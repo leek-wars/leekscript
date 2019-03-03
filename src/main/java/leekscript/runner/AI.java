@@ -15,6 +15,7 @@ import java.util.Iterator;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.leekwars.game.fight.entity.EntityAI;
 
 public abstract class AI {
 	
@@ -30,6 +31,7 @@ public abstract class AI {
 
 	protected LeekLog log;
 	protected AI mUAI;
+	protected EntityAI mLeekIA;
 
 	public AI() throws Exception {
 		mUAI = this;
@@ -48,6 +50,10 @@ public abstract class AI {
 
 	protected void init() throws Exception {
 
+	}
+	
+	public void setLeekIA(EntityAI ia) {
+		mLeekIA = ia;
 	}
 
 	public void addOperations(int nb) throws LeekRunException {
