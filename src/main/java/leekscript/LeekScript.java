@@ -28,7 +28,7 @@ public class LeekScript {
 	private static void execute(String code) {
 		try {
 			long ct = System.currentTimeMillis();
-			AI ai = LeekScriptCompilation.compile(code);
+			AI ai = LeekScriptCompilation.compile(code, "AI");
 			long compileTime = System.currentTimeMillis() - ct;
 			
 			long et = System.currentTimeMillis();

@@ -7,9 +7,11 @@ import leekscript.compiler.bloc.MainLeekBlock;
 public class LeekFunctionValue extends AbstractExpression {
 
 	private final String mFunctionName;
+	private final String mFunctionNamespace;
 
-	public LeekFunctionValue(String funcname) {
+	public LeekFunctionValue(String funcname, String namespace) {
 		mFunctionName = funcname;
+		mFunctionNamespace = namespace;
 	}
 
 	@Override
@@ -35,7 +37,7 @@ public class LeekFunctionValue extends AbstractExpression {
 				writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
 			}
 			else{
-				writer.addCode("LeekValueManager.getFunction(LeekFunctions." + mFunctionName + ")");
+				writer.addCode("LeekValueManager.getFunction(" + mFunctionNamespace + "." + mFunctionName + ")");
 			}
 		}
 	}

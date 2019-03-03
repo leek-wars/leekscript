@@ -1,7 +1,8 @@
 package leekscript.runner.values;
 
-import leekscript.LeekLog;
+import leekscript.AILog;
 import leekscript.runner.AI;
+import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekAnonymousFunction;
 import leekscript.runner.LeekFunctions;
 import leekscript.runner.LeekOperations;
@@ -15,7 +16,7 @@ public class FunctionLeekValue extends AbstractLeekValue {
 
 	private final int mType;
 	private final int mId;
-	private LeekFunctions mFunction;
+	private ILeekFunction mFunction;
 	private LeekAnonymousFunction mAnonymous;
 
 	public FunctionLeekValue(int id) {
@@ -29,7 +30,7 @@ public class FunctionLeekValue extends AbstractLeekValue {
 		mId = id;
 	}
 
-	public FunctionLeekValue(LeekFunctions fonction) {
+	public FunctionLeekValue(ILeekFunction fonction) {
 		mFunction = fonction;
 		mType = LEEK_FUNCTION;
 		mId = 0;
@@ -97,7 +98,7 @@ public class FunctionLeekValue extends AbstractLeekValue {
 			if (values.length != ai.userFunctionCount(mId)) {
 
 				ai.addOperations(AI.ERROR_LOG_COST);
-				ai.addSystemLog(LeekLog.ERROR, LeekLog.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.userFunctionCount(mId)) });
+				ai.addSystemLog(AILog.ERROR, AILog.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.userFunctionCount(mId)) });
 			}
 			else
 				return ai.userFunctionExecute(mId, copyValues(ai, values, ai.userFunctionReference(mId)));
@@ -106,7 +107,7 @@ public class FunctionLeekValue extends AbstractLeekValue {
 			if (values.length != ai.anonymousFunctionCount(mId)) {
 
 				ai.addOperations(AI.ERROR_LOG_COST);
-				ai.addSystemLog(LeekLog.ERROR, LeekLog.CAN_NOT_EXECUTE_WITH_ARGUMENTS,
+				ai.addSystemLog(AILog.ERROR, AILog.CAN_NOT_EXECUTE_WITH_ARGUMENTS,
 						new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.anonymousFunctionCount(mId)) });
 			}
 			else

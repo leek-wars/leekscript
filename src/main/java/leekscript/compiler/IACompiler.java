@@ -113,7 +113,7 @@ public class IACompiler {
 			compiler.readCode();
 
 			JavaWriter writer = new JavaWriter(ai.getOwner() > 0);
-			compiler.writeJava("IA_" + ai.getClassName(), writer);
+			compiler.writeJava("IA_" + ai.getClassName(), writer, "AI");
 
 			ai.setCompiled(writer.getJavaCode());
 			ai.setMinLevel(main.getMinLevel());

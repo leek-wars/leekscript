@@ -165,10 +165,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return str + super.getCode();
 	}
 
-	public void writeJavaCode(JavaWriter writer, String className) {
+	public void writeJavaCode(JavaWriter writer, String className, String AIClass) {
 		writer.addLine("import leekscript.runner.*;");
 		writer.addLine("import leekscript.runner.values.*;");
-		writer.addLine("public class " + className + " extends AI {");
+		writer.addLine("public class " + className + " extends " + AIClass + " {");
 		writer.addLine("public " + className + "() throws Exception{ super(); }");
 		// Variables globales
 		for (String global : mGobales) {

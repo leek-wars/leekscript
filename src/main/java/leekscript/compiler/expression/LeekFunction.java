@@ -6,6 +6,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekFunctions;
 
 public class LeekFunction extends AbstractExpression {
@@ -48,7 +49,7 @@ public class LeekFunction extends AbstractExpression {
 				throw new LeekExpressionException(this, LeekCompilerException.INVALID_PAREMETER_COUNT);
 		}
 		else {
-			LeekFunctions f = LeekFunctions.getValue(mName);
+			ILeekFunction f = LeekFunctions.getValue(mName);
 			if (mParameters.size() > nb_params || mParameters.size() < f.getArgumentsMin())
 				throw new LeekExpressionException(this, LeekCompilerException.INVALID_PAREMETER_COUNT);
 		}
@@ -94,12 +95,13 @@ public class LeekFunction extends AbstractExpression {
 				writer.addCode(")");
 			}
 			else {
-				int nb_params = LeekFunctions.isFunction(mName);
+				ILeekFunction fun = LeekFunctions.getValue(mName);
+				int nb_params = fun.getArguments();
 				if (!writer.hasDebug() && (mName.equals("debug") || mName.equalsIgnoreCase("mark") || mName.equals("pause"))) {
 					writer.addCode("nothing(LeekValueManager.NULL)");
 					return;
 				}
-				writer.addCode("LeekFunctions.executeFunction(mUAI, LeekFunctions." + mName + ", new AbstractLeekValue[]{");
+				writer.addCode("LeekFunctions.executeFunction(mUAI, " + fun.getNamespace() + "." + mName + ", new AbstractLeekValue[]{");
 				for (int i = 0; i < nb_params; i++) {
 					if (i > 0)
 						writer.addCode(", ");

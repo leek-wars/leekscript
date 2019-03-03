@@ -161,7 +161,7 @@ public class LeekScriptCompilation {
 		return IALoader.loadAI(IA_PATH, name);
 	}
 
-	public static AI compile(String leekscript) throws Exception {
+	public static AI compile(String leekscript, String AIClass) throws Exception {
 		LeekAI ai = new LeekAI(1, 1, "Test", 0, leekscript, 0, 0, 0, 0, false);
 		IACompiler c = new IACompilerTest(ai);// On lance la compilation du code
 												// de l'IA
@@ -173,14 +173,14 @@ public class LeekScriptCompilation {
 		compiler.readCode();
 
 		JavaWriter writer = new JavaWriter(false);
-		compiler.writeJava("IA_" + ai.getClassName(), writer);
+		compiler.writeJava("IA_" + ai.getClassName(), writer, AIClass);
 
 		ai.setCompiled(writer.getJavaCode());
 		return LeekScriptCompilation.getUserAI(ai);
 	}
 
-	public static boolean testScript(String leek, String script, AbstractLeekValue s) throws Exception {
-		AI ai = LeekScriptCompilation.compile(script);
+	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass) throws Exception {
+		AI ai = LeekScriptCompilation.compile(script, AIClass);
 		AbstractLeekValue v = ai.runIA();
 		if (v.equals(ai, s))
 			return true;
@@ -199,7 +199,7 @@ public class LeekScriptCompilation {
 	}
 
 	public static boolean testScript(String script, AbstractLeekValue s) throws Exception {
-		AI ai = LeekScriptCompilation.compile(script);
+		AI ai = LeekScriptCompilation.compile(script, "AI");
 		AbstractLeekValue v = ai.runIA();
 		System.out.println(v.getString(ai));
 		return v.equals(ai, s);

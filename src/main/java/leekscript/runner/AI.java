@@ -1,6 +1,6 @@
 package leekscript.runner;
 
-import leekscript.LeekLog;
+import leekscript.AILog;
 import leekscript.runner.PhpArray.Element;
 import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
@@ -15,7 +15,6 @@ import java.util.Iterator;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.leekwars.game.fight.entity.EntityAI;
 
 public abstract class AI {
 	
@@ -29,31 +28,20 @@ public abstract class AI {
 	protected JSONArray mErrorObject = null;
 	protected JSONObject thisObject = null;
 
-	protected LeekLog log;
+	protected AILog log;
 	protected AI mUAI;
-	protected EntityAI mLeekIA;
 
-	public AI() throws Exception {
+	public AI() {
 		mUAI = this;
-		log = new LeekLog();
-		init();
+		log = new AILog();
 	}
 
 	public long getOperations() {
 		return mOperations;
 	}
 	
-
-	public LeekLog getLeekLog() {
+	public AILog getLeekLog() {
 		return log;
-	}
-
-	protected void init() throws Exception {
-
-	}
-	
-	public void setLeekIA(EntityAI ia) {
-		mLeekIA = ia;
 	}
 
 	public void addOperations(int nb) throws LeekRunException {
@@ -292,7 +280,7 @@ public abstract class AI {
 
 		} catch (Exception e) {
 
-			getLeekLog().addLog(LeekLog.ERROR, "Cannot encode object \"" + object.toString() + "\"");
+			getLeekLog().addLog(AILog.ERROR, "Cannot encode object \"" + object.toString() + "\"");
 			try {
 				addOperations(100);
 			} catch (Exception e1) {}
@@ -310,7 +298,7 @@ public abstract class AI {
 
 		} catch (Exception e) {
 
-			getLeekLog().addLog(LeekLog.ERROR, "Cannot parse json \"" + json + "\"");
+			getLeekLog().addLog(AILog.ERROR, "Cannot parse json \"" + json + "\"");
 			try {
 				addOperations(100);
 			} catch (Exception e1) {}
@@ -328,12 +316,12 @@ public abstract class AI {
 
 	public void addSystemLog(int type, String key, String[] parameters, StackTraceElement[] elements) {
 
-		if (type == LeekLog.WARNING)
-			type = LeekLog.SWARNING;
-		else if (type == LeekLog.ERROR)
-			type = LeekLog.SERROR;
-		else if (type == LeekLog.STANDARD)
-			type = LeekLog.SSTANDARD;
+		if (type == AILog.WARNING)
+			type = AILog.SWARNING;
+		else if (type == AILog.ERROR)
+			type = AILog.SERROR;
+		else if (type == AILog.STANDARD)
+			type = AILog.SSTANDARD;
 
 		log.addSystemLog(type, getErrorMessage(elements), key, parameters);
 	}

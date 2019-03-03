@@ -4,7 +4,7 @@ import java.io.UnsupportedEncodingException;
 
 import com.alibaba.fastjson.JSONArray;
 
-public class LeekLog {
+public class AILog {
 
 	public final static int STANDARD = 1;
 	public final static int WARNING = 2;
@@ -37,7 +37,7 @@ public class LeekLog {
 	public static final String CODE_TOO_LARGE_FUNCTION = "code_too_large_function";
 	public static final String NUMBER_OF_OPERATIONS = "number_of_operations";
 
-	public LeekLog() {}
+	public AILog() {}
 
 	public void addSystemLog(int type, String trace, String key, String[] parameters) {
 

@@ -1,5 +1,9 @@
 package leekscript.runner;
 
+import java.lang.reflect.Field;
+import java.util.HashSet;
+import java.util.Set;
+
 public class LeekConstants {
 
 	public final static double PI = Math.PI;
@@ -25,7 +29,9 @@ public class LeekConstants {
 	public final static int TYPE_STRING = 3;
 	public final static int TYPE_ARRAY = 4;
 	public final static int TYPE_FUNCTION = 5;
-
+	
+	private static Set<String> extraConstants = new HashSet<>();
+	private static String extraConstantsClass;
 
 	public static int getType(String constant) {
 
@@ -188,5 +194,25 @@ public class LeekConstants {
 			return LeekFunctions.INT;
 		}
 		return 0;
+	}
+	
+
+	public static void setExtraConstants(String extraConstantsClass) {
+		LeekConstants.extraConstantsClass = extraConstantsClass;
+		try {
+			Class<?> extra = Class.forName(extraConstantsClass);
+			for (Field constant : extra.getDeclaredFields()) {
+				extraConstants.add(constant.getName());
+			}
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static String getNamespace(String mConstantName) {
+		if (extraConstants.contains(mConstantName)) {
+			return extraConstantsClass;
+		}
+		return "LeekConstants";
 	}
 }

@@ -246,8 +246,8 @@ public class WordCompiler {
 		mCurentBlock.addInstruction(new LeekExpressionInstruction(exp, mLine, mAI));
 	}
 
-	public void writeJava(String className, JavaWriter writer) {
-		mMain.writeJavaCode(writer, className);
+	public void writeJava(String className, JavaWriter writer, String AIClass) {
+		mMain.writeJavaCode(writer, className, AIClass);
 	}
 
 	private void includeBlock() throws Exception {
@@ -730,7 +730,8 @@ public class WordCompiler {
 						if (mCompiler.getWord().getType() != WordParser.T_PAR_LEFT) {
 							// On utilise le nom de la fonction comme une
 							// variable
-							retour.addExpression(new LeekFunctionValue(fname));
+							String namespace = LeekFunctions.getNamespace(fname);
+							retour.addExpression(new LeekFunctionValue(fname, namespace));
 							continue;
 						} else {
 							mCompiler.skipWord();

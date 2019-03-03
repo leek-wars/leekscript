@@ -26,8 +26,9 @@ public class LeekConstant extends AbstractExpression {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		int type = LeekConstants.getType(mConstantName);
-		if(type == LeekFunctions.INT) writer.addCode("LeekValueManager.getLeekIntValue(LeekConstants." + mConstantName + ")");
-		else if(type == LeekFunctions.DOUBLE) writer.addCode("new DoubleLeekValue(LeekConstants." + mConstantName + ")");
+		String namespace = LeekConstants.getNamespace(mConstantName);
+		if(type == LeekFunctions.INT) writer.addCode("LeekValueManager.getLeekIntValue(" + namespace + "." + mConstantName + ")");
+		else if(type == LeekFunctions.DOUBLE) writer.addCode("new DoubleLeekValue(" + namespace + "." + mConstantName + ")");
 		else writer.addCode("LeekValueManager.NULL");
 	}
 

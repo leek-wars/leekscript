@@ -1,6 +1,6 @@
 package leekscript.runner;
 
-import leekscript.LeekLog;
+import leekscript.AILog;
 import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.ArrayLeekValue.ArrayIterator;
@@ -117,7 +117,7 @@ public class LeekOperations {
 		if (v1.isNumeric() && v2.isNumeric()) {
 			if (v2.getDouble(ai) == 0) {
 				ai.addOperations(AI.ERROR_LOG_COST);
-				ai.addSystemLog(LeekLog.ERROR, LeekLog.DIVISION_BY_ZERO);
+				ai.addSystemLog(AILog.ERROR, AILog.DIVISION_BY_ZERO);
 				return LeekValueManager.NULL;
 			}
 			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
@@ -140,7 +140,7 @@ public class LeekOperations {
 		if (v1.isNumeric() && v2.isNumeric()) {
 			if (v2.getDouble(ai) == 0) {
 				ai.addOperations(AI.ERROR_LOG_COST);
-				ai.addSystemLog(LeekLog.ERROR, LeekLog.DIVISION_BY_ZERO);
+				ai.addSystemLog(AILog.ERROR, AILog.DIVISION_BY_ZERO);
 				return LeekValueManager.NULL;
 			}
 			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue)

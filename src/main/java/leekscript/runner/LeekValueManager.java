@@ -30,7 +30,7 @@ public class LeekValueManager {
 	public final static int MAX_INT = 800;
 
 	private static TreeMap<Integer, IntLeekValue> mIntegers;
-	private static TreeMap<LeekFunctions, FunctionLeekValue> mFunctions;
+	private static TreeMap<String, FunctionLeekValue> mFunctions;
 
 	public static void init() {
 		mIntegers = new TreeMap<Integer, IntLeekValue>();
@@ -41,14 +41,17 @@ public class LeekValueManager {
 				ErrorManager.exception(e);
 			}
 		}
-		mFunctions = new TreeMap<LeekFunctions, FunctionLeekValue>();
+		mFunctions = new TreeMap<String, FunctionLeekValue>();
 		for (LeekFunctions function : LeekFunctions.values()) {
-			mFunctions.put(function, new FunctionLeekValue(function));
+			mFunctions.put(function.toString(), new FunctionLeekValue(function));
+		}
+		for (Object function : LeekFunctions.getExtraFunctions()) {
+			mFunctions.put(function.toString(), new FunctionLeekValue((ILeekFunction) function));
 		}
 	}
 
-	public static FunctionLeekValue getFunction(LeekFunctions function) {
-		return mFunctions.get(function);
+	public static FunctionLeekValue getFunction(ILeekFunction function) {
+		return mFunctions.get(function.toString());
 	}
 
 	public static AbstractLeekValue getLeekDoubleValue(double nb) {
