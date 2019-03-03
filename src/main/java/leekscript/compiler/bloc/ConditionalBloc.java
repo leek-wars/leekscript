@@ -1,0 +1,92 @@
+package leekscript.compiler.bloc;
+
+import leekscript.compiler.JavaWriter;
+import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.instruction.LeekInstruction;
+
+public class ConditionalBloc extends AbstractLeekBlock implements LeekInstruction {
+
+	private ConditionalBloc mParentCondition = null;
+	private AbstractExpression mCondition = null;
+
+	private boolean mPutCounterBefore = false;
+
+	public ConditionalBloc(AbstractLeekBlock parent, MainLeekBlock main, int line, int ai) {
+		super(parent, main, line, ai);
+	}
+
+	public void setParentCondition(ConditionalBloc parent) {
+		mParentCondition = parent;
+	}
+
+	public ConditionalBloc getParentCondition() {
+		return mParentCondition;
+	}
+
+	public void setCondition(AbstractExpression condition) {
+		mCondition = condition;
+	}
+
+	public AbstractExpression getCondition() {
+		return mCondition;
+	}
+
+	@Override
+	public String getCode() {
+		String str = "";
+		if(mParentCondition == null) str = "if(" + mCondition.getString() + "){";
+		else if(mCondition != null) str = "elseif(" + mCondition.getString() + "){";
+		else str = "else{";
+		str += "\n" + super.getCode();
+		return str + "}";
+	}
+
+	@Override
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+		if(mParentCondition == null){
+			writer.addCode("if(");
+			mCondition.writeJavaCode(mainblock, writer);
+			writer.addLine(".getBoolean()){", mLine, mAI);
+		}
+		else if(mCondition != null){
+			writer.addCode("else if(");
+			mCondition.writeJavaCode(mainblock, writer);
+			writer.addLine(".getBoolean()){", mLine, mAI);
+		}
+		else writer.addLine("else{", mLine, mAI);
+		super.writeJavaCode(mainblock, writer);
+		if(mEndInstruction == 0) writer.addCounter(1);
+		writer.addLine("}");
+	}
+
+	public int getConditionEndBlock() {
+		if(mEndInstruction == 0) return 0;
+		if(mParentCondition != null){
+			int parent = mParentCondition.getConditionEndBlock();
+			if(parent == 0) return 0;
+			return parent | mEndInstruction;
+		}
+		return mEndInstruction;
+	}
+
+	@Override
+	public int getEndBlock() {
+		if(mCondition == null){
+			int r = getConditionEndBlock();
+			if(r != 0) setPutCounterBefore(true);
+			return r;
+		}
+		return 0;
+	}
+
+	@Override
+	public boolean putCounterBefore() {
+		return mPutCounterBefore;
+	}
+
+	private void setPutCounterBefore(boolean value) {
+		if(mParentCondition != null) mParentCondition.setPutCounterBefore(value);
+		else mPutCounterBefore = value;
+	}
+
+}

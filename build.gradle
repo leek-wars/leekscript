@@ -1,0 +1,17 @@
+apply plugin: 'java'
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile 'org.slf4j:slf4j-api:1.7.21'
+    testCompile 'junit:junit:4.12'
+    compile group: 'com.alibaba', name: 'fastjson', version: '1.1.25'
+}
