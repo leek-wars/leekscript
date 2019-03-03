@@ -4,5 +4,5 @@ First version of LeekScript language, built in Java.
 
 ### Build and run tests
 ```
-gradle build
+gradle jar test
 ```
