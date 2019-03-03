@@ -6,6 +6,9 @@ test {
     }
 }
 
+jar.baseName = 'leekscript'
+libsDirName = '..'
+
 repositories {
     jcenter()
 }
