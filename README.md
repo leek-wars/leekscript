@@ -6,3 +6,6 @@ First version of LeekScript language, built in Java.
 ```
 gradle jar test
 ```
+
+### Credits
+Developed by Dawyde © 2012-2019
