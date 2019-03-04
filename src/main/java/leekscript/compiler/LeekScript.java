@@ -10,12 +10,17 @@ import java.nio.file.Paths;
 import leekscript.ErrorManager;
 import leekscript.LSException;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.resolver.FileSystemResolver;
+import leekscript.compiler.resolver.Resolver;
 import leekscript.runner.AI;
 import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 
 public class LeekScript {
 	private final static String IA_PATH = "ai/";
+	
+	private static Resolver defaultResolver = new FileSystemResolver();
+	private static Resolver customResolver = null;
 	
 	public static AI compileFile(int id, String filepath, String AIClass) throws LeekScriptException, LeekCompilerException {
 		String code = "";
@@ -130,5 +135,13 @@ public class LeekScript {
 		AbstractLeekValue v = ai.runIA();
 		System.out.println(v.getString(ai));
 		return v.equals(ai, s);
+	}
+	
+	public static void setResolver(Resolver resolver) {
+		customResolver = resolver;
+	}
+
+	public static Resolver getResolver() {
+		return customResolver != null ? customResolver : defaultResolver;
 	}
 }
