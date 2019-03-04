@@ -137,6 +137,13 @@ public class LeekScript {
 		return v.equals(ai, s);
 	}
 	
+	public static String runFile(String filename) throws Exception  {
+		AI ai = LeekScript.compileFile(1212, filename, "AI");
+		AbstractLeekValue v = ai.runIA();
+		System.out.println(v.getString(ai));
+		return v.getString(ai);
+	}
+	
 	public static void setResolver(Resolver resolver) {
 		customResolver = resolver;
 	}
