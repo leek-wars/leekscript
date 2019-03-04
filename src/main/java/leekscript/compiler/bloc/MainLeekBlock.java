@@ -9,6 +9,8 @@ import java.util.TreeMap;
 import leekscript.compiler.IACompiler;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.LeekScript;
+import leekscript.compiler.WordCompiler;
+import leekscript.compiler.WordParser;
 import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.runner.AI;
 
@@ -28,17 +30,18 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	private int mCounter = 0;
 	private int mCountInstruction = 0;
-	private final IACompiler mCompiler = new IACompiler();
+	private final IACompiler mCompiler;
 
 	@Override
 	public int getCount() {
 		return mCounter++;
 	}
 
-	public MainLeekBlock(String ai) {
+	public MainLeekBlock(IACompiler compiler, String ai) {
 		super(null, null, 0, 0);
 		// On ajoute l'IA pour pas pouvoir l'include
 		mIncluded.add(ai);
+		mCompiler = compiler;
 	}
 
 	public void addRedefinedFunction(String function) {
@@ -73,11 +76,18 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		if (mIncluded.contains(path)) {
 			return true;
 		}
-		AI ai = LeekScript.compile(1213, path, "AI");
+		AI ai = LeekScript.compileFile(1213, path, "AI");
 		if (ai == null) {
 			return false;
 		}
 		mIncluded.add(path);
+		AI previousAI = mCompiler.getCurrentAI();
+		mCompiler.setCurrentAI(ai);
+		String code = LeekScript.getResolver().resolve(path);
+		WordParser words = new WordParser(1213, code);
+		WordCompiler compiler = new WordCompiler(words, this);
+		compiler.readCode();
+		mCompiler.setCurrentAI(previousAI);
 		return true;
 	}
 

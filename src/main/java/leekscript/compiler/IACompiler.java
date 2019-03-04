@@ -3,6 +3,7 @@ package leekscript.compiler;
 import leekscript.ErrorManager;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.runner.AI;
 
 import com.alibaba.fastjson.JSONArray;
 
@@ -13,6 +14,7 @@ public class IACompiler {
 
 	private final JSONArray mInformations = new JSONArray();
 	private boolean mErrors = false;
+	private AI mCurrentAI;
 
 	public IACompiler() {}
 
@@ -54,7 +56,7 @@ public class IACompiler {
 			// On lance la compilation du code de l'IA
 			WordParser parser = new WordParser(id, code);
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
-			MainLeekBlock main = new MainLeekBlock(name);
+			MainLeekBlock main = new MainLeekBlock(this, name);
 			WordCompiler compiler = new WordCompiler(parser, main);
 			compiler.readCode();
 
@@ -79,5 +81,13 @@ public class IACompiler {
 
 	public boolean hasError() {
 		return mErrors;
+	}
+	
+	public AI getCurrentAI() {
+		return mCurrentAI;
+	}
+
+	public void setCurrentAI(AI ai) {
+		mCurrentAI = ai;
 	}
 }
