@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 
 public class JavaCompiler {
+	
 	public final static int INIT = 0;
 	public final static int RUNNING = 1;
 	public final static int END = 2;
@@ -42,8 +43,7 @@ public class JavaCompiler {
 			return;
 		}
 
-		Process process = Runtime.getRuntime().exec(new String[] { "javac", "-encoding", "utf8", "-nowarn",
-				"-classpath", "LeekWars.jar", mInput.getAbsolutePath() });
+		Process process = Runtime.getRuntime().exec(new String[] { "javac", "-encoding", "utf8", "-nowarn", "-classpath", "leekscript.jar", mInput.getAbsolutePath() });
 
 		Worker worker = new Worker(process);
 		worker.start();
@@ -89,18 +89,9 @@ public class JavaCompiler {
 		} finally {
 			process.destroy();
 		}
-
-		
-		/*
-		try {
-			Thread.sleep(300);
-		} catch (Exception e) {
-		}
-		*/
 	}
 
 	public static int getStatus() {
 		return 0;
 	}
-
 }
