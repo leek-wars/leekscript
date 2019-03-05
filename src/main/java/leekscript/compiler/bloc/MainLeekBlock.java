@@ -6,12 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import leekscript.LeekAI;
 import leekscript.compiler.IACompiler;
 import leekscript.compiler.JavaWriter;
-import leekscript.compiler.WordCompiler;
-import leekscript.compiler.WordParser;
+import leekscript.compiler.LeekScript;
 import leekscript.compiler.instruction.LeekInstruction;
+import leekscript.runner.AI;
 
 public class MainLeekBlock extends AbstractLeekBlock {
 
@@ -25,22 +24,21 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private int mAnonymousId = 1;
 	private int mFunctionId = 1;
 
-	private final ArrayList<Integer> mIncluded = new ArrayList<Integer>();
+	private final ArrayList<String> mIncluded = new ArrayList<String>();
 
 	private int mCounter = 0;
 	private int mCountInstruction = 0;
-	private final IACompiler mCompiler;
+	private final IACompiler mCompiler = new IACompiler();
 
 	@Override
 	public int getCount() {
 		return mCounter++;
 	}
 
-	public MainLeekBlock(IACompiler iaCompiler, LeekAI ai) {
+	public MainLeekBlock(String ai) {
 		super(null, null, 0, 0);
-		mCompiler = iaCompiler;
 		// On ajoute l'IA pour pas pouvoir l'include
-		mIncluded.add(ai.getId());
+		mIncluded.add(ai);
 	}
 
 	public void addRedefinedFunction(String function) {
@@ -59,7 +57,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return mCountInstruction;
 	}
 
-	public List<Integer> getIncludes() {
+	public List<String> getIncludes() {
 		return mIncluded;
 	}
 
@@ -71,21 +69,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMinLevel = min_level;
 	}
 
-	public boolean includeAI(String name) throws Exception {
-		LeekAI ai = mCompiler.getAI(name);
+	public boolean includeAI(String path) throws Exception {
+		if (mIncluded.contains(path)) {
+			return true;
+		}
+		AI ai = LeekScript.compile(1213, path, "AI");
 		if (ai == null) {
 			return false;
 		}
-		if (mIncluded.contains(ai.getId())) {
-			return true;
-		}
-		mIncluded.add(ai.getId());
-		LeekAI previousAI = mCompiler.getCurrentAI();
-		mCompiler.setCurrentAI(ai);
-		WordParser words = new WordParser(ai);
-		WordCompiler compiler = new WordCompiler(words, this);
-		compiler.readCode();
-		mCompiler.setCurrentAI(previousAI);
+		mIncluded.add(path);
 		return true;
 	}
 
@@ -195,12 +187,12 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("}");
 
 		TreeMap<Integer, String> ais = new TreeMap<Integer, String>();
-		for (Integer id : mIncluded) {
-			LeekAI ai = mCompiler.getAI(id);
-			if (ai == null)
-				continue;
-			ais.put(ai.getId(), ai.getName());
-		}
+		// for (String path : mIncluded) {
+		// 	LeekAI ai = mCompiler.getAI(id);
+		// 	if (ai == null)
+		// 		continue;
+		// 	ais.put(ai.getId(), ai.getName());
+		// }
 		writer.writeErrorFunction(mCompiler, ais);
 		printFunctionInformations(writer);
 

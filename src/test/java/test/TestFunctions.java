@@ -5,7 +5,7 @@ import java.util.List;
 
 import leekscript.ErrorManager;
 import leekscript.LSException;
-import leekscript.compiler.LeekScriptCompilation;
+import leekscript.compiler.LeekScript;
 import leekscript.runner.AI;
 import leekscript.runner.LeekConstants;
 import leekscript.runner.values.AbstractLeekValue;
@@ -20,13 +20,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class LeekScriptFunctions {
+public class TestFunctions {
 	
 	private AI ai;
 	
 	@Before
 	public void init() throws Exception {
-		ai = new DefaultUserAI();
+		ai = new TestAI();
 	}
 
 	@Test
@@ -490,14 +490,14 @@ public class LeekScriptFunctions {
 	@Test
 	public void testReference() throws Exception {
 		String leekscript = "var t = [3,4,5]; t[3]=[1,2,3,4]; var r = @t[3]; r[4] ='prou3t'; return t;";
-		LeekScriptCompilation.testScript(leekscript, new NullLeekValue());
+		LeekScript.testScript(leekscript, new NullLeekValue());
 	}
 
 	@Test
 	public void testAnonymousFunctioNSelfAccess() {
 		String leekscript = "var t = function(){ return t; };";
 		try {
-			LeekScriptCompilation.testScript(leekscript, new NullLeekValue());
+			LeekScript.testScript(leekscript, new NullLeekValue());
 		} catch (Exception e) {
 
 			ErrorManager.exception(e);
@@ -576,7 +576,7 @@ public class LeekScriptFunctions {
 		}
 		leekscript += "];";
 		try {
-			return LeekScriptCompilation.testScript(leekscript, new ArrayLeekValue(ai, values));
+			return LeekScript.testScript(leekscript, new ArrayLeekValue(ai, values));
 		} catch (LSException e) {
 			int i = e.getIndex();
 			System.err.println("Erreur :\n" + mCodes.get(i));

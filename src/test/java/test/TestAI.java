@@ -2,9 +2,9 @@ package test;
 import leekscript.runner.AI;
 import leekscript.runner.values.AbstractLeekValue;
 
-public class DefaultUserAI extends AI {
+public class TestAI extends AI {
 
-	public DefaultUserAI() throws Exception {
+	public TestAI() throws Exception {
 		super();
 	}
 

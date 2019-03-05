@@ -1,89 +1,23 @@
 package leekscript.compiler;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import leekscript.ErrorManager;
-import leekscript.LeekAI;
+import leekscript.LSException;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.runner.AI;
+import leekscript.runner.values.AbstractLeekValue;
+import leekscript.runner.values.ArrayLeekValue;
 
 public class LeekScript {
-	// Classe principale du LeekScript
 	private final static String IA_PATH = "ai/";
 
-	private final static Map<Integer, Long> sIA_modified = new TreeMap<Integer, Long>();
-	private final static Map<Integer, Long> sIA_tournament_modified = new TreeMap<Integer, Long>();
-
-	public static void init() {
-		try {
-			File f = new File("data/modified.sv");
-			if (f.exists()) {
-				DataInputStream data_input = new DataInputStream(new FileInputStream(f));
-				int len = data_input.readInt();
-				for (int i = 0; i < len; i++) {
-					int id = data_input.readInt();
-					long modified = data_input.readLong();
-					sIA_modified.put(id, modified);
-				}
-				data_input.close();
-			}
-			f = new File("data/modified_ai.sv");
-			if (f.exists()) {
-				DataInputStream data_input = new DataInputStream(new FileInputStream(f));
-				int len = data_input.readInt();
-				for (int i = 0; i < len; i++) {
-					int id = data_input.readInt();
-					long modified = data_input.readLong();
-					sIA_tournament_modified.put(id, modified);
-				}
-				data_input.close();
-			}
-		} catch (Exception e) {
-
-		}
-	}
-
-	public static void writeAIModified(DataOutputStream output) throws IOException {
-		output.writeInt(sIA_modified.size());
-		for (Entry<Integer, Long> e : sIA_modified.entrySet()) {
-			output.writeInt(e.getKey());
-			output.writeLong(e.getValue());
-		}
-	}
-
-	public static void save() {
-		try {
-			File f = new File("data/modified.sv");
-			DataOutputStream output = new DataOutputStream(new FileOutputStream(f));
-			output.writeInt(sIA_modified.size());
-			for (Entry<Integer, Long> e : sIA_modified.entrySet()) {
-				output.writeInt(e.getKey());
-				output.writeLong(e.getValue());
-			}
-			output.close();
-			f = new File("data/modified_ai.sv");
-			output = new DataOutputStream(new FileOutputStream(f));
-			output.writeInt(sIA_tournament_modified.size());
-			for (Entry<Integer, Long> e : sIA_tournament_modified.entrySet()) {
-				output.writeInt(e.getKey());
-				output.writeLong(e.getValue());
-			}
-			output.close();
-		} catch (Exception e) {
-
-		}
-	}
-
-	public static boolean compileCode(String name, LeekAI ai) {
-		// if(ai.getValid() == 0) return false;//Si l'ia est invalide on se
-		// fatigue pas
+	public static boolean compileCode(int id, String name, String code, String AIClass) throws LeekCompilerException {
 
 		File compiled = new File(IA_PATH + name + ".class");
 		if (compiled.exists())
@@ -91,26 +25,22 @@ public class LeekScript {
 		File java = new File(IA_PATH + name + ".java");
 		if (java.exists())
 			java.delete();
-
-		if (ai.getCompiled() == null || ai.getCompiled().isEmpty()) {// Pas de
-																		// code
-			// java
-			if (ai.v2) {
-				return true;
-			}
-			if (ai.getCode().isEmpty()) {// Pas de code du tout...
-				return false;
-			} else {
-				// On compile l'IA
-				new IACompiler(ai);
-			}
+		
+		if (code.isEmpty()) {// Pas de code du tout...
+			System.out.println("No code!");
+			return false;
 		}
-		if (ai.getCompiled().isEmpty())
-			return false;// Rien ne compile
+		// On compile l'IA
+		String compiledJava = new IACompiler().compile(id, name, code, AIClass);
+		
+		if (compiledJava.isEmpty()) {
+			System.out.println("No java generated!");
+			return false; // Rien ne compile
+		}
 		// Si on a maintenant du code java
 		try {
 			FileOutputStream output = new FileOutputStream(java);
-			output.write(ai.getCompiled().getBytes());
+			output.write(compiledJava.getBytes());
 			output.close();
 		} catch (Exception e) {
 			ErrorManager.exception(e);
@@ -118,28 +48,29 @@ public class LeekScript {
 		}
 		return true;
 	}
-
-	public static boolean isValid(LeekAI ai) {
-		if ((ai.getAITournament() ? sIA_tournament_modified : sIA_modified).containsKey(ai.getId())) {
-			if ((ai.getAITournament() ? sIA_tournament_modified : sIA_modified).get(ai.getId()) == ai.getModified())
-				return true;
+	
+	public static AI compileFile(int id, String filepath, String AIClass) throws LeekScriptException, LeekCompilerException {
+		String code = "";
+		try {
+			code = new String(Files.readAllBytes(Paths.get(filepath)), StandardCharsets.UTF_8);
+		} catch (IOException e1) {
+			e1.printStackTrace();
 		}
-		return false;
-		// return f.lastModified() > ai.getModified() && (!isJava || f.length()
-		// != ai.getCompiled().length());
+		return compile(id, code, AIClass);
 	}
 
-	public static AI getUserAI(LeekAI ai) throws LeekScriptException {
+	public static AI compile(int id, String code, String AIClass) throws LeekScriptException, LeekCompilerException {
 
-		String name = "IA_" + ai.getClassName();
+		String name = "IA_" + id;
 		String error = "";
 		File compiled = new File(IA_PATH + name + ".class");
 		File java = new File(IA_PATH + name + ".java");
 
-		if (!compiled.exists() || !isValid(ai)) {
+		if (!compiled.exists()) {
 
 			// On commence par la conversion LS->Java
-			if (!compileCode(name, ai)) {
+			if (!compileCode(id, name, code, AIClass)) {
+				System.out.println("Failed to compiled AI: " + code);
 				return null;
 			}
 
@@ -158,22 +89,17 @@ public class LeekScript {
 
 			} catch (Exception e) {
 
-				ErrorManager.exception(e, ai.getId());
+				// ErrorManager.exception(e, ai.getId());
 				ErrorManager.exception(e);
 				status = JavaCompiler.ERROR;
 			}
-			(ai.getAITournament() ? sIA_tournament_modified : sIA_modified).put(ai.getId(), ai.getModified());
 
 			if (status == JavaCompiler.ERROR) {
 				java.delete();
 				throwException(error);
 			}
 		}
-		AI loaded_ai = IALoader.loadAI(IA_PATH, name);
-		if (loaded_ai == null) {
-			throwException("compilation_error");
-		}
-		return loaded_ai;
+		return IALoader.loadAI(IA_PATH, name);
 	}
 
 	public static void throwException(String error) throws LeekScriptException {
@@ -190,5 +116,35 @@ public class LeekScript {
 			}
 		}
 		throw new LeekScriptException(LeekScriptException.CANT_COMPILE);
+	}
+	
+	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass) throws Exception {
+		new File(IA_PATH + "IA_1212.java").delete();
+		new File(IA_PATH + "IA_1212.class").delete();
+		AI ai = LeekScript.compile(1212, script, AIClass);
+		AbstractLeekValue v = ai.runIA();
+		if (v.equals(ai, s))
+			return true;
+		ArrayLeekValue tab1 = v.getArray();
+		ArrayLeekValue tab2 = s.getArray();
+		if (tab1 != null && tab2 != null && tab1.size() == tab2.size()) {
+			int i = 0;
+			for (i = 0; i < tab1.size(); i++) {
+				if (!tab1.get(ai, i).equals(ai, tab2.get(ai, i))) {
+					throw new LSException(i, tab1.get(ai, i), tab2.get(ai, i));
+				}
+			}
+		} else
+			System.out.println(v.getString(ai) + " -- " + s.getString(ai));
+		return false;
+	}
+	
+	public static boolean testScript(String script, AbstractLeekValue s) throws Exception {
+		new File(IA_PATH + "IA_1212.java").delete();
+		new File(IA_PATH + "IA_1212.class").delete();
+		AI ai = LeekScript.compile(1212, script, "AI");
+		AbstractLeekValue v = ai.runIA();
+		System.out.println(v.getString(ai));
+		return v.equals(ai, s);
 	}
 }

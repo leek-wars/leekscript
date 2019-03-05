@@ -144,7 +144,6 @@ public class WordCompiler {
 
 	private void compileWord() throws Exception {
 		mLine = mCompiler.getWord().getLine();
-		mAI = mCompiler.getWord().getAI();
 		mMain.addInstruction();
 		IAWord word = mCompiler.getWord();
 		if (word.getType() == WordParser.T_END_INSTRUCTION) {

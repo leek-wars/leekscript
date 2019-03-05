@@ -18,19 +18,19 @@ import leekscript.runner.values.StringLeekValue;
 
 import org.junit.Test;
 
-public class Operators {
+public class TestOperators {
 	
 	AI ai;
 	
 	@Before
 	public void init() throws Exception {
-		ai = new DefaultUserAI();
+		ai = new TestAI();
 	}
 
 	@Test
 	public void simpleEqualsOperators() throws Exception {
 		try {
-			AI uai = new DefaultUserAI();
+			AI uai = new TestAI();
 			if (!LeekOperations.equals(uai, new StringLeekValue("Chaine1"), new StringLeekValue("Chaine1")).getBoolean())
 				fail("Chaine1 != Chaine1");
 			if (LeekOperations.equals(uai, new StringLeekValue("Chaine1"), new StringLeekValue("Chaine2")).getBoolean())
@@ -96,7 +96,7 @@ public class Operators {
 	public void advancedEqualsOperators() {
 		try {
 			// String-Intger
-			AI uai = new DefaultUserAI();
+			AI uai = new TestAI();
 			if (!LeekOperations.equals(uai, new StringLeekValue("1"), new IntLeekValue(1)).getBoolean())
 				fail("\"1\" != 1");
 			if (!LeekOperations.equals(uai, new StringLeekValue("0"), new IntLeekValue(0)).getBoolean())

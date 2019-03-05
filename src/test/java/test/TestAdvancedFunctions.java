@@ -9,7 +9,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import leekscript.LSException;
-import leekscript.compiler.LeekScriptCompilation;
+import leekscript.compiler.LeekScript;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.runner.AI;
 import leekscript.runner.values.AbstractLeekValue;
@@ -20,29 +20,29 @@ import leekscript.runner.values.IntLeekValue;
 import leekscript.runner.values.NullLeekValue;
 import leekscript.runner.values.StringLeekValue;
 
-public class LeekScriptAdvancedFunctions {
+public class TestAdvancedFunctions {
 
 	private AI ai;
 	
 	@Before
 	public void init() throws Exception {
-		ai = new DefaultUserAI();
+		ai = new TestAI();
 	}
 
 	// Test de retour sur des structures du leekscript
 	@Test
 	public void whileReturnTest() throws Exception {
 		// Test AI
-		Assert.assertTrue(LeekScriptCompilation.testScript("var t = 0; while(t<5){ t++; return t;}", new IntLeekValue(1)));
-		Assert.assertTrue(LeekScriptCompilation.testScript("var t = 0; while(t<5){ t++; return t;} return 0;", new IntLeekValue(1)));
+		Assert.assertTrue(LeekScript.testScript("var t = 0; while(t<5){ t++; return t;}", new IntLeekValue(1)));
+		Assert.assertTrue(LeekScript.testScript("var t = 0; while(t<5){ t++; return t;} return 0;", new IntLeekValue(1)));
 	}
 
 	@Test
 	public void doWhileReturnTest() throws Exception {
 		// Test AI
-		Assert.assertTrue(LeekScriptCompilation.testScript("var t = 0; do{ t++; return t;}while(t<5);", new IntLeekValue(1)));
+		Assert.assertTrue(LeekScript.testScript("var t = 0; do{ t++; return t;}while(t<5);", new IntLeekValue(1)));
 		try {
-			LeekScriptCompilation.testScript("var t = 0; do{ t++; return t;}while(t<5); return 2;", new IntLeekValue(1));
+			LeekScript.testScript("var t = 0; do{ t++; return t;}while(t<5); return 2;", new IntLeekValue(1));
 			Assert.fail("Compilation validée...");
 		} catch (LeekCompilerException e) {
 			return;
@@ -54,46 +54,46 @@ public class LeekScriptAdvancedFunctions {
 	@Test
 	public void forReturnTest() throws Exception {
 		// Test AI
-		Assert.assertTrue(LeekScriptCompilation.testScript("for(var i=0;i<3;i++){ return i; }", new IntLeekValue(0)));
-		Assert.assertTrue(LeekScriptCompilation.testScript("for(var i=0;i<3;i++){ return i; } return 2;", new IntLeekValue(0)));
+		Assert.assertTrue(LeekScript.testScript("for(var i=0;i<3;i++){ return i; }", new IntLeekValue(0)));
+		Assert.assertTrue(LeekScript.testScript("for(var i=0;i<3;i++){ return i; } return 2;", new IntLeekValue(0)));
 	}
 
 	@Test
 	public void anonymousTest() throws Exception {
 		// Test AI
-		Assert.assertTrue(LeekScriptCompilation.testScript("function te(a){ return function(){ return a**2; }; } return te(2)();", new IntLeekValue(4)));
+		Assert.assertTrue(LeekScript.testScript("function te(a){ return function(){ return a**2; }; } return te(2)();", new IntLeekValue(4)));
 	}
 
 	@Test
 	public void anonymous2Test() throws Exception {
 		// Test AI
-		Assert.assertTrue(LeekScriptCompilation.testScript("function te(a){ return function(b){ return function(c){return a*b*c;}; }; } return te(2)(1)(2);", new IntLeekValue(4)));
+		Assert.assertTrue(LeekScript.testScript("function te(a){ return function(b){ return function(c){return a*b*c;}; }; } return te(2)(1)(2);", new IntLeekValue(4)));
 	}
 
 	@Test
 	public void anonymous3Test() throws Exception {
 		// Test AI
-		Assert.assertTrue(LeekScriptCompilation.testScript("var tab = [2,3,4,5,6];var r = [];for(var i: var j in tab){	r[i] = function(){ return j; };}return 4;", new IntLeekValue(4)));
+		Assert.assertTrue(LeekScript.testScript("var tab = [2,3,4,5,6];var r = [];for(var i: var j in tab){	r[i] = function(){ return j; };}return 4;", new IntLeekValue(4)));
 	}
 
 	@Test
 	public void conditionalTest() throws Exception {
 		// Test AI
-		Assert.assertTrue(LeekScriptCompilation.testScript("var test = 0; if(false) if(true) test = 3; else test = 1; return test;", new IntLeekValue(0)));
+		Assert.assertTrue(LeekScript.testScript("var test = 0; if(false) if(true) test = 3; else test = 1; return test;", new IntLeekValue(0)));
 	}
 
 	@Test
 	public void forEachReturnTest() throws Exception {
 		// Test AI
-		Assert.assertTrue(LeekScriptCompilation.testScript("var tab = [0,1,2,3]; for(var i in tab){ return i; }", new IntLeekValue(0)));
-		Assert.assertTrue(LeekScriptCompilation.testScript("var tab = [0,1,2,3]; for(var i in tab){ return i; } return 5;", new IntLeekValue(0)));
+		Assert.assertTrue(LeekScript.testScript("var tab = [0,1,2,3]; for(var i in tab){ return i; }", new IntLeekValue(0)));
+		Assert.assertTrue(LeekScript.testScript("var tab = [0,1,2,3]; for(var i in tab){ return i; } return 5;", new IntLeekValue(0)));
 	}
 
 	@Test
 	public void forEachKeyReturnTest() throws Exception {
 		// Test AI
-		Assert.assertTrue(LeekScriptCompilation.testScript("var tab = [1:0,2:1,3:2,4:3]; for(var i : var j in tab){ return i; } ", new IntLeekValue(1)));
-		Assert.assertTrue(LeekScriptCompilation.testScript("var tab = [1:0,2:1,3:2,4:3]; for(var i : var j in tab){ return i; } return 0;", new IntLeekValue(1)));
+		Assert.assertTrue(LeekScript.testScript("var tab = [1:0,2:1,3:2,4:3]; for(var i : var j in tab){ return i; } ", new IntLeekValue(1)));
+		Assert.assertTrue(LeekScript.testScript("var tab = [1:0,2:1,3:2,4:3]; for(var i : var j in tab){ return i; } return 0;", new IntLeekValue(1)));
 	}
 
 	@Test
@@ -335,7 +335,7 @@ public class LeekScriptAdvancedFunctions {
 		String leekscript = "var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return string(retour);";
 
 		// Test AI
-		Assert.assertTrue(LeekScriptCompilation.testScript(leekscript, new StringLeekValue("[2, 1, 2, 1, 2]")));
+		Assert.assertTrue(LeekScript.testScript(leekscript, new StringLeekValue("[2, 1, 2, 1, 2]")));
 	}
 
 	private boolean testAI(List<String> mCodes, List<Object> mValues) throws Exception {
@@ -363,7 +363,7 @@ public class LeekScriptAdvancedFunctions {
 
 		leekscript += "];";
 		try {
-			return LeekScriptCompilation.testScript(leekscript, new ArrayLeekValue(ai, values));
+			return LeekScript.testScript(leekscript, new ArrayLeekValue(ai, values));
 		} catch (LSException e) {
 			int i = e.getIndex();
 			System.err.println("Erreur :\n" + mCodes.get(i));

@@ -1,6 +1,6 @@
 package test;
 
-import leekscript.compiler.LeekScriptCompilation;
+import leekscript.compiler.LeekScript;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.functions.VariableOperations;
 import leekscript.runner.values.AbstractLeekValue;
@@ -17,13 +17,13 @@ import org.junit.Test;
 
 import com.alibaba.fastjson.JSONObject;
 
-public class LeekScript {
+public class TestGeneral {
 
-	DefaultUserAI ai;
+	TestAI ai;
 	
 	@Before
 	public void init() throws Exception {
-		ai = new DefaultUserAI();
+		ai = new TestAI();
 	}
 
 	@Test
@@ -35,7 +35,7 @@ public class LeekScript {
 	@Test
 	public void ternaireBisTest() throws Exception {
 		try {
-			LeekScriptCompilation.testScript("return (1&2?'coucou');", new BooleanLeekValue(false));
+			LeekScript.testScript("return (1&2?'coucou');", new BooleanLeekValue(false));
 			Assert.fail("Compilation validée...");
 		} catch (LeekCompilerException exp) {
 			return;
@@ -204,7 +204,7 @@ public class LeekScript {
 		if (value == null)
 			value = new NullLeekValue();
 		
-		return LeekScriptCompilation.testScript(leekscript, value);
+		return LeekScript.testScript(leekscript, value);
 	}
 
 	private boolean testScript(String leekscript, int value) throws Exception {

@@ -2,17 +2,16 @@ package leekscript;
 
 import java.util.Scanner;
 
-import leekscript.compiler.LeekScriptCompilation;
 import leekscript.runner.AI;
 import leekscript.runner.values.AbstractLeekValue;
 
-public class LeekScript {
+public class TopLevel {
 
 	public static void main(String[] args) {
 		if (args.length < 1) {
 			Scanner input = new Scanner(System.in);
 		    System.out.print(">>> ");
-		   
+	
 		    String code;
 		    while ((code = input.nextLine()) != null) {
 		    	execute(code);
@@ -28,7 +27,7 @@ public class LeekScript {
 	private static void execute(String code) {
 		try {
 			long ct = System.currentTimeMillis();
-			AI ai = LeekScriptCompilation.compile(code, "AI");
+			AI ai = leekscript.compiler.LeekScript.compile(1212, code, "AI");
 			long compileTime = System.currentTimeMillis() - ct;
 			
 			long et = System.currentTimeMillis();
