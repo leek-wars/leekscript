@@ -4,6 +4,7 @@ import leekscript.LSException;
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.functions.VariableOperations;
+import leekscript.runner.LeekConstants;
 import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.BooleanLeekValue;
@@ -21,6 +22,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.alibaba.fastjson.JSONObject;
+import com.leekwars.game.ErrorManager;
 
 public class TestGeneral {
 
@@ -463,6 +465,170 @@ public class TestGeneral {
 		String leekscript = "var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return string(retour);";
 
 		Assert.assertTrue(LeekScript.testScript(leekscript, new StringLeekValue("[2, 1, 2, 1, 2]")));
+	}
+	
+
+
+	@Test
+	public void testReference() throws Exception {
+		String leekscript = "var t = [3,4,5]; t[3]=[1,2,3,4]; var r = @t[3]; r[4] ='prou3t'; return t;";
+		LeekScript.testScript(leekscript, new NullLeekValue());
+	}
+
+	@Test
+	public void testAnonymousFunctioNSelfAccess() {
+		String leekscript = "var t = function(){ return t; };";
+		try {
+			LeekScript.testScript(leekscript, new NullLeekValue());
+		} catch (Exception e) {
+
+			ErrorManager.exception(e);
+		}
+	}
+
+	@Test
+	public void testIfIfNot() {
+		ArrayList<String> codes = new ArrayList<String>();
+		ArrayList<Object> values = new ArrayList<Object>();
+
+		codes.add("function(){ var a = 1; if(a is 1) return 2; else return 0;}()");
+		values.add(2);
+
+		codes.add("function(){ var a = 1; if(a is 2) return 2; else return 0;}()");
+		values.add(0);
+
+		codes.add("function(){ var a = 1; if(a is not 2) return 2; else return 0;}()");
+		values.add(2);
+
+		codes.add("function(){ var a = 1; if(a is not 1) return 2; else return 0;}()");
+		values.add(0);
+
+		codes.add("function(){ var a = true; if(not a) return 2; else return 0;}()");
+		values.add(0);
+
+		// Test AI
+		try {
+			Assert.assertTrue(testAI(codes, values));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail();
+		}
+	}
+
+	@Test
+	public void testOperators() {
+		ArrayList<String> codes = new ArrayList<String>();
+		ArrayList<Object> values = new ArrayList<Object>();
+
+		codes.add("function(){ var a = 1; var result = -10 + (1- (a-1)); return result;}()");
+		values.add(-9);
+
+		codes.add("function(){ var a = 1; var result = 0; result = -10 + (1- (a-1)); return result;}()");
+		values.add(-9);
+		// Test AI
+		try {
+			Assert.assertTrue(testAI(codes, values));
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail();
+		}
+	}
+
+	@Test
+	public void sortTest() throws Exception {
+		ArrayList<String> codes = new ArrayList<String>();
+		ArrayList<Object> values = new ArrayList<Object>();
+
+		// Test sort
+		codes.add("function(){ var t =[null,null,4,8,9]; sort(t); return t;}()");
+		values.add(new ArrayLeekValue(ai, new AbstractLeekValue[] { new IntLeekValue(4), new IntLeekValue(8), new IntLeekValue(9), new NullLeekValue(), new NullLeekValue() }));
+
+		// Test sort
+		codes.add("function(){ var t =[4, null, 4, null, 4]; sort(t); return t;}()");
+		values.add(new ArrayLeekValue(ai, new AbstractLeekValue[] { new IntLeekValue(4), new IntLeekValue(4), new IntLeekValue(4), new NullLeekValue(), new NullLeekValue() }));
+
+		// Test sort desc
+		codes.add("function(){ var t =[4, null, 5, null, 8]; sort(t,SORT_DESC); return t;}()");
+		values.add(new ArrayLeekValue(ai, new AbstractLeekValue[] { new NullLeekValue(), new NullLeekValue(), new IntLeekValue(8), new IntLeekValue(5), new IntLeekValue(4) }));
+
+		// Test AI
+		Assert.assertTrue(testAI(codes, values));
+	}
+	
+	@Test
+	public void colorTest() throws Exception {
+		ArrayList<String> codes = new ArrayList<String>();
+		ArrayList<Object> values = new ArrayList<Object>();
+
+		// Test color
+		codes.add("color(255,0,255)");
+		values.add(0xFF00FF);
+		// Test color
+		codes.add("color(255,255,0)");
+		values.add(0xFFFF00);
+		// Test color
+		codes.add("color(0,255,255)");
+		values.add(0x00FFFF);
+
+		// Red
+		codes.add("getRed(" + 0xAE0000 + ")");
+		values.add(174);
+		// Green
+		codes.add("getGreen(" + 0xAF00 + ")");
+		values.add(175);
+		// Blue
+		codes.add("getBlue(" + 0xAD + ")");
+		values.add(173);
+
+		// Test AI
+		Assert.assertTrue(testAI(codes, values));
+	}
+	
+
+	@Test
+	public void typeOfTest() throws Exception {
+		ArrayList<String> codes = new ArrayList<String>();
+		ArrayList<Object> values = new ArrayList<Object>();
+
+		// Test nombre
+		codes.add("typeOf(255)");
+		values.add(LeekConstants.TYPE_NUMBER);
+		codes.add("typeOf(255.8)");
+		values.add(LeekConstants.TYPE_NUMBER);
+		// Test string
+		codes.add("typeOf('coucou')");
+		values.add(LeekConstants.TYPE_STRING);
+		// Test boolean
+		codes.add("typeOf(false)");
+		values.add(LeekConstants.TYPE_BOOLEAN);
+		// Test array
+		codes.add("typeOf([1,false])");
+		values.add(LeekConstants.TYPE_ARRAY);
+		// Test fonction
+		codes.add("typeOf(function(){ return null; })");
+		values.add(LeekConstants.TYPE_FUNCTION);
+		// Test null
+		codes.add("typeOf(null)");
+		values.add(LeekConstants.TYPE_NULL);
+		// Test piège
+		codes.add("typeOf(function(){ return 4; }())");
+		values.add(LeekConstants.TYPE_NUMBER);
+
+		// Test AI
+		Assert.assertTrue(testAI(codes, values));
+	}
+
+	@Test
+	public void stringTest() throws Exception {
+		ArrayList<String> codes = new ArrayList<String>();
+		ArrayList<Object> values = new ArrayList<Object>();
+
+		// Test nombre
+		codes.add("'\\\\'");
+		values.add("\\\\");
+
+		// Test AI
+		Assert.assertTrue(testAI(codes, values));
 	}
 
 	private boolean testAI(List<String> mCodes, List<Object> mValues) throws Exception {
