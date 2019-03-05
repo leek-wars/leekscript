@@ -53,4 +53,9 @@ public class TestWithFile {
 	public void testRelativePath() throws Exception {
 		assertEquals("cent-vingt-trois millions quatre-cent-cinquante-six-mille-sept-cent-quatre-vingt-neuf", LeekScript.runFile("test/ai/subfolder/include_parent.leek"));
 	}
+	
+	@Test
+	public void testMultipleInclude() throws Exception {
+		assertEquals("bonjour", LeekScript.runFile("test/ai/multiple_includes.leek"));
+	}
 }

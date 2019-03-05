@@ -52,6 +52,10 @@ public class LeekScript {
 		return false;
 	}
 	
+	public static AbstractLeekValue runScript(String script) throws Exception {
+		return LeekScript.compileSnippet(script, "AI").runIA();
+	}
+	
 	public static boolean testScript(String script, AbstractLeekValue s) throws Exception {
 		AI ai = LeekScript.compileSnippet(script, "AI");
 		AbstractLeekValue v = ai.runIA();
