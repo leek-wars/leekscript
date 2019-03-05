@@ -18,19 +18,11 @@ public class IALoader {
 
 		URLClassLoader loader = null;
 		try {
-			// ClassLoader loader =
-			// Thread.currentThread().getContextClassLoader()
-			// Class<?> c =
-			// Thread.currentThread().getContextClassLoader().loadClass(classname);
-			// return (AI) c.newInstance();
-
-			// Not closed because we need to load internal classes, like
-			// Class$1.class etc.
+			// Not closed because we need to load internal classes, like Class$1.class etc.
 			loader = new URLClassLoader(new URL[] { f.toURI().toURL() }, new ClassLoader() {});
 
 			if (loader != null) {
 				Class<?> c = loader.loadClass(classname);
-				// loader.close();
 				return (AI) c.newInstance();
 			}
 		} catch (Exception e) {
