@@ -22,7 +22,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.alibaba.fastjson.JSONObject;
-import com.leekwars.game.ErrorManager;
 
 public class TestGeneral {
 
@@ -270,7 +269,6 @@ public class TestGeneral {
 		Assert.assertTrue(LeekScript.testScript("var tab = [1:0,2:1,3:2,4:3]; for(var i : var j in tab){ return i; } return 0;", new IntLeekValue(1)));
 	}
 	
-
 	@Test
 	public void arrayMapTest() throws Exception {
 
@@ -289,7 +287,6 @@ public class TestGeneral {
 						new StringLeekValue("b"),
 						new StringLeekValue("tomate") }, true)));
 	}
-	
 
 	@Test
 	public void arrayFilterTest() throws Exception {
@@ -461,13 +458,9 @@ public class TestGeneral {
 	@Test
 	@Ignore
 	public void redefineFunctionTest() throws Exception {
-
 		String leekscript = "var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return string(retour);";
-
 		Assert.assertTrue(LeekScript.testScript(leekscript, new StringLeekValue("[2, 1, 2, 1, 2]")));
 	}
-	
-
 
 	@Test
 	public void testReference() throws Exception {
@@ -476,14 +469,9 @@ public class TestGeneral {
 	}
 
 	@Test
-	public void testAnonymousFunctioNSelfAccess() {
+	public void testAnonymousFunctioNSelfAccess() throws Exception {
 		String leekscript = "var t = function(){ return t; };";
-		try {
-			LeekScript.testScript(leekscript, new NullLeekValue());
-		} catch (Exception e) {
-
-			ErrorManager.exception(e);
-		}
+		LeekScript.testScript(leekscript, new NullLeekValue());
 	}
 
 	@Test
