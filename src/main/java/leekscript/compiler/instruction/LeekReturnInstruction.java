@@ -10,11 +10,8 @@ public class LeekReturnInstruction implements LeekInstruction {
 	private final int mLine;
 	private AbstractExpression mExpression = null;
 
-	// private final int mCount;
-
 	public LeekReturnInstruction(int count, AbstractExpression exp, int line, int ai) {
 		mExpression = exp;
-		// mCount = count;
 		mLine = line;
 		mAI = ai;
 	}
