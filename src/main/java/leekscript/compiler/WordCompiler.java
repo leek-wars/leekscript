@@ -755,8 +755,8 @@ public class WordCompiler {
 						retour.addExpression(new LeekNull());
 					else if (word.getWord().equalsIgnoreCase("not"))
 						retour.addUnaryPrefix(Operators.NOT);
-					else if (LeekConstants.getType(word.getWord()) != 0)
-						retour.addExpression(new LeekConstant(word.getWord()));
+					else if (LeekConstants.get(word.getWord()) != null)
+						retour.addExpression(new LeekConstant(word.getWord(), LeekConstants.get(word.getWord())));
 					else {
 						throw new LeekCompilerException(word, LeekCompilerException.UNKNOWN_VARIABLE_OR_FUNCTION);
 					}

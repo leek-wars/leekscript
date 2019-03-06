@@ -102,17 +102,17 @@ public abstract class AI {
 
 	public int typeOf(AbstractLeekValue value) {
 		if (value.getType() == AbstractLeekValue.ARRAY)
-			return LeekConstants.TYPE_ARRAY;
+			return (int) LeekConstants.TYPE_ARRAY.getValue();
 		if (value.getType() == AbstractLeekValue.NULL)
-			return LeekConstants.TYPE_NULL;
+			return (int) LeekConstants.TYPE_NULL.getValue();
 		if (value.getType() == AbstractLeekValue.STRING)
-			return LeekConstants.TYPE_STRING;
+			return (int) LeekConstants.TYPE_STRING.getValue();
 		if (value.getType() == AbstractLeekValue.NUMBER)
-			return LeekConstants.TYPE_NUMBER;
+			return (int) LeekConstants.TYPE_NUMBER.getValue();
 		if (value.getType() == AbstractLeekValue.BOOLEAN)
-			return LeekConstants.TYPE_BOOLEAN;
+			return (int) LeekConstants.TYPE_BOOLEAN.getValue();
 		if (value.getType() == AbstractLeekValue.FUNCTION)
-			return LeekConstants.TYPE_FUNCTION;
+			return (int) LeekConstants.TYPE_FUNCTION.getValue();
 		return 0;
 	}
 

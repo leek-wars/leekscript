@@ -580,27 +580,27 @@ public class TestGeneral {
 
 		// Test nombre
 		codes.add("typeOf(255)");
-		values.add(LeekConstants.TYPE_NUMBER);
+		values.add(LeekConstants.TYPE_NUMBER.getIntValue());
 		codes.add("typeOf(255.8)");
-		values.add(LeekConstants.TYPE_NUMBER);
+		values.add(LeekConstants.TYPE_NUMBER.getIntValue());
 		// Test string
 		codes.add("typeOf('coucou')");
-		values.add(LeekConstants.TYPE_STRING);
+		values.add(LeekConstants.TYPE_STRING.getIntValue());
 		// Test boolean
 		codes.add("typeOf(false)");
-		values.add(LeekConstants.TYPE_BOOLEAN);
+		values.add(LeekConstants.TYPE_BOOLEAN.getIntValue());
 		// Test array
 		codes.add("typeOf([1,false])");
-		values.add(LeekConstants.TYPE_ARRAY);
+		values.add(LeekConstants.TYPE_ARRAY.getIntValue());
 		// Test fonction
 		codes.add("typeOf(function(){ return null; })");
-		values.add(LeekConstants.TYPE_FUNCTION);
+		values.add(LeekConstants.TYPE_FUNCTION.getIntValue());
 		// Test null
 		codes.add("typeOf(null)");
-		values.add(LeekConstants.TYPE_NULL);
+		values.add(LeekConstants.TYPE_NULL.getIntValue());
 		// Test piège
 		codes.add("typeOf(function(){ return 4; }())");
-		values.add(LeekConstants.TYPE_NUMBER);
+		values.add(LeekConstants.TYPE_NUMBER.getIntValue());
 
 		// Test AI
 		Assert.assertTrue(testAI(codes, values));

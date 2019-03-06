@@ -110,7 +110,7 @@ public class LeekCompilerException extends Exception {
 
 	@Override
 	public String getMessage() {
-		return mIA + ", Ligne : " + mLine + ", Char : " + mChar + " (" + mWord + ") : " + mType;
+		return mIA.getPath() + ":" + mLine + " : " + mWord + " : " + mType;
 	}
 
 	public String getError() {

@@ -2,15 +2,17 @@ package leekscript.compiler.expression;
 
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.bloc.MainLeekBlock;
-import leekscript.runner.LeekConstants;
+import leekscript.runner.ILeekConstant;
 import leekscript.runner.LeekFunctions;
 
 public class LeekConstant extends AbstractExpression {
 
 	private final String mConstantName;
-
-	public LeekConstant(String word) {
+	private final ILeekConstant mConstant;
+	
+	public LeekConstant(String word, ILeekConstant constant) {
 		mConstantName = word;
+		mConstant = constant;
 	}
 
 	@Override
@@ -25,16 +27,14 @@ public class LeekConstant extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		int type = LeekConstants.getType(mConstantName);
-		String namespace = LeekConstants.getNamespace(mConstantName);
-		if(type == LeekFunctions.INT) writer.addCode("LeekValueManager.getLeekIntValue(" + namespace + "." + mConstantName + ")");
-		else if(type == LeekFunctions.DOUBLE) writer.addCode("new DoubleLeekValue(" + namespace + "." + mConstantName + ")");
+		if (mConstant.getType() == LeekFunctions.INT) writer.addCode("LeekValueManager.getLeekIntValue(" + mConstant.getIntValue() + ")");
+		else if (mConstant.getType() == LeekFunctions.DOUBLE) writer.addCode("new DoubleLeekValue(" + mConstant.getValue() + ")");
 		else writer.addCode("LeekValueManager.NULL");
 	}
 
 	@Override
 	public boolean validExpression(MainLeekBlock mainblock) throws LeekExpressionException {
-		//La vérification se fait en amont
+		// La vérification se fait en amont
 		return true;
 	}
 
