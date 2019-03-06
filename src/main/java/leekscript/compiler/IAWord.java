@@ -5,9 +5,9 @@ public class IAWord {
 	private final String word;
 	private final int line;
 	private final int character;
-	private final int ai;
+	private final AIFile<?> ai;
 
-	public IAWord(int ai, int type, String word, int line, int character) {
+	public IAWord(AIFile<?> ai, int type, String word, int line, int character) {
 		this.ai = ai;
 		this.type = type;
 		this.word = word;
@@ -15,7 +15,7 @@ public class IAWord {
 		this.character = character;
 	}
 
-	public int getAI() {
+	public AIFile<?> getAI() {
 		return ai;
 	}
 

@@ -13,9 +13,9 @@ public class JavaWriter {
 	private class Line {
 		private final int mJavaLine;
 		private final int mCodeLine;
-		private final int mAI;
+		private final AIFile<?> mAI;
 
-		public Line(int java_line, int code_line, int ai) {
+		public Line(int java_line, int code_line, AIFile<?> ai) {
 			mJavaLine = java_line;
 			mCodeLine = code_line;
 			mAI = ai;
@@ -33,7 +33,7 @@ public class JavaWriter {
 		return mWithDebug;
 	}
 
-	public void addLine(String datas, int line, int ai) {
+	public void addLine(String datas, int line, AIFile<?> ai) {
 		mCode.append(datas).append("\n");
 		mLines.add(new Line(mLine, line, ai));
 		mLine++;

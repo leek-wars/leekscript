@@ -1,5 +1,6 @@
 package leekscript.compiler.instruction;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
@@ -8,11 +9,11 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 
 	private final String mName;
 	private final int mLine;
-	private final int mAI;
+	private final AIFile<?> mAI;
 	private AbstractExpression mValue = null;
 	private boolean mMustSepare = false;
 
-	public LeekVariableDeclarationInstruction(String name, int line, int ai) {
+	public LeekVariableDeclarationInstruction(String name, int line, AIFile<?> ai) {
 		mName = name;
 		mLine = line;
 		mAI = ai;

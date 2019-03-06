@@ -1,11 +1,23 @@
 package leekscript.compiler.resolver;
 
-public interface Resolver {
+import leekscript.compiler.AIFile;
+
+public interface Resolver<C extends ResolverContext> {
+	
+	public class Result<C> {
+		public final String code;
+		public final C context;
+		public Result(String code, C context) {
+			this.code = code;
+			this.context = context;
+		}
+	}
 	
 	/**
 	 * Resolve a AI by path, like 'library.leek' or '../../test.leek'
 	 * @param path AI path
-	 * @return The AI's code, or null if not found
+	 * @param context The AI's context or null to initialize it from default
+	 * @return The result with the AI's code and context, or null if not found
 	 */
-	String resolve(String path);
+	abstract public AIFile<C> resolve(String path, ResolverContext context);
 }

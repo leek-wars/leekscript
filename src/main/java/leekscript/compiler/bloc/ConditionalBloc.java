@@ -1,5 +1,6 @@
 package leekscript.compiler.bloc;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.instruction.LeekInstruction;
@@ -11,7 +12,7 @@ public class ConditionalBloc extends AbstractLeekBlock implements LeekInstructio
 
 	private boolean mPutCounterBefore = false;
 
-	public ConditionalBloc(AbstractLeekBlock parent, MainLeekBlock main, int line, int ai) {
+	public ConditionalBloc(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
 		super(parent, main, line, ai);
 	}
 

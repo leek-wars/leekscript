@@ -1,5 +1,6 @@
 package leekscript.compiler.bloc;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekExpression;
@@ -16,7 +17,7 @@ public class ForBlock extends AbstractLeekBlock {
 	private AbstractExpression mCondition = null;
 	private AbstractExpression mIncrementation = null;
 
-	public ForBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, int ai) {
+	public ForBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
 		super(parent, main, line, ai);
 	}
 

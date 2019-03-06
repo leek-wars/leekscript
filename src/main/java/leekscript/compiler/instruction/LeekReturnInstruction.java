@@ -1,16 +1,17 @@
 package leekscript.compiler.instruction;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
 
 public class LeekReturnInstruction implements LeekInstruction {
 
-	private final int mAI;
+	private final AIFile<?> mAI;
 	private final int mLine;
 	private AbstractExpression mExpression = null;
 
-	public LeekReturnInstruction(int count, AbstractExpression exp, int line, int ai) {
+	public LeekReturnInstruction(int count, AbstractExpression exp, int line, AIFile<?> ai) {
 		mExpression = exp;
 		mLine = line;
 		mAI = ai;

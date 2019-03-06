@@ -1,5 +1,6 @@
 package leekscript.compiler.instruction;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
@@ -9,9 +10,9 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 	private final String mName;
 	private AbstractExpression mValue = null;
 	private final int mLine;
-	private final int mAI;
+	private final AIFile<?> mAI;
 
-	public LeekGlobalDeclarationInstruction(String name, int line, int ai) {
+	public LeekGlobalDeclarationInstruction(String name, int line, AIFile<?> ai) {
 		mName = name;
 		mLine = line;
 		mAI = ai;

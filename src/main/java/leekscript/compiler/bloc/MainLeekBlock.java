@@ -2,17 +2,16 @@ package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.IACompiler;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.WordParser;
 import leekscript.compiler.instruction.LeekInstruction;
-import leekscript.runner.AI;
 
 public class MainLeekBlock extends AbstractLeekBlock {
 
@@ -37,11 +36,12 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return mCounter++;
 	}
 
-	public MainLeekBlock(IACompiler compiler, String ai) {
-		super(null, null, 0, 0);
+	public MainLeekBlock(IACompiler compiler, AIFile<?> ai) {
+		super(null, null, 0, null);
 		// On ajoute l'IA pour pas pouvoir l'include
-		mIncluded.add(ai);
+		mIncluded.add(ai.getPath());
 		mCompiler = compiler;
+		mCompiler.setCurrentAI(ai);
 	}
 
 	public void addRedefinedFunction(String function) {
@@ -60,10 +60,6 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return mCountInstruction;
 	}
 
-	public List<String> getIncludes() {
-		return mIncluded;
-	}
-
 	public int getMinLevel() {
 		return mMinLevel;
 	}
@@ -76,15 +72,14 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		if (mIncluded.contains(path)) {
 			return true;
 		}
-		AI ai = LeekScript.compileFile(1213, path, "AI");
+		AIFile<?> ai = LeekScript.getResolver().resolve(path, mCompiler.getCurrentAI().getContext());
 		if (ai == null) {
 			return false;
 		}
-		mIncluded.add(path);
-		AI previousAI = mCompiler.getCurrentAI();
+		mIncluded.add(ai.getPath());
+		AIFile<?> previousAI = mCompiler.getCurrentAI();
 		mCompiler.setCurrentAI(ai);
-		String code = LeekScript.getResolver().resolve(path);
-		WordParser words = new WordParser(1213, code);
+		WordParser words = new WordParser(ai);
 		WordCompiler compiler = new WordCompiler(words, this);
 		compiler.readCode();
 		mCompiler.setCurrentAI(previousAI);

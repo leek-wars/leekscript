@@ -2,14 +2,11 @@ package leekscript.compiler;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import leekscript.ErrorManager;
 import leekscript.LSException;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.resolver.FileSystemContext;
 import leekscript.compiler.resolver.FileSystemResolver;
 import leekscript.compiler.resolver.Resolver;
 import leekscript.runner.AI;
@@ -17,41 +14,90 @@ import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 
 public class LeekScript {
+	
 	private final static String IA_PATH = "ai/";
+	private static long id = 1;
 	
-	private static Resolver defaultResolver = new FileSystemResolver();
-	private static Resolver customResolver = null;
+	private static Resolver<FileSystemContext> defaultResolver = new FileSystemResolver();
+	private static Resolver<?> customResolver = null;
 	
-	public static AI compileFile(int id, String filepath, String AIClass) throws LeekScriptException, LeekCompilerException {
-		String code = "";
-		try {
-			code = new String(Files.readAllBytes(Paths.get(filepath)), StandardCharsets.UTF_8);
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		return compile(id, code, AIClass);
+	public static AI compileFile(String filepath, String AIClass) throws LeekScriptException, LeekCompilerException {
+		AIFile<?> ai = getResolver().resolve(filepath, null);
+		ai.setJavaClassName("IA_" + id++);
+		return compile(ai, AIClass);
+	}
+	
+	public static AI compileSnippet(String snippet, String AIClass) throws LeekScriptException, LeekCompilerException {
+		AIFile<?> ai = new AIFile<FileSystemContext>(null, snippet, null);
+		ai.setJavaClassName("IA_" + id++);
+		return compile(ai, AIClass);
+	}
+	
+	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass) throws Exception {
+		AI ai = LeekScript.compileSnippet(script, AIClass);
+		AbstractLeekValue v = ai.runIA();
+		if (v.equals(ai, s))
+			return true;
+		ArrayLeekValue tab1 = v.getArray();
+		ArrayLeekValue tab2 = s.getArray();
+		if (tab1 != null && tab2 != null && tab1.size() == tab2.size()) {
+			int i = 0;
+			for (i = 0; i < tab1.size(); i++) {
+				if (!tab1.get(ai, i).equals(ai, tab2.get(ai, i))) {
+					throw new LSException(i, tab1.get(ai, i), tab2.get(ai, i));
+				}
+			}
+		} else
+			System.out.println(v.getString(ai) + " -- " + s.getString(ai));
+		return false;
+	}
+	
+	public static boolean testScript(String script, AbstractLeekValue s) throws Exception {
+		AI ai = LeekScript.compileSnippet(script, "AI");
+		AbstractLeekValue v = ai.runIA();
+		System.out.println(v.getString(ai));
+		return v.equals(ai, s);
+	}
+	
+	public static String runFile(String filename) throws Exception  {
+		AI ai = LeekScript.compileFile(filename, "AI");
+		AbstractLeekValue v = ai.runIA();
+		System.out.println(v.getString(ai));
+		return v.getString(ai);
+	}
+	
+	public static void setResolver(Resolver<?> resolver) {
+		customResolver = resolver;
 	}
 
-	public static AI compile(int id, String code, String AIClass) throws LeekScriptException, LeekCompilerException {
+	public static void resetResolver() {
+		customResolver = null;
+	}
+	
+	public static Resolver<?> getResolver() {
+		return customResolver != null ? customResolver : defaultResolver;
+	}
 
-		String name = "IA_" + id;
+	private static AI compile(AIFile<?> ai, String AIClass) throws LeekScriptException, LeekCompilerException {
+
+		String javaClassName = ai.getJavaClassName();
 		String error = "";
-		File compiled = new File(IA_PATH + name + ".class");
+		File compiled = new File(IA_PATH + javaClassName + ".class");
 		if (compiled.exists()) {
 			compiled.delete();
 		}
-		File java = new File(IA_PATH + name + ".java");
+		File java = new File(IA_PATH + javaClassName + ".java");
 		if (java.exists()) {
 			java.delete();
 		}
 
 		// On commence par la conversion LS->Java
-		if (code.isEmpty()) { // Pas de code du tout...
+		if (ai.getCode().isEmpty()) { // Pas de code du tout...
 			System.out.println("No code!");
 			return null;
 		}
 		// On compile l'IA
-		String compiledJava = new IACompiler().compile(id, name, code, AIClass);
+		String compiledJava = new IACompiler().compile(ai, AIClass);
 		
 		if (compiledJava.isEmpty()) {
 			System.out.println("No java generated!");
@@ -64,7 +110,7 @@ public class LeekScript {
 			output.close();
 		} catch (Exception e) {
 			ErrorManager.exception(e);
-			System.out.println("Failed to compiled AI: " + code);
+			System.out.println("Failed to compiled AI: " + ai.getPath());
 			return null;
 		}
 
@@ -92,7 +138,7 @@ public class LeekScript {
 			java.delete();
 			throwException(error);
 		}
-		return IALoader.loadAI(IA_PATH, name);
+		return IALoader.loadAI(IA_PATH, javaClassName);
 	}
 
 	public static void throwException(String error) throws LeekScriptException {
@@ -109,46 +155,5 @@ public class LeekScript {
 			}
 		}
 		throw new LeekScriptException(LeekScriptException.CANT_COMPILE);
-	}
-	
-	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass) throws Exception {
-		AI ai = LeekScript.compile(1212, script, AIClass);
-		AbstractLeekValue v = ai.runIA();
-		if (v.equals(ai, s))
-			return true;
-		ArrayLeekValue tab1 = v.getArray();
-		ArrayLeekValue tab2 = s.getArray();
-		if (tab1 != null && tab2 != null && tab1.size() == tab2.size()) {
-			int i = 0;
-			for (i = 0; i < tab1.size(); i++) {
-				if (!tab1.get(ai, i).equals(ai, tab2.get(ai, i))) {
-					throw new LSException(i, tab1.get(ai, i), tab2.get(ai, i));
-				}
-			}
-		} else
-			System.out.println(v.getString(ai) + " -- " + s.getString(ai));
-		return false;
-	}
-	
-	public static boolean testScript(String script, AbstractLeekValue s) throws Exception {
-		AI ai = LeekScript.compile(1212, script, "AI");
-		AbstractLeekValue v = ai.runIA();
-		System.out.println(v.getString(ai));
-		return v.equals(ai, s);
-	}
-	
-	public static String runFile(String filename) throws Exception  {
-		AI ai = LeekScript.compileFile(1212, filename, "AI");
-		AbstractLeekValue v = ai.runIA();
-		System.out.println(v.getString(ai));
-		return v.getString(ai);
-	}
-	
-	public static void setResolver(Resolver resolver) {
-		customResolver = resolver;
-	}
-
-	public static Resolver getResolver() {
-		return customResolver != null ? customResolver : defaultResolver;
 	}
 }

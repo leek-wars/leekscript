@@ -36,7 +36,7 @@ public class WordParser {
 	public final static int T_BRACKET_LEFT = 12;
 	public final static int T_BRACKET_RIGHT = 13;
 
-	private final int mAI;
+	private final AIFile<?> mAI;
 	private final ArrayList<IAWord> words = new ArrayList<IAWord>();
 
 	private int instructions = 0;
@@ -45,9 +45,9 @@ public class WordParser {
 	private int char_counter = 0;
 	private final String code;
 
-	public WordParser(int ai, String code) {
+	public WordParser(AIFile<?> ai) {
 		mAI = ai;
-		this.code = code;
+		this.code = ai.getCode();
 	}
 
 	public void compile() throws LeekCompilerException {

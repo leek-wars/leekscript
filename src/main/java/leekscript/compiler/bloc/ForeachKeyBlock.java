@@ -1,5 +1,6 @@
 package leekscript.compiler.bloc;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.expression.AbstractExpression;
 
@@ -12,7 +13,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	private String mKeyIterator = null;
 	private boolean mIsKeyDeclaration = false;
 
-	public ForeachKeyBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isKeyDeclaration, boolean isValueDeclaration, int line, int ai) {
+	public ForeachKeyBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isKeyDeclaration, boolean isValueDeclaration, int line, AIFile<?> ai) {
 		super(parent, main, line, ai);
 		mIsDeclaration = isValueDeclaration;
 		mIsKeyDeclaration = isKeyDeclaration;

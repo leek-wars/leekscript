@@ -1,5 +1,6 @@
 package leekscript.compiler.instruction;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
@@ -11,10 +12,10 @@ import leekscript.compiler.expression.LeekVariable;
 public class LeekExpressionInstruction implements LeekInstruction {
 
 	private final AbstractExpression mExpression;
-	private final int mAI;
+	private final AIFile<?> mAI;
 	private final int mLine;
 
-	public LeekExpressionInstruction(AbstractExpression expression, int line, int ai) {
+	public LeekExpressionInstruction(AbstractExpression expression, int line, AIFile<?> ai) {
 		mExpression = expression;
 		mLine = line;
 		mAI = ai;

@@ -1,5 +1,6 @@
 package leekscript.compiler.bloc;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.expression.AbstractExpression;
 
@@ -7,7 +8,7 @@ public class WhileBlock extends AbstractLeekBlock {
 
 	private AbstractExpression mCondition = null;
 
-	public WhileBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, int ai) {
+	public WhileBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
 		super(parent, main, line, ai);
 	}
 

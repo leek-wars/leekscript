@@ -1,5 +1,6 @@
 package leekscript.compiler.instruction;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.bloc.MainLeekBlock;
 
@@ -7,9 +8,9 @@ public class LeekBreakInstruction implements LeekInstruction {
 
 	// private final int mCount;
 	private final int mLine;
-	private final int mAI;
+	private final AIFile<?> mAI;
 
-	public LeekBreakInstruction(int count, int line, int ai) {
+	public LeekBreakInstruction(int count, int line, AIFile<?> ai) {
 		// mCount = count;
 		mLine = line;
 		mAI = ai;

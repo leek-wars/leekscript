@@ -1,5 +1,6 @@
 package leekscript.compiler.exceptions;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.IAWord;
 
 public class LeekCompilerException extends Exception {
@@ -55,7 +56,7 @@ public class LeekCompilerException extends Exception {
 	int mChar;
 	String mWord;
 	String mType;
-	int mIA;
+	AIFile<?> mIA;
 	private String[] mParameters = null;
 
 	public LeekCompilerException(IAWord word) {
@@ -83,7 +84,7 @@ public class LeekCompilerException extends Exception {
 		mParameters = parameters;
 	}
 
-	public LeekCompilerException(int ai, int line, int char_pos, String word, String informations) {
+	public LeekCompilerException(AIFile<?> ai, int line, int char_pos, String word, String informations) {
 		mLine = line;
 		mChar = char_pos;
 		mWord = word;
@@ -116,7 +117,7 @@ public class LeekCompilerException extends Exception {
 		return mType;
 	}
 
-	public int getIA() {
+	public AIFile<?> getIA() {
 		return mIA;
 	}
 }

@@ -3,7 +3,6 @@ package leekscript.compiler;
 import leekscript.ErrorManager;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
-import leekscript.runner.AI;
 
 import com.alibaba.fastjson.JSONArray;
 
@@ -14,16 +13,15 @@ public class IACompiler {
 
 	private final JSONArray mInformations = new JSONArray();
 	private boolean mErrors = false;
-	private AI mCurrentAI;
+	private AIFile<?> mCurrentAI;
 
 	public IACompiler() {}
 
-	public void addError(int ia_context, int ia, int line, int pos, String word, String informations, String[] parameters) {
+	public void addError(AIFile<?> ia_context, int line, int pos, String word, String informations, String[] parameters) {
 		mErrors = true;
 		JSONArray error = new JSONArray();
 		error.add(0);
 		error.add(ia_context);
-		error.add(ia);
 		error.add(line);
 		error.add(pos);
 		error.add(word);
@@ -33,7 +31,7 @@ public class IACompiler {
 		mInformations.add(error);
 	}
 
-	public void addError(int ia_context, String informations) {
+	public void addError(AIFile<?> ia_context, String informations) {
 		mErrors = true;
 		JSONArray error = new JSONArray();
 		error.add(1);
@@ -42,7 +40,7 @@ public class IACompiler {
 		mInformations.add(error);
 	}
 
-	public void addInformations(int ia_context, int level) {
+	public void addInformations(AIFile<?> ia_context, int level) {
 		JSONArray error = new JSONArray();
 		error.add(2);
 		error.add(ia_context);
@@ -50,27 +48,27 @@ public class IACompiler {
 		mInformations.add(error);
 	}
 
-	public String compile(int id, String name, String code, String AIClass) throws LeekCompilerException {
+	public String compile(AIFile<?> ai, String AIClass) throws LeekCompilerException {
 		JavaWriter writer = new JavaWriter(false);
 		try {
 			// On lance la compilation du code de l'IA
-			WordParser parser = new WordParser(id, code);
+			WordParser parser = new WordParser(ai);
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
-			MainLeekBlock main = new MainLeekBlock(this, name);
+			MainLeekBlock main = new MainLeekBlock(this, ai);
 			WordCompiler compiler = new WordCompiler(parser, main);
 			compiler.readCode();
 
-			compiler.writeJava("IA_" + id, writer, AIClass);
+			compiler.writeJava(ai.getJavaClassName(), writer, AIClass);
 
 			// On sauvegarde les dépendances
-			addInformations(id, main.getMinLevel());
+			addInformations(ai, main.getMinLevel());
 
 		} catch (LeekCompilerException e) {
-			addError(id, e.getIA(), e.getLine(), e.getChar(), e.getWord(), e.getError(), e.getParameters());
+			addError(e.getIA(), e.getLine(), e.getChar(), e.getWord(), e.getError(), e.getParameters());
 			throw e;
 		} catch (Exception e) {
 			ErrorManager.exception(e);
-			addError(id, e.getMessage());
+			addError(ai, e.getMessage());
 		}
 		return writer.getJavaCode();
 	}
@@ -83,11 +81,11 @@ public class IACompiler {
 		return mErrors;
 	}
 	
-	public AI getCurrentAI() {
+	public AIFile<?> getCurrentAI() {
 		return mCurrentAI;
 	}
 
-	public void setCurrentAI(AI ai) {
+	public void setCurrentAI(AIFile<?> ai) {
 		mCurrentAI = ai;
 	}
 }

@@ -2,6 +2,7 @@ package leekscript;
 
 import java.util.Scanner;
 
+import leekscript.compiler.LeekScript;
 import leekscript.runner.AI;
 import leekscript.runner.values.AbstractLeekValue;
 
@@ -27,7 +28,7 @@ public class TopLevel {
 	private static void execute(String code) {
 		try {
 			long ct = System.currentTimeMillis();
-			AI ai = leekscript.compiler.LeekScript.compile(1212, code, "AI");
+			AI ai = LeekScript.compileSnippet(code, "AI");
 			long compileTime = System.currentTimeMillis() - ct;
 			
 			long et = System.currentTimeMillis();

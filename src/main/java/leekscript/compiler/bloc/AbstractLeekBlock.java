@@ -2,6 +2,7 @@ package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.exceptions.LeekInstructionException;
@@ -18,7 +19,7 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 	protected MainLeekBlock mMain = null;
 	protected int mEndInstruction = 0;
 	protected int mLine = 0;
-	protected int mAI = 0;
+	protected AIFile<?> mAI = null;
 
 	public AbstractLeekBlock getParent() {
 		return mParent;
@@ -47,7 +48,7 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 		return 1;
 	}
 
-	public AbstractLeekBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, int ai) {
+	public AbstractLeekBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
 		mParent = parent;
 		mMain = main;
 		mLine = line;

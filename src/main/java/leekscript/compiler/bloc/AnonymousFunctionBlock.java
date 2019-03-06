@@ -2,6 +2,7 @@ package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 
 public class AnonymousFunctionBlock extends AbstractLeekBlock {
@@ -10,7 +11,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	private final ArrayList<Boolean> mReferences = new ArrayList<Boolean>();
 	private int mId = 0;
 
-	public AnonymousFunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, int ai) {
+	public AnonymousFunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
 		super(parent, main, line, ai);
 	}
 

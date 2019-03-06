@@ -1,5 +1,6 @@
 package leekscript.compiler.bloc;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.expression.AbstractExpression;
 
@@ -8,10 +9,10 @@ public class DoWhileBlock extends AbstractLeekBlock {
 	private AbstractExpression mCondition = null;
 
 	public DoWhileBlock(AbstractLeekBlock parent, MainLeekBlock main) {
-		super(parent, main, 0, 0);
+		super(parent, main, 0, null);
 	}
 
-	public void setLineAI(int line, int ai) {
+	public void setLineAI(int line, AIFile<?> ai) {
 		mLine = line;
 		mAI = ai;
 	}

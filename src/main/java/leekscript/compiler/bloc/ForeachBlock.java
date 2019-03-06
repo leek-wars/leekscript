@@ -1,5 +1,6 @@
 package leekscript.compiler.bloc;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.expression.AbstractExpression;
 
@@ -9,7 +10,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 	private AbstractExpression mArray;
 	private boolean mIsDeclaration = false;
 
-	public ForeachBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isDeclaration, int line, int ai) {
+	public ForeachBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isDeclaration, int line, AIFile<?> ai) {
 		super(parent, main, line, ai);
 		mIsDeclaration = isDeclaration;
 	}

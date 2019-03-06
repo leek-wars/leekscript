@@ -45,7 +45,7 @@ public class WordCompiler {
 	private AbstractLeekBlock mCurentBlock;
 	private final WordParser mCompiler;
 	private int mLine;
-	private int mAI;
+	private AIFile<?> mAI;
 
 	// private final LeekVariableDeclarationInstruction mDeclaringVariable =
 	// null;
@@ -809,7 +809,7 @@ public class WordCompiler {
 		// On enregistre les block actuels
 		AbstractLeekBlock initialBlock = mCurentBlock;
 		int initialLine = mLine;
-		int initialAI = mAI;
+		AIFile<?> initialAI = mAI;
 		AnonymousFunctionBlock block = new AnonymousFunctionBlock(mCurentBlock, mMain, mLine, mAI);
 		if (initialBlock.getDeclaringVariable() != null)
 			block.addVariable(initialBlock.getDeclaringVariable());
