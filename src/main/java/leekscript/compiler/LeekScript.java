@@ -84,6 +84,7 @@ public class LeekScript {
 
 	private static AI compile(AIFile<?> ai, String AIClass) throws LeekScriptException, LeekCompilerException {
 
+		new File(IA_PATH).mkdir();
 		String javaClassName = ai.getJavaClassName();
 		String error = "";
 		File compiled = new File(IA_PATH + javaClassName + ".class");
