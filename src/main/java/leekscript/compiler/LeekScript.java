@@ -16,38 +16,6 @@ import leekscript.runner.values.ArrayLeekValue;
 
 public class LeekScript {
 	private final static String IA_PATH = "ai/";
-
-	public static boolean compileCode(int id, String name, String code, String AIClass) throws LeekCompilerException {
-
-		File compiled = new File(IA_PATH + name + ".class");
-		if (compiled.exists())
-			compiled.delete();
-		File java = new File(IA_PATH + name + ".java");
-		if (java.exists())
-			java.delete();
-		
-		if (code.isEmpty()) {// Pas de code du tout...
-			System.out.println("No code!");
-			return false;
-		}
-		// On compile l'IA
-		String compiledJava = new IACompiler().compile(id, name, code, AIClass);
-		
-		if (compiledJava.isEmpty()) {
-			System.out.println("No java generated!");
-			return false; // Rien ne compile
-		}
-		// Si on a maintenant du code java
-		try {
-			FileOutputStream output = new FileOutputStream(java);
-			output.write(compiledJava.getBytes());
-			output.close();
-		} catch (Exception e) {
-			ErrorManager.exception(e);
-			return false;
-		}
-		return true;
-	}
 	
 	public static AI compileFile(int id, String filepath, String AIClass) throws LeekScriptException, LeekCompilerException {
 		String code = "";
@@ -64,40 +32,60 @@ public class LeekScript {
 		String name = "IA_" + id;
 		String error = "";
 		File compiled = new File(IA_PATH + name + ".class");
+		if (compiled.exists()) {
+			compiled.delete();
+		}
 		File java = new File(IA_PATH + name + ".java");
+		if (java.exists()) {
+			java.delete();
+		}
 
-		if (!compiled.exists()) {
+		// On commence par la conversion LS->Java
+		if (code.isEmpty()) { // Pas de code du tout...
+			System.out.println("No code!");
+			return null;
+		}
+		// On compile l'IA
+		String compiledJava = new IACompiler().compile(id, name, code, AIClass);
+		
+		if (compiledJava.isEmpty()) {
+			System.out.println("No java generated!");
+			return null; // Rien ne compile
+		}
+		// Si on a maintenant du code java
+		try {
+			FileOutputStream output = new FileOutputStream(java);
+			output.write(compiledJava.getBytes());
+			output.close();
+		} catch (Exception e) {
+			ErrorManager.exception(e);
+			System.out.println("Failed to compiled AI: " + code);
+			return null;
+		}
 
-			// On commence par la conversion LS->Java
-			if (!compileCode(id, name, code, AIClass)) {
-				System.out.println("Failed to compiled AI: " + code);
-				return null;
-			}
+		// On va compiler le java maintenant
+		JavaCompiler compiler = new JavaCompiler(java);
+		int status = JavaCompiler.INIT;
 
-			// On va compiler le java maintenant
-			JavaCompiler compiler = new JavaCompiler(java);
-			int status = JavaCompiler.INIT;
+		try {
+			compiler.compile();
+			status = JavaCompiler.getStatus();
+		} catch (CompilationException e) {
 
-			try {
-				compiler.compile();
-				status = JavaCompiler.getStatus();
-			} catch (CompilationException e) {
-
-				error = e.getMessage();
+			error = e.getMessage();
 //				ErrorManager.registerCompilationError(ai, e.getMessage());
-				status = JavaCompiler.ERROR;
+			status = JavaCompiler.ERROR;
 
-			} catch (Exception e) {
+		} catch (Exception e) {
 
-				// ErrorManager.exception(e, ai.getId());
-				ErrorManager.exception(e);
-				status = JavaCompiler.ERROR;
-			}
+			// ErrorManager.exception(e, ai.getId());
+			ErrorManager.exception(e);
+			status = JavaCompiler.ERROR;
+		}
 
-			if (status == JavaCompiler.ERROR) {
-				java.delete();
-				throwException(error);
-			}
+		if (status == JavaCompiler.ERROR) {
+			java.delete();
+			throwException(error);
 		}
 		return IALoader.loadAI(IA_PATH, name);
 	}
@@ -119,8 +107,6 @@ public class LeekScript {
 	}
 	
 	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass) throws Exception {
-		new File(IA_PATH + "IA_1212.java").delete();
-		new File(IA_PATH + "IA_1212.class").delete();
 		AI ai = LeekScript.compile(1212, script, AIClass);
 		AbstractLeekValue v = ai.runIA();
 		if (v.equals(ai, s))
@@ -140,8 +126,6 @@ public class LeekScript {
 	}
 	
 	public static boolean testScript(String script, AbstractLeekValue s) throws Exception {
-		new File(IA_PATH + "IA_1212.java").delete();
-		new File(IA_PATH + "IA_1212.class").delete();
 		AI ai = LeekScript.compile(1212, script, "AI");
 		AbstractLeekValue v = ai.runIA();
 		System.out.println(v.getString(ai));
