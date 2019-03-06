@@ -5,5 +5,5 @@
 build/
 *.jar
 .project
-ai/
+/ai/
 /bin/
