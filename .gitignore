@@ -6,3 +6,4 @@ build/
 *.jar
 .project
 ai/
+/bin/
