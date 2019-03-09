@@ -28,20 +28,20 @@ public abstract class AI {
 	protected JSONArray mErrorObject = null;
 	protected JSONObject thisObject = null;
 
-	protected AILog log;
+	protected AILog logs;
 	protected AI mUAI;
 
 	public AI() {
 		mUAI = this;
-		log = new AILog();
+		logs = new AILog();
 	}
 
 	public long getOperations() {
 		return mOperations;
 	}
 	
-	public AILog getLeekLog() {
-		return log;
+	public AILog getLogs() {
+		return logs;
 	}
 
 	public void addOperations(int nb) throws LeekRunException {
@@ -280,7 +280,7 @@ public abstract class AI {
 
 		} catch (Exception e) {
 
-			getLeekLog().addLog(AILog.ERROR, "Cannot encode object \"" + object.toString() + "\"");
+			getLogs().addLog(AILog.ERROR, "Cannot encode object \"" + object.toString() + "\"");
 			try {
 				addOperations(100);
 			} catch (Exception e1) {}
@@ -298,7 +298,7 @@ public abstract class AI {
 
 		} catch (Exception e) {
 
-			getLeekLog().addLog(AILog.ERROR, "Cannot parse json \"" + json + "\"");
+			getLogs().addLog(AILog.ERROR, "Cannot parse json \"" + json + "\"");
 			try {
 				addOperations(100);
 			} catch (Exception e1) {}
@@ -323,7 +323,7 @@ public abstract class AI {
 		else if (type == AILog.STANDARD)
 			type = AILog.SSTANDARD;
 
-		log.addSystemLog(type, getErrorMessage(elements), key, parameters);
+		logs.addSystemLog(type, getErrorMessage(elements), key, parameters);
 	}
 	
 	protected abstract String getErrorString();

@@ -1170,7 +1170,7 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws Exception {
 			String p = parameters[0].getString(leekIA);
-			leekIA.getLeekLog().addLog(AILog.STANDARD, p);
+			leekIA.getLogs().addLog(AILog.STANDARD, p);
 			leekIA.addOperations(p.length());
 			return LeekValueManager.NULL;
 		}
@@ -1179,7 +1179,7 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws Exception {
 			String p = parameters[0].getString(leekIA);
-			leekIA.getLeekLog().addLog(AILog.WARNING, p);
+			leekIA.getLogs().addLog(AILog.WARNING, p);
 			leekIA.addOperations(p.length());
 			return LeekValueManager.NULL;
 		}
@@ -1188,7 +1188,7 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws Exception {
 			String p = parameters[0].getString(leekIA);
-			leekIA.getLeekLog().addLog(AILog.ERROR, p);
+			leekIA.getLogs().addLog(AILog.ERROR, p);
 			leekIA.addOperations(p.length());
 			return LeekValueManager.NULL;
 		}
@@ -1198,7 +1198,7 @@ public enum LeekFunctions implements ILeekFunction {
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws Exception {
 			String message = parameters[0].getString(leekIA);
 			int color = parameters[1].getInt(leekIA);
-			leekIA.getLeekLog().addLog(AILog.STANDARD, message, color);
+			leekIA.getLogs().addLog(AILog.STANDARD, message, color);
 			leekIA.addOperations(message.length());
 			return LeekValueManager.NULL;
 		}
