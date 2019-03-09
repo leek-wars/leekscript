@@ -55,7 +55,7 @@ public class IACompiler {
 			WordParser parser = new WordParser(ai);
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
 			MainLeekBlock main = new MainLeekBlock(this, ai);
-			WordCompiler compiler = new WordCompiler(parser, main);
+			WordCompiler compiler = new WordCompiler(parser, main, ai);
 			compiler.readCode();
 
 			compiler.writeJava(ai.getJavaClassName(), writer, AIClass);

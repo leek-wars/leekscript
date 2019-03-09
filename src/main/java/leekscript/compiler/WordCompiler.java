@@ -45,15 +45,16 @@ public class WordCompiler {
 	private AbstractLeekBlock mCurentBlock;
 	private final WordParser mCompiler;
 	private int mLine;
-	private AIFile<?> mAI;
+	private AIFile<?> mAI = null;
 
 	// private final LeekVariableDeclarationInstruction mDeclaringVariable =
 	// null;
 
-	public WordCompiler(WordParser cmp, MainLeekBlock main) {
+	public WordCompiler(WordParser cmp, MainLeekBlock main, AIFile<?> ai) {
 		mCompiler = cmp;
 		mMain = main;
 		mCurentBlock = main;
+		mAI = ai;
 	}
 
 	public void readCode() throws Exception {

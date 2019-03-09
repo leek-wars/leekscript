@@ -14,7 +14,6 @@ import java.util.Iterator;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 
 public abstract class AI {
 	
@@ -26,7 +25,7 @@ public abstract class AI {
 	public final static long MAX_OPERATIONS = 20000000;
 
 	protected JSONArray mErrorObject = null;
-	protected JSONObject thisObject = null;
+	protected String thisObject = null;
 
 	protected AILog logs;
 	protected AI mUAI;
@@ -75,7 +74,7 @@ public abstract class AI {
 	protected String getErrorLocalisation(int line) {
 		if (mErrorObject == null) {
 			mErrorObject = JSONArray.parseArray(getErrorString());
-			thisObject = JSONObject.parseObject(getAItring());
+			thisObject = getAItring();
 		}
 		int value = 0;
 		for (int i = 0; i < mErrorObject.size(); i++) {
@@ -87,7 +86,7 @@ public abstract class AI {
 		if (mErrorObject.size() > value) {
 			JSONArray l = mErrorObject.getJSONArray(value);
 			if (l != null && l.size() >= 3) {
-				String ai_name = thisObject != null ? thisObject.getString(l.getString(1)) : "";
+				String ai_name = thisObject != null ? thisObject : "";
 				return "(IA : " + ai_name + ", line : " + l.getString(2) + ")";
 			}
 		}

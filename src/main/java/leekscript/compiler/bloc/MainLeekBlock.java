@@ -80,7 +80,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		AIFile<?> previousAI = mCompiler.getCurrentAI();
 		mCompiler.setCurrentAI(ai);
 		WordParser words = new WordParser(ai);
-		WordCompiler compiler = new WordCompiler(words, this);
+		WordCompiler compiler = new WordCompiler(words, this, ai);
 		compiler.readCode();
 		mCompiler.setCurrentAI(previousAI);
 		return true;
@@ -191,14 +191,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			writer.addLine("return LeekValueManager.NULL;");
 		writer.addLine("}");
 
-		TreeMap<Integer, String> ais = new TreeMap<Integer, String>();
-		// for (String path : mIncluded) {
-		// 	LeekAI ai = mCompiler.getAI(id);
-		// 	if (ai == null)
-		// 		continue;
-		// 	ais.put(ai.getId(), ai.getName());
-		// }
-		writer.writeErrorFunction(mCompiler, ais);
+		writer.writeErrorFunction(mCompiler, mIncluded.get(0));
 		printFunctionInformations(writer);
 
 		if (mRedefinedFunctions.size() > 0) {

@@ -1,8 +1,6 @@
 package leekscript.compiler;
 
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.Map.Entry;
 
 public class JavaWriter {
 	private final StringBuilder mCode;
@@ -73,7 +71,7 @@ public class JavaWriter {
 		return str;
 	}
 
-	public void writeErrorFunction(IACompiler comp, Map<Integer, String> ais) {
+	public void writeErrorFunction(IACompiler comp, String ai) {
 		mCode.append("protected String getErrorString(){ return \"[");
 		boolean first = true;
 		for (Line l : mLines) {
@@ -81,18 +79,11 @@ public class JavaWriter {
 				mCode.append(",");
 			else
 				first = false;
-			mCode.append("[").append(l.mJavaLine).append(",").append(l.mAI).append(",").append(l.mCodeLine).append("]");
+			mCode.append("[").append(l.mJavaLine).append(",\\\"").append(escape(l.mAI.getPath())).append("\\\",").append(l.mCodeLine).append("]");
 		}
-		mCode.append("]\";} protected String getAItring(){ return \"{");
-		first = true;
-		for (Entry<Integer, String> e : ais.entrySet()) {
-			if (!first)
-				mCode.append(",");
-			else
-				first = false;
-			mCode.append(e.getKey()).append(":\\\"").append(escape(escape(e.getValue()))).append("\\\"");
-		}
-		mCode.append("}\";}");
+		mCode.append("]\";}\n protected String getAItring(){ return \"");
+		mCode.append(escape(ai));
+		mCode.append("\";}");
 	}
 
 	/*
