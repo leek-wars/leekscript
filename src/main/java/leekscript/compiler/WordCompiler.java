@@ -47,9 +47,6 @@ public class WordCompiler {
 	private int mLine;
 	private AIFile<?> mAI = null;
 
-	// private final LeekVariableDeclarationInstruction mDeclaringVariable =
-	// null;
-
 	public WordCompiler(WordParser cmp, MainLeekBlock main, AIFile<?> ai) {
 		mCompiler = cmp;
 		mMain = main;

@@ -86,25 +86,6 @@ public class JavaWriter {
 		mCode.append("\";}");
 	}
 
-	/*
-	 * public void writeErrorFunction(IACompiler comp, Map<Integer, String> ais)
-	 * { mCode.append("protected String getErrorLocalisation(int line){");
-	 * mCode.append("int[][] line_data = {"); boolean first = true; for(Line l :
-	 * mLines){ if(!first) mCode.append(", "); else first = false;
-	 * mCode.append("{"
-	 * ).append(l.mJavaLine).append(",").append(l.mAI).append(","
-	 * ).append(l.mCodeLine).append("}"); } mCode.append("};"); mCode.append(
-	 * "int value = 0;for(int i=0;i<line_data.length;i++){ if(line_data[i][0] > line){ break; } value=i;}"
-	 * ); mCode.append("if(line_data.length > value){");
-	 * mCode.append("String ai_name = \"\"; switch(line_data[value][1]){");
-	 * for(Entry<Integer, String> e : ais.entrySet()){
-	 * mCode.append("case ").append(e.getKey()).append(": ai_name = \"").append(
-	 * escape(e.getValue())).append("\"; break; "); } mCode.append("}");
-	 * mCode.append(
-	 * "return \"(IA : \" + ai_name + \", line : \"+line_data[value][2]+\")\";} else { return \"\"; } }"
-	 * ); }
-	 */
-
 	public void addCounter(int id) {
 		addCode("mUAI.addOperations(1);");
 	}

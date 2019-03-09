@@ -43,11 +43,6 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		addVariable(parameter);
 	}
 
-	/*
-	 * @Override public boolean hasVariable(String variable) { return
-	 * mVariables.contains(variable); }
-	 */
-
 	@Override
 	public String getCode() {
 		String str = "function anonymous" + mId + "(";
@@ -88,5 +83,4 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	public boolean isReference(int i) {
 		return mReferences.get(i);
 	}
-
 }
