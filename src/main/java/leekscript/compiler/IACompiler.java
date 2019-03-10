@@ -49,7 +49,7 @@ public class IACompiler {
 	}
 
 	public String compile(AIFile<?> ai, String AIClass) throws LeekCompilerException {
-		JavaWriter writer = new JavaWriter(false);
+		JavaWriter writer = new JavaWriter(true);
 		try {
 			// On lance la compilation du code de l'IA
 			WordParser parser = new WordParser(ai);
