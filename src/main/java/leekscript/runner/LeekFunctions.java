@@ -1456,13 +1456,6 @@ public enum LeekFunctions implements ILeekFunction {
 		// throw new LeekRunException(LeekRunException.UNKNOWN_FUNCTION);
 	}
 
-	/*
-	 * private static void parametersMatch(int[] types, IAAbstractValue[]
-	 * parameters, IAFunctions function) throws IARunException {
-	 * if(!verifyParameters(types, parameters)) throw new
-	 * IARunException(IARunException.FUNCTION_PARAMETERS, function.name()); }
-	 */
-
 	public static int intOrNull(AI ai, AbstractLeekValue value) throws LeekRunException {
 		if (isType(value, NULL))
 			return -1;
