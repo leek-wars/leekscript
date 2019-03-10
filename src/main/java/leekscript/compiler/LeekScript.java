@@ -23,7 +23,8 @@ public class LeekScript {
 	
 	public static AI compileFile(String filepath, String AIClass) throws LeekScriptException, LeekCompilerException {
 		AIFile<?> ai = getResolver().resolve(filepath, null);
-		ai.setJavaClassName("IA_" + id++);
+		int id = (filepath + "_" + ai.getCode()).hashCode() & 0xfffffff;
+		ai.setJavaClassName("IA_" + id);
 		return compile(ai, AIClass);
 	}
 	
@@ -88,60 +89,55 @@ public class LeekScript {
 		String javaClassName = ai.getJavaClassName();
 		String error = "";
 		File compiled = new File(IA_PATH + javaClassName + ".class");
-		if (compiled.exists()) {
-			compiled.delete();
-		}
 		File java = new File(IA_PATH + javaClassName + ".java");
-		if (java.exists()) {
-			java.delete();
-		}
-
-		// On commence par la conversion LS->Java
-		if (ai.getCode().isEmpty()) { // Pas de code du tout...
-			System.out.println("No code!");
-			return null;
-		}
-		// On compile l'IA
-		String compiledJava = new IACompiler().compile(ai, AIClass);
 		
-		if (compiledJava.isEmpty()) {
-			System.out.println("No java generated!");
-			return null; // Rien ne compile
-		}
-		// Si on a maintenant du code java
-		try {
-			FileOutputStream output = new FileOutputStream(java);
-			output.write(compiledJava.getBytes());
-			output.close();
-		} catch (Exception e) {
-			ErrorManager.exception(e);
-			System.out.println("Failed to compiled AI: " + ai.getPath());
-			return null;
-		}
-
-		// On va compiler le java maintenant
-		JavaCompiler compiler = new JavaCompiler(java);
-		int status = JavaCompiler.INIT;
-
-		try {
-			compiler.compile();
-			status = JavaCompiler.getStatus();
-		} catch (CompilationException e) {
-
-			error = e.getMessage();
-//				ErrorManager.registerCompilationError(ai, e.getMessage());
-			status = JavaCompiler.ERROR;
-
-		} catch (Exception e) {
-
-			// ErrorManager.exception(e, ai.getId());
-			ErrorManager.exception(e);
-			status = JavaCompiler.ERROR;
-		}
-
-		if (status == JavaCompiler.ERROR) {
-			java.delete();
-			throwException(error);
+		if (!compiled.exists()) {
+			// On commence par la conversion LS->Java
+			if (ai.getCode().isEmpty()) { // Pas de code du tout...
+				System.out.println("No code!");
+				return null;
+			}
+			// On compile l'IA
+			String compiledJava = new IACompiler().compile(ai, AIClass);
+			
+			if (compiledJava.isEmpty()) {
+				System.out.println("No java generated!");
+				return null; // Rien ne compile
+			}
+			// Si on a maintenant du code java
+			try {
+				FileOutputStream output = new FileOutputStream(java);
+				output.write(compiledJava.getBytes());
+				output.close();
+			} catch (Exception e) {
+				ErrorManager.exception(e);
+				System.out.println("Failed to compiled AI: " + ai.getPath());
+				return null;
+			}
+	
+			// On va compiler le java maintenant
+			JavaCompiler compiler = new JavaCompiler(java);
+			int status = JavaCompiler.INIT;
+	
+			try {
+				compiler.compile();
+				status = JavaCompiler.getStatus();
+			} catch (CompilationException e) {
+	
+				error = e.getMessage();
+				// ErrorManager.registerCompilationError(ai, e.getMessage());
+				status = JavaCompiler.ERROR;
+	
+			} catch (Exception e) {
+	
+				// ErrorManager.exception(e, ai.getId());
+				ErrorManager.exception(e);
+				status = JavaCompiler.ERROR;
+			}
+			if (status == JavaCompiler.ERROR) {
+				java.delete();
+				throwException(error);
+			}
 		}
 		return IALoader.loadAI(IA_PATH, javaClassName);
 	}
