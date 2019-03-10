@@ -28,7 +28,7 @@ public class LeekScript {
 	}
 	
 	public static AI compileSnippet(String snippet, String AIClass) throws LeekScriptException, LeekCompilerException {
-		AIFile<?> ai = new AIFile<FileSystemContext>(null, snippet, null);
+		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet>", snippet, null);
 		ai.setJavaClassName("IA_" + id++);
 		return compile(ai, AIClass);
 	}
