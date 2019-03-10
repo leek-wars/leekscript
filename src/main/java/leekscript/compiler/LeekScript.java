@@ -2,6 +2,7 @@ package leekscript.compiler;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.Random;
 
 import leekscript.ErrorManager;
 import leekscript.LSException;
@@ -20,6 +21,25 @@ public class LeekScript {
 	
 	private static Resolver<FileSystemContext> defaultResolver = new FileSystemResolver();
 	private static Resolver<?> customResolver = null;
+	
+	private static RandomGenerator defaultRandomGenerator = new RandomGenerator() {
+		private Random random = new Random();
+		@Override
+		public void seed(long seed) {
+			random.setSeed(seed);
+		}
+		@Override
+		public int getInt(int min, int max) {
+			if (max - min + 1 <= 0)
+				return 0;
+			return min + random.nextInt(max - min + 1);
+		}
+		@Override
+		public double getDouble() {
+			return random.nextDouble();
+		}
+	};
+	private static RandomGenerator customRandomGenerator = null;
 	
 	public static AI compileFile(String filepath, String AIClass) throws LeekScriptException, LeekCompilerException {
 		AIFile<?> ai = getResolver().resolve(filepath, null);
@@ -64,7 +84,7 @@ public class LeekScript {
 		return v.equals(ai, s);
 	}
 	
-	public static String runFile(String filename) throws Exception  {
+	public static String runFile(String filename) throws Exception {
 		AI ai = LeekScript.compileFile(filename, "AI");
 		AbstractLeekValue v = ai.runIA();
 		System.out.println(v.getString(ai));
@@ -74,13 +94,18 @@ public class LeekScript {
 	public static void setResolver(Resolver<?> resolver) {
 		customResolver = resolver;
 	}
-
 	public static void resetResolver() {
 		customResolver = null;
 	}
-	
 	public static Resolver<?> getResolver() {
 		return customResolver != null ? customResolver : defaultResolver;
+	}
+	
+	public static void setRandomGenerator(RandomGenerator generator) {
+		customRandomGenerator = generator;
+	}
+	public static RandomGenerator getRandom() {
+		return customRandomGenerator != null ? customRandomGenerator : defaultRandomGenerator;
 	}
 
 	private static AI compile(AIFile<?> ai, String AIClass) throws LeekScriptException, LeekCompilerException {

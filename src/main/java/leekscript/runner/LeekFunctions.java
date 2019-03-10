@@ -1,10 +1,9 @@
 package leekscript.runner;
 
-import java.util.Random;
 import java.util.regex.Pattern;
 
 import leekscript.AILog;
-import leekscript.Util;
+import leekscript.compiler.LeekScript;
 import leekscript.functions.Functions;
 import leekscript.functions.VariableOperations;
 import leekscript.runner.values.AbstractLeekValue;
@@ -252,7 +251,7 @@ public enum LeekFunctions implements ILeekFunction {
 	rand(0) {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws Exception {
-			return new DoubleLeekValue(sRandom.nextDouble());
+			return new DoubleLeekValue(LeekScript.getRandom().getDouble());
 		}
 	},
 	randInt(2) {
@@ -261,9 +260,9 @@ public enum LeekFunctions implements ILeekFunction {
 			int nb = parameters[0].getInt(leekIA);
 			int nb1 = parameters[1].getInt(leekIA);
 			if (nb > nb1)
-				return LeekValueManager.getLeekIntValue(Util.getRandom(nb1, nb - 1));
+				return LeekValueManager.getLeekIntValue(LeekScript.getRandom().getInt(nb1, nb - 1));
 			else
-				return LeekValueManager.getLeekIntValue(Util.getRandom(nb, nb1 - 1));
+				return LeekValueManager.getLeekIntValue(LeekScript.getRandom().getInt(nb, nb1 - 1));
 		}
 
 		@Override
@@ -274,7 +273,7 @@ public enum LeekFunctions implements ILeekFunction {
 	randFloat(2) {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws Exception {
-			return new DoubleLeekValue(parameters[0].getDouble(leekIA) + sRandom.nextDouble() * (parameters[1].getDouble(leekIA) - parameters[0].getDouble(leekIA)));
+			return new DoubleLeekValue(parameters[0].getDouble(leekIA) + LeekScript.getRandom().getDouble() * (parameters[1].getDouble(leekIA) - parameters[0].getDouble(leekIA)));
 		}
 
 		@Override
@@ -1299,8 +1298,6 @@ public enum LeekFunctions implements ILeekFunction {
 	};
 	
 	private static String extraFunctions = null;
-
-	private static Random sRandom = new Random();
 
 	private int mArguments;
 	private int mArgumentsMin;
