@@ -461,7 +461,7 @@ public class WordCompiler {
 	}
 
 	private void dowhileBlock() throws LeekCompilerException, LeekInstructionException {
-		DoWhileBlock bloc = new DoWhileBlock(mCurentBlock, mMain);
+		DoWhileBlock bloc = new DoWhileBlock(mCurentBlock, mMain, mAI);
 		if (mCompiler.getWord().getType() == WordParser.T_ACCOLADE_LEFT) {
 			mCompiler.skipWord();
 		} else

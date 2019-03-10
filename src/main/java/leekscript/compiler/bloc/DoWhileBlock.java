@@ -8,13 +8,8 @@ public class DoWhileBlock extends AbstractLeekBlock {
 
 	private AbstractExpression mCondition = null;
 
-	public DoWhileBlock(AbstractLeekBlock parent, MainLeekBlock main) {
-		super(parent, main, 0, null);
-	}
-
-	public void setLineAI(int line, AIFile<?> ai) {
-		mLine = line;
-		mAI = ai;
+	public DoWhileBlock(AbstractLeekBlock parent, MainLeekBlock main, AIFile<?> ai) {
+		super(parent, main, 0, ai);
 	}
 
 	public void setCondition(AbstractExpression condition) {
