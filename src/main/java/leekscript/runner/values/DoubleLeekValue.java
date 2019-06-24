@@ -1,5 +1,7 @@
 package leekscript.runner.values;
 
+import java.text.DecimalFormat;
+
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
@@ -35,7 +37,9 @@ public class DoubleLeekValue extends AbstractLeekValue {
 	@Override
 	public String getString(AI ai) throws LeekRunException {
 		ai.addOperations(3);
-		return String.valueOf(mValue);
+		DecimalFormat df = new DecimalFormat();
+		df.setMinimumFractionDigits(0);
+		return df.format(mValue);
 	}
 
 	@Override
