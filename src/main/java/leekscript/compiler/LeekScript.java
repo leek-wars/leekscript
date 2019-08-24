@@ -41,21 +41,21 @@ public class LeekScript {
 	};
 	private static RandomGenerator customRandomGenerator = null;
 	
-	public static AI compileFile(String filepath, String AIClass, boolean nocache) throws LeekScriptException, LeekCompilerException {
+	public static AI compileFile(String filepath, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException {
 		AIFile<?> ai = getResolver().resolve(filepath, null);
 		int id = (filepath + "_" + ai.getCode()).hashCode() & 0xfffffff;
 		ai.setJavaClassName("IA_" + id);
-		return compile(ai, AIClass, nocache);
+		return compile(ai, AIClass, jar, nocache);
 	}
 	
-	public static AI compileSnippet(String snippet, String AIClass) throws LeekScriptException, LeekCompilerException {
+	public static AI compileSnippet(String snippet, String AIClass, String jar) throws LeekScriptException, LeekCompilerException {
 		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet>", snippet, null);
 		ai.setJavaClassName("IA_" + id++);
-		return compile(ai, AIClass, false);
+		return compile(ai, AIClass, jar, false);
 	}
 	
-	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass, boolean nocache) throws Exception {
-		AI ai = LeekScript.compileSnippet(script, AIClass);
+	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass, String jar, boolean nocache) throws Exception {
+		AI ai = LeekScript.compileSnippet(script, AIClass, jar);
 		AbstractLeekValue v = ai.runIA();
 		if (v.equals(ai, s))
 			return true;
@@ -74,18 +74,18 @@ public class LeekScript {
 	}
 	
 	public static AbstractLeekValue runScript(String script, boolean nocache) throws Exception {
-		return LeekScript.compileSnippet(script, "AI").runIA();
+		return LeekScript.compileSnippet(script, "AI", "leekscript.jar").runIA();
 	}
 	
-	public static boolean testScript(String script, AbstractLeekValue s, boolean nocache) throws Exception {
-		AI ai = LeekScript.compileSnippet(script, "AI");
+	public static boolean testScript(String script, AbstractLeekValue s) throws Exception {
+		AI ai = LeekScript.compileSnippet(script, "AI", "leekscript.jar");
 		AbstractLeekValue v = ai.runIA();
 		System.out.println(v.getString(ai));
 		return v.equals(ai, s);
 	}
 	
-	public static String runFile(String filename, boolean nocache) throws Exception {
-		AI ai = LeekScript.compileFile(filename, "AI", nocache);
+	public static String runFile(String filename) throws Exception {
+		AI ai = LeekScript.compileFile(filename, "AI", "leekscript.jar", true);
 		AbstractLeekValue v = ai.runIA();
 		System.out.println(v.getString(ai));
 		return v.getString(ai);
@@ -108,7 +108,7 @@ public class LeekScript {
 		return customRandomGenerator != null ? customRandomGenerator : defaultRandomGenerator;
 	}
 
-	private static AI compile(AIFile<?> ai, String AIClass, boolean nocache) throws LeekScriptException, LeekCompilerException {
+	private static AI compile(AIFile<?> ai, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException {
 
 		new File(IA_PATH).mkdir();
 		String javaClassName = ai.getJavaClassName();
@@ -145,7 +145,7 @@ public class LeekScript {
 			int status = JavaCompiler.INIT;
 	
 			try {
-				compiler.compile();
+				compiler.compile(jar);
 				status = JavaCompiler.getStatus();
 			} catch (CompilationException e) {
 	

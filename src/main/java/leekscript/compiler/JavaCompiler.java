@@ -34,7 +34,7 @@ public class JavaCompiler {
 		mInput = input;
 	}
 
-	public void compile() throws Exception {
+	public void compile(String jar) throws Exception {
 		if (mStatus != INIT)
 			return;
 		mStatus = RUNNING;
@@ -43,7 +43,7 @@ public class JavaCompiler {
 			return;
 		}
 
-		Process process = Runtime.getRuntime().exec(new String[] { "javac", "-encoding", "utf8", "-nowarn", "-classpath", "leekscript.jar", mInput.getAbsolutePath() });
+		Process process = Runtime.getRuntime().exec(new String[] { "javac", "-encoding", "utf8", "-nowarn", "-classpath", jar, mInput.getAbsolutePath() });
 
 		Worker worker = new Worker(process);
 		worker.start();
