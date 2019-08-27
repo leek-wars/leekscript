@@ -43,9 +43,12 @@ public class LeekScript {
 	
 	public static AI compileFile(String filepath, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException {
 		AIFile<?> ai = getResolver().resolve(filepath, null);
-		int id = (filepath + "_" + ai.getCode()).hashCode() & 0xfffffff;
-		ai.setJavaClassName("IA_" + id);
-		return compile(ai, AIClass, jar, nocache);
+		if (ai != null) {
+			int id = (filepath + "_" + ai.getCode()).hashCode() & 0xfffffff;
+			ai.setJavaClassName("IA_" + id);
+			return compile(ai, AIClass, jar, nocache);
+		}
+		return null;
 	}
 	
 	public static AI compileSnippet(String snippet, String AIClass, String jar) throws LeekScriptException, LeekCompilerException {
