@@ -150,16 +150,8 @@ public class LeekScript {
 			try {
 				compiler.compile(jar);
 				status = JavaCompiler.getStatus();
-			} catch (CompilationException e) {
-	
-				error = e.getMessage();
-				// ErrorManager.registerCompilationError(ai, e.getMessage());
-				status = JavaCompiler.ERROR;
-	
 			} catch (Exception e) {
-	
-				// ErrorManager.exception(e, ai.getId());
-				ErrorManager.exception(e);
+				error = e.getMessage();
 				status = JavaCompiler.ERROR;
 			}
 			if (status == JavaCompiler.ERROR) {
@@ -183,6 +175,6 @@ public class LeekScript {
 				throw new LeekScriptException(LeekScriptException.CODE_TOO_LARGE);
 			}
 		}
-		throw new LeekScriptException(LeekScriptException.CANT_COMPILE);
+		throw new LeekScriptException(LeekScriptException.CANT_COMPILE, error);
 	}
 }

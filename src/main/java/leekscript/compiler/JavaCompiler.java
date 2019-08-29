@@ -1,8 +1,10 @@
 package leekscript.compiler;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.io.InputStreamReader;
 
 public class JavaCompiler {
 	
@@ -12,23 +14,6 @@ public class JavaCompiler {
 	public final static int ERROR = 3;
 	private final File mInput;
 	private int mStatus = 0;
-
-	private static class Worker extends Thread {
-		private final Process process;
-		private Integer exit;
-
-		private Worker(Process process) {
-			this.process = process;
-		}
-
-		public void run() {
-			try {
-				exit = process.waitFor();
-			} catch (InterruptedException ignore) {
-				return;
-			}
-		}
-	}
 
 	public JavaCompiler(File input) {
 		mInput = input;
@@ -43,45 +28,35 @@ public class JavaCompiler {
 			return;
 		}
 
-		Process process = Runtime.getRuntime().exec(new String[] { "javac", "-encoding", "utf8", "-nowarn", "-classpath", jar, mInput.getAbsolutePath() });
+		String[] args = new String[] { "javac", "-encoding", "utf8", "-classpath", jar, mInput.getPath() };
+		// System.out.println(String.join(" ", args));
+		ProcessBuilder pb = new ProcessBuilder(args);
+		Worker worker = new Worker(pb);
+		Process process = worker.begin();
 
-		Worker worker = new Worker(process);
-		worker.start();
+		Gobbler outGobbler = new Gobbler(process.getInputStream());
+		Gobbler errGobbler = new Gobbler(process.getErrorStream());
+		Thread outThread = new Thread(outGobbler);
+		Thread errThread = new Thread(errGobbler);
+		outThread.start();
+		errThread.start();
+
 		try {
-			
 			worker.join(10000);
 			if (worker.exit == null) {
 				throw new CompilationException("too_long_java");
 			}
-			
-			// new
-			// File(System.getProperty("user.dir")));
-			boolean error = false;
-			InputStream iin = process.getErrorStream();
-			if (iin != null) {
-				byte[] e = new byte[128];
-				int nb;
-				StringBuilder sb = new StringBuilder();
-				while ((nb = iin.read(e)) > 0) {
-					sb.append(new String(Arrays.copyOf(e, nb)));
-				}
-				if (sb.length() > 0)
-					throw new CompilationException(sb.toString());
-			}
-			iin = process.getInputStream();
-			if (iin != null) {
-				byte[] e = new byte[128];
-				int nb;
-				while ((nb = iin.read(e)) > 0) {
-					System.out.println(new String(Arrays.copyOf(e, nb)));
-				}
-			}
+			outThread.join();
+			errThread.join();
 			process.waitFor();
-			if (process.exitValue() != 0)
-				error = true;
-			if (!error)
+			String error = errGobbler.getOuput();
+			if (error.length() > 0) {
 				mStatus = END;
-			
+				throw new CompilationException(error);
+			}
+			if (process.exitValue() == 0) {
+				mStatus = END;
+			}
 		} catch (InterruptedException ex) {
 			worker.interrupt();
 			Thread.currentThread().interrupt();
@@ -94,4 +69,54 @@ public class JavaCompiler {
 	public static int getStatus() {
 		return 0;
 	}
+
+	public static class Worker extends Thread {
+		private final ProcessBuilder pb;
+		private Process p;
+		public Integer exit;
+		public Worker(ProcessBuilder pb) {
+			this.pb = pb;
+		}
+		public Process begin() {
+			try {
+				p = pb.start();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			super.start();
+			return p;
+		}
+		public void run() {
+			try {
+				exit = p.waitFor();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public static class Gobbler implements Runnable {
+        private BufferedReader reader;
+        private StringBuilder output;
+        public Gobbler(InputStream inputStream) {
+            this.reader = new BufferedReader(new InputStreamReader(inputStream));
+        }
+        public void run() {
+            String line;
+            output = new StringBuilder();
+            try {
+                while ((line = reader.readLine()) != null) {
+					// Limit the length of the line to 500 characters
+                    output.append(line.substring(0, Math.min(line.length(), 500)) + "\n");
+                }
+                reader.close();
+            } catch (IOException e) {
+				System.err.println("ERROR: " + e.getMessage());
+				e.printStackTrace();
+            }
+        }
+        public String getOuput() {
+            return this.output.toString();
+        }
+    }
 }
