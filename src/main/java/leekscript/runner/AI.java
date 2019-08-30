@@ -73,7 +73,10 @@ public abstract class AI {
 
 	protected String getErrorLocalisation(int line) {
 		if (mErrorObject == null) {
-			mErrorObject = JSONArray.parseArray(getErrorString());
+			mErrorObject = new JSONArray();
+			for (String error : getErrorString()) {
+				mErrorObject.add(JSON.parseArray(error));
+			}
 			thisObject = getAItring();
 		}
 		int value = 0;
@@ -325,7 +328,7 @@ public abstract class AI {
 		logs.addSystemLog(type, getErrorMessage(elements), key, parameters);
 	}
 	
-	protected abstract String getErrorString();
+	protected abstract String[] getErrorString();
 
 	protected abstract String getAItring();
 

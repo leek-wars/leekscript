@@ -72,16 +72,16 @@ public class JavaWriter {
 	}
 
 	public void writeErrorFunction(IACompiler comp, String ai) {
-		mCode.append("protected String getErrorString(){ return \"[");
+		mCode.append("protected String[] getErrorString(){ return new String[]{");
 		boolean first = true;
 		for (Line l : mLines) {
 			if (!first)
 				mCode.append(",");
 			else
 				first = false;
-			mCode.append("[").append(l.mJavaLine).append(",\\\"").append(escape(l.mAI.getPath())).append("\\\",").append(l.mCodeLine).append("]");
+			mCode.append("\"[").append(l.mJavaLine).append(",\\\"").append(escape(l.mAI.getPath())).append("\\\",").append(l.mCodeLine).append("]\"");
 		}
-		mCode.append("]\";}\n protected String getAItring(){ return \"");
+		mCode.append("};}\n protected String getAItring(){ return \"");
 		mCode.append(escape(ai));
 		mCode.append("\";}");
 	}

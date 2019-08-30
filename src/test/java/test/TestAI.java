@@ -9,7 +9,7 @@ public class TestAI extends AI {
 	}
 
 	@Override
-	protected String getErrorString() {
+	protected String[] getErrorString() {
 		// TODO Auto-generated method stub
 		return null;
 	}
