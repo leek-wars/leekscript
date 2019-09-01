@@ -7,3 +7,4 @@ build/
 .project
 /ai/
 /bin/
+.vscode/
