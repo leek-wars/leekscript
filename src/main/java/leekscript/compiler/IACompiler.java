@@ -48,6 +48,24 @@ public class IACompiler {
 		mInformations.add(error);
 	}
 
+	public String analyze(AIFile<?> ai) throws LeekCompilerException {
+		try {
+			// On lance la compilation du code de l'IA
+			WordParser parser = new WordParser(ai);
+			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
+			MainLeekBlock main = new MainLeekBlock(this, ai);
+			WordCompiler compiler = new WordCompiler(parser, main, ai);
+			compiler.readCode();
+			// On sauvegarde les dépendances
+			addInformations(ai, main.getMinLevel());
+		} catch (LeekCompilerException e) {
+			addError(e.getIA(), e.getLine(), e.getChar(), e.getWord(), e.getError(), e.getParameters());
+		} catch (Exception e) {
+			addError(ai, e.getMessage());
+		}
+		return mInformations.toJSONString();
+	}
+
 	public String compile(AIFile<?> ai, String AIClass) throws LeekCompilerException {
 		JavaWriter writer = new JavaWriter(true);
 		try {
