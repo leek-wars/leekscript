@@ -1301,7 +1301,7 @@ public enum LeekFunctions implements ILeekFunction {
 
 	private int mArguments;
 	private int mArgumentsMin;
-	private Integer mOperations = null;
+	private int mOperations = 1;
 	protected VariableOperations mVariableOperations = null;
 
 	public static final int DOUBLE = 1;
@@ -1365,15 +1365,6 @@ public enum LeekFunctions implements ILeekFunction {
 	}
 
 	public int getOperations() {
-		if (mOperations == null) {
-			if (!Functions.isReady()) {
-				return 0;
-			}
-			mOperations = Functions.getOperations(this.name());
-			if (mOperations <= 0) {
-				mOperations = 1;
-			}
-		}
 		return mOperations;
 	}
 
@@ -1385,10 +1376,9 @@ public enum LeekFunctions implements ILeekFunction {
 	}
 
 	public static ILeekFunction getValue(String name) {
-		for (LeekFunctions func : LeekFunctions.values()) {
-			if (func.name().equals(name))
-				return func;
-		}
+		try {
+			return LeekFunctions.valueOf(name);
+		} catch (Exception e) {}
 		if (extraFunctions != null) {
 			try {
 				Class<?> extra = Class.forName(extraFunctions);
@@ -1429,6 +1419,10 @@ public enum LeekFunctions implements ILeekFunction {
 
 	public int cost() {
 		return 1;
+	}
+
+	public void setOperations(int operations) {
+		mOperations = operations;
 	}
 
 	public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws Exception {
