@@ -3,6 +3,7 @@ package leekscript.runner;
 import leekscript.runner.values.AbstractLeekValue;
 
 public interface ILeekFunction {
+	abstract public void setOperations(int operations);
 	abstract public int getArguments();
 	abstract public int getArgumentsMin();
 	abstract public boolean isExtra();
