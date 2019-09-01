@@ -21,7 +21,7 @@ public class IACompiler {
 		mErrors = true;
 		JSONArray error = new JSONArray();
 		error.add(0);
-		error.add(ia_context);
+		error.add(ia_context.getId());
 		error.add(line);
 		error.add(pos);
 		error.add(word);
@@ -35,7 +35,7 @@ public class IACompiler {
 		mErrors = true;
 		JSONArray error = new JSONArray();
 		error.add(1);
-		error.add(ia_context);
+		error.add(ia_context.getId());
 		error.add(informations);
 		mInformations.add(error);
 	}
@@ -43,7 +43,7 @@ public class IACompiler {
 	public void addInformations(AIFile<?> ia_context, int level) {
 		JSONArray error = new JSONArray();
 		error.add(2);
-		error.add(ia_context);
+		error.add(ia_context.getId());
 		error.add(level);
 		mInformations.add(error);
 	}
