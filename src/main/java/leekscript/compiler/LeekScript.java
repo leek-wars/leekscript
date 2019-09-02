@@ -10,6 +10,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.resolver.FileSystemContext;
 import leekscript.compiler.resolver.FileSystemResolver;
 import leekscript.compiler.resolver.Resolver;
+import leekscript.compiler.resolver.ResolverContext;
 import leekscript.runner.AI;
 import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
@@ -43,6 +44,16 @@ public class LeekScript {
 	
 	public static AI compileFile(String filepath, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException {
 		AIFile<?> ai = getResolver().resolve(filepath, null);
+		if (ai != null) {
+			int id = (filepath + "_" + ai.getCode()).hashCode() & 0xfffffff;
+			ai.setJavaClassName("IA_" + id);
+			return compile(ai, AIClass, jar, nocache);
+		}
+		return null;
+	}
+
+	public static AI compileFileContext(String filepath, String AIClass, String jar, ResolverContext context, boolean nocache) throws LeekScriptException, LeekCompilerException {
+		AIFile<?> ai = getResolver().resolve(filepath, context);
 		if (ai != null) {
 			int id = (filepath + "_" + ai.getCode()).hashCode() & 0xfffffff;
 			ai.setJavaClassName("IA_" + id);
