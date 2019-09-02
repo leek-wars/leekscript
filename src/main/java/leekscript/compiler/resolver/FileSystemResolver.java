@@ -30,4 +30,8 @@ public class FileSystemResolver implements Resolver<FileSystemContext> {
 			return null;
 		}
 	}
+
+	public ResolverContext createContext(int parameter) {
+		return new FileSystemContext(Paths.get(".").toFile());
+	}
 }
