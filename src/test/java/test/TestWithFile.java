@@ -39,6 +39,10 @@ public class TestWithFile {
 			public AIFile<CustomContext> resolve(String path, ResolverContext context) {
 				return new AIFile<CustomContext>(path, "return 'generated';", new CustomContext());
 			}
+			@Override
+			public ResolverContext createContext(int parameter) {
+				return null;
+			}
 		});
 		assertEquals("generated", LeekScript.runFile("whatever"));
 		LeekScript.resetResolver();
