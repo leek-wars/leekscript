@@ -20,4 +20,6 @@ public interface Resolver<C extends ResolverContext> {
 	 * @return The result with the AI's code and context, or null if not found
 	 */
 	abstract public AIFile<C> resolve(String path, ResolverContext context);
+
+	public abstract ResolverContext createContext(int parameter);
 }
