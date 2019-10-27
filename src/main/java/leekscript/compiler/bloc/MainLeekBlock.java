@@ -25,11 +25,12 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private int mAnonymousId = 1;
 	private int mFunctionId = 1;
 
-	private final ArrayList<String> mIncluded = new ArrayList<String>();
+	private final ArrayList<Integer> mIncluded = new ArrayList<Integer>();
 
 	private int mCounter = 0;
 	private int mCountInstruction = 0;
 	private final IACompiler mCompiler;
+	private String mAIName;
 
 	@Override
 	public int getCount() {
@@ -39,7 +40,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public MainLeekBlock(IACompiler compiler, AIFile<?> ai) {
 		super(null, null, 0, null);
 		// On ajoute l'IA pour pas pouvoir l'include
-		mIncluded.add(ai.getPath());
+		mIncluded.add(ai.getId());
+		mAIName = ai.getPath();
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
 	}
@@ -69,14 +71,14 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public boolean includeAI(String path) throws Exception {
-		if (mIncluded.contains(path)) {
-			return true;
-		}
 		AIFile<?> ai = LeekScript.getResolver().resolve(path, mCompiler.getCurrentAI().getContext());
 		if (ai == null) {
 			return false;
 		}
-		mIncluded.add(ai.getPath());
+		if (mIncluded.contains(ai.getId())) {
+			return true;
+		}
+		mIncluded.add(ai.getId());
 		AIFile<?> previousAI = mCompiler.getCurrentAI();
 		mCompiler.setCurrentAI(ai);
 		WordParser words = new WordParser(ai);
@@ -191,7 +193,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			writer.addLine("return LeekValueManager.NULL;");
 		writer.addLine("}");
 
-		writer.writeErrorFunction(mCompiler, mIncluded.get(0));
+		writer.writeErrorFunction(mCompiler, mAIName);
 		printFunctionInformations(writer);
 
 		if (mRedefinedFunctions.size() > 0) {
@@ -272,16 +274,16 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		 */
 		/*
 		 * public abstract int userFunctionCount(int id);
-		 * 
+		 *
 		 * public abstract boolean[] userFunctionReference(int id);
-		 * 
+		 *
 		 * public abstract AbstractLeekValue userFunctionExecute(int id,
 		 * AbstractLeekValue[] value);
-		 * 
+		 *
 		 * public abstract int anonymousFunctionCount(int id);
-		 * 
+		 *
 		 * public abstract boolean[] anonymousFunctionReference(int id);
-		 * 
+		 *
 		 * public abstract AbstractLeekValue anonymousFunctionExecute(int id,
 		 * AbstractLeekValue[] value);
 		 */
