@@ -9,6 +9,16 @@ test {
 jar.baseName = 'leekscript'
 libsDirName = '..'
 
+jar {
+	baseName = 'leekscript'
+	manifest {
+        attributes "Main-Class": "leekscript.TopLevel"
+    }
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
 repositories {
     jcenter()
 }
