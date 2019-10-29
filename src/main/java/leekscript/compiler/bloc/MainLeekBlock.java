@@ -168,7 +168,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("import leekscript.runner.*;");
 		writer.addLine("import leekscript.runner.values.*;");
 		writer.addLine("public class " + className + " extends " + AIClass + " {");
-		writer.addLine("public " + className + "() throws Exception{ super(); }");
+		writer.addLine("public " + className + "() throws Exception {");
+		writer.addLine("super();");
+		writer.addLine("mInstructions = " + mInstructions.size() + ";");
+		writer.addLine("}");
 		// Variables globales
 		for (String global : mGobales) {
 			writer.addLine("private VariableLeekValue globale_" + global + " = null;");

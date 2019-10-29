@@ -16,7 +16,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 
 public abstract class AI {
-	
+
 	public static final int ERROR_LOG_COST = 1000;
 
 	public final static int MAX_MEMORY = 100000;
@@ -29,16 +29,21 @@ public abstract class AI {
 
 	protected AILog logs;
 	protected AI mUAI;
+	protected int mInstructions;
 
 	public AI() {
 		mUAI = this;
 		logs = new AILog();
 	}
 
+	public int getInstructions() {
+		return mInstructions;
+	}
+
 	public long getOperations() {
 		return mOperations;
 	}
-	
+
 	public AILog getLogs() {
 		return logs;
 	}
@@ -95,7 +100,7 @@ public abstract class AI {
 		}
 		return "";
 	}
-	
+
 
 
 	public AbstractLeekValue color(AbstractLeekValue red, AbstractLeekValue green, AbstractLeekValue blue) throws LeekRunException {
@@ -327,7 +332,7 @@ public abstract class AI {
 
 		logs.addSystemLog(type, getErrorMessage(elements), key, parameters);
 	}
-	
+
 	protected abstract String[] getErrorString();
 
 	protected abstract String getAItring();
