@@ -16,13 +16,13 @@ import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 
 public class LeekScript {
-	
+
 	private final static String IA_PATH = "ai/";
 	private static long id = 1;
-	
+
 	private static Resolver<FileSystemContext> defaultResolver = new FileSystemResolver();
 	private static Resolver<?> customResolver = null;
-	
+
 	private static RandomGenerator defaultRandomGenerator = new RandomGenerator() {
 		private Random random = new Random();
 		@Override
@@ -41,12 +41,10 @@ public class LeekScript {
 		}
 	};
 	private static RandomGenerator customRandomGenerator = null;
-	
+
 	public static AI compileFile(String filepath, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException {
 		AIFile<?> ai = getResolver().resolve(filepath, null);
 		if (ai != null) {
-			int id = (filepath + "_" + ai.getCode()).hashCode() & 0xfffffff;
-			ai.setJavaClassName("IA_" + id);
 			return compile(ai, AIClass, jar, nocache);
 		}
 		return null;
@@ -55,19 +53,16 @@ public class LeekScript {
 	public static AI compileFileContext(String filepath, String AIClass, String jar, ResolverContext context, boolean nocache) throws LeekScriptException, LeekCompilerException {
 		AIFile<?> ai = getResolver().resolve(filepath, context);
 		if (ai != null) {
-			int id = (filepath + "_" + ai.getCode()).hashCode() & 0xfffffff;
-			ai.setJavaClassName("IA_" + id);
 			return compile(ai, AIClass, jar, nocache);
 		}
 		return null;
 	}
-	
+
 	public static AI compileSnippet(String snippet, String AIClass, String jar) throws LeekScriptException, LeekCompilerException {
-		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet>", snippet, null);
-		ai.setJavaClassName("IA_" + id++);
+		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet " + id++ + ">", snippet, null);
 		return compile(ai, AIClass, jar, false);
 	}
-	
+
 	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass, String jar, boolean nocache) throws Exception {
 		AI ai = LeekScript.compileSnippet(script, AIClass, jar);
 		AbstractLeekValue v = ai.runIA();
@@ -86,25 +81,25 @@ public class LeekScript {
 			System.out.println(v.getString(ai) + " -- " + s.getString(ai));
 		return false;
 	}
-	
+
 	public static AbstractLeekValue runScript(String script, boolean nocache) throws Exception {
 		return LeekScript.compileSnippet(script, "AI", "leekscript.jar").runIA();
 	}
-	
+
 	public static boolean testScript(String script, AbstractLeekValue s) throws Exception {
 		AI ai = LeekScript.compileSnippet(script, "AI", "leekscript.jar");
 		AbstractLeekValue v = ai.runIA();
 		System.out.println(v.getString(ai));
 		return v.equals(ai, s);
 	}
-	
+
 	public static String runFile(String filename) throws Exception {
 		AI ai = LeekScript.compileFile(filename, "AI", "leekscript.jar", true);
 		AbstractLeekValue v = ai.runIA();
 		System.out.println(v.getString(ai));
 		return v.getString(ai);
 	}
-	
+
 	public static void setResolver(Resolver<?> resolver) {
 		customResolver = resolver;
 	}
@@ -114,7 +109,7 @@ public class LeekScript {
 	public static Resolver<?> getResolver() {
 		return customResolver != null ? customResolver : defaultResolver;
 	}
-	
+
 	public static void setRandomGenerator(RandomGenerator generator) {
 		customRandomGenerator = generator;
 	}
@@ -125,11 +120,11 @@ public class LeekScript {
 	private static AI compile(AIFile<?> ai, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException {
 
 		new File(IA_PATH).mkdir();
-		String javaClassName = ai.getJavaClassName();
+		String javaClassName = "AI_" + ai.getId();
 		String error = "";
 		File compiled = new File(IA_PATH + javaClassName + ".class");
 		File java = new File(IA_PATH + javaClassName + ".java");
-		
+
 		if (!compiled.exists() || nocache) {
 			// On commence par la conversion LS->Java
 			if (ai.getCode().isEmpty()) { // Pas de code du tout...
@@ -137,8 +132,8 @@ public class LeekScript {
 				return null;
 			}
 			// On compile l'IA
-			String compiledJava = new IACompiler().compile(ai, AIClass);
-			
+			String compiledJava = new IACompiler().compile(ai, javaClassName, AIClass);
+
 			if (compiledJava.isEmpty()) {
 				System.out.println("No java generated!");
 				return null; // Rien ne compile
@@ -153,11 +148,11 @@ public class LeekScript {
 				System.out.println("Failed to compiled AI: " + ai.getPath());
 				return null;
 			}
-	
+
 			// On va compiler le java maintenant
 			JavaCompiler compiler = new JavaCompiler(java);
 			int status = JavaCompiler.INIT;
-	
+
 			try {
 				compiler.compile(jar);
 				status = JavaCompiler.getStatus();
