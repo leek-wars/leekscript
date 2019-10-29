@@ -23,7 +23,7 @@ public class IALoader {
 
 			if (loader != null) {
 				Class<?> c = loader.loadClass(classname);
-				return (AI) c.newInstance();
+				return (AI) c.getDeclaredConstructor().newInstance();
 			}
 		} catch (Exception e) {
 			ErrorManager.exception(e);
