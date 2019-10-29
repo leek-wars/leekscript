@@ -12,6 +12,7 @@ import leekscript.compiler.LeekScript;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.WordParser;
 import leekscript.compiler.instruction.LeekInstruction;
+import leekscript.runner.LeekFunctions;
 
 public class MainLeekBlock extends AbstractLeekBlock {
 
@@ -200,7 +201,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		printFunctionInformations(writer);
 
 		if (mRedefinedFunctions.size() > 0) {
-			writer.addCode("protected void init() throws Exception{");
+			writer.addCode("protected void init() throws Exception {\n");
 			for (String redefined : mRedefinedFunctions) {
 				FunctionBlock user_function = getUserFunction(redefined);
 				writer.addCode("rfunction_");
@@ -211,7 +212,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 					writer.addCode(String.valueOf(user_function.getId()));
 					writer.addCode(")");
 				} else {
-					writer.addCode("new FunctionLeekValue(LeekFunctions.");
+					String namespace = LeekFunctions.getNamespace(redefined);
+					writer.addCode("new FunctionLeekValue(" + namespace + ".");
 					writer.addCode(redefined);
 					writer.addCode(")");
 				}
