@@ -37,7 +37,7 @@ public class TestWithFile {
 		LeekScript.setResolver(new Resolver<CustomContext>() {
 			@Override
 			public AIFile<CustomContext> resolve(String path, ResolverContext context) {
-				return new AIFile<CustomContext>(path, "return 'generated';", new CustomContext());
+				return new AIFile<CustomContext>(path, "return 'generated';", System.currentTimeMillis(), new CustomContext());
 			}
 			@Override
 			public ResolverContext createContext(int parameter) {

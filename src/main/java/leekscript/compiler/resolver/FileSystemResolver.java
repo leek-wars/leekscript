@@ -25,7 +25,9 @@ public class FileSystemResolver implements Resolver<FileSystemContext> {
 
 			FileSystemContext newContext = new FileSystemContext(resolvedPath.getParent().toFile());
 
-			return new AIFile<FileSystemContext>(path, code, newContext, resolvedPath.hashCode() & 0xfffffff);
+			long timestamp = resolvedPath.toFile().lastModified();
+
+			return new AIFile<FileSystemContext>(path, code, timestamp, newContext, resolvedPath.hashCode() & 0xfffffff);
 
 		} catch (IOException e) {
 			return null;
