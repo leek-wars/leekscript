@@ -59,7 +59,7 @@ public class LeekScript {
 	}
 
 	public static AI compileSnippet(String snippet, String AIClass, String jar) throws LeekScriptException, LeekCompilerException {
-		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet " + id++ + ">", snippet, null);
+		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet " + id++ + ">", snippet, System.currentTimeMillis(), null);
 		return compile(ai, AIClass, jar, false);
 	}
 
@@ -125,7 +125,7 @@ public class LeekScript {
 		File compiled = new File(IA_PATH + javaClassName + ".class");
 		File java = new File(IA_PATH + javaClassName + ".java");
 
-		if (!compiled.exists() || nocache) {
+		if (!compiled.exists() || compiled.lastModified() < ai.getTimestamp() || nocache) {
 			// On commence par la conversion LS->Java
 			if (ai.getCode().isEmpty()) { // Pas de code du tout...
 				System.out.println("No code!");
