@@ -31,10 +31,14 @@ public abstract class AI {
 	protected AI mUAI;
 	protected int mInstructions;
 
-	public AI() {
+	public AI() throws Exception {
 		mUAI = this;
 		logs = new AILog();
+		init();
 	}
+
+	// Method that can be overriden in each AI
+	protected void init() throws Exception {}
 
 	public int getInstructions() {
 		return mInstructions;
