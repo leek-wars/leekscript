@@ -66,7 +66,7 @@ public class IACompiler {
 		return mInformations.toJSONString();
 	}
 
-	public String compile(AIFile<?> ai, String AIClass) throws LeekCompilerException {
+	public String compile(AIFile<?> ai, String javaClassName, String AIClass) throws LeekCompilerException {
 		JavaWriter writer = new JavaWriter(true);
 		try {
 			// On lance la compilation du code de l'IA
@@ -76,8 +76,7 @@ public class IACompiler {
 			WordCompiler compiler = new WordCompiler(parser, main, ai);
 			compiler.readCode();
 
-			compiler.writeJava(ai.getJavaClassName(), writer, AIClass);
-
+			compiler.writeJava(javaClassName, writer, AIClass);
 			// On sauvegarde les dépendances
 			addInformations(ai, main.getMinLevel());
 
@@ -98,7 +97,7 @@ public class IACompiler {
 	public boolean hasError() {
 		return mErrors;
 	}
-	
+
 	public AIFile<?> getCurrentAI() {
 		return mCurrentAI;
 	}

@@ -3,17 +3,17 @@ package leekscript.compiler;
 import leekscript.compiler.resolver.ResolverContext;
 
 public class AIFile<C extends ResolverContext> {
-	
+
 	private String path;
 	private String code;
 	private C context;
-	private String javaClassName;
 	private int id;
 
 	public AIFile(String path, String code, C context) {
 		this.path = path;
 		this.code = code;
 		this.context = context;
+		this.id = (context + "/" + path).hashCode() & 0xfffffff;
 	}
 	public AIFile(String path, String code, C context, int id) {
 		this.path = path;
@@ -38,12 +38,6 @@ public class AIFile<C extends ResolverContext> {
 	}
 	public void setContext(C context) {
 		this.context = context;
-	}
-	public String getJavaClassName() {
-		return javaClassName;
-	}
-	public void setJavaClassName(String javaClassName) {
-		this.javaClassName = javaClassName;
 	}
 	public String getPath() {
 		return path;
