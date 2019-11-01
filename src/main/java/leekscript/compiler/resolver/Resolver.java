@@ -21,5 +21,5 @@ public interface Resolver<C extends ResolverContext> {
 	 */
 	abstract public AIFile<C> resolve(String path, ResolverContext context);
 
-	public abstract ResolverContext createContext(int parameter);
+	public abstract ResolverContext createContext(int parameter1, int parameter2);
 }
