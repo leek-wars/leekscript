@@ -34,7 +34,7 @@ public class FileSystemResolver implements Resolver<FileSystemContext> {
 		}
 	}
 
-	public ResolverContext createContext(int parameter) {
+	public ResolverContext createContext(int parameter1, int parameter2) {
 		return new FileSystemContext(Paths.get(".").toFile());
 	}
 }
