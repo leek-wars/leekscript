@@ -2,6 +2,7 @@ package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -292,5 +293,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		 * public abstract AbstractLeekValue anonymousFunctionExecute(int id,
 		 * AbstractLeekValue[] value);
 		 */
+	}
+
+	public List<Integer> getIncludedAIs() {
+		return mIncluded;
 	}
 }

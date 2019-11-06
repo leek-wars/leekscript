@@ -4,12 +4,20 @@ import leekscript.ErrorManager;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.alibaba.fastjson.JSONArray;
 
 /**
  * Classe permettant de compiler une IA
  */
 public class IACompiler {
+
+	public static class AnalyzeResult {
+		public String informations;
+		public List<Integer> includedAIs = new ArrayList<>();
+	}
 
 	private final JSONArray mInformations = new JSONArray();
 	private boolean mErrors = false;
@@ -48,7 +56,8 @@ public class IACompiler {
 		mInformations.add(error);
 	}
 
-	public String analyze(AIFile<?> ai) throws LeekCompilerException {
+	public AnalyzeResult analyze(AIFile<?> ai) throws LeekCompilerException {
+		AnalyzeResult result = new AnalyzeResult();
 		try {
 			// On lance la compilation du code de l'IA
 			WordParser parser = new WordParser(ai);
@@ -58,12 +67,14 @@ public class IACompiler {
 			compiler.readCode();
 			// On sauvegarde les dépendances
 			addInformations(ai, main.getMinLevel());
+			result.includedAIs = main.getIncludedAIs();
 		} catch (LeekCompilerException e) {
 			addError(e.getIA(), e.getLine(), e.getChar(), e.getWord(), e.getError(), e.getParameters());
 		} catch (Exception e) {
 			addError(ai, e.getMessage());
 		}
-		return mInformations.toJSONString();
+		result.informations = mInformations.toJSONString();
+		return result;
 	}
 
 	public String compile(AIFile<?> ai, String javaClassName, String AIClass) throws LeekCompilerException {
