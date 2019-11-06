@@ -40,7 +40,7 @@ public class TestWithFile {
 				return new AIFile<CustomContext>(path, "return 'generated';", System.currentTimeMillis(), new CustomContext());
 			}
 			@Override
-			public ResolverContext createContext(int parameter) {
+			public ResolverContext createContext(int parameter1, int parameter2) {
 				return null;
 			}
 		});
