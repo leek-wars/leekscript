@@ -161,7 +161,6 @@ public class LeekScript {
 				status = JavaCompiler.ERROR;
 			}
 			if (status == JavaCompiler.ERROR) {
-				java.delete();
 				throwException(error);
 			}
 		}
