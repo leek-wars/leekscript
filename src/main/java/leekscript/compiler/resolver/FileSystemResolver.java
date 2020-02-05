@@ -23,7 +23,10 @@ public class FileSystemResolver implements Resolver<FileSystemContext> {
 
 			String code = new String(Files.readAllBytes(resolvedPath), StandardCharsets.UTF_8);
 
-			FileSystemContext newContext = new FileSystemContext(resolvedPath.getParent().toFile());
+			Path parent = resolvedPath.getParent();
+			if (parent == null) parent = Paths.get(".");
+
+			FileSystemContext newContext = new FileSystemContext(parent.toFile());
 
 			long timestamp = resolvedPath.toFile().lastModified();
 
