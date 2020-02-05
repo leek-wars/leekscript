@@ -99,7 +99,7 @@ public abstract class AI {
 			JSONArray l = mErrorObject.getJSONArray(value);
 			if (l != null && l.size() >= 3) {
 				String ai_name = thisObject != null ? thisObject : "";
-				return "(IA : " + ai_name + ", line : " + l.getString(2) + ")";
+				return "(IA : " + l.getString(1) + ", line : " + l.getString(2) + ")";
 			}
 		}
 		return "";
