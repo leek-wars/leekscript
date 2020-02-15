@@ -7,7 +7,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 public class WordParser {
 	/**
 	 * Son but est de convertir le LeekCode en un "bytecode" plus rapide à
-	 * éxécuter Il doit aussi trouver les erreurs dans le LeekCode
+	 * exécuter Il doit aussi trouver les erreurs dans le LeekCode
 	 */
 
 	/**
