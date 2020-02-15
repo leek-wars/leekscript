@@ -30,21 +30,21 @@ public class LeekRunException extends Exception {
 	public String getMessage() {
 		switch (mError) {
 		case TOO_MUCH_OPERATIONS:
-			return "Erreur d'execution : Trop d'opérations éxécutées pour ce tour";
+			return "Erreur d'exécution : Trop d'opérations exécutées pour ce tour";
 		case ARRAY_EMPTY:
-			return "Erreur d'execution : Tableau vide";
+			return "Erreur d'exécution : Tableau vide";
 		case INVALID_INDEX:
-			return "Erreur d'execution : Indice invalide";
+			return "Erreur d'exécution : Indice invalide";
 		case UNKNOWN_FUNCTION:
-			return "Erreur d'execution : Fonction inconnue";
+			return "Erreur d'exécution : Fonction inconnue";
 		case INVALID_OPERATOR:
-			return "Erreur d'execution : Impossible d'utiliser cet opérateur";
+			return "Erreur d'exécution : Impossible d'utiliser cet opérateur";
 		case INVALID_LEVEL:
-			return "Erreur d'execution : Niveau invalide";
+			return "Erreur d'exécution : Niveau invalide";
 		case OUT_OF_MEMORY:
-			return "Erreur d'execution : Trop de RAM utilisée";
+			return "Erreur d'exécution : Trop de RAM utilisée";
 
 		}
-		return "Erreur d'éxécution";
+		return "Erreur d'exécution";
 	}
 }
