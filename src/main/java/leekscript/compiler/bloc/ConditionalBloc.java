@@ -3,9 +3,8 @@ package leekscript.compiler.bloc;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.expression.AbstractExpression;
-import leekscript.compiler.instruction.LeekInstruction;
 
-public class ConditionalBloc extends AbstractLeekBlock implements LeekInstruction {
+public class ConditionalBloc extends AbstractLeekBlock {
 
 	private ConditionalBloc mParentCondition = null;
 	private AbstractExpression mCondition = null;
