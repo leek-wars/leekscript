@@ -633,10 +633,7 @@ public enum LeekFunctions implements ILeekFunction {
 
 		@Override
 		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws Exception {
-			if (parameters[2].getInt(leekIA) >= 0 && parameters[2].getInt(leekIA) < parameters[0].getArray().size()) {
-				leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[1].getInt(leekIA) + 1) : 1);
-			} else
-				leekIA.addOperations(1);
+			leekIA.addOperations(1 + (parameters[0].getArray().getSize() - parameters[2].getInt(leekIA)) * 4);
 		}
 	},
 	push(2) {
