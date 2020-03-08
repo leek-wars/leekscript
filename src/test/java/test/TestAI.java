@@ -10,49 +10,41 @@ public class TestAI extends AI {
 
 	@Override
 	protected String[] getErrorString() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	protected String getAItring() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public AbstractLeekValue runIA() throws Exception {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public int userFunctionCount(int id) {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public boolean[] userFunctionReference(int id) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public AbstractLeekValue userFunctionExecute(int id, AbstractLeekValue[] value) throws Exception {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public int anonymousFunctionCount(int id) {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public boolean[] anonymousFunctionReference(int id) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
