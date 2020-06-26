@@ -125,7 +125,7 @@ public class LeekScript {
 		File compiled = new File(IA_PATH + javaClassName + ".class");
 		File java = new File(IA_PATH + javaClassName + ".java");
 
-		if (!compiled.exists() || compiled.lastModified() < ai.getTimestamp() || nocache) {
+		if (!compiled.exists() || compiled.length() == 0 || compiled.lastModified() < ai.getTimestamp() || nocache) {
 			// On commence par la conversion LS->Java
 			if (ai.getCode().isEmpty()) { // Pas de code du tout...
 				System.out.println("No code!");

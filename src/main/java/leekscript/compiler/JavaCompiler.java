@@ -7,7 +7,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 public class JavaCompiler {
-	
+
 	public final static int INIT = 0;
 	public final static int RUNNING = 1;
 	public final static int END = 2;
@@ -42,7 +42,7 @@ public class JavaCompiler {
 		errThread.start();
 
 		try {
-			worker.join(10000);
+			worker.join(20000);
 			if (worker.exit == null) {
 				throw new CompilationException("too_long_java");
 			}
