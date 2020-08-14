@@ -2,6 +2,7 @@ package leekscript.compiler;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 import leekscript.ErrorManager;
@@ -141,7 +142,7 @@ public class LeekScript {
 			// Si on a maintenant du code java
 			try {
 				FileOutputStream output = new FileOutputStream(java);
-				output.write(compiledJava.getBytes());
+				output.write(compiledJava.getBytes(StandardCharsets.UTF_8));
 				output.close();
 			} catch (Exception e) {
 				ErrorManager.exception(e);
