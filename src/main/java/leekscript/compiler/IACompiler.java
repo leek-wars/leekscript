@@ -15,7 +15,7 @@ import com.alibaba.fastjson.JSONArray;
 public class IACompiler {
 
 	public static class AnalyzeResult {
-		public String informations;
+		public JSONArray informations;
 		public List<Integer> includedAIs = new ArrayList<>();
 	}
 
@@ -73,7 +73,7 @@ public class IACompiler {
 		} catch (Exception e) {
 			addError(ai, e.getMessage());
 		}
-		result.informations = mInformations.toJSONString();
+		result.informations = mInformations;
 		return result;
 	}
 
