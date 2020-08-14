@@ -4,7 +4,7 @@ import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
 public class StringLeekValue extends AbstractLeekValue {
-	
+
 	private String mValue;
 
 	public StringLeekValue(String value) {
@@ -92,7 +92,10 @@ public class StringLeekValue extends AbstractLeekValue {
 			return getBoolean() == comp.getBoolean();
 		} else if (comp.getType() == STRING) {
 			String s = comp.getString(ai);
-			ai.addOperations(Math.min(s.length(), mValue.length()));
+			ai.addOperations(Math.min(
+				s.length(),
+				mValue.length()
+			));
 			return mValue.equals(s);
 		} else if (comp.getType() == ARRAY) {
 			return comp.equals(ai, this);
