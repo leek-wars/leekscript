@@ -9,12 +9,10 @@ public class AILog {
 	public final static int STANDARD = 1;
 	public final static int WARNING = 2;
 	public final static int ERROR = 3;
-	public final static int MARK = 4;
-	public final static int PAUSE = 5;
 	public final static int SSTANDARD = 6;
 	public final static int SWARNING = 7;
 	public final static int SERROR = 8;
-	
+
 	// Clés
 	public static final String DEPRECATED_FUNCTION = "deprecated_function";
 	public static final String UNKNOWN_FUNCTION = "unknown_function";
@@ -28,7 +26,7 @@ public class AILog {
 	public static final String CODE_TOO_LARGE = "code_too_large";
 	public static final String CODE_TOO_LARGE_FUNCTION = "code_too_large_function";
 	public static final String NUMBER_OF_OPERATIONS = "number_of_operations";
-	
+
 	public interface Stream {
 		public void write(JSONArray a);
 	}
@@ -47,7 +45,7 @@ public class AILog {
 	}
 
 	public void addSystemLog(int type, String trace, String key, String[] parameters) {
-		
+
 		int paramSize = 0;
 		if (parameters != null) {
 			for (String p : parameters) {
@@ -66,7 +64,7 @@ public class AILog {
 		obj.add(key);
 		if (parameters != null)
 			obj.add(parameters);
-		
+
 		stream.write(obj);
 	}
 
