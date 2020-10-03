@@ -17,4 +17,4 @@ gradle jar test
 ```
 
 ### Credits
-Developed by Dawyde © 2012-2019
+Developed by Dawyde © 2012-2020
