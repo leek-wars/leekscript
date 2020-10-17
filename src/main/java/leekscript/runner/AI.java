@@ -101,7 +101,7 @@ public abstract class AI {
 		if (mErrorObject.size() > value) {
 			JSONArray l = mErrorObject.getJSONArray(value);
 			if (l != null && l.size() >= 3) {
-				return "(IA : " + l.getString(1) + ", line : " + l.getString(2) + ")";
+				return "AI " + l.getString(1) + ", line " + l.getString(2) + " ▶ ";
 			}
 		}
 		return "";
