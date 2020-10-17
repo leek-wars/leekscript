@@ -1,6 +1,7 @@
 package leekscript.runner;
 
 import leekscript.AILog;
+import leekscript.compiler.RandomGenerator;
 import leekscript.runner.PhpArray.Element;
 import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
@@ -30,10 +31,12 @@ public abstract class AI {
 	protected AILog logs;
 	protected AI mUAI;
 	protected int mInstructions;
+	protected RandomGenerator randomGenerator;
 
 	public AI() throws Exception {
 		mUAI = this;
 		logs = new AILog();
+		randomGenerator = LeekScript.getRandom();
 		init();
 	}
 
@@ -351,4 +354,8 @@ public abstract class AI {
 	public abstract int anonymousFunctionCount(int id);
 
 	public abstract boolean[] anonymousFunctionReference(int id);
+
+	public RandomGenerator getRandom() {
+		return randomGenerator;
+	}
 }
