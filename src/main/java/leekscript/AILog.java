@@ -19,6 +19,8 @@ public class AILog {
 	public static final String DIVISION_BY_ZERO = "division_by_zero";
 	public static final String CAN_NOT_EXECUTE_VALUE = "can_not_execute_value";
 	public static final String CAN_NOT_EXECUTE_WITH_ARGUMENTS = "can_not_execute_with_arguments";
+	public static final String NO_AI_EQUIPPED = "no_ai_equipped";
+	public static final String INVALID_AI = "invalid_ai";
 	public static final String CAN_NOT_COMPILE_AI = "can_not_compile_ai";
 	public static final String AI_DISABLED = "ai_disabled";
 	public static final String AI_INTERRUPTED = "ai_interrupted";
