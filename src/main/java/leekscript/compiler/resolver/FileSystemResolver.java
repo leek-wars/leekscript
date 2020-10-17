@@ -1,5 +1,6 @@
 package leekscript.compiler.resolver;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -12,7 +13,7 @@ import leekscript.compiler.AIFile;
 public class FileSystemResolver implements Resolver<FileSystemContext> {
 
 	@Override
-	public AIFile<FileSystemContext> resolve(String path, ResolverContext basecontext) {
+	public AIFile<FileSystemContext> resolve(String path, ResolverContext basecontext) throws FileNotFoundException {
 
 		FileSystemContext context = (FileSystemContext) basecontext;
 		if (context == null) {
@@ -33,7 +34,7 @@ public class FileSystemResolver implements Resolver<FileSystemContext> {
 			return new AIFile<FileSystemContext>(path, code, timestamp, newContext, resolvedPath.hashCode() & 0xfffffff);
 
 		} catch (IOException e) {
-			return null;
+			throw new FileNotFoundException();
 		}
 	}
 
