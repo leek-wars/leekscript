@@ -17,6 +17,7 @@ public class IACompiler {
 	public static class AnalyzeResult {
 		public JSONArray informations;
 		public List<Integer> includedAIs = new ArrayList<>();
+		public boolean success;
 	}
 
 	private final JSONArray mInformations = new JSONArray();
@@ -68,10 +69,13 @@ public class IACompiler {
 			// On sauvegarde les dépendances
 			addInformations(ai, main.getMinLevel());
 			result.includedAIs = main.getIncludedAIs();
+			result.success = true;
 		} catch (LeekCompilerException e) {
 			addError(e.getIA(), e.getLine(), e.getChar(), e.getWord(), e.getError(), e.getParameters());
+			result.success = false;
 		} catch (Exception e) {
 			addError(ai, e.getMessage());
+			result.success = false;
 		}
 		result.informations = mInformations;
 		return result;
