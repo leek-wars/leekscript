@@ -2,10 +2,10 @@ package leekscript.compiler;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
-import leekscript.ErrorManager;
 import leekscript.LSException;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.resolver.FileSystemContext;
@@ -45,23 +45,17 @@ public class LeekScript {
 		}
 	};
 
-	public static AI compileFile(String filepath, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException {
+	public static AI compileFile(String filepath, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
 		AIFile<?> ai = getResolver().resolve(filepath, null);
-		if (ai != null) {
-			return compile(ai, AIClass, jar, nocache);
-		}
-		return null;
+		return compile(ai, AIClass, jar, nocache);
 	}
 
-	public static AI compileFileContext(String filepath, String AIClass, String jar, ResolverContext context, boolean nocache) throws LeekScriptException, LeekCompilerException {
+	public static AI compileFileContext(String filepath, String AIClass, String jar, ResolverContext context, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
 		AIFile<?> ai = getResolver().resolve(filepath, context);
-		if (ai != null) {
-			return compile(ai, AIClass, jar, nocache);
-		}
-		return null;
+		return compile(ai, AIClass, jar, nocache);
 	}
 
-	public static AI compileSnippet(String snippet, String AIClass, String jar) throws LeekScriptException, LeekCompilerException {
+	public static AI compileSnippet(String snippet, String AIClass, String jar)	throws LeekScriptException, LeekCompilerException, IOException {
 		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet " + id++ + ">", snippet, System.currentTimeMillis(), null);
 		return compile(ai, AIClass, jar, false);
 	}
@@ -119,37 +113,26 @@ public class LeekScript {
 		return defaultRandomGenerator;
 	}
 
-	private static AI compile(AIFile<?> ai, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException {
+	public static AI compile(AIFile<?> file, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
 
 		new File(IA_PATH).mkdir();
-		String javaClassName = "AI_" + ai.getId();
+		String javaClassName = "AI_" + file.getId();
 		String error = "";
 		File compiled = new File(IA_PATH + javaClassName + ".class");
 		File java = new File(IA_PATH + javaClassName + ".java");
 
-		if (!compiled.exists() || compiled.length() == 0 || compiled.lastModified() < ai.getTimestamp() || nocache) {
-			// On commence par la conversion LS->Java
-			if (ai.getCode().isEmpty()) { // Pas de code du tout...
-				System.out.println("No code!");
-				return null;
-			}
-			// On compile l'IA
-			String compiledJava = new IACompiler().compile(ai, javaClassName, AIClass);
+		if (!compiled.exists() || compiled.length() == 0 || compiled.lastModified() < file.getTimestamp() || nocache) {
 
-			if (compiledJava.isEmpty()) {
-				System.out.println("No java generated!");
-				return null; // Rien ne compile
+			// On commence par la conversion LS->Java
+			String compiledJava = new IACompiler().compile(file, javaClassName, AIClass);
+
+			if (compiledJava.isEmpty()) { // Rien ne compile, pas normal
+				throw new LeekScriptException(LeekScriptException.CANT_COMPILE, "No java generated!");
 			}
 			// Si on a maintenant du code java
-			try {
-				FileOutputStream output = new FileOutputStream(java);
-				output.write(compiledJava.getBytes(StandardCharsets.UTF_8));
-				output.close();
-			} catch (Exception e) {
-				ErrorManager.exception(e);
-				System.out.println("Failed to compiled AI: " + ai.getPath());
-				return null;
-			}
+			FileOutputStream output = new FileOutputStream(java);
+			output.write(compiledJava.getBytes(StandardCharsets.UTF_8));
+			output.close();
 
 			// On va compiler le java maintenant
 			JavaCompiler compiler = new JavaCompiler(java);
