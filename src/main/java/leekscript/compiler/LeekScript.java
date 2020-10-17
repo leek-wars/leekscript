@@ -26,22 +26,24 @@ public class LeekScript {
 
 	private static RandomGenerator defaultRandomGenerator = new RandomGenerator() {
 		private Random random = new Random();
+
 		@Override
 		public void seed(long seed) {
 			random.setSeed(seed);
 		}
+
 		@Override
 		public int getInt(int min, int max) {
 			if (max - min + 1 <= 0)
 				return 0;
 			return min + random.nextInt(max - min + 1);
 		}
+
 		@Override
 		public double getDouble() {
 			return random.nextDouble();
 		}
 	};
-	private static RandomGenerator customRandomGenerator = null;
 
 	public static AI compileFile(String filepath, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException {
 		AIFile<?> ai = getResolver().resolve(filepath, null);
@@ -104,18 +106,17 @@ public class LeekScript {
 	public static void setResolver(Resolver<?> resolver) {
 		customResolver = resolver;
 	}
+
 	public static void resetResolver() {
 		customResolver = null;
 	}
+
 	public static Resolver<?> getResolver() {
 		return customResolver != null ? customResolver : defaultResolver;
 	}
 
-	public static void setRandomGenerator(RandomGenerator generator) {
-		customRandomGenerator = generator;
-	}
 	public static RandomGenerator getRandom() {
-		return customRandomGenerator != null ? customRandomGenerator : defaultRandomGenerator;
+		return defaultRandomGenerator;
 	}
 
 	private static AI compile(AIFile<?> ai, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException {
