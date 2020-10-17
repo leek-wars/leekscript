@@ -2,6 +2,9 @@ package leekscript.compiler;
 
 import java.util.ArrayList;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+
 public class JavaWriter {
 	private final StringBuilder mCode;
 	private int mLine;
@@ -50,40 +53,26 @@ public class JavaWriter {
 		return mCode.toString();
 	}
 
-	public String escape(String string) {
-		String str = "";
-		for (int i = 0; i < string.length(); i++) {
-			if (string.charAt(i) == '\n')
-				str += "\\n";
-			else if (string.charAt(i) == '"')
-				str += "\\\"";
-			else if (string.charAt(i) == '\\') {
-				if (string.charAt(i + 1) == 'n')
-					str += "\\";
-				else if (string.charAt(i + 1) == 't')
-					str += "\\";
-				else
-					str += "\\\\";
-			}
-			else
-				str += string.charAt(i);
-		}
-		return str;
-	}
-
 	public void writeErrorFunction(IACompiler comp, String ai) {
 		mCode.append("protected String[] getErrorString(){ return new String[]{");
+
+		String aiJson = JSON.toJSONString(ai);
+
 		boolean first = true;
 		for (Line l : mLines) {
 			if (!first)
 				mCode.append(",");
 			else
 				first = false;
-			mCode.append("\"[").append(l.mJavaLine).append(",\\\"").append(escape(l.mAI.getPath())).append("\\\",").append(l.mCodeLine).append("]\"");
+			JSONArray array = new JSONArray();
+			array.add(l.mJavaLine);
+			array.add(l.mAI.getPath());
+			array.add(l.mCodeLine);
+			mCode.append(JSON.toJSONString(array.toJSONString()));
 		}
-		mCode.append("};}\n protected String getAItring(){ return \"");
-		mCode.append(escape(ai));
-		mCode.append("\";}");
+		mCode.append("};}\nprotected String getAItring(){ return ");
+		mCode.append(aiJson);
+		mCode.append(";}\n");
 	}
 
 	public void addCounter(int id) {
