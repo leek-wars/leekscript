@@ -166,7 +166,9 @@ public class LeekScript {
 				throwException(error);
 			}
 		}
-		return IALoader.loadAI(IA_PATH, javaClassName);
+		AI ai = IALoader.loadAI(IA_PATH, javaClassName);
+		ai.setId(file.getId());
+		return ai;
 	}
 
 	public static void throwException(String error) throws LeekScriptException {

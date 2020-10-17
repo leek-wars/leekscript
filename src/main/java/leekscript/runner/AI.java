@@ -1,6 +1,7 @@
 package leekscript.runner;
 
 import leekscript.AILog;
+import leekscript.compiler.LeekScript;
 import leekscript.compiler.RandomGenerator;
 import leekscript.runner.PhpArray.Element;
 import leekscript.runner.values.AbstractLeekValue;
@@ -28,16 +29,27 @@ public abstract class AI {
 	protected JSONArray mErrorObject = null;
 	protected String thisObject = null;
 
+	protected int id;
 	protected AILog logs;
 	protected AI mUAI;
 	protected int mInstructions;
 	protected RandomGenerator randomGenerator;
 
-	public AI() throws Exception {
+	public AI() {
 		mUAI = this;
 		logs = new AILog();
 		randomGenerator = LeekScript.getRandom();
-		init();
+		try {
+			init();
+		} catch (Exception e) {}
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public int getId() {
+		return id;
 	}
 
 	// Method that can be overriden in each AI
@@ -106,8 +118,6 @@ public abstract class AI {
 		}
 		return "";
 	}
-
-
 
 	public AbstractLeekValue color(AbstractLeekValue red, AbstractLeekValue green, AbstractLeekValue blue) throws LeekRunException {
 		return LeekValueManager.getLeekIntValue(((red.getInt(this) & 255) << 16) | ((green.getInt(this) & 255) << 8) | (blue.getInt(this) & 255));
