@@ -12,7 +12,7 @@ public abstract class AbstractLeekValue {
 	public final static int NULL = 4;
 	public final static int STRING = 5;
 	public final static int FUNCTION = 6;
-	
+
 	public final static int ADD_COST = 1;
 	public final static int MUL_COST = 5;
 	public final static int DIV_COST = 5;
@@ -82,6 +82,9 @@ public abstract class AbstractLeekValue {
 	}
 
 	public AbstractLeekValue set(AI ai, AbstractLeekValue value) throws LeekRunException, Exception {
+		return this;
+	}
+	public AbstractLeekValue setRef(AI ai, AbstractLeekValue value) throws LeekRunException, Exception {
 		return this;
 	}
 

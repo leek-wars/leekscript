@@ -12,11 +12,15 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 	private String mKeyIterator = null;
 	private boolean mIsKeyDeclaration = false;
+	private boolean mKeyReference = false;
+	private boolean mValueReference = false;
 
-	public ForeachKeyBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isKeyDeclaration, boolean isValueDeclaration, int line, AIFile<?> ai) {
+	public ForeachKeyBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isKeyDeclaration, boolean isValueDeclaration, int line, AIFile<?> ai, boolean keyReference, boolean valueReference) {
 		super(parent, main, line, ai);
 		mIsDeclaration = isValueDeclaration;
 		mIsKeyDeclaration = isKeyDeclaration;
+		mKeyReference = keyReference;
+		mValueReference = valueReference;
 	}
 
 	public void setValueIterator(String iterator, boolean declaration) {
@@ -58,13 +62,21 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		//Valeur
 		if(mIsDeclaration) sb.append("final VariableLeekValue ").append(val_iterator).append(" = new VariableLeekValue(mUAI, LeekValueManager.NULL);");
 		else sb.append(val_iterator).append(".set(mUAI, LeekValueManager.NULL);");
-		//On fait le parcour
+		//On fait le parcours
 		//Déclaration de la variable
 		sb.append("ArrayLeekValue.ArrayIterator ").append(var).append("=").append(ar).append(".getArray().getArrayIterator();");
 		sb.append("while(!").append(var).append(".ended()){");
 		//Maj des variables
-		sb.append(key_iterator).append(".set(mUAI, ").append(var).append(".getKey(mUAI));");
-		sb.append(val_iterator).append(".set(mUAI, ").append(var).append(".getValue(mUAI));");
+		if (mKeyReference) {
+			sb.append(key_iterator).append(".setRef(mUAI, ").append(var).append(".getKeyRef());");
+		} else {
+			sb.append(key_iterator).append(".set(mUAI, ").append(var).append(".getKeyRef());");
+		}
+		if (mValueReference) {
+			sb.append(val_iterator).append(".setRef(mUAI, ").append(var).append(".getValueRef());");
+		} else {
+			sb.append(val_iterator).append(".set(mUAI, ").append(var).append(".getValueRef());");
+		}
 		sb.append(var).append(".next();");
 		writer.addCounter(1);
 

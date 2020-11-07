@@ -79,6 +79,11 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
+	public AbstractLeekValue setRef(AI ai, AbstractLeekValue value) throws Exception {
+		return mValue = value.getValue();
+	}
+
+	@Override
 	public AbstractLeekValue increment(AI ai) throws Exception {
 		mValue = mValue.getValue();
 		if (mValue instanceof IntLeekValue) {

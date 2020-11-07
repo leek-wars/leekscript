@@ -9,10 +9,12 @@ public class ForeachBlock extends AbstractLeekBlock {
 	private String mIterator;
 	private AbstractExpression mArray;
 	private boolean mIsDeclaration = false;
+	private boolean mReference = false;
 
-	public ForeachBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isDeclaration, int line, AIFile<?> ai) {
+	public ForeachBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isDeclaration, int line, AIFile<?> ai, boolean reference) {
 		super(parent, main, line, ai);
 		mIsDeclaration = isDeclaration;
+		mReference = reference;
 	}
 
 	public void setIterator(String iterator, boolean declaration) {
@@ -43,7 +45,11 @@ public class ForeachBlock extends AbstractLeekBlock {
 		writer.addLine("if(" + ar + ".isArray()){");
 		if(mIsDeclaration) writer.addLine("final VariableLeekValue " + iterator_name + " = new VariableLeekValue(mUAI, LeekValueManager.NULL);");
 		else writer.addLine(iterator_name + ".set(mUAI, LeekValueManager.NULL);");
-		writer.addLine("for(AbstractLeekValue " + var + " : " + ar + ".getArray()){ " + iterator_name + ".set(mUAI, " + var + ".getValue());");
+		if (mReference) {
+			writer.addLine("for(AbstractLeekValue " + var + " : " + ar + ".getArray()){ " + iterator_name + ".setRef(mUAI, " + var + ");");
+		} else {
+			writer.addLine("for(AbstractLeekValue " + var + " : " + ar + ".getArray()){ " + iterator_name + ".set(mUAI, " + var + ".getValue());");
+		}
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
 

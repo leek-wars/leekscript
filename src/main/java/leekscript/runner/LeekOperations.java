@@ -29,9 +29,9 @@ public class LeekOperations {
 
 		// Concatenate arrays
 		if (v1 instanceof ArrayLeekValue && v2 instanceof ArrayLeekValue) {
-			
+
 			ai.addOperations(1 + (v1.getArray().size() + v2.getArray().size()) * 2);
-			
+
 			ArrayLeekValue retour = new ArrayLeekValue();
 			ArrayIterator iterator = v1.getArray().getArrayIterator();
 
@@ -109,7 +109,7 @@ public class LeekOperations {
 	}
 
 	public static AbstractLeekValue divide(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws Exception {
-		
+
 		ai.addOperations(AbstractLeekValue.DIV_COST);
 
 		v1 = v1.getValue();
@@ -133,7 +133,7 @@ public class LeekOperations {
 	}
 
 	public static AbstractLeekValue modulus(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws Exception {
-		
+
 		ai.addOperations(AbstractLeekValue.MOD_COST);
 		v1 = v1.getValue();
 		v2 = v2.getValue();

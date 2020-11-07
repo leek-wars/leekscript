@@ -327,6 +327,12 @@ public class WordCompiler {
 			isDeclaration = true;
 			mCompiler.skipWord();
 		}
+		// Référence ?
+		boolean reference1 = false;
+		if (mCompiler.getWord().getWord().equals("@")) {
+			reference1 = true;
+			mCompiler.skipWord();
+		}
 		// On récupère ensuite le nom de la variable
 		if (mCompiler.getWord().getType() != WordParser.T_STRING)
 			throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.VARIABLE_NAME_EXPECTED);
@@ -353,6 +359,12 @@ public class WordCompiler {
 				isValueDeclaration = true;
 				mCompiler.skipWord();
 			}
+			// Référence ?
+			boolean reference2 = false;
+			if (mCompiler.getWord().getWord().equals("@")) {
+				reference2 = true;
+				mCompiler.skipWord();
+			}
 			// On récupère ensuite le nom de la variable accueillant la valeur
 			if (mCompiler.getWord().getType() != WordParser.T_STRING)
 				throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.VARIABLE_NAME_EXPECTED);
@@ -371,7 +383,7 @@ public class WordCompiler {
 				throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.KEYWORD_IN_EXPECTED);
 
 			// On déclare notre bloc foreach et on entre dedans
-			ForeachKeyBlock block = new ForeachKeyBlock(mCurentBlock, mMain, isDeclaration, isValueDeclaration, mLine, mAI);
+			ForeachKeyBlock block = new ForeachKeyBlock(mCurentBlock, mMain, isDeclaration, isValueDeclaration, mLine, mAI, reference1, reference2);
 			mCurentBlock.addInstruction(block);
 			mCurentBlock = block;
 
@@ -387,7 +399,7 @@ public class WordCompiler {
 																// array)
 			mCompiler.skipWord();
 
-			ForeachBlock block = new ForeachBlock(mCurentBlock, mMain, isDeclaration, mLine, mAI);
+			ForeachBlock block = new ForeachBlock(mCurentBlock, mMain, isDeclaration, mLine, mAI, reference1);
 			mCurentBlock.addInstruction(block);
 			mCurentBlock = block;
 
