@@ -38,12 +38,20 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 			return LeekOperations.clone(ai, mElement.key());
 		}
 
+		public AbstractLeekValue getKeyRef() throws Exception {
+			return mElement.key();
+		}
+
 		public Object key() {
 			return mElement.keyObject();
 		}
 
 		public AbstractLeekValue getValue(AI ai) throws Exception {
 			return LeekOperations.clone(ai, mElement.value());
+		}
+
+		public AbstractLeekValue getValueRef() throws Exception {
+			return mElement.value();
 		}
 
 		public AbstractLeekValue getKeyReference() throws Exception {
