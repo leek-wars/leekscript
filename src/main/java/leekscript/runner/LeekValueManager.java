@@ -85,6 +85,14 @@ public class LeekValueManager {
 		return mValue;
 	}
 
+	public static AbstractLeekValue getStringOrNullValue(String string) {
+		if (string == null) {
+			return LeekValueManager.NULL;
+		} else {
+			return new StringLeekValue(string);
+		}
+	}
+
 	public static AbstractLeekValue getLeekBooleanValue(boolean b) {
 		return b ? TRUE : FALSE;
 	}
