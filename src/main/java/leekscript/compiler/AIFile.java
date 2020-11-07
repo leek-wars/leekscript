@@ -47,4 +47,7 @@ public class AIFile<C extends ResolverContext> {
 	public long getTimestamp() {
 		return this.timestamp;
 	}
+	public void setTimestamp(long timestamp) {
+		this.timestamp = timestamp;
+	}
 }
