@@ -12,9 +12,9 @@ public class WordParser {
 
 	/**
 	 * Instructions byte(0) (0-255) byte => instruction
-	 * 
+	 *
 	 * 1 : Etiquette SmallInt (2) : numéro d'étiquette
-	 * 
+	 *
 	 * 2 : SetVariable StringUTF : nom variable
 	 */
 
@@ -169,7 +169,7 @@ public class WordParser {
 					throw new LeekCompilerException(mAI, line_counter, char_counter, word, LeekCompilerException.INVALID_CHAR);
 				}
 			}
-			else if(c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-' || c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^'){
+			else if(c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-' || c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~'){
 				if(type == T_VAR_STRING){
 					word += c;
 				}

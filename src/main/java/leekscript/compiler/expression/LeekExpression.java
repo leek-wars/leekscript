@@ -578,6 +578,10 @@ public class LeekExpression extends AbstractExpression {
 			mExpression2.writeJavaCode(mainblock, writer);
 			writer.addCode(".not(mUAI)");
 			return;
+		case Operators.BITNOT:
+			mExpression2.writeJavaCode(mainblock, writer);
+			writer.addCode(".bnot(mUAI)");
+			return;
 		case Operators.UNARY_MINUS:
 			mExpression2.writeJavaCode(mainblock, writer);
 			writer.addCode(".opposite(mUAI)");

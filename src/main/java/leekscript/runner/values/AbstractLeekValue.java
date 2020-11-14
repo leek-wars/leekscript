@@ -77,6 +77,10 @@ public abstract class AbstractLeekValue {
 		return LeekValueManager.getLeekBooleanValue(!getBoolean());
 	}
 
+	public AbstractLeekValue bnot(AI ai) throws Exception {
+		return LeekValueManager.getLeekIntValue(~getInt(ai));
+	}
+
 	public AbstractLeekValue opposite(AI ai) throws Exception {
 		return LeekValueManager.getLeekIntValue(-getInt(ai));
 	}
