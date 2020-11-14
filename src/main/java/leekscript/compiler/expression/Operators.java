@@ -47,6 +47,7 @@ public class Operators {
 	public final static int PRE_INCREMENT = 44;
 	public final static int PRE_DECREMENT = 45;
 	public final static int REFERENCE = 46;
+	public final static int BITNOT = 47;
 
 	public final static int getOperator(String operator) {
 		if(operator.equals("[")) return CROCHET;
@@ -82,6 +83,7 @@ public class Operators {
 		if(operator.equals("^")) return BITXOR;
 		if(operator.equals("&")) return BITAND;
 		if(operator.equals("|")) return BITOR;
+		if(operator.equals("~")) return BITNOT;
 		if(operator.equals("<<")) return SHIFT_LEFT;
 		if(operator.equals(">>")) return SHIFT_RIGHT;
 		if(operator.equals(">>>")) return ROTATE_RIGHT;
@@ -107,6 +109,7 @@ public class Operators {
 		case UNARY_MINUS:
 			return 14;
 		case NOT:
+		case BITNOT:
 			return 13;
 		case POWER:
 			return 12;
@@ -170,6 +173,7 @@ public class Operators {
 		case PRE_INCREMENT:
 		case PRE_DECREMENT:
 		case REFERENCE:
+		case BITNOT:
 			return true;
 		}
 		return false;
