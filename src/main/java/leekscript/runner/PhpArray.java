@@ -202,11 +202,11 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	private Element[] mTable = null;
 
 	public PhpArray() {}
-	
+
 	public PhpArray(AI ai, int capacity) throws LeekRunException {
 		initTable(ai, capacity);
 	}
-	
+
 	public PhpArray(AI ai, PhpArray phpArray) throws Exception {
 		if (phpArray.size() > 0) {
 			initTable(ai, phpArray.size());
@@ -217,19 +217,19 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			}
 		}
 	}
-	
+
 	private void initTable(AI ai, int capacity) throws LeekRunException {
-		ai.addOperations(capacity / 5);
+		ai.addOperationsNoCheck(capacity / 5);
 		this.capacity = capacity;
 		mTable = new Element[capacity];
 	}
-	
+
 	private void growCapacity(AI ai) throws Exception {
 
 		if (capacity == MAX_CAPACITY) return;
-		
+
 		capacity = Math.min(capacity * 2, MAX_CAPACITY);
-		
+
 		// Copy in a new array
 		PhpArray newArray = new PhpArray(ai, capacity);
 		Element e = mHead;
@@ -289,7 +289,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 * @param value
 	 *            Valeur à rechercher
 	 * @return True si la valeur existe dans le tableau
-	 * @throws LeekRunException 
+	 * @throws LeekRunException
 	 */
 	public boolean contains(AI ai, AbstractLeekValue value) throws LeekRunException {
 		Element e = mHead;
@@ -308,7 +308,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 *            Valeur à rechercher
 	 * @param pos
 	 * @return Clé associée à la valeur ou null si la valeur n'existe pas
-	 * @throws LeekRunException 
+	 * @throws LeekRunException
 	 */
 	public AbstractLeekValue search(AI ai, AbstractLeekValue value, int pos) throws LeekRunException {
 		Element e = mHead;
@@ -650,7 +650,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 
 			// On réindexe
 			reindex(ai);
-			
+
 			mSize++;
 			if (mSize > capacity) {
 				growCapacity(ai);
@@ -664,7 +664,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		// Réindexer le tableau (Change l'index de toutes les valeurs
 		// numériques)
 		int new_index = 0;
-		
+
 		Element e = mHead;
 		while (e != null) {
 			if (e.numeric) {
@@ -716,7 +716,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 
 		// On ajoute la taille de la clé
 		int keySize = 1;
-		
+
 		e.value = new PhpArrayVariableLeekValue(this, ai, value, keySize);
 		if (key instanceof Integer) {
 			// On met à jour l'index suivant
@@ -730,7 +730,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		addToHashMap(ai, e);
 
 		int operations = ArrayLeekValue.ARRAY_CELL_CREATE_OPERATIONS + (int) Math.sqrt(mSize) / 3;
-		ai.addOperations(operations);
+		ai.addOperationsNoCheck(operations);
 
 		return e;
 	}
@@ -789,7 +789,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			return null; // empty array
 		}
 		int operations = ArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS;
-		ai.addOperations(operations);
+		ai.addOperationsNoCheck(operations);
 
 		int hash = getHash(key);
 		int index = getIndex(hash);
@@ -870,9 +870,9 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	}
 
 	public boolean equals(AI ai, PhpArray array) throws LeekRunException {
-		
+
 		ai.addOperations(1);
-		
+
 		// On commence par vérifier la taille
 		if (mSize != array.mSize)
 			return false;
@@ -880,7 +880,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			return true;
 
 		ai.addOperations(mSize);
-		
+
 		Element e1 = mHead;
 		Element e2 = array.mHead;
 		// On va comparer chaque élément 1 à 1

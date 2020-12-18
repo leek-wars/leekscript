@@ -74,6 +74,10 @@ public abstract class AI {
 		}
 	}
 
+	public void addOperationsNoCheck(int nb) throws LeekRunException {
+		mOperations += nb;
+	}
+
 	public void resetCounter() {
 		mOperations = 0;
 	}
