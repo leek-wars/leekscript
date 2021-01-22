@@ -1,5 +1,6 @@
 package leekscript.compiler.bloc;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -73,21 +74,22 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public boolean includeAI(String path) throws Exception {
-		AIFile<?> ai = LeekScript.getResolver().resolve(path, mCompiler.getCurrentAI().getContext());
-		if (ai == null) {
+		try {
+			AIFile<?> ai = LeekScript.getResolver().resolve(path, mCompiler.getCurrentAI().getContext());
+			if (mIncluded.contains(ai.getId())) {
+				return true;
+			}
+			mIncluded.add(ai.getId());
+			AIFile<?> previousAI = mCompiler.getCurrentAI();
+			mCompiler.setCurrentAI(ai);
+			WordParser words = new WordParser(ai);
+			WordCompiler compiler = new WordCompiler(words, this, ai);
+			compiler.readCode();
+			mCompiler.setCurrentAI(previousAI);
+			return true;
+		} catch (FileNotFoundException e) {
 			return false;
 		}
-		if (mIncluded.contains(ai.getId())) {
-			return true;
-		}
-		mIncluded.add(ai.getId());
-		AIFile<?> previousAI = mCompiler.getCurrentAI();
-		mCompiler.setCurrentAI(ai);
-		WordParser words = new WordParser(ai);
-		WordCompiler compiler = new WordCompiler(words, this, ai);
-		compiler.readCode();
-		mCompiler.setCurrentAI(previousAI);
-		return true;
 	}
 
 	public boolean hasUserFunction(String name, boolean use_declarations) {
