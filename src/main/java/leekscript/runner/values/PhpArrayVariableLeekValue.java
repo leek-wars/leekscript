@@ -9,7 +9,7 @@ public class PhpArrayVariableLeekValue extends VariableLeekValue {
 	private final PhpArray mArray;
 	private int mTotalSize = 0;
 
-	public PhpArrayVariableLeekValue(PhpArray array, AI uai, AbstractLeekValue value, int keySize) throws Exception {
+	public PhpArrayVariableLeekValue(PhpArray array, AI uai, AbstractLeekValue value, int keySize) throws LeekRunException {
 		super(uai, value.getValue());
 		mArray = array;
 		mTotalSize = value.getSize();
@@ -20,7 +20,7 @@ public class PhpArrayVariableLeekValue extends VariableLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue set(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue set(AI ai, AbstractLeekValue value) throws LeekRunException {
 		value = value.getValue();
 		int size = value.getSize();
 		mArray.updateArraySize(size - mTotalSize);

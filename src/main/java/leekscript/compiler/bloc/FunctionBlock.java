@@ -82,7 +82,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 				sb.append(", ");
 			sb.append("AbstractLeekValue param_").append(mParameters.get(i));
 		}
-		sb.append(") throws Exception{");
+		sb.append(") throws LeekRunException {");
 		for (int i = 0; i < mParameters.size(); i++) {
 			sb.append("final VariableLeekValue user_").append(mParameters.get(i)).append(" = ");
 			if (mReferences.get(i)) {

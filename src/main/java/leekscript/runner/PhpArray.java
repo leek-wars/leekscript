@@ -184,7 +184,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			return value.getValue();
 		}
 
-		public void setValue(AI ai, AbstractLeekValue v) throws Exception {
+		public void setValue(AI ai, AbstractLeekValue v) throws LeekRunException {
 			value.set(ai, v.getValue());
 		}
 	}
@@ -209,7 +209,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		initTable(ai, capacity);
 	}
 
-	public PhpArray(AI ai, PhpArray phpArray) throws Exception {
+	public PhpArray(AI ai, PhpArray phpArray) throws LeekRunException {
 		if (phpArray.size() > 0) {
 			initTable(ai, phpArray.size());
 			Element e = phpArray.mHead;
@@ -226,7 +226,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		mTable = new Element[capacity];
 	}
 
-	private void growCapacity(AI ai) throws Exception {
+	private void growCapacity(AI ai) throws LeekRunException {
 
 		if (capacity == MAX_CAPACITY) return;
 
@@ -422,9 +422,9 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 * Trie le tableau
 	 *
 	 * @param comparator
-	 * @throws Exception
+	 * @throws LeekRunException
 	 */
-	public void sort(AI ai, Comparator<Element> comparator) throws Exception {
+	public void sort(AI ai, Comparator<Element> comparator) throws LeekRunException {
 		if (mSize == 0)
 			return;
 
@@ -548,9 +548,9 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 *
 	 * @param value
 	 *            Element à ajouter
-	 * @throws Exception
+	 * @throws LeekRunException
 	 */
-	public void push(AI ai, AbstractLeekValue value) throws Exception {
+	public void push(AI ai, AbstractLeekValue value) throws LeekRunException {
 		Integer key = Integer.valueOf(mIndex);
 		Element e = createElement(ai, key, value);
 		pushElement(e);
@@ -565,9 +565,9 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 *
 	 * @param value
 	 *            Element à ajouter
-	 * @throws Exception
+	 * @throws LeekRunException
 	 */
-	public void unshift(AI ai, AbstractLeekValue value) throws Exception {
+	public void unshift(AI ai, AbstractLeekValue value) throws LeekRunException {
 		Integer key = 0;
 		Element e = createElement(ai, key, value);
 		unshiftElement(e);
@@ -585,9 +585,9 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 *            Clé (Integer, Double ou String)
 	 * @param value
 	 *            Valeur
-	 * @throws Exception
+	 * @throws LeekRunException
 	 */
-	public void set(AI ai, Object key, AbstractLeekValue value) throws Exception {
+	public void set(AI ai, Object key, AbstractLeekValue value) throws LeekRunException {
 
 		Element e = getElement(ai, key);
 		// Si l'élément n'existe pas on le crée
@@ -603,7 +603,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		}
 	}
 
-	public AbstractLeekValue getOrCreate(AI ai, Object key) throws Exception {
+	public AbstractLeekValue getOrCreate(AI ai, Object key) throws LeekRunException {
 		Element e = getElement(ai, key);
 		if (e == null) {
 			e = createElement(ai, key, LeekValueManager.NULL);
@@ -617,7 +617,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		return e.value;
 	}
 
-	public void set(int key, AbstractLeekValue value) throws Exception {
+	public void set(int key, AbstractLeekValue value) throws LeekRunException {
 		set(Integer.valueOf(key), value);
 	}
 
@@ -629,7 +629,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		return mHead == null ? LeekValueManager.NULL : mHead.value;
 	}
 
-	public void insert(AI ai, int position, AbstractLeekValue value) throws Exception {
+	public void insert(AI ai, int position, AbstractLeekValue value) throws LeekRunException {
 		if (position < 0) {
 			return;
 		} else if (position >= mSize) {
@@ -710,7 +710,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		}
 	}
 
-	private Element createElement(AI ai, Object key, AbstractLeekValue value) throws Exception {
+	private Element createElement(AI ai, Object key, AbstractLeekValue value) throws LeekRunException {
 		// On crée l'élément
 		Element e = new Element();
 		e.hash = key.hashCode();

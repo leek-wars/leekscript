@@ -19,7 +19,7 @@ public class TestAI extends AI {
 	}
 
 	@Override
-	public AbstractLeekValue runIA() throws Exception {
+	public AbstractLeekValue runIA() throws LeekRunException {
 		return null;
 	}
 
@@ -34,7 +34,7 @@ public class TestAI extends AI {
 	}
 
 	@Override
-	public AbstractLeekValue userFunctionExecute(int id, AbstractLeekValue[] value) throws Exception {
+	public AbstractLeekValue userFunctionExecute(int id, AbstractLeekValue[] value) throws LeekRunException {
 		return null;
 	}
 

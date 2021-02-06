@@ -12,8 +12,7 @@ import leekscript.runner.values.StringLeekValue;
 
 public class LeekOperations {
 
-	public static AbstractLeekValue add(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue add(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 
 		v1 = v1.getValue();
 		v2 = v2.getValue();
@@ -61,7 +60,7 @@ public class LeekOperations {
 		return new StringLeekValue(v1_string + v2_string);
 	}
 
-	public static AbstractLeekValue minus(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue minus(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		v1 = v1.getValue();
 		v2 = v2.getValue();
@@ -74,7 +73,7 @@ public class LeekOperations {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public static AbstractLeekValue power(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue power(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(AbstractLeekValue.POW_COST);
 		v1 = v1.getValue();
 		v2 = v2.getValue();
@@ -94,7 +93,7 @@ public class LeekOperations {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public static AbstractLeekValue multiply(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue multiply(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(AbstractLeekValue.MUL_COST);
 		v1 = v1.getValue();
 		v2 = v2.getValue();
@@ -108,7 +107,7 @@ public class LeekOperations {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public static AbstractLeekValue divide(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue divide(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 
 		ai.addOperations(AbstractLeekValue.DIV_COST);
 
@@ -132,7 +131,7 @@ public class LeekOperations {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public static AbstractLeekValue modulus(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue modulus(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 
 		ai.addOperations(AbstractLeekValue.MOD_COST);
 		v1 = v1.getValue();
@@ -151,92 +150,77 @@ public class LeekOperations {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public static AbstractLeekValue and(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue and(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.getBoolean() && v2.getBoolean());
 	}
 
-	public static AbstractLeekValue or(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue or(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.getBoolean() || v2.getBoolean());
 	}
 
-	public static AbstractLeekValue bor(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue bor(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekIntValue(v1.getInt(ai) | v2.getInt(ai));
 	}
 
-	public static AbstractLeekValue band(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue band(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekIntValue(v1.getInt(ai) & v2.getInt(ai));
 	}
 
-	public static AbstractLeekValue bxor(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue bxor(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekIntValue(v1.getInt(ai) ^ v2.getInt(ai));
 	}
 
-	public static AbstractLeekValue bleft(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue bleft(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekIntValue(v1.getInt(ai) << v2.getInt(ai));
 	}
 
-	public static AbstractLeekValue bright(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue bright(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekIntValue(v1.getInt(ai) >> v2.getInt(ai));
 	}
 
-	public static AbstractLeekValue brotate(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue brotate(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekIntValue(v1.getInt(ai) >>> v2.getInt(ai));
 	}
 
-	public static AbstractLeekValue equals(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue equals(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.equals(ai, v2));
 	}
 
-	public static AbstractLeekValue notequals(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue notequals(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.notequals(ai, v2));
 	}
 
-	public static AbstractLeekValue less(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue less(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.less(ai, v2));
 	}
 
-	public static AbstractLeekValue more(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue more(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.more(ai, v2));
 	}
 
-	public static AbstractLeekValue lessequals(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue lessequals(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.lessequals(ai, v2));
 	}
 
-	public static AbstractLeekValue moreequals(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue moreequals(AI ai, AbstractLeekValue v1,	AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.moreequals(ai, v2));
 	}
 
-	public static AbstractLeekValue clone(AI ai, AbstractLeekValue value)
-			throws Exception {
+	public static AbstractLeekValue clone(AI ai, AbstractLeekValue value) throws LeekRunException {
 		value = value.getValue();
 		ai.addOperations(1);
 		if (value instanceof StringLeekValue)
@@ -258,14 +242,12 @@ public class LeekOperations {
 			return LeekValueManager.NULL;
 	}
 
-	public static AbstractLeekValue equals_equals(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue equals_equals(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.getType() == v2.getType() && v1.equals(ai, v2));
 	}
 
-	public static AbstractLeekValue notequals_equals(AI ai, AbstractLeekValue v1,
-			AbstractLeekValue v2) throws Exception {
+	public static AbstractLeekValue notequals_equals(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.getType() != v2.getType()
 				|| v1.notequals(ai, v2));
