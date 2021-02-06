@@ -82,7 +82,7 @@ public abstract class AI {
 		mOperations = 0;
 	}
 
-	protected NullLeekValue nothing(AbstractLeekValue obj) throws Exception {
+	protected NullLeekValue nothing(AbstractLeekValue obj) throws LeekRunException {
 		return LeekValueManager.NULL;
 	}
 
@@ -149,7 +149,7 @@ public abstract class AI {
 		return 0;
 	}
 
-	public void arrayFlatten(ArrayLeekValue array, ArrayLeekValue retour, int depth) throws Exception {
+	public void arrayFlatten(ArrayLeekValue array, ArrayLeekValue retour, int depth) throws LeekRunException {
 		for (AbstractLeekValue value : array) {
 			if (value.getValue() instanceof ArrayLeekValue && depth > 0) {
 				arrayFlatten(value.getArray(), retour, depth - 1);
@@ -158,7 +158,7 @@ public abstract class AI {
 		}
 	}
 
-	public AbstractLeekValue arrayFoldLeft(ArrayLeekValue array, AbstractLeekValue function, AbstractLeekValue start_value) throws Exception {
+	public AbstractLeekValue arrayFoldLeft(ArrayLeekValue array, AbstractLeekValue function, AbstractLeekValue start_value) throws LeekRunException {
 		AbstractLeekValue result = LeekOperations.clone(this, start_value);
 		// AbstractLeekValue prev = null;
 		for (AbstractLeekValue value : array) {
@@ -167,7 +167,7 @@ public abstract class AI {
 		return result;
 	}
 
-	public AbstractLeekValue arrayFoldRight(ArrayLeekValue array, AbstractLeekValue function, AbstractLeekValue start_value) throws Exception {
+	public AbstractLeekValue arrayFoldRight(ArrayLeekValue array, AbstractLeekValue function, AbstractLeekValue start_value) throws LeekRunException {
 		AbstractLeekValue result = LeekOperations.clone(this, start_value);
 		// AbstractLeekValue prev = null;
 		Iterator<AbstractLeekValue> it = array.getReversedIterator();
@@ -177,7 +177,7 @@ public abstract class AI {
 		return result;
 	}
 
-	public AbstractLeekValue arrayPartition(ArrayLeekValue array, AbstractLeekValue function) throws Exception {
+	public AbstractLeekValue arrayPartition(ArrayLeekValue array, AbstractLeekValue function) throws LeekRunException {
 		ArrayLeekValue list1 = new ArrayLeekValue();
 		ArrayLeekValue list2 = new ArrayLeekValue();
 		int nb = function.getArgumentsCount(this);
@@ -199,7 +199,7 @@ public abstract class AI {
 		return new ArrayLeekValue(this, new AbstractLeekValue[] { list1, list2 }, false);
 	}
 
-	public ArrayLeekValue arrayMap(ArrayLeekValue array, AbstractLeekValue function) throws LeekRunException, Exception {
+	public ArrayLeekValue arrayMap(ArrayLeekValue array, AbstractLeekValue function) throws LeekRunException {
 		ArrayLeekValue retour = new ArrayLeekValue();
 		ArrayIterator iterator = array.getArrayIterator();
 		int nb = function.getArgumentsCount(this);
@@ -218,7 +218,7 @@ public abstract class AI {
 		return retour;
 	}
 
-	public ArrayLeekValue arrayFilter(ArrayLeekValue array, AbstractLeekValue function) throws LeekRunException, Exception {
+	public ArrayLeekValue arrayFilter(ArrayLeekValue array, AbstractLeekValue function) throws LeekRunException {
 		ArrayLeekValue retour = new ArrayLeekValue();
 		ArrayIterator iterator = array.getArrayIterator();
 		int nb = function.getArgumentsCount(this);
@@ -246,7 +246,7 @@ public abstract class AI {
 		return retour;
 	}
 
-	public AbstractLeekValue arrayIter(ArrayLeekValue array, AbstractLeekValue function) throws LeekRunException, Exception {
+	public AbstractLeekValue arrayIter(ArrayLeekValue array, AbstractLeekValue function) throws LeekRunException {
 		ArrayIterator iterator = array.getArrayIterator();
 		int nb = function.getArgumentsCount(this);
 		if (nb != 1 && nb != 2)
@@ -264,7 +264,7 @@ public abstract class AI {
 		return LeekValueManager.NULL;
 	}
 
-	public AbstractLeekValue arraySort(ArrayLeekValue origin, final AbstractLeekValue function) throws Exception {
+	public AbstractLeekValue arraySort(ArrayLeekValue origin, final AbstractLeekValue function) throws LeekRunException {
 		try {
 			int nb = function.getArgumentsCount(this);
 			if (nb == 2) {
@@ -363,13 +363,13 @@ public abstract class AI {
 
 	protected abstract String getAItring();
 
-	public abstract AbstractLeekValue runIA() throws Exception;
+	public abstract AbstractLeekValue runIA() throws LeekRunException;
 
 	public abstract int userFunctionCount(int id);
 
 	public abstract boolean[] userFunctionReference(int id);
 
-	public abstract AbstractLeekValue userFunctionExecute(int id, AbstractLeekValue[] value) throws Exception;
+	public abstract AbstractLeekValue userFunctionExecute(int id, AbstractLeekValue[] value) throws LeekRunException;
 
 	public abstract int anonymousFunctionCount(int id);
 

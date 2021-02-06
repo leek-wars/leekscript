@@ -62,15 +62,15 @@ public abstract class AbstractLeekValue {
 		return null;
 	}
 
-	public AbstractLeekValue get(AI ai, int value) throws LeekRunException, Exception {
+	public AbstractLeekValue get(AI ai, int value) throws LeekRunException {
 		return LeekValueManager.NULL;
 	}
 
-	public AbstractLeekValue get(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue get(AI ai, AbstractLeekValue value) throws LeekRunException {
 		return LeekValueManager.NULL;
 	}
 
-	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value) throws LeekRunException {
 		return LeekValueManager.NULL;
 	}
 
@@ -82,22 +82,22 @@ public abstract class AbstractLeekValue {
 		return LeekValueManager.getLeekBooleanValue(!getBoolean());
 	}
 
-	public AbstractLeekValue bnot(AI ai) throws Exception {
+	public AbstractLeekValue bnot(AI ai) throws LeekRunException {
 		return LeekValueManager.getLeekIntValue(~getInt(ai));
 	}
 
-	public AbstractLeekValue opposite(AI ai) throws Exception {
+	public AbstractLeekValue opposite(AI ai) throws LeekRunException {
 		return LeekValueManager.getLeekIntValue(-getInt(ai));
 	}
 
-	public AbstractLeekValue set(AI ai, AbstractLeekValue value) throws LeekRunException, Exception {
+	public AbstractLeekValue set(AI ai, AbstractLeekValue value) throws LeekRunException {
 		return this;
 	}
-	public AbstractLeekValue setRef(AI ai, AbstractLeekValue value) throws LeekRunException, Exception {
+	public AbstractLeekValue setRef(AI ai, AbstractLeekValue value) throws LeekRunException {
 		return this;
 	}
 
-	public int getArgumentsCount(AI ai) throws Exception {
+	public int getArgumentsCount(AI ai) throws LeekRunException {
 		return -1;
 	}
 
@@ -127,67 +127,67 @@ public abstract class AbstractLeekValue {
 	}
 
 	// Fonctions pour L-Values
-	public AbstractLeekValue increment(AI ai) throws Exception {
+	public AbstractLeekValue increment(AI ai) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue decrement(AI ai) throws Exception {
+	public AbstractLeekValue decrement(AI ai) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue pre_increment(AI ai) throws Exception {
+	public AbstractLeekValue pre_increment(AI ai) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue pre_decrement(AI ai) throws Exception {
+	public AbstractLeekValue pre_decrement(AI ai) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue add(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue add(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue minus(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue minus(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue multiply(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue multiply(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue divide(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue divide(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue modulus(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue modulus(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue power(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue power(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue band(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue band(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue bor(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue bor(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue bxor(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue bxor(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue bleft(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue bleft(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue bright(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue bright(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
-	public AbstractLeekValue brotate(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue brotate(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
@@ -197,9 +197,9 @@ public abstract class AbstractLeekValue {
 		return false;
 	}
 
-	public abstract Object toJSON(AI ai) throws Exception;
+	public abstract Object toJSON(AI ai) throws LeekRunException;
 
-	public AbstractLeekValue executeFunction(AI ai, AbstractLeekValue[] value) throws Exception {
+	public AbstractLeekValue executeFunction(AI ai, AbstractLeekValue... value) throws LeekRunException {
 
 		// On ne peux pas exécuter ce type de variable
 		ai.addOperations(AI.ERROR_LOG_COST);

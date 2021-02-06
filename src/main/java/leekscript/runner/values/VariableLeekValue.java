@@ -10,7 +10,7 @@ public class VariableLeekValue extends AbstractLeekValue {
 	protected AbstractLeekValue mValue;
 	protected AI mUAI = null;
 
-	public VariableLeekValue(AI uai, AbstractLeekValue value) throws Exception {
+	public VariableLeekValue(AI uai, AbstractLeekValue value) throws LeekRunException {
 		mUAI = uai;
 		mUAI.addOperations(1);
 		if (!(value instanceof VariableLeekValue))
@@ -70,7 +70,7 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue set(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue set(AI ai, AbstractLeekValue value) throws LeekRunException {
 		ai.addOperations(1);
 		if (value.isReference())
 			return mValue = value.getValue();
@@ -79,12 +79,12 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue setRef(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue setRef(AI ai, AbstractLeekValue value) throws LeekRunException {
 		return mValue = value.getValue();
 	}
 
 	@Override
-	public AbstractLeekValue increment(AI ai) throws Exception {
+	public AbstractLeekValue increment(AI ai) throws LeekRunException {
 		mValue = mValue.getValue();
 		if (mValue instanceof IntLeekValue) {
 			ai.addOperations(1);
@@ -96,7 +96,7 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue decrement(AI ai) throws Exception {
+	public AbstractLeekValue decrement(AI ai) throws LeekRunException {
 		mValue = mValue.getValue();
 		if (mValue instanceof IntLeekValue) {
 			ai.addOperations(1);
@@ -108,7 +108,7 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue pre_increment(AI ai) throws Exception {
+	public AbstractLeekValue pre_increment(AI ai) throws LeekRunException {
 		mValue = mValue.getValue();
 		if (mValue instanceof IntLeekValue) {
 			ai.addOperations(1);
@@ -119,7 +119,7 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue pre_decrement(AI ai) throws Exception {
+	public AbstractLeekValue pre_decrement(AI ai) throws LeekRunException {
 		mValue = mValue.getValue();
 		if (mValue instanceof IntLeekValue) {
 			ai.addOperations(1);
@@ -130,7 +130,7 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue opposite(AI ai) throws Exception {
+	public AbstractLeekValue opposite(AI ai) throws LeekRunException {
 		return mValue.opposite(ai);
 	}
 
@@ -150,62 +150,62 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue add(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue add(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return mValue = mValue.add(ai, val);
 	}
 
 	@Override
-	public AbstractLeekValue minus(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue minus(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return mValue = mValue.minus(ai, val);
 	}
 
 	@Override
-	public AbstractLeekValue multiply(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue multiply(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return mValue = mValue.multiply(ai, val);
 	}
 
 	@Override
-	public AbstractLeekValue power(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue power(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return mValue = mValue.power(ai, val);
 	}
 
 	@Override
-	public AbstractLeekValue band(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue band(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return mValue = mValue.band(ai, val);
 	}
 
 	@Override
-	public AbstractLeekValue bor(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue bor(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return mValue = mValue.bor(ai, val);
 	}
 
 	@Override
-	public AbstractLeekValue bxor(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue bxor(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return mValue = mValue.bxor(ai, val);
 	}
 
 	@Override
-	public AbstractLeekValue bleft(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue bleft(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return mValue = mValue.bleft(ai, val);
 	}
 
 	@Override
-	public AbstractLeekValue bright(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue bright(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return mValue = mValue.bright(ai, val);
 	}
 
 	@Override
-	public AbstractLeekValue brotate(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue brotate(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return mValue = mValue.brotate(ai, val);
 	}
 
 	@Override
-	public AbstractLeekValue divide(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue divide(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return mValue = mValue.divide(ai, val);
 	}
 
 	@Override
-	public AbstractLeekValue modulus(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue modulus(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return mValue = mValue.modulus(ai, val);
 	}
 
@@ -220,17 +220,17 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue executeFunction(AI ai, AbstractLeekValue[] values) throws Exception {
+	public AbstractLeekValue executeFunction(AI ai, AbstractLeekValue... values) throws LeekRunException {
 		return mValue.executeFunction(ai, values);
 	}
 
 	@Override
-	public int getArgumentsCount(AI ai) throws Exception {
+	public int getArgumentsCount(AI ai) throws LeekRunException {
 		return mValue.getArgumentsCount(ai);
 	}
 
 	@Override
-	public Object toJSON(AI ai) throws Exception {
+	public Object toJSON(AI ai) throws LeekRunException {
 		return mValue.toJSON(ai);
 	}
 }

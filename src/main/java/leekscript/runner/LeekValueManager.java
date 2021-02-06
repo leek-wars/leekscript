@@ -97,7 +97,7 @@ public class LeekValueManager {
 		return b ? TRUE : FALSE;
 	}
 
-	public static AbstractLeekValue parseJSON(Object o, AI ai) throws Exception {
+	public static AbstractLeekValue parseJSON(Object o, AI ai) throws LeekRunException {
 
 		if (o instanceof Boolean) {
 			return new BooleanLeekValue((Boolean) o);
@@ -109,7 +109,7 @@ public class LeekValueManager {
 			return new IntLeekValue((Integer) o);
 		}
 		if (o instanceof BigInteger) {
-			throw new Exception();
+			throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 		}
 		if (o instanceof BigDecimal) {
 			return new DoubleLeekValue(((BigDecimal) o).doubleValue());

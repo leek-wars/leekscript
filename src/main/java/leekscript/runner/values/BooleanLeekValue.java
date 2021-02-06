@@ -43,22 +43,22 @@ public class BooleanLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue add(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue add(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return LeekOperations.add(ai, this, val);
 	}
 
 	@Override
-	public AbstractLeekValue multiply(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue multiply(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return LeekOperations.multiply(ai, this, val);
 	}
 
 	@Override
-	public AbstractLeekValue divide(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue divide(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return LeekOperations.divide(ai, this, val);
 	}
 
 	@Override
-	public AbstractLeekValue modulus(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue modulus(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return LeekOperations.modulus(ai, this, val);
 	}
 

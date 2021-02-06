@@ -6,6 +6,7 @@ import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekAnonymousFunction;
 import leekscript.runner.LeekFunctions;
 import leekscript.runner.LeekOperations;
+import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
 
 public class FunctionLeekValue extends AbstractLeekValue {
@@ -59,7 +60,7 @@ public class FunctionLeekValue extends AbstractLeekValue {
 		return AbstractLeekValue.FUNCTION;
 	}
 
-	private AbstractLeekValue[] copyValues(AI uai, AbstractLeekValue[] values, boolean[] references) throws Exception {
+	private AbstractLeekValue[] copyValues(AI uai, AbstractLeekValue[] values, boolean[] references) throws LeekRunException {
 		AbstractLeekValue[] copy = new AbstractLeekValue[values.length];
 		for (int i = 0; i < values.length; i++) {
 			if (!references[i])
@@ -79,7 +80,7 @@ public class FunctionLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public int getArgumentsCount(AI ai) throws Exception {
+	public int getArgumentsCount(AI ai) throws LeekRunException {
 		if (mType == LEEK_FUNCTION)
 			return mFunction.getArguments();
 		else if (mType == USER_FUNCTION)
@@ -90,7 +91,7 @@ public class FunctionLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue executeFunction(AI ai, AbstractLeekValue[] values) throws Exception {
+	public AbstractLeekValue executeFunction(AI ai, AbstractLeekValue... values) throws LeekRunException {
 		if (mType == LEEK_FUNCTION) {
 			return LeekFunctions.executeFunction(ai, mFunction, prepareValues(values, mFunction.getArguments()), values.length);
 		}

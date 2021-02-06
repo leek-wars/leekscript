@@ -163,7 +163,7 @@ public class IntLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue divide(AI ai, AbstractLeekValue val) throws Exception {
+	public AbstractLeekValue divide(AI ai, AbstractLeekValue val) throws LeekRunException {
 		ai.addOperations(DIV_COST);
 		return LeekOperations.divide(ai, this, val);
 	}

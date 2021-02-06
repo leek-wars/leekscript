@@ -172,7 +172,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("import leekscript.runner.*;");
 		writer.addLine("import leekscript.runner.values.*;");
 		writer.addLine("public class " + className + " extends " + AIClass + " {");
-		writer.addLine("public " + className + "() throws Exception {");
+		writer.addLine("public " + className + "() throws LeekRunException {");
 		writer.addLine("super();");
 		writer.addLine("mInstructions = " + mInstructions.size() + ";");
 		writer.addLine("}");
@@ -194,7 +194,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		 * for(LeekInstruction instruction : mAnonymousFunctions){
 		 * instruction.writeJavaCode(this, writer); }
 		 */
-		writer.addLine("public AbstractLeekValue runIA() throws Exception{ resetCounter();");
+		writer.addLine("public AbstractLeekValue runIA() throws LeekRunException { resetCounter();");
 		super.writeJavaCode(this, writer);
 		if (mEndInstruction == 0)
 			writer.addLine("return LeekValueManager.NULL;");
@@ -204,7 +204,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		printFunctionInformations(writer);
 
 		if (mRedefinedFunctions.size() > 0) {
-			writer.addCode("protected void init() throws Exception {\n");
+			writer.addCode("protected void init() throws LeekRunException {\n");
 			for (String redefined : mRedefinedFunctions) {
 				FunctionBlock user_function = getUserFunction(redefined);
 				writer.addCode("rfunction_");
@@ -243,7 +243,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 		writer.addLine("} return null; }");
 		// Execute
-		writer.addLine("public AbstractLeekValue userFunctionExecute(int id, AbstractLeekValue[] value) throws Exception{");
+		writer.addLine("public AbstractLeekValue userFunctionExecute(int id, AbstractLeekValue[] value) throws LeekRunException {");
 		writer.addLine("switch(id){");
 		for (FunctionBlock f : mFunctions) {
 			String params = "";

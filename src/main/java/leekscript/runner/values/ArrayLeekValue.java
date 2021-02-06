@@ -34,11 +34,11 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 			mElement = mElement.next();
 		}
 
-		public AbstractLeekValue getKey(AI ai) throws Exception {
+		public AbstractLeekValue getKey(AI ai) throws LeekRunException {
 			return LeekOperations.clone(ai, mElement.key());
 		}
 
-		public AbstractLeekValue getKeyRef() throws Exception {
+		public AbstractLeekValue getKeyRef() throws LeekRunException {
 			return mElement.key();
 		}
 
@@ -46,23 +46,23 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 			return mElement.keyObject();
 		}
 
-		public AbstractLeekValue getValue(AI ai) throws Exception {
+		public AbstractLeekValue getValue(AI ai) throws LeekRunException {
 			return LeekOperations.clone(ai, mElement.value());
 		}
 
-		public AbstractLeekValue getValueRef() throws Exception {
+		public AbstractLeekValue getValueRef() throws LeekRunException {
 			return mElement.value();
 		}
 
-		public AbstractLeekValue getKeyReference() throws Exception {
+		public AbstractLeekValue getKeyReference() throws LeekRunException {
 			return mElement.key();
 		}
 
-		public AbstractLeekValue getValueReference() throws Exception {
+		public AbstractLeekValue getValueReference() throws LeekRunException {
 			return mElement.value();
 		}
 
-		public void setValue(AI ai, VariableLeekValue value) throws Exception {
+		public void setValue(AI ai, VariableLeekValue value) throws LeekRunException {
 			mElement.setValue(ai, value);
 		}
 	}
@@ -71,11 +71,11 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		mValues = new PhpArray();
 	}
 
-	public ArrayLeekValue(AI ai, AbstractLeekValue values[]) throws Exception {
+	public ArrayLeekValue(AI ai, AbstractLeekValue values[]) throws LeekRunException {
 		this(ai, values, false);
 	}
 
-	public ArrayLeekValue(AI ai, AbstractLeekValue values[], boolean isKeyValue) throws Exception {
+	public ArrayLeekValue(AI ai, AbstractLeekValue values[], boolean isKeyValue) throws LeekRunException {
 		mValues = new PhpArray(ai, values.length);
 		if (isKeyValue) {
 			int i = 0;
@@ -94,7 +94,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	 * public ArrayLeekValue() { mValues = new PhpArray(); }
 	 */
 
-	public ArrayLeekValue(AI ai, ArrayLeekValue array) throws Exception {
+	public ArrayLeekValue(AI ai, ArrayLeekValue array) throws LeekRunException {
 		mValues = new PhpArray(ai, array.mValues);
 	}
 
@@ -103,7 +103,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	}
 
 	@Override
-	public AbstractLeekValue get(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue get(AI ai, AbstractLeekValue value) throws LeekRunException {
 		Object key;
 		value = value.getValue();
 		if (value instanceof StringLeekValue)
@@ -114,7 +114,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	}
 
 	@Override
-	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value) throws LeekRunException {
 		Object key;
 		value = value.getValue();
 		if (value instanceof StringLeekValue) {
@@ -126,7 +126,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	}
 
 	@Override
-	public AbstractLeekValue get(AI ai, int value) throws Exception {
+	public AbstractLeekValue get(AI ai, int value) throws LeekRunException {
 		return mValues.getOrCreate(ai, Integer.valueOf(value));
 	}
 
@@ -171,7 +171,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		return sb.toString();
 	}
 
-	public void insert(AI ai, AbstractLeekValue value, int pos) throws Exception {
+	public void insert(AI ai, AbstractLeekValue value, int pos) throws LeekRunException {
 		mValues.insert(ai, pos, value);
 	}
 
@@ -202,7 +202,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		return mValues.contains(ai, value);
 	}
 
-	public void push(AI ai, AbstractLeekValue m) throws Exception {
+	public void push(AI ai, AbstractLeekValue m) throws LeekRunException {
 		mValues.push(ai, m);
 	}
 
@@ -259,7 +259,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	}
 
 	@Override
-	public AbstractLeekValue add(AI ai, AbstractLeekValue value) throws Exception {
+	public AbstractLeekValue add(AI ai, AbstractLeekValue value) throws LeekRunException {
 		value = value.getValue();
 		if (value instanceof ArrayLeekValue) {
 			// mValues.reindex(ai);
@@ -283,7 +283,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		return mValues.reversedIterator();
 	}
 
-	public void sort(AI ai, Comparator<PhpArray.Element> comparator) throws Exception {
+	public void sort(AI ai, Comparator<PhpArray.Element> comparator) throws LeekRunException {
 		mValues.sort(ai, comparator);
 	}
 
@@ -292,7 +292,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	}
 
 	@Override
-	public Object toJSON(AI ai) throws Exception {
+	public Object toJSON(AI ai) throws LeekRunException {
 
 		if (mValues.isAssociative()) {
 			JSONObject o = new JSONObject();
