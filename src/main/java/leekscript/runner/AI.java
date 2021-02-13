@@ -87,12 +87,13 @@ public abstract class AI {
 	}
 
 	public String getErrorMessage(StackTraceElement[] elements) {
+		StringBuilder sb = new StringBuilder();
 		for (StackTraceElement element : elements) {
 			if (element.getMethodName().equals("runIA") || element.getMethodName().startsWith("user_function_")) {
-				return getErrorLocalisation(element.getLineNumber());
+				sb.append(getErrorLocalisation(element.getLineNumber())).append("\n");
 			}
 		}
-		return "";
+		return sb.toString();
 	}
 
 	public String getErrorMessage(Throwable e) {
@@ -117,7 +118,7 @@ public abstract class AI {
 		if (mErrorObject.size() > value) {
 			JSONArray l = mErrorObject.getJSONArray(value);
 			if (l != null && l.size() >= 3) {
-				return "AI " + l.getString(1) + ", line " + l.getString(2) + " ▶ ";
+				return "\t▶ AI " + l.getString(1) + ", line " + l.getString(2);
 			}
 		}
 		return "";
