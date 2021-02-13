@@ -666,7 +666,7 @@ public class WordCompiler {
 
 					retour.addFunction(function);
 				} else if (word.getType() == WordParser.T_OPERATOR) {
-					int operator = Operators.getOperator(word.getWord());
+					int operator = Operators.getOperator(word.getWord(), getVersion());
 
 					// Là c'est soit un opérateur (+ - ...) soit un suffix
 					// unaire (++ -- ) sinon on sort de l'expression
@@ -785,7 +785,7 @@ public class WordCompiler {
 				} else if (word.getType() == WordParser.T_OPERATOR) {
 					// Si c'est un opérateur (il doit forcément être unaire et
 					// de type préfix (! ))
-					int operator = Operators.getOperator(word.getWord());
+					int operator = Operators.getOperator(word.getWord(), getVersion());
 					if (operator == Operators.MINUS)
 						operator = Operators.UNARY_MINUS;
 					else if (operator == Operators.DECREMENT)

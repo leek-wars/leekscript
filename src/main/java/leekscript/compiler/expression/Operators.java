@@ -49,7 +49,7 @@ public class Operators {
 	public final static int REFERENCE = 46;
 	public final static int BITNOT = 47;
 
-	public final static int getOperator(String operator) {
+	public final static int getOperator(String operator, int version) {
 		if(operator.equals("[")) return CROCHET;
 		if(operator.equals("(")) return PARENTHESIS;
 		if(operator.equals("++")) return INCREMENT;
@@ -77,18 +77,24 @@ public class Operators {
 		if(operator.equals("?")) return TERNAIRE;
 		if(operator.equals(":")) return DOUBLE_POINT;
 		if(operator.equals("**")) return POWER;
-		if(operator.equals("^=")) return POWERASSIGN;
+		if(operator.equals("**=")) return POWERASSIGN;
 		if(operator.equals("===")) return EQUALS_EQUALS;
 		if(operator.equals("!==")) return NOT_EQUALS_EQUALS;
 		if(operator.equals("^")) return BITXOR;
+		if(operator.equals("^=")) {
+			if (version >= 11) {
+				return BITXOR_ASSIGN;
+			} else {
+				// In LeekScript 1.0, ^= was still power assignment
+				return POWERASSIGN;
+			}
+		}
 		if(operator.equals("&")) return BITAND;
 		if(operator.equals("|")) return BITOR;
 		if(operator.equals("~")) return BITNOT;
 		if(operator.equals("<<")) return SHIFT_LEFT;
 		if(operator.equals(">>")) return SHIFT_RIGHT;
 		if(operator.equals(">>>")) return ROTATE_RIGHT;
-		if(operator.equals("**=")) return POWERASSIGN;
-		if(operator.equals("^=")) return BITXOR_ASSIGN;
 		if(operator.equals("&=")) return BITAND_ASSIGN;
 		if(operator.equals("|=")) return BITOR_ASSIGN;
 		if(operator.equals("<<=")) return SHIFT_LEFT_ASSIGN;
