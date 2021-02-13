@@ -231,15 +231,21 @@ public abstract class AI {
 			if (nb == 1) {
 				b = function.executeFunction(this, new AbstractLeekValue[] { value }).getBoolean();
 				iterator.setValue(this, value);
-				if (b)
-					retour.getOrCreate(this, iterator.getKey(this).getValue()).set(this, iterator.getValue(this).getValue());
-
+				if (b) {
+					if (getVersion() >= 11)
+						retour.push(this, iterator.getValue(this).getValue());
+					else
+						// In LeekScript < 1.0, arrayFilter had a bug, the result array was not reindexed
+						retour.getOrCreate(this, iterator.getKey(this).getValue()).set(this, iterator.getValue(this).getValue());
+				}
 			} else {
 				b = function.executeFunction(this, new AbstractLeekValue[] { iterator.getKey(this), value }).getBoolean();
 				iterator.setValue(this, value);
 				if (b)
-					retour.getOrCreate(this, iterator.getKey(this).getValue()).set(this, iterator.getValue(this).getValue());
-
+					if (getVersion() >= 11)
+						retour.push(this, iterator.getValue(this).getValue());
+					else
+						retour.getOrCreate(this, iterator.getKey(this).getValue()).set(this, iterator.getValue(this).getValue());
 			}
 			iterator.next();
 		}
