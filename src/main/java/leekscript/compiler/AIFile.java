@@ -9,15 +9,17 @@ public class AIFile<C extends ResolverContext> {
 	private C context;
 	private int id;
 	private long timestamp;
+	private int version;
 
-	public AIFile(String path, String code, long timestamp, C context) {
-		this(path, code, timestamp, context, (context + "/" + path).hashCode() & 0xfffffff);
+	public AIFile(String path, String code, long timestamp, int version, C context) {
+		this(path, code, timestamp, version, context, (context + "/" + path).hashCode() & 0xfffffff);
 	}
-	public AIFile(String path, String code, long timestamp, C context, int id) {
+	public AIFile(String path, String code, long timestamp, int version, C context, int id) {
 		this.path = path;
 		this.code = code;
 		this.context = context;
 		this.timestamp = timestamp;
+		this.version = version;
 		this.id = id;
 	}
 	public int getId() {
@@ -49,5 +51,8 @@ public class AIFile<C extends ResolverContext> {
 	}
 	public void setTimestamp(long timestamp) {
 		this.timestamp = timestamp;
+	}
+	public int getVersion() {
+		return this.version;
 	}
 }

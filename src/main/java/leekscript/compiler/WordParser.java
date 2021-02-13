@@ -44,10 +44,12 @@ public class WordParser {
 	private int line_counter = 0;
 	private int char_counter = 0;
 	private final String code;
+	private int version;
 
-	public WordParser(AIFile<?> ai) {
+	public WordParser(AIFile<?> ai, int version) {
 		mAI = ai;
 		this.code = ai.getCode();
+		this.version = version;
 	}
 
 	public void compile() throws LeekCompilerException {
