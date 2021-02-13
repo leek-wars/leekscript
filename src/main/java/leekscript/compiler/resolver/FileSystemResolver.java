@@ -31,7 +31,7 @@ public class FileSystemResolver implements Resolver<FileSystemContext> {
 
 			long timestamp = resolvedPath.toFile().lastModified();
 
-			return new AIFile<FileSystemContext>(path, code, timestamp, newContext, resolvedPath.hashCode() & 0xfffffff);
+			return new AIFile<FileSystemContext>(path, code, timestamp, 11, newContext, resolvedPath.hashCode() & 0xfffffff);
 
 		} catch (IOException e) {
 			throw new FileNotFoundException();

@@ -46,12 +46,14 @@ public class WordCompiler {
 	private final WordParser mCompiler;
 	private int mLine;
 	private AIFile<?> mAI = null;
+	private final int version;
 
-	public WordCompiler(WordParser cmp, MainLeekBlock main, AIFile<?> ai) {
+	public WordCompiler(WordParser cmp, MainLeekBlock main, AIFile<?> ai, int version) {
 		mCompiler = cmp;
 		mMain = main;
 		mCurentBlock = main;
 		mAI = ai;
+		this.version = version;
 	}
 
 	public void readCode() throws Exception {
@@ -907,5 +909,9 @@ public class WordCompiler {
 
 	public String getString() {
 		return mMain.getCode();
+	}
+
+	public int getVersion() {
+		return this.version;
 	}
 }

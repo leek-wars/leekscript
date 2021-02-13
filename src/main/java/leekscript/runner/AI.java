@@ -373,4 +373,6 @@ public abstract class AI {
 	public RandomGenerator getRandom() {
 		return randomGenerator;
 	}
+
+	public abstract int getVersion();
 }

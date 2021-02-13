@@ -61,10 +61,10 @@ public class IACompiler {
 		AnalyzeResult result = new AnalyzeResult();
 		try {
 			// On lance la compilation du code de l'IA
-			WordParser parser = new WordParser(ai);
+			WordParser parser = new WordParser(ai, ai.getVersion());
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
 			MainLeekBlock main = new MainLeekBlock(this, ai);
-			WordCompiler compiler = new WordCompiler(parser, main, ai);
+			WordCompiler compiler = new WordCompiler(parser, main, ai, ai.getVersion());
 			compiler.readCode();
 			// On sauvegarde les dépendances
 			addInformations(ai, main.getMinLevel());
@@ -85,10 +85,10 @@ public class IACompiler {
 		JavaWriter writer = new JavaWriter(true);
 		try {
 			// On lance la compilation du code de l'IA
-			WordParser parser = new WordParser(ai);
+			WordParser parser = new WordParser(ai, ai.getVersion());
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
 			MainLeekBlock main = new MainLeekBlock(this, ai);
-			WordCompiler compiler = new WordCompiler(parser, main, ai);
+			WordCompiler compiler = new WordCompiler(parser, main, ai, ai.getVersion());
 			compiler.readCode();
 
 			compiler.writeJava(javaClassName, writer, AIClass);
