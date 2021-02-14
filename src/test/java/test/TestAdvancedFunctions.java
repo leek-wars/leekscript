@@ -23,7 +23,7 @@ import leekscript.runner.values.StringLeekValue;
 public class TestAdvancedFunctions {
 
 	private AI ai;
-	
+
 	@Before
 	public void init() throws Exception {
 		ai = new TestAI();
@@ -155,21 +155,25 @@ public class TestAdvancedFunctions {
 
 		codes.add("arrayFilter([1,2,3,4,5,6,7,8,9],function(e){ return e>5; })");
 		values.add(new ArrayLeekValue(ai, new AbstractLeekValue[] {
-				new IntLeekValue(5), new IntLeekValue(6), new IntLeekValue(6),
-				new IntLeekValue(7), new IntLeekValue(7),
-				new IntLeekValue(8), new IntLeekValue(8), new IntLeekValue(9) }, true));
+			new IntLeekValue(6),
+			new IntLeekValue(7),
+			new IntLeekValue(8),
+			new IntLeekValue(9)
+		}));
 
 		codes.add("arrayFilter([4,5,6,'test',8,9],function(e){ return e=='test'; })");
-		values.add(new ArrayLeekValue(ai, new AbstractLeekValue[] { new IntLeekValue(3), new StringLeekValue("test") }, true));
+		values.add(new ArrayLeekValue(ai, new AbstractLeekValue[] {
+			new StringLeekValue("test")
+		}));
 
 		codes.add("string(arrayFilter(['a','b','c','d'],function(k,v){ return k==3; }))");
-		values.add("[3 : d]");
+		values.add("[d]");
 
 		codes.add("string(function(){ var t = ['a','b','c','d']; arrayFilter(t,function(k,@v){ v=4; return k==3; }); return t;}())");
 		values.add("[4, 4, 4, 4]");
 
 		codes.add("string(arrayFilter(['a','b','c','d'],function(k,@v){ v=4; return k==3; }))");
-		values.add("[3 : 4]");
+		values.add("[4]");
 
 		// Test AI
 		Assert.assertTrue(testAI(codes, values));

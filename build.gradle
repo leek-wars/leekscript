@@ -1,5 +1,13 @@
 apply plugin: 'java'
 
+sourceSets {
+    test {
+        java {
+            srcDirs = ['src/test/java']
+        }
+    }
+}
+
 test {
     testLogging {
         events "passed", "skipped", "failed"

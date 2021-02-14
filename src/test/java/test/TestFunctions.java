@@ -21,9 +21,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class TestFunctions {
-	
+
 	private AI ai;
-	
+
 	@Before
 	public void init() throws Exception {
 		ai = new TestAI();
@@ -384,21 +384,8 @@ public class TestFunctions {
 		// Test large array
 		codes.add("function(){ var a = []; for (var i = 0; i < 100000; ++i) { push(a, i); } return a[91212]; }()");
 		values.add("91212");
-		
+
 		// Test arrayMap et suivant => plus loin
-
-		// Test AI
-		Assert.assertTrue(testAI(codes, values));
-	}
-
-	@Test
-	public void stringTest() throws Exception {
-		ArrayList<String> codes = new ArrayList<String>();
-		ArrayList<Object> values = new ArrayList<Object>();
-
-		// Test nombre
-		codes.add("'\\\\'");
-		values.add("\\\\");
 
 		// Test AI
 		Assert.assertTrue(testAI(codes, values));
