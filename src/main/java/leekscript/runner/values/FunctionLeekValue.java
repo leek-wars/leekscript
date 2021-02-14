@@ -71,6 +71,14 @@ public class FunctionLeekValue extends AbstractLeekValue {
 		return copy;
 	}
 
+	private AbstractLeekValue[] copyPrimitiveValues(AI uai, AbstractLeekValue[] values) throws LeekRunException {
+		AbstractLeekValue[] copy = new AbstractLeekValue[values.length];
+		for (int i = 0; i < values.length; i++) {
+			copy[i] = LeekOperations.clonePrimitive(uai, values[i]);
+		}
+		return copy;
+	}
+
 	private AbstractLeekValue[] prepareValues(AbstractLeekValue[] values, int count) {
 		AbstractLeekValue[] retour = new AbstractLeekValue[count];
 		for (int i = 0; i < count; i++) {
@@ -101,8 +109,13 @@ public class FunctionLeekValue extends AbstractLeekValue {
 				ai.addOperations(AI.ERROR_LOG_COST);
 				ai.addSystemLog(AILog.ERROR, AILog.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.userFunctionCount(mId)) });
 			}
-			else
-				return ai.userFunctionExecute(mId, copyValues(ai, values, ai.userFunctionReference(mId)));
+			else {
+				if (ai.getVersion() >= 11) {
+					return ai.userFunctionExecute(mId, copyPrimitiveValues(ai, values));
+				} else {
+					return ai.userFunctionExecute(mId, copyValues(ai, values, ai.userFunctionReference(mId)));
+				}
+			}
 		}
 		else if (mType == ANONYMOUS_FUNCTION) {
 			if (values.length != ai.anonymousFunctionCount(mId)) {
@@ -112,7 +125,11 @@ public class FunctionLeekValue extends AbstractLeekValue {
 						new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.anonymousFunctionCount(mId)) });
 			}
 			else
-				return mAnonymous.run(ai, copyValues(ai, values, ai.anonymousFunctionReference(mId)));
+				if (ai.getVersion() >= 11) {
+					return mAnonymous.run(ai, null, copyPrimitiveValues(ai, values));
+				} else {
+					return mAnonymous.run(ai, null, copyValues(ai, values, ai.anonymousFunctionReference(mId)));
+				}
 
 		}
 		return LeekValueManager.NULL;

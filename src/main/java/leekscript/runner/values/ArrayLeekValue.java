@@ -35,7 +35,11 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		}
 
 		public AbstractLeekValue getKey(AI ai) throws LeekRunException {
-			return LeekOperations.clone(ai, mElement.key());
+			if (ai.getVersion() >= 11) {
+				return LeekOperations.clonePrimitive(ai, mElement.key());
+			} else {
+				return LeekOperations.clone(ai, mElement.key());
+			}
 		}
 
 		public AbstractLeekValue getKeyRef() throws LeekRunException {
@@ -47,7 +51,11 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		}
 
 		public AbstractLeekValue getValue(AI ai) throws LeekRunException {
-			return LeekOperations.clone(ai, mElement.value());
+			if (ai.getVersion() >= 11) {
+				return LeekOperations.clonePrimitive(ai, mElement.value());
+			} else {
+				return LeekOperations.clone(ai, mElement.value());
+			}
 		}
 
 		public AbstractLeekValue getValueRef() throws LeekRunException {
@@ -94,9 +102,10 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	 * public ArrayLeekValue() { mValues = new PhpArray(); }
 	 */
 
-	public ArrayLeekValue(AI ai, ArrayLeekValue array) throws LeekRunException {
-		mValues = new PhpArray(ai, array.mValues);
+	public ArrayLeekValue(AI ai, ArrayLeekValue array, int level) throws LeekRunException {
+		mValues = new PhpArray(ai, array.mValues, level);
 	}
+
 
 	public int size() {
 		return mValues.size();
@@ -234,8 +243,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	public boolean equals(AI ai, AbstractLeekValue comp) throws LeekRunException {
 		if (comp.getType() == ARRAY) {
 			return mValues.equals(ai, comp.getArray().mValues);
-		} else if (mValues.size() == 1) {// Si y'a un seul élément dans le
-											// tableau
+		} else if (mValues.size() == 1) { // Si y'a un seul élément dans le tableau
 			return mValues.getHeadElement().value().equals(ai, comp);
 		} else if (comp.getType() == BOOLEAN) {
 			return comp.getBoolean() == getBoolean();

@@ -637,8 +637,12 @@ public enum LeekFunctions implements ILeekFunction {
 	},
 	push(2) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			parameters[0].getArray().push(leekIA, LeekOperations.clone(leekIA, parameters[1]));
+		public AbstractLeekValue run(AI ai, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
+			if (ai.getVersion() >= 11) {
+				parameters[0].getArray().push(ai, LeekOperations.clonePrimitive(ai, parameters[1]));
+			} else {
+				parameters[0].getArray().push(ai, LeekOperations.clone(ai, parameters[1]));
+			}
 			return LeekValueManager.NULL;
 		}
 
@@ -1291,7 +1295,14 @@ public enum LeekFunctions implements ILeekFunction {
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
 			return LeekValueManager.getLeekIntValue((int) leekIA.getOperations());
 		}
-	};
+	},
+	clone(1, 2) {
+		@Override
+		public AbstractLeekValue run(AI ai, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
+			return LeekOperations.clone(ai, parameters[0], parameters[1].getInt(ai));
+		}
+	}
+	;
 
 	private static String extraFunctions = null;
 

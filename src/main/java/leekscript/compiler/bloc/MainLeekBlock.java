@@ -73,7 +73,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMinLevel = min_level;
 	}
 
-	public boolean includeAI(WordCompiler compiler, String path) throws LeekCompilerException {
+	public boolean includeAI(WordCompiler compiler, String path) throws Exception {
 		try {
 			AIFile<?> ai = LeekScript.getResolver().resolve(path, mCompiler.getCurrentAI().getContext());
 			if (mIncluded.contains(ai.getId())) {
@@ -299,5 +299,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public List<Integer> getIncludedAIs() {
 		return mIncluded;
+	}
+
+	public IACompiler getCompiler() {
+		return mCompiler;
 	}
 }

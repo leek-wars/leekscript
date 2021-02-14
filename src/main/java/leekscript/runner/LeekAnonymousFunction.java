@@ -4,5 +4,5 @@ import leekscript.runner.values.AbstractLeekValue;
 
 public interface LeekAnonymousFunction {
 
-	public AbstractLeekValue run(AI ai, AbstractLeekValue... values) throws LeekRunException;
+	public AbstractLeekValue run(AI ai, AbstractLeekValue thiz, AbstractLeekValue... values) throws LeekRunException;
 }
