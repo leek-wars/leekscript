@@ -34,6 +34,7 @@ public class FileSystemResolver implements Resolver<FileSystemContext> {
 			return new AIFile<FileSystemContext>(path, code, timestamp, 11, newContext, resolvedPath.hashCode() & 0xfffffff);
 
 		} catch (IOException e) {
+			e.printStackTrace();
 			throw new FileNotFoundException();
 		}
 	}
