@@ -73,7 +73,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMinLevel = min_level;
 	}
 
-	public boolean includeAI(String path) throws Exception {
+	public boolean includeAI(WordCompiler compiler, String path) throws Exception {
 		try {
 			AIFile<?> ai = LeekScript.getResolver().resolve(path, mCompiler.getCurrentAI().getContext());
 			if (mIncluded.contains(ai.getId())) {
@@ -82,9 +82,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			mIncluded.add(ai.getId());
 			AIFile<?> previousAI = mCompiler.getCurrentAI();
 			mCompiler.setCurrentAI(ai);
-			WordParser words = new WordParser(ai);
-			WordCompiler compiler = new WordCompiler(words, this, ai);
-			compiler.readCode();
+			WordParser words = new WordParser(ai, compiler.getVersion());
+			WordCompiler newCompiler = new WordCompiler(words, this, ai, compiler.getVersion());
+			newCompiler.readCode();
 			mCompiler.setCurrentAI(previousAI);
 			return true;
 		} catch (FileNotFoundException e) {
