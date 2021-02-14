@@ -1,5 +1,7 @@
 package test;
+
 import leekscript.runner.AI;
+import leekscript.runner.LeekRunException;
 import leekscript.runner.values.AbstractLeekValue;
 
 public class TestAI extends AI {
@@ -52,5 +54,4 @@ public class TestAI extends AI {
 	public int getVersion() {
 		return 11;
 	}
-
 }
