@@ -71,7 +71,7 @@ public class AILog {
 	}
 
 	public void addLog(int type, String message) {
-
+		message = message.replaceAll("\t", "    ");
 		addLog(type, message, 0);
 	}
 
