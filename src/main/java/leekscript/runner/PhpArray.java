@@ -209,12 +209,20 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		initTable(ai, capacity);
 	}
 
-	public PhpArray(AI ai, PhpArray phpArray) throws LeekRunException {
+	public PhpArray(AI ai, PhpArray phpArray, int level) throws LeekRunException {
 		if (phpArray.size() > 0) {
 			initTable(ai, phpArray.size());
 			Element e = phpArray.mHead;
 			while (e != null) {
-				set(ai, e.key, LeekOperations.clone(ai, e.value.getValue()));
+				if (ai.getVersion() >= 11) {
+					if (level == 0) {
+						set(ai, e.key, LeekOperations.clonePrimitive(ai, e.value.getValue()));
+					} else {
+						set(ai, e.key, LeekOperations.clone(ai, e.value.getValue(), level - 1));
+					}
+				} else {
+					set(ai, e.key, LeekOperations.clone(ai, e.value.getValue()));
+				}
 				e = e.next;
 			}
 		}

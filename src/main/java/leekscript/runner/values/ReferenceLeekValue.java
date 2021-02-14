@@ -8,11 +8,15 @@ public class ReferenceLeekValue extends AbstractLeekValue {
 
 	private AbstractLeekValue mValue;
 
-	public ReferenceLeekValue(AI uai, AbstractLeekValue value) throws LeekRunException {
-		if (!(value instanceof ReferenceLeekValue))
-			mValue = value;
-		else
-			mValue = LeekOperations.clone(uai, value.getValue());
+	public ReferenceLeekValue(AI ai, AbstractLeekValue value) throws LeekRunException {
+		if (ai.getVersion() >= 11) {
+			mValue = value.getValue();
+		} else {
+			if (!(value instanceof ReferenceLeekValue))
+				mValue = value;
+			else
+				mValue = LeekOperations.clone(ai, value.getValue());
+		}
 	}
 
 	@Override

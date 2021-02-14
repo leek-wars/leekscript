@@ -63,7 +63,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("new LeekAnonymousFunction() {");
-		sb.append("public AbstractLeekValue run(AI mUAI, AbstractLeekValue... values) throws LeekRunException {");
+		sb.append("public AbstractLeekValue run(AI mUAI, AbstractLeekValue thiz, AbstractLeekValue... values) throws LeekRunException {");
 
 		for (int i = 0; i < mParameters.size(); i++) {
 			sb.append("final VariableLeekValue user_").append(mParameters.get(i)).append(" = ");
