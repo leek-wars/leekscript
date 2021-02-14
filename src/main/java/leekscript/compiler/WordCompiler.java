@@ -58,7 +58,7 @@ public class WordCompiler {
 
 	public void readCode() throws Exception {
 		try {
-			mCompiler.compile();
+			mCompiler.compile(this);
 			// Receherche des fonctions utilisateur
 			while (mCompiler.haveWords()) {
 				if (mCompiler.getWord().getWord().equals("global")) {
@@ -261,8 +261,9 @@ public class WordCompiler {
 			throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.AI_NAME_EXPECTED);
 		String iaName = mCompiler.readWord().getWord();
 
-		if (!mMain.includeAI(iaName))
+		if (!mMain.includeAI(this, iaName)) {
 			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.AI_NOT_EXISTING, new String[] { iaName });
+		}
 
 		if (mCompiler.readWord().getType() != WordParser.T_PAR_RIGHT)
 			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.CLOSING_PARENTHESIS_EXPECTED);

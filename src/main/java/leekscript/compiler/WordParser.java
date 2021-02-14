@@ -52,7 +52,7 @@ public class WordParser {
 		this.version = version;
 	}
 
-	public void compile() throws LeekCompilerException {
+	public void compile(WordCompiler compiler) throws LeekCompilerException {
 		words.clear();
 		line_counter = 1;
 		char_counter = 0;
