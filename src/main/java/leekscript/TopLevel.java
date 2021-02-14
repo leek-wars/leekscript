@@ -54,7 +54,7 @@ public class TopLevel {
 	private static void executeFile(File file) {
 		try {
 			long ct = System.currentTimeMillis();
-			AI ai = LeekScript.compileFile(file.getPath(), "AI", "leekscript.jar", false);
+			AI ai = LeekScript.compileFile(file.getPath(), "AI", false);
 			long compileTime = System.currentTimeMillis() - ct;
 
 			long et = System.currentTimeMillis();

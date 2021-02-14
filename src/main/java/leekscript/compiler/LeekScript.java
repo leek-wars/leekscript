@@ -45,19 +45,19 @@ public class LeekScript {
 		}
 	};
 
-	public static AI compileFile(String filepath, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
+	public static AI compileFile(String filepath, String AIClass, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
 		AIFile<?> ai = getResolver().resolve(filepath, null);
-		return compile(ai, AIClass, jar, nocache);
+		return compile(ai, AIClass, nocache);
 	}
 
-	public static AI compileFileContext(String filepath, String AIClass, String jar, ResolverContext context, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
+	public static AI compileFileContext(String filepath, String AIClass, ResolverContext context, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
 		AIFile<?> ai = getResolver().resolve(filepath, context);
-		return compile(ai, AIClass, jar, nocache);
+		return compile(ai, AIClass, nocache);
 	}
 
 	public static AI compileSnippet(String snippet, String AIClass, String jar)	throws LeekScriptException, LeekCompilerException, IOException {
 		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet " + id++ + ">", snippet, System.currentTimeMillis(), 11, null);
-		return compile(ai, AIClass, jar, false);
+		return compile(ai, AIClass, false);
 	}
 
 	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass, String jar, boolean nocache) throws Exception {
@@ -91,7 +91,7 @@ public class LeekScript {
 	}
 
 	public static String runFile(String filename) throws Exception {
-		AI ai = LeekScript.compileFile(filename, "AI", "leekscript.jar", true);
+		AI ai = LeekScript.compileFile(filename, "AI", true);
 		AbstractLeekValue v = ai.runIA();
 		System.out.println(v.getString(ai));
 		return v.getString(ai);
@@ -113,7 +113,7 @@ public class LeekScript {
 		return defaultRandomGenerator;
 	}
 
-	public static AI compile(AIFile<?> file, String AIClass, String jar, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
+	public static AI compile(AIFile<?> file, String AIClass, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
 
 		new File(IA_PATH).mkdir();
 		String javaClassName = "AI_" + file.getId();
@@ -139,7 +139,7 @@ public class LeekScript {
 			int status = JavaCompiler.INIT;
 
 			try {
-				compiler.compile(jar);
+				compiler.compile();
 				status = JavaCompiler.getStatus();
 			} catch (Exception e) {
 				error = e.getMessage();

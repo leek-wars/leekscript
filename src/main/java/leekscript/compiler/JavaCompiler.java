@@ -19,7 +19,7 @@ public class JavaCompiler {
 		mInput = input;
 	}
 
-	public void compile(String jar) throws Exception {
+	public void compile() throws Exception {
 		if (mStatus != INIT)
 			return;
 		mStatus = RUNNING;
@@ -28,7 +28,8 @@ public class JavaCompiler {
 			return;
 		}
 
-		String[] args = new String[] { "javac", "-encoding", "utf8", "-classpath", jar, mInput.getPath() };
+		String classpath = JavaCompiler.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+		String[] args = new String[] { "javac", "-encoding", "utf8", "-classpath", classpath, mInput.getPath() };
 		// System.out.println(String.join(" ", args));
 		ProcessBuilder pb = new ProcessBuilder(args);
 		Worker worker = new Worker(pb);
