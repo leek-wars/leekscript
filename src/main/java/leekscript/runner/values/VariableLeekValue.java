@@ -240,4 +240,9 @@ public class VariableLeekValue extends AbstractLeekValue {
 	public Object toJSON(AI ai) throws LeekRunException {
 		return mValue.toJSON(ai);
 	}
+
+	@Override
+	public boolean isPrimitive() {
+		return mValue.isPrimitive();
+	}
 }

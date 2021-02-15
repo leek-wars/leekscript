@@ -208,4 +208,9 @@ public class IntLeekValue extends AbstractLeekValue {
 	public Object toJSON(AI ai) {
 		return mValue;
 	}
+
+	@Override
+	public boolean isPrimitive() {
+		return true;
+	}
 }

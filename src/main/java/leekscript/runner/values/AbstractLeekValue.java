@@ -228,4 +228,6 @@ public abstract class AbstractLeekValue {
 		}
 		return ret;
 	}
+
+	public abstract boolean isPrimitive();
 }

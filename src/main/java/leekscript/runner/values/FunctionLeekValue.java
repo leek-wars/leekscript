@@ -158,4 +158,9 @@ public class FunctionLeekValue extends AbstractLeekValue {
 	public Object toJSON(AI ai) {
 		return "<function>";
 	}
+
+	@Override
+	public boolean isPrimitive() {
+		return false;
+	}
 }

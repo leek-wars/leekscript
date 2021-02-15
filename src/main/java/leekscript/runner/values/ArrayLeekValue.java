@@ -318,4 +318,9 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 			return a;
 		}
 	}
+
+	@Override
+	public boolean isPrimitive() {
+		return false;
+	}
 }
