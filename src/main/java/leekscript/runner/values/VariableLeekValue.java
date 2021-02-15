@@ -218,6 +218,14 @@ public class VariableLeekValue extends AbstractLeekValue {
 		return mValue = mValue.modulus(ai, val);
 	}
 
+	public AbstractLeekValue getField(AI ai, String field) throws LeekRunException {
+		return mValue.getField(ai, field);
+	}
+
+	public AbstractLeekValue callMethod(AI ai, String field, AbstractLeekValue... arguments) throws LeekRunException {
+		return mValue.callMethod(ai, field, arguments);
+	}
+
 	@Override
 	public int getType() {
 		return mValue.getType();

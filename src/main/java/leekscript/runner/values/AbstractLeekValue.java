@@ -15,6 +15,8 @@ public abstract class AbstractLeekValue {
 	public final static int NULL = 4;
 	public final static int STRING = 5;
 	public final static int FUNCTION = 6;
+	public final static int CLASS = 7;
+	public final static int OBJECT = 8;
 
 	public final static int ADD_COST = 1;
 	public final static int MUL_COST = 5;
@@ -196,6 +198,14 @@ public abstract class AbstractLeekValue {
 
 	public AbstractLeekValue brotate(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+	}
+
+	public AbstractLeekValue getField(AI ai, String field) throws LeekRunException {
+		return LeekValueManager.NULL;
+	}
+
+	public AbstractLeekValue callMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
+		return LeekValueManager.NULL;
 	}
 
 	public abstract int getType();
