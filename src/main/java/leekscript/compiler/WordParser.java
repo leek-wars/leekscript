@@ -2,6 +2,7 @@ package leekscript.compiler;
 
 import java.util.ArrayList;
 
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
 
 public class WordParser {
@@ -28,13 +29,15 @@ public class WordParser {
 	public final static int T_PAR_RIGHT = 7;
 	public final static int T_VIRG = 8;
 	public final static int T_CONDITION_OPERATOR = 9;
-	public final static int T_DOUBLE_POINT = 14;
 
 	public final static int T_ACCOLADE_LEFT = 10;
 	public final static int T_ACCOLADE_RIGHT = 11;
 
 	public final static int T_BRACKET_LEFT = 12;
 	public final static int T_BRACKET_RIGHT = 13;
+
+	public final static int T_DOUBLE_POINT = 14;
+	public final static int T_DOT = 15;
 
 	private final AIFile<?> mAI;
 	private final ArrayList<IAWord> words = new ArrayList<IAWord>();
@@ -167,11 +170,19 @@ public class WordParser {
 				if(type == T_NUMBER || type == T_VAR_STRING){
 					word += c;
 				}
-				else{
-					throw new LeekCompilerException(mAI, line_counter, char_counter, word, LeekCompilerException.INVALID_CHAR);
+				else if (version >= 11) {
+					if (type == T_STRING) {
+						newWord(word, type);
+					}
+					newWord(".", T_DOT);
+					word = "";
+					type = T_NOTHING;
+				} else {
+					compiler.addError(new AnalyzeError(new IAWord(mAI, 0, ".", line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, LeekCompilerException.INVALID_CHAR));
+					// throw new LeekCompilerException(mAI, line_counter, char_counter + 1, ".", LeekCompilerException.INVALID_CHAR);
 				}
 			}
-			else if(c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-' || c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~'){
+			else if(c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-' || c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~' || c == '.'){
 				if(type == T_VAR_STRING){
 					word += c;
 				}
@@ -332,12 +343,10 @@ public class WordParser {
 		if(type != T_NOTHING){
 			newWord(word, type);
 		}
-		/*
-		 * for(int i=0;i<words.size();i++){
-		 * System.out.println(words.get(i).getType()+" => "+words.get(i).getWord(
-		 * ));
-		 * }
-		 */
+
+		// for(int i=0;i<words.size();i++){
+		// 	System.out.println(words.get(i).getType()+" => "+words.get(i).getWord());
+		// }
 	}
 
 	private void newWord(String word, int type) {
@@ -388,6 +397,10 @@ public class WordParser {
 		cursor++;
 	}
 
+	public void back() {
+		cursor--;
+	}
+
 	public boolean haveWords() {
 		return cursor < words.size();
 	}
@@ -404,4 +417,11 @@ public class WordParser {
 		return instructions;
 	}
 
+	public int getPosition() {
+		return cursor;
+	}
+
+	public void setPosition(int position) {
+		this.cursor = position;
+	}
 }
