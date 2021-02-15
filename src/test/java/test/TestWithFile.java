@@ -15,49 +15,49 @@ public class TestWithFile {
 	public void testBasicFile() throws Exception {
 		assertEquals("bonjour", LeekScript.runFile("test/ai/bonjour.leek"));
 	}
-	
+
 	@Test
 	public void testLargeFile() throws Exception {
 		assertEquals("cent-vingt-trois millions quatre-cent-cinquante-six-mille-sept-cent-quatre-vingt-neuf", LeekScript.runFile("test/ai/french.leek"));
 	}
-	
+
 	@Test
 	public void testInclude() throws Exception {
 		assertEquals("[a, b, KEY]", LeekScript.runFile("test/ai/array_keys.leek"));
 	}
-	
+
 	@Test
 	public void testIncludeMultiple() throws Exception {
 		assertEquals("[a, b, KEY]", LeekScript.runFile("test/ai/include_multiple.leek"));
 	}
-	
+
 	@Test
 	public void testCustomResolver() throws Exception {
-		class CustomContext extends ResolverContext {} 
+		class CustomContext extends ResolverContext {}
 		LeekScript.setResolver(new Resolver<CustomContext>() {
 			@Override
 			public AIFile<CustomContext> resolve(String path, ResolverContext context) {
-				return new AIFile<CustomContext>(path, "return 'generated';", System.currentTimeMillis(), new CustomContext());
+				return new AIFile<CustomContext>(path, "return 'generated';", System.currentTimeMillis(), 11, new CustomContext());
 			}
 			@Override
-			public ResolverContext createContext(int parameter1, int parameter2) {
+			public ResolverContext createContext(int parameter1, int parameter2, int parameter3) {
 				return null;
 			}
 		});
 		assertEquals("generated", LeekScript.runFile("whatever"));
 		LeekScript.resetResolver();
 	}
-	
+
 	@Test
 	public void testSubFolder() throws Exception {
 		assertEquals("sub", LeekScript.runFile("test/ai/include_sub.leek"));
 	}
-	
+
 	@Test
 	public void testRelativePath() throws Exception {
 		assertEquals("cent-vingt-trois millions quatre-cent-cinquante-six-mille-sept-cent-quatre-vingt-neuf", LeekScript.runFile("test/ai/subfolder/include_parent.leek"));
 	}
-	
+
 	@Test
 	public void testMultipleInclude() throws Exception {
 		assertEquals("bonjour", LeekScript.runFile("test/ai/multiple_includes.leek"));

@@ -33,7 +33,7 @@ public class TopLevel {
 	private static void executeSnippet(String code) {
 		try {
 			long ct = System.currentTimeMillis();
-			AI ai = LeekScript.compileSnippet(code, "AI", "leekscript.jar");
+			AI ai = LeekScript.compileSnippet(code, "AI");
 			long compileTime = System.currentTimeMillis() - ct;
 
 			long et = System.currentTimeMillis();

@@ -24,5 +24,5 @@ public interface Resolver<C extends ResolverContext> {
 	 */
 	abstract public AIFile<C> resolve(String path, ResolverContext context) throws FileNotFoundException;
 
-	public abstract ResolverContext createContext(int parameter1, int parameter2);
+	public abstract ResolverContext createContext(int parameter1, int parameter2, int parameter3);
 }
