@@ -47,9 +47,19 @@ public class LeekCompilerException extends Exception {
 	public final static String INVALID_PAREMETER_COUNT = "invalid_parameter_count";
 	public final static String INVALID_CHAR = "invalid_char";
 	public final static String INVALID_NUMBER = "invalid_number";
+	public final static String CONSTRUCTOR_ALREADY_EXISTS = "constructor_already_exists";
+	public final static String END_OF_CLASS_EXPECTED = "end_of_class_expected";
+	public final static String FIELD_ALREADY_EXISTS = "field_already_exists";
+	public final static String NO_SUCH_CLASS = "no_such_class";
+	public final static String THIS_NOT_ALLOWED_HERE = "this_not_allowed_here";
+	public final static String REFERENCE_IGNORED_IN_METHODS = "reference_ignored_in_methods";
+	public final static String KEYWORD_MUST_BE_IN_CLASS = "keyword_must_be_in_class";
+	public final static String SUPER_NOT_AVAILABLE_PARENT = "super_not_available_parent";
+	public final static String CLASS_MEMBER_DOES_NOT_EXIST = "class_member_does_not_exist";
+	public final static String CLASS_STATIC_MEMBER_DOES_NOT_EXIST = "class_static_member_does_not_exist";
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 	int mLine;

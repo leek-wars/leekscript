@@ -48,6 +48,8 @@ public class Operators {
 	public final static int PRE_DECREMENT = 45;
 	public final static int REFERENCE = 46;
 	public final static int BITNOT = 47;
+	public final static int NEW = 48;
+	public final static int DOT = 49;
 
 	public final static int getOperator(String operator, int version) {
 		if(operator.equals("[")) return CROCHET;
@@ -101,6 +103,8 @@ public class Operators {
 		if(operator.equals(">>=")) return SHIFT_RIGHT_ASSIGN;
 		if(operator.equals(">>>=")) return ROTATE_RIGHT_ASSIGN;
 		if(operator.equals("@")) return REFERENCE;
+		if(operator.equals("new")) return NEW;
+		if(operator.equals(".")) return DOT;
 		return -1;
 	}
 
@@ -108,6 +112,8 @@ public class Operators {
 		switch(operator) {
 		case CROCHET:
 		case PARENTHESIS:
+			return 16;
+		case DOT:
 			return 15;
 		case INCREMENT:
 		case DECREMENT:
@@ -180,6 +186,7 @@ public class Operators {
 		case PRE_DECREMENT:
 		case REFERENCE:
 		case BITNOT:
+		case NEW:
 			return true;
 		}
 		return false;
@@ -230,6 +237,8 @@ public class Operators {
 			return "^";
 		case POWERASSIGN:
 			return "^=";
+		case NEW:
+			return "new";
 		}
 		return "null";
 	}

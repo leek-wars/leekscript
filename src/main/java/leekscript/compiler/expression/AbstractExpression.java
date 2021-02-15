@@ -16,6 +16,8 @@ public abstract class AbstractExpression {
 	public final static int FUNCTION = 8;
 	public final static int GLOBAL = 9;
 	public final static int ARRAY = 10;
+	public final static int OBJECT = 11;
+	public final static int OBJECT_ACCESS = 12;
 
 	public abstract int getType();
 

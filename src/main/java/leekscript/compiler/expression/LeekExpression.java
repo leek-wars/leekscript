@@ -617,7 +617,9 @@ public class LeekExpression extends AbstractExpression {
 			mExpression2.writeJavaCode(mainblock, writer);
 			writer.addCode(".opposite(mUAI)");
 			return;
-
+		case Operators.NEW:
+			mExpression2.writeJavaCode(mainblock, writer);
+			return;
 			// Les unaires suffixés (++, --), Il a été vérifié au préalable
 			// qu'on avait bien une L-Value
 		case Operators.INCREMENT:
@@ -721,8 +723,16 @@ public class LeekExpression extends AbstractExpression {
 			mExpression2.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 			return;
+		case Operators.DOT:
+			mExpression2.writeJavaCode(mainblock, writer);
+			return;
 		}
 		return;
+	}
+
+	@Override
+	public boolean isLeftValue() {
+		return mOperator == Operators.DOT;
 	}
 
 	@Override

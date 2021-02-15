@@ -78,6 +78,7 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 	public void analyze(WordCompiler compiler) {
 		// Variables interdites
 		if (token.getWord().equals("this")) {
+			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, LeekCompilerException.THIS_NOT_ALLOWED_HERE));
 		} else {
 			// On ajoute la variable
 			if (compiler.getMainBlock().hasGlobal(token.getWord()) || compiler.getMainBlock().hasUserFunction(token.getWord(), true) || compiler.getCurrentBlock().hasVariable(token.getWord())) {
