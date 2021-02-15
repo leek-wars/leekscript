@@ -6,6 +6,7 @@ import java.util.TreeSet;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.compiler.bloc.AnonymousFunctionBlock;
+import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.ConditionalBloc;
 import leekscript.compiler.bloc.DoWhileBlock;
 import leekscript.compiler.bloc.ForBlock;
@@ -26,12 +27,15 @@ import leekscript.compiler.expression.LeekExpressionFunction;
 import leekscript.compiler.expression.LeekGlobal;
 import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekNumber;
+import leekscript.compiler.expression.LeekObjectAccess;
 import leekscript.compiler.expression.LeekParenthesis;
 import leekscript.compiler.expression.LeekString;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.compiler.instruction.AccessLevel;
 import leekscript.compiler.instruction.BlankInstruction;
+import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekBreakInstruction;
 import leekscript.compiler.instruction.LeekContinueInstruction;
 import leekscript.compiler.instruction.LeekExpressionInstruction;
@@ -44,6 +48,7 @@ public class WordCompiler {
 
 	private final MainLeekBlock mMain;
 	private AbstractLeekBlock mCurentBlock;
+	private ClassDeclarationInstruction mCurrentClass;
 	private final WordParser mCompiler;
 	private int mLine;
 	private AIFile<?> mAI = null;
@@ -123,7 +128,6 @@ public class WordCompiler {
 					break;
 
 				// Puis on lit l'instruction
-
 				compileWord();
 			}
 			while (mCurentBlock.getParent() != null && !mCurentBlock.hasAccolade()) {
@@ -139,6 +143,7 @@ public class WordCompiler {
 				throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.OPEN_BLOC_REMAINING);
 
 		} catch (IndexOutOfBoundsException e) {
+			e.printStackTrace(System.out);
 			throw new LeekCompilerException(mCompiler.endWord(), LeekCompilerException.END_OF_SCRIPT_UNEXPECTED);
 		}
 	}
@@ -186,6 +191,11 @@ public class WordCompiler {
 				// Déclaration de variable
 				mCompiler.skipWord();
 				globalDeclaration();
+				return;
+			} else if (version >= 11 && word.getWord().equals("class")) {
+				// Déclaration de classe
+				mCompiler.skipWord();
+				classDeclaration();
 				return;
 			} else if (word.getWord().equals("if")) {
 				mCompiler.skipWord();
@@ -652,9 +662,185 @@ public class WordCompiler {
 		if (mCompiler.haveWords() && mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION) {
 			mCompiler.skipWord();
 		}
+	}
+
+	public void classDeclaration() throws LeekCompilerException {
+		// Read class name
+		IAWord word = mCompiler.readWord();
+		if (word.getType() != WordParser.T_STRING) {
+			throw new LeekCompilerException(word, LeekCompilerException.VAR_NAME_EXPECTED);
+		}
+		// if (!isAvailable(word.getWord(), true)) {
+		// 	throw new LeekCompilerException(word, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
+		// }
+		ClassDeclarationInstruction classDeclaration = new ClassDeclarationInstruction(word, mLine, mAI);
+		mMain.addClass(classDeclaration);
+		mCurrentClass = classDeclaration;
+
+		if (mCompiler.getWord().getWord().equals("extends")) {
+			mCompiler.skipWord();
+			IAWord parent = mCompiler.readWord();
+			// if (!mMain.hasUserClass(parentName)) {
+			// 	throw new LeekCompilerException(word, LeekCompilerException.NO_SUCH_CLASS);
+			// }
+			classDeclaration.setParent(parent);
+		}
+		if (mCompiler.getWord().getType() != WordParser.T_ACCOLADE_LEFT) {
+			throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.OPENING_CURLY_BRACKET_EXPECTED);
+		}
+		mCompiler.skipWord();
+
 		word = mCompiler.readWord();
-		if (word.getType() != WordParser.T_END_INSTRUCTION)
-			throw new LeekCompilerException(word, LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
+		while (word.getType() != WordParser.T_ACCOLADE_RIGHT) {
+			switch (word.getWord()) {
+				case "public":
+				case "private":
+				case "protected":
+				{
+					AccessLevel level = AccessLevel.fromString(word.getWord());
+					classAccessLevelMember(classDeclaration, level);
+					break;
+				}
+				case "constructor": {
+					classConstructor(classDeclaration, AccessLevel.PUBLIC);
+					break;
+				}
+				default: {
+					if (word.getType() == WordParser.T_STRING) {
+						mCompiler.back();
+						classAccessLevelMember(classDeclaration, AccessLevel.PUBLIC);
+					} else {
+						throw new LeekCompilerException(word, LeekCompilerException.KEYWORD_UNEXPECTED);
+					}
+				}
+			}
+			word = mCompiler.readWord();
+		}
+		if (word.getType() != WordParser.T_ACCOLADE_RIGHT) {
+			throw new LeekCompilerException(word, LeekCompilerException.END_OF_CLASS_EXPECTED);
+		}
+		mCurrentClass = null;
+		// mMain.addInstruction(this, classDeclaration);
+	}
+
+	public void classAccessLevelMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel) throws LeekCompilerException {
+		IAWord name = mCompiler.readWord();
+		switch (name.getWord()) {
+			case "constructor":
+				classConstructor(classDeclaration, accessLevel);
+				return;
+			case "static":
+				classStaticMember(classDeclaration, accessLevel);
+				return;
+		}
+		IAWord word2 = mCompiler.getWord();
+		if (word2.getType() == WordParser.T_PAR_LEFT) {
+			// Méthode
+			ClassMethodBlock method = classMethod(classDeclaration, accessLevel, name.getWord(), false);
+			classDeclaration.addMethod(name, method);
+		} else {
+			// Field
+			AbstractExpression expr = null;
+			if (mCompiler.getWord().getType() == WordParser.T_OPERATOR && mCompiler.getWord().getWord().equals("=")) {
+				mCompiler.skipWord();
+				expr = readExpression().getAbstractExpression();
+			}
+			classDeclaration.addField(this, name, expr);
+			if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
+				mCompiler.skipWord();
+		}
+	}
+
+	public void classStaticMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel) throws LeekCompilerException {
+		IAWord name = mCompiler.readWord();
+		// Static field
+		AbstractExpression expr = null;
+		if (mCompiler.getWord().getType() == WordParser.T_OPERATOR && mCompiler.getWord().getWord().equals("=")) {
+			mCompiler.skipWord();
+			expr = readExpression().getAbstractExpression();
+		} else if (mCompiler.getWord().getType() == WordParser.T_PAR_LEFT) {
+			// Méthode
+			ClassMethodBlock method = classMethod(classDeclaration, accessLevel, name.getWord(), true);
+			classDeclaration.addStaticMethod(name.getWord(), method);
+			if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
+				mCompiler.skipWord();
+			return;
+		}
+		classDeclaration.addStaticField(name, expr);
+
+		if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
+			mCompiler.skipWord();
+	}
+
+	public void classConstructor(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel) throws LeekCompilerException {
+		ClassMethodBlock constructor = classMethod(classDeclaration, accessLevel, "constructor", false);
+		classDeclaration.addConstructor(constructor);
+	}
+
+	public ClassMethodBlock classMethod(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, String name, boolean isStatic) throws LeekCompilerException {
+
+		ClassMethodBlock method = new ClassMethodBlock(classDeclaration, isStatic, mCurentBlock, mMain, mLine, mAI);
+
+		IAWord word = mCompiler.readWord();
+		if (word.getType() != WordParser.T_PAR_LEFT) {
+			throw new LeekCompilerException(word, LeekCompilerException.OPENING_PARENTHESIS_EXPECTED);
+		}
+		int param_count = 0;
+		while (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
+			if (mCompiler.getWord().getType() == WordParser.T_OPERATOR && mCompiler.getWord().getWord().equals("@")) {
+				errors.add(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.WARNING, LeekCompilerException.REFERENCE_IGNORED_IN_METHODS));
+				mCompiler.skipWord();
+			}
+			if (mCompiler.getWord().getType() != WordParser.T_STRING)
+				throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARAMETER_NAME_EXPECTED);
+			method.addParameter(mCompiler.getWord());
+			mCompiler.skipWord();
+			param_count++;
+			if (mCompiler.getWord().getType() == WordParser.T_VIRG)
+				mCompiler.skipWord();
+		}
+		if (mCompiler.readWord().getType() != WordParser.T_PAR_RIGHT) {
+			throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+		}
+		if (classDeclaration.hasMethod(name, param_count)) {
+			throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.CONSTRUCTOR_ALREADY_EXISTS);
+		}
+
+		// On enregistre les block actuels
+		AbstractLeekBlock initialBlock = mCurentBlock;
+		int initialLine = mLine;
+		AIFile<?> initialAI = mAI;
+		mCurentBlock = method;
+
+		// Ouverture des accolades
+		if (mCompiler.readWord().getType() != WordParser.T_ACCOLADE_LEFT)
+			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.OPENING_CURLY_BRACKET_EXPECTED);
+
+		// Lecture du corps de la fonction
+		while (mCompiler.haveWords()) {
+			// Fermeture des blocs ouverts
+			if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.lastInstruction() != null) {
+				DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
+				mCurentBlock = mCurentBlock.endInstruction();
+				dowhileendBlock(do_block);
+				mCompiler.skipWord();
+			} else
+				mCurentBlock = mCurentBlock.endInstruction();
+			if (!mCompiler.haveWords())
+				break;
+
+			// On regarde si on veut fermer la fonction anonyme
+			if (mCompiler.getWord().getType() == WordParser.T_ACCOLADE_RIGHT && mCurentBlock == method) {
+				mCompiler.skipWord();
+				break; // Fermeture de la fonction anonyme
+			} else
+				compileWord();
+		}
+		// On remet le bloc initial
+		mCurentBlock = initialBlock;
+		mLine = initialLine;
+		mAI = initialAI;
+		return method;
 	}
 
 	public LeekExpression readExpression() throws LeekCompilerException {
@@ -686,8 +872,19 @@ public class WordCompiler {
 					if (mCompiler.haveWords() && mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
 						throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
 					}
-
 					retour.addFunction(function);
+				} else if (word.getType() == WordParser.T_DOT) {
+					// Object access
+					IAWord token = mCompiler.readWord();
+					IAWord name = mCompiler.readWord();
+
+					retour.addOperator(Operators.DOT, token);
+
+					// Object access
+					LeekObjectAccess objectAccess = new LeekObjectAccess(retour.getLastExpression(), name);
+					retour.addExpression(objectAccess);
+					mCompiler.back();
+
 				} else if (word.getType() == WordParser.T_OPERATOR) {
 					int operator = Operators.getOperator(word.getWord(), getVersion());
 
@@ -796,7 +993,18 @@ public class WordCompiler {
 						retour.addUnaryPrefix(Operators.NOT, word);
 					else if (LeekConstants.get(word.getWord()) != null)
 						retour.addExpression(new LeekConstant(word.getWord(), LeekConstants.get(word.getWord())));
-					else {
+					else if (getVersion() >= 11 && word.getWord().equalsIgnoreCase("new")) {
+						retour.addUnaryPrefix(Operators.NEW, word);
+					} else if (word.getWord().equals("super")) {
+						// super doit être dans une méthode
+						if (!(mCurentBlock instanceof ClassMethodBlock)) {
+							errors.add(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, LeekCompilerException.KEYWORD_MUST_BE_IN_CLASS));
+						}
+						if (mCurentBlock instanceof ClassMethodBlock && ((ClassMethodBlock) mCurentBlock).getClassDeclaration().getParentToken() == null) {
+							errors.add(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, LeekCompilerException.SUPER_NOT_AVAILABLE_PARENT));
+						}
+						retour.addExpression(new LeekVariable(word, VariableType.SUPER, ((ClassMethodBlock) mCurentBlock).getClassDeclaration()));
+					} else {
 						retour.addExpression(new LeekVariable(word, VariableType.LOCAL));
 						// throw new LeekCompilerException(word, LeekCompilerException.UNKNOWN_VARIABLE_OR_FUNCTION);
 					}
@@ -971,5 +1179,13 @@ public class WordCompiler {
 
 	public void addErrors(Set<AnalyzeError> errors) {
 		this.errors.addAll(errors);
+	}
+
+	public ClassDeclarationInstruction getCurrentClass() {
+		return mCurrentClass;
+	}
+
+	public void setCurrentClass(ClassDeclarationInstruction clazz) {
+		this.mCurrentClass = clazz;
 	}
 }

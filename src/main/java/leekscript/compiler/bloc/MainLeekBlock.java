@@ -14,6 +14,7 @@ import leekscript.compiler.LeekScript;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.WordParser;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.runner.LeekFunctions;
 
@@ -25,6 +26,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final ArrayList<FunctionBlock> mFunctions = new ArrayList<FunctionBlock>();
 	private final ArrayList<AnonymousFunctionBlock> mAnonymousFunctions = new ArrayList<AnonymousFunctionBlock>();
 	private final Map<String, Integer> mUserFunctions = new TreeMap<String, Integer>();
+	private final Map<String, ClassDeclarationInstruction> mUserClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private int mMinLevel = 1;
 	private int mAnonymousId = 1;
 	private int mFunctionId = 1;
@@ -80,6 +82,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			if (mIncluded.contains(ai.getId())) {
 				return true;
 			}
+			// System.out.println("include " + ai.getPath());
 			mIncluded.add(ai.getId());
 			AIFile<?> previousAI = mCompiler.getCurrentAI();
 			mCompiler.setCurrentAI(ai);
@@ -196,11 +199,19 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (LeekInstruction instruction : mFunctions) {
 			instruction.writeJavaCode(this, writer);
 		}
+		for (var clazz : mUserClasses.values()) {
+			clazz.declareJava(this, writer);
+		}
 		/*
 		 * for(LeekInstruction instruction : mAnonymousFunctions){
 		 * instruction.writeJavaCode(this, writer); }
 		 */
 		writer.addLine("public AbstractLeekValue runIA() throws LeekRunException { resetCounter();");
+
+		for (var clazz : mUserClasses.values()) {
+			clazz.writeJavaCode(this, writer);
+		}
+
 		super.writeJavaCode(this, writer);
 		if (mEndInstruction == 0)
 			writer.addLine("return LeekValueManager.NULL;");
@@ -314,9 +325,27 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return mCompiler;
 	}
 
+	public boolean hasUserClass(String name) {
+		return mUserClasses.containsKey(name);
+	}
+
+	public void addClass(ClassDeclarationInstruction classDeclaration) {
+		mUserClasses.put(classDeclaration.getName(), classDeclaration);
+	}
+
+	public ClassDeclarationInstruction getUserClass(String name) {
+		return mUserClasses.get(name);
+	}
+
 	public void analyze(WordCompiler compiler) {
+		for (var clazz : mUserClasses.values()) {
+			clazz.declare(compiler);
+		}
 		for (var function : mFunctions) {
 			function.declare(compiler);
+		}
+		for (var clazz : mUserClasses.values()) {
+			clazz.analyze(compiler);
 		}
 		for (var function : mFunctions) {
 			function.analyze(compiler);
