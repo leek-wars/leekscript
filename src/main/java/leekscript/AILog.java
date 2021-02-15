@@ -28,6 +28,10 @@ public class AILog {
 	public static final String CODE_TOO_LARGE = "code_too_large";
 	public static final String CODE_TOO_LARGE_FUNCTION = "code_too_large_function";
 	public static final String NUMBER_OF_OPERATIONS = "number_of_operations";
+	public static final String UNKNOWN_METHOD = "unknown_method";
+	public static final String UNKNOWN_STATIC_METHOD = "unknown_static_method";
+	public static final String STRING_METHOD_MUST_RETURN_STRING = "string_method_must_return_string";
+	public static final String UNKNOWN_FIELD = "unknown_field";
 
 	public interface Stream {
 		public void write(JSONArray a);

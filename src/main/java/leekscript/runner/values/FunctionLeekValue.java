@@ -1,5 +1,7 @@
 package leekscript.runner.values;
 
+import java.util.Arrays;
+
 import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.ILeekFunction;
@@ -14,6 +16,7 @@ public class FunctionLeekValue extends AbstractLeekValue {
 	private final static int LEEK_FUNCTION = 1;
 	private final static int USER_FUNCTION = 2;
 	private final static int ANONYMOUS_FUNCTION = 3;
+	private final static int METHOD = 4;
 
 	private final int mType;
 	private final int mId;
@@ -34,6 +37,12 @@ public class FunctionLeekValue extends AbstractLeekValue {
 	public FunctionLeekValue(ILeekFunction fonction) {
 		mFunction = fonction;
 		mType = LEEK_FUNCTION;
+		mId = 0;
+	}
+
+	public FunctionLeekValue(LeekAnonymousFunction fonction) {
+		mAnonymous = fonction;
+		mType = METHOD;
 		mId = 0;
 	}
 
@@ -131,6 +140,8 @@ public class FunctionLeekValue extends AbstractLeekValue {
 					return mAnonymous.run(ai, null, copyValues(ai, values, ai.anonymousFunctionReference(mId)));
 				}
 
+		} else if (mType == METHOD) {
+			return mAnonymous.run(ai, values[0], Arrays.copyOfRange(copyPrimitiveValues(ai, values), 1, values.length));
 		}
 		return LeekValueManager.NULL;
 	}
@@ -141,6 +152,8 @@ public class FunctionLeekValue extends AbstractLeekValue {
 			return "#Function " + mFunction;
 		else if (mType == USER_FUNCTION)
 			return "#User Function";
+		else if (mType == METHOD)
+			return "#Method Function";
 		else
 			return "#Anonymous Function";
 	}

@@ -5,9 +5,11 @@ import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.ArrayLeekValue.ArrayIterator;
 import leekscript.runner.values.BooleanLeekValue;
+import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.DoubleLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
 import leekscript.runner.values.IntLeekValue;
+import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.StringLeekValue;
 
 public class LeekOperations {
@@ -261,6 +263,10 @@ public class LeekOperations {
 				ai.addOperations(value.getArray().size() * (ArrayLeekValue.ARRAY_CELL_CREATE_OPERATIONS));
 			}
 			return new ArrayLeekValue(ai, value.getArray(), level);
+		} else if (value instanceof ObjectLeekValue) {
+			return value;
+		} else if (value instanceof ClassLeekValue) {
+			return value;
 		} else
 			return LeekValueManager.NULL;
 		}
