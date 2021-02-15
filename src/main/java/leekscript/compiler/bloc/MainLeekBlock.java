@@ -15,13 +15,14 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.WordParser;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
+import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.runner.LeekFunctions;
 
 public class MainLeekBlock extends AbstractLeekBlock {
 
-	private final ArrayList<String> mGobales = new ArrayList<String>();
-	private final ArrayList<String> mGobalesDeclarations = new ArrayList<String>();
+	private final ArrayList<String> mGlobales = new ArrayList<>();
+	private final ArrayList<LeekGlobalDeclarationInstruction> mGlobalesDeclarations = new ArrayList<>();
 	private final HashSet<String> mRedefinedFunctions = new HashSet<String>();
 	private final ArrayList<FunctionBlock> mFunctions = new ArrayList<FunctionBlock>();
 	private final ArrayList<AnonymousFunctionBlock> mAnonymousFunctions = new ArrayList<AnonymousFunctionBlock>();
@@ -111,8 +112,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mUserFunctions.put(name, count_param);
 	}
 
-	public void addGlobalDeclaration(String declaration) {
-		mGobalesDeclarations.add(declaration);
+	public void addGlobalDeclaration(LeekGlobalDeclarationInstruction declaration) {
+		mGlobalesDeclarations.add(declaration);
 	}
 
 	public void addAnonymousFunction(AnonymousFunctionBlock block) {
@@ -142,19 +143,17 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	@Override
 	public boolean hasGlobal(String globale) {
-		if (mGobalesDeclarations.contains(globale))
-			return true;
-		return mGobales.contains(globale);
+		return mGlobales.contains(globale);
 	}
 
 	@Override
 	public boolean hasDeclaredGlobal(String globale) {
-		return mGobales.contains(globale);
+		return mGlobales.contains(globale);
 	}
 
 	@Override
-	public void addGlobal(String globale) {
-		mGobales.add(globale);
+	public void addGlobal(String variable) {
+		mGlobales.add(variable);
 	}
 
 	public void addFunction(FunctionBlock block) {
@@ -186,7 +185,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("}");
 
 		// Variables globales
-		for (String global : mGobales) {
+		for (String global : mGlobales) {
 			writer.addLine("private VariableLeekValue globale_" + global + " = null;");
 		}
 		// Fonctions redéfinies
@@ -343,6 +342,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 		for (var function : mFunctions) {
 			function.declare(compiler);
+		}
+		for (var global : mGlobalesDeclarations) {
+			global.declare(compiler);
 		}
 		for (var clazz : mUserClasses.values()) {
 			clazz.analyze(compiler);

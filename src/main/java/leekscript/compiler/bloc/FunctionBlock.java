@@ -108,4 +108,8 @@ public class FunctionBlock extends AbstractLeekBlock {
 		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.FUNCTION));
 		// System.out.println("Declare function " + token.getWord());
 	}
+
+	public String toString() {
+		return token.getWord();
+	}
 }
