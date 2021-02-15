@@ -88,9 +88,14 @@ public abstract class AI {
 
 	public String getErrorMessage(StackTraceElement[] elements) {
 		StringBuilder sb = new StringBuilder();
+		int count = 0;
 		for (StackTraceElement element : elements) {
 			if (element.getMethodName().equals("runIA") || element.getMethodName().startsWith("user_function_")) {
 				sb.append(getErrorLocalisation(element.getLineNumber())).append("\n");
+				if (count++ > 50) {
+					sb.append("[...]");
+					break;
+				}
 			}
 		}
 		return sb.toString();
