@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekNull extends AbstractExpression {
@@ -16,7 +17,7 @@ public class LeekNull extends AbstractExpression {
 	}
 
 	@Override
-	public boolean validExpression(MainLeekBlock mainblock) throws LeekExpressionException {
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		//Pour une valeur null pas de soucis
 		return true;
 	}
@@ -26,4 +27,8 @@ public class LeekNull extends AbstractExpression {
 		writer.addCode("LeekValueManager.NULL");
 	}
 
+	@Override
+	public void analyze(WordCompiler compiler) {
+
+	}
 }

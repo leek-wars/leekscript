@@ -2,6 +2,7 @@ package leekscript.compiler.instruction;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
 
@@ -41,5 +42,12 @@ public class LeekReturnInstruction implements LeekInstruction {
 	@Override
 	public boolean putCounterBefore() {
 		return true;
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		if (mExpression != null) {
+			mExpression.analyze(compiler);
+		}
 	}
 }

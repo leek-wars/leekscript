@@ -1,5 +1,7 @@
 package leekscript.runner.values;
 
+import java.util.Set;
+
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
@@ -42,8 +44,8 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public String getString(AI ai) throws LeekRunException {
-		return mValue.getString(ai);
+	public String getString(AI ai, Set<Object> visited) throws LeekRunException {
+		return mValue.getString(ai, visited);
 	}
 
 	@Override

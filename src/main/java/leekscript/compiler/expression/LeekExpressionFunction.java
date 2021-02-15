@@ -3,15 +3,17 @@ package leekscript.compiler.expression;
 import java.util.ArrayList;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.runner.LeekFunctions;
 
 public class LeekExpressionFunction extends AbstractExpression {
 
 	private final ArrayList<AbstractExpression> mParameters = new ArrayList<AbstractExpression>();
 	private AbstractExpression mExpression = null;
 
-	public LeekExpressionFunction() {
-	}
+	public LeekExpressionFunction() {}
 
 	public void setExpression(AbstractExpression expression) {
 		mExpression = expression;
@@ -37,25 +39,50 @@ public class LeekExpressionFunction extends AbstractExpression {
 	}
 
 	@Override
-	public boolean validExpression(MainLeekBlock mainblock) throws LeekExpressionException {
-		if(mExpression == null || !mExpression.validExpression(mainblock)) return false;
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+		if(mExpression == null || !mExpression.validExpression(compiler, mainblock)) return false;
 
 		//Vérification de chaque paramètre
 		for(AbstractExpression parameter : mParameters){
-			parameter.validExpression(mainblock);
+			parameter.validExpression(compiler, mainblock);
 		}
 		return true;
 	}
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		mExpression.writeJavaCode(mainblock, writer);
-		writer.addCode(".executeFunction(mUAI, new AbstractLeekValue[]{");
-		for(int i = 0; i < mParameters.size(); i++){
-			if(i > 0) writer.addCode(", ");
-			if(i < mParameters.size()) mParameters.get(i).writeJavaCode(mainblock, writer);
-			else writer.addCode("LeekValueManager.NULL");
+		boolean addComma = true;
+		if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SYSTEM_FUNCTION) {
+			var variable = (LeekVariable) mExpression;
+			String namespace = LeekFunctions.getNamespace(variable.getName());
+			writer.addCode("LeekValueManager.getFunction(" + namespace + "." + variable.getName() + ")");
+			writer.addCode(".executeFunction(mUAI");
+		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.FUNCTION) {
+			writer.addCode("user_function_");
+			writer.addCode(((LeekVariable) mExpression).getName());
+			writer.addCode("(");
+			addComma = false;
+		} else {
+			mExpression.writeJavaCode(mainblock, writer);
+			writer.addCode(".executeFunction(mUAI");
 		}
-		writer.addCode("})");
+		for (int i = 0; i < mParameters.size(); i++) {
+			if (i > 0 || addComma) writer.addCode(", ");
+			if (i < mParameters.size()) {
+				mParameters.get(i).writeJavaCode(mainblock, writer);
+				writer.addCode(".getValue()");
+			} else {
+				writer.addCode("LeekValueManager.NULL");
+			}
+		}
+		writer.addCode(")");
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		mExpression.analyze(compiler);
+		for (AbstractExpression parameter : mParameters) {
+			parameter.analyze(compiler);
+		}
 	}
 }

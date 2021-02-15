@@ -1,5 +1,9 @@
 package leekscript.compiler;
 
+import java.util.Set;
+import java.util.TreeSet;
+
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.compiler.bloc.AnonymousFunctionBlock;
 import leekscript.compiler.bloc.ConditionalBloc;
@@ -11,7 +15,6 @@ import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.bloc.WhileBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
-import leekscript.compiler.exceptions.LeekInstructionException;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekAnonymousFunction;
 import leekscript.compiler.expression.LeekArray;
@@ -20,8 +23,6 @@ import leekscript.compiler.expression.LeekConstant;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekExpressionFunction;
-import leekscript.compiler.expression.LeekFunction;
-import leekscript.compiler.expression.LeekFunctionValue;
 import leekscript.compiler.expression.LeekGlobal;
 import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekNumber;
@@ -29,6 +30,7 @@ import leekscript.compiler.expression.LeekParenthesis;
 import leekscript.compiler.expression.LeekString;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
+import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.BlankInstruction;
 import leekscript.compiler.instruction.LeekBreakInstruction;
 import leekscript.compiler.instruction.LeekContinueInstruction;
@@ -37,7 +39,6 @@ import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.compiler.instruction.LeekReturnInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.LeekConstants;
-import leekscript.runner.LeekFunctions;
 
 public class WordCompiler {
 
@@ -46,6 +47,7 @@ public class WordCompiler {
 	private final WordParser mCompiler;
 	private int mLine;
 	private AIFile<?> mAI = null;
+	private Set<AnalyzeError> errors = new TreeSet<>();
 	private final int version;
 
 	public WordCompiler(WordParser cmp, MainLeekBlock main, AIFile<?> ai, int version) {
@@ -56,7 +58,7 @@ public class WordCompiler {
 		this.version = version;
 	}
 
-	public void readCode() throws Exception {
+	public void readCode() throws LeekCompilerException {
 		try {
 			mCompiler.compile(this);
 			// Receherche des fonctions utilisateur
@@ -135,26 +137,32 @@ public class WordCompiler {
 			}
 			if (!mMain.equals(mCurentBlock))
 				throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.OPEN_BLOC_REMAINING);
-		} catch (LeekInstructionException e) {
-			throw new LeekCompilerException(mCompiler.lastWord(), e.getMessage());
+
 		} catch (IndexOutOfBoundsException e) {
 			throw new LeekCompilerException(mCompiler.endWord(), LeekCompilerException.END_OF_SCRIPT_UNEXPECTED);
 		}
 	}
 
-	private void compileWord() throws Exception {
+	public void analyze() {
+		// Analyse sémantique
+		mCurentBlock = mMain;
+		mMain.analyze(this);
+	}
+
+	private void compileWord() throws LeekCompilerException {
 		mLine = mCompiler.getWord().getLine();
 		mMain.addInstruction();
 		IAWord word = mCompiler.getWord();
 		if (word.getType() == WordParser.T_END_INSTRUCTION) {
-			mCurentBlock.addInstruction(new BlankInstruction());
+			mCurentBlock.addInstruction(this, new BlankInstruction());
 			mCompiler.skipWord();
 			return;
 		} else if (word.getType() == WordParser.T_ACCOLADE_RIGHT) {
 			// Fermeture de bloc
-			if (!mCurentBlock.hasAccolade() || mCurentBlock.getParent() == null)
-				throw new LeekCompilerException(word, LeekCompilerException.NO_BLOC_TO_CLOSE);
-			else {
+			if (!mCurentBlock.hasAccolade() || mCurentBlock.getParent() == null) {
+				// throw new LeekCompilerException(word, LeekCompilerException.NO_BLOC_TO_CLOSE);
+				errors.add(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, LeekCompilerException.NO_BLOC_TO_CLOSE));
+			} else {
 				if (mCurentBlock instanceof DoWhileBlock) {
 					DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
 					mCurentBlock.checkEndBlock();
@@ -208,9 +216,10 @@ public class WordCompiler {
 					throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.BREAK_OUT_OF_LOOP);
 				}
 				mCompiler.skipWord();
-				if (mCompiler.readWord().getType() != WordParser.T_END_INSTRUCTION)
-					throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
-				mCurentBlock.addInstruction(new LeekBreakInstruction(mCurentBlock.countInstructions(), mCompiler.lastWord().getLine(), mCompiler.lastWord().getAI()));
+				if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
+					mCompiler.skipWord();
+					// throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
+				mCurentBlock.addInstruction(this, new LeekBreakInstruction(mCurentBlock.countInstructions(), mCompiler.lastWord().getLine(), mCompiler.lastWord().getAI()));
 
 				return;
 			} else if (word.getWord().equals("continue")) {
@@ -218,9 +227,11 @@ public class WordCompiler {
 					throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.CONTINUE_OUT_OF_LOOP);
 				}
 				mCompiler.skipWord();
-				if (mCompiler.readWord().getType() != WordParser.T_END_INSTRUCTION)
-					throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
-				mCurentBlock.addInstruction(new LeekContinueInstruction(mCurentBlock.countInstructions(), mLine, mAI));
+				if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
+					mCompiler.skipWord();
+				// if (mCompiler.readWord().getType() != WordParser.T_END_INSTRUCTION)
+				// 	throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
+				mCurentBlock.addInstruction(this, new LeekContinueInstruction(mCurentBlock.countInstructions(), mLine, mAI));
 				return;
 			} else if (word.getWord().equals("return")) {
 				mCompiler.skipWord();
@@ -228,9 +239,9 @@ public class WordCompiler {
 				if (mCompiler.getWord().getType() != WordParser.T_END_INSTRUCTION) {
 					exp = readExpression().getAbstractExpression();
 				}
-				if (mCompiler.readWord().getType() != WordParser.T_END_INSTRUCTION)
-					throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
-				mCurentBlock.addInstruction(new LeekReturnInstruction(mCurentBlock.countInstructions(), exp, mLine, mAI));
+				if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
+					mCompiler.skipWord();
+				mCurentBlock.addInstruction(this, new LeekReturnInstruction(mCurentBlock.countInstructions(), exp, mLine, mAI));
 				return;
 			} else if (word.getWord().equals("function")) {
 				mCompiler.skipWord();
@@ -240,16 +251,19 @@ public class WordCompiler {
 
 		}
 		AbstractExpression exp = readExpression().getAbstractExpression();
-		if (mCompiler.readWord().getType() != WordParser.T_END_INSTRUCTION)
-			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
-		mCurentBlock.addInstruction(new LeekExpressionInstruction(exp, mLine, mAI));
+		if (mCompiler.haveWords() && mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION) {
+			mCompiler.skipWord();
+		}
+		// if (mCompiler.readWord().getType() != WordParser.T_END_INSTRUCTION)
+		// 	throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
+		mCurentBlock.addInstruction(this, new LeekExpressionInstruction(exp, mLine, mAI));
 	}
 
 	public void writeJava(String className, JavaWriter writer, String AIClass) {
 		mMain.writeJavaCode(writer, className, AIClass);
 	}
 
-	private void includeBlock() throws Exception {
+	private void includeBlock() throws LeekCompilerException {
 		// On vérifie qu'on est dans le bloc principal
 		if (!mCurentBlock.equals(mMain))
 			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.INCLUDE_ONLY_IN_MAIN_BLOCK);
@@ -262,14 +276,11 @@ public class WordCompiler {
 		String iaName = mCompiler.readWord().getWord();
 
 		if (!mMain.includeAI(this, iaName)) {
-			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.AI_NOT_EXISTING, new String[] { iaName });
+			errors.add(new AnalyzeError(mCompiler.lastWord(), AnalyzeErrorLevel.ERROR, LeekCompilerException.AI_NOT_EXISTING, new String[] { iaName }));
 		}
 
 		if (mCompiler.readWord().getType() != WordParser.T_PAR_RIGHT)
 			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.CLOSING_PARENTHESIS_EXPECTED);
-
-		if (mCompiler.readWord().getType() != WordParser.T_END_INSTRUCTION)
-			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
 	}
 
 	private void functionBlock() throws LeekCompilerException {
@@ -279,16 +290,15 @@ public class WordCompiler {
 		// Récupération du nom de la fonction
 		if (mCompiler.getWord().getType() != WordParser.T_STRING)
 			throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.FUNCTION_NAME_EXPECTED);
-		String funcName = mCompiler.readWord().getWord();
-		if (!isAvailable(funcName, false))
+		IAWord funcName = mCompiler.readWord();
+		if (!isAvailable(funcName.getWord(), false))
 			throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.FUNCTION_NAME_UNAVAILABLE);
 
 		if (mCompiler.readWord().getType() != WordParser.T_PAR_LEFT) {
 			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.OPENING_PARENTHESIS_EXPECTED);
 		}
 
-		FunctionBlock block = new FunctionBlock(mCurentBlock, mMain, mLine, mAI);
-		block.setName(funcName);
+		FunctionBlock block = new FunctionBlock(mCurentBlock, mMain, mLine, mAI, funcName);
 		mCurentBlock = block;
 		while (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
 			boolean is_reference = false;
@@ -300,7 +310,7 @@ public class WordCompiler {
 				throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARAMETER_NAME_EXPECTED);
 			if (!isAvailable(mCompiler.getWord().getWord(), true))
 				throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARAMETER_NAME_UNAVAILABLE);
-			block.addParameter(mCompiler.readWord().getWord(), is_reference);
+			block.addParameter(mCompiler.readWord(), is_reference);
 			if (mCompiler.getWord().getType() == WordParser.T_VIRG)
 				mCompiler.skipWord();
 		}
@@ -314,7 +324,7 @@ public class WordCompiler {
 		mMain.addFunction(block);
 	}
 
-	private void forBlock() throws Exception {
+	private void forBlock() throws LeekCompilerException {
 		// Bloc de type for(i=0;i<5;i++) ou encore for(element in tableau)
 		// On peut déclarer une variable pendant l'instruction d'initialisation
 		if (mCompiler.readWord().getType() != WordParser.T_PAR_LEFT) {
@@ -322,7 +332,6 @@ public class WordCompiler {
 		}
 
 		boolean isDeclaration = false;
-		String varName = "";
 		AbstractLeekBlock forBlock = null;
 
 		// Là on doit déterminer si y'a déclaration de variable
@@ -339,8 +348,9 @@ public class WordCompiler {
 		// On récupère ensuite le nom de la variable
 		if (mCompiler.getWord().getType() != WordParser.T_STRING)
 			throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.VARIABLE_NAME_EXPECTED);
-		varName = mCompiler.readWord().getWord();
+		IAWord varName = mCompiler.readWord();
 		// Si c'est une déclaration on vérifie que le nom est disponnible
+		/*
 		if (isDeclaration) {
 			if (!isAvailable(varName, true))
 				throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
@@ -349,6 +359,7 @@ public class WordCompiler {
 			if (!mCurentBlock.hasVariable(varName) && !mMain.hasGlobal(varName))
 				throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.VARIABLE_NOT_EXISTS);
 		}
+		*/
 		// Maintenant on va savoir si on a affaire à un for(i in array) ou à un
 		// for(i=0;i<...
 		if (mCompiler.getWord().getWord().equals(":")) {// C'est un
@@ -371,8 +382,8 @@ public class WordCompiler {
 			// On récupère ensuite le nom de la variable accueillant la valeur
 			if (mCompiler.getWord().getType() != WordParser.T_STRING)
 				throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.VARIABLE_NAME_EXPECTED);
-			String valueVarName = mCompiler.readWord().getWord();
-
+			IAWord valueVarName = mCompiler.readWord();
+			/*
 			if (isValueDeclaration) {
 				if (!isAvailable(valueVarName, true))
 					throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
@@ -381,13 +392,13 @@ public class WordCompiler {
 				if (!mCurentBlock.hasVariable(valueVarName) && !mMain.hasGlobal(valueVarName))
 					throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.VARIABLE_NOT_EXISTS);
 			}
-
+			*/
 			if (!mCompiler.readWord().getWord().equals("in"))
 				throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.KEYWORD_IN_EXPECTED);
 
 			// On déclare notre bloc foreach et on entre dedans
 			ForeachKeyBlock block = new ForeachKeyBlock(mCurentBlock, mMain, isDeclaration, isValueDeclaration, mLine, mAI, reference1, reference2);
-			mCurentBlock.addInstruction(block);
+			mCurentBlock.addInstruction(this, block);
 			mCurentBlock = block;
 
 			// On lit le array (ou liste de valeurs)
@@ -403,7 +414,7 @@ public class WordCompiler {
 			mCompiler.skipWord();
 
 			ForeachBlock block = new ForeachBlock(mCurentBlock, mMain, isDeclaration, mLine, mAI, reference1);
-			mCurentBlock.addInstruction(block);
+			mCurentBlock.addInstruction(this, block);
 			mCurentBlock = block;
 
 			// On lit le array (ou liste de valeurs)
@@ -417,18 +428,28 @@ public class WordCompiler {
 			mCompiler.skipWord();
 
 			ForBlock block = new ForBlock(mCurentBlock, mMain, mLine, mAI);
-			mCurentBlock.addInstruction(block);
+			mCurentBlock.addInstruction(this, block);
 			mCurentBlock = block;
 
 			// On récupère la valeur de base du compteur
 			AbstractExpression initValue = readExpression().getAbstractExpression();
-			if (isDeclaration)
-				block.addVariable(varName);
-			if (mCompiler.readWord().getType() != WordParser.T_END_INSTRUCTION)
+			if (mCompiler.readWord().getType() != WordParser.T_END_INSTRUCTION) {
+				// errors.add(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.ERROR, LeekCompilerException.END_OF_INSTRUCTION_EXPECTED));
 				throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
+				// return;
+			}
+			// if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION) {
+			// 	mCompiler.skipWord();
+			// }
 			AbstractExpression condition = readExpression().getAbstractExpression();
-			if (mCompiler.readWord().getType() != WordParser.T_END_INSTRUCTION)
+			if (mCompiler.readWord().getType() != WordParser.T_END_INSTRUCTION) {
+				// errors.add(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.ERROR, LeekCompilerException.END_OF_INSTRUCTION_EXPECTED));
 				throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
+				// return;
+			}
+			// if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION) {
+			// 	mCompiler.skipWord();
+			// }
 			AbstractExpression incrementation = readExpression().getAbstractExpression();
 
 			// Attention si l'incrémentation n'est pas une expression Java fait
@@ -438,7 +459,7 @@ public class WordCompiler {
 				throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.UNCOMPLETE_EXPRESSION);
 			}
 
-			block.setInitialisation(varName, initValue, isDeclaration, block.hasGlobal(varName));
+			block.setInitialisation(varName, initValue, isDeclaration, block.hasGlobal(varName.getWord()));
 			block.setCondition(condition);
 			block.setIncrementation(incrementation);
 
@@ -457,7 +478,7 @@ public class WordCompiler {
 			forBlock.noAccolade();
 	}
 
-	private void whileBlock() throws Exception {
+	private void whileBlock() throws LeekCompilerException {
 		if (mCompiler.readWord().getType() != WordParser.T_PAR_LEFT) {
 			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.OPENING_PARENTHESIS_EXPECTED);
 		}
@@ -471,21 +492,21 @@ public class WordCompiler {
 			mCompiler.skipWord();
 		} else
 			bloc.noAccolade();
-		mCurentBlock.addInstruction(bloc);
+		mCurentBlock.addInstruction(this, bloc);
 		mCurentBlock = bloc;
 	}
 
-	private void dowhileBlock() throws LeekCompilerException, LeekInstructionException {
+	private void dowhileBlock() throws LeekCompilerException {
 		DoWhileBlock bloc = new DoWhileBlock(mCurentBlock, mMain, mAI);
 		if (mCompiler.getWord().getType() == WordParser.T_ACCOLADE_LEFT) {
 			mCompiler.skipWord();
 		} else
 			bloc.noAccolade();
-		mCurentBlock.addInstruction(bloc);
+		mCurentBlock.addInstruction(this, bloc);
 		mCurentBlock = bloc;
 	}
 
-	private void dowhileendBlock(DoWhileBlock bloc) throws Exception {
+	private void dowhileendBlock(DoWhileBlock bloc) throws LeekCompilerException {
 		if (!mCompiler.readWord().getWord().equals("while"))
 			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.WHILE_EXPECTED_AFTER_DO);
 		if (mCompiler.readWord().getType() != WordParser.T_PAR_LEFT) {
@@ -495,11 +516,11 @@ public class WordCompiler {
 		if (mCompiler.readWord().getType() != WordParser.T_PAR_RIGHT) {
 			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.CLOSING_PARENTHESIS_EXPECTED);
 		}
-		if (mCompiler.getWord().getType() != WordParser.T_END_INSTRUCTION)
-			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
+		// if (mCompiler.getWord().getType() != WordParser.T_END_INSTRUCTION)
+		// 	throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
 	}
 
-	private void elseBlock() throws Exception {
+	private void elseBlock() throws LeekCompilerException {
 		// On vérifie qu'on est bien associé à un bloc conditionnel
 		ConditionalBloc last = mCurentBlock.getLastOpenedConditionalBlock();
 		if (last == null || last.getCondition() == null) {
@@ -524,11 +545,11 @@ public class WordCompiler {
 			mCompiler.skipWord();
 		} else
 			bloc.noAccolade();
-		last.getParent().addInstruction(bloc);
+		last.getParent().addInstruction(this, bloc);
 		mCurentBlock = bloc;
 	}
 
-	private void ifBlock() throws Exception {
+	private void ifBlock() throws LeekCompilerException {
 		if (mCompiler.readWord().getType() != WordParser.T_PAR_LEFT) {
 			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.OPENING_PARENTHESIS_EXPECTED);
 		}
@@ -542,20 +563,20 @@ public class WordCompiler {
 			mCompiler.skipWord();
 		} else
 			bloc.noAccolade();
-		mCurentBlock.addInstruction(bloc);
+		mCurentBlock.addInstruction(this, bloc);
 		mCurentBlock = bloc;
 	}
 
-	private void globalDeclaration() throws Exception {
+	private void globalDeclaration() throws LeekCompilerException {
 		// Il y a au moins une premiere variable
 		IAWord word = mCompiler.readWord();
 		if (!(mCurentBlock instanceof MainLeekBlock))
 			throw new LeekCompilerException(word, LeekCompilerException.GLOBAL_ONLY_IN_MAIN_BLOCK);
 		if (word.getType() != WordParser.T_STRING)
 			throw new LeekCompilerException(word, LeekCompilerException.VAR_NAME_EXPECTED_AFTER_GLOBAL);
-		if (!isGlobalAvailable(word.getWord()) || mMain.hasDeclaredGlobal(word.getWord()))
-			throw new LeekCompilerException(word, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
-		LeekGlobalDeclarationInstruction variable = new LeekGlobalDeclarationInstruction(word.getWord(), mLine, mAI);
+		// if (!isGlobalAvailable(word.getWord()) || mMain.hasDeclaredGlobal(word.getWord()))
+		// 	throw new LeekCompilerException(word, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
+		LeekGlobalDeclarationInstruction variable = new LeekGlobalDeclarationInstruction(word, mLine, mAI);
 		// On regarde si une valeur est assignée
 		if (mCompiler.getWord().getWord().equals("=")) {
 			mCompiler.skipWord();
@@ -564,16 +585,16 @@ public class WordCompiler {
 		}
 		// On ajoute la variable
 		mMain.addGlobal(variable.getName());
-		mCurentBlock.addInstruction(variable);
-		while (mCompiler.getWord().getType() == WordParser.T_VIRG) {
+		mCurentBlock.addInstruction(this, variable);
+		while (mCompiler.haveWords() && mCompiler.getWord().getType() == WordParser.T_VIRG) {
 			// On regarde si y'en a d'autres
 			mCompiler.skipWord();// On passe la virgule
 			word = mCompiler.readWord();
 			if (word.getType() != WordParser.T_STRING)
 				throw new LeekCompilerException(word, LeekCompilerException.VAR_NAME_EXPECTED);
-			if (!isGlobalAvailable(word.getWord()) || mMain.hasDeclaredGlobal(word.getWord()))
-				throw new LeekCompilerException(word, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
-			variable = new LeekGlobalDeclarationInstruction(word.getWord(), mLine, mAI);
+			// if (!isGlobalAvailable(word.getWord()) || mMain.hasDeclaredGlobal(word.getWord()))
+			// 	throw new LeekCompilerException(word, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
+			variable = new LeekGlobalDeclarationInstruction(word, mLine, mAI);
 			// On regarde si une valeur est assign�e
 			if (mCompiler.getWord().getWord().equals("=")) {
 				mCompiler.skipWord();
@@ -582,59 +603,61 @@ public class WordCompiler {
 			}
 			// On ajoute la variable
 			mMain.addGlobal(variable.getName());
-			mCurentBlock.addInstruction(variable);
+			mCurentBlock.addInstruction(this, variable);
 		}
-		word = mCompiler.readWord();
-		if (word.getType() != WordParser.T_END_INSTRUCTION)
-			throw new LeekCompilerException(word, LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
+		// word = mCompiler.readWord();
+		// if (word.getType() != WordParser.T_END_INSTRUCTION)
+			// throw new LeekCompilerException(word, LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
+		if (mCompiler.haveWords() && mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
+			mCompiler.skipWord();
 	}
 
-	private void variableDeclaration() throws Exception {
+	private void variableDeclaration() throws LeekCompilerException {
 		// Il y a au moins une premiere variable
 		IAWord word = mCompiler.readWord();
 		if (word.getType() != WordParser.T_STRING)
 			throw new LeekCompilerException(word, LeekCompilerException.VAR_NAME_EXPECTED);
-		if (!isAvailable(word.getWord(), true))
-			throw new LeekCompilerException(word, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
-		LeekVariableDeclarationInstruction variable = new LeekVariableDeclarationInstruction(word.getWord(), mLine, mAI);
+		// if (!isAvailable(word.getWord(), true))
+		// 	throw new LeekCompilerException(word, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
+		LeekVariableDeclarationInstruction variable = new LeekVariableDeclarationInstruction(word, mLine, mAI);
 		// On regarde si une valeur est assignée
 		if (mCompiler.getWord().getWord().equals("=")) {
 			mCompiler.skipWord();
 			// Si oui on récupère la valeur en question
-			mCurentBlock.setDeclaringVariable(variable.getName());
+			mCurentBlock.setDeclaringVariable(variable.getToken());
 			variable.setValue(readExpression().getAbstractExpression());
 			if (mCurentBlock.isDeclaringBariableUsed())
 				variable.mustSepare();
 			mCurentBlock.setDeclaringVariable(null);
 		}
-		// On ajoute la variable
-		mCurentBlock.addVariable(variable.getName());
-		mCurentBlock.addInstruction(variable);
+		mCurentBlock.addInstruction(this, variable);
 		while (mCompiler.getWord().getType() == WordParser.T_VIRG) {
 			// On regarde si y'en a d'autres
 			mCompiler.skipWord();// On passe la virgule
 			word = mCompiler.readWord();
 			if (word.getType() != WordParser.T_STRING)
 				throw new LeekCompilerException(word, LeekCompilerException.VAR_NAME_EXPECTED);
-			if (!isAvailable(word.getWord(), true))
-				throw new LeekCompilerException(word, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
-			variable = new LeekVariableDeclarationInstruction(word.getWord(), mLine, mAI);
-			// On regarde si une valeur est assign�e
+			// if (!isAvailable(word.getWord(), true))
+			// 	throw new LeekCompilerException(word, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
+			variable = new LeekVariableDeclarationInstruction(word, mLine, mAI);
+			// On regarde si une valeur est assignée
 			if (mCompiler.getWord().getWord().equals("=")) {
 				mCompiler.skipWord();
 				// Si oui on récupère la valeur en question
 				variable.setValue(readExpression().getAbstractExpression());
 			}
 			// On ajoute la variable
-			mCurentBlock.addVariable(variable.getName());
-			mCurentBlock.addInstruction(variable);
+			mCurentBlock.addInstruction(this, variable);
+		}
+		if (mCompiler.haveWords() && mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION) {
+			mCompiler.skipWord();
 		}
 		word = mCompiler.readWord();
 		if (word.getType() != WordParser.T_END_INSTRUCTION)
 			throw new LeekCompilerException(word, LeekCompilerException.END_OF_INSTRUCTION_EXPECTED);
 	}
 
-	public LeekExpression readExpression() throws Exception {
+	public LeekExpression readExpression() throws LeekCompilerException {
 		LeekExpression retour = new LeekExpression();
 		while (mCompiler.haveWords()) {
 			IAWord word = mCompiler.getWord();
@@ -660,7 +683,7 @@ public class WordCompiler {
 						if (mCompiler.getWord().getType() == WordParser.T_VIRG)
 							mCompiler.skipWord();
 					}
-					if (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
+					if (mCompiler.haveWords() && mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
 						throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
 					}
 
@@ -676,18 +699,18 @@ public class WordCompiler {
 						break;
 
 					if (Operators.isUnarySuffix(operator))
-						retour.addUnarySuffix(operator);
+						retour.addUnarySuffix(operator, word);
 					else
-						retour.addOperator(operator);
+						retour.addOperator(operator, word);
 				} else if (word.getType() == WordParser.T_STRING) {
 					if (word.getWord().equals("is")) {
 						mCompiler.skipWord();
 						word = mCompiler.getWord();
 						if (word.getWord().equals("not")) {
-							mCompiler.skipWord();
-							retour.addOperator(Operators.NOTEQUALS);
+							IAWord token = mCompiler.readWord();
+							retour.addOperator(Operators.NOTEQUALS, token);
 						} else {
-							retour.addOperator(Operators.EQUALS);
+							retour.addOperator(Operators.EQUALS, word);
 						}
 						continue;
 					}
@@ -730,36 +753,39 @@ public class WordCompiler {
 					}
 					retour.addExpression(array);
 				} else if (word.getType() == WordParser.T_STRING) {
-					if (mCurentBlock.hasVariable(word.getWord()))
-						retour.addExpression(new LeekVariable(word.getWord()));
-					else if (mMain.hasGlobal(word.getWord()))
-						retour.addExpression(new LeekGlobal(word.getWord()));
-					else if (LeekFunctions.isFunction(word.getWord()) > -1 || mMain.hasUserFunction(word.getWord(), true)) {
-						LeekFunction function = new LeekFunction(word.getWord());
-						String fname = word.getWord();
-						// On doit lire la fonction
-						mCompiler.skipWord();
-						if (mCompiler.getWord().getType() != WordParser.T_PAR_LEFT) {
-							// On utilise le nom de la fonction comme une
-							// variable
-							String namespace = LeekFunctions.getNamespace(fname);
-							retour.addExpression(new LeekFunctionValue(fname, namespace));
-							continue;
-						} else {
-							mCompiler.skipWord();
-							while (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
-								function.addParameter(readExpression().getAbstractExpression());
-								if (mCompiler.getWord().getType() == WordParser.T_VIRG)
-									mCompiler.skipWord();
-							}
-							if (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
-								throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
-							}
-							retour.addExpression(function);
-						}
+					// var variable = mCurentBlock.getVariable(word.getWord());
+					// if (variable != null) {
+					// 	retour.addExpression(variable);
+					// }
+					// else
+					if (mMain.hasGlobal(word.getWord())) {
+						retour.addExpression(new LeekGlobal(word));
+					// } else if (LeekFunctions.isFunction(word.getWord()) > -1 || mMain.hasUserFunction(word.getWord(), true) || mMain.hasUserClass(word.getWord())) {
+					// 	// System.out.println("Function call " + word.getWord());
+					// 	boolean isClass = mMain.hasUserClass(word.getWord());
+					// 	LeekFunction function = new LeekFunction(word.getWord(), isClass);
+					// 	String fname = word.getWord();
+					// 	// On doit lire la fonction
+					// 	mCompiler.skipWord();
+					// 	if (mCompiler.getWord().getType() != WordParser.T_PAR_LEFT) {
+					// 		// On utilise le nom de la fonction comme une variable
+					// 		String namespace = LeekFunctions.getNamespace(fname);
+					// 		retour.addExpression(new LeekFunctionValue(fname, namespace));
+					// 		continue;
+					// 	} else {
+					// 		mCompiler.skipWord();
+					// 		while (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
+					// 			function.addParameter(readExpression().getAbstractExpression());
+					// 			if (mCompiler.getWord().getType() == WordParser.T_VIRG)
+					// 				mCompiler.skipWord();
+					// 		}
+					// 		if (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
+					// 			throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+					// 		}
+					// 		retour.addExpression(function);
+					// 	}
 					} else if (word.getWord().equalsIgnoreCase("function")) {
 						retour.addExpression(readAnonymousFunction());
-
 					} else if (word.getWord().equalsIgnoreCase("true"))
 						retour.addExpression(new LeekBoolean(true));
 					else if (word.getWord().equalsIgnoreCase("false"))
@@ -767,11 +793,12 @@ public class WordCompiler {
 					else if (word.getWord().equalsIgnoreCase("null"))
 						retour.addExpression(new LeekNull());
 					else if (word.getWord().equalsIgnoreCase("not"))
-						retour.addUnaryPrefix(Operators.NOT);
+						retour.addUnaryPrefix(Operators.NOT, word);
 					else if (LeekConstants.get(word.getWord()) != null)
 						retour.addExpression(new LeekConstant(word.getWord(), LeekConstants.get(word.getWord())));
 					else {
-						throw new LeekCompilerException(word, LeekCompilerException.UNKNOWN_VARIABLE_OR_FUNCTION);
+						retour.addExpression(new LeekVariable(word, VariableType.LOCAL));
+						// throw new LeekCompilerException(word, LeekCompilerException.UNKNOWN_VARIABLE_OR_FUNCTION);
 					}
 				} else if (word.getType() == WordParser.T_PAR_LEFT) {
 					mCompiler.skipWord();// On avance le curseur pour bien être
@@ -795,26 +822,28 @@ public class WordCompiler {
 
 					if (Operators.isUnaryPrefix(operator)) {
 						// Si oui on l'ajoute
-						retour.addUnaryPrefix(operator);
+						retour.addUnaryPrefix(operator, word);
 					} else {
-						throw new LeekCompilerException(word, LeekCompilerException.OPERATOR_UNEXPECTED);
+						errors.add(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, LeekCompilerException.OPERATOR_UNEXPECTED));
+						// throw new LeekCompilerException(word, LeekCompilerException.OPERATOR_UNEXPECTED);
 					}
 				} else {
-					throw new LeekCompilerException(word, LeekCompilerException.VALUE_EXPECTED);
+					errors.add(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, LeekCompilerException.VALUE_EXPECTED));
+					// throw new LeekCompilerException(word, LeekCompilerException.VALUE_EXPECTED);
 				}
 			}
 			mCompiler.skipWord();
 		}
 		// Avant de retourner, on valide l'expression
 		try {
-			retour.getAbstractExpression().validExpression(mMain);
+			retour.getAbstractExpression().validExpression(this, mMain);
 		} catch (LeekExpressionException e) {
 			throw new LeekCompilerException(mCompiler.lastWord(), e.getMessage(), new String[] { e.getExpression() });
 		}
 		return retour;
 	}
 
-	private LeekAnonymousFunction readAnonymousFunction() throws Exception {
+	private LeekAnonymousFunction readAnonymousFunction() throws LeekCompilerException {
 		mCompiler.skipWord();
 		if (mCompiler.readWord().getType() != WordParser.T_PAR_LEFT) {
 			throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARENTHESIS_EXPECTED_AFTER_FUNCTION);
@@ -825,7 +854,7 @@ public class WordCompiler {
 		AIFile<?> initialAI = mAI;
 		AnonymousFunctionBlock block = new AnonymousFunctionBlock(mCurentBlock, mMain, mLine, mAI);
 		if (initialBlock.getDeclaringVariable() != null)
-			block.addVariable(initialBlock.getDeclaringVariable());
+			block.addVariable(new LeekVariable(initialBlock.getDeclaringVariable(), VariableType.LOCAL));
 		mCurentBlock = block;
 
 		// Lecture des paramètres
@@ -837,9 +866,9 @@ public class WordCompiler {
 			}
 			if (mCompiler.getWord().getType() != WordParser.T_STRING)
 				throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARAMETER_NAME_EXPECTED);
-			if (!isAvailable(mCompiler.getWord().getWord(), true))
-				throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARAMETER_NAME_UNAVAILABLE);
-			block.addParameter(mCompiler.readWord().getWord(), is_reference);
+			// if (!isAvailable(mCompiler.getWord().getWord(), true))
+			// 	throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARAMETER_NAME_UNAVAILABLE);
+			block.addParameter(mCompiler.readWord(), is_reference);
 			if (mCompiler.getWord().getType() == WordParser.T_VIRG)
 				mCompiler.skipWord();
 		}
@@ -912,7 +941,35 @@ public class WordCompiler {
 		return mMain.getCode();
 	}
 
+	public Set<AnalyzeError> getErrors() {
+		return this.errors;
+	}
+
+	public AbstractLeekBlock getCurrentBlock() {
+		return mCurentBlock;
+	}
+
+	public void addError(AnalyzeError error) {
+		this.errors.add(error);
+	}
+
+	public void setCurrentBlock(AbstractLeekBlock block) {
+		mCurentBlock = block;
+	}
+
+	public WordParser getParser() {
+		return mCompiler;
+	}
+
+	public MainLeekBlock getMainBlock() {
+		return mMain;
+	}
+
 	public int getVersion() {
 		return this.version;
+	}
+
+	public void addErrors(Set<AnalyzeError> errors) {
+		this.errors.addAll(errors);
 	}
 }

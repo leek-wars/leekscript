@@ -2,6 +2,7 @@ package leekscript.runner.values;
 
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Set;
 
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
@@ -230,8 +231,9 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		return this;
 	}
 
-	public String getString(AI ai) throws LeekRunException {
-		return mValues.toString(ai);
+	public String getString(AI ai, Set<Object> visited) throws LeekRunException {
+		visited.add(this);
+		return mValues.toString(ai, visited);
 	}
 
 	@Override
@@ -295,9 +297,9 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		mValues.sort(ai, comparator);
 	}
 
-	public void setParent(PhpArrayVariableLeekValue parent) {
-		mValues.setParent(parent);
-	}
+	// public void setParent(PhpArrayVariableLeekValue parent) {
+	// 	mValues.setParent(parent);
+	// }
 
 	@Override
 	public Object toJSON(AI ai) throws LeekRunException {

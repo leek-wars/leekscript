@@ -1,19 +1,23 @@
 package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import leekscript.compiler.AIFile;
+import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
-import leekscript.compiler.exceptions.LeekInstructionException;
+import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.instruction.LeekInstruction;
 
 public abstract class AbstractLeekBlock implements LeekInstruction {
+
 	protected ArrayList<LeekInstruction> mInstructions = new ArrayList<LeekInstruction>();
 	protected AbstractLeekBlock mParent = null;
-	protected ArrayList<String> mVariables = new ArrayList<String>();
+	protected HashMap<String, LeekVariable> mVariables = new HashMap<>();
 
-	protected String mDeclaringVariable = null;
+	protected IAWord mDeclaringVariable = null;
 	protected boolean mDeclaringVariableUsed = false;
 	protected boolean mAccolade = true;
 	protected MainLeekBlock mMain = null;
@@ -55,9 +59,9 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 		mAI = ai;
 	}
 
-	public void addInstruction(LeekInstruction instruction) throws LeekInstructionException {
+	public void addInstruction(WordCompiler compiler, LeekInstruction instruction) throws LeekCompilerException {
 		if (mEndInstruction != 0) {
-			throw new LeekInstructionException(LeekCompilerException.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+			throw new LeekCompilerException(compiler.getParser().lastWord(), LeekCompilerException.CANT_ADD_INSTRUCTION_AFTER_BREAK);
 		}
 		mEndInstruction = instruction.getEndBlock();
 		mInstructions.add(instruction);
@@ -71,12 +75,12 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 		return mAccolade;
 	}
 
-	public void setDeclaringVariable(String variable) {
+	public void setDeclaringVariable(IAWord variable) {
 		mDeclaringVariable = variable;
 		mDeclaringVariableUsed = false;
 	}
 
-	public String getDeclaringVariable() {
+	public IAWord getDeclaringVariable() {
 		mDeclaringVariableUsed = true;
 		return mDeclaringVariable;
 	}
@@ -104,8 +108,8 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 		return this;
 	}
 
-	public void addVariable(String variable) {
-		mVariables.add(variable);
+	public void addVariable(LeekVariable variable) {
+		mVariables.put(variable.getName(), variable);
 	}
 
 	public LeekInstruction lastInstruction() {
@@ -113,11 +117,16 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 	}
 
 	public boolean hasVariable(String variable) {
-		if (mVariables.contains(variable))
-			return true;
+		return mVariables.containsKey(variable);
+		// return getVariable(variable, false) != null;
+	}
+
+	public LeekVariable getVariable(String variable, boolean includeClassMembers) {
+		var v = mVariables.get(variable);
+		if (v != null) return v;
 		if (mParent != null)
-			return mParent.hasVariable(variable);
-		return false;
+			return mParent.getVariable(variable, includeClassMembers);
+		return null;
 	}
 
 	public boolean hasGlobal(String globale) {
@@ -166,5 +175,21 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 	@Override
 	public boolean putCounterBefore() {
 		return mEndInstruction != 0;
+	}
+
+	public void analyze(WordCompiler compiler) {
+		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
+		compiler.setCurrentBlock(this);
+		for (var instruction : mInstructions) {
+			instruction.analyze(compiler);
+		}
+		compiler.setCurrentBlock(initialBlock);
+	}
+
+	public int getLine() {
+		return mLine;
+	}
+	public AIFile<?> getFile() {
+		return mAI;
 	}
 }

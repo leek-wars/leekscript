@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 
@@ -26,24 +27,22 @@ public class LeekFunctionValue extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		//return "Fonction[" + mFunctionName + "]";
-		//FunctionLeekValue
-		if(mainblock.isRedefinedFunction(mFunctionName)){
+		// return "Fonction[" + mFunctionName + "]";
+		// FunctionLeekValue
+		if (mainblock.isRedefinedFunction(mFunctionName)) {
 			writer.addCode("rfunction_" + mFunctionName);
-		}
-		else{
+		} else {
 			FunctionBlock user_function = mainblock.getUserFunction(mFunctionName);
-			if(user_function != null){
+			if (user_function != null) {
 				writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
-			}
-			else{
+			} else {
 				writer.addCode("LeekValueManager.getFunction(" + mFunctionNamespace + "." + mFunctionName + ")");
 			}
 		}
 	}
 
 	@Override
-	public boolean validExpression(MainLeekBlock mainblock) throws LeekExpressionException {
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		return true;
 	}
 
@@ -51,4 +50,8 @@ public class LeekFunctionValue extends AbstractExpression {
 		return mFunctionName;
 	}
 
+	@Override
+	public void analyze(WordCompiler compiler) {
+
+	}
 }

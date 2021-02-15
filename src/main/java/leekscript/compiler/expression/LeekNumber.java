@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekNumber extends AbstractExpression {
@@ -22,7 +23,7 @@ public class LeekNumber extends AbstractExpression {
 	}
 
 	@Override
-	public boolean validExpression(MainLeekBlock mainblock) throws LeekExpressionException {
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		//Pour un nombre pas de soucis
 		return true;
 	}
@@ -37,4 +38,8 @@ public class LeekNumber extends AbstractExpression {
 		}
 	}
 
+	@Override
+	public void analyze(WordCompiler compiler) {
+
+	}
 }

@@ -1,6 +1,7 @@
 package leekscript.compiler.instruction;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public interface LeekInstruction {
@@ -12,4 +13,6 @@ public interface LeekInstruction {
 	public int getEndBlock();
 
 	public boolean putCounterBefore();
+
+	public void analyze(WordCompiler compiler);
 }

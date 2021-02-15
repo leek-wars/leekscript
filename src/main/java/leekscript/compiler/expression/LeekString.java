@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekString extends AbstractExpression {
@@ -22,7 +23,7 @@ public class LeekString extends AbstractExpression {
 	}
 
 	@Override
-	public boolean validExpression(MainLeekBlock mainblock) throws LeekExpressionException {
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		//Pour une chaine de caractères pas de problèmes
 		return true;
 	}
@@ -49,5 +50,10 @@ public class LeekString extends AbstractExpression {
 			else str += mString.charAt(i);
 		}
 		writer.addCode("new StringLeekValue(\"" + str + "\")");
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+
 	}
 }

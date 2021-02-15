@@ -2,6 +2,7 @@ package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.AbstractExpression;
 
 public class ConditionalBloc extends AbstractLeekBlock {
@@ -89,4 +90,11 @@ public class ConditionalBloc extends AbstractLeekBlock {
 		else mPutCounterBefore = value;
 	}
 
+	@Override
+	public void analyze(WordCompiler compiler) {
+		if (mCondition != null) {
+			mCondition.analyze(compiler);
+		}
+		super.analyze(compiler);
+	}
 }

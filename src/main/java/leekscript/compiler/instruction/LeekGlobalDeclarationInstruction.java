@@ -1,19 +1,21 @@
 package leekscript.compiler.instruction;
 
 import leekscript.compiler.AIFile;
+import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
 
 public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 
-	private final String mName;
+	private final IAWord token;
 	private AbstractExpression mValue = null;
 	private final int mLine;
 	private final AIFile<?> mAI;
 
-	public LeekGlobalDeclarationInstruction(String name, int line, AIFile<?> ai) {
-		mName = name;
+	public LeekGlobalDeclarationInstruction(IAWord token, int line, AIFile<?> ai) {
+		this.token = token;
 		mLine = line;
 		mAI = ai;
 	}
@@ -23,24 +25,24 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 	}
 
 	public String getName() {
-		return mName;
+		return token.getWord();
 	}
 
 	@Override
 	public String getCode() {
-		return mName + " = " + mValue.getString();
+		return token.getWord() + " = " + mValue.getString();
 	}
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("if(globale_" + mName + " == null){globale_" + mName + " = new VariableLeekValue(mUAI, ");
+		writer.addCode("if(globale_" + token.getWord() + " == null){globale_" + token.getWord() + " = new VariableLeekValue(mUAI, ");
 		if(mValue != null) mValue.writeJavaCode(mainblock, writer);
 		else writer.addCode("LeekValueManager.NULL");
 		writer.addLine(");}", mLine, mAI);
 	}
 
 	public String getJavaDeclaration() {
-		return "private VariableLeekValue globale_" + mName + " = null;";
+		return "private VariableLeekValue globale_" + token.getWord() + " = null;";
 	}
 
 	@Override
@@ -51,5 +53,17 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 	@Override
 	public boolean putCounterBefore() {
 		return false;
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		// if (token.getWord().equals("COLOR_ORANGE")) {
+		// 	System.out.println("Add global " + token.getWord());
+		// }
+		// compiler.getMainBlock().addGlobal(token.getWord());
+		// compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.GLOBAL));
+		if (mValue != null) {
+			mValue.analyze(compiler);
+		}
 	}
 }

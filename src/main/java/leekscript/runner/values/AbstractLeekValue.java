@@ -1,5 +1,8 @@
 package leekscript.runner.values;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
@@ -34,7 +37,11 @@ public abstract class AbstractLeekValue {
 	}
 
 	public String getString(AI ai) throws LeekRunException {
-		return "";
+		return getString(ai, new HashSet<>());
+	}
+
+	public String getString(AI ai, Set<Object> visited) throws LeekRunException {
+		return getString(ai);
 	}
 
 	public boolean getBoolean() {

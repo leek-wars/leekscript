@@ -1,6 +1,7 @@
 package leekscript.compiler.instruction;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class BlankInstruction implements LeekInstruction {
@@ -24,4 +25,8 @@ public class BlankInstruction implements LeekInstruction {
 		return false;
 	}
 
+	@Override
+	public void analyze(WordCompiler compiler) {
+
+	}
 }

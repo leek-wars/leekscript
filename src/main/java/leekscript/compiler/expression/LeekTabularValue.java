@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekTabularValue extends AbstractExpression {
@@ -36,15 +37,15 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public boolean validExpression(MainLeekBlock mainblock) throws LeekExpressionException {
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		//On doit vérifier qu'on a affaire : soit à une expression tabulaire, soit à une variable, soit à une globale
 		if(!(mTabular instanceof LeekVariable) && !(mTabular instanceof LeekGlobal) && !(mTabular instanceof LeekTabularValue)){
 			//throw new LeekExpressionException(this, "Ce n'est pas un tableau valide");
 			mLeftValue = false;
 		}
 		//Sinon on valide simplement les deux expressions
-		mTabular.validExpression(mainblock);
-		mCase.validExpression(mainblock);
+		mTabular.validExpression(compiler, mainblock);
+		mCase.validExpression(compiler, mainblock);
 		return true;
 	}
 
@@ -68,4 +69,14 @@ public class LeekTabularValue extends AbstractExpression {
 		mLeftValue = b;
 	}
 
+	@Override
+	public boolean isLeftValue() {
+		return true;
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		mTabular.analyze(compiler);
+		mCase.analyze(compiler);
+	}
 }

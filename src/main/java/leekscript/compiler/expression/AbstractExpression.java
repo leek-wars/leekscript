@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public abstract class AbstractExpression {
@@ -22,9 +23,15 @@ public abstract class AbstractExpression {
 
 	public abstract void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer);
 
-	public abstract boolean validExpression(MainLeekBlock mainblock) throws LeekExpressionException;
+	public abstract boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException;
 
 	public AbstractExpression trim() {
 		return this;
 	}
+
+	public boolean isLeftValue() {
+		return false;
+	}
+
+	public abstract void analyze(WordCompiler compiler);
 }

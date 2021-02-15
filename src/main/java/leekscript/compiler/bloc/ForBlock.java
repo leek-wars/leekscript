@@ -1,12 +1,15 @@
 package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
+import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekGlobal;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
+import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.LeekExpressionInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
@@ -21,16 +24,15 @@ public class ForBlock extends AbstractLeekBlock {
 		super(parent, main, line, ai);
 	}
 
-	public void setInitialisation(String counter, AbstractExpression value, boolean isDeclaration, boolean isGlobal) {
-		if(isDeclaration){
-			LeekVariableDeclarationInstruction init = new LeekVariableDeclarationInstruction(counter, mLine, mAI);
+	public void setInitialisation(IAWord token, AbstractExpression value, boolean isDeclaration, boolean isGlobal) {
+		if (isDeclaration) {
+			LeekVariableDeclarationInstruction init = new LeekVariableDeclarationInstruction(token, mLine, mAI);
 			init.setValue(value);
 			mInitialisation = init;
-		}
-		else{
+		} else {
 			LeekExpression exp = new LeekExpression();
-			exp.addExpression(isGlobal ? new LeekGlobal(counter) : new LeekVariable(counter));
-			exp.addOperator(Operators.ASSIGN);
+			exp.addExpression(isGlobal ? new LeekGlobal(token) : new LeekVariable(token, VariableType.LOCAL));
+			exp.addOperator(Operators.ASSIGN, token);
 			exp.addExpression(value);
 			mInitialisation = new LeekExpressionInstruction(exp, mLine, mAI);
 		}
@@ -73,4 +75,13 @@ public class ForBlock extends AbstractLeekBlock {
 		return 0;
 	}
 
+	public void analyze(WordCompiler compiler) {
+		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
+		compiler.setCurrentBlock(this);
+		if (mInitialisation != null) mInitialisation.analyze(compiler);
+		if (mCondition != null) mCondition.analyze(compiler);
+		if (mIncrementation != null) mIncrementation.analyze(compiler);
+		compiler.setCurrentBlock(initialBlock);
+		super.analyze(compiler);
+	}
 }
