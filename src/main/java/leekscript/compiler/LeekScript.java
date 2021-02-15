@@ -55,13 +55,13 @@ public class LeekScript {
 		return compile(ai, AIClass, nocache);
 	}
 
-	public static AI compileSnippet(String snippet, String AIClass, String jar)	throws LeekScriptException, LeekCompilerException, IOException {
+	public static AI compileSnippet(String snippet, String AIClass)	throws LeekScriptException, LeekCompilerException, IOException {
 		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet " + id++ + ">", snippet, System.currentTimeMillis(), 11, null);
 		return compile(ai, AIClass, false);
 	}
 
-	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass, String jar, boolean nocache) throws Exception {
-		AI ai = LeekScript.compileSnippet(script, AIClass, jar);
+	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass, boolean nocache) throws Exception {
+		AI ai = LeekScript.compileSnippet(script, AIClass);
 		AbstractLeekValue v = ai.runIA();
 		if (v.equals(ai, s))
 			return true;
@@ -80,11 +80,11 @@ public class LeekScript {
 	}
 
 	public static AbstractLeekValue runScript(String script, boolean nocache) throws Exception {
-		return LeekScript.compileSnippet(script, "AI", "leekscript.jar").runIA();
+		return LeekScript.compileSnippet(script, "AI").runIA();
 	}
 
 	public static boolean testScript(String script, AbstractLeekValue s) throws Exception {
-		AI ai = LeekScript.compileSnippet(script, "AI", "leekscript.jar");
+		AI ai = LeekScript.compileSnippet(script, "AI");
 		AbstractLeekValue v = ai.runIA();
 		System.out.println(v.getString(ai));
 		return v.equals(ai, s);

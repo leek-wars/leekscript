@@ -48,4 +48,9 @@ public class TestAI extends AI {
 		return null;
 	}
 
+	@Override
+	public int getVersion() {
+		return 11;
+	}
+
 }
