@@ -1,11 +1,16 @@
 package leekscript.compiler.instruction;
 
 import leekscript.compiler.AIFile;
+import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.expression.LeekVariable.VariableType;
 
 public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 
@@ -55,13 +60,22 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 		return false;
 	}
 
+	public void declare(WordCompiler compiler) {
+		// Variables interdites
+		if (token.getWord().equals("this")) {
+		} else {
+			// Vérification déjà existante (on vérifie les globales seulement en 1.1 car il y a un léger bug en 1.0 avec les includes)
+			if ((compiler.getVersion() >= 11 && compiler.getMainBlock().hasGlobal(token.getWord())) || compiler.getMainBlock().hasUserFunction(token.getWord(), true)) {
+				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE));
+			} else {
+				// On ajoute la variable
+				compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.GLOBAL));
+			}
+		}
+	}
+
 	@Override
 	public void analyze(WordCompiler compiler) {
-		// if (token.getWord().equals("COLOR_ORANGE")) {
-		// 	System.out.println("Add global " + token.getWord());
-		// }
-		// compiler.getMainBlock().addGlobal(token.getWord());
-		// compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.GLOBAL));
 		if (mValue != null) {
 			mValue.analyze(compiler);
 		}

@@ -71,11 +71,11 @@ public class WordCompiler {
 				if (mCompiler.getWord().getWord().equals("global")) {
 					mCompiler.skipWord();
 					String globalName = mCompiler.readWord().getWord();
-					mMain.addGlobalDeclaration(globalName);
+					mMain.addGlobal(globalName);
 					while (mCompiler.getWord().getType() == WordParser.T_VIRG && mCompiler.haveWords()) {
 						mCompiler.skipWord();
 						globalName = mCompiler.readWord().getWord();
-						mMain.addGlobalDeclaration(globalName);
+						mMain.addGlobal(globalName);
 					}
 				} else if (mCompiler.getWord().getWord().equals("function")) {
 					mCompiler.skipWord();
@@ -95,8 +95,8 @@ public class WordCompiler {
 						}
 						if (mCompiler.getWord().getType() != WordParser.T_STRING)
 							throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARAMETER_NAME_EXPECTED);
-						if (!isAvailable(mCompiler.getWord().getWord(), true))
-							throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARAMETER_NAME_UNAVAILABLE);
+						// if (!isAvailable(mCompiler.getWord().getWord(), true))
+						// 	throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARAMETER_NAME_UNAVAILABLE);
 						mCompiler.skipWord();
 						param_count++;
 
@@ -318,8 +318,8 @@ public class WordCompiler {
 			}
 			if (mCompiler.getWord().getType() != WordParser.T_STRING)
 				throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARAMETER_NAME_EXPECTED);
-			if (!isAvailable(mCompiler.getWord().getWord(), true))
-				throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARAMETER_NAME_UNAVAILABLE);
+			// if (!isAvailable(mCompiler.getWord().getWord(), true))
+			// 	throw new LeekCompilerException(mCompiler.getWord(), LeekCompilerException.PARAMETER_NAME_UNAVAILABLE);
 			block.addParameter(mCompiler.readWord(), is_reference);
 			if (mCompiler.getWord().getType() == WordParser.T_VIRG)
 				mCompiler.skipWord();
@@ -594,7 +594,7 @@ public class WordCompiler {
 			variable.setValue(readExpression().getAbstractExpression());
 		}
 		// On ajoute la variable
-		mMain.addGlobal(variable.getName());
+		mMain.addGlobalDeclaration(variable);
 		mCurentBlock.addInstruction(this, variable);
 		while (mCompiler.haveWords() && mCompiler.getWord().getType() == WordParser.T_VIRG) {
 			// On regarde si y'en a d'autres
