@@ -59,4 +59,9 @@ public class NullLeekValue extends AbstractLeekValue {
 	public Object toJSON(AI ai) {
 		return null;
 	}
+
+	@Override
+	public boolean isPrimitive() {
+		return true;
+	}
 }
