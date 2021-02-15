@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekParenthesis extends AbstractExpression {
@@ -32,8 +33,12 @@ public class LeekParenthesis extends AbstractExpression {
 	}
 
 	@Override
-	public boolean validExpression(MainLeekBlock mainblock) throws LeekExpressionException {
-		return mExpression.validExpression(mainblock);
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+		return mExpression.validExpression(compiler, mainblock);
 	}
 
+	@Override
+	public void analyze(WordCompiler compiler) {
+		mExpression.analyze(compiler);
+	}
 }

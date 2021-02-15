@@ -3,6 +3,7 @@ package leekscript.compiler.expression;
 import java.util.ArrayList;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekArray extends AbstractExpression {
@@ -37,9 +38,9 @@ public class LeekArray extends AbstractExpression {
 	}
 
 	@Override
-	public boolean validExpression(MainLeekBlock mainblock) throws LeekExpressionException {
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		for(AbstractExpression parameter : mValues){
-			parameter.validExpression(mainblock);
+			parameter.validExpression(compiler, mainblock);
 		}
 		return true;
 	}
@@ -54,6 +55,13 @@ public class LeekArray extends AbstractExpression {
 				mValues.get(i).writeJavaCode(mainblock, writer);
 			}
 			writer.addCode("}, " + (mIsKeyVal ? "true" : "false") + ")");
+		}
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		for (var value : mValues) {
+			value.analyze(compiler);
 		}
 	}
 }

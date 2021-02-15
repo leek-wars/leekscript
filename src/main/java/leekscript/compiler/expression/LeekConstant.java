@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.runner.ILeekConstant;
 import leekscript.runner.LeekFunctions;
@@ -9,7 +10,7 @@ public class LeekConstant extends AbstractExpression {
 
 	private final String mConstantName;
 	private final ILeekConstant mConstant;
-	
+
 	public LeekConstant(String word, ILeekConstant constant) {
 		mConstantName = word;
 		mConstant = constant;
@@ -33,9 +34,13 @@ public class LeekConstant extends AbstractExpression {
 	}
 
 	@Override
-	public boolean validExpression(MainLeekBlock mainblock) throws LeekExpressionException {
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		// La vérification se fait en amont
 		return true;
 	}
 
+	@Override
+	public void analyze(WordCompiler compiler) {
+
+	}
 }

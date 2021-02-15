@@ -1,12 +1,16 @@
 package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
+import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.expression.LeekVariable.VariableType;
 
 public class ForeachBlock extends AbstractLeekBlock {
 
-	private String mIterator;
+	private IAWord mIterator;
 	private AbstractExpression mArray;
 	private boolean mIsDeclaration = false;
 	private boolean mReference = false;
@@ -17,8 +21,8 @@ public class ForeachBlock extends AbstractLeekBlock {
 		mReference = reference;
 	}
 
-	public void setIterator(String iterator, boolean declaration) {
-		if(declaration) addVariable(iterator);
+	public void setIterator(IAWord iterator, boolean declaration) {
+		if (declaration) addVariable(new LeekVariable(iterator, VariableType.LOCAL));
 		mIterator = iterator;
 	}
 
@@ -37,7 +41,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		int block_count = getCount();
 		String var = "i" + block_count;
 		String ar = "ar" + block_count;
-		String iterator_name = mainblock.hasGlobal(mIterator) ? ("globale_" + mIterator) : "user_" + mIterator;
+		String iterator_name = mainblock.hasGlobal(mIterator.getWord()) ? ("globale_" + mIterator) : "user_" + mIterator;
 
 		writer.addCode("final AbstractLeekValue " + ar + " = ");
 		mArray.writeJavaCode(mainblock, writer);
@@ -64,5 +68,17 @@ public class ForeachBlock extends AbstractLeekBlock {
 	@Override
 	public int getEndBlock() {
 		return 0;
+	}
+
+	public void analyze(WordCompiler compiler) {
+		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
+		compiler.setCurrentBlock(this);
+		if (mIsDeclaration) {
+			this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL));
+		}
+		mArray.analyze(compiler);
+		compiler.setCurrentBlock(initialBlock);
+
+		super.analyze(compiler);
 	}
 }

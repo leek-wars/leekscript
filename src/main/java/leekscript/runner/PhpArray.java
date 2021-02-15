@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import leekscript.compiler.LeekScript;
 import leekscript.runner.values.AbstractLeekValue;
@@ -26,7 +27,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	public final static int ASC_K = 6;
 	public final static int DESC_K = 7;
 
-	private static int RAM_LIMIT = 1000000;
+	// private static int RAM_LIMIT = 1000000;
 
 	private class ElementComparator implements Comparator<Element> {
 
@@ -199,7 +200,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 
 	// Calcul optimisé de la ram utilisée (Optimisé niveau UC, pas niveau RAM)
 	private int mTotalSize = 0;
-	private PhpArrayVariableLeekValue mParent = null;
+	// private PhpArrayVariableLeekValue mParent = null;
 
 	private Element[] mTable = null;
 
@@ -823,7 +824,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		return hash & (capacity - 1);
 	}
 
-	public String toString(AI ai) throws LeekRunException {
+	public String toString(AI ai, Set<Object> visited) throws LeekRunException {
 
 		ai.addOperations(1 + mSize * 2);
 
@@ -849,7 +850,14 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 				sb.append(", ");
 			if (!isInOrder)
 				sb.append(e.key).append(" : ");
-			sb.append(e.value.getString(ai));
+			if (visited.contains(e.value.getValue())) {
+				sb.append("<...>");
+			} else {
+				if (!e.value.getValue().isPrimitive()) {
+					visited.add(e.value.getValue());
+				}
+				sb.append(e.value.getString(ai, visited));
+			}
 			e = e.next;
 		}
 		sb.append("]");
@@ -905,21 +913,21 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		return true;
 	}
 
-	public void setParent(PhpArrayVariableLeekValue parent) {
-		mParent = parent;
-	}
+	// public void setParent(PhpArrayVariableLeekValue parent) {
+	// 	mParent = parent;
+	// }
 
 	public void updateArraySize(int delta) throws LeekRunException {
 		if (delta == 0) {
 			return;
 		}
 		mTotalSize += delta;
-		if (mTotalSize >= RAM_LIMIT) {
-			throw new LeekRunException(LeekRunException.OUT_OF_MEMORY);
-		}
-		if (mParent != null) {
-			mParent.updateSize(delta);
-		}
+		// if (mTotalSize >= RAM_LIMIT) {
+		// 	throw new LeekRunException(LeekRunException.OUT_OF_MEMORY);
+		// }
+		// if (mParent != null) {
+		// 	mParent.updateSize(delta);
+		// }
 	}
 
 	public int getSize() {

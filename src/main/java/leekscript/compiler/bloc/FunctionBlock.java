@@ -3,17 +3,22 @@ package leekscript.compiler.bloc;
 import java.util.ArrayList;
 
 import leekscript.compiler.AIFile;
+import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
+import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.expression.LeekVariable.VariableType;
 
 public class FunctionBlock extends AbstractLeekBlock {
 
-	private String mName;
+	private IAWord token;
 	private int mId;
 	private final ArrayList<String> mParameters = new ArrayList<String>();
 	private final ArrayList<Boolean> mReferences = new ArrayList<Boolean>();
 
-	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
+	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai, IAWord token) {
 		super(parent, main, line, ai);
+		this.token = token;
 	}
 
 	public int getId() {
@@ -25,7 +30,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 	}
 
 	public String getName() {
-		return mName;
+		return token.getWord();
 	}
 
 	public int countParameters() {
@@ -42,24 +47,20 @@ public class FunctionBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void setName(String name) {
-		mName = name;
-	}
-
-	public void addParameter(String parameter, boolean is_reference) {
-		mParameters.add(parameter);
+	public void addParameter(IAWord parameter, boolean is_reference) {
+		mParameters.add(parameter.getWord());
 		mReferences.add(is_reference);
-		addVariable(parameter);
+		addVariable(new LeekVariable(parameter, VariableType.ARGUMENT));
 	}
 
 	@Override
 	public boolean hasVariable(String variable) {
-		return mVariables.contains(variable);
+		return mVariables.containsKey(variable);
 	}
 
 	@Override
 	public String getCode() {
-		String str = "function " + mName + "(";
+		String str = "function " + token.getWord() + "(";
 		for (int i = 0; i < mParameters.size(); i++) {
 			if (i != 0)
 				str += ", ";
@@ -76,7 +77,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("private AbstractLeekValue user_function_").append(mName).append("(");
+		sb.append("private AbstractLeekValue user_function_").append(token.getWord()).append("(");
 		for (int i = 0; i < mParameters.size(); i++) {
 			if (i != 0)
 				sb.append(", ");
@@ -100,5 +101,11 @@ public class FunctionBlock extends AbstractLeekBlock {
 
 	public boolean isReference(int i) {
 		return mReferences.get(i);
+	}
+
+	public void declare(WordCompiler compiler) {
+		// On ajoute la fonction
+		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.FUNCTION));
+		// System.out.println("Declare function " + token.getWord());
 	}
 }

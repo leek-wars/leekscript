@@ -7,6 +7,14 @@ public class IAWord {
 	private final int character;
 	private final AIFile<?> ai;
 
+	public IAWord(String word) {
+		this.ai = null;
+		this.type = 0;
+		this.word = word;
+		this.line = 0;
+		this.character = 0;
+	}
+
 	public IAWord(AIFile<?> ai, int type, String word, int line, int character) {
 		this.ai = ai;
 		this.type = type;
@@ -33,5 +41,10 @@ public class IAWord {
 
 	public int getCharacter() {
 		return character;
+	}
+
+	@Override
+	public String toString() {
+		return word;
 	}
 }

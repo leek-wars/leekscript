@@ -1,8 +1,12 @@
 package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
+import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.expression.LeekVariable.VariableType;
 
 public class ForeachKeyBlock extends AbstractLeekBlock {
 
@@ -23,14 +27,14 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		mValueReference = valueReference;
 	}
 
-	public void setValueIterator(String iterator, boolean declaration) {
-		if(declaration) addVariable(iterator);
-		mIterator = iterator;
+	public void setValueIterator(IAWord iterator, boolean declaration) {
+		if(declaration) addVariable(new LeekVariable(iterator, VariableType.LOCAL));
+		mIterator = iterator.getWord();
 	}
 
-	public void setKeyIterator(String iterator, boolean declaration) {
-		if(declaration) addVariable(iterator);
-		mKeyIterator = iterator;
+	public void setKeyIterator(IAWord iterator, boolean declaration) {
+		if(declaration) addVariable(new LeekVariable(iterator, VariableType.LOCAL));
+		mKeyIterator = iterator.getWord();
 	}
 
 	public void setArray(AbstractExpression exp) {
@@ -96,5 +100,13 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	@Override
 	public int getEndBlock() {
 		return 0;
+	}
+
+	public void analyze(WordCompiler compiler) {
+		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
+		compiler.setCurrentBlock(this);
+		mArray.analyze(compiler);
+		compiler.setCurrentBlock(initialBlock);
+		super.analyze(compiler);
 	}
 }

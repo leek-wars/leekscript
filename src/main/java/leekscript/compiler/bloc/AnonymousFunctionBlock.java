@@ -3,7 +3,10 @@ package leekscript.compiler.bloc;
 import java.util.ArrayList;
 
 import leekscript.compiler.AIFile;
+import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.expression.LeekVariable.VariableType;
 
 public class AnonymousFunctionBlock extends AbstractLeekBlock {
 
@@ -37,10 +40,10 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void addParameter(String parameter, boolean is_reference) {
-		mParameters.add(parameter);
+	public void addParameter(IAWord token, boolean is_reference) {
+		mParameters.add(token.getWord());
 		mReferences.add(is_reference);
-		addVariable(parameter);
+		addVariable(new LeekVariable(token, VariableType.ARGUMENT));
 	}
 
 	@Override

@@ -13,6 +13,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.WordParser;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.runner.LeekFunctions;
 
@@ -73,7 +74,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMinLevel = min_level;
 	}
 
-	public boolean includeAI(WordCompiler compiler, String path) throws Exception {
+	public boolean includeAI(WordCompiler compiler, String path) throws LeekCompilerException {
 		try {
 			AIFile<?> ai = LeekScript.getResolver().resolve(path, mCompiler.getCurrentAI().getContext());
 			if (mIncluded.contains(ai.getId())) {
@@ -85,6 +86,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			WordParser words = new WordParser(ai, compiler.getVersion());
 			WordCompiler newCompiler = new WordCompiler(words, this, ai, compiler.getVersion());
 			newCompiler.readCode();
+			compiler.addErrors(newCompiler.getErrors());
 			mCompiler.setCurrentAI(previousAI);
 			return true;
 		} catch (FileNotFoundException e) {
@@ -122,7 +124,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			if (block.getName().equals(name))
 				return block.countParameters();
 		}
-		return mUserFunctions.get(name);
+		var f = mUserFunctions.get(name);
+		if (f != null) return f;
+		return -1;
 	}
 
 	public FunctionBlock getUserFunction(String name) {
@@ -171,11 +175,13 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public void writeJavaCode(JavaWriter writer, String className, String AIClass) {
 		writer.addLine("import leekscript.runner.*;");
 		writer.addLine("import leekscript.runner.values.*;");
+		writer.addLine();
 		writer.addLine("public class " + className + " extends " + AIClass + " {");
 		writer.addLine("public " + className + "() throws LeekRunException {");
 		writer.addLine("super();");
 		writer.addLine("mInstructions = " + mInstructions.size() + ";");
 		writer.addLine("}");
+
 		// Variables globales
 		for (String global : mGobales) {
 			writer.addLine("private VariableLeekValue globale_" + global + " = null;");
@@ -236,8 +242,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 		writer.addLine("} return -1; }");
 		// Références
-		writer.addLine("public boolean[] userFunctionReference(int id){");
-		writer.addLine("switch(id){");
+		writer.addLine("public boolean[] userFunctionReference(int id) {");
+		writer.addLine("switch(id) {");
 		for (FunctionBlock f : mFunctions) {
 			writer.addLine("case " + f.getId() + ": return new boolean[]" + f.referenceArray() + ";");
 		}
@@ -269,6 +275,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			writer.addLine("case " + f.getId() + ": return new boolean[]" + f.referenceArray() + ";");
 		}
 		writer.addLine("} return null; }");
+		writer.addLine("public int getVersion() {");
+		writer.addLine("return " + mCompiler.getCurrentAI().getVersion() + ";");
+		writer.addLine("}");
 		// Execute
 		/*
 		 * writer.addLine(
@@ -303,5 +312,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public IACompiler getCompiler() {
 		return mCompiler;
+	}
+
+	public void analyze(WordCompiler compiler) {
+		for (var function : mFunctions) {
+			function.declare(compiler);
+		}
+		for (var function : mFunctions) {
+			function.analyze(compiler);
+		}
+		super.analyze(compiler);
 	}
 }

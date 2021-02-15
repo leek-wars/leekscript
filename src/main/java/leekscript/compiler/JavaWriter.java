@@ -45,6 +45,11 @@ public class JavaWriter {
 		mLine++;
 	}
 
+	public void addLine() {
+		mCode.append("\n");
+		mLine++;
+	}
+
 	public void addCode(String datas) {
 		mCode.append(datas);
 	}

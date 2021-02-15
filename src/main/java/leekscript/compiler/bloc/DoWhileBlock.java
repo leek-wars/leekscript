@@ -2,6 +2,7 @@ package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.AbstractExpression;
 
 public class DoWhileBlock extends AbstractLeekBlock {
@@ -38,5 +39,12 @@ public class DoWhileBlock extends AbstractLeekBlock {
 	@Override
 	public boolean isBreakable() {
 		return true;
+	}
+
+	public void analyze(WordCompiler compiler) {
+		if (mCondition != null) {
+			mCondition.analyze(compiler);
+		}
+		super.analyze(compiler);
 	}
 }

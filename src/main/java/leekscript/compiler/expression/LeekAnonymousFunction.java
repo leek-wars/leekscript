@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.AnonymousFunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 
@@ -23,7 +24,7 @@ public class LeekAnonymousFunction extends AbstractExpression {
 	}
 
 	@Override
-	public boolean validExpression(MainLeekBlock mainblock) throws LeekExpressionException {
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		return true;
 	}
 
@@ -34,4 +35,8 @@ public class LeekAnonymousFunction extends AbstractExpression {
 		writer.addCode(")");
 	}
 
+	@Override
+	public void analyze(WordCompiler compiler) {
+		mBlock.analyze(compiler);
+	}
 }

@@ -2,6 +2,7 @@ package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.AbstractExpression;
 
 public class WhileBlock extends AbstractLeekBlock {
@@ -43,5 +44,12 @@ public class WhileBlock extends AbstractLeekBlock {
 	@Override
 	public int getEndBlock() {
 		return 0;
+	}
+
+	public void analyze(WordCompiler compiler) {
+		if (mCondition != null) {
+			mCondition.analyze(compiler);
+		}
+		super.analyze(compiler);
 	}
 }
