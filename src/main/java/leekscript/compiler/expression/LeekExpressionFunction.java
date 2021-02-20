@@ -55,6 +55,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		boolean addComma = true;
+		boolean userFunction = false;
 		if (mExpression instanceof LeekObjectAccess) {
 			var object = ((LeekObjectAccess) mExpression).getObject();
 			object.writeJavaCode(mainblock, writer);
@@ -74,6 +75,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 			writer.addCode(((LeekVariable) mExpression).getName());
 			writer.addCode("(");
 			addComma = false;
+			userFunction = true;
 		} else {
 			mExpression.writeJavaCode(mainblock, writer);
 			writer.addCode(".executeFunction(mUAI");
@@ -81,8 +83,19 @@ public class LeekExpressionFunction extends AbstractExpression {
 		for (int i = 0; i < mParameters.size(); i++) {
 			if (i > 0 || addComma) writer.addCode(", ");
 			if (i < mParameters.size()) {
-				mParameters.get(i).writeJavaCode(mainblock, writer);
-				writer.addCode(".getValue()");
+				if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+					mParameters.get(i).writeJavaCode(mainblock, writer);
+					writer.addCode(".getValue()");
+				} else {
+					if (userFunction) {
+						writer.addCode("LeekOperations.clone(mUAI, ");
+						mParameters.get(i).writeJavaCode(mainblock, writer);
+						writer.addCode(".getValue())");
+					} else {
+						mParameters.get(i).writeJavaCode(mainblock, writer);
+						writer.addCode(".getValue()");
+					}
+				}
 			} else {
 				writer.addCode("LeekValueManager.NULL");
 			}
