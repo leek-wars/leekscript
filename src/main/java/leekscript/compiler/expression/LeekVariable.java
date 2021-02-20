@@ -9,12 +9,13 @@ import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
+import leekscript.runner.LeekConstants;
 import leekscript.runner.LeekFunctions;
 
 public class LeekVariable extends AbstractExpression {
 
 	public static enum VariableType {
-		LOCAL, GLOBAL, ARGUMENT, FIELD, STATIC_FIELD, THIS, THIS_CLASS, CLASS, SUPER, METHOD, STATIC_METHOD, SYSTEM_FUNCTION, FUNCTION
+		LOCAL, GLOBAL, ARGUMENT, FIELD, STATIC_FIELD, THIS, THIS_CLASS, CLASS, SUPER, METHOD, STATIC_METHOD, SYSTEM_CONSTANT, SYSTEM_FUNCTION, FUNCTION
 	}
 
 	private final IAWord token;
@@ -66,6 +67,11 @@ public class LeekVariable extends AbstractExpression {
 		if (type == VariableType.FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
 			writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
+		} else if (type == VariableType.SYSTEM_CONSTANT) {
+			var constant = LeekConstants.get(token.getWord());
+			if (constant.getType() == LeekFunctions.INT) writer.addCode("LeekValueManager.getLeekIntValue(" + constant.getIntValue() + ")");
+			else if (constant.getType() == LeekFunctions.DOUBLE) writer.addCode("new DoubleLeekValue(" + constant.getValue() + ")");
+			else writer.addCode("LeekValueManager.NULL");
 		} else if (type == VariableType.SYSTEM_FUNCTION) {
 			if (mainblock.isRedefinedFunction(token.getWord())) {
 				writer.addCode("rfunction_" + token.getWord());
@@ -111,6 +117,10 @@ public class LeekVariable extends AbstractExpression {
 		if (v != null) {
 			this.type = v.getVariableType();
 			this.classDeclaration = v.getClassDeclaration();
+			return;
+		}
+		if (LeekConstants.get(token.getWord()) != null) {
+			this.type = VariableType.SYSTEM_CONSTANT;
 			return;
 		}
 		if (LeekFunctions.isFunction(token.getWord()) != -1) {

@@ -2,8 +2,6 @@ package leekscript.runner.values;
 
 import java.util.Set;
 
-import com.leekwars.generator.fight.statistics.FarmerStatistics.LeekValue;
-
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
