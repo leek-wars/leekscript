@@ -76,7 +76,13 @@ public class IACompiler {
 			WordCompiler compiler = new WordCompiler(parser, main, ai, ai.getVersion());
 			compiler.readCode();
 			compiler.analyze();
+			System.out.println("errors " + compiler.getErrors().size());
 
+			if (compiler.getErrors().size() > 0) {
+				for (var error : compiler.getErrors()) {
+					throw new LeekCompilerException(error.token, error.error, error.parameters);
+				}
+			}
 			compiler.writeJava(javaClassName, writer, AIClass);
 
 		} catch (LeekCompilerException e) {
