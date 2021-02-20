@@ -584,8 +584,9 @@ public class WordCompiler {
 			throw new LeekCompilerException(word, LeekCompilerException.GLOBAL_ONLY_IN_MAIN_BLOCK);
 		if (word.getType() != WordParser.T_STRING)
 			throw new LeekCompilerException(word, LeekCompilerException.VAR_NAME_EXPECTED_AFTER_GLOBAL);
-		// if (!isGlobalAvailable(word.getWord()) || mMain.hasDeclaredGlobal(word.getWord()))
-		// 	throw new LeekCompilerException(word, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
+		if (!isGlobalAvailable(word.getWord()) || mMain.hasDeclaredGlobal(word.getWord())) {
+			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE));
+		}
 		LeekGlobalDeclarationInstruction variable = new LeekGlobalDeclarationInstruction(word, mLine, mAI);
 		// On regarde si une valeur est assignée
 		if (mCompiler.getWord().getWord().equals("=")) {
@@ -602,8 +603,9 @@ public class WordCompiler {
 			word = mCompiler.readWord();
 			if (word.getType() != WordParser.T_STRING)
 				throw new LeekCompilerException(word, LeekCompilerException.VAR_NAME_EXPECTED);
-			// if (!isGlobalAvailable(word.getWord()) || mMain.hasDeclaredGlobal(word.getWord()))
-			// 	throw new LeekCompilerException(word, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE);
+			if (!isGlobalAvailable(word.getWord()) || mMain.hasDeclaredGlobal(word.getWord())) {
+				addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE));
+			}
 			variable = new LeekGlobalDeclarationInstruction(word, mLine, mAI);
 			// On regarde si une valeur est assign�e
 			if (mCompiler.getWord().getWord().equals("=")) {
