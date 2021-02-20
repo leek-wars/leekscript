@@ -76,6 +76,9 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 
 	@Override
 	public void analyze(WordCompiler compiler) {
+		if (mValue != null) {
+			mValue.analyze(compiler);
+		}
 		// Variables interdites
 		if (token.getWord().equals("this")) {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, LeekCompilerException.THIS_NOT_ALLOWED_HERE));
@@ -87,9 +90,6 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 				// On ajoute la variable
 				compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.LOCAL));
 			}
-		}
-		if (mValue != null) {
-			mValue.analyze(compiler);
 		}
 	}
 }
