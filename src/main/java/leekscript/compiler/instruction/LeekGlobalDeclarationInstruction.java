@@ -1,13 +1,10 @@
 package leekscript.compiler.instruction;
 
 import leekscript.compiler.AIFile;
-import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
-import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
-import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -40,14 +37,14 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("if(globale_" + token.getWord() + " == null){globale_" + token.getWord() + " = new VariableLeekValue(mUAI, ");
+		writer.addCode("if (!globale_init_" + token.getWord() + ") { globale_" + token.getWord() + ".initGlobal(mUAI, ");
 		if(mValue != null) mValue.writeJavaCode(mainblock, writer);
 		else writer.addCode("LeekValueManager.NULL");
-		writer.addLine(");}", mLine, mAI);
-	}
-
-	public String getJavaDeclaration() {
-		return "private VariableLeekValue globale_" + token.getWord() + " = null;";
+		writer.addCode("); globale_init_" + token.getWord() + " = true;");
+		if (mainblock.getCompiler().getCurrentAI().getVersion() <= 10) {
+			writer.addCounter(1); // Add one operation in LS 1.0
+		}
+		writer.addLine("}", mLine, mAI);
 	}
 
 	@Override

@@ -31,7 +31,7 @@ public class LeekGlobal extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("(globale_" + token.getWord() + "==null?LeekValueManager.NULL:globale_" + token.getWord() + ")");
+		writer.addCode("globale_" + token.getWord());
 	}
 
 	@Override
