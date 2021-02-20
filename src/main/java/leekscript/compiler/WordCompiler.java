@@ -70,12 +70,28 @@ public class WordCompiler {
 			while (mCompiler.haveWords()) {
 				if (mCompiler.getWord().getWord().equals("global")) {
 					mCompiler.skipWord();
-					String globalName = mCompiler.readWord().getWord();
-					mMain.addGlobal(globalName);
-					while (mCompiler.getWord().getType() == WordParser.T_VIRG && mCompiler.haveWords()) {
+					var global = mCompiler.readWord();
+					if (!isGlobalAvailable(global.getWord()) || mMain.hasDeclaredGlobal(global.getWord())) {
+						addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE));
+					} else {
+						mMain.addGlobal(global.getWord());
+					}
+					if (mCompiler.getWord().getWord().equals("=")) {
 						mCompiler.skipWord();
-						globalName = mCompiler.readWord().getWord();
-						mMain.addGlobal(globalName);
+						readExpression();
+					}
+					while (mCompiler.haveWords() && mCompiler.getWord().getType() == WordParser.T_VIRG) {
+						mCompiler.skipWord();
+						global = mCompiler.readWord();
+						if (!isGlobalAvailable(global.getWord()) || mMain.hasDeclaredGlobal(global.getWord())) {
+							addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE));
+						} else {
+							mMain.addGlobal(global.getWord());
+						}
+						if (mCompiler.getWord().getWord().equals("=")) {
+							mCompiler.skipWord();
+							readExpression();
+						}
 					}
 				} else if (mCompiler.getWord().getWord().equals("function")) {
 					mCompiler.skipWord();
@@ -584,9 +600,6 @@ public class WordCompiler {
 			throw new LeekCompilerException(word, LeekCompilerException.GLOBAL_ONLY_IN_MAIN_BLOCK);
 		if (word.getType() != WordParser.T_STRING)
 			throw new LeekCompilerException(word, LeekCompilerException.VAR_NAME_EXPECTED_AFTER_GLOBAL);
-		if (!isGlobalAvailable(word.getWord()) || mMain.hasDeclaredGlobal(word.getWord())) {
-			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE));
-		}
 		LeekGlobalDeclarationInstruction variable = new LeekGlobalDeclarationInstruction(word, mLine, mAI);
 		// On regarde si une valeur est assignée
 		if (mCompiler.getWord().getWord().equals("=")) {
@@ -603,9 +616,6 @@ public class WordCompiler {
 			word = mCompiler.readWord();
 			if (word.getType() != WordParser.T_STRING)
 				throw new LeekCompilerException(word, LeekCompilerException.VAR_NAME_EXPECTED);
-			if (!isGlobalAvailable(word.getWord()) || mMain.hasDeclaredGlobal(word.getWord())) {
-				addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE));
-			}
 			variable = new LeekGlobalDeclarationInstruction(word, mLine, mAI);
 			// On regarde si une valeur est assign�e
 			if (mCompiler.getWord().getWord().equals("=")) {
@@ -614,7 +624,7 @@ public class WordCompiler {
 				variable.setValue(readExpression().getAbstractExpression());
 			}
 			// On ajoute la variable
-			mMain.addGlobal(variable.getName());
+			mMain.addGlobalDeclaration(variable);
 			mCurentBlock.addInstruction(this, variable);
 		}
 		// word = mCompiler.readWord();

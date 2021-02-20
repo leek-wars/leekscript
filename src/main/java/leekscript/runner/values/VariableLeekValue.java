@@ -2,6 +2,8 @@ package leekscript.runner.values;
 
 import java.util.Set;
 
+import com.leekwars.generator.fight.statistics.FarmerStatistics.LeekValue;
+
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
@@ -11,6 +13,11 @@ public class VariableLeekValue extends AbstractLeekValue {
 
 	protected AbstractLeekValue mValue;
 	protected AI mUAI = null;
+
+	public VariableLeekValue(AI ai) throws LeekRunException {
+		mUAI = ai;
+		mValue = LeekValueManager.NULL;
+	}
 
 	public VariableLeekValue(AI ai, AbstractLeekValue value) throws LeekRunException {
 		mUAI = ai;
@@ -90,6 +97,21 @@ public class VariableLeekValue extends AbstractLeekValue {
 	@Override
 	public AbstractLeekValue setRef(AI ai, AbstractLeekValue value) throws LeekRunException {
 		return mValue = value.getValue();
+	}
+
+	public void initGlobal(AI ai, AbstractLeekValue value) throws LeekRunException {
+		if (value instanceof VariableLeekValue) {
+			if (ai.getVersion() >= 11) {
+				mValue = LeekOperations.clonePrimitive(ai, value.getValue());
+			} else {
+				if (value.isReference())
+					mValue = value.getValue();
+				else
+					mValue = LeekOperations.clone(ai, value.getValue());
+			}
+		} else {
+			mValue = value.getValue();
+		}
 	}
 
 	@Override

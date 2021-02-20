@@ -78,6 +78,8 @@ public class LeekVariable extends AbstractExpression {
 					writer.addCode("LeekValueManager.getFunction(" + namespace + "." + token.getWord() + ")");
 				}
 			}
+		} else if (type == VariableType.GLOBAL) {
+			writer.addCode("globale_" + token.getWord());
 		} else {
 			writer.addCode("user_" + token.getWord());
 		}
