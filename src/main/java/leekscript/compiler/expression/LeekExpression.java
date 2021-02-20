@@ -7,6 +7,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.expression.LeekVariable.VariableType;
 
 public class LeekExpression extends AbstractExpression {
 
@@ -311,8 +312,10 @@ public class LeekExpression extends AbstractExpression {
 					mExpression1 = trn;
 				}
 			}
-			else
+			else {
 				mOperator = operator;
+				mOperatorToken = token;
+			}
 		}
 		else {
 			int cur_p = Operators.getPriority(mOperator);
@@ -403,28 +406,6 @@ public class LeekExpression extends AbstractExpression {
 			mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
 		if (mExpression1 == null || mExpression2 == null || mOperator == -1)
 			throw new LeekExpressionException(this, LeekCompilerException.UNCOMPLETE_EXPRESSION);
-
-		// Si on a affaire à une assignation, incrémentation ou autre du genre
-		// on doit vérifier qu'on a bien une variable (l-value)
-		if (mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.ASSIGN || mOperator == Operators.MODULUSASSIGN
-				|| mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.POWERASSIGN) {
-			if (!mExpression1.isLeftValue())
-				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.CANT_ASSIGN_VALUE));
-				// throw new LeekExpressionException(mExpression1, LeekCompilerException.CANT_ASSIGN_VALUE);
-			if (mExpression1 instanceof LeekFunctionValue)
-				mainblock.addRedefinedFunction(((LeekFunctionValue) mExpression1).getFunctionName());
-			if (mExpression1 instanceof LeekTabularValue)
-				((LeekTabularValue) mExpression1).setLeftValue(true);
-		}
-		if (mOperator == Operators.INCREMENT || mOperator == Operators.DECREMENT || mOperator == Operators.PRE_INCREMENT || mOperator == Operators.PRE_DECREMENT) {
-			if (!(mExpression2 instanceof LeekFunctionValue) && !(mExpression2 instanceof LeekVariable) && !(mExpression2 instanceof LeekGlobal) && !(mExpression2 instanceof LeekTabularValue))
-				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.CANT_ASSIGN_VALUE));
-				// throw new LeekExpressionException(mExpression2, LeekCompilerException.CANT_ASSIGN_VALUE);
-			if (mExpression2 instanceof LeekFunctionValue)
-				mainblock.addRedefinedFunction(((LeekFunctionValue) mExpression2).getFunctionName());
-			if (mExpression2 instanceof LeekTabularValue)
-				((LeekTabularValue) mExpression2).setLeftValue(true);
-		}
 
 		return mExpression1.validExpression(compiler, mainblock) && mExpression2.validExpression(compiler, mainblock);
 	}
@@ -739,5 +720,27 @@ public class LeekExpression extends AbstractExpression {
 	public void analyze(WordCompiler compiler) {
 		if (mExpression1 != null) mExpression1.analyze(compiler);
 		if (mExpression2 != null) mExpression2.analyze(compiler);
+
+		// Si on a affaire à une assignation, incrémentation ou autre du genre
+		// on doit vérifier qu'on a bien une variable (l-value)
+		if (mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.ASSIGN || mOperator == Operators.MODULUSASSIGN || mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.POWERASSIGN) {
+			if (!mExpression1.isLeftValue())
+				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.CANT_ASSIGN_VALUE));
+				// throw new LeekExpressionException(mExpression1, LeekCompilerException.CANT_ASSIGN_VALUE);
+			if (mExpression1 instanceof LeekVariable && ((LeekVariable) mExpression1).getVariableType() == VariableType.SYSTEM_FUNCTION)
+				compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression1).getName());
+			if (mExpression1 instanceof LeekTabularValue)
+				((LeekTabularValue) mExpression1).setLeftValue(true);
+		}
+
+		if (mOperator == Operators.INCREMENT || mOperator == Operators.DECREMENT || mOperator == Operators.PRE_INCREMENT || mOperator == Operators.PRE_DECREMENT) {
+			if (!(mExpression2 instanceof LeekVariable) && !(mExpression2 instanceof LeekGlobal) && !(mExpression2 instanceof LeekTabularValue))
+				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.CANT_ASSIGN_VALUE));
+				// throw new LeekExpressionException(mExpression2, LeekCompilerException.CANT_ASSIGN_VALUE);
+			if (mExpression2 instanceof LeekVariable && ((LeekVariable) mExpression2).getVariableType() == VariableType.SYSTEM_FUNCTION)
+				compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression2).getName());
+			if (mExpression2 instanceof LeekTabularValue)
+				((LeekTabularValue) mExpression2).setLeftValue(true);
+		}
 	}
 }

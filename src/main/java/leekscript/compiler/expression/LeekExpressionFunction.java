@@ -68,8 +68,12 @@ public class LeekExpressionFunction extends AbstractExpression {
 		} else
 		if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SYSTEM_FUNCTION) {
 			var variable = (LeekVariable) mExpression;
-			String namespace = LeekFunctions.getNamespace(variable.getName());
-			writer.addCode("LeekValueManager.getFunction(" + namespace + "." + variable.getName() + ")");
+			if (mainblock.isRedefinedFunction(variable.getName())) {
+				writer.addCode("rfunction_" + variable.getName());
+			} else {
+				String namespace = LeekFunctions.getNamespace(variable.getName());
+				writer.addCode("LeekValueManager.getFunction(" + namespace + "." + variable.getName() + ")");
+			}
 			writer.addCode(".executeFunction(mUAI");
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.FUNCTION) {
 			writer.addCode("user_function_");
