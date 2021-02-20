@@ -20,7 +20,6 @@ import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekAnonymousFunction;
 import leekscript.compiler.expression.LeekArray;
 import leekscript.compiler.expression.LeekBoolean;
-import leekscript.compiler.expression.LeekConstant;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekExpressionFunction;
@@ -42,7 +41,6 @@ import leekscript.compiler.instruction.LeekExpressionInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.compiler.instruction.LeekReturnInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
-import leekscript.runner.LeekConstants;
 
 public class WordCompiler {
 
@@ -1003,8 +1001,6 @@ public class WordCompiler {
 						retour.addExpression(new LeekNull());
 					else if (word.getWord().equalsIgnoreCase("not"))
 						retour.addUnaryPrefix(Operators.NOT, word);
-					else if (LeekConstants.get(word.getWord()) != null)
-						retour.addExpression(new LeekConstant(word.getWord(), LeekConstants.get(word.getWord())));
 					else if (getVersion() >= 11 && word.getWord().equalsIgnoreCase("new")) {
 						retour.addUnaryPrefix(Operators.NEW, word);
 					} else if (word.getWord().equals("super")) {
