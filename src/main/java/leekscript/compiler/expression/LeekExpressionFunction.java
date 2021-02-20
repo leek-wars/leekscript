@@ -6,6 +6,7 @@ import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -55,7 +56,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		boolean addComma = true;
-		boolean userFunction = false;
+		FunctionBlock user_function = null;
 		if (mExpression instanceof LeekObjectAccess) {
 			var object = ((LeekObjectAccess) mExpression).getObject();
 			object.writeJavaCode(mainblock, writer);
@@ -75,7 +76,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 			writer.addCode(((LeekVariable) mExpression).getName());
 			writer.addCode("(");
 			addComma = false;
-			userFunction = true;
+			user_function = mainblock.getUserFunction(((LeekVariable) mExpression).getName());
 		} else {
 			mExpression.writeJavaCode(mainblock, writer);
 			writer.addCode(".executeFunction(mUAI");
@@ -87,10 +88,14 @@ public class LeekExpressionFunction extends AbstractExpression {
 					mParameters.get(i).writeJavaCode(mainblock, writer);
 					writer.addCode(".getValue()");
 				} else {
-					if (userFunction) {
-						writer.addCode("LeekOperations.clone(mUAI, ");
-						mParameters.get(i).writeJavaCode(mainblock, writer);
-						writer.addCode(".getValue())");
+					if (user_function != null) {
+						if (user_function.isReference(i))
+							mParameters.get(i).writeJavaCode(mainblock, writer);
+						else {
+							writer.addCode("LeekOperations.clone(mUAI, ");
+							mParameters.get(i).writeJavaCode(mainblock, writer);
+							writer.addCode(".getValue())");
+						}
 					} else {
 						mParameters.get(i).writeJavaCode(mainblock, writer);
 						writer.addCode(".getValue()");
