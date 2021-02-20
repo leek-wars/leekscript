@@ -121,4 +121,8 @@ public class LeekVariable extends AbstractExpression {
 	public ClassDeclarationInstruction getClassDeclaration() {
 		return classDeclaration;
 	}
+
+	public IAWord getToken() {
+		return token;
+	}
 }

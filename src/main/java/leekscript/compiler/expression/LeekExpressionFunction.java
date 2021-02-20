@@ -2,9 +2,12 @@ package leekscript.compiler.expression;
 
 import java.util.ArrayList;
 
+import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.runner.LeekFunctions;
 
@@ -92,6 +95,21 @@ public class LeekExpressionFunction extends AbstractExpression {
 		mExpression.analyze(compiler);
 		for (AbstractExpression parameter : mParameters) {
 			parameter.analyze(compiler);
+		}
+
+		if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.FUNCTION) {
+			var v = (LeekVariable) mExpression;
+			int nb_params = LeekFunctions.isFunction(v.getName());
+			if (nb_params == -1) {
+				nb_params = compiler.getMainBlock().getUserFunctionParametersCount(v.getName());
+				if (mParameters.size() != nb_params) {
+					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, LeekCompilerException.INVALID_PAREMETER_COUNT));
+				}
+			} else {
+				var f = LeekFunctions.getValue(v.getName());
+				if (mParameters.size() > nb_params || mParameters.size() < f.getArgumentsMin())
+					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, LeekCompilerException.INVALID_PAREMETER_COUNT));
+			}
 		}
 	}
 }
