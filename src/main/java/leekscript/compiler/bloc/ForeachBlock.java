@@ -49,7 +49,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		writer.addLine("if(" + ar + ".isArray()){");
 		if(mIsDeclaration) writer.addLine("final VariableLeekValue " + iterator_name + " = new VariableLeekValue(mUAI, LeekValueManager.NULL);");
 		else writer.addLine(iterator_name + ".set(mUAI, LeekValueManager.NULL);");
-		if (mReference) {
+		if (mReference || mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
 			writer.addLine("for(AbstractLeekValue " + var + " : " + ar + ".getArray()){ " + iterator_name + ".setRef(mUAI, " + var + ");");
 		} else {
 			writer.addLine("for(AbstractLeekValue " + var + " : " + ar + ".getArray()){ " + iterator_name + ".set(mUAI, " + var + ".getValue());");

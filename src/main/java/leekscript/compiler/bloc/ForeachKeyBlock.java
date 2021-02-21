@@ -71,12 +71,12 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		sb.append("ArrayLeekValue.ArrayIterator ").append(var).append("=").append(ar).append(".getArray().getArrayIterator();");
 		sb.append("while(!").append(var).append(".ended()){");
 		//Maj des variables
-		if (mKeyReference) {
+		if (mKeyReference || mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
 			sb.append(key_iterator).append(".setRef(mUAI, ").append(var).append(".getKeyRef());");
 		} else {
 			sb.append(key_iterator).append(".set(mUAI, ").append(var).append(".getKeyRef());");
 		}
-		if (mValueReference) {
+		if (mValueReference || mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
 			sb.append(val_iterator).append(".setRef(mUAI, ").append(var).append(".getValueRef());");
 		} else {
 			sb.append(val_iterator).append(".set(mUAI, ").append(var).append(".getValueRef());");
