@@ -24,10 +24,6 @@ public abstract class AbstractLeekValue {
 	public final static int MOD_COST = 5;
 	public final static int POW_COST = 140;
 
-	public int getSize() throws LeekRunException {
-		return 1;
-	}
-
 	public int getInt(AI ai) throws LeekRunException {
 		return 0;
 	}

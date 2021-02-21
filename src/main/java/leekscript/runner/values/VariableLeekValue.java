@@ -34,11 +34,6 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public int getSize() throws LeekRunException {
-		return mValue.getSize();
-	}
-
-	@Override
 	public int getInt(AI ai) throws LeekRunException {
 		return mValue.getInt(ai);
 	}

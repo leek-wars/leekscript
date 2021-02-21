@@ -11,11 +11,6 @@ public class NullLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public int getSize() {
-		return 1;
-	}
-
-	@Override
 	public boolean isNumeric() {
 		return true;
 	}

@@ -264,11 +264,6 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	}
 
 	@Override
-	public int getSize() throws LeekRunException {
-		return mValues.getSize();
-	}
-
-	@Override
 	public AbstractLeekValue add(AI ai, AbstractLeekValue value) throws LeekRunException {
 		value = value.getValue();
 		if (value instanceof ArrayLeekValue) {
