@@ -280,10 +280,36 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 	}
 
 	public boolean hasMember(IAWord field) {
-		return fields.containsKey(field.getWord()) || methods.containsKey(field.getWord());
+		return getMember(field) != null;
 	}
 
 	public boolean hasStaticMember(IAWord field) {
-		return staticFields.containsKey(field.getWord()) || staticMethods.containsKey(field.getWord());
+		return getStaticMember(field) != null;
+	}
+
+	public LeekVariable getMember(IAWord token) {
+		var f = fieldVariables.get(token.getWord());
+		if (f != null) return f;
+
+		var m = methodVariables.get(token.getWord());
+		if (m != null) return m;
+
+		if (parent != null) {
+			return parent.getMember(token);
+		}
+		return null;
+	}
+
+	public LeekVariable getStaticMember(IAWord token) {
+		var f = staticFieldVariables.get(token.getWord());
+		if (f != null) return f;
+
+		var m = staticMethodVariables.get(token.getWord());
+		if (m != null) return m;
+
+		if (parent != null) {
+			return parent.getStaticMember(token);
+		}
+		return null;
 	}
 }
