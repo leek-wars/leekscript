@@ -10,6 +10,7 @@ import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekFunctions;
 
 public class LeekExpressionFunction extends AbstractExpression {
@@ -57,6 +58,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		boolean addComma = true;
 		FunctionBlock user_function = null;
+		ILeekFunction system_function = null;
 		if (mExpression instanceof LeekObjectAccess) {
 			var object = ((LeekObjectAccess) mExpression).getObject();
 			object.writeJavaCode(mainblock, writer);
@@ -70,11 +72,14 @@ public class LeekExpressionFunction extends AbstractExpression {
 			var variable = (LeekVariable) mExpression;
 			if (mainblock.isRedefinedFunction(variable.getName())) {
 				writer.addCode("rfunction_" + variable.getName());
+				writer.addCode(".executeFunction(mUAI");
 			} else {
+				system_function = LeekFunctions.getValue(variable.getName());
 				String namespace = LeekFunctions.getNamespace(variable.getName());
-				writer.addCode("LeekValueManager.getFunction(" + namespace + "." + variable.getName() + ")");
+				// writer.addCode("LeekValueManager.getFunction(" + namespace + "." + variable.getName() + ")");
+				writer.addCode("LeekFunctions.executeFunction(mUAI, " + namespace + "." + variable.getName() + ", new AbstractLeekValue[] {");
+				addComma = false;
 			}
-			writer.addCode(".executeFunction(mUAI");
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.FUNCTION) {
 			writer.addCode("user_function_");
 			writer.addCode(((LeekVariable) mExpression).getName());
@@ -85,12 +90,14 @@ public class LeekExpressionFunction extends AbstractExpression {
 			mExpression.writeJavaCode(mainblock, writer);
 			writer.addCode(".executeFunction(mUAI");
 		}
-		for (int i = 0; i < mParameters.size(); i++) {
+		int argCount = mParameters.size();
+		if (system_function != null) argCount = Math.max(argCount, system_function.getArguments());
+		for (int i = 0; i < argCount; i++) {
 			if (i > 0 || addComma) writer.addCode(", ");
 			if (i < mParameters.size()) {
 				if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
 					mParameters.get(i).writeJavaCode(mainblock, writer);
-					writer.addCode(".getValue()");
+					// writer.addCode(".getValue()");
 				} else {
 					if (user_function != null) {
 						if (user_function.isReference(i))
@@ -108,6 +115,9 @@ public class LeekExpressionFunction extends AbstractExpression {
 			} else {
 				writer.addCode("LeekValueManager.NULL");
 			}
+		}
+		if (system_function != null) {
+			writer.addCode("}, " + mParameters.size());
 		}
 		writer.addCode(")");
 	}
