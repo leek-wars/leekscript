@@ -162,17 +162,14 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 	}
 
 	public void declareJava(MainLeekBlock mainblock, JavaWriter writer) {
-
+		// Declare the class as a field of the AI
 		String className = "user_" + token.getWord();
-		writer.addLine("private ClassLeekValue " + className + ";");
+		writer.addLine("private ClassLeekValue " + className + " = new ClassLeekValue(\"" + token.getWord() + "\");");
 	}
 
-	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-
+	public void createJava(MainLeekBlock mainblock, JavaWriter writer) {
+		// Create the class in the constructor of the AI
 		String className = "user_" + token.getWord();
-		writer.addCode(className);
-		writer.addLine(" = new ClassLeekValue(\"" + token.getWord() + "\");");
 
 		if (parent != null) {
 			writer.addLine(className + ".setParent(user_" + parent.getName() + ");");
@@ -251,6 +248,11 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			writer.addCode(className);
 			writer.addLine(".addGenericMethod(\"" + method.getKey() + "\");");
 		}
+	}
+
+	@Override
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+
 	}
 
 	private void writeFields(MainLeekBlock mainblock, JavaWriter writer, String className) {

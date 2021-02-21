@@ -26,7 +26,6 @@ import leekscript.compiler.expression.LeekExpressionFunction;
 import leekscript.compiler.expression.LeekGlobal;
 import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekNumber;
-import leekscript.compiler.expression.LeekObjectAccess;
 import leekscript.compiler.expression.LeekParenthesis;
 import leekscript.compiler.expression.LeekString;
 import leekscript.compiler.expression.LeekVariable;

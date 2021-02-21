@@ -101,8 +101,13 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		writer.addLine("", mLine, mAI);
 
 		super.writeJavaCode(mainblock, writer);
-		if (mEndInstruction == 0)
-			writer.addLine("return u_this;");
+		if (mEndInstruction == 0) {
+			if (isStatic) {
+				writer.addLine("return LeekValueManager.NULL;");
+			} else {
+				writer.addLine("return u_this;");
+			}
+		}
 	}
 
 	public ClassDeclarationInstruction getClassDeclaration() {
