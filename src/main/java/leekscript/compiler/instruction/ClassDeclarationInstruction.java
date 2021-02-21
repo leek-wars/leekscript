@@ -293,19 +293,19 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		return parent;
 	}
 
-	public boolean hasMember(IAWord field) {
+	public boolean hasMember(String field) {
 		return getMember(field) != null;
 	}
 
-	public boolean hasStaticMember(IAWord field) {
+	public boolean hasStaticMember(String field) {
 		return getStaticMember(field) != null;
 	}
 
-	public LeekVariable getMember(IAWord token) {
-		var f = fieldVariables.get(token.getWord());
+	public LeekVariable getMember(String token) {
+		var f = fieldVariables.get(token);
 		if (f != null) return f;
 
-		var m = methodVariables.get(token.getWord());
+		var m = methodVariables.get(token);
 		if (m != null) return m;
 
 		if (parent != null) {
@@ -314,11 +314,11 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		return null;
 	}
 
-	public LeekVariable getStaticMember(IAWord token) {
-		var f = staticFieldVariables.get(token.getWord());
+	public LeekVariable getStaticMember(String token) {
+		var f = staticFieldVariables.get(token);
 		if (f != null) return f;
 
-		var m = staticMethodVariables.get(token.getWord());
+		var m = staticMethodVariables.get(token);
 		if (m != null) return m;
 
 		if (parent != null) {

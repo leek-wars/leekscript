@@ -61,8 +61,8 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 
 		// Search in fields
 		if (!isStatic) {
-			if (variable.getWord().equals("this")) return new LeekVariable(new IAWord("this"), VariableType.THIS);
-			if (variable.getWord().equals("class")) return new LeekVariable(new IAWord("class"), VariableType.THIS_CLASS);
+			if (variable.equals("this")) return new LeekVariable(new IAWord("this"), VariableType.THIS);
+			if (variable.equals("class")) return new LeekVariable(new IAWord("class"), VariableType.THIS_CLASS);
 			if (includeClassMembers) {
 				v = clazz.getMember(variable);
 				if (v != null) return v;
