@@ -180,6 +180,15 @@ public class ClassLeekValue extends AbstractLeekValue {
 		return methodsArray;
 	}
 
+	public LeekAnonymousFunction getMethod(String method) {
+		var m = methods.get(method);
+		if (m != null) return m;
+		if (parent instanceof ClassLeekValue) {
+			return ((ClassLeekValue) parent).getMethod(method);
+		}
+		return null;
+	}
+
 	@Override
 	public boolean getBoolean() {
 		return true;
