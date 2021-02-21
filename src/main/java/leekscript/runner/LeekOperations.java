@@ -276,12 +276,15 @@ public class LeekOperations {
 
 	public static AbstractLeekValue equals_equals(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);
+		v1 = v1.getValue();
+		v2 = v2.getValue();
+		if (v1 instanceof ObjectLeekValue && v2 instanceof ObjectLeekValue) {
+			return LeekValueManager.getLeekBooleanValue(v1.equals(v2));
+		}
 		return LeekValueManager.getLeekBooleanValue(v1.getType() == v2.getType() && v1.equals(ai, v2));
 	}
 
 	public static AbstractLeekValue notequals_equals(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
-		ai.addOperations(1);
-		return LeekValueManager.getLeekBooleanValue(v1.getType() != v2.getType()
-				|| v1.notequals(ai, v2));
+		return LeekValueManager.getLeekBooleanValue(!equals_equals(ai, v1, v2).getBoolean());
 	}
 }
