@@ -100,16 +100,18 @@ public class LeekExpressionFunction extends AbstractExpression {
 					// writer.addCode(".getValue()");
 				} else {
 					if (user_function != null) {
-						if (user_function.isReference(i))
+						if (user_function.isReference(i)) {
 							mParameters.get(i).writeJavaCode(mainblock, writer);
-						else {
+						} else {
 							writer.addCode("LeekOperations.clone(mUAI, ");
 							mParameters.get(i).writeJavaCode(mainblock, writer);
 							writer.addCode(".getValue())");
 						}
-					} else {
+					} else if (system_function != null) {
 						mParameters.get(i).writeJavaCode(mainblock, writer);
 						writer.addCode(".getValue()");
+					} else {
+						mParameters.get(i).writeJavaCode(mainblock, writer);
 					}
 				}
 			} else {
