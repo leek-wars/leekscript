@@ -114,6 +114,8 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		value = value.getValue();
 		if (value instanceof StringLeekValue)
 			key = value.getString(ai);
+		else if (value instanceof ObjectLeekValue)
+			key = value;
 		else
 			key = Integer.valueOf(value.getInt(ai));
 		return mValues.get(ai, key);

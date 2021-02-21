@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import leekscript.AILog;
-import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
@@ -84,21 +83,23 @@ public class ClassLeekValue extends AbstractLeekValue {
 
 	@Override
 	public AbstractLeekValue getField(AI ai, String field) throws LeekRunException {
-		ai.addOperations(1);
 		AbstractLeekValue result = staticFields.get(field);
-		if (result == null) {
-			if (field.equals("name")) {
-				return new StringLeekValue(name);
-			} else if (field.equals("fields")) {
-				return getFieldsArray(ai);
-			} else if (field.equals("methods")) {
-				return getMethodsArray(ai);
-			} else if (field.equals("parent")) {
-				return parent;
-			}
-			return LeekValueManager.NULL;
+		if (result != null) {
+			return result;
 		}
-		return result;
+		if (field.equals("name")) {
+			return new StringLeekValue(name);
+		} else if (field.equals("fields")) {
+			return getFieldsArray(ai);
+		} else if (field.equals("methods")) {
+			return getMethodsArray(ai);
+		} else if (field.equals("parent")) {
+			return parent;
+		}
+		if (parent instanceof ClassLeekValue) {
+			return parent.getField(ai, field);
+		}
+		return LeekValueManager.NULL;
 	}
 
 	@Override

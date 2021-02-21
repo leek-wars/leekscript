@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.HashSet;
 
 import leekscript.compiler.LeekScript;
 import leekscript.runner.values.AbstractLeekValue;
@@ -839,8 +838,14 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		while (e != null) {
 			if (e != mHead)
 				sb.append(", ");
-			if (!isInOrder)
-				sb.append(e.key).append(" : ");
+			if (!isInOrder) {
+				if (e.key instanceof ObjectLeekValue) {
+					sb.append(((ObjectLeekValue) e.key).getString(ai));
+				} else {
+					sb.append(e.key);
+				}
+				sb.append(" : ");
+			}
 			if (visited.contains(e.value.getValue())) {
 				sb.append("<...>");
 			} else {
