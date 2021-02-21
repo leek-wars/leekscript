@@ -179,9 +179,19 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("import leekscript.runner.values.*;");
 		writer.addLine();
 		writer.addLine("public class " + className + " extends " + AIClass + " {");
+
+		// Classes
+		for (var clazz : mUserClasses.values()) {
+			clazz.declareJava(this, writer);
+		}
+		// Constructor
 		writer.addLine("public " + className + "() throws LeekRunException {");
 		writer.addLine("super();");
 		writer.addLine("mInstructions = " + mInstructions.size() + ";");
+
+		for (var clazz : mUserClasses.values()) {
+			clazz.createJava(this, writer);
+		}
 		writer.addLine("}");
 
 		// Variables globales
@@ -198,9 +208,6 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		// Fonctions
 		for (LeekInstruction instruction : mFunctions) {
 			instruction.writeJavaCode(this, writer);
-		}
-		for (var clazz : mUserClasses.values()) {
-			clazz.declareJava(this, writer);
 		}
 		/*
 		 * for(LeekInstruction instruction : mAnonymousFunctions){
