@@ -103,8 +103,9 @@ public class ObjectLeekValue extends AbstractLeekValue {
 	public String getString(AI ai, Set<Object> visited) throws LeekRunException {
 		visited.add(this);
 
-		if (clazz.methods.containsKey("string_0")) {
-			var result = clazz.methods.get("string_0").run(ai, this, new AbstractLeekValue[] {});
+		var string_method = clazz.getMethod("string_0");
+		if (string_method != null) {
+			var result = string_method.run(ai, this, new AbstractLeekValue[] {});
 			if (result.getType() != STRING) {
 				ai.addSystemLog(AILog.ERROR, AILog.STRING_METHOD_MUST_RETURN_STRING, new String[] { clazz.name });
 			} else {
