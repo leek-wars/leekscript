@@ -99,10 +99,6 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		}
 	}
 
-	/*
-	 * public ArrayLeekValue() { mValues = new PhpArray(); }
-	 */
-
 	public ArrayLeekValue(AI ai, ArrayLeekValue array, int level) throws LeekRunException {
 		mValues = new PhpArray(ai, array.mValues, level);
 	}
@@ -129,6 +125,8 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		value = value.getValue();
 		if (value instanceof StringLeekValue) {
 			key = value.getString(ai);
+		} else if (value instanceof ObjectLeekValue) {
+			key = value;
 		} else {
 			key = Integer.valueOf(value.getInt(ai));
 		}
@@ -153,10 +151,11 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 			mValues.remove(ai, value.getString(ai));
 		else if (value.getType() == NUMBER)
 			mValues.remove(ai, value.getInt(ai));
+		else if (value.getType() == OBJECT)
+			mValues.remove(ai, value);
 	}
 
 	public void shuffle(AI ai) throws LeekRunException {
-		// Collections.shuffle(mValues);
 		mValues.sort(ai, PhpArray.RANDOM);
 	}
 
@@ -190,8 +189,6 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	}
 
 	public void sort(AI ai, int type) throws LeekRunException {
-		// Collections.sort(mValues, new
-		// LeekValueComparator.SortComparator(type));
 		mValues.sort(ai, type);
 	}
 
@@ -270,7 +267,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 			// mValues.reindex(ai);
 			ArrayIterator iterator = value.getArray().getArrayIterator();
 			while (!iterator.ended()) {
-				if (iterator.key() instanceof String)
+				if (iterator.key() instanceof String || iterator.key() instanceof ObjectLeekValue)
 					mValues.getOrCreate(ai, iterator.getKey(ai).getString(ai)).set(ai, iterator.getValue(ai));
 				else
 					mValues.push(ai, iterator.getValue(ai));
@@ -291,10 +288,6 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	public void sort(AI ai, Comparator<PhpArray.Element> comparator) throws LeekRunException {
 		mValues.sort(ai, comparator);
 	}
-
-	// public void setParent(PhpArrayVariableLeekValue parent) {
-	// 	mValues.setParent(parent);
-	// }
 
 	@Override
 	public Object toJSON(AI ai) throws LeekRunException {

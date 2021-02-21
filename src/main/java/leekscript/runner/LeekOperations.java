@@ -259,17 +259,20 @@ public class LeekOperations {
 		else if (value instanceof DoubleLeekValue)
 			return new DoubleLeekValue(value.getDouble(ai));
 		else if (value instanceof ArrayLeekValue) {
+			if (level == 0) return value;
 			if (value.getArray().size() > 0) {
 				ai.addOperations(value.getArray().size() * (ArrayLeekValue.ARRAY_CELL_CREATE_OPERATIONS));
 			}
 			return new ArrayLeekValue(ai, value.getArray(), level);
 		} else if (value instanceof ObjectLeekValue) {
-			return value;
+			if (level == 0) return value;
+			return new ObjectLeekValue(ai, (ObjectLeekValue) value, level);
 		} else if (value instanceof ClassLeekValue) {
 			return value;
-		} else
+		} else {
 			return LeekValueManager.NULL;
 		}
+	}
 
 	public static AbstractLeekValue equals_equals(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		ai.addOperations(1);

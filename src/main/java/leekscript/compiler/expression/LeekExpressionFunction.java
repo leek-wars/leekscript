@@ -3,6 +3,7 @@ package leekscript.compiler.expression;
 import java.util.ArrayList;
 
 import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
@@ -15,10 +16,13 @@ import leekscript.runner.LeekFunctions;
 
 public class LeekExpressionFunction extends AbstractExpression {
 
+	private IAWord openParenthesis = null;
 	private final ArrayList<AbstractExpression> mParameters = new ArrayList<AbstractExpression>();
 	private AbstractExpression mExpression = null;
 
-	public LeekExpressionFunction() {}
+	public LeekExpressionFunction(IAWord openParenthesis) {
+		this.openParenthesis = openParenthesis;
+	}
 
 	public void setExpression(AbstractExpression expression) {
 		mExpression = expression;
@@ -63,6 +67,11 @@ public class LeekExpressionFunction extends AbstractExpression {
 			var object = ((LeekObjectAccess) mExpression).getObject();
 			object.writeJavaCode(mainblock, writer);
 			writer.addCode(".callMethod(mUAI, \"" + ((LeekObjectAccess) mExpression).getField() + "_" + mParameters.size() + "\"");
+		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SUPER) {
+			// Super constructor
+			var variable = (LeekVariable) mExpression;
+			writer.addCode("user_" + variable.getClassDeclaration().getParent().getName());
+			writer.addCode(".callConstructor(mUAI, u_this");
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.METHOD) {
 			writer.addCode("u_this.callMethod(mUAI, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\"");
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.STATIC_METHOD) {
@@ -94,7 +103,9 @@ public class LeekExpressionFunction extends AbstractExpression {
 			if (i < mParameters.size()) {
 				if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
 					mParameters.get(i).writeJavaCode(mainblock, writer);
-					// writer.addCode(".getValue()");
+					if (system_function != null) {
+						writer.addCode(".getValue()");
+					}
 				} else {
 					if (user_function != null) {
 						if (user_function.isReference(i)) {
@@ -119,6 +130,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 			writer.addCode("}, " + mParameters.size());
 		}
 		writer.addCode(")");
+		writer.addPosition(openParenthesis);
 	}
 
 	@Override

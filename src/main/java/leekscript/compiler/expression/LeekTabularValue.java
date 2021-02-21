@@ -39,10 +39,11 @@ public class LeekTabularValue extends AbstractExpression {
 	@Override
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		//On doit vérifier qu'on a affaire : soit à une expression tabulaire, soit à une variable, soit à une globale
-		if(!(mTabular instanceof LeekVariable) && !(mTabular instanceof LeekGlobal) && !(mTabular instanceof LeekTabularValue)){
-			//throw new LeekExpressionException(this, "Ce n'est pas un tableau valide");
+		//throw new LeekExpressionException(this, "Ce n'est pas un tableau valide");
+		if (!mTabular.isLeftValue()) {
 			mLeftValue = false;
 		}
+
 		//Sinon on valide simplement les deux expressions
 		mTabular.validExpression(compiler, mainblock);
 		mCase.validExpression(compiler, mainblock);
@@ -51,13 +52,12 @@ public class LeekTabularValue extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if(mLeftValue){
+		if (mLeftValue) {
 			mTabular.writeJavaCode(mainblock, writer);
 			writer.addCode(".getValue().getOrCreate(mUAI, ");
 			mCase.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
-		}
-		else{
+		} else {
 			mTabular.writeJavaCode(mainblock, writer);
 			writer.addCode(".getValue().get(mUAI, ");
 			mCase.writeJavaCode(mainblock, writer);

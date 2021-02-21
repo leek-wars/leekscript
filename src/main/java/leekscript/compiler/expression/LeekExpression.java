@@ -174,6 +174,22 @@ public class LeekExpression extends AbstractExpression {
 		}
 	}
 
+	public void addObjectAccess(IAWord name) {
+		if (mExpression1 != null && mExpression2 == null) {
+			if (mExpression1.getType() == EXPRESSION)
+				((LeekExpression) mExpression1).addObjectAccess(name);
+			else {
+				mExpression1 = new LeekObjectAccess(mExpression1, name);
+			}
+		} else if (mExpression2 != null) {
+			if (mExpression2.getType() == EXPRESSION)
+				((LeekExpression) mExpression2).addObjectAccess(name);
+			else {
+				mExpression2 = new LeekObjectAccess(mExpression2, name);
+			}
+		}
+	}
+
 	public void addFunction(LeekExpressionFunction function) {
 		// On doit ajouter ce crochet au dernier élément ajouté
 		if (mExpression1 != null && mExpression2 == null) {
@@ -390,20 +406,12 @@ public class LeekExpression extends AbstractExpression {
 		return retour + ")";
 	}
 
-	public AbstractExpression getAbstractExpression() {
-		// Retourner l'AbstractExpression (dans le cas où on n'aurait pas
-		// d'expression complete)
-		if (mOperator == -1)
-			return mExpression1;
-		return this;
-	}
-
 	@Override
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
-		if (mExpression1 instanceof LeekExpression)
-			mExpression1 = ((LeekExpression) mExpression1).getAbstractExpression();
-		if (mExpression2 instanceof LeekExpression)
-			mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
+		// if (mExpression1 instanceof LeekExpression)
+		// 	mExpression1 = ((LeekExpression) mExpression1).getAbstractExpression();
+		// if (mExpression2 instanceof LeekExpression)
+		// 	mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
 		if (mExpression1 == null || mExpression2 == null || mOperator == -1)
 			throw new LeekExpressionException(this, LeekCompilerException.UNCOMPLETE_EXPRESSION);
 
@@ -419,10 +427,10 @@ public class LeekExpression extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if (mExpression1 instanceof LeekExpression)
-			mExpression1 = ((LeekExpression) mExpression1).getAbstractExpression();
-		if (mExpression2 instanceof LeekExpression)
-			mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
+		// if (mExpression1 instanceof LeekExpression)
+		// 	mExpression1 = ((LeekExpression) mExpression1).getAbstractExpression();
+		// if (mExpression2 instanceof LeekExpression)
+		// 	mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
 		// Retourner le code java de l'expression... plein de cas :)
 		switch (mOperator) {
 
@@ -704,16 +712,17 @@ public class LeekExpression extends AbstractExpression {
 			mExpression2.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 			return;
-		case Operators.DOT:
-			mExpression2.writeJavaCode(mainblock, writer);
-			return;
+		// case Operators.DOT:
+		// 	mExpression2.writeJavaCode(mainblock, writer);
+		// 	return;
 		}
 		return;
 	}
 
 	@Override
 	public boolean isLeftValue() {
-		return mOperator == Operators.DOT;
+		// return mOperator == Operators.DOT;
+		return false;
 	}
 
 	@Override

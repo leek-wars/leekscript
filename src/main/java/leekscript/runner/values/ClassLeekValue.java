@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import leekscript.AILog;
+import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
@@ -49,23 +50,46 @@ public class ClassLeekValue extends AbstractLeekValue {
 		methods.put(method + "_" + argCount, function);
 	}
 
-	public void addGenericMethod(String method, LeekAnonymousFunction function) {
-		genericMethods.put(method, new FunctionLeekValue(function));
+	public void addGenericMethod(String method) {
+		genericMethods.put(method, new FunctionLeekValue(new LeekAnonymousFunction() {
+			public AbstractLeekValue run(AI ai, AbstractLeekValue thiz, AbstractLeekValue... arguments) throws LeekRunException {
+				final var methodCode = method + "_" + arguments.length;
+				final var m = methods.get(methodCode);
+				if (m != null) {
+					return m.run(ai, thiz, arguments);
+				}
+				ai.addSystemLog(leekscript.AILog.ERROR, leekscript.AILog.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
+				return LeekValueManager.NULL;
+			}
+		}));
 	}
 
 	public void addStaticMethod(String method, int argCount, LeekAnonymousFunction function) {
 		staticMethods.put(method + "_" + argCount, function);
 	}
 
-	public void addGenericStaticMethod(String method, LeekAnonymousFunction function) {
-		genericStaticMethods.put(method, new FunctionLeekValue(function));
+	public void addGenericStaticMethod(String method) {
+		genericMethods.put(method, new FunctionLeekValue(new LeekAnonymousFunction() {
+			public AbstractLeekValue run(AI ai, AbstractLeekValue thiz, AbstractLeekValue... arguments) throws LeekRunException {
+				final var methodCode = method + "_" + arguments.length;
+				final var m = methods.get(methodCode);
+				if (m != null) {
+					return m.run(ai, null, arguments);
+				}
+				ai.addSystemLog(leekscript.AILog.ERROR, leekscript.AILog.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
+				return LeekValueManager.NULL;
+			}
+		}));
 	}
 
 	@Override
 	public AbstractLeekValue getField(AI ai, String field) throws LeekRunException {
+		ai.addOperations(1);
 		AbstractLeekValue result = staticFields.get(field);
 		if (result == null) {
-			if (field.equals("fields")) {
+			if (field.equals("name")) {
+				return new StringLeekValue(name);
+			} else if (field.equals("fields")) {
 				return getFieldsArray(ai);
 			} else if (field.equals("methods")) {
 				return getMethodsArray(ai);
@@ -79,21 +103,35 @@ public class ClassLeekValue extends AbstractLeekValue {
 
 	@Override
 	public AbstractLeekValue callMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
+		ai.addOperations(1);
 		LeekAnonymousFunction result = staticMethods.get(method);
 		if (result == null) {
-			int underscore = method.lastIndexOf("_");
-			int argCount = Integer.parseInt(method.substring(underscore + 1));
-			String methodRealName = method.substring(0, underscore) + "(";
-			for (int i = 0; i < argCount; ++i) {
-				if (i > 0) methodRealName += ", ";
-				methodRealName += "x";
-			}
-			methodRealName += ")";
-			ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_STATIC_METHOD, new String[] { name, methodRealName });
+			ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_STATIC_METHOD, new String[] { name, createMethodError(method) });
 			return LeekValueManager.NULL;
 		}
 		// Call method with new arguments, add the object at the beginning
 		return result.run(ai, null, arguments);
+	}
+
+	public void callConstructor(AI ai, AbstractLeekValue thiz, AbstractLeekValue... arguments) throws LeekRunException {
+		ai.addOperations(1);
+		if (!constructors.containsKey(arguments.length)) {
+			ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
+			return;
+		}
+		constructors.get(arguments.length).run(ai, thiz, arguments);
+	}
+
+	public static String createMethodError(String method) {
+		int underscore = method.lastIndexOf("_");
+		int argCount = Integer.parseInt(method.substring(underscore + 1));
+		String methodRealName = method.substring(0, underscore) + "(";
+		for (int i = 0; i < argCount; ++i) {
+			if (i > 0) methodRealName += ", ";
+			methodRealName += "x";
+		}
+		methodRealName += ")";
+		return methodRealName;
 	}
 
 	/**
@@ -101,7 +139,7 @@ public class ClassLeekValue extends AbstractLeekValue {
 	 */
 	@Override
 	public AbstractLeekValue executeFunction(AI ai, AbstractLeekValue... arguments) throws LeekRunException {
-
+		ai.addOperations(1);
 		// Create the actual object
 		ObjectLeekValue object = new ObjectLeekValue(this);
 		// Add fields

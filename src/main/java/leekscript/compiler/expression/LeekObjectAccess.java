@@ -26,7 +26,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 	public String getString() {
-		return "<method_call>";
+		return object.getString() + "." + field.getWord();
 	}
 
 	public AbstractExpression getObject() {
@@ -41,8 +41,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
-
-		return true;
+		return object.validExpression(compiler, mainblock);
 	}
 
 	@Override
@@ -52,6 +51,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 	public void analyze(WordCompiler compiler) {
+		// System.out.println("oa " + getString());
 		object.analyze(compiler);
 		if (object instanceof LeekVariable) {
 			var v = (LeekVariable) object;

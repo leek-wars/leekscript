@@ -227,16 +227,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				writer.addLine(".addStaticMethod(\"" + method.getKey() + "\", " + version.getKey() + ", " + methodName + ");");
 			}
 			writer.addCode(className);
-			writer.addCode(".addGenericStaticMethod(\"" + method.getKey() + "\", new LeekAnonymousFunction() {");
-			writer.addLine("public AbstractLeekValue run(AI mUAI, AbstractLeekValue thiz, AbstractLeekValue... values) throws LeekRunException {");
-			writer.addLine("switch (values.length) {");
-			for (Entry<Integer, ClassMethodBlock> version : method.getValue().entrySet()) {
-				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
-				writer.addLine("case " + version.getKey() + ": return " + methodName + ".run(mUAI, thiz, values);");
-			}
-			writer.addLine("default: mUAI.addSystemLog(leekscript.AILog.ERROR, leekscript.AILog.UNKNOWN_METHOD, new String[] { });");
-			writer.addLine("return LeekValueManager.NULL;");
-			writer.addLine("}}});");
+			writer.addLine(".addGenericStaticMethod(\"" + method.getKey() + "\");");
 		}
 
 		for (Entry<Integer, ClassMethodBlock> construct : constructors.entrySet()) {
@@ -258,16 +249,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				writer.addLine(".addMethod(\"" + method.getKey() + "\", " + version.getKey() + ", " + methodName + ");");
 			}
 			writer.addCode(className);
-			writer.addCode(".addGenericMethod(\"" + method.getKey() + "\", new LeekAnonymousFunction() {");
-			writer.addLine("public AbstractLeekValue run(AI mUAI, AbstractLeekValue thiz, AbstractLeekValue... values) throws LeekRunException {");
-			writer.addLine("switch (values.length) {");
-			for (Entry<Integer, ClassMethodBlock> version : method.getValue().entrySet()) {
-				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
-				writer.addLine("case " + version.getKey() + ": return " + methodName + ".run(mUAI, thiz, values);");
-			}
-			writer.addLine("default: mUAI.addSystemLog(leekscript.AILog.ERROR, leekscript.AILog.UNKNOWN_METHOD, new String[] { });");
-			writer.addLine("return LeekValueManager.NULL;");
-			writer.addLine("}}});");
+			writer.addLine(".addGenericMethod(\"" + method.getKey() + "\");");
 		}
 	}
 

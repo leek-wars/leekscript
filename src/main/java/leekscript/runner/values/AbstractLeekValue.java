@@ -204,6 +204,8 @@ public abstract class AbstractLeekValue {
 		return LeekValueManager.NULL;
 	}
 
+	public void callConstructor(AI ai, AbstractLeekValue thiz, AbstractLeekValue... arguments) throws LeekRunException {}
+
 	public abstract int getType();
 
 	public boolean isReference() {
@@ -236,6 +238,8 @@ public abstract class AbstractLeekValue {
 				ret += "function";
 			else if (parameters[j].getValue().getType() == NULL)
 				ret += "null";
+			else if (parameters[j].getValue().getType() == OBJECT)
+				ret += "object";
 			else
 				ret += "?";
 		}
