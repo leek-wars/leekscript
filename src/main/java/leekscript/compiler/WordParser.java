@@ -72,7 +72,12 @@ public class WordParser {
 			c = code.charAt(i);
 			if(c == '\r') continue;
 			// Compteur caractères/lignes
-			if(c == '\n'){
+			if(c == '\n') {
+				if (type != T_NOTHING) {
+					newWord(word, type);
+					type = T_NOTHING;
+					word = "";
+				}
 				char_counter = 0;
 				line_counter++;
 				comment_line = false;
