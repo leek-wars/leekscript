@@ -783,10 +783,6 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 
 	private void destroyElement(Element e) throws LeekRunException {
 		mSize--;
-		if (e.key instanceof Integer)
-			e.value.removeFromTable(1);
-		else
-			e.value.removeFromTable(((String) e.key).length());
 	}
 
 	private Element getElement(AI ai, Object key) throws LeekRunException {
