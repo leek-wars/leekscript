@@ -90,7 +90,8 @@ public abstract class AI {
 		StringBuilder sb = new StringBuilder();
 		int count = 0;
 		for (StackTraceElement element : elements) {
-			if (element.getMethodName().equals("runIA") || element.getMethodName().startsWith("user_function_")) {
+			// System.out.println(element.getClassName() + " " + element.getMethodName() + " " + element.getLineNumber());
+			if (element.getClassName().startsWith("AI_")) {
 				sb.append(getErrorLocalisation(element.getLineNumber())).append("\n");
 				if (count++ > 50) {
 					sb.append("[...]");
@@ -98,6 +99,9 @@ public abstract class AI {
 				}
 			}
 		}
+		// for (StackTraceElement element : elements) {
+		// 	sb.append("\t▶ " + element.getClassName() + "." + element.getMethodName() + ", line " + element.getLineNumber()).append("\n");
+		// }
 		return sb.toString();
 	}
 
@@ -123,7 +127,7 @@ public abstract class AI {
 		if (mErrorObject.size() > value) {
 			JSONArray l = mErrorObject.getJSONArray(value);
 			if (l != null && l.size() >= 3) {
-				return "\t▶ AI " + l.getString(1) + ", line " + l.getString(2);
+				return "\t▶ AI " + l.getString(1) + ", line " + l.getString(2); // + ", java " + line;
 			}
 		}
 		return "";
