@@ -186,7 +186,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 		// Variables globales
 		for (String global : mGlobales) {
-			writer.addLine("private VariableLeekValue globale_" + global + " = new VariableLeekValue(mUAI);");
+			writer.addLine("private AbstractLeekValue globale_" + global + " = LeekValueManager.NULL;");
 			writer.addLine("private boolean globale_init_" + global + " = false;");
 		}
 		// Fonctions redéfinies
