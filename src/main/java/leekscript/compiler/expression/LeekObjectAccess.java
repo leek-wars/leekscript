@@ -58,11 +58,11 @@ public class LeekObjectAccess extends AbstractExpression {
 			if (v.getName().equals("this")) {
 				// this, check field exists in class
 				var clazz = compiler.getCurrentClass();
-				if (clazz != null && !clazz.hasMember(field)) {
+				if (clazz != null && !clazz.hasMember(field.getWord())) {
 					compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, LeekCompilerException.CLASS_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), field.getWord() }));
 				}
 			} else if (v.getVariableType() == VariableType.CLASS && v.getClassDeclaration() != null) {
-				if (!v.getClassDeclaration().hasStaticMember(field)) {
+				if (!v.getClassDeclaration().hasStaticMember(field.getWord())) {
 					compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, LeekCompilerException.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { v.getClassDeclaration().getName(), field.getWord() }));
 				}
 			}
