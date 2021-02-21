@@ -37,13 +37,10 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("if (!globale_init_" + token.getWord() + ") { globale_" + token.getWord() + ".initGlobal(mUAI, ");
+		writer.addCode("if (!globale_init_" + token.getWord() + ") { globale_" + token.getWord() + " = new VariableLeekValue(mUAI, ");
 		if(mValue != null) mValue.writeJavaCode(mainblock, writer);
 		else writer.addCode("LeekValueManager.NULL");
 		writer.addCode("); globale_init_" + token.getWord() + " = true;");
-		if (mainblock.getCompiler().getCurrentAI().getVersion() <= 10) {
-			writer.addCounter(1); // Add one operation in LS 1.0
-		}
 		writer.addLine(" }", mLine, mAI);
 	}
 
