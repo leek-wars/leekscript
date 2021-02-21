@@ -44,7 +44,7 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 		if (mainblock.getCompiler().getCurrentAI().getVersion() <= 10) {
 			writer.addCounter(1); // Add one operation in LS 1.0
 		}
-		writer.addLine("}", mLine, mAI);
+		writer.addLine(" }", mLine, mAI);
 	}
 
 	@Override
