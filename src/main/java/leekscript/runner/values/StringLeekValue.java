@@ -12,14 +12,6 @@ public class StringLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public int getSize() {
-		if (mValue == null) {
-			return 0;
-		}
-		return mValue.length();
-	}
-
-	@Override
 	public String getString(AI ai) {
 		return mValue;
 	}

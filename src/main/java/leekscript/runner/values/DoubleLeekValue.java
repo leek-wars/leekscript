@@ -15,11 +15,6 @@ public class DoubleLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public int getSize() {
-		return 2;
-	}
-
-	@Override
 	public int getInt(AI ai) {
 		return (int) mValue;
 	}

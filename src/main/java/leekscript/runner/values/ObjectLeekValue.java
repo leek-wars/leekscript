@@ -65,11 +65,6 @@ public class ObjectLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public int getSize() {
-		return fields.size();
-	}
-
-	@Override
 	public boolean getBoolean() {
 		return fields.size() > 0;
 	}

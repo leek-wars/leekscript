@@ -142,11 +142,6 @@ public class ClassLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public int getSize() {
-		return 1;
-	}
-
-	@Override
 	public boolean getBoolean() {
 		return true;
 	}

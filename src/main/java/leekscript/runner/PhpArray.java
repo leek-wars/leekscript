@@ -27,8 +27,6 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	public final static int ASC_K = 6;
 	public final static int DESC_K = 7;
 
-	// private static int RAM_LIMIT = 1000000;
-
 	private class ElementComparator implements Comparator<Element> {
 
 		private final int mOrder;
@@ -192,16 +190,9 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 
 	private Element mHead = null;
 	private Element mEnd = null;
-
 	private int mIndex = 0;
-
 	private int mSize = 0;
 	private int capacity = 0;
-
-	// Calcul optimisé de la ram utilisée (Optimisé niveau UC, pas niveau RAM)
-	private int mTotalSize = 0;
-	// private PhpArrayVariableLeekValue mParent = null;
-
 	private Element[] mTable = null;
 
 	public PhpArray() {}
@@ -911,26 +902,5 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			e2 = e2.next;
 		}
 		return true;
-	}
-
-	// public void setParent(PhpArrayVariableLeekValue parent) {
-	// 	mParent = parent;
-	// }
-
-	public void updateArraySize(int delta) throws LeekRunException {
-		if (delta == 0) {
-			return;
-		}
-		mTotalSize += delta;
-		// if (mTotalSize >= RAM_LIMIT) {
-		// 	throw new LeekRunException(LeekRunException.OUT_OF_MEMORY);
-		// }
-		// if (mParent != null) {
-		// 	mParent.updateSize(delta);
-		// }
-	}
-
-	public int getSize() {
-		return mTotalSize;
 	}
 }
