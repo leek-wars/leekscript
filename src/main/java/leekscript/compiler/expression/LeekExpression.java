@@ -727,8 +727,12 @@ public class LeekExpression extends AbstractExpression {
 			if (!mExpression1.isLeftValue())
 				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.CANT_ASSIGN_VALUE));
 				// throw new LeekExpressionException(mExpression1, LeekCompilerException.CANT_ASSIGN_VALUE);
-			if (mExpression1 instanceof LeekVariable && ((LeekVariable) mExpression1).getVariableType() == VariableType.SYSTEM_FUNCTION)
-				compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression1).getName());
+			if (mExpression1 instanceof LeekVariable) {
+				var v = (LeekVariable) mExpression1;
+				if (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION) {
+					compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression1).getName());
+				}
+			}
 			if (mExpression1 instanceof LeekTabularValue)
 				((LeekTabularValue) mExpression1).setLeftValue(true);
 		}
@@ -737,8 +741,12 @@ public class LeekExpression extends AbstractExpression {
 			if (!(mExpression2 instanceof LeekVariable) && !(mExpression2 instanceof LeekGlobal) && !(mExpression2 instanceof LeekTabularValue))
 				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.CANT_ASSIGN_VALUE));
 				// throw new LeekExpressionException(mExpression2, LeekCompilerException.CANT_ASSIGN_VALUE);
-			if (mExpression2 instanceof LeekVariable && ((LeekVariable) mExpression2).getVariableType() == VariableType.SYSTEM_FUNCTION)
-				compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression2).getName());
+				if (mExpression2 instanceof LeekVariable) {
+					var v = (LeekVariable) mExpression2;
+					if (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION) {
+						compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression2).getName());
+					}
+				}
 			if (mExpression2 instanceof LeekTabularValue)
 				((LeekTabularValue) mExpression2).setLeftValue(true);
 		}

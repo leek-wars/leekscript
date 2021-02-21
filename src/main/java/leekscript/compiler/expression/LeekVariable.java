@@ -63,8 +63,9 @@ public class LeekVariable extends AbstractExpression {
 			writer.addCode("u_class.getField(mUAI, \"" + token.getWord() + "\")");
 		} else if (type == VariableType.METHOD) {
 			writer.addCode("###");
-		} else
-		if (type == VariableType.FUNCTION) {
+		} else if (mainblock.isRedefinedFunction(token.getWord())) {
+			writer.addCode("rfunction_" + token.getWord());
+		} else if (type == VariableType.FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
 			writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
@@ -73,16 +74,12 @@ public class LeekVariable extends AbstractExpression {
 			else if (constant.getType() == LeekFunctions.DOUBLE) writer.addCode("new DoubleLeekValue(" + constant.getValue() + ")");
 			else writer.addCode("LeekValueManager.NULL");
 		} else if (type == VariableType.SYSTEM_FUNCTION) {
-			if (mainblock.isRedefinedFunction(token.getWord())) {
-				writer.addCode("rfunction_" + token.getWord());
+			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
+			if (user_function != null) {
+				writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
 			} else {
-				FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
-				if (user_function != null) {
-					writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
-				} else {
-					String namespace = LeekFunctions.getNamespace(token.getWord());
-					writer.addCode("LeekValueManager.getFunction(" + namespace + "." + token.getWord() + ")");
-				}
+				String namespace = LeekFunctions.getNamespace(token.getWord());
+				writer.addCode("LeekValueManager.getFunction(" + namespace + "." + token.getWord() + ")");
 			}
 		} else if (type == VariableType.GLOBAL) {
 			writer.addCode("globale_" + token.getWord());
