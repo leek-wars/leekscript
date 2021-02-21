@@ -5,7 +5,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
+import leekscript.compiler.LeekScript;
 import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.PhpArrayVariableLeekValue;
@@ -389,7 +391,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		}
 		// Trie de la liste
 		if (comparator == RANDOM)
-			Collections.shuffle(liste);
+			Collections.shuffle(liste, new Random(LeekScript.getRandom().getInt(0, Integer.MAX_VALUE)));
 		else if (comparator == ASC_K || comparator == DESC_K) {
 			Collections.sort(liste, new KeyComparator(
 					(comparator == ASC_K) ? ElementComparator.SORT_ASC
