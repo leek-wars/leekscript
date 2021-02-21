@@ -141,7 +141,19 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			} else if (parentVar.getVariableType() != VariableType.CLASS) {
 				compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.UNKNOWN_VARIABLE_OR_FUNCTION));
 			} else {
-				this.parent = parentVar.getClassDeclaration();
+				var current = parentVar.getClassDeclaration();
+				boolean ok = true;
+				while (current != null) {
+					if (current == this) {
+						compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.EXTENDS_LOOP));
+						ok = false;
+						break;
+					}
+					current = current.getParent();
+				}
+				if (ok) {
+					this.parent = parentVar.getClassDeclaration();
+				}
 			}
 		}
 
