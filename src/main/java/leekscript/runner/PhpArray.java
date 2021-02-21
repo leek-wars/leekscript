@@ -7,10 +7,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.HashSet;
 
 import leekscript.compiler.LeekScript;
 import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
+import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.PhpArrayVariableLeekValue;
 import leekscript.runner.values.StringLeekValue;
 
@@ -171,6 +173,8 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		public AbstractLeekValue key() {
 			if (key instanceof Integer)
 				return LeekValueManager.getLeekIntValue(((Integer) key).intValue());
+			else if (key instanceof ObjectLeekValue)
+				return (ObjectLeekValue) key;
 			else
 				return new StringLeekValue(key.toString());
 		}
@@ -207,7 +211,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			Element e = phpArray.mHead;
 			while (e != null) {
 				if (ai.getVersion() >= 11) {
-					if (level == 0) {
+					if (level == 1) {
 						set(ai, e.key, LeekOperations.clonePrimitive(ai, e.value.getValue()));
 					} else {
 						set(ai, e.key, LeekOperations.clone(ai, e.value.getValue(), level - 1));
@@ -793,7 +797,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		int operations = ArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS;
 		ai.addOperationsNoCheck(operations);
 
-		int hash = getHash(key);
+		int hash = key.hashCode();
 		int index = getIndex(hash);
 
 		Element f = mTable[index];
@@ -805,10 +809,6 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			f = f.hashNext;
 		}
 		return null;
-	}
-
-	private int getHash(Object key) {
-		return key.hashCode();
 	}
 
 	private int getIndex(int hash) {

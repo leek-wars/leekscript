@@ -6,6 +6,7 @@ import java.util.Set;
 import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekAnonymousFunction;
+import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
 
@@ -18,13 +19,26 @@ public class ObjectLeekValue extends AbstractLeekValue {
 		this.clazz = clazz;
 	}
 
+	public ObjectLeekValue(AI ai, ObjectLeekValue value, int level) throws LeekRunException {
+		this.clazz = value.clazz;
+		ai.addOperations(value.fields.size());
+		for (var field : value.fields.entrySet()) {
+			if (level == 1) {
+				fields.put(field.getKey(), new VariableLeekValue(ai, LeekOperations.clonePrimitive(ai, field.getValue())));
+			} else {
+				fields.put(field.getKey(), new VariableLeekValue(ai, LeekOperations.clone(ai, field.getValue(), level - 1)));
+			}
+		}
+	}
+
 	public void addField(AI ai, String field, AbstractLeekValue value) throws LeekRunException {
-		fields.put(field, new VariableLeekValue(ai, value));
+		fields.put(field, new VariableLeekValue(ai, LeekOperations.clone(ai, value)));
 	}
 
 	@Override
 	public AbstractLeekValue getField(AI ai, String field) throws LeekRunException {
 		// System.out.println("getField " + field);
+		ai.addOperations(1);
 		if (field.equals("class")) {
 			return clazz;
 		}
@@ -47,6 +61,7 @@ public class ObjectLeekValue extends AbstractLeekValue {
 
 	@Override
 	public AbstractLeekValue callMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
+		ai.addOperations(1);
 		LeekAnonymousFunction result = clazz.methods.get(method);
 		if (result == null) {
 			int underscore = method.lastIndexOf("_");

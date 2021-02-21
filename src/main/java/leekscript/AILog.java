@@ -32,6 +32,7 @@ public class AILog {
 	public static final String UNKNOWN_STATIC_METHOD = "unknown_static_method";
 	public static final String STRING_METHOD_MUST_RETURN_STRING = "string_method_must_return_string";
 	public static final String UNKNOWN_FIELD = "unknown_field";
+	public static final String UNKNOWN_CONSTRUCTOR = "unknown_constructor";
 
 	public interface Stream {
 		public void write(JSONArray a);

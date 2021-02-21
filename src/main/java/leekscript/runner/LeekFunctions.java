@@ -1,5 +1,6 @@
 package leekscript.runner;
 
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 import leekscript.AILog;
@@ -1299,7 +1300,9 @@ public enum LeekFunctions implements ILeekFunction {
 	clone(1, 2) {
 		@Override
 		public AbstractLeekValue run(AI ai, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekOperations.clone(ai, parameters[0], parameters[1].getInt(ai));
+			// Clone one level by default
+			int level = count == 1 ? 1 : Math.max(0, parameters[1].getInt(ai));
+			return LeekOperations.clone(ai, parameters[0], level);
 		}
 	}
 	;
