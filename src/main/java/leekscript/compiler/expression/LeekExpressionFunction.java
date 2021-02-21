@@ -67,19 +67,16 @@ public class LeekExpressionFunction extends AbstractExpression {
 			writer.addCode("u_this.callMethod(mUAI, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\"");
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.STATIC_METHOD) {
 			writer.addCode("u_class.callMethod(mUAI, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\"");
-		} else
-		if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SYSTEM_FUNCTION) {
+		} else if (mExpression instanceof LeekVariable && mainblock.isRedefinedFunction(((LeekVariable) mExpression).getName())) {
+			writer.addCode("rfunction_" + ((LeekVariable) mExpression).getName());
+			writer.addCode(".executeFunction(mUAI");
+		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SYSTEM_FUNCTION) {
 			var variable = (LeekVariable) mExpression;
-			if (mainblock.isRedefinedFunction(variable.getName())) {
-				writer.addCode("rfunction_" + variable.getName());
-				writer.addCode(".executeFunction(mUAI");
-			} else {
-				system_function = LeekFunctions.getValue(variable.getName());
-				String namespace = LeekFunctions.getNamespace(variable.getName());
-				// writer.addCode("LeekValueManager.getFunction(" + namespace + "." + variable.getName() + ")");
-				writer.addCode("LeekFunctions.executeFunction(mUAI, " + namespace + "." + variable.getName() + ", new AbstractLeekValue[] {");
-				addComma = false;
-			}
+			system_function = LeekFunctions.getValue(variable.getName());
+			String namespace = LeekFunctions.getNamespace(variable.getName());
+			// writer.addCode("LeekValueManager.getFunction(" + namespace + "." + variable.getName() + ")");
+			writer.addCode("LeekFunctions.executeFunction(mUAI, " + namespace + "." + variable.getName() + ", new AbstractLeekValue[] {");
+			addComma = false;
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.FUNCTION) {
 			writer.addCode("user_function_");
 			writer.addCode(((LeekVariable) mExpression).getName());
