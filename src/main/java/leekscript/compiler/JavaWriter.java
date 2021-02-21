@@ -74,6 +74,8 @@ public class JavaWriter {
 			array.add(l.mAI.getPath());
 			array.add(l.mCodeLine);
 			mCode.append(JSON.toJSONString(array.toJSONString()));
+
+			// System.out.println(l.mAI.getPath() + ":" + l.mCodeLine + " -> " + l.mJavaLine);
 		}
 		mCode.append("};}\nprotected String getAItring(){ return ");
 		mCode.append(aiJson);
@@ -82,5 +84,13 @@ public class JavaWriter {
 
 	public void addCounter(int id) {
 		addCode("mUAI.addOperations(1);");
+	}
+
+	public int getCurrentLine() {
+		return mLine;
+	}
+
+	public void addPosition(IAWord token) {
+		mLines.add(new Line(mLine, token.getLine(), token.getAI()));
 	}
 }

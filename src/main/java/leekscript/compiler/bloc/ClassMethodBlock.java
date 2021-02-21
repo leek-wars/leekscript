@@ -102,6 +102,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 			writer.addCode("final VariableLeekValue user_" + mParameters.get(i) + " = ");
 			writer.addLine("new VariableLeekValue(mUAI, values[" + i + "].getValue());");
 		}
+		writer.addLine("", mLine, mAI);
 
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0)
