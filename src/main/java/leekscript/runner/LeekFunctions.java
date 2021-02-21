@@ -714,18 +714,6 @@ public enum LeekFunctions implements ILeekFunction {
 					mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
 		}
 	},
-	removeByKey(2) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			parameters[0].getArray().removeByKey(leekIA, parameters[1]);
-			return LeekValueManager.NULL;
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1 };
-		}
-	},
 	removeKey(2) {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
