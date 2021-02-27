@@ -48,7 +48,7 @@ public class IACompiler {
 			compiler.readCode();
 			compiler.analyze();
 
-			System.out.println("errors " + compiler.getErrors().size());
+			// System.out.println("errors " + compiler.getErrors().size());
 			if (compiler.getErrors().size() > 0) {
 				for (var error : compiler.getErrors()) {
 					mInformations.add(error.toJSON());
@@ -76,7 +76,7 @@ public class IACompiler {
 			WordCompiler compiler = new WordCompiler(parser, main, ai, ai.getVersion());
 			compiler.readCode();
 			compiler.analyze();
-			System.out.println("errors " + compiler.getErrors().size());
+			// System.out.println("errors " + compiler.getErrors().size());
 
 			if (compiler.getErrors().size() > 0) {
 				for (var error : compiler.getErrors()) {
