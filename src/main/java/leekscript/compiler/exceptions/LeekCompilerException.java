@@ -58,6 +58,7 @@ public class LeekCompilerException extends Exception {
 	public final static String CLASS_MEMBER_DOES_NOT_EXIST = "class_member_does_not_exist";
 	public final static String CLASS_STATIC_MEMBER_DOES_NOT_EXIST = "class_static_member_does_not_exist";
 	public final static String EXTENDS_LOOP = "extends_loop";
+	public final static String REFERENCES_DEPRECATED = "reference_deprecated";
 
 	/**
 	 *

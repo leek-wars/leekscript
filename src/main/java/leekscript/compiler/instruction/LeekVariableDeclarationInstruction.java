@@ -80,11 +80,11 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 			mValue.analyze(compiler);
 		}
 		// Variables interdites
-		if (token.getWord().equals("this")) {
+		if (compiler.getVersion() >= 11 && token.getWord().equals("this")) {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, LeekCompilerException.THIS_NOT_ALLOWED_HERE));
 		} else {
-			// Vérification déjà existante (on vérifie les globales seulement en 1.1 car il y a un léger bug en 1.0 avec les includes)
-			if ((compiler.getVersion() >= 11 && compiler.getMainBlock().hasGlobal(token.getWord())) || compiler.getMainBlock().hasUserFunction(token.getWord(), true) || compiler.getCurrentBlock().hasVariable(token.getWord())) {
+			// Vérification déjà existante (on vérifie les globales et fonctions seulement en 1.1 car il y a un léger bug en 1.0 avec les includes)
+			if ((compiler.getVersion() >= 11 && (compiler.getMainBlock().hasGlobal(token.getWord()) || compiler.getMainBlock().hasUserFunction(token.getWord(), true))) || compiler.getCurrentBlock().hasVariable(token.getWord())) {
 				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE));
 			} else {
 				// On ajoute la variable

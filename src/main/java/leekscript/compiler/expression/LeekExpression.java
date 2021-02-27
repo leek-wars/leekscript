@@ -730,6 +730,11 @@ public class LeekExpression extends AbstractExpression {
 
 	@Override
 	public void analyze(WordCompiler compiler) {
+
+		if (mOperator == Operators.REFERENCE && compiler.getVersion() >= 11) {
+			compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.WARNING, LeekCompilerException.REFERENCES_DEPRECATED));
+		}
+
 		if (mExpression1 != null) mExpression1.analyze(compiler);
 		if (mExpression2 != null) mExpression2.analyze(compiler);
 

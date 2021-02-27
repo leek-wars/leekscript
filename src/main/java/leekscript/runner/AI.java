@@ -127,7 +127,10 @@ public abstract class AI {
 		if (mErrorObject.size() > value) {
 			JSONArray l = mErrorObject.getJSONArray(value);
 			if (l != null && l.size() >= 3) {
-				return "\t▶ AI " + l.getString(1) + ", line " + l.getString(2); // + ", java " + line;
+				var files = getErrorFiles();
+				var f = l.getIntValue(1);
+				String file = f < files.length ? files[f] : "?";
+				return "\t▶ AI " + file + ", line " + l.getString(2); // + ", java " + line;
 			}
 		}
 		return "";
@@ -370,6 +373,8 @@ public abstract class AI {
 	}
 
 	protected abstract String[] getErrorString();
+
+	protected abstract String[] getErrorFiles();
 
 	protected abstract String getAItring();
 

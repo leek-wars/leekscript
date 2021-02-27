@@ -63,11 +63,12 @@ public class WordCompiler {
 	public void readCode() throws LeekCompilerException {
 		try {
 			mCompiler.compile(this);
-			// Receherche des fonctions utilisateur
+			// Recherche des fonctions utilisateur
 			while (mCompiler.haveWords()) {
-				if (mCompiler.getWord().getWord().equals("global")) {
+				if (mCompiler.getWord().getType() == WordParser.T_STRING && mCompiler.getWord().getWord().equals("global")) {
 					mCompiler.skipWord();
 					var global = mCompiler.readWord();
+					// System.out.println("global = " + global.getWord() + " " + global.getLine());
 					if (!isGlobalAvailable(global.getWord()) || mMain.hasDeclaredGlobal(global.getWord())) {
 						addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, LeekCompilerException.VARIABLE_NAME_UNAVAILABLE));
 					} else {
@@ -327,6 +328,9 @@ public class WordCompiler {
 			boolean is_reference = false;
 			if (mCompiler.getWord().getType() == WordParser.T_OPERATOR && mCompiler.getWord().getWord().equals("@")) {
 				is_reference = true;
+				if (getVersion() >= 11) {
+					addError(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.WARNING, LeekCompilerException.REFERENCES_DEPRECATED));
+				}
 				mCompiler.skipWord();
 			}
 			if (mCompiler.getWord().getType() != WordParser.T_STRING)
@@ -366,6 +370,9 @@ public class WordCompiler {
 		boolean reference1 = false;
 		if (mCompiler.getWord().getWord().equals("@")) {
 			reference1 = true;
+			if (getVersion() >= 11) {
+				addError(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.WARNING, LeekCompilerException.REFERENCES_DEPRECATED));
+			}
 			mCompiler.skipWord();
 		}
 		// On récupère ensuite le nom de la variable
@@ -400,6 +407,9 @@ public class WordCompiler {
 			boolean reference2 = false;
 			if (mCompiler.getWord().getWord().equals("@")) {
 				reference2 = true;
+				if (getVersion() >= 11) {
+					addError(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.WARNING, LeekCompilerException.REFERENCES_DEPRECATED));
+				}
 				mCompiler.skipWord();
 			}
 			// On récupère ensuite le nom de la variable accueillant la valeur
@@ -797,7 +807,7 @@ public class WordCompiler {
 		int param_count = 0;
 		while (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
 			if (mCompiler.getWord().getType() == WordParser.T_OPERATOR && mCompiler.getWord().getWord().equals("@")) {
-				errors.add(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.WARNING, LeekCompilerException.REFERENCE_IGNORED_IN_METHODS));
+				errors.add(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.WARNING, LeekCompilerException.REFERENCES_DEPRECATED));
 				mCompiler.skipWord();
 			}
 			if (mCompiler.getWord().getType() != WordParser.T_STRING)
@@ -1046,6 +1056,9 @@ public class WordCompiler {
 			boolean is_reference = false;
 			if (mCompiler.getWord().getType() == WordParser.T_OPERATOR && mCompiler.getWord().getWord().equals("@")) {
 				is_reference = true;
+				if (getVersion() >= 11) {
+					addError(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.WARNING, LeekCompilerException.REFERENCES_DEPRECATED));
+				}
 				mCompiler.skipWord();
 			}
 			if (mCompiler.getWord().getType() != WordParser.T_STRING)
