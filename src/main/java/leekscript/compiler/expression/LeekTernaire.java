@@ -52,15 +52,7 @@ public class LeekTernaire extends LeekExpression {
 	}
 
 	@Override
-	public AbstractExpression getAbstractExpression() {
-		return this;
-	}
-
-	@Override
 	public String getString() {
-		if(mCondition instanceof LeekExpression) mCondition = ((LeekExpression) mCondition).getAbstractExpression();
-		if(mExpression1 instanceof LeekExpression) mExpression1 = ((LeekExpression) mExpression1).getAbstractExpression();
-		if(mExpression2 instanceof LeekExpression) mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
 		String retour = "(";
 		retour += mCondition == null ? "null" : mCondition.getString();
 		retour += " ? ";
@@ -72,9 +64,9 @@ public class LeekTernaire extends LeekExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if(mCondition instanceof LeekExpression) mCondition = ((LeekExpression) mCondition).getAbstractExpression();
-		if(mExpression1 instanceof LeekExpression) mExpression1 = ((LeekExpression) mExpression1).getAbstractExpression();
-		if(mExpression2 instanceof LeekExpression) mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
+		// if(mCondition instanceof LeekExpression) mCondition = ((LeekExpression) mCondition).getAbstractExpression();
+		// if(mExpression1 instanceof LeekExpression) mExpression1 = ((LeekExpression) mExpression1).getAbstractExpression();
+		// if(mExpression2 instanceof LeekExpression) mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
 		if (!complete()) writer.addCode("/* " + getString() + " */");
 		else{
 			writer.addCode("(");
