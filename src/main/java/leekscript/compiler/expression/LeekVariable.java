@@ -106,20 +106,24 @@ public class LeekVariable extends AbstractExpression {
 		if (this.type == VariableType.SUPER) {
 			return; // Déjà OK
 		}
-		if (compiler.getMainBlock().hasUserFunction(token.getWord(), true)) {
-			this.type = VariableType.FUNCTION;
-			return;
-		}
+		// Local variables first
 		var v = compiler.getCurrentBlock().getVariable(token.getWord(), true);
 		if (v != null) {
 			this.type = v.getVariableType();
 			this.classDeclaration = v.getClassDeclaration();
 			return;
 		}
+		// Global user functions
+		if (compiler.getMainBlock().hasUserFunction(token.getWord(), true)) {
+			this.type = VariableType.FUNCTION;
+			return;
+		}
+		// LS constants
 		if (LeekConstants.get(token.getWord()) != null) {
 			this.type = VariableType.SYSTEM_CONSTANT;
 			return;
 		}
+		// LS functions
 		if (LeekFunctions.isFunction(token.getWord()) != -1) {
 			this.type = VariableType.SYSTEM_FUNCTION;
 			return;
