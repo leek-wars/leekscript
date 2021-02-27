@@ -50,6 +50,7 @@ public class Operators {
 	public final static int BITNOT = 47;
 	public final static int NEW = 48;
 	public final static int DOT = 49;
+	public final static int INSTANCEOF = 50;
 
 	public final static int getOperator(String operator, int version) {
 		if(operator.equals("[")) return CROCHET;
@@ -105,6 +106,7 @@ public class Operators {
 		if(operator.equals("@")) return REFERENCE;
 		if(operator.equals("new")) return NEW;
 		if(operator.equals(".")) return DOT;
+		if(operator.equals("instanceof")) return INSTANCEOF;
 		return -1;
 	}
 
@@ -112,16 +114,18 @@ public class Operators {
 		switch(operator) {
 		case CROCHET:
 		case PARENTHESIS:
-			return 16;
+			return 17;
 		case DOT:
-			return 15;
+			return 16;
 		case INCREMENT:
 		case DECREMENT:
 		case REFERENCE:
 		case UNARY_MINUS:
-			return 14;
+			return 15;
 		case NOT:
 		case BITNOT:
+			return 14;
+		case NEW:
 			return 13;
 		case POWER:
 			return 12;
@@ -140,6 +144,7 @@ public class Operators {
 		case LESSEQUALS:
 		case MORE:
 		case MOREEQUALS:
+		case INSTANCEOF:
 			return 8;
 		case EQUALS:
 		case NOTEQUALS:
@@ -239,6 +244,8 @@ public class Operators {
 			return "^=";
 		case NEW:
 			return "new";
+		case INSTANCEOF:
+			return "instanceof";
 		}
 		return "null";
 	}
