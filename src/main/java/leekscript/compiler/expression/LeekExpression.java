@@ -712,9 +712,12 @@ public class LeekExpression extends AbstractExpression {
 			mExpression2.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 			return;
-		// case Operators.DOT:
-		// 	mExpression2.writeJavaCode(mainblock, writer);
-		// 	return;
+		case Operators.INSTANCEOF:
+			mExpression1.writeJavaCode(mainblock, writer);
+			writer.addCode(".instanceOf(mUAI, ");
+			mExpression2.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+			return;
 		}
 		return;
 	}

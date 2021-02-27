@@ -54,4 +54,9 @@ public class TestAI extends AI {
 	public int getVersion() {
 		return 11;
 	}
+
+	@Override
+	protected String[] getErrorFiles() {
+		return null;
+	}
 }

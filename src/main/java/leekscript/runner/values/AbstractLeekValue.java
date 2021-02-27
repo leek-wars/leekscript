@@ -3,6 +3,7 @@ package leekscript.runner.values;
 import java.util.HashSet;
 import java.util.Set;
 
+import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
@@ -194,6 +195,20 @@ public abstract class AbstractLeekValue {
 
 	public AbstractLeekValue brotate(AI ai, AbstractLeekValue value) throws LeekRunException {
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+	}
+
+	public AbstractLeekValue instanceOf(AI ai, AbstractLeekValue value) throws LeekRunException {
+		var clazz = value.getValue();
+		if (!(clazz instanceof ClassLeekValue)) {
+			ai.addOperations(AI.ERROR_LOG_COST);
+			ai.addSystemLog(AILog.ERROR, AILog.INSTANCEOF_MUST_BE_CLASS);
+			return LeekValueManager.getLeekBooleanValue(false);
+		}
+		var v = getValue();
+		if (v instanceof ObjectLeekValue && ((ObjectLeekValue) v).getClazz() == clazz) {
+			return LeekValueManager.getLeekBooleanValue(true);
+		}
+		return LeekValueManager.getLeekBooleanValue(false);
 	}
 
 	public AbstractLeekValue getField(AI ai, String field) throws LeekRunException {

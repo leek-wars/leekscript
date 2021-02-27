@@ -164,4 +164,7 @@ public class ObjectLeekValue extends AbstractLeekValue {
 		return false;
 	}
 
+	public ClassLeekValue getClazz() {
+		return clazz;
+	}
 }

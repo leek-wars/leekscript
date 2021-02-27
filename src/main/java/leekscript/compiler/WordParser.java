@@ -364,6 +364,10 @@ public class WordParser {
 				type = T_OPERATOR;
 				word = "&&";
 			}
+			else if (word.equalsIgnoreCase("instanceof")) {
+				type = T_OPERATOR;
+				word = "instanceof";
+			}
 			/*
 			 * else if(word.equalsIgnoreCase("not")){
 			 * type = T_OPERATOR;
