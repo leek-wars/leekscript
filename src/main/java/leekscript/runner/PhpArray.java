@@ -230,16 +230,16 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 
 		if (capacity == MAX_CAPACITY) return;
 
-		capacity = Math.min(capacity * 2, MAX_CAPACITY);
-
 		// Copy in a new array
-		PhpArray newArray = new PhpArray(ai, capacity);
+		int new_capacity = Math.min(capacity * 2, MAX_CAPACITY);
+		PhpArray newArray = new PhpArray(ai, new_capacity);
 		Element e = mHead;
 		while (e != null) {
 			newArray.set(ai, e.key, e.value.getValue());
 			e = e.next;
 		}
 		// Use the table of this new array
+		capacity = new_capacity;
 		mTable = newArray.mTable;
 		mHead = newArray.mHead;
 		mEnd = newArray.mEnd;
