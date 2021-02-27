@@ -41,6 +41,11 @@ public abstract class AbstractLeekValue {
 		return false;
 	}
 
+	public boolean getBooleanTernary(AI ai) throws LeekRunException {
+		ai.addOperations(1);
+		return getBoolean();
+	}
+
 	public boolean isNumeric() {
 		return false;
 	}

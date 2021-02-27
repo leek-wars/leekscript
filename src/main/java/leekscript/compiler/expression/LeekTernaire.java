@@ -73,13 +73,13 @@ public class LeekTernaire extends LeekExpression {
 		if(mCondition instanceof LeekExpression) mCondition = ((LeekExpression) mCondition).getAbstractExpression();
 		if(mExpression1 instanceof LeekExpression) mExpression1 = ((LeekExpression) mExpression1).getAbstractExpression();
 		if(mExpression2 instanceof LeekExpression) mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
-		if(!complete()) writer.addCode("/* " + getString() + " */");
+		if (!complete()) writer.addCode("/* " + getString() + " */");
 		else{
 			writer.addCode("(");
 			mCondition.writeJavaCode(mainblock, writer);
-			writer.addCode(".getBoolean()?(");
+			writer.addCode(".getBooleanTernary(mUAI) ? (");
 			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode("):(");
+			writer.addCode(") : (");
 			mExpression2.writeJavaCode(mainblock, writer);
 			writer.addCode("))");
 		}
