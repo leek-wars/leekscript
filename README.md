@@ -1,7 +1,7 @@
-# LeekScript v1
+# LeekScript
 
 First version of LeekScript language, built in Java.
-Used in the [leek-wars-generator-v1](https://github.com/leek-wars/leek-wars-generator-v1) project.
+Used in the [leek-wars-generator](https://github.com/leek-wars/leek-wars-generator) project.
 
 ### Build
 ```
