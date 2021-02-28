@@ -1,6 +1,6 @@
 # LeekScript
 
-First version of LeekScript language, built in Java.
+The language of Leek Wars, built in Java.
 Used in the [leek-wars-generator](https://github.com/leek-wars/leek-wars-generator) project.
 
 ### Build
