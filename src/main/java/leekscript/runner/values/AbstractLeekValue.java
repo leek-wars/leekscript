@@ -235,6 +235,10 @@ public abstract class AbstractLeekValue {
 		return LeekValueManager.NULL;
 	}
 
+	public AbstractLeekValue callSuperMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
+		return LeekValueManager.NULL;
+	}
+
 	public void callConstructor(AI ai, AbstractLeekValue thiz, AbstractLeekValue... arguments) throws LeekRunException {}
 
 	public abstract int getType();
