@@ -1216,7 +1216,6 @@ public enum LeekFunctions implements ILeekFunction {
 	color(3) {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			leekIA.addOperations(AI.ERROR_LOG_COST);
 			leekIA.addSystemLog(AILog.WARNING, AILog.DEPRECATED_FUNCTION, new String[] { "color", "getColor" });
 			return leekIA.color(parameters[0], parameters[1], parameters[2]);
 		}
@@ -1437,7 +1436,6 @@ public enum LeekFunctions implements ILeekFunction {
 		} else {
 			// Message d'erreur
 			String ret = AbstractLeekValue.getParamString(parameters);
-			leekIA.addOperations(AI.ERROR_LOG_COST);
 			leekIA.addSystemLog(AILog.ERROR, AILog.UNKNOWN_FUNCTION, new String[] { function + "(" + ret + ")" });
 			return LeekValueManager.NULL;
 		}

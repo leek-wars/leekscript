@@ -114,8 +114,6 @@ public class FunctionLeekValue extends AbstractLeekValue {
 		}
 		else if (mType == USER_FUNCTION) {
 			if (values.length != ai.userFunctionCount(mId)) {
-
-				ai.addOperations(AI.ERROR_LOG_COST);
 				ai.addSystemLog(AILog.ERROR, AILog.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.userFunctionCount(mId)) });
 			}
 			else {
@@ -128,8 +126,6 @@ public class FunctionLeekValue extends AbstractLeekValue {
 		}
 		else if (mType == ANONYMOUS_FUNCTION) {
 			if (values.length != ai.anonymousFunctionCount(mId)) {
-
-				ai.addOperations(AI.ERROR_LOG_COST);
 				ai.addSystemLog(AILog.ERROR, AILog.CAN_NOT_EXECUTE_WITH_ARGUMENTS,
 						new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.anonymousFunctionCount(mId)) });
 			}

@@ -359,6 +359,7 @@ public abstract class AI {
 	}
 
 	public void addSystemLog(int type, String key, String[] parameters) throws LeekRunException {
+		addOperations(AI.ERROR_LOG_COST);
 		if (type == AILog.WARNING)
 			type = AILog.SWARNING;
 		else if (type == AILog.ERROR)

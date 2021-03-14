@@ -117,7 +117,6 @@ public class LeekOperations {
 		v2 = v2.getValue();
 		if (v1.isNumeric() && v2.isNumeric()) {
 			if (v2.getDouble(ai) == 0) {
-				ai.addOperations(AI.ERROR_LOG_COST);
 				ai.addSystemLog(AILog.ERROR, AILog.DIVISION_BY_ZERO);
 				return LeekValueManager.NULL;
 			}
@@ -140,7 +139,6 @@ public class LeekOperations {
 		v2 = v2.getValue();
 		if (v1.isNumeric() && v2.isNumeric()) {
 			if (v2.getDouble(ai) == 0) {
-				ai.addOperations(AI.ERROR_LOG_COST);
 				ai.addSystemLog(AILog.ERROR, AILog.DIVISION_BY_ZERO);
 				return LeekValueManager.NULL;
 			}
