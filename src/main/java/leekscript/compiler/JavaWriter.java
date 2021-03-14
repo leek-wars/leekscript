@@ -90,7 +90,7 @@ public class JavaWriter {
 
 		mCode.append("protected String[] getErrorFiles() { return new String[] {");
 		for (var f : mFilesList) {
-			mCode.append("\"" + f.getPath().replaceAll("\\/", "/") + "\"");
+			mCode.append("\"" + f.getPath().replaceAll("\\\\/", "/").replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"");
 			mCode.append(", ");
 		}
 		mCode.append("};}\n");
