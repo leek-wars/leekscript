@@ -58,6 +58,10 @@ public class ObjectLeekValue extends AbstractLeekValue {
 	public AbstractLeekValue get(AI ai, AbstractLeekValue value) throws LeekRunException {
 		return getField(ai, value.getString(ai));
 	}
+		@Override
+	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value) throws LeekRunException {
+		return getField(ai, value.getString(ai));
+	}
 
 	@Override
 	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value) throws LeekRunException {
