@@ -201,7 +201,6 @@ public abstract class AbstractLeekValue {
 		ai.addOperations(2);
 		var clazz = value.getValue();
 		if (!(clazz instanceof ClassLeekValue)) {
-			ai.addOperations(AI.ERROR_LOG_COST);
 			ai.addSystemLog(AILog.ERROR, AILog.INSTANCEOF_MUST_BE_CLASS);
 			return LeekValueManager.getLeekBooleanValue(false);
 		}
@@ -235,9 +234,8 @@ public abstract class AbstractLeekValue {
 	public abstract Object toJSON(AI ai) throws LeekRunException;
 
 	public AbstractLeekValue executeFunction(AI ai, AbstractLeekValue... value) throws LeekRunException {
-
 		// On ne peux pas exécuter ce type de variable
-		ai.addOperations(AI.ERROR_LOG_COST);
+		ai.addOperations(1);
 		return LeekValueManager.NULL;
 	}
 
