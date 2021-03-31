@@ -3,7 +3,7 @@ package leekscript.runner;
 import java.util.HashMap;
 
 public enum LeekConstants implements ILeekConstant {
-	
+
 	PI(Math.PI, LeekFunctions.DOUBLE),
 	E(Math.E, LeekFunctions.DOUBLE),
 
@@ -26,18 +26,19 @@ public enum LeekConstants implements ILeekConstant {
 	TYPE_BOOLEAN(2, LeekFunctions.INT),
 	TYPE_STRING(3, LeekFunctions.INT),
 	TYPE_ARRAY(4, LeekFunctions.INT),
-	TYPE_FUNCTION(5, LeekFunctions.INT);
-	
+	TYPE_FUNCTION(5, LeekFunctions.INT),
+	TYPE_OBJECT(6, LeekFunctions.INT);
+
 	private static HashMap<String, ILeekConstant> extraConstants = new HashMap<String, ILeekConstant>();
-	
+
 	private double value;
 	private int type;
-	
+
 	LeekConstants(double value, int type) {
 		this.value = value;
 		this.type = type;
 	}
-	
+
 	@Override
 	public double getValue() {
 		return value;
@@ -61,7 +62,7 @@ public enum LeekConstants implements ILeekConstant {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static ILeekConstant get(String name) {
 		for (LeekConstants constant : LeekConstants.values()) {
 			if (constant.name().equals(name))
