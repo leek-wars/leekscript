@@ -40,7 +40,12 @@ public class LeekString extends AbstractExpression {
 				else if (len > i && mString.charAt(i + 1) == 't') str += "\\";
 				else {
 					if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
-						str += "\\";
+						if (len > i && mString.charAt(i + 1) == '\\') {
+							str += "\\\\";
+							i++;
+						} else {
+							str += "\\\\";
+						}
 					} else {
 						// LeekScript 1.0 had a bug with "\\" strings producing 4 \
 						str += "\\\\";
