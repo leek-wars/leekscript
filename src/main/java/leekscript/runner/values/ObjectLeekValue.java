@@ -167,6 +167,14 @@ public class ObjectLeekValue extends AbstractLeekValue {
 	public boolean equals(AI ai, AbstractLeekValue comp) throws LeekRunException {
 		comp = comp.getValue();
 		if (comp instanceof ObjectLeekValue) {
+			return this == comp;
+		}
+		return false;
+	}
+
+	public boolean equalsDeep(AI ai, AbstractLeekValue comp) throws LeekRunException {
+		comp = comp.getValue();
+		if (comp instanceof ObjectLeekValue) {
 			var o = (ObjectLeekValue) comp;
 			if (o.clazz != clazz) return false;
 			for (var f : fields.entrySet()) {
