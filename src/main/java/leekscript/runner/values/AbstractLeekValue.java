@@ -235,7 +235,7 @@ public abstract class AbstractLeekValue {
 
 	public AbstractLeekValue executeFunction(AI ai, AbstractLeekValue... value) throws LeekRunException {
 		// On ne peux pas exécuter ce type de variable
-		ai.addOperations(1);
+		ai.addSystemLog(AILog.ERROR, AILog.CAN_NOT_EXECUTE_VALUE, new String[] { getString(ai) });
 		return LeekValueManager.NULL;
 	}
 
