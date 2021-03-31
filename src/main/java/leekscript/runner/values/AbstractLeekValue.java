@@ -212,14 +212,20 @@ public abstract class AbstractLeekValue {
 	}
 
 	public AbstractLeekValue getField(AI ai, String field) throws LeekRunException {
+		// Aucun champ
+		ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_FIELD, new String[] { getString(ai), field });
 		return LeekValueManager.NULL;
 	}
 
 	public AbstractLeekValue callMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
+		// Aucune méthode
+		ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_METHOD, new String[] { getString(ai), method });
 		return LeekValueManager.NULL;
 	}
 
 	public AbstractLeekValue callSuperMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
+		// Aucune méthode
+		ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_METHOD, new String[] { getString(ai), method });
 		return LeekValueManager.NULL;
 	}
 
