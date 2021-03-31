@@ -74,7 +74,7 @@ public abstract class AI {
 		}
 	}
 
-	public void addOperationsNoCheck(int nb) throws LeekRunException {
+	public void addOperationsNoCheck(int nb) {
 		mOperations += nb;
 	}
 
@@ -354,16 +354,11 @@ public abstract class AI {
 		}
 	}
 
-	public void addSystemLog(int type, String key) {
+	public void addSystemLog(int type, String key) throws LeekRunException {
 		addSystemLog(type, key, null);
 	}
 
-	public void addSystemLog(int type, String key, String[] parameters) {
-		addSystemLog(type, key, parameters, Thread.currentThread().getStackTrace());
-	}
-
-	public void addSystemLog(int type, String key, String[] parameters, StackTraceElement[] elements) {
-
+	public void addSystemLog(int type, String key, String[] parameters) throws LeekRunException {
 		if (type == AILog.WARNING)
 			type = AILog.SWARNING;
 		else if (type == AILog.ERROR)
@@ -371,7 +366,7 @@ public abstract class AI {
 		else if (type == AILog.STANDARD)
 			type = AILog.SSTANDARD;
 
-		logs.addSystemLog(type, getErrorMessage(elements), key, parameters);
+		logs.addSystemLog(type, getErrorMessage(Thread.currentThread().getStackTrace()), key, parameters);
 	}
 
 	protected abstract String[] getErrorString();
