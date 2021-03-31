@@ -152,6 +152,9 @@ public class ClassLeekValue extends AbstractLeekValue {
 		if (constructors.containsKey(arg_count)) {
 			return constructors.get(arg_count).run(ai, object, arguments);
 		} else {
+			if (arg_count > 0) {
+				ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
+			}
 			return object;
 		}
 	}
