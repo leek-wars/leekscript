@@ -755,15 +755,15 @@ public class LeekExpression extends AbstractExpression {
 		}
 
 		if (mOperator == Operators.INCREMENT || mOperator == Operators.DECREMENT || mOperator == Operators.PRE_INCREMENT || mOperator == Operators.PRE_DECREMENT) {
-			if (!(mExpression2 instanceof LeekVariable) && !(mExpression2 instanceof LeekGlobal) && !(mExpression2 instanceof LeekTabularValue))
+			if (!mExpression2.isLeftValue())
 				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.CANT_ASSIGN_VALUE));
 				// throw new LeekExpressionException(mExpression2, LeekCompilerException.CANT_ASSIGN_VALUE);
-				if (mExpression2 instanceof LeekVariable) {
-					var v = (LeekVariable) mExpression2;
-					if (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION) {
-						compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression2).getName());
-					}
+			if (mExpression2 instanceof LeekVariable) {
+				var v = (LeekVariable) mExpression2;
+				if (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION) {
+					compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression2).getName());
 				}
+			}
 			if (mExpression2 instanceof LeekTabularValue)
 				((LeekTabularValue) mExpression2).setLeftValue(true);
 		}

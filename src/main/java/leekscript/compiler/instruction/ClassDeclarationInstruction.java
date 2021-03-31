@@ -86,7 +86,11 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		constructors.put(block.countParameters(), block);
 	}
 
-	public void addMethod(IAWord token, ClassMethodBlock method) {
+	public void addMethod(WordCompiler compiler, IAWord token, ClassMethodBlock method) {
+		// On regarde si il n'y a pas déjà une méthode statique du même nom
+		if (staticMethods.containsKey(token.getWord())) {
+			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, LeekCompilerException.DUPLICATED_METHOD));
+		}
 		if (!methods.containsKey(token.getWord())) {
 			methods.put(token.getWord(), new HashMap<>());
 			methodVariables.put(token.getWord(), new LeekVariable(token, VariableType.METHOD));
@@ -101,12 +105,16 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		return methods.containsKey(name + "_" + param_count);
 	}
 
-	public void addStaticMethod(String name, ClassMethodBlock method) {
-		if (!staticMethods.containsKey(name)) {
-			staticMethods.put(name, new HashMap<>());
-			staticMethodVariables.put(name, new LeekVariable(token, VariableType.STATIC_METHOD));
+	public void addStaticMethod(WordCompiler compiler, IAWord token, ClassMethodBlock method) {
+		// On regarde si il n'y a pas déjà une méthode du même nom
+		if (methods.containsKey(token.getWord())) {
+			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, LeekCompilerException.DUPLICATED_METHOD));
 		}
-		staticMethods.get(name).put(method.countParameters(), method);
+		if (!staticMethods.containsKey(token.getWord())) {
+			staticMethods.put(token.getWord(), new HashMap<>());
+			staticMethodVariables.put(token.getWord(), new LeekVariable(token, VariableType.STATIC_METHOD));
+		}
+		staticMethods.get(token.getWord()).put(method.countParameters(), method);
 	}
 
 	public void addField(WordCompiler compiler, IAWord word, AbstractExpression expr) throws LeekCompilerException {
