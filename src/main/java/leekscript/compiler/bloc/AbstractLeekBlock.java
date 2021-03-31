@@ -117,8 +117,7 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 	}
 
 	public boolean hasVariable(String variable) {
-		return mVariables.containsKey(variable);
-		// return getVariable(variable, false) != null;
+		return getVariable(variable, false) != null;
 	}
 
 	public LeekVariable getVariable(String variable, boolean includeClassMembers) {
