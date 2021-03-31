@@ -59,7 +59,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		mArray.writeJavaCode(mainblock, writer);
 		writer.addCode(".getValue();");
 		StringBuilder sb = new StringBuilder();
-		sb.append("if(").append(ar).append(".isArray()){");
+		sb.append("if(").append(ar).append(".isArrayForIteration(mUAI)){");
 		//Clé
 		if(mIsKeyDeclaration) sb.append("final VariableLeekValue ").append(key_iterator).append(" = new VariableLeekValue(mUAI, LeekValueManager.NULL);");
 		else sb.append(key_iterator).append(".set(mUAI, LeekValueManager.NULL);");
@@ -69,7 +69,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		//On fait le parcours
 		//Déclaration de la variable
 		sb.append("ArrayLeekValue.ArrayIterator ").append(var).append("=").append(ar).append(".getArray().getArrayIterator();");
-		sb.append("while(!").append(var).append(".ended()){");
+		sb.append("while(!").append(var).append(".ended()){ mUAI.addOperations(1); ");
 		//Maj des variables
 		if (mKeyReference || mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
 			sb.append(key_iterator).append(".setRef(mUAI, ").append(var).append(".getKeyRef());");
@@ -82,7 +82,6 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			sb.append(val_iterator).append(".set(mUAI, ").append(var).append(".getValueRef());");
 		}
 		sb.append(var).append(".next();");
-		writer.addCounter(1);
 
 		writer.addLine(sb.toString(), mLine, mAI);
 		//Instructions

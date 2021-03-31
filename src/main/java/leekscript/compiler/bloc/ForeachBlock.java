@@ -46,7 +46,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		writer.addCode("final AbstractLeekValue " + ar + " = ");
 		mArray.writeJavaCode(mainblock, writer);
 		writer.addLine(".getValue();", mLine, mAI);
-		writer.addLine("if(" + ar + ".isArray()){");
+		writer.addLine("if(" + ar + ".isArrayForIteration(mUAI)){");
 		if(mIsDeclaration) writer.addLine("final VariableLeekValue " + iterator_name + " = new VariableLeekValue(mUAI, LeekValueManager.NULL);");
 		else writer.addLine(iterator_name + ".set(mUAI, LeekValueManager.NULL);");
 		if (mReference || mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
