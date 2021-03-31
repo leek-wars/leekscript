@@ -201,22 +201,18 @@ public class LeekOperations {
 	}
 
 	public static AbstractLeekValue less(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
-		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.less(ai, v2));
 	}
 
 	public static AbstractLeekValue more(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
-		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.more(ai, v2));
 	}
 
 	public static AbstractLeekValue lessequals(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
-		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.lessequals(ai, v2));
 	}
 
 	public static AbstractLeekValue moreequals(AI ai, AbstractLeekValue v1,	AbstractLeekValue v2) throws LeekRunException {
-		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(v1.moreequals(ai, v2));
 	}
 
