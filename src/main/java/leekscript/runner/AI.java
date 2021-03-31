@@ -153,6 +153,8 @@ public abstract class AI {
 			return (int) LeekConstants.TYPE_BOOLEAN.getValue();
 		if (value.getType() == AbstractLeekValue.FUNCTION)
 			return (int) LeekConstants.TYPE_FUNCTION.getValue();
+		if (value.getType() == AbstractLeekValue.OBJECT)
+			return (int) LeekConstants.TYPE_OBJECT.getValue();
 		return 0;
 	}
 
