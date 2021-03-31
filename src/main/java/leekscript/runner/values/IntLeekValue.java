@@ -67,7 +67,6 @@ public class IntLeekValue extends AbstractLeekValue {
 
 	@Override
 	public boolean less(AI ai, AbstractLeekValue comp) throws LeekRunException {
-		ai.addOperations(1);
 		comp = comp.getValue();
 		if (comp instanceof DoubleLeekValue)
 			return getDouble(ai) < comp.getDouble(ai);
@@ -76,7 +75,6 @@ public class IntLeekValue extends AbstractLeekValue {
 
 	@Override
 	public boolean more(AI ai, AbstractLeekValue comp) throws LeekRunException {
-		ai.addOperations(1);
 		comp = comp.getValue();
 		if (comp instanceof DoubleLeekValue)
 			return getDouble(ai) > comp.getDouble(ai);
