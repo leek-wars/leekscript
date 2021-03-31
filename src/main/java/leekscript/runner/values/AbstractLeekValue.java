@@ -198,6 +198,7 @@ public abstract class AbstractLeekValue {
 	}
 
 	public AbstractLeekValue instanceOf(AI ai, AbstractLeekValue value) throws LeekRunException {
+		ai.addOperations(2);
 		var clazz = value.getValue();
 		if (!(clazz instanceof ClassLeekValue)) {
 			ai.addOperations(AI.ERROR_LOG_COST);
@@ -205,7 +206,7 @@ public abstract class AbstractLeekValue {
 			return LeekValueManager.getLeekBooleanValue(false);
 		}
 		var v = getValue();
-		if (v instanceof ObjectLeekValue && ((ObjectLeekValue) v).getClazz() == clazz) {
+		if (v instanceof ObjectLeekValue && ((ObjectLeekValue) v).getClazz().descendsFrom((ClassLeekValue) clazz)) {
 			return LeekValueManager.getLeekBooleanValue(true);
 		}
 		return LeekValueManager.getLeekBooleanValue(false);
