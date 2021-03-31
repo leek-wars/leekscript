@@ -867,6 +867,9 @@ public class WordCompiler {
 		LeekExpression retour = new LeekExpression();
 		while (mCompiler.haveWords()) {
 			IAWord word = mCompiler.getWord();
+			if (word.getType() == WordParser.T_PAR_RIGHT) {
+				break;
+			}
 			if (retour.needOperator()) {
 				// Si on attend un opérateur mais qu'il vient pas
 
@@ -1029,6 +1032,13 @@ public class WordCompiler {
 		AbstractExpression result = retour;
 		if (retour.getOperator() == -1) {
 			result = retour.getExpression1();
+		}
+		if (getVersion() == 10 && result instanceof LeekExpression) {
+			var expr = (LeekExpression) result;
+			if (expr.getOperator() == Operators.NOT && expr.getExpression2() == null) {
+				// Un "not" tout seul est valide en LS 1.0
+				result = new LeekVariable(expr.getOperatorToken(), VariableType.LOCAL);
+			}
 		}
 		if (result == null) {
 			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.UNCOMPLETE_EXPRESSION);

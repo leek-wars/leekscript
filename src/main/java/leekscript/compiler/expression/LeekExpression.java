@@ -54,6 +54,10 @@ public class LeekExpression extends AbstractExpression {
 		return mOperator;
 	}
 
+	public IAWord getOperatorToken() {
+		return mOperatorToken;
+	}
+
 	public int getLastOperator() {
 		if (mExpression2 != null && mExpression2 instanceof LeekExpression) {
 			return ((LeekExpression) mExpression2).getLastOperator();
@@ -414,7 +418,6 @@ public class LeekExpression extends AbstractExpression {
 		// 	mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
 		if (mExpression1 == null || mExpression2 == null || mOperator == -1)
 			throw new LeekExpressionException(this, LeekCompilerException.UNCOMPLETE_EXPRESSION);
-
 		return mExpression1.validExpression(compiler, mainblock) && mExpression2.validExpression(compiler, mainblock);
 	}
 
