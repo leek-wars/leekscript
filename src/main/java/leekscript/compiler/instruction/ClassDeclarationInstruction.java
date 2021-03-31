@@ -98,11 +98,11 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		methods.get(token.getWord()).put(method.countParameters(), method);
 	}
 
-	public boolean hasMethod(String name, int param_count) {
+	public boolean hasMethod(String name, int paramCount) {
 		if (name.equals("constructor")) {
-			return hasConstructor(param_count);
+			return hasConstructor(paramCount);
 		}
-		return methods.containsKey(name + "_" + param_count);
+		return methods.containsKey(name + "_" + paramCount);
 	}
 
 	public void addStaticMethod(WordCompiler compiler, IAWord token, ClassMethodBlock method) {
@@ -115,6 +115,10 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			staticMethodVariables.put(token.getWord(), new LeekVariable(token, VariableType.STATIC_METHOD));
 		}
 		staticMethods.get(token.getWord()).put(method.countParameters(), method);
+	}
+
+	public boolean hasStaticMethod(String name, int paramCount) {
+		return staticMethods.containsKey(name) && staticMethods.get(name).containsKey(paramCount);
 	}
 
 	public void addField(WordCompiler compiler, IAWord word, AbstractExpression expr) throws LeekCompilerException {

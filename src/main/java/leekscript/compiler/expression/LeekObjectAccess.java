@@ -72,4 +72,8 @@ public class LeekObjectAccess extends AbstractExpression {
 	public String getField() {
 		return field.getWord();
 	}
+
+	public IAWord getFieldToken() {
+		return field;
+	}
 }
