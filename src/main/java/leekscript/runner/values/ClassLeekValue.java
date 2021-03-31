@@ -236,4 +236,17 @@ public class ClassLeekValue extends AbstractLeekValue {
 	public boolean isPrimitive() {
 		return false;
 	}
+
+	public boolean descendsFrom(ClassLeekValue clazz) {
+		var current = this;
+		while (current != null) {
+			if (current == clazz) return true;
+			if (current.parent instanceof ClassLeekValue) {
+				current = (ClassLeekValue) current.parent;
+			} else {
+				return false;
+			}
+		}
+		return false;
+	}
 }
