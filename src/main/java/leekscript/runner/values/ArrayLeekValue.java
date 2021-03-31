@@ -226,6 +226,11 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	}
 
 	@Override
+	public boolean isArrayForIteration(AI ai) throws LeekRunException {
+		return true;
+	}
+
+	@Override
 	public ArrayLeekValue getArray() {
 		return this;
 	}

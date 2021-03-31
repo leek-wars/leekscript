@@ -60,6 +60,12 @@ public abstract class AbstractLeekValue {
 		return false;
 	}
 
+	public boolean isArrayForIteration(AI ai) throws LeekRunException {
+		// Pas itérable
+		ai.addSystemLog(AILog.ERROR, AILog.NOT_ITERABLE, new String[] { getString(ai) });
+		return false;
+	}
+
 	public boolean isNull() {
 		return false;
 	}

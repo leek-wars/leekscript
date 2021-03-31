@@ -64,6 +64,11 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
+	public boolean isArrayForIteration(AI ai) throws LeekRunException {
+		return mValue.isArray();
+	}
+
+	@Override
 	public boolean isNull() {
 		return mValue.isNull();
 	}
