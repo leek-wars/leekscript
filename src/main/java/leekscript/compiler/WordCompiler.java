@@ -868,7 +868,7 @@ public class WordCompiler {
 		LeekExpression retour = new LeekExpression();
 		while (mCompiler.haveWords()) {
 			IAWord word = mCompiler.getWord();
-			if (word.getType() == WordParser.T_PAR_RIGHT) {
+			if (word.getType() == WordParser.T_PAR_RIGHT || word.getType() == WordParser.T_ACCOLADE_RIGHT || word.getType() == WordParser.T_END_INSTRUCTION) {
 				break;
 			}
 			if (retour.needOperator()) {
