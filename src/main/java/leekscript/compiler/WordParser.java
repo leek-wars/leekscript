@@ -120,8 +120,9 @@ public class WordParser {
 				continue;
 			}
 
-			if(c == '/' && i > 1 && code.charAt(i - 1) == '*' && comment_block && code.charAt(i - 2) != '/'){
+			if (comment_block && c == '*' && length > i + 1 && code.charAt(i + 1) == '/') {
 				comment_block = false;
+				i++;
 				continue;
 			}
 			if(comment_line || comment_block) continue;
@@ -173,8 +174,14 @@ public class WordParser {
 				type = T_NOTHING;
 			}
 			else if(c == '.'){
-				if(type == T_NUMBER || type == T_VAR_STRING){
+				if (type == T_VAR_STRING) {
 					word += c;
+				} else if (type == T_NUMBER) {
+					if (word.contains(".")) {
+						compiler.addError(new AnalyzeError(new IAWord(mAI, 0, ".", line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
+					} else {
+						word += c;
+					}
 				}
 				else if (version >= 11) {
 					if (type == T_STRING) {
