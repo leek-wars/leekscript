@@ -144,7 +144,8 @@ public class WordCompiler {
 				// Puis on lit l'instruction
 				compileWord();
 			}
-			while (mCurentBlock.getParent() != null && !mCurentBlock.hasAccolade()) {
+			int i = 0;
+			while (i++ < 100 && mCurentBlock.getParent() != null && !mCurentBlock.hasAccolade()) {
 				if (mCurentBlock instanceof DoWhileBlock) {
 					DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
 					mCurentBlock = mCurentBlock.endInstruction();
@@ -756,7 +757,7 @@ public class WordCompiler {
 		if (word2.getType() == WordParser.T_PAR_LEFT) {
 			// Méthode
 			ClassMethodBlock method = classMethod(classDeclaration, accessLevel, name.getWord(), false);
-			classDeclaration.addMethod(name, method);
+			classDeclaration.addMethod(this, name, method);
 		} else {
 			// Field
 			AbstractExpression expr = null;
@@ -780,7 +781,7 @@ public class WordCompiler {
 		} else if (mCompiler.getWord().getType() == WordParser.T_PAR_LEFT) {
 			// Méthode
 			ClassMethodBlock method = classMethod(classDeclaration, accessLevel, name.getWord(), true);
-			classDeclaration.addStaticMethod(name.getWord(), method);
+			classDeclaration.addStaticMethod(this, name, method);
 			if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
 				mCompiler.skipWord();
 			return;
@@ -1028,6 +1029,9 @@ public class WordCompiler {
 		AbstractExpression result = retour;
 		if (retour.getOperator() == -1) {
 			result = retour.getExpression1();
+		}
+		if (result == null) {
+			throw new LeekCompilerException(mCompiler.lastWord(), LeekCompilerException.UNCOMPLETE_EXPRESSION);
 		}
 		try {
 			result.validExpression(this, mMain);

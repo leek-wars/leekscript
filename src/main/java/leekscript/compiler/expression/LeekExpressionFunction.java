@@ -65,8 +65,12 @@ public class LeekExpressionFunction extends AbstractExpression {
 		ILeekFunction system_function = null;
 		if (mExpression instanceof LeekObjectAccess) {
 			var object = ((LeekObjectAccess) mExpression).getObject();
-			object.writeJavaCode(mainblock, writer);
-			writer.addCode(".callMethod(mUAI, \"" + ((LeekObjectAccess) mExpression).getField() + "_" + mParameters.size() + "\"");
+			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
+				writer.addCode("u_this.callSuperMethod(mUAI, \"" + ((LeekObjectAccess) mExpression).getField() + "_" + mParameters.size() + "\"");
+			} else {
+				object.writeJavaCode(mainblock, writer);
+				writer.addCode(".callMethod(mUAI, \"" + ((LeekObjectAccess) mExpression).getField() + "_" + mParameters.size() + "\"");
+			}
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SUPER) {
 			// Super constructor
 			var variable = (LeekVariable) mExpression;

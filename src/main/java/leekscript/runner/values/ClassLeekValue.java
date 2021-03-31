@@ -189,6 +189,13 @@ public class ClassLeekValue extends AbstractLeekValue {
 		return null;
 	}
 
+	public LeekAnonymousFunction getSuperMethod(String method) {
+		if (parent instanceof ClassLeekValue) {
+			return ((ClassLeekValue) parent).getMethod(method);
+		}
+		return null;
+	}
+
 	@Override
 	public boolean getBoolean() {
 		return true;

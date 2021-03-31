@@ -60,9 +60,34 @@ public class ObjectLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
+	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value) throws LeekRunException {
+		return getField(ai, value.getString(ai));
+	}
+
+	@Override
 	public AbstractLeekValue callMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
 		ai.addOperations(1);
-		LeekAnonymousFunction result = clazz.methods.get(method);
+		LeekAnonymousFunction result = clazz.getMethod(method);
+		if (result == null) {
+			int underscore = method.lastIndexOf("_");
+			int argCount = Integer.parseInt(method.substring(underscore + 1));
+			String methodRealName = method.substring(0, underscore) + "(";
+			for (int i = 0; i < argCount; ++i) {
+				if (i > 0) methodRealName += ", ";
+				methodRealName += "x";
+			}
+			methodRealName += ")";
+			ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_METHOD, new String[] { clazz.name, methodRealName });
+			return LeekValueManager.NULL;
+		}
+		// Call method with new arguments, add the object at the beginning
+		return result.run(ai, this, arguments);
+	}
+
+	@Override
+	public AbstractLeekValue callSuperMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
+		ai.addOperations(1);
+		LeekAnonymousFunction result = clazz.getSuperMethod(method);
 		if (result == null) {
 			int underscore = method.lastIndexOf("_");
 			int argCount = Integer.parseInt(method.substring(underscore + 1));

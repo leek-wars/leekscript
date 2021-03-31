@@ -241,6 +241,10 @@ public class VariableLeekValue extends AbstractLeekValue {
 		return mValue.callMethod(ai, field, arguments);
 	}
 
+	public AbstractLeekValue callSuperMethod(AI ai, String field, AbstractLeekValue... arguments) throws LeekRunException {
+		return mValue.callSuperMethod(ai, field, arguments);
+	}
+
 	public void callConstructor(AI ai, AbstractLeekValue thiz, AbstractLeekValue... arguments) throws LeekRunException {
 		mValue.callConstructor(ai, thiz, arguments);
 	}
