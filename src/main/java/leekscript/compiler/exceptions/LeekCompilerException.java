@@ -60,6 +60,8 @@ public class LeekCompilerException extends Exception {
 	public final static String EXTENDS_LOOP = "extends_loop";
 	public final static String REFERENCES_DEPRECATED = "reference_deprecated";
 	public final static String DUPLICATED_METHOD = "duplicated_method";
+	public final static String UNKNOWN_CONSTRUCTOR = "unknown_constructor";
+	public final static String UNKNOWN_STATIC_METHOD = "unknown_static_method";
 
 	/**
 	 *

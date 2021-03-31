@@ -2,6 +2,8 @@ package leekscript.compiler.expression;
 
 import java.util.ArrayList;
 
+import org.graalvm.compiler.word.ObjectAccess;
+
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
@@ -11,6 +13,7 @@ import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekFunctions;
 
@@ -144,18 +147,40 @@ public class LeekExpressionFunction extends AbstractExpression {
 			parameter.analyze(compiler);
 		}
 
-		if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.FUNCTION) {
+		if (mExpression instanceof LeekVariable) {
 			var v = (LeekVariable) mExpression;
-			int nb_params = LeekFunctions.isFunction(v.getName());
-			if (nb_params == -1) {
-				nb_params = compiler.getMainBlock().getUserFunctionParametersCount(v.getName());
-				if (mParameters.size() != nb_params) {
-					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, LeekCompilerException.INVALID_PAREMETER_COUNT));
+			if (v.getVariableType() == VariableType.FUNCTION) {
+				int nb_params = LeekFunctions.isFunction(v.getName());
+				if (nb_params == -1) {
+					nb_params = compiler.getMainBlock().getUserFunctionParametersCount(v.getName());
+					if (mParameters.size() != nb_params) {
+						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, LeekCompilerException.INVALID_PAREMETER_COUNT));
+					}
+				} else {
+					var f = LeekFunctions.getValue(v.getName());
+					if (mParameters.size() > nb_params || mParameters.size() < f.getArgumentsMin())
+						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, LeekCompilerException.INVALID_PAREMETER_COUNT));
 				}
-			} else {
-				var f = LeekFunctions.getValue(v.getName());
-				if (mParameters.size() > nb_params || mParameters.size() < f.getArgumentsMin())
-					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, LeekCompilerException.INVALID_PAREMETER_COUNT));
+			} else if (v.getVariableType() == VariableType.CLASS) {
+				System.out.println("Class " + v);
+
+				var clazz = v.getClassDeclaration();
+				if (mParameters.size() != 0 && !clazz.hasConstructor(mParameters.size())) {
+					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, LeekCompilerException.UNKNOWN_CONSTRUCTOR, new String[] { clazz.getName() }));
+				}
+			}
+		} else if (mExpression instanceof LeekObjectAccess) {
+			System.out.println("OA " + mExpression.getString());
+
+			var oa = (LeekObjectAccess) mExpression;
+			if (oa.getObject() instanceof LeekVariable) {
+				var v = (LeekVariable) oa.getObject();
+				if (v.getVariableType() == VariableType.CLASS) {
+					var clazz = v.getClassDeclaration();
+					if (!clazz.hasStaticMethod(oa.getField(), mParameters.size())) {
+						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, LeekCompilerException.UNKNOWN_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
+					}
+				}
 			}
 		}
 	}
