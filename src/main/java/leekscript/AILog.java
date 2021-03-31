@@ -13,29 +13,6 @@ public class AILog {
 	public final static int SWARNING = 7;
 	public final static int SERROR = 8;
 
-	// Clés
-	public static final String DEPRECATED_FUNCTION = "deprecated_function";
-	public static final String UNKNOWN_FUNCTION = "unknown_function";
-	public static final String DIVISION_BY_ZERO = "division_by_zero";
-	public static final String CAN_NOT_EXECUTE_VALUE = "can_not_execute_value";
-	public static final String CAN_NOT_EXECUTE_WITH_ARGUMENTS = "can_not_execute_with_arguments";
-	public static final String NO_AI_EQUIPPED = "no_ai_equipped";
-	public static final String INVALID_AI = "invalid_ai";
-	public static final String CAN_NOT_COMPILE_AI = "can_not_compile_ai";
-	public static final String AI_DISABLED = "ai_disabled";
-	public static final String AI_INTERRUPTED = "ai_interrupted";
-	public static final String AI_TIMEOUT = "ai_timeout";
-	public static final String CODE_TOO_LARGE = "code_too_large";
-	public static final String CODE_TOO_LARGE_FUNCTION = "code_too_large_function";
-	public static final String NUMBER_OF_OPERATIONS = "number_of_operations";
-	public static final String UNKNOWN_METHOD = "unknown_method";
-	public static final String UNKNOWN_STATIC_METHOD = "unknown_static_method";
-	public static final String STRING_METHOD_MUST_RETURN_STRING = "string_method_must_return_string";
-	public static final String UNKNOWN_FIELD = "unknown_field";
-	public static final String UNKNOWN_CONSTRUCTOR = "unknown_constructor";
-	public static final String INSTANCEOF_MUST_BE_CLASS = "instanceof_must_be_class";
-	public static final String NOT_ITERABLE = "not_iterable";
-
 	public interface Stream {
 		public void write(JSONArray a);
 	}
@@ -53,7 +30,7 @@ public class AILog {
 		};
 	}
 
-	public void addSystemLog(int type, String trace, String key, String[] parameters) {
+	public void addSystemLog(int type, String trace, int key, String[] parameters) {
 
 		int paramSize = 0;
 		if (parameters != null) {
@@ -62,7 +39,7 @@ public class AILog {
 			}
 		}
 
-		if (!addSize(20 + trace.length() + key.length() + paramSize)) {
+		if (!addSize(20 + trace.length() + paramSize)) {
 			return;
 		}
 

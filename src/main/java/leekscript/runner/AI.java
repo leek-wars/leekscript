@@ -10,6 +10,7 @@ import leekscript.runner.values.NullLeekValue;
 import leekscript.runner.values.StringLeekValue;
 import leekscript.runner.values.VariableLeekValue;
 import leekscript.runner.values.ArrayLeekValue.ArrayIterator;
+import leekscript.common.Error;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -354,11 +355,19 @@ public abstract class AI {
 		}
 	}
 
-	public void addSystemLog(int type, String key) throws LeekRunException {
-		addSystemLog(type, key, null);
+	public void addSystemLog(int type, Error error) throws LeekRunException {
+		addSystemLog(type, error.ordinal(), null);
 	}
 
-	public void addSystemLog(int type, String key, String[] parameters) throws LeekRunException {
+	public void addSystemLog(int type, int error) throws LeekRunException {
+		addSystemLog(type, error, null);
+	}
+
+	public void addSystemLog(int type, Error error, String[] parameters) throws LeekRunException {
+		addSystemLog(type, error.ordinal(), parameters);
+	}
+
+	public void addSystemLog(int type, int error, String[] parameters) throws LeekRunException {
 		addOperations(AI.ERROR_LOG_COST);
 		if (type == AILog.WARNING)
 			type = AILog.SWARNING;
@@ -367,7 +376,7 @@ public abstract class AI {
 		else if (type == AILog.STANDARD)
 			type = AILog.SSTANDARD;
 
-		logs.addSystemLog(type, getErrorMessage(Thread.currentThread().getStackTrace()), key, parameters);
+		logs.addSystemLog(type, getErrorMessage(Thread.currentThread().getStackTrace()), error, parameters);
 	}
 
 	protected abstract String[] getErrorString();

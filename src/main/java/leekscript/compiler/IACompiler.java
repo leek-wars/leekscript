@@ -2,6 +2,7 @@ package leekscript.compiler;
 
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.common.Error;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,14 +25,14 @@ public class IACompiler {
 
 	public IACompiler() {}
 
-	public void addError(AIFile<?> ia_context, int line, int pos, String word, String informations, String[] parameters) {
+	public void addError(AIFile<?> ia_context, int line, int pos, String word, Error errorType, String[] parameters) {
 		JSONArray error = new JSONArray();
 		error.add(0); // level
 		error.add(ia_context.getId());
 		error.add(line);
 		error.add(pos);
 		error.add(word);
-		error.add(informations);
+		error.add(errorType.ordinal());
 		if (parameters != null)
 			error.add(parameters);
 		mInformations.add(error);
