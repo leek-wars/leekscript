@@ -6,8 +6,8 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
-import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.common.Error;
 
 public class LeekExpression extends AbstractExpression {
 
@@ -417,7 +417,7 @@ public class LeekExpression extends AbstractExpression {
 		// if (mExpression2 instanceof LeekExpression)
 		// 	mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
 		if (mExpression1 == null || mExpression2 == null || mOperator == -1)
-			throw new LeekExpressionException(this, LeekCompilerException.UNCOMPLETE_EXPRESSION);
+			throw new LeekExpressionException(this, Error.UNCOMPLETE_EXPRESSION);
 		return mExpression1.validExpression(compiler, mainblock) && mExpression2.validExpression(compiler, mainblock);
 	}
 
@@ -735,7 +735,7 @@ public class LeekExpression extends AbstractExpression {
 	public void analyze(WordCompiler compiler) {
 
 		if (mOperator == Operators.REFERENCE && compiler.getVersion() >= 11) {
-			compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.WARNING, LeekCompilerException.REFERENCES_DEPRECATED));
+			compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.WARNING, Error.REFERENCE_DEPRECATED));
 		}
 
 		if (mExpression1 != null) mExpression1.analyze(compiler);
@@ -745,7 +745,7 @@ public class LeekExpression extends AbstractExpression {
 		// on doit vérifier qu'on a bien une variable (l-value)
 		if (mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.ASSIGN || mOperator == Operators.MODULUSASSIGN || mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.POWERASSIGN) {
 			if (!mExpression1.isLeftValue())
-				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.CANT_ASSIGN_VALUE));
+				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, Error.CANT_ASSIGN_VALUE));
 				// throw new LeekExpressionException(mExpression1, LeekCompilerException.CANT_ASSIGN_VALUE);
 			if (mExpression1 instanceof LeekVariable) {
 				var v = (LeekVariable) mExpression1;
@@ -759,7 +759,7 @@ public class LeekExpression extends AbstractExpression {
 
 		if (mOperator == Operators.INCREMENT || mOperator == Operators.DECREMENT || mOperator == Operators.PRE_INCREMENT || mOperator == Operators.PRE_DECREMENT) {
 			if (!mExpression2.isLeftValue())
-				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.CANT_ASSIGN_VALUE));
+				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, Error.CANT_ASSIGN_VALUE));
 				// throw new LeekExpressionException(mExpression2, LeekCompilerException.CANT_ASSIGN_VALUE);
 			if (mExpression2 instanceof LeekVariable) {
 				var v = (LeekVariable) mExpression2;

@@ -8,6 +8,7 @@ import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
 import leekscript.runner.LeekAnonymousFunction;
+import leekscript.common.Error;
 
 public class ClassLeekValue extends AbstractLeekValue {
 
@@ -57,7 +58,7 @@ public class ClassLeekValue extends AbstractLeekValue {
 				if (m != null) {
 					return m.run(ai, thiz, arguments);
 				}
-				ai.addSystemLog(leekscript.AILog.ERROR, leekscript.AILog.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
+				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
 				return LeekValueManager.NULL;
 			}
 		}));
@@ -75,7 +76,7 @@ public class ClassLeekValue extends AbstractLeekValue {
 				if (m != null) {
 					return m.run(ai, null, arguments);
 				}
-				ai.addSystemLog(leekscript.AILog.ERROR, leekscript.AILog.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
+				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
 				return LeekValueManager.NULL;
 			}
 		}));
@@ -107,7 +108,7 @@ public class ClassLeekValue extends AbstractLeekValue {
 		ai.addOperations(1);
 		LeekAnonymousFunction result = staticMethods.get(method);
 		if (result == null) {
-			ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_STATIC_METHOD, new String[] { name, createMethodError(method) });
+			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_STATIC_METHOD, new String[] { name, createMethodError(method) });
 			return LeekValueManager.NULL;
 		}
 		// Call method with new arguments, add the object at the beginning
@@ -117,7 +118,7 @@ public class ClassLeekValue extends AbstractLeekValue {
 	public void callConstructor(AI ai, AbstractLeekValue thiz, AbstractLeekValue... arguments) throws LeekRunException {
 		ai.addOperations(1);
 		if (!constructors.containsKey(arguments.length)) {
-			ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
+			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
 			return;
 		}
 		constructors.get(arguments.length).run(ai, thiz, arguments);
@@ -153,7 +154,7 @@ public class ClassLeekValue extends AbstractLeekValue {
 			return constructors.get(arg_count).run(ai, object, arguments);
 		} else {
 			if (arg_count > 0) {
-				ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
+				ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
 			}
 			return object;
 		}

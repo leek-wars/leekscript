@@ -9,6 +9,7 @@ import leekscript.runner.LeekAnonymousFunction;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
+import leekscript.common.Error;
 
 public class ObjectLeekValue extends AbstractLeekValue {
 
@@ -50,16 +51,12 @@ public class ObjectLeekValue extends AbstractLeekValue {
 		if (method != null) {
 			return method;
 		}
-		ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_FIELD, new String[] { clazz.name, field });
+		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { clazz.name, field });
 		return LeekValueManager.NULL;
 	}
 
 	@Override
 	public AbstractLeekValue get(AI ai, AbstractLeekValue value) throws LeekRunException {
-		return getField(ai, value.getString(ai));
-	}
-		@Override
-	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value) throws LeekRunException {
 		return getField(ai, value.getString(ai));
 	}
 
@@ -81,7 +78,7 @@ public class ObjectLeekValue extends AbstractLeekValue {
 				methodRealName += "x";
 			}
 			methodRealName += ")";
-			ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_METHOD, new String[] { clazz.name, methodRealName });
+			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { clazz.name, methodRealName });
 			return LeekValueManager.NULL;
 		}
 		// Call method with new arguments, add the object at the beginning
@@ -101,7 +98,7 @@ public class ObjectLeekValue extends AbstractLeekValue {
 				methodRealName += "x";
 			}
 			methodRealName += ")";
-			ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_METHOD, new String[] { clazz.name, methodRealName });
+			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { clazz.name, methodRealName });
 			return LeekValueManager.NULL;
 		}
 		// Call method with new arguments, add the object at the beginning
@@ -136,7 +133,7 @@ public class ObjectLeekValue extends AbstractLeekValue {
 		if (string_method != null) {
 			var result = string_method.run(ai, this, new AbstractLeekValue[] {});
 			if (result.getType() != STRING) {
-				ai.addSystemLog(AILog.ERROR, AILog.STRING_METHOD_MUST_RETURN_STRING, new String[] { clazz.name });
+				ai.addSystemLog(AILog.ERROR, Error.STRING_METHOD_MUST_RETURN_STRING, new String[] { clazz.name });
 			} else {
 				return result.getString(ai, visited);
 			}

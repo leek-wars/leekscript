@@ -7,10 +7,10 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
-import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.runner.LeekConstants;
 import leekscript.runner.LeekFunctions;
+import leekscript.common.Error;
 
 public class LeekVariable extends AbstractExpression {
 
@@ -128,7 +128,7 @@ public class LeekVariable extends AbstractExpression {
 			this.type = VariableType.SYSTEM_FUNCTION;
 			return;
 		}
-		compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, LeekCompilerException.UNKNOWN_VARIABLE_OR_FUNCTION));
+		compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
 	}
 
 	public ClassDeclarationInstruction getClassDeclaration() {

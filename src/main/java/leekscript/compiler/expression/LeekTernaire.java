@@ -4,7 +4,7 @@ import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
-import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.common.Error;
 
 public class LeekTernaire extends LeekExpression {
 
@@ -81,8 +81,8 @@ public class LeekTernaire extends LeekExpression {
 
 	@Override
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
-		if(!complete()) throw new LeekExpressionException(this, LeekCompilerException.UNCOMPLETE_EXPRESSION);
-		if(!(mCondition.validExpression(compiler, mainblock) && mExpression1.validExpression(compiler, mainblock) && mExpression2.validExpression(compiler, mainblock))) throw new LeekExpressionException(this, LeekCompilerException.UNCOMPLETE_EXPRESSION);
+		if(!complete()) throw new LeekExpressionException(this, Error.UNCOMPLETE_EXPRESSION);
+		if(!(mCondition.validExpression(compiler, mainblock) && mExpression1.validExpression(compiler, mainblock) && mExpression2.validExpression(compiler, mainblock))) throw new LeekExpressionException(this, Error.UNCOMPLETE_EXPRESSION);
 		return true;
 	}
 

@@ -10,6 +10,7 @@ import leekscript.runner.LeekFunctions;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
+import leekscript.common.Error;
 
 public class FunctionLeekValue extends AbstractLeekValue {
 
@@ -114,7 +115,7 @@ public class FunctionLeekValue extends AbstractLeekValue {
 		}
 		else if (mType == USER_FUNCTION) {
 			if (values.length != ai.userFunctionCount(mId)) {
-				ai.addSystemLog(AILog.ERROR, AILog.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.userFunctionCount(mId)) });
+				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.userFunctionCount(mId)) });
 			}
 			else {
 				if (ai.getVersion() >= 11) {
@@ -126,16 +127,14 @@ public class FunctionLeekValue extends AbstractLeekValue {
 		}
 		else if (mType == ANONYMOUS_FUNCTION) {
 			if (values.length != ai.anonymousFunctionCount(mId)) {
-				ai.addSystemLog(AILog.ERROR, AILog.CAN_NOT_EXECUTE_WITH_ARGUMENTS,
-						new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.anonymousFunctionCount(mId)) });
-			}
-			else
+				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.anonymousFunctionCount(mId)) });
+			} else {
 				if (ai.getVersion() >= 11) {
 					return mAnonymous.run(ai, null, copyPrimitiveValues(ai, values));
 				} else {
 					return mAnonymous.run(ai, null, copyValues(ai, values, ai.anonymousFunctionReference(mId)));
 				}
-
+			}
 		} else if (mType == METHOD) {
 			return mAnonymous.run(ai, values[0], Arrays.copyOfRange(copyPrimitiveValues(ai, values), 1, values.length));
 		}

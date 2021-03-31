@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.common.Error;
 
 public class WordParser {
 	/**
@@ -147,7 +148,7 @@ public class WordParser {
 						type = T_STRING;
 					}
 					else if(type == T_NUMBER){
-						throw new LeekCompilerException(mAI, line_counter, char_counter, word, LeekCompilerException.INVALID_NUMBER);
+						throw new LeekCompilerException(mAI, line_counter, char_counter, word, Error.INVALID_NUMBER);
 					}
 				}
 			}
@@ -183,8 +184,8 @@ public class WordParser {
 					word = "";
 					type = T_NOTHING;
 				} else {
-					compiler.addError(new AnalyzeError(new IAWord(mAI, 0, ".", line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, LeekCompilerException.INVALID_CHAR));
-					// throw new LeekCompilerException(mAI, line_counter, char_counter + 1, ".", LeekCompilerException.INVALID_CHAR);
+					compiler.addError(new AnalyzeError(new IAWord(mAI, 0, ".", line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
+					// throw new LeekCompilerException(mAI, line_counter, char_counter + 1, ".", Error.INVALID_CHAR);
 				}
 			}
 			else if(c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-' || c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~' || c == '.'){
@@ -340,7 +341,7 @@ public class WordParser {
 					word += c;
 				}
 				else{
-					throw new LeekCompilerException(mAI, line_counter, char_counter, "" + c, LeekCompilerException.INVALID_CHAR);
+					throw new LeekCompilerException(mAI, line_counter, char_counter, "" + c, Error.INVALID_CHAR);
 				}
 			}
 		}

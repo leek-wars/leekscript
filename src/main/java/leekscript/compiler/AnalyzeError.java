@@ -1,6 +1,7 @@
 package leekscript.compiler;
 
 import com.alibaba.fastjson.JSONArray;
+import leekscript.common.Error;
 
 public class AnalyzeError implements Comparable<AnalyzeError> {
 
@@ -15,14 +16,14 @@ public class AnalyzeError implements Comparable<AnalyzeError> {
 	// public int endLine;
 	// public int endCharacter;
 	public IAWord token;
-	public String error;
+	public Error error;
 	public AnalyzeErrorLevel level;
 	public String[] parameters;
 
-	public AnalyzeError(IAWord token, AnalyzeErrorLevel level, String error) {
+	public AnalyzeError(IAWord token, AnalyzeErrorLevel level, Error error) {
 		this(token, level, error, null);
 	}
-	public AnalyzeError(IAWord token, AnalyzeErrorLevel level, String error, String[] parameters) {
+	public AnalyzeError(IAWord token, AnalyzeErrorLevel level, Error error, String[] parameters) {
 		this.token = token;
 		this.error = error;
 		this.level = level;
@@ -36,7 +37,7 @@ public class AnalyzeError implements Comparable<AnalyzeError> {
 		array.add(token.getLine());
 		array.add(token.getCharacter());
 		array.add(token.getWord());
-		array.add(this.error);
+		array.add(this.error.ordinal());
 		if (parameters != null) {
 			array.add(parameters);
 		}

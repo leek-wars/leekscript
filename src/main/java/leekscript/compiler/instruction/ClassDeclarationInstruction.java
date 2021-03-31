@@ -15,6 +15,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.common.Error;
 
 public class ClassDeclarationInstruction implements LeekInstruction {
 
@@ -89,7 +90,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 	public void addMethod(WordCompiler compiler, IAWord token, ClassMethodBlock method) {
 		// On regarde si il n'y a pas déjà une méthode statique du même nom
 		if (staticMethods.containsKey(token.getWord())) {
-			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, LeekCompilerException.DUPLICATED_METHOD));
+			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.DUPLICATED_METHOD));
 		}
 		if (!methods.containsKey(token.getWord())) {
 			methods.put(token.getWord(), new HashMap<>());
@@ -108,7 +109,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 	public void addStaticMethod(WordCompiler compiler, IAWord token, ClassMethodBlock method) {
 		// On regarde si il n'y a pas déjà une méthode du même nom
 		if (methods.containsKey(token.getWord())) {
-			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, LeekCompilerException.DUPLICATED_METHOD));
+			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.DUPLICATED_METHOD));
 		}
 		if (!staticMethods.containsKey(token.getWord())) {
 			staticMethods.put(token.getWord(), new HashMap<>());
@@ -123,7 +124,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 
 	public void addField(WordCompiler compiler, IAWord word, AbstractExpression expr) throws LeekCompilerException {
 		if (fields.containsKey(word.getWord()) || staticFields.containsKey(word.getWord())) {
-			compiler.addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, LeekCompilerException.FIELD_ALREADY_EXISTS));
+			compiler.addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.FIELD_ALREADY_EXISTS));
 			return;
 		}
 		fields.put(word.getWord(), expr);
@@ -132,7 +133,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 
 	public void addStaticField(IAWord word, AbstractExpression expr) throws LeekCompilerException {
 		if (staticFields.containsKey(word.getWord()) || fields.containsKey(word.getWord())) {
-			throw new LeekCompilerException(word, LeekCompilerException.FIELD_ALREADY_EXISTS);
+			throw new LeekCompilerException(word, Error.FIELD_ALREADY_EXISTS);
 		}
 		staticFields.put(word.getWord(), expr);
 		staticFieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.STATIC_FIELD));
@@ -149,15 +150,15 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		if (parentToken != null) {
 			var parentVar = compiler.getCurrentBlock().getVariable(this.parentToken.getWord(), true);
 			if (parentVar == null) {
-				compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.UNKNOWN_VARIABLE_OR_FUNCTION));
+				compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
 			} else if (parentVar.getVariableType() != VariableType.CLASS) {
-				compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.UNKNOWN_VARIABLE_OR_FUNCTION));
+				compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
 			} else {
 				var current = parentVar.getClassDeclaration();
 				boolean ok = true;
 				while (current != null) {
 					if (current == this) {
-						compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, LeekCompilerException.EXTENDS_LOOP));
+						compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, Error.EXTENDS_LOOP));
 						ok = false;
 						break;
 					}

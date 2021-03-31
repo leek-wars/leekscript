@@ -7,6 +7,7 @@ import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
+import leekscript.common.Error;
 
 public abstract class AbstractLeekValue {
 
@@ -62,7 +63,7 @@ public abstract class AbstractLeekValue {
 
 	public boolean isArrayForIteration(AI ai) throws LeekRunException {
 		// Pas itérable
-		ai.addSystemLog(AILog.ERROR, AILog.NOT_ITERABLE, new String[] { getString(ai) });
+		ai.addSystemLog(AILog.ERROR, Error.NOT_ITERABLE, new String[] { getString(ai) });
 		return false;
 	}
 
@@ -207,7 +208,7 @@ public abstract class AbstractLeekValue {
 		ai.addOperations(2);
 		var clazz = value.getValue();
 		if (!(clazz instanceof ClassLeekValue)) {
-			ai.addSystemLog(AILog.ERROR, AILog.INSTANCEOF_MUST_BE_CLASS);
+			ai.addSystemLog(AILog.ERROR, Error.INSTANCEOF_MUST_BE_CLASS);
 			return LeekValueManager.getLeekBooleanValue(false);
 		}
 		var v = getValue();
@@ -219,23 +220,19 @@ public abstract class AbstractLeekValue {
 
 	public AbstractLeekValue getField(AI ai, String field) throws LeekRunException {
 		// Aucun champ
-		ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_FIELD, new String[] { getString(ai), field });
+		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { getString(ai), field });
 		return LeekValueManager.NULL;
 	}
 
 	public AbstractLeekValue callMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
 		// Aucune méthode
-		ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_METHOD, new String[] { getString(ai), method });
+		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { getString(ai), method });
 		return LeekValueManager.NULL;
 	}
 
 	public AbstractLeekValue callSuperMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
 		// Aucune méthode
-		ai.addSystemLog(AILog.ERROR, AILog.UNKNOWN_METHOD, new String[] { getString(ai), method });
-		return LeekValueManager.NULL;
-	}
-
-	public AbstractLeekValue callSuperMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
+		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { getString(ai), method });
 		return LeekValueManager.NULL;
 	}
 
@@ -251,7 +248,7 @@ public abstract class AbstractLeekValue {
 
 	public AbstractLeekValue executeFunction(AI ai, AbstractLeekValue... value) throws LeekRunException {
 		// On ne peux pas exécuter ce type de variable
-		ai.addSystemLog(AILog.ERROR, AILog.CAN_NOT_EXECUTE_VALUE, new String[] { getString(ai) });
+		ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { getString(ai) });
 		return LeekValueManager.NULL;
 	}
 

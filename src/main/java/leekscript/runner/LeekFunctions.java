@@ -13,6 +13,7 @@ import leekscript.runner.values.FunctionLeekValue;
 import leekscript.runner.values.IntLeekValue;
 import leekscript.runner.values.NullLeekValue;
 import leekscript.runner.values.StringLeekValue;
+import leekscript.common.Error;
 
 public enum LeekFunctions implements ILeekFunction {
 	// Fonctions mathématiques
@@ -1216,7 +1217,7 @@ public enum LeekFunctions implements ILeekFunction {
 	color(3) {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			leekIA.addSystemLog(AILog.WARNING, AILog.DEPRECATED_FUNCTION, new String[] { "color", "getColor" });
+			leekIA.addSystemLog(AILog.WARNING, Error.DEPRECATED_FUNCTION, new String[] { "color", "getColor" });
 			return leekIA.color(parameters[0], parameters[1], parameters[2]);
 		}
 	},
@@ -1436,7 +1437,7 @@ public enum LeekFunctions implements ILeekFunction {
 		} else {
 			// Message d'erreur
 			String ret = AbstractLeekValue.getParamString(parameters);
-			leekIA.addSystemLog(AILog.ERROR, AILog.UNKNOWN_FUNCTION, new String[] { function + "(" + ret + ")" });
+			leekIA.addSystemLog(AILog.ERROR, Error.UNKNOWN_FUNCTION, new String[] { function + "(" + ret + ")" });
 			return LeekValueManager.NULL;
 		}
 		// throw new LeekRunException(LeekRunException.UNKNOWN_FUNCTION);

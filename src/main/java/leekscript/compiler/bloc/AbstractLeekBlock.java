@@ -10,6 +10,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.instruction.LeekInstruction;
+import leekscript.common.Error;
 
 public abstract class AbstractLeekBlock implements LeekInstruction {
 
@@ -61,7 +62,7 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 
 	public void addInstruction(WordCompiler compiler, LeekInstruction instruction) throws LeekCompilerException {
 		if (mEndInstruction != 0) {
-			throw new LeekCompilerException(compiler.getParser().lastWord(), LeekCompilerException.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+			throw new LeekCompilerException(compiler.getParser().lastWord(), Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
 		}
 		mEndInstruction = instruction.getEndBlock();
 		mInstructions.add(instruction);
