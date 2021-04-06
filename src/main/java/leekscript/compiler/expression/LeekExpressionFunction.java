@@ -159,7 +159,6 @@ public class LeekExpressionFunction extends AbstractExpression {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
 				}
 			} else if (v.getVariableType() == VariableType.CLASS) {
-				System.out.println("Class " + v);
 
 				var clazz = v.getClassDeclaration();
 				if (mParameters.size() != 0 && !clazz.hasConstructor(mParameters.size())) {
@@ -167,7 +166,6 @@ public class LeekExpressionFunction extends AbstractExpression {
 				}
 			}
 		} else if (mExpression instanceof LeekObjectAccess) {
-			System.out.println("OA " + mExpression.getString());
 
 			var oa = (LeekObjectAccess) mExpression;
 			if (oa.getObject() instanceof LeekVariable) {
