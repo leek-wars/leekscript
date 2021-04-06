@@ -71,9 +71,9 @@ public class WordParser {
 		int length = code.length();
 		for(int i = 0; i < code.length(); i++){
 			c = code.charAt(i);
-			if(c == '\r') continue;
+			if (c == '\r') continue;
 			// Compteur caractères/lignes
-			if(c == '\n') {
+			if (c == '\n') {
 				if (type != T_NOTHING) {
 					newWord(word, type);
 					type = T_NOTHING;
@@ -84,30 +84,29 @@ public class WordParser {
 				comment_line = false;
 			}
 			else char_counter++;
-			if((c == '"' || c == '\'') && !comment_block && !comment_line){
-				if(type == T_NOTHING){
+			if ((c == '"' || c == '\'') && !comment_block && !comment_line) {
+				if (type == T_NOTHING) {
 					word = "";
 					type = T_VAR_STRING;
 					opener = c;
 				}
-				else if(type == T_VAR_STRING && opener == c){
+				else if (type == T_VAR_STRING && opener == c) {
 					boolean isEscaped = false;
-					for(int j = word.length() - 1; j >= 0; j--){
+					for (int j = word.length() - 1; j >= 0; j--) {
 						if(word.charAt(j) == '\\') isEscaped = !isEscaped;
 						else break;
 					}
-					if(isEscaped){
+					if (isEscaped) {
 						word = word.substring(0, word.length() - 1);
 						word += c;
-					}
-					else{
+					} else {
 						newWord(word, type);
 						word = "";
 						type = T_NOTHING;
 					}
 				}
-				else if(type == T_VAR_STRING) word += c;
-				else{
+				else if (type == T_VAR_STRING) word += c;
+				else {
 					newWord(word, type);
 					word = "";
 					opener = c;
@@ -115,7 +114,7 @@ public class WordParser {
 				}
 				continue;
 			}
-			if(type == T_VAR_STRING){
+			if (type == T_VAR_STRING) {
 				word += c;
 				continue;
 			}
@@ -136,21 +135,18 @@ public class WordParser {
 				if (version >= 11) i++;
 				continue;
 			}
-			if((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'){
-				if(type == T_NOTHING){
+			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_') {
+				if (type == T_NOTHING) {
 					word += c;
 					type = T_STRING;
-				}
-				else if(type == T_STRING || type == T_VAR_STRING){
+				} else if (type == T_STRING || type == T_VAR_STRING) {
 					word += c;
-				}
-				else{
-					if(type == T_OPERATOR){
+				} else {
+					if (type == T_OPERATOR) {
 						newWord(word, type);
 						word = "" + c;
 						type = T_STRING;
-					}
-					else if(type == T_NUMBER){
+					} else if (type == T_NUMBER) {
 						throw new LeekCompilerException(mAI, line_counter, char_counter, word, Error.INVALID_NUMBER);
 					}
 				}
@@ -175,7 +171,7 @@ public class WordParser {
 				word = "";
 				type = T_NOTHING;
 			}
-			else if(c == '.'){
+			else if(c == '.') {
 				if (type == T_VAR_STRING) {
 					word += c;
 				} else if (type == T_NUMBER) {
@@ -344,7 +340,7 @@ public class WordParser {
 				}
 				newWord(",", T_VIRG);
 			}
-			else{
+			else {
 				// Tout autre caractère
 				if(type == T_VAR_STRING){
 					word += c;
