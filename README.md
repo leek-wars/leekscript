@@ -1,6 +1,6 @@
 # LeekScript
 
-[![Java CI with Gradle](https://github.com/leek-wars/leekscript/actions/workflows/build.yml/badge.svg)](https://github.com/leek-wars/leekscript/actions/workflows/build.yml)
+[![CI](https://github.com/leek-wars/leekscript/actions/workflows/build.yml/badge.svg)](https://github.com/leek-wars/leekscript/actions/workflows/build.yml)
 
 The language of Leek Wars, built in Java.
 Used in the [leek-wars-generator](https://github.com/leek-wars/leek-wars-generator) project.
