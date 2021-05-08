@@ -23,7 +23,7 @@ jar {
         attributes "Main-Class": "leekscript.TopLevel"
     }
     from {
-        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
 
@@ -32,6 +32,6 @@ repositories {
 }
 
 dependencies {
-    testCompile 'junit:junit:4.12'
-    compile group: 'com.alibaba', name: 'fastjson', version: '1.1.25'
+    testImplementation 'junit:junit:4.12'
+    implementation group: 'com.alibaba', name: 'fastjson', version: '1.1.25'
 }
