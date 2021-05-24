@@ -66,6 +66,11 @@ public class LeekScript {
 		return compile(ai, AIClass, false);
 	}
 
+	public static AI compileSnippet(String snippet, String AIClass, int version) throws LeekScriptException, LeekCompilerException, IOException {
+		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet " + id++ + ">", snippet, System.currentTimeMillis(), version, null);
+		return compile(ai, AIClass, false);
+	}
+
 	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass, boolean nocache) throws Exception {
 		AI ai = LeekScript.compileSnippet(script, AIClass);
 		AbstractLeekValue v = ai.runIA();
@@ -175,5 +180,6 @@ public class LeekScript {
 		}
 		throw new LeekScriptException(LeekScriptException.CANT_COMPILE, error);
 	}
+
 
 }

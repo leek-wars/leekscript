@@ -5,12 +5,9 @@ sourceSets {
         java {
             srcDirs = ['src/test/java']
         }
-    }
-}
-
-test {
-    testLogging {
-        events "passed", "skipped", "failed"
+        resources {
+            srcDirs = ['src/test/resources']
+        }
     }
 }
 
@@ -23,7 +20,7 @@ jar {
         attributes "Main-Class": "leekscript.TopLevel"
     }
     from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
 
@@ -35,3 +32,10 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     implementation group: 'com.alibaba', name: 'fastjson', version: '1.1.25'
 }
+
+task tests(type: Exec) {
+    group = "Execution"
+    description = "Run the main class with ExecTask"
+    commandLine "java", "-classpath", sourceSets.test.runtimeClasspath.getAsPath(), "test.TestMain"
+}
+test.dependsOn(tests)

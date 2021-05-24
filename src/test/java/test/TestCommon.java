@@ -62,8 +62,12 @@ public class TestCommon {
 		public void almost(double expected, double delta) {
 			run(version, new Checker() {
 				public boolean check(Result result) {
-					double r = Double.parseDouble(result.result);
-					return Math.abs(r - expected) < delta;
+					try {
+						double r = Double.parseDouble(result.result);
+						return Math.abs(r - expected) < delta;
+					} catch (Exception e) {
+						return false;
+					}
 				}
 				public String getExpected() { return String.valueOf(expected); }
 			});
@@ -92,7 +96,7 @@ public class TestCommon {
 			try {
 				boolean is_file = code.contains(".leek");
 
-				AI ai = is_file ? LeekScript.compileFile(code, "AI", version) : LeekScript.compileSnippet(code, "AI");
+				AI ai = is_file ? LeekScript.compileFile(code, "AI", version) : LeekScript.compileSnippet(code, "AI", version);
 				aiID = ai.getId();
 
 				// compile_time = ai.getCompileTime() / 1000000;
