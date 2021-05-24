@@ -55,4 +55,7 @@ public class AIFile<C extends ResolverContext> {
 	public int getVersion() {
 		return this.version;
 	}
+	public void setVersion(int version) {
+		this.version = version;
+	}
 }
