@@ -125,13 +125,15 @@ public class WordParser {
 				i++;
 				continue;
 			}
-			if(comment_line || comment_block) continue;
-			if(c == '/' && length > i + 1 && code.charAt(i + 1) == '/'){
+			if (comment_line || comment_block) continue;
+			if (c == '/' && length > i + 1 && code.charAt(i + 1) == '/') {
 				comment_line = true;
+				i++;
 				continue;
 			}
-			else if(c == '/' && length > i + 1 && code.charAt(i + 1) == '*'){
+			else if (c == '/' && length > i + 1 && code.charAt(i + 1) == '*') {
 				comment_block = true;
+				i++;
 				continue;
 			}
 			if((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'){
