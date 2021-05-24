@@ -318,14 +318,20 @@ public class TestArray extends TestCommon {
 		code("return arrayMax([0:7,8:9,'a':2])").equals("9");
 
 		section("Array.sum()");
-		code("return sum([1,5,7])").equals("13.0");
-		code("return sum([0:1,'a':5,'test':7])").equals("13.0");
-		code("return sum([])").equals("0.0");
+		code_v10("return sum([1,5,7])").equals("13");
+		code_v11("return sum([1,5,7])").equals("13.0");
+		code_v10("return sum([0:1,'a':5,'test':7])").equals("13");
+		code_v11("return sum([0:1,'a':5,'test':7])").equals("13.0");
+		code_v10("return sum([])").equals("0");
+		code_v11("return sum([])").equals("0.0");
 
 		section("Array.average()");
-		code("return average([2,4,6])").equals("4.0");
-		code("return average([0:2,'a':4,'test':6])").equals("4.0");
-		code("return average([])").equals("0.0");
+		code_v10("return average([2, 4, 6])").equals("4");
+		code_v11("return average([2, 4, 6])").equals("4.0");
+		code_v10("return average([0: 2, 'a': 4, 'test': 6])").equals("4");
+		code_v11("return average([0: 2, 'a': 4, 'test': 6])").equals("4.0");
+		code_v10("return average([])").equals("0");
+		code_v11("return average([])").equals("0.0");
 
 		section("Array.fill()");
 		code("var a = [1,2,3]; fill(a, 'a'); return a").equals("[a, a, a]");
