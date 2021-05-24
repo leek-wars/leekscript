@@ -1,0 +1,22 @@
+function fact(x) {
+	let a = if x < 5 {
+		if x == 1 {
+			1
+		} else {
+			fact(x + 1) * x
+		}
+	} else {
+		if x > 10 {
+			fact(x - 1) * x
+		} else {
+			1
+		}
+	}
+	if a % 2 {
+		a
+	} else {
+		fact(4) + a
+	}
+}
+
+fact(12)

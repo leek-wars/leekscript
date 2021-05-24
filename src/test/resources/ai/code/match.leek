@@ -1,0 +1,6 @@
+let v = "oui"
+match v {
+    "oui": print("Yeah!")
+    "non": print("snif")
+    ..: print("ok")
+}

@@ -1,0 +1,5 @@
+function _(n) {
+	var	T = '-', V = '', x = split('s  un deux trois quatre cinq six sept huit neuf dix onze douze treize quatorze quinze seize dix vingt trente quarante cinquante soixante  quatre-vingt  cent' ' '), b = n % 100, d = (17 + b / 10) | 0, u = n % 10, c = floor(n / 100), e = u - 1 ? T : '-et-', L = (log10(n) / 3) | 0, H = 1000 ** L, v = floor(n / H), i = [T ' ' x[d] ? 0 : d-- or (u += 10)][L > 1]
+	return (L < 1) ? c ? (c > 1 ? _(c) + T : '') + x[27] + x[c * !b < 2] + (b ? T : '') + _(b) : n < 17 ? x[n + 1] : n < 20 ? x[11] + '-' + x[u + 1] : x[d] + (u ? e + _(u) : x[d != 25]) : (L * v > 1 ? _(v) + i : '') + 'mill' + [n %= H 'e' 'ion' 'iard'][L] + x[v < 2 or L < 2] + (n ? i : '') + _(n)
+}
+return _(987654321012);

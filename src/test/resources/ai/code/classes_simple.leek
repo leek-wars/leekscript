@@ -1,0 +1,14 @@
+class Car {
+	name = ""
+	engine = 5000
+}
+
+var ferrari = Car()
+var maserati = new Car()
+var lamborghini = new Car()
+
+ferrari.name = "Ferrari"
+maserati.name = "Maserati"
+lamborghini.name = "Lamborghini"
+
+return [ferrari.name, maserati.name, lamborghini.name];

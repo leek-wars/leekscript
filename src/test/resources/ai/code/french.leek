@@ -1,0 +1,63 @@
+var french = function(n) {
+	var	T = '-'
+	var V = ''
+	var x = split('s  un deux trois quatre cinq six sept huit neuf dix onze douze treize quatorze quinze seize dix vingt trente quarante cinquante soixante  quatre-vingt  cent', ' ')
+	var b = n % 100
+	var d = 17 + b / 10
+	var u = n % 10
+	var c = floor(n / 100)
+	var e = (u - 1) ? T : '-et-'
+	var L = floor(log10(n) / 3)
+	var H = pow(1000, L)
+	var v = floor(n / H)
+	if (x[d] == '') { d--	u += 10 }
+	var k = L > 1 ? 1 : 0
+	var i = [T, ' '][k]
+
+	if (L < 1) {
+		if (c) {
+			var r = ''
+			if (c > 1) { r = french(c) r += T }
+			r += x[27]
+			if (!(c * !b < 2)) { r += x[0] }
+			r += (b ? T : V) + french(b)
+			return r
+		} else {
+			if (n < 17) {
+				return x[n + 1]
+			} else {
+				if (n < 20) {
+					return x[11] + T + x[u + 1]
+				} else {
+					var r = x[d]
+					if (u) {
+						return r + e + french(u)
+					} else {
+						if (d == 25) { r += x[0] }
+						return r
+					}
+				}
+			}
+		}
+	} else {
+		var r = ''
+		if (L * v > 1) { r = french(v) + i }
+		r += 'mill'
+		r += ['', 'e', 'ion', 'iard'][L]
+		if (!(v < 2 or L < 2)) { r += x[0] }
+		if (n) { r += i }
+		n %= H
+		r += french(n)
+		return r
+	}
+}
+
+return french(168489999);
+
+/*
+for (var j = 0; j < 3; ++j) {
+	for (var i = 1; i < 5; ++i) {
+		var n = Number.randInt(1000 ** j, 1000 ** (j + 1))
+		System.print(n + " ==> " + french(n))
+	}
+}

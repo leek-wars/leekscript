@@ -1,0 +1,4 @@
+function fun_real(x) { return fun_int(floor(x - 0.5)) }
+function fun_int(x) { return x > 10 ? fun_real(x - 0.5) : x }
+
+return fun_int(20);

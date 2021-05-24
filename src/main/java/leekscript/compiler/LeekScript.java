@@ -1,6 +1,7 @@
 package leekscript.compiler;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -48,6 +49,11 @@ public class LeekScript {
 	public static AI compileFile(String filepath, String AIClass, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
 		AIFile<?> ai = getResolver().resolve(filepath, null);
 		return compile(ai, AIClass, nocache);
+	}
+
+	public static AI compileFile(String filepath, String AIClass, int version) throws LeekScriptException, LeekCompilerException, IOException {
+		AIFile<?> ai = getResolver().resolve(filepath, null);
+		return compile(ai, AIClass, true);
 	}
 
 	public static AI compileFileContext(String filepath, String AIClass, ResolverContext context, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
@@ -169,4 +175,5 @@ public class LeekScript {
 		}
 		throw new LeekScriptException(LeekScriptException.CANT_COMPILE, error);
 	}
+
 }

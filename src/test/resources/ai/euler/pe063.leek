@@ -1,0 +1,10 @@
+var c = 0
+for (var power = 1m; power < 25m; power++) {
+	for (var n = 1m; n < 10m; n++) {
+		var s = '' + (n ** power)
+		if power == s.size() {
+			c++
+		}
+	}
+}
+c

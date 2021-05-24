@@ -1,0 +1,8 @@
+function productN(n) {
+    if (n == 1) {
+        return 1m;
+    } else {
+        return n * productN(n - 1);
+    }
+}
+productN(30m)

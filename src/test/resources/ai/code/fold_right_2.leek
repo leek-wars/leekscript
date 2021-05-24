@@ -1,0 +1,2 @@
+function ppair(p, v) { {p: p, v: v} }
+[1, 3, 4, 2, 7, 5, 8, 9, 6].foldRight((pq, x) -> ppair(x, pq), {})

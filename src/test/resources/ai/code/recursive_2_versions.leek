@@ -1,0 +1,12 @@
+let fun = n -> {
+	if n < 10 {
+		n
+	} else {
+		if (n.isInteger()) {
+			fun(n - 0.5)
+		} else {
+			fun((n - 0.5).floor())
+		}
+	}
+}
+fun(20)

@@ -1,0 +1,15 @@
+var m = ['A', 'T', 'C', 'G']
+var count = 0
+var tests = 500
+
+for (var k = 0; k < tests; k++) {
+
+	var adn = ''
+	for (var j = 0; j < 200; j++) {
+		adn += m[randInt(0, 4)]
+	}
+	var c = contains(adn, 'GAGA');
+	if (c) count++
+}
+
+return abs(100 * (count / tests) - 52) < 12; // ~ 52%

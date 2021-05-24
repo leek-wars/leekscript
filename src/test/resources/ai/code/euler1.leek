@@ -1,0 +1,10 @@
+var n = 100000
+
+var x3 = floor(n / 3)
+var d3 = (x3 * (x3 + 1) / 2 | 0) * 3
+var x5 = floor((n - 1) / 5)
+var d5 = (x5 * (x5 + 1) / 2 | 0) * 5
+var x15 = floor((n - 1) / 15)
+var d15 = (x15 * (x15 + 1) / 2 | 0) * 15
+
+return d3 + d5 - d15;

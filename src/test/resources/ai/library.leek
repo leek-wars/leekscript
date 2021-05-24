@@ -1,0 +1,5 @@
+function arrayKeys(array) {
+	var keys = [];
+	for (var k : var _ in array) push(keys, k);
+	return keys;
+}

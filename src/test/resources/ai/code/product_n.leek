@@ -1,0 +1,8 @@
+function productN(n) {
+    if (n == 1) {
+        1m;
+    } else {
+        n * productN(n - 1);
+    }
+}
+productN(7m)

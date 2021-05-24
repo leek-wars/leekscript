@@ -1,0 +1,4 @@
+ (2m ** 1000).string().fold((x, y) -> x + y.number(), 0)
+
+// TODO : only 2 ** 1000 without the m -> detect that it's a large number constant
+// TODO : fold the number itself (base 10 by default), iterate over digits as integers

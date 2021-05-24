@@ -1,0 +1,11 @@
+let period = n => {
+	var s = n.sqrt(), a0 = s.int()
+	if (n == a0 * a0) return 0
+	var a = a0 var b = 1 var l = 0 // TODO with commas
+	while ++l {
+		b = (n - a * a) \ b
+		a = b * ((s + a) \ b) - a
+		if (a == a0 and b == 1) return l
+	}
+}
+[2..10000].filter(i => period(i) % 2).size()

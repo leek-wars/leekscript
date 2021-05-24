@@ -1,0 +1,3 @@
+let ppair = (p, v) -> {p: p, v: v}
+let pqSingleton = (p, v) -> [{p: p, v: v}]
+[ppair(2, 5), pqSingleton(3, 6)]

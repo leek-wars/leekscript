@@ -1,0 +1,9 @@
+var text = "Le Poireau (Allium porrum) est une espèce de plante herbacée vivace largement cultivée comme plante potagère pour ses feuilles (pseudo-tiges) consommées comme légumes.
+Il appartient à la famille des Amaryllidacées (précédemment famille des Liliacées puis des Alliacées).
+Noms communs : poireau, porreau, poirée, poirette, asperge du pauvre."
+
+let lines = text.lines().size()
+let words = text.wordCount()
+let chars = text.lines().map(x -> x.size()).foldLeft((x, y -> x + y), 0)
+
+return [lines, words, chars];

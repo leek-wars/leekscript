@@ -1,0 +1,2 @@
+var divisors = function(n) { return [1..n.sqrt()].filter(x -> !(n % x) }
+return divisors(1989);

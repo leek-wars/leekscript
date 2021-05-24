@@ -1,0 +1,1 @@
+var q=Json.encode('')[0]var a="var q=Json.encode('')[0]var a="+q var b="System.print(a+a+'+q var b='+q+b+q+b)"System.print(a+a+'+q var b='+q+b+q+b)

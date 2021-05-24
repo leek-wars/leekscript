@@ -1,0 +1,39 @@
+var obstacles = [100 118 136 151 153 154 169 170 172 185 187 202 205 219 223 236 237 253 255 273 291 321 322 339 340 341 356 358 359 374 375 389 392 406 407 409 423 425 427 441 442 459 477 495]
+var leeks = [168 309 327]
+
+function reachable_cells(start, mp, obstacles, leeks) {
+
+	var neighbours = function(c, obstacles, leeks) {
+
+		var n = []
+		var n1 = c + 17
+		if (!inArray(obstacles, n1) and !inArray(leeks, n1)) { push(n, n1) }
+		var n2 = c + 18
+		if (!inArray(obstacles, n2) and !inArray(leeks, n2)) { push(n, n2) }
+		var n3 = c - 17
+		if (!inArray(obstacles, n3) and !inArray(leeks, n3)) { push(n, n3) }
+		var n4 = c - 18
+		if (!inArray(obstacles, n4) and !inArray(leeks, n4)) { push(n, n4) }
+		return n
+	}
+
+	var cells = [start]
+	var grow = [start]
+
+	while (mp--) {
+		var res = []
+		for (var cell in grow) {
+			var n = neighbours(cell, obstacles, leeks)
+			for (var c in n) {
+				if (!inArray(cells, c) and !inArray(res, c)) {
+					push(res, c)
+				}
+			}
+		}
+		grow = res
+		pushAll(cells, res)
+	}
+	return cells
+}
+
+return count(reachable_cells(306, 15, obstacles, leeks));
