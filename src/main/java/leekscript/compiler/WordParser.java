@@ -270,7 +270,7 @@ public class WordParser {
 							word = "" + c;
 						}
 					}
-					else if(word.equals("*") || word.equals("/") || word.equals("%") || word.equals("=") || word.equals("!") || word.equals("<") || word.equals(">") || word.equals("^") || word.equals("==") || word.equals("!=")){
+					else if(word.equals("*") || word.equals("**") || word.equals("/") || word.equals("%") || word.equals("=") || word.equals("!") || word.equals("<") || word.equals(">") || word.equals("^") || word.equals("==") || word.equals("!=")){
 						if(c == '=') word += c;
 						else{
 							newWord(word, type);
