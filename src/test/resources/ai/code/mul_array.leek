@@ -1,0 +1,26 @@
+// TODO allow 'new' token in v1
+
+function _mulArrays(arrays) {
+
+	if (count(arrays) == 0) return []
+
+	var aux = function(stack, neww) {
+		var res = []
+		for (var n in neww) {
+			for (var e in stack) {
+				push(res, e + [n])
+			}
+		}
+		return res
+	}
+
+	var res = arrayMap(shift(arrays), function(e) {
+		return [e]
+	})
+	for (var array in arrays) {
+		res = aux(res, array)
+	}
+	return res
+}
+
+_mulArrays([[1, 2, 3], [4, 5, 6]])

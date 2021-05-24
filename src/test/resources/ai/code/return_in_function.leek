@@ -1,0 +1,6 @@
+function f() {
+	var cells = [12]
+	push(cells, 1)
+	return cells
+}
+return count(f());

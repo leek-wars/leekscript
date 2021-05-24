@@ -1,0 +1,22 @@
+var S = 20
+
+var paths = []
+fill(paths, 0, 21)
+
+var walk = function(x, y) {
+	if (x + y == S) {
+		paths[y]++
+		return;
+	}
+	if (x > 0) walk(x - 1, y)
+	if (y > 0) walk(x, y - 1)
+}
+
+walk(S, S)
+
+var sum = 1
+for (var i = 0; i < S; ++i) {
+	var long = paths[i] * paths[i]
+	sum += long
+}
+return sum;

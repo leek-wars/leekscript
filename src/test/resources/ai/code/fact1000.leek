@@ -1,0 +1,5 @@
+var n = 1m
+for var i = 1m; i < 1000m; i = i + 1m {
+	n = n * i
+}
+return n

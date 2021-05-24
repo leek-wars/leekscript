@@ -1,0 +1,9 @@
+var c = 0
+
+for var i = 1m; i < 100000m; i += 2m {
+	if i.isPrime() > 0 {
+		c++
+	}
+}
+
+return c

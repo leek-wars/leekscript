@@ -1,0 +1,22 @@
+class Engine {
+	power = 5000
+}
+class Wheel {
+	diameter = 45.7
+}
+class Car {
+	// engine = new Engine()
+	wheels = []
+}
+
+var ferrari = new Car()
+for (var i in [1, 2, 3, 4]) {
+	var w = new Wheel()
+	w.diameter = i * 20
+	push(ferrari.wheels, w)
+}
+
+// TODO not working
+// ferrari.wheels.foldLeft((x, s) -> s + x.diameter, 0)
+
+return [count(ferrari.wheels), ferrari.wheels[1].diameter, ferrari.wheels[3].diameter];

@@ -1,0 +1,16 @@
+var s=charAt('\"'0);
+var q=charAt('\"'1);
+var l=[];
+pushAll(l,[
+"var s=charAt('\"'0);",
+"var q=charAt('\"'1);",
+"var l=[];",
+"pushAll(l,[",
+"]);",
+"for(var i=0;i<4;i++)debug(replace(l[i],q,s+s+q));",
+"for(var i=0;i<count(l);i++)debug(q+replace(l[i],q,s+s+q)+q+',');",
+"for(var i=4;i<count(l);i++)debug(l[i]);",
+]);
+for(var i=0;i<4;i++)debug(replace(l[i],q,s+s+q));
+for(var i=0;i<count(l);i++)debug(q+replace(l[i],q,s+s+q)+q+',');
+for(var i=4;i<count(l);i++)debug(l[i]);

@@ -1,0 +1,22 @@
+function hello(x) {
+	let a = if x < 5 {
+		if x == 1 {
+			'_'
+		} else {
+			hello(x + 1) + x
+		}
+	} else {
+		if x > 10 {
+			hello(x - 1) + x
+		} else {
+			'-'
+		}
+	}
+	if x % 2 {
+		a
+	} else {
+		hello(4) + a
+	}
+}
+
+hello(12)

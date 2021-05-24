@@ -1,0 +1,32 @@
+var items = [
+	[37, 3], [47, 10], [28, 5], [89, 7], [55, 11], [11, 2], [75, 4]
+]
+
+var all = [];
+var aux = function(current, i, tp, added, last) {
+
+	if (count(current[1])) push(all, current);
+	var item_count = count(items);
+
+	for (var j = i; j < item_count; ++j) {
+		var item = items[j];
+		var item_id = item[0];
+		var cost = item[1];
+
+		if (cost > tp) continue;
+
+		var new_added = clone(added);
+		new_added[item_id] = true;
+
+		var copy = current;
+		if (item_id === last) {
+			copy[1][count(copy[1]) - 1][2]++;
+		} else {
+			push(copy[1], [item, cost, 1]);
+		}
+		copy[0] += cost;
+		aux(copy, j, tp - cost, new_added, item_id);
+	}
+};
+aux([0, []], 0, 25, [], -1);
+return count(all);

@@ -1,0 +1,51 @@
+function isWeapon(w) {
+	if (w == 12) return true
+	return false
+}
+function isChip(w) {
+	if (w != 12) return true
+	return false
+}
+function getChipCooldown(x) {
+	return 0
+}
+function count(array) {
+	return Array.size(array)
+}
+function inArray(array, element) {
+	return Array.contains(array, element)
+}
+
+function _partition(n, si, items, added) {
+
+	var combos = [];
+	for (var i = si; i < count(items); i++) {
+
+		var item = items[i];
+		var cost = item[1];
+
+		if (isWeapon(item[0]) && inArray(added, item)) cost--;
+
+		if (cost > n) continue;
+
+		if (isChip(item[0]) && getChipCooldown(item[0]) > 0 && inArray(added, item)) continue;
+
+		added += item;
+
+		var subs = _partition(n - cost, i, items, added);
+		if (count(subs) > 0) {
+			for (var sub in subs) { Array.push(combos, [
+				[item[0], cost]
+			] + sub); }
+		} else {
+			Array.push(combos, [
+				[item[0], cost]
+			]);
+		}
+	}
+	combos;
+}
+
+var items = [12, 5, 18]
+
+_partition(10, 0, items, [])

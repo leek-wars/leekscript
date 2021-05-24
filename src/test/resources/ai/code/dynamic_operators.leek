@@ -1,0 +1,5 @@
+// Add more iterations to test the speed of a simple operator
+var a = 12$
+for var i = 0; i < 100; ++i {
+	a * 5
+}

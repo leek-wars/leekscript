@@ -1,0 +1,278 @@
+package test;
+
+import leekscript.LSException;
+import leekscript.compiler.LeekScript;
+import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.functions.VariableOperations;
+import leekscript.runner.LeekConstants;
+import leekscript.runner.values.ArrayLeekValue;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.alibaba.fastjson.JSONObject;
+
+public class TestGeneral {
+
+	TestAI ai;
+
+	@Before
+	public void init() throws Exception {
+		ai = new TestAI();
+	}
+
+	@Test
+	public void lsOperationsTest() throws Exception {
+		VariableOperations op = new VariableOperations(JSONObject.parseObject("{\"1\":\"50\",\"10\":\"100\",\"50\":\"1000\",\"100\":\"5000\"}"));
+		System.out.println(op.getOperations(501));
+	}
+
+	@Test
+	public void ternaireBisTest() throws Exception {
+		Assert.assertFalse(LeekScript.testScript("return (1 & 2 ? 'coucou');", false));
+	}
+
+	@Test
+	public void incrementTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var u=0; return 1*u++ +2-2;", 0));
+	}
+
+	@Test
+	public void decrementTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var u=2; return 1*u--+2-2;", 2));
+	}
+
+	@Test
+	public void preIncrementTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var u=0; return 1*++u+2-2;", 1));
+	}
+
+	@Test
+	public void preDecrementTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var u=2; return 1*--u+2-2;", 1));
+	}
+
+	@Test
+	public void tripleEqualsTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("return 1 === true;", false));
+	}
+
+	@Test
+	public void ternaireTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var t = true; return t === 2?6:2*4;", 8));
+	}
+
+	@Test
+	public void anonymousFunctionTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript(10, "var test = function(@a) { a = 8; }; var test2 = function(b, d) { var c = 1; d(c); return c; }; return test2(1, test);", 8));
+	}
+
+	@Test
+	public void conditionTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var test = 8; if(test == 7) return 1; else if(test == 8) return 2; else return 3;", 2));
+	}
+
+	@Test
+	public void foreachTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var test = [0,1,2,3,4,5]; var retour = \"\"; for(var i in test){ retour += i; } return retour;",
+				"012345"));
+	}
+
+	@Test
+	public void foreachGlobalTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("global i; var test = [0,1,2,3,4,5]; var retour = \"\"; for(i in test){ retour += i; } return retour;",
+			"012345"));
+	}
+
+	@Test
+	public void foreachkeyvalTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var test = ['a':5,'b':8,'c':8,9:'p']; var retour = \"\"; for(var i : var j in test){ retour += i+':'+j; } return retour;",
+				"a:5b:8c:89:p"));
+	}
+
+	@Test
+	public void foreachkeyvalGlobalTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("global i,j; var test = ['a':5,'b':8,'c':8,9:'p']; var retour = \"\"; for(i : j in test){ retour += i+':'+j; } return retour;",
+				"a:5b:8c:89:p"));
+	}
+
+	@Test
+	public void forTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("for(var i=0;i<1000;i++){}", null));
+	}
+/*
+	@Test
+	public void forGlobalTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("global i; for(i=0;i<1000;i++){}", null));
+	}
+*/
+
+	@Test
+	public void functionGlobalTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("function testi() { var tab=[1,5]; for (i in tab) debug(i); } global i;", null));
+	}
+
+	@Test
+	public void foreach() throws Exception {
+		Assert.assertTrue(LeekScript.testScript(
+			"var a = [1, 2, 3, 4, 5] var s = 0 for (var i in a) { s += i } return s;", 15));
+
+		Assert.assertTrue(LeekScript.testScript(10,
+			"var a = [1, 2, 3, 4, 5] var s = 0 for (var i in a) { s += i } return s;", 15));
+
+		// Assert.assertTrue(LeekScript.testScript(10, "var a = [1, 2, 3, 4, 5] var i var s = 0 for (i in a) { s += i } return s;", 15));
+
+		Assert.assertTrue(LeekScript.testScript(10,
+			"var a = [1, 2, 3, 4, 5] var s = 0 for (var i : var j in a) { s += i * j } return s;", 40));
+
+		Assert.assertTrue(LeekScript.testScript(10,
+			"var a = [[1], [2], [3], [4], [5]] var s = 0 for (var i : var j in a) { s += i } return s;", 10));
+
+		Assert.assertTrue(LeekScript.testScript(10,
+			"var a = [[1], [2], [3], [4], [5]] var s = 0 for (var i : var j in a) { push(j, 12) s += i * count(j) } return s;", 20));
+
+		Assert.assertTrue(LeekScript.testScript(10,
+			"var a = [[1], [2], [3], [4], [5]] var s = 0 for (var i in a) { push(i, 12) s += count(i) } return s;", 10));
+	}
+
+	@Test
+	public void whileTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var i = 0; while(i<1000){ i++; }", null));
+	}
+
+	// Test simples d'opérateurs
+	@Test
+	public void additionTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var test = 1 + 8; test += 3; test++; var a = 7; var b = 1; return [test, a+b, (1+1)+9.5, 'test'+8];",
+				new ArrayLeekValue(ai, new Object[] { 13, 8, 11.5, "test8" })));
+	}
+
+	@Test
+	public void soustractionTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var test = 20 - 8; test -= 3; test--; var a = 7; var b = 1; return [test, a-b, (1-1)-9.5];",
+				new ArrayLeekValue(ai, new Object[] {
+				8, 6, -9.5 })));
+	}
+
+	@Test
+	public void multiplicationTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var test = 4; test *= 3; var c = 7;return [test, 8*9, 2*c];",
+				new ArrayLeekValue(ai, new Object[] { 12, 72, 14 })));
+	}
+
+	@Test
+	public void modulusTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var test = 4; test %= 3; var c = 7;return [test, 8%9, 8%c];",
+				new ArrayLeekValue(ai, new Object[] { 1,
+				8, 1 })));
+	}
+
+	@Test
+	public void divisionTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var test = 7; test /= 2; var c = 7;return [test, 12/6, 14/c];",
+				new ArrayLeekValue(ai, new Object[] { 3.5, 2, 2 })));
+	}
+
+	@Test
+	public void operatorsTest() throws Exception {
+		Object[] values = new Object[] { true, false, true, false, false, true, false };
+		Assert.assertTrue(LeekScript.testScript("return [true && true, true && false, true || false, false || false, 1 > 3, 1 < 3, 4 == 7];",
+				new ArrayLeekValue(ai, values)));
+	}
+
+	@Test
+	public void prioritiesTest() throws Exception {
+		Object[] values = new Object[] {
+				// 1+6*2 - 3*2
+				7,
+				// 7*8 - 1
+				55,
+				// 3*3 - 8 > 0
+				true,
+				// 7*8 == 56 && 33 -8
+				true };
+		Assert.assertTrue(LeekScript.testScript("return [1+6*2-3*2,7*8-1, 3*3-8>0, 7*8 == 56 && 33-8 ];",
+				new ArrayLeekValue(ai, values)));
+	}
+
+	// Test un peu plus poussés
+	@Test
+	public void functionTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("function test(a){ return a+2; } return test(7);", 9));
+	}
+
+	@Test
+	public void divisionByZeroTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("return 8/0;", null));
+		Assert.assertTrue(LeekScript.testScript("return 8/null;", null));
+	}
+
+	@Test
+	public void whileReturnTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var t = 0; while(t<5){ t++; return t;}", 1));
+		Assert.assertTrue(LeekScript.testScript("var t = 0; while(t<5){ t++; return t;} return 0;", 1));
+	}
+
+	@Test
+	public void doWhileReturnTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var t = 0; do { t++; return t; } while (t < 5);", 1));
+		Assert.assertFalse(LeekScript.testScript("var t = 0; do { t++; return t; } while (t < 5); return 2;", 1));
+	}
+
+	@Test
+	public void forReturnTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("for(var i=0;i<3;i++){ return i; }", 0));
+		Assert.assertTrue(LeekScript.testScript("for(var i=0;i<3;i++){ return i; } return 2;", 0));
+	}
+
+	@Test
+	public void anonymousTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("function te(a){ return function(){ return a**2; }; } return te(2)();", 4));
+	}
+
+	@Test
+	public void anonymous2Test() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("function te(a){ return function(b){ return function(c){return a*b*c;}; }; } return te(2)(1)(2);", 4));
+	}
+
+	@Test
+	public void conditionalTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var test = 0; if(false) if(true) test = 3; else test = 1; return test;", 0));
+	}
+
+	@Test
+	public void forEachReturnTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var tab = [0,1,2,3]; for(var i in tab){ return i; }", 0));
+		Assert.assertTrue(LeekScript.testScript("var tab = [0,1,2,3]; for(var i in tab){ return i; } return 5;", 0));
+	}
+
+	@Test
+	public void forEachKeyReturnTest() throws Exception {
+		Assert.assertTrue(LeekScript.testScript("var tab = [1:0,2:1,3:2,4:3]; for(var i : var j in tab){ return i; } ", 1));
+		Assert.assertTrue(LeekScript.testScript("var tab = [1:0,2:1,3:2,4:3]; for(var i : var j in tab){ return i; } return 0;", 1));
+	}
+
+
+	@Test
+	public void testAnonymousFunctioNSelfAccess() throws Exception {
+		String leekscript = "var t = function(){ return t; };";
+		LeekScript.testScript(leekscript, null);
+	}
+
+	@Test
+	public void stringTest() throws Exception {
+		ArrayList<String> codes = new ArrayList<String>();
+		ArrayList<Object> values = new ArrayList<Object>();
+
+		// Test nombre
+		codes.add("'\\\\'");
+		values.add("\\");
+
+		// Test AI
+		Assert.assertTrue(testAI(codes, values));
+	}
+}

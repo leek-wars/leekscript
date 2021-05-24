@@ -1,0 +1,7 @@
+var v = is_good(5, 6)
+
+function is_good(x, y) {
+	return x == y
+}
+
+return v;

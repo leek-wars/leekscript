@@ -1,0 +1,7 @@
+var p = 600851475143
+for (var i = 2; i * i <= p; i++) {
+	if (p % i == 0) {
+		p /= i
+	}
+}
+return p | 0;

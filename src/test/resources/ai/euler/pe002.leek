@@ -1,0 +1,12 @@
+var f1 = 1
+var f2 = 1
+var sum = 0
+while (f2 < 4000000) {
+	var n = f1 + f2
+	f1 = f2
+	f2 = n
+	if (n % 2 == 0) {
+		sum += n
+	}
+}
+return sum;

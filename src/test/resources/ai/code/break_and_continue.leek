@@ -1,0 +1,25 @@
+var values = []
+
+for var i = 0; i < 10; ++i {
+	var b = []
+	for var j = 0; j < 10; ++j {
+		var c = []
+		for var k = 1; k <= 30; ++k { c += k }
+		b += [c]
+	}
+	values += [b]
+}
+
+var sum = 0
+for v in values {
+	for w in v {
+		for x in w {
+			if x % 2 { continue }
+			if x == 18 { continue 2 }
+			sum += x
+			if (sum > 2500) { break 3 }
+		}
+	}
+}
+
+sum

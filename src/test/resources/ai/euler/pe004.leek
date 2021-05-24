@@ -1,0 +1,10 @@
+var max = 0
+for (var a = 999; a >= 100; --a) {
+	for (var b = a; b >= 100; --b) {
+		let p = a × b
+		if (p > max and p.isPalindrome()) {
+			max = p
+		}
+	}
+}
+return max

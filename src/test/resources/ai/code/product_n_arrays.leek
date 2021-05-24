@@ -1,0 +1,8 @@
+function productN(n) {
+    if n == [1] {
+        [1]
+    } else {
+        [n[0] * productN([n[0] - 1])[0]]
+    }
+}
+productN([7])

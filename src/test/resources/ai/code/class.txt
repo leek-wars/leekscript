@@ -1,0 +1,31 @@
+class A extends B {
+	const STATIC_CLASS_CONSTANT = 12;
+	let constant_field
+	var mutable_field = 0
+	constructor(a) => constant_field = a
+	constructor() {
+		mutable_field = 12
+	}
+	update() { ... }
+	update2() => ...
+	let f = () => 'salut' // function field
+}
+class Operation {
+	let op = +
+	constructor(op) => this.op = op
+	operator () (a, b) {
+		return op(a, b)
+	}
+	run(a, b) => op(a, b)
+}
+let plus = new Operation(×)
+plus(5, 6)
+plus.run(5, 6)
+
+var a
+const a
+var a = []
+function() { return 'salut' }
+function m() { return 'salut' }
+() => 'salut'
+m() => 'salut'

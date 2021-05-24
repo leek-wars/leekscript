@@ -1,0 +1,8 @@
+function coProductN(n, i, acc) {
+    if (i == n) {
+        return i * acc;
+    } else {
+        return coProductN(n, i + 1, i * acc);
+    }
+}
+coProductN(69m, 1m, 1m)

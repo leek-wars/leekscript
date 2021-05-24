@@ -1,0 +1,23 @@
+let siftUp = (c, pq) -> {
+	if (c > 0) {
+		let p = (c - 1) >> 1
+		if (pq[c].p < pq[p].p) {
+			pq[p] <=> pq[c]
+			return siftUp(p, pq)
+		} else {
+			return pq
+		}
+	} else {
+		return pq
+	}
+}
+
+let pqInsert = (p, pq) -> {
+	siftUp(pq.size(), pq.push({p: p}))
+}
+
+var pq = [{p: 4}]
+pqInsert(5, pq)
+pqInsert(3, pq)
+pqInsert(12, pq)
+pqInsert(1, pq)

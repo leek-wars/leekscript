@@ -1,0 +1,33 @@
+var N = 1000000
+var cache = []
+fill(cache, 0, N)
+cache[1] = 1
+
+var sequence_length = function(n) {
+	if (n >= N) {
+		return n % 2 ?
+			1 + sequence_length(n * 3 + 1)
+		:
+			1 + sequence_length(n / 2)
+	}
+	var c = cache[n]
+	if (c) return c
+
+	return cache[n] = n % 2 ?
+		1 + sequence_length(n * 3 + 1)
+	:
+		1 + sequence_length(n / 2)
+}
+
+var max = 0
+var n = 0
+
+for (var i = 1; i < 1000000; i++) {
+	var l = sequence_length(i)
+	if (l > max) {
+		max = l
+		n = i
+	}
+}
+
+return n;
