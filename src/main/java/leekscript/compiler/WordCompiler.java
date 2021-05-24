@@ -265,7 +265,7 @@ public class WordCompiler {
 				if (mCompiler.getWord().getType() != WordParser.T_END_INSTRUCTION) {
 					exp = readExpression();
 				}
-				if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
+				if (mCompiler.haveWords() && mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
 					mCompiler.skipWord();
 				mCurentBlock.addInstruction(this, new LeekReturnInstruction(mCurentBlock.countInstructions(), exp, mLine, mAI));
 				return;
