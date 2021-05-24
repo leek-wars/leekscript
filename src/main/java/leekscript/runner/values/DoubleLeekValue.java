@@ -32,9 +32,12 @@ public class DoubleLeekValue extends AbstractLeekValue {
 	@Override
 	public String getString(AI ai) throws LeekRunException {
 		ai.addOperations(3);
-		DecimalFormat df = new DecimalFormat();
-		df.setMinimumFractionDigits(0);
-		return df.format(mValue);
+		if (ai.getVersion() <= 10) {
+			DecimalFormat df = new DecimalFormat();
+			df.setMinimumFractionDigits(0);
+			return df.format(mValue);
+		}
+		return String.valueOf(mValue);
 	}
 
 	@Override
