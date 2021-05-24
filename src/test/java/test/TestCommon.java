@@ -55,6 +55,15 @@ public class TestCommon {
 			});
 		}
 
+		public void error() {
+			run(version, new Checker() {
+				public boolean check(Result result) {
+					return result.result.equals("error");
+				}
+				public String getExpected() { return "error"; }
+			});
+		}
+
 		public void almost(double expected) {
 			almost(expected, 1e-10);
 		}
@@ -116,7 +125,7 @@ public class TestCommon {
 
 			} catch (Exception e) {
 				e.printStackTrace();
-				result = new Result("", 0, 0);
+				result = new Result("error", 0, 0);
 			}
 
 			if (checker.check(result)) {

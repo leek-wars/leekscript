@@ -128,12 +128,12 @@ public class WordParser {
 			if (comment_line || comment_block) continue;
 			if (c == '/' && length > i + 1 && code.charAt(i + 1) == '/') {
 				comment_line = true;
-				i++;
+				if (version >= 11) i++;
 				continue;
 			}
 			else if (c == '/' && length > i + 1 && code.charAt(i + 1) == '*') {
 				comment_block = true;
-				i++;
+				if (version >= 11) i++;
 				continue;
 			}
 			if((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'){
