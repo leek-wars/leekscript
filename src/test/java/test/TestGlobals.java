@@ -22,7 +22,8 @@ public class TestGlobals extends TestCommon {
 		code("global x = 12; x += 5; return x;").equals("17");
 		code("global x = 12; x -= 5; return x;").equals("7");
 		code("global x = 12; x *= 5; return x;").equals("60");
-		code("global x = 12; x /= 5; return x;").equals("2.4");
+		code_v10("global x = 12; x /= 5; return x;").equals("2,4");
+		code_v11("global x = 12; x /= 5; return x;").equals("2.4");
 		code("global x = 12; x %= 5; return x;").equals("2");
 		code("global x = 2; x **= 5; return x;").equals("32");
 		code("global x = 12; x |= 5; return x;").equals("13");
