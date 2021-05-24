@@ -84,7 +84,8 @@ public class TestLoops extends TestCommon {
 		// DISABLED_code("var i = 0 for (; i < 10; i++) { } return i;").equals("10");
 		code("var i = 0 for (i = 0; i < 10; i++) { } return i;").equals("10");
 		code("var i = 0 for (i = 0; i < 10; i++) { if (i == 5) { break } } return i;").equals("5");
-		code("var i var c = 0 for (i = 0; i < 20; i += 0.573) { c++ } return i;").equals("20.05500000000001");
+		code_v10("var i var c = 0 for (i = 0; i < 20; i += 0.573) { c++ } return i;").equals("20,055");
+		code_v11("var i var c = 0 for (i = 0; i < 20; i += 0.573) { c++ } return i;").equals("20.05500000000001");
 		code("var i = 's' var c = 0 for (i = []; count(i) < 8; push(i, 1)) { c++ } return i;").equals("[1, 1, 1, 1, 1, 1, 1, 1]");
 		// DISABLED_code("var i = 0 for (; i < 10; i += 0.5) { } return i;").equals("10");
 		// code("var i = 0 for (i = 2l; i < 10; i += 0.5) { } return i;").equals("10");
@@ -132,7 +133,8 @@ public class TestLoops extends TestCommon {
 		code("var a = 0 var x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] for (var i in x) { if (i < 5) { continue } a++ } return a;").equals("5");
 		code("var s = 0 for (var k : var v in [1, 2, 3, 4]) { s += k * v } return s;").equals("20");
 		// code("var s = '' for (var k : var v in ['a': 1, 'b': 2, 'c': 3, 'd': 4]) { s += v * k } return s;").equals("abbcccdddd");
-		code("return (function (a) { var s = 0.0; for (var x in a) { s += x } return s; })([1, 2, 3, 4.25]);").equals("10.25");
+		code_v10("return (function (a) { var s = 0.0; for (var x in a) { s += x } return s; })([1, 2, 3, 4.25]);").equals("10,25");
+		code_v11("return (function (a) { var s = 0.0; for (var x in a) { s += x } return s; })([1, 2, 3, 4.25]);").equals("10.25");
 		// DISABLED_code("var y = '' for k, x in { var x = [] x.push(4) x } { y += k + ':' + x + ' ' } y").equals("'0:4 '");
 		// DISABLED_code("var y = '' for k, x in { var x = [1: 2] x.insert(3, 4) x } { y += k + ':' + x + ' ' } y").equals("'1:2 3:4 '");
 		// DISABLED_code("var y = '' for k, x in { var x = [1: 2.5] x.insert(3, 4) x } { y += k + ':' + x + ' ' } y").equals("'1:2.5 3:4 '");
