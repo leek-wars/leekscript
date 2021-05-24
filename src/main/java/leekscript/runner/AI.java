@@ -25,7 +25,8 @@ public abstract class AI {
 	public final static int MAX_MEMORY = 100000;
 
 	protected long mOperations = 0;
-	public final static long MAX_OPERATIONS = 20000000;
+	public final static int MAX_OPERATIONS = 20000000;
+	public int maxOperations = MAX_OPERATIONS;
 
 	protected JSONArray mErrorObject = null;
 	protected String thisObject = null;
@@ -35,6 +36,7 @@ public abstract class AI {
 	protected AI mUAI;
 	protected int mInstructions;
 	protected RandomGenerator randomGenerator;
+
 
 	public AI() {
 		mUAI = this;
@@ -70,7 +72,7 @@ public abstract class AI {
 
 	public void addOperations(int nb) throws LeekRunException {
 		mOperations += nb;
-		if (mOperations >= MAX_OPERATIONS) {
+		if (mOperations >= maxOperations) {
 			throw new LeekRunException(LeekRunException.TOO_MUCH_OPERATIONS);
 		}
 	}
