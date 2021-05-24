@@ -3,7 +3,6 @@ package leekscript.compiler.resolver;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -22,7 +21,8 @@ public class FileSystemResolver implements Resolver<FileSystemContext> {
 		try {
 			Path resolvedPath = context.getFolder().toPath().resolve(path).normalize();
 
-			String code = new String(Files.readAllBytes(resolvedPath), StandardCharsets.UTF_8);
+			var is = getClass().getClassLoader().getResourceAsStream(resolvedPath.toString());
+			String code = new String(is.readAllBytes(), StandardCharsets.UTF_8);
 
 			Path parent = resolvedPath.getParent();
 			if (parent == null) parent = Paths.get(".");
@@ -31,7 +31,7 @@ public class FileSystemResolver implements Resolver<FileSystemContext> {
 
 			long timestamp = resolvedPath.toFile().lastModified();
 
-			return new AIFile<FileSystemContext>(path, code, timestamp, 11, newContext, resolvedPath.hashCode() & 0xfffffff);
+			return new AIFile<FileSystemContext>(path, code, timestamp, 11, newContext, resolvedPath.toString().hashCode() & 0xfffffff);
 
 		} catch (IOException e) {
 			e.printStackTrace();
