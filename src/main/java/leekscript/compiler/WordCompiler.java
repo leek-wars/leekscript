@@ -933,9 +933,10 @@ public class WordCompiler {
 				} else
 					break;
 			} else {
-				if (word.getType() == WordParser.T_NUMBER)
-					retour.addExpression(new LeekNumber(Double.parseDouble(word.getWord())));
-				else if (word.getType() == WordParser.T_VAR_STRING) {
+				if (word.getType() == WordParser.T_NUMBER) {
+					boolean floating = word.getWord().contains(".");
+					retour.addExpression(new LeekNumber(Double.parseDouble(word.getWord()), floating));
+				} else if (word.getType() == WordParser.T_VAR_STRING) {
 					retour.addExpression(new LeekString(word.getWord()));
 				} else if (word.getType() == WordParser.T_BRACKET_LEFT) {
 					// Déclaration d'un tableau

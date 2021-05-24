@@ -7,9 +7,11 @@ import leekscript.compiler.bloc.MainLeekBlock;
 public class LeekNumber extends AbstractExpression {
 
 	private final double mValue;
+	private final boolean floating;
 
-	public LeekNumber(double value) {
+	public LeekNumber(double value, boolean floating) {
 		mValue = value;
+		this.floating = floating;
 	}
 
 	@Override
@@ -30,11 +32,10 @@ public class LeekNumber extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if(mValue == (int) mValue){
-			writer.addCode("LeekValueManager.getLeekIntValue(" + ((int) mValue) + ")");
-		}
-		else{
+		if (floating || mValue != (int) mValue) {
 			writer.addCode("new DoubleLeekValue(" + mValue + ")");
+		} else {
+			writer.addCode("LeekValueManager.getLeekIntValue(" + ((int) mValue) + ")");
 		}
 	}
 
