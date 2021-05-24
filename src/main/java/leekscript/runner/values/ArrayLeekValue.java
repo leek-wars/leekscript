@@ -216,6 +216,11 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	}
 
 	@Override
+	public int getV10Type() {
+		return ARRAY_V10;
+	}
+
+	@Override
 	public int getType() {
 		return ARRAY;
 	}

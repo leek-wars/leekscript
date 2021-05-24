@@ -28,6 +28,65 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	public final static int ASC_K = 6;
 	public final static int DESC_K = 7;
 
+	private class ElementComparatorV10 implements Comparator<Element> {
+
+		private final int mOrder;
+		private final AI ai;
+
+		public final static int SORT_ASC = 1;
+		public final static int SORT_DESC = 2;
+
+		public ElementComparatorV10(AI ai, int order) {
+			mOrder = order;
+			this.ai = ai;
+		}
+
+		@Override
+		public int compare(Element v1, Element v2) {
+			try {
+			if (mOrder == SORT_ASC)
+				return compareAsc(v1.value.getValue(), v2.value.getValue());
+			else if (mOrder == SORT_DESC)
+				return compareAsc(v2.value.getValue(), v1.value.getValue());
+			} catch (Exception e) {}
+			return 0;
+		}
+
+		public int compareAsc(AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
+			if (v1.getV10Type() < v2.getV10Type())
+				return -1;
+			else if (v1.getV10Type() > v2.getV10Type())
+				return 1;
+			if (v1.getType() == AbstractLeekValue.BOOLEAN) {
+				if (v1.getBoolean() == v2.getBoolean())
+					return 0;
+				else if (v1.getBoolean())
+					return 1;
+				else
+					return -1;
+			} else if (v1.getType() == AbstractLeekValue.NUMBER) {
+				if (v1.getDouble(ai) == v2.getDouble(ai))
+					return 0;
+				else if (v1.getDouble(ai) < v2.getDouble(ai))
+					return -1;
+				else
+					return 1;
+			} else if (v1.getType() == AbstractLeekValue.STRING) {
+				return v1.getString(ai).compareTo(v2.getString(ai));
+			} else if (v1.getType() == AbstractLeekValue.ARRAY) {
+				if (v1.getArray().size() == v2.getArray().size())
+					return 0;
+				else if (v1.getArray().size() < v2.getArray().size())
+					return -1;
+				else
+					return 1;
+			} else if (v1.getType() == AbstractLeekValue.NULL)
+				return 0;
+			else
+				return -1;
+		}
+	}
+
 	private class ElementComparator implements Comparator<Element> {
 
 		private final int mOrder;
@@ -399,10 +458,17 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			Collections.sort(liste, new KeyComparator(
 					(comparator == ASC_K) ? ElementComparator.SORT_ASC
 							: ElementComparator.SORT_DESC));
-		} else
-			Collections.sort(liste, new ElementComparator(ai,
+		} else {
+			if (ai.getVersion() == 10) {
+				Collections.sort(liste, new ElementComparatorV10(ai,
 					(comparator == ASC || comparator == ASC_A) ? ElementComparator.SORT_ASC
 							: ElementComparator.SORT_DESC));
+			} else {
+				Collections.sort(liste, new ElementComparator(ai,
+				(comparator == ASC || comparator == ASC_A) ? ElementComparator.SORT_ASC
+						: ElementComparator.SORT_DESC));
+			}
+		}
 
 		// Mise en place de la liste
 		mHead = liste.get(0);

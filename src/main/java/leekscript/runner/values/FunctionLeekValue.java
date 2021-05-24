@@ -66,8 +66,13 @@ public class FunctionLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
+	public int getV10Type() {
+		return FUNCTION_V10;
+	}
+
+	@Override
 	public int getType() {
-		return AbstractLeekValue.FUNCTION;
+		return FUNCTION;
 	}
 
 	private AbstractLeekValue[] copyValues(AI uai, AbstractLeekValue[] values, boolean[] references) throws LeekRunException {

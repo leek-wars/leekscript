@@ -255,6 +255,11 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
+	public int getV10Type() {
+		return mValue.getV10Type();
+	}
+
+	@Override
 	public int getType() {
 		return mValue.getType();
 	}
