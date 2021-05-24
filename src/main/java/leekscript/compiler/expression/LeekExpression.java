@@ -743,7 +743,7 @@ public class LeekExpression extends AbstractExpression {
 
 		// Si on a affaire à une assignation, incrémentation ou autre du genre
 		// on doit vérifier qu'on a bien une variable (l-value)
-		if (mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.ASSIGN || mOperator == Operators.MODULUSASSIGN || mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.POWERASSIGN) {
+		if (mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.ASSIGN || mOperator == Operators.MODULUSASSIGN || mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.POWERASSIGN || mOperator == Operators.BITOR_ASSIGN || mOperator == Operators.BITAND_ASSIGN || mOperator == Operators.BITXOR_ASSIGN || mOperator == Operators.SHIFT_LEFT_ASSIGN || mOperator == Operators.SHIFT_RIGHT_ASSIGN || mOperator == Operators.ROTATE_RIGHT_ASSIGN) {
 			if (!mExpression1.isLeftValue())
 				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, Error.CANT_ASSIGN_VALUE));
 				// throw new LeekExpressionException(mExpression1, LeekCompilerException.CANT_ASSIGN_VALUE);
