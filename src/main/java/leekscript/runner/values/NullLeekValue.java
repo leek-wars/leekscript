@@ -26,6 +26,11 @@ public class NullLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
+	public AbstractLeekValue minus(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.minus(ai, this, val);
+	}
+
+	@Override
 	public AbstractLeekValue multiply(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return LeekOperations.multiply(ai, this, val);
 	}
@@ -38,6 +43,16 @@ public class NullLeekValue extends AbstractLeekValue {
 	@Override
 	public AbstractLeekValue modulus(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return LeekOperations.modulus(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue power(AI ai, AbstractLeekValue value) throws LeekRunException {
+		return LeekOperations.power(ai, this, value);
+	}
+
+	@Override
+	public AbstractLeekValue bor(AI ai, AbstractLeekValue value) throws LeekRunException {
+		return LeekOperations.bor(ai, this, value);
 	}
 
 	@Override
