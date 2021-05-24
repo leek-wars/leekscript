@@ -226,6 +226,11 @@ public class ClassLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
+	public int getV10Type() {
+		return CLASS_V10;
+	}
+
+	@Override
 	public int getType() {
 		return CLASS;
 	}

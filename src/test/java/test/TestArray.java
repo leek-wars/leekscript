@@ -192,9 +192,12 @@ public class TestArray extends TestCommon {
 		code("return arrayFlatten([6,[[7]],[8,9]]);").equals("[6, [7], 8, 9]");
 
 		section("Array.sort");
-		code("return function() { var t = [null, null, 4, 8, 9]; sort(t); return t; }();").equals("[null, null, 4, 8, 9]");
-		code("return function() { var t = [4, null, 4, null, 4]; sort(t); return t; }();").equals("[null, null, 4, 4, 4]");
-		code("return function() { var t = [4, null, 5, null, 8]; sort(t, SORT_DESC); return t; }();").equals("[8, 5, 4, null, null]");
+		code_v10("return function() { var t = [null, null, 4, 8, 9]; sort(t); return t; }();").equals("[4, 8, 9, null, null]");
+		code_v11("return function() { var t = [null, null, 4, 8, 9]; sort(t); return t; }();").equals("[null, null, 4, 8, 9]");
+		code_v10("return function() { var t = [4, null, 4, null, 4]; sort(t); return t; }();").equals("[4, 4, 4, null, null]");
+		code_v11("return function() { var t = [4, null, 4, null, 4]; sort(t); return t; }();").equals("[null, null, 4, 4, 4]");
+		code_v10("return function() { var t = [4, null, 5, null, 8]; sort(t, SORT_DESC); return t; }();").equals("[null, null, 8, 5, 4]");
+		code_v11("return function() { var t = [4, null, 5, null, 8]; sort(t, SORT_DESC); return t; }();").equals("[8, 5, 4, null, null]");
 
 		section("Array and references");
 		code_v10("var t = [@3, @4, @5]; return t;").equals("[3, 4, 5]");

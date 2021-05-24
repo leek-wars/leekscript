@@ -56,6 +56,11 @@ public class NullLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
+	public int getV10Type() {
+		return NULL_V10;
+	}
+
+	@Override
 	public int getType() {
 		return NULL;
 	}

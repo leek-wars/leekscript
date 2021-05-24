@@ -11,14 +11,23 @@ import leekscript.common.Error;
 
 public abstract class AbstractLeekValue {
 
-	public final static int NUMBER = 1;
+	public final static int NUMBER_V10 = 1;
+	public final static int BOOLEAN_V10 = 2;
+	public final static int ARRAY_V10 = 3;
+	public final static int NULL_V10 = 4;
+	public final static int STRING_V10 = 5;
+	public final static int FUNCTION_V10 = 6;
+	public final static int CLASS_V10 = 7;
+	public final static int OBJECT_V10 = 8;
+
+	public final static int NULL = 1;
 	public final static int BOOLEAN = 2;
-	public final static int ARRAY = 3;
-	public final static int NULL = 4;
-	public final static int STRING = 5;
-	public final static int FUNCTION = 6;
-	public final static int CLASS = 7;
-	public final static int OBJECT = 8;
+	public final static int NUMBER = 3;
+	public final static int STRING = 4;
+	public final static int ARRAY = 5;
+	public final static int OBJECT = 6;
+	public final static int FUNCTION = 7;
+	public final static int CLASS = 8;
 
 	public final static int ADD_COST = 1;
 	public final static int MUL_COST = 5;
@@ -237,6 +246,8 @@ public abstract class AbstractLeekValue {
 	}
 
 	public void callConstructor(AI ai, AbstractLeekValue thiz, AbstractLeekValue... arguments) throws LeekRunException {}
+
+	public abstract int getV10Type();
 
 	public abstract int getType();
 
