@@ -1,16 +1,14 @@
 package leekscript;
 
-import leekscript.runner.values.AbstractLeekValue;
-
 public class LSException extends Exception {
 
 	private static final long serialVersionUID = -8672880192298794957L;
 
 	private final int mIndex;
-	private final AbstractLeekValue mRun;
-	private final AbstractLeekValue mThe;
+	private final Object mRun;
+	private final Object mThe;
 
-	public LSException(int i, AbstractLeekValue run, AbstractLeekValue the) {
+	public LSException(int i, Object run, Object the) {
 		mIndex = i;
 		mRun = run;
 		mThe = the;
@@ -20,11 +18,11 @@ public class LSException extends Exception {
 		return mIndex;
 	}
 
-	public AbstractLeekValue getRun() {
+	public Object getRun() {
 		return mRun;
 	}
 
-	public AbstractLeekValue getThe() {
+	public Object getThe() {
 		return mThe;
 	}
 

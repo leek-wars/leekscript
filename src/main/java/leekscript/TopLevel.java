@@ -5,7 +5,6 @@ import java.io.File;
 
 import leekscript.compiler.LeekScript;
 import leekscript.runner.AI;
-import leekscript.runner.values.AbstractLeekValue;
 
 public class TopLevel {
 
@@ -37,7 +36,7 @@ public class TopLevel {
 			long compileTime = System.currentTimeMillis() - ct;
 
 			long et = System.currentTimeMillis();
-			AbstractLeekValue v = ai.runIA();
+			var v = ai.runIA();
 			long executionTime = System.currentTimeMillis() - et;
 
 			String result = v.getString(ai);
@@ -58,7 +57,7 @@ public class TopLevel {
 			long compileTime = System.currentTimeMillis() - ct;
 
 			long et = System.currentTimeMillis();
-			AbstractLeekValue v = ai.runIA();
+			var v = ai.runIA();
 			long executionTime = System.currentTimeMillis() - et;
 
 			String result = v.getString(ai);

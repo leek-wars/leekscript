@@ -121,7 +121,7 @@ public abstract class AI {
 			for (String error : getErrorString()) {
 				mErrorObject.add(JSON.parseArray(error));
 			}
-			thisObject = getAItring();
+			thisObject = getAIString();
 		}
 		int value = 0;
 		for (int i = 0; i < mErrorObject.size(); i++) {
@@ -388,7 +388,7 @@ public abstract class AI {
 
 	protected abstract String[] getErrorFiles();
 
-	protected abstract String getAItring();
+	protected String getAIString() { return ""; }
 
 	public abstract AbstractLeekValue runIA() throws LeekRunException;
 

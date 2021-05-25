@@ -86,7 +86,7 @@ public class JavaWriter {
 			mCode.append(", ");
 			// System.out.println(l.mAI.getPath() + ":" + l.mCodeLine + " -> " + l.mJavaLine);
 		}
-		mCode.append("};}\nprotected String getAItring() { return ");
+		mCode.append("};}\nprotected String getAIString() { return ");
 		mCode.append(aiJson);
 		mCode.append(";}\n");
 
