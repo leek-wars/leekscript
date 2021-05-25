@@ -7,7 +7,7 @@ import leekscript.runner.values.AbstractLeekValue;
 public class TestAI extends AI {
 
 	public TestAI() throws Exception {
-		super();
+		super(0, 11);
 	}
 
 	@Override

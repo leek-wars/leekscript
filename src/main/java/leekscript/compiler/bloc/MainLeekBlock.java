@@ -186,8 +186,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 		// Constructor
 		writer.addLine("public " + className + "() throws LeekRunException {");
-		writer.addLine("super();");
-		writer.addLine("mInstructions = " + mInstructions.size() + ";");
+		writer.addLine("super(" + mInstructions.size() + ", " + mCompiler.getCurrentAI().getVersion() + ");");
 
 		for (var clazz : mUserClasses.values()) {
 			clazz.createJava(this, writer);

@@ -32,13 +32,16 @@ public abstract class AI {
 	protected String thisObject = null;
 
 	protected int id;
+	protected int version;
 	protected AILog logs;
 	protected AI mUAI;
 	protected int mInstructions;
 	protected RandomGenerator randomGenerator;
 
+	public AI(int instructions, int version) {
+		this.mInstructions = instructions;
+		this.version = version;
 
-	public AI() {
 		mUAI = this;
 		logs = new AILog();
 		randomGenerator = LeekScript.getRandom();
