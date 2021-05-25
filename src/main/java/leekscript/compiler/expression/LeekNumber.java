@@ -1,5 +1,6 @@
 package leekscript.compiler.expression;
 
+import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
@@ -7,16 +8,21 @@ import leekscript.compiler.bloc.MainLeekBlock;
 public class LeekNumber extends AbstractExpression {
 
 	private final double mValue;
-	private final boolean floating;
+	private Type type;
 
-	public LeekNumber(double value, boolean floating) {
+	public LeekNumber(double value, Type type) {
 		mValue = value;
-		this.floating = floating;
+		this.type = type;
 	}
 
 	@Override
-	public int getType() {
+	public int getNature() {
 		return NUMBER;
+	}
+
+	@Override
+	public Type getType() {
+		return type;
 	}
 
 	@Override
@@ -32,7 +38,7 @@ public class LeekNumber extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if (floating || mValue != (int) mValue) {
+		if (type == Type.REAL) {
 			writer.addCode("new DoubleLeekValue(" + mValue + ")");
 		} else {
 			writer.addCode("LeekValueManager.getLeekIntValue(" + ((int) mValue) + ")");

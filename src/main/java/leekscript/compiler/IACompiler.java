@@ -46,6 +46,7 @@ public class IACompiler {
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
 			MainLeekBlock main = new MainLeekBlock(this, ai);
 			WordCompiler compiler = new WordCompiler(parser, main, ai, ai.getVersion());
+			main.setWordCompiler(compiler);
 			compiler.readCode();
 			compiler.analyze();
 
@@ -68,13 +69,14 @@ public class IACompiler {
 	}
 
 	public String compile(AIFile<?> ai, String javaClassName, String AIClass) throws LeekCompilerException {
-		JavaWriter writer = new JavaWriter(true);
+		JavaWriter writer = new JavaWriter(true, javaClassName);
 		try {
 			// On lance la compilation du code de l'IA
 			WordParser parser = new WordParser(ai, ai.getVersion());
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
 			MainLeekBlock main = new MainLeekBlock(this, ai);
 			WordCompiler compiler = new WordCompiler(parser, main, ai, ai.getVersion());
+			main.setWordCompiler(compiler);
 			compiler.readCode();
 			compiler.analyze();
 			// System.out.println("errors " + compiler.getErrors().size());

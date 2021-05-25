@@ -56,7 +56,7 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 
 	public void declare(WordCompiler compiler) {
 		// On ajoute la variable
-		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.GLOBAL));
+		compiler.getCurrentBlock().addVariable(new LeekVariable(compiler, token, VariableType.GLOBAL));
 	}
 
 	@Override
@@ -64,5 +64,10 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 		if (mValue != null) {
 			mValue.analyze(compiler);
 		}
+	}
+
+	@Override
+	public int getOperations() {
+		return 0;
 	}
 }

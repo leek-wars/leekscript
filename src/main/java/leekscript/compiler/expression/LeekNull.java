@@ -1,5 +1,6 @@
 package leekscript.compiler.expression;
 
+import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
@@ -7,8 +8,13 @@ import leekscript.compiler.bloc.MainLeekBlock;
 public class LeekNull extends AbstractExpression {
 
 	@Override
-	public int getType() {
+	public int getNature() {
 		return NULL;
+	}
+
+	@Override
+	public Type getType() {
+		return Type.NULL;
 	}
 
 	@Override

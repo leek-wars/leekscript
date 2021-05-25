@@ -1,5 +1,6 @@
 package leekscript.compiler.expression;
 
+import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
@@ -27,8 +28,13 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public int getType() {
+	public int getNature() {
 		return TABULAR_VALUE;
+	}
+
+	@Override
+	public Type getType() {
+		return Type.ANY;
 	}
 
 	@Override
@@ -38,13 +44,13 @@ public class LeekTabularValue extends AbstractExpression {
 
 	@Override
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
-		//On doit vérifier qu'on a affaire : soit à une expression tabulaire, soit à une variable, soit à une globale
-		//throw new LeekExpressionException(this, "Ce n'est pas un tableau valide");
+		// On doit vérifier qu'on a affaire : soit à une expression tabulaire, soit à une variable, soit à une globale
+		// throw new LeekExpressionException(this, "Ce n'est pas un tableau valide");
 		if (!mTabular.isLeftValue()) {
 			mLeftValue = false;
 		}
 
-		//Sinon on valide simplement les deux expressions
+		// Sinon on valide simplement les deux expressions
 		mTabular.validExpression(compiler, mainblock);
 		mCase.validExpression(compiler, mainblock);
 		return true;
@@ -75,8 +81,14 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
+	public boolean nullable() {
+		return true;
+	}
+
+	@Override
 	public void analyze(WordCompiler compiler) {
 		mTabular.analyze(compiler);
 		mCase.analyze(compiler);
+		operations = mTabular.getOperations() + mCase.getOperations();
 	}
 }

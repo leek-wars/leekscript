@@ -1,6 +1,7 @@
 package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.IAWord;
@@ -112,5 +113,9 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 
 	public ClassDeclarationInstruction getClassDeclaration() {
 		return this.clazz;
+	}
+
+	public List<IAWord> getParameters() {
+		return mParameters;
 	}
 }

@@ -8,12 +8,14 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 
 public class FunctionBlock extends AbstractLeekBlock {
 
 	private IAWord token;
 	private int mId;
 	private final ArrayList<String> mParameters = new ArrayList<String>();
+	private final ArrayList<LeekVariableDeclarationInstruction> mParameterDeclarations = new ArrayList<>();
 	private final ArrayList<Boolean> mReferences = new ArrayList<Boolean>();
 
 	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai, IAWord token) {
@@ -47,10 +49,12 @@ public class FunctionBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void addParameter(IAWord parameter, boolean is_reference) {
+	public void addParameter(WordCompiler compiler, IAWord parameter, boolean is_reference) {
 		mParameters.add(parameter.getWord());
 		mReferences.add(is_reference);
-		addVariable(new LeekVariable(parameter, VariableType.ARGUMENT));
+		var declaration = new LeekVariableDeclarationInstruction(compiler, parameter, parameter.getLine(), parameter.getAI(), this);
+		mParameterDeclarations.add(declaration);
+		addVariable(new LeekVariable(parameter, VariableType.ARGUMENT, declaration));
 	}
 
 	@Override
@@ -66,7 +70,15 @@ public class FunctionBlock extends AbstractLeekBlock {
 				str += ", ";
 			str += mParameters.get(i);
 		}
-		return str + "){\n" + super.getCode() + "}\n";
+		return str + ") {\n" + super.getCode() + "}\n";
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		var initialFunction = compiler.getCurrentFunction();
+		compiler.setCurrentFunction(this);
+		super.analyze(compiler);
+		compiler.setCurrentFunction(initialFunction);
 	}
 
 	@Override

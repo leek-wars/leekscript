@@ -10,13 +10,15 @@ import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
+import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 
 public class ForeachBlock extends AbstractLeekBlock {
 
 	private IAWord mIterator;
 	private AbstractExpression mArray;
-	private boolean mIsDeclaration = false;
+	private final boolean mIsDeclaration;
 	private boolean mReference = false;
+	private LeekVariableDeclarationInstruction declaration;
 
 	public ForeachBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isDeclaration, int line, AIFile<?> ai, boolean reference) {
 		super(parent, main, line, ai);
@@ -24,9 +26,11 @@ public class ForeachBlock extends AbstractLeekBlock {
 		mReference = reference;
 	}
 
-	public void setIterator(IAWord iterator, boolean declaration) {
-		// if (declaration) addVariable(new LeekVariable(iterator, VariableType.LOCAL));
+	public void setIterator(WordCompiler compiler, IAWord iterator) {
 		mIterator = iterator;
+		if (mIsDeclaration) {
+			declaration = new LeekVariableDeclarationInstruction(compiler, iterator, iterator.getLine(), iterator.getAI(), compiler.getCurrentFunction());
+		}
 	}
 
 	public void setArray(AbstractExpression exp) {

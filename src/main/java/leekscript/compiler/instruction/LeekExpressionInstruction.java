@@ -59,4 +59,9 @@ public class LeekExpressionInstruction implements LeekInstruction {
 	public void analyze(WordCompiler compiler) {
 		mExpression.analyze(compiler);
 	}
+
+	@Override
+	public int getOperations() {
+		return 0;
+	}
 }

@@ -5,12 +5,14 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.common.Error;
+import leekscript.common.Type;
 
 public class LeekTernaire extends LeekExpression {
 
 	private AbstractExpression mCondition;
 
 	private int mOperator = 0;
+	private Type type = Type.ANY;
 
 	public LeekTernaire() {
 		mCondition = null;
@@ -21,19 +23,19 @@ public class LeekTernaire extends LeekExpression {
 	@Override
 	public boolean needOperator() {
 		if(mCondition != null && mOperator == 0){
-			if(mCondition.getType() == EXPRESSION){
+			if(mCondition.getNature() == EXPRESSION){
 				return ((LeekExpression) mCondition).needOperator();
 			}
 			return true;
 		}
 		if(mExpression1 != null && mOperator == 1){
-			if(mExpression1.getType() == EXPRESSION){
+			if(mExpression1.getNature() == EXPRESSION){
 				return ((LeekExpression) mExpression1).needOperator();
 			}
 			return true;
 		}
 		if(mExpression2 != null && mOperator == 2){
-			if(mExpression2.getType() == EXPRESSION){
+			if(mExpression2.getNature() == EXPRESSION){
 				return ((LeekExpression) mExpression2).needOperator();
 			}
 			return true;
@@ -47,8 +49,12 @@ public class LeekTernaire extends LeekExpression {
 	}
 
 	@Override
-	public int getType() {
+	public int getNature() {
 		return EXPRESSION;
+	}
+
+	public Type getType() {
+		return type;
 	}
 
 	@Override
@@ -89,7 +95,7 @@ public class LeekTernaire extends LeekExpression {
 	@Override
 	public void addExpression(AbstractExpression expression) {
 		if(mCondition == null) mCondition = expression;
-		else if(mCondition.getType() == EXPRESSION && !((LeekExpression) mCondition).complete()){
+		else if(mCondition.getNature() == EXPRESSION && !((LeekExpression) mCondition).complete()){
 			((LeekExpression) mCondition).addExpression(expression);
 		}
 		else if(mOperator == 1){
@@ -107,7 +113,7 @@ public class LeekTernaire extends LeekExpression {
 	public void addUnarySuffix(int suffix, IAWord token) {
 		//On doit ajouter ce suffix au dernier élément ajouté
 		if(mCondition != null && mExpression1 == null && mExpression2 == null){
-			if(mCondition.getType() == EXPRESSION) ((LeekExpression) mCondition).addUnarySuffix(suffix, token);
+			if(mCondition.getNature() == EXPRESSION) ((LeekExpression) mCondition).addUnarySuffix(suffix, token);
 			else{
 				//On doit ajouter à l'élément mExpression1
 				LeekExpression exp = new LeekExpression();
@@ -119,7 +125,7 @@ public class LeekTernaire extends LeekExpression {
 			}
 		}
 		else if(mExpression1 != null && mExpression2 == null){
-			if(mExpression1.getType() == EXPRESSION) ((LeekExpression) mExpression1).addUnarySuffix(suffix, token);
+			if(mExpression1.getNature() == EXPRESSION) ((LeekExpression) mExpression1).addUnarySuffix(suffix, token);
 			else{
 				//On doit ajouter à l'élément mExpression1
 				LeekExpression exp = new LeekExpression();
@@ -131,7 +137,7 @@ public class LeekTernaire extends LeekExpression {
 			}
 		}
 		else if(mExpression2 != null){
-			if(mExpression2.getType() == EXPRESSION) ((LeekExpression) mExpression2).addUnarySuffix(suffix, token);
+			if(mExpression2.getNature() == EXPRESSION) ((LeekExpression) mExpression2).addUnarySuffix(suffix, token);
 			else{
 				//On doit ajouter à l'élément mExpression2
 				LeekExpression exp = new LeekExpression();
@@ -155,7 +161,7 @@ public class LeekTernaire extends LeekExpression {
 	public boolean complete() {
 		if(!super.complete()) return false;
 		if(mCondition == null) return false;
-		if(mCondition.getType() == EXPRESSION && !((LeekExpression) mCondition).complete()) return false;
+		if(mCondition.getNature() == EXPRESSION && !((LeekExpression) mCondition).complete()) return false;
 		return true;
 	}
 
@@ -165,13 +171,13 @@ public class LeekTernaire extends LeekExpression {
 		if(mOperator == 0 && operator == Operators.TERNAIRE){
 			mOperator = 1;
 		}
-		else if(mExpression1.getType() == EXPRESSION && !((LeekExpression) mExpression1).complete()) ((LeekExpression) mExpression1).addOperator(operator, token);
+		else if(mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete()) ((LeekExpression) mExpression1).addOperator(operator, token);
 		else if(mOperator == 1 && operator == Operators.DOUBLE_POINT){
 			mOperator = 2;
 		}
 		else{
 			if(mOperator == 0){
-				if(mCondition.getType() == EXPRESSION) ((LeekExpression) mCondition).addOperator(operator, token);
+				if(mCondition.getNature() == EXPRESSION) ((LeekExpression) mCondition).addOperator(operator, token);
 				else{
 					LeekExpression new_e = new LeekExpression();
 					new_e.setParent(this);
@@ -181,7 +187,7 @@ public class LeekTernaire extends LeekExpression {
 				}
 			}
 			else if(mOperator == 1){
-				if(mExpression1.getType() == EXPRESSION) ((LeekExpression) mExpression1).addOperator(operator, token);
+				if(mExpression1.getNature() == EXPRESSION) ((LeekExpression) mExpression1).addOperator(operator, token);
 				else{
 					if(operator == Operators.TERNAIRE){
 						LeekTernaire new_e = new LeekTernaire();
@@ -200,7 +206,7 @@ public class LeekTernaire extends LeekExpression {
 				}
 			}
 			else{
-				if(mExpression2.getType() == EXPRESSION) ((LeekExpression) mExpression2).addOperator(operator, token);
+				if(mExpression2.getNature() == EXPRESSION) ((LeekExpression) mExpression2).addOperator(operator, token);
 				else{
 					if(operator == Operators.TERNAIRE){
 						LeekTernaire new_e = new LeekTernaire();
@@ -223,8 +229,15 @@ public class LeekTernaire extends LeekExpression {
 
 	@Override
 	public void analyze(WordCompiler compiler) {
-		if (mCondition != null) mCondition.analyze(compiler);
+		if (mCondition != null) {
+			mCondition.analyze(compiler);
+			operations = mCondition.getOperations();
+		}
 		if (mExpression1 != null) mExpression1.analyze(compiler);
 		if (mExpression2 != null) mExpression2.analyze(compiler);
+
+		if (mExpression1 != null && mExpression2 != null && mExpression1.getType() == mExpression2.getType()) {
+			type = mExpression1.getType();
+		}
 	}
 }

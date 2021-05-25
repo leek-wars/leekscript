@@ -8,6 +8,7 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
+import leekscript.common.Type;
 
 public class LeekObjectAccess extends AbstractExpression {
 
@@ -20,8 +21,13 @@ public class LeekObjectAccess extends AbstractExpression {
 	}
 
 	@Override
-	public int getType() {
+	public int getNature() {
 		return OBJECT_ACCESS;
+	}
+
+	@Override
+	public Type getType() {
+		return Type.ANY;
 	}
 
 	@Override
@@ -50,9 +56,16 @@ public class LeekObjectAccess extends AbstractExpression {
 	}
 
 	@Override
+	public boolean nullable() {
+		return object.nullable();
+	}
+
+	@Override
 	public void analyze(WordCompiler compiler) {
 		// System.out.println("oa " + getString());
 		object.analyze(compiler);
+		operations = 1 + object.operations;
+
 		if (object instanceof LeekVariable) {
 			var v = (LeekVariable) object;
 			if (v.getName().equals("this")) {

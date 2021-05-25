@@ -15,4 +15,6 @@ public interface LeekInstruction {
 	public boolean putCounterBefore();
 
 	public void analyze(WordCompiler compiler);
+
+	public int getOperations();
 }

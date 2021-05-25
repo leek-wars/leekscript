@@ -86,7 +86,7 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 		return mDeclaringVariable;
 	}
 
-	public boolean isDeclaringBariableUsed() {
+	public boolean isDeclaringVariableUsed() {
 		return mDeclaringVariableUsed;
 	}
 
@@ -155,6 +155,11 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 		for (LeekInstruction instruction : mInstructions) {
 			instruction.writeJavaCode(mainblock, writer);
 		}
+	}
+
+	@Override
+	public int getOperations() {
+		return 0;
 	}
 
 	public int countInstructions() {

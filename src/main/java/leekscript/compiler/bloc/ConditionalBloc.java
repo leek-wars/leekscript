@@ -61,10 +61,10 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	}
 
 	public int getConditionEndBlock() {
-		if(mEndInstruction == 0) return 0;
-		if(mParentCondition != null){
+		if (mEndInstruction == 0) return 0;
+		if (mParentCondition != null) {
 			int parent = mParentCondition.getConditionEndBlock();
-			if(parent == 0) return 0;
+			if (parent == 0) return 0;
 			return parent | mEndInstruction;
 		}
 		return mEndInstruction;
@@ -72,9 +72,9 @@ public class ConditionalBloc extends AbstractLeekBlock {
 
 	@Override
 	public int getEndBlock() {
-		if(mCondition == null){
+		if (mCondition == null) {
 			int r = getConditionEndBlock();
-			if(r != 0) setPutCounterBefore(true);
+			if (r != 0) setPutCounterBefore(true);
 			return r;
 		}
 		return 0;
@@ -86,7 +86,7 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	}
 
 	private void setPutCounterBefore(boolean value) {
-		if(mParentCondition != null) mParentCondition.setPutCounterBefore(value);
+		if (mParentCondition != null) mParentCondition.setPutCounterBefore(value);
 		else mPutCounterBefore = value;
 	}
 

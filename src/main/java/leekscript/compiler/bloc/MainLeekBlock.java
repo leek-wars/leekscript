@@ -38,6 +38,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private int mCountInstruction = 0;
 	private final IACompiler mCompiler;
 	private String mAIName;
+	private String className;
+	private WordCompiler wordCompiler;
 
 	@Override
 	public int getCount() {
@@ -175,6 +177,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public void writeJavaCode(JavaWriter writer, String className, String AIClass) {
+		this.className = className;
+
 		writer.addLine("import leekscript.runner.*;");
 		writer.addLine("import leekscript.runner.values.*;");
 		writer.addLine();
@@ -360,5 +364,17 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			function.analyze(compiler);
 		}
 		super.analyze(compiler);
+	}
+
+	public String getClassName() {
+		return className;
+	}
+
+	public void setWordCompiler(WordCompiler compiler) {
+		this.wordCompiler = compiler;
+	}
+
+	public WordCompiler getWordCompiler() {
+		return this.wordCompiler;
 	}
 }

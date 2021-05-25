@@ -33,13 +33,13 @@ public class Operators {
 	public final static int EQUALS_EQUALS = 30;
 	public final static int NOT_EQUALS_EQUALS = 31;
 	public final static int SHIFT_LEFT = 32;
-	public final static int ROTATE_RIGHT = 33;
+	public final static int SHIFT_UNSIGNED_RIGHT = 33;
 	public final static int SHIFT_RIGHT = 34;
 	public final static int BITXOR = 35;
 	public final static int BITAND = 36;
 	public final static int BITOR = 37;
 	public final static int SHIFT_LEFT_ASSIGN = 38;
-	public final static int ROTATE_RIGHT_ASSIGN = 39;
+	public final static int SHIFT_UNSIGNED_RIGHT_ASSIGN = 39;
 	public final static int SHIFT_RIGHT_ASSIGN = 40;
 	public final static int BITXOR_ASSIGN = 41;
 	public final static int BITAND_ASSIGN = 42;
@@ -97,12 +97,12 @@ public class Operators {
 		if(operator.equals("~")) return BITNOT;
 		if(operator.equals("<<")) return SHIFT_LEFT;
 		if(operator.equals(">>")) return SHIFT_RIGHT;
-		if(operator.equals(">>>")) return ROTATE_RIGHT;
+		if(operator.equals(">>>")) return SHIFT_UNSIGNED_RIGHT;
 		if(operator.equals("&=")) return BITAND_ASSIGN;
 		if(operator.equals("|=")) return BITOR_ASSIGN;
 		if(operator.equals("<<=")) return SHIFT_LEFT_ASSIGN;
 		if(operator.equals(">>=")) return SHIFT_RIGHT_ASSIGN;
-		if(operator.equals(">>>=")) return ROTATE_RIGHT_ASSIGN;
+		if(operator.equals(">>>=")) return SHIFT_UNSIGNED_RIGHT_ASSIGN;
 		if(operator.equals("@")) return REFERENCE;
 		if(operator.equals("new")) return NEW;
 		if(operator.equals(".")) return DOT;
@@ -138,7 +138,7 @@ public class Operators {
 			return 10;
 		case SHIFT_LEFT:
 		case SHIFT_RIGHT:
-		case ROTATE_RIGHT:
+		case SHIFT_UNSIGNED_RIGHT:
 			return 9;
 		case LESS:
 		case LESSEQUALS:
@@ -173,7 +173,7 @@ public class Operators {
 		case POWERASSIGN:
 		case SHIFT_LEFT_ASSIGN:
 		case SHIFT_RIGHT_ASSIGN:
-		case ROTATE_RIGHT_ASSIGN:
+		case SHIFT_UNSIGNED_RIGHT_ASSIGN:
 		case BITAND_ASSIGN:
 		case BITOR_ASSIGN:
 		case BITXOR_ASSIGN:

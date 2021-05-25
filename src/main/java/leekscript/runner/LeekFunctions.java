@@ -14,6 +14,7 @@ import leekscript.runner.values.IntLeekValue;
 import leekscript.runner.values.NullLeekValue;
 import leekscript.runner.values.StringLeekValue;
 import leekscript.common.Error;
+import leekscript.common.Type;
 
 public enum LeekFunctions implements ILeekFunction {
 	// Fonctions mathématiques
@@ -1319,6 +1320,7 @@ public enum LeekFunctions implements ILeekFunction {
 	private int mArgumentsMin;
 	private int mOperations = 1;
 	protected VariableOperations mVariableOperations = null;
+	private int[] parameters;
 
 	public static final int DOUBLE = 1;
 	public static final int INT = 2;
@@ -1328,15 +1330,28 @@ public enum LeekFunctions implements ILeekFunction {
 	public static final int ARRAY = 6;
 	public static final int NUMBER = 7;
 	public static final int FUNCTION = 8;
+	private Type return_type;
+	private CallableVersion[] versions;
+	private boolean direct = false;
 
 	LeekFunctions(int arguments) {
 		mArgumentsMin = arguments;
 		mArguments = arguments;
+		this.parameters = new int[0];
 	}
 
 	LeekFunctions(int arguments, int arguments_max) {
 		mArgumentsMin = arguments;
 		mArguments = arguments_max;
+		this.parameters = new int[0];
+	}
+
+	public Type getReturnType() {
+		return return_type;
+	}
+
+	public CallableVersion[] getVersions() {
+		return versions;
 	}
 
 	public static void setExtraFunctions(String extraFunctions) {

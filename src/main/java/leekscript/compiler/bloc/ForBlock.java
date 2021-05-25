@@ -6,7 +6,6 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekExpression;
-import leekscript.compiler.expression.LeekGlobal;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -24,14 +23,14 @@ public class ForBlock extends AbstractLeekBlock {
 		super(parent, main, line, ai);
 	}
 
-	public void setInitialisation(IAWord token, AbstractExpression value, boolean isDeclaration, boolean isGlobal) {
+	public void setInitialisation(WordCompiler compiler, IAWord token, AbstractExpression value, boolean isDeclaration, boolean isGlobal) {
 		if (isDeclaration) {
-			LeekVariableDeclarationInstruction init = new LeekVariableDeclarationInstruction(token, mLine, mAI);
+			LeekVariableDeclarationInstruction init = new LeekVariableDeclarationInstruction(compiler, token, mLine, mAI, compiler.getCurrentFunction());
 			init.setValue(value);
 			mInitialisation = init;
 		} else {
 			LeekExpression exp = new LeekExpression();
-			exp.addExpression(isGlobal ? new LeekGlobal(token) : new LeekVariable(token, VariableType.LOCAL));
+			exp.addExpression(isGlobal ? new LeekVariable(token, VariableType.GLOBAL) : new LeekVariable(token, VariableType.LOCAL));
 			exp.addOperator(Operators.ASSIGN, token);
 			exp.addExpression(value);
 			mInitialisation = new LeekExpressionInstruction(exp, mLine, mAI);

@@ -50,4 +50,9 @@ public class LeekReturnInstruction implements LeekInstruction {
 			mExpression.analyze(compiler);
 		}
 	}
+
+	@Override
+	public int getOperations() {
+		return 0;
+	}
 }
