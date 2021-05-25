@@ -1,13 +1,24 @@
 package leekscript.compiler;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
-import leekscript.LSException;
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
+
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.resolver.FileSystemContext;
 import leekscript.compiler.resolver.FileSystemResolver;
@@ -15,7 +26,6 @@ import leekscript.compiler.resolver.Resolver;
 import leekscript.compiler.resolver.ResolverContext;
 import leekscript.runner.AI;
 import leekscript.runner.values.AbstractLeekValue;
-import leekscript.runner.values.ArrayLeekValue;
 
 public class LeekScript {
 
@@ -24,6 +34,25 @@ public class LeekScript {
 
 	private static Resolver<FileSystemContext> defaultResolver = new FileSystemResolver();
 	private static Resolver<?> customResolver = null;
+	private static String classpath;
+	private static List<String> arguments = new ArrayList<>();
+	private static JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+	private static SimpleFileManager fileManager = new SimpleFileManager(compiler.getStandardFileManager(null, null, null));
+	private static URLClassLoader urlLoader;
+	private static HashMap<String, Class<?>> aiCache = new HashMap<>();
+	static {
+		try {
+			classpath = LeekScript.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+			arguments.addAll(Arrays.asList("-classpath", classpath, "-nowarn"));
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
+		try {
+			urlLoader = new URLClassLoader(new URL[] { new File("ai").toURI().toURL() }, new ClassLoader() {});
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+	}
 
 	private static RandomGenerator defaultRandomGenerator = new RandomGenerator() {
 		private Random random = new Random();
@@ -46,9 +75,9 @@ public class LeekScript {
 		}
 	};
 
-	public static AI compileFile(String filepath, String AIClass, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
+	public static AI compileFile(String filepath, String AIClass, boolean useClassCache) throws LeekScriptException, LeekCompilerException, IOException {
 		AIFile<?> ai = getResolver().resolve(filepath, null);
-		return compile(ai, AIClass, nocache);
+		return compile(ai, AIClass, useClassCache);
 	}
 
 	public static AI compileFile(String filepath, String AIClass, int version) throws LeekScriptException, LeekCompilerException, IOException {
@@ -57,49 +86,24 @@ public class LeekScript {
 		return compile(ai, AIClass, true);
 	}
 
-	public static AI compileFileContext(String filepath, String AIClass, ResolverContext context, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
+	public static AI compileFileContext(String filepath, String AIClass, ResolverContext context, boolean useClassCache) throws LeekScriptException, LeekCompilerException, IOException {
 		AIFile<?> ai = getResolver().resolve(filepath, context);
-		return compile(ai, AIClass, nocache);
+		return compile(ai, AIClass, useClassCache);
 	}
 
 	public static AI compileSnippet(String snippet, String AIClass)	throws LeekScriptException, LeekCompilerException, IOException {
-		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet " + id++ + ">", snippet, System.currentTimeMillis(), 11, null);
-		return compile(ai, AIClass, false);
+		return compileSnippet(snippet, AIClass, 11);
 	}
 
 	public static AI compileSnippet(String snippet, String AIClass, int version) throws LeekScriptException, LeekCompilerException, IOException {
-		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet " + id++ + ">", snippet, System.currentTimeMillis(), version, null);
+		long ai_id = id++;
+		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet " + ai_id + ">", snippet, System.currentTimeMillis(), version, null, (int) ai_id);
 		return compile(ai, AIClass, false);
 	}
 
-	public static boolean testScript(String leek, String script, AbstractLeekValue s, String AIClass, boolean nocache) throws Exception {
-		AI ai = LeekScript.compileSnippet(script, AIClass);
-		AbstractLeekValue v = ai.runIA();
-		if (v.equals(ai, s))
-			return true;
-		ArrayLeekValue tab1 = v.getArray();
-		ArrayLeekValue tab2 = s.getArray();
-		if (tab1 != null && tab2 != null && tab1.size() == tab2.size()) {
-			int i = 0;
-			for (i = 0; i < tab1.size(); i++) {
-				if (!tab1.get(ai, i).equals(ai, tab2.get(ai, i))) {
-					throw new LSException(i, tab1.get(ai, i), tab2.get(ai, i));
-				}
-			}
-		} else
-			System.out.println(v.getString(ai) + " -- " + s.getString(ai));
-		return false;
-	}
 
 	public static AbstractLeekValue runScript(String script, boolean nocache) throws Exception {
 		return LeekScript.compileSnippet(script, "AI").runIA();
-	}
-
-	public static boolean testScript(String script, AbstractLeekValue s) throws Exception {
-		AI ai = LeekScript.compileSnippet(script, "AI");
-		AbstractLeekValue v = ai.runIA();
-		System.out.println(v.getString(ai));
-		return v.equals(ai, s);
 	}
 
 	public static String runFile(String filename) throws Exception {
@@ -125,45 +129,98 @@ public class LeekScript {
 		return defaultRandomGenerator;
 	}
 
-	public static AI compile(AIFile<?> file, String AIClass, boolean nocache) throws LeekScriptException, LeekCompilerException, IOException {
+	public static AI compile(AIFile<?> file, String AIClass, boolean useClassCache) throws LeekScriptException, LeekCompilerException, IOException {
 
 		new File(IA_PATH).mkdir();
 		String javaClassName = "AI_" + file.getId();
-		String error = "";
+		String fileName = javaClassName + ".java";
 		File compiled = new File(IA_PATH + javaClassName + ".class");
 		File java = new File(IA_PATH + javaClassName + ".java");
 
-		if (!compiled.exists() || compiled.length() == 0 || compiled.lastModified() < file.getTimestamp() || nocache) {
-
-			// On commence par la conversion LS->Java
-			String compiledJava = new IACompiler().compile(file, javaClassName, AIClass);
-
-			if (compiledJava.isEmpty()) { // Rien ne compile, pas normal
-				throw new LeekScriptException(LeekScriptException.CANT_COMPILE, "No java generated!");
-			}
-			// Si on a maintenant du code java
-			FileOutputStream output = new FileOutputStream(java);
-			output.write(compiledJava.getBytes(StandardCharsets.UTF_8));
-			output.close();
-
-			// On va compiler le java maintenant
-			JavaCompiler compiler = new JavaCompiler(java);
-			int status = JavaCompiler.INIT;
-
+		// Utilisation du cache de class
+		if (useClassCache && compiled.exists() && compiled.length() != 0 && compiled.lastModified() > file.getTimestamp()) {
 			try {
-				compiler.compile();
-				status = JavaCompiler.getStatus();
+				var clazz = aiCache.get(javaClassName);
+				if (clazz == null) {
+					clazz = urlLoader.loadClass(javaClassName);
+					aiCache.put(javaClassName, clazz);
+				}
+				var ai = (AI) clazz.getDeclaredConstructor().newInstance();
+				ai.setId(file.getId());
+				return ai;
 			} catch (Exception e) {
-				error = e.getMessage();
-				status = JavaCompiler.ERROR;
-			}
-			if (status == JavaCompiler.ERROR) {
-				throwException(error);
+				e.printStackTrace();
 			}
 		}
-		AI ai = IALoader.loadAI(IA_PATH, javaClassName);
-		ai.setId(file.getId());
-		return ai;
+
+		// On commence par la conversion LS->Java
+		long t = System.nanoTime();
+		String compiledJava = new IACompiler().compile(file, javaClassName, AIClass);
+		long analyze_time = System.nanoTime() - t;
+
+		if (compiledJava.isEmpty()) { // Rien ne compile, pas normal
+			throw new LeekScriptException(LeekScriptException.CANT_COMPILE, "No java generated!");
+		}
+
+		// System.out.println(compiledJava);
+
+		// Sauvegarde du code java
+		FileOutputStream javaOutput = new FileOutputStream(java);
+		javaOutput.write(compiledJava.getBytes(StandardCharsets.UTF_8));
+		javaOutput.close();
+
+		try {
+
+			t = System.nanoTime();
+			fileManager.clear();
+			var output = new StringWriter();
+			var compilationUnits = Collections.singletonList(new SimpleSourceFile(fileName, compiledJava));
+			var task = compiler.getTask(output, fileManager, null, arguments, null, compilationUnits);
+
+			boolean result = task.call();
+			long compile_time = System.nanoTime() - t;
+
+			if (!result) { // Java compilation failed
+				throw new LeekScriptException(LeekScriptException.CANT_COMPILE, output.toString());
+			}
+
+			t = System.nanoTime();
+			ClassLoader classLoader = new ClassLoader() {
+				@Override
+				protected Class<?> findClass(String name) throws ClassNotFoundException {
+					var bytes = fileManager.get(name).getCompiledBinaries();
+					return defineClass(name, bytes, 0, bytes.length);
+				}
+			};
+
+			// Load inner classes before
+			for (var compiledClass : fileManager.getCompiled().values()) {
+
+				if (useClassCache) { // Save bytecode
+					var classFile = new FileOutputStream(IA_PATH + compiledClass.getName() + ".class");
+					classFile.write(compiledClass.getCompiledBinaries());
+					classFile.close();
+				}
+
+				if (compiledClass.getName().equals(javaClassName)) continue;
+				classLoader.loadClass(compiledClass.getName());
+			}
+
+			// Load the main class
+			var clazz = classLoader.loadClass(javaClassName);
+			var ai = (AI) clazz.getDeclaredConstructor().newInstance();
+			long load_time = System.nanoTime() - t;
+
+			ai.setId(file.getId());
+
+			if (useClassCache) {
+				aiCache.put(javaClassName, clazz);
+			}
+			return ai;
+
+		} catch (Exception e) {
+			throw new LeekScriptException(LeekScriptException.CANT_COMPILE, e.getMessage());
+		}
 	}
 
 	public static void throwException(String error) throws LeekScriptException {
