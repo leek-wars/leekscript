@@ -25,7 +25,6 @@ import leekscript.compiler.resolver.FileSystemResolver;
 import leekscript.compiler.resolver.Resolver;
 import leekscript.compiler.resolver.ResolverContext;
 import leekscript.runner.AI;
-import leekscript.runner.values.AbstractLeekValue;
 
 public class LeekScript {
 
@@ -101,14 +100,13 @@ public class LeekScript {
 		return compile(ai, AIClass, false);
 	}
 
-
-	public static AbstractLeekValue runScript(String script, boolean nocache) throws Exception {
+	public static Object runScript(String script, boolean nocache) throws Exception {
 		return LeekScript.compileSnippet(script, "AI").runIA();
 	}
 
 	public static String runFile(String filename) throws Exception {
 		AI ai = LeekScript.compileFile(filename, "AI", true);
-		AbstractLeekValue v = ai.runIA();
+		var v = ai.runIA();
 		System.out.println(v.getString(ai));
 		return v.getString(ai);
 	}

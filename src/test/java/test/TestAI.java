@@ -16,7 +16,7 @@ public class TestAI extends AI {
 	}
 
 	@Override
-	protected String getAItring() {
+	protected String getAIString() {
 		return null;
 	}
 
