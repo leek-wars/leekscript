@@ -6,11 +6,14 @@ import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.LeekAnonymousFunction;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
+import leekscript.common.Type;
 
 public class LeekVariableDeclarationInstruction implements LeekInstruction {
 
@@ -18,16 +21,16 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 	private final int mLine;
 	private final AIFile<?> mAI;
 	private AbstractExpression mValue = null;
-	private boolean mMustSepare = false;
+	private boolean captured = false;
+	private AbstractLeekBlock function;
+	private boolean box = false;
 
-	public LeekVariableDeclarationInstruction(IAWord token, int line, AIFile<?> ai) {
+	public LeekVariableDeclarationInstruction(WordCompiler compiler, IAWord token, int line, AIFile<?> ai, AbstractLeekBlock function) {
 		this.token = token;
 		mLine = line;
 		mAI = ai;
-	}
-
-	public void mustSepare() {
-		mMustSepare = true;
+		this.function = function;
+		this.box = compiler.getVersion() <= 10;
 	}
 
 	public void setValue(AbstractExpression value) {
@@ -42,15 +45,23 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 		return this.token;
 	}
 
+	public boolean isBox() {
+		return this.box || this.captured;
+	}
+
+	public boolean isWrapper() {
+		return this.captured;
+	}
+
 	@Override
 	public String getCode() {
-		if(mValue == null) return "var " + token.getWord();
+		if (mValue == null) return "var " + token.getWord();
 		return "var " + token.getWord() + " = " + mValue.getString();
 	}
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if (!mMustSepare) {
+		if (!captured || !(mValue instanceof LeekAnonymousFunction)) {
 			writer.addCode("final VariableLeekValue user_" + token.getWord() + " = new VariableLeekValue(mUAI, ");
 			if (mValue != null) mValue.writeJavaCode(mainblock, writer);
 			else writer.addCode("LeekValueManager.NULL");
@@ -68,6 +79,14 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 		return 0;
 	}
 
+	public AbstractLeekBlock getFunction() {
+		return this.function;
+	}
+
+	public boolean isCaptured() {
+		return captured;
+	}
+
 	@Override
 	public boolean putCounterBefore() {
 		return false;
@@ -75,9 +94,17 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 
 	@Override
 	public void analyze(WordCompiler compiler) {
-		if (mValue != null) {
+		function = compiler.getCurrentFunction();
+		if (mValue != null && mValue.getType() == Type.FUNCTION) {
+			registerVariable(compiler);
 			mValue.analyze(compiler);
+		} else {
+			if (mValue != null) mValue.analyze(compiler);
+			registerVariable(compiler);
 		}
+	}
+
+	private void registerVariable(WordCompiler compiler) {
 		// Variables interdites
 		if (compiler.getVersion() >= 11 && token.getWord().equals("this")) {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.THIS_NOT_ALLOWED_HERE));
@@ -87,8 +114,21 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 			} else {
 				// On ajoute la variable
-				compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.LOCAL));
+				compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.LOCAL, this));
 			}
 		}
+	}
+
+	public void setCaptured() {
+		this.captured = true;
+	}
+
+	public void setFunction(AbstractLeekBlock function) {
+		this.function = function;
+	}
+
+	@Override
+	public int getOperations() {
+		return 0;
 	}
 }

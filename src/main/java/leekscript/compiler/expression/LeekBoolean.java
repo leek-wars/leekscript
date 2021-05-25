@@ -1,5 +1,6 @@
 package leekscript.compiler.expression;
 
+import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
@@ -13,8 +14,13 @@ public class LeekBoolean extends AbstractExpression {
 	}
 
 	@Override
-	public int getType() {
+	public int getNature() {
 		return BOOLEAN;
+	}
+
+	@Override
+	public Type getType() {
+		return Type.BOOL;
 	}
 
 	@Override

@@ -10,15 +10,18 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.runner.CallableVersion;
 import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekFunctions;
 import leekscript.common.Error;
+import leekscript.common.Type;
 
 public class LeekExpressionFunction extends AbstractExpression {
 
 	private IAWord openParenthesis = null;
 	private final ArrayList<AbstractExpression> mParameters = new ArrayList<AbstractExpression>();
 	private AbstractExpression mExpression = null;
+	private Type type = Type.ANY;
 
 	public LeekExpressionFunction(IAWord openParenthesis) {
 		this.openParenthesis = openParenthesis;
@@ -33,8 +36,13 @@ public class LeekExpressionFunction extends AbstractExpression {
 	}
 
 	@Override
-	public int getType() {
+	public int getNature() {
 		return FUNCTION;
+	}
+
+	@Override
+	public Type getType() {
+		return type;
 	}
 
 	@Override
@@ -139,9 +147,12 @@ public class LeekExpressionFunction extends AbstractExpression {
 
 	@Override
 	public void analyze(WordCompiler compiler) {
+		operations = 1;
 		mExpression.analyze(compiler);
+		operations += mExpression.getOperations();
 		for (AbstractExpression parameter : mParameters) {
 			parameter.analyze(compiler);
+			operations += parameter.getOperations();
 		}
 
 		if (mExpression instanceof LeekVariable) {
@@ -155,8 +166,18 @@ public class LeekExpressionFunction extends AbstractExpression {
 					}
 				} else {
 					var f = LeekFunctions.getValue(v.getName());
-					if (mParameters.size() > nb_params || mParameters.size() < f.getArgumentsMin())
+					if (mParameters.size() > nb_params || mParameters.size() < f.getArgumentsMin()) {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
+					}
+					var version = checkArgumentsStatically(f);
+					if (version != null) {
+						type = version.return_type;
+					}
+				}
+			} else if (v.getVariableType() == VariableType.SYSTEM_FUNCTION) {
+				var system_function = LeekFunctions.getValue(v.getName());
+				if (system_function.getReturnType() != null) {
+					type = system_function.getReturnType();
 				}
 			} else if (v.getVariableType() == VariableType.CLASS) {
 
@@ -178,5 +199,34 @@ public class LeekExpressionFunction extends AbstractExpression {
 				}
 			}
 		}
+	}
+
+	CallableVersion checkArgumentsStatically(ILeekFunction function) {
+		var versions = function.getVersions();
+		if (versions == null) return null;
+
+		for (var version : versions) {
+			if (checkArgumentsStatically(version)) {
+				return version;
+			}
+		}
+		return null;
+	}
+
+	private boolean checkArgumentsStatically(CallableVersion version) {
+		for (int i = 0; i < version.arguments.length; ++i) {
+			if (!version.arguments[i].accepts(mParameters.get(i).getType())) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private String buildTypesSignature(Type[] types) {
+		var s = new StringBuilder();
+		for (var type : types) {
+			s.append(type.getSignature());
+		}
+		return s.toString();
 	}
 }

@@ -37,6 +37,10 @@ public class TestFunction extends TestCommon {
 		code_v10("var f = function(@a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("12");
 		code_v11("var f = function(a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("10");
 
+		section("Capture loop variable");
+		code("var sum = 0 for (var i = 0; i < 10; ++i) { sum += (function() { return i })() } return sum").equals("45");
+
+		section("Misc");
 		code("function f(x) { var s = 0 s |= 12 return s } f(12);").equals("null");
 		code("function te(a){ return function(){ return a**2; }; } return te(2)();").equals("4");
 		code("function te(a){ return function(b){ return function(c){return a*b*c;}; }; } return te(2)(1)(2);").equals("4");

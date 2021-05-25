@@ -42,4 +42,9 @@ public class LeekBreakInstruction implements LeekInstruction {
 	public void analyze(WordCompiler compiler) {
 
 	}
+
+	@Override
+	public int getOperations() {
+		return 0;
+	}
 }

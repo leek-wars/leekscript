@@ -8,35 +8,72 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
+import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.LeekConstants;
 import leekscript.runner.LeekFunctions;
 import leekscript.common.Error;
+import leekscript.common.Type;
 
 public class LeekVariable extends AbstractExpression {
 
 	public static enum VariableType {
-		LOCAL, GLOBAL, ARGUMENT, FIELD, STATIC_FIELD, THIS, THIS_CLASS, CLASS, SUPER, METHOD, STATIC_METHOD, SYSTEM_CONSTANT, SYSTEM_FUNCTION, FUNCTION
+		LOCAL, GLOBAL, ARGUMENT, FIELD, STATIC_FIELD, THIS, THIS_CLASS, CLASS, SUPER, METHOD, STATIC_METHOD, SYSTEM_CONSTANT, SYSTEM_FUNCTION, FUNCTION, ITERATOR
 	}
 
 	private final IAWord token;
 	private VariableType type;
+	private Type variableType = Type.ANY;
+	private LeekVariableDeclarationInstruction declaration;
 	private ClassDeclarationInstruction classDeclaration;
+	private boolean box;
 
 	public LeekVariable(IAWord token, VariableType type) {
 		this.token = token;
 		this.type = type;
+		this.declaration = null;
 		this.classDeclaration = null;
+		this.box = false;
+	}
+
+	public LeekVariable(WordCompiler compiler, IAWord token, VariableType type) {
+		this.token = token;
+		this.type = type;
+		this.declaration = null;
+		this.classDeclaration = null;
+		this.box = compiler.getVersion() <= 10;
+	}
+
+	public LeekVariable(IAWord token, VariableType type, boolean box) {
+		this.token = token;
+		this.type = type;
+		this.declaration = null;
+		this.classDeclaration = null;
+		this.box = box;
+	}
+
+	public LeekVariable(IAWord token, VariableType type, LeekVariableDeclarationInstruction declaration) {
+		this.token = token;
+		this.type = type;
+		this.declaration = declaration;
+		this.classDeclaration = null;
+		this.box = declaration.isCaptured();
 	}
 
 	public LeekVariable(IAWord token, VariableType type, ClassDeclarationInstruction classDeclaration) {
 		this.token = token;
 		this.type = type;
 		this.classDeclaration = classDeclaration;
+		this.box = false;
 	}
 
 	@Override
-	public int getType() {
+	public int getNature() {
 		return VARIABLE;
+	}
+
+	@Override
+	public Type getType() {
+		return variableType;
 	}
 
 	@Override
@@ -70,8 +107,8 @@ public class LeekVariable extends AbstractExpression {
 			writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
 			var constant = LeekConstants.get(token.getWord());
-			if (constant.getType() == LeekFunctions.INT) writer.addCode("LeekValueManager.getLeekIntValue(" + constant.getIntValue() + ")");
-			else if (constant.getType() == LeekFunctions.DOUBLE) writer.addCode("new DoubleLeekValue(" + constant.getValue() + ")");
+			if (constant.getType() == Type.INT) writer.addCode("LeekValueManager.getLeekIntValue(" + constant.getIntValue() + ")");
+			else if (constant.getType() == Type.REAL) writer.addCode("new DoubleLeekValue(" + constant.getValue() + ")");
 			else writer.addCode("LeekValueManager.NULL");
 		} else if (type == VariableType.SYSTEM_FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
@@ -110,7 +147,12 @@ public class LeekVariable extends AbstractExpression {
 		var v = compiler.getCurrentBlock().getVariable(token.getWord(), true);
 		if (v != null) {
 			this.type = v.getVariableType();
+			this.declaration = v.getDeclaration();
 			this.classDeclaration = v.getClassDeclaration();
+			this.box = v.box;
+			if (v.getDeclaration() != null && v.getDeclaration().getFunction() != compiler.getCurrentFunction()) {
+				v.getDeclaration().setCaptured();
+			}
 			return;
 		}
 		// Global user functions
@@ -119,8 +161,10 @@ public class LeekVariable extends AbstractExpression {
 			return;
 		}
 		// LS constants
-		if (LeekConstants.get(token.getWord()) != null) {
+		var constant = LeekConstants.get(token.getWord());
+		if (constant != null) {
 			this.type = VariableType.SYSTEM_CONSTANT;
+			this.variableType = constant.getType();
 			return;
 		}
 		// LS functions
@@ -135,7 +179,20 @@ public class LeekVariable extends AbstractExpression {
 		return classDeclaration;
 	}
 
+	public LeekVariableDeclarationInstruction getDeclaration() {
+		return declaration;
+	}
+
 	public IAWord getToken() {
 		return token;
 	}
+
+	public boolean isBox() {
+		return this.box || (declaration != null && declaration.isBox());
+	}
+
+	public boolean isWrapper() {
+		return declaration != null && declaration.isWrapper();
+	}
+
 }

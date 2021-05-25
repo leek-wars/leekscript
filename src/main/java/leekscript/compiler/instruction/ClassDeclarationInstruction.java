@@ -339,4 +339,20 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		}
 		return null;
 	}
+
+	public String getMethodName(String name, int argumentCount) {
+		var versions = methods.get(name);
+		if (versions != null) {
+			if (versions.containsKey(argumentCount)) return getName() + "_" + name + "_" + argumentCount;
+		}
+		if (parent != null) {
+			return parent.getMethodName(name, argumentCount);
+		}
+		return null;
+	}
+
+	@Override
+	public int getOperations() {
+		return 0;
+	}
 }

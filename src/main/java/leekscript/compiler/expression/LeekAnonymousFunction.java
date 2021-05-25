@@ -1,5 +1,6 @@
 package leekscript.compiler.expression;
 
+import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.AnonymousFunctionBlock;
@@ -14,8 +15,13 @@ public class LeekAnonymousFunction extends AbstractExpression {
 	}
 
 	@Override
-	public int getType() {
+	public int getNature() {
 		return FUNCTION;
+	}
+
+	@Override
+	public Type getType() {
+		return Type.FUNCTION;
 	}
 
 	@Override
@@ -37,6 +43,9 @@ public class LeekAnonymousFunction extends AbstractExpression {
 
 	@Override
 	public void analyze(WordCompiler compiler) {
+		var previousFunction = compiler.getCurrentFunction();
+		compiler.setCurrentFunction(mBlock);
 		mBlock.analyze(compiler);
+		compiler.setCurrentFunction(previousFunction);
 	}
 }

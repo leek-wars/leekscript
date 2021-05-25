@@ -2,6 +2,7 @@ package leekscript.compiler.expression;
 
 import java.util.ArrayList;
 
+import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
@@ -23,8 +24,13 @@ public class LeekArray extends AbstractExpression {
 	}
 
 	@Override
-	public int getType() {
+	public int getNature() {
 		return ARRAY;
+	}
+
+	@Override
+	public Type getType() {
+		return Type.ARRAY;
 	}
 
 	@Override
@@ -60,8 +66,10 @@ public class LeekArray extends AbstractExpression {
 
 	@Override
 	public void analyze(WordCompiler compiler) {
+		operations = 0;
 		for (var value : mValues) {
 			value.analyze(compiler);
+			operations += value.getOperations();
 		}
 	}
 }

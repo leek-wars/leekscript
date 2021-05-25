@@ -14,6 +14,7 @@ public class JavaWriter {
 	private final HashMap<AIFile<?>, Integer> mFiles = new HashMap<>();
 	private final ArrayList<AIFile<?>> mFilesList = new ArrayList<>();
 	private final boolean mWithDebug;
+	private final String className;
 
 	private class Line {
 		private final int mJavaLine;
@@ -27,10 +28,11 @@ public class JavaWriter {
 		}
 	}
 
-	public JavaWriter(boolean debug) {
+	public JavaWriter(boolean debug, String className) {
 		mCode = new StringBuilder();
 		mLine = 1;
 		mWithDebug = debug;
+		this.className = className;
 	}
 
 	public boolean hasDebug() {

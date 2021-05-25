@@ -10,6 +10,7 @@ import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
+import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 
 public class ForeachKeyBlock extends AbstractLeekBlock {
 
@@ -21,6 +22,8 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	private boolean mIsKeyDeclaration = false;
 	private boolean mKeyReference = false;
 	private boolean mValueReference = false;
+	private LeekVariableDeclarationInstruction iteratorDeclaration;
+	private LeekVariableDeclarationInstruction iteratorKeyDeclaration;
 
 	public ForeachKeyBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isKeyDeclaration, boolean isValueDeclaration, int line, AIFile<?> ai, boolean keyReference, boolean valueReference) {
 		super(parent, main, line, ai);
@@ -30,14 +33,20 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		mValueReference = valueReference;
 	}
 
-	public void setValueIterator(IAWord iterator, boolean declaration) {
-		// if(declaration) addVariable(new LeekVariable(iterator, VariableType.LOCAL));
-		mIterator = iterator;
+	public void setValueIterator(WordCompiler compiler, IAWord iterator, boolean declaration) {
+		if (declaration) {
+			iteratorDeclaration = new LeekVariableDeclarationInstruction(compiler, iterator, 0, null, compiler.getCurrentFunction());
+			addVariable(new LeekVariable(iterator, VariableType.ITERATOR, iteratorDeclaration));
+		}
+		mIterator = iterator.getWord();
 	}
 
-	public void setKeyIterator(IAWord iterator, boolean declaration) {
-		// if(declaration) addVariable(new LeekVariable(iterator, VariableType.LOCAL));
-		mKeyIterator = iterator;
+	public void setKeyIterator(WordCompiler compiler, IAWord iterator, boolean declaration) {
+		if (declaration) {
+			iteratorKeyDeclaration = new LeekVariableDeclarationInstruction(compiler, iterator, 0, null, compiler.getCurrentFunction());
+			addVariable(new LeekVariable(iterator, VariableType.ITERATOR, iteratorKeyDeclaration));
+		}
+		mKeyIterator = iterator.getWord();
 	}
 
 	public void setArray(AbstractExpression exp) {
@@ -134,6 +143,10 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
 			}
 		}
+		if (iteratorDeclaration != null)
+			iteratorDeclaration.setFunction(compiler.getCurrentFunction());
+		if (iteratorKeyDeclaration != null)
+			iteratorKeyDeclaration.setFunction(compiler.getCurrentFunction());
 
 		mArray.analyze(compiler);
 		compiler.setCurrentBlock(initialBlock);
