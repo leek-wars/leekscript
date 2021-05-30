@@ -18,7 +18,7 @@ public class TestArray extends TestCommon {
 		code_v11("return [1.21, -5, 4.55, 12, -6.7];").equals("[1.21, -5, 4.55, 12, -6.7]");
 		code("return [true, false, true];").equals("[true, false, true]");
 		// DISABLED_code("[23, true, '', {}, 123]").equals("[23, true, '', {}, 123]");
-		// DISABLED_code("let a = x -> x [1, 2, a]").equals("[1, 2, <function>]");
+		// DISABLED_code("var a = x -> x [1, 2, a]").equals("[1, 2, <function>]");
 		// DISABLED_code("[1m, 34324234m, 231232131232132134379897874534243257343341432423m]").equals("[1, 34324234, 231232131232132134379897874534243257343341432423]");
 		// DISABLED_code("[true, 'hello', 231232131232132134379897874534243257343341432423m]").equals("[true, 'hello', 231232131232132134379897874534243257343341432423]");
 
@@ -60,13 +60,13 @@ public class TestArray extends TestCommon {
 		code("var a = [5] var b = ['b'] return a + b;").equals("[5, b]");
 		code("var a = ['a'] return a + ['b'];").equals("[a, b]");
 		// DISABLED_code("[1, 2] + {};").equals("[1, 2, {}]");
-		// DISABLED_code("let a = [1, 2] a + {};").equals("[1, 2, {}]");
+		// DISABLED_code("var a = [1, 2] a + {};").equals("[1, 2, {}]");
 		// DISABLED_code("['a', 'b'] + {};").equals("['a', 'b', {}]");
-		// DISABLED_code("let a = ['a', 'b'] a + {}").equals("['a', 'b', {}]");
+		// DISABLED_code("var a = ['a', 'b'] a + {}").equals("['a', 'b', {}]");
 		// DISABLED_code("return ['a', 'b'] + (x -> x)").equals("['a', 'b', <function>]");
-		// DISABLED_code("let a = ['a', 'b'] a + (x -> x)").equals("['a', 'b', <function>]");
+		// DISABLED_code("var a = ['a', 'b'] a + (x -> x)").equals("['a', 'b', <function>]");
 		// DISABLED_code("['a', 'b'] + Number").equals("['a', 'b', <class Number>]");
-		// DISABLED_code("let a = ['a', 'b'] a + Number").equals("['a', 'b', <class Number>]");
+		// DISABLED_code("var a = ['a', 'b'] a + Number").equals("['a', 'b', <class Number>]");
 		// DISABLED_code("var a = [1, 2] return a + [3, 4];").equals("[1, 2, 3, 4]");
 		// DISABLED_code("var a = ['a'] return [3.5, 4.6] + a;").equals("[3.5, 4.6, 'a']");
 		// DISABLED_code("var pq = [] pq = pq + 1 return pq;").equals("[1]");
@@ -77,6 +77,84 @@ public class TestArray extends TestCommon {
 		code("var a = null return a[1]").equals("null");
 		code("var a = null return a['a']").equals("null");
 		code("var a = null return a[1] = 12").equals("null");
+
+		section("Array.operator []");
+		code("return [1, 2, 3][1]").equals("2");
+		code("var a = [1, 2, 3] return a[0]").equals("1");
+		code_v10("var a = [1.6, 2.5, 3.4] return a[0]").equals("1,6");
+		code_v11("var a = [1.6, 2.5, 3.4] return a[0]").equals("1.6");
+		code("var a = [1, 2, 3] a[0] = 5 return a[0]").equals("5");
+		// code("var a = [23, 23, true, '', [], 123]; return |a|").equals("6");
+		code("var a = [] return !a").equals("true");
+		code("var a = [1, 2, 3] a[1] = 12 return a").equals("[1, 12, 3]");
+		code_v10("return [1.2, 321.42, 23.15]").equals("[1,2, 321,42, 23,15]");
+		code_v11("return [1.2, 321.42, 23.15]").equals("[1.2, 321.42, 23.15]");
+		// code("return [1, 2, 3, 4, 5][1:3]").equals("[2, 3, 4]");
+		code("var a = [5, 'yolo', 12] return a[1]").equals("yolo");
+		code("var a = [12]; a[0]++; return a").equals("[13]");
+		// code("[1, 2, 'a'][['salut', 2][0]]").exception(ls::vm::Exception::ARRAY_KEY_IS_NOT_NUMBER);
+		code("return ['a', 'b', 'c'][[2, ''][0]]").equals("c");
+		code("var a = [[12], ''][0]; a[0]++; return a").equals("[13]");
+		// code("var a = [[12], ''][0] a[a]++ a").exception(ls::vm::Exception::ARRAY_KEY_IS_NOT_NUMBER);
+		code_v10("var a = [[12], [5.5], ['a']] a[0][0] += 1 a[1][0] += 1 a[2][0] += 1 return a").equals("[[13], [6,5], [a1]]");
+		code_v11("var a = [[12], [5.5], ['a']] a[0][0] += 1 a[1][0] += 1 a[2][0] += 1 return a").equals("[[13], [6.5], [a1]]");
+		// code("var a = [1, 2, 3] return a[0l]").equals("1");
+		// code("var a = [1, 2, 3] return a[1l]").equals("2");
+		// code("var a = [1, 2, 3] return a[2m]").equals("3");
+		code("var a = ['a', 'b', 'c'] return a[0.5]").equals("a");
+		code("var a = ['a', 'b', 'c'] return a[1.9]").equals("b");
+		code("return ['', [2][0]]").equals("[, 2]");
+		code_v10("return ['', [2.5][0]]").equals("[, 2,5]");
+		code_v11("return ['', [2.5][0]]").equals("[, 2.5]");
+		code("var a = [1, 2, 3] return a[true]").equals("2");
+		code_v10("return [1, 2.5][1]").equals("2,5");
+		code_v11("return [1, 2.5][1]").equals("2.5");
+		code("return [1, true][0]").equals("1");
+		code("return [1, true][1]").equals("true");
+		// code("return [5l, 7l, 9l][2l]").equals("9");
+
+		section("[] operator on unknown arrays");
+		code("var v = [['a', 'b'], 12] return v[0][0]").equals("a");
+		code("var v = [['a', 'b'], 12] return v[0][1]").equals("b");
+		code("var v = [['a', 'b'], 12] return v[0][true]").equals("b");
+		// code("[['a', 'b'], 12][0][['yolo', 1][0]]").exception(ls::vm::Exception::ARRAY_KEY_IS_NOT_NUMBER);
+		code("return [['a', 'b'], 12][0][2]").equals("null");
+		code("var v = [['a', 'b'], 12] v[0][0] = 5 return v").equals("[[5, b], 12]");
+		code("var v = [['a', 'b'], 12] v[0][2] = 5 return v").equals("[[a, b, 5], 12]");
+		// code("var a = [[12], [1..10]][1] return a[5]").equals("6");
+
+		section("Out of bounds exception");
+		code("return [][1]").equals("null");
+		code("return [1, 2, 3][100]").equals("null");
+		code("var a = [1, 2, 3] return a[10]").equals("null");
+		code("return [5.6, 7.2][-5]").equals("null");
+		code("return ['hello', true][2]").equals("null");
+		code("var a = [1, 2, 3] return a[100] = 12").equals("12");
+		code("var a = [1, 2, 3] return a[-100] = 12").equals("12");
+		// code("var a = [[12], ''][0]; a[100]++; return a").equals("null");
+		// code("var a = [5] var e = a[1] !? 5 return e").equals("5");
+
+		section("Access with booleans");
+		code("return [1, 2, 3][false]").equals("1");
+		code("return [1, 2, 3][true]").equals("2");
+		code("return ['1', '2', '3'][false]").equals("1");
+		code_v10("return [1.5, 2.5, 3.5][true]").equals("2,5");
+		code_v11("return [1.5, 2.5, 3.5][true]").equals("2.5");
+
+		// section("Push with empty array access");
+		// code("var a = [] a[] = 12 return a").equals("[12]");
+		// code("var a = [1, 2] a[] = 3 return a").equals("[1, 2, 3]");
+		// code("var a = [1, 2] a[] = 3 return a").equals("[1, 2, 3]");
+		// code("var a = [] a[] = 'a' return a").equals("[a]");
+		// code("var a = ['a', 'b'] a[] = 'c' return a").equals("[a, b, c]");
+		// code("var a = [1, 'b', true] a[] = function(x) { return x } return a").equals("[1, b, true, <function>]");
+		// code("var a = ['a', 'b', 'c'] a[] = ['d'][0] return a").equals("[a, b, c, d]");
+
+		section("Methods calls on unknown array");
+		code("var a = [1, [1, 2]] return count(a[1])").equals("2");
+		code("var a = [1, [1, 2]] push(a[1], 3) return a[1]").equals("[1, 2, 3]");
+		code("var a = [1, ['a', 'b']] push(a[1], 'c') return a[1]").equals("[a, b, c]");
+		code("var a = [[], ['a']] push(a[1], 'b') return a").equals("[[], [a, b]]");
 
 		section("Array.operator +=");
 		// DISABLED_code("var a = [1.55] a += 12.9 return a;").equals("[1.55]");
@@ -122,9 +200,9 @@ public class TestArray extends TestCommon {
 		code("var a = [] a[0] += 1 return a;").equals("[1]");
 
 		section("Array.operator ++ on element");
-		code("var a = [5] a[0]++ return a;").equals("[6]");
-		code("var a = [5, 6, 7] a[0]++ a[1]++ return a;").equals("[6, 7, 7]");
-		code("var a = [[5]] a[0][0]++ return a;").equals("[[6]]");
+		code("var a = [5]; a[0]++; return a;").equals("[6]");
+		code("var a = [5, 6, 7]; a[0]++; a[1]++; return a;").equals("[6, 7, 7]");
+		code("var a = [[5]]; a[0][0]++; return a;").equals("[[6]]");
 
 		section("Array.operator -- on element");
 		code("var a = [5] a[0]-- return a;").equals("[4]");
