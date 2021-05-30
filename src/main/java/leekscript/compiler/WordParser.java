@@ -314,7 +314,7 @@ public class WordParser {
 				if(c == '{') newWord("{", T_ACCOLADE_LEFT);
 				else newWord("}", T_ACCOLADE_RIGHT);
 			}
-			else if(c == ' ' || c == '\n' || c == '\t'){
+			else if(c == ' ' || c == '\n' || c == '\t' || c == 160 /* NBSP */){
 				if(type == T_VAR_STRING){
 					word += c;
 				}
@@ -339,13 +339,11 @@ public class WordParser {
 					type = T_NOTHING;
 				}
 				newWord(",", T_VIRG);
-			}
-			else {
+			} else {
 				// Tout autre caractère
-				if(type == T_VAR_STRING){
+				if (type == T_VAR_STRING) {
 					word += c;
-				}
-				else{
+				} else {
 					throw new LeekCompilerException(mAI, line_counter, char_counter, "" + c, Error.INVALID_CHAR);
 				}
 			}
