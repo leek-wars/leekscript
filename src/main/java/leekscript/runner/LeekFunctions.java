@@ -21,9 +21,6 @@ public enum LeekFunctions implements ILeekFunction {
 	abs(1) {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (leekIA.getVersion() == 10) {
-				return LeekValueManager.getLeekDoubleValue(Math.abs(parameters[0].getDouble(leekIA)));
-			}
 			if (parameters[0] instanceof DoubleLeekValue) {
 				return LeekValueManager.getLeekDoubleValue(Math.abs(parameters[0].getDouble(leekIA)));
 			} else {
