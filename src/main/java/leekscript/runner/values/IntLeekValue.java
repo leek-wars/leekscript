@@ -68,16 +68,20 @@ public class IntLeekValue extends AbstractLeekValue {
 	@Override
 	public boolean less(AI ai, AbstractLeekValue comp) throws LeekRunException {
 		comp = comp.getValue();
-		if (comp instanceof DoubleLeekValue)
+		if (comp instanceof DoubleLeekValue) {
+			ai.addOperations(1);
 			return getDouble(ai) < comp.getDouble(ai);
+		}
 		return super.less(ai, comp);
 	}
 
 	@Override
 	public boolean more(AI ai, AbstractLeekValue comp) throws LeekRunException {
 		comp = comp.getValue();
-		if (comp instanceof DoubleLeekValue)
+		if (comp instanceof DoubleLeekValue) {
+			ai.addOperations(1);
 			return getDouble(ai) > comp.getDouble(ai);
+		}
 		return super.more(ai, comp);
 	}
 
@@ -157,7 +161,6 @@ public class IntLeekValue extends AbstractLeekValue {
 
 	@Override
 	public AbstractLeekValue divide(AI ai, AbstractLeekValue val) throws LeekRunException {
-		ai.addOperations(DIV_COST);
 		return LeekOperations.divide(ai, this, val);
 	}
 
