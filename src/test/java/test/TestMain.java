@@ -37,5 +37,7 @@ public class TestMain {
 		new TestEuler().run();
 
 		Assert.assertTrue(TestCommon.summary());
+
+		TestCommon.ouputOperationsFile();
     }
 }

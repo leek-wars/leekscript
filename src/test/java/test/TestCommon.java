@@ -1,5 +1,8 @@
 package test;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
@@ -27,6 +30,7 @@ public class TestCommon {
 	private static long compile_time = 0;
 	private static long load_time = 0;
 	private static long execution_time = 0;
+	private static ArrayList<Long> operations = new ArrayList<>();
 
 	private static List<String> failedTests = new ArrayList<String>();
 	private static List<String> disabledTests = new ArrayList<String>();
@@ -229,5 +233,17 @@ public class TestCommon {
 		symbols.setGroupingSeparator(' ');
 		formatter.setDecimalFormatSymbols(symbols);
 		return formatter.format(n);
+	}
+	public static void ouputOperationsFile() {
+		try {
+			FileWriter myWriter = new FileWriter("opérations.txt");
+			for (Long ops : operations) {
+				myWriter.write(String.valueOf(ops) + "\n");
+			}
+			myWriter.close();
+		} catch (IOException e) {
+			System.out.println("An error occurred.");
+			e.printStackTrace();
+		}
 	}
 }
