@@ -1034,9 +1034,14 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
 			ArrayLeekValue array = parameters[0].getArray();
-			ArrayLeekValue source = LeekOperations.clone(leekIA, parameters[1]).getArray();
+			ArrayLeekValue source = parameters[1].getArray();
+			// ArrayLeekValue source = LeekOperations.clone(leekIA, parameters[1]).getArray();
 			for (AbstractLeekValue value : source) {
-				array.push(leekIA, value.getValue());
+				if (leekIA.getVersion() >= 11) {
+					array.push(leekIA, LeekOperations.clonePrimitive(leekIA, value.getValue()));
+				} else {
+					array.push(leekIA, LeekOperations.clone(leekIA, value.getValue()));
+				}
 				leekIA.addOperations(1);
 			}
 			return LeekValueManager.NULL;

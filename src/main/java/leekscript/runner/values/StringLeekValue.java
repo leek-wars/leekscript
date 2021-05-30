@@ -26,7 +26,6 @@ public class StringLeekValue extends AbstractLeekValue {
 
 	@Override
 	public int getInt(AI ai) throws LeekRunException {
-		ai.addOperations(2);
 		if (mValue.isEmpty())
 			return 0;
 		if (mValue.equals("true"))
@@ -43,7 +42,6 @@ public class StringLeekValue extends AbstractLeekValue {
 
 	@Override
 	public double getDouble(AI ai) throws LeekRunException {
-		ai.addOperations(2);
 		if (mValue.equals("true"))
 			return 1;
 		if (mValue.equals("false"))

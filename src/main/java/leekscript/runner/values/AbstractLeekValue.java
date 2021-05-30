@@ -100,19 +100,23 @@ public abstract class AbstractLeekValue {
 		return this;
 	}
 
-	public AbstractLeekValue not(AI ai) {
+	public AbstractLeekValue not(AI ai) throws LeekRunException {
+		ai.addOperations(1);
 		return LeekValueManager.getLeekBooleanValue(!getBoolean());
 	}
 
 	public AbstractLeekValue bnot(AI ai) throws LeekRunException {
+		ai.addOperations(1);
 		return LeekValueManager.getLeekIntValue(~getInt(ai));
 	}
 
 	public AbstractLeekValue opposite(AI ai) throws LeekRunException {
+		ai.addOperations(1);
 		return LeekValueManager.getLeekIntValue(-getInt(ai));
 	}
 
 	public AbstractLeekValue set(AI ai, AbstractLeekValue value) throws LeekRunException {
+		ai.addOperations(1);
 		return this;
 	}
 	public AbstractLeekValue setRef(AI ai, AbstractLeekValue value) throws LeekRunException {
