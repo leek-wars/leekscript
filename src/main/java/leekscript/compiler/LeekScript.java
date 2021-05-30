@@ -82,7 +82,7 @@ public class LeekScript {
 	public static AI compileFile(String filepath, String AIClass, int version) throws LeekScriptException, LeekCompilerException, IOException {
 		AIFile<?> ai = getResolver().resolve(filepath, null);
 		ai.setVersion(version);
-		return compile(ai, AIClass, true);
+		return compile(ai, AIClass, false);
 	}
 
 	public static AI compileFileContext(String filepath, String AIClass, ResolverContext context, boolean useClassCache) throws LeekScriptException, LeekCompilerException, IOException {
