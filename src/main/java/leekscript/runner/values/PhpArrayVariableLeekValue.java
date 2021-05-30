@@ -16,4 +16,11 @@ public class PhpArrayVariableLeekValue extends VariableLeekValue {
 		super.set(ai, value);
 		return mValue;
 	}
+
+	@Override
+	public AbstractLeekValue setNoOps(AI ai, AbstractLeekValue value) throws LeekRunException {
+		value = value.getValue();
+		super.setNoOps(ai, value);
+		return mValue;
+	}
 }

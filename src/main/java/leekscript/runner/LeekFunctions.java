@@ -977,7 +977,7 @@ public enum LeekFunctions implements ILeekFunction {
 				size = parameters[2].getInt(leekIA);
 			AbstractLeekValue copy = LeekOperations.clone(leekIA, parameters[1].getValue());
 			for (int i = 0; i < size; i++) {
-				array.get(leekIA, i).set(leekIA, copy);
+				array.get(leekIA, i).setNoOps(leekIA, copy);
 				leekIA.addOperations(3);
 			}
 			return LeekValueManager.NULL;

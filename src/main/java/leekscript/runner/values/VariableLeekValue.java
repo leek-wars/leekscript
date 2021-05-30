@@ -108,6 +108,18 @@ public class VariableLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
+	public AbstractLeekValue setNoOps(AI ai, AbstractLeekValue value) throws LeekRunException {
+		if (ai.getVersion() >= 11) {
+			return mValue = LeekOperations.clonePrimitive(ai, value.getValue());
+		} else {
+			if (value.isReference())
+				return mValue = value.getValue();
+			else
+				return mValue = LeekOperations.clone(ai, value.getValue());
+		}
+	}
+
+	@Override
 	public AbstractLeekValue setRef(AI ai, AbstractLeekValue value) throws LeekRunException {
 		return mValue = value.getValue();
 	}
