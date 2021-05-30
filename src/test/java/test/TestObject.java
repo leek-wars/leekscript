@@ -31,6 +31,10 @@ public class TestObject extends TestCommon {
 		code_v11("class A { a = 10 } var a = new A(); a.a-- return a.a").equals("9");
 		code_v11("class A { a = 10 } var a = new A(); return ++a.a").equals("11");
 		code_v11("class A { a = 10 } var a = new A(); a.a++ return a.a").equals("11");
+		code_v11("class A { a = 10 } var a = [new A()]; a[0].a++ return a[0].a").equals("11");
+		code_v11("class A { a = 10 } var a = [new A()]; a[0].a-- return a[0].a").equals("9");
+		code_v11("class A { a = 10 } var a = [new A()]; ++a[0].a return a[0].a").equals("11");
+		code_v11("class A { a = 10 } var a = [new A()]; --a[0].a return a[0].a").equals("9");
 
 		/*
 		* Operators

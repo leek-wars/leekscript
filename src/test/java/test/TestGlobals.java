@@ -21,6 +21,7 @@ public class TestGlobals extends TestCommon {
 		code("global r = [0] return r[0] += 12").equals("12");
 		code("global r = [] return r[5] += 12").equals("12");
 		code_v10("global r = 12 r = @null").equals("null");
+		code("global m = [] return m = m").equals("[]");
 
 		section("Globals operators");
 		code("global x = 12; x++; return x;").equals("13");
