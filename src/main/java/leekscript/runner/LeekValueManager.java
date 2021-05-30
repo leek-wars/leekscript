@@ -54,17 +54,6 @@ public class LeekValueManager {
 		return mFunctions.get(function.toString());
 	}
 
-	public static AbstractLeekValue getLeekDoubleValue(double nb) {
-		if (nb == 0)
-			return getLeekIntValue(0);
-		else if (nb == 1)
-			return getLeekIntValue(1);
-		else if (nb == -1)
-			return getLeekIntValue(-1);
-		else
-			return new DoubleLeekValue(nb);
-	}
-
 	public static AbstractLeekValue getLeekIntValue(int nb) {
 		// Si c'est une valeur en cache on la retourne
 		if (MIN_INT <= nb && nb <= MAX_INT) {
