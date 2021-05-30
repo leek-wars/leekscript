@@ -39,7 +39,7 @@ public class LeekOperations {
 
 			while (!iterator.ended()) {
 				if (iterator.key() instanceof String) {
-					retour.getOrCreate(ai, iterator.getKey(ai)).set(ai, iterator.getValue(ai));
+					retour.getOrCreate(ai, iterator.getKey(ai)).setNoOps(ai, iterator.getValue(ai));
 				} else {
 					retour.push(ai, iterator.getValue(ai));
 				}
@@ -48,7 +48,7 @@ public class LeekOperations {
 			iterator = v2.getArray().getArrayIterator();
 			while (!iterator.ended()) {
 				if (iterator.key() instanceof String) {
-					retour.getOrCreate(ai, iterator.getKey(ai)).set(ai, iterator.getValue(ai));
+					retour.getOrCreate(ai, iterator.getKey(ai)).setNoOps(ai, iterator.getValue(ai));
 				} else {
 					retour.push(ai, iterator.getValue(ai));
 				}

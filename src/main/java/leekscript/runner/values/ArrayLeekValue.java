@@ -89,7 +89,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		if (isKeyValue) {
 			int i = 0;
 			while (i < values.length) {
-				getOrCreate(ai, values[i].getValue()).set(ai, values[i + 1].getValue());
+				getOrCreate(ai, values[i].getValue()).setNoOps(ai, values[i + 1].getValue());
 				i += 2;
 			}
 		} else {
@@ -281,7 +281,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 			ArrayIterator iterator = value.getArray().getArrayIterator();
 			while (!iterator.ended()) {
 				if (iterator.key() instanceof String || iterator.key() instanceof ObjectLeekValue)
-					mValues.getOrCreate(ai, iterator.getKey(ai).getString(ai)).set(ai, iterator.getValue(ai));
+					mValues.getOrCreate(ai, iterator.getKey(ai).getString(ai)).setNoOps(ai, iterator.getValue(ai));
 				else
 					mValues.push(ai, iterator.getValue(ai));
 				iterator.next();

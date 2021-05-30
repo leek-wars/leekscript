@@ -126,7 +126,7 @@ public class LeekValueManager {
 			JSONObject a = (JSONObject) o;
 			ArrayLeekValue array = new ArrayLeekValue();
 			for (String key : a.keySet()) {
-				array.getOrCreate(ai, new StringLeekValue(key)).set(ai, parseJSON(a.get(key), ai));
+				array.getOrCreate(ai, new StringLeekValue(key)).setNoOps(ai, parseJSON(a.get(key), ai));
 			}
 			return array;
 		}

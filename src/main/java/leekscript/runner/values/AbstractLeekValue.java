@@ -119,6 +119,11 @@ public abstract class AbstractLeekValue {
 		ai.addOperations(1);
 		return this;
 	}
+
+	public AbstractLeekValue setNoOps(AI ai, AbstractLeekValue value) throws LeekRunException {
+		return this;
+	}
+
 	public AbstractLeekValue setRef(AI ai, AbstractLeekValue value) throws LeekRunException {
 		return this;
 	}
