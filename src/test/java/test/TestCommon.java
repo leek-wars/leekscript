@@ -128,6 +128,9 @@ public class TestCommon {
 				long exec_time = (System.nanoTime() - t) / 1000;
 				TestCommon.execution_time += exec_time / 1000;
 
+				long ops = ai.getOperations();
+				operations.add(ops);
+
 				var vs = v.getString(ai);
 				result = new Result(vs, Error.NONE, (int) ai.getOperations(), exec_time);
 
