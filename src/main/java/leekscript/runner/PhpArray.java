@@ -17,7 +17,7 @@ import leekscript.runner.values.StringLeekValue;
 
 public class PhpArray implements Iterable<AbstractLeekValue> {
 
-	private final static int START_CAPACITY = 16;
+	private final static int START_CAPACITY = 8;
 	private final static int MAX_CAPACITY = 32000;
 
 	public final static int ASC = 1;
@@ -264,7 +264,9 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	public PhpArray() {}
 
 	public PhpArray(AI ai, int capacity) throws LeekRunException {
-		initTable(ai, capacity);
+		if (capacity > 0) {
+			initTable(ai, capacity);
+		}
 	}
 
 	public PhpArray(AI ai, PhpArray phpArray, int level) throws LeekRunException {
@@ -287,9 +289,10 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	}
 
 	private void initTable(AI ai, int capacity) throws LeekRunException {
-		ai.addOperationsNoCheck(capacity / 5);
-		this.capacity = capacity;
-		mTable = new Element[capacity];
+		int realCapacity = Math.max(START_CAPACITY, capacity);
+		ai.addOperationsNoCheck(realCapacity / 5);
+		this.capacity = realCapacity;
+		mTable = new Element[realCapacity];
 	}
 
 	private void growCapacity(AI ai) throws LeekRunException {
@@ -297,7 +300,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		if (capacity == MAX_CAPACITY) return;
 
 		// Copy in a new array
-		int new_capacity = Math.min(capacity * 2, MAX_CAPACITY);
+		int new_capacity = Math.min(Math.max(START_CAPACITY, capacity * 2), MAX_CAPACITY);
 		PhpArray newArray = new PhpArray(ai, new_capacity);
 		Element e = mHead;
 		while (e != null) {
@@ -679,7 +682,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	public AbstractLeekValue getOrCreate(AI ai, Object key) throws LeekRunException {
 		Element e = getElement(ai, key);
 		if (e == null) {
-			if (mSize + 1 > capacity) {
+			if (mSize >= capacity) {
 				growCapacity(ai);
 			}
 			mSize++;
