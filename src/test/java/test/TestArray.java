@@ -112,6 +112,10 @@ public class TestArray extends TestCommon {
 		code("return [1, true][0]").equals("1");
 		code("return [1, true][1]").equals("true");
 		// code("return [5l, 7l, 9l][2l]").equals("9");
+		code("var a = [12: 5] return a[5] = 7").equals("7");
+		code("var a = [12: 5] var b = 7 return a[5] = b").equals("7");
+		code("var a = [] return a[0] + 2").equals("2");
+		code("var a = 5 return a[0] + 2").equals("2");
 
 		section("[] operator on unknown arrays");
 		code("var v = [['a', 'b'], 12] return v[0][0]").equals("a");
@@ -287,6 +291,11 @@ public class TestArray extends TestCommon {
 		code_v10("var t = [3, 4, 5]; var a = @t[1] a++ return t;").equals("[3, 4, 5]");
 		code_v10("var t = [3, 4, 5]; var a = null a = @t[1] a++ return t;").equals("[3, 4, 5]");
 		code_v10("var t = [3, 4, 5]; t[3] = [1, 2, 3, 4]; var r = @t[3]; r[4] = 'coucou'; return t;").equals("[3, 4, 5, [1, 2, 3, 4, coucou]]");
+
+		section("Array.map()");
+		code("return arrayMap([1, 2, 3], function(v) { var r = [] return r })").equals("[[], [], []]");
+		code("return arrayMap([1, 2, 3], function(v) { var r = [1, 2, 3] return r })").equals("[[1, 2, 3], [1, 2, 3], [1, 2, 3]]");
+		code("var r = [] var a = arrayMap([1, 2, 3], function(v) { return r }) push(r, 1) return a").equals("[[1], <...>, <...>]");
 
 		section("Array.map() v1.0");
 		code_v10("return arrayMap([1, 2, 3, 4, 5], function(e) { return e * 2; });").equals("[2, 4, 6, 8, 10]");

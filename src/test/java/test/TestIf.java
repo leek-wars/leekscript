@@ -52,6 +52,14 @@ public class TestIf extends TestCommon {
 		code("var a = 1; if(a is not 1) return 2; else return 0").equals("0");
 		code("var a = true; if(not a) return 2; else return 0").equals("0");
 		code("var Bob = 12 if (Bob = 75);").equals("null");
+		code("var cell = 1 if (cell != null) return 12").equals("12");
+		code("var cell = null if (cell != null) return 12 return 5").equals("5");
+		code("function t(c) { var cell = c if (cell!=null ) 1; } return t(300);").equals("null");
+		code_v10("function t(@c) { var cell = c if (cell!=null ) 1; } return t(300);").equals("null");
+		code_v10("function t(@c) { var cell = c } for (var i = 0; i < 10; ++i) return t(i);").equals("null");
+		code_v10("function t(@c) { var cell = c if (cell!=null ) 1; } for (var i = 0; i < 10; ++i) return t(i);").equals("null");
+		code_v10("function t(@c) { var cell = c cell != null } for (var i = 0; i < 10; ++i) return t(i);").equals("null");
+		code_v10("function t(@c) { var cell = c return cell != null } for (var i = 0; i < 10; ++i) return t(i);").equals("true");
 
 		section("Conditions with other types");
 		code("if (1212) { return 'ok' } else { return 5 }").equals("ok");

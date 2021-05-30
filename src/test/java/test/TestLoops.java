@@ -133,6 +133,7 @@ public class TestLoops extends TestCommon {
 		code("var s = 0; var a; for (a in [1, 2, 3]) { s += a } return s").equals("6");
 		code("var s = 0; var a; for (var k : a in [1, 2, 3]) { s += a } return s").equals("6");
 		code("var s = 0; var k; for (k : var a in [1, 2, 3, 4, 5]) { s += k } return s").equals("10");
+		DISABLED_code("for (var x in 12) {}").error();
 
 		section("Normal containers");
 		code("for (var v in [1, 2, 3, 4]) {}").equals("null");
@@ -153,8 +154,7 @@ public class TestLoops extends TestCommon {
 		// DISABLED_code("var y = '' for k, x in { var x = [1: '2'] x.insert(3, 4) x } { y += k + ':' + x + ' ' } y").equals("'1:2 3:4 '");
 		// code("var y = 'test' for (var x in 1) { y = x } y").equals("1");
 		// code("var y = 'test' for (var x in 'salut') { y = x } y").equals("'t'");
-		// Working but should error
-		DISABLED_code("var x = 'test' for (var x in [1]) {} return x;").equals("'test'");
+		code("var x = 'test' for (var x in [1]) {} return x;").error();
 		// code("var y = '' for k, x in { var x = <> x.insert(4) x } { y += k + ':' + x } y").equals("'0:4'");
 		// DISABLED_code("var fs = [] fs.push(s -> {var sum = 0 for v in s {sum += v} sum}) fs[0](<1, 2>)").equals("3"); // TODO issue #243
 		// DISABLED_code("var fs = [] fs.push(s -> {[for v in s {v}]}) fs[0](<2,1>)").equals("[1, 2]"); // TODO issue #243
