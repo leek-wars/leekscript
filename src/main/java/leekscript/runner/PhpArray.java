@@ -460,7 +460,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		}
 		// Trie de la liste
 		if (comparator == RANDOM)
-			Collections.shuffle(liste, new Random(LeekScript.getRandom().getInt(0, Integer.MAX_VALUE)));
+			Collections.shuffle(liste, new Random(ai.getRandom().getInt(0, Integer.MAX_VALUE - 1)));
 		else if (comparator == ASC_K || comparator == DESC_K) {
 			Collections.sort(liste, new KeyComparator(
 					(comparator == ASC_K) ? ElementComparator.SORT_ASC
