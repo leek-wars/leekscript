@@ -240,12 +240,12 @@ public abstract class AI {
 		if (nb != 1 && nb != 2)
 			return retour;
 		boolean b;
-		VariableLeekValue value = new VariableLeekValue(this, LeekValueManager.NULL);
+		// VariableLeekValue value = new VariableLeekValue(this, LeekValueManager.NULL);
 		while (!iterator.ended()) {
-			value.set(this, iterator.getValueReference());
+			// value.set(this, iterator.getValueReference());
 			if (nb == 1) {
-				b = function.executeFunction(this, new AbstractLeekValue[] { value }).getBoolean();
-				iterator.setValue(this, value);
+				b = function.executeFunction(this, new AbstractLeekValue[] { iterator.getValueReference() }).getBoolean();
+				// iterator.setValue(this, value);
 				if (b) {
 					if (getVersion() >= 11)
 						retour.push(this, iterator.getValue(this).getValue());
@@ -254,8 +254,8 @@ public abstract class AI {
 						retour.getOrCreate(this, iterator.getKey(this).getValue()).set(this, iterator.getValue(this).getValue());
 				}
 			} else {
-				b = function.executeFunction(this, new AbstractLeekValue[] { iterator.getKey(this), value }).getBoolean();
-				iterator.setValue(this, value);
+				b = function.executeFunction(this, new AbstractLeekValue[] { iterator.getKey(this), iterator.getValueReference() }).getBoolean();
+				// iterator.setValue(this, value);
 				if (b)
 					if (getVersion() >= 11)
 						retour.push(this, iterator.getValue(this).getValue());

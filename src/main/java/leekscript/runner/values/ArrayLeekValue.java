@@ -68,7 +68,7 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		}
 
 		public AbstractLeekValue getValueReference() throws LeekRunException {
-			return mElement.value();
+			return mElement.valueRef();
 		}
 
 		public void setValue(AI ai, VariableLeekValue value) throws LeekRunException {

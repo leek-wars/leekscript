@@ -245,6 +245,10 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			return value.getValue();
 		}
 
+		public AbstractLeekValue valueRef() {
+			return value;
+		}
+
 		public void setValue(AI ai, AbstractLeekValue v) throws LeekRunException {
 			value.set(ai, v.getValue());
 		}
