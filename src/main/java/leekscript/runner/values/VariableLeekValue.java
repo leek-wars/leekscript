@@ -23,13 +23,10 @@ public class VariableLeekValue extends AbstractLeekValue {
 		if (ai.getVersion() >= 11) {
 			mValue = LeekOperations.clonePrimitive(ai, value.getValue());
 		} else {
-			if (!(value instanceof VariableLeekValue))
-				mValue = value.getValue();
+			if (value instanceof VariableLeekValue)
+				mValue = LeekOperations.clone(ai, value.getValue());
 			else
-				if (value.isReference())
-					mValue = value.getValue();
-				else
-					mValue = LeekOperations.clone(ai, value.getValue());
+				mValue = value.getValue();
 		}
 	}
 
@@ -38,13 +35,10 @@ public class VariableLeekValue extends AbstractLeekValue {
 		if (ai.getVersion() >= 11) {
 			mValue = LeekOperations.clonePrimitive(ai, value.getValue());
 		} else {
-			if (!(value instanceof VariableLeekValue))
-				mValue = value.getValue();
+			if (value instanceof VariableLeekValue)
+				mValue = LeekOperations.clone(ai, value.getValue());
 			else
-				if (value.isReference())
-					mValue = value.getValue();
-				else
-					mValue = LeekOperations.clone(ai, value.getValue());
+				mValue = value.getValue();
 		}
 	}
 
@@ -100,10 +94,10 @@ public class VariableLeekValue extends AbstractLeekValue {
 		if (ai.getVersion() >= 11) {
 			return mValue = LeekOperations.clonePrimitive(ai, value.getValue());
 		} else {
-			if (value.isReference())
-				return mValue = value.getValue();
-			else
+			if (value instanceof VariableLeekValue)
 				return mValue = LeekOperations.clone(ai, value.getValue());
+			else
+				return mValue = value.getValue();
 		}
 	}
 
@@ -112,10 +106,10 @@ public class VariableLeekValue extends AbstractLeekValue {
 		if (ai.getVersion() >= 11) {
 			return mValue = LeekOperations.clonePrimitive(ai, value.getValue());
 		} else {
-			if (value.isReference())
-				return mValue = value.getValue();
-			else
+			if (value instanceof VariableLeekValue)
 				return mValue = LeekOperations.clone(ai, value.getValue());
+			else
+				return mValue = value.getValue();
 		}
 	}
 

@@ -78,7 +78,7 @@ public class FunctionLeekValue extends AbstractLeekValue {
 	private AbstractLeekValue[] copyValues(AI uai, AbstractLeekValue[] values, boolean[] references) throws LeekRunException {
 		AbstractLeekValue[] copy = new AbstractLeekValue[values.length];
 		for (int i = 0; i < values.length; i++) {
-			if (!references[i])
+			if (!references[i] && values[i] instanceof VariableLeekValue)
 				copy[i] = LeekOperations.clone(uai, values[i]);
 			else
 				copy[i] = values[i];
