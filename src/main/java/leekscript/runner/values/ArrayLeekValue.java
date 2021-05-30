@@ -135,6 +135,10 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		return mValues.getOrCreate(ai, key);
 	}
 
+	public void put(AI ai, Object key, AbstractLeekValue value) throws LeekRunException {
+		mValues.set(ai, key, value);
+	}
+
 	@Override
 	public AbstractLeekValue get(AI ai, int value) throws LeekRunException {
 		return mValues.getOrCreate(ai, Integer.valueOf(value));
@@ -275,9 +279,9 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	@Override
 	public AbstractLeekValue add(AI ai, AbstractLeekValue value) throws LeekRunException {
 		value = value.getValue();
+		ai.addOperations(1);
 		if (value instanceof ArrayLeekValue) {
 			// mValues.reindex(ai);
-			ai.addOperations(1);
 			ArrayIterator iterator = value.getArray().getArrayIterator();
 			while (!iterator.ended()) {
 				if (iterator.key() instanceof String || iterator.key() instanceof ObjectLeekValue)
