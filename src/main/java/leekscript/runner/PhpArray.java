@@ -679,13 +679,12 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	public AbstractLeekValue getOrCreate(AI ai, Object key) throws LeekRunException {
 		Element e = getElement(ai, key);
 		if (e == null) {
+			if (mSize + 1 > capacity) {
+				growCapacity(ai);
+			}
+			mSize++;
 			e = createElement(ai, key, LeekValueManager.NULL);
 			pushElement(e);
-			mSize++;
-			if (mSize > capacity) {
-				growCapacity(ai);
-				e = getElement(ai, key);
-			}
 		}
 		return e.value;
 	}
