@@ -110,6 +110,7 @@ public class TestCommon {
 			int aiID = 0;
 			Result result;
 			long compile_time = 0;
+			long ops = 0;
 			try {
 				boolean is_file = code.contains(".leek");
 
@@ -128,8 +129,7 @@ public class TestCommon {
 				long exec_time = (System.nanoTime() - t) / 1000;
 				TestCommon.execution_time += exec_time / 1000;
 
-				long ops = ai.getOperations();
-				operations.add(ops);
+				ops = ai.getOperations();
 
 				var vs = v.getString(ai);
 				result = new Result(vs, Error.NONE, (int) ai.getOperations(), exec_time);
@@ -142,6 +142,8 @@ public class TestCommon {
 				// e.printStackTrace();
 				result = new Result("error", Error.NONE, 0, 0);
 			}
+
+			operations.add(ops);
 
 			if (checker.check(result)) {
 				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "] " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops" + END_COLOR);
