@@ -35,6 +35,7 @@ public class TestMain {
 		new TestIf().run();
 		new TestLoops().run();
 		new TestFunction().run();
+		new TestJSON().run();
 		new TestFiles().run();
 		new TestEuler().run();
 
