@@ -124,10 +124,7 @@ public class LeekOperations {
 			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
 				return LeekValueManager.getLeekDoubleValue(v1.getDouble(ai) / v2.getDouble(ai));
 			} else {
-				if (ai.getVersion() == 10 && v1.getInt(ai) % v2.getInt(ai) == 0)
-					return LeekValueManager.getLeekIntValue(v1.getInt(ai) / v2.getInt(ai));
-				else
-					return new DoubleLeekValue(v1.getDouble(ai) / v2.getDouble(ai));
+				return new DoubleLeekValue(v1.getDouble(ai) / v2.getDouble(ai));
 			}
 		}
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
