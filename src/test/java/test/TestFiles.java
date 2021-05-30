@@ -12,6 +12,17 @@ public class TestFiles extends TestCommon {
 		file("ai/code/gcd.leek").equals("151");
 		file("ai/code/strings.leek").equals("true");
 		file("ai/code/reachable_cells.leek").equals("383");
+		file("ai/code/reachable_cells.leek").equals("383");
+		file("ai/code/reachable_cells_variant_1.leek").equals("400");
+		file("ai/code/reachable_cells_variant_2.leek").equals("481");
+		file("ai/code/reachable_cells_variant_3.leek").equals("16");
+		file("ai/code/reachable_cells_variant_4.leek").equals("2");
+		file("ai/code/reachable_cells_variant_5.leek").equals("5");
+		file("ai/code/reachable_cells_variant_6.leek").equals("4");
+		file("ai/code/reachable_cells_variant_7.leek").equals("5");
+		file("ai/code/reachable_cells_variant_8.leek").equals("null");
+		file("ai/code/reachable_cells_variant_9.leek").equals("null");
+		file("ai/code/reachable_cells_variant_10.leek").equals("null");
 		file("ai/code/french.leek").equals("cent-soixante-huit millions quatre-cent-quatre-vingt-neuf-mille-neuf-cent-quatre-vingt-dix-neuf");
 		// DISABLED_file("test/code/break_and_continue.leek").equals("2504");
 		file("ai/code/french.min.leek").equals("neuf-cent-quatre-vingt-sept milliards six-cent-cinquante-quatre millions trois-cent-vingt-et-un-mille-douze");

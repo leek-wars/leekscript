@@ -9,6 +9,9 @@ public class TestReference extends TestCommon {
 		section("Références");
 		code_v10("var t = [3, 4, 5]; var a = @t[1] a++ return t;").equals("[3, 4, 5]");
 		code_v10("var t = [3, 4, 5]; var a = null a = @t[1] a++ return t;").equals("[3, 4, 5]");
+		code_v10("var t = 0; var f = function(a) { t = a }; f([]);").equals("null");
+		code_v10("var t = 0; var f = function(a) { t = a }; var b = []; f(b);").equals("null");
+		code_v10("var t = 0; var f = function(a) { t = a }; var b = []; f(b); push(t, 5);").equals("null");
 		code_v10("var t = 0; var f = function(a) { t = a }; var b = []; f(b); push(t, 5); return [t, b];").equals("[[5], []]");
 		code_v10("var t = 0; var f = function(a) { t = @a }; var b = []; f(b); push(t, 5); return b;").equals("[]");
 		code_v10("var t = 0; var f = function(@a) { t = @a }; var b = []; f(b); push(t, 5); return b;").equals("[5]");

@@ -1,0 +1,20 @@
+function reachable_cells(start, mp) {
+
+	var cells = [start]
+	var grow = [start]
+
+	while (mp--) {
+		var res = []
+		for (var cell in grow) {
+			var c = cell + 17
+			if (!inArray(cells, c) and !inArray(res, c)) {
+				push(res, c)
+			}
+		}
+		grow = res
+		pushAll(cells, res)
+	}
+	return cells
+}
+
+return count(reachable_cells(306, 15));

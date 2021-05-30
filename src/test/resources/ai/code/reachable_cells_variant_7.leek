@@ -1,0 +1,25 @@
+var neighbours = function(c) {
+	var n = []
+	var n1 = c + 17
+	push(n, n1)
+	var n2 = c + 18
+	push(n, n2)
+	var n3 = c - 17
+	push(n, n3)
+	var n4 = c - 18
+	push(n, n4)
+	return n
+}
+
+var cell = 306
+var cells = [cell]
+
+var res = []
+var n = neighbours(cell)
+for (var c in n) {
+	if (!inArray(res, c)) {
+		push(res, c)
+	}
+}
+pushAll(cells, res)
+return count(cells)

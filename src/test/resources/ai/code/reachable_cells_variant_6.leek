@@ -1,0 +1,13 @@
+var neighbours = function(c) {
+	return [c + 17, c + 18, c - 17, c - 18]
+}
+
+var cell = 306
+
+var res = []
+for (var c in neighbours(cell)) {
+	if (!inArray(res, c)) {
+		push(res, c)
+	}
+}
+return count(res)
