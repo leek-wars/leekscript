@@ -1,0 +1,6 @@
+var neighbours = function(c) {
+	var r = [c + 17]
+	return r
+}
+
+var n = neighbours(306);

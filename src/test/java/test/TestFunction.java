@@ -40,6 +40,15 @@ public class TestFunction extends TestCommon {
 		section("Capture loop variable");
 		code("var sum = 0 for (var i = 0; i < 10; ++i) { sum += (function() { return i })() } return sum").equals("45");
 
+		section("Return reference");
+		code_v10("global x = 10 function f() { return @x } var a = f() a += 5 return x").equals("10");
+		code("global x = 10 function f() { return x } var a = f() a += 5 return x").equals("10");
+		code_v10("var x = 10 var f = function() { return @x } var a = f() a += 5 return x").equals("10");
+		code("var x = 10 var f = function() { return x } var a = f() a += 5 return x").equals("10");
+		code_v10("var x = [] var f = function() { return @x } var a = f() push(a, 5) return x").equals("[5]");
+		code_v10("var x = [] var f = function() { return x } var a = f() push(a, 5) return x").equals("[]");
+		code_v11("var x = [] var f = function() { return x } var a = f() push(a, 5) return x").equals("[5]");
+
 		section("Misc");
 		code("function f(x) { var s = 0 s |= 12 return s } f(12);").equals("null");
 		code("function te(a){ return function(){ return a**2; }; } return te(2)();").equals("4");
@@ -47,6 +56,8 @@ public class TestFunction extends TestCommon {
 		code("var tab = [2, 3, 4, 5, 6]; var r = []; for (var i : var j in tab) { r[i] = function() { return j; }; } return 4;").equals("4");
 		code_v10("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return string(retour);").equals("[2, 1, 2, 1, 2]");
 		code_v11("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return string(retour);").equals("[2.0, 1, 2.0, 1, 2.0]");
+		code_v10("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3]");
+		code_v11("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3, 12]");
 
 		section("Modify argument");
 		code("function test(x) { x += 10 return x } return test(5)").equals("15");
@@ -91,5 +102,32 @@ public class TestFunction extends TestCommon {
 		code_v10("var items = [[37, 3], [47, 10], [28, 5]] var all = []; var aux; aux = function(@current, i, tp, added, last) { if (count(current[1])) push(all, current);	var item_count = count(items); for (var j = i; j < item_count; ++j) { var item = @items[j];	var item_id = item[0]; var cost = item[1]; if (cost > tp) continue;var new_added = added; new_added[item_id] = true; var copy = current; aux(copy, j, tp - cost, new_added, item_id); } }; aux([0, []], 0, 25, [], -1); return count(all);").equals("0");
 		code_v10("var items = [[37, 3], [47, 10], [28, 5]] var all = []; var aux; aux = function(@current, i, tp, added, last) { if (count(current[1])) push(all, current);	var item_count = count(items); for (var j = i; j < item_count; ++j) { var item = @items[j];	var item_id = item[0]; var cost = item[1]; if (cost > tp) continue;var new_added = added; new_added[item_id] = true; var copy = current; push(copy[1], @[item, cost, 1]); aux(copy, j, tp - cost, new_added, item_id); } }; aux([0, []], 0, 25, [], -1); return count(all);").equals("44");
 		code_v10("var items = [[37, 3], [47, 10], [28, 5]] var all = []; var aux; aux = function(@current, i, tp, added, last) { if (count(current[1])) push(all, current);	var item_count = count(items); for (var j = i; j < item_count; ++j) { var item = @items[j];	var item_id = item[0]; var cost = item[1]; if (cost > tp) continue;var new_added = added; new_added[item_id] = true; var copy = current; push(copy[1], @[item, cost, 1]); copy[0] += cost; aux(copy, j, tp - cost, new_added, item_id); } }; aux([0, []], 0, 25, [], -1); return count(all);").equals("44");
+
+		section("strings.leek variations");
+		code("var m = ['A', 'T', 'C', 'G'];").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) {} return abs(100 * (count / tests) - 52) < 12;").equals("false");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) {} } return abs(100 * (count / tests) - 52) < 12;").equals("false");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) {} var c = contains(adn, 'GAGA'); if (c) count++ } return abs(100 * (count / tests) - 52) < 12;").equals("false");
+		code("var m = ['A', 'T', 'C', 'G'] var adn = '' adn += m[randInt(0, 4)];").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] }").equals("null");
+		code("var adn = 'testtest' contains(adn, 'GAGA');").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var adn = 'testtest' adn += m[randInt(0, 4)]").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var adn = 'testtest' adn += m[randInt(0, 4)] contains(adn, 'GAGA');").equals("null");
+		code("var adn = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' var c = contains(adn, 'GAGA');").equals("null");
+		code("var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA');").equals("null");
+		code("var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA');").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] }").equals("null");
+		code("var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code("var count = 0 var m = ['A', 'T', 'C', 'G'] var adn = '' for (var j = 0; j < 200; j++) { adn += m[0] } var c = false if (c) count++").equals("null");
+		code("var count = 0 var m = ['A', 'T', 'C', 'G'] var adn = '' adn += m[0] var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code("var count = 0 var m = ['A', 'T', 'C', 'G'] var adn = '' for (var j = 0; j < 200; j++) { adn += m[0] } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 50; j++) { adn += m[randInt(0, 4)] } var c = true; if (c) count++").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 50; j++) { adn += m[randInt(0, 4)] } var c = false; if (c) count++").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 50; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 100; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++ }").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++ } return abs(100 * (count / tests) - 52) < 12;").equals("true");
 	}
 }

@@ -1,0 +1,35 @@
+function reachable_cells(start, mp) {
+
+	var neighbours = function(c) {
+		var n = []
+		var n1 = c + 17
+		push(n, n1)
+		var n2 = c + 18
+		push(n, n2)
+		var n3 = c - 17
+		push(n, n3)
+		var n4 = c - 18
+		push(n, n4)
+		return n
+	}
+
+	var cells = [start]
+	var grow = [start]
+
+	while (mp--) {
+		var res = []
+		for (var cell in grow) {
+			var n = neighbours(cell)
+			for (var c in n) {
+				if (!inArray(cells, c) and !inArray(res, c)) {
+					push(res, c)
+				}
+			}
+		}
+		grow = res
+		pushAll(cells, res)
+	}
+	return cells
+}
+
+return count(reachable_cells(306, 15));
