@@ -13,6 +13,14 @@ public class TestGlobals extends TestCommon {
 		code("global x; x = [1, 2, 3]; return x;").equals("[1, 2, 3]");
 		code("var r = x; global x; return r;").equals("null");
 		code("var r = x; global x = 12; return r;").equals("null");
+		code("global r = 2 + 2; return r").equals("4");
+		code("global r = [1, 2, 3]; return r").equals("[1, 2, 3]");
+		code("global r = 'salut'; return r").equals("salut");
+		code("global r = ['a': 12, 'b': 5]; return r").equals("[a : 12, b : 5]");
+		code("global r = [] return r[1] = 12").equals("12");
+		code("global r = [0] return r[0] += 12").equals("12");
+		code("global r = [] return r[5] += 12").equals("12");
+		code_v10("global r = 12 r = @null").equals("null");
 
 		section("Globals operators");
 		code("global x = 12; x++; return x;").equals("13");

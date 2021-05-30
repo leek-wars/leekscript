@@ -19,6 +19,7 @@ public class TestFunction extends TestCommon {
 		// code("function test() { var fact = x -> if x == 1 { 1 } else { fact(x - 1) * x } fact(8) } test()").equals("40320");
 		file_v10("ai/code/knapsack.leek").equals("761");
 		file_v11("ai/code/knapsack_11.leek").equals("761");
+		code("function cellsInRange(i) { var areaInRange = []; if (i == 0) { return cellsInRange(10); } else { return areaInRange; } } var myRange = cellsInRange(0); return myRange").equals("[]");
 
 		section("Redefinition");
 		code("var count = count([1, 2, 3]) return count;").equals("3");
@@ -65,6 +66,11 @@ public class TestFunction extends TestCommon {
 		code("var toto = 12; var f = function() { toto = 'salut'; }; var g = function() { return f; }; g()() return toto").equals("salut");
 		code_v10("function Coordonate(@par_x, @par_y) { var x = par_x; var y = par_y; var getX = function(){ return x; }; var getY = function(){ return y; };return @(function(@method) { if(method === 'getX'){ return getX; } if(method === 'getY'){ return getY;	} }); } var c = Coordonate(5, 12) return [c('getX')(), c('getY')()]").equals("[5, 12]");
 		code_v11("function Coordonate(par_x, par_y) { var x = par_x; var y = par_y; var getX = function(){ return x; }; var getY = function(){ return y; };return (function(method) { if(method === 'getX'){ return getX; } if(method === 'getY'){ return getY;	} }); } var c = Coordonate(5, 12) return [c('getX')(), c('getY')()]").equals("[5, 12]");
+		code("function test() { var r = [1, 2, 3] return (r); } return test()").equals("[1, 2, 3]");
+		code("function test() { var r = [1, 2, 3] return (r); } var a = test() return a").equals("[1, 2, 3]");
+		code("function t(a) {} t([ [12], [12] ])").equals("null");
+		code_v10("function t(@a) {} t([ [12], [12] ])").equals("null");
+		code_v10("function t() { var a = 12 return @a } return t() + 2").equals("14");
 
 		section("Modify argument");
 		code("function test(x) { x += 10 return x } return test(5)").equals("15");
