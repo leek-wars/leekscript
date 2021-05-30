@@ -856,11 +856,13 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	}
 
 	private Element getElement(AI ai, Object key) throws LeekRunException {
+
+		int operations = ArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS;
+		ai.addOperationsNoCheck(operations);
+
 		if (mTable == null) {
 			return null; // empty array
 		}
-		int operations = ArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS;
-		ai.addOperationsNoCheck(operations);
 
 		int hash = key.hashCode();
 		int index = getIndex(hash);
