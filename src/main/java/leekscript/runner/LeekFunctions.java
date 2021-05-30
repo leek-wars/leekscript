@@ -358,10 +358,7 @@ public enum LeekFunctions implements ILeekFunction {
 				String string = parameters[0].getString(leekIA);
 				int index = parameters[1].getInt(leekIA);
 				int length = parameters[2].getInt(leekIA);
-				if (string.length() <= index || index < 0) {
-					return LeekValueManager.NULL;
-				}
-				if (index + length > string.length()) {
+				if (string.length() <= index || index < 0 || length < 0 || index + length > string.length()) {
 					return LeekValueManager.NULL;
 				}
 				return new StringLeekValue(string.substring(index, index + length));
