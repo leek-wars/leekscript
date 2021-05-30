@@ -23,7 +23,7 @@ public class LeekOperations {
 		if (v1.isNumeric() && v2.isNumeric()) {
 			ai.addOperations(1);
 			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
-				return LeekValueManager.getLeekDoubleValue(v1.getDouble(ai) + v2.getDouble(ai));
+				return new DoubleLeekValue(v1.getDouble(ai) + v2.getDouble(ai));
 			} else {
 				return LeekValueManager.getLeekIntValue(v1.getInt(ai) + v2.getInt(ai));
 			}
@@ -69,7 +69,7 @@ public class LeekOperations {
 		v2 = v2.getValue();
 		if (v1.isNumeric() && v2.isNumeric()) {
 			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue)
-				return LeekValueManager.getLeekDoubleValue(v1.getDouble(ai) - v2.getDouble(ai));
+				return new DoubleLeekValue(v1.getDouble(ai) - v2.getDouble(ai));
 			else
 				return LeekValueManager.getLeekIntValue(v1.getInt(ai) - v2.getInt(ai));
 		}
@@ -85,7 +85,7 @@ public class LeekOperations {
 				double result = Math.pow(v1.getDouble(ai), v2.getDouble(ai));
 				if (Double.isNaN(result))
 					return LeekValueManager.NULL;
-				return LeekValueManager.getLeekDoubleValue(result);
+				return new DoubleLeekValue(result);
 			} else {
 				double result = Math.pow(v1.getInt(ai), v2.getInt(ai));
 				if (Double.isNaN(result))
@@ -102,7 +102,7 @@ public class LeekOperations {
 		v2 = v2.getValue();
 		if (v1.isNumeric() && v2.isNumeric()) {
 			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
-				return LeekValueManager.getLeekDoubleValue(v1.getDouble(ai) * v2.getDouble(ai));
+				return new DoubleLeekValue(v1.getDouble(ai) * v2.getDouble(ai));
 			} else {
 				return LeekValueManager.getLeekIntValue(v1.getInt(ai) * v2.getInt(ai));
 			}
@@ -121,11 +121,7 @@ public class LeekOperations {
 				ai.addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
 				return LeekValueManager.NULL;
 			}
-			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
-				return LeekValueManager.getLeekDoubleValue(v1.getDouble(ai) / v2.getDouble(ai));
-			} else {
-				return new DoubleLeekValue(v1.getDouble(ai) / v2.getDouble(ai));
-			}
+			return new DoubleLeekValue(v1.getDouble(ai) / v2.getDouble(ai));
 		}
 		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
@@ -141,7 +137,7 @@ public class LeekOperations {
 				return LeekValueManager.NULL;
 			}
 			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue)
-				return LeekValueManager.getLeekDoubleValue(v1.getDouble(ai) % v2.getDouble(ai));
+				return new DoubleLeekValue(v1.getDouble(ai) % v2.getDouble(ai));
 			else
 				return LeekValueManager.getLeekIntValue(v1.getInt(ai) % v2.getInt(ai));
 		}

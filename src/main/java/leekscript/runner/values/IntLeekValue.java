@@ -92,7 +92,7 @@ public class IntLeekValue extends AbstractLeekValue {
 		ai.addOperations(ADD_COST);
 		val = val.getValue();
 		if (val instanceof DoubleLeekValue)
-			return LeekValueManager.getLeekDoubleValue(mValue + val.getDouble(ai));
+			return new DoubleLeekValue(mValue + val.getDouble(ai));
 		return LeekValueManager.getLeekIntValue(ai, mValue + val.getInt(ai), this);
 	}
 
@@ -101,7 +101,7 @@ public class IntLeekValue extends AbstractLeekValue {
 		ai.addOperations(ADD_COST);
 		val = val.getValue();
 		if (val instanceof DoubleLeekValue)
-			return LeekValueManager.getLeekDoubleValue(mValue - val.getDouble(ai));
+			return new DoubleLeekValue(mValue - val.getDouble(ai));
 		return LeekValueManager.getLeekIntValue(ai, mValue - val.getInt(ai), this);
 	}
 
@@ -110,7 +110,7 @@ public class IntLeekValue extends AbstractLeekValue {
 		ai.addOperations(MUL_COST);
 		val = val.getValue();
 		if (val instanceof DoubleLeekValue)
-			return LeekValueManager.getLeekDoubleValue(mValue * val.getDouble(ai));
+			return new DoubleLeekValue(mValue * val.getDouble(ai));
 		return LeekValueManager.getLeekIntValue(ai, mValue * val.getInt(ai), this);
 	}
 
@@ -169,7 +169,7 @@ public class IntLeekValue extends AbstractLeekValue {
 		ai.addOperations(MOD_COST);
 		val = val.getValue();
 		if (val instanceof DoubleLeekValue)
-			return LeekValueManager.getLeekDoubleValue(mValue % val.getDouble(ai));
+			return new DoubleLeekValue(mValue % val.getDouble(ai));
 		return LeekValueManager.getLeekIntValue(ai, mValue % val.getInt(ai), this);
 	}
 

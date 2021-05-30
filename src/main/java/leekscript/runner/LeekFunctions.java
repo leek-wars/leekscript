@@ -22,7 +22,7 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
 			if (parameters[0] instanceof DoubleLeekValue) {
-				return LeekValueManager.getLeekDoubleValue(Math.abs(parameters[0].getDouble(leekIA)));
+				return new DoubleLeekValue(Math.abs(parameters[0].getDouble(leekIA)));
 			} else {
 				return LeekValueManager.getLeekIntValue(Math.abs(parameters[0].getInt(leekIA)));
 			}
@@ -37,7 +37,7 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
 			if (parameters[0] instanceof DoubleLeekValue || parameters[1] instanceof DoubleLeekValue) {
-				return LeekValueManager.getLeekDoubleValue(Math.min(parameters[0].getDouble(leekIA), parameters[1].getDouble(leekIA)));
+				return new DoubleLeekValue(Math.min(parameters[0].getDouble(leekIA), parameters[1].getDouble(leekIA)));
 			}
 			return LeekValueManager.getLeekIntValue(Math.min(parameters[0].getInt(leekIA), parameters[1].getInt(leekIA)));
 		}
@@ -51,7 +51,7 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
 			if (parameters[0] instanceof DoubleLeekValue || parameters[1] instanceof DoubleLeekValue) {
-				return LeekValueManager.getLeekDoubleValue(Math.max(parameters[0].getDouble(leekIA), parameters[1].getDouble(leekIA)));
+				return new DoubleLeekValue(Math.max(parameters[0].getDouble(leekIA), parameters[1].getDouble(leekIA)));
 			}
 			return LeekValueManager.getLeekIntValue(Math.max(parameters[0].getInt(leekIA), parameters[1].getInt(leekIA)));
 		}
@@ -251,7 +251,7 @@ public enum LeekFunctions implements ILeekFunction {
 	pow(2) {
 		@Override
 		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekDoubleValue(Math.pow(parameters[0].getDouble(leekIA), parameters[1].getDouble(leekIA)));
+			return new DoubleLeekValue(Math.pow(parameters[0].getDouble(leekIA), parameters[1].getDouble(leekIA)));
 		}
 
 		@Override
@@ -566,7 +566,7 @@ public enum LeekFunctions implements ILeekFunction {
 				return LeekValueManager.NULL;
 			try {
 				if (parameters[0].getString(leekIA).contains(".")) {
-					return LeekValueManager.getLeekDoubleValue(Double.parseDouble(parameters[0].getString(leekIA)));
+					return new DoubleLeekValue(Double.parseDouble(parameters[0].getString(leekIA)));
 				} else {
 					return LeekValueManager.getLeekIntValue(Integer.parseInt(parameters[0].getString(leekIA)));
 				}
@@ -924,7 +924,7 @@ public enum LeekFunctions implements ILeekFunction {
 			for (AbstractLeekValue val : parameters[0].getArray()) {
 				somme += val.getDouble(leekIA);
 			}
-			return LeekValueManager.getLeekDoubleValue(somme);
+			return new DoubleLeekValue(somme);
 		}
 
 		@Override
@@ -949,7 +949,7 @@ public enum LeekFunctions implements ILeekFunction {
 			}
 			if (average == 0 && leekIA.getVersion() == 10)
 				return LeekValueManager.getLeekIntValue(0);
-			return LeekValueManager.getLeekDoubleValue(average / parameters[0].getArray().size());
+			return new DoubleLeekValue(average / parameters[0].getArray().size());
 		}
 
 		@Override
