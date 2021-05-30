@@ -37,6 +37,9 @@ public abstract class AI {
 	protected AI mUAI;
 	protected int mInstructions;
 	protected RandomGenerator randomGenerator;
+	private long analyzeTime;
+	private long compileTime;
+	private long loadTime;
 
 	public AI(int instructions, int version) {
 		this.mInstructions = instructions;
@@ -403,4 +406,28 @@ public abstract class AI {
 	}
 
 	public abstract int getVersion();
+
+	public long getLoadTime() {
+		return loadTime;
+	}
+
+	public void setLoadTime(long loadTime) {
+		this.loadTime = loadTime;
+	}
+
+	public long getCompileTime() {
+		return compileTime;
+	}
+
+	public void setCompileTime(long compileTime) {
+		this.compileTime = compileTime;
+	}
+
+	public long getAnalyzeTime() {
+		return analyzeTime;
+	}
+
+	public void setAnalyzeTime(long analyzeTime) {
+		this.analyzeTime = analyzeTime;
+	}
 }

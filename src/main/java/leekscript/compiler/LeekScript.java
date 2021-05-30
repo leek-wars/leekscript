@@ -210,6 +210,9 @@ public class LeekScript {
 			long load_time = System.nanoTime() - t;
 
 			ai.setId(file.getId());
+			ai.setAnalyzeTime(analyze_time);
+			ai.setCompileTime(compile_time);
+			ai.setLoadTime(load_time);
 
 			if (useClassCache) {
 				aiCache.put(javaClassName, clazz);
