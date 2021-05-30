@@ -131,6 +131,8 @@ public class TestArray extends TestCommon {
 		code("return ['hello', true][2]").equals("null");
 		code("var a = [1, 2, 3] return a[100] = 12").equals("12");
 		code("var a = [1, 2, 3] return a[-100] = 12").equals("12");
+		code("var a = [] a[100] = true return a").equals("[100 : true]");
+		code("var a = [1, 2, 3] a[100] = true return a").equals("[0 : 1, 1 : 2, 2 : 3, 100 : true]");
 		// code("var a = [[12], ''][0]; a[100]++; return a").equals("null");
 		// code("var a = [5] var e = a[1] !? 5 return e").equals("5");
 
