@@ -1299,8 +1299,9 @@ public enum LeekFunctions implements ILeekFunction {
 	},
 	getOperations(0) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekIntValue((int) leekIA.getOperations());
+		public AbstractLeekValue run(AI ai, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
+			ai.addOperations(1);
+			return LeekValueManager.getLeekIntValue((int) ai.getOperations());
 		}
 	},
 	clone(1, 2) {
