@@ -220,16 +220,12 @@ public class LeekOperations {
 	public static AbstractLeekValue clonePrimitive(AI ai, AbstractLeekValue value) throws LeekRunException {
 		AbstractLeekValue v = value.getValue();
 		if (v instanceof StringLeekValue) {
-			ai.addOperations(1);
 			return new StringLeekValue(v.getString(ai));
 		} else if (v instanceof BooleanLeekValue) {
-			ai.addOperations(1);
 			return LeekValueManager.getLeekBooleanValue(v.getBoolean());
 		} else if (v instanceof IntLeekValue) {
-			ai.addOperations(1);
 			return LeekValueManager.getLeekIntValue(v.getInt(ai));
 		} else if (v instanceof DoubleLeekValue) {
-			ai.addOperations(1);
 			return new DoubleLeekValue(v.getDouble(ai));
 		} else {
 			return value;
@@ -242,7 +238,6 @@ public class LeekOperations {
 
 	public static AbstractLeekValue clone(AI ai, AbstractLeekValue value, int level) throws LeekRunException {
 		value = value.getValue();
-		ai.addOperations(1);
 		if (value instanceof StringLeekValue)
 			return new StringLeekValue(value.getString(ai));
 		else if (value instanceof FunctionLeekValue)
@@ -255,12 +250,14 @@ public class LeekOperations {
 			return new DoubleLeekValue(value.getDouble(ai));
 		else if (value instanceof ArrayLeekValue) {
 			if (level == 0) return value;
+			ai.addOperations(1);
 			if (value.getArray().size() > 0) {
 				ai.addOperations(value.getArray().size() * (ArrayLeekValue.ARRAY_CELL_CREATE_OPERATIONS));
 			}
 			return new ArrayLeekValue(ai, value.getArray(), level);
 		} else if (value instanceof ObjectLeekValue) {
 			if (level == 0) return value;
+			ai.addOperations(1);
 			return new ObjectLeekValue(ai, (ObjectLeekValue) value, level);
 		} else if (value instanceof ClassLeekValue) {
 			return value;
