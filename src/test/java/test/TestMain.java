@@ -26,6 +26,7 @@ public class TestMain {
 		new TestNumber().run();
 		new TestString().run();
 		new TestArray().run();
+		new TestMap().run();
 		new TestComments().run();
 		new TestOperators().run();
 		new TestReference().run();
