@@ -108,6 +108,15 @@ public class TestLoops extends TestCommon {
 		// DISABLED_code("var s = 0 for (var i = 0; i < 10; i += 1) { var j = 0 for (; j < 10; j += 1) { s++ }} return s;").equals("100");
 		// file("test/code/loops/lot_of_fors_int.leek").equals("15015");
 		// file("test/code/loops/lot_of_fors_array.leek").equals("15015");
+		code("var tabmulti=[]; for (var i = 0; i < 8; ++i) tabmulti[i]=1; return tabmulti").equals("[1, 1, 1, 1, 1, 1, 1, 1]");
+		code("var tabmulti=[]; for (var i = 0; i < 9; ++i) tabmulti[i]=1; return tabmulti").equals("[1, 1, 1, 1, 1, 1, 1, 1, 1]");
+		code("var tabmulti=[]; for (var i = 0; i < 50; ++i) tabmulti[i]=1; return tabmulti").equals("[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]");
+		code("var tabmulti=[[],[],[],[],[]]; var i = 3, j = -2 tabmulti[i][j]=i*j; return tabmulti").equals("[[], [], [], [-2 : -6], []]");
+		code("var tabmulti=[[],[],[],[],[]]; var vPM=4; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ }} return tabmulti").equals("[[], [], [], [], []]");
+		code("var tabmulti=[[],[],[],[],[]]; var vPM=1; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-1 : 0, 0 : 0, 1 : 0], [-1 : -1, 0 : 0, 1 : 1], [], [], []]");
+		code("var tabmulti=[[],[],[],[],[]]; var vPM=2; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-2 : 0, -1 : 0, 0 : 0, 1 : 0, 2 : 0], [-2 : -2, -1 : -1, 0 : 0, 1 : 1, 2 : 2], [-2 : -4, -1 : -2, 0 : 0, 1 : 2, 2 : 4], [], []]");
+		code("var tabmulti=[[],[],[],[],[]]; var vPM=3; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-3 : 0, -2 : 0, -1 : 0, 0 : 0, 1 : 0, 2 : 0, 3 : 0], [-3 : -3, -2 : -2, -1 : -1, 0 : 0, 1 : 1, 2 : 2, 3 : 3], [-3 : -6, -2 : -4, -1 : -2, 0 : 0, 1 : 2, 2 : 4, 3 : 6], [-3 : -9, -2 : -6, -1 : -3, 0 : 0, 1 : 3, 2 : 6, 3 : 9], []]");
+		code("var tabmulti=[[],[],[],[],[]]; var vPM=4; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-4 : 0, -3 : 0, -2 : 0, -1 : 0, 0 : 0, 1 : 0, 2 : 0, 3 : 0, 4 : 0], [-4 : -4, -3 : -3, -2 : -2, -1 : -1, 0 : 0, 1 : 1, 2 : 2, 3 : 3, 4 : 4], [-4 : -8, -3 : -6, -2 : -4, -1 : -2, 0 : 0, 1 : 2, 2 : 4, 3 : 6, 4 : 8], [-4 : -12, -3 : -9, -2 : -6, -1 : -3, 0 : 0, 1 : 3, 2 : 6, 3 : 9, 4 : 12], [-4 : -16, -3 : -12, -2 : -8, -1 : -4, 0 : 0, 1 : 4, 2 : 8, 3 : 12, 4 : 16]]");
 
 		section("Mix for and while loops");
 		code("var s = 0 for (var i = 0; i < 10; i += 1) { var j = 10 while (j--) { s++ }} return s;").equals("100");
