@@ -111,6 +111,7 @@ public class TestCommon {
 			Result result;
 			long compile_time = 0;
 			long ops = 0;
+			LeekScript.getRandom().seed(123456789);
 			try {
 				boolean is_file = code.contains(".leek");
 
