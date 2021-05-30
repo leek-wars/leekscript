@@ -194,6 +194,8 @@ public class TestArray extends TestCommon {
 		// DISABLED_code("var a = [] if (true) a += 12 return a;").equals("[12]");
 		// DISABLED_code("var a = [1] if (true) a += 12 return a;").equals("[1, 12]");
 		// DISABLED_code("var a = ['a'] if (true) a += 12 return a;").equals("['a', 12]");
+		code_v10("var a = [1.55]; a += 12.9; return a").equals("[1,55]");
+		code_v11("var a = [1.55]; a += 12.9; return a").equals("[1.55]");
 
 		section("Array.operator += on element");
 		code("var a = [5] a[0] += 1 return a;").equals("[6]");

@@ -58,6 +58,13 @@ public class TestFunction extends TestCommon {
 		code_v11("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return string(retour);").equals("[2.0, 1, 2.0, 1, 2.0]");
 		code_v10("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3]");
 		code_v11("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3, 12]");
+		code("function f() { return [1, 2, 3] } var x = f();").equals("null");
+		code("var x = arrayMap([1, 2, 3], function(x) { return x });").equals("null");
+		code("var x = arrayMap([1, 2, 3], function(x) { return x }); debug(x);").equals("null");
+		code("var toto = 12; var f = function() { toto = 'salut'; }; [true, 12, f][2](); return toto").equals("salut");
+		code("var toto = 12; var f = function() { toto = 'salut'; }; var g = function() { return f; }; g()() return toto").equals("salut");
+		code_v10("function Coordonate(@par_x, @par_y) { var x = par_x; var y = par_y; var getX = function(){ return x; }; var getY = function(){ return y; };return @(function(@method) { if(method === 'getX'){ return getX; } if(method === 'getY'){ return getY;	} }); } var c = Coordonate(5, 12) return [c('getX')(), c('getY')()]").equals("[5, 12]");
+		code_v11("function Coordonate(par_x, par_y) { var x = par_x; var y = par_y; var getX = function(){ return x; }; var getY = function(){ return y; };return (function(method) { if(method === 'getX'){ return getX; } if(method === 'getY'){ return getY;	} }); } var c = Coordonate(5, 12) return [c('getX')(), c('getY')()]").equals("[5, 12]");
 
 		section("Modify argument");
 		code("function test(x) { x += 10 return x } return test(5)").equals("15");
