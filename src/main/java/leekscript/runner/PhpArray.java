@@ -627,13 +627,13 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 * @throws LeekRunException
 	 */
 	public void push(AI ai, AbstractLeekValue value) throws LeekRunException {
+		if (mSize >= capacity) {
+			growCapacity(ai);
+		}
+		mSize++;
 		Integer key = Integer.valueOf(mIndex);
 		Element e = createElement(ai, key, value);
 		pushElement(e);
-		mSize++;
-		if (mSize > capacity) {
-			growCapacity(ai);
-		}
 	}
 
 	/**
@@ -644,14 +644,14 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 * @throws LeekRunException
 	 */
 	public void unshift(AI ai, AbstractLeekValue value) throws LeekRunException {
+		if (mSize >= capacity) {
+			growCapacity(ai);
+		}
+		mSize++;
 		Integer key = 0;
 		Element e = createElement(ai, key, value);
 		unshiftElement(e);
 		reindex(ai);
-		mSize++;
-		if (mSize > capacity) {
-			growCapacity(ai);
-		}
 	}
 
 	/**
@@ -668,12 +668,12 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		Element e = getElement(ai, key);
 		// Si l'élément n'existe pas on le crée
 		if (e == null) {
-			e = createElement(ai, key, value);
-			pushElement(e);
-			mSize++;
-			if (mSize > capacity) {
+			if (mSize >= capacity) {
 				growCapacity(ai);
 			}
+			mSize++;
+			e = createElement(ai, key, value);
+			pushElement(e);
 		} else {
 			e.value.set(ai, value);
 		}
@@ -712,6 +712,10 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		} else if (position == 0) {
 			unshift(ai, value);
 		} else {
+			if (mSize >= capacity) {
+				growCapacity(ai);
+			}
+			mSize++;
 			// On crée notre nouvel élément
 			Element e = createElement(ai, Integer.valueOf(mIndex), value);
 			// On va rechercher l'élément avant lequel insérer
@@ -727,11 +731,6 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 
 			// On réindexe
 			reindex(ai);
-
-			mSize++;
-			if (mSize > capacity) {
-				growCapacity(ai);
-			}
 		}
 	}
 
@@ -763,11 +762,11 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		mIndex = new_index;
 	}
 
-	private void unshiftElement(Element e) {// Ajouter un élément au début
-		if (mHead == null) {// Tableau vide
+	private void unshiftElement(Element e) { // Ajouter un élément au début
+		if (mHead == null) { // Tableau vide
 			mHead = e;
 			mEnd = e;
-		} else {// Ajouter au début
+		} else { // Ajouter au début
 			mHead.prev = e;
 			e.next = mHead;
 			mHead = e;
@@ -775,10 +774,10 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	}
 
 	private void pushElement(Element e) {// Ajouter un élément à la fin
-		if (mEnd == null) {// Tableau vide
+		if (mEnd == null) { // Tableau vide
 			mHead = e;
 			mEnd = e;
-		} else {// Sinon on ajoute à la fin
+		} else { // Sinon on ajoute à la fin
 			mEnd.next = e;
 			e.prev = mEnd;
 			mEnd = e;
