@@ -1,12 +1,15 @@
 package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
+import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.common.Error;
 
 public class ForeachBlock extends AbstractLeekBlock {
 
@@ -22,7 +25,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 	}
 
 	public void setIterator(IAWord iterator, boolean declaration) {
-		if (declaration) addVariable(new LeekVariable(iterator, VariableType.LOCAL));
+		// if (declaration) addVariable(new LeekVariable(iterator, VariableType.LOCAL));
 		mIterator = iterator;
 	}
 
@@ -73,8 +76,18 @@ public class ForeachBlock extends AbstractLeekBlock {
 	public void analyze(WordCompiler compiler) {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
+		// Si c'est une déclaration on vérifie que le nom est disponnible
 		if (mIsDeclaration) {
-			this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL));
+			if ((compiler.getVersion() >= 11 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
+				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+			} else {
+				this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL));
+			}
+		} else {
+			var v = compiler.getCurrentBlock().getVariable(mIterator.getWord(), true);
+			if (v == null) {
+				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
+			}
 		}
 		mArray.analyze(compiler);
 		compiler.setCurrentBlock(initialBlock);

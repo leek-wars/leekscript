@@ -46,6 +46,13 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		addVariable(new LeekVariable(token, VariableType.ARGUMENT));
 	}
 
+	public boolean hasParameter(String name) {
+		for (var parameter : mParameters) {
+			if (parameter.equals(name)) return true;
+		}
+		return false;
+	}
+
 	@Override
 	public String getCode() {
 		String str = "function anonymous" + mId + "(";
