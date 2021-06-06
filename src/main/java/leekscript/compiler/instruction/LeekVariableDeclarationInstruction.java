@@ -50,15 +50,14 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if(!mMustSepare){
+		if (!mMustSepare) {
 			writer.addCode("final VariableLeekValue user_" + token.getWord() + " = new VariableLeekValue(mUAI, ");
-			if(mValue != null) mValue.writeJavaCode(mainblock, writer);
+			if (mValue != null) mValue.writeJavaCode(mainblock, writer);
 			else writer.addCode("LeekValueManager.NULL");
 			writer.addLine(");", mLine, mAI);
-		}
-		else{
-			writer.addCode("final VariableLeekValue user_" + token.getWord() + " = new VariableLeekValue(mUAI, LeekValueManager.NULL); user_" + token.getWord() + ".set(mUAI, ");
-			if(mValue != null) mValue.writeJavaCode(mainblock, writer);
+		} else {
+			writer.addCode("final VariableLeekValue user_" + token.getWord() + " = new VariableLeekValue(mUAI); user_" + token.getWord() + ".init(mUAI, ");
+			if (mValue != null) mValue.writeJavaCode(mainblock, writer);
 			else writer.addCode("LeekValueManager.NULL");
 			writer.addLine(");", mLine, mAI);
 		}
