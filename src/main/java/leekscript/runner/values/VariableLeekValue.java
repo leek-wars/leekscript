@@ -33,6 +33,21 @@ public class VariableLeekValue extends AbstractLeekValue {
 		}
 	}
 
+	public void init(AI ai, AbstractLeekValue value) throws LeekRunException {
+		ai.addOperations(1);
+		if (ai.getVersion() >= 11) {
+			mValue = LeekOperations.clonePrimitive(ai, value.getValue());
+		} else {
+			if (!(value instanceof VariableLeekValue))
+				mValue = value.getValue();
+			else
+				if (value.isReference())
+					mValue = value.getValue();
+				else
+					mValue = LeekOperations.clone(ai, value.getValue());
+		}
+	}
+
 	@Override
 	public int getInt(AI ai) throws LeekRunException {
 		return mValue.getInt(ai);
