@@ -1,5 +1,6 @@
 package leekscript.compiler;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -104,15 +105,19 @@ public class WordCompiler {
 						throw new LeekCompilerException(mCompiler.lastWord(), Error.OPENING_PARENTHESIS_EXPECTED);
 					}
 					int param_count = 0;
+					var parameters = new HashSet<String>();
 					while (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
 						if (mCompiler.getWord().getType() == WordParser.T_OPERATOR && mCompiler.getWord().getWord().equals("@")) {
 							mCompiler.skipWord();
 						}
-						if (mCompiler.getWord().getType() != WordParser.T_STRING)
+						if (mCompiler.getWord().getType() != WordParser.T_STRING) {
 							throw new LeekCompilerException(mCompiler.getWord(), Error.PARAMETER_NAME_EXPECTED);
-						// if (!isAvailable(mCompiler.getWord().getWord(), true))
-						// 	throw new LeekCompilerException(mCompiler.getWord(), Error.PARAMETER_NAME_UNAVAILABLE);
-						mCompiler.skipWord();
+						}
+						var parameter = mCompiler.readWord();
+						if (parameters.contains(parameter.getWord())) {
+							throw new LeekCompilerException(parameter, Error.PARAMETER_NAME_UNAVAILABLE);
+						}
+						parameters.add(parameter.getWord());
 						param_count++;
 
 						if (mCompiler.getWord().getType() == WordParser.T_VIRG)
@@ -381,27 +386,12 @@ public class WordCompiler {
 		if (mCompiler.getWord().getType() != WordParser.T_STRING)
 			throw new LeekCompilerException(mCompiler.getWord(), Error.VARIABLE_NAME_EXPECTED);
 		IAWord varName = mCompiler.readWord();
-		// Si c'est une déclaration on vérifie que le nom est disponnible
-		/*
-		if (isDeclaration) {
-			if (!isAvailable(varName, true))
-				throw new LeekCompilerException(mCompiler.lastWord(), Error.VARIABLE_NAME_UNAVAILABLE);
-		} else {
-			// Sinon on vérifie que la variable existe
-			if (!mCurentBlock.hasVariable(varName) && !mMain.hasGlobal(varName))
-				throw new LeekCompilerException(mCompiler.lastWord(), Error.VARIABLE_NOT_EXISTS);
-		}
-		*/
-		// Maintenant on va savoir si on a affaire à un for(i in array) ou à un
-		// for(i=0;i<...
-		if (mCompiler.getWord().getWord().equals(":")) {// C'est un
-														// for(key:value in
-														// array)
+
+		// Maintenant on va savoir si on a affaire à un for (i in array) ou à un for(i=0;i<...
+		if (mCompiler.getWord().getWord().equals(":")) { // C'est un for (key:value in array)
 			mCompiler.skipWord();
 			boolean isValueDeclaration = false;
-			if (mCompiler.getWord().getWord().equals("var")) {// Il y a
-																// déclaration
-																// de la valeur
+			if (mCompiler.getWord().getWord().equals("var")) { // Il y a déclaration de la valeur
 				isValueDeclaration = true;
 				mCompiler.skipWord();
 			}
@@ -418,16 +408,7 @@ public class WordCompiler {
 			if (mCompiler.getWord().getType() != WordParser.T_STRING)
 				throw new LeekCompilerException(mCompiler.getWord(), Error.VARIABLE_NAME_EXPECTED);
 			IAWord valueVarName = mCompiler.readWord();
-			/*
-			if (isValueDeclaration) {
-				if (!isAvailable(valueVarName, true))
-					throw new LeekCompilerException(mCompiler.lastWord(), Error.VARIABLE_NAME_UNAVAILABLE);
-			} else {
-				// Sinon on vérifie que la variable existe
-				if (!mCurentBlock.hasVariable(valueVarName) && !mMain.hasGlobal(valueVarName))
-					throw new LeekCompilerException(mCompiler.lastWord(), Error.VARIABLE_NOT_EXISTS);
-			}
-			*/
+
 			if (!mCompiler.readWord().getWord().equals("in"))
 				throw new LeekCompilerException(mCompiler.getWord(), Error.KEYWORD_IN_EXPECTED);
 
@@ -443,9 +424,7 @@ public class WordCompiler {
 			block.setValueIterator(valueVarName, isValueDeclaration);
 
 			forBlock = block;
-		} else if (mCompiler.getWord().getWord().equals("in")) {// C'est un
-																// for(i in
-																// array)
+		} else if (mCompiler.getWord().getWord().equals("in")) { // C'est un for (i in array)
 			mCompiler.skipWord();
 
 			ForeachBlock block = new ForeachBlock(mCurentBlock, mMain, isDeclaration, mLine, mAI, reference1);
@@ -458,8 +437,7 @@ public class WordCompiler {
 			block.setIterator(varName, isDeclaration);
 
 			forBlock = block;
-		} else if (mCompiler.getWord().getWord().equals("=")) {// C'est un
-																// for(i=0;i<1;i++)
+		} else if (mCompiler.getWord().getWord().equals("=")) { // C'est un for (i=0;i<1;i++)
 			mCompiler.skipWord();
 
 			ForBlock block = new ForBlock(mCurentBlock, mMain, mLine, mAI);
@@ -487,8 +465,7 @@ public class WordCompiler {
 			// }
 			AbstractExpression incrementation = readExpression();
 
-			// Attention si l'incrémentation n'est pas une expression Java fait
-			// la gueule !
+			// Attention si l'incrémentation n'est pas une expression Java fait la gueule !
 			if (incrementation != null && (incrementation instanceof LeekVariable ||
 					(incrementation instanceof LeekExpression && ((LeekExpression) incrementation).getOperator() == -1))) {
 				throw new LeekCompilerException(mCompiler.lastWord(), Error.UNCOMPLETE_EXPRESSION);
@@ -1077,11 +1054,14 @@ public class WordCompiler {
 				}
 				mCompiler.skipWord();
 			}
-			if (mCompiler.getWord().getType() != WordParser.T_STRING)
+			if (mCompiler.getWord().getType() != WordParser.T_STRING) {
 				throw new LeekCompilerException(mCompiler.getWord(), Error.PARAMETER_NAME_EXPECTED);
-			// if (!isAvailable(mCompiler.getWord().getWord(), true))
-			// 	throw new LeekCompilerException(mCompiler.getWord(), Error.PARAMETER_NAME_UNAVAILABLE);
-			block.addParameter(mCompiler.readWord(), is_reference);
+			}
+			var parameter = mCompiler.readWord();
+			if (block.hasParameter(parameter.getWord())) {
+				throw new LeekCompilerException(parameter, Error.PARAMETER_NAME_UNAVAILABLE);
+			}
+			block.addParameter(parameter, is_reference);
 			if (mCompiler.getWord().getType() == WordParser.T_VIRG)
 				mCompiler.skipWord();
 		}

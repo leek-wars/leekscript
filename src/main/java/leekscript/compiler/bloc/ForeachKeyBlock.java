@@ -1,20 +1,23 @@
 package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
+import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.common.Error;
 
 public class ForeachKeyBlock extends AbstractLeekBlock {
 
-	private String mIterator;
+	private IAWord mIterator;
 	private AbstractExpression mArray;
 	private boolean mIsDeclaration = false;
 
-	private String mKeyIterator = null;
+	private IAWord mKeyIterator = null;
 	private boolean mIsKeyDeclaration = false;
 	private boolean mKeyReference = false;
 	private boolean mValueReference = false;
@@ -28,13 +31,13 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	}
 
 	public void setValueIterator(IAWord iterator, boolean declaration) {
-		if(declaration) addVariable(new LeekVariable(iterator, VariableType.LOCAL));
-		mIterator = iterator.getWord();
+		// if(declaration) addVariable(new LeekVariable(iterator, VariableType.LOCAL));
+		mIterator = iterator;
 	}
 
 	public void setKeyIterator(IAWord iterator, boolean declaration) {
-		if(declaration) addVariable(new LeekVariable(iterator, VariableType.LOCAL));
-		mKeyIterator = iterator.getWord();
+		// if(declaration) addVariable(new LeekVariable(iterator, VariableType.LOCAL));
+		mKeyIterator = iterator;
 	}
 
 	public void setArray(AbstractExpression exp) {
@@ -53,8 +56,8 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		String var = "i" + block_count;
 		String ar = "ar" + block_count;
 
-		String key_iterator = mainblock.hasGlobal(mKeyIterator) ? ("globale_" + mKeyIterator) : ("user_" + mKeyIterator);
-		String val_iterator = mainblock.hasGlobal(mIterator) ? ("globale_" + mIterator) : ("user_" + mIterator);
+		String key_iterator = mainblock.hasGlobal(mKeyIterator.getWord()) ? ("globale_" + mKeyIterator) : ("user_" + mKeyIterator);
+		String val_iterator = mainblock.hasGlobal(mIterator.getWord()) ? ("globale_" + mIterator) : ("user_" + mIterator);
 		writer.addCode("final AbstractLeekValue " + ar + " = ");
 		mArray.writeJavaCode(mainblock, writer);
 		writer.addCode(".getValue();");
@@ -104,6 +107,34 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	public void analyze(WordCompiler compiler) {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
+
+		// Si c'est une déclaration on vérifie que le nom est disponnible
+		if (mIsKeyDeclaration) {
+			if ((compiler.getVersion() >= 11 && (compiler.getMainBlock().hasGlobal(mKeyIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mKeyIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mKeyIterator.getWord())) {
+				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+			} else {
+				this.addVariable(new LeekVariable(mKeyIterator, VariableType.LOCAL));
+			}
+		} else {
+			var v = compiler.getCurrentBlock().getVariable(mKeyIterator.getWord(), true);
+			if (v == null) {
+				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
+			}
+		}
+		// Si c'est une déclaration on vérifie que le nom est disponnible
+		if (mIsDeclaration) {
+			if ((compiler.getVersion() >= 11 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
+				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+			} else {
+				this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL));
+			}
+		} else {
+			var v = compiler.getCurrentBlock().getVariable(mIterator.getWord(), true);
+			if (v == null) {
+				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
+			}
+		}
+
 		mArray.analyze(compiler);
 		compiler.setCurrentBlock(initialBlock);
 		super.analyze(compiler);

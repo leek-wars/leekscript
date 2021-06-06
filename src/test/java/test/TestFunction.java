@@ -45,5 +45,7 @@ public class TestFunction extends TestCommon {
 		section("Modify argument");
 		code("function test(x) { x += 10 return x } return test(5)").equals("15");
 		code("var a = [1, 2, 3] function test(x) { push(x, 10) return x } return [a, test([])]").equals("[[1, 2, 3], [10]]");
+
+		code("function f(arg, arg) { return arg } return f(1, 2)").equals("1");
 	}
 }

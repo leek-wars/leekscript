@@ -113,6 +113,7 @@ public class TestLoops extends TestCommon {
 		code("var s = 0 for (var i = 0; i < 10; i += 1) { var j = [] while (count(j) < 10) { push(j, 'a') s++ }} return s;").equals("100");
 		code("var s = [] var i = 3 while (i--) { for (var j = 0; j < 2; ++j) { push(s, j) }} return s;").equals("[0, 1, 0, 1, 0, 1]");
 		code("var s = [] var i = 3 var j while (i--) { for (j = 0; j < 2; ++j) { push(s, j) }} return s;").equals("[0, 1, 0, 1, 0, 1]");
+		code("for (var x in [1, 2, 3]) { for (var x = 0; x < 10; ++x) { } }").equals("null");
 
 		header("Foreach loops");
 		section("Empty containers");
@@ -159,6 +160,9 @@ public class TestLoops extends TestCommon {
 		section("Foreach - double");
 		code("var r = [] for (var x in [1, 2, 3]) { for (var y in [4, 5, 6]) { push(r, x * y) }} return r;").equals("[4, 5, 6, 8, 10, 12, 12, 15, 18]");
 		// code("var r = [] for x in ['a', 'b', 'c'] { for y in [4, 5, 6] { r += x * y }} r").equals("['aaaa', 'aaaaa', 'aaaaaa', 'bbbb', 'bbbbb', 'bbbbbb', 'cccc', 'ccccc', 'cccccc']");
+		code("for (var x in [1, 2, 3]) { for (var x in [4, 5, 6]) { } }").equals("null");
+		code("for (var x : var y1 in [1, 2, 3]) { for (var x : var y2 in [4, 5, 6]) { } }").equals("null");
+		code("for (var x1 : var y in [1, 2, 3]) { for (var x2 : var y in [4, 5, 6]) { } }").equals("null");
 
 		section("Foreach - mix");
 		// code("var n = 3 while (n--) { var r = [] for x in [1, 2, 3] { r += x } print(r) }").output("[1, 2, 3]\n[1, 2, 3]\n[1, 2, 3]\n");
