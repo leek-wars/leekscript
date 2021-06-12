@@ -1,7 +1,7 @@
 package leekscript.common;
 
 public enum Error {
-	UNKNOWN,
+	NONE,
 	FUNCTION_NAME_UNAVAILABLE, // 1
 	PARAMETER_NAME_UNAVAILABLE, // 2
 	OPENING_PARENTHESIS_EXPECTED, // 3

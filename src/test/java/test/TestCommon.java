@@ -4,12 +4,13 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
 import leekscript.compiler.LeekScript;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.runner.AI;
+import leekscript.common.Error;
 
 public class TestCommon {
 
@@ -52,15 +53,17 @@ public class TestCommon {
 					return result.result.equals(expected);
 				}
 				public String getExpected() { return expected; }
+				public String getResult(Result result) { return result.result; }
 			});
 		}
 
-		public void error() {
+		public void error(Error type) {
 			run(version, new Checker() {
 				public boolean check(Result result) {
-					return result.result.equals("error");
+					return result.error == type;
 				}
-				public String getExpected() { return "error"; }
+				public String getExpected() { return type.name(); }
+				public String getResult(Result result) { return result.error.name(); }
 			});
 		}
 
@@ -79,6 +82,7 @@ public class TestCommon {
 					}
 				}
 				public String getExpected() { return String.valueOf(expected); }
+				public String getResult(Result result) { return result.result; }
 			});
 		}
 
@@ -121,18 +125,22 @@ public class TestCommon {
 				TestCommon.execution_time += exec_time / 1000;
 
 				var vs = v.getString(ai);
-				result = new Result(vs, (int) ai.getOperations(), exec_time);
+				result = new Result(vs, Error.NONE, (int) ai.getOperations(), exec_time);
 
+			} catch (LeekCompilerException e) {
+				// e.printStackTrace();
+				// System.out.println("Error = " + e.getError());
+				result = new Result("error", e.getError(), 0, 0);
 			} catch (Exception e) {
-				e.printStackTrace();
-				result = new Result("error", 0, 0);
+				// e.printStackTrace();
+				result = new Result("error", Error.NONE, 0, 0);
 			}
 
 			if (checker.check(result)) {
-				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "] " + code + " === " + result.result + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops" + END_COLOR);
+				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "] " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops" + END_COLOR);
 				success++;
 			} else {
-				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "] " + code + " =/= " + checker.getExpected() + " got " + result.result + "\n" +
+				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "] " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
 				"/home/pierre/dev/leek-wars/server/daemon/generator-v1/leekscript-v1/ai/AI_" + aiID + ".java";
 				System.out.println(err);
 				failedTests.add(err);
@@ -142,18 +150,22 @@ public class TestCommon {
 
 	public static class Result {
 		String result;
+		Error error;
 		int operations;
 		long exec_time;
 
-		public Result(String result, int operations, long exec_time) {
+		public Result(String result, Error error, int operations, long exec_time) {
 			this.result = result;
 			this.operations = operations;
 			this.exec_time = exec_time;
+			this.error = error;
 		}
 	}
 
 	public static interface Checker {
 		public boolean check(Result result);
+
+		public String getResult(Result result);
 
 		public String getExpected();
 	}

@@ -1,5 +1,7 @@
 package test;
 
+import leekscript.common.Error;
+
 public class TestFunction extends TestCommon {
 
 	public void run() {
@@ -46,6 +48,6 @@ public class TestFunction extends TestCommon {
 		code("function test(x) { x += 10 return x } return test(5)").equals("15");
 		code("var a = [1, 2, 3] function test(x) { push(x, 10) return x } return [a, test([])]").equals("[[1, 2, 3], [10]]");
 
-		code("function f(arg, arg) { return arg } return f(1, 2)").equals("1");
+		code("function f(arg, arg) { return arg } return f(1, 2)").error(Error.PARAMETER_NAME_UNAVAILABLE);
 	}
 }
