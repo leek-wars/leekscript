@@ -260,6 +260,11 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		for (var constructor : constructors.values()) {
 			constructor.block.analyze(compiler);
 		}
+		// Ajout du constructeur à 0 argument par défaut en public
+		if (!constructors.containsKey(0)) {
+			constructors.put(0, new ClassDeclarationMethod(null, AccessLevel.PUBLIC));
+		}
+
 		for (var method : methods.values()) {
 			for (var version : method.values()) {
 				version.block.analyze(compiler);
@@ -318,18 +323,6 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			}
 		}
 
-		for (Entry<String, ClassDeclarationField> field : staticFields.entrySet()) {
-			writer.addCode(className);
-			writer.addCode(".addStaticField(mUAI, \"" + field.getKey() + "\", ");
-			if (field.getValue() != null) {
-				field.getValue().expression.writeJavaCode(mainblock, writer);
-			} else {
-				writer.addCode("LeekValueManager.NULL");
-			}
-			writer.addCode(", AccessLevel." + field.getValue().level);
-			writer.addLine(");");
-		}
-
 		writeFields(mainblock, writer, className);
 
 		for (Entry<String, HashMap<Integer, ClassDeclarationMethod>> method : staticMethods.entrySet()) {
@@ -350,7 +343,24 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			if (parent != null) {
 				writer.addLine("final var u_super = user_" + parent.token.getWord() + ";");
 			}
-			construct.getValue().block.writeJavaCode(mainblock, writer);
+			ClassDeclarationInstruction current = this;
+			while (current != null) {
+				for (var field : current.fields.entrySet()) {
+					writer.addCode("((ObjectLeekValue) u_this).addField(mUAI, \"" + field.getKey() + "\", ");
+					if (field.getValue().expression != null) {
+						field.getValue().expression.writeJavaCode(mainblock, writer);
+					} else {
+						writer.addCode("LeekValueManager.NULL");
+					}
+					writer.addLine(", AccessLevel." + field.getValue().level + ");");
+				}
+				current = current.parent;
+			}
+			if (construct.getValue().block != null) {
+				construct.getValue().block.writeJavaCode(mainblock, writer);
+			} else {
+				writer.addLine("return u_this;");
+			}
 			writer.addLine("}});");
 		}
 
@@ -362,6 +372,26 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			}
 			writer.addCode(className);
 			writer.addLine(".addGenericMethod(\"" + method.getKey() + "\");");
+		}
+	}
+
+	public void initializeStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
+
+		mainblock.getWordCompiler().setCurrentClass(this);
+
+		// Create the class in the constructor of the AI
+		String className = "user_" + token.getWord();
+
+		for (var field : staticFields.entrySet()) {
+			writer.addCode(className);
+			writer.addCode(".addStaticField(mUAI, \"" + field.getKey() + "\", ");
+			if (field.getValue() != null) {
+				field.getValue().expression.writeJavaCode(mainblock, writer);
+			} else {
+				writer.addCode("null");
+			}
+			writer.addCode(", AccessLevel." + field.getValue().level);
+			writer.addLine(");");
 		}
 	}
 
@@ -378,12 +408,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 
 		for (Entry<String, ClassDeclarationField> field : fields.entrySet()) {
 			writer.addCode(className);
-			writer.addCode(".addField(mUAI, \"" + field.getKey() + "\", ");
-			if (field.getValue().expression != null) {
-				field.getValue().expression.writeJavaCode(mainblock, writer);
-			} else {
-				writer.addCode("LeekValueManager.NULL");
-			}
+			writer.addCode(".addField(mUAI, \"" + field.getKey() + "\"");
 			writer.addCode(", AccessLevel." + field.getValue().level);
 			writer.addLine(");");
 		}

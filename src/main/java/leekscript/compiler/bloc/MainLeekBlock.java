@@ -196,6 +196,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var clazz : mUserClasses.values()) {
 			clazz.createJava(this, writer);
 		}
+		// Initialize classes static fields
+		for (var clazz : mUserClasses.values()) {
+			clazz.initializeStaticFields(this, writer);
+		}
 		writer.addLine("}");
 
 		// Variables globales
