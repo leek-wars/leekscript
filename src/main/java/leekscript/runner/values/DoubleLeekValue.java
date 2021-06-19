@@ -48,6 +48,10 @@ public class DoubleLeekValue extends AbstractLeekValue {
 		return true;
 	}
 
+	public AbstractLeekValue oppositeConstant() throws LeekRunException {
+		return LeekValueManager.getLeekDoubleValue(-mValue);
+	}
+
 	@Override
 	public AbstractLeekValue increment(AI ai) throws LeekRunException {
 		ai.addOperations(ADD_COST);

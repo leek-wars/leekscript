@@ -621,8 +621,13 @@ public class LeekExpression extends AbstractExpression {
 			writer.addCode(".bnot(mUAI)");
 			return;
 		case Operators.UNARY_MINUS:
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(".opposite(mUAI)");
+			if (mExpression2 instanceof LeekNumber) {
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(".oppositeConstant()");
+			} else {
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(".opposite(mUAI)");
+			}
 			return;
 		case Operators.NEW:
 			mExpression2.writeJavaCode(mainblock, writer);
