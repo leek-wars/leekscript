@@ -1,5 +1,7 @@
 package test;
 
+import leekscript.common.Error;
+
 public class TestObject extends TestCommon {
 
 	public void run() {
@@ -27,14 +29,100 @@ public class TestObject extends TestCommon {
 
 		section("Classes");
 		code_v11("class A { } return new A();").equals("A {}");
-		code_v11("class A { a = 10 } var a = new A(); return --a.a").equals("9");
-		code_v11("class A { a = 10 } var a = new A(); a.a-- return a.a").equals("9");
-		code_v11("class A { a = 10 } var a = new A(); return ++a.a").equals("11");
-		code_v11("class A { a = 10 } var a = new A(); a.a++ return a.a").equals("11");
 		code_v11("class A { a = 10 } var a = [new A()]; a[0].a++ return a[0].a").equals("11");
 		code_v11("class A { a = 10 } var a = [new A()]; a[0].a-- return a[0].a").equals("9");
 		code_v11("class A { a = 10 } var a = [new A()]; ++a[0].a return a[0].a").equals("11");
 		code_v11("class A { a = 10 } var a = [new A()]; --a[0].a return a[0].a").equals("9");
+		code_v11("class A { a = 10 m() { return 12 } } var a = new A(); return a.m()").equals("12");
+		code_v11("class A { a = 10 m() { return 13 } } var a = new A(); return a['m']()").equals("13");
+		code_v11("class A { a = 10 m() { return 13 } } var a = new A(); var m = 'm' return a[m]()").equals("13");
+		code_v11("class A { a = 10 m() { return a } } var a = new A(); var array = [a.m] return array[0](a)").equals("10");
+		code_v11("class A { a = 10 m() { return a } } var a = new A(); var array = [a['m']] return array[0](a)").equals("10");
+
+		section("Operators on field");
+		code_v11("class A { a = 10 } var a = new A(); return --a.a").equals("9");
+		code_v11("class A { a = 10 } var a = new A(); a.a-- return a.a").equals("9");
+		code_v11("class A { a = 10 } var a = new A(); return ++a.a").equals("11");
+		code_v11("class A { a = 10 } var a = new A(); a.a++ return a.a").equals("11");
+		code_v11("class A { a = 10 } var a = new A(); return a.a += 5").equals("15");
+		code_v11("class A { a = 10 } var a = new A(); return a.a -= 5").equals("5");
+		code_v11("class A { a = 10 } var a = new A(); return a.a *= 5").equals("50");
+		code_v11("class A { a = 10 } var a = new A(); return a.a /= 5").equals("2.0");
+		code_v11("class A { a = 10 } var a = new A(); return a.a %= 5").equals("0");
+		code_v11("class A { a = 10 } var a = new A(); return a.a **= 5").equals("100000");
+		code_v11("class A { a = 10 } var a = new A(); return a.a |= 5").equals("15");
+		code_v11("class A { a = 10 } var a = new A(); return a.a &= 5").equals("0");
+		code_v11("class A { a = 10 } var a = new A(); return a.a ^= 5").equals("15");
+		code_v11("class A { a = 10 } var a = new A(); return a.a <<= 5").equals("320");
+		code_v11("class A { a = 10 } var a = new A(); return a.a >>= 5").equals("0");
+		code_v11("class A { a = 10 } var a = new A(); return a.a >>>= 5").equals("0");
+
+		section("Operators on static field");
+		code_v11("class A { static a = 10 } return --A.a").equals("9");
+		code_v11("class A { static a = 10 } A.a-- return A.a").equals("9");
+		code_v11("class A { static a = 10 } return ++A.a").equals("11");
+		code_v11("class A { static a = 10 } A.a++ return A.a").equals("11");
+		code_v11("class A { static a = 10 } return A.a += 5").equals("15");
+		code_v11("class A { static a = 10 } return A.a -= 5").equals("5");
+		code_v11("class A { static a = 10 } return A.a *= 5").equals("50");
+		code_v11("class A { static a = 10 } return A.a /= 5").equals("2.0");
+		code_v11("class A { static a = 10 } return A.a %= 5").equals("0");
+		code_v11("class A { static a = 10 } return A.a **= 5").equals("100000");
+		code_v11("class A { static a = 10 } return A.a |= 5").equals("15");
+		code_v11("class A { static a = 10 } return A.a &= 5").equals("0");
+		code_v11("class A { static a = 10 } return A.a ^= 5").equals("15");
+		code_v11("class A { static a = 10 } return A.a <<= 5").equals("320");
+		code_v11("class A { static a = 10 } return A.a >>= 5").equals("0");
+		code_v11("class A { static a = 10 } return A.a >>>= 5").equals("0");
+
+		section("Inheritance");
+		code_v11("class A { x = 10 } class B extends A {} var a = new B() return a.x").equals("10");
+		code_v11("class A { m() { return 'ok' } } class B extends A { m() { return super.m() } } var a = new B() return a.m()").equals("ok");
+		code_v11("class A { x = 10 } class B extends A {} class C extends B {} var a = new C() return a.x").equals("10");
+		code_v11("class A { m() { return 'ok' } } class B extends A {} class C extends B {} var a = new C() return a.m()").equals("ok");
+		code_v11("class A { m() { return 'ok' } } class B extends A { m() { return super.m() }} class C extends B { m() { return super.m() } } var a = new C() return a.m()").equals("ok");
+		code_v11("class A { m() { return 'ok' } } class B extends A {} class C extends B { m() { return super.m() } } var a = new C() return a.m()").equals("ok");
+		code_v11("class A { m() { return 'okA' } } class B extends A { m() { return super.m() + 'B' }} class C extends B { m() { return super.m() + 'C' } } var a = new C()return a.m()").equals("okABC");
+
+		section("Access levels: fields");
+		code_v11("class A { x = 10 } var a = new A() return a.x").equals("10");
+		code_v11("class A { public x = 10 } var a = new A() return a.x").equals("10");
+		code_v11("class A { protected x = 10 } var a = new A() return a.x").equals("null");
+		code_v11("class A { private x = 10 } var a = new A() return a.x").equals("null");
+		code_v11("class A { private x = 10 m() { return x } } var a = new A() return a.m()").equals("10");
+		code_v11("class A { private x = 10 } class B extends A {} var a = new B() return a.x").equals("null");
+		code_v11("class A { protected x = 10 } class B extends A {} var a = new B() return a.x").equals("null");
+		code_v11("class A { protected x = 10 } class B extends A { m() { return x } } var a = new B() return a.m()").equals("10");
+
+		section("Access levels: static fields");
+		code_v11("class A { static x = 10 } return A.x").equals("10");
+		code_v11("class A { public static x = 10 } return A.x").equals("10");
+		code_v11("class A { protected static x = 10 } return A.x").equals("null");
+		code_v11("class A { private static x = 10 } return A.x").equals("null");
+		code_v11("class A { private static x = 10 static m() { return x } } return A.m()").equals("10");
+		code_v11("class A { private static x = 10 } class B extends A {} return B.x").equals("null");
+		code_v11("class A { protected static x = 10 } class B extends A {} return B.x").equals("null");
+		code_v11("class A { protected static x = 10 } class B extends A { static m() { return x } } return B.m()").equals("10");
+
+		section("Access levels: methods");
+		code_v11("class A { m() { return 10 } } var a = new A() return a.m()").equals("10");
+		code_v11("class A { public m() { return 10 } } var a = new A() return a.m()").equals("10");
+		code_v11("class A { protected m() { return 10 } } var a = new A() return a.m()").equals("null");
+		code_v11("class A { private m() { return 10 } } var a = new A() return a.m()").equals("null");
+		code_v11("class A { public m() { return 10 } } class B extends A {} var a = new B() return a.m()").equals("10");
+		code_v11("class A { protected m() { return 10 } } class B extends A {} var a = new B() return a.m()").equals("null");
+		code_v11("class A { private m() { return 10 } } class B extends A {} var a = new B() return a.m()").equals("null");
+		code_v11("class A { protected m() { return 10 } } class B extends A { m() { return super.m() } } var a = new B() return a.m()").equals("10");
+
+		section("Access levels: static methods");
+		code_v11("class A { static m() { return 10 } } return A.m()").equals("10");
+		code_v11("class A { public static m() { return 10 } } return A.m()").equals("10");
+		code_v11("class A { protected static m() { return 10 } } return A.m()").equals("null");
+		code_v11("class A { private static m() { return 10 } } return A.m()").equals("null");
+		code_v11("class A { public static m() { return 10 } } class B extends A {} return B.m()").equals("10");
+		code_v11("class A { protected static m() { return 10 } } class B extends A {} return B.m()").equals("null");
+		code_v11("class A { private static m() { return 10 } } class B extends A {} return B.m()").equals("null");
+
 
 		/*
 		* Operators
