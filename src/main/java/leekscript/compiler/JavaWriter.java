@@ -7,6 +7,8 @@ import java.util.TreeMap;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 
+import leekscript.compiler.bloc.AbstractLeekBlock;
+
 public class JavaWriter {
 	private final StringBuilder mCode;
 	private int mLine;
@@ -15,6 +17,7 @@ public class JavaWriter {
 	private final ArrayList<AIFile<?>> mFilesList = new ArrayList<>();
 	private final boolean mWithDebug;
 	private final String className;
+	public AbstractLeekBlock currentBlock = null;
 
 	private class Line {
 		private final int mJavaLine;

@@ -7,6 +7,7 @@ import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
+import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 
 public abstract class AbstractLeekValue {
@@ -92,7 +93,15 @@ public abstract class AbstractLeekValue {
 		return LeekValueManager.NULL;
 	}
 
+	public AbstractLeekValue get(AI ai, AbstractLeekValue value, ClassLeekValue fromClass) throws LeekRunException {
+		return LeekValueManager.NULL;
+	}
+
 	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value) throws LeekRunException {
+		return LeekValueManager.NULL;
+	}
+
+	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value, ClassLeekValue fromClass) throws LeekRunException {
 		return LeekValueManager.NULL;
 	}
 
@@ -236,19 +245,19 @@ public abstract class AbstractLeekValue {
 		return LeekValueManager.getLeekBooleanValue(false);
 	}
 
-	public AbstractLeekValue getField(AI ai, String field) throws LeekRunException {
+	public AbstractLeekValue getField(AI ai, String field, ClassLeekValue fromClass) throws LeekRunException {
 		// Aucun champ
 		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { getString(ai), field });
 		return LeekValueManager.NULL;
 	}
 
-	public AbstractLeekValue callMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
+	public AbstractLeekValue callMethod(AI ai, String method, ClassLeekValue fromClass, AbstractLeekValue... arguments) throws LeekRunException {
 		// Aucune méthode
 		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { getString(ai), method });
 		return LeekValueManager.NULL;
 	}
 
-	public AbstractLeekValue callSuperMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
+	public AbstractLeekValue callSuperMethod(AI ai, ClassLeekValue currentClass, String method, AbstractLeekValue... arguments) throws LeekRunException {
 		// Aucune méthode
 		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { getString(ai), method });
 		return LeekValueManager.NULL;

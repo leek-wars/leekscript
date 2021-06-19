@@ -5,6 +5,7 @@ import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
@@ -42,7 +43,8 @@ public class LeekObjectAccess extends AbstractExpression {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		object.writeJavaCode(mainblock, writer);
-		writer.addCode(".getField(mUAI, \"" + field.getWord() + "\")");
+		String fromClass = (writer.currentBlock instanceof ClassMethodBlock) ? "u_class" : "null";
+		writer.addCode(".getField(mUAI, \"" + field.getWord() + "\", " + fromClass + ")");
 	}
 
 	@Override

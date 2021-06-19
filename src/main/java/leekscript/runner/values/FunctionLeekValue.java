@@ -141,7 +141,11 @@ public class FunctionLeekValue extends AbstractLeekValue {
 				}
 			}
 		} else if (mType == METHOD) {
-			return mAnonymous.run(ai, values[0], Arrays.copyOfRange(copyPrimitiveValues(ai, values), 1, values.length));
+			if (values.length == 0) {
+				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { "", "1+" });
+			} else {
+				return mAnonymous.run(ai, values[0], Arrays.copyOfRange(copyPrimitiveValues(ai, values), 1, values.length));
+			}
 		}
 		return LeekValueManager.NULL;
 	}

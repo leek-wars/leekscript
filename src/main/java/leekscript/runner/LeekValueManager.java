@@ -8,10 +8,12 @@ import leekscript.ErrorManager;
 import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.BooleanLeekValue;
+import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.DoubleLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
 import leekscript.runner.values.IntLeekValue;
 import leekscript.runner.values.NullLeekValue;
+import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.StringLeekValue;
 
 import com.alibaba.fastjson.JSONArray;
@@ -121,5 +123,14 @@ public class LeekValueManager {
 		}
 
 		return new StringLeekValue("Class " + o.getClass().getSimpleName());
+	}
+
+	public static AbstractLeekValue executeArrayAccess(AI ai, AbstractLeekValue array, AbstractLeekValue key, ClassLeekValue fromClass, AbstractLeekValue... arguments) throws LeekRunException {
+		array = array.getValue();
+		if (array instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) array).callMethod(ai, key.getString(ai) + "_" + arguments.length, fromClass, arguments);
+		} else {
+			return array.get(ai, key).executeFunction(ai, arguments);
+		}
 	}
 }

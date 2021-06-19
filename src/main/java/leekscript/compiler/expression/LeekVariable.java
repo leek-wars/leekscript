@@ -95,9 +95,9 @@ public class LeekVariable extends AbstractExpression {
 		} else if (type == VariableType.SUPER) {
 			writer.addCode("user_" + classDeclaration.getParent().getName());
 		} else if (type == VariableType.FIELD) {
-			writer.addCode("u_this.getField(mUAI, \"" + token.getWord() + "\")");
+			writer.addCode("u_this.getField(mUAI, \"" + token.getWord() + "\", u_class)");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.getField(mUAI, \"" + token.getWord() + "\")");
+			writer.addCode("u_class.getField(mUAI, \"" + token.getWord() + "\", u_class)");
 		} else if (type == VariableType.METHOD) {
 			writer.addCode("###");
 		} else if (mainblock.isRedefinedFunction(token.getWord())) {

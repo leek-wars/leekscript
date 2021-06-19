@@ -8,18 +8,38 @@ import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
 import leekscript.runner.LeekAnonymousFunction;
+import leekscript.common.AccessLevel;
 import leekscript.common.Error;
+import leekscript.compiler.bloc.AnonymousFunctionBlock;
 
 public class ClassLeekValue extends AbstractLeekValue {
 
+	public static class ClassField {
+		AbstractLeekValue value;
+		AccessLevel level;
+		public ClassField(AbstractLeekValue value, AccessLevel level) {
+			this.value = value;
+			this.level = level;
+		}
+	};
+
+	public static class ClassMethod {
+		LeekAnonymousFunction value;
+		AccessLevel level;
+		public ClassMethod(LeekAnonymousFunction value, AccessLevel level) {
+			this.value = value;
+			this.level = level;
+		}
+	};
+
 	public String name;
 	public AbstractLeekValue parent;
-	public HashMap<String, AbstractLeekValue> fields = new HashMap<>();
-	public HashMap<String, VariableLeekValue> staticFields = new HashMap<>();
+	public HashMap<String, ClassField> fields = new HashMap<>();
+	public HashMap<String, ObjectVariableValue> staticFields = new HashMap<>();
 	public HashMap<Integer, LeekAnonymousFunction> constructors = new HashMap<>();
-	public HashMap<String, LeekAnonymousFunction> methods = new HashMap<>();
+	public HashMap<String, ClassMethod> methods = new HashMap<>();
 	public HashMap<String, AbstractLeekValue> genericMethods = new HashMap<>();
-	public HashMap<String, LeekAnonymousFunction> staticMethods = new HashMap<>();
+	public HashMap<String, ClassMethod> staticMethods = new HashMap<>();
 	public HashMap<String, AbstractLeekValue> genericStaticMethods = new HashMap<>();
 
 	private ArrayLeekValue fieldsArray;
@@ -38,16 +58,16 @@ public class ClassLeekValue extends AbstractLeekValue {
 		constructors.put(arg_count, function);
 	}
 
-	public void addField(AI ai, String field, AbstractLeekValue value) {
-		fields.put(field, value);
+	public void addField(AI ai, String field, AbstractLeekValue value, AccessLevel level) {
+		fields.put(field, new ClassField(value, level));
 	}
 
-	public void addStaticField(AI ai, String field, AbstractLeekValue value) throws LeekRunException {
-		staticFields.put(field, new VariableLeekValue(ai, value));
+	public void addStaticField(AI ai, String field, AbstractLeekValue value, AccessLevel level) throws LeekRunException {
+		staticFields.put(field, new ObjectVariableValue(ai, value, level));
 	}
 
-	public void addMethod(String method, int argCount, LeekAnonymousFunction function) {
-		methods.put(method + "_" + argCount, function);
+	public void addMethod(String method, int argCount, LeekAnonymousFunction function, AccessLevel level) {
+		methods.put(method + "_" + argCount, new ClassMethod(function, level));
 	}
 
 	public void addGenericMethod(String method) {
@@ -56,7 +76,7 @@ public class ClassLeekValue extends AbstractLeekValue {
 				final var methodCode = method + "_" + arguments.length;
 				final var m = methods.get(methodCode);
 				if (m != null) {
-					return m.run(ai, thiz, arguments);
+					return m.value.run(ai, thiz, arguments);
 				}
 				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
 				return LeekValueManager.NULL;
@@ -64,8 +84,8 @@ public class ClassLeekValue extends AbstractLeekValue {
 		}));
 	}
 
-	public void addStaticMethod(String method, int argCount, LeekAnonymousFunction function) {
-		staticMethods.put(method + "_" + argCount, function);
+	public void addStaticMethod(String method, int argCount, LeekAnonymousFunction function, AccessLevel level) {
+		staticMethods.put(method + "_" + argCount, new ClassMethod(function, level));
 	}
 
 	public void addGenericStaticMethod(String method) {
@@ -74,7 +94,7 @@ public class ClassLeekValue extends AbstractLeekValue {
 				final var methodCode = method + "_" + arguments.length;
 				final var m = methods.get(methodCode);
 				if (m != null) {
-					return m.run(ai, null, arguments);
+					return m.value.run(ai, null, arguments);
 				}
 				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
 				return LeekValueManager.NULL;
@@ -83,10 +103,29 @@ public class ClassLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue getField(AI ai, String field) throws LeekRunException {
-		AbstractLeekValue result = staticFields.get(field);
+	public AbstractLeekValue getField(AI ai, String field, ClassLeekValue fromClass) throws LeekRunException {
+		// Private
+		var result = staticFields.get(field);
 		if (result != null) {
-			return result;
+			if (fromClass == this) {
+				return result;
+			} else {
+				// Protected : Access from descendant
+				if (fromClass != null && fromClass.descendsFrom(this)) {
+					if (result.level == AccessLevel.PRIVATE) {
+						ai.addSystemLog(AILog.ERROR, Error.PRIVATE_STATIC_FIELD, new String[] { this.name, field });
+						return LeekValueManager.NULL;
+					}
+					return result;
+				} else {
+					// Public : Access from outside
+					if (result.level != AccessLevel.PUBLIC) {
+						ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_FIELD : Error.PRIVATE_STATIC_FIELD, new String[] { this.name, field });
+						return LeekValueManager.NULL;
+					}
+					return result;
+				}
+			}
 		}
 		if (field.equals("name")) {
 			return new StringLeekValue(name);
@@ -98,19 +137,20 @@ public class ClassLeekValue extends AbstractLeekValue {
 			return parent;
 		}
 		if (parent instanceof ClassLeekValue) {
-			return parent.getField(ai, field);
+			return parent.getField(ai, field, fromClass);
 		}
 		return LeekValueManager.NULL;
 	}
 
 	@Override
-	public AbstractLeekValue callMethod(AI ai, String method, AbstractLeekValue... arguments) throws LeekRunException {
+	public AbstractLeekValue callMethod(AI ai, String method, ClassLeekValue fromClass, AbstractLeekValue... arguments) throws LeekRunException {
 		ai.addOperations(1);
-		LeekAnonymousFunction result = staticMethods.get(method);
+		var result = getStaticMethod(ai, method, fromClass);
 		if (result == null) {
 			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_STATIC_METHOD, new String[] { name, createMethodError(method) });
 			return LeekValueManager.NULL;
 		}
+
 		// Call method with new arguments, add the object at the beginning
 		return result.run(ai, null, arguments);
 	}
@@ -145,8 +185,8 @@ public class ClassLeekValue extends AbstractLeekValue {
 		// Create the actual object
 		ObjectLeekValue object = new ObjectLeekValue(this);
 		// Add fields
-		for (Entry<String, AbstractLeekValue> field : fields.entrySet()) {
-			object.addField(ai, field.getKey(), field.getValue());
+		for (Entry<String, ClassField> field : fields.entrySet()) {
+			object.addField(ai, field.getKey(), field.getValue().value, field.getValue().level);
 		}
 
 		int arg_count = arguments.length;
@@ -184,18 +224,69 @@ public class ClassLeekValue extends AbstractLeekValue {
 		return methodsArray;
 	}
 
-	public LeekAnonymousFunction getMethod(String method) {
+	public LeekAnonymousFunction getMethod(AI ai, String method, ClassLeekValue fromClass) throws LeekRunException {
 		var m = methods.get(method);
-		if (m != null) return m;
+		if (m != null) {
+			// Private : Access from same class
+			if (fromClass == this) {
+				return m.value;
+			} else {
+				// Protected : Access from descendant
+				if (fromClass != null && fromClass.descendsFrom(this)) {
+					if (m.level == AccessLevel.PRIVATE) {
+						ai.addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new String[] { this.name, method });
+						return null;
+					}
+					return m.value;
+				} else {
+					// Public : Access from outside
+					if (m.level != AccessLevel.PUBLIC) {
+						ai.addSystemLog(AILog.ERROR, m.level == AccessLevel.PROTECTED ? Error.PROTECTED_METHOD : Error.PRIVATE_METHOD, new String[] { this.name, method });
+						return null;
+					}
+					return m.value;
+				}
+			}
+		}
 		if (parent instanceof ClassLeekValue) {
-			return ((ClassLeekValue) parent).getMethod(method);
+			return ((ClassLeekValue) parent).getMethod(ai, method, fromClass);
 		}
 		return null;
 	}
 
-	public LeekAnonymousFunction getSuperMethod(String method) {
+	public LeekAnonymousFunction getStaticMethod(AI ai, String method, ClassLeekValue fromClass) throws LeekRunException {
+		var m = staticMethods.get(method);
+		if (m != null) {
+			// Private : Access from same class
+			if (fromClass == this) {
+				return m.value;
+			} else {
+				// Protected : Access from descendant
+				if (fromClass != null && fromClass.descendsFrom(this)) {
+					if (m.level == AccessLevel.PRIVATE) {
+						ai.addSystemLog(AILog.ERROR, Error.PRIVATE_STATIC_METHOD, new String[] { this.name, method });
+						return null;
+					}
+					return m.value;
+				} else {
+					// Public : Access from outside
+					if (m.level != AccessLevel.PUBLIC) {
+						ai.addSystemLog(AILog.ERROR, m.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_METHOD : Error.PRIVATE_STATIC_METHOD, new String[] { this.name, method });
+						return null;
+					}
+					return m.value;
+				}
+			}
+		}
 		if (parent instanceof ClassLeekValue) {
-			return ((ClassLeekValue) parent).getMethod(method);
+			return ((ClassLeekValue) parent).getStaticMethod(ai, method, fromClass);
+		}
+		return null;
+	}
+
+	public LeekAnonymousFunction getSuperMethod(AI ai, String method, ClassLeekValue fromClass) throws LeekRunException {
+		if (parent instanceof ClassLeekValue) {
+			return ((ClassLeekValue) parent).getMethod(ai, method, fromClass);
 		}
 		return null;
 	}

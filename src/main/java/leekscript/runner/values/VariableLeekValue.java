@@ -2,6 +2,7 @@ package leekscript.runner.values;
 
 import java.util.Set;
 
+import leekscript.common.AccessLevel;
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
@@ -262,16 +263,16 @@ public class VariableLeekValue extends AbstractLeekValue {
 		return mValue = mValue.modulus(ai, val);
 	}
 
-	public AbstractLeekValue getField(AI ai, String field) throws LeekRunException {
-		return mValue.getField(ai, field);
+	public AbstractLeekValue getField(AI ai, String field, ClassLeekValue fromClass) throws LeekRunException {
+		return mValue.getField(ai, field, fromClass);
 	}
 
-	public AbstractLeekValue callMethod(AI ai, String field, AbstractLeekValue... arguments) throws LeekRunException {
-		return mValue.callMethod(ai, field, arguments);
+	public AbstractLeekValue callMethod(AI ai, String field, ClassLeekValue fromClass, AbstractLeekValue... arguments) throws LeekRunException {
+		return mValue.callMethod(ai, field, fromClass, arguments);
 	}
 
-	public AbstractLeekValue callSuperMethod(AI ai, String field, AbstractLeekValue... arguments) throws LeekRunException {
-		return mValue.callSuperMethod(ai, field, arguments);
+	public AbstractLeekValue callSuperMethod(AI ai, ClassLeekValue currentClass, String field, AbstractLeekValue... arguments) throws LeekRunException {
+		return mValue.callSuperMethod(ai, currentClass, field, arguments);
 	}
 
 	public void callConstructor(AI ai, AbstractLeekValue thiz, AbstractLeekValue... arguments) throws LeekRunException {
