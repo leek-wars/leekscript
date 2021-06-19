@@ -127,11 +127,11 @@ public class TestObject extends TestCommon {
 		section("Access levels: static methods");
 		code_v11("class A { static m() { return 10 } } return A.m()").equals("10");
 		code_v11("class A { public static m() { return 10 } } return A.m()").equals("10");
-		code_v11("class A { protected static m() { return 10 } } return A.m()").equals("null");
-		code_v11("class A { private static m() { return 10 } } return A.m()").equals("null");
+		code_v11("class A { protected static m() { return 10 } } return A.m()").error();
+		code_v11("class A { private static m() { return 10 } } return A.m()").error();
 		code_v11("class A { public static m() { return 10 } } class B extends A {} return B.m()").equals("10");
-		code_v11("class A { protected static m() { return 10 } } class B extends A {} return B.m()").equals("null");
-		code_v11("class A { private static m() { return 10 } } class B extends A {} return B.m()").equals("null");
+		code_v11("class A { protected static m() { return 10 } } class B extends A {} return B.m()").error();
+		code_v11("class A { private static m() { return 10 } } class B extends A {} return B.m()").error();
 
 		/*
 		* Operators

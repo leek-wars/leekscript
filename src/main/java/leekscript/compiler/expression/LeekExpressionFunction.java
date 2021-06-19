@@ -225,8 +225,13 @@ public class LeekExpressionFunction extends AbstractExpression {
 				var v = (LeekVariable) oa.getObject();
 				if (v.getVariableType() == VariableType.CLASS) {
 					var clazz = v.getClassDeclaration();
-					if (!clazz.hasStaticMethod(oa.getField(), mParameters.size())) {
+					var staticMethod = clazz.getStaticMethod(oa.getField(), mParameters.size());
+					if (staticMethod == null) {
 						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
+					} else if (staticMethod.level == AccessLevel.PRIVATE && clazz != compiler.getCurrentClass()) {
+						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
+					} else if (staticMethod.level == AccessLevel.PROTECTED && !compiler.getCurrentClass().descendsFrom(clazz)) {
+						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
 					}
 				}
 			}
