@@ -442,8 +442,32 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		return null;
 	}
 
+	public ClassDeclarationMethod getStaticMethod(String method, int argumentCount) {
+		var versions = staticMethods.get(method);
+		if (versions != null) {
+			if (versions.containsKey(argumentCount)) return versions.get(argumentCount);
+		}
+		if (parent != null) {
+			return parent.getStaticMethod(method, argumentCount);
+		}
+		return null;
+	}
+
 	@Override
 	public int getOperations() {
 		return 0;
+	}
+
+	public boolean descendsFrom(ClassDeclarationInstruction clazz) {
+		var current = this;
+		while (current != null) {
+			if (current == clazz) return true;
+			if (current.parent != null) {
+				current = current.parent;
+			} else {
+				return false;
+			}
+		}
+		return false;
 	}
 }
