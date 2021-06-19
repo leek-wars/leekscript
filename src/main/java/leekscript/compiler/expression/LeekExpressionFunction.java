@@ -14,6 +14,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.runner.CallableVersion;
 import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekFunctions;
+import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
@@ -198,8 +199,23 @@ public class LeekExpressionFunction extends AbstractExpression {
 			} else if (v.getVariableType() == VariableType.CLASS) {
 
 				var clazz = v.getClassDeclaration();
-				if (mParameters.size() != 0 && !clazz.hasConstructor(mParameters.size())) {
+				var constructor = clazz.getConstructor(mParameters.size());
+				if (constructor == null) {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { clazz.getName() }));
+				} else if (constructor.level != AccessLevel.PUBLIC) {
+					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, constructor.level == AccessLevel.PROTECTED ? Error.PROTECTED_CONSTRUCTOR : Error.PRIVATE_CONSTRUCTOR, new String[] { clazz.getName() }));
+				}
+
+			} else if (v.getVariableType() == VariableType.SUPER) {
+
+				var clazz = v.getClassDeclaration().getParent();
+				if (clazz != null) {
+					var constructor = clazz.getConstructor(mParameters.size());
+					if (constructor == null) {
+						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { clazz.getName() }));
+					} else if (constructor.level == AccessLevel.PRIVATE) {
+						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_CONSTRUCTOR, new String[] { clazz.getName() }));
+					}
 				}
 			}
 		} else if (mExpression instanceof LeekObjectAccess) {

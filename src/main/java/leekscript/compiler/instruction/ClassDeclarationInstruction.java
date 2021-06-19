@@ -15,6 +15,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.runner.values.ClassLeekValue.ClassMethod;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 
@@ -33,8 +34,8 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 
 	public static class ClassDeclarationMethod {
 
-		ClassMethodBlock block;
-		AccessLevel level;
+		public ClassMethodBlock block;
+		public AccessLevel level;
 
 		public ClassDeclarationMethod(ClassMethodBlock block, AccessLevel level) {
 			this.block = block;
@@ -149,6 +150,18 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 
 	public boolean hasConstructor(int param_count) {
 		return constructors.containsKey(param_count);
+	}
+
+	public ClassDeclarationMethod getConstructor(int param_count) {
+		// Search existing constructor
+		var constructor = constructors.get(param_count);
+		if (constructor != null) return constructor;
+
+		// If constructor has 0 parameters, return the default implicit one
+		if (param_count == 0) {
+			return new ClassDeclarationMethod(null, AccessLevel.PUBLIC);
+		}
+		return null;
 	}
 
 	public void addConstructor(ClassMethodBlock block, AccessLevel level) {
@@ -366,7 +379,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		for (Entry<String, ClassDeclarationField> field : fields.entrySet()) {
 			writer.addCode(className);
 			writer.addCode(".addField(mUAI, \"" + field.getKey() + "\", ");
-			if (field.getValue() != null) {
+			if (field.getValue().expression != null) {
 				field.getValue().expression.writeJavaCode(mainblock, writer);
 			} else {
 				writer.addCode("LeekValueManager.NULL");
