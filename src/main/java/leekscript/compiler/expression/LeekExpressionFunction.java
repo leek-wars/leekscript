@@ -230,7 +230,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
 					} else if (staticMethod.level == AccessLevel.PRIVATE && clazz != compiler.getCurrentClass()) {
 						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
-					} else if (staticMethod.level == AccessLevel.PROTECTED && !compiler.getCurrentClass().descendsFrom(clazz)) {
+					} else if (staticMethod.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
 						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
 					}
 				}
