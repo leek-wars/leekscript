@@ -75,6 +75,8 @@ public class TestFunction extends TestCommon {
 		code("function t() { var a = [1, 2, 3] return a } var x = t() var f = function() { return x } return x").equals("[1, 2, 3]");
 		code("push = 1 return push").equals("1");
 		code_v10("function LamaSwag() {} @LamaSwag();").equals("null");
+		code("function f() { distance = 12 } function distance() { return 'salut' } return distance()").equals("salut");
+		code("getOperations()").equals("null");
 
 		section("Modify argument");
 		code("function test(x) { x += 10 return x } return test(5)").equals("15");

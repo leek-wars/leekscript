@@ -137,6 +137,12 @@ public class TestOperators extends TestCommon {
 		}
 		code("return 1 === 1.0").equals("true");
 		code("return 12 === 12.0").equals("true");
+		code("return null == [null]").equals("false");
+		code("return null != [null]").equals("true");
+		code_v10("return [null] == null").equals("true"); // Bug in LS1.0
+		code_v11("return [null] == null").equals("false"); // Fixed in 1.1
+		code_v10("return [null] != null").equals("false"); // Bug in LS1.0
+		code_v11("return [null] != null").equals("true"); // Fixed in 1.1
 
 		code("var a = 1; var result = -10 + (1- (a-1)); return result").equals("-9");
 		code("var a = 1; var result = 0; result = -10 + (1- (a-1)); return result").equals("-9");
