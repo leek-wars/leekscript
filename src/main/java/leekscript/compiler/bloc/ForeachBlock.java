@@ -92,6 +92,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 			if (v == null) {
 				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
 			}
+			declaration.setFunction(compiler.getCurrentFunction());
 		}
 		mArray.analyze(compiler);
 		compiler.setCurrentBlock(initialBlock);
