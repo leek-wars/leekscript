@@ -50,8 +50,8 @@ public class TestCommon {
 			this.version = version;
 		}
 
-		public void equals(String expected) {
-			run(version, new Checker() {
+		public String equals(String expected) {
+			return run(version, new Checker() {
 				public boolean check(Result result) {
 					return result.result.equals(expected);
 				}
@@ -60,8 +60,8 @@ public class TestCommon {
 			});
 		}
 
-		public void error(Error type) {
-			run(version, new Checker() {
+		public String error(Error type) {
+			return run(version, new Checker() {
 				public boolean check(Result result) {
 					return result.error == type;
 				}
@@ -89,22 +89,22 @@ public class TestCommon {
 			});
 		}
 
-		public void run(int version, Checker checker) {
+		public String run(int version, Checker checker) {
 			if (!enabled) {
 				disabled++;
 				var s = C_PINK + "[DISA] " + END_COLOR + "[v" + version + "] " + code;
 				System.out.println(s);
 				disabledTests.add(s);
-				return;
+				return "disabled";
 			}
 			if (version == -1) {
 				run_version(10, checker);
-				run_version(11, checker);
+				return run_version(11, checker);
 			} else {
-				run_version(version, checker);
+				return run_version(version, checker);
 			}
 		}
-		public void run_version(int version, Checker checker) {
+		public String run_version(int version, Checker checker) {
 			tests++;
 			int aiID = 0;
 			Result result;
@@ -154,6 +154,7 @@ public class TestCommon {
 				System.out.println(err);
 				failedTests.add(err);
 			}
+			return result.result;
 		}
 	}
 
