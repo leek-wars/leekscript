@@ -99,6 +99,7 @@ public class TestGeneral extends TestCommon {
 		code("var y if (false) { if (true) {;} else { y = 2 } } else { y = 5 } return y").equals("5");
 		code_v10("PI = PI + 12; return PI").equals("3,142");
 		code_v11("PI = PI + 12; return PI").equals("3.141592653589793");
+		code_v10("var grow = []; var n = []; grow = @n; return grow").equals("[]");
 
 		section("Assignments with +=");
 		code_v10("var a = 10 a += 0.5 return a").equals("10,5");

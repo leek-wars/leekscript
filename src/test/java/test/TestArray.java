@@ -1,5 +1,7 @@
 package test;
 
+import leekscript.common.Error;
+
 public class TestArray extends TestCommon {
 
 	public void run() throws Exception {
@@ -77,6 +79,14 @@ public class TestArray extends TestCommon {
 		code("var a = null return a[1]").equals("null");
 		code("var a = null return a['a']").equals("null");
 		code("var a = null return a[1] = 12").equals("null");
+
+		section("Array misc");
+		code("return [1, 2, 3] + null").equals("[1, 2, 3, null]");
+		code("var a = [1] return a % 2").equals("1");
+		code_v10("var a = [[1], [1]]; return (a[0] + a[2]) / 2").equals("1");
+		code_v11("var a = [[1], [1]]; return (a[0] + a[2]) / 2").equals("1.0");
+		code_v10("var effects = [[1], [1]];\n\nreturn (effects[0] + effects[2]) /2;").equals("1");
+		code_v11("var effects = [[1], [1]];\n\nreturn (effects[0] + effects[2]) /2;").equals("1.0");
 
 		section("Array.operator []");
 		code("return [1, 2, 3][1]").equals("2");
@@ -198,8 +208,8 @@ public class TestArray extends TestCommon {
 		// DISABLED_code("var a = [] if (true) a += 12 return a;").equals("[12]");
 		// DISABLED_code("var a = [1] if (true) a += 12 return a;").equals("[1, 12]");
 		// DISABLED_code("var a = ['a'] if (true) a += 12 return a;").equals("['a', 12]");
-		code_v10("var a = [1.55]; a += 12.9; return a").equals("[1,55]");
-		code_v11("var a = [1.55]; a += 12.9; return a").equals("[1.55]");
+		code_v10("var a = [1.55]; a += 12.9; return a").equals("[1,55, 12,9]");
+		code_v11("var a = [1.55]; a += 12.9; return a").equals("[1.55, 12.9]");
 
 		section("Array.operator += on element");
 		code("var a = [5] a[0] += 1 return a;").equals("[6]");
@@ -401,12 +411,27 @@ public class TestArray extends TestCommon {
 		code("var a = ['a','b','c','d']; reverse(a); return a").equals("[d, c, b, a]");
 
 		section("Array.arrayMin()");
+		code("return arrayMin([])").equals("null");
 		code("return arrayMin([8,4,3,-1,8,44])").equals("-1");
 		code("return arrayMin([0:7,8:9,'a':2])").equals("2");
+		code("return arrayMin([1, 2, 3, 4, 5, null])").equals("null");
+		code("var a = arrayMin([1, 2, 3, 4, 5, null]) return a").equals("null");
+		code("return arrayMin([1, 2, 3, 4, 5, null])").equals("null");
+		code("return arrayMin([1, 2, 3, null, 4, 5])").equals("null");
+		code("return arrayMin([1, null, 5, 3, null, 2])").equals("null");
+		code("return arrayMin([null, 3, 4, 5, null, 1])").equals("null");
+		code("var a = [560 : null, 595 : null, 601 : 15, 566 : 13, 531 : 13] return arrayMin(a)").equals("null");
 
 		section("Array.arrayMax()");
+		code("return arrayMax([])").equals("null");
 		code("return arrayMax([8,4,3,-1,8,44])").equals("44");
 		code("return arrayMax([0:7,8:9,'a':2])").equals("9");
+		code("return arrayMax([1, 2, 3, 4, 5, null])").equals("5");
+		code("return arrayMax([1, 2, 3, null, 4, 5])").equals("5");
+		code("return arrayMax([1, null, 5, 3, null, 2])").equals("5");
+		code("return arrayMax([null, 3, 4, 5, null, 1])").equals("5");
+		code("var a = arrayMax([1, 2, 3, 4, 5, null]) return a").equals("5");
+		code("var a = [560 : null, 595 : null, 601 : 15, 566 : 13, 531 : 13] return arrayMax(a)").equals("15");
 
 		section("Array.sum()");
 		code_v10("return sum([1,5,7])").equals("13");
