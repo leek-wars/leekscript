@@ -34,6 +34,7 @@ public class LeekNumber extends AbstractExpression {
 		if (type == Type.REAL) {
 			var formatter = (DecimalFormat) NumberFormat.getNumberInstance(Locale.US);
 			formatter.setMaximumFractionDigits(15);
+			formatter.setGroupingUsed(false);
 			return formatter.format(mValue);
 		} else {
 			return String.valueOf((int) mValue);
