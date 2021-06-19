@@ -32,7 +32,11 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 
 	@Override
 	public String getCode() {
-		return token.getWord() + " = " + mValue.getString();
+		if (mValue != null) {
+			return "global " + token.getWord() + " = " + mValue.getString() + ";";
+		} else {
+			return "global " + token.getWord() + ";";
+		}
 	}
 
 	@Override

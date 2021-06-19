@@ -1,5 +1,9 @@
 package leekscript.compiler.expression;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.Locale;
+
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
@@ -27,12 +31,18 @@ public class LeekNumber extends AbstractExpression {
 
 	@Override
 	public String getString() {
-		return String.valueOf(mValue);
+		if (type == Type.REAL) {
+			var formatter = (DecimalFormat) NumberFormat.getNumberInstance(Locale.US);
+			formatter.setMaximumFractionDigits(15);
+			return formatter.format(mValue);
+		} else {
+			return String.valueOf((int) mValue);
+		}
 	}
 
 	@Override
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
-		//Pour un nombre pas de soucis
+		// Pour un nombre pas de soucis
 		return true;
 	}
 

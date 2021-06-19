@@ -59,13 +59,13 @@ public class LeekTernaire extends LeekExpression {
 
 	@Override
 	public String getString() {
-		String retour = "(";
+		String retour = "";
 		retour += mCondition == null ? "null" : mCondition.getString();
 		retour += " ? ";
 		retour += mExpression1 == null ? "null" : mExpression1.getString();
 		retour += " : ";
 		retour += mExpression2 == null ? "null" : mExpression2.getString();
-		return retour + ")";
+		return retour;
 	}
 
 	@Override

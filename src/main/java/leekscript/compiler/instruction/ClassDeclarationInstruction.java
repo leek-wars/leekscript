@@ -62,7 +62,52 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 
 	@Override
 	public String getCode() {
-		return "class";
+		String r = "class " + token.getWord();
+		if (parentToken != null) {
+			r += " extends " + parentToken.getWord();
+		}
+		r += " {\n";
+
+		for (Entry<String, AbstractExpression> field : staticFields.entrySet()) {
+			r += "\tstatic " + field.getKey();
+			if (field.getValue() != null) {
+				r += " = " + field.getValue().getString();
+			}
+			r += "\n";
+		}
+		r += "\n";
+
+		for (var method : staticMethods.entrySet()) {
+			for (var version : method.getValue().entrySet()) {
+				r += "\tstatic " + method.getKey() + version.getValue().getCode();
+			}
+			r += "\n";
+		}
+		r += "\n";
+
+		for (Entry<String, AbstractExpression> field : fields.entrySet()) {
+			r += "\t" + field.getKey();
+			if (field.getValue() != null) {
+				r += " = " + field.getValue().getString();
+			}
+			r += "\n";
+		}
+		r += "\n";
+
+		for (var constructor : constructors.entrySet()) {
+			r += "\tconstructor" + constructor.getValue().getCode();
+		}
+		r += "\n";
+
+		for (var method : methods.entrySet()) {
+			for (var version : method.getValue().entrySet()) {
+				r += "\t" + method.getKey() + version.getValue().getCode();
+			}
+			r += "\n";
+		}
+
+		r += "}";
+		return r;
 	}
 
 	@Override

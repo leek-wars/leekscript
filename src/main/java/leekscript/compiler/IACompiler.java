@@ -95,6 +95,18 @@ public class IACompiler {
 		return writer.getJavaCode();
 	}
 
+	public String merge(AIFile<?> ai) throws LeekCompilerException {
+		// System.out.println("Merge ai " + ai);
+		WordParser parser = new WordParser(ai, ai.getVersion());
+		MainLeekBlock main = new MainLeekBlock(this, ai);
+		WordCompiler compiler = new WordCompiler(parser, main, ai, ai.getVersion());
+		main.setWordCompiler(compiler);
+		compiler.readCode();
+		String code = main.getCode();
+		// System.out.println("Code = " + code);
+		return code;
+	}
+
 	public String getInformations() {
 		return mInformations.toJSONString();
 	}

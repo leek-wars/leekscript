@@ -55,7 +55,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 	@Override
 	public String getCode() {
-		return "for(" + mIterator + " in " + mArray.getString() + "){\n" + super.getCode() + "}";
+		return "for (" + (mIsKeyDeclaration ? "var " : "") + mKeyIterator + " : " + (mIsDeclaration ? "var " : "") + mIterator + " in " + mArray.getString() + ") {\n" + super.getCode() + "}";
 	}
 
 	@Override

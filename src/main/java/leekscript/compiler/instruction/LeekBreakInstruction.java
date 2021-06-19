@@ -19,7 +19,7 @@ public class LeekBreakInstruction implements LeekInstruction {
 
 	@Override
 	public String getCode() {
-		return "break";
+		return "break;";
 	}
 
 	@Override

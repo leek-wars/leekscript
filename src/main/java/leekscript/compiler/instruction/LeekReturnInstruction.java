@@ -20,7 +20,7 @@ public class LeekReturnInstruction implements LeekInstruction {
 
 	@Override
 	public String getCode() {
-		return "return " + (mExpression == null ? "null" : mExpression.getString());
+		return "return " + (mExpression == null ? "null" : mExpression.getString()) + ";";
 	}
 
 	@Override

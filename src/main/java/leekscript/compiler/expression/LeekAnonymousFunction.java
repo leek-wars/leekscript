@@ -26,7 +26,7 @@ public class LeekAnonymousFunction extends AbstractExpression {
 
 	@Override
 	public String getString() {
-		return "#Anonymous" + mBlock.getId();
+		return mBlock.getCode();
 	}
 
 	@Override

@@ -210,16 +210,25 @@ public class Operators {
 		return false;
 	}
 
-	public static String getString(int operator) {
-		switch(operator) {
+	public static String getString(int operator, int version) {
+		switch (operator) {
 		case ADD:
 			return "+";
+		case ADDASSIGN:
+			return "+=";
 		case MINUS:
+		case UNARY_MINUS:
 			return "-";
+		case MINUSASSIGN:
+			return "-=";
 		case MULTIPLIE:
 			return "*";
+		case MULTIPLIEASSIGN:
+			return "*=";
 		case DIVIDE:
 			return "/";
+		case DIVIDEASSIGN:
+			return "/=";
 		case MODULUS:
 			return "%";
 		case ASSIGN:
@@ -228,22 +237,62 @@ public class Operators {
 			return "&&";
 		case OR:
 			return "||";
+		case LESS:
+			return "<";
+		case LESSEQUALS:
+			return "<=";
+		case MORE:
+			return ">";
+		case MOREEQUALS:
+			return ">=";
 		case EQUALS:
 			return "==";
+		case EQUALS_EQUALS:
+			return "===";
 		case NOTEQUALS:
 			return "!=";
+		case NOT_EQUALS_EQUALS:
+			return "!==";
 		case NOT:
 			return "!";
+		case BITAND:
+			return "&";
+		case BITAND_ASSIGN:
+			return "&=";
+		case BITOR:
+			return "|";
+		case BITOR_ASSIGN:
+			return "|=";
+		case BITXOR:
+			return "^";
+		case BITXOR_ASSIGN:
+			return "^=";
+		case SHIFT_LEFT:
+			return "<<";
+		case SHIFT_LEFT_ASSIGN:
+			return "<<=";
+		case SHIFT_RIGHT:
+			return ">>";
+		case SHIFT_RIGHT_ASSIGN:
+			return ">>=";
+		case SHIFT_UNSIGNED_RIGHT:
+			return ">>>";
+		case SHIFT_UNSIGNED_RIGHT_ASSIGN:
+			return ">>>=";
 		case INCREMENT:
+		case PRE_INCREMENT:
 			return "++";
 		case DECREMENT:
+		case PRE_DECREMENT:
 			return "--";
 		case POWER:
-			return "^";
+			return "**";
 		case POWERASSIGN:
-			return "^=";
+			return version == 10 ? "^=" : "**=";
 		case NEW:
 			return "new";
+		case BITNOT:
+			return "~";
 		case INSTANCEOF:
 			return "instanceof";
 		}

@@ -56,7 +56,7 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 	@Override
 	public String getCode() {
 		if (mValue == null) return "var " + token.getWord();
-		return "var " + token.getWord() + " = " + mValue.getString();
+		return "var " + token.getWord() + " = " + mValue.getString() + ";";
 	}
 
 	@Override

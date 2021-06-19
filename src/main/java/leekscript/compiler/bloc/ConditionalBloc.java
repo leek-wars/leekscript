@@ -35,9 +35,9 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	@Override
 	public String getCode() {
 		String str = "";
-		if(mParentCondition == null) str = "if(" + mCondition.getString() + "){";
-		else if(mCondition != null) str = "elseif(" + mCondition.getString() + "){";
-		else str = "else{";
+		if(mParentCondition == null) str = "if (" + mCondition.getString() + ") {";
+		else if(mCondition != null) str = "else if (" + mCondition.getString() + ") {";
+		else str = "else {";
 		str += "\n" + super.getCode();
 		return str + "}";
 	}

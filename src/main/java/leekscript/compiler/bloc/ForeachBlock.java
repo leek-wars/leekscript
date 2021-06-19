@@ -39,7 +39,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 
 	@Override
 	public String getCode() {
-		return "for(" + mIterator + " in " + mArray.getString() + "){\n" + super.getCode() + "}";
+		return "for (" + (mIsDeclaration ? "var " : "") + mIterator + " in " + mArray.getString() + ") {\n" + super.getCode() + "}";
 	}
 
 	@Override

@@ -78,13 +78,13 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 
 	@Override
 	public String getCode() {
-		String str = "function method" + mId + "(";
+		String str = "(";
 		for (int i = 0; i < mParameters.size(); i++) {
 			if (i != 0)
 				str += ", ";
 			str += mParameters.get(i);
 		}
-		return str + "){\n" + super.getCode() + "}\n";
+		return str + ") {\n" + super.getCode() + "}\n";
 	}
 
 	@Override
