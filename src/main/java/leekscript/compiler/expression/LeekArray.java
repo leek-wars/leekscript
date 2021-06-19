@@ -37,7 +37,11 @@ public class LeekArray extends AbstractExpression {
 	public String getString() {
 		String str = "[";
 		for(int i = 0; i < mValues.size(); i++){
-			if(i > 0) str += ", ";
+			if (i > 0) str += ", ";
+			if (mIsKeyVal) {
+				str += mValues.get(i).getString() + ": ";
+				i++;
+			}
 			str += mValues.get(i).getString();
 		}
 		return str + "]";

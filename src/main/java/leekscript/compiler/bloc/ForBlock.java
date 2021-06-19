@@ -47,7 +47,7 @@ public class ForBlock extends AbstractLeekBlock {
 
 	@Override
 	public String getCode() {
-		return "for(" + mInitialisation.getCode() + ";" + mCondition.getString() + ";" + mIncrementation.getString() + "){\n" + super.getCode() + "}";
+		return "for (" + mInitialisation.getCode() + mCondition.getString() + "; " + mIncrementation.getString() + ") {\n" + super.getCode() + "}";
 	}
 
 	@Override

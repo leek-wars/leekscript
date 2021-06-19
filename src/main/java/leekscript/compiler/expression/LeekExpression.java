@@ -407,22 +407,22 @@ public class LeekExpression extends AbstractExpression {
 
 	@Override
 	public String getString() {
-		String retour = "(";
+		String retour = "";
 		if (Operators.isUnaryPrefix(mOperator)) {
-			;
-			retour += Operators.getString(mOperator);
+			retour += Operators.getString(mOperator, mOperatorToken.getAI().getVersion());
+			if (mOperator == Operators.NEW) retour += " ";
 			retour += mExpression2 == null ? "null" : mExpression2.getString();
 		}
 		else if (Operators.isUnarySuffix(mOperator)) {
 			retour += mExpression2 == null ? "null" : mExpression2.getString();
-			retour += Operators.getString(mOperator);
+			retour += Operators.getString(mOperator, mOperatorToken.getAI().getVersion());
 		}
 		else {
 			retour += mExpression1 == null ? "null" : mExpression1.getString();
-			retour += " " + Operators.getString(mOperator) + " ";
+			retour += " " + Operators.getString(mOperator, mOperatorToken.getAI().getVersion()) + " ";
 			retour += mExpression2 == null ? "null" : mExpression2.getString();
 		}
-		return retour + ")";
+		return retour + "";
 	}
 
 	@Override

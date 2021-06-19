@@ -19,7 +19,7 @@ public class LeekContinueInstruction implements LeekInstruction {
 
 	@Override
 	public String getCode() {
-		return "continue";
+		return "continue;";
 	}
 
 	@Override

@@ -24,7 +24,7 @@ public class LeekExpressionInstruction implements LeekInstruction {
 
 	@Override
 	public String getCode() {
-		return mExpression.getString();
+		return mExpression.getString() + ";";
 	}
 
 	@Override
