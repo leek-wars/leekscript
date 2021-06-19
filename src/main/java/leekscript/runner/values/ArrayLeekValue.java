@@ -266,6 +266,10 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 
 	@Override
 	public boolean equals(AI ai, AbstractLeekValue comp) throws LeekRunException {
+		// In LS1.0, [null] == null, not in 1.1+
+		if (ai.getVersion() >= 11 && comp.getType() == NULL) {
+			return false;
+		}
 		if (comp.getType() == ARRAY) {
 			return mValues.equals(ai, comp.getArray().mValues);
 		} else if (mValues.size() == 1) { // Si y'a un seul élément dans le tableau
