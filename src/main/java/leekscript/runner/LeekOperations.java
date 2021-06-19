@@ -64,10 +64,10 @@ public class LeekOperations {
 	}
 
 	public static AbstractLeekValue minus(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
-		ai.addOperations(1);
 		v1 = v1.getValue();
 		v2 = v2.getValue();
 		if (v1.isNumeric() && v2.isNumeric()) {
+			ai.addOperations(1);
 			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue)
 				return new DoubleLeekValue(v1.getDouble(ai) - v2.getDouble(ai));
 			else
@@ -77,10 +77,10 @@ public class LeekOperations {
 	}
 
 	public static AbstractLeekValue power(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
-		ai.addOperations(AbstractLeekValue.POW_COST);
 		v1 = v1.getValue();
 		v2 = v2.getValue();
 		if (v1.isNumeric() && v2.isNumeric()) {
+			ai.addOperations(AbstractLeekValue.POW_COST);
 			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
 				double result = Math.pow(v1.getDouble(ai), v2.getDouble(ai));
 				if (Double.isNaN(result))
@@ -97,10 +97,10 @@ public class LeekOperations {
 	}
 
 	public static AbstractLeekValue multiply(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
-		ai.addOperations(AbstractLeekValue.MUL_COST);
 		v1 = v1.getValue();
 		v2 = v2.getValue();
 		if (v1.isNumeric() && v2.isNumeric()) {
+			ai.addOperations(AbstractLeekValue.MUL_COST);
 			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
 				return new DoubleLeekValue(v1.getDouble(ai) * v2.getDouble(ai));
 			} else {
@@ -112,11 +112,10 @@ public class LeekOperations {
 
 	public static AbstractLeekValue divide(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 
-		ai.addOperations(AbstractLeekValue.DIV_COST);
-
 		v1 = v1.getValue();
 		v2 = v2.getValue();
 		if (v1.isNumeric() && v2.isNumeric()) {
+			ai.addOperations(AbstractLeekValue.DIV_COST);
 			if (v2.getDouble(ai) == 0) {
 				ai.addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
 				return LeekValueManager.NULL;
@@ -128,10 +127,10 @@ public class LeekOperations {
 
 	public static AbstractLeekValue modulus(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 
-		ai.addOperations(AbstractLeekValue.MOD_COST);
 		v1 = v1.getValue();
 		v2 = v2.getValue();
 		if (v1.isNumeric() && v2.isNumeric()) {
+			ai.addOperations(AbstractLeekValue.MOD_COST);
 			if (v2.getDouble(ai) == 0) {
 				ai.addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
 				return LeekValueManager.NULL;
