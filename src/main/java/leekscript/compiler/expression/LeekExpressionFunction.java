@@ -70,17 +70,36 @@ public class LeekExpressionFunction extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+		writer.addCode("load(");
+		compileL(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileL(MainLeekBlock mainblock, JavaWriter writer) {
 		boolean addComma = true;
+		boolean addBrace = false;
 		FunctionBlock user_function = null;
 		ILeekFunction system_function = null;
 		if (mExpression instanceof LeekObjectAccess) {
 			var object = ((LeekObjectAccess) mExpression).getObject();
+			var field = ((LeekObjectAccess) mExpression).getField();
 			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
-				writer.addCode("u_this.callSuperMethod(mUAI, u_class, \"" + ((LeekObjectAccess) mExpression).getField() + "_" + mParameters.size() + "\"");
+				writer.addCode("u_this.callSuperMethod(this, \"" + (field + "_" + mParameters.size() + "\""));
+			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.CLASS) {
+				// Méthode statique connue
+				var v = (LeekVariable) object;
+				String methodName = "u_" + v.getClassDeclaration().getName() + "_" + field + "_" + mParameters.size();
+				writer.addCode(methodName + "(");
+				addComma = false;
+			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
+				// Méthode connue
+				String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getMethodName(field, mParameters.size());
+				writer.addCode(methodName + "(u_this");
 			} else {
-				var fromClass = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
+				writer.addCode("callMethod(");
 				object.writeJavaCode(mainblock, writer);
-				writer.addCode(".callMethod(mUAI, \"" + ((LeekObjectAccess) mExpression).getField() + "_" + mParameters.size() + "\", " + fromClass);
+				writer.addCode(", \"" + field + "_" + mParameters.size() + "\"");
 			}
 		} else if (mExpression instanceof LeekTabularValue) {
 			var object = ((LeekTabularValue) mExpression).getTabular();
@@ -99,64 +118,93 @@ public class LeekExpressionFunction extends AbstractExpression {
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SUPER) {
 			// Super constructor
 			var variable = (LeekVariable) mExpression;
-			writer.addCode("user_" + variable.getClassDeclaration().getParent().getName());
-			writer.addCode(".callConstructor(mUAI, u_this");
+			writer.addCode("u_" + variable.getClassDeclaration().getParent().getName());
+			writer.addCode(".callConstructor(u_this");
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.METHOD) {
-			writer.addCode("u_this.callMethod(mUAI, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\", u_class");
+			// Méthode connue
+			String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getMethodName(((LeekVariable) mExpression).getName(), mParameters.size());
+			writer.addCode(methodName + "(u_this");
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.STATIC_METHOD) {
-			writer.addCode("u_class.callMethod(mUAI, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\", u_class");
+			// Méthode statique connue
+			String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getName() + "_" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size();
+			writer.addCode(methodName + "(");
+			addComma = false;
 		} else if (mExpression instanceof LeekVariable && mainblock.isRedefinedFunction(((LeekVariable) mExpression).getName())) {
 			writer.addCode("rfunction_" + ((LeekVariable) mExpression).getName());
-			writer.addCode(".executeFunction(mUAI");
+			writer.addCode(".execute(this");
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SYSTEM_FUNCTION) {
 			var variable = (LeekVariable) mExpression;
 			system_function = LeekFunctions.getValue(variable.getName());
-			String namespace = LeekFunctions.getNamespace(variable.getName());
-			// writer.addCode("LeekValueManager.getFunction(" + namespace + "." + variable.getName() + ")");
-			writer.addCode("LeekFunctions.executeFunction(mUAI, " + namespace + "." + variable.getName() + ", new AbstractLeekValue[] {");
-			addComma = false;
+
+			if (system_function.getVersions() != null) {
+				// var version = checkArgumentsStatically(system_function);
+				// System.out.println("version = " + version);
+				// if (version != null) {
+				// 	var signature = buildTypesSignature(version.arguments);
+				// 	writer.addCode("" + system_function + "_" + signature + "(");
+				// } else {
+					writer.addCode("" + system_function + "(");
+				// }
+				addComma = false;
+			} else {
+				// writer.addCode("" + system_function + "_(");
+				String namespace = LeekFunctions.getNamespace(variable.getName());
+				writer.addCode("sysexec(" + namespace + "." + variable.getName());
+			}
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.FUNCTION) {
-			writer.addCode("user_function_");
+			writer.addCode("f_");
 			writer.addCode(((LeekVariable) mExpression).getName());
 			writer.addCode("(");
 			addComma = false;
 			user_function = mainblock.getUserFunction(((LeekVariable) mExpression).getName());
 		} else {
-			mExpression.writeJavaCode(mainblock, writer);
-			writer.addCode(".executeFunction(mUAI");
+			if (mExpression.isLeftValue() && !mExpression.nullable()) {
+				writer.addCode("execute(");
+				mExpression.writeJavaCode(mainblock, writer);
+				// addComma = false;
+			} else {
+				writer.addCode("execute(");
+				mExpression.writeJavaCode(mainblock, writer);
+			}
 		}
+
 		int argCount = mParameters.size();
 		if (system_function != null) argCount = Math.max(argCount, system_function.getArguments());
 		for (int i = 0; i < argCount; i++) {
 			if (i > 0 || addComma) writer.addCode(", ");
 			if (i < mParameters.size()) {
+				var parameter = mParameters.get(i);
+				// Java doesn't like a single null for Object... argument
+				if (argCount == 1 && parameter.getType() == Type.NULL) {
+					writer.addCode("new Object[] { null }");
+					continue;
+				}
 				if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
-					mParameters.get(i).writeJavaCode(mainblock, writer);
-					if (system_function != null) {
-						writer.addCode(".getValue()");
-					}
+					parameter.writeJavaCode(mainblock, writer);
 				} else {
 					if (user_function != null) {
-						if (user_function.isReference(i)) {
-							mParameters.get(i).writeJavaCode(mainblock, writer);
-						} else {
-							writer.addCode("LeekOperations.clone(mUAI, ");
-							mParameters.get(i).writeJavaCode(mainblock, writer);
-							writer.addCode(".getValue())");
-						}
+						// if (user_function.isReference(i)) {
+							parameter.compileL(mainblock, writer);
+						// } else {
+						// 	writer.compileClone(mainblock, parameter);
+						// }
 					} else if (system_function != null) {
-						mParameters.get(i).writeJavaCode(mainblock, writer);
-						writer.addCode(".getValue()");
+						writer.compileLoad(mainblock, parameter);
 					} else {
-						mParameters.get(i).writeJavaCode(mainblock, writer);
+						parameter.compileL(mainblock, writer);
 					}
 				}
 			} else {
-				writer.addCode("LeekValueManager.NULL");
+				// Java doesn't like a single null for Object... argument
+				if (argCount == 1) {
+					writer.addCode("new Object[] { null }");
+				} else {
+					writer.addCode("null");
+				}
 			}
 		}
-		if (system_function != null) {
-			writer.addCode("}, " + mParameters.size());
+		if (addBrace) {
+			writer.addCode("}");
 		}
 		writer.addCode(")");
 		writer.addPosition(openParenthesis);
@@ -164,7 +212,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 
 	@Override
 	public void analyze(WordCompiler compiler) {
-		operations = 1;
+		operations = 0;
 		mExpression.analyze(compiler);
 		operations += mExpression.getOperations();
 		for (AbstractExpression parameter : mParameters) {

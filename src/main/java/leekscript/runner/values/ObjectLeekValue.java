@@ -12,7 +12,7 @@ import leekscript.runner.LeekValueManager;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 
-public class ObjectLeekValue extends AbstractLeekValue {
+public class ObjectLeekValue {
 
 	public final ClassLeekValue clazz;
 	public final HashMap<String, ObjectVariableValue> fields = new HashMap<>();
@@ -23,24 +23,22 @@ public class ObjectLeekValue extends AbstractLeekValue {
 
 	public ObjectLeekValue(AI ai, ObjectLeekValue value, int level) throws LeekRunException {
 		this.clazz = value.clazz;
-		ai.addOperations(value.fields.size());
+		ai.ops(value.fields.size());
 		for (var field : value.fields.entrySet()) {
 			if (level == 1) {
-				fields.put(field.getKey(), new ObjectVariableValue(ai, LeekOperations.clonePrimitive(ai, field.getValue()), field.getValue().level));
+				fields.put(field.getKey(), new ObjectVariableValue(ai, field.getValue().getValue(), field.getValue().level));
 			} else {
-				fields.put(field.getKey(), new ObjectVariableValue(ai, LeekOperations.clone(ai, field.getValue(), level - 1), field.getValue().level));
+				fields.put(field.getKey(), new ObjectVariableValue(ai, LeekOperations.clone(ai, field.getValue().getValue(), level - 1), field.getValue().level));
 			}
 		}
 	}
 
-	public void addField(AI ai, String field, AbstractLeekValue value, AccessLevel level) throws LeekRunException {
+	public void addField(AI ai, String field, Object value, AccessLevel level) throws LeekRunException {
 		fields.put(field, new ObjectVariableValue(ai, LeekOperations.clone(ai, value), level));
 	}
 
-	@Override
-	public AbstractLeekValue getField(AI ai, String field, ClassLeekValue fromClass) throws LeekRunException {
+	public Object getField(String field, ClassLeekValue fromClass) throws LeekRunException {
 		// System.out.println("getField " + field);
-		ai.addOperations(1);
 		if (field.equals("class")) {
 			return clazz;
 		}
@@ -53,15 +51,15 @@ public class ObjectLeekValue extends AbstractLeekValue {
 				// Protected : Access from descendant
 				if (fromClass != null && fromClass.descendsFrom(clazz)) {
 					if (result.level == AccessLevel.PRIVATE) {
-						ai.addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new String[] { clazz.name, field });
-						return LeekValueManager.NULL;
+						clazz.ai.addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new String[] { clazz.name, field });
+						return null;
 					}
 					return result;
 				} else {
 					// Public : Access from outside
 					if (result.level != AccessLevel.PUBLIC) {
-						ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_FIELD : Error.PRIVATE_FIELD, new String[] { clazz.name, field });
-						return LeekValueManager.NULL;
+						clazz.ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_FIELD : Error.PRIVATE_FIELD, new String[] { clazz.name, field });
+						return null;
 					}
 					return result;
 				}
@@ -70,34 +68,75 @@ public class ObjectLeekValue extends AbstractLeekValue {
 		var method = clazz.genericMethods.get(field);
 		if (method != null) return method;
 
-		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { clazz.name, field });
-		return LeekValueManager.NULL;
+		clazz.ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { clazz.name, field });
+		return null;
 	}
 
-	@Override
-	public AbstractLeekValue get(AI ai, AbstractLeekValue value) throws LeekRunException {
-		return getField(ai, value.getString(ai), null);
+	public Box getFieldL(String field) throws LeekRunException {
+		// System.out.println("getField " + field);
+		var result = fields.get(field);
+		if (result != null) {
+			return result;
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		// ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { clazz.name, field });
+		// return null;
 	}
 
-	@Override
-	public AbstractLeekValue get(AI ai, AbstractLeekValue value, ClassLeekValue fromClass) throws LeekRunException {
-		return getField(ai, value.getString(ai), fromClass);
+	public Object setField(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			result.set(value);
+		}
+		return value;
 	}
 
-	@Override
-	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value) throws LeekRunException {
-		return getField(ai, value.getString(ai), null);
+	public Object field_inc(String field) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.increment();
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
 
-	@Override
-	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value, ClassLeekValue fromClass) throws LeekRunException {
-		return getField(ai, value.getString(ai), fromClass);
+	public Object field_add_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.add_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
 
-	@Override
-	public AbstractLeekValue callMethod(AI ai, String method, ClassLeekValue fromClass, AbstractLeekValue... arguments) throws LeekRunException {
-		ai.addOperations(1);
-		LeekAnonymousFunction result = clazz.getMethod(ai, method, fromClass);
+	public Object field_sub_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.sub_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_mul_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.mul_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_bor_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.bor_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Box getOrCreate(AI ai, Object value) throws LeekRunException {
+		return getFieldL(LeekValueManager.getString(ai, value));
+	}
+
+	public Object callMethod(String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
+		var result = clazz.getMethod(clazz.ai, method, fromClass);
 		if (result == null) {
 			int underscore = method.lastIndexOf("_");
 			int argCount = Integer.parseInt(method.substring(underscore + 1));
@@ -107,16 +146,14 @@ public class ObjectLeekValue extends AbstractLeekValue {
 				methodRealName += "x";
 			}
 			methodRealName += ")";
-			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { clazz.name, methodRealName });
-			return LeekValueManager.NULL;
+			clazz.ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { clazz.name, methodRealName });
+			return null;
 		}
 		// Call method with new arguments, add the object at the beginning
-		return result.run(ai, this, arguments);
+		return result.run(this, arguments);
 	}
 
-	@Override
-	public AbstractLeekValue callSuperMethod(AI ai, ClassLeekValue currentClass, String method, AbstractLeekValue... arguments) throws LeekRunException {
-		ai.addOperations(1);
+	public Object callSuperMethod(AI ai, ClassLeekValue currentClass, String method, Object... arguments) throws LeekRunException {
 		LeekAnonymousFunction result = currentClass.getSuperMethod(ai, method, currentClass);
 		if (result == null) {
 			int underscore = method.lastIndexOf("_");
@@ -128,43 +165,30 @@ public class ObjectLeekValue extends AbstractLeekValue {
 			}
 			methodRealName += ")";
 			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { clazz.name, methodRealName });
-			return LeekValueManager.NULL;
+			return null;
 		}
 		// Call method with new arguments, add the object at the beginning
-		return result.run(ai, this, arguments);
+		return result.run(this, arguments);
 	}
 
-	@Override
-	public boolean getBoolean() {
-		return fields.size() > 0;
-	}
-
-	@Override
 	public int getInt(AI ai) {
 		return fields.size();
 	}
 
-	@Override
 	public double getDouble(AI ai) {
 		return fields.size();
 	}
 
-	@Override
-	public boolean isNumeric() {
-		return true;
-	}
-
-	@Override
 	public String getString(AI ai, Set<Object> visited) throws LeekRunException {
 		visited.add(this);
 
 		var string_method = clazz.getMethod(ai, "string_0", null);
 		if (string_method != null) {
-			var result = string_method.run(ai, this, new AbstractLeekValue[] {});
-			if (result.getType() != STRING) {
+			var result = string_method.run(this);
+			if (!(result instanceof String)) {
 				ai.addSystemLog(AILog.ERROR, Error.STRING_METHOD_MUST_RETURN_STRING, new String[] { clazz.name });
 			} else {
-				return result.getString(ai, visited);
+				return LeekValueManager.getString(ai, result, visited);
 			}
 		}
 
@@ -178,42 +202,29 @@ public class ObjectLeekValue extends AbstractLeekValue {
 			if (visited.contains(field.getValue().getValue())) {
 				sb.append("<...>");
 			} else {
-				if (!field.getValue().getValue().isPrimitive()) {
+				if (!ai.isPrimitive(field.getValue().getValue())) {
 					visited.add(field.getValue().getValue());
 				}
-				sb.append(field.getValue().getValue().getString(ai, visited));
+				sb.append(ai.getString(field.getValue().getValue(), visited));
 			}
 		}
 		sb.append("}");
 		return sb.toString();
 	}
 
-	@Override
-	public int getV10Type() {
-		return OBJECT_V10;
-	}
-
-	@Override
-	public int getType() {
-		return OBJECT;
-	}
-
-	@Override
-	public boolean equals(AI ai, AbstractLeekValue comp) throws LeekRunException {
-		comp = comp.getValue();
+	public boolean equals(AI ai, Object comp) throws LeekRunException {
 		if (comp instanceof ObjectLeekValue) {
 			return this == comp;
 		}
 		return false;
 	}
 
-	public boolean equalsDeep(AI ai, AbstractLeekValue comp) throws LeekRunException {
-		comp = comp.getValue();
+	public boolean equalsDeep(AI ai, Object comp) throws LeekRunException {
 		if (comp instanceof ObjectLeekValue) {
 			var o = (ObjectLeekValue) comp;
 			if (o.clazz != clazz) return false;
 			for (var f : fields.entrySet()) {
-				if (!f.getValue().getValue().equals(ai, o.fields.get(f.getKey()))) {
+				if (!ai.eq(f.getValue().getValue(), o.fields.get(f.getKey()))) {
 					return false;
 				}
 			}
@@ -222,17 +233,29 @@ public class ObjectLeekValue extends AbstractLeekValue {
 		return false;
 	}
 
-	@Override
 	public Object toJSON(AI ai) {
 		return "object";
 	}
 
-	@Override
-	public boolean isPrimitive() {
-		return false;
-	}
-
 	public ClassLeekValue getClazz() {
 		return clazz;
+	}
+
+	public int size() {
+		return fields.size();
+	}
+
+	public String toString() {
+		var sb = new StringBuilder(clazz.name + " {");
+		boolean first = true;
+		for (HashMap.Entry<String, ObjectVariableValue> field : fields.entrySet()) {
+			if (first) first = false;
+			else sb.append(", ");
+			sb.append(field.getKey());
+			sb.append(": ");
+			sb.append(field.getValue().toString());
+		}
+		sb.append("}");
+		return sb.toString();
 	}
 }

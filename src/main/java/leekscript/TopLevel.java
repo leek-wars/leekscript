@@ -11,13 +11,13 @@ public class TopLevel {
 	public static void main(String[] args) {
 		if (args.length < 1) {
 			Scanner input = new Scanner(System.in);
-		    System.out.print(">>> ");
-		    String code;
-		    while ((code = input.nextLine()) != null) {
-		    	executeSnippet(code);
-		    	System.out.print(">>> ");
+			System.out.print(">>> ");
+			String code;
+			while ((code = input.nextLine()) != null) {
+				executeSnippet(code);
+				System.out.print(">>> ");
 			}
-	    	input.close();
+			input.close();
 		} else {
 
 			File file = new File(args[0]);
@@ -39,8 +39,8 @@ public class TopLevel {
 			var v = ai.runIA();
 			long executionTime = System.currentTimeMillis() - et;
 
-			String result = v.getString(ai);
-			long ops = ai.getOperations();
+			var result = ai.string(v);
+			long ops = ai.operations();
 
 			System.out.println(result);
 			System.out.println("(" + ops + " ops, " + compileTime + "ms + " + executionTime + "ms)");
@@ -60,8 +60,8 @@ public class TopLevel {
 			var v = ai.runIA();
 			long executionTime = System.currentTimeMillis() - et;
 
-			String result = v.getString(ai);
-			long ops = ai.getOperations();
+			var result = ai.string(v);
+			long ops = ai.operations();
 
 			System.out.println(result);
 			System.out.println("(" + ops + " ops, " + compileTime + "ms + " + executionTime + "ms)");

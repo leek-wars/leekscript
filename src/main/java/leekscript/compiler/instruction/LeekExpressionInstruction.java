@@ -5,10 +5,17 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.LeekAnonymousFunction;
 import leekscript.compiler.expression.LeekBoolean;
+import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekNull;
+import leekscript.compiler.expression.LeekNumber;
+import leekscript.compiler.expression.LeekObjectAccess;
+import leekscript.compiler.expression.LeekString;
+import leekscript.compiler.expression.LeekTabularValue;
 import leekscript.compiler.expression.LeekTernaire;
 import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.expression.Operators;
 
 public class LeekExpressionInstruction implements LeekInstruction {
 
@@ -29,20 +36,30 @@ public class LeekExpressionInstruction implements LeekInstruction {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if (mExpression.trim() instanceof LeekTernaire || mExpression.trim() instanceof LeekNull || mExpression.trim() instanceof LeekBoolean) {
-			writer.addCode("nothing(");
-			mExpression.writeJavaCode(mainblock, writer);
-			writer.addLine(");", mLine, mAI);
+
+		// Simple values are not compiled
+		var trimmed = mExpression.trim();
+		if (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).getOperator() == Operators.REFERENCE) {
+			trimmed = ((LeekExpression) trimmed).getExpression1();
 		}
-		else {
-			if (mExpression instanceof LeekVariable) {
-				// We don't write a code like "variable;", useless and not
-				// authorized by Java
-			} else {
-				mExpression.writeJavaCode(mainblock, writer);
-				writer.addLine(";", mLine, mAI);
-			}
+		if (trimmed instanceof LeekNull || trimmed instanceof LeekBoolean || trimmed instanceof LeekNumber || trimmed instanceof LeekString || trimmed instanceof LeekVariable || trimmed instanceof LeekObjectAccess || trimmed instanceof LeekTabularValue || trimmed instanceof LeekAnonymousFunction) {
+			return;
 		}
+
+		// Wrap an expression with a function call to avoid 'error: not a statement' error
+		if (trimmed instanceof LeekTernaire || (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).needsWrapper())) {
+			writer.addCode("ops(");
+			trimmed.writeJavaCode(mainblock, writer);
+			writer.addCode(", " + trimmed.getOperations() + ")");
+		} else {
+			if (trimmed.getOperations() > 0) writer.addCode("ops(");
+			trimmed.writeJavaCode(mainblock, writer);
+			if (trimmed.getOperations() > 0) writer.addCode(", " + trimmed.getOperations() + ")");
+		}
+		// if (trimmed.getOperations() > 0) {
+		// 	writer.addCode("; ops(" + trimmed.getOperations() + ")");
+		// }
+		writer.addLine(";", mLine, mAI);
 	}
 
 	@Override

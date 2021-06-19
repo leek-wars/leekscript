@@ -58,19 +58,205 @@ public class LeekTabularValue extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if (mLeftValue) {
-			mTabular.writeJavaCode(mainblock, writer);
-			writer.addCode(".getValue().getOrCreate(mUAI, ");
-			mCase.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
-		} else {
-			mTabular.writeJavaCode(mainblock, writer);
-			writer.addCode(".getValue().get(mUAI, ");
-			mCase.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
-		}
+		writer.addCode("get(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
 	}
 
+	@Override
+	public void compileL(MainLeekBlock mainblock, JavaWriter writer) {
+		assert(mLeftValue && !mTabular.nullable());
+		writer.addCode("getBox(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+
+		// writer.compileClone(mainblock, expr);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_inc(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_dec(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_add_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_sub_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_mul_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_div_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+
+	@Override
+	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_bor_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+
+	@Override
+	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_band_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+
+	@Override
+	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_bxor_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_shl_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_shr_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_ushr_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
 	public void setLeftValue(boolean b) {
 		mLeftValue = b;
 	}

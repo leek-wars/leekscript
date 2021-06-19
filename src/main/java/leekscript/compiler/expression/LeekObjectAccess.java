@@ -41,13 +41,6 @@ public class LeekObjectAccess extends AbstractExpression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		object.writeJavaCode(mainblock, writer);
-		String fromClass = (writer.currentBlock instanceof ClassMethodBlock) ? "u_class" : "null";
-		writer.addCode(".getField(mUAI, \"" + field.getWord() + "\", " + fromClass + ")");
-	}
-
-	@Override
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		return object.validExpression(compiler, mainblock);
 	}
@@ -90,5 +83,88 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	public IAWord getFieldToken() {
 		return field;
+	}
+
+	@Override
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+		writer.addCode("getField(");
+		object.writeJavaCode(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\")");
+	}
+
+	@Override
+	public void compileL(MainLeekBlock mainblock, JavaWriter writer) {
+		assert (object.isLeftValue() && !object.nullable());
+
+		writer.addCode("getField(");
+		object.compileL(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\")");
+	}
+
+	@Override
+	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert (object.isLeftValue() && !object.nullable());
+
+		writer.addCode("setField(");
+		object.compileL(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer) {
+		assert (object.isLeftValue() && !object.nullable());
+
+		object.compileL(mainblock, writer);
+		writer.addCode(".getFieldL(\"" + field.getWord() + "\").increment()");
+	}
+
+	@Override
+	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert (object.isLeftValue() && !object.nullable());
+
+		writer.addCode("field_add_eq(");
+		object.compileL(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+
+	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert (object.isLeftValue() && !object.nullable());
+
+		writer.addCode("field_sub_eq(");
+		object.compileL(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+
+	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert (object.isLeftValue() && !object.nullable());
+
+		writer.addCode("field_mul_eq(");
+		object.writeJavaCode(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+
+	@Override
+
+	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert (object.isLeftValue() && !object.nullable());
+
+		writer.addCode("field_bor_eq(");
+		object.writeJavaCode(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
 	}
 }

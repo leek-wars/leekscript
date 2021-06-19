@@ -440,56 +440,98 @@ public class LeekExpression extends AbstractExpression {
 	public AbstractExpression trim() {
 		if (mExpression2 == null)
 			return mExpression1.trim();
+		// if (mOperator == Operators.REFERENCE) {
+		// 	return mExpression1.trim();
+		// }
 		return this;
 	}
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		// if (mExpression1 instanceof LeekExpression)
-		// 	mExpression1 = ((LeekExpression) mExpression1).getAbstractExpression();
-		// if (mExpression2 instanceof LeekExpression)
-		// 	mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
+
 		// Retourner le code java de l'expression... plein de cas :)
 		switch (mOperator) {
 
 		// Les classiques
-		case Operators.ADD:// Addition (on commence facile)
-			writer.addCode("LeekOperations.add(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+		case Operators.ADD: // Addition (on commence facile)
+			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(" + ");
+				mExpression2.writeJavaCode(mainblock, writer);
+			// } else if (mExpression1.getType() == Type.STRING || mExpression2.getType() == Type.STRING) {
+			// 	if (mExpression1.getType() == Type.STRING)
+			// 		mExpression1.writeJavaCode(mainblock, writer);
+			// 	else
+			// 		writer.getString(mainblock, mExpression1);
+			// 	writer.addCode(" + ");
+			// 	if (mExpression2.getType() == Type.STRING || mExpression2.getType() == Type.REAL || mExpression2.getType() == Type.INT || mExpression2.getType() == Type.BOOL)
+			// 		mExpression2.writeJavaCode(mainblock, writer);
+			// 	else
+			// 		writer.getString(mainblock, mExpression2);
+			} else {
+				writer.addCode("add(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 			return;
-		case Operators.MINUS:// Soustraction
-			writer.addCode("LeekOperations.minus(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+		case Operators.MINUS: // Soustraction
+			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(" - ");
+				mExpression2.writeJavaCode(mainblock, writer);
+			} else {
+				writer.addCode("sub(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 			return;
-		case Operators.MULTIPLIE:// Multiplication
-			writer.addCode("LeekOperations.multiply(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+		case Operators.MULTIPLIE: // Multiplication
+			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(" * ");
+				mExpression2.writeJavaCode(mainblock, writer);
+			} else {
+				writer.addCode("mul(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 			return;
 		case Operators.MODULUS:// Modulo
-			writer.addCode("LeekOperations.modulus(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(" % ");
+				mExpression2.writeJavaCode(mainblock, writer);
+			} else {
+				writer.addCode("mod(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 			return;
 		case Operators.DIVIDE:// Division
-			writer.addCode("LeekOperations.divide(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			// Division by zero is not handled
+			// if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			// 	mExpression1.writeJavaCode(mainblock, writer);
+			// 	writer.addCode(" / ");
+			// 	mExpression2.writeJavaCode(mainblock, writer);
+			// } else {
+				writer.addCode("div(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				writer.compileLoad(mainblock, mExpression2);
+				// mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			// }
 			return;
-		case Operators.POWER:// Puissance
-			writer.addCode("LeekOperations.power(mUAI, ");
+		case Operators.POWER: // Puissance
+			writer.addCode("pow(");
 			mExpression1.writeJavaCode(mainblock, writer);
 			writer.addCode(", ");
 			mExpression2.writeJavaCode(mainblock, writer);
@@ -497,136 +539,161 @@ public class LeekExpression extends AbstractExpression {
 			return;
 			// Les binaires
 		case Operators.BITAND:
-			writer.addCode("LeekOperations.band(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			writer.getInt(mainblock, mExpression1);
+			writer.addCode(" & ");
+			writer.getInt(mainblock, mExpression2);
 			return;
 		case Operators.BITOR:
-			writer.addCode("LeekOperations.bor(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			writer.getInt(mainblock, mExpression1);
+			writer.addCode(" | ");
+			writer.getInt(mainblock, mExpression2);
 			return;
 		case Operators.BITXOR:
-			writer.addCode("LeekOperations.bxor(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			writer.getInt(mainblock, mExpression1);
+			writer.addCode(" ^ ");
+			writer.getInt(mainblock, mExpression2);
 			return;
 		case Operators.SHIFT_LEFT:
-			writer.addCode("LeekOperations.bleft(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			writer.getInt(mainblock, mExpression1);
+			writer.addCode(" << ");
+			writer.getInt(mainblock, mExpression2);
 			return;
 		case Operators.SHIFT_RIGHT:
-			writer.addCode("LeekOperations.bright(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			writer.getInt(mainblock, mExpression1);
+			writer.addCode(" >> ");
+			writer.getInt(mainblock, mExpression2);
 			return;
 		case Operators.SHIFT_UNSIGNED_RIGHT:
-			writer.addCode("LeekOperations.brotate(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			writer.getInt(mainblock, mExpression1);
+			writer.addCode(" >>> ");
+			writer.getInt(mainblock, mExpression2);
 			return;
 
 			// Les logiques
 		case Operators.EQUALS_EQUALS:
-			writer.addCode("LeekOperations.equals_equals(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			if (mExpression2 instanceof LeekNull) {
+				if (mExpression1.getType() == Type.BOOL || mExpression1.getType().isNumber()) {
+					writer.addCode("false");
+				} else {
+					mExpression1.writeJavaCode(mainblock, writer);
+					writer.addCode(" == null");
+				}
+			} else {
+				writer.addCode("equals_equals(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 			return;
 		case Operators.NOT_EQUALS_EQUALS:
-			writer.addCode("LeekOperations.notequals_equals(mUAI, ");
+			writer.addCode("notequals_equals(");
 			mExpression1.writeJavaCode(mainblock, writer);
 			writer.addCode(", ");
 			mExpression2.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 			return;
 		case Operators.EQUALS:
-			writer.addCode("LeekOperations.equals(mUAI, ");
+			writer.addCode("eq(");
 			mExpression1.writeJavaCode(mainblock, writer);
 			writer.addCode(", ");
 			mExpression2.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 			return;
 		case Operators.MORE:
-			writer.addCode("LeekOperations.more(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(" > ");
+				mExpression2.writeJavaCode(mainblock, writer);
+			} else {
+				writer.addCode("more(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 			return;
 		case Operators.LESS:
-			writer.addCode("LeekOperations.less(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(" < ");
+				mExpression2.writeJavaCode(mainblock, writer);
+			} else {
+				writer.addCode("less(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 			return;
 		case Operators.MOREEQUALS:
-			writer.addCode("LeekOperations.moreequals(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(" >= ");
+				mExpression2.writeJavaCode(mainblock, writer);
+			} else {
+				writer.addCode("moreequals(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 			return;
 		case Operators.LESSEQUALS:
-			writer.addCode("LeekOperations.lessequals(mUAI, ");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(" <= ");
+				mExpression2.writeJavaCode(mainblock, writer);
+			} else {
+				writer.addCode("lessequals(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 			return;
 		case Operators.NOTEQUALS:
-			writer.addCode("LeekOperations.notequals(mUAI, ");
+			writer.addCode("neq(");
 			mExpression1.writeJavaCode(mainblock, writer);
 			writer.addCode(", ");
 			mExpression2.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 			return;
 		case Operators.AND:
-			writer.addCode("LeekValueManager.getLeekBooleanValue(");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".getBoolean() && ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(".getBoolean())");
+			writer.addCode("(");
+			writer.addCode("ops(");
+			writer.getBoolean(mainblock, mExpression1);
+			writer.addCode(", " + mExpression1.operations + ") && ops(");
+			writer.getBoolean(mainblock, mExpression2);
+			writer.addCode(", " + mExpression2.operations + "))");
 			return;
 		case Operators.OR:
-			writer.addCode("LeekValueManager.getLeekBooleanValue(");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".getBoolean() || ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(".getBoolean())");
+			writer.addCode("(");
+			writer.addCode("ops(");
+			writer.getBoolean(mainblock, mExpression1);
+			writer.addCode(", " + mExpression1.operations + ") || ops(");
+			writer.getBoolean(mainblock, mExpression2);
+			writer.addCode(", " + mExpression2.operations + "))");
 			return;
 
 			// Les unaires préfixés (!)
 		case Operators.NOT:
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(".not(mUAI)");
+			writer.addCode("!");
+			writer.getBoolean(mainblock, mExpression2);
 			return;
 		case Operators.BITNOT:
+			writer.addCode("bnot(");
 			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(".bnot(mUAI)");
+			writer.addCode(")");
 			return;
 		case Operators.UNARY_MINUS:
-			if (mExpression2 instanceof LeekNumber) {
+			if (mExpression2.getType().isNumber()) {
+				writer.addCode("-");
 				mExpression2.writeJavaCode(mainblock, writer);
-				writer.addCode(".oppositeConstant()");
 			} else {
+				writer.addCode("minus(");
 				mExpression2.writeJavaCode(mainblock, writer);
-				writer.addCode(".opposite(mUAI)");
+				writer.addCode(")");
 			}
 			return;
 		case Operators.NEW:
@@ -635,109 +702,74 @@ public class LeekExpression extends AbstractExpression {
 			// Les unaires suffixés (++, --), Il a été vérifié au préalable
 			// qu'on avait bien une L-Value
 		case Operators.INCREMENT:
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(".increment(mUAI)");
+			mExpression2.compileIncrement(mainblock, writer);
 			return;
 		case Operators.DECREMENT:
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(".decrement(mUAI)");
+			mExpression2.compileDecrement(mainblock, writer);
 			return;
 		case Operators.PRE_INCREMENT:
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(".pre_increment(mUAI)");
+			mExpression2.compilePreIncrement(mainblock, writer);
 			return;
 		case Operators.PRE_DECREMENT:
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(".pre_decrement(mUAI)");
+			mExpression2.compilePreDecrement(mainblock, writer);
 			return;
 
 			// Les assignations
 		case Operators.ASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".set(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			// Assign without clone for LS 1.1 or reference
+			if (mainblock.getWordCompiler().getVersion() >= 11) {
+				mExpression1.compileSet(mainblock, writer, mExpression2);
+			} else if (mExpression2 instanceof LeekExpression && ((LeekExpression) mExpression2).getOperator() == Operators.REFERENCE) {
+				mExpression1.compileSet(mainblock, writer, ((LeekExpression) mExpression2).mExpression2);
+			} else {
+				mExpression1.compileSetCopy(mainblock, writer, mExpression2);
+			}
 			return;
 		case Operators.ADDASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".add(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			mExpression1.compileAddEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.MINUSASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".minus(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			mExpression1.compileSubEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.MODULUSASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".modulus(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			mExpression1.compileModEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.DIVIDEASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".divide(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			mExpression1.compileDivEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.MULTIPLIEASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".multiply(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			mExpression1.compileMulEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.POWERASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".power(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			mExpression1.compileSet(mainblock, writer, new LeekExpression(mExpression1, Operators.POWER, mExpression2));
 			return;
 		case Operators.BITXOR_ASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".bxor(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			mExpression1.compileBitXorEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.BITAND_ASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".band(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			mExpression1.compileBitAndEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.BITOR_ASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".bor(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			mExpression1.compileBitOrEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.SHIFT_LEFT_ASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".bleft(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			mExpression1.compileShiftLeftEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.SHIFT_RIGHT_ASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".bright(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			mExpression1.compileShiftRightEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN:
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".brotate(mUAI, ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			mExpression1.compileShiftUnsignedRightEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.REFERENCE:
-			writer.addCode("new ReferenceLeekValue(mUAI, ");
+			// writer.addCode("new ReferenceLeekValue(" + writer.getAIThis() + ", ");
 			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			// writer.addCode(")");
 			return;
 		case Operators.INSTANCEOF:
+			writer.addCode("instanceOf(");
 			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(".instanceOf(mUAI, ");
+			writer.addCode(", ");
 			mExpression2.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 			return;
@@ -830,14 +862,22 @@ public class LeekExpression extends AbstractExpression {
 
 		// Opérations
 		operations = (mExpression1 != null ? mExpression1.getOperations() : 0) + (mExpression2 != null ? mExpression2.getOperations() : 0);
-		if (mOperator == Operators.POWER || mOperator == Operators.POWERASSIGN) {
+		if (mOperator == Operators.POWER) {
 			operations += LeekValue.POW_COST;
-		} else if (mOperator == Operators.MULTIPLIE || mOperator == Operators.MULTIPLIEASSIGN) {
+		} else if (mOperator == Operators.POWERASSIGN) {
+			operations += LeekValue.POW_COST;
+		} else if (mOperator == Operators.MULTIPLIE) {
 			operations += LeekValue.MUL_COST;
+		} else if (mOperator == Operators.MULTIPLIEASSIGN) {
+			operations += LeekValue.MUL_COST; //+ 1;
 		} else if (mOperator == Operators.DIVIDE || mOperator == Operators.DIVIDEASSIGN) {
 			operations += LeekValue.DIV_COST;
 		} else if (mOperator == Operators.MODULUS || mOperator == Operators.MODULUSASSIGN) {
 			operations += LeekValue.MOD_COST;
+		} else if (mOperator == Operators.REFERENCE || mOperator == Operators.NEW) {
+			// 0
+		} else if (mOperator == Operators.AND || mOperator == Operators.OR) {
+			operations = 0;
 		} else {
 			operations += 1;
 		}

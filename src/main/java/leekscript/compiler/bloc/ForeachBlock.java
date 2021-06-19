@@ -44,22 +44,55 @@ public class ForeachBlock extends AbstractLeekBlock {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		//On prend un nombre unique pour les noms de variables temporaires
+		// On prend un nombre unique pour les noms de variables temporaires
 		int block_count = getCount();
 		String var = "i" + block_count;
 		String ar = "ar" + block_count;
-		String iterator_name = mainblock.hasGlobal(mIterator.getWord()) ? ("globale_" + mIterator) : "user_" + mIterator;
+		String iterator_name = mainblock.hasGlobal(mIterator.getWord()) ? ("g_" + mIterator) : "u_" + mIterator;
 
-		writer.addCode("final AbstractLeekValue " + ar + " = ");
-		mArray.writeJavaCode(mainblock, writer);
-		writer.addLine(".getValue();", mLine, mAI);
-		writer.addLine("if(" + ar + ".isArrayForIteration(mUAI)){");
-		if(mIsDeclaration) writer.addLine("final VariableLeekValue " + iterator_name + " = new VariableLeekValue(mUAI, LeekValueManager.NULL);");
-		else writer.addLine(iterator_name + ".set(mUAI, LeekValueManager.NULL);");
-		if (mReference || mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
-			writer.addLine("for(AbstractLeekValue " + var + " : " + ar + ".getArray()){ " + iterator_name + ".setRef(mUAI, " + var + ");");
+		// Container
+		writer.addCode("final var " + ar + " = ");
+		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+			mArray.writeJavaCode(mainblock, writer);
 		} else {
-			writer.addLine("for(AbstractLeekValue " + var + " : " + ar + ".getArray()){ " + iterator_name + ".set(mUAI, " + var + ".getValue());");
+			writer.compileLoad(mainblock, mArray);
+		}
+		writer.addCode(";");
+
+		writer.addLine("if (isIterable(" + ar + ")) {");
+		if (mIsDeclaration) {
+			if (mIsDeclaration && declaration.isCaptured()) {
+				writer.addCode("final Wrapper " + iterator_name + " = new Wrapper(new Box(" + writer.getAIThis() + ", null));");
+			} else if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+				writer.addLine("Object " + iterator_name + " = null;");
+				writer.addCounter(1);
+			} else {
+				writer.addLine("var " + iterator_name + " = new Box(" + writer.getAIThis() + ", null);");
+			}
+		} else {
+			writer.addCounter(1);
+		}
+		writer.addLine("for (var " + var + " : (ArrayLeekValue) " + ar + ") {\n");
+
+		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+			if (mIsDeclaration && declaration.isCaptured()) {
+				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
+			} else if (mReference) {
+				writer.addLine(iterator_name + " = " + var + ".getValue();");
+				writer.addCounter(1);
+			} else {
+				writer.addLine(iterator_name + " = " + var + ".getValue();");
+			}
+		} else {
+			if (mReference) {
+				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
+			} else if (mIsDeclaration && declaration.isCaptured()) {
+				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
+				writer.addCounter(1);
+			} else {
+				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
+				writer.addCounter(1);
+			}
 		}
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);

@@ -4,7 +4,7 @@ import leekscript.common.AccessLevel;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
-public class ObjectVariableValue extends VariableLeekValue {
+public class ObjectVariableValue extends Box {
 
 	public AccessLevel level;
 
@@ -13,7 +13,7 @@ public class ObjectVariableValue extends VariableLeekValue {
 		this.level = level;
 	}
 
-	public ObjectVariableValue(AI ai, AbstractLeekValue value, AccessLevel level) throws LeekRunException {
+	public ObjectVariableValue(AI ai, Object value, AccessLevel level) throws LeekRunException {
 		super(ai, value);
 		this.level = level;
 	}

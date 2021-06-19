@@ -6,13 +6,12 @@ import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekAnonymousFunction;
-import leekscript.runner.LeekFunctions;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
 import leekscript.common.Error;
 
-public class FunctionLeekValue extends AbstractLeekValue {
+public class FunctionLeekValue {
 
 	private final static int LEEK_FUNCTION = 1;
 	private final static int USER_FUNCTION = 2;
@@ -47,9 +46,8 @@ public class FunctionLeekValue extends AbstractLeekValue {
 		mId = 0;
 	}
 
-	@Override
-	public boolean equals(AI ai, AbstractLeekValue comp) {
-		if (comp.getType() != getType()) {
+	public boolean equals(AI ai, Object comp) {
+		if (LeekValueManager.getType(comp) != LeekValue.FUNCTION) {
 			return false;
 		}
 		if (!(comp instanceof FunctionLeekValue)) {
@@ -65,20 +63,18 @@ public class FunctionLeekValue extends AbstractLeekValue {
 		}
 	}
 
-	@Override
-	public int getV10Type() {
-		return FUNCTION_V10;
+	private Object[] prepareValues(Object[] values, int count) {
+		Object[] retour = new Object[count];
+		for (int i = 0; i < count; i++) {
+			retour[i] = (i >= values.length) ? null : LeekValueManager.getValue(values[i]);
+		}
+		return retour;
 	}
 
-	@Override
-	public int getType() {
-		return FUNCTION;
-	}
-
-	private AbstractLeekValue[] copyValues(AI uai, AbstractLeekValue[] values, boolean[] references) throws LeekRunException {
-		AbstractLeekValue[] copy = new AbstractLeekValue[values.length];
+	private Object[] copyValues(AI uai, Object[] values, boolean[] references) throws LeekRunException {
+		Object[] copy = new Object[values.length];
 		for (int i = 0; i < values.length; i++) {
-			if (!references[i] && values[i] instanceof VariableLeekValue)
+			if (!references[i] && values[i] instanceof Box)
 				copy[i] = LeekOperations.clone(uai, values[i]);
 			else
 				copy[i] = values[i];
@@ -86,23 +82,14 @@ public class FunctionLeekValue extends AbstractLeekValue {
 		return copy;
 	}
 
-	private AbstractLeekValue[] copyPrimitiveValues(AI uai, AbstractLeekValue[] values) throws LeekRunException {
-		AbstractLeekValue[] copy = new AbstractLeekValue[values.length];
+	private Object[] copyPrimitiveValues(AI uai, Object[] values) throws LeekRunException {
+		Object[] copy = new Object[values.length];
 		for (int i = 0; i < values.length; i++) {
-			copy[i] = LeekOperations.clonePrimitive(uai, values[i]);
+			copy[i] = LeekOperations.clone(uai, values[i]);
 		}
 		return copy;
 	}
 
-	private AbstractLeekValue[] prepareValues(AbstractLeekValue[] values, int count) {
-		AbstractLeekValue[] retour = new AbstractLeekValue[count];
-		for (int i = 0; i < count; i++) {
-			retour[i] = (i >= values.length) ? LeekValueManager.NULL : values[i].getValue();
-		}
-		return retour;
-	}
-
-	@Override
 	public int getArgumentsCount(AI ai) throws LeekRunException {
 		if (mType == LEEK_FUNCTION)
 			return mFunction.getArguments();
@@ -113,44 +100,37 @@ public class FunctionLeekValue extends AbstractLeekValue {
 		return -1;
 	}
 
-	@Override
-	public AbstractLeekValue executeFunction(AI ai, AbstractLeekValue... values) throws LeekRunException {
+	public Object execute(AI ai, Object... values) throws LeekRunException {
 		if (mType == LEEK_FUNCTION) {
-			return LeekFunctions.executeFunction(ai, mFunction, prepareValues(values, mFunction.getArguments()), values.length);
+			return ai.sysexec(mFunction, prepareValues(values, mFunction.getArguments()));
 		}
 		else if (mType == USER_FUNCTION) {
 			if (values.length != ai.userFunctionCount(mId)) {
-				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.userFunctionCount(mId)) });
+				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(values), String.valueOf(ai.userFunctionCount(mId)) });
 			}
 			else {
 				if (ai.getVersion() >= 11) {
-					return ai.userFunctionExecute(mId, copyPrimitiveValues(ai, values));
+					return ai.userFunctionExecute(mId, values);
 				} else {
 					return ai.userFunctionExecute(mId, copyValues(ai, values, ai.userFunctionReference(mId)));
 				}
 			}
-		}
-		else if (mType == ANONYMOUS_FUNCTION) {
+		} else if (mType == ANONYMOUS_FUNCTION) {
 			if (values.length != ai.anonymousFunctionCount(mId)) {
-				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { AbstractLeekValue.getParamString(values), String.valueOf(ai.anonymousFunctionCount(mId)) });
+				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(values), String.valueOf(ai.anonymousFunctionCount(mId)) });
 			} else {
-				if (ai.getVersion() >= 11) {
-					return mAnonymous.run(ai, null, copyPrimitiveValues(ai, values));
-				} else {
-					return mAnonymous.run(ai, null, copyValues(ai, values, ai.anonymousFunctionReference(mId)));
-				}
+				return mAnonymous.run(null, values);
 			}
 		} else if (mType == METHOD) {
 			if (values.length == 0) {
 				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { "", "1+" });
 			} else {
-				return mAnonymous.run(ai, values[0], Arrays.copyOfRange(copyPrimitiveValues(ai, values), 1, values.length));
+				return mAnonymous.run((ObjectLeekValue) values[0], Arrays.copyOfRange(values, 1, values.length));
 			}
 		}
-		return LeekValueManager.NULL;
+		return null;
 	}
 
-	@Override
 	public String getString(AI ai) {
 		if (mType == LEEK_FUNCTION)
 			return "#Function " + mFunction;
@@ -162,7 +142,7 @@ public class FunctionLeekValue extends AbstractLeekValue {
 			return "#Anonymous Function";
 	}
 
-	public AbstractLeekValue cloneFunction() {
+	public FunctionLeekValue cloneFunction() {
 		if (mType == LEEK_FUNCTION)
 			return new FunctionLeekValue(mFunction);
 		else if (mType == USER_FUNCTION)
@@ -171,13 +151,7 @@ public class FunctionLeekValue extends AbstractLeekValue {
 			return new FunctionLeekValue(mId, mAnonymous);
 	}
 
-	@Override
 	public Object toJSON(AI ai) {
 		return "<function>";
-	}
-
-	@Override
-	public boolean isPrimitive() {
-		return false;
 	}
 }

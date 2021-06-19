@@ -74,14 +74,17 @@ public class LeekTernaire extends LeekExpression {
 		// if(mExpression1 instanceof LeekExpression) mExpression1 = ((LeekExpression) mExpression1).getAbstractExpression();
 		// if(mExpression2 instanceof LeekExpression) mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
 		if (!complete()) writer.addCode("/* " + getString() + " */");
-		else{
-			writer.addCode("(");
-			mCondition.writeJavaCode(mainblock, writer);
-			writer.addCode(".getBooleanTernary(mUAI) ? (");
+		else {
+			writer.addCode("ops(");
+			writer.getBoolean(mainblock, mCondition);
+			writer.addCode(", 1) ? ");
+			if (mExpression1.getOperations() > 0) writer.addCode("ops(");
 			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(") : (");
+			if (mExpression1.getOperations() > 0) writer.addCode(", " + mExpression1.getOperations() + ")");
+			writer.addCode(" : ");
+			if (mExpression2.getOperations() > 0) writer.addCode("ops(");
 			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode("))");
+			if (mExpression2.getOperations() > 0) writer.addCode(", " + mExpression2.getOperations() + ")");
 		}
 	}
 

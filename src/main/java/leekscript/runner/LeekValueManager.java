@@ -2,19 +2,19 @@ package leekscript.runner;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.text.DecimalFormat;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.TreeMap;
 
-import leekscript.ErrorManager;
-import leekscript.runner.values.AbstractLeekValue;
+import leekscript.AILog;
 import leekscript.runner.values.ArrayLeekValue;
-import leekscript.runner.values.BooleanLeekValue;
 import leekscript.runner.values.ClassLeekValue;
-import leekscript.runner.values.DoubleLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
-import leekscript.runner.values.IntLeekValue;
-import leekscript.runner.values.NullLeekValue;
+import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.ObjectLeekValue;
-import leekscript.runner.values.StringLeekValue;
+import leekscript.runner.values.Box;
+import leekscript.common.Error;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -25,24 +25,9 @@ public class LeekValueManager {
 		init();
 	}
 
-	public final static NullLeekValue NULL = new NullLeekValue();
-	public final static BooleanLeekValue TRUE = new BooleanLeekValue(true);
-	public final static BooleanLeekValue FALSE = new BooleanLeekValue(false);
-	public final static int MIN_INT = -50;
-	public final static int MAX_INT = 800;
-
-	private static TreeMap<Integer, IntLeekValue> mIntegers;
 	private static TreeMap<String, FunctionLeekValue> mFunctions;
 
 	public static void init() {
-		mIntegers = new TreeMap<Integer, IntLeekValue>();
-		for (int i = MIN_INT; i <= MAX_INT; i++) {
-			try {
-				mIntegers.put(i, new IntLeekValue(i));
-			} catch (Exception e) {
-				ErrorManager.exception(e);
-			}
-		}
 		mFunctions = new TreeMap<String, FunctionLeekValue>();
 		for (LeekFunctions function : LeekFunctions.values()) {
 			mFunctions.put(function.toString(), new FunctionLeekValue(function));
@@ -56,54 +41,21 @@ public class LeekValueManager {
 		return mFunctions.get(function.toString());
 	}
 
-	public static AbstractLeekValue getLeekIntValue(int nb) {
-		// Si c'est une valeur en cache on la retourne
-		if (MIN_INT <= nb && nb <= MAX_INT) {
-			return mIntegers.get(nb);
-		}
-		return new IntLeekValue(nb);
-	}
-
-	public static AbstractLeekValue getLeekIntValue(AI ai, int nb, AbstractLeekValue mValue) throws LeekRunException {
-		// Si c'est une valeur en cache on la retourne
-		if (MIN_INT <= nb && nb <= MAX_INT)
-			return mIntegers.get(nb);
-		// Si l'ancienne valeur est une valeur en cache on la modifie pas
-		if (MIN_INT <= mValue.getInt(ai) && mValue.getInt(ai) <= MAX_INT)
-			return new IntLeekValue(nb);
-		// Sinon on modifie direct la valeur
-		mValue.setInt(nb);
-		return mValue;
-	}
-
-	public static AbstractLeekValue getStringOrNullValue(String string) {
-		if (string == null) {
-			return LeekValueManager.NULL;
-		} else {
-			return new StringLeekValue(string);
-		}
-	}
-
-	public static AbstractLeekValue getLeekBooleanValue(boolean b) {
-		return b ? TRUE : FALSE;
-	}
-
-	public static AbstractLeekValue parseJSON(Object o, AI ai) throws LeekRunException {
-
+	public static Object parseJSON(Object o, AI ai) throws LeekRunException {
 		if (o instanceof Boolean) {
-			return new BooleanLeekValue((Boolean) o);
+			return o;
 		}
 		if (o instanceof String) {
-			return new StringLeekValue((String) o);
+			return o;
 		}
 		if (o instanceof Integer) {
-			return new IntLeekValue((Integer) o);
+			return o;
 		}
 		if (o instanceof BigInteger) {
 			throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 		}
 		if (o instanceof BigDecimal) {
-			return new DoubleLeekValue(((BigDecimal) o).doubleValue());
+			return ((BigDecimal) o).doubleValue();
 		}
 		if (o instanceof JSONArray) {
 			JSONArray a = (JSONArray) o;
@@ -117,20 +69,194 @@ public class LeekValueManager {
 			JSONObject a = (JSONObject) o;
 			ArrayLeekValue array = new ArrayLeekValue();
 			for (String key : a.keySet()) {
-				array.getOrCreate(ai, new StringLeekValue(key)).setNoOps(ai, parseJSON(a.get(key), ai));
+				array.getOrCreate(ai, key).set(parseJSON(a.get(key), ai));
 			}
 			return array;
 		}
 
-		return new StringLeekValue("Class " + o.getClass().getSimpleName());
+		return "Class " + o.getClass().getSimpleName();
 	}
 
-	public static AbstractLeekValue executeArrayAccess(AI ai, AbstractLeekValue array, AbstractLeekValue key, ClassLeekValue fromClass, AbstractLeekValue... arguments) throws LeekRunException {
-		array = array.getValue();
-		if (array instanceof ObjectLeekValue) {
-			return ((ObjectLeekValue) array).callMethod(ai, key.getString(ai) + "_" + arguments.length, fromClass, arguments);
+	public static Object getValue(Object value) {
+		if (value instanceof Box) {
+			return ((Box) value).getValue();
+		}
+		return value;
+	}
+
+	public static double getDouble(AI ai, Object value) throws LeekRunException {
+		if (value instanceof Double) {
+			return (Double) value;
+		} else if (value instanceof Integer) {
+			return (Integer) value;
+		} else if (value instanceof Boolean) {
+			return ((Boolean) value) ? 1 : 0;
+		} else if (value instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) value).size();
+		} else if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).size();
+		} else if (value instanceof String) {
+			var s = (String) value;
+			// ai.ops(2);
+			if (s.equals("true")) return 1;
+			if (s.equals("false")) return 0;
+			if (s.isEmpty()) return 0;
+			ai.ops(s.length());
+			try {
+				return Double.parseDouble(s);
+			} catch (Exception e) {
+				return 1;
+			}
+		} else if (value instanceof Box) {
+			return getDouble(ai, ((Box) value).getValue());
+		}
+		return 0;
+	}
+
+	public static String doubleToString(AI ai, double value) throws LeekRunException {
+		ai.ops(3);
+		if (ai.getVersion() >= 11) {
+			return String.valueOf((Double) value);
 		} else {
-			return array.get(ai, key).executeFunction(ai, arguments);
+			// if (((Double) value) == ((Double) value).intValue()) {
+			// 	return String.valueOf(((Double) value).intValue());
+			// }
+			DecimalFormat df = new DecimalFormat();
+			df.setMinimumFractionDigits(0);
+			return df.format((Double) value);
+		}
+	}
+
+	public static String getString(AI ai, Object value) throws LeekRunException {
+		if (value instanceof Double) {
+			return doubleToString(ai, (Double) value);
+		} else if (value instanceof Integer) {
+			ai.ops(3);
+			return String.valueOf((Integer) value);
+		} else if (value instanceof Boolean) {
+			return String.valueOf((Boolean) value);
+		} else if (value instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) value).getString(ai, new HashSet<Object>());
+		} else if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).getString(ai, new HashSet<Object>());
+		} else if (value instanceof String) {
+			return (String) value;
+		} else if (value instanceof FunctionLeekValue) {
+			return ((FunctionLeekValue) value).getString(ai);
+		} else if (value instanceof Box) {
+			return getString(ai, ((Box) value).getValue());
+		}
+		return "null";
+	}
+
+	public static String getString(AI ai, Object value, Set<Object> visited) throws LeekRunException {
+		if (value instanceof Double) {
+			return doubleToString(ai, (Double) value);
+		} else if (value instanceof Integer) {
+			ai.ops(3);
+			return String.valueOf((Integer) value);
+		} else if (value instanceof Boolean) {
+			return String.valueOf((Boolean) value);
+		} else if (value instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) value).getString(ai, visited);
+		} else if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).getString(ai, visited);
+		} else if (value instanceof String) {
+			return (String) value;
+		} else if (value instanceof Box) {
+			return getString(ai, ((Box) value).getValue());
+		}
+		return "null";
+	}
+
+	public static int bnot(AI ai, Object value) throws LeekRunException {
+		return ~ai.integer(value);
+	}
+
+	public static FunctionLeekValue getFunction(AI ai, Object value) throws LeekRunException {
+		var v = getValue(value);
+		if (v instanceof FunctionLeekValue) {
+			return (FunctionLeekValue) v;
+		}
+		// On ne peux pas exécuter ce type de variable
+		ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { getString(ai, value) });
+		return null;
+	}
+
+	public static Object execute(AI ai, Object value, Object... args) throws LeekRunException {
+		if (value instanceof FunctionLeekValue) {
+			return ((FunctionLeekValue) value).execute(ai, args);
+		}
+		// On ne peux pas exécuter ce type de variable
+		ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { getString(ai, value) });
+		return null;
+	}
+
+	public static Box getOrCreate(AI ai, Object value, Object index) throws LeekRunException {
+		if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).getOrCreate(ai, index);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FUNCTION);
+	}
+
+	public static Box getFieldL(AI ai, Object value, String field) throws LeekRunException {
+		// value = getValue(value);
+		if (value instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) value).getFieldL(field);
+		}
+		if (value instanceof ClassLeekValue) {
+			return ((ClassLeekValue) value).getFieldL(field);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public static Object callMethod(AI ai, Object value, String method, Object... arguments) throws LeekRunException {
+		// Aucune méthode
+		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { getString(ai, value), method });
+		return null;
+	}
+
+	public static Object callSuperMethod(AI ai, Object value, String method, Object... arguments) throws LeekRunException {
+		// Aucune méthode
+		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { getString(ai, value), method });
+		return null;
+	}
+
+	public static int getType(Object v) {
+		if (v == null) return LeekValue.NULL;
+		if (v instanceof Boolean) return LeekValue.BOOLEAN;
+		if (v instanceof Number) return LeekValue.NUMBER;
+		if (v instanceof String) return LeekValue.STRING;
+		if (v instanceof ArrayLeekValue) return LeekValue.ARRAY;
+		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT;
+		if (v instanceof ClassLeekValue) return LeekValue.CLASS;
+		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION;
+		if (v instanceof Box) return getType(((Box) v).getValue());
+		return 0;
+	}
+
+	public static int getV10Type(Object v) {
+		if (v == null) return LeekValue.NULL_V10;
+		if (v instanceof Boolean) return LeekValue.BOOLEAN_V10;
+		if (v instanceof Number) return LeekValue.NUMBER_V10;
+		if (v instanceof String) return LeekValue.STRING_V10;
+		if (v instanceof ArrayLeekValue) return LeekValue.ARRAY_V10;
+		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT_V10;
+		if (v instanceof ClassLeekValue) return LeekValue.CLASS_V10;
+		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION_V10;
+		if (v instanceof Box) return getV10Type(((Box) v).getValue());
+		return 0;
+	}
+
+	public static String toJSON(AI ai, Object value) {
+		return null;
+	}
+
+	public static Object executeArrayAccess(AI ai, Object array, Object key, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
+		if (array instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) array).callMethod(ai.string(key) + "_" + arguments.length, fromClass, arguments);
+		} else {
+			return ai.execute(ai.get(array, key), arguments);
 		}
 	}
 }

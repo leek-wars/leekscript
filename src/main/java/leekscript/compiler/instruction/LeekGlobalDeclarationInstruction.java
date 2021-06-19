@@ -41,10 +41,23 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("if (!globale_init_" + token.getWord() + ") { globale_" + token.getWord() + " = new VariableLeekValue(mUAI, ");
-		if(mValue != null) mValue.writeJavaCode(mainblock, writer);
-		else writer.addCode("LeekValueManager.NULL");
-		writer.addCode("); globale_init_" + token.getWord() + " = true;");
+		writer.addCode("if (!g_init_" + token.getWord() + ") { ");
+		if (mainblock.getWordCompiler().getVersion() >= 11) {
+			writer.addCode("g_" + token.getWord() + " = ");
+			if (mValue != null) {
+				if (mValue.getOperations() > 0) writer.addCode("ops(");
+				mValue.writeJavaCode(mainblock, writer);
+				if (mValue.getOperations() > 0) writer.addCode(", " + mValue.getOperations() + ")");
+			}
+			else writer.addCode("null");
+		} else {
+			writer.addCode("g_" + token.getWord() + " = new Box(" + writer.getAIThis() + ", ");
+			if (mValue != null) mValue.writeJavaCode(mainblock, writer);
+			else writer.addCode("null");
+			writer.addCode(", " + (mValue != null ? mValue.getOperations() : 0) + ")");
+		}
+		writer.addCode("; g_init_" + token.getWord() + " = true;");
+		if (mainblock.getWordCompiler().getVersion() >= 11) writer.addCode(" ops(1);");
 		writer.addLine(" }", mLine, mAI);
 	}
 

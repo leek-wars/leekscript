@@ -5,1011 +5,758 @@ import java.util.regex.Pattern;
 import leekscript.AILog;
 import leekscript.functions.Functions;
 import leekscript.functions.VariableOperations;
-import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
-import leekscript.runner.values.BooleanLeekValue;
-import leekscript.runner.values.DoubleLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
-import leekscript.runner.values.IntLeekValue;
-import leekscript.runner.values.NullLeekValue;
-import leekscript.runner.values.StringLeekValue;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
 public enum LeekFunctions implements ILeekFunction {
+
 	// Fonctions mathématiques
-	abs(1) {
+	abs(new CallableVersion[] {
+		new CallableVersion(Type.INT, new Type[] { Type.INT }),
+		new CallableVersion(Type.REAL, new Type[] { Type.REAL })
+	}),
+
+	min(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (parameters[0] instanceof DoubleLeekValue) {
-				return new DoubleLeekValue(Math.abs(parameters[0].getDouble(leekIA)));
-			} else {
-				return LeekValueManager.getLeekIntValue(Math.abs(parameters[0].getInt(leekIA)));
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			if (parameters[0] instanceof Integer && parameters[1] instanceof Integer) {
+				var v1 = ((Integer) parameters[0]).intValue();
+				var v2 = ((Integer) parameters[1]).intValue();
+				return Math.min(v1, v2);
 			}
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+			var v1 = ((Number) parameters[0]).doubleValue();
+			var v2 = ((Number) parameters[1]).doubleValue();
+			return Math.min(v1, v2);
 		}
 	},
-	min(2) {
+
+	max(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (parameters[0] instanceof DoubleLeekValue || parameters[1] instanceof DoubleLeekValue) {
-				return new DoubleLeekValue(Math.min(parameters[0].getDouble(leekIA), parameters[1].getDouble(leekIA)));
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			if (parameters[0] instanceof Integer && parameters[1] instanceof Integer) {
+				var v1 = ((Integer) parameters[0]).intValue();
+				var v2 = ((Integer) parameters[1]).intValue();
+				return Math.max(v1, v2);
 			}
-			return LeekValueManager.getLeekIntValue(Math.min(parameters[0].getInt(leekIA), parameters[1].getInt(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER, NUMBER };
+			double v1 = ((Number) parameters[0]).doubleValue();
+			double v2 = ((Number) parameters[1]).doubleValue();
+			return Math.max(v1, v2);
 		}
 	},
-	max(2) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (parameters[0] instanceof DoubleLeekValue || parameters[1] instanceof DoubleLeekValue) {
-				return new DoubleLeekValue(Math.max(parameters[0].getDouble(leekIA), parameters[1].getDouble(leekIA)));
-			}
-			return LeekValueManager.getLeekIntValue(Math.max(parameters[0].getInt(leekIA), parameters[1].getInt(leekIA)));
-		}
 
+	cos(new CallableVersion[] {
+		new CallableVersion(Type.REAL, new Type[] { Type.REAL })
+	}),
+
+	sin(1, new int[] { AI.NUMBER }) {
 		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER, NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return Math.sin(v);
 		}
 	},
-	cos(1) {
+	tan(1, new int[] { AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.cos(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return Math.tan(v);
 		}
 	},
-	sin(1) {
+	toRadians(1, new int[] { AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.sin(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return v * Math.PI / 180;
 		}
 	},
-	tan(1) {
+	toDegrees(1, new int[] { AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.tan(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return v * 180 / Math.PI;
 		}
 	},
-	toRadians(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(parameters[0].getDouble(leekIA) * Math.PI / 180);
-		}
 
+	acos(new CallableVersion[] {
+		new CallableVersion(Type.REAL, new Type[] { Type.REAL })
+	}),
+
+	asin(new CallableVersion[] {
+		new CallableVersion(Type.REAL, new Type[] { Type.REAL })
+	}),
+
+	atan(new CallableVersion[] {
+		new CallableVersion(Type.REAL, new Type[] { Type.REAL })
+	}),
+
+	atan2(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double y = LeekValueManager.getDouble(ai, parameters[0]);
+			double x = LeekValueManager.getDouble(ai, parameters[1]);
+			return Math.atan2(y, x);
 		}
 	},
-	toDegrees(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(parameters[0].getDouble(leekIA) * 180 / Math.PI);
-		}
 
+	ceil(new CallableVersion[] {
+		new CallableVersion(Type.INT, new Type[] { Type.INT }),
+		new CallableVersion(Type.INT, new Type[] { Type.REAL }),
+	}),
+
+	floor(new CallableVersion[] {
+		new CallableVersion(Type.INT, new Type[] { Type.INT }),
+		new CallableVersion(Type.INT, new Type[] { Type.REAL }),
+	}),
+
+	round(new CallableVersion[] {
+		new CallableVersion(Type.INT, new Type[] { Type.INT }),
+		new CallableVersion(Type.INT, new Type[] { Type.REAL }),
+	}),
+
+	sqrt(1, new int[] { AI.NUMBER }) {
 		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return Math.sqrt(v);
 		}
 	},
-	acos(1) {
+	cbrt(1, new int[] { AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.acos(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return Math.cbrt(v);
 		}
 	},
-	asin(1) {
+	log(1, new int[] { AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.asin(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return Math.log(v);
 		}
 	},
-	atan(1) {
+	log2(1, new int[] { AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.atan(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return Math.log(v) / Math.log(2);
 		}
 	},
-	atan2(2) {
+	log10(1, new int[] { AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.atan2(parameters[0].getDouble(leekIA), parameters[1].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER, NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return Math.log10(v);
 		}
 	},
-	ceil(1) {
+	exp(1, new int[] { AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekIntValue((int) Math.ceil(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return Math.exp(v);
 		}
 	},
-	floor(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekIntValue((int) Math.floor(parameters[0].getDouble(leekIA)));
-		}
 
+	pow(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double x = LeekValueManager.getDouble(ai, parameters[0]);
+			double y = LeekValueManager.getDouble(ai, parameters[1]);
+			return Math.pow(x, y);
 		}
 	},
-	round(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekIntValue((int) Math.round(parameters[0].getDouble(leekIA)));
-		}
 
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
-		}
-	},
-	sqrt(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.sqrt(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
-		}
-	},
-	cbrt(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.cbrt(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
-		}
-	},
-	log(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.log(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
-		}
-	},
-	log10(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.log10(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
-		}
-	},
-	exp(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.exp(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
-		}
-	},
-	pow(2) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.pow(parameters[0].getDouble(leekIA), parameters[1].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER, NUMBER };
-		}
-	},
 	rand(0) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(leekIA.getRandom().getDouble());
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ai.getRandom().getDouble();
 		}
 	},
-	randInt(2) {
+	randInt(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			int nb = parameters[0].getInt(leekIA);
-			int nb1 = parameters[1].getInt(leekIA);
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			int nb = ai.integer(parameters[0]);
+			int nb1 = ai.integer(parameters[1]);
 			if (nb > nb1)
-				return LeekValueManager.getLeekIntValue(leekIA.getRandom().getInt(nb1, nb - 1));
+				return ai.getRandom().getInt(nb1, nb - 1);
 			else
-				return LeekValueManager.getLeekIntValue(leekIA.getRandom().getInt(nb, nb1 - 1));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER, NUMBER };
+				return ai.getRandom().getInt(nb, nb1 - 1);
 		}
 	},
-	randFloat(2) {
+	randFloat(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(parameters[0].getDouble(leekIA) + leekIA.getRandom().getDouble() * (parameters[1].getDouble(leekIA) - parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER, NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double a = LeekValueManager.getDouble(ai, parameters[0]);
+			double b = LeekValueManager.getDouble(ai, parameters[1]);
+			return a + ai.getRandom().getDouble() * (b - a);
 		}
 	},
-	hypot(2) {
+	hypot(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new DoubleLeekValue(Math.hypot(parameters[0].getDouble(leekIA), parameters[1].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER, NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double x = LeekValueManager.getDouble(ai, parameters[0]);
+			double y = LeekValueManager.getDouble(ai, parameters[1]);
+			return Math.hypot(x, y);
 		}
 	},
-	signum(1) {
+	signum(1, new int[] { AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekIntValue((int) Math.signum(parameters[0].getDouble(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = ((Number) parameters[0]).doubleValue();
+			return (int) Math.signum(v);
 		}
 	},
 	string(1) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new StringLeekValue(parameters[0].getString(leekIA));
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ai.string(parameters[0]);
 		}
 	},
+
 	// Fonctions string
-	charAt(2) {
-
+	charAt(2, new int[] { AI.STRING, AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			int pos = parameters[1].getInt(leekIA);
-			String str = parameters[0].getString(leekIA);
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			int pos = ai.integer(parameters[1]);
+			String str = (String) parameters[0];
 			if (pos < 0 || pos >= str.length())
-				return LeekValueManager.NULL;
-			return new StringLeekValue(String.valueOf(str.charAt(pos)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { STRING, NUMBER };
+				return null;
+			return String.valueOf(str.charAt(pos));
 		}
 	},
-	length(1) {
+	length(1, new int[] { AI.STRING }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekIntValue(parameters[0].getString(leekIA).length());
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { STRING };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String v = LeekValueManager.getString(ai, parameters[0]);
+			return v.length();
 		}
 	},
-	substring(2, 3) {
+	substring(2, 3, new int[] { AI.STRING, AI.NUMBER, AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (verifyParameters(new int[] { STRING, NUMBER, NUMBER }, parameters)) {
-				String string = parameters[0].getString(leekIA);
-				int index = parameters[1].getInt(leekIA);
-				int length = parameters[2].getInt(leekIA);
-				if (string.length() <= index || index < 0 || length < 0 || index + length > string.length()) {
-					return LeekValueManager.NULL;
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			if (AI.verifyParameters(new int[] { AI.STRING, AI.NUMBER, AI.NUMBER }, parameters)) {
+				String string = LeekValueManager.getString(ai, parameters[0]);
+				int index = ai.integer(parameters[1]);
+				int length = ai.integer(parameters[2]);
+				if (string.length() <= index || index < 0 || index + length > string.length() || length < 0) {
+					return null;
 				}
-				return new StringLeekValue(string.substring(index, index + length));
+				return string.substring(index, index + length);
 			} else {
-				int index = parameters[1].getInt(leekIA);
-				if (parameters[0].getString(leekIA).length() <= index || index < 0) {
-					return LeekValueManager.NULL;
+				String string = LeekValueManager.getString(ai, parameters[0]);
+				int index = ai.integer(parameters[1]);
+				if (string.length() <= index || index < 0) {
+					return null;
 				}
-				return new StringLeekValue(parameters[0].getString(leekIA).substring(index));
-			}
-		}
-		@Override
-		public int[] parameters() {
-			return new int[] { STRING, NUMBER, -1 };
-		}
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(
-					retour.getString(leekIA).length()) : 1);
-		}
-	},
-	replace(3) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new StringLeekValue(parameters[0].getString(leekIA)
-					.replaceAll(Pattern.quote(parameters[1]
-							.getString(leekIA)),
-							parameters[2].getString(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { STRING, STRING, STRING };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ?
-					mVariableOperations.getOperations(
-							parameters[0].getString(leekIA).length()) : 1);
-		}
-	},
-	indexOf(2, 3) {
-
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (verifyParameters(new int[] { STRING, STRING, NUMBER }, parameters)) {
-				return LeekValueManager.getLeekIntValue(parameters[0].getString(leekIA)
-						.indexOf(parameters[1].getString(leekIA), parameters[2].getInt(leekIA)));
-			} else {
-				return LeekValueManager.getLeekIntValue(parameters[0].getString(leekIA)
-						.indexOf(parameters[1].getString(leekIA)));
+				return string.substring(index);
 			}
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { STRING, STRING, -1 };
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			String s = LeekValueManager.getString(ai, retour);
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(s.length()) : 1);
+		}
+	},
+	replace(3, new int[] { AI.STRING, AI.STRING, AI.STRING }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String s = LeekValueManager.getString(ai, parameters[0]);
+			String pattern = LeekValueManager.getString(ai, parameters[1]);
+			String replacement = LeekValueManager.getString(ai, parameters[2]);
+			return s.replaceAll(Pattern.quote(pattern),	replacement);
 		}
 
 		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations((parameters[0].getString(leekIA).length())) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			String s = LeekValueManager.getString(ai, parameters[0]);
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(s.length()) : 1);
 		}
 	},
-	split(2, 3) {
+	indexOf(2, 3, new int[] { AI.STRING, AI.STRING, -1 }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (verifyParameters(new int[] { STRING, STRING, NUMBER }, parameters)) {
-				String[] elements = parameters[0].getString(leekIA)
-						.split(parameters[1].getString(leekIA), parameters[2].getInt(leekIA));
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String s = (String) parameters[0];
+			String needle = (String) parameters[1];
+			int from = ai.integer(parameters[2]);
+			if (AI.verifyParameters(new int[] { AI.STRING, AI.STRING, AI.NUMBER }, parameters)) {
+				return s.indexOf(needle, from);
+			} else {
+				return s.indexOf(needle);
+			}
+		}
+
+		@Override
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			String s = LeekValueManager.getString(ai, parameters[0]);
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(s.length()) : 1);
+		}
+	},
+	split(2, 3, new int[] { AI.STRING, AI.STRING, -1 }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String s = LeekValueManager.getString(ai, parameters[0]);
+			String delimiter = LeekValueManager.getString(ai, parameters[1]);
+			if (AI.verifyParameters(new int[] { AI.STRING, AI.STRING, AI.NUMBER }, parameters)) {
+				int limit = ai.integer(parameters[2]);
+				String[] elements = s.split(delimiter, limit);
 				ArrayLeekValue array = new ArrayLeekValue();
 				for (short i = 0; i < elements.length; i++) {
-					array.push(leekIA, new StringLeekValue(elements[i]));
+					array.push(ai, elements[i]);
 				}
 				return array;
 			} else {
-				String[] elements = parameters[0].getString(leekIA)
-						.split(Pattern.quote(parameters[1].getString(leekIA)));
+				String[] elements = s.split(Pattern.quote(delimiter));
 				ArrayLeekValue array = new ArrayLeekValue();
 				for (short i = 0; i < elements.length; i++) {
-					array.push(leekIA, new StringLeekValue(elements[i]));
+					array.push(ai, elements[i]);
 				}
 				return array;
 			}
 		}
-		@Override
-		public int[] parameters() {
-			return new int[] { STRING, STRING, -1 };
-		}
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(
-					hasVariableOperations() ?
-					mVariableOperations.getOperations(
-							(int) (parameters[0].getString(leekIA).length()
-									* Math.log(parameters[1].getString(leekIA).length() + 1)))
-					: 1);
-			if (retour.isArray())
-				leekIA.addOperations(retour.getArray().size());
-		}
-	},
-	toLower(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new StringLeekValue(parameters[0].getString(leekIA).toLowerCase());
-		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { STRING };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ?
-					mVariableOperations.getOperations(retour.getString(leekIA).length()) : 1);
-		}
-	},
-	toUpper(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new StringLeekValue(parameters[0].getString(leekIA).toUpperCase());
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { STRING };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations()
-					? mVariableOperations.getOperations(retour.getString(leekIA).length()) : 1);
-		}
-	},
-	startsWith(2) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekBooleanValue(
-					parameters[0].getString(leekIA)
-					.startsWith(parameters[1].getString(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { STRING, STRING };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			if (parameters[0].getString(leekIA).length() > parameters[1].getString(leekIA).length()) {
-				leekIA.addOperations(hasVariableOperations() ?
-						mVariableOperations.getOperations((parameters[1].getString(leekIA).length())) : 1);
-			} else
-				leekIA.addOperations(1);
-		}
-	},
-	endsWith(2) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekBooleanValue(parameters[0].getString(leekIA)
-					.endsWith(parameters[1].getString(leekIA)));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { STRING, STRING };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			if (parameters[0].getString(leekIA).length() > parameters[1].getString(leekIA).length()) {
-				leekIA.addOperations(hasVariableOperations() ?
-						mVariableOperations.getOperations((parameters[1].getString(leekIA).length())) : 1);
-			} else
-				leekIA.addOperations(1);
-		}
-	},
-	contains(2) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			String haystack = parameters[0].getString(leekIA);
-			String needle = parameters[1].getString(leekIA);
-			if (needle.length() > haystack.length()) {
-				return LeekValueManager.getLeekBooleanValue(false);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			String s = LeekValueManager.getString(ai, parameters[0]);
+			String delimiter = LeekValueManager.getString(ai, parameters[1]);
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations((int) (s.length() * Math.log(delimiter.length() + 1))) : 1);
+			if (retour instanceof ArrayLeekValue) {
+				ai.ops(((ArrayLeekValue) retour).size());
 			}
-			return LeekValueManager.getLeekBooleanValue(haystack.contains(needle));
 		}
+	},
+	toLower(1, new int[] { AI.STRING }) {
 		@Override
-		public int[] parameters() {
-			return new int[] { STRING, STRING };
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String s = LeekValueManager.getString(ai, parameters[0]);
+			return s.toLowerCase();
 		}
+
 		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ?
-					mVariableOperations.getOperations(
-							(int) (parameters[0].getString(leekIA).length()
-									* Math.log(parameters[1].getString(leekIA).length() + 1))) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(((String) retour).length()) : 1);
+		}
+	},
+	toUpper(1, new int[] { AI.STRING }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String s = LeekValueManager.getString(ai, parameters[0]);
+			return s.toUpperCase();
+		}
+
+		@Override
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(((String) retour).length()) : 1);
+		}
+	},
+	startsWith(2, new int[] { AI.STRING, AI.STRING }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String s = LeekValueManager.getString(ai, parameters[0]);
+			String prefix = LeekValueManager.getString(ai, parameters[1]);
+			return s.startsWith(prefix);
+		}
+
+		@Override
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			String s = LeekValueManager.getString(ai, parameters[0]);
+			String prefix = LeekValueManager.getString(ai, parameters[1]);
+			if (s.length() > prefix.length()) {
+				ai.ops(hasVariableOperations() ? mVariableOperations.getOperations((prefix.length())) : 1);
+			} else
+				ai.ops(1);
+		}
+	},
+	endsWith(2, new int[] { AI.STRING, AI.STRING }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String s = LeekValueManager.getString(ai, parameters[0]);
+			String suffix = LeekValueManager.getString(ai, parameters[1]);
+			return s.endsWith(suffix);
+		}
+
+		@Override
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			String s = LeekValueManager.getString(ai, parameters[0]);
+			String suffix = LeekValueManager.getString(ai, parameters[1]);
+			if (s.length() > suffix.length()) {
+				ai.ops(hasVariableOperations() ? mVariableOperations.getOperations((suffix.length())) : 1);
+			} else
+				ai.ops(1);
+		}
+	},
+	contains(2, new int[] { AI.STRING, AI.STRING }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String haystack = LeekValueManager.getString(ai, parameters[0]);
+			String needle = LeekValueManager.getString(ai, parameters[1]);
+			return haystack.contains(needle);
+		}
+
+		@Override
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			String haystack = LeekValueManager.getString(ai, parameters[0]);
+			String needle = LeekValueManager.getString(ai, parameters[1]);
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations((int) (haystack.length() * Math.log(needle.length() + 1))) : 1);
 		}
 	},
 	number(1) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (parameters[0].getType() == AbstractLeekValue.NUMBER)
-				return LeekOperations.clone(leekIA, parameters[0].getValue());
-			if (parameters[0].getType() != AbstractLeekValue.STRING)
-				return LeekValueManager.NULL;
-			try {
-				if (parameters[0].getString(leekIA).contains(".")) {
-					return new DoubleLeekValue(Double.parseDouble(parameters[0].getString(leekIA)));
-				} else {
-					return LeekValueManager.getLeekIntValue(Integer.parseInt(parameters[0].getString(leekIA)));
-				}
-			} catch (Exception e) {
-				return LeekValueManager.NULL;
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var v = parameters[0];
+			if (v instanceof Number)
+				return v;
+			if (v instanceof String) {
+				var s = (String) v;
+				try {
+					if (s.contains(".")) {
+						return Double.parseDouble(s);
+					} else {
+						return Integer.parseInt(s);
+					}
+				} catch (Exception e) {}
 			}
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { -1 };
+			return null;
 		}
 	},
 	// Fonctions array
-	remove(2) {
+	remove(2, new int[] { AI.ARRAY, AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return parameters[0].getArray().remove(leekIA, parameters[1].getInt(leekIA));
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			var index = ((Number) parameters[1]).intValue();
+			return array.remove(ai, index);
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, NUMBER };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			if (parameters[1].getInt(leekIA) >= 0 && parameters[1].getInt(leekIA) < parameters[0].getArray().size()) {
-				leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[1].getInt(leekIA) + 1) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			var index = ((Number) parameters[1]).intValue();
+			if (index >= 0 && index < array.size()) {
+				ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(index + 1) : 1);
 			} else
-				leekIA.addOperations(1);
+				ai.ops(1);
 		}
 	},
-	count(1) {
+
+	count(new CallableVersion[] { new CallableVersion(Type.INT, new Type[] { Type.ARRAY }) }),
+
+	join(2, new int[] { AI.ARRAY, AI.STRING }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekIntValue(parameters[0].getArray().size());
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			var delimiter = (String) parameters[1];
+			return array.join(leekIA, delimiter);
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY };
+		public void addOperations(AI leekIA, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var r = (String) retour;
+			leekIA.ops(hasVariableOperations() ? mVariableOperations.getOperations(r.length() + 1) : 1);
 		}
 	},
-	join(2) {
+	insert(3, new int[] { AI.ARRAY, -1, AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new StringLeekValue(parameters[0].getArray().join(leekIA, parameters[1].getString(leekIA)));
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			var value = LeekOperations.clone(ai, parameters[1]);
+			var index = ((Number) parameters[2]).intValue();
+			array.insert(ai, value, index);
+			return null;
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, STRING };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(retour.getString(leekIA).length() + 1) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			var index = ((Number) parameters[2]).intValue();
+			ai.ops(1 + (array.size() - index) * 4);
 		}
 	},
-	insert(3) {
+	push(2, new int[] { AI.ARRAY, -1 }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			parameters[0].getArray().insert(leekIA, LeekOperations.clone(leekIA, parameters[1]), parameters[2].getInt(leekIA));
-			return LeekValueManager.NULL;
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1, NUMBER };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(1 + (parameters[0].getArray().size() - parameters[2].getInt(leekIA)) * 4);
-		}
-	},
-	push(2) {
-		@Override
-		public AbstractLeekValue run(AI ai, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
 			if (ai.getVersion() >= 11) {
-				parameters[0].getArray().push(ai, LeekOperations.clonePrimitive(ai, parameters[1]));
+				array.push(ai, parameters[1]);
 			} else {
-				parameters[0].getArray().push(ai, LeekOperations.clone(ai, parameters[1]));
+				array.push(ai, LeekOperations.clone(ai, parameters[1]));
 			}
-			return LeekValueManager.NULL;
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1 };
+			return null;
 		}
 	},
-	unshift(2) {
+	unshift(2, new int[] { AI.ARRAY, -1 }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			parameters[0].getArray().insert(leekIA, LeekOperations.clone(leekIA, parameters[1]), 0);
-			return LeekValueManager.NULL;
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1 };
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			var value = LeekOperations.clone(leekIA, parameters[1]);
+			array.insert(leekIA, value, 0);
+			return null;
 		}
 	},
-	shift(1) {
+	shift(1, new int[] { AI.ARRAY }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (parameters[0].getArray().size() > 0) {
-				AbstractLeekValue v = parameters[0].getArray().start().getValue();
-				parameters[0].getArray().remove(leekIA, 0);
-				return v;
-			}
-			return LeekValueManager.NULL;
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY };
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			return array.remove(leekIA, 0);
 		}
 	},
-	pop(1) {
+	pop(1, new int[] { AI.ARRAY }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (parameters[0].getArray().size() > 0) {
-				AbstractLeekValue v = parameters[0].getArray().end().getValue();
-				parameters[0].getArray().remove(leekIA, parameters[0].getArray().size() - 1);
-				return v;
-			}
-			return LeekValueManager.NULL;
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY };
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			return array.remove(leekIA, array.size() - 1);
 		}
 	},
-	removeElement(2) {
+	removeElement(2, new int[] { AI.ARRAY, -1 }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			parameters[0].getArray().removeObject(leekIA, parameters[1]);
-			return LeekValueManager.NULL;
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			array.removeObject(ai, parameters[1]);
+			return null;
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1 };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ?
-					mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
-	removeKey(2) {
+	removeKey(2, new int[] { AI.ARRAY, -1 }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			parameters[0].getArray().removeByKey(leekIA, parameters[1]);
-			return LeekValueManager.NULL;
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1 };
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			array.removeByKey(leekIA, parameters[1]);
+			return null;
 		}
 	},
-	sort(1, 2) {
+	sort(1, 2, new int[] { AI.ARRAY, -1 }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
 			int type = LeekValueComparator.SortComparator.SORT_ASC;
-			if (parameters[1].getBoolean())
+			if (leekIA.bool(parameters[1]))
 				type = LeekValueComparator.SortComparator.SORT_DESC;
-			parameters[0].getArray().sort(leekIA, type);
-			return LeekValueManager.NULL;
+			array.sort(leekIA, type);
+			return null;
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1 };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
-	assocSort(1, 2) {
+	assocSort(1, 2, new int[] { AI.ARRAY, -1 }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
 			int type = PhpArray.ASC_A;
-			if (parameters[1].getBoolean())
+			if (leekIA.bool(parameters[1]))
 				type = PhpArray.DESC_A;
-			parameters[0].getArray().sort(leekIA, type);
-			return LeekValueManager.NULL;
+			array.sort(leekIA, type);
+			return null;
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1 };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
-	keySort(1, 2) {
+	keySort(1, 2, new int[] { AI.ARRAY, -1 }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
 			int type = PhpArray.ASC_K;
-			if (parameters[1].getBoolean())
+			if (leekIA.bool(parameters[1]))
 				type = PhpArray.DESC_K;
-			parameters[0].getArray().sort(leekIA, type);
-			return LeekValueManager.NULL;
+			array.sort(leekIA, type);
+			return null;
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1 };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
-	shuffle(1) {
+	shuffle(1, new int[] { AI.ARRAY }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			parameters[0].getArray().shuffle(leekIA);
-			return LeekValueManager.NULL;
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			array.shuffle(leekIA);
+			return null;
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
+		public void addOperations(AI leekIA, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			leekIA.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
-	search(2, 3) {
+	search(2, 3, new int[] { AI.ARRAY, -1, -1 }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (verifyParameters(new int[] { ARRAY, -1, NUMBER }, parameters)) {
-				return parameters[0].getArray().search(leekIA, parameters[1], parameters[2].getInt(leekIA));
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			if (AI.verifyParameters(new int[] { AI.ARRAY, -1, AI.NUMBER }, parameters)) {
+				var index = ai.integer(parameters[2]);
+				return array.search(ai, parameters[1], index);
 			} else {
-				return parameters[0].getArray().search(leekIA, parameters[1], 0);
+				return array.search(ai, parameters[1], 0);
 			}
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1, -1 };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
+		public void addOperations(AI leekIA, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			leekIA.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
-	inArray(2) {
+	inArray(2, new int[] { AI.ARRAY, -1 }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekBooleanValue(parameters[0].getArray().contains(leekIA, parameters[1]));
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			return array.contains(leekIA, parameters[1]);
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1 };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
-	reverse(1) {
+	reverse(1, new int[] { AI.ARRAY }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			parameters[0].getArray().reverse(leekIA);
-			return LeekValueManager.NULL;
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			array.reverse(leekIA);
+			return null;
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
-	arrayMin(1) {
+	arrayMin(1, new int[] { AI.ARRAY }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			AbstractLeekValue max_c = null;
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			Object max_c = null;
 			LeekValueComparator.SortComparator comp = new LeekValueComparator.SortComparator(leekIA, LeekValueComparator.SortComparator.SORT_ASC);
-			for (AbstractLeekValue val : parameters[0].getArray()) {
+			for (var val : array) {
 				if (max_c == null)
 					max_c = val.getValue();
-				else if (comp.compare(val.getValue(), max_c) == -1)
+				else if (comp.compare(LeekValueManager.getValue(val), max_c) == -1)
 					max_c = val.getValue();
 			}
 			if (max_c == null)
-				return LeekValueManager.NULL;
+				return null;
 			else
 				return LeekOperations.clone(leekIA, max_c);
 		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY };
-		}
 	},
-	arrayMax(1) {
+	arrayMax(1, new int[] { AI.ARRAY }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			AbstractLeekValue min_c = null;
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			Object min_c = null;
 			LeekValueComparator.SortComparator mincomp = new LeekValueComparator.SortComparator(leekIA, LeekValueComparator.SortComparator.SORT_ASC);
-			for (AbstractLeekValue val : parameters[0].getArray()) {
+			for (var val : array) {
 				if (min_c == null)
 					min_c = val.getValue();
-				else if (mincomp.compare(val.getValue(), min_c) == 1)
+				else if (mincomp.compare(LeekValueManager.getValue(val), min_c) == 1)
 					min_c = val.getValue();
 			}
 			if (min_c == null)
-				return LeekValueManager.NULL;
+				return null;
 			else
 				return LeekOperations.clone(leekIA, min_c);
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
-	sum(1) {
+	sum(1, new int[] { AI.ARRAY }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (parameters[0].getArray().size() == 0) {
-				return new DoubleLeekValue(0.0);
-			}
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
 			double somme = 0;
-			for (AbstractLeekValue val : parameters[0].getArray()) {
-				somme += val.getDouble(leekIA);
+			for (var val : array) {
+				somme += LeekValueManager.getDouble(ai, val.getValue());
 			}
-			return new DoubleLeekValue(somme);
+			return somme;
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
-	average(1) {
+	average(1, new int[] { AI.ARRAY }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			if (parameters[0].getArray().size() == 0) {
-				return new DoubleLeekValue(0.0);
-			}
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
 			double average = 0;
-			for (AbstractLeekValue val : parameters[0].getArray()) {
-				average += val.getDouble(leekIA);
+			for (var val : array) {
+				average += LeekValueManager.getDouble(ai, val.getValue());
 			}
-			if (average == 0 && leekIA.getVersion() == 10)
-				return LeekValueManager.getLeekIntValue(0);
-			return new DoubleLeekValue(average / parameters[0].getArray().size());
+			if (average == 0)
+				return 0.0;
+			return average / array.size();
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
-	fill(2, 3) {
+	fill(2, 3, new int[] { AI.ARRAY, -1, -1 }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			ArrayLeekValue array = parameters[0].getArray();
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
 			int size = array.size();
-			if (isType(parameters[2], NUMBER))
-				size = parameters[2].getInt(leekIA);
-			AbstractLeekValue copy = LeekOperations.clone(leekIA, parameters[1].getValue());
+			if (AI.isType(parameters[2], AI.NUMBER))
+				size = ai.integer(parameters[2]);
+			Object copy = LeekOperations.clone(ai, parameters[1]);
 			for (int i = 0; i < size; i++) {
-				array.get(leekIA, i).setNoOps(leekIA, copy);
-				leekIA.addOperations(3);
+				array.put(ai, i, copy);
+				ai.ops(3);
 			}
-			return LeekValueManager.NULL;
+			return null;
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1, -1 };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {}
+		public void addOperations(AI leekIA, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {}
 	},
-	isEmpty(1) {
+	isEmpty(1, new int[] { AI.ARRAY }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekBooleanValue(parameters[0].getArray().size() == 0);
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY };
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			return array.size() == 0;
 		}
 	},
-	subArray(3) {
+	subArray(3, new int[] { AI.ARRAY, AI.NUMBER, AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			ArrayLeekValue array = parameters[0].getArray();
-			int start = parameters[1].getInt(leekIA);
-			int end = parameters[2].getInt(leekIA);
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			int start = ai.integer(parameters[1]);
+			int end = ai.integer(parameters[2]);
 			if (start < 0 || end < start || end >= array.size())
-				return LeekValueManager.NULL;
+				return null;
 			ArrayLeekValue retour = new ArrayLeekValue();
 			int i = 0;
-			for (AbstractLeekValue val : array) {
+			for (var val : array) {
 				if (i >= start && i <= end) {
-					retour.push(leekIA, LeekOperations.clone(leekIA, val.getValue()));
-					leekIA.addOperations(1);
+					retour.push(ai, LeekOperations.clone(ai, val.getValue()));
+					ai.ops(1);
 				}
 				i++;
 			}
@@ -1017,298 +764,196 @@ public enum LeekFunctions implements ILeekFunction {
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, NUMBER, NUMBER };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {}
+		public void addOperations(AI leekIA, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {}
 	},
-	pushAll(2) {
+	pushAll(2, new int[] { AI.ARRAY, AI.ARRAY }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			ArrayLeekValue array = parameters[0].getArray();
-			ArrayLeekValue source = parameters[1].getArray();
-			// ArrayLeekValue source = LeekOperations.clone(leekIA, parameters[1]).getArray();
-			for (AbstractLeekValue value : source) {
-				if (leekIA.getVersion() >= 11) {
-					array.push(leekIA, LeekOperations.clonePrimitive(leekIA, value.getValue()));
-				} else {
-					array.push(leekIA, LeekOperations.clone(leekIA, value.getValue()));
-				}
-				leekIA.addOperations(1);
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			var array2 = (ArrayLeekValue) parameters[1];
+			for (var value : array2) {
+				array.push(leekIA, value.getValue());
+				leekIA.ops(1);
 			}
-			return LeekValueManager.NULL;
+			return null;
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, ARRAY };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {}
+		public void addOperations(AI leekIA, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {}
 	},
-	assocReverse(1) {
+	assocReverse(1, new int[] { AI.ARRAY }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			parameters[0].getArray().assocReverse();
-			return LeekValueManager.NULL;
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			array.assocReverse();
+			return null;
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY };
-		}
-
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(parameters[0].getArray().size() + 1) : 1);
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(((ArrayLeekValue) parameters[0]).size() + 1) : 1);
 		}
 	},
-	arrayMap(2) {
+	arrayMap(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return leekIA.arrayMap(parameters[0].getArray(), parameters[1]);
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, FUNCTION };
-		}
-	},
-	arrayFilter(2) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return leekIA.arrayFilter(parameters[0].getArray(), parameters[1]);
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, FUNCTION };
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			var fun = (FunctionLeekValue) parameters[1];
+			if (leekIA.getVersion() >= 11) {
+				return leekIA.arrayMap(array, fun);
+			} else {
+				return leekIA.arrayMapV10(array, fun);
+			}
 		}
 	},
-	arrayFlatten(1, 2) {
+	arrayFilter(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			int maxDepth = isType(parameters[1], NUMBER) ? parameters[1].getInt(leekIA) : 1;
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			if (ai.getVersion() >= 11) {
+				return ai.arrayFilter((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+			} else {
+				return ai.arrayFilterV10((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+			}
+		}
+	},
+	arrayFlatten(1, 2, new int[] { AI.ARRAY, -1 }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			int maxDepth = AI.isType(parameters[1], AI.NUMBER) ? ai.integer(parameters[1]) : 1;
 			ArrayLeekValue retour = new ArrayLeekValue();
-			leekIA.arrayFlatten(parameters[0].getArray(), retour, maxDepth);
+			ai.arrayFlatten((ArrayLeekValue) parameters[0], retour, maxDepth);
 			return retour;
 		}
 
 		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, -1 };
+		public void addOperations(AI leekIA, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			leekIA.ops(hasVariableOperations() ? mVariableOperations.getOperations(((ArrayLeekValue) retour).size() + 1) : 1);
 		}
+	},
+	arrayFoldLeft(2, 3, new int[] { AI.ARRAY, AI.FUNCTION, -1 }) {
+		@Override
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return leekIA.arrayFoldLeft((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1], parameters[2]);
+		}
+	},
+	arrayFoldRight(2, 3, new int[] { AI.ARRAY, AI.FUNCTION, -1 }) {
+		@Override
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			return leekIA.arrayFoldRight(array, (FunctionLeekValue) parameters[1], parameters[2]);
+		}
+	},
+	arrayPartition(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
+		@Override
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return leekIA.arrayPartition((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+		}
+	},
+	arrayIter(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
+		@Override
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return leekIA.arrayIter((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+		}
+	},
+	arrayConcat(2, new int[] { AI.ARRAY, AI.ARRAY }) {
+		@Override
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			leekIA.ops(1);
+			return leekIA.add(parameters[0], parameters[1]);
+		}
+	},
+	arraySort(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
+		@Override
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return leekIA.arraySort((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+		}
+	},
 
-		@Override
-		public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-			leekIA.addOperations(hasVariableOperations() ? mVariableOperations.getOperations(retour.getArray().size() + 1) : 1);
-		}
-	},
-	arrayFoldLeft(2, 3) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return leekIA.arrayFoldLeft(parameters[0].getArray(), parameters[1], parameters[2]);
-		}
+	debug(new CallableVersion[] { new CallableVersion(Type.NULL, new Type[] { Type.ANY }) }),
+	debugW(new CallableVersion[] { new CallableVersion(Type.NULL, new Type[] { Type.ANY }) }),
+	debugE(new CallableVersion[] { new CallableVersion(Type.NULL, new Type[] { Type.ANY }) }),
 
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, FUNCTION, -1 };
-		}
-	},
-	arrayFoldRight(2, 3) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return leekIA.arrayFoldRight(parameters[0].getArray(), parameters[1], parameters[2]);
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, FUNCTION, -1 };
-		}
-	},
-	arrayPartition(2) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return leekIA.arrayPartition(parameters[0].getArray(), parameters[1]);
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, FUNCTION };
-		}
-	},
-	arrayIter(2) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return leekIA.arrayIter(parameters[0].getArray(), parameters[1]);
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, FUNCTION };
-		}
-	},
-	arrayConcat(2) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekOperations.add(leekIA, parameters[0], parameters[1]);
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, ARRAY };
-		}
-	},
-	arraySort(2) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return leekIA.arraySort(parameters[0].getArray(), parameters[1]);
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { ARRAY, FUNCTION };
-		}
-	},
-	debug(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			String p = parameters[0].getString(leekIA);
-			leekIA.getLogs().addLog(AILog.STANDARD, p);
-			leekIA.addOperations(p.length());
-			return LeekValueManager.NULL;
-		}
-	},
-	debugW(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			String p = parameters[0].getString(leekIA);
-			leekIA.getLogs().addLog(AILog.WARNING, p);
-			leekIA.addOperations(p.length());
-			return LeekValueManager.NULL;
-		}
-	},
-	debugE(1) {
-		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			String p = parameters[0].getString(leekIA);
-			leekIA.getLogs().addLog(AILog.ERROR, p);
-			leekIA.addOperations(p.length());
-			return LeekValueManager.NULL;
-		}
-	},
 	debugC(2) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			String message = parameters[0].getString(leekIA);
-			int color = parameters[1].getInt(leekIA);
-			leekIA.getLogs().addLog(AILog.STANDARD, message, color);
-			leekIA.addOperations(message.length());
-			return LeekValueManager.NULL;
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String message = LeekValueManager.getString(ai, parameters[0]);
+			int color = ai.integer(parameters[1]);
+			ai.getLogs().addLog(AILog.STANDARD, message, color);
+			ai.ops(message.length());
+			return null;
 		}
 	},
 	jsonEncode(1) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
 			return leekIA.jsonEncode(leekIA, parameters[0]);
 		}
 	},
-	jsonDecode(1) {
+	jsonDecode(1, new int[] { AI.STRING }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return leekIA.jsonDecode(parameters[0].getString(leekIA));
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { STRING };
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return leekIA.jsonDecode((String) parameters[0]);
 		}
 	},
 	getInstructionsCount(0) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekIntValue(0);
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return 0;
 		}
 	},
 	color(3) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
 			leekIA.addSystemLog(AILog.WARNING, Error.DEPRECATED_FUNCTION, new String[] { "color", "getColor" });
 			return leekIA.color(parameters[0], parameters[1], parameters[2]);
 		}
 	},
 	getColor(3) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
 			return leekIA.color(parameters[0], parameters[1], parameters[2]);
 		}
 	},
-	getRed(1) {
+	getRed(1, new int[] { AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekIntValue(((parameters[0].getInt(leekIA)) >> 16) & 255);
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((((Number) parameters[0]).intValue()) >> 16) & 255;
 		}
 	},
-	getGreen(1) {
+	getGreen(1, new int[] { AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekIntValue(((parameters[0].getInt(leekIA)) >> 8) & 255);
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((((Number) parameters[0]).intValue()) >> 8) & 255;
 		}
 	},
-	getBlue(1) {
+	getBlue(1, new int[] { AI.NUMBER }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekIntValue(parameters[0].getInt(leekIA) & 255);
-		}
-
-		@Override
-		public int[] parameters() {
-			return new int[] { NUMBER };
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((Number) parameters[0]).intValue() & 255;
 		}
 	},
 
 	typeOf(1) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return LeekValueManager.getLeekIntValue(leekIA.typeOf(parameters[0]));
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return LeekValueManager.getType(parameters[0]);
 		}
 	},
-	trim(1) {
+	trim(1, new int[] { AI.STRING }) {
 		@Override
-		public AbstractLeekValue run(AI leekIA, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			return new StringLeekValue(parameters[0].getString(leekIA).trim());
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var s = (String) parameters[0];
+			return s.trim();
 		}
+	},
 
-		@Override
-		public int[] parameters() {
-			return new int[] { STRING };
-		}
-	},
-	getOperations(0) {
-		@Override
-		public AbstractLeekValue run(AI ai, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
-			ai.addOperations(1);
-			return LeekValueManager.getLeekIntValue((int) ai.getOperations());
-		}
-	},
+	getOperations(new CallableVersion[] { new CallableVersion(Type.INT, new Type[0]) }),
+
 	clone(1, 2) {
 		@Override
-		public AbstractLeekValue run(AI ai, ILeekFunction function, AbstractLeekValue[] parameters, int count) throws LeekRunException {
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			// Clone one level by default
-			int level = count == 1 ? 1 : Math.max(0, parameters[1].getInt(ai));
+			int level = parameters[1] == null ? 1 : Math.max(0, ai.integer(parameters[1]));
 			return LeekOperations.clone(ai, parameters[0], level);
 		}
 	}
@@ -1321,15 +966,6 @@ public enum LeekFunctions implements ILeekFunction {
 	private int mOperations = 1;
 	protected VariableOperations mVariableOperations = null;
 	private int[] parameters;
-
-	public static final int DOUBLE = 1;
-	public static final int INT = 2;
-	public static final int BOOLEAN = 3;
-	public static final int STRING = 4;
-	public static final int NULL = 5;
-	public static final int ARRAY = 6;
-	public static final int NUMBER = 7;
-	public static final int FUNCTION = 8;
 	private Type return_type;
 	private CallableVersion[] versions;
 	private boolean direct = false;
@@ -1337,13 +973,46 @@ public enum LeekFunctions implements ILeekFunction {
 	LeekFunctions(int arguments) {
 		mArgumentsMin = arguments;
 		mArguments = arguments;
-		this.parameters = new int[0];
+		// this.parameters = new int[0];
+	}
+
+	LeekFunctions(int arguments, int[] parameters) {
+		mArgumentsMin = arguments;
+		mArguments = arguments;
+		this.parameters = parameters;
+	}
+
+	LeekFunctions(int arguments, int arguments_max, int[] parameters) {
+		mArgumentsMin = arguments;
+		mArguments = arguments_max;
+		this.parameters = parameters;
 	}
 
 	LeekFunctions(int arguments, int arguments_max) {
 		mArgumentsMin = arguments;
 		mArguments = arguments_max;
-		this.parameters = new int[0];
+		// this.parameters = new int[0];
+	}
+
+	LeekFunctions(CallableVersion[] versions) {
+		this.versions = versions;
+		this.direct = true;
+		// this.parameters = new int[0];
+	}
+
+	LeekFunctions(Type return_type, CallableVersion[] versions, int[] parameters) {
+		this.return_type = return_type;
+		this.versions = versions;
+		this.direct = true;
+		this.parameters = parameters;
+	}
+
+	public boolean isDirect() {
+		return direct;
+	}
+
+	public int[] getParameters() {
+		return parameters;
 	}
 
 	public Type getReturnType() {
@@ -1442,9 +1111,7 @@ public enum LeekFunctions implements ILeekFunction {
 	/*
 	 * Lancer la fonction
 	 */
-	public abstract AbstractLeekValue run(AI ai, ILeekFunction function, AbstractLeekValue parameters[], int count) throws LeekRunException;
-
-	public int[] parameters() {
+	public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 		return null;
 	}
 
@@ -1456,68 +1123,7 @@ public enum LeekFunctions implements ILeekFunction {
 		mOperations = operations;
 	}
 
-	public void addOperations(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], AbstractLeekValue retour, int count) throws LeekRunException {
-		leekIA.addOperations(getOperations());
-	}
-
-	public static AbstractLeekValue executeFunction(AI leekIA, ILeekFunction function, AbstractLeekValue parameters[], int count) throws LeekRunException {
-
-		// Vérification parametres
-		int[] types = function.parameters();
-		if (types == null || verifyParameters(types, parameters)) {
-			AbstractLeekValue retour = function.run(leekIA, function, parameters, count);
-			function.addOperations(leekIA, function, parameters, retour, count);
-			return retour;
-		} else {
-			// Message d'erreur
-			String ret = AbstractLeekValue.getParamString(parameters);
-			leekIA.addSystemLog(AILog.ERROR, Error.UNKNOWN_FUNCTION, new String[] { function + "(" + ret + ")" });
-			return LeekValueManager.NULL;
-		}
-		// throw new LeekRunException(LeekRunException.UNKNOWN_FUNCTION);
-	}
-
-	public static int intOrNull(AI ai, AbstractLeekValue value) throws LeekRunException {
-		if (isType(value, NULL))
-			return -1;
-		return value.getInt(ai);
-	}
-
-	public static boolean verifyParameters(int[] types, AbstractLeekValue[] parameters) {
-		if (parameters == null) {
-			return types.length == 0;
-		}
-		if (types.length != parameters.length) {
-			return false;
-		}
-		for (int i = 0; i < types.length; i++) {
-			if (types[i] == -1) {
-				continue;
-			}
-			if (!isType(parameters[i], types[i])) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	public static boolean isType(AbstractLeekValue value, int type) {
-		if (type == BOOLEAN && !(value instanceof BooleanLeekValue))
-			return false;
-		if (type == INT && !(value instanceof IntLeekValue))
-			return false;
-		if (type == DOUBLE && !(value instanceof DoubleLeekValue))
-			return false;
-		if (type == STRING && !(value instanceof StringLeekValue))
-			return false;
-		if (type == NULL && !(value instanceof NullLeekValue))
-			return false;
-		if (type == ARRAY && !(value instanceof ArrayLeekValue))
-			return false;
-		if (type == FUNCTION && !(value instanceof FunctionLeekValue))
-			return false;
-		if (type == NUMBER && !(value instanceof IntLeekValue) && !(value instanceof DoubleLeekValue))
-			return false;
-		return true;
+	public void addOperations(AI leekIA, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+		leekIA.ops(getOperations());
 	}
 }

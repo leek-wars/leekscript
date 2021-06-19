@@ -7,12 +7,13 @@ import java.util.Set;
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
+import leekscript.runner.LeekValueManager;
 import leekscript.runner.PhpArray;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-public class ArrayLeekValue extends AbstractLeekValue implements Iterable<AbstractLeekValue> {
+public class ArrayLeekValue implements Iterable<Box> {
 
 	private final PhpArray mValues;
 
@@ -35,43 +36,39 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 			mElement = mElement.next();
 		}
 
-		public AbstractLeekValue getKey(AI ai) throws LeekRunException {
+		public Object getKey(AI ai) throws LeekRunException {
 			if (ai.getVersion() >= 11) {
-				return LeekOperations.clonePrimitive(ai, mElement.key());
+				return mElement.key();
 			} else {
 				return LeekOperations.clone(ai, mElement.key());
 			}
-		}
-
-		public AbstractLeekValue getKeyRef() throws LeekRunException {
-			return mElement.key();
 		}
 
 		public Object key() {
 			return mElement.keyObject();
 		}
 
-		public AbstractLeekValue getValue(AI ai) throws LeekRunException {
+		public Object getValue(AI ai) throws LeekRunException {
 			if (ai.getVersion() >= 11) {
-				return LeekOperations.clonePrimitive(ai, mElement.value());
+				return mElement.value();
 			} else {
 				return LeekOperations.clone(ai, mElement.value());
 			}
 		}
 
-		public AbstractLeekValue getValueRef() throws LeekRunException {
+		public Object value() {
 			return mElement.value();
 		}
 
-		public AbstractLeekValue getKeyReference() throws LeekRunException {
+		public Object getKeyRef() throws LeekRunException {
 			return mElement.key();
 		}
 
-		public AbstractLeekValue getValueReference() throws LeekRunException {
-			return mElement.valueRef();
+		public Object getValueBox() throws LeekRunException {
+			return mElement.valueBox();
 		}
 
-		public void setValue(AI ai, VariableLeekValue value) throws LeekRunException {
+		public void setValue(AI ai, Box value) throws LeekRunException {
 			mElement.setValue(ai, value);
 		}
 	}
@@ -80,16 +77,16 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		mValues = new PhpArray();
 	}
 
-	public ArrayLeekValue(AI ai, AbstractLeekValue values[]) throws LeekRunException {
+	public ArrayLeekValue(AI ai, Object values[]) throws LeekRunException {
 		this(ai, values, false);
 	}
 
-	public ArrayLeekValue(AI ai, AbstractLeekValue values[], boolean isKeyValue) throws LeekRunException {
+	public ArrayLeekValue(AI ai, Object values[], boolean isKeyValue) throws LeekRunException {
 		mValues = new PhpArray(ai, values.length);
 		if (isKeyValue) {
 			int i = 0;
 			while (i < values.length) {
-				getOrCreate(ai, values[i].getValue()).setNoOps(ai, values[i + 1].getValue());
+				getOrCreate(ai, values[i]).set(values[i + 1]);
 				i += 2;
 			}
 		} else {
@@ -103,72 +100,135 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		mValues = new PhpArray(ai, array.mValues, level);
 	}
 
-
 	public int size() {
 		return mValues.size();
 	}
 
-	@Override
-	public int getInt(AI ai) throws LeekRunException {
-		return mValues.size();
-	}
-
-	@Override
-	public double getDouble(AI ai) throws LeekRunException {
-		return mValues.size();
-	}
-
-	@Override
-	public AbstractLeekValue get(AI ai, AbstractLeekValue value) throws LeekRunException {
-		Object key;
-		value = value.getValue();
-		if (value instanceof StringLeekValue)
-			key = value.getString(ai);
-		else if (value instanceof ObjectLeekValue)
-			key = value;
-		else
-			key = Integer.valueOf(value.getInt(ai));
+	public Object get(AI ai, Object keyValue) throws LeekRunException {
+		var key = transformKey(ai, keyValue);
 		return mValues.get(ai, key);
 	}
 
-	@Override
-	public AbstractLeekValue getOrCreate(AI ai, AbstractLeekValue value) throws LeekRunException {
-		Object key;
-		value = value.getValue();
-		if (value instanceof StringLeekValue) {
-			key = value.getString(ai);
-		} else if (value instanceof ObjectLeekValue) {
-			key = value;
-		} else {
-			key = Integer.valueOf(value.getInt(ai));
-		}
+	public Box getBox(AI ai, Object keyValue) throws LeekRunException {
+		var key = transformKey(ai, keyValue);
+		return mValues.getBox(ai, key);
+	}
+
+	public Box getOrCreate(AI ai, Object keyValue) throws LeekRunException {
+		var key = transformKey(ai, keyValue);
 		return mValues.getOrCreate(ai, key);
 	}
 
-	public void put(AI ai, Object key, AbstractLeekValue value) throws LeekRunException {
+	public Object put(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
 		mValues.set(ai, key, value);
+		return value;
 	}
 
-	@Override
-	public AbstractLeekValue get(AI ai, int value) throws LeekRunException {
+	public Object put_inc(AI ai, Object keyValue) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		return mValues.getOrCreate(ai, key).increment();
+	}
+
+	public Object put_dec(AI ai, Object keyValue) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		return mValues.getOrCreate(ai, key).decrement();
+	}
+
+	public Object put_add_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		mValues.getOrCreate(ai, key).add_eq(value);
+		return value;
+	}
+
+	public Object put_sub_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		mValues.getOrCreate(ai, key).sub_eq(value);
+		return value;
+	}
+
+	public Object put_mul_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		mValues.getOrCreate(ai, key).mul_eq(value);
+		return value;
+	}
+
+	public Object put_div_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		mValues.getOrCreate(ai, key).div_eq(value);
+		return value;
+	}
+
+
+	public Object put_bor_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		mValues.getOrCreate(ai, key).bor_eq(value);
+		return value;
+	}
+
+
+	public Object put_band_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		mValues.getOrCreate(ai, key).band_eq(value);
+		return value;
+	}
+
+
+	public Object put_bxor_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		return mValues.getOrCreate(ai, key).bxor_eq(value);
+	}
+
+	public Object put_shl_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		return mValues.getOrCreate(ai, key).shl_eq(value);
+	}
+
+	public Object put_shr_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		return mValues.getOrCreate(ai, key).shr_eq(value);
+	}
+
+	public Object put_ushr_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		return mValues.getOrCreate(ai, key).ushr_eq(value);
+	}
+
+	private Object transformKey(AI ai, Object key) throws LeekRunException {
+		if (key instanceof String || key instanceof ObjectLeekValue) {
+			return key;
+		} else {
+			return ai.integer(key);
+		}
+	}
+
+	public Box get(AI ai, int value) throws LeekRunException {
 		return mValues.getOrCreate(ai, Integer.valueOf(value));
 	}
 
-	public AbstractLeekValue remove(AI ai, int index) throws LeekRunException {
+	public Object remove(AI ai, int index) throws LeekRunException {
 		return mValues.removeIndex(ai, index);
 	}
 
-	public void removeObject(AI ai, AbstractLeekValue value) throws LeekRunException {
+	public void removeObject(AI ai, Object value) throws LeekRunException {
 		mValues.removeObject(ai, value);
 	}
 
-	public void removeByKey(AI ai, AbstractLeekValue value) throws LeekRunException {
-		if (value.getType() == STRING)
-			mValues.remove(ai, value.getString(ai));
-		else if (value.getType() == NUMBER)
-			mValues.remove(ai, value.getInt(ai));
-		else if (value.getType() == OBJECT)
-			mValues.remove(ai, value);
+	public void removeByKey(AI ai, Object value) throws LeekRunException {
+		mValues.remove(ai, value);
 	}
 
 	public void shuffle(AI ai) throws LeekRunException {
@@ -186,21 +246,21 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	public String join(AI ai, String sep) throws LeekRunException {
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
-		for (AbstractLeekValue val : mValues) {
+		for (Object val : mValues) {
 			if (!first)
 				sb.append(sep);
 			else
 				first = false;
-			sb.append(val.getValue().getString(ai));
+			sb.append(LeekValueManager.getString(ai, val));
 		}
 		return sb.toString();
 	}
 
-	public void insert(AI ai, AbstractLeekValue value, int pos) throws LeekRunException {
+	public void insert(AI ai, Object value, int pos) throws LeekRunException {
 		mValues.insert(ai, pos, value);
 	}
 
-	public AbstractLeekValue search(AI ai, AbstractLeekValue search, int pos) throws LeekRunException {
+	public Object search(AI ai, Object search, int pos) throws LeekRunException {
 		return mValues.search(ai, search, pos);
 	}
 
@@ -209,49 +269,24 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	}
 
 	@Override
-	public Iterator<AbstractLeekValue> iterator() {
+	public Iterator<Box> iterator() {
 		return mValues.iterator();
 	}
 
-	public AbstractLeekValue end() {
+	public Object end() {
 		return mValues.end().getValue();
 	}
 
-	public AbstractLeekValue start() {
+	public Object start() {
 		return mValues.start().getValue();
 	}
 
-	public boolean contains(AI ai, AbstractLeekValue value) throws LeekRunException {
+	public boolean contains(AI ai, Object value) throws LeekRunException {
 		return mValues.contains(ai, value);
 	}
 
-	public void push(AI ai, AbstractLeekValue m) throws LeekRunException {
+	public void push(AI ai, Object m) throws LeekRunException {
 		mValues.push(ai, m);
-	}
-
-	@Override
-	public int getV10Type() {
-		return ARRAY_V10;
-	}
-
-	@Override
-	public int getType() {
-		return ARRAY;
-	}
-
-	@Override
-	public boolean isArray() {
-		return true;
-	}
-
-	@Override
-	public boolean isArrayForIteration(AI ai) throws LeekRunException {
-		return true;
-	}
-
-	@Override
-	public ArrayLeekValue getArray() {
-		return this;
 	}
 
 	public String getString(AI ai, Set<Object> visited) throws LeekRunException {
@@ -259,47 +294,38 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		return mValues.toString(ai, visited);
 	}
 
-	@Override
-	public boolean getBoolean() {
-		return mValues.size() != 0;
-	}
-
-	@Override
-	public boolean equals(AI ai, AbstractLeekValue comp) throws LeekRunException {
-		// In LS1.0, [null] == null, not in 1.1+
-		if (ai.getVersion() >= 11 && comp.getType() == NULL) {
-			return false;
-		}
-		if (comp.getType() == ARRAY) {
-			return mValues.equals(ai, comp.getArray().mValues);
+	public boolean equals(AI ai, Object comp) throws LeekRunException {
+		if (comp instanceof ArrayLeekValue) {
+			return mValues.equals(ai, ((ArrayLeekValue) comp).mValues);
 		} else if (mValues.size() == 1) { // Si y'a un seul élément dans le tableau
-			return mValues.getHeadElement().value().equals(ai, comp);
-		} else if (comp.getType() == BOOLEAN) {
-			return comp.getBoolean() == getBoolean();
-		} else if (comp.getType() == STRING) {
-			if (comp.getString(ai).equals("false") && getBoolean() == false)
+			// In LS1.0, [null] == null, not in 1.1+
+			if (ai.getVersion() >= 11 && comp == null) {
+				return false;
+			}
+			return ai.eq(mValues.getHeadElement().value(), comp);
+		} else if (comp instanceof Boolean) {
+			return ai.bool(comp) == ai.bool(this);
+		} else if (comp instanceof String) {
+			if (ai.string(comp).equals("false") && ai.bool(this) == false)
 				return true;
-			else if (comp.getString(ai).equals("true") && getBoolean() == true)
+			else if (ai.string(comp).equals("true") && ai.bool(this) == true)
 				return true;
-			else if (comp.getString(ai).isEmpty() && mValues.size() == 0)
+			else if (ai.string(comp).isEmpty() && mValues.size() == 0)
 				return true;
-		} else if (comp.getType() == NUMBER) {
-			if (mValues.size() == 0 && comp.getInt(ai) == 0)
+		} else if (comp instanceof Number) {
+			if (mValues.size() == 0 && ai.integer(comp) == 0)
 				return true;
 		}
 		return false;
 	}
 
-	@Override
-	public AbstractLeekValue add(AI ai, AbstractLeekValue value) throws LeekRunException {
-		value = value.getValue();
-		ai.addOperations(1);
+	public Object add_eq(AI ai, Object value) throws LeekRunException {
 		if (value instanceof ArrayLeekValue) {
 			// mValues.reindex(ai);
-			ArrayIterator iterator = value.getArray().getArrayIterator();
+			ArrayIterator iterator = ((ArrayLeekValue) value).getArrayIterator();
 			while (!iterator.ended()) {
 				if (iterator.key() instanceof String || iterator.key() instanceof ObjectLeekValue)
-					mValues.getOrCreate(ai, iterator.getKey(ai).getString(ai)).setNoOps(ai, iterator.getValue(ai));
+					mValues.getOrCreate(ai, ai.string(iterator.getKey(ai))).set(iterator.getValue(ai));
 				else
 					mValues.push(ai, iterator.getValue(ai));
 				iterator.next();
@@ -310,65 +336,11 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		return this;
 	}
 
-	@Override
-	public AbstractLeekValue minus(AI ai, AbstractLeekValue val) throws LeekRunException {
-		return LeekOperations.minus(ai, this, val);
-	}
-
-	@Override
-	public AbstractLeekValue multiply(AI ai, AbstractLeekValue val) throws LeekRunException {
-		return LeekOperations.multiply(ai, this, val);
-	}
-
-	@Override
-	public AbstractLeekValue divide(AI ai, AbstractLeekValue val) throws LeekRunException {
-		return LeekOperations.divide(ai, this, val);
-	}
-
-	@Override
-	public AbstractLeekValue modulus(AI ai, AbstractLeekValue val) throws LeekRunException {
-		return LeekOperations.modulus(ai, this, val);
-	}
-
-	@Override
-	public AbstractLeekValue power(AI ai, AbstractLeekValue value) throws LeekRunException {
-		return LeekOperations.power(ai, this, value);
-	}
-
-	@Override
-	public AbstractLeekValue band(AI ai, AbstractLeekValue val) throws LeekRunException {
-		return LeekOperations.band(ai, this, val);
-	}
-
-	@Override
-	public AbstractLeekValue bor(AI ai, AbstractLeekValue val) throws LeekRunException {
-		return LeekOperations.bor(ai, this, val);
-	}
-
-	@Override
-	public AbstractLeekValue bxor(AI ai, AbstractLeekValue val) throws LeekRunException {
-		return LeekOperations.bxor(ai, this, val);
-	}
-
-	@Override
-	public AbstractLeekValue bleft(AI ai, AbstractLeekValue val) throws LeekRunException {
-		return LeekOperations.bleft(ai, this, val);
-	}
-
-	@Override
-	public AbstractLeekValue bright(AI ai, AbstractLeekValue val) throws LeekRunException {
-		return LeekOperations.bright(ai, this, val);
-	}
-
-	@Override
-	public AbstractLeekValue brotate(AI ai, AbstractLeekValue val) throws LeekRunException {
-		return LeekOperations.brotate(ai, this, val);
-	}
 	public ArrayIterator getArrayIterator() {
 		return new ArrayIterator(mValues.getHeadElement());
 	}
 
-	public Iterator<AbstractLeekValue> getReversedIterator() {
+	public Iterator<Object> getReversedIterator() {
 		return mValues.reversedIterator();
 	}
 
@@ -376,28 +348,34 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 		mValues.sort(ai, comparator);
 	}
 
-	@Override
 	public Object toJSON(AI ai) throws LeekRunException {
 
 		if (mValues.isAssociative()) {
 			JSONObject o = new JSONObject();
 			ArrayIterator i = getArrayIterator();
 			while (!i.ended()) {
-				o.put(i.key().toString(), i.getValue(ai).toJSON(ai));
+				o.put(i.key().toString(), ai.toJSON(i.getValue(ai)));
 				i.next();
 			}
 			return o;
 		} else {
 			JSONArray a = new JSONArray();
-			for (AbstractLeekValue v : this) {
-				a.add(v.toJSON(ai));
+			for (Object v : this) {
+				a.add(ai.toJSON(v));
 			}
 			return a;
 		}
 	}
 
 	@Override
-	public boolean isPrimitive() {
-		return false;
+	public String toString() {
+		var r = "[";
+		boolean first = true;
+		for (Object v : this) {
+			if (first) first = false;
+			else r += ", ";
+			r += v.toString();
+		}
+		return r + "]";
 	}
 }

@@ -84,23 +84,45 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+		var previousFunction = mainblock.getWordCompiler().getCurrentFunction();
+		mainblock.getWordCompiler().setCurrentFunction(this);
 		StringBuilder sb = new StringBuilder();
 		sb.append("new LeekAnonymousFunction() {");
-		sb.append("public AbstractLeekValue run(AI mUAI, AbstractLeekValue thiz, AbstractLeekValue... values) throws LeekRunException {");
+		sb.append("public Object run(ObjectLeekValue thiz, Object... values) throws LeekRunException {");
 
 		for (int i = 0; i < mParameters.size(); i++) {
-			sb.append("final VariableLeekValue user_").append(mParameters.get(i)).append(" = ");
-			if (mReferences.get(i)) {
-				sb.append("(values[").append(i).append("] instanceof VariableLeekValue)?(VariableLeekValue)values[").append(i).append("]:");
+			var parameter = mParameters.get(i);
+			var declaration = mParameterDeclarations.get(i);
+			if (declaration.isCaptured()) {
+				sb.append("final var u_").append(parameter).append(" = new Wrapper(");
+				if (mReferences.get(i)) {
+					sb.append("(values[").append(i).append("] instanceof Box) ? (Box) values[").append(i).append("] : ");
+				}
+				sb.append("new Box(" + writer.getAIThis() + ", ");
+				sb.append("values[").append(i).append("]));");
+			} else {
+				sb.append("var u_").append(parameter).append(" = ");
+
+				if (mainblock.getWordCompiler().getVersion() >= 11) {
+					sb.append("values[").append(i).append("]; ops(1);");
+				} else {
+					// In LeekScript 1.0, load the value or reference
+					if (mReferences.get(i)) {
+						sb.append("values[").append(i).append("] instanceof Box ? (Box) values[").append(i).append("] : new Box(" + writer.getAIThis() + ", load(values[").append(i).append("]));");
+					} else {
+						// sb.append("new Box(" + writer.getAIThis() + ", values[").append(i).append("] instanceof Box ? copy(load(values[").append(i).append("])) : copy(load(values[").append(i).append("])));");
+						sb.append("new Box(" + writer.getAIThis() + ", values[").append(i).append("]);");
+					}
+				}
 			}
-			sb.append("new VariableLeekValue(mUAI, values[").append(i).append("].getValue());");
 		}
 		writer.addLine(sb.toString(), mLine, mAI);
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0)
-			writer.addLine("return LeekValueManager.NULL;");
+			writer.addLine("return null;");
 		writer.addCode("}}");
+		mainblock.getWordCompiler().setCurrentFunction(previousFunction);
 	}
 
 	public boolean isReference(int i) {
