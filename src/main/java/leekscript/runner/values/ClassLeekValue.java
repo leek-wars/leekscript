@@ -58,8 +58,8 @@ public class ClassLeekValue extends AbstractLeekValue {
 		constructors.put(arg_count, function);
 	}
 
-	public void addField(AI ai, String field, AbstractLeekValue value, AccessLevel level) {
-		fields.put(field, new ClassField(value, level));
+	public void addField(AI ai, String field, AccessLevel level) {
+		fields.put(field, new ClassField(null, level));
 	}
 
 	public void addStaticField(AI ai, String field, AbstractLeekValue value, AccessLevel level) throws LeekRunException {
@@ -184,10 +184,6 @@ public class ClassLeekValue extends AbstractLeekValue {
 		ai.addOperations(1);
 		// Create the actual object
 		ObjectLeekValue object = new ObjectLeekValue(this);
-		// Add fields
-		for (Entry<String, ClassField> field : fields.entrySet()) {
-			object.addField(ai, field.getKey(), field.getValue().value, field.getValue().level);
-		}
 
 		int arg_count = arguments.length;
 		if (constructors.containsKey(arg_count)) {
