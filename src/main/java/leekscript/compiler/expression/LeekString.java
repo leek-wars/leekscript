@@ -1,5 +1,7 @@
 package leekscript.compiler.expression;
 
+import com.alibaba.fastjson.JSON;
+
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
@@ -25,7 +27,7 @@ public class LeekString extends AbstractExpression {
 
 	@Override
 	public String getString() {
-		return "\"" + mString + "\"";
+		return JSON.toJSONString(mString);
 	}
 
 	@Override

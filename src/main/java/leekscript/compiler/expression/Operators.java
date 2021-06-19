@@ -293,6 +293,8 @@ public class Operators {
 			return "new";
 		case BITNOT:
 			return "~";
+		case REFERENCE:
+			return "@";
 		case INSTANCEOF:
 			return "instanceof";
 		}
