@@ -46,6 +46,10 @@ public class IntLeekValue extends AbstractLeekValue {
 		return true;
 	}
 
+	public IntLeekValue oppositeConstant() throws LeekRunException {
+		return LeekValueManager.getLeekIntValue(-mValue);
+	}
+
 	@Override
 	public AbstractLeekValue increment(AI ai) {
 		return this;
