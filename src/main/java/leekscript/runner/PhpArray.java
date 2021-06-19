@@ -684,8 +684,8 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		if (e == null) {
 			if (mSize >= capacity) {
 				growCapacity(ai);
+				mSize++;
 			}
-			mSize++;
 			e = createElement(ai, key, LeekValueManager.NULL);
 			pushElement(e);
 		}
