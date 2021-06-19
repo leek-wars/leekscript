@@ -385,10 +385,10 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		for (var field : staticFields.entrySet()) {
 			writer.addCode(className);
 			writer.addCode(".addStaticField(mUAI, \"" + field.getKey() + "\", ");
-			if (field.getValue() != null) {
+			if (field.getValue().expression != null) {
 				field.getValue().expression.writeJavaCode(mainblock, writer);
 			} else {
-				writer.addCode("null");
+				writer.addCode("LeekValueManager.NULL");
 			}
 			writer.addCode(", AccessLevel." + field.getValue().level);
 			writer.addLine(");");

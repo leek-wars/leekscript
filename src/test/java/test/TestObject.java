@@ -39,6 +39,14 @@ public class TestObject extends TestCommon {
 		code_v11("class A { a = 10 m() { return a } } var a = new A(); var array = [a.m] return array[0](a)").equals("10");
 		code_v11("class A { a = 10 m() { return a } } var a = new A(); var array = [a['m']] return array[0](a)").equals("10");
 
+		section("Static fields");
+		code_v11("class A { static x }").equals("null");
+		code_v11("class A { static x } return A.x").equals("null");
+		code_v11("class A { static x = 10 } return A.x").equals("10");
+		code_v11("class A { static x = 'hello' } return A.x").equals("hello");
+		code_v11("class A { static x = [1, 2, 3] } return A.x").equals("[1, 2, 3]");
+		code_v11("class A { static x = null } return A.x").equals("null");
+
 		section("Operators on field");
 		code_v11("class A { a = 10 } var a = new A(); return --a.a").equals("9");
 		code_v11("class A { a = 10 } var a = new A(); a.a-- return a.a").equals("9");
@@ -83,6 +91,7 @@ public class TestObject extends TestCommon {
 		code_v11("class A { m() { return 'ok' } } class B extends A { m() { return super.m() }} class C extends B { m() { return super.m() } } var a = new C() return a.m()").equals("ok");
 		code_v11("class A { m() { return 'ok' } } class B extends A {} class C extends B { m() { return super.m() } } var a = new C() return a.m()").equals("ok");
 		code_v11("class A { m() { return 'okA' } } class B extends A { m() { return super.m() + 'B' }} class C extends B { m() { return super.m() + 'C' } } var a = new C()return a.m()").equals("okABC");
+		code_v11("class A { items } class B extends A { constructor() { this.items = [] } } var x = new B() return x").equals("B {items: []}");
 
 		section("Access levels: fields");
 		code_v11("class A { x = 10 } var a = new A() return a.x").equals("10");
