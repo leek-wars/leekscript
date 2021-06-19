@@ -222,10 +222,24 @@ public class TestArray extends TestCommon {
 		code("var a = [5, 6, 7]; a[0]++; a[1]++; return a;").equals("[6, 7, 7]");
 		code("var a = [[5]]; a[0][0]++; return a;").equals("[[6]]");
 
+		section("Array.operator pre ++ on element");
+		code("var a = [5]; ++a[0]; return a;").equals("[6]");
+		code("var a = [5]; return ++a[0];").equals("6");
+		code("var a = [5, 6, 7]; ++a[0]; ++a[1]; return a;").equals("[6, 7, 7]");
+		code("var a = [[5]]; ++a[0][0]; return a;").equals("[[6]]");
+		code("var a = [[5]]; return ++a[0][0];").equals("6");
+
 		section("Array.operator -- on element");
 		code("var a = [5] a[0]-- return a;").equals("[4]");
 		code("var a = [5, 6, 7] a[0]-- a[1]-- return a;").equals("[4, 5, 7]");
 		code("var a = [[5]] a[0][0]-- return a;").equals("[[4]]");
+
+		section("Array.operator pre -- on element");
+		code("var a = [5]; --a[0] return a;").equals("[4]");
+		code("var a = [5] return --a[0];").equals("4");
+		code("var a = [5, 6, 7]; --a[0]; --a[1] return a;").equals("[4, 5, 7]");
+		code("var a = [[5]]; --a[0][0] return a;").equals("[[4]]");
+		code("var a = [[5]] return --a[0][0];").equals("4");
 
 		section("Array.operator -= on element");
 		code("var a = [5] a[0] -= 1 return a;").equals("[4]");
@@ -238,11 +252,37 @@ public class TestArray extends TestCommon {
 		code("var a = [5, 6, 7] a[0] *= 10 a[1] *= 10 return a;").equals("[50, 60, 7]");
 		code("var a = [[5]] a[0][0] *= 10 return a;").equals("[[50]]");
 
+		section("Array.operator %= on element");
+		code("var a = [5] a[0] %= 2 return a;").equals("[1]");
+		code("var a = [5, 6, 7] a[0] %= 2 a[1] %= 2 return a;").equals("[1, 0, 7]");
+		code("var a = [[5]] a[0][0] %= 2 return a;").equals("[[1]]");
+
+		section("Array.operator **= on element");
+		code("var a = [5] a[0] **= 2 return a;").equals("[25]");
+		code("var a = [5, 6, 7] a[0] **= 2 a[1] **= 2 return a;").equals("[25, 36, 7]");
+		code("var a = [[5]] a[0][0] **= 2 return a;").equals("[[25]]");
+
 		section("Array.operator |= on element");
 		code("var a = [5] a[0] |= 2 return a;").equals("[7]");
 		code("var a = [5, 6, 7] a[0] |= 8 a[1] |= 8 return a;").equals("[13, 14, 7]");
 		code("var a = [[5]] a[0][0] |= 2 return a;").equals("[[7]]");
 		code("var a = [] a[0] |= 1 return a;").equals("[1]");
+
+		section("Array.operator &= on element");
+		code("var a = [87619] a[0] &= 18431 return a;").equals("[17987]");
+
+		section("Array.operator ^= on element");
+		code_v10("var a = [876] a[0] ^= 3 return a;").equals("[672221376]");
+		code_v11("var a = [876] a[0] ^= 3 return a;").equals("[879]");
+
+		section("Array.operator <<= on element");
+		code("var a = [123] a[0] <<= 12 return a;").equals("[503808]");
+
+		section("Array.operator >>= on element");
+		code("var a = [123123123] a[0] >>= 5 return a;").equals("[3847597]");
+
+		section("Array.operator >>>= on element");
+		code("var a = [-155] a[0] >>>= 5 return a;").equals("[134217723]");
 
 		section("Array.count()");
 		code("return count([1, 2, 3, 4, 5]);").equals("5");
