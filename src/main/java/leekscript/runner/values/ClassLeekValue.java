@@ -41,6 +41,7 @@ public class ClassLeekValue extends AbstractLeekValue {
 	public HashMap<String, AbstractLeekValue> genericMethods = new HashMap<>();
 	public HashMap<String, ClassMethod> staticMethods = new HashMap<>();
 	public HashMap<String, AbstractLeekValue> genericStaticMethods = new HashMap<>();
+	public LeekAnonymousFunction initFields = null;
 
 	private ArrayLeekValue fieldsArray;
 	private ArrayLeekValue methodsArray;
@@ -184,6 +185,8 @@ public class ClassLeekValue extends AbstractLeekValue {
 		ai.addOperations(1);
 		// Create the actual object
 		ObjectLeekValue object = new ObjectLeekValue(this);
+		// Init fields
+		this.initFields.run(ai, object);
 
 		int arg_count = arguments.length;
 		if (constructors.containsKey(arg_count)) {

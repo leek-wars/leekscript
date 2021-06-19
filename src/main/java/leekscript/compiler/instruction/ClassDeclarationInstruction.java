@@ -291,6 +291,23 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		if (parent != null) {
 			writer.addLine(className + ".setParent(user_" + parent.getName() + ");");
 		}
+		writer.addCode(className + ".initFields = new LeekAnonymousFunction() {");
+		writer.addLine("public AbstractLeekValue run(AI mUAI, AbstractLeekValue u_this, AbstractLeekValue... values) throws LeekRunException {");
+		ClassDeclarationInstruction current = this;
+		while (current != null) {
+			for (var field : current.fields.entrySet()) {
+				writer.addCode("((ObjectLeekValue) u_this).addField(mUAI, \"" + field.getKey() + "\", ");
+				if (field.getValue().expression != null) {
+					field.getValue().expression.writeJavaCode(mainblock, writer);
+				} else {
+					writer.addCode("LeekValueManager.NULL");
+				}
+				writer.addLine(", AccessLevel." + field.getValue().level + ");");
+			}
+			current = current.parent;
+		}
+		writer.addLine("return null;");
+		writer.addLine("}};");
 
 		for (Entry<String, HashMap<Integer, ClassDeclarationMethod>> method : staticMethods.entrySet()) {
 			for (Entry<Integer, ClassDeclarationMethod> version : method.getValue().entrySet()) {
@@ -342,19 +359,6 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			writer.addLine("final var u_class = " + className + ";");
 			if (parent != null) {
 				writer.addLine("final var u_super = user_" + parent.token.getWord() + ";");
-			}
-			ClassDeclarationInstruction current = this;
-			while (current != null) {
-				for (var field : current.fields.entrySet()) {
-					writer.addCode("((ObjectLeekValue) u_this).addField(mUAI, \"" + field.getKey() + "\", ");
-					if (field.getValue().expression != null) {
-						field.getValue().expression.writeJavaCode(mainblock, writer);
-					} else {
-						writer.addCode("LeekValueManager.NULL");
-					}
-					writer.addLine(", AccessLevel." + field.getValue().level + ");");
-				}
-				current = current.parent;
 			}
 			if (construct.getValue().block != null) {
 				construct.getValue().block.writeJavaCode(mainblock, writer);

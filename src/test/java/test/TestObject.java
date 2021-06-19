@@ -92,6 +92,7 @@ public class TestObject extends TestCommon {
 		code_v11("class A { m() { return 'ok' } } class B extends A {} class C extends B { m() { return super.m() } } var a = new C() return a.m()").equals("ok");
 		code_v11("class A { m() { return 'okA' } } class B extends A { m() { return super.m() + 'B' }} class C extends B { m() { return super.m() + 'C' } } var a = new C()return a.m()").equals("okABC");
 		code_v11("class A { items } class B extends A { constructor() { this.items = [] } } var x = new B() return x").equals("B {items: []}");
+		code_v11("class A { items } class B extends A { constructor() { this.items = [] super() } } var x = new B() return x").equals("B {items: []}");
 
 		section("Access levels: fields");
 		code_v11("class A { x = 10 } var a = new A() return a.x").equals("10");
