@@ -36,17 +36,17 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	public void setValueIterator(WordCompiler compiler, IAWord iterator, boolean declaration) {
 		if (declaration) {
 			iteratorDeclaration = new LeekVariableDeclarationInstruction(compiler, iterator, 0, null, compiler.getCurrentFunction());
-			addVariable(new LeekVariable(iterator, VariableType.ITERATOR, iteratorDeclaration));
+			// addVariable(new LeekVariable(iterator, VariableType.ITERATOR, iteratorDeclaration));
 		}
-		mIterator = iterator.getWord();
+		mIterator = iterator;
 	}
 
 	public void setKeyIterator(WordCompiler compiler, IAWord iterator, boolean declaration) {
 		if (declaration) {
 			iteratorKeyDeclaration = new LeekVariableDeclarationInstruction(compiler, iterator, 0, null, compiler.getCurrentFunction());
-			addVariable(new LeekVariable(iterator, VariableType.ITERATOR, iteratorKeyDeclaration));
+			// addVariable(new LeekVariable(iterator, VariableType.ITERATOR, iteratorKeyDeclaration));
 		}
-		mKeyIterator = iterator.getWord();
+		mKeyIterator = iterator;
 	}
 
 	public void setArray(AbstractExpression exp) {
