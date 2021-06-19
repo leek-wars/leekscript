@@ -8,6 +8,9 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 
 import leekscript.compiler.bloc.AbstractLeekBlock;
+import leekscript.common.Type;
+import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.expression.AbstractExpression;
 
 public class JavaWriter {
 	private final StringBuilder mCode;
@@ -101,8 +104,8 @@ public class JavaWriter {
 		mCode.append("};}\n");
 	}
 
-	public void addCounter(int id) {
-		addCode("mUAI.addOperations(1);");
+	public void addCounter(int count) {
+		addCode("ops(" + count + ");");
 	}
 
 	public int getCurrentLine() {
@@ -112,5 +115,67 @@ public class JavaWriter {
 	public void addPosition(IAWord token) {
 		var index = getFileIndex(token.getAI());
 		mLines.put(mLine, new Line(mLine, token.getLine(), index));
+	}
+
+	public String getAIThis() {
+		return className + ".this";
+	}
+
+	public String getClassName() {
+		return className;
+	}
+
+	public void getBoolean(MainLeekBlock mainblock, AbstractExpression expression) {
+		if (expression.getType() == Type.BOOL) {
+			expression.writeJavaCode(mainblock, this);
+		} else if (expression.getType() == Type.INT) {
+			addCode("((");
+			expression.writeJavaCode(mainblock, this);
+			addCode(") != 0)");
+		} else {
+			addCode("bool(");
+			expression.writeJavaCode(mainblock, this);
+			addCode(")");
+		}
+	}
+
+	public void getString(MainLeekBlock mainblock, AbstractExpression expression) {
+		if (expression.getType() == Type.STRING) {
+			expression.writeJavaCode(mainblock, this);
+		} else {
+			addCode("string(");
+			expression.writeJavaCode(mainblock, this);
+			addCode(")");
+		}
+	}
+
+	public void getInt(MainLeekBlock mainblock, AbstractExpression expression) {
+		if (expression.getType() == Type.INT) {
+			expression.writeJavaCode(mainblock, this);
+		} else {
+			addCode("integer(");
+			expression.writeJavaCode(mainblock, this);
+			addCode(")");
+		}
+	}
+
+	public void compileLoad(MainLeekBlock mainblock, AbstractExpression expr) {
+		if (expr.getType() == Type.NULL || expr.getType() == Type.BOOL || expr.getType().isNumber() || expr.getType() == Type.STRING || expr.getType() == Type.ARRAY) {
+			expr.writeJavaCode(mainblock, this);
+		} else {
+			addCode("load(");
+			expr.writeJavaCode(mainblock, this);
+			addCode(")");
+		}
+	}
+
+	public void compileClone(MainLeekBlock mainblock, AbstractExpression expr) {
+		if (expr.getType() == Type.NULL || expr.getType() == Type.BOOL || expr.getType().isNumber() || expr.getType() == Type.STRING) {
+			expr.writeJavaCode(mainblock, this);
+		} else {
+			addCode("copy(");
+			expr.writeJavaCode(mainblock, this);
+			addCode(")");
+		}
 	}
 }

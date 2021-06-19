@@ -9,13 +9,12 @@ import java.util.Random;
 import java.util.Set;
 
 import leekscript.compiler.LeekScript;
-import leekscript.runner.values.AbstractLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
+import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.ObjectLeekValue;
-import leekscript.runner.values.PhpArrayVariableLeekValue;
-import leekscript.runner.values.StringLeekValue;
+import leekscript.runner.values.Box;
 
-public class PhpArray implements Iterable<AbstractLeekValue> {
+public class PhpArray implements Iterable<Box> {
 
 	private final static int START_CAPACITY = 8;
 	private final static int MAX_CAPACITY = 32000;
@@ -31,14 +30,12 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	private class ElementComparatorV10 implements Comparator<Element> {
 
 		private final int mOrder;
-		private final AI ai;
 
 		public final static int SORT_ASC = 1;
 		public final static int SORT_DESC = 2;
 
-		public ElementComparatorV10(AI ai, int order) {
+		public ElementComparatorV10(int order) {
 			mOrder = order;
-			this.ai = ai;
 		}
 
 		@Override
@@ -48,41 +45,45 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 				return compareAsc(v1.value.getValue(), v2.value.getValue());
 			else if (mOrder == SORT_DESC)
 				return compareAsc(v2.value.getValue(), v1.value.getValue());
-			} catch (Exception e) {}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 			return 0;
 		}
 
-		public int compareAsc(AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
-			if (v1.getV10Type() < v2.getV10Type())
+		public int compareAsc(Object v1, Object v2) throws LeekRunException {
+			int type1 = LeekValueManager.getV10Type(v1);
+			int type2 = LeekValueManager.getV10Type(v2);
+			if (type1 < type2)
 				return -1;
-			else if (v1.getV10Type() > v2.getV10Type())
+			else if (type1 > type2)
 				return 1;
-			if (v1.getType() == AbstractLeekValue.BOOLEAN) {
-				if (v1.getBoolean() == v2.getBoolean())
+			if (type1 == LeekValue.BOOLEAN_V10) {
+				if ((Boolean) v1 == (Boolean) v2)
 					return 0;
-				else if (v1.getBoolean())
+				else if ((Boolean) v1)
 					return 1;
 				else
 					return -1;
-			} else if (v1.getType() == AbstractLeekValue.NUMBER) {
-				if (v1.getDouble(ai) == v2.getDouble(ai))
+			} else if (type1 == LeekValue.NUMBER_V10) {
+				var d = ((Number) v2).doubleValue();
+				if (((Number) v1).doubleValue() == d)
 					return 0;
-				else if (v1.getDouble(ai) < v2.getDouble(ai))
+				else if (((Number) v1).doubleValue() < d)
 					return -1;
 				else
 					return 1;
-			} else if (v1.getType() == AbstractLeekValue.STRING) {
-				return v1.getString(ai).compareTo(v2.getString(ai));
-			} else if (v1.getType() == AbstractLeekValue.ARRAY) {
-				if (v1.getArray().size() == v2.getArray().size())
+			} else if (type1 == LeekValue.STRING_V10) {
+				return ((String) v1).compareTo((String) v2);
+			} else if (type1 == LeekValue.ARRAY_V10) {
+				var a = (ArrayLeekValue) v2;
+				if (((ArrayLeekValue) v1).size() == a.size())
 					return 0;
-				else if (v1.getArray().size() < v2.getArray().size())
+				else if (((ArrayLeekValue) v1).size() < a.size())
 					return -1;
 				else
 					return 1;
-			} else if (v1.getType() == AbstractLeekValue.NULL)
-				return 0;
-			else
+			} else
 				return -1;
 		}
 	}
@@ -90,14 +91,12 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	private class ElementComparator implements Comparator<Element> {
 
 		private final int mOrder;
-		private final AI ai;
 
 		public final static int SORT_ASC = 1;
 		public final static int SORT_DESC = 2;
 
-		public ElementComparator(AI ai, int order) {
+		public ElementComparator(int order) {
 			mOrder = order;
-			this.ai = ai;
 		}
 
 		@Override
@@ -107,41 +106,45 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 				return compareAsc(v1.value.getValue(), v2.value.getValue());
 			else if (mOrder == SORT_DESC)
 				return compareAsc(v2.value.getValue(), v1.value.getValue());
-			} catch (Exception e) {}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 			return 0;
 		}
 
-		public int compareAsc(AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
-			if (v1.getType() < v2.getType())
+		public int compareAsc(Object v1, Object v2) throws LeekRunException {
+			int type1 = LeekValueManager.getType(v1);
+			int type2 = LeekValueManager.getType(v2);
+			if (type1 < type2)
 				return -1;
-			else if (v1.getType() > v2.getType())
+			else if (type1 > type2)
 				return 1;
-			if (v1.getType() == AbstractLeekValue.BOOLEAN) {
-				if (v1.getBoolean() == v2.getBoolean())
+			if (type1 == LeekValue.BOOLEAN) {
+				if ((Boolean) v1 == (Boolean) v2)
 					return 0;
-				else if (v1.getBoolean())
+				else if ((Boolean) v1)
 					return 1;
 				else
 					return -1;
-			} else if (v1.getType() == AbstractLeekValue.NUMBER) {
-				if (v1.getDouble(ai) == v2.getDouble(ai))
+			} else if (type1 == LeekValue.NUMBER) {
+				var d = ((Number) v2).doubleValue();
+				if (((Number) v1).doubleValue() == d)
 					return 0;
-				else if (v1.getDouble(ai) < v2.getDouble(ai))
+				else if (((Number) v1).doubleValue() < d)
 					return -1;
 				else
 					return 1;
-			} else if (v1.getType() == AbstractLeekValue.STRING) {
-				return v1.getString(ai).compareTo(v2.getString(ai));
-			} else if (v1.getType() == AbstractLeekValue.ARRAY) {
-				if (v1.getArray().size() == v2.getArray().size())
+			} else if (type1 == LeekValue.STRING) {
+				return ((String) v1).compareTo((String) v2);
+			} else if (type1 == LeekValue.ARRAY) {
+				var a = (ArrayLeekValue) v2;
+				if (((ArrayLeekValue) v1).size() == a.size())
 					return 0;
-				else if (v1.getArray().size() < v2.getArray().size())
+				else if (((ArrayLeekValue) v1).size() < a.size())
 					return -1;
 				else
 					return 1;
-			} else if (v1.getType() == AbstractLeekValue.NULL)
-				return 0;
-			else
+			} else
 				return -1;
 		}
 	}
@@ -177,25 +180,27 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		}
 	}
 
-	private class PhpIterator implements Iterator<AbstractLeekValue> {
+	private class PhpIterator implements Iterator<Box> {
 		private Element e = mHead;
 
 		@Override
 		public boolean hasNext() {
 			return e != null;
 		}
+
 		@Override
-		public AbstractLeekValue next() {
-			AbstractLeekValue v = e.value;
+		public Box next() {
+			var v = e.value;
 			if (e != null)
 				e = e.next;
 			return v;
 		}
+
 		@Override
 		public void remove() {}
 	}
 
-	private class ReversedPhpIterator implements Iterator<AbstractLeekValue> {
+	private class ReversedPhpIterator implements Iterator<Object> {
 		private Element e = mEnd;
 
 		@Override
@@ -203,8 +208,8 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			return e != null;
 		}
 		@Override
-		public AbstractLeekValue next() {
-			AbstractLeekValue v = e.value;
+		public Object next() {
+			var v = e.value.getValue();
 			if (e != null)
 				e = e.prev;
 			return v;
@@ -214,10 +219,11 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	}
 
 	public class Element {
+
 		private Object key;
 		private int hash;
 		private boolean numeric = false;
-		private PhpArrayVariableLeekValue value = null;
+		private Box value = null;
 
 		private Element next = null;
 		private Element prev = null;
@@ -228,29 +234,28 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			return next;
 		}
 
-		public AbstractLeekValue key() {
-			if (key instanceof Integer)
-				return LeekValueManager.getLeekIntValue(((Integer) key).intValue());
-			else if (key instanceof ObjectLeekValue)
-				return (ObjectLeekValue) key;
-			else
-				return new StringLeekValue(key.toString());
+		public Object key() {
+			return key;
 		}
 
 		public Object keyObject() {
 			return key;
 		}
 
-		public AbstractLeekValue value() {
+		public Object value() {
 			return value.getValue();
 		}
 
-		public AbstractLeekValue valueRef() {
+		public Object valueBox() {
 			return value;
 		}
 
-		public void setValue(AI ai, AbstractLeekValue v) throws LeekRunException {
-			value.set(ai, v.getValue());
+		public void setValue(AI ai, Object v) throws LeekRunException {
+			value.set(v);
+		}
+
+		public String toString() {
+			return value.getValue().toString();
 		}
 	}
 
@@ -276,7 +281,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			while (e != null) {
 				if (ai.getVersion() >= 11) {
 					if (level == 1) {
-						set(ai, e.key, LeekOperations.clonePrimitive(ai, e.value.getValue()));
+						set(ai, e.key, e.value.getValue());
 					} else {
 						set(ai, e.key, LeekOperations.clone(ai, e.value.getValue(), level - 1));
 					}
@@ -290,6 +295,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 
 	private void initTable(AI ai, int capacity) throws LeekRunException {
 		int realCapacity = Math.max(START_CAPACITY, capacity);
+		// System.out.println("ops initTable");
 		ai.addOperationsNoCheck(realCapacity / 5);
 		this.capacity = realCapacity;
 		mTable = new Element[realCapacity];
@@ -337,9 +343,14 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 * @return Valeur à la clé donnée
 	 * @throws LeekRunException
 	 */
-	public AbstractLeekValue get(AI ai, Object key) throws LeekRunException {
+	public Object get(AI ai, Object key) throws LeekRunException {
 		Element e = getElement(ai, key);
-		return e == null ? LeekValueManager.NULL : e.value;
+		return e == null ? null : e.value.getValue();
+	}
+
+	public Box getBox(AI ai, Object key) throws LeekRunException {
+		Element e = getElement(ai, key);
+		return e == null ? null : e.value;
 	}
 
 	/**
@@ -362,10 +373,10 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 * @return True si la valeur existe dans le tableau
 	 * @throws LeekRunException
 	 */
-	public boolean contains(AI ai, AbstractLeekValue value) throws LeekRunException {
+	public boolean contains(AI ai, Object value) throws LeekRunException {
 		Element e = mHead;
 		while (e != null) {
-			if (e.value.equals(ai, value))
+			if (ai.eq(e.value.getValue(), value))
 				return true;
 			e = e.next;
 		}
@@ -381,25 +392,22 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 * @return Clé associée à la valeur ou null si la valeur n'existe pas
 	 * @throws LeekRunException
 	 */
-	public AbstractLeekValue search(AI ai, AbstractLeekValue value, int pos) throws LeekRunException {
+	public Object search(AI ai, Object value, int pos) throws LeekRunException {
 		Element e = mHead;
 		int p = 0;
 		while (e != null) {
-			if (p >= pos && e.value.getType() == value.getType() && e.value.equals(ai, value)) {
-				if (e.key instanceof Integer)
-					return LeekValueManager.getLeekIntValue(((Integer) e.key).intValue());
-				else
-					return new StringLeekValue(e.key.toString());
+			if (p >= pos && LeekValueManager.getType(e.value) == LeekValueManager.getType(value) && ai.eq(e.value.getValue(), value)) {
+				return e.key;
 			}
 			e = e.next;
 			p++;
 		}
-		return LeekValueManager.NULL;
+		return null;
 	}
 
-	public AbstractLeekValue removeIndex(AI ai, int index) throws LeekRunException {
+	public Object removeIndex(AI ai, int index) throws LeekRunException {
 		if (index >= mSize)
-			return LeekValueManager.NULL;
+			return null;
 		Element e = mHead;
 		int p = 0;
 		while (e != null) {
@@ -411,7 +419,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			e = e.next;
 			p++;
 		}
-		return LeekValueManager.NULL;
+		return null;
 	}
 
 	/**
@@ -451,6 +459,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		if (mSize == 0) {
 			return;
 		}
+		// System.out.println("sort " + comparator);
 		// création de la liste
 		List<Element> liste = new ArrayList<Element>();
 		Element elem = mHead;
@@ -467,11 +476,11 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 							: ElementComparator.SORT_DESC));
 		} else {
 			if (ai.getVersion() == 10) {
-				Collections.sort(liste, new ElementComparatorV10(ai,
+				Collections.sort(liste, new ElementComparatorV10(
 					(comparator == ASC || comparator == ASC_A) ? ElementComparator.SORT_ASC
 							: ElementComparator.SORT_DESC));
 			} else {
-				Collections.sort(liste, new ElementComparator(ai,
+				Collections.sort(liste, new ElementComparator(
 				(comparator == ASC || comparator == ASC_A) ? ElementComparator.SORT_ASC
 						: ElementComparator.SORT_DESC));
 			}
@@ -595,10 +604,10 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		mEnd = prev;
 	}
 
-	public void removeObject(AI ai, AbstractLeekValue value) throws LeekRunException {
+	public void removeObject(AI ai, Object value) throws LeekRunException {
 		Element e = mHead;
 		while (e != null) {
-			if (e.value.getType() == value.getType() && e.value.equals(ai, value)) {
+			if (LeekValueManager.getType(e.value) == LeekValueManager.getType(value) && ai.eq(e.value.getValue(), value)) {
 				// On a notre élément à supprimer
 				// On l'enleve de la HashMap
 				removeFromHashmap(ai, e);
@@ -626,7 +635,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 *            Element à ajouter
 	 * @throws LeekRunException
 	 */
-	public void push(AI ai, AbstractLeekValue value) throws LeekRunException {
+	public void push(AI ai, Object value) throws LeekRunException {
 		if (mSize >= capacity) {
 			growCapacity(ai);
 		}
@@ -643,7 +652,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 *            Element à ajouter
 	 * @throws LeekRunException
 	 */
-	public void unshift(AI ai, AbstractLeekValue value) throws LeekRunException {
+	public void unshift(AI ai, Object value) throws LeekRunException {
 		if (mSize >= capacity) {
 			growCapacity(ai);
 		}
@@ -663,7 +672,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	 *            Valeur
 	 * @throws LeekRunException
 	 */
-	public void set(AI ai, Object key, AbstractLeekValue value) throws LeekRunException {
+	public void set(AI ai, Object key, Object value) throws LeekRunException {
 
 		Element e = getElement(ai, key);
 		// Si l'élément n'existe pas on le crée
@@ -675,36 +684,36 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			e = createElement(ai, key, value);
 			pushElement(e);
 		} else {
-			e.value.set(ai, value);
+			e.value.set(value);
 		}
 	}
 
-	public AbstractLeekValue getOrCreate(AI ai, Object key) throws LeekRunException {
+	public Box getOrCreate(AI ai, Object key) throws LeekRunException {
 		Element e = getElement(ai, key);
 		if (e == null) {
 			if (mSize >= capacity) {
 				growCapacity(ai);
-				mSize++;
 			}
-			e = createElement(ai, key, LeekValueManager.NULL);
+			mSize++;
+			e = createElement(ai, key, null);
 			pushElement(e);
 		}
 		return e.value;
 	}
 
-	public void set(int key, AbstractLeekValue value) throws LeekRunException {
+	public void set(int key, Object value) throws LeekRunException {
 		set(Integer.valueOf(key), value);
 	}
 
-	public AbstractLeekValue end() {
-		return mEnd == null ? LeekValueManager.NULL : mEnd.value;
+	public Box end() {
+		return mEnd == null ? null : mEnd.value;
 	}
 
-	public AbstractLeekValue start() {
-		return mHead == null ? LeekValueManager.NULL : mHead.value;
+	public Box start() {
+		return mHead == null ? null : mHead.value;
 	}
 
-	public void insert(AI ai, int position, AbstractLeekValue value) throws LeekRunException {
+	public void insert(AI ai, int position, Object value) throws LeekRunException {
 		if (position < 0) {
 			return;
 		} else if (position >= mSize) {
@@ -784,16 +793,13 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		}
 	}
 
-	private Element createElement(AI ai, Object key, AbstractLeekValue value) throws LeekRunException {
+	private Element createElement(AI ai, Object key, Object value) throws LeekRunException {
 		// On crée l'élément
 		Element e = new Element();
 		e.hash = key.hashCode();
 		e.key = key;
 
-		// On ajoute la taille de la clé
-		int keySize = 1;
-
-		e.value = new PhpArrayVariableLeekValue(this, ai, value, keySize);
+		e.value = new Box(ai, value);
 		if (key instanceof Integer) {
 			// On met à jour l'index suivant
 			int index = ((Integer) key).intValue();
@@ -805,6 +811,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		// On l'ajoute dans la hashmap
 		addToHashMap(ai, e);
 
+		// System.out.println("ops createElement");
 		int operations = ArrayLeekValue.ARRAY_CELL_CREATE_OPERATIONS + (int) Math.sqrt(mSize) / 3;
 		ai.addOperationsNoCheck(operations);
 
@@ -858,6 +865,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 
 	private Element getElement(AI ai, Object key) throws LeekRunException {
 
+		// System.out.println("ops getElement");
 		int operations = ArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS;
 		ai.addOperationsNoCheck(operations);
 
@@ -865,7 +873,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			return null; // empty array
 		}
 
-		int hash = key.hashCode();
+		int hash = key == null ? 0 : key.hashCode();
 		int index = getIndex(hash);
 
 		Element f = mTable[index];
@@ -885,7 +893,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 
 	public String toString(AI ai, Set<Object> visited) throws LeekRunException {
 
-		ai.addOperations(1 + mSize * 2);
+		ai.ops(1 + mSize * 2);
 
 		StringBuilder sb = new StringBuilder();
 		// On va regarder si le tableau est dans l'ordre
@@ -909,7 +917,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 				sb.append(", ");
 			if (!isInOrder) {
 				if (e.key instanceof ObjectLeekValue) {
-					sb.append(((ObjectLeekValue) e.key).getString(ai));
+					sb.append(LeekValueManager.getString(ai, (ObjectLeekValue) e.key));
 				} else {
 					sb.append(e.key);
 				}
@@ -918,10 +926,10 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 			if (visited.contains(e.value.getValue())) {
 				sb.append("<...>");
 			} else {
-				if (!e.value.getValue().isPrimitive()) {
+				if (!ai.isPrimitive(e.value.getValue())) {
 					visited.add(e.value.getValue());
 				}
-				sb.append(e.value.getString(ai, visited));
+				sb.append(ai.getString(e.value, visited));
 			}
 			e = e.next;
 		}
@@ -944,17 +952,17 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 	}
 
 	@Override
-	public Iterator<AbstractLeekValue> iterator() {
+	public Iterator<Box> iterator() {
 		return new PhpIterator();
 	}
 
-	public Iterator<AbstractLeekValue> reversedIterator() {
+	public Iterator<Object> reversedIterator() {
 		return new ReversedPhpIterator();
 	}
 
 	public boolean equals(AI ai, PhpArray array) throws LeekRunException {
 
-		ai.addOperations(1);
+		ai.ops(1);
 
 		// On commence par vérifier la taille
 		if (mSize != array.mSize)
@@ -962,7 +970,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		if (mSize == 0)
 			return true;
 
-		ai.addOperations(mSize);
+		ai.ops(mSize);
 
 		Element e1 = mHead;
 		Element e2 = array.mHead;
@@ -970,7 +978,7 @@ public class PhpArray implements Iterable<AbstractLeekValue> {
 		while (e1 != null) {
 			if (!e1.key.equals(e2.key))
 				return false;
-			if (!e1.value.getValue().equals(ai, e2.value.getValue()))
+			if (!ai.eq(e1.value.getValue(), e2.value.getValue()))
 				return false;
 			e1 = e1.next;
 			e2 = e2.next;

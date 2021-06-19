@@ -95,16 +95,12 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 
-		for (int i = 0; i < mParameters.size(); i++) {
-			writer.addCode("final VariableLeekValue user_" + mParameters.get(i) + " = ");
-			writer.addLine("new VariableLeekValue(mUAI, values[" + i + "].getValue());");
-		}
 		writer.addLine("", mLine, mAI);
 
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0) {
 			if (isStatic) {
-				writer.addLine("return LeekValueManager.NULL;");
+				writer.addLine("return null;");
 			} else {
 				writer.addLine("return u_this;");
 			}

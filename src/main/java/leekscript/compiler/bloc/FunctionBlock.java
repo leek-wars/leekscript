@@ -89,25 +89,40 @@ public class FunctionBlock extends AbstractLeekBlock {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("private AbstractLeekValue user_function_").append(token.getWord()).append("(");
+		sb.append("private Object f_").append(token.getWord()).append("(");
 		for (int i = 0; i < mParameters.size(); i++) {
 			if (i != 0)
 				sb.append(", ");
-			sb.append("AbstractLeekValue param_").append(mParameters.get(i));
+			sb.append("Object p_").append(mParameters.get(i));
 		}
 		sb.append(") throws LeekRunException {");
 		for (int i = 0; i < mParameters.size(); i++) {
-			sb.append("final VariableLeekValue user_").append(mParameters.get(i)).append(" = ");
-			if (mReferences.get(i)) {
-				sb.append("(param_").append(mParameters.get(i)).append(" instanceof VariableLeekValue)?(VariableLeekValue)param_").append(mParameters.get(i)).append(":");
+			var parameter = mParameters.get(i);
+			var declaration = mParameterDeclarations.get(i);
+			if (declaration.isCaptured()) {
+				sb.append("final var u_").append(parameter).append(" = new Wrapper(");
+				if (mReferences.get(i)) {
+					sb.append("(p_").append(parameter).append(" instanceof Box) ? (Box) p_").append(parameter).append(" : ");
+				}
+				sb.append("new Box(" + writer.getAIThis() + ", ");
+				sb.append("copy(p_").append(parameter).append(")));");
+			} else {
+				sb.append("var u_").append(parameter).append(" = ");
+				if (mReferences.get(i)) {
+					sb.append("(p_").append(parameter).append(" instanceof Box) ? (Box) p_").append(parameter).append(" : ");
+				}
+				if (mainblock.getCompiler().getCurrentAI().getVersion() <= 10) {
+					sb.append("new Box(" + writer.getAIThis() + ", copy(p_").append(parameter).append("));");
+				} else {
+					sb.append("p_").append(parameter).append("; ops(1); ");
+				}
 			}
-			sb.append("new VariableLeekValue(this, param_").append(mParameters.get(i)).append(".getValue());");
 		}
 		writer.addLine(sb.toString(), mLine, mAI);
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0)
-			writer.addLine("return LeekValueManager.NULL;");
+			writer.addLine("return null;");
 		writer.addLine("}");
 	}
 
@@ -118,7 +133,6 @@ public class FunctionBlock extends AbstractLeekBlock {
 	public void declare(WordCompiler compiler) {
 		// On ajoute la fonction
 		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.FUNCTION));
-		// System.out.println("Declare function " + token.getWord());
 	}
 
 	public String toString() {

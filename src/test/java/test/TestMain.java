@@ -21,6 +21,8 @@ public class TestMain {
 
         System.out.println("Start tests...");
 
+		TestCommon.loadReferenceOperations();
+
 		// new TestCommon().code_v11("return 5 + 5;").equals("10");
 		new TestGeneral().run();
 		new TestNumber().run();
@@ -39,8 +41,8 @@ public class TestMain {
 		new TestFiles().run();
 		new TestEuler().run();
 
+		TestCommon.ouputOperationsFile();
 		Assert.assertTrue(TestCommon.summary());
 
-		TestCommon.ouputOperationsFile();
     }
 }

@@ -30,7 +30,7 @@ public class LeekNull extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("LeekValueManager.NULL");
+		writer.addCode("null");
 	}
 
 	@Override

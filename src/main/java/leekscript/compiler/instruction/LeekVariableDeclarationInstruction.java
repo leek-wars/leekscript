@@ -10,7 +10,9 @@ import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekAnonymousFunction;
+import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.expression.Operators;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
 import leekscript.common.Type;
@@ -61,16 +63,82 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if (!captured || !(mValue instanceof LeekAnonymousFunction)) {
-			writer.addCode("final VariableLeekValue user_" + token.getWord() + " = new VariableLeekValue(mUAI, ");
-			if (mValue != null) mValue.writeJavaCode(mainblock, writer);
-			else writer.addCode("LeekValueManager.NULL");
-			writer.addLine(");", mLine, mAI);
+		if (this.captured) {
+			if (mValue instanceof LeekAnonymousFunction) {
+				writer.addCode("final Wrapper u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", null)); u_" + token.getWord() + ".set(");
+				mValue.writeJavaCode(mainblock, writer);
+				writer.addLine(");", mLine, mAI);
+			} else if (mValue instanceof LeekExpression && ((LeekExpression) mValue).getOperator() == Operators.REFERENCE) {
+				var e = ((LeekExpression) mValue).getExpression2();
+				if (e.isLeftValue()) {
+					writer.addCode("final Wrapper u_" + token.getWord() + " = new Wrapper(");
+					e.compileL(mainblock, writer);
+					writer.addLine(", " + e.getOperations() + ")");
+				} else {
+					writer.addCode("final var u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", ");
+					e.writeJavaCode(mainblock, writer);
+					writer.addLine("), " + e.getOperations() + ")");
+				}
+				writer.addLine(";", mLine, mAI);
+			} else {
+				writer.addCode("final var u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", ");
+				if (mValue != null) mValue.writeJavaCode(mainblock, writer);
+				else writer.addCode("null");
+				writer.addLine(")");
+				if (mValue != null && mValue.getOperations() > 0) {
+					writer.addCode(", " + mValue.getOperations());
+				}
+				writer.addLine(");", mLine, mAI);
+			}
 		} else {
-			writer.addCode("final VariableLeekValue user_" + token.getWord() + " = new VariableLeekValue(mUAI); user_" + token.getWord() + ".init(mUAI, ");
-			if (mValue != null) mValue.writeJavaCode(mainblock, writer);
-			else writer.addCode("LeekValueManager.NULL");
-			writer.addLine(");", mLine, mAI);
+			if (mainblock.getWordCompiler().getVersion() <= 10) {
+				if (mValue instanceof LeekExpression && ((LeekExpression) mValue).getOperator() == Operators.REFERENCE) {
+					var e = ((LeekExpression) mValue).getExpression2();
+					if (e.isLeftValue()) {
+						// writer.addCode("Box u_" + token.getWord() + " = ");
+						// e.compileL(mainblock, writer);
+						writer.addCode("var u_" + token.getWord() + " = new Box(" + writer.getAIThis() + ", ");
+						// e.compileL(mainblock, writer);
+						e.writeJavaCode(mainblock, writer);
+						if (mValue.getOperations() > 0) {
+							writer.addCode(", " + mValue.getOperations());
+						}
+						writer.addLine(")");
+					} else {
+						writer.addCode("var u_" + token.getWord() + " = new Box(" + writer.getAIThis() + ", ");
+						// e.writeJavaCode(mainblock, writer);
+						mValue.compileL(mainblock, writer);
+						if (mValue.getOperations() > 0) {
+							writer.addCode(", " + mValue.getOperations());
+						}
+						writer.addLine(")");
+					}
+					writer.addLine(";", mLine, mAI);
+				} else {
+					writer.addCode("var u_" + token.getWord() + " = new Box(" + writer.getAIThis() + ", ");
+					if (mValue != null) {
+						if (mValue.isLeftValue()) {
+							writer.compileClone(mainblock, mValue);
+					 	} else {
+							mValue.compileL(mainblock, writer);
+							// mValue.writeJavaCode(mainblock, writer);
+						}
+						if (mValue.getOperations() > 0) {
+							writer.addCode(", " + mValue.getOperations());
+						}
+					} else {
+						writer.addCode("null");
+					}
+					writer.addLine(");", mLine, mAI);
+				}
+			} else {
+				writer.addCode("Object u_" + token.getWord() + " = ");
+				writer.addCode("ops(");
+				if (mValue != null) mValue.writeJavaCode(mainblock, writer);
+				else writer.addCode("null");
+				writer.addCode(", " + (1 + (mValue == null ? 0 : mValue.getOperations())) + ")");
+				writer.addLine(";", mLine, mAI);
+			}
 		}
 	}
 

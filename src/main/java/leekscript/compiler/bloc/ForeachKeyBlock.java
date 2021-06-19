@@ -60,46 +60,96 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		//On prend un nombre unique pour les noms de variables temporaires
+		// On prend un nombre unique pour les noms de variables temporaires
 		int block_count = getCount();
 		String var = "i" + block_count;
 		String ar = "ar" + block_count;
 
-		String key_iterator = mainblock.hasGlobal(mKeyIterator.getWord()) ? ("globale_" + mKeyIterator) : ("user_" + mKeyIterator);
-		String val_iterator = mainblock.hasGlobal(mIterator.getWord()) ? ("globale_" + mIterator) : ("user_" + mIterator);
-		writer.addCode("final AbstractLeekValue " + ar + " = ");
-		mArray.writeJavaCode(mainblock, writer);
-		writer.addCode(".getValue();");
-		StringBuilder sb = new StringBuilder();
-		sb.append("if(").append(ar).append(".isArrayForIteration(mUAI)){");
-		//Clé
-		if(mIsKeyDeclaration) sb.append("final VariableLeekValue ").append(key_iterator).append(" = new VariableLeekValue(mUAI, LeekValueManager.NULL);");
-		else sb.append(key_iterator).append(".set(mUAI, LeekValueManager.NULL);");
-		//Valeur
-		if(mIsDeclaration) sb.append("final VariableLeekValue ").append(val_iterator).append(" = new VariableLeekValue(mUAI, LeekValueManager.NULL);");
-		else sb.append(val_iterator).append(".set(mUAI, LeekValueManager.NULL);");
-		//On fait le parcours
-		//Déclaration de la variable
-		sb.append("ArrayLeekValue.ArrayIterator ").append(var).append("=").append(ar).append(".getArray().getArrayIterator();");
-		sb.append("while(!").append(var).append(".ended()){ mUAI.addOperations(1); ");
-		//Maj des variables
-		if (mKeyReference || mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
-			sb.append(key_iterator).append(".setRef(mUAI, ").append(var).append(".getKeyRef());");
+		String key_iterator = mainblock.hasGlobal(mKeyIterator.getWord()) ? ("g_" + mKeyIterator) : ("u_" + mKeyIterator);
+		String val_iterator = mainblock.hasGlobal(mIterator.getWord()) ? ("g_" + mIterator) : ("u_" + mIterator);
+
+		// Container
+		writer.addCode("final var " + ar + " = ");
+		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+			mArray.writeJavaCode(mainblock, writer);
 		} else {
-			sb.append(key_iterator).append(".set(mUAI, ").append(var).append(".getKeyRef());");
+			writer.compileLoad(mainblock, mArray);
 		}
-		if (mValueReference || mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
-			sb.append(val_iterator).append(".setRef(mUAI, ").append(var).append(".getValueRef());");
+		writer.addCode(";");
+
+		StringBuilder sb = new StringBuilder();
+		sb.append("if (isIterable(").append(ar).append(")) {");
+		// Clé
+		if (mIsKeyDeclaration) {
+			if (iteratorKeyDeclaration.isCaptured()) {
+				sb.append("final Wrapper " + key_iterator + " = new Wrapper(new Box(" + writer.getAIThis() + ", null));");
+			} else if (mainblock.getCompiler().getCurrentAI().getVersion() <= 10) {
+				sb.append("var " + key_iterator + " = new Box(" + writer.getAIThis() + ", null);");
+			} else {
+				sb.append("Object ").append(key_iterator).append(" = null; ops(1); ");
+			}
 		} else {
-			sb.append(val_iterator).append(".set(mUAI, ").append(var).append(".getValueRef());");
+			sb.append("ops(1);");
+		}
+		// Valeur
+		if (mIsDeclaration) {
+			if (iteratorDeclaration.isCaptured()) {
+				sb.append("final Wrapper " + val_iterator + " = new Wrapper(new Box(" + writer.getAIThis() + ", null));");
+			} else if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+				sb.append("Object " + val_iterator + " = null; ops(1);");
+			} else if (mainblock.getCompiler().getCurrentAI().getVersion() <= 10 || (iteratorDeclaration != null && iteratorDeclaration.isCaptured())) {
+				sb.append("var " + val_iterator + " = new Box(" + writer.getAIThis() + ", null);");
+			} else {
+				sb.append("Object ").append(val_iterator).append(" = null; ops(1);");
+			}
+		} else {
+			sb.append("ops(1);");
+		}
+		// On fait le parcours
+		// Déclaration de la variable
+		sb.append("var ").append(var).append(" = ((ArrayLeekValue) ").append(ar).append(").getArrayIterator(); ");
+		sb.append("while (!").append(var).append(".ended()) { ops(1); ");
+		// Maj de la clé
+		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+			if (mIsKeyDeclaration && iteratorKeyDeclaration.isCaptured()) {
+				sb.append(key_iterator).append(".set(").append(var).append(".getKeyRef());");
+			} else {
+				sb.append(key_iterator).append(" = ").append(var).append(".getKeyRef();");
+			}
+		} else {
+			if (mIsKeyDeclaration && iteratorKeyDeclaration.isCaptured()) {
+				sb.append(key_iterator).append(".set(").append(var).append(".getKeyRef()); ops(1); ");
+			} else if (mKeyReference) {
+				sb.append(key_iterator).append(".set(").append(var).append(".getKeyRef());");
+			} else {
+				sb.append(key_iterator).append(".set(").append(var).append(".getKeyRef()); ops(1); ");
+			}
+		}
+		// Maj de la valeur
+		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+			if (mValueReference) {
+				sb.append(val_iterator).append(" = ").append(var).append(".value();");
+			} else if (mIsDeclaration && iteratorDeclaration.isCaptured()) {
+				sb.append(val_iterator).append(".set(").append(var).append(".value());");
+			} else {
+				sb.append(val_iterator).append(" = ").append(var).append(".value();");
+			}
+		} else {
+			if (mValueReference) {
+				sb.append(val_iterator).append(".set(").append(var).append(".value());");
+			} else if (mIsDeclaration && iteratorDeclaration.isCaptured()) {
+				sb.append(val_iterator).append(".set(").append(var).append(".value()); ops(1);");
+			} else {
+				sb.append(val_iterator).append(".set(").append(var).append(".value()); ops(1);");
+			}
 		}
 		sb.append(var).append(".next();");
 
 		writer.addLine(sb.toString(), mLine, mAI);
-		//Instructions
+		// Instructions
 		super.writeJavaCode(mainblock, writer);
 
-		//Fin
+		// Fin
 		writer.addLine("}}");
 	}
 

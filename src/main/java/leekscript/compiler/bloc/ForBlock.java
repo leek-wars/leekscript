@@ -5,6 +5,7 @@ import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
@@ -53,12 +54,21 @@ public class ForBlock extends AbstractLeekBlock {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 
-		writer.addLine("for(", mLine, mAI);
+		writer.addCode("for (");
 		mInitialisation.writeJavaCode(mainblock, writer);
-		mCondition.writeJavaCode(mainblock, writer);
-		writer.addCode(".getBoolean();");
+
+		writer.addCode("ops(");
+		// Prevent unreachable code error
+		if (mCondition instanceof LeekBoolean) {
+			writer.addCode("bool(");
+			writer.getBoolean(mainblock, mCondition);
+			writer.addCode(")");
+		} else {
+			writer.getBoolean(mainblock, mCondition);
+		}
+		writer.addCode(", " + mCondition.getOperations() + "); ops(");
 		mIncrementation.writeJavaCode(mainblock, writer);
-		writer.addLine("){", mLine, mAI);
+		writer.addLine(", " + mIncrementation.getOperations() + ")) {", mLine, mAI);
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
 		writer.addLine("}");

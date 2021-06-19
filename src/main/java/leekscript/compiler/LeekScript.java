@@ -116,8 +116,8 @@ public class LeekScript {
 	public static String runFile(String filename) throws Exception {
 		AI ai = LeekScript.compileFile(filename, "AI", true);
 		var v = ai.runIA();
-		System.out.println(v.getString(ai));
-		return v.getString(ai);
+		System.out.println(ai.string(v));
+		return ai.string(v);
 	}
 
 	public static void setResolver(Resolver<?> resolver) {

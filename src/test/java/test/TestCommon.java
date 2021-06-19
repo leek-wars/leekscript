@@ -1,11 +1,15 @@
 package test;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -29,6 +33,8 @@ public class TestCommon {
 	private static long compile_time = 0;
 	private static long load_time = 0;
 	private static long execution_time = 0;
+	private static ArrayList<Long> operationsReference = new ArrayList<>();
+	private static int operationsReferenceIndex = 0;
 	private static ArrayList<Long> operations = new ArrayList<>();
 
 	private static List<String> failedTests = new ArrayList<String>();
@@ -116,10 +122,10 @@ public class TestCommon {
 				AI ai = is_file ? LeekScript.compileFile(code, "AI", version) : LeekScript.compileSnippet(code, "AI", version);
 				aiID = ai.getId();
 
-				// compile_time = ai.getCompileTime() / 1000000;
-				// TestCommon.analyze_time += ai.getAnalyzeTime() / 1000000;
-				// TestCommon.compile_time += ai.getCompileTime() / 1000000;
-				// TestCommon.load_time += ai.getLoadTime() / 1000000;
+				compile_time = ai.getCompileTime() / 1000000;
+				TestCommon.analyze_time += ai.getAnalyzeTime() / 1000000;
+				TestCommon.compile_time += ai.getCompileTime() / 1000000;
+				TestCommon.load_time += ai.getLoadTime() / 1000000;
 
 				ai.maxOperations = Integer.MAX_VALUE;
 
@@ -128,9 +134,9 @@ public class TestCommon {
 				long exec_time = (System.nanoTime() - t) / 1000;
 				TestCommon.execution_time += exec_time / 1000;
 
-				ops = ai.getOperations();
+				ops = ai.operations();
 
-				var vs = v.getString(ai);
+				var vs = ai.getString(ai, new HashSet<>());
 				result = new Result(vs, Error.NONE, (int) ai.getOperations(), exec_time);
 
 			} catch (LeekCompilerException e) {
@@ -143,6 +149,7 @@ public class TestCommon {
 			}
 
 			operations.add(ops);
+			long referenceOperations = operationsReference.get(operationsReferenceIndex++);
 
 			if (checker.check(result)) {
 				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "] " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops" + END_COLOR);
@@ -248,6 +255,21 @@ public class TestCommon {
 			myWriter.close();
 		} catch (IOException e) {
 			System.out.println("An error occurred.");
+			e.printStackTrace();
+		}
+	}
+	public static void loadReferenceOperations() {
+		BufferedReader reader;
+		try {
+			reader = new BufferedReader(new FileReader("opérations_v10.txt"));
+			String line = reader.readLine();
+			while (line != null) {
+				operationsReference.add(Long.parseLong(line));
+				line = reader.readLine();
+			}
+			System.out.println(operationsReference.size() + " test operations references loaded.");
+			reader.close();
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}

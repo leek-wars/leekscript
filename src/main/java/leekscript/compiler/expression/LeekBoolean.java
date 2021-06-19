@@ -30,7 +30,7 @@ public class LeekBoolean extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("LeekValueManager." + (mValue ? "TRUE" : "FALSE"));
+		writer.addCode(mValue ? "true" : "false");
 	}
 
 	@Override

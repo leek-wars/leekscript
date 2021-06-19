@@ -1,8 +1,8 @@
 package leekscript.runner;
 
-import leekscript.runner.values.AbstractLeekValue;
+import leekscript.runner.values.ObjectLeekValue;
 
 public interface LeekAnonymousFunction {
 
-	public AbstractLeekValue run(AI ai, AbstractLeekValue thiz, AbstractLeekValue... values) throws LeekRunException;
+	public Object run(ObjectLeekValue thiz, Object... values) throws LeekRunException;
 }

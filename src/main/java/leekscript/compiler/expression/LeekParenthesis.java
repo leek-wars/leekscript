@@ -39,7 +39,9 @@ public class LeekParenthesis extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+		writer.addCode("(");
 		mExpression.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
 	}
 
 	@Override

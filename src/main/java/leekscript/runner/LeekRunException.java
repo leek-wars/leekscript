@@ -13,6 +13,7 @@ public class LeekRunException extends Exception {
 	public final static int INVALID_OPERATOR = 5;
 	public final static int INVALID_LEVEL = 6;
 	public final static int OUT_OF_MEMORY = 7;
+	public final static int UNKNOWN_FIELD = 8;
 
 	public LeekRunException(int error) {
 		mError = error;

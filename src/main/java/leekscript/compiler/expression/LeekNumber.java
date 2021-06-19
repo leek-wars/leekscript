@@ -49,10 +49,10 @@ public class LeekNumber extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if (type == Type.REAL) {
-			writer.addCode("new DoubleLeekValue(" + mValue + ")");
+		if (type == Type.INT) {
+			writer.addCode(String.valueOf((int) mValue));
 		} else {
-			writer.addCode("LeekValueManager.getLeekIntValue(" + ((int) mValue) + ")");
+			writer.addCode(String.valueOf(mValue));
 		}
 	}
 

@@ -5,6 +5,8 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.LeekExpression;
+import leekscript.compiler.expression.Operators;
 
 public class LeekReturnInstruction implements LeekInstruction {
 
@@ -26,10 +28,22 @@ public class LeekReturnInstruction implements LeekInstruction {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		writer.addCode("return ");
-		if (mExpression == null)
-			writer.addCode("LeekValueManager.NULL;");
-		else {
-			mExpression.writeJavaCode(mainblock, writer);
+		if (mExpression == null) {
+			writer.addCode("null;");
+		} else {
+			if (mExpression.getOperations() > 0) writer.addCode("ops(");
+			var finalExpression = mExpression.trim();
+			boolean isRef = finalExpression instanceof LeekExpression && ((LeekExpression) finalExpression).getOperator() == Operators.REFERENCE;
+			if (mainblock.getWordCompiler().getVersion() == 10) {
+				if (isRef || !finalExpression.isLeftValue()) {
+					finalExpression.writeJavaCode(mainblock, writer);
+				} else {
+					finalExpression.compileL(mainblock, writer);
+				}
+			} else {
+				finalExpression.compileL(mainblock, writer);
+			}
+			if (finalExpression.getOperations() > 0) writer.addCode(", " + finalExpression.getOperations() + ")");
 			writer.addLine(";", mLine, mAI);
 		}
 	}

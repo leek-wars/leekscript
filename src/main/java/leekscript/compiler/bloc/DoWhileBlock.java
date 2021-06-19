@@ -4,6 +4,7 @@ import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.LeekBoolean;
 
 public class DoWhileBlock extends AbstractLeekBlock {
 
@@ -28,12 +29,20 @@ public class DoWhileBlock extends AbstractLeekBlock {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addLine("do{");
+		writer.addLine("do {");
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
-		writer.addCode("}while(");
-		mCondition.writeJavaCode(mainblock, writer);
-		writer.addLine(".getBoolean());", mLine, mAI);
+		writer.addCode("} while (ops(");
+		// Prevent unreachable code error
+		if (mCondition instanceof LeekBoolean) {
+			writer.addCode("bool(");
+			writer.getBoolean(mainblock, mCondition);
+			writer.addCode(")");
+		} else {
+			writer.getBoolean(mainblock, mCondition);
+		}
+		writer.addCode(", " + mCondition.getOperations() + ")");
+		writer.addLine(");", mLine, mAI);
 	}
 
 	@Override
