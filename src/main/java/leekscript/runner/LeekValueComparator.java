@@ -34,6 +34,9 @@ public class LeekValueComparator {
 
 		public int compareAsc(AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 			if (LeekFunctions.isType(v1, LeekFunctions.BOOLEAN)) {
+				if (LeekFunctions.isType(v2, LeekFunctions.NULL)) {
+					return 1;
+				}
 				if (LeekFunctions.isType(v2, LeekFunctions.BOOLEAN)) {
 					if (v1.getBoolean() == v2.getBoolean())
 						return 0;
@@ -51,14 +54,14 @@ public class LeekValueComparator {
 						return -1;
 					else
 						return 1;
-				} else if (LeekFunctions.isType(v2, LeekFunctions.BOOLEAN))
+				} else if (LeekFunctions.isType(v2, LeekFunctions.BOOLEAN) || LeekFunctions.isType(v2, LeekFunctions.NULL))
 					return 1;
 				else
 					return -1;
 			} else if (LeekFunctions.isType(v1, LeekFunctions.STRING)) {
 				if (LeekFunctions.isType(v2, LeekFunctions.STRING)) {
 					return v1.getString(ai).compareTo(v2.getString(ai));
-				} else if (LeekFunctions.isType(v2, LeekFunctions.NUMBER) || LeekFunctions.isType(v2, LeekFunctions.BOOLEAN))
+				} else if (LeekFunctions.isType(v2, LeekFunctions.NUMBER) || LeekFunctions.isType(v2, LeekFunctions.BOOLEAN) || LeekFunctions.isType(v2, LeekFunctions.NULL))
 					return 1;
 				else
 					return -1;
