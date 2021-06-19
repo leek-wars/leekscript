@@ -24,6 +24,8 @@ import leekscript.compiler.resolver.FileSystemContext;
 import leekscript.compiler.resolver.FileSystemResolver;
 import leekscript.compiler.resolver.Resolver;
 import leekscript.compiler.resolver.ResolverContext;
+import leekscript.compiler.resolver.ResourceContext;
+import leekscript.compiler.resolver.ResourceResolver;
 import leekscript.runner.AI;
 
 public class LeekScript {
@@ -31,7 +33,8 @@ public class LeekScript {
 	private final static String IA_PATH = "ai/";
 	private static long id = 1;
 
-	private static Resolver<FileSystemContext> defaultResolver = new FileSystemResolver();
+	private static Resolver<ResourceContext> defaultResolver = new ResourceResolver();
+	private static Resolver<FileSystemContext> fileSystemResolver = new FileSystemResolver();
 	private static Resolver<?> customResolver = null;
 	private static String classpath;
 	private static List<String> arguments = new ArrayList<>();
@@ -98,6 +101,12 @@ public class LeekScript {
 		long ai_id = id++;
 		AIFile<?> ai = new AIFile<FileSystemContext>("<snippet " + ai_id + ">", snippet, System.currentTimeMillis(), version, null, (int) ai_id);
 		return compile(ai, AIClass, false);
+	}
+
+	public static String mergeFile(String filepath, ResolverContext context) throws LeekScriptException, LeekCompilerException, IOException {
+		AIFile<?> ai = getResolver().resolve(filepath, context);
+
+		return new IACompiler().merge(ai);
 	}
 
 	public static Object runScript(String script, boolean nocache) throws Exception {
@@ -238,6 +247,10 @@ public class LeekScript {
 			}
 		}
 		throw new LeekScriptException(LeekScriptException.CANT_COMPILE, error);
+	}
+
+	public static Resolver<?> getFileSystemResolver() {
+		return fileSystemResolver;
 	}
 
 

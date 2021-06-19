@@ -10,29 +10,29 @@ import java.nio.file.Paths;
 import leekscript.compiler.AIFile;
 
 
-public class FileSystemResolver implements Resolver<FileSystemContext> {
+public class ResourceResolver implements Resolver<ResourceContext> {
 
 	@Override
-	public AIFile<FileSystemContext> resolve(String path, ResolverContext basecontext) throws FileNotFoundException {
+	public AIFile<ResourceContext> resolve(String path, ResolverContext basecontext) throws FileNotFoundException {
 
-		FileSystemContext context = (FileSystemContext) basecontext;
+		ResourceContext context = (ResourceContext) basecontext;
 		if (context == null) {
-			context = new FileSystemContext(Paths.get(".").toFile());
+			context = new ResourceContext(Paths.get(".").toFile());
 		}
 		try {
 			Path resolvedPath = context.getFolder().toPath().resolve(path).normalize();
 
-			var is = new FileInputStream(resolvedPath.toFile());
+			var is = getClass().getClassLoader().getResourceAsStream(resolvedPath.toString());
 			String code = new String(is.readAllBytes(), StandardCharsets.UTF_8);
 
 			Path parent = resolvedPath.getParent();
 			if (parent == null) parent = Paths.get(".");
 
-			FileSystemContext newContext = new FileSystemContext(parent.toFile());
+			var newContext = new ResourceContext(parent.toFile());
 
 			long timestamp = resolvedPath.toFile().lastModified();
 
-			return new AIFile<FileSystemContext>(path, code, timestamp, 11, newContext, resolvedPath.toString().hashCode() & 0xfffffff);
+			return new AIFile<ResourceContext>(path, code, timestamp, 11, newContext, resolvedPath.toString().hashCode() & 0xfffffff);
 
 		} catch (Exception e) {
 			throw new FileNotFoundException();
