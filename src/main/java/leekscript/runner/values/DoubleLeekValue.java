@@ -2,9 +2,12 @@ package leekscript.runner.values;
 
 import java.text.DecimalFormat;
 
+import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
+import leekscript.common.Error;
+import leekscript.runner.LeekOperations;
 
 public class DoubleLeekValue extends AbstractLeekValue {
 
@@ -87,9 +90,7 @@ public class DoubleLeekValue extends AbstractLeekValue {
 
 	@Override
 	public AbstractLeekValue add(AI ai, AbstractLeekValue val) throws LeekRunException {
-		ai.addOperations(ADD_COST);
-		mValue += val.getDouble(ai);
-		return this;
+		return LeekOperations.add(ai, this, val);
 	}
 
 	@Override
@@ -109,7 +110,12 @@ public class DoubleLeekValue extends AbstractLeekValue {
 	@Override
 	public AbstractLeekValue divide(AI ai, AbstractLeekValue val) throws LeekRunException {
 		ai.addOperations(DIV_COST);
-		mValue /= val.getDouble(ai);
+		double y_real = val.getDouble(ai);
+		if (ai.getVersion() == 10 && y_real == 0) {
+			ai.addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
+			return LeekValueManager.NULL;
+		}
+		mValue /= y_real;
 		return this;
 	}
 

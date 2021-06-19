@@ -20,19 +20,42 @@ public class LeekOperations {
 		v1 = v1.getValue();
 		v2 = v2.getValue();
 
-		if (v1.isNumeric() && v2.isNumeric()) {
-			ai.addOperations(1);
-			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
-				return new DoubleLeekValue(v1.getDouble(ai) + v2.getDouble(ai));
-			} else {
-				return LeekValueManager.getLeekIntValue(v1.getInt(ai) + v2.getInt(ai));
-			}
+		if (v1 instanceof StringLeekValue || v2 instanceof StringLeekValue) {
+			String v1_string = v1.getString(ai);
+			String v2_string = v2.getString(ai);
+			ai.addOperations(1 + v1_string.length() + v2_string.length());
+			return new StringLeekValue(v1_string + v2_string);
 		}
 
-		// Concatenate arrays
-		if (v1 instanceof ArrayLeekValue && v2 instanceof ArrayLeekValue) {
+		if (v1 instanceof ArrayLeekValue) {
+			if (v2 instanceof ArrayLeekValue) {
 
-			ai.addOperations(1 + (v1.getArray().size() + v2.getArray().size()) * 2);
+				ai.addOperations(1 + (v1.getArray().size() + v2.getArray().size()) * 2);
+
+				ArrayLeekValue retour = new ArrayLeekValue();
+				ArrayIterator iterator = v1.getArray().getArrayIterator();
+
+				while (!iterator.ended()) {
+					if (iterator.key() instanceof String) {
+						retour.getOrCreate(ai, iterator.getKey(ai)).setNoOps(ai, iterator.getValue(ai));
+					} else {
+						retour.push(ai, iterator.getValue(ai));
+					}
+					iterator.next();
+				}
+				iterator = v2.getArray().getArrayIterator();
+				while (!iterator.ended()) {
+					if (iterator.key() instanceof String) {
+						retour.getOrCreate(ai, iterator.getKey(ai)).setNoOps(ai, iterator.getValue(ai));
+					} else {
+						retour.push(ai, iterator.getValue(ai));
+					}
+					iterator.next();
+				}
+				return retour;
+			}
+
+			ai.addOperations(1 + v1.getArray().size() * 2);
 
 			ArrayLeekValue retour = new ArrayLeekValue();
 			ArrayIterator iterator = v1.getArray().getArrayIterator();
@@ -45,7 +68,19 @@ public class LeekOperations {
 				}
 				iterator.next();
 			}
-			iterator = v2.getArray().getArrayIterator();
+			retour.push(ai, v2);
+			return retour;
+		}
+
+		if (v2 instanceof ArrayLeekValue) {
+
+			ai.addOperations(1 + v2.getArray().size() * 2);
+
+			ArrayLeekValue retour = new ArrayLeekValue();
+			ArrayIterator iterator = v2.getArray().getArrayIterator();
+
+			retour.push(ai, v1);
+
 			while (!iterator.ended()) {
 				if (iterator.key() instanceof String) {
 					retour.getOrCreate(ai, iterator.getKey(ai)).setNoOps(ai, iterator.getValue(ai));
@@ -57,90 +92,70 @@ public class LeekOperations {
 			return retour;
 		}
 
-		String v1_string = v1.getString(ai);
-		String v2_string = v2.getString(ai);
-		ai.addOperations(1 + v1_string.length() + v2_string.length());
-		return new StringLeekValue(v1_string + v2_string);
+		ai.addOperations(1);
+		if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
+			return new DoubleLeekValue(v1.getDouble(ai) + v2.getDouble(ai));
+		}
+		return LeekValueManager.getLeekIntValue(v1.getInt(ai) + v2.getInt(ai));
 	}
 
 	public static AbstractLeekValue minus(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		v1 = v1.getValue();
 		v2 = v2.getValue();
-		if (v1.isNumeric() && v2.isNumeric()) {
-			ai.addOperations(1);
-			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue)
-				return new DoubleLeekValue(v1.getDouble(ai) - v2.getDouble(ai));
-			else
-				return LeekValueManager.getLeekIntValue(v1.getInt(ai) - v2.getInt(ai));
+		ai.addOperations(1);
+		if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
+			return new DoubleLeekValue(v1.getDouble(ai) - v2.getDouble(ai));
+		} else {
+			return LeekValueManager.getLeekIntValue(v1.getInt(ai) - v2.getInt(ai));
 		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
-
 	public static AbstractLeekValue power(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		v1 = v1.getValue();
 		v2 = v2.getValue();
-		if (v1.isNumeric() && v2.isNumeric()) {
-			ai.addOperations(AbstractLeekValue.POW_COST);
-			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
-				double result = Math.pow(v1.getDouble(ai), v2.getDouble(ai));
-				if (Double.isNaN(result))
-					return LeekValueManager.NULL;
-				return new DoubleLeekValue(result);
-			} else {
-				double result = Math.pow(v1.getInt(ai), v2.getInt(ai));
-				if (Double.isNaN(result))
-					return LeekValueManager.NULL;
-				return LeekValueManager.getLeekIntValue((int) result);
-			}
+		ai.addOperations(AbstractLeekValue.POW_COST);
+		if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
+			return new DoubleLeekValue(Math.pow(v1.getDouble(ai), v2.getDouble(ai)));
+		} else {
+			return LeekValueManager.getLeekIntValue((int) Math.pow(v1.getInt(ai), v2.getInt(ai)));
 		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
 	public static AbstractLeekValue multiply(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
 		v1 = v1.getValue();
 		v2 = v2.getValue();
-		if (v1.isNumeric() && v2.isNumeric()) {
-			ai.addOperations(AbstractLeekValue.MUL_COST);
-			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
-				return new DoubleLeekValue(v1.getDouble(ai) * v2.getDouble(ai));
-			} else {
-				return LeekValueManager.getLeekIntValue(v1.getInt(ai) * v2.getInt(ai));
-			}
+		ai.addOperations(AbstractLeekValue.MUL_COST);
+		if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
+			return new DoubleLeekValue(v1.getDouble(ai) * v2.getDouble(ai));
+		} else {
+			return LeekValueManager.getLeekIntValue(v1.getInt(ai) * v2.getInt(ai));
 		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
 	}
 
 	public static AbstractLeekValue divide(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
-
 		v1 = v1.getValue();
 		v2 = v2.getValue();
-		if (v1.isNumeric() && v2.isNumeric()) {
-			ai.addOperations(AbstractLeekValue.DIV_COST);
-			if (v2.getDouble(ai) == 0) {
-				ai.addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
-				return LeekValueManager.NULL;
-			}
-			return new DoubleLeekValue(v1.getDouble(ai) / v2.getDouble(ai));
+		ai.addOperations(AbstractLeekValue.DIV_COST);
+		double y_real = v2.getDouble(ai);
+		if (ai.getVersion() == 10 && y_real == 0) {
+			ai.addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
+			return LeekValueManager.NULL;
 		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+		return new DoubleLeekValue(v1.getDouble(ai) / y_real);
 	}
 
 	public static AbstractLeekValue modulus(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
-
 		v1 = v1.getValue();
 		v2 = v2.getValue();
-		if (v1.isNumeric() && v2.isNumeric()) {
-			ai.addOperations(AbstractLeekValue.MOD_COST);
-			if (v2.getDouble(ai) == 0) {
-				ai.addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
-				return LeekValueManager.NULL;
-			}
-			if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue)
-				return new DoubleLeekValue(v1.getDouble(ai) % v2.getDouble(ai));
-			else
-				return LeekValueManager.getLeekIntValue(v1.getInt(ai) % v2.getInt(ai));
+		ai.addOperations(AbstractLeekValue.MOD_COST);
+		if (v1 instanceof DoubleLeekValue || v2 instanceof DoubleLeekValue) {
+			return new DoubleLeekValue(v1.getDouble(ai) % v2.getDouble(ai));
 		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+		var v2_int = v2.getInt(ai);
+		if (v2_int == 0) {
+			ai.addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
+			return LeekValueManager.NULL;
+		}
+		return LeekValueManager.getLeekIntValue(v1.getInt(ai) % v2_int);
 	}
 
 	public static AbstractLeekValue and(AI ai, AbstractLeekValue v1, AbstractLeekValue v2) throws LeekRunException {
