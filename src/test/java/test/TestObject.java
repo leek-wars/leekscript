@@ -127,21 +127,21 @@ public class TestObject extends TestCommon {
 		section("Access levels: constructors");
 		code_v11("class A { constructor() { } } return new A()").equals("A {}");
 		code_v11("class A { public constructor() { } } return new A()").equals("A {}");
-		code_v11("class A { protected constructor() { } } return new A()").error();
-		code_v11("class A { private constructor() { } } return new A()").error();
+		code_v11("class A { protected constructor() { } } return new A()").error(Error.PROTECTED_CONSTRUCTOR);
+		code_v11("class A { private constructor() { } } return new A()").error(Error.PRIVATE_CONSTRUCTOR);
 		code_v11("class A { public constructor() { } } class B extends A {} return new B()").equals("B {}");
 		code_v11("class A { x protected constructor() { x = 10 } } class B extends A { constructor() { super() } } return new B().x").equals("10");
-		code_v11("class A { x private constructor() { x = 10 } } class B extends A { constructor() { super() } } return new B().x").error();
+		code_v11("class A { x private constructor() { x = 10 } } class B extends A { constructor() { super() } } return new B().x").error(Error.PRIVATE_CONSTRUCTOR);
 		code_v11("class A { private constructor() { } } class B extends A {} return new B()").equals("B {}");
 
 		section("Access levels: static methods");
 		code_v11("class A { static m() { return 10 } } return A.m()").equals("10");
 		code_v11("class A { public static m() { return 10 } } return A.m()").equals("10");
-		code_v11("class A { protected static m() { return 10 } } return A.m()").error();
-		code_v11("class A { private static m() { return 10 } } return A.m()").error();
+		code_v11("class A { protected static m() { return 10 } } return A.m()").error(Error.PROTECTED_STATIC_METHOD);
+		code_v11("class A { private static m() { return 10 } } return A.m()").error(Error.PRIVATE_STATIC_METHOD);
 		code_v11("class A { public static m() { return 10 } } class B extends A {} return B.m()").equals("10");
-		code_v11("class A { protected static m() { return 10 } } class B extends A {} return B.m()").error();
-		code_v11("class A { private static m() { return 10 } } class B extends A {} return B.m()").error();
+		code_v11("class A { protected static m() { return 10 } } class B extends A {} return B.m()").error(Error.PROTECTED_STATIC_METHOD);
+		code_v11("class A { private static m() { return 10 } } class B extends A {} return B.m()").error(Error.PRIVATE_STATIC_METHOD);
 
 		section("Initialization of fields");
 		code_v11("class A { x = [1, 2, 3] } var a = new A() return a.x").equals("[1, 2, 3]");

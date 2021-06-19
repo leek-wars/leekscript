@@ -137,7 +137,7 @@ public class TestCommon {
 			} catch (LeekCompilerException e) {
 				// e.printStackTrace();
 				// System.out.println("Error = " + e.getError());
-				result = new Result("error", e.getError(), 0, 0);
+				result = new Result(e.getError().toString(), e.getError(), 0, 0);
 			} catch (Exception e) {
 				// e.printStackTrace();
 				result = new Result("error", Error.NONE, 0, 0);

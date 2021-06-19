@@ -2,6 +2,7 @@ package test;
 
 import java.util.ArrayList;
 import java.util.List;
+import leekscript.common.Error;
 
 public class TestOperators extends TestCommon {
 
@@ -195,14 +196,14 @@ public class TestOperators extends TestCommon {
 				for (var operator : operators) {
 					String expected = actualResults[r++];
 					var c = code_v10("var a = " + value1 + " return a " + operator + " " + value2);
-					if (expected.equals("error")) result = c.error();
+					if (expected.equals("error")) result = c.error(Error.INVALID_OPERATOR);
 					else result = c.equals(expected);
 					results.add("\"" + result + "\"");
 				}
 				for (var operator : assignmentOperators) {
 					String expected = actualResults[r++];
 					var c = code_v10("var a = " + value1 + " a " + operator + " " + value2 + " return a");
-					if (expected.equals("error")) result = c.error();
+					if (expected.equals("error")) result = c.error(Error.INVALID_OPERATOR);
 					else result = c.equals(expected);
 					results.add("\"" + result + "\"");
 				}
