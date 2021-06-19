@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
+import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
@@ -33,7 +34,6 @@ import leekscript.compiler.expression.LeekString;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
 import leekscript.compiler.expression.LeekVariable.VariableType;
-import leekscript.compiler.instruction.AccessLevel;
 import leekscript.compiler.instruction.BlankInstruction;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekBreakInstruction;
@@ -744,8 +744,8 @@ public class WordCompiler {
 		IAWord word2 = mCompiler.getWord();
 		if (word2.getType() == WordParser.T_PAR_LEFT) {
 			// Méthode
-			ClassMethodBlock method = classMethod(classDeclaration, accessLevel, name.getWord(), false);
-			classDeclaration.addMethod(this, name, method);
+			ClassMethodBlock method = classMethod(classDeclaration, name.getWord(), false);
+			classDeclaration.addMethod(this, name, method, accessLevel);
 		} else {
 			// Field
 			AbstractExpression expr = null;
@@ -753,7 +753,7 @@ public class WordCompiler {
 				mCompiler.skipWord();
 				expr = readExpression();
 			}
-			classDeclaration.addField(this, name, expr);
+			classDeclaration.addField(this, name, expr, accessLevel);
 			if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
 				mCompiler.skipWord();
 		}
@@ -768,24 +768,24 @@ public class WordCompiler {
 			expr = readExpression();
 		} else if (mCompiler.getWord().getType() == WordParser.T_PAR_LEFT) {
 			// Méthode
-			ClassMethodBlock method = classMethod(classDeclaration, accessLevel, name.getWord(), true);
-			classDeclaration.addStaticMethod(this, name, method);
+			ClassMethodBlock method = classMethod(classDeclaration, name.getWord(), true);
+			classDeclaration.addStaticMethod(this, name, method, accessLevel);
 			if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
 				mCompiler.skipWord();
 			return;
 		}
-		classDeclaration.addStaticField(name, expr);
+		classDeclaration.addStaticField(name, expr, accessLevel);
 
 		if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
 			mCompiler.skipWord();
 	}
 
 	public void classConstructor(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel) throws LeekCompilerException {
-		ClassMethodBlock constructor = classMethod(classDeclaration, accessLevel, "constructor", false);
-		classDeclaration.addConstructor(constructor);
+		ClassMethodBlock constructor = classMethod(classDeclaration, "constructor", false);
+		classDeclaration.addConstructor(constructor, accessLevel);
 	}
 
-	public ClassMethodBlock classMethod(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, String name, boolean isStatic) throws LeekCompilerException {
+	public ClassMethodBlock classMethod(ClassDeclarationInstruction classDeclaration, String name, boolean isStatic) throws LeekCompilerException {
 
 		ClassMethodBlock method = new ClassMethodBlock(classDeclaration, isStatic, mCurentBlock, mMain, mLine, mAI);
 
@@ -994,7 +994,7 @@ public class WordCompiler {
 											// au début de l'expression
 
 					AbstractExpression exp = readExpression();
-					if (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
+					if (mCompiler.haveWords() && mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
 						throw new LeekCompilerException(mCompiler.getWord(), Error.CLOSING_PARENTHESIS_EXPECTED);
 					}
 					retour.addExpression(new LeekParenthesis(exp));

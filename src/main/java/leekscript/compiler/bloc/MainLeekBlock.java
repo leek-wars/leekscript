@@ -181,6 +181,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 		writer.addLine("import leekscript.runner.*;");
 		writer.addLine("import leekscript.runner.values.*;");
+		writer.addLine("import leekscript.common.*;");
 		writer.addLine();
 		writer.addLine("public class " + className + " extends " + AIClass + " {");
 

@@ -1,4 +1,4 @@
-package leekscript.compiler.instruction;
+package leekscript.common;
 
 public enum AccessLevel {
 	PUBLIC, PROTECTED, PRIVATE;

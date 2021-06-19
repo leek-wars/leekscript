@@ -7,6 +7,7 @@ import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -74,10 +75,25 @@ public class LeekExpressionFunction extends AbstractExpression {
 		if (mExpression instanceof LeekObjectAccess) {
 			var object = ((LeekObjectAccess) mExpression).getObject();
 			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
-				writer.addCode("u_this.callSuperMethod(mUAI, \"" + ((LeekObjectAccess) mExpression).getField() + "_" + mParameters.size() + "\"");
+				writer.addCode("u_this.callSuperMethod(mUAI, u_class, \"" + ((LeekObjectAccess) mExpression).getField() + "_" + mParameters.size() + "\"");
 			} else {
+				var fromClass = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
 				object.writeJavaCode(mainblock, writer);
-				writer.addCode(".callMethod(mUAI, \"" + ((LeekObjectAccess) mExpression).getField() + "_" + mParameters.size() + "\"");
+				writer.addCode(".callMethod(mUAI, \"" + ((LeekObjectAccess) mExpression).getField() + "_" + mParameters.size() + "\", " + fromClass);
+			}
+		} else if (mExpression instanceof LeekTabularValue) {
+			var object = ((LeekTabularValue) mExpression).getTabular();
+			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
+				writer.addCode("u_this.callSuperMethod(mUAI, u_class, ");
+				((LeekTabularValue) mExpression).getCase().writeJavaCode(mainblock, writer);
+				writer.addCode(".getString(mUAI) + \"_" + mParameters.size() + "\"");
+			} else {
+				writer.addCode("LeekValueManager.executeArrayAccess(mUAI, ");
+				object.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				((LeekTabularValue) mExpression).getCase().writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				writer.addCode(writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null");
 			}
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SUPER) {
 			// Super constructor
@@ -85,9 +101,9 @@ public class LeekExpressionFunction extends AbstractExpression {
 			writer.addCode("user_" + variable.getClassDeclaration().getParent().getName());
 			writer.addCode(".callConstructor(mUAI, u_this");
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.METHOD) {
-			writer.addCode("u_this.callMethod(mUAI, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\"");
+			writer.addCode("u_this.callMethod(mUAI, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\", u_class");
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.STATIC_METHOD) {
-			writer.addCode("u_class.callMethod(mUAI, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\"");
+			writer.addCode("u_class.callMethod(mUAI, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\", u_class");
 		} else if (mExpression instanceof LeekVariable && mainblock.isRedefinedFunction(((LeekVariable) mExpression).getName())) {
 			writer.addCode("rfunction_" + ((LeekVariable) mExpression).getName());
 			writer.addCode(".executeFunction(mUAI");
