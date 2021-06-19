@@ -23,6 +23,7 @@ public class TestFunction extends TestCommon {
 
 		section("Redefinition");
 		code("var count = count([1, 2, 3]) return count;").equals("3");
+		code("var d = debug d('salut')").equals("null");
 
 		section("System function as argument");
 		code_v10("function t(@f) { return function(@a) { return arrayMap(a, f); } } return t(sqrt)([1, 4, 9, 16, 25]);").equals("[1, 2, 3, 4, 5]");
@@ -71,6 +72,9 @@ public class TestFunction extends TestCommon {
 		code("function t(a) {} t([ [12], [12] ])").equals("null");
 		code_v10("function t(@a) {} t([ [12], [12] ])").equals("null");
 		code_v10("function t() { var a = 12 return @a } return t() + 2").equals("14");
+		code("function t() { var a = [1, 2, 3] return a } var x = t() var f = function() { return x } return x").equals("[1, 2, 3]");
+		code("push = 1 return push").equals("1");
+		code_v10("function LamaSwag() {} @LamaSwag();").equals("null");
 
 		section("Modify argument");
 		code("function test(x) { x += 10 return x } return test(5)").equals("15");
