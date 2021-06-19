@@ -133,6 +133,13 @@ public class TestObject extends TestCommon {
 		code_v11("class A { protected static m() { return 10 } } class B extends A {} return B.m()").error();
 		code_v11("class A { private static m() { return 10 } } class B extends A {} return B.m()").error();
 
+		section("Initialization of fields");
+		code_v11("class A { x = [1, 2, 3] } var a = new A() return a.x").equals("[1, 2, 3]");
+		code_v11("class A { x = [1, 2, 3] } var a = new A() push(a.x, 4) var b = new A() return b.x").equals("[1, 2, 3]");
+		code_v11("class B { y = 10 } class A { x = new B() } var a = new A() return a.x").equals("B {y: 10}");
+		code_v11("class B { y = 10 } class A { x = new B() } var a = new A() return a.x.y").equals("10");
+		code_v11("class B { y = 10 } class A { static x = new B() } return A.x").equals("B {y: 10}");
+
 		/*
 		* Operators
 		*/
