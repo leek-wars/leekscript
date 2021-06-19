@@ -608,7 +608,7 @@ public class TestNumber extends TestCommon {
 		section("Not a statement errors");
 		code("null; return null;").equals("null");
 		code("(null); return null;").equals("null");
-		DISABLED_code("((null)); return null;").equals("null");
+		code("((null)); return null;").equals("null");
 		code("true; return null;").equals("null");
 		code("false; return null;").equals("null");
 		code("'salut'; return null;").equals("null");
