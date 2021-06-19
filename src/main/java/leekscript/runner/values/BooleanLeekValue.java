@@ -43,8 +43,18 @@ public class BooleanLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
+	public AbstractLeekValue minus(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.minus(ai, this, val);
+	}
+
+	@Override
 	public AbstractLeekValue multiply(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return LeekOperations.multiply(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue power(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.power(ai, this, val);
 	}
 
 	@Override
@@ -55,6 +65,36 @@ public class BooleanLeekValue extends AbstractLeekValue {
 	@Override
 	public AbstractLeekValue modulus(AI ai, AbstractLeekValue val) throws LeekRunException {
 		return LeekOperations.modulus(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue band(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.band(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bor(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bor(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bxor(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bxor(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bleft(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bleft(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bright(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bright(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue brotate(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.brotate(ai, this, val);
 	}
 
 	@Override

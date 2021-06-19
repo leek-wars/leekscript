@@ -109,6 +109,16 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 	}
 
 	@Override
+	public int getInt(AI ai) throws LeekRunException {
+		return mValues.size();
+	}
+
+	@Override
+	public double getDouble(AI ai) throws LeekRunException {
+		return mValues.size();
+	}
+
+	@Override
 	public AbstractLeekValue get(AI ai, AbstractLeekValue value) throws LeekRunException {
 		Object key;
 		value = value.getValue();
@@ -290,10 +300,66 @@ public class ArrayLeekValue extends AbstractLeekValue implements Iterable<Abstra
 					mValues.push(ai, iterator.getValue(ai));
 				iterator.next();
 			}
+		} else {
+			mValues.push(ai, value);
 		}
 		return this;
 	}
 
+	@Override
+	public AbstractLeekValue minus(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.minus(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue multiply(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.multiply(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue divide(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.divide(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue modulus(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.modulus(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue power(AI ai, AbstractLeekValue value) throws LeekRunException {
+		return LeekOperations.power(ai, this, value);
+	}
+
+	@Override
+	public AbstractLeekValue band(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.band(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bor(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bor(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bxor(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bxor(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bleft(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bleft(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bright(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bright(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue brotate(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.brotate(ai, this, val);
+	}
 	public ArrayIterator getArrayIterator() {
 		return new ArrayIterator(mValues.getHeadElement());
 	}

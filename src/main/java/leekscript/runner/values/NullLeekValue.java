@@ -51,8 +51,33 @@ public class NullLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue bor(AI ai, AbstractLeekValue value) throws LeekRunException {
-		return LeekOperations.bor(ai, this, value);
+	public AbstractLeekValue band(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.band(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bor(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bor(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bxor(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bxor(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bleft(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bleft(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bright(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bright(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue brotate(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.brotate(ai, this, val);
 	}
 
 	@Override

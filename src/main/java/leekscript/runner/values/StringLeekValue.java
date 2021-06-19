@@ -2,6 +2,7 @@ package leekscript.runner.values;
 
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
+import leekscript.runner.LeekOperations;
 
 public class StringLeekValue extends AbstractLeekValue {
 
@@ -36,7 +37,7 @@ public class StringLeekValue extends AbstractLeekValue {
 		try {
 			return Integer.parseInt(mValue);
 		} catch (Exception e) {
-			return 1;
+			return mValue.length();
 		}
 	}
 
@@ -52,7 +53,7 @@ public class StringLeekValue extends AbstractLeekValue {
 		try {
 			return Double.parseDouble(mValue);
 		} catch (Exception e) {
-			return 1;
+			return mValue.length();
 		}
 	}
 
@@ -62,6 +63,61 @@ public class StringLeekValue extends AbstractLeekValue {
 		ai.addOperations(1 + s.length() + mValue.length());
 		mValue += s;
 		return this;
+	}
+
+	@Override
+	public AbstractLeekValue minus(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.minus(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue multiply(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.multiply(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue divide(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.divide(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue modulus(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.modulus(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue power(AI ai, AbstractLeekValue value) throws LeekRunException {
+		return LeekOperations.power(ai, this, value);
+	}
+
+	@Override
+	public AbstractLeekValue band(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.band(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bor(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bor(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bxor(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bxor(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bleft(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bleft(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue bright(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.bright(ai, this, val);
+	}
+
+	@Override
+	public AbstractLeekValue brotate(AI ai, AbstractLeekValue val) throws LeekRunException {
+		return LeekOperations.brotate(ai, this, val);
 	}
 
 	@Override
@@ -78,8 +134,15 @@ public class StringLeekValue extends AbstractLeekValue {
 	@Override
 	public boolean equals(AI ai, AbstractLeekValue comp) throws LeekRunException {
 		if (comp.getType() == NUMBER) {
-			if (mValue.equals("true"))
+			if (mValue.equals("false") || mValue.equals("0") || mValue.equals("")) {
+				return comp.getInt(ai) == 0;
+			}
+			if (mValue.equals("true")) {
 				return comp.getDouble(ai) != 0;
+			}
+			if (mValue.equals("1") && comp.getDouble(ai) == 1) {
+				return true;
+			}
 			if (comp instanceof IntLeekValue)
 				return getInt(ai) == comp.getInt(ai);
 			else

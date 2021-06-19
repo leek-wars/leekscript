@@ -201,7 +201,10 @@ public class VariableLeekValue extends AbstractLeekValue {
 
 	@Override
 	public AbstractLeekValue add(AI ai, AbstractLeekValue val) throws LeekRunException {
-		return mValue = mValue.add(ai, val);
+		if (mValue.getValue() instanceof ArrayLeekValue && !(val.getValue() instanceof StringLeekValue)) {
+			return mValue = mValue.add(ai, val);
+		}
+		return mValue = LeekOperations.add(ai, mValue, val);
 	}
 
 	@Override

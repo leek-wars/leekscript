@@ -1,9 +1,12 @@
 package leekscript.runner.values;
 
+import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
+import leekscript.runner.LeekOperations;
+import leekscript.common.Error;
 
 public class IntLeekValue extends AbstractLeekValue {
 	private int mValue;
@@ -89,11 +92,7 @@ public class IntLeekValue extends AbstractLeekValue {
 
 	@Override
 	public AbstractLeekValue add(AI ai, AbstractLeekValue val) throws LeekRunException {
-		ai.addOperations(ADD_COST);
-		val = val.getValue();
-		if (val instanceof DoubleLeekValue)
-			return new DoubleLeekValue(mValue + val.getDouble(ai));
-		return LeekValueManager.getLeekIntValue(ai, mValue + val.getInt(ai), this);
+		return LeekOperations.add(ai, this, val);
 	}
 
 	@Override
@@ -112,6 +111,26 @@ public class IntLeekValue extends AbstractLeekValue {
 		if (val instanceof DoubleLeekValue)
 			return new DoubleLeekValue(mValue * val.getDouble(ai));
 		return LeekValueManager.getLeekIntValue(ai, mValue * val.getInt(ai), this);
+	}
+
+	@Override
+	public AbstractLeekValue modulus(AI ai, AbstractLeekValue val) throws LeekRunException {
+		ai.addOperations(MOD_COST);
+		val = val.getValue();
+		if (val instanceof DoubleLeekValue) {
+			double y_real = val.getDouble(ai);
+			if (ai.getVersion() == 10 && y_real == 0) {
+				ai.addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
+				return LeekValueManager.NULL;
+			}
+			return new DoubleLeekValue(mValue % y_real);
+		}
+		int y_int = val.getInt(ai);
+		if (ai.getVersion() == 10 && y_int == 0) {
+			ai.addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
+			return LeekValueManager.NULL;
+		}
+		return LeekValueManager.getLeekIntValue(ai, mValue % y_int, this);
 	}
 
 	@Override
@@ -165,15 +184,6 @@ public class IntLeekValue extends AbstractLeekValue {
 	}
 
 	@Override
-	public AbstractLeekValue modulus(AI ai, AbstractLeekValue val) throws LeekRunException {
-		ai.addOperations(MOD_COST);
-		val = val.getValue();
-		if (val instanceof DoubleLeekValue)
-			return new DoubleLeekValue(mValue % val.getDouble(ai));
-		return LeekValueManager.getLeekIntValue(ai, mValue % val.getInt(ai), this);
-	}
-
-	@Override
 	public int getV10Type() {
 		return NUMBER_V10;
 	}
@@ -195,9 +205,17 @@ public class IntLeekValue extends AbstractLeekValue {
 			return comp.getBoolean() == getBoolean();
 		}
 		else if (comp.getType() == STRING) {
+			if (comp.getString(ai).equals("false") || comp.getString(ai).equals("0") || comp.getString(ai).equals(""))
+				return mValue == 0;
 			if (comp.getString(ai).equals("true"))
 				return mValue != 0;
-			return mValue == comp.getInt(ai);
+			if (comp.getString(ai).equals("1") && mValue == 1) return true;
+			try {
+				ai.addOperations(comp.getString(ai).length());
+				return mValue == Integer.parseInt(comp.getString(ai));
+			} catch (Exception e) {
+				return false;
+			}
 		}
 		else if (comp.getType() == ARRAY) {
 			return comp.equals(ai, this);
