@@ -29,5 +29,6 @@ jobs:
         export JAVA_TOOL_OPTIONS="-Duser.language=fr -Duser.region=FR"
         export _JAVA_OPTIONS="-Duser.language=fr -Duser.region=FR"
         export JAVA_ARGS="-Duser.language=fr -Duser.region=FR"
+        locale
     - name: Build
       run: gradle build
