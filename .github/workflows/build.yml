@@ -27,5 +27,6 @@ jobs:
         sudo update-locale
         export LANG=fr_FR.utf8
         export JAVA_TOOL_OPTIONS=-Duser.language=fr-FR
+        export _JAVA_OPTIONS=-Duser.language=fr
     - name: Build
       run: gradle build
