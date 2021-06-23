@@ -23,8 +23,8 @@ jobs:
         distribution: 'adopt'
     - name: Setup locale
       run: |
-        locale-gen fr_FR
-        locale-gen fr_FR.UTF-8
-        update-locale
+        sudo locale-gen fr_FR
+        sudo locale-gen fr_FR.UTF-8
+        sudo update-locale
     - name: Build
       run: gradle build
