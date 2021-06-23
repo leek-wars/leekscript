@@ -21,7 +21,10 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
-    - name: Build
+    - name: Setup locale
       run: |
-        export LANG=fr_FR.utf8
-        gradle build
+        locale-gen fr_FR
+        locale-gen fr_FR.UTF-8
+        update-locale
+    - name: Build
+      run: gradle build
