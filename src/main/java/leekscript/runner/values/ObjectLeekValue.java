@@ -36,6 +36,10 @@ public class ObjectLeekValue {
 		fields.put(field, new ObjectVariableValue(ai, LeekOperations.clone(ai, value), level));
 	}
 
+	public Object getField(String field) throws LeekRunException {
+		return getField(field, clazz);
+	}
+
 	public Object getField(String field, ClassLeekValue fromClass) throws LeekRunException {
 		// System.out.println("getField " + field);
 		if (field.equals("class")) {

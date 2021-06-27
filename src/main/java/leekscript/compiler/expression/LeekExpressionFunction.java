@@ -180,7 +180,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 			if (i < mParameters.size()) {
 				var parameter = mParameters.get(i);
 				// Java doesn't like a single null for Object... argument
-				if (argCount == 1 && parameter.getType() == Type.NULL) {
+				if (argCount == 1 && parameter.getType() == Type.NULL && user_function == null) {
 					writer.addCode("new Object[] { null }");
 					continue;
 				}

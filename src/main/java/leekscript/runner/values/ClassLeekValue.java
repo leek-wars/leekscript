@@ -113,12 +113,16 @@ public class ClassLeekValue {
 		}));
 	}
 
+	public Object getField(String field) throws LeekRunException {
+		return getField(ai, field, this);
+	}
+
 	public Object getField(AI ai, String field, ClassLeekValue fromClass) throws LeekRunException {
 		// Private
 		var result = staticFields.get(field);
 		if (result != null) {
 			if (fromClass == this) {
-				return result;
+				return result.getValue();
 			} else {
 				// Protected : Access from descendant
 				if (fromClass != null && fromClass.descendsFrom(this)) {
@@ -126,14 +130,14 @@ public class ClassLeekValue {
 						ai.addSystemLog(AILog.ERROR, Error.PRIVATE_STATIC_FIELD, new String[] { this.name, field });
 						return null;
 					}
-					return result;
+					return result.getValue();
 				} else {
 					// Public : Access from outside
 					if (result.level != AccessLevel.PUBLIC) {
 						ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_FIELD : Error.PRIVATE_STATIC_FIELD, new String[] { this.name, field });
 						return null;
 					}
-					return result;
+					return result.getValue();
 				}
 			}
 		}
