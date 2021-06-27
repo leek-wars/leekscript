@@ -264,6 +264,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 				var clazz = v.getClassDeclaration().getParent();
 				if (clazz != null) {
 					var constructor = clazz.getConstructor(mParameters.size());
+					operations += 1;
 					if (constructor == null) {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { clazz.getName() }));
 					} else if (constructor.level == AccessLevel.PRIVATE) {
@@ -279,6 +280,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 				if (v.getVariableType() == VariableType.CLASS) {
 					var clazz = v.getClassDeclaration();
 					var staticMethod = clazz.getStaticMethod(oa.getField(), mParameters.size());
+					operations += 1;
 					if (staticMethod == null) {
 						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
 					} else if (staticMethod.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != clazz) {

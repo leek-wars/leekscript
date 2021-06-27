@@ -225,6 +225,7 @@ public class LeekValueManager {
 
 	public static Object executeArrayAccess(AI ai, Object array, Object key, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
 		if (array instanceof ObjectLeekValue) {
+			ai.ops(1);
 			return ((ObjectLeekValue) array).callMethod(ai.string(key) + "_" + arguments.length, fromClass, arguments);
 		} else {
 			return ai.execute(ai.get(array, key, fromClass), arguments);
