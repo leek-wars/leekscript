@@ -227,7 +227,7 @@ public class LeekValueManager {
 		if (array instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) array).callMethod(ai.string(key) + "_" + arguments.length, fromClass, arguments);
 		} else {
-			return ai.execute(ai.get(array, key), arguments);
+			return ai.execute(ai.get(array, key, fromClass), arguments);
 		}
 	}
 }

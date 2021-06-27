@@ -10,7 +10,6 @@ import leekscript.runner.LeekAnonymousFunction;
 import leekscript.common.AccessLevel;
 import leekscript.runner.LeekFunction;
 import leekscript.common.Error;
-import leekscript.compiler.bloc.AnonymousFunctionBlock;
 
 public class ClassLeekValue {
 
@@ -180,7 +179,7 @@ public class ClassLeekValue {
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
 
-	public Object callMethod(AI ai, String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
+	public Object callMethod(String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
 		ai.ops(1);
 		var result = getStaticMethod(ai, method, fromClass);
 		if (result == null) {

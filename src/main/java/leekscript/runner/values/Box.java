@@ -183,8 +183,8 @@ public class Box {
 		return mValue = mUAI.mod(mValue, val);
 	}
 
-	public Object get(Object index) throws LeekRunException {
-		return mUAI.get(mValue, index);
+	public Object get(Object index, ClassLeekValue fromClass) throws LeekRunException {
+		return mUAI.get(mValue, index, fromClass);
 	}
 
 	public Box getOrCreate(Object index) throws LeekRunException {

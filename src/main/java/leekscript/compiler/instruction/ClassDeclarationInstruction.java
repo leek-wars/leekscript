@@ -15,7 +15,6 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
-import leekscript.runner.values.ClassLeekValue.ClassMethod;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 
@@ -306,8 +305,9 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		}
 
 		// Methods
-		for (Entry<String, HashMap<Integer, ClassDeclarationMethod>> method : methods.entrySet()) {
-			for (Entry<Integer, ClassDeclarationMethod> version : method.getValue().entrySet()) {
+		for (var method : methods.entrySet()) {
+			for (var version : method.getValue().entrySet()) {
+				writer.currentBlock = version.getValue().block;
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
 				writer.addCode("private final Object " + methodName + "(ObjectLeekValue u_this");
 				for (var arg : version.getValue().block.getParameters()) {
@@ -324,6 +324,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				writer.addCounter(1);
 				version.getValue().block.writeJavaCode(mainblock, writer);
 				writer.addLine("}");
+				writer.currentBlock = null;
 			}
 		}
 
@@ -378,7 +379,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 
 		for (Entry<String, ClassDeclarationField> field : staticFields.entrySet()) {
 			writer.addCode(className);
-			writer.addCode(".addStaticField(\"" + field.getKey() + "\", ");
+			writer.addCode(".addStaticField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
 			if (field.getValue() != null) {
 				field.getValue().expression.writeJavaCode(mainblock, writer);
 			} else {
@@ -402,7 +403,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 					writer.addCode("args[" + i + "]");
 					i++;
 				}
-				writer.addLine("); }});");
+				writer.addLine("); }}, AccessLevel." + version.getValue().level + ");");
 			}
 			writer.addCode(className);
 			writer.addLine(".addGenericStaticMethod(\"" + method.getKey() + "\");");
@@ -433,7 +434,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				for (var arg : version.getValue().block.getParameters()) {
 					writer.addCode(", args[" + i++ + "]");
 				}
-				writer.addLine("); }});");
+				writer.addLine("); }}, AccessLevel." + version.getValue().level + ");");
 			}
 			writer.addCode(className);
 			writer.addLine(".addGenericMethod(\"" + method.getKey() + "\");");
@@ -528,6 +529,17 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		}
 		if (parent != null) {
 			return parent.getMethodName(name, argumentCount);
+		}
+		return null;
+	}
+
+	public String getStaticMethodName(String name, int argumentCount) {
+		var versions = staticMethods.get(name);
+		if (versions != null) {
+			if (versions.containsKey(argumentCount)) return getName() + "_" + name + "_" + argumentCount;
+		}
+		if (parent != null) {
+			return parent.getStaticMethodName(name, argumentCount);
 		}
 		return null;
 	}

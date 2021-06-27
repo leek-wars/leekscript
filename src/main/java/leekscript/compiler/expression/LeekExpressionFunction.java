@@ -85,11 +85,12 @@ public class LeekExpressionFunction extends AbstractExpression {
 			var object = ((LeekObjectAccess) mExpression).getObject();
 			var field = ((LeekObjectAccess) mExpression).getField();
 			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
-				writer.addCode("u_this.callSuperMethod(this, \"" + (field + "_" + mParameters.size() + "\""));
+				var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
+				writer.addCode("u_this.callSuperMethod(this, \"" + field + "_" + mParameters.size() + "\", " + from_class);
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.CLASS) {
 				// Méthode statique connue
 				var v = (LeekVariable) object;
-				String methodName = "u_" + v.getClassDeclaration().getName() + "_" + field + "_" + mParameters.size();
+				String methodName = "u_" + v.getClassDeclaration().getStaticMethodName(field, mParameters.size());
 				writer.addCode(methodName + "(");
 				addComma = false;
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
@@ -99,16 +100,19 @@ public class LeekExpressionFunction extends AbstractExpression {
 			} else {
 				writer.addCode("callMethod(");
 				object.writeJavaCode(mainblock, writer);
-				writer.addCode(", \"" + field + "_" + mParameters.size() + "\"");
+				var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
+				writer.addCode(", \"" + field + "_" + mParameters.size() + "\", " + from_class);
 			}
 		} else if (mExpression instanceof LeekTabularValue) {
 			var object = ((LeekTabularValue) mExpression).getTabular();
 			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
 				writer.addCode("u_this.callSuperMethod(mUAI, u_class, ");
 				((LeekTabularValue) mExpression).getCase().writeJavaCode(mainblock, writer);
-				writer.addCode(".getString(mUAI) + \"_" + mParameters.size() + "\"");
+				writer.addCode(".getString(mUAI) + \"_" + mParameters.size() + "\", ");
+				var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
+				writer.addCode(from_class);
 			} else {
-				writer.addCode("LeekValueManager.executeArrayAccess(mUAI, ");
+				writer.addCode("LeekValueManager.executeArrayAccess(" + writer.getAIThis() + ", ");
 				object.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
 				((LeekTabularValue) mExpression).getCase().writeJavaCode(mainblock, writer);
@@ -126,7 +130,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 			writer.addCode(methodName + "(u_this");
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.STATIC_METHOD) {
 			// Méthode statique connue
-			String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getName() + "_" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size();
+			String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getStaticMethodName(((LeekVariable) mExpression).getName(), mParameters.size());
 			writer.addCode(methodName + "(");
 			addComma = false;
 		} else if (mExpression instanceof LeekVariable && mainblock.isRedefinedFunction(((LeekVariable) mExpression).getName())) {
@@ -277,7 +281,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 					var staticMethod = clazz.getStaticMethod(oa.getField(), mParameters.size());
 					if (staticMethod == null) {
 						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
-					} else if (staticMethod.level == AccessLevel.PRIVATE && clazz != compiler.getCurrentClass()) {
+					} else if (staticMethod.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != clazz) {
 						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
 					} else if (staticMethod.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
 						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));

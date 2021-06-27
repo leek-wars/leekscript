@@ -5,8 +5,6 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
-import leekscript.compiler.expression.LeekExpression;
-import leekscript.compiler.expression.Operators;
 
 public class LeekReturnInstruction implements LeekInstruction {
 
