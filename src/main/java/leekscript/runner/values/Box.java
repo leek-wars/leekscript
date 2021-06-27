@@ -133,37 +133,18 @@ public class Box {
 	}
 
 	public Object add_eq(Object val) throws LeekRunException {
-		if (mValue == null) {
-			return mValue = val;
+		if (mValue instanceof ArrayLeekValue && !(val instanceof String)) {
+			return mValue = mUAI.add_eq(mValue, val);
 		}
-		if (mValue instanceof Number) {
-			return mValue = mUAI.add(mValue, val);
-		}
-		if (mValue instanceof String) {
-			return mValue = mUAI.add(mValue, val);
-		}
-		return mValue = mUAI.add_eq(mValue, val);
+		return mValue = mUAI.add(mValue, val);
 	}
 
 	public Object sub_eq(Object val) throws LeekRunException {
-		if (mValue == null) {
-			return mValue = mUAI.minus(val);
-		}
-		if (mValue instanceof Number) {
-			return mValue = mUAI.sub(mValue, val);
-		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
-		// return mValue = mUAI.sub_eq(mValue, val);
+		return mValue = mUAI.sub(mValue, val);
 	}
 
 	public Object mul_eq(Object val) throws LeekRunException {
-		if (mValue instanceof Number) {
-			return mValue = mUAI.mul(mValue, val);
-		}
-		if (mValue == null) {
-			return mValue = mUAI.mul(mValue, val);
-		}
-		return mValue = mUAI.mul_eq(mValue, val);
+		return mValue = mUAI.mul(mValue, val);
 	}
 
 	public Object pow_eq(Object val) throws LeekRunException {
@@ -171,7 +152,7 @@ public class Box {
 	}
 
 	public int band_eq(Object val) throws LeekRunException {
-		return (int) (mValue = LeekOperations.band(mUAI, mValue, val));
+		return (int) (mValue = mUAI.band(mValue, val));
 	}
 
 	public int bor_eq(Object val) throws LeekRunException {
@@ -182,16 +163,16 @@ public class Box {
 		return (int) (mValue = mUAI.bxor(mValue, val));
 	}
 
-	public Object shl_eq(Object val) throws LeekRunException {
-		return mValue = LeekOperations.bleft(mUAI, mValue, val);
+	public int shl_eq(Object val) throws LeekRunException {
+		return (int) (mValue = mUAI.shl(mValue, val));
 	}
 
-	public Object shr_eq(Object val) throws LeekRunException {
-		return mValue = LeekOperations.bright(mUAI, mValue, val);
+	public int shr_eq(Object val) throws LeekRunException {
+		return (int) (mValue = mUAI.shr(mValue, val));
 	}
 
-	public Object ushr_eq(Object val) throws LeekRunException {
-		return mValue = LeekOperations.buright(mUAI, mValue, val);
+	public int ushr_eq(Object val) throws LeekRunException {
+		return (int) (mValue = mUAI.ushr(mValue, val));
 	}
 
 	public Object div_eq(Object val) throws LeekRunException {

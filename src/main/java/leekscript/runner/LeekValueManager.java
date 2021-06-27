@@ -84,35 +84,6 @@ public class LeekValueManager {
 		return value;
 	}
 
-	public static double getDouble(AI ai, Object value) throws LeekRunException {
-		if (value instanceof Double) {
-			return (Double) value;
-		} else if (value instanceof Integer) {
-			return (Integer) value;
-		} else if (value instanceof Boolean) {
-			return ((Boolean) value) ? 1 : 0;
-		} else if (value instanceof ObjectLeekValue) {
-			return ((ObjectLeekValue) value).size();
-		} else if (value instanceof ArrayLeekValue) {
-			return ((ArrayLeekValue) value).size();
-		} else if (value instanceof String) {
-			var s = (String) value;
-			// ai.ops(2);
-			if (s.equals("true")) return 1;
-			if (s.equals("false")) return 0;
-			if (s.isEmpty()) return 0;
-			ai.ops(s.length());
-			try {
-				return Double.parseDouble(s);
-			} catch (Exception e) {
-				return 1;
-			}
-		} else if (value instanceof Box) {
-			return getDouble(ai, ((Box) value).getValue());
-		}
-		return 0;
-	}
-
 	public static String doubleToString(AI ai, double value) throws LeekRunException {
 		ai.ops(3);
 		if (ai.getVersion() >= 11) {
