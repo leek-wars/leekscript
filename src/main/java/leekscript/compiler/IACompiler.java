@@ -1,5 +1,6 @@
 package leekscript.compiler;
 
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.common.Error;
@@ -83,7 +84,9 @@ public class IACompiler {
 
 			if (compiler.getErrors().size() > 0) {
 				for (var error : compiler.getErrors()) {
-					throw new LeekCompilerException(error.token, error.error, error.parameters);
+					if (error.level == AnalyzeErrorLevel.ERROR) {
+						throw new LeekCompilerException(error.token, error.error, error.parameters);
+					}
 				}
 			}
 			compiler.writeJava(javaClassName, writer, AIClass);

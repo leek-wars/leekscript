@@ -345,19 +345,6 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			if (parent != null) {
 				writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
 			}
-			ClassDeclarationInstruction current = this;
-			while (current != null) {
-				for (var field : current.fields.entrySet()) {
-					writer.addCode("u_this.addField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
-					if (field.getValue().expression != null) {
-						field.getValue().expression.writeJavaCode(mainblock, writer);
-					} else {
-						writer.addCode("null");
-					}
-					writer.addLine(", AccessLevel." + field.getValue().level + ");");
-				}
-				current = current.parent;
-			}
 			if (construct.getValue().block != null) {
 				construct.getValue().block.writeJavaCode(mainblock, writer);
 			} else {
@@ -379,11 +366,11 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		}
 
 		writer.addCode(className + ".initFields = new LeekAnonymousFunction() {");
-		writer.addLine("public AbstractLeekValue run(AI mUAI, AbstractLeekValue u_this, AbstractLeekValue... values) throws LeekRunException {");
+		writer.addLine("public Object run(ObjectLeekValue u_this, Object... values) throws LeekRunException {");
 		ClassDeclarationInstruction current = this;
 		while (current != null) {
 			for (var field : current.fields.entrySet()) {
-				writer.addCode("((ObjectLeekValue) u_this).addField(mUAI, \"" + field.getKey() + "\", ");
+				writer.addCode("u_this.addField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
 				if (field.getValue().expression != null) {
 					field.getValue().expression.writeJavaCode(mainblock, writer);
 				} else {
@@ -395,18 +382,6 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		}
 		writer.addLine("return null;");
 		writer.addLine("}};");
-
-		for (Entry<String, ClassDeclarationField> field : staticFields.entrySet()) {
-			writer.addCode(className);
-			writer.addCode(".addStaticField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
-			if (field.getValue() != null) {
-				field.getValue().expression.writeJavaCode(mainblock, writer);
-			} else {
-				writer.addCode("null");
-			}
-			writer.addCode(", AccessLevel." + field.getValue().level);
-			writer.addLine(");");
-		}
 
 		writeFields(mainblock, writer, className);
 
@@ -433,9 +408,6 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			writer.addCode(className);
 			writer.addCode(".addConstructor(" + construct.getKey() + ", new LeekAnonymousFunction() { public Object run(ObjectLeekValue thiz, Object... args) throws LeekRunException { return " + methodName + "(thiz");
 			int i = 0;
-			for (var arg : construct.getValue().block.getParameters()) {
-				writer.addCode(", args[" + i++ + "]");
-			}
 			if (construct.getValue().block != null) {
 				for (var arg : construct.getValue().block.getParameters()) {
 					writer.addCode(", args[" + i++ + "]");
@@ -473,7 +445,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			if (field.getValue().expression != null) {
 				field.getValue().expression.writeJavaCode(mainblock, writer);
 			} else {
-				writer.addCode("LeekValueManager.NULL");
+				writer.addCode("null");
 			}
 			writer.addCode(", AccessLevel." + field.getValue().level);
 			writer.addLine(");");

@@ -75,16 +75,20 @@ public class LeekTernaire extends LeekExpression {
 		// if(mExpression2 instanceof LeekExpression) mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
 		if (!complete()) writer.addCode("/* " + getString() + " */");
 		else {
-			writer.addCode("ops(");
+			var branch_ops = mExpression1.operations != mExpression2.operations;
 			writer.getBoolean(mainblock, mCondition);
-			writer.addCode(", 1) ? ");
-			if (mExpression1.getOperations() > 0) writer.addCode("ops(");
+			writer.addCode(" ? ");
+			if (mExpression1.getOperations() > 0 && branch_ops) writer.addCode("ops(");
+			else writer.addCode("(");
 			mExpression1.writeJavaCode(mainblock, writer);
-			if (mExpression1.getOperations() > 0) writer.addCode(", " + mExpression1.getOperations() + ")");
+			if (mExpression1.getOperations() > 0 && branch_ops) writer.addCode(", " + mExpression1.getOperations() + ")");
+			else writer.addCode(")");
 			writer.addCode(" : ");
-			if (mExpression2.getOperations() > 0) writer.addCode("ops(");
+			if (mExpression2.getOperations() > 0 && branch_ops) writer.addCode("ops(");
+			else writer.addCode("(");
 			mExpression2.writeJavaCode(mainblock, writer);
-			if (mExpression2.getOperations() > 0) writer.addCode(", " + mExpression2.getOperations() + ")");
+			if (mExpression2.getOperations() > 0 && branch_ops) writer.addCode(", " + mExpression2.getOperations() + ")");
+			else writer.addCode(")");
 		}
 	}
 
@@ -109,7 +113,6 @@ public class LeekTernaire extends LeekExpression {
 			if(mExpression2 == null) mExpression2 = expression;
 			else ((LeekExpression) mExpression2).addExpression(expression);
 		}
-
 	}
 
 	@Override
@@ -234,10 +237,14 @@ public class LeekTernaire extends LeekExpression {
 	public void analyze(WordCompiler compiler) {
 		if (mCondition != null) {
 			mCondition.analyze(compiler);
-			operations = mCondition.getOperations();
+			operations = 1 + mCondition.getOperations();
 		}
-		if (mExpression1 != null) mExpression1.analyze(compiler);
-		if (mExpression2 != null) mExpression2.analyze(compiler);
+		mExpression1.analyze(compiler);
+		mExpression2.analyze(compiler);
+
+		if (mExpression1.operations == mExpression2.operations) {
+			operations += mExpression1.operations;
+		}
 
 		if (mExpression1 != null && mExpression2 != null && mExpression1.getType() == mExpression2.getType()) {
 			type = mExpression1.getType();
