@@ -119,6 +119,9 @@ public class LeekVariable extends AbstractExpression {
 			if (v.getDeclaration() != null && v.getDeclaration().getFunction() != compiler.getCurrentFunction()) {
 				v.getDeclaration().setCaptured();
 			}
+			if (this.type == VariableType.FIELD) {
+				operations += 1;
+			}
 			return;
 		}
 		// Global user functions

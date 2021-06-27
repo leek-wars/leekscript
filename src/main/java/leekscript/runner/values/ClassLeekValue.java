@@ -69,7 +69,7 @@ public class ClassLeekValue {
 		constructors.put(arg_count, new ClassMethod(function, level));
 	}
 
-	public void addField(AI ai, String field, AccessLevel level) {
+	public void addField(String field, AccessLevel level) {
 		fields.put(field, new ClassField(null, level));
 	}
 
