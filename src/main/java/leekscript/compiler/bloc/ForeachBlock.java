@@ -72,7 +72,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		} else {
 			writer.addCounter(1);
 		}
-		writer.addLine("for (var " + var + " : (ArrayLeekValue) " + ar + ") {\n");
+		writer.addLine("for (var " + var + " : (ArrayLeekValue) " + ar + ") {");
 
 		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
 			if (mIsDeclaration && declaration.isCaptured()) {

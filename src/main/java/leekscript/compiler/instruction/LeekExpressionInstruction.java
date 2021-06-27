@@ -40,7 +40,7 @@ public class LeekExpressionInstruction implements LeekInstruction {
 		// Simple values are not compiled
 		var trimmed = mExpression.trim();
 		if (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).getOperator() == Operators.REFERENCE) {
-			trimmed = ((LeekExpression) trimmed).getExpression1();
+			trimmed = ((LeekExpression) trimmed).getExpression2().trim();
 		}
 		if (trimmed instanceof LeekNull || trimmed instanceof LeekBoolean || trimmed instanceof LeekNumber || trimmed instanceof LeekString || trimmed instanceof LeekVariable || trimmed instanceof LeekObjectAccess || trimmed instanceof LeekTabularValue || trimmed instanceof LeekAnonymousFunction) {
 			return;

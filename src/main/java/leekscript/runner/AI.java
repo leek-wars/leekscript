@@ -749,8 +749,6 @@ public abstract class AI {
 	}
 
 	public boolean neq(Object x, Object y) throws LeekRunException {
-		if (x == null) return y != null;
-		if (y == null) return x != null;
 		return !eq(x, y);
 	}
 
