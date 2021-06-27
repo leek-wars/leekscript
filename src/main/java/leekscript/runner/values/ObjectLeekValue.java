@@ -48,7 +48,7 @@ public class ObjectLeekValue {
 		// Private : Access from same class
 		var result = fields.get(field);
 		if (result != null) {
-			if (fromClass == clazz) {
+			if (fromClass == clazz || clazz.descendsFrom(fromClass)) {
 				return result.mValue;
 			} else {
 				// Protected : Access from descendant

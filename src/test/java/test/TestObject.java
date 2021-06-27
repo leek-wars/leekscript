@@ -46,6 +46,7 @@ public class TestObject extends TestCommon {
 		code_v11("class A { static x = 'hello' } return A.x").equals("hello");
 		code_v11("class A { static x = [1, 2, 3] } return A.x").equals("[1, 2, 3]");
 		code_v11("class A { static x = null } return A.x").equals("null");
+		code_v11("class Affiche { static COULEUR = getColor(42, 125, 78) } return Affiche.COULEUR").equals("");
 
 		section("Operators on field");
 		code_v11("class A { a = 10 } var a = new A(); return --a.a").equals("9");
@@ -65,6 +66,24 @@ public class TestObject extends TestCommon {
 		code_v11("class A { a = 10 } var a = new A(); return a.a >>= 5").equals("0");
 		code_v11("class A { a = 10 } var a = new A(); return a.a >>>= 5").equals("0");
 
+		section("Operators on field in method");
+		code_v11("class A { a = 10 m() { return --a } } return new A().m()").equals("9");
+		code_v11("class A { a = 10 m() { a-- return a } } return new A().m()").equals("9");
+		code_v11("class A { a = 10 m() { return ++a } } return new A().m()").equals("11");
+		code_v11("class A { a = 10 m() { a++ return a } } return new A().m()").equals("11");
+		code_v11("class A { a = 10 m() { return a += 5 } } return new A().m()").equals("15");
+		code_v11("class A { a = 10 m() { return a -= 5 } } return new A().m()").equals("5");
+		code_v11("class A { a = 10 m() { return a *= 5 } } return new A().m()").equals("50");
+		code_v11("class A { a = 10 m() { return a /= 5 } } return new A().m()").equals("2.0");
+		code_v11("class A { a = 10 m() { return a %= 5 } } return new A().m()").equals("0");
+		code_v11("class A { a = 10 m() { return a **= 5 } } return new A().m()").equals("100000");
+		code_v11("class A { a = 10 m() { return a |= 5 } } return new A().m()").equals("15");
+		code_v11("class A { a = 10 m() { return a &= 5 } } return new A().m()").equals("0");
+		code_v11("class A { a = 10 m() { return a ^= 5 } } return new A().m()").equals("15");
+		code_v11("class A { a = 10 m() { return a <<= 5 } } return new A().m()").equals("320");
+		code_v11("class A { a = 10 m() { return a >>= 5 } } return new A().m()").equals("0");
+		code_v11("class A { a = 10 m() { return a >>>= 5 } } return new A().m()").equals("0");
+
 		section("Operators on static field");
 		code_v11("class A { static a = 10 } return --A.a").equals("9");
 		code_v11("class A { static a = 10 } A.a-- return A.a").equals("9");
@@ -83,6 +102,24 @@ public class TestObject extends TestCommon {
 		code_v11("class A { static a = 10 } return A.a >>= 5").equals("0");
 		code_v11("class A { static a = 10 } return A.a >>>= 5").equals("0");
 
+		section("Operators on static field in method");
+		code_v11("class A { static a = 10 static m() { return --a } } return A.m()").equals("9");
+		code_v11("class A { static a = 10 static m() { a-- return a } } return A.m()").equals("9");
+		code_v11("class A { static a = 10 static m() { return ++a } } return A.m()").equals("11");
+		code_v11("class A { static a = 10 static m() { a++ return a } } return A.m()").equals("11");
+		code_v11("class A { static a = 10 static m() { return a += 5 } } return A.m()").equals("15");
+		code_v11("class A { static a = 10 static m() { return a -= 5 } } return A.m()").equals("5");
+		code_v11("class A { static a = 10 static m() { return a *= 5 } } return A.m()").equals("50");
+		code_v11("class A { static a = 10 static m() { return a /= 5 } } return A.m()").equals("2.0");
+		code_v11("class A { static a = 10 static m() { return a %= 5 } } return A.m()").equals("0");
+		code_v11("class A { static a = 10 static m() { return a **= 5 } } return A.m()").equals("100000");
+		code_v11("class A { static a = 10 static m() { return a |= 5 } } return A.m()").equals("15");
+		code_v11("class A { static a = 10 static m() { return a &= 5 } } return A.m()").equals("0");
+		code_v11("class A { static a = 10 static m() { return a ^= 5 } } return A.m()").equals("15");
+		code_v11("class A { static a = 10 static m() { return a <<= 5 } } return A.m()").equals("320");
+		code_v11("class A { static a = 10 static m() { return a >>= 5 } } return A.m()").equals("0");
+		code_v11("class A { static a = 10 static m() { return a >>>= 5 } } return A.m()").equals("0");
+
 		section("Inheritance");
 		code_v11("class A { x = 10 } class B extends A {} var a = new B() return a.x").equals("10");
 		code_v11("class A { m() { return 'ok' } } class B extends A { m() { return super.m() } } var a = new B() return a.m()").equals("ok");
@@ -93,6 +130,9 @@ public class TestObject extends TestCommon {
 		code_v11("class A { m() { return 'okA' } } class B extends A { m() { return super.m() + 'B' }} class C extends B { m() { return super.m() + 'C' } } var a = new C()return a.m()").equals("okABC");
 		code_v11("class A { items } class B extends A { constructor() { this.items = [] } } var x = new B() return x").equals("B {items: []}");
 		code_v11("class A { items } class B extends A { constructor() { this.items = [] super() } } var x = new B() return x").equals("B {items: []}");
+		code_v11("class A { m() { return 'parent' } t() { return this.m() } } class B extends A { m() { return 'enfant' } } return new B().t()").equals("enfant");
+		code_v11("class A { m() { return 'parent' } t() { return m() } } class B extends A { m() { return 'enfant' } } return new B().t()").equals("enfant");
+		code_v11("class A {	public id; } class W extends A {} class H extends W { constructor(id){ this.id=id } }").equals("null");
 
 		section("Access levels: fields");
 		code_v11("class A { x = 10 } var a = new A() return a.x").equals("10");
@@ -103,7 +143,13 @@ public class TestObject extends TestCommon {
 		code_v11("class A { private x = 10 } class B extends A {} var a = new B() return a.x").equals("null");
 		code_v11("class A { protected x = 10 } class B extends A {} var a = new B() return a.x").equals("null");
 		code_v11("class A { protected x = 10 } class B extends A { m() { return x } } var a = new B() return a.m()").equals("10");
+		code_v11("class A { private x = 10 constructor() { x = 15 } } var a = new A() return a").equals("A {x: 15}");
+		code_v11("class A {	private x; constructor() { this.x = []; } } return new A()").equals("A {x: []}");
+		code_v11("class Parent { private chaine = 'Nawak'; public get_chaine_parent() { return this.chaine; } } class Enfant extends Parent { public get_chaine_enfant() { return this.get_chaine_parent() } } var e = Enfant() return [e.get_chaine_parent(), e.get_chaine_enfant() ]").equals("[Nawak, Nawak]");
+		code_v11("class Parent { protected chaine = 'Nawak'; public get_chaine_parent() { return this.chaine; } } class Enfant extends Parent { public get_chaine_enfant() { return this.get_chaine_parent() } } var e = Enfant() return [e.get_chaine_parent(), e.get_chaine_enfant() ]").equals("[Nawak, Nawak]");
+		code_v11("class A { private x; constructor() { this.x = [] push(this.x, 10); } } return new A()").equals("A {x: [10]}");
 
+		code_v11("class A { private x = 10 m() { return x } } var a = new A() return a.m()").equals("10");
 		section("Access levels: static fields");
 		code_v11("class A { static x = 10 } return A.x").equals("10");
 		code_v11("class A { public static x = 10 } return A.x").equals("10");
@@ -113,6 +159,7 @@ public class TestObject extends TestCommon {
 		code_v11("class A { private static x = 10 } class B extends A {} return B.x").equals("null");
 		code_v11("class A { protected static x = 10 } class B extends A {} return B.x").equals("null");
 		code_v11("class A { protected static x = 10 } class B extends A { static m() { return x } } return B.m()").equals("10");
+		code_v11("class A { private static x = 10 static m() { return A.x } } return A.m()").equals("10");
 
 		section("Access levels: methods");
 		code_v11("class A { m() { return 10 } } var a = new A() return a.m()").equals("10");
@@ -133,6 +180,7 @@ public class TestObject extends TestCommon {
 		code_v11("class A { x protected constructor() { x = 10 } } class B extends A { constructor() { super() } } return new B().x").equals("10");
 		code_v11("class A { x private constructor() { x = 10 } } class B extends A { constructor() { super() } } return new B().x").error(Error.PRIVATE_CONSTRUCTOR);
 		code_v11("class A { private constructor() { } } class B extends A {} return new B()").equals("B {}");
+		code_v11("class A { private constructor() {} static getInstance() { return new A() } } return A.getInstance()").equals("A {}");
 
 		section("Access levels: static methods");
 		code_v11("class A { static m() { return 10 } } return A.m()").equals("10");
@@ -149,6 +197,10 @@ public class TestObject extends TestCommon {
 		code_v11("class B { y = 10 } class A { x = new B() } var a = new A() return a.x").equals("B {y: 10}");
 		code_v11("class B { y = 10 } class A { x = new B() } var a = new A() return a.x.y").equals("10");
 		code_v11("class B { y = 10 } class A { static x = new B() } return A.x").equals("B {y: 10}");
+
+		section("Method is a system method");
+		code_v11("class A { sqrt() { return sqrt(25) } }").equals("null");
+		code_v11("class A { sqrt() { return sqrt(25) } } return new A().sqrt()").equals("5");
 
 		/*
 		* Operators

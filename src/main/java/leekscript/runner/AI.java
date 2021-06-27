@@ -950,7 +950,11 @@ public abstract class AI {
 					if (iterator.key() instanceof String) {
 						retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 					} else {
-						retour.push(this, iterator.getValue(this));
+						if (getVersion() == 10) {
+							retour.push(this, LeekOperations.clone(this, iterator.getValue(this)));
+						} else {
+							retour.push(this, iterator.getValue(this));
+						}
 					}
 					iterator.next();
 				}
@@ -959,7 +963,11 @@ public abstract class AI {
 					if (iterator.key() instanceof String) {
 						retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 					} else {
-						retour.push(this, iterator.getValue(this));
+						if (getVersion() == 10) {
+							retour.push(this, LeekOperations.clone(this, iterator.getValue(this)));
+						} else {
+							retour.push(this, iterator.getValue(this));
+						}
 					}
 					iterator.next();
 				}
@@ -977,11 +985,19 @@ public abstract class AI {
 				if (iterator.key() instanceof String) {
 					retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 				} else {
-					retour.push(this, iterator.getValue(this));
+					if (getVersion() == 10) {
+						retour.push(this, LeekOperations.clone(this, iterator.getValue(this)));
+					} else {
+						retour.push(this, iterator.getValue(this));
+					}
 				}
 				iterator.next();
 			}
-			retour.push(this, y);
+			if (getVersion() == 10) {
+				retour.push(this, LeekOperations.clone(this, y));
+			} else {
+				retour.push(this, y);
+			}
 
 			return retour;
 		}

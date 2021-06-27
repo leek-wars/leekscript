@@ -82,8 +82,9 @@ public class PhpArray implements Iterable<Box> {
 					return -1;
 				else
 					return 1;
-			} else
-				return -1;
+			} else {
+				return 0;
+			}
 		}
 	}
 
@@ -143,8 +144,9 @@ public class PhpArray implements Iterable<Box> {
 					return -1;
 				else
 					return 1;
-			} else
-				return -1;
+			} else {
+				return 0;
+			}
 		}
 	}
 
@@ -928,7 +930,7 @@ public class PhpArray implements Iterable<Box> {
 				if (!ai.isPrimitive(e.value.getValue())) {
 					visited.add(e.value.getValue());
 				}
-				sb.append(ai.getString(e.value, visited));
+				sb.append(ai.getString(e.value.getValue(), visited));
 			}
 			e = e.next;
 		}

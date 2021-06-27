@@ -254,6 +254,9 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 					this.parent = parentVar.getClassDeclaration();
 				}
 			}
+			if (parent == null) {
+				System.out.println("issue");
+			}
 		}
 
 		for (var constructor : constructors.values()) {
@@ -287,6 +290,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		// Static methods
 		for (Entry<String, HashMap<Integer, ClassDeclarationMethod>> method : staticMethods.entrySet()) {
 			for (Entry<Integer, ClassDeclarationMethod> version : method.getValue().entrySet()) {
+				writer.currentBlock = version.getValue().block;
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
 				writer.addCode("private final Object " + methodName + "(");
 				int i = 0;
@@ -301,6 +305,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				}
 				version.getValue().block.writeJavaCode(mainblock, writer);
 				writer.addLine("}");
+				writer.currentBlock = null;
 			}
 		}
 
@@ -330,6 +335,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 
 		// Constructeurs
 		for (Entry<Integer, ClassDeclarationMethod> construct : constructors.entrySet()) {
+			writer.currentBlock = construct.getValue().block;
 			String methodName = className + "_" + construct.getKey();
 			writer.addCode("private final Object " + methodName + "(ObjectLeekValue u_this");
 			if (construct.getValue().block != null) {
@@ -351,6 +357,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				writer.addLine("return u_this;");
 			}
 			writer.addLine("}");
+			writer.currentBlock = null;
 		}
 	}
 

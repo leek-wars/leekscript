@@ -124,6 +124,9 @@ public class ArrayLeekValue implements Iterable<Box> {
 	public Object put(AI ai, Object keyValue, Object value) throws LeekRunException {
 		// ai.ops(1);
 		var key = transformKey(ai, keyValue);
+		if (ai.getVersion() == 10) {
+			value = LeekOperations.clone(ai, value);
+		}
 		mValues.set(ai, key, value);
 		return value;
 	}
@@ -414,10 +417,15 @@ public class ArrayLeekValue implements Iterable<Box> {
 	public String toString() {
 		var r = "[";
 		boolean first = true;
-		for (Object v : this) {
+		ArrayIterator i = getArrayIterator();
+		while (!i.ended()) {
 			if (first) first = false;
 			else r += ", ";
-			r += v.toString();
+			if (mValues.isAssociative()) {
+				r += i.key().toString() + ": ";
+			}
+			r += i.value();
+			i.next();
 		}
 		return r + "]";
 	}

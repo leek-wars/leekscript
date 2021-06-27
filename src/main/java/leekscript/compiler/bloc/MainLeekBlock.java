@@ -28,6 +28,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final ArrayList<AnonymousFunctionBlock> mAnonymousFunctions = new ArrayList<AnonymousFunctionBlock>();
 	private final Map<String, Integer> mUserFunctions = new TreeMap<String, Integer>();
 	private final Map<String, ClassDeclarationInstruction> mUserClasses = new TreeMap<String, ClassDeclarationInstruction>();
+	private final List<ClassDeclarationInstruction> mUserClassesList = new ArrayList<>();
 	private int mMinLevel = 1;
 	private int mAnonymousId = 1;
 	private int mFunctionId = 1;
@@ -186,7 +187,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("public class " + className + " extends " + AIClass + " {");
 
 		// Classes
-		for (var clazz : mUserClasses.values()) {
+		for (var clazz : mUserClassesList) {
 			clazz.declareJava(this, writer);
 		}
 
@@ -194,11 +195,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("public " + className + "() throws LeekRunException {");
 		writer.addLine("super(" + mInstructions.size() + ", " + mCompiler.getCurrentAI().getVersion() + ");");
 
-		for (var clazz : mUserClasses.values()) {
+		for (var clazz : mUserClassesList) {
 			clazz.createJava(this, writer);
 		}
 		// Initialize classes static fields
-		for (var clazz : mUserClasses.values()) {
+		for (var clazz : mUserClassesList) {
 			clazz.initializeStaticFields(this, writer);
 		}
 		writer.addLine("}");
@@ -228,7 +229,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		 */
 		writer.addLine("public Object runIA() throws LeekRunException { resetCounter();");
 
-		for (var clazz : mUserClasses.values()) {
+		for (var clazz : mUserClassesList) {
 			clazz.writeJavaCode(this, writer);
 		}
 
@@ -360,6 +361,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public void addClass(ClassDeclarationInstruction classDeclaration) {
 		mUserClasses.put(classDeclaration.getName(), classDeclaration);
+		mUserClassesList.add(classDeclaration);
 	}
 
 	public ClassDeclarationInstruction getUserClass(String name) {
@@ -367,7 +369,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public void analyze(WordCompiler compiler) {
-		for (var clazz : mUserClasses.values()) {
+		for (var clazz : mUserClassesList) {
 			clazz.declare(compiler);
 		}
 		for (var function : mFunctions) {
@@ -376,7 +378,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var global : mGlobalesDeclarations) {
 			global.declare(compiler);
 		}
-		for (var clazz : mUserClasses.values()) {
+		for (var clazz : mUserClassesList) {
 			clazz.analyze(compiler);
 		}
 		for (var function : mFunctions) {

@@ -95,8 +95,9 @@ public class LeekExpressionFunction extends AbstractExpression {
 				addComma = false;
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
 				// Méthode connue
-				String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getMethodName(field, mParameters.size());
-				writer.addCode(methodName + "(u_this");
+				// String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getMethodName(field, mParameters.size());
+				// writer.addCode(methodName + "(u_this");
+				writer.addCode("callMethod(u_this, \"" + field + "_" + mParameters.size() + "\", u_class");
 			} else {
 				writer.addCode("callMethod(");
 				object.writeJavaCode(mainblock, writer);
@@ -126,8 +127,10 @@ public class LeekExpressionFunction extends AbstractExpression {
 			writer.addCode(".callConstructor(u_this");
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.METHOD) {
 			// Méthode connue
-			String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getMethodName(((LeekVariable) mExpression).getName(), mParameters.size());
-			writer.addCode(methodName + "(u_this");
+			// String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getMethodName(((LeekVariable) mExpression).getName(), mParameters.size());
+			// writer.addCode(methodName + "(u_this");
+			writer.addCode("callMethod(u_this, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\", u_class");
+
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.STATIC_METHOD) {
 			// Méthode statique connue
 			String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getStaticMethodName(((LeekVariable) mExpression).getName(), mParameters.size());
@@ -255,8 +258,10 @@ public class LeekExpressionFunction extends AbstractExpression {
 				var constructor = clazz.getConstructor(mParameters.size());
 				if (constructor == null) {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { clazz.getName() }));
-				} else if (constructor.level != AccessLevel.PUBLIC) {
-					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, constructor.level == AccessLevel.PROTECTED ? Error.PROTECTED_CONSTRUCTOR : Error.PRIVATE_CONSTRUCTOR, new String[] { clazz.getName() }));
+				} else if (constructor.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != clazz) {
+					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_CONSTRUCTOR, new String[] { clazz.getName() }));
+				} else if (constructor.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
+					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_CONSTRUCTOR, new String[] { clazz.getName() }));
 				}
 
 			} else if (v.getVariableType() == VariableType.SUPER) {
@@ -267,8 +272,10 @@ public class LeekExpressionFunction extends AbstractExpression {
 					operations += 1;
 					if (constructor == null) {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { clazz.getName() }));
-					} else if (constructor.level == AccessLevel.PRIVATE) {
+					} else if (constructor.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != clazz) {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_CONSTRUCTOR, new String[] { clazz.getName() }));
+					} else if (constructor.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
+						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_CONSTRUCTOR, new String[] { clazz.getName() }));
 					}
 				}
 			}

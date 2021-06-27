@@ -525,9 +525,12 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			var array = (ArrayLeekValue) parameters[0];
-			var value = LeekOperations.clone(ai, parameters[1]);
 			var index = ((Number) parameters[2]).intValue();
-			array.insert(ai, value, index);
+			if (ai.getVersion() == 10) {
+				array.insert(ai, LeekOperations.clone(ai, parameters[1]), index);
+			} else {
+				array.insert(ai, parameters[1], index);
+			}
 			return null;
 		}
 
@@ -554,8 +557,12 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
 			var array = (ArrayLeekValue) parameters[0];
-			var value = LeekOperations.clone(leekIA, parameters[1]);
-			array.insert(leekIA, value, 0);
+			if (leekIA.getVersion() == 10) {
+				var value = LeekOperations.clone(leekIA, parameters[1]);
+				array.insert(leekIA, value, 0);
+			} else {
+				array.insert(leekIA, parameters[1], 0);
+			}
 			return null;
 		}
 	},
@@ -619,7 +626,12 @@ public enum LeekFunctions implements ILeekFunction {
 			int type = PhpArray.ASC_A;
 			if (leekIA.bool(parameters[1]))
 				type = PhpArray.DESC_A;
+			// try {
 			array.sort(leekIA, type);
+			// } catch (Exception e) {
+
+			// 	e.printStackTrace(System.out);
+			// }
 			return null;
 		}
 
@@ -791,9 +803,8 @@ public enum LeekFunctions implements ILeekFunction {
 			int size = array.size();
 			if (AI.isType(parameters[2], AI.NUMBER))
 				size = ai.integer(parameters[2]);
-			Object copy = LeekOperations.clone(ai, parameters[1]);
 			for (int i = 0; i < size; i++) {
-				array.put(ai, i, copy);
+				array.put(ai, i, parameters[1]);
 				ai.ops(3);
 			}
 			return null;
@@ -838,7 +849,11 @@ public enum LeekFunctions implements ILeekFunction {
 			var array = (ArrayLeekValue) parameters[0];
 			var array2 = (ArrayLeekValue) parameters[1];
 			for (var value : array2) {
-				array.push(leekIA, value.getValue());
+				if (leekIA.getVersion() == 10) {
+					array.push(leekIA, LeekOperations.clone(leekIA, value.getValue()));
+				} else {
+					array.push(leekIA, value.getValue());
+				}
 				leekIA.ops(1);
 			}
 			return null;

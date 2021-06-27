@@ -80,9 +80,18 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 					writer.addLine("), " + e.getOperations() + ")");
 				}
 				writer.addLine(";", mLine, mAI);
-			} else {
+			} else if (mainblock.getWordCompiler().getVersion() <= 10) {
 				writer.addCode("final var u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", ");
 				if (mValue != null) mValue.compileL(mainblock, writer);
+				else writer.addCode("null");
+				writer.addLine(")");
+				if (mValue != null && mValue.getOperations() > 0) {
+					writer.addCode(", " + mValue.getOperations());
+				}
+				writer.addLine(");", mLine, mAI);
+			} else {
+				writer.addCode("final var u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", ");
+				if (mValue != null) mValue.writeJavaCode(mainblock, writer);
 				else writer.addCode("null");
 				writer.addLine(")");
 				if (mValue != null && mValue.getOperations() > 0) {
