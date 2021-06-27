@@ -51,15 +51,15 @@ public class ForeachBlock extends AbstractLeekBlock {
 		String iterator_name = mainblock.hasGlobal(mIterator.getWord()) ? ("g_" + mIterator) : "u_" + mIterator;
 
 		// Container
-		writer.addCode("final var " + ar + " = ");
+		writer.addCode("final var " + ar + " = ops(");
 		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
 			mArray.writeJavaCode(mainblock, writer);
 		} else {
 			writer.compileLoad(mainblock, mArray);
 		}
-		writer.addCode(";");
+		writer.addCode(", " + mArray.getOperations() + ");");
 
-		writer.addLine("if (isIterable(" + ar + ")) {");
+		writer.addLine("if (isIterable(" + ar + ")) {", mIterator.getLine(), mIterator.getAI());
 		if (mIsDeclaration) {
 			if (mIsDeclaration && declaration.isCaptured()) {
 				writer.addCode("final Wrapper " + iterator_name + " = new Wrapper(new Box(" + writer.getAIThis() + ", null));");

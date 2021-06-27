@@ -14,6 +14,7 @@ import leekscript.runner.values.ArrayLeekValue.ArrayIterator;
 import leekscript.common.Error;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Set;
 
 import com.alibaba.fastjson.JSON;
@@ -337,13 +338,13 @@ public abstract class AI {
 		return array.size();
 	}
 
-	public int count(Object... args) throws LeekRunException {
+	public Object count(Object... args) throws LeekRunException {
 		if (check("count", new int[] { ARRAY }, args)) {
 			ops(LeekFunctions.count.getOperations());
 			var array = (ArrayLeekValue) args[0];
 			return array.size();
 		}
-		return 0;
+		return null;
 	}
 
 	public Object debug(Object x) throws LeekRunException {
@@ -572,6 +573,7 @@ public abstract class AI {
 
 		} catch (Exception e) {
 
+			// e.printStackTrace();
 			getLogs().addLog(AILog.ERROR, "Cannot encode object \"" + object.toString() + "\"");
 			try {
 				ops(100);
@@ -672,29 +674,52 @@ public abstract class AI {
 			if (y instanceof ArrayLeekValue) {
 				return ((ArrayLeekValue) y).equals(this, (Number) x);
 			}
+			if (y == null) return false;
 			return n == getDouble(y);
-		}
-		if (y instanceof Number) {
-			return getDouble(x) == ((Number) y).doubleValue();
 		}
 		if (x instanceof Boolean) {
 			if (y instanceof String) {
-				if (((String) y).equals("true")) return ((Boolean) x) == true;
-				if (((String) y).equals("false")) return ((Boolean) x) == false;
-				return false;
+				if (((String) y).equals("false") || ((String) y).equals("0") || ((String) y).length() == 0) return ((Boolean) x) == false;
+				return ((Boolean) x) == true;
 			}
 			if (y instanceof ArrayLeekValue) {
 				return ((ArrayLeekValue) y).equals(this, (Boolean) x);
 			}
+			if (y instanceof Number) {
+				return (Boolean) x == (((Number) y).doubleValue() != 0);
+			}
 		}
 		if (x instanceof ArrayLeekValue) {
+			var array = (ArrayLeekValue) x;
+			if (y instanceof String) {
+				if (((String) y).length() == 0) return array.size() == 0 || eq(array.iterator().next().getValue(), y);
+			}
 			return ((ArrayLeekValue) x).equals(this, y);
 		}
 		if (x instanceof FunctionLeekValue) {
 			return ((FunctionLeekValue) x).equals(this, y);
 		}
-		if (x instanceof String && y instanceof String) {
-			ops(Math.min(((String) x).length(), ((String) y).length()));
+		if (x instanceof String) {
+			var s = (String) x;
+			if (y instanceof String) {
+				ops(Math.min(s.length(), ((String) y).length()));
+				return x.equals(y);
+			}
+			if (y instanceof Number) {
+				if (s.equals("true")) return ((Number) y).doubleValue() != 0;
+				if (s.equals("false")) return ((Number) y).doubleValue() == 0;
+				return getDouble(x) == ((Number) y).doubleValue();
+			}
+			if (y instanceof Boolean) {
+				if (s.equals("false") || s.equals("0") || s.length() == 0) return ((Boolean) y) == false;
+				return ((Boolean) y) == true;
+			}
+			if (y instanceof ArrayLeekValue) {
+				var array = (ArrayLeekValue) y;
+				if (array.size() == 0) return s.length() == 0 || s.equals("false");
+				if (array.size() == 1 || s.equals("true")) return eq(((ArrayLeekValue) y).iterator().next().getValue(), x);
+				return false;
+			}
 		}
 		return x.equals(y);
 	}
@@ -869,6 +894,16 @@ public abstract class AI {
 			if (v2 == null) return v1;
 		}
 
+		if (v1 instanceof Boolean) {
+			if (v2 instanceof Integer) {
+				return (((Boolean) v1) ? 1 : 0) + (Integer) v2;
+			}
+			if (v2 instanceof Number) {
+				return (((Boolean) v1) ? 1 : 0) + ((Number) v2).doubleValue();
+			}
+			if (v2 == null) return ((Boolean) v1) ? 1 : 0;
+		}
+
 		// Concatenate arrays
 		if (v1 instanceof ArrayLeekValue && v2 instanceof ArrayLeekValue) {
 
@@ -903,6 +938,9 @@ public abstract class AI {
 		if (v1 == null) {
 			if (v2 instanceof Number) {
 				return v2;
+			}
+			if (v2 instanceof Boolean) {
+				return ((Boolean) v2) ? 1 : 0;
 			}
 			if (v2 == null) return 0;
 		}
@@ -1107,15 +1145,23 @@ public abstract class AI {
 	public String getString(Object value, Set<Object> visited) throws LeekRunException {
 		return LeekValueManager.getString(this, value, visited);
 	}
-	public String toJSON(Object value) {
-		return LeekValueManager.toJSON(this, value);
+
+	public Object toJSON(Object v) throws LeekRunException {
+		if (v instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) v).toJSON(this, new HashSet<Object>());
+		}
+		return v;
 	}
 
 	public boolean isPrimitive(Object value) {
 		return !(value instanceof ArrayLeekValue || value instanceof ObjectLeekValue);
 	}
-	public boolean isIterable(Object value) {
-		return value instanceof ArrayLeekValue;
+	public boolean isIterable(Object value) throws LeekRunException {
+		boolean ok = value instanceof ArrayLeekValue;
+		if (!ok) {
+			addSystemLog(AILog.ERROR, Error.NOT_ITERABLE, new String[] { string(value) });
+		}
+		return ok;
 	}
 	public boolean getBooleanTernary(Object value) throws LeekRunException {
 		ops(1);
@@ -1145,6 +1191,36 @@ public abstract class AI {
 	public Object field_inc(Object object, String field) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_inc(field);
+		}
+		if (object instanceof ClassLeekValue) {
+			// return ((ClassLeekValue) object).field_add_eq(field, value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_pre_inc(Object object, String field) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_pre_inc(field);
+		}
+		if (object instanceof ClassLeekValue) {
+			// return ((ClassLeekValue) object).field_add_eq(field, value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_dec(Object object, String field) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_dec(field);
+		}
+		if (object instanceof ClassLeekValue) {
+			// return ((ClassLeekValue) object).field_add_eq(field, value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_pre_dec(Object object, String field) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_pre_dec(field);
 		}
 		if (object instanceof ClassLeekValue) {
 			// return ((ClassLeekValue) object).field_add_eq(field, value);
@@ -1353,7 +1429,6 @@ public abstract class AI {
 		if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getBox(this, index);
 		}
-		// return new Box(this, null);
 		return null;
 	}
 

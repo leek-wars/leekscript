@@ -52,7 +52,7 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 			else writer.addCode("null");
 		} else {
 			writer.addCode("g_" + token.getWord() + " = new Box(" + writer.getAIThis() + ", ");
-			if (mValue != null) mValue.writeJavaCode(mainblock, writer);
+			if (mValue != null) mValue.compileL(mainblock, writer);
 			else writer.addCode("null");
 			writer.addCode(", " + (mValue != null ? mValue.getOperations() : 0) + ")");
 		}

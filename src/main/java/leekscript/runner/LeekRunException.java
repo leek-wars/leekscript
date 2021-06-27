@@ -44,7 +44,8 @@ public class LeekRunException extends Exception {
 			return "Erreur d'exécution : Niveau invalide";
 		case OUT_OF_MEMORY:
 			return "Erreur d'exécution : Trop de RAM utilisée";
-
+		case UNKNOWN_FIELD:
+			return "Erreur d'exécution : Champ inconnu";
 		}
 		return "Erreur d'exécution";
 	}

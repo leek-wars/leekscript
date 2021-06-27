@@ -99,6 +99,30 @@ public class ObjectLeekValue {
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
 
+	public Object field_pre_inc(String field) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.pre_increment();
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_dec(String field) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.decrement();
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_pre_dec(String field) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.pre_decrement();
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
 	public Object field_add_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {

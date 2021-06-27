@@ -97,7 +97,7 @@ public class LeekObjectAccess extends AbstractExpression {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("getField(");
-		object.compileL(mainblock, writer);
+		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\")");
 	}
 
@@ -106,7 +106,7 @@ public class LeekObjectAccess extends AbstractExpression {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("setField(");
-		object.compileL(mainblock, writer);
+		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
 		writer.addCode(")");
@@ -116,8 +116,36 @@ public class LeekObjectAccess extends AbstractExpression {
 	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer) {
 		assert (object.isLeftValue() && !object.nullable());
 
-		object.compileL(mainblock, writer);
-		writer.addCode(".getFieldL(\"" + field.getWord() + "\").increment()");
+		writer.addCode("field_inc(");
+		object.writeJavaCode(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\")");
+	}
+
+	@Override
+	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer) {
+		assert (object.isLeftValue() && !object.nullable());
+
+		writer.addCode("field_pre_inc(");
+		object.writeJavaCode(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\")");
+	}
+
+	@Override
+	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer) {
+		assert (object.isLeftValue() && !object.nullable());
+
+		writer.addCode("field_dec(");
+		object.writeJavaCode(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\")");
+	}
+
+	@Override
+	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer) {
+		assert (object.isLeftValue() && !object.nullable());
+
+		writer.addCode("field_pre_dec(");
+		object.writeJavaCode(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\")");
 	}
 
 	@Override
@@ -125,7 +153,7 @@ public class LeekObjectAccess extends AbstractExpression {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_add_eq(");
-		object.compileL(mainblock, writer);
+		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
 		writer.addCode(")");
@@ -137,7 +165,7 @@ public class LeekObjectAccess extends AbstractExpression {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_sub_eq(");
-		object.compileL(mainblock, writer);
+		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
 		writer.addCode(")");

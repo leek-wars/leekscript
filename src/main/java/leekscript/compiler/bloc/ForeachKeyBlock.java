@@ -69,13 +69,13 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		String val_iterator = mainblock.hasGlobal(mIterator.getWord()) ? ("g_" + mIterator) : ("u_" + mIterator);
 
 		// Container
-		writer.addCode("final var " + ar + " = ");
+		writer.addCode("final var " + ar + " = ops(");
 		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
 			mArray.writeJavaCode(mainblock, writer);
 		} else {
 			writer.compileLoad(mainblock, mArray);
 		}
-		writer.addCode(";");
+		writer.addCode(", " + mArray.getOperations() + ");");
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("if (isIterable(").append(ar).append(")) {");
