@@ -152,7 +152,8 @@ public class Box {
 		if (mValue instanceof Number) {
 			return mValue = mUAI.sub(mValue, val);
 		}
-		return mValue = mUAI.sub_eq(mValue, val);
+		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+		// return mValue = mUAI.sub_eq(mValue, val);
 	}
 
 	public Object mul_eq(Object val) throws LeekRunException {

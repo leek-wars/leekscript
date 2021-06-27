@@ -1,6 +1,7 @@
 package leekscript.runner.values;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -10,6 +11,7 @@ import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
 import leekscript.runner.PhpArray;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
@@ -348,20 +350,36 @@ public class ArrayLeekValue implements Iterable<Box> {
 		mValues.sort(ai, comparator);
 	}
 
-	public Object toJSON(AI ai) throws LeekRunException {
+	public JSON toJSON(AI ai) throws LeekRunException {
+		return toJSON(ai, new HashSet<>());
+	}
+
+	public JSON toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
+		visited.add(this);
 
 		if (mValues.isAssociative()) {
 			JSONObject o = new JSONObject();
 			ArrayIterator i = getArrayIterator();
 			while (!i.ended()) {
-				o.put(i.key().toString(), ai.toJSON(i.getValue(ai)));
+				var v = i.getValue(ai);
+				if (!visited.contains(v)) {
+					if (!ai.isPrimitive(v)) {
+						visited.add(v);
+					}
+					o.put(i.key().toString(), ai.toJSON(v));
+				}
 				i.next();
 			}
 			return o;
 		} else {
 			JSONArray a = new JSONArray();
-			for (Object v : this) {
-				a.add(ai.toJSON(v));
+			for (var v : this) {
+				if (!visited.contains(v)) {
+					if (!ai.isPrimitive(v)) {
+						visited.add(v);
+					}
+					a.add(ai.toJSON(v.getValue()));
+				}
 			}
 			return a;
 		}

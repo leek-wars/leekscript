@@ -33,7 +33,11 @@ public class LeekValueComparator {
 		}
 
 		public int compareAsc(Object v1, Object v2) throws LeekRunException {
-			if (v1 instanceof Boolean) {
+			if (v1 == null) {
+				if (v2 == null) return 0;
+				return -1;
+			} else if (v1 instanceof Boolean) {
+				if (v2 == null) return 1;
 				if (v2 instanceof Boolean) {
 					if ((Boolean) v1 == (Boolean) v2)
 						return 0;
@@ -51,14 +55,14 @@ public class LeekValueComparator {
 						return -1;
 					else
 						return 1;
-				} else if (v2 instanceof Boolean)
+				} else if (v2 instanceof Boolean || v2 == null)
 					return 1;
 				else
 					return -1;
 			} else if (v1 instanceof String) {
 				if (v2 instanceof String) {
 					return ((String) v1).compareTo((String) v2);
-				} else if (v2 instanceof Number || v2 instanceof Boolean)
+				} else if (v2 instanceof Number || v2 instanceof Boolean || v2 == null)
 					return 1;
 				else
 					return -1;
@@ -74,8 +78,9 @@ public class LeekValueComparator {
 					return -1;
 				else
 					return 1;
-			} else
+			} else {
 				return -1;
+			}
 		}
 	}
 }

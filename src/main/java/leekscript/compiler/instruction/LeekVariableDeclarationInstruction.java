@@ -82,7 +82,7 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 				writer.addLine(";", mLine, mAI);
 			} else {
 				writer.addCode("final var u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", ");
-				if (mValue != null) mValue.writeJavaCode(mainblock, writer);
+				if (mValue != null) mValue.compileL(mainblock, writer);
 				else writer.addCode("null");
 				writer.addLine(")");
 				if (mValue != null && mValue.getOperations() > 0) {

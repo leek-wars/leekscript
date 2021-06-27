@@ -350,7 +350,7 @@ public class PhpArray implements Iterable<Box> {
 
 	public Box getBox(AI ai, Object key) throws LeekRunException {
 		Element e = getElement(ai, key);
-		return e == null ? null : e.value;
+		return e == null ? new Box(ai) : e.value;
 	}
 
 	/**

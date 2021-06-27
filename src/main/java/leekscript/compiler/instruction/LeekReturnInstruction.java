@@ -33,16 +33,7 @@ public class LeekReturnInstruction implements LeekInstruction {
 		} else {
 			if (mExpression.getOperations() > 0) writer.addCode("ops(");
 			var finalExpression = mExpression.trim();
-			boolean isRef = finalExpression instanceof LeekExpression && ((LeekExpression) finalExpression).getOperator() == Operators.REFERENCE;
-			if (mainblock.getWordCompiler().getVersion() == 10) {
-				if (isRef || !finalExpression.isLeftValue()) {
-					finalExpression.writeJavaCode(mainblock, writer);
-				} else {
-					finalExpression.compileL(mainblock, writer);
-				}
-			} else {
-				finalExpression.compileL(mainblock, writer);
-			}
+			finalExpression.compileL(mainblock, writer);
 			if (finalExpression.getOperations() > 0) writer.addCode(", " + finalExpression.getOperations() + ")");
 			writer.addLine(";", mLine, mAI);
 		}

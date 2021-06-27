@@ -266,6 +266,10 @@ public class LeekVariable extends AbstractExpression {
 			writer.addCode("u_class.setField(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
+		} else if (mainblock.isRedefinedFunction(token.getWord())) {
+			writer.addCode("rfunction_" + token.getWord() + ".set(");
+			expr.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (mainblock.getWordCompiler().getVersion() >= 11) {
 				writer.addCode("g_" + token.getWord() + " = ");
@@ -296,7 +300,7 @@ public class LeekVariable extends AbstractExpression {
 				// 	expr.compileL(mainblock, writer);
 				// } else {
 					writer.addCode("u_" + token.getWord() + ".set(");
-					expr.compileL(mainblock, writer);
+					expr.writeJavaCode(mainblock, writer);
 					writer.addCode(")");
 				// }
 			} else {
@@ -328,7 +332,7 @@ public class LeekVariable extends AbstractExpression {
 			} else {
 				writer.addCode("g_" + token.getWord() + ".set(");
 				// writer.compileClone(mainblock, expr);
-				expr.writeJavaCode(mainblock, writer);
+				expr.compileL(mainblock, writer);
 				writer.addCode(")");
 			}
 		} else {

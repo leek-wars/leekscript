@@ -13,10 +13,19 @@ import leekscript.common.Type;
 public enum LeekFunctions implements ILeekFunction {
 
 	// Fonctions mathématiques
-	abs(new CallableVersion[] {
-		new CallableVersion(Type.INT, new Type[] { Type.INT }),
-		new CallableVersion(Type.REAL, new Type[] { Type.REAL })
-	}),
+	// abs(new CallableVersion[] {
+	// 	new CallableVersion(Type.INT, new Type[] { Type.INT }),
+	// 	new CallableVersion(Type.REAL, new Type[] { Type.REAL })
+	// }),
+	abs(1, new int[] { AI.NUMBER }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			if (parameters[0] instanceof Integer) {
+				return Math.abs((Integer) parameters[0]);
+			}
+			return Math.abs(LeekValueManager.getDouble(ai, parameters[0]));
+		}
+	},
 
 	min(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
@@ -46,9 +55,16 @@ public enum LeekFunctions implements ILeekFunction {
 		}
 	},
 
-	cos(new CallableVersion[] {
-		new CallableVersion(Type.REAL, new Type[] { Type.REAL })
-	}),
+	// cos(new CallableVersion[] {
+	// 	new CallableVersion(Type.REAL, new Type[] { Type.REAL })
+	// }),
+	cos(1, new int[] { AI.NUMBER }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return Math.cos(v);
+		}
+	},
 
 	sin(1, new int[] { AI.NUMBER }) {
 		@Override
@@ -79,17 +95,38 @@ public enum LeekFunctions implements ILeekFunction {
 		}
 	},
 
-	acos(new CallableVersion[] {
-		new CallableVersion(Type.REAL, new Type[] { Type.REAL })
-	}),
+	// acos(new CallableVersion[] {
+	// 	new CallableVersion(Type.REAL, new Type[] { Type.REAL })
+	// }),
+	acos(1, new int[] { AI.NUMBER }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return Math.acos(v);
+		}
+	},
 
-	asin(new CallableVersion[] {
-		new CallableVersion(Type.REAL, new Type[] { Type.REAL })
-	}),
+	// asin(new CallableVersion[] {
+	// 	new CallableVersion(Type.REAL, new Type[] { Type.REAL })
+	// }),
+	asin(1, new int[] { AI.NUMBER }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return Math.asin(v);
+		}
+	},
 
-	atan(new CallableVersion[] {
-		new CallableVersion(Type.REAL, new Type[] { Type.REAL })
-	}),
+	// atan(new CallableVersion[] {
+	// 	new CallableVersion(Type.REAL, new Type[] { Type.REAL })
+	// }),
+	atan(1, new int[] { AI.NUMBER }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return Math.atan(v);
+		}
+	},
 
 	atan2(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
@@ -100,20 +137,41 @@ public enum LeekFunctions implements ILeekFunction {
 		}
 	},
 
-	ceil(new CallableVersion[] {
-		new CallableVersion(Type.INT, new Type[] { Type.INT }),
-		new CallableVersion(Type.INT, new Type[] { Type.REAL }),
-	}),
+	// ceil(new CallableVersion[] {
+	// 	new CallableVersion(Type.INT, new Type[] { Type.INT }),
+	// 	new CallableVersion(Type.INT, new Type[] { Type.REAL }),
+	// }),
+	ceil(1, new int[] { AI.NUMBER }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return (int) Math.ceil(v);
+		}
+	},
 
-	floor(new CallableVersion[] {
-		new CallableVersion(Type.INT, new Type[] { Type.INT }),
-		new CallableVersion(Type.INT, new Type[] { Type.REAL }),
-	}),
+	// floor(new CallableVersion[] {
+	// 	new CallableVersion(Type.INT, new Type[] { Type.INT }),
+	// 	new CallableVersion(Type.INT, new Type[] { Type.REAL }),
+	// }),
+	floor(1, new int[] { AI.NUMBER }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return (int) Math.floor(v);
+		}
+	},
 
-	round(new CallableVersion[] {
-		new CallableVersion(Type.INT, new Type[] { Type.INT }),
-		new CallableVersion(Type.INT, new Type[] { Type.REAL }),
-	}),
+	// round(new CallableVersion[] {
+	// 	new CallableVersion(Type.INT, new Type[] { Type.INT }),
+	// 	new CallableVersion(Type.INT, new Type[] { Type.REAL }),
+	// }),
+	round(1, new int[] { AI.NUMBER }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			return (int) Math.round(v);
+		}
+	},
 
 	sqrt(1, new int[] { AI.NUMBER }) {
 		@Override
@@ -440,7 +498,14 @@ public enum LeekFunctions implements ILeekFunction {
 		}
 	},
 
-	count(new CallableVersion[] { new CallableVersion(Type.INT, new Type[] { Type.ARRAY }) }),
+	// count(new CallableVersion[] { new CallableVersion(Type.ANY, new Type[] { Type.ARRAY }) }),
+	count(1, new int[] { AI.ARRAY }) {
+		@Override
+		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			return array.size();
+		}
+	},
 
 	join(2, new int[] { AI.ARRAY, AI.STRING }) {
 		@Override
@@ -642,20 +707,21 @@ public enum LeekFunctions implements ILeekFunction {
 	},
 	arrayMin(1, new int[] { AI.ARRAY }) {
 		@Override
-		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			var array = (ArrayLeekValue) parameters[0];
-			Object max_c = null;
-			LeekValueComparator.SortComparator comp = new LeekValueComparator.SortComparator(leekIA, LeekValueComparator.SortComparator.SORT_ASC);
-			for (var val : array) {
-				if (max_c == null)
-					max_c = val.getValue();
-				else if (comp.compare(LeekValueManager.getValue(val), max_c) == -1)
-					max_c = val.getValue();
+			if (array.size() > 0) {
+				var comp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
+				var iterator = array.iterator();
+				Object min_c = iterator.next().getValue();
+				while (iterator.hasNext()) {
+					var value = iterator.next().getValue();
+					if (comp.compare(value, min_c) == -1) {
+						min_c = value;
+					}
+				}
+				return LeekOperations.clone(ai, min_c);
 			}
-			if (max_c == null)
-				return null;
-			else
-				return LeekOperations.clone(leekIA, max_c);
+			return null;
 		}
 	},
 	arrayMax(1, new int[] { AI.ARRAY }) {
@@ -663,11 +729,11 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
 			var array = (ArrayLeekValue) parameters[0];
 			Object min_c = null;
-			LeekValueComparator.SortComparator mincomp = new LeekValueComparator.SortComparator(leekIA, LeekValueComparator.SortComparator.SORT_ASC);
+			var mincomp = new LeekValueComparator.SortComparator(leekIA, LeekValueComparator.SortComparator.SORT_ASC);
 			for (var val : array) {
 				if (min_c == null)
 					min_c = val.getValue();
-				else if (mincomp.compare(LeekValueManager.getValue(val), min_c) == 1)
+				else if (mincomp.compare(val.getValue(), min_c) == 1)
 					min_c = val.getValue();
 			}
 			if (min_c == null)
@@ -869,9 +935,36 @@ public enum LeekFunctions implements ILeekFunction {
 		}
 	},
 
-	debug(new CallableVersion[] { new CallableVersion(Type.NULL, new Type[] { Type.ANY }) }),
-	debugW(new CallableVersion[] { new CallableVersion(Type.NULL, new Type[] { Type.ANY }) }),
-	debugE(new CallableVersion[] { new CallableVersion(Type.NULL, new Type[] { Type.ANY }) }),
+	// debug(new CallableVersion[] { new CallableVersion(Type.NULL, new Type[] { Type.ANY }) }),
+	// debugW(new CallableVersion[] { new CallableVersion(Type.NULL, new Type[] { Type.ANY }) }),
+	// debugE(new CallableVersion[] { new CallableVersion(Type.NULL, new Type[] { Type.ANY }) }),
+	debug(1) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String message = LeekValueManager.getString(ai, parameters[0]);
+			ai.getLogs().addLog(AILog.STANDARD, message);
+			ai.ops(message.length());
+			return null;
+		}
+	},
+	debugW(1) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String message = LeekValueManager.getString(ai, parameters[0]);
+			ai.getLogs().addLog(AILog.WARNING, message);
+			ai.ops(message.length());
+			return null;
+		}
+	},
+	debugE(1) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			String message = LeekValueManager.getString(ai, parameters[0]);
+			ai.getLogs().addLog(AILog.ERROR, message);
+			ai.ops(message.length());
+			return null;
+		}
+	},
 
 	debugC(2) {
 		@Override
@@ -947,7 +1040,13 @@ public enum LeekFunctions implements ILeekFunction {
 		}
 	},
 
-	getOperations(new CallableVersion[] { new CallableVersion(Type.INT, new Type[0]) }),
+	// getOperations(new CallableVersion[] { new CallableVersion(Type.INT, new Type[0]) }),
+	getOperations(0) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ai.getOperations();
+		}
+	},
 
 	clone(1, 2) {
 		@Override
@@ -998,6 +1097,7 @@ public enum LeekFunctions implements ILeekFunction {
 		this.versions = versions;
 		this.direct = true;
 		// this.parameters = new int[0];
+		mArguments = this.versions[0].arguments.length;
 	}
 
 	LeekFunctions(Type return_type, CallableVersion[] versions, int[] parameters) {
