@@ -131,7 +131,8 @@ public class LeekExpressionFunction extends AbstractExpression {
 			addComma = false;
 		} else if (mExpression instanceof LeekVariable && mainblock.isRedefinedFunction(((LeekVariable) mExpression).getName())) {
 			writer.addCode("rfunction_" + ((LeekVariable) mExpression).getName());
-			writer.addCode(".execute(this");
+			writer.addCode(".execute(");
+			addComma = false;
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SYSTEM_FUNCTION) {
 			var variable = (LeekVariable) mExpression;
 			system_function = LeekFunctions.getValue(variable.getName());

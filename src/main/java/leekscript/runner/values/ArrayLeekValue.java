@@ -300,11 +300,11 @@ public class ArrayLeekValue implements Iterable<Box> {
 		if (comp instanceof ArrayLeekValue) {
 			return mValues.equals(ai, ((ArrayLeekValue) comp).mValues);
 		} else if (mValues.size() == 1) { // Si y'a un seul élément dans le tableau
-			// In LS1.0, [null] == null, not in 1.1+
-			if (ai.getVersion() >= 11 && comp == null) {
-				return false;
+			var firstValue = mValues.getHeadElement().value();
+			if (firstValue == null && comp == null) {
+				return ai.getVersion() == 10; // Bug in 1.0, [null] == null
 			}
-			return ai.eq(mValues.getHeadElement().value(), comp);
+			return ai.eq(firstValue, comp);
 		} else if (comp instanceof Boolean) {
 			return ai.bool(comp) == ai.bool(this);
 		} else if (comp instanceof String) {
