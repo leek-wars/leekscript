@@ -146,6 +146,14 @@ public class ObjectLeekValue {
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
 
+	public Object field_pow_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.pow_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
 	public Object field_div_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {

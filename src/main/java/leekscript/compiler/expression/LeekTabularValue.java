@@ -117,11 +117,34 @@ public class LeekTabularValue extends AbstractExpression {
 		writer.addCode(")");
 	}
 
+
+	@Override
+	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_pre_inc(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
 	@Override
 	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_dec(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_pre_dec(");
 		mTabular.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		mCase.writeJavaCode(mainblock, writer);
@@ -168,6 +191,19 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
+	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_mod_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
@@ -180,6 +216,18 @@ public class LeekTabularValue extends AbstractExpression {
 		writer.addCode(")");
 	}
 
+	@Override
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_pow_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
 
 	@Override
 	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
@@ -260,6 +308,7 @@ public class LeekTabularValue extends AbstractExpression {
 		expr.writeJavaCode(mainblock, writer);
 		writer.addCode(")");
 	}
+
 	public void setLeftValue(boolean b) {
 		mLeftValue = b;
 	}

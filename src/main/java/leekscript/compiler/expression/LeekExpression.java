@@ -741,7 +741,7 @@ public class LeekExpression extends AbstractExpression {
 			mExpression1.compileMulEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.POWERASSIGN:
-			mExpression1.compileSet(mainblock, writer, new LeekExpression(mExpression1, Operators.POWER, mExpression2));
+			mExpression1.compilePowEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.BITXOR_ASSIGN:
 			mExpression1.compileBitXorEq(mainblock, writer, mExpression2);

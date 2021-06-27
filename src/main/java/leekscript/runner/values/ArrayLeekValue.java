@@ -134,10 +134,22 @@ public class ArrayLeekValue implements Iterable<Box> {
 		return mValues.getOrCreate(ai, key).increment();
 	}
 
+	public Object put_pre_inc(AI ai, Object keyValue) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		return mValues.getOrCreate(ai, key).pre_increment();
+	}
+
 	public Object put_dec(AI ai, Object keyValue) throws LeekRunException {
 		// ai.ops(1);
 		var key = transformKey(ai, keyValue);
 		return mValues.getOrCreate(ai, key).decrement();
+	}
+
+	public Object put_pre_dec(AI ai, Object keyValue) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		return mValues.getOrCreate(ai, key).pre_decrement();
 	}
 
 	public Object put_add_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
@@ -161,6 +173,13 @@ public class ArrayLeekValue implements Iterable<Box> {
 		return value;
 	}
 
+	public Object put_pow_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		mValues.getOrCreate(ai, key).pow_eq(value);
+		return value;
+	}
+
 	public Object put_div_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
 		// ai.ops(1);
 		var key = transformKey(ai, keyValue);
@@ -168,6 +187,12 @@ public class ArrayLeekValue implements Iterable<Box> {
 		return value;
 	}
 
+	public Object put_mod_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
+		// ai.ops(1);
+		var key = transformKey(ai, keyValue);
+		mValues.getOrCreate(ai, key).mod_eq(value);
+		return value;
+	}
 
 	public Object put_bor_eq(AI ai, Object keyValue, Object value) throws LeekRunException {
 		// ai.ops(1);

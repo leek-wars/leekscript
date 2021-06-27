@@ -539,6 +539,40 @@ public class LeekVariable extends AbstractExpression {
 		}
 	}
 
+
+	@Override
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		if (type == VariableType.FIELD) {
+			writer.addCode("u_this.powEqField(\"" + token.getWord() + "\", ");
+			expr.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+		} else if (type == VariableType.STATIC_FIELD) {
+			writer.addCode("u_class.powEqField(\"" + token.getWord() + "\", ");
+			expr.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+		} else if (type == VariableType.GLOBAL) {
+			if (isBox()) {
+				writer.addCode("g_" + token.getWord() + ".pow_eq(");
+				expr.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			} else {
+				writer.addCode("g_" + token.getWord() + " = pow(g_" + token.getWord() + ", ");
+				expr.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
+		} else {
+			if (isBox()) {
+				writer.addCode("u_" + token.getWord() + ".pow_eq(");
+				expr.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			} else {
+				writer.addCode("u_" + token.getWord() + " = pow(u_" + token.getWord() + ", ");
+				expr.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
+		}
+	}
+
 	@Override
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
