@@ -118,14 +118,14 @@ public class ForeachBlock extends AbstractLeekBlock {
 			if ((compiler.getVersion() >= 11 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
 				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 			} else {
-				this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL));
+				this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL, declaration));
 			}
+			declaration.setFunction(compiler.getCurrentFunction());
 		} else {
 			var v = compiler.getCurrentBlock().getVariable(mIterator.getWord(), true);
 			if (v == null) {
 				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
 			}
-			declaration.setFunction(compiler.getCurrentFunction());
 		}
 		mArray.analyze(compiler);
 		compiler.setCurrentBlock(initialBlock);

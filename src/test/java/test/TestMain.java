@@ -21,7 +21,7 @@ public class TestMain {
 
         System.out.println("Start tests...");
 
-		TestCommon.loadReferenceOperations();
+		// TestCommon.loadReferenceOperations();
 
 		// new TestCommon().code_v11("return 5 + 5;").equals("10");
 		new TestGeneral().run();
