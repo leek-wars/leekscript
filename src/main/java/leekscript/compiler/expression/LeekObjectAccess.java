@@ -188,6 +188,18 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		assert (object.isLeftValue() && !object.nullable());
+
+		writer.addCode("field_pow_eq(");
+		object.writeJavaCode(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 

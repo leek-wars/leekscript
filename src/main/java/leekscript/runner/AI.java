@@ -1248,6 +1248,16 @@ public abstract class AI {
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
 
+	public Object field_pow_eq(Object object, String field, Object value) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_pow_eq(field, value);
+		}
+		if (object instanceof ClassLeekValue) {
+			return ((ClassLeekValue) object).getFieldL(field).pow_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
 	public Object field_div_eq(Object object, String field, Object value) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_div_eq(field, value);
@@ -1350,9 +1360,31 @@ public abstract class AI {
 		return null;
 	}
 
+	public Object put_pre_inc(Object array, Object key) throws LeekRunException {
+		if (array instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) array).put_pre_inc(this, key);
+		}
+		if (array instanceof ClassLeekValue) {
+			// var field = string(key);
+			// return ((ClassLeekValue) array).getField(field), value);
+		}
+		return null;
+	}
+
 	public Object put_dec(Object array, Object key) throws LeekRunException {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_dec(this, key);
+		}
+		if (array instanceof ClassLeekValue) {
+			// var field = string(key);
+			// return ((ClassLeekValue) array).getField(field), value);
+		}
+		return null;
+	}
+
+	public Object put_pre_dec(Object array, Object key) throws LeekRunException {
+		if (array instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) array).put_pre_dec(this, key);
 		}
 		if (array instanceof ClassLeekValue) {
 			// var field = string(key);
@@ -1392,6 +1424,29 @@ public abstract class AI {
 		}
 		return null;
 	}
+
+	public Object put_pow_eq(Object array, Object key, Object value) throws LeekRunException {
+		if (array instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) array).put_pow_eq(this, key, value);
+		}
+		if (array instanceof ClassLeekValue) {
+			// var field = string(key);
+			// return ((ClassLeekValue) array).getField(field), value);
+		}
+		return null;
+	}
+
+	public Object put_mod_eq(Object array, Object key, Object value) throws LeekRunException {
+		if (array instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) array).put_mod_eq(this, key, value);
+		}
+		if (array instanceof ClassLeekValue) {
+			// var field = string(key);
+			// return ((ClassLeekValue) array).getField(field), value);
+		}
+		return null;
+	}
+
 	public Object put_div_eq(Object array, Object key, Object value) throws LeekRunException {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_div_eq(this, key, value);

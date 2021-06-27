@@ -90,6 +90,12 @@ public abstract class AbstractExpression {
 		expr.writeJavaCode(mainblock, writer);
 	}
 
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+		writeJavaCode(mainblock, writer);
+		writer.addCode(" **= ");
+		expr.writeJavaCode(mainblock, writer);
+	}
+
 	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" %= ");
