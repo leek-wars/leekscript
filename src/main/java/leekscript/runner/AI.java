@@ -1483,6 +1483,7 @@ public abstract class AI {
 			return ((ArrayLeekValue) value).get(this, index);
 		}
 		if (value instanceof ObjectLeekValue) {
+			ops(1);
 			return ((ObjectLeekValue) value).getField(string(index), fromClass);
 		}
 		return null;
