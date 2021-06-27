@@ -668,14 +668,31 @@ public abstract class AI {
 				return n == 0;
 			}
 			if (y instanceof String) {
-				if (((String) y).equals("true")) return n != 0;
-				if (((String) y).equals("false")) return n == 0;
+				var s = (String) y;
+				if (s.equals("false") || s.equals("0") || s.equals("")) return n == 0;
+				if (s.equals("true")) return n != 0;
+				if (s.equals("1") && n == 1) return true;
+				if (x instanceof Double) {
+					try {
+						ops(((String) y).length());
+						return n == Double.parseDouble((String) y);
+					} catch (Exception e) {
+						return false;
+					}
+				} else {
+					try {
+						ops(((String) y).length());
+						return n == Integer.parseInt((String) y);
+					} catch (Exception e) {
+						return false;
+					}
+				}
 			}
 			if (y instanceof ArrayLeekValue) {
 				return ((ArrayLeekValue) y).equals(this, (Number) x);
 			}
 			if (y == null) return false;
-			return n == getDouble(y);
+			return n == real(y);
 		}
 		if (x instanceof Boolean) {
 			if (y instanceof String) {
@@ -706,9 +723,16 @@ public abstract class AI {
 				return x.equals(y);
 			}
 			if (y instanceof Number) {
-				if (s.equals("true")) return ((Number) y).doubleValue() != 0;
-				if (s.equals("false")) return ((Number) y).doubleValue() == 0;
-				return getDouble(x) == ((Number) y).doubleValue();
+				var n = ((Number) y).doubleValue();
+				if (s.equals("true")) return n != 0;
+				if (s.equals("false") || s.equals("0") || s.length() == 0) return n == 0;
+				if (s.equals("1") && n == 1) return true;
+				try {
+					ops(s.length());
+					return n == Double.parseDouble(s);
+				} catch (Exception e) {
+					return false;
+				}
 			}
 			if (y instanceof Boolean) {
 				if (s.equals("false") || s.equals("0") || s.length() == 0) return ((Boolean) y) == false;
@@ -816,8 +840,8 @@ public abstract class AI {
 			return ((Boolean) value) ? 1 : 0;
 		} else if (value instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) value).size();
-		// } else if (value instanceof ArrayLeekValue) {
-		// 	return ((ArrayLeekValue) value).size();
+		} else if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).size();
 		} else if (value instanceof String) {
 			var s = (String) value;
 			// ops(2);
@@ -828,7 +852,7 @@ public abstract class AI {
 			try {
 				return Integer.parseInt(s);
 			} catch (Exception e) {
-				return 1;
+				return s.length();
 			}
 		} else if (value instanceof Box) {
 			return integer(((Box) value).getValue());
@@ -836,8 +860,33 @@ public abstract class AI {
 		return 0;
 	}
 
-	public double getDouble(Object value) throws LeekRunException {
-		return LeekValueManager.getDouble(this, value);
+	public double real(Object value) throws LeekRunException {
+		if (value instanceof Double) {
+			return (Double) value;
+		} else if (value instanceof Integer) {
+			return (Integer) value;
+		} else if (value instanceof Boolean) {
+			return ((Boolean) value) ? 1 : 0;
+		} else if (value instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) value).size();
+		} else if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).size();
+		} else if (value instanceof String) {
+			var s = (String) value;
+			// ai.ops(2);
+			if (s.equals("true")) return 1;
+			if (s.equals("false")) return 0;
+			if (s.isEmpty()) return 0;
+			ops(s.length());
+			try {
+				return Double.parseDouble(s);
+			} catch (Exception e) {
+				return s.length();
+			}
+		} else if (value instanceof Box) {
+			return real(((Box) value).getValue());
+		}
+		return 0;
 	}
 
 	public boolean not(Object value) throws LeekRunException {
@@ -878,39 +927,50 @@ public abstract class AI {
 		return integer(x) >>> integer(y);
 	}
 
-	public Object add(Object v1, Object v2) throws LeekRunException {
-		if (v1 instanceof Number) {
-			if (v2 instanceof Number) {
-				if (v1 instanceof Double) return (Double) v1 + ((Number) v2).doubleValue();
-				if (v2 instanceof Double) return (Double) v2 + ((Number) v1).doubleValue();
-				return ((Number) v1).intValue() + ((Number) v2).intValue();
-			}
-			if (v2 instanceof Boolean) {
-				if (v1 instanceof Integer) {
-					return ((Integer) v1) + (((Boolean) v2) ? 1 : 0);
-				}
-				return ((Number) v1).doubleValue() + (((Boolean) v2) ? 1 : 0);
-			}
-			if (v2 == null) return v1;
+	public Object add(Object x, Object y) throws LeekRunException {
+
+		if (x instanceof String || y instanceof String) {
+			String v1_string = LeekValueManager.getString(this, x);
+			String v2_string = LeekValueManager.getString(this, y);
+			ops(v1_string.length() + v2_string.length());
+			return v1_string + v2_string;
 		}
 
-		if (v1 instanceof Boolean) {
-			if (v2 instanceof Integer) {
-				return (((Boolean) v1) ? 1 : 0) + (Integer) v2;
-			}
-			if (v2 instanceof Number) {
-				return (((Boolean) v1) ? 1 : 0) + ((Number) v2).doubleValue();
-			}
-			if (v2 == null) return ((Boolean) v1) ? 1 : 0;
-		}
 
 		// Concatenate arrays
-		if (v1 instanceof ArrayLeekValue && v2 instanceof ArrayLeekValue) {
+		if (x instanceof ArrayLeekValue) {
+			if (y instanceof ArrayLeekValue) {
+				var array1 = (ArrayLeekValue) x;
+				var array2 = (ArrayLeekValue) y;
 
-			var array1 = (ArrayLeekValue) v1;
-			var array2 = (ArrayLeekValue) v2;
+				ops((array1.size() + array2.size()) * 2);
 
-			ops((array1.size() + array2.size()) * 2);
+				ArrayLeekValue retour = new ArrayLeekValue();
+				ArrayIterator iterator = array1.getArrayIterator();
+
+				while (!iterator.ended()) {
+					if (iterator.key() instanceof String) {
+						retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
+					} else {
+						retour.push(this, iterator.getValue(this));
+					}
+					iterator.next();
+				}
+				iterator = array2.getArrayIterator();
+				while (!iterator.ended()) {
+					if (iterator.key() instanceof String) {
+						retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
+					} else {
+						retour.push(this, iterator.getValue(this));
+					}
+					iterator.next();
+				}
+				return retour;
+			}
+
+			var array1 = (ArrayLeekValue) x;
+
+			ops(array1.size() * 2);
 
 			ArrayLeekValue retour = new ArrayLeekValue();
 			ArrayIterator iterator = array1.getArrayIterator();
@@ -923,7 +983,21 @@ public abstract class AI {
 				}
 				iterator.next();
 			}
-			iterator = array2.getArrayIterator();
+			retour.push(this, y);
+
+			return retour;
+		}
+
+		if (y instanceof ArrayLeekValue) {
+			var array2 = (ArrayLeekValue) y;
+
+			ops(array2.size() * 2);
+
+			ArrayLeekValue retour = new ArrayLeekValue();
+
+			retour.push(this, x);
+
+			ArrayIterator iterator = array2.getArrayIterator();
 			while (!iterator.ended()) {
 				if (iterator.key() instanceof String) {
 					retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
@@ -935,135 +1009,53 @@ public abstract class AI {
 			return retour;
 		}
 
-		if (v1 == null) {
-			if (v2 instanceof Number) {
-				return v2;
-			}
-			if (v2 instanceof Boolean) {
-				return ((Boolean) v2) ? 1 : 0;
-			}
-			if (v2 == null) return 0;
+		if (x instanceof Double || y instanceof Double) {
+			return real(x) + real(y);
 		}
 
-		String v1_string = LeekValueManager.getString(this, v1);
-		String v2_string = LeekValueManager.getString(this, v2);
-		ops(v1_string.length() + v2_string.length());
-		return v1_string + v2_string;
+		return integer(x) + integer(y);
 	}
 
-	public Object sub(Object v1, Object v2) throws LeekRunException {
-		if (v1 instanceof Number) {
-			if (v2 instanceof Number) {
-				if (v1 instanceof Double) return (Double) v1 - ((Number) v2).doubleValue();
-				if (v2 instanceof Double) return ((Number) v1).doubleValue() - (Double) v2;
-				return ((Number) v1).intValue() - ((Number) v2).intValue();
-			}
-			if (v1 instanceof Integer) {
-				return ((Integer) v1).intValue() - integer(v2);
-			}
-			if (v2 == null) return v1;
-			return ((Number) v1).doubleValue() - integer(v2);
+	public Object sub(Object x, Object y) throws LeekRunException {
+		if (x instanceof Double || y instanceof Double) {
+			return real(x) - real(y);
 		}
-		if (v1 == null) {
-			if (v2 instanceof Integer) return -(Integer) v2;
-			if (v2 instanceof Double) return -(Double) v2;
-			if (v2 == null) return 0;
-		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+		return integer(x) - integer(y);
 	}
 
-	public Object mul(Object v1, Object v2) throws LeekRunException {
-		if (v1 instanceof Number) {
-			if (v2 instanceof Number) {
-				if (v1 instanceof Double || v2 instanceof Double) {
-					return ((Number) v1).doubleValue() * ((Number) v2).doubleValue();
-				} else {
-					return ((Number) v1).intValue() * ((Number) v2).intValue();
-				}
-			}
-			if (v2 instanceof Boolean) {
-				if (v1 instanceof Integer) {
-					return ((Integer) v1) * (((Boolean) v2) ? 1 : 0);
-				}
-				return ((Number) v1).doubleValue() * (((Boolean) v2) ? 1 : 0);
-			}
-			if (v2 == null) {
-				return 0;
-			}
+	public Object mul(Object x, Object y) throws LeekRunException {
+		if (x instanceof Double || y instanceof Double) {
+			return real(x) * real(y);
 		}
-		if (v1 == null) return 0;
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+		return integer(x) * integer(y);
 	}
 
 	public Object div(Object x, Object y) throws LeekRunException {
-		if (x == null) return 0.0;
-		if (y == null) {
+		double real_y = real(y);
+		if (version == 10 && real_y == 0) {
 			addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
 			return null;
 		}
-		if (x instanceof Number) {
-			if (y instanceof Number) {
-				if (((Number) y).doubleValue() == 0) {
-					addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
-					return null;
-				}
-				return ((Number) x).doubleValue() / ((Number) y).doubleValue();
-			}
-			if (y instanceof Boolean) {
-				if ((Boolean) y) return ((Number) x).doubleValue();
-				addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
-			}
-		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+		return real(x) / real_y;
 	}
 
 	public Object mod(Object x, Object y) throws LeekRunException {
-		if (x == null) return 0;
-
-		if (x instanceof Number && y instanceof Number) {
-			if (((Number) y).doubleValue() == 0) {
-				addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
-				return null;
-			}
-			if (x instanceof Integer && y instanceof Integer) {
-				return ((Integer) x) % ((Integer) y);
-			}
-			return ((Number) x).doubleValue() % ((Number) y).doubleValue();
+		if (x instanceof Double || y instanceof Double) {
+			return real(x) % real(y);
 		}
-		if (x instanceof Boolean) {
-			if (((Number) y).doubleValue() == 0) {
-				addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
-				return null;
-			}
-			if ((Boolean) x) return 1;
-			return 0;
+		var y_int = integer(y);
+		if (version == 10 && y_int == 0) {
+			addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
+			return null;
 		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+		return integer(x) % y_int;
 	}
 
 	public Number pow(Object x, Object y) throws LeekRunException {
-		if (x instanceof Number) {
-			if (y instanceof Number) {
-				if (x instanceof Integer && y instanceof Integer) {
-					return (int) Math.pow((Integer) x, (Integer) y);
-				}
-				return Math.pow(((Number) x).doubleValue(), ((Number) y).doubleValue());
-			}
-			if (y instanceof Boolean) {
-				if (((Boolean) y) == true) return (Number) x;
-				return 1;
-			}
-			if (y == null) {
-				return 1;
-			}
+		if (x instanceof Double || y instanceof Double) {
+			return Math.pow(real(x), real(y));
 		}
-		if (x == null) {
-			if (y == null) {
-				return 1;
-			}
-			return 0;
-		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+		return (int) Math.pow(integer(x), integer(y));
 	}
 
 	public Object add_eq(Object x, Object y) throws LeekRunException {

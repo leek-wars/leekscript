@@ -23,7 +23,7 @@ public enum LeekFunctions implements ILeekFunction {
 			if (parameters[0] instanceof Integer) {
 				return Math.abs((Integer) parameters[0]);
 			}
-			return Math.abs(LeekValueManager.getDouble(ai, parameters[0]));
+			return Math.abs(ai.real(parameters[0]));
 		}
 	},
 
@@ -61,7 +61,7 @@ public enum LeekFunctions implements ILeekFunction {
 	cos(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return Math.cos(v);
 		}
 	},
@@ -69,28 +69,28 @@ public enum LeekFunctions implements ILeekFunction {
 	sin(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return Math.sin(v);
 		}
 	},
 	tan(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return Math.tan(v);
 		}
 	},
 	toRadians(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return v * Math.PI / 180;
 		}
 	},
 	toDegrees(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return v * 180 / Math.PI;
 		}
 	},
@@ -101,7 +101,7 @@ public enum LeekFunctions implements ILeekFunction {
 	acos(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return Math.acos(v);
 		}
 	},
@@ -112,7 +112,7 @@ public enum LeekFunctions implements ILeekFunction {
 	asin(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return Math.asin(v);
 		}
 	},
@@ -123,7 +123,7 @@ public enum LeekFunctions implements ILeekFunction {
 	atan(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return Math.atan(v);
 		}
 	},
@@ -131,8 +131,8 @@ public enum LeekFunctions implements ILeekFunction {
 	atan2(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double y = LeekValueManager.getDouble(ai, parameters[0]);
-			double x = LeekValueManager.getDouble(ai, parameters[1]);
+			double y = ai.real(parameters[0]);
+			double x = ai.real(parameters[1]);
 			return Math.atan2(y, x);
 		}
 	},
@@ -144,7 +144,7 @@ public enum LeekFunctions implements ILeekFunction {
 	ceil(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return (int) Math.ceil(v);
 		}
 	},
@@ -156,7 +156,7 @@ public enum LeekFunctions implements ILeekFunction {
 	floor(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return (int) Math.floor(v);
 		}
 	},
@@ -168,7 +168,7 @@ public enum LeekFunctions implements ILeekFunction {
 	round(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return (int) Math.round(v);
 		}
 	},
@@ -176,42 +176,42 @@ public enum LeekFunctions implements ILeekFunction {
 	sqrt(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return Math.sqrt(v);
 		}
 	},
 	cbrt(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return Math.cbrt(v);
 		}
 	},
 	log(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return Math.log(v);
 		}
 	},
 	log2(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return Math.log(v) / Math.log(2);
 		}
 	},
 	log10(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return Math.log10(v);
 		}
 	},
 	exp(1, new int[] { AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double v = LeekValueManager.getDouble(ai, parameters[0]);
+			double v = ai.real(parameters[0]);
 			return Math.exp(v);
 		}
 	},
@@ -219,8 +219,8 @@ public enum LeekFunctions implements ILeekFunction {
 	pow(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double x = LeekValueManager.getDouble(ai, parameters[0]);
-			double y = LeekValueManager.getDouble(ai, parameters[1]);
+			double x = ai.real(parameters[0]);
+			double y = ai.real(parameters[1]);
 			return Math.pow(x, y);
 		}
 	},
@@ -245,16 +245,16 @@ public enum LeekFunctions implements ILeekFunction {
 	randFloat(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double a = LeekValueManager.getDouble(ai, parameters[0]);
-			double b = LeekValueManager.getDouble(ai, parameters[1]);
+			double a = ai.real(parameters[0]);
+			double b = ai.real(parameters[1]);
 			return a + ai.getRandom().getDouble() * (b - a);
 		}
 	},
 	hypot(2, new int[] { AI.NUMBER, AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			double x = LeekValueManager.getDouble(ai, parameters[0]);
-			double y = LeekValueManager.getDouble(ai, parameters[1]);
+			double x = ai.real(parameters[0]);
+			double y = ai.real(parameters[1]);
 			return Math.hypot(x, y);
 		}
 	},
@@ -754,7 +754,7 @@ public enum LeekFunctions implements ILeekFunction {
 			var array = (ArrayLeekValue) parameters[0];
 			double somme = 0;
 			for (var val : array) {
-				somme += LeekValueManager.getDouble(ai, val.getValue());
+				somme += ai.real(val.getValue());
 			}
 			return somme;
 		}
@@ -771,7 +771,7 @@ public enum LeekFunctions implements ILeekFunction {
 			var array = (ArrayLeekValue) parameters[0];
 			double average = 0;
 			for (var val : array) {
-				average += LeekValueManager.getDouble(ai, val.getValue());
+				average += ai.real(val.getValue());
 			}
 			if (average == 0)
 				return 0.0;
