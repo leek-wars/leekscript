@@ -135,7 +135,7 @@ public class TestCommon {
 
 				ops = ai.operations();
 
-				var vs = ai.getString(ai, new HashSet<>());
+				var vs = ai.getString(v, new HashSet<>());
 				result = new Result(vs, Error.NONE, (int) ai.getOperations(), exec_time);
 
 			} catch (LeekCompilerException e) {
@@ -148,7 +148,7 @@ public class TestCommon {
 			}
 
 			operations.add(ops);
-			long referenceOperations = operationsReference.get(operationsReferenceIndex++);
+			// long referenceOperations = operationsReference.get(operationsReferenceIndex++);
 
 			if (checker.check(result)) {
 				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "] " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops" + END_COLOR);

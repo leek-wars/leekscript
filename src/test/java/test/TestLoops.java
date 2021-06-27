@@ -1,5 +1,7 @@
 package test;
 
+import leekscript.common.Error;
+
 public class TestLoops extends TestCommon {
 
 	public void run() {
