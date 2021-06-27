@@ -356,9 +356,9 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.incField(\"" + token.getWord() + "\")");
+			writer.addCode("u_this.field_inc(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.incField(\"" + token.getWord() + "\")");
+			writer.addCode("u_class.field_inc(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".increment()");
@@ -377,9 +377,9 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.decField(\"" + token.getWord() + "\")");
+			writer.addCode("u_this.field_dec(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.decField(\"" + token.getWord() + "\")");
+			writer.addCode("u_class.field_dec(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".decrement()");
@@ -398,9 +398,9 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.incField(\"" + token.getWord() + "\")");
+			writer.addCode("u_this.field_pre_inc(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.incField(\"" + token.getWord() + "\")");
+			writer.addCode("u_class.field_pre_inc(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".pre_increment()");
@@ -419,9 +419,9 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.decField(\"" + token.getWord() + "\")");
+			writer.addCode("u_this.field_pre_dec(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.decField(\"" + token.getWord() + "\")");
+			writer.addCode("u_class.field_pre_dec(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".pre_decrement()");
@@ -440,11 +440,11 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.addEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_this.field_add_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.addEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_class.field_add_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
@@ -476,11 +476,11 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.subEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_this.field_sub_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.subEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_class.field_sub_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
@@ -509,11 +509,11 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.mulEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_this.field_mul_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.mulEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_class.field_mul_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
@@ -543,11 +543,11 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.powEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_this.field_pow_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.powEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_class.field_pow_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
@@ -576,11 +576,11 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.divEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_this.field_div_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.divEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_class.field_div_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
@@ -609,11 +609,11 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.modEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_this.field_mod_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.modEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_class.field_mod_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
@@ -642,11 +642,11 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.bitOrEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_this.field_bor_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.bitOrEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_class.field_bor_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
@@ -676,11 +676,11 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.bitAndEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_this.field_band_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.bitAndEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_class.field_band_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
@@ -710,11 +710,11 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.bitXorEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_this.field_bxor_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.bitXorEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_class.field_bxor_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
@@ -743,11 +743,11 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.shlEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_this.field_shl_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.shlEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_class.field_shl_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
@@ -776,11 +776,11 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.shrEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_this.field_shr_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.shrEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_class.field_shr_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
@@ -809,11 +809,11 @@ public class LeekVariable extends AbstractExpression {
 	@Override
 	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.ushrEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_this.field_ushr_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode("u_class.ushrEqField(\"" + token.getWord() + "\", ");
+			writer.addCode("u_class.field_ushr_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {

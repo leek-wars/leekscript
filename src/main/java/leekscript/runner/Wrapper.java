@@ -47,8 +47,16 @@ public class Wrapper {
 		return variable.increment();
 	}
 
+	public Object pre_increment() throws LeekRunException {
+		return variable.pre_increment();
+	}
+
 	public Object decrement() throws LeekRunException {
 		return variable.decrement();
+	}
+
+	public Object pre_decrement() throws LeekRunException {
+		return variable.pre_decrement();
 	}
 
 	public Object add_eq(Object x) throws LeekRunException {
@@ -69,5 +77,33 @@ public class Wrapper {
 
 	public Object mod_eq(Object x) throws LeekRunException {
 		return variable.mod_eq(x);
+	}
+
+	public Object pow_eq(Object x) throws LeekRunException {
+		return variable.pow_eq(x);
+	}
+
+	public int band_eq(Object x) throws LeekRunException {
+		return variable.band_eq(x);
+	}
+
+	public int bor_eq(Object x) throws LeekRunException {
+		return variable.bor_eq(x);
+	}
+
+	public int bxor_eq(Object x) throws LeekRunException {
+		return variable.bxor_eq(x);
+	}
+
+	public int shl_eq(Object x) throws LeekRunException {
+		return variable.shl_eq(x);
+	}
+
+	public int shr_eq(Object x) throws LeekRunException {
+		return variable.shr_eq(x);
+	}
+
+	public int ushr_eq(Object x) throws LeekRunException {
+		return variable.ushr_eq(x);
 	}
 }

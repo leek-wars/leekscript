@@ -78,6 +78,8 @@ public class TestFunction extends TestCommon {
 		code("function f() { distance = 12 } function distance() { return 'salut' } return distance()").equals("salut");
 		code("getOperations()").equals("null");
 		code("var a = [function() { return 12 }] return a[0]()").equals("12");
+		code_v10("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[]");
+		code_v11("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[0, 1, 2, 3, 4]");
 
 		section("Modify argument");
 		code("function test(x) { x += 10 return x } return test(5)").equals("15");

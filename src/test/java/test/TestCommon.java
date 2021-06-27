@@ -139,11 +139,11 @@ public class TestCommon {
 				result = new Result(vs, Error.NONE, (int) ai.getOperations(), exec_time);
 
 			} catch (LeekCompilerException e) {
-				// e.printStackTrace();
+				e.printStackTrace();
 				// System.out.println("Error = " + e.getError());
 				result = new Result(e.getError().toString(), e.getError(), 0, 0);
 			} catch (Exception e) {
-				// e.printStackTrace();
+				e.printStackTrace();
 				result = new Result("error", Error.NONE, 0, 0);
 			}
 
