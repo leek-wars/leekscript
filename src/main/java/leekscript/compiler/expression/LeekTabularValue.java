@@ -3,6 +3,7 @@ package leekscript.compiler.expression;
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekTabularValue extends AbstractExpression {
@@ -62,6 +63,8 @@ public class LeekTabularValue extends AbstractExpression {
 		mTabular.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		writer.addCode(writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null");
 		writer.addCode(")");
 	}
 

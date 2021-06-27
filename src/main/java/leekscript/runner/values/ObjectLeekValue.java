@@ -5,7 +5,6 @@ import java.util.Set;
 
 import leekscript.AILog;
 import leekscript.runner.AI;
-import leekscript.runner.LeekAnonymousFunction;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
@@ -46,7 +45,7 @@ public class ObjectLeekValue {
 		var result = fields.get(field);
 		if (result != null) {
 			if (fromClass == clazz) {
-				return result;
+				return result.mValue;
 			} else {
 				// Protected : Access from descendant
 				if (fromClass != null && fromClass.descendsFrom(clazz)) {
@@ -54,14 +53,14 @@ public class ObjectLeekValue {
 						clazz.ai.addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new String[] { clazz.name, field });
 						return null;
 					}
-					return result;
+					return result.mValue;
 				} else {
 					// Public : Access from outside
 					if (result.level != AccessLevel.PUBLIC) {
 						clazz.ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_FIELD : Error.PRIVATE_FIELD, new String[] { clazz.name, field });
 						return null;
 					}
-					return result;
+					return result.mValue;
 				}
 			}
 		}
@@ -147,10 +146,66 @@ public class ObjectLeekValue {
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
 
+	public Object field_div_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.div_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_mod_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.mod_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
 	public Object field_bor_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			return result.bor_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_bxor_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.bxor_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_band_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.band_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_shl_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.shl_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_shr_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.shr_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_ushr_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			return result.ushr_eq(value);
 		}
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
@@ -177,8 +232,8 @@ public class ObjectLeekValue {
 		return result.run(this, arguments);
 	}
 
-	public Object callSuperMethod(AI ai, ClassLeekValue currentClass, String method, Object... arguments) throws LeekRunException {
-		LeekAnonymousFunction result = currentClass.getSuperMethod(ai, method, currentClass);
+	public Object callSuperMethod(AI ai, String method, ClassLeekValue currentClass, Object... arguments) throws LeekRunException {
+		var result = currentClass.getSuperMethod(ai, method, currentClass);
 		if (result == null) {
 			int underscore = method.lastIndexOf("_");
 			int argCount = Integer.parseInt(method.substring(underscore + 1));

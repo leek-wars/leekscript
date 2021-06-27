@@ -1183,7 +1183,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_inc(field);
 		}
 		if (object instanceof ClassLeekValue) {
-			// return ((ClassLeekValue) object).field_add_eq(field, value);
+			return ((ClassLeekValue) object).getFieldL(field).increment();
 		}
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
@@ -1193,7 +1193,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_pre_inc(field);
 		}
 		if (object instanceof ClassLeekValue) {
-			// return ((ClassLeekValue) object).field_add_eq(field, value);
+			return ((ClassLeekValue) object).getFieldL(field).pre_increment();
 		}
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
@@ -1203,7 +1203,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_dec(field);
 		}
 		if (object instanceof ClassLeekValue) {
-			// return ((ClassLeekValue) object).field_add_eq(field, value);
+			return ((ClassLeekValue) object).getFieldL(field).decrement();
 		}
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
@@ -1213,7 +1213,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_pre_dec(field);
 		}
 		if (object instanceof ClassLeekValue) {
-			// return ((ClassLeekValue) object).field_add_eq(field, value);
+			return ((ClassLeekValue) object).getFieldL(field).pre_decrement();
 		}
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
@@ -1223,7 +1223,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_add_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			// return ((ClassLeekValue) object).field_add_eq(field, value);
+			return ((ClassLeekValue) object).getFieldL(field).add_eq(value);
 		}
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
@@ -1233,7 +1233,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_sub_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			// return ((ClassLeekValue) object).field_add_eq(field, value);
+			return ((ClassLeekValue) object).getFieldL(field).sub_eq(value);
 		}
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
@@ -1243,7 +1243,27 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_mul_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			// return ((ClassLeekValue) object).field_add_eq(field, value);
+			return ((ClassLeekValue) object).getFieldL(field).mul_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_div_eq(Object object, String field, Object value) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_div_eq(field, value);
+		}
+		if (object instanceof ClassLeekValue) {
+			return ((ClassLeekValue) object).getFieldL(field).div_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_mod_eq(Object object, String field, Object value) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_mod_eq(field, value);
+		}
+		if (object instanceof ClassLeekValue) {
+			return ((ClassLeekValue) object).getFieldL(field).mod_eq(value);
 		}
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
@@ -1253,7 +1273,57 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_bor_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			// return ((ClassLeekValue) object).field_add_eq(field, value);
+			return ((ClassLeekValue) object).getFieldL(field).bor_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_band_eq(Object object, String field, Object value) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_band_eq(field, value);
+		}
+		if (object instanceof ClassLeekValue) {
+			return ((ClassLeekValue) object).getFieldL(field).band_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_bxor_eq(Object object, String field, Object value) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_bxor_eq(field, value);
+		}
+		if (object instanceof ClassLeekValue) {
+			return ((ClassLeekValue) object).getFieldL(field).bxor_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_shl_eq(Object object, String field, Object value) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_shl_eq(field, value);
+		}
+		if (object instanceof ClassLeekValue) {
+			return ((ClassLeekValue) object).getFieldL(field).shl_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_shr_eq(Object object, String field, Object value) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_shr_eq(field, value);
+		}
+		if (object instanceof ClassLeekValue) {
+			return ((ClassLeekValue) object).getFieldL(field).shr_eq(value);
+		}
+		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+	}
+
+	public Object field_ushr_eq(Object object, String field, Object value) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_ushr_eq(field, value);
+		}
+		if (object instanceof ClassLeekValue) {
+			return ((ClassLeekValue) object).getFieldL(field).ushr_eq(value);
 		}
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}
@@ -1408,9 +1478,12 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object get(Object value, Object index) throws LeekRunException {
+	public Object get(Object value, Object index, ClassLeekValue fromClass) throws LeekRunException {
 		if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).get(this, index);
+		}
+		if (value instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) value).getField(string(index), fromClass);
 		}
 		return null;
 	}

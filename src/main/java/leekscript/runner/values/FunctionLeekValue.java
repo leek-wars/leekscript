@@ -82,14 +82,6 @@ public class FunctionLeekValue {
 		return copy;
 	}
 
-	private Object[] copyPrimitiveValues(AI uai, Object[] values) throws LeekRunException {
-		Object[] copy = new Object[values.length];
-		for (int i = 0; i < values.length; i++) {
-			copy[i] = LeekOperations.clone(uai, values[i]);
-		}
-		return copy;
-	}
-
 	public int getArgumentsCount(AI ai) throws LeekRunException {
 		if (mType == LEEK_FUNCTION)
 			return mFunction.getArguments();

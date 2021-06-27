@@ -1,7 +1,6 @@
 package test;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -31,7 +30,7 @@ public class TestCommon {
 	private static int disabled = 0;
 	private static long analyze_time = 0;
 	private static long compile_time = 0;
-	private static long load_time = 0;
+	// private static long load_time = 0;
 	private static long execution_time = 0;
 	private static ArrayList<Long> operationsReference = new ArrayList<>();
 	private static int operationsReferenceIndex = 0;
@@ -125,7 +124,7 @@ public class TestCommon {
 				compile_time = ai.getCompileTime() / 1000000;
 				TestCommon.analyze_time += ai.getAnalyzeTime() / 1000000;
 				TestCommon.compile_time += ai.getCompileTime() / 1000000;
-				TestCommon.load_time += ai.getLoadTime() / 1000000;
+				// TestCommon.load_time += ai.getLoadTime() / 1000000;
 
 				ai.maxOperations = Integer.MAX_VALUE;
 

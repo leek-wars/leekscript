@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import leekscript.compiler.LeekScript;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.ObjectLeekValue;
