@@ -131,7 +131,6 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 
 	@Override
 	public int getOperations() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 }

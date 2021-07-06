@@ -1,7 +1,6 @@
 package leekscript.runner.values;
 
 import java.util.HashMap;
-import java.util.Map.Entry;
 
 import leekscript.AILog;
 import leekscript.runner.AI;

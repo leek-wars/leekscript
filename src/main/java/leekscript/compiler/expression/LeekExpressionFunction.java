@@ -320,12 +320,4 @@ public class LeekExpressionFunction extends AbstractExpression {
 		}
 		return true;
 	}
-
-	private String buildTypesSignature(Type[] types) {
-		var s = new StringBuilder();
-		for (var type : types) {
-			s.append(type.getSignature());
-		}
-		return s.toString();
-	}
 }
