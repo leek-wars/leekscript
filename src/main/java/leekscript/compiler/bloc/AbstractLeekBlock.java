@@ -25,6 +25,7 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 	protected int mEndInstruction = 0;
 	protected int mLine = 0;
 	protected AIFile<?> mAI = null;
+	protected boolean full = false;
 
 	public AbstractLeekBlock getParent() {
 		return mParent;
@@ -96,7 +97,7 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 	}
 
 	public AbstractLeekBlock endInstruction() {
-		if (!mAccolade && mParent != null && mInstructions.size() == 1) {
+		if (!mAccolade && mParent != null && isFull()) {
 			// if(this instanceof ConditionalBloc){
 			// ConditionalBloc bloc = (ConditionalBloc) this;
 			// do{
@@ -196,5 +197,13 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 	}
 	public AIFile<?> getFile() {
 		return mAI;
+	}
+
+	public void setFull(boolean full) {
+		this.full = full;
+	}
+
+	public boolean isFull() {
+		return lastInstruction() != null || this.full;
 	}
 }
