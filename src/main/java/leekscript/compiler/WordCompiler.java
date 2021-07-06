@@ -139,7 +139,7 @@ public class WordCompiler {
 
 				// On vérifie les instructions en cours
 
-				if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.lastInstruction() != null) {
+				if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
 					DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
 					mCurentBlock = mCurentBlock.endInstruction();
 					dowhileendBlock(do_block);
@@ -183,6 +183,7 @@ public class WordCompiler {
 		IAWord word = mCompiler.getWord();
 		if (word.getType() == WordParser.T_END_INSTRUCTION) {
 			// mCurentBlock.addInstruction(this, new BlankInstruction());
+			mCurentBlock.setFull(true);
 			mCompiler.skipWord();
 			return;
 		} else if (word.getType() == WordParser.T_ACCOLADE_RIGHT) {
@@ -827,7 +828,7 @@ public class WordCompiler {
 		// Lecture du corps de la fonction
 		while (mCompiler.haveWords()) {
 			// Fermeture des blocs ouverts
-			if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.lastInstruction() != null) {
+			if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
 				DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
 				mCurentBlock = mCurentBlock.endInstruction();
 				dowhileendBlock(do_block);
@@ -1095,7 +1096,7 @@ public class WordCompiler {
 		while (mCompiler.haveWords()) {
 
 			// Fermeture des blocs ouverts
-			if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.lastInstruction() != null) {
+			if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
 				DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
 				mCurentBlock = mCurentBlock.endInstruction();
 				dowhileendBlock(do_block);
