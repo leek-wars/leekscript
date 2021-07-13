@@ -399,7 +399,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				writer.addCode(className);
 				writer.addCode(".addStaticMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new LeekFunction() { public Object run(Object... args) throws LeekRunException { return " + methodName + "(");
 				int i = 0;
-				for (var arg : version.getValue().block.getParameters()) {
+				for (var a = 0; a < version.getValue().block.getParameters().size(); ++a) {
 					if (i > 0) writer.addCode(", ");
 					writer.addCode("args[" + i + "]");
 					i++;
@@ -416,7 +416,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			writer.addCode(".addConstructor(" + construct.getKey() + ", new LeekAnonymousFunction() { public Object run(ObjectLeekValue thiz, Object... args) throws LeekRunException { return " + methodName + "(thiz");
 			int i = 0;
 			if (construct.getValue().block != null) {
-				for (var arg : construct.getValue().block.getParameters()) {
+				for (var a = 0; a < construct.getValue().block.getParameters().size(); ++a) {
 					writer.addCode(", args[" + i++ + "]");
 				}
 			}
@@ -429,7 +429,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				writer.addCode(className);
 				writer.addCode(".addMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new LeekAnonymousFunction() { public Object run(ObjectLeekValue thiz, Object... args) throws LeekRunException { return " + methodName + "(thiz");
 				int i = 0;
-				for (var arg : version.getValue().block.getParameters()) {
+				for (var a = 0; a < version.getValue().block.getParameters().size(); ++a) {
 					writer.addCode(", args[" + i++ + "]");
 				}
 				writer.addLine("); }}, AccessLevel." + version.getValue().level + ");");
