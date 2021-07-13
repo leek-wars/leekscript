@@ -64,7 +64,7 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		if (this.captured) {
-			if (mValue instanceof LeekAnonymousFunction) {
+			if (mValue != null && mValue.trim() instanceof LeekAnonymousFunction) {
 				writer.addCode("final Wrapper u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", null)); u_" + token.getWord() + ".set(");
 				mValue.writeJavaCode(mainblock, writer);
 				writer.addLine(");", mLine, mAI);
