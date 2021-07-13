@@ -33,7 +33,7 @@ public class TestCommon {
 	// private static long load_time = 0;
 	private static long execution_time = 0;
 	private static ArrayList<Long> operationsReference = new ArrayList<>();
-	private static int operationsReferenceIndex = 0;
+	// private static int operationsReferenceIndex = 0;
 	private static ArrayList<Long> operations = new ArrayList<>();
 
 	private static List<String> failedTests = new ArrayList<String>();
