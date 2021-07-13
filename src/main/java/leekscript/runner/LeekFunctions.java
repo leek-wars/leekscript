@@ -290,7 +290,7 @@ public enum LeekFunctions implements ILeekFunction {
 			return v.length();
 		}
 	},
-	substring(2, 3, new int[] { AI.STRING, AI.NUMBER, AI.NUMBER }) {
+	substring(2, 3, new int[] { AI.STRING, AI.NUMBER, -1 }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			if (AI.verifyParameters(new int[] { AI.STRING, AI.NUMBER, AI.NUMBER }, parameters)) {
