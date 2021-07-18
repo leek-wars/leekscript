@@ -271,6 +271,7 @@ public class ObjectLeekValue {
 	}
 
 	public String getString(AI ai, Set<Object> visited) throws LeekRunException {
+
 		visited.add(this);
 
 		var string_method = clazz.getMethod(ai, "string_0", null);
@@ -282,6 +283,8 @@ public class ObjectLeekValue {
 				return LeekValueManager.getString(ai, result, visited);
 			}
 		}
+
+		ai.ops(1 + fields.size() * 2);
 
 		var sb = new StringBuilder(clazz.name + " {");
 		boolean first = true;
