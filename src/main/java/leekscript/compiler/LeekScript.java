@@ -27,6 +27,7 @@ import leekscript.compiler.resolver.ResolverContext;
 import leekscript.compiler.resolver.ResourceContext;
 import leekscript.compiler.resolver.ResourceResolver;
 import leekscript.runner.AI;
+import leekscript.common.Error;
 
 public class LeekScript {
 
@@ -39,7 +40,6 @@ public class LeekScript {
 	private static String classpath;
 	private static List<String> arguments = new ArrayList<>();
 	private static JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-	private static SimpleFileManager fileManager = new SimpleFileManager(compiler.getStandardFileManager(null, null, null));
 	private static URLClassLoader urlLoader;
 	private static HashMap<String, Class<?>> aiCache = new HashMap<>();
 	static {
@@ -136,7 +136,7 @@ public class LeekScript {
 		return defaultRandomGenerator;
 	}
 
-	public static AI compile(AIFile<?> file, String AIClass, boolean useClassCache) throws LeekScriptException, LeekCompilerException, IOException {
+	public static AI compile(AIFile<?> file, String AIClass, boolean useClassCache) throws LeekScriptException, LeekCompilerException {
 
 		new File(IA_PATH).mkdir();
 		String javaClassName = "AI_" + file.getId();
@@ -156,7 +156,7 @@ public class LeekScript {
 				ai.setId(file.getId());
 				return ai;
 			} catch (Exception e) {
-				e.printStackTrace();
+				throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
 			}
 		}
 
@@ -166,54 +166,66 @@ public class LeekScript {
 		long analyze_time = System.nanoTime() - t;
 
 		if (compiledJava.isEmpty()) { // Rien ne compile, pas normal
-			throw new LeekScriptException(LeekScriptException.CANT_COMPILE, "No java generated!");
+			throw new LeekScriptException(Error.TRANSPILE_TO_JAVA, "No java generated!");
 		}
 
 		// System.out.println(compiledJava);
 
 		// Sauvegarde du code java
-		FileOutputStream javaOutput = new FileOutputStream(java);
-		javaOutput.write(compiledJava.getBytes(StandardCharsets.UTF_8));
-		javaOutput.close();
-
 		try {
+			FileOutputStream javaOutput = new FileOutputStream(java);
+			javaOutput.write(compiledJava.getBytes(StandardCharsets.UTF_8));
+			javaOutput.close();
+		} catch (IOException e) {
+			throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
+		}
 
-			t = System.nanoTime();
-			fileManager.clear();
-			var output = new StringWriter();
-			var compilationUnits = Collections.singletonList(new SimpleSourceFile(fileName, compiledJava));
-			var task = compiler.getTask(output, fileManager, null, arguments, null, compilationUnits);
 
-			boolean result = task.call();
-			long compile_time = System.nanoTime() - t;
+		t = System.nanoTime();
+		var fileManager = new SimpleFileManager(compiler.getStandardFileManager(null, null, null));
+		var output = new StringWriter();
+		var compilationUnits = Collections.singletonList(new SimpleSourceFile(fileName, compiledJava));
+		var task = compiler.getTask(output, fileManager, null, arguments, null, compilationUnits);
 
-			if (!result) { // Java compilation failed
-				throw new LeekScriptException(LeekScriptException.CANT_COMPILE, output.toString());
+		boolean result = task.call();
+		long compile_time = System.nanoTime() - t;
+
+		if (!result) { // Java compilation failed
+			throw new LeekScriptException(Error.COMPILE_JAVA, output.toString());
+		}
+
+		t = System.nanoTime();
+		ClassLoader classLoader = new ClassLoader() {
+			@Override
+			protected Class<?> findClass(String name) throws ClassNotFoundException {
+				var bytes = fileManager.get(name).getCompiledBinaries();
+				return defineClass(name, bytes, 0, bytes.length);
 			}
+		};
 
-			t = System.nanoTime();
-			ClassLoader classLoader = new ClassLoader() {
-				@Override
-				protected Class<?> findClass(String name) throws ClassNotFoundException {
-					var bytes = fileManager.get(name).getCompiledBinaries();
-					return defineClass(name, bytes, 0, bytes.length);
-				}
-			};
+		// Load inner classes before
+		for (var compiledClass : fileManager.getCompiled().values()) {
 
-			// Load inner classes before
-			for (var compiledClass : fileManager.getCompiled().values()) {
-
-				if (useClassCache) { // Save bytecode
+			if (useClassCache) { // Save bytecode
+				try {
 					var classFile = new FileOutputStream(IA_PATH + compiledClass.getName() + ".class");
 					classFile.write(compiledClass.getCompiledBinaries());
 					classFile.close();
+				} catch (IOException e) {
+					throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
 				}
-
-				if (compiledClass.getName().equals(javaClassName)) continue;
-				classLoader.loadClass(compiledClass.getName());
 			}
 
-			// Load the main class
+			if (compiledClass.getName().equals(javaClassName)) continue;
+			try {
+				classLoader.loadClass(compiledClass.getName());
+			} catch (Exception e) {
+				throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
+			}
+		}
+
+		// Load the main class
+		try {
 			var clazz = classLoader.loadClass(javaClassName);
 			var ai = (AI) clazz.getDeclaredConstructor().newInstance();
 			long load_time = System.nanoTime() - t;
@@ -227,9 +239,8 @@ public class LeekScript {
 				aiCache.put(javaClassName, clazz);
 			}
 			return ai;
-
 		} catch (Exception e) {
-			throw new LeekScriptException(LeekScriptException.CANT_COMPILE, e.getMessage());
+			throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
 		}
 	}
 
@@ -240,13 +251,13 @@ public class LeekScript {
 				if (lines.length >= 2 && lines[1].split(" ").length > 4) {
 					String l = lines[1].split(" ")[2];
 					if (l.length() > 4 && !l.startsWith("runIA")) {
-						throw new LeekScriptException(LeekScriptException.CODE_TOO_LARGE_FUNCTION, l.substring(14, l.length() - 2));
+						throw new LeekScriptException(Error.CODE_TOO_LARGE_FUNCTION, l.substring(14, l.length() - 2));
 					}
 				}
-				throw new LeekScriptException(LeekScriptException.CODE_TOO_LARGE);
+				throw new LeekScriptException(Error.CODE_TOO_LARGE);
 			}
 		}
-		throw new LeekScriptException(LeekScriptException.CANT_COMPILE, error);
+		throw new LeekScriptException(Error.COMPILE_JAVA, error);
 	}
 
 	public static Resolver<?> getFileSystemResolver() {
