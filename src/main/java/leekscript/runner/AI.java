@@ -1181,7 +1181,8 @@ public abstract class AI {
 		if (value instanceof ClassLeekValue) {
 			return ((ClassLeekValue) value).getField(this, field, fromClass);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(value), field });
+		return null;
 	}
 
 	public Object setField(Object object, String field, Object value) throws LeekRunException {
