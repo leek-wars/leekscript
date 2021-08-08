@@ -918,7 +918,7 @@ public class PhpArray implements Iterable<Box> {
 				sb.append(", ");
 			if (!isInOrder) {
 				if (e.key instanceof ObjectLeekValue) {
-					sb.append(LeekValueManager.getString(ai, (ObjectLeekValue) e.key));
+					sb.append(ai.getString((ObjectLeekValue) e.key, visited));
 				} else {
 					sb.append(e.key);
 				}
