@@ -92,8 +92,8 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		r += " {\n";
 
 		for (Entry<String, ClassDeclarationField> field : staticFields.entrySet()) {
-			r += "\tstatic " + field.getValue().level.toString().toLowerCase() + " " + field.getKey();
-			if (field.getValue() != null) {
+			r += "\t" + field.getValue().level.toString().toLowerCase() + " static " + field.getKey();
+			if (field.getValue().expression != null) {
 				r += " = " + field.getValue().expression.getString();
 			}
 			r += "\n";
@@ -102,7 +102,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 
 		for (var method : staticMethods.entrySet()) {
 			for (var version : method.getValue().entrySet()) {
-				r += "\tstatic " + method.getKey() + version.getValue().block.getCode();
+				r += "\t" + version.getValue().level.toString().toLowerCase() + " static " + method.getKey() + version.getValue().block.getCode();
 			}
 			r += "\n";
 		}
@@ -110,7 +110,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 
 		for (Entry<String, ClassDeclarationField> field : fields.entrySet()) {
 			r += "\t" + field.getValue().level.toString().toLowerCase() + " " + field.getKey();
-			if (field.getValue() != null) {
+			if (field.getValue().expression != null) {
 				r += " = " + field.getValue().expression.getString();
 			}
 			r += "\n";
@@ -118,7 +118,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		r += "\n";
 
 		for (var constructor : constructors.entrySet()) {
-			r += "\tconstructor" + constructor.getValue().level.toString().toLowerCase() + " " + constructor.getValue().block.getCode();
+			r += "\t" + constructor.getValue().level.toString().toLowerCase() + " constructor" + constructor.getValue().block.getCode();
 		}
 		r += "\n";
 
