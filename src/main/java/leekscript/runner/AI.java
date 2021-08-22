@@ -108,6 +108,11 @@ public abstract class AI {
 		return x;
 	}
 
+	public double ops(double x, int nb) throws LeekRunException {
+		ops(nb);
+		return x;
+	}
+
 	public boolean ops(boolean x, int nb) throws LeekRunException {
 		ops(nb);
 		return x;
