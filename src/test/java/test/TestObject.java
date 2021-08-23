@@ -46,7 +46,7 @@ public class TestObject extends TestCommon {
 		code_v11("class A { static x = 'hello' } return A.x").equals("hello");
 		code_v11("class A { static x = [1, 2, 3] } return A.x").equals("[1, 2, 3]");
 		code_v11("class A { static x = null } return A.x").equals("null");
-		code_v11("class Affiche { static COULEUR = getColor(42, 125, 78) } return Affiche.COULEUR").equals("");
+		code_v11("class Affiche { static COULEUR = getColor(42, 125, 78) } return Affiche.COULEUR").equals("2784590");
 
 		section("Operators on field");
 		code_v11("class A { a = 10 } var a = new A(); return --a.a").equals("9");
@@ -201,6 +201,13 @@ public class TestObject extends TestCommon {
 		section("Method is a system method");
 		code_v11("class A { sqrt() { return sqrt(25) } }").equals("null");
 		code_v11("class A { sqrt() { return sqrt(25) } } return new A().sqrt()").equals("5");
+
+		section("Return of field");
+		code_v11("class R { f = [] m(k, r) { return this.f[k] = r } } var x = new R() return x.m(1, 2)").equals("2");
+		code_v11("class R { private f = [] m(k, r) { return this.f[k] = r } } var x = new R() return x.m(1, 'hello')").equals("hello");
+
+		section("Constant in static field");
+		code_v11("class A { static bulbsNameChip = ['puny_bulb': PI] } return A.bulbsNameChip").equals("[puny_bulb : 3.141592653589793]");
 
 		/*
 		* Operators

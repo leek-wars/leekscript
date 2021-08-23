@@ -259,6 +259,19 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			}
 		}
 
+		// Fields
+		for (var field : fields.entrySet()) {
+			if (field.getValue().expression != null) {
+				field.getValue().expression.analyze(compiler);
+			}
+		}
+		// Static fields
+		for (var field : staticFields.entrySet()) {
+			if (field.getValue().expression != null) {
+				field.getValue().expression.analyze(compiler);
+			}
+		}
+
 		for (var constructor : constructors.values()) {
 			constructor.block.analyze(compiler);
 		}
