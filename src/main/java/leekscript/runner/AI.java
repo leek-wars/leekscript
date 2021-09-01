@@ -82,7 +82,6 @@ public abstract class AI {
 	}
 
 	public int getOperations() throws LeekRunException {
-		ops(LeekFunctions.getOperations.getOperations());
 		return mOperations;
 	}
 
