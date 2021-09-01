@@ -977,7 +977,7 @@ public class WordCompiler {
 						retour.addUnaryPrefix(Operators.NOT, word);
 					else if (getVersion() >= 11 && word.getWord().equalsIgnoreCase("new")) {
 						retour.addUnaryPrefix(Operators.NEW, word);
-					} else if (word.getWord().equals("super")) {
+					} else if (getVersion() >= 11 && word.getWord().equals("super")) {
 						// super doit être dans une méthode
 						if (!(mCurentBlock instanceof ClassMethodBlock)) {
 							errors.add(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.KEYWORD_MUST_BE_IN_CLASS));
