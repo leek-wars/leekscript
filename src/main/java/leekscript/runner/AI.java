@@ -31,7 +31,7 @@ public abstract class AI {
 	public static final int NUMBER = 7;
 	public static final int FUNCTION = 8;
 
-	public static final int ERROR_LOG_COST = 1000;
+	public static final int ERROR_LOG_COST = 10000;
 
 	public final static int MAX_MEMORY = 100000;
 
