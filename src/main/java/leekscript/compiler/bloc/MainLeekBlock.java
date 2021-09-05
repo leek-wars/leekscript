@@ -198,6 +198,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var clazz : mUserClassesList) {
 			clazz.createJava(this, writer);
 		}
+		writer.addLine("}");
+
+		// Static init
+		writer.addLine("public void staticInit() throws LeekRunException {");
+
 		// Initialize classes static fields
 		for (var clazz : mUserClassesList) {
 			clazz.initializeStaticFields(this, writer);

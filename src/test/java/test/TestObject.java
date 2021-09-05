@@ -198,6 +198,11 @@ public class TestObject extends TestCommon {
 		code_v11("class B { y = 10 } class A { x = new B() } var a = new A() return a.x.y").equals("10");
 		code_v11("class B { y = 10 } class A { static x = new B() } return A.x").equals("B {y: 10}");
 
+		section("Initialization of static fields");
+		code_v11("class A { public static x = arrayMap([1, 3, 5], function(y) { return y ** 3 }) } return A.x").equals("[1, 27, 125]");
+		code_v11("class A { static x = arrayMap([1, 3, 5], function(y) { return y ** 3 }) } return A.x").equals("[1, 27, 125]");
+		code_v11("class Map { public static obstacles = toUpper('hello') } return Map.obstacles").equals("HELLO");
+
 		section("Method is a system method");
 		code_v11("class A { sqrt() { return sqrt(25) } }").equals("null");
 		code_v11("class A { sqrt() { return sqrt(25) } } return new A().sqrt()").equals("5");
