@@ -73,6 +73,9 @@ public abstract class AI {
 	// Method that can be overriden in each AI
 	protected void init() throws Exception {}
 
+	// Method that can be overriden in each AI
+	public void staticInit() throws Exception {}
+
 	public int getInstructions() {
 		return mInstructions;
 	}
