@@ -747,9 +747,10 @@ public class PhpArray implements Iterable<Box> {
 	// Fonctions "briques de base"
 
 	public void reindex(AI ai) throws LeekRunException {
-		// Réindexer le tableau (Change l'index de toutes les valeurs
-		// numériques)
+		// Réindexer le tableau (Change l'index de toutes les valeurs numériques)
 		int new_index = 0;
+
+		ai.addOperationsNoCheck(mSize);
 
 		Element e = mHead;
 		while (e != null) {
