@@ -2,6 +2,7 @@ package leekscript.runner;
 
 import leekscript.AILog;
 import leekscript.compiler.LeekScript;
+import leekscript.compiler.LineMapping;
 import leekscript.compiler.RandomGenerator;
 import leekscript.runner.PhpArray.Element;
 import leekscript.runner.values.ArrayLeekValue;
@@ -13,12 +14,16 @@ import leekscript.runner.values.Box;
 import leekscript.runner.values.ArrayLeekValue.ArrayIterator;
 import leekscript.common.Error;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 
 public abstract class AI {
 
@@ -39,7 +44,7 @@ public abstract class AI {
 	public final static int MAX_OPERATIONS = 20000000;
 	public int maxOperations = MAX_OPERATIONS;
 
-	protected JSONArray mErrorObject = null;
+	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
 	protected String thisObject = null;
 
 	protected int id;
@@ -51,6 +56,7 @@ public abstract class AI {
 	private long analyzeTime;
 	private long compileTime;
 	private long loadTime;
+	private File filesLines;
 
 	public AI(int instructions, int version) {
 		this.mInstructions = instructions;
@@ -139,7 +145,7 @@ public abstract class AI {
 		for (StackTraceElement element : elements) {
 			// System.out.println(element.getClassName() + " " + element.getMethodName() + " " + element.getLineNumber());
 			if (element.getClassName().startsWith("AI_")) {
-				sb.append(getErrorLocalisation(element.getLineNumber())).append("\n");
+				sb.append(getErrorLocalisation(element.getLineNumber()));
 				if (count++ > 50) {
 					sb.append("[...]");
 					break;
@@ -156,33 +162,22 @@ public abstract class AI {
 		return getErrorMessage(e.getStackTrace());
 	}
 
-	protected String getErrorLocalisation(int line) {
-		if (mErrorObject == null) {
-			mErrorObject = new JSONArray();
-			var errorString = getErrorString();
-			if (errorString != null) {
-				// System.out.println("errorString = " + errorString.length);
-				for (String error : errorString) {
-					mErrorObject.add(JSON.parseArray(error));
-				}
-			}
+	protected String getErrorLocalisation(int javaLine) {
+		if (mLinesMapping.isEmpty() && this.filesLines != null && this.filesLines.exists()) {
+			try (Stream<String> stream = Files.lines(this.filesLines.toPath())) {
+				stream.forEach(l -> {
+					var parts = l.split(" ");
+					mLinesMapping.put(Integer.parseInt(parts[0]), new LineMapping(Integer.parseInt(parts[2]), Integer.parseInt(parts[1])));
+				});
+			} catch (IOException e) {}
 			thisObject = getAIString();
 		}
-		int value = 0;
-		for (int i = 0; i < mErrorObject.size(); i++) {
-			if (mErrorObject.getJSONArray(i).getInteger(0) > line) {
-				break;
-			}
-			value = i;
-		}
-		if (mErrorObject.size() > value) {
-			JSONArray l = mErrorObject.getJSONArray(value);
-			if (l != null && l.size() >= 3) {
-				var files = getErrorFiles();
-				var f = l.getIntValue(1);
-				String file = f < files.length ? files[f] : "?";
-				return "\t▶ AI " + file + ", line " + l.getString(2); // + ", java " + line;
-			}
+		var lineMapping = mLinesMapping.get(javaLine);
+		if (lineMapping != null) {
+			var files = getErrorFiles();
+			var f = lineMapping.getAI();
+			String file = f < files.length ? files[f] : "?";
+			return "\t▶ AI " + file + ", line " + lineMapping.getLeekScriptLine() + "\n"; // + ", java " + line;
 		}
 		return "";
 	}
@@ -630,8 +625,6 @@ public abstract class AI {
 
 		logs.addSystemLog(type, getErrorMessage(Thread.currentThread().getStackTrace()), error, parameters);
 	}
-
-	abstract protected String[] getErrorString();
 
 	protected String[] getErrorFiles() { return null; }
 
@@ -1683,5 +1676,9 @@ public abstract class AI {
 
 	public long getLoadTime() {
 		return loadTime;
+	}
+
+	public void setLinesFile(File lines) {
+		this.filesLines = lines;
 	}
 }

@@ -10,11 +10,6 @@ public class TestAI extends AI {
 	}
 
 	@Override
-	protected String[] getErrorString() {
-		return null;
-	}
-
-	@Override
 	protected String getAIString() {
 		return null;
 	}

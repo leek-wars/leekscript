@@ -143,6 +143,7 @@ public class LeekScript {
 		String fileName = javaClassName + ".java";
 		File compiled = new File(IA_PATH + javaClassName + ".class");
 		File java = new File(IA_PATH + javaClassName + ".java");
+		File lines = new File(IA_PATH + javaClassName + ".lines");
 
 		// Utilisation du cache de class
 		if (useClassCache && compiled.exists() && compiled.length() != 0 && compiled.lastModified() > file.getTimestamp()) {
@@ -154,6 +155,7 @@ public class LeekScript {
 				}
 				var ai = (AI) clazz.getDeclaredConstructor().newInstance();
 				ai.setId(file.getId());
+				ai.setLinesFile(lines);
 				return ai;
 			} catch (Exception e) {
 				throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
@@ -162,10 +164,10 @@ public class LeekScript {
 
 		// On commence par la conversion LS->Java
 		long t = System.nanoTime();
-		String compiledJava = new IACompiler().compile(file, javaClassName, AIClass);
+		var compiledCode = new IACompiler().compile(file, javaClassName, AIClass);
 		long analyze_time = System.nanoTime() - t;
 
-		if (compiledJava.isEmpty()) { // Rien ne compile, pas normal
+		if (compiledCode.getJavaCode().isEmpty()) { // Rien ne compile, pas normal
 			throw new LeekScriptException(Error.TRANSPILE_TO_JAVA, "No java generated!");
 		}
 
@@ -174,7 +176,16 @@ public class LeekScript {
 		// Sauvegarde du code java
 		try {
 			FileOutputStream javaOutput = new FileOutputStream(java);
-			javaOutput.write(compiledJava.getBytes(StandardCharsets.UTF_8));
+			javaOutput.write(compiledCode.getJavaCode().getBytes(StandardCharsets.UTF_8));
+			javaOutput.close();
+		} catch (IOException e) {
+			throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
+		}
+
+		// Sauvegarde du fichier de lignes
+		try {
+			FileOutputStream javaOutput = new FileOutputStream(lines);
+			javaOutput.write(compiledCode.getLines().getBytes(StandardCharsets.UTF_8));
 			javaOutput.close();
 		} catch (IOException e) {
 			throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
@@ -184,7 +195,7 @@ public class LeekScript {
 		t = System.nanoTime();
 		var fileManager = new SimpleFileManager(compiler.getStandardFileManager(null, null, null));
 		var output = new StringWriter();
-		var compilationUnits = Collections.singletonList(new SimpleSourceFile(fileName, compiledJava));
+		var compilationUnits = Collections.singletonList(new SimpleSourceFile(fileName, compiledCode.getJavaCode()));
 		var task = compiler.getTask(output, fileManager, null, arguments, null, compilationUnits);
 
 		boolean result = task.call();
@@ -234,6 +245,7 @@ public class LeekScript {
 			ai.setAnalyzeTime(analyze_time);
 			ai.setCompileTime(compile_time);
 			ai.setLoadTime(load_time);
+			ai.setLinesFile(lines);
 
 			if (useClassCache) {
 				aiCache.put(javaClassName, clazz);

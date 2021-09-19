@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.TreeMap;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 
 import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.common.Type;
@@ -14,28 +13,18 @@ import leekscript.compiler.expression.AbstractExpression;
 
 public class JavaWriter {
 	private final StringBuilder mCode;
+	private final StringBuilder mLinesFile;
 	private int mLine;
-	private final TreeMap<Integer, Line> mLines = new TreeMap<>();
+	private final TreeMap<Integer, LineMapping> mLines = new TreeMap<>();
 	private final HashMap<AIFile<?>, Integer> mFiles = new HashMap<>();
 	private final ArrayList<AIFile<?>> mFilesList = new ArrayList<>();
 	private final boolean mWithDebug;
 	private final String className;
 	public AbstractLeekBlock currentBlock = null;
 
-	private class Line {
-		private final int mJavaLine;
-		private final int mCodeLine;
-		private final int mAI;
-
-		public Line(int java_line, int code_line, int ai) {
-			mJavaLine = java_line;
-			mCodeLine = code_line;
-			mAI = ai;
-		}
-	}
-
 	public JavaWriter(boolean debug, String className) {
 		mCode = new StringBuilder();
+		mLinesFile = new StringBuilder();
 		mLine = 1;
 		mWithDebug = debug;
 		this.className = className;
@@ -48,7 +37,7 @@ public class JavaWriter {
 	public void addLine(String datas, int line, AIFile<?> ai) {
 		mCode.append(datas).append("\n");
 		int fileIndex = getFileIndex(ai);
-		mLines.put(mLine, new Line(mLine, line, fileIndex));
+		mLines.put(mLine, new LineMapping(line, fileIndex));
 		mLine++;
 	}
 
@@ -75,24 +64,18 @@ public class JavaWriter {
 		mCode.append(datas);
 	}
 
-	public String getJavaCode() {
-		return mCode.toString();
+	public AICode getCode() {
+		return new AICode(mCode.toString(), mLinesFile.toString());
 	}
 
 	public void writeErrorFunction(IACompiler comp, String ai) {
-		mCode.append("protected String[] getErrorString() { return new String[] {");
-
 		String aiJson = JSON.toJSONString(ai);
-		for (Line l : mLines.values()) {
-			JSONArray array = new JSONArray();
-			array.add(l.mJavaLine);
-			array.add(l.mAI);
-			array.add(l.mCodeLine);
-			mCode.append(JSON.toJSONString(array.toJSONString()));
-			mCode.append(", ");
+		for (var e : mLines.entrySet()) {
+			var line = e.getValue();
+			mLinesFile.append(e.getKey() + " " + line.getAI() + " " + line.getLeekScriptLine() + "\n");
 			// System.out.println(l.mAI.getPath() + ":" + l.mCodeLine + " -> " + l.mJavaLine);
 		}
-		mCode.append("};}\nprotected String getAIString() { return ");
+		mCode.append("protected String getAIString() { return ");
 		mCode.append(aiJson);
 		mCode.append(";}\n");
 
@@ -114,7 +97,7 @@ public class JavaWriter {
 
 	public void addPosition(IAWord token) {
 		var index = getFileIndex(token.getAI());
-		mLines.put(mLine, new Line(mLine, token.getLine(), index));
+		mLines.put(mLine, new LineMapping(token.getLine(), index));
 	}
 
 	public String getAIThis() {
