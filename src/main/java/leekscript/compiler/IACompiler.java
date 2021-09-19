@@ -69,7 +69,7 @@ public class IACompiler {
 		return result;
 	}
 
-	public String compile(AIFile<?> ai, String javaClassName, String AIClass) throws LeekCompilerException {
+	public AICode compile(AIFile<?> ai, String javaClassName, String AIClass) throws LeekCompilerException {
 		JavaWriter writer = new JavaWriter(true, javaClassName);
 		try {
 			// On lance la compilation du code de l'IA
@@ -95,7 +95,7 @@ public class IACompiler {
 			addError(e.getIA(), e.getLine(), e.getChar(), e.getWord(), e.getError(), e.getParameters());
 			throw e;
 		}
-		return writer.getJavaCode();
+		return writer.getCode();
 	}
 
 	public String merge(AIFile<?> ai) throws LeekCompilerException {
