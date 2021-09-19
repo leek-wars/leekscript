@@ -158,8 +158,12 @@ public class WordCompiler {
 					mCurentBlock = mCurentBlock.endInstruction();
 					dowhileendBlock(do_block);
 					mCompiler.skipWord();
-				} else
+				} else {
+					if (mCurentBlock.endInstruction() == mCurentBlock) {
+						throw new LeekCompilerException(mCompiler.lastWord(), Error.NO_BLOC_TO_CLOSE);
+					}
 					mCurentBlock = mCurentBlock.endInstruction();
+				}
 			}
 			if (!mMain.equals(mCurentBlock))
 				throw new LeekCompilerException(mCompiler.lastWord(), Error.OPEN_BLOC_REMAINING);
@@ -506,7 +510,7 @@ public class WordCompiler {
 		}
 		WhileBlock bloc = new WhileBlock(mCurentBlock, mMain, mLine, mAI);
 		bloc.setCondition(exp);
-		if (mCompiler.getWord().getType() == WordParser.T_ACCOLADE_LEFT) {
+		if (mCompiler.haveWords() && mCompiler.getWord().getType() == WordParser.T_ACCOLADE_LEFT) {
 			mCompiler.skipWord();
 		} else if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION) {
 			mCompiler.skipWord();
