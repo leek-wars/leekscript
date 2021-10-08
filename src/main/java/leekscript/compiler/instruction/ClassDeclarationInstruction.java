@@ -459,16 +459,23 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		// Create the class in the constructor of the AI
 		String className = "u_" + token.getWord();
 
+		// First declare all static fields
 		for (var field : staticFields.entrySet()) {
 			writer.addCode(className);
 			writer.addCode(".addStaticField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
-			if (field.getValue().expression != null) {
-				field.getValue().expression.writeJavaCode(mainblock, writer);
-			} else {
-				writer.addCode("null");
-			}
+			writer.addCode("null");
 			writer.addCode(", AccessLevel." + field.getValue().level);
 			writer.addLine(");");
+		}
+
+		// Second assign values for fields with values
+		for (var field : staticFields.entrySet()) {
+			if (field.getValue().expression != null) {
+				writer.addCode(className);
+				writer.addCode(".setField(\"" + field.getKey() + "\", ");
+				field.getValue().expression.writeJavaCode(mainblock, writer);
+				writer.addLine(");");
+			}
 		}
 	}
 
