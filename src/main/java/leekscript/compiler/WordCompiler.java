@@ -985,11 +985,13 @@ public class WordCompiler {
 						// super doit être dans une méthode
 						if (!(mCurentBlock instanceof ClassMethodBlock)) {
 							errors.add(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.KEYWORD_MUST_BE_IN_CLASS));
+							retour.addExpression(new LeekVariable(this, word, VariableType.LOCAL));
+						} else {
+							if (((ClassMethodBlock) mCurentBlock).getClassDeclaration().getParentToken() == null) {
+								errors.add(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.SUPER_NOT_AVAILABLE_PARENT));
+							}
+							retour.addExpression(new LeekVariable(word, VariableType.SUPER, ((ClassMethodBlock) mCurentBlock).getClassDeclaration()));
 						}
-						if (mCurentBlock instanceof ClassMethodBlock && ((ClassMethodBlock) mCurentBlock).getClassDeclaration().getParentToken() == null) {
-							errors.add(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.SUPER_NOT_AVAILABLE_PARENT));
-						}
-						retour.addExpression(new LeekVariable(word, VariableType.SUPER, ((ClassMethodBlock) mCurentBlock).getClassDeclaration()));
 					} else {
 						retour.addExpression(new LeekVariable(this, word, VariableType.LOCAL));
 						// throw new LeekCompilerException(word, Error.UNKNOWN_VARIABLE_OR_FUNCTION);
