@@ -97,8 +97,8 @@ public class TestGeneral extends TestCommon {
 		code("var x = 5 if (true) if (true) if (true) if (true) if (true) x = 'a' return x").equals("a");
 		// code("var x = 2 var y = { if (x == 0) { return 'error' } 7 * x } return y").equals("14");
 		code("var y if (false) { if (true) {;} else { y = 2 } } else { y = 5 } return y").equals("5");
-		code_v10("PI = PI + 12; return PI").equals("3,142");
-		code_v11("PI = PI + 12; return PI").equals("3.141592653589793");
+		DISABLED_code("PI = PI + 12; return PI").equals("3,142");
+		DISABLED_code("PI = PI + 12; return PI").equals("3.141592653589793");
 		code_v10("var grow = []; var n = []; grow = @n; return grow").equals("[]");
 
 		section("Assignments with +=");

@@ -205,7 +205,7 @@ public class TestObject extends TestCommon {
 
 		section("Method is a system method");
 		code_v11("class A { sqrt() { return sqrt(25) } }").equals("null");
-		code_v11("class A { sqrt() { return sqrt(25) } } return new A().sqrt()").equals("5");
+		DISABLED_code_v11("class A { sqrt() { return sqrt(25) } } return new A().sqrt()").equals("5");
 
 		section("Return of field");
 		code_v11("class R { f = [] m(k, r) { return this.f[k] = r } } var x = new R() return x.m(1, 2)").equals("2");
