@@ -663,7 +663,7 @@ public class TestNumber extends TestCommon {
 		code_v11("return exp(4.89)").almost(132.953574051282743085);
 		code_v10("return exp(-2.97)").equals("0,051");
 		code_v11("return exp(-2.97)").almost(0.051303310331919108);
-		code_v10("return exp(['a', 7.78][1])").equals("2 392,275");
+		code_v10("return exp(['a', 7.78][1])").equals("2 392,275");
 		code_v11("return exp(['a', 7.78][1])").almost(2392.274820537377763685);
 		// code("return 0.exp();").equals("1");
 		// code("return 1.exp();").almost(Math.E);
@@ -983,7 +983,7 @@ public class TestNumber extends TestCommon {
 		// code("2.pow(10)").equals("1024");
 		code_v10("return pow(5, 3)").equals("125");
 		code_v11("return pow(5, 3)").equals("125.0");
-		code_v10("return pow(2, 10)").equals("1 024");
+		code_v10("return pow(2, 10)").equals("1 024");
 		code_v11("return pow(2, 10)").equals("1024.0");
 		// code("pow([10, ''][0], 5)").equals("100000");
 		// code("3000.pow(3)").equals("2147483648");

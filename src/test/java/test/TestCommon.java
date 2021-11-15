@@ -210,6 +210,9 @@ public class TestCommon {
 	public Case DISABLED_code(String code) {
 		return new Case(code, false);
 	}
+	public Case DISABLED_code_v11(String code) {
+		return new Case(code, false, 11);
+	}
 
 	public void section(String title) {
 		System.out.println("========== " + title + " ==========");
