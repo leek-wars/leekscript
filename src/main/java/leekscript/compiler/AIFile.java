@@ -1,5 +1,7 @@
 package leekscript.compiler;
 
+import com.alibaba.fastjson.JSONObject;
+
 import leekscript.compiler.resolver.ResolverContext;
 
 public class AIFile<C extends ResolverContext> {
@@ -14,6 +16,7 @@ public class AIFile<C extends ResolverContext> {
 	public AIFile(String path, String code, long timestamp, int version, C context) {
 		this(path, code, timestamp, version, context, (context + "/" + path).hashCode() & 0xfffffff);
 	}
+
 	public AIFile(String path, String code, long timestamp, int version, C context, int id) {
 		this.path = path;
 		this.code = code;
@@ -57,5 +60,14 @@ public class AIFile<C extends ResolverContext> {
 	}
 	public void setVersion(int version) {
 		this.version = version;
+	}
+
+	public String toJson() {
+		JSONObject json = new JSONObject();
+		json.put("path", path);
+		json.put("timestamp", timestamp);
+		json.put("version", version);
+		context.toJson(json);
+		return json.toJSONString();
 	}
 }
