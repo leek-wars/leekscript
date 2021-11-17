@@ -34,6 +34,15 @@ public class LeekScript {
 	private final static String IA_PATH = "ai/";
 	private static long id = 1;
 
+	private static class AIClassEntry {
+		Class<?> clazz;
+		long timestamp;
+		public AIClassEntry(Class<?> clazz, long timestamp) {
+			this.clazz = clazz;
+			this.timestamp = timestamp;
+		}
+	}
+
 	private static Resolver<ResourceContext> defaultResolver = new ResourceResolver();
 	private static Resolver<FileSystemContext> fileSystemResolver = new FileSystemResolver();
 	private static Resolver<?> customResolver = null;
@@ -41,7 +50,7 @@ public class LeekScript {
 	private static List<String> arguments = new ArrayList<>();
 	private static JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 	private static URLClassLoader urlLoader;
-	private static HashMap<String, Class<?>> aiCache = new HashMap<>();
+	private static HashMap<String, AIClassEntry> aiCache = new HashMap<>();
 	static {
 		try {
 			classpath = LeekScript.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
@@ -145,15 +154,11 @@ public class LeekScript {
 		File java = new File(IA_PATH + javaClassName + ".java");
 		File lines = new File(IA_PATH + javaClassName + ".lines");
 
-		// Utilisation du cache de class
-		if (useClassCache && compiled.exists() && compiled.length() != 0 && compiled.lastModified() > file.getTimestamp()) {
+		// Cache des classes en RAM d'abord
+		var entry = aiCache.get(javaClassName);
+		if (entry != null && entry.timestamp > file.getTimestamp()) {
 			try {
-				var clazz = aiCache.get(javaClassName);
-				if (clazz == null) {
-					clazz = urlLoader.loadClass(javaClassName);
-					aiCache.put(javaClassName, clazz);
-				}
-				var ai = (AI) clazz.getDeclaredConstructor().newInstance();
+				var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
 				ai.setId(file.getId());
 				ai.setLinesFile(lines);
 				return ai;
@@ -162,7 +167,22 @@ public class LeekScript {
 			}
 		}
 
-		// On commence par la conversion LS->Java
+		// Utilisation du cache de class dans le file system
+		if (useClassCache && compiled.exists() && compiled.length() != 0 && compiled.lastModified() > file.getTimestamp()) {
+			try {
+				var clazz = urlLoader.loadClass(javaClassName);
+				entry = new AIClassEntry(clazz, System.currentTimeMillis());
+				aiCache.put(javaClassName, entry);
+				var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
+				ai.setId(file.getId());
+				ai.setLinesFile(lines);
+				return ai;
+			} catch (Exception e) {
+				throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
+			}
+		}
+
+		// On commence par la conversion LS -> Java
 		long t = System.nanoTime();
 		var compiledCode = new IACompiler().compile(file, javaClassName, AIClass);
 		long analyze_time = System.nanoTime() - t;
@@ -248,7 +268,7 @@ public class LeekScript {
 			ai.setLinesFile(lines);
 
 			if (useClassCache) {
-				aiCache.put(javaClassName, clazz);
+				aiCache.put(javaClassName, new AIClassEntry(clazz, System.currentTimeMillis()));
 			}
 			return ai;
 		} catch (Exception e) {
