@@ -59,7 +59,7 @@ public class LeekScript {
 			e.printStackTrace();
 		}
 		try {
-			urlLoader = new URLClassLoader(new URL[] { new File("ai").toURI().toURL() }, new ClassLoader() {});
+			urlLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, new ClassLoader() {});
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
@@ -147,7 +147,9 @@ public class LeekScript {
 
 	public static AI compile(AIFile<?> file, String AIClass, boolean useClassCache) throws LeekScriptException, LeekCompilerException {
 
-		new File(IA_PATH).mkdir();
+
+		var root = new File(IA_PATH);
+		if (!root.exists()) root.mkdir();
 		String javaClassName = "AI_" + file.getId();
 		String fileName = javaClassName + ".java";
 		File compiled = new File(IA_PATH + javaClassName + ".class");
@@ -156,7 +158,7 @@ public class LeekScript {
 
 		// Cache des classes en RAM d'abord
 		var entry = aiCache.get(javaClassName);
-		if (entry != null && entry.timestamp > file.getTimestamp()) {
+		if (entry != null && entry.timestamp >= file.getTimestamp()) {
 			try {
 				var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
 				ai.setId(file.getId());
@@ -168,10 +170,15 @@ public class LeekScript {
 		}
 
 		// Utilisation du cache de class dans le file system
-		if (useClassCache && compiled.exists() && compiled.length() != 0 && compiled.lastModified() > file.getTimestamp()) {
+		if (useClassCache && compiled.exists() && compiled.length() != 0 && compiled.lastModified() >= file.getTimestamp()) {
 			try {
+				try {
+					urlLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, new ClassLoader() {});
+				} catch (MalformedURLException e) {
+					e.printStackTrace();
+				}
 				var clazz = urlLoader.loadClass(javaClassName);
-				entry = new AIClassEntry(clazz, System.currentTimeMillis());
+				entry = new AIClassEntry(clazz, file.getTimestamp());
 				aiCache.put(javaClassName, entry);
 				var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
 				ai.setId(file.getId());
@@ -268,7 +275,7 @@ public class LeekScript {
 			ai.setLinesFile(lines);
 
 			if (useClassCache) {
-				aiCache.put(javaClassName, new AIClassEntry(clazz, System.currentTimeMillis()));
+				aiCache.put(javaClassName, new AIClassEntry(clazz, file.getTimestamp()));
 			}
 			return ai;
 		} catch (Exception e) {
