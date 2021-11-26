@@ -201,6 +201,9 @@ public class TestCommon {
 	public Case DISABLED_file(String code) {
 		return new Case(code, false);
 	}
+	public Case DISABLED_file_v2(String code) {
+		return new Case(code, false, 2);
+	}
 	public Case code_v1(String code) {
 		return new Case(code, true, 1);
 	}
