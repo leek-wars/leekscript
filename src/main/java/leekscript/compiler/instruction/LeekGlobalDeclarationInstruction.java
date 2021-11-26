@@ -42,7 +42,7 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		writer.addCode("if (!g_init_" + token.getWord() + ") { ");
-		if (mainblock.getWordCompiler().getVersion() >= 11) {
+		if (mainblock.getWordCompiler().getVersion() >= 2) {
 			writer.addCode("g_" + token.getWord() + " = ");
 			if (mValue != null) {
 				if (mValue.getOperations() > 0) writer.addCode("ops(");
@@ -57,7 +57,7 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 			writer.addCode(", " + (mValue != null ? mValue.getOperations() : 0) + ")");
 		}
 		writer.addCode("; g_init_" + token.getWord() + " = true;");
-		if (mainblock.getWordCompiler().getVersion() >= 11) writer.addCode(" ops(1);");
+		if (mainblock.getWordCompiler().getVersion() >= 2) writer.addCode(" ops(1);");
 		writer.addLine(" }", mLine, mAI);
 	}
 

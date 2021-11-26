@@ -1,6 +1,5 @@
 package leekscript.compiler.expression;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import leekscript.common.Type;
@@ -62,7 +61,7 @@ public class LeekObject extends AbstractExpression {
 		}
 		writer.addCode(" })");
 	}
-	
+
 	@Override
 	public void analyze(WordCompiler compiler) {
 		operations = 0;

@@ -187,7 +187,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 					writer.addCode("new Object[] { null }");
 					continue;
 				}
-				if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+				if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
 					parameter.writeJavaCode(mainblock, writer);
 				} else {
 					if (user_function != null) {

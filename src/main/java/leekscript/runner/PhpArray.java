@@ -26,14 +26,14 @@ public class PhpArray implements Iterable<Box> {
 	public final static int ASC_K = 6;
 	public final static int DESC_K = 7;
 
-	private class ElementComparatorV10 implements Comparator<Element> {
+	private class ElementComparatorV1 implements Comparator<Element> {
 
 		private final int mOrder;
 
 		public final static int SORT_ASC = 1;
 		public final static int SORT_DESC = 2;
 
-		public ElementComparatorV10(int order) {
+		public ElementComparatorV1(int order) {
 			mOrder = order;
 		}
 
@@ -51,20 +51,20 @@ public class PhpArray implements Iterable<Box> {
 		}
 
 		public int compareAsc(Object v1, Object v2) throws LeekRunException {
-			int type1 = LeekValueManager.getV10Type(v1);
-			int type2 = LeekValueManager.getV10Type(v2);
+			int type1 = LeekValueManager.getV1Type(v1);
+			int type2 = LeekValueManager.getV1Type(v2);
 			if (type1 < type2)
 				return -1;
 			else if (type1 > type2)
 				return 1;
-			if (type1 == LeekValue.BOOLEAN_V10) {
+			if (type1 == LeekValue.BOOLEAN_V1) {
 				if ((Boolean) v1 == (Boolean) v2)
 					return 0;
 				else if ((Boolean) v1)
 					return 1;
 				else
 					return -1;
-			} else if (type1 == LeekValue.NUMBER_V10) {
+			} else if (type1 == LeekValue.NUMBER_V1) {
 				var d = ((Number) v2).doubleValue();
 				if (((Number) v1).doubleValue() == d)
 					return 0;
@@ -72,9 +72,9 @@ public class PhpArray implements Iterable<Box> {
 					return -1;
 				else
 					return 1;
-			} else if (type1 == LeekValue.STRING_V10) {
+			} else if (type1 == LeekValue.STRING_V1) {
 				return ((String) v1).compareTo((String) v2);
-			} else if (type1 == LeekValue.ARRAY_V10) {
+			} else if (type1 == LeekValue.ARRAY_V1) {
 				var a = (ArrayLeekValue) v2;
 				if (((ArrayLeekValue) v1).size() == a.size())
 					return 0;
@@ -280,7 +280,7 @@ public class PhpArray implements Iterable<Box> {
 			initTable(ai, phpArray.size());
 			Element e = phpArray.mHead;
 			while (e != null) {
-				if (ai.getVersion() >= 11) {
+				if (ai.getVersion() >= 2) {
 					if (level == 1) {
 						set(ai, e.key, e.value.getValue());
 					} else {
@@ -476,8 +476,8 @@ public class PhpArray implements Iterable<Box> {
 					(comparator == ASC_K) ? ElementComparator.SORT_ASC
 							: ElementComparator.SORT_DESC));
 		} else {
-			if (ai.getVersion() == 10) {
-				Collections.sort(liste, new ElementComparatorV10(
+			if (ai.getVersion() == 1) {
+				Collections.sort(liste, new ElementComparatorV1(
 					(comparator == ASC || comparator == ASC_A) ? ElementComparator.SORT_ASC
 							: ElementComparator.SORT_DESC));
 			} else {

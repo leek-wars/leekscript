@@ -32,7 +32,7 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 		mLine = line;
 		mAI = ai;
 		this.function = function;
-		this.box = compiler.getVersion() <= 10;
+		this.box = compiler.getVersion() <= 1;
 	}
 
 	public void setValue(AbstractExpression value) {
@@ -80,7 +80,7 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 					writer.addLine("), " + e.getOperations() + ")");
 				}
 				writer.addLine(";", mLine, mAI);
-			} else if (mainblock.getWordCompiler().getVersion() <= 10) {
+			} else if (mainblock.getWordCompiler().getVersion() <= 1) {
 				writer.addCode("final var u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", ");
 				if (mValue != null) mValue.compileL(mainblock, writer);
 				else writer.addCode("null");
@@ -100,7 +100,7 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 				writer.addLine(");", mLine, mAI);
 			}
 		} else {
-			if (mainblock.getWordCompiler().getVersion() <= 10) {
+			if (mainblock.getWordCompiler().getVersion() <= 1) {
 				if (mValue instanceof LeekExpression && ((LeekExpression) mValue).getOperator() == Operators.REFERENCE) {
 					var e = ((LeekExpression) mValue).getExpression2();
 					if (e.isLeftValue()) {
@@ -183,11 +183,11 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 
 	private void registerVariable(WordCompiler compiler) {
 		// Variables interdites
-		if (compiler.getVersion() >= 11 && token.getWord().equals("this")) {
+		if (compiler.getVersion() >= 2 && token.getWord().equals("this")) {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.THIS_NOT_ALLOWED_HERE));
 		} else {
 			// Vérification déjà existante (on vérifie les globales et fonctions seulement en 1.1 car il y a un léger bug en 1.0 avec les includes)
-			if ((compiler.getVersion() >= 11 && (compiler.getMainBlock().hasGlobal(token.getWord()) || compiler.getMainBlock().hasUserFunction(token.getWord(), true))) || compiler.getCurrentBlock().hasVariable(token.getWord())) {
+			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(token.getWord()) || compiler.getMainBlock().hasUserFunction(token.getWord(), true))) || compiler.getCurrentBlock().hasVariable(token.getWord())) {
 				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 			} else {
 				// On ajoute la variable

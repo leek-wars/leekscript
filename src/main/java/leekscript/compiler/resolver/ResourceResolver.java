@@ -30,7 +30,7 @@ public class ResourceResolver implements Resolver<ResourceContext> {
 
 			long timestamp = resolvedPath.toFile().lastModified();
 
-			return new AIFile<ResourceContext>(path, code, timestamp, 11, newContext, resolvedPath.toString().hashCode() & 0xfffffff);
+			return new AIFile<ResourceContext>(path, code, timestamp, 2, newContext, resolvedPath.toString().hashCode() & 0xfffffff);
 
 		} catch (Exception e) {
 			throw new FileNotFoundException();

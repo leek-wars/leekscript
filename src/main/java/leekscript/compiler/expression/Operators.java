@@ -85,7 +85,7 @@ public class Operators {
 		if(operator.equals("!==")) return NOT_EQUALS_EQUALS;
 		if(operator.equals("^")) return BITXOR;
 		if(operator.equals("^=")) {
-			if (version >= 11) {
+			if (version >= 2) {
 				return BITXOR_ASSIGN;
 			} else {
 				// In LeekScript 1.0, ^= was still power assignment
@@ -288,7 +288,7 @@ public class Operators {
 		case POWER:
 			return "**";
 		case POWERASSIGN:
-			return version == 10 ? "^=" : "**=";
+			return version == 1 ? "^=" : "**=";
 		case NEW:
 			return "new";
 		case BITNOT:

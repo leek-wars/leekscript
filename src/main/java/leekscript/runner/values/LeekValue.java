@@ -2,14 +2,14 @@ package leekscript.runner.values;
 
 public class LeekValue {
 
-	public final static int NUMBER_V10 = 1;
-	public final static int BOOLEAN_V10 = 2;
-	public final static int ARRAY_V10 = 3;
-	public final static int NULL_V10 = 4;
-	public final static int STRING_V10 = 5;
-	public final static int FUNCTION_V10 = 6;
-	public final static int CLASS_V10 = 7;
-	public final static int OBJECT_V10 = 8;
+	public final static int NUMBER_V1 = 1;
+	public final static int BOOLEAN_V1 = 2;
+	public final static int ARRAY_V1 = 3;
+	public final static int NULL_V1 = 4;
+	public final static int STRING_V1 = 5;
+	public final static int FUNCTION_V1 = 6;
+	public final static int CLASS_V1 = 7;
+	public final static int OBJECT_V1 = 8;
 
 	public final static int NULL = 0;
 	public final static int NUMBER = 1;

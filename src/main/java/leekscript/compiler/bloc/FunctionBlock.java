@@ -101,7 +101,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 			var declaration = mParameterDeclarations.get(i);
 			if (declaration.isCaptured()) {
 				sb.append("final var u_").append(parameter).append(" = new Wrapper(");
-				if (mainblock.getCompiler().getCurrentAI().getVersion() <= 10) {
+				if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
 					if (mReferences.get(i)) {
 						sb.append("(p_").append(parameter).append(" instanceof Box) ? (Box) p_").append(parameter).append(" : new Box(" + writer.getAIThis() + ", ").append("p_").append(parameter).append("));");
 					} else {
@@ -114,13 +114,13 @@ public class FunctionBlock extends AbstractLeekBlock {
 				sb.append("var u_").append(parameter).append(" = ");
 				if (mReferences.get(i)) {
 					sb.append("(p_").append(parameter).append(" instanceof Box) ? (Box) p_").append(parameter).append(" : new Box(" + writer.getAIThis());
-					if (mainblock.getCompiler().getCurrentAI().getVersion() <= 10) {
+					if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
 						sb.append(", p_").append(parameter).append(");");
 					} else {
 						sb.append(", copy(p_").append(parameter).append("));");
 					}
 				} else {
-					if (mainblock.getCompiler().getCurrentAI().getVersion() <= 10) {
+					if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
 						sb.append("new Box(" + writer.getAIThis() + ", copy(p_").append(parameter).append("));");
 					} else {
 						sb.append("p_").append(parameter).append("; ops(1); ");

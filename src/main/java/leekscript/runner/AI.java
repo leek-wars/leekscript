@@ -409,7 +409,7 @@ public abstract class AI {
 		return result;
 	}
 
-	public ArrayLeekValue arrayPartitionV10(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
+	public ArrayLeekValue arrayPartitionV1(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
 		ArrayLeekValue list1 = new ArrayLeekValue();
 		ArrayLeekValue list2 = new ArrayLeekValue();
 		int nb = function.getArgumentsCount(this);
@@ -466,7 +466,7 @@ public abstract class AI {
 		return retour;
 	}
 
-	public ArrayLeekValue arrayMapV10(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
+	public ArrayLeekValue arrayMapV1(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
 		ArrayLeekValue retour = new ArrayLeekValue();
 		ArrayIterator iterator = array.getArrayIterator();
 		int nb = function.getArgumentsCount(this);
@@ -483,7 +483,7 @@ public abstract class AI {
 		return retour;
 	}
 
-	public ArrayLeekValue arrayFilterV10(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
+	public ArrayLeekValue arrayFilterV1(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
 		ArrayLeekValue retour = new ArrayLeekValue();
 		ArrayIterator iterator = array.getArrayIterator();
 		int nb = function.getArgumentsCount(this);
@@ -528,7 +528,7 @@ public abstract class AI {
 		return retour;
 	}
 
-	public Object arrayIterV10(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
+	public Object arrayIterV1(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
 		ArrayIterator iterator = array.getArrayIterator();
 		if (function == null) {
 			return null;
@@ -992,7 +992,7 @@ public abstract class AI {
 					if (iterator.key() instanceof String) {
 						retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 					} else {
-						if (getVersion() == 10) {
+						if (getVersion() == 1) {
 							retour.push(this, LeekOperations.clone(this, iterator.getValue(this)));
 						} else {
 							retour.push(this, iterator.getValue(this));
@@ -1005,7 +1005,7 @@ public abstract class AI {
 					if (iterator.key() instanceof String) {
 						retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 					} else {
-						if (getVersion() == 10) {
+						if (getVersion() == 1) {
 							retour.push(this, LeekOperations.clone(this, iterator.getValue(this)));
 						} else {
 							retour.push(this, iterator.getValue(this));
@@ -1027,7 +1027,7 @@ public abstract class AI {
 				if (iterator.key() instanceof String) {
 					retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 				} else {
-					if (getVersion() == 10) {
+					if (getVersion() == 1) {
 						retour.push(this, LeekOperations.clone(this, iterator.getValue(this)));
 					} else {
 						retour.push(this, iterator.getValue(this));
@@ -1035,7 +1035,7 @@ public abstract class AI {
 				}
 				iterator.next();
 			}
-			if (getVersion() == 10) {
+			if (getVersion() == 1) {
 				retour.push(this, LeekOperations.clone(this, y));
 			} else {
 				retour.push(this, y);
@@ -1088,7 +1088,7 @@ public abstract class AI {
 
 	public Object div(Object x, Object y) throws LeekRunException {
 		double real_y = real(y);
-		if (version == 10 && real_y == 0) {
+		if (version == 1 && real_y == 0) {
 			addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
 			return null;
 		}
@@ -1100,7 +1100,7 @@ public abstract class AI {
 			return real(x) % real(y);
 		}
 		var y_int = integer(y);
-		if (version == 10 && y_int == 0) {
+		if (version == 1 && y_int == 0) {
 			addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
 			return null;
 		}

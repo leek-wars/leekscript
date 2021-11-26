@@ -20,10 +20,10 @@ public class TestGlobals extends TestCommon {
 		code("global r = [] return r[1] = 12").equals("12");
 		code("global r = [0] return r[0] += 12").equals("12");
 		code("global r = [] return r[5] += 12").equals("12");
-		code_v10("global r = 12 r = @null").equals("null");
+		code_v1("global r = 12 r = @null").equals("null");
 		code("global m = [] return m = m").equals("[]");
-		code_v11("global m = {} return m = m").equals("{}");
-		code_v11("global m = {a: 12} return m = m").equals("{a: 12}");
+		code_v2("global m = {} return m = m").equals("{}");
+		code_v2("global m = {a: 12} return m = m").equals("{a: 12}");
 
 		section("Globals operators");
 		code("global x = 12; x++; return x;").equals("13");
@@ -33,14 +33,14 @@ public class TestGlobals extends TestCommon {
 		code("global x = 12; x += 5; return x;").equals("17");
 		code("global x = 12; x -= 5; return x;").equals("7");
 		code("global x = 12; x *= 5; return x;").equals("60");
-		code_v10("global x = 12; x /= 5; return x;").equals("2,4");
-		code_v11("global x = 12; x /= 5; return x;").equals("2.4");
+		code_v1("global x = 12; x /= 5; return x;").equals("2,4");
+		code_v2("global x = 12; x /= 5; return x;").equals("2.4");
 		code("global x = 12; x %= 5; return x;").equals("2");
 		code("global x = 2; x **= 5; return x;").equals("32");
 		code("global x = 12; x |= 5; return x;").equals("13");
 		code("global x = 12; x &= 5; return x;").equals("4");
-		code_v10("global x = 12; x ^= 5; return x;").equals("248832");
-		code_v11("global x = 12; x ^= 5; return x;").equals("9");
+		code_v1("global x = 12; x ^= 5; return x;").equals("248832");
+		code_v2("global x = 12; x ^= 5; return x;").equals("9");
 		code("global x = 12; return x == 5;").equals("false");
 		code("global x = 12; return x === 5;").equals("false");
 	}

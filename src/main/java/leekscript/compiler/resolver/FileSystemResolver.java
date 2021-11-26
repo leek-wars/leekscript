@@ -30,7 +30,7 @@ public class FileSystemResolver implements Resolver<FileSystemContext> {
 			FileSystemContext newContext = new FileSystemContext(parent.toFile());
 
 			long timestamp = resolvedPath.toFile().lastModified();
-			int version = resolvedPath.toFile().getName().contains("v10") ? 10 : 11;
+			int version = resolvedPath.toFile().getName().contains("v1") ? 1 : 2;
 
 			return new AIFile<FileSystemContext>(path, code, timestamp, version, newContext, resolvedPath.toString().hashCode() & 0xfffffff);
 

@@ -103,8 +103,8 @@ public class TestCommon {
 				return "disabled";
 			}
 			if (version == -1) {
-				run_version(10, checker);
-				return run_version(11, checker);
+				run_version(1, checker);
+				return run_version(2, checker);
 			} else {
 				return run_version(version, checker);
 			}
@@ -192,26 +192,26 @@ public class TestCommon {
 	public Case file(String code) {
 		return new Case(code, true);
 	}
-	public Case file_v10(String code) {
-		return new Case(code, true, 10);
+	public Case file_v1(String code) {
+		return new Case(code, true, 1);
 	}
-	public Case file_v11(String code) {
-		return new Case(code, true, 11);
+	public Case file_v2(String code) {
+		return new Case(code, true, 2);
 	}
 	public Case DISABLED_file(String code) {
 		return new Case(code, false);
 	}
-	public Case code_v10(String code) {
-		return new Case(code, true, 10);
+	public Case code_v1(String code) {
+		return new Case(code, true, 1);
 	}
-	public Case code_v11(String code) {
-		return new Case(code, true, 11);
+	public Case code_v2(String code) {
+		return new Case(code, true, 2);
 	}
 	public Case DISABLED_code(String code) {
 		return new Case(code, false);
 	}
-	public Case DISABLED_code_v11(String code) {
-		return new Case(code, false, 11);
+	public Case DISABLED_code_v2(String code) {
+		return new Case(code, false, 2);
 	}
 
 	public void section(String title) {
@@ -264,7 +264,7 @@ public class TestCommon {
 	public static void loadReferenceOperations() {
 		BufferedReader reader;
 		try {
-			reader = new BufferedReader(new FileReader("opérations_v10.txt"));
+			reader = new BufferedReader(new FileReader("opérations_v1.txt"));
 			String line = reader.readLine();
 			while (line != null) {
 				operationsReference.add(Long.parseLong(line));

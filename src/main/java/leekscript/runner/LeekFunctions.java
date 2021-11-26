@@ -526,7 +526,7 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			var array = (ArrayLeekValue) parameters[0];
 			var index = ((Number) parameters[2]).intValue();
-			if (ai.getVersion() == 10) {
+			if (ai.getVersion() == 1) {
 				array.insert(ai, LeekOperations.clone(ai, parameters[1]), index);
 			} else {
 				array.insert(ai, parameters[1], index);
@@ -545,7 +545,7 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			var array = (ArrayLeekValue) parameters[0];
-			if (ai.getVersion() >= 11) {
+			if (ai.getVersion() >= 2) {
 				array.push(ai, parameters[1]);
 			} else {
 				array.push(ai, LeekOperations.clone(ai, parameters[1]));
@@ -557,7 +557,7 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
 			var array = (ArrayLeekValue) parameters[0];
-			if (leekIA.getVersion() == 10) {
+			if (leekIA.getVersion() == 1) {
 				var value = LeekOperations.clone(leekIA, parameters[1]);
 				array.insert(leekIA, value, 0);
 			} else {
@@ -849,7 +849,7 @@ public enum LeekFunctions implements ILeekFunction {
 			var array = (ArrayLeekValue) parameters[0];
 			var array2 = (ArrayLeekValue) parameters[1];
 			for (var value : array2) {
-				if (leekIA.getVersion() == 10) {
+				if (leekIA.getVersion() == 1) {
 					array.push(leekIA, LeekOperations.clone(leekIA, value.getValue()));
 				} else {
 					array.push(leekIA, value.getValue());
@@ -880,20 +880,20 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
 			var array = (ArrayLeekValue) parameters[0];
 			var fun = (FunctionLeekValue) parameters[1];
-			if (leekIA.getVersion() >= 11) {
+			if (leekIA.getVersion() >= 2) {
 				return leekIA.arrayMap(array, fun);
 			} else {
-				return leekIA.arrayMapV10(array, fun);
+				return leekIA.arrayMapV1(array, fun);
 			}
 		}
 	},
 	arrayFilter(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			if (ai.getVersion() >= 11) {
+			if (ai.getVersion() >= 2) {
 				return ai.arrayFilter((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 			} else {
-				return ai.arrayFilterV10((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+				return ai.arrayFilterV1((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 			}
 		}
 	},
@@ -927,20 +927,20 @@ public enum LeekFunctions implements ILeekFunction {
 	arrayPartition(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			if (ai.getVersion() >= 11) {
+			if (ai.getVersion() >= 2) {
 				return ai.arrayPartition((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 			} else {
-				return ai.arrayPartitionV10((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+				return ai.arrayPartitionV1((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 			}
 		}
 	},
 	arrayIter(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			if (ai.getVersion() >= 11) {
+			if (ai.getVersion() >= 2) {
 				return ai.arrayIter((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 			} else {
-				return ai.arrayIterV10((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+				return ai.arrayIterV1((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 			}
 		}
 	},

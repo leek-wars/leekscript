@@ -6,7 +6,7 @@ import leekscript.runner.LeekRunException;
 public class TestAI extends AI {
 
 	public TestAI() throws Exception {
-		super(0, 11);
+		super(0, 2);
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public class TestAI extends AI {
 
 	@Override
 	public int getVersion() {
-		return 11;
+		return 2;
 	}
 
 	@Override

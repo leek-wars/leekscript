@@ -101,7 +101,7 @@ public class FunctionLeekValue {
 				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(values), String.valueOf(ai.userFunctionCount(mId)) });
 			}
 			else {
-				if (ai.getVersion() >= 11) {
+				if (ai.getVersion() >= 2) {
 					return ai.userFunctionExecute(mId, values);
 				} else {
 					return ai.userFunctionExecute(mId, copyValues(ai, values, ai.userFunctionReference(mId)));

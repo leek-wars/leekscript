@@ -86,7 +86,7 @@ public class LeekValueManager {
 
 	public static String doubleToString(AI ai, double value) throws LeekRunException {
 		ai.ops(3);
-		if (ai.getVersion() >= 11) {
+		if (ai.getVersion() >= 2) {
 			return String.valueOf((Double) value);
 		} else {
 			// if (((Double) value) == ((Double) value).intValue()) {
@@ -206,16 +206,16 @@ public class LeekValueManager {
 		return 0;
 	}
 
-	public static int getV10Type(Object v) {
-		if (v == null) return LeekValue.NULL_V10;
-		if (v instanceof Boolean) return LeekValue.BOOLEAN_V10;
-		if (v instanceof Number) return LeekValue.NUMBER_V10;
-		if (v instanceof String) return LeekValue.STRING_V10;
-		if (v instanceof ArrayLeekValue) return LeekValue.ARRAY_V10;
-		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT_V10;
-		if (v instanceof ClassLeekValue) return LeekValue.CLASS_V10;
-		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION_V10;
-		if (v instanceof Box) return getV10Type(((Box) v).getValue());
+	public static int getV1Type(Object v) {
+		if (v == null) return LeekValue.NULL_V1;
+		if (v instanceof Boolean) return LeekValue.BOOLEAN_V1;
+		if (v instanceof Number) return LeekValue.NUMBER_V1;
+		if (v instanceof String) return LeekValue.STRING_V1;
+		if (v instanceof ArrayLeekValue) return LeekValue.ARRAY_V1;
+		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT_V1;
+		if (v instanceof ClassLeekValue) return LeekValue.CLASS_V1;
+		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION_V1;
+		if (v instanceof Box) return getV1Type(((Box) v).getValue());
 		return 0;
 	}
 

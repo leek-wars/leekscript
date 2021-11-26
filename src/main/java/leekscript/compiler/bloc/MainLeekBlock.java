@@ -211,7 +211,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 		// Variables globales
 		for (String global : mGlobales) {
-			if (getWordCompiler().getVersion() >= 11) {
+			if (getWordCompiler().getVersion() >= 2) {
 				writer.addLine("private Object g_" + global + " = null;");
 			} else {
 				writer.addLine("private Box g_" + global + " = new Box(" + writer.getAIThis() + ");");
