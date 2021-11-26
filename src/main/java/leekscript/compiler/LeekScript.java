@@ -147,6 +147,7 @@ public class LeekScript {
 
 	public static AI compile(AIFile<?> file, String AIClass, boolean useClassCache) throws LeekScriptException, LeekCompilerException {
 
+		// System.out.println("LeekScript compile AI " + file.getPath() + " timestamp : " + file.getTimestamp());
 
 		var root = new File(IA_PATH);
 		if (!root.exists()) root.mkdir();
@@ -159,6 +160,7 @@ public class LeekScript {
 		// Cache des classes en RAM d'abord
 		var entry = aiCache.get(javaClassName);
 		if (entry != null && entry.timestamp >= file.getTimestamp()) {
+			// System.out.println("Load AI " + file.getPath() + " from RAM");
 			try {
 				var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
 				ai.setId(file.getId());
@@ -171,6 +173,7 @@ public class LeekScript {
 
 		// Utilisation du cache de class dans le file system
 		if (useClassCache && compiled.exists() && compiled.length() != 0 && compiled.lastModified() >= file.getTimestamp()) {
+			// System.out.println("Load AI " + file.getPath() + " from disk");
 			try {
 				try {
 					urlLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, new ClassLoader() {});
@@ -190,6 +193,7 @@ public class LeekScript {
 		}
 
 		// On commence par la conversion LS -> Java
+		// System.out.println("Re-compile AI " + file.getPath());
 		long t = System.nanoTime();
 		var compiledCode = new IACompiler().compile(file, javaClassName, AIClass);
 		long analyze_time = System.nanoTime() - t;
