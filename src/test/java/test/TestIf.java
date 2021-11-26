@@ -21,8 +21,8 @@ public class TestIf extends TestCommon {
 		code("if (true) null else {}").equals("null");
 		// code("if true").error(ls::Error::UNEXPECTED_TOKEN, {""});
 		// code("if true else").error(ls::Error::UNEXPECTED_TOKEN, {"else"});
-		// code("if (true) {a: 12} else {b: 5}").equals("{a: 12}");
-		// code("if (true) { {a: 12} } else { {b: 5} }").equals("{a: 12}");
+		code_v11("if (true) {a: 12} else {b: 5}").equals("{a: 12}");
+		code_v11("if (true) { {a: 12} } else { {b: 5} }").equals("{a: 12}");
 		code("if (true) return 12 else return 5;").equals("12");
 		code("if (false) return 12 else return 5;").equals("5");
 		code("if (true) return 12;").equals("12");

@@ -29,6 +29,7 @@ import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekExpressionFunction;
 import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekNumber;
+import leekscript.compiler.expression.LeekObject;
 import leekscript.compiler.expression.LeekParenthesis;
 import leekscript.compiler.expression.LeekString;
 import leekscript.compiler.expression.LeekVariable;
@@ -867,8 +868,7 @@ public class WordCompiler {
 				// Si on attend un opérateur mais qu'il vient pas
 
 				if (word.getType() == WordParser.T_BRACKET_LEFT) {
-					mCompiler.skipWord();// On avance le curseur pour être au
-											// début de l'expression
+					mCompiler.skipWord(); // On avance le curseur pour être au début de l'expression
 
 					AbstractExpression exp = readExpression();
 					if (mCompiler.getWord().getType() != WordParser.T_BRACKET_RIGHT) {
@@ -966,7 +966,39 @@ public class WordCompiler {
 						throw new LeekCompilerException(mCompiler.getWord(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
 					}
 					retour.addExpression(array);
+
+				} else if (getVersion() >= 11 && word.getType() == WordParser.T_ACCOLADE_LEFT) {
+
+					// Déclaration d'un objet
+					mCompiler.skipWord();
+					var object = new LeekObject();
+					int type = 0;
+					while (mCompiler.getWord().getType() != WordParser.T_ACCOLADE_RIGHT) {
+						if (mCompiler.getWord().getType() != WordParser.T_STRING) {
+							throw new LeekCompilerException(mCompiler.getWord(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+						}
+						String key = mCompiler.getWord().getWord();
+						mCompiler.skipWord();
+
+						if (!mCompiler.getWord().getWord().equals(":")) {
+							throw new LeekCompilerException(mCompiler.getWord(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+						}
+						mCompiler.skipWord();
+
+						AbstractExpression value = readExpression();
+						object.addEntry(key, value);
+
+						if (mCompiler.getWord().getType() == WordParser.T_VIRG) {
+							mCompiler.skipWord();
+						}
+					}
+					if (mCompiler.getWord().getType() != WordParser.T_ACCOLADE_RIGHT) {
+						throw new LeekCompilerException(mCompiler.getWord(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+					}
+					retour.addExpression(object);
+
 				} else if (word.getType() == WordParser.T_STRING) {
+
 					if (mMain.hasGlobal(word.getWord())) {
 						retour.addExpression(new LeekVariable(this, word, VariableType.GLOBAL));
 					} else if (word.getWord().equalsIgnoreCase("function")) {

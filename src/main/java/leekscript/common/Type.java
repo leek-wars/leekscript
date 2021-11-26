@@ -10,6 +10,7 @@ public class Type {
 	public static Type REAL = new Type("real", 'r');
 	public static Type STRING = new Type("string", 's');
 	public static Type ARRAY = new Type("array", 'a');
+	public static Type OBJECT = new Type("object", 'o');
 	public static Type FUNCTION = new Type("function", 'f');
 
 	public String name;

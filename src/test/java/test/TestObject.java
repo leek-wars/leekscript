@@ -10,22 +10,22 @@ public class TestObject extends TestCommon {
 		// code("return Object()").equals("{}");
 		// code("return new Object").equals("{}");
 		// code("return new Object()").equals("{}");
-		// code("return {}").equals("{}");
-		// code("return {a: 12}").equals("{a: 12}");
-		// code("return {a: 12, b: 5}").equals("{a: 12, b: 5}");
-		// code("return {a: {}, b: []}").equals("{a: {}, b: []}");
-		// code("var a = {} return a").equals("{}");
-		// code("var a = {b: 12, c: 5} return a").equals("{b: 12, c: 5}");
+		code_v11("return {}").equals("{}");
+		code_v11("return {a: 12}").equals("{a: 12}");
+		code_v11("return {a: 12, b: 5}").equals("{a: 12, b: 5}");
+		code_v11("return {a: {}, b: []}").equals("{a: {}, b: []}");
+		code_v11("var a = {} return a").equals("{}");
+		code_v11("var a = {b: 12, c: 5} return a").equals("{b: 12, c: 5}");
 
 		section("Objects with functions");
-		// code("var f = obj -> obj.a return f({a: 'foo'})").equals("'foo'");
-		// code("var f = obj -> obj.a return [f({a: 'foo'}), f({a: 'bar'})]").equals("['foo', 'bar']");
-		// code("var f = obj -> obj.a [f(12), f({a: 'bar'})]").error(ls::Error::NO_SUCH_ATTRIBUTE, {"a", "Number"});
+		code_v11("var f = function(obj) { return obj.a } return f({a: 'foo'})").equals("foo");
+		code_v11("var f = function(obj) { return obj.a } return [f({a: 'foo'}), f({a: 'bar'})]").equals("[foo, bar]");
+		//code("var f = function(obj) { return obj.a } [f(12), f({a: 'bar'})]").error(ls::Error::NO_SUCH_ATTRIBUTE, {"a", "Number"});
 
 		section("No commas");
-		// code("return {a: 12 b: 5}").equals("{a: 12, b: 5}");
-		// code("return {a: 12 - 2 yo: -6}").equals("{a: 10, yo: -6}");
-		// code("return {a: 12 b: 'yo' c: true d: [1 2 3]}").equals("{a: 12, b: 'yo', c: true, d: [1, 2, 3]}");
+		code_v11("return {a: 12 b: 5}").equals("{a: 12, b: 5}");
+		code_v11("return {a: 12 - 2 yo: -6}").equals("{a: 10, yo: -6}");
+		code_v11("return {a: 12 b: 'yo' c: true d: [1 2 3]}").equals("{a: 12, b: yo, c: true, d: [1, 2, 3]}");
 
 		section("Classes");
 		code_v11("class A { } return new A();").equals("A {}");
@@ -218,43 +218,43 @@ public class TestObject extends TestCommon {
 		* Operators
 		*/
 		section("Object.operator !");
-		// code("return !{}").equals("true");
-		// code("return !{a: 32}").equals("false");
+		code_v11("return !{}").equals("true");
+		code_v11("return !{a: 32}").equals("false");
 
 		section("Object.operator | |");
-		// code("var a = {a: 32, b: 'toto', c: false}; return |a|").equals("3");
+		// code_v11("var a = {a: 32, b: 'toto', c: false}; return |a|").equals("3");
 
 		section("Object.operator in ()");
-		// code("return 12 in {x: 5, y: 12}").equals("true");
-		// code("return 12 in {x: 5, y: 'yo'}").equals("false");
+		// code_v11("return 12 in {x: 5, y: 12}").equals("true");
+		// code_v11("return 12 in {x: 5, y: 'yo'}").equals("false");
 
 		section("Object.operator . ()");
-		// code("return { v: 12 }.v").equals("12");
-		// code("var a = {b: 12, c: 5} return a.b").equals("12");
-		// code("var a = {v: 5} return a.v = 12").equals("12");
-		// code("var a = {v: 5} a.v = 12 return a").equals("{v: 12}");
-		// code("var a = {v: 5} return a.v = 'salut'").equals("'salut'");
-		// code("var a = {v: 5} a.v = 'salut' return a").equals("{v: 'salut'}");
-		// code("var a = {b: 12} return a.b += 10").equals("22");
-		// code("var a = {b: 12} return a.b -= 10").equals("2");
-		// code("var a = {b: 12} return a.b *= 10").equals("120");
-		// code("var a = {b: 12} return a.b /= 10").almost(1.2);
-		// code("var a = {b: 12} return a.b %= 10").equals("2");
-		// code("var o = {} o.new_val = 12 return o").equals("{new_val: 12}");
-		// code("var o = {a: 'a'} o.b = 'b' return o").equals("{a: 'a', b: 'b'}");
+		code_v11("return { v: 12 }.v").equals("12");
+		code_v11("var a = {b: 12, c: 5} return a.b").equals("12");
+		code_v11("var a = {v: 5} return a.v = 12").equals("12");
+		code_v11("var a = {v: 5} a.v = 12 return a").equals("{v: 12}");
+		code_v11("var a = {v: 5} return a.v = 'salut'").equals("salut");
+		code_v11("var a = {v: 5} a.v = 'salut' return a").equals("{v: salut}");
+		code_v11("var a = {b: 12} return a.b += 10").equals("22");
+		code_v11("var a = {b: 12} return a.b -= 10").equals("2");
+		code_v11("var a = {b: 12} return a.b *= 10").equals("120");
+		code_v11("var a = {b: 12} return a.b /= 10").almost(1.2);
+		code_v11("var a = {b: 12} return a.b %= 10").equals("2");
+		code_v11("var o = {} o.new_val = 12 return o").equals("{new_val: 12}");
+		code_v11("var o = {a: 'a'} o.b = 'b' return o").equals("{a: a, b: b}");
 		// DISABLED_code("Object.readonly.v = 5").exception(ls::vm::Exception::CANT_MODIFY_READONLY_OBJECT);
-		// code("var o = [{}, ''][0] return o.values").equals("<function>");
-		// code("var pq = [{p: 22, v: 55}] return pq[0].p").equals("22");
-		// code("var pq = [{p: 22, v: 55}] var o = pq[0] return o.v").equals("55");
+		// code_v11("var o = [{}, ''][0] return o.values").equals("<function>");
+		code_v11("var pq = [{p: 22, v: 55}] return pq[0].p").equals("22");
+		code_v11("var pq = [{p: 22, v: 55}] var o = pq[0] return o.v").equals("55");
 
 		section("Object.operator ==");
-		// code("class A {} return {} == new A").equals("false");
+		code_v11("class A {} return {} == new A").equals("false");
 		code_v11("class A { }; class B { }; return new A() == new B();").equals("false");
-		// code("class A {} return new A == new A").equals("true");
-		// code("return {a: 2} == {}").equals("false");
-		// code("return {a: 2} == {a: 1}").equals("false");
-		// code("return {a: 2} == {b: 2}").equals("false");
-		// code("return {a: 2} == {a: 2}").equals("true");
+		code_v11("class A {} return new A == new A").equals("true");
+		code_v11("return {a: 2} == {}").equals("false");
+		code_v11("return {a: 2} == {a: 1}").equals("false");
+		code_v11("return {a: 2} == {b: 2}").equals("false");
+		code_v11("return {a: 2} == {a: 2}").equals("false");
 
 		section("Object.operator <");
 		// code("return {} < {}").equals("false");
@@ -293,11 +293,11 @@ public class TestObject extends TestCommon {
 		// code("return {a: 5, b: 'toto', c: true, d: -> 5}.values()").equals("[5, 'toto', true, <function>]");
 
 		section("Object.isTrue()");
-		// code("if ({x: 12}) { return 5 } else { return 12 }").equals("5");
-		// code("if ({}) { return 5 } else { return 12 }").equals("12");
+		code_v11("if ({x: 12}) { return 5 } else { return 12 }").equals("5");
+		code_v11("if ({}) { return 5 } else { return 12 }").equals("12");
 
 		section("Object.clone()");
-		// code("var a = {v: 12} return [a]").equals("[{v: 12}]");
+		code_v11("var a = {v: 12} return [a]").equals("[{v: 12}]");
 
 		section("Object.map()");
 		// code("return {}.map(x -> x + 1)").equals("{}");

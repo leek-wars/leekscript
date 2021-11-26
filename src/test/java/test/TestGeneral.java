@@ -50,7 +50,7 @@ public class TestGeneral extends TestCommon {
 		code("var a = 'hello' return a = 2").equals("2");
 		code("var a = 2 a = 'hello' return a").equals("hello");
 		code("var a = 2 a = [1, 2] return a").equals("[1, 2]");
-		// code("var a = 5.5 a = {} a").equals("{}");
+		code_v11("var a = 5.5 a = {} return a").equals("{}");
 		// code("var a = [5, 7] a = 7 System.print(a)").output("7\n");
 		// code("var a = 7 a = [5, 12] a").equals("[5, 12]");
 		// code("var a = 7 System.print(a) a = <5, 12> System.print(a)").output("7\n<5, 12>\n");
