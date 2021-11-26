@@ -103,7 +103,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 			} else {
 				sb.append("var u_").append(parameter).append(" = ");
 
-				if (mainblock.getWordCompiler().getVersion() >= 11) {
+				if (mainblock.getWordCompiler().getVersion() >= 2) {
 					sb.append("values[").append(i).append("]; ops(1);");
 				} else {
 					// In LeekScript 1.0, load the value or reference

@@ -41,8 +41,8 @@ public class TestLoops extends TestCommon {
 		code("var s = [] var i = 0 var j = 0 while (i < 2) { i++ j = 0 while (j < 3) { j++ push(s, j) }} return s;").equals("[1, 2, 3, 1, 2, 3]");
 		code("var s = [] var i = 0 var j = 0 while (i < 4) { j = i i++ while (j < 4) { j++ push(s, j) }} return s;").equals("[1, 2, 3, 4, 2, 3, 4, 3, 4, 4]");
 		code("var s = [] var i = 0 while (i < 2) { i++ var j = 0 while (j < 2) { j++ var k = 0 while (k < 2) { k++ push(s, k) }}} return s;").equals("[1, 2, 1, 2, 1, 2, 1, 2]");
-		code_v10("var s = [] var i = 0 while (i < 2) { i++ push(s, 0.5) var j = 0 while (j < 3) { j++ push(s, j) }} return s;").equals("[0,5, 1, 2, 3, 0,5, 1, 2, 3]");
-		code_v11("var s = [] var i = 0 while (i < 2) { i++ push(s, 0.5) var j = 0 while (j < 3) { j++ push(s, j) }} return s;").equals("[0.5, 1, 2, 3, 0.5, 1, 2, 3]");
+		code_v1("var s = [] var i = 0 while (i < 2) { i++ push(s, 0.5) var j = 0 while (j < 3) { j++ push(s, j) }} return s;").equals("[0,5, 1, 2, 3, 0,5, 1, 2, 3]");
+		code_v2("var s = [] var i = 0 while (i < 2) { i++ push(s, 0.5) var j = 0 while (j < 3) { j++ push(s, j) }} return s;").equals("[0.5, 1, 2, 3, 0.5, 1, 2, 3]");
 		// DISABLED_code("var s = [] var i = 0 while (i < 2) { i++ s.push([]) var j = 0 while j < 3 { j++ s[|s| - 1] += 1 }} s").equals("[[1, 1, 1], [1, 1, 1]]");
 		// DISABLED_code("var s = [] var i = 0 while (i < 2) { i++ s.push([]) var j = 0 while j < 3 { j++ s[|s| - 1] += ('a'.code() + 3 * (i - 1) + j - 1).char() }} s").equals("[['a', 'b', 'c'], ['d', 'e', 'f']]");
 		// file("test/code/loops/lot_of_whiles_int.leek").equals("30030");
@@ -86,8 +86,8 @@ public class TestLoops extends TestCommon {
 		// DISABLED_code("var i = 0 for (; i < 10; i++) { } return i;").equals("10");
 		code("var i = 0 for (i = 0; i < 10; i++) { } return i;").equals("10");
 		code("var i = 0 for (i = 0; i < 10; i++) { if (i == 5) { break } } return i;").equals("5");
-		code_v10("var i var c = 0 for (i = 0; i < 20; i += 0.573) { c++ } return i;").equals("20,055");
-		code_v11("var i var c = 0 for (i = 0; i < 20; i += 0.573) { c++ } return i;").equals("20.05500000000001");
+		code_v1("var i var c = 0 for (i = 0; i < 20; i += 0.573) { c++ } return i;").equals("20,055");
+		code_v2("var i var c = 0 for (i = 0; i < 20; i += 0.573) { c++ } return i;").equals("20.05500000000001");
 		code("var i = 's' var c = 0 for (i = []; count(i) < 8; push(i, 1)) { c++ } return i;").equals("[1, 1, 1, 1, 1, 1, 1, 1]");
 		// DISABLED_code("var i = 0 for (; i < 10; i += 0.5) { } return i;").equals("10");
 		// code("var i = 0 for (i = 2l; i < 10; i += 0.5) { } return i;").equals("10");
@@ -146,8 +146,8 @@ public class TestLoops extends TestCommon {
 		code("var a = 0 var x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] for (var i in x) { if (i < 5) { continue } a++ } return a;").equals("5");
 		code("var s = 0 for (var k : var v in [1, 2, 3, 4]) { s += k * v } return s;").equals("20");
 		// code("var s = '' for (var k : var v in ['a': 1, 'b': 2, 'c': 3, 'd': 4]) { s += v * k } return s;").equals("abbcccdddd");
-		code_v10("return (function (a) { var s = 0.0; for (var x in a) { s += x } return s; })([1, 2, 3, 4.25]);").equals("10,25");
-		code_v11("return (function (a) { var s = 0.0; for (var x in a) { s += x } return s; })([1, 2, 3, 4.25]);").equals("10.25");
+		code_v1("return (function (a) { var s = 0.0; for (var x in a) { s += x } return s; })([1, 2, 3, 4.25]);").equals("10,25");
+		code_v2("return (function (a) { var s = 0.0; for (var x in a) { s += x } return s; })([1, 2, 3, 4.25]);").equals("10.25");
 		// DISABLED_code("var y = '' for k, x in { var x = [] x.push(4) x } { y += k + ':' + x + ' ' } y").equals("'0:4 '");
 		// DISABLED_code("var y = '' for k, x in { var x = [1: 2] x.insert(3, 4) x } { y += k + ':' + x + ' ' } y").equals("'1:2 3:4 '");
 		// DISABLED_code("var y = '' for k, x in { var x = [1: 2.5] x.insert(3, 4) x } { y += k + ':' + x + ' ' } y").equals("'1:2.5 3:4 '");
@@ -179,14 +179,14 @@ public class TestLoops extends TestCommon {
 		// code("var n = 3 while (n--) { var r = [] for x in [1, 2, 3] { r += x } print(r) }").output("[1, 2, 3]\n[1, 2, 3]\n[1, 2, 3]\n");
 
 		section("Foreach - references");
-		code_v10("var s = 0 for (var @v in [1, 2, 3, 4]) { s += v } return s;").equals("10");
-		code_v10("var s = 0 for (var @k : var @v in [1, 2, 3, 4]) { s += k * v } return s;").equals("20");
+		code_v1("var s = 0 for (var @v in [1, 2, 3, 4]) { s += v } return s;").equals("10");
+		code_v1("var s = 0 for (var @k : var @v in [1, 2, 3, 4]) { s += k * v } return s;").equals("20");
 
 		section("Foreach - captures");
 		code("for (var e in [1, 2, 3]) { (function() { return e })() } return null;").equals("null");
 		code("for (var i : var e in [1, 2, 3]) { (function() { return e })() } return null;").equals("null");
-		code_v10("var a = [1, 2, 3] for (var @e in a) { (function() { e = 5 })() } return a;").equals("[1, 2, 3]");
-		code_v10("var a = [1, 2, 3] for (var i : var @e in a) { (function() { e = 5 })() } return a;").equals("[1, 2, 3]");
+		code_v1("var a = [1, 2, 3] for (var @e in a) { (function() { e = 5 })() } return a;").equals("[1, 2, 3]");
+		code_v1("var a = [1, 2, 3] for (var i : var @e in a) { (function() { e = 5 })() } return a;").equals("[1, 2, 3]");
 		code("var a = [1, 2, 3] for (var i : var v in a) { (function() { i += 1 })() } return a;").equals("[1, 2, 3]");
 
 		section("Foreach - return");

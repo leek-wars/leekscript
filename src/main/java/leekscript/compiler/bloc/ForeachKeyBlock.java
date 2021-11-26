@@ -70,7 +70,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 		// Container
 		writer.addCode("final var " + ar + " = ops(");
-		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
 			mArray.writeJavaCode(mainblock, writer);
 		} else {
 			writer.compileLoad(mainblock, mArray);
@@ -83,7 +83,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		if (mIsKeyDeclaration) {
 			if (iteratorKeyDeclaration.isCaptured()) {
 				sb.append("final Wrapper " + key_iterator + " = new Wrapper(new Box(" + writer.getAIThis() + ", null));");
-			} else if (mainblock.getCompiler().getCurrentAI().getVersion() <= 10) {
+			} else if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
 				sb.append("var " + key_iterator + " = new Box(" + writer.getAIThis() + ", null);");
 			} else {
 				sb.append("Object ").append(key_iterator).append(" = null; ops(1); ");
@@ -95,9 +95,9 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		if (mIsDeclaration) {
 			if (iteratorDeclaration.isCaptured()) {
 				sb.append("final Wrapper " + val_iterator + " = new Wrapper(new Box(" + writer.getAIThis() + ", null));");
-			} else if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+			} else if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
 				sb.append("Object " + val_iterator + " = null; ops(1);");
-			} else if (mainblock.getCompiler().getCurrentAI().getVersion() <= 10 || (iteratorDeclaration != null && iteratorDeclaration.isCaptured())) {
+			} else if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1 || (iteratorDeclaration != null && iteratorDeclaration.isCaptured())) {
 				sb.append("var " + val_iterator + " = new Box(" + writer.getAIThis() + ", null);");
 			} else {
 				sb.append("Object ").append(val_iterator).append(" = null; ops(1);");
@@ -110,7 +110,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		sb.append("var ").append(var).append(" = ((ArrayLeekValue) ").append(ar).append(").getArrayIterator(); ");
 		sb.append("while (!").append(var).append(".ended()) { ops(1); ");
 		// Maj de la clé
-		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
 			if (mIsKeyDeclaration && iteratorKeyDeclaration.isCaptured()) {
 				sb.append(key_iterator).append(".set(").append(var).append(".getKeyRef());");
 			} else {
@@ -126,7 +126,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			}
 		}
 		// Maj de la valeur
-		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
 			if (mValueReference) {
 				sb.append(val_iterator).append(" = ").append(var).append(".value();");
 			} else if (mIsDeclaration && iteratorDeclaration.isCaptured()) {
@@ -169,7 +169,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 		// Si c'est une déclaration on vérifie que le nom est disponnible
 		if (mIsKeyDeclaration) {
-			if ((compiler.getVersion() >= 11 && (compiler.getMainBlock().hasGlobal(mKeyIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mKeyIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mKeyIterator.getWord())) {
+			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mKeyIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mKeyIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mKeyIterator.getWord())) {
 				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 			} else {
 				this.addVariable(new LeekVariable(mKeyIterator, VariableType.LOCAL, iteratorKeyDeclaration));
@@ -182,7 +182,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		}
 		// Si c'est une déclaration on vérifie que le nom est disponnible
 		if (mIsDeclaration) {
-			if ((compiler.getVersion() >= 11 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
+			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
 				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 			} else {
 				this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL, iteratorDeclaration));

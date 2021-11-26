@@ -140,10 +140,10 @@ public class TestOperators extends TestCommon {
 		code("return 12 === 12.0").equals("true");
 		code("return null == [null]").equals("false");
 		code("return null != [null]").equals("true");
-		code_v10("return [null] == null").equals("true"); // Bug in LS1.0
-		code_v11("return [null] == null").equals("false"); // Fixed in 1.1
-		code_v10("return [null] != null").equals("false"); // Bug in LS1.0
-		code_v11("return [null] != null").equals("true"); // Fixed in 1.1
+		code_v1("return [null] == null").equals("true"); // Bug in LS1.0
+		code_v2("return [null] == null").equals("false"); // Fixed in 1.1
+		code_v1("return [null] != null").equals("false"); // Bug in LS1.0
+		code_v2("return [null] != null").equals("true"); // Fixed in 1.1
 
 		code("var a = 1; var result = -10 + (1- (a-1)); return result").equals("-9");
 		code("var a = 1; var result = 0; result = -10 + (1- (a-1)); return result").equals("-9");
@@ -195,14 +195,14 @@ public class TestOperators extends TestCommon {
 			for (var value2 : values2) {
 				for (var operator : operators) {
 					String expected = actualResults[r++];
-					var c = code_v10("var a = " + value1 + " return a " + operator + " " + value2);
+					var c = code_v1("var a = " + value1 + " return a " + operator + " " + value2);
 					if (expected.equals("error")) result = c.error(Error.INVALID_OPERATOR);
 					else result = c.equals(expected);
 					results.add("\"" + result + "\"");
 				}
 				for (var operator : assignmentOperators) {
 					String expected = actualResults[r++];
-					var c = code_v10("var a = " + value1 + " a " + operator + " " + value2 + " return a");
+					var c = code_v1("var a = " + value1 + " a " + operator + " " + value2 + " return a");
 					if (expected.equals("error")) result = c.error(Error.INVALID_OPERATOR);
 					else result = c.equals(expected);
 					results.add("\"" + result + "\"");

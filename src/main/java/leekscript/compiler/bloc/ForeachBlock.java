@@ -52,7 +52,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 
 		// Container
 		writer.addCode("final var " + ar + " = ops(");
-		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
 			mArray.writeJavaCode(mainblock, writer);
 		} else {
 			writer.compileLoad(mainblock, mArray);
@@ -63,7 +63,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		if (mIsDeclaration) {
 			if (mIsDeclaration && declaration.isCaptured()) {
 				writer.addCode("final Wrapper " + iterator_name + " = new Wrapper(new Box(" + writer.getAIThis() + ", null));");
-			} else if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+			} else if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
 				writer.addLine("Object " + iterator_name + " = null;");
 				writer.addCounter(1);
 			} else {
@@ -74,7 +74,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		}
 		writer.addLine("for (var " + var + " : (ArrayLeekValue) " + ar + ") {");
 
-		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
 			if (mIsDeclaration && declaration.isCaptured()) {
 				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
 			} else if (mReference) {
@@ -115,7 +115,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		compiler.setCurrentBlock(this);
 		// Si c'est une déclaration on vérifie que le nom est disponnible
 		if (mIsDeclaration) {
-			if ((compiler.getVersion() >= 11 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
+			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
 				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 			} else {
 				this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL, declaration));

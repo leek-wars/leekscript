@@ -103,7 +103,7 @@ public class LeekScript {
 	}
 
 	public static AI compileSnippet(String snippet, String AIClass)	throws LeekScriptException, LeekCompilerException, IOException {
-		return compileSnippet(snippet, AIClass, 11);
+		return compileSnippet(snippet, AIClass, 2);
 	}
 
 	public static AI compileSnippet(String snippet, String AIClass, int version) throws LeekScriptException, LeekCompilerException, IOException {

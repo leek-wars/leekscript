@@ -39,7 +39,7 @@ public class ArrayLeekValue implements Iterable<Box> {
 		}
 
 		public Object getKey(AI ai) throws LeekRunException {
-			if (ai.getVersion() >= 11) {
+			if (ai.getVersion() >= 2) {
 				return mElement.key();
 			} else {
 				return LeekOperations.clone(ai, mElement.key());
@@ -51,7 +51,7 @@ public class ArrayLeekValue implements Iterable<Box> {
 		}
 
 		public Object getValue(AI ai) throws LeekRunException {
-			if (ai.getVersion() >= 11) {
+			if (ai.getVersion() >= 2) {
 				return mElement.value();
 			} else {
 				return LeekOperations.clone(ai, mElement.value());
@@ -124,7 +124,7 @@ public class ArrayLeekValue implements Iterable<Box> {
 	public Object put(AI ai, Object keyValue, Object value) throws LeekRunException {
 		// ai.ops(1);
 		var key = transformKey(ai, keyValue);
-		if (ai.getVersion() == 10) {
+		if (ai.getVersion() == 1) {
 			value = LeekOperations.clone(ai, value);
 		}
 		mValues.set(ai, key, value);
@@ -330,7 +330,7 @@ public class ArrayLeekValue implements Iterable<Box> {
 		} else if (mValues.size() == 1) { // Si y'a un seul élément dans le tableau
 			var firstValue = mValues.getHeadElement().value();
 			if (firstValue == null && comp == null) {
-				return ai.getVersion() == 10; // Bug in 1.0, [null] == null
+				return ai.getVersion() == 1; // Bug in LS1, [null] == null
 			}
 			return ai.eq(firstValue, comp);
 		} else if (comp instanceof Boolean) {

@@ -127,12 +127,12 @@ public class WordParser {
 			if (comment_line || comment_block) continue;
 			if (c == '/' && length > i + 1 && code.charAt(i + 1) == '/') {
 				comment_line = true;
-				if (version >= 11) i++;
+				if (version >= 2) i++;
 				continue;
 			}
 			else if (c == '/' && length > i + 1 && code.charAt(i + 1) == '*') {
 				comment_block = true;
-				if (version >= 11) i++;
+				if (version >= 2) i++;
 				continue;
 			}
 			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_') {
@@ -181,7 +181,7 @@ public class WordParser {
 						word += c;
 					}
 				}
-				else if (version >= 11) {
+				else if (version >= 2) {
 					if (type == T_STRING) {
 						newWord(word, type);
 					}

@@ -85,10 +85,10 @@ public class TestJSON extends TestCommon {
 
 		code("return jsonDecode('12')").equals("12");
 		code("return jsonDecode('-589')").equals("-589");
-		code_v10("return jsonDecode('54.123')").equals("54,123");
-		code_v11("return jsonDecode('54.123')").equals("54.123");
-		code_v10("return jsonDecode('-65.89')").equals("-65,89");
-		code_v11("return jsonDecode('-65.89')").equals("-65.89");
+		code_v1("return jsonDecode('54.123')").equals("54,123");
+		code_v2("return jsonDecode('54.123')").equals("54.123");
+		code_v1("return jsonDecode('-65.89')").equals("-65,89");
+		code_v2("return jsonDecode('-65.89')").equals("-65.89");
 		// code("return jsonDecode('1234567890987')").equals("1234567890987");
 
 		code("return jsonDecode('\"\"')").equals("");
@@ -96,8 +96,8 @@ public class TestJSON extends TestCommon {
 
 		code("return jsonDecode('[]')").equals("[]");
 		code("return jsonDecode('[1,2,3]')").equals("[1, 2, 3]");
-		code_v10("return jsonDecode('[1.6,2.1,3.77]')").equals("[1,6, 2,1, 3,77]");
-		code_v11("return jsonDecode('[1.6,2.1,3.77]')").equals("[1.6, 2.1, 3.77]");
+		code_v1("return jsonDecode('[1.6,2.1,3.77]')").equals("[1,6, 2,1, 3,77]");
+		code_v2("return jsonDecode('[1.6,2.1,3.77]')").equals("[1.6, 2.1, 3.77]");
 		code("return jsonDecode('[\"a\",\"b\",\"c\"]')").equals("[a, b, c]");
 		code("return jsonDecode('[[],[[],[]],[]]')").equals("[[], [[], []], []]");
 

@@ -19,7 +19,7 @@ public class Box {
 		mUAI = ai;
 		// System.out.println("ops Box");
 		ai.ops(1);
-		if (ai.getVersion() >= 11) {
+		if (ai.getVersion() >= 2) {
 			mValue = value;
 		} else if (value instanceof Box) {
 			mValue = LeekOperations.clone(ai, ((Box) value).getValue());
@@ -39,7 +39,7 @@ public class Box {
 
 	public Object set(Object value) throws LeekRunException {
 		// mUAI.ops(1);
-		if (mUAI.getVersion() >= 11) {
+		if (mUAI.getVersion() >= 2) {
 			return mValue = LeekValueManager.getValue(value);
 		} else {
 			if (value instanceof Box) {
@@ -56,7 +56,7 @@ public class Box {
 
 	public void initGlobal(Object value) throws LeekRunException {
 		if (value instanceof Box) {
-			if (mUAI.getVersion() >= 11) {
+			if (mUAI.getVersion() >= 2) {
 				mValue = value;
 			} else {
 				mValue = LeekOperations.clone(mUAI, value);

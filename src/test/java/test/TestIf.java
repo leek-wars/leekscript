@@ -21,8 +21,8 @@ public class TestIf extends TestCommon {
 		code("if (true) null else {}").equals("null");
 		// code("if true").error(ls::Error::UNEXPECTED_TOKEN, {""});
 		// code("if true else").error(ls::Error::UNEXPECTED_TOKEN, {"else"});
-		code_v11("if (true) {a: 12} else {b: 5}").equals("{a: 12}");
-		code_v11("if (true) { {a: 12} } else { {b: 5} }").equals("{a: 12}");
+		code_v2("if (true) {a: 12} else {b: 5}").equals("{a: 12}");
+		code_v2("if (true) { {a: 12} } else { {b: 5} }").equals("{a: 12}");
 		code("if (true) return 12 else return 5;").equals("12");
 		code("if (false) return 12 else return 5;").equals("5");
 		code("if (true) return 12;").equals("12");
@@ -55,11 +55,11 @@ public class TestIf extends TestCommon {
 		code("var cell = 1 if (cell != null) return 12").equals("12");
 		code("var cell = null if (cell != null) return 12 return 5").equals("5");
 		code("function t(c) { var cell = c if (cell!=null ) 1; } return t(300);").equals("null");
-		code_v10("function t(@c) { var cell = c if (cell!=null ) 1; } return t(300);").equals("null");
-		code_v10("function t(@c) { var cell = c } for (var i = 0; i < 10; ++i) return t(i);").equals("null");
-		code_v10("function t(@c) { var cell = c if (cell!=null ) 1; } for (var i = 0; i < 10; ++i) return t(i);").equals("null");
-		code_v10("function t(@c) { var cell = c cell != null } for (var i = 0; i < 10; ++i) return t(i);").equals("null");
-		code_v10("function t(@c) { var cell = c return cell != null } for (var i = 0; i < 10; ++i) return t(i);").equals("true");
+		code_v1("function t(@c) { var cell = c if (cell!=null ) 1; } return t(300);").equals("null");
+		code_v1("function t(@c) { var cell = c } for (var i = 0; i < 10; ++i) return t(i);").equals("null");
+		code_v1("function t(@c) { var cell = c if (cell!=null ) 1; } for (var i = 0; i < 10; ++i) return t(i);").equals("null");
+		code_v1("function t(@c) { var cell = c cell != null } for (var i = 0; i < 10; ++i) return t(i);").equals("null");
+		code_v1("function t(@c) { var cell = c return cell != null } for (var i = 0; i < 10; ++i) return t(i);").equals("true");
 
 		section("Conditions with other types");
 		code("if (1212) { return 'ok' } else { return 5 }").equals("ok");
@@ -69,8 +69,8 @@ public class TestIf extends TestCommon {
 		section("Different branch types");
 		code("if (1) return ['a'] else if (0) return [2] else return [5.5];").equals("[a]");
 		code("if (0) return ['a'] else if (1) return [2] else return [5.5];").equals("[2]");
-		code_v10("if (0) return ['a'] else if (0) return [2] else return [5.5];").equals("[5,5]");
-		code_v11("if (0) return ['a'] else if (0) return [2] else return [5.5];").equals("[5.5]");
+		code_v1("if (0) return ['a'] else if (0) return [2] else return [5.5];").equals("[5,5]");
+		code_v2("if (0) return ['a'] else if (0) return [2] else return [5.5];").equals("[5.5]");
 
 		section("Ternary conditions");
 		code("return true ? 5 : 12;").equals("5");

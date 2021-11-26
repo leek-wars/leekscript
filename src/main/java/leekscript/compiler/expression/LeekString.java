@@ -47,7 +47,7 @@ public class LeekString extends AbstractExpression {
 				if (len > i && mString.charAt(i + 1) == 'n') str += "\\";
 				else if (len > i && mString.charAt(i + 1) == 't') str += "\\";
 				else {
-					if (mainblock.getCompiler().getCurrentAI().getVersion() >= 11) {
+					if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
 						if (len > i && mString.charAt(i + 1) == '\\') {
 							str += "\\\\";
 							i++;

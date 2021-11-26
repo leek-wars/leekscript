@@ -40,7 +40,7 @@ public class LeekVariable extends AbstractExpression {
 		this.type = type;
 		this.declaration = null;
 		this.classDeclaration = null;
-		this.box = compiler.getVersion() <= 10;
+		this.box = compiler.getVersion() <= 1;
 	}
 
 	public LeekVariable(IAWord token, VariableType type, boolean box) {
@@ -200,7 +200,7 @@ public class LeekVariable extends AbstractExpression {
 				writer.addCode("LeekValueManager.getFunction(" + namespace + "." + token.getWord() + ")");
 			}
 		} else if (type == VariableType.GLOBAL) {
-			if (mainblock.getWordCompiler().getVersion() <= 10) {
+			if (mainblock.getWordCompiler().getVersion() <= 1) {
 				writer.addCode("g_" + token.getWord() + ".getValue()");
 			} else {
 				writer.addCode("g_" + token.getWord());
@@ -274,7 +274,7 @@ public class LeekVariable extends AbstractExpression {
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
-			if (mainblock.getWordCompiler().getVersion() >= 11) {
+			if (mainblock.getWordCompiler().getVersion() >= 2) {
 				writer.addCode("g_" + token.getWord() + " = ");
 				expr.writeJavaCode(mainblock, writer);
 			} else {
@@ -285,7 +285,7 @@ public class LeekVariable extends AbstractExpression {
 		} else {
 			if (isWrapper()) {
 				if (expr.isLeftValue()) {
-					if (mainblock.getWordCompiler().getVersion() <= 10) {
+					if (mainblock.getWordCompiler().getVersion() <= 1) {
 						writer.addCode("u_" + token.getWord() + ".setBox(");
 					} else {
 						writer.addCode("u_" + token.getWord() + ".set(");
@@ -328,7 +328,7 @@ public class LeekVariable extends AbstractExpression {
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
-			if (mainblock.getWordCompiler().getVersion() >= 11) {
+			if (mainblock.getWordCompiler().getVersion() >= 2) {
 				writer.addCode("g_" + token.getWord() + " = ");
 				// writer.compileClone(mainblock, expr);
 				expr.writeJavaCode(mainblock, writer);

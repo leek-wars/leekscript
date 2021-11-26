@@ -221,7 +221,7 @@ public class WordCompiler {
 				mCompiler.skipWord();
 				globalDeclaration();
 				return;
-			} else if (version >= 11 && word.getWord().equals("class")) {
+			} else if (version >= 2 && word.getWord().equals("class")) {
 				// Déclaration de classe
 				mCompiler.skipWord();
 				classDeclaration();
@@ -345,7 +345,7 @@ public class WordCompiler {
 			boolean is_reference = false;
 			if (mCompiler.getWord().getType() == WordParser.T_OPERATOR && mCompiler.getWord().getWord().equals("@")) {
 				is_reference = true;
-				if (getVersion() >= 11) {
+				if (getVersion() >= 2) {
 					addError(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.WARNING, Error.REFERENCE_DEPRECATED));
 				}
 				mCompiler.skipWord();
@@ -388,7 +388,7 @@ public class WordCompiler {
 		boolean reference1 = false;
 		if (mCompiler.getWord().getWord().equals("@")) {
 			reference1 = true;
-			if (getVersion() >= 11) {
+			if (getVersion() >= 2) {
 				addError(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.WARNING, Error.REFERENCE_DEPRECATED));
 			}
 			mCompiler.skipWord();
@@ -410,7 +410,7 @@ public class WordCompiler {
 			boolean reference2 = false;
 			if (mCompiler.getWord().getWord().equals("@")) {
 				reference2 = true;
-				if (getVersion() >= 11) {
+				if (getVersion() >= 2) {
 					addError(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.WARNING, Error.REFERENCE_DEPRECATED));
 				}
 				mCompiler.skipWord();
@@ -967,12 +967,12 @@ public class WordCompiler {
 					}
 					retour.addExpression(array);
 
-				} else if (getVersion() >= 11 && word.getType() == WordParser.T_ACCOLADE_LEFT) {
+				} else if (getVersion() >= 2 && word.getType() == WordParser.T_ACCOLADE_LEFT) {
 
 					// Déclaration d'un objet
 					mCompiler.skipWord();
 					var object = new LeekObject();
-					int type = 0;
+
 					while (mCompiler.getWord().getType() != WordParser.T_ACCOLADE_RIGHT) {
 						if (mCompiler.getWord().getType() != WordParser.T_STRING) {
 							throw new LeekCompilerException(mCompiler.getWord(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
@@ -1011,9 +1011,9 @@ public class WordCompiler {
 						retour.addExpression(new LeekNull());
 					else if (word.getWord().equalsIgnoreCase("not"))
 						retour.addUnaryPrefix(Operators.NOT, word);
-					else if (getVersion() >= 11 && word.getWord().equalsIgnoreCase("new")) {
+					else if (getVersion() >= 2 && word.getWord().equalsIgnoreCase("new")) {
 						retour.addUnaryPrefix(Operators.NEW, word);
-					} else if (getVersion() >= 11 && word.getWord().equals("super")) {
+					} else if (getVersion() >= 2 && word.getWord().equals("super")) {
 						// super doit être dans une méthode
 						if (!(mCurentBlock instanceof ClassMethodBlock)) {
 							errors.add(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.KEYWORD_MUST_BE_IN_CLASS));
@@ -1067,7 +1067,7 @@ public class WordCompiler {
 		if (retour.getOperator() == -1) {
 			result = retour.getExpression1();
 		}
-		if (getVersion() == 10 && result instanceof LeekExpression) {
+		if (getVersion() == 1 && result instanceof LeekExpression) {
 			var expr = (LeekExpression) result;
 			if (expr.getOperator() == Operators.NOT && expr.getExpression2() == null) {
 				// Un "not" tout seul est valide en LS 1.0
@@ -1106,7 +1106,7 @@ public class WordCompiler {
 			boolean is_reference = false;
 			if (mCompiler.getWord().getType() == WordParser.T_OPERATOR && mCompiler.getWord().getWord().equals("@")) {
 				is_reference = true;
-				if (getVersion() >= 11) {
+				if (getVersion() >= 2) {
 					addError(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.WARNING, Error.REFERENCE_DEPRECATED));
 				}
 				mCompiler.skipWord();
