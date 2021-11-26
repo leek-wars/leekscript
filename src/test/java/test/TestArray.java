@@ -17,7 +17,7 @@ public class TestArray extends TestCommon {
 		code_v10("return [1.21, -5, 4.55, 12, -6.7];").equals("[1,21, -5, 4,55, 12, -6,7]");
 		code_v11("return [1.21, -5, 4.55, 12, -6.7];").equals("[1.21, -5, 4.55, 12, -6.7]");
 		code("return [true, false, true];").equals("[true, false, true]");
-		// DISABLED_code("[23, true, '', {}, 123]").equals("[23, true, '', {}, 123]");
+		code_v11("[23, true, '', {}, 123]").equals("[23, true, '', {}, 123]");
 		// DISABLED_code("var a = x -> x [1, 2, a]").equals("[1, 2, <function>]");
 		// DISABLED_code("[1m, 34324234m, 231232131232132134379897874534243257343341432423m]").equals("[1, 34324234, 231232131232132134379897874534243257343341432423]");
 		// DISABLED_code("[true, 'hello', 231232131232132134379897874534243257343341432423m]").equals("[true, 'hello', 231232131232132134379897874534243257343341432423]");
@@ -59,10 +59,10 @@ public class TestArray extends TestCommon {
 		// DISABLED_code("var a = ['yo'] return a + '!';").equals("['yo', '!']");
 		code("var a = [5] var b = ['b'] return a + b;").equals("[5, b]");
 		code("var a = ['a'] return a + ['b'];").equals("[a, b]");
-		// DISABLED_code("[1, 2] + {};").equals("[1, 2, {}]");
-		// DISABLED_code("var a = [1, 2] a + {};").equals("[1, 2, {}]");
-		// DISABLED_code("['a', 'b'] + {};").equals("['a', 'b', {}]");
-		// DISABLED_code("var a = ['a', 'b'] a + {}").equals("['a', 'b', {}]");
+		code_v11("[1, 2] + {};").equals("[1, 2, {}]");
+		code_v11("var a = [1, 2] a + {};").equals("[1, 2, {}]");
+		code_v11("['a', 'b'] + {};").equals("['a', 'b', {}]");
+		code_v11("var a = ['a', 'b'] a + {}").equals("['a', 'b', {}]");
 		// DISABLED_code("return ['a', 'b'] + (x -> x)").equals("['a', 'b', <function>]");
 		// DISABLED_code("var a = ['a', 'b'] a + (x -> x)").equals("['a', 'b', <function>]");
 		// DISABLED_code("['a', 'b'] + Number").equals("['a', 'b', <class Number>]");

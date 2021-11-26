@@ -57,12 +57,14 @@ public abstract class AI {
 	private long compileTime;
 	private long loadTime;
 	private File filesLines;
+	public ClassLeekValue objectClass;
 
 	public AI(int instructions, int version) {
 		this.mInstructions = instructions;
 		this.version = version;
 		logs = new AILog();
 		randomGenerator = LeekScript.getRandom();
+		objectClass = new ClassLeekValue(this, "Object");
 		try {
 			init();
 		} catch (Exception e) {}

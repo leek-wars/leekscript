@@ -20,6 +20,13 @@ public class ObjectLeekValue {
 		this.clazz = clazz;
 	}
 
+	public ObjectLeekValue(AI ai, String[] keys, Object[] values) throws LeekRunException {
+		this.clazz = ai.objectClass;
+		for (int i = 0; i < keys.length; ++i) {
+			addField(ai, keys[i], values[i], AccessLevel.PUBLIC);
+		}
+	}
+
 	public ObjectLeekValue(AI ai, ObjectLeekValue value, int level) throws LeekRunException {
 		this.clazz = value.clazz;
 		ai.ops(value.fields.size());
@@ -88,6 +95,10 @@ public class ObjectLeekValue {
 
 	public Object setField(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
+		// Pour un objet anonyme (classe Object), on peut rajouter des proprietés à la volée
+		if (result == null && clazz == clazz.ai.objectClass) {
+			addField(clazz.ai, field, value, AccessLevel.PUBLIC);
+		}
 		if (result != null) {
 			result.set(value);
 		}
@@ -286,7 +297,11 @@ public class ObjectLeekValue {
 
 		ai.ops(1 + fields.size() * 2);
 
-		var sb = new StringBuilder(clazz.name + " {");
+		var sb = new StringBuilder();
+		if (clazz != clazz.ai.objectClass) {
+			sb.append(clazz.name).append(" ");
+		}
+		sb.append("{");
 		boolean first = true;
 		for (HashMap.Entry<String, ObjectVariableValue> field : fields.entrySet()) {
 			if (first) first = false;
@@ -340,7 +355,11 @@ public class ObjectLeekValue {
 	}
 
 	public String toString() {
-		var sb = new StringBuilder(clazz.name + " {");
+		var sb = new StringBuilder();
+		if (clazz != clazz.ai.objectClass) {
+			sb.append(clazz.name).append(" ");
+		}
+		sb.append("{");
 		boolean first = true;
 		for (HashMap.Entry<String, ObjectVariableValue> field : fields.entrySet()) {
 			if (first) first = false;
