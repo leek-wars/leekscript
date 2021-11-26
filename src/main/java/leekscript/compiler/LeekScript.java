@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Paths;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +31,7 @@ import leekscript.common.Error;
 
 public class LeekScript {
 
-	private final static String IA_PATH = "ai/";
+	private final static String IA_PATH = "ai";
 	private static long id = 1;
 
 	private static class AIClassEntry {
@@ -52,12 +52,8 @@ public class LeekScript {
 	private static URLClassLoader urlLoader;
 	private static HashMap<String, AIClassEntry> aiCache = new HashMap<>();
 	static {
-		try {
-			classpath = LeekScript.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-			arguments.addAll(Arrays.asList("-classpath", classpath, "-nowarn"));
-		} catch (URISyntaxException e) {
-			e.printStackTrace();
-		}
+		classpath = new File(LeekScript.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getPath();
+		arguments.addAll(Arrays.asList("-classpath", classpath, "-nowarn"));
 		try {
 			urlLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, new ClassLoader() {});
 		} catch (MalformedURLException e) {
@@ -153,9 +149,9 @@ public class LeekScript {
 		if (!root.exists()) root.mkdir();
 		String javaClassName = "AI_" + file.getId();
 		String fileName = javaClassName + ".java";
-		File compiled = new File(IA_PATH + javaClassName + ".class");
-		File java = new File(IA_PATH + javaClassName + ".java");
-		File lines = new File(IA_PATH + javaClassName + ".lines");
+		File compiled = Paths.get(IA_PATH, javaClassName + ".class").toFile();
+		File java = Paths.get(IA_PATH, javaClassName + ".java").toFile();
+		File lines = Paths.get(IA_PATH, javaClassName + ".lines").toFile();
 
 		// Cache des classes en RAM d'abord
 		var entry = aiCache.get(javaClassName);
@@ -222,7 +218,6 @@ public class LeekScript {
 			throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
 		}
 
-
 		t = System.nanoTime();
 		var fileManager = new SimpleFileManager(compiler.getStandardFileManager(null, null, null));
 		var output = new StringWriter();
@@ -250,7 +245,7 @@ public class LeekScript {
 
 			if (useClassCache) { // Save bytecode
 				try {
-					var classFile = new FileOutputStream(IA_PATH + compiledClass.getName() + ".class");
+					var classFile = new FileOutputStream(Paths.get(IA_PATH, compiledClass.getName() + ".class").toFile());
 					classFile.write(compiledClass.getCompiledBinaries());
 					classFile.close();
 				} catch (IOException e) {
