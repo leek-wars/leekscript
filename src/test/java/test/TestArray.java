@@ -345,6 +345,7 @@ public class TestArray extends TestCommon {
 		code("return arrayMap([1, 2, 3], function(v) { var r = [] return r })").equals("[[], [], []]");
 		code("return arrayMap([1, 2, 3], function(v) { var r = [1, 2, 3] return r })").equals("[[1, 2, 3], [1, 2, 3], [1, 2, 3]]");
 		code("var r = [] var a = arrayMap([1, 2, 3], function(v) { return r }) push(r, 1) return a").equals("[[1], <...>, <...>]");
+		code_v11("class A { name part constructor(name, part) { this.name = name this.part = part } } var list = [new A('foo', true), new A('bar', false), new A('baz', true)] return arrayMap(list, function(a) { return a.name })").equals("[foo, bar, baz]");
 
 		section("Array.map() v1.0");
 		code_v10("return arrayMap([1, 2, 3, 4, 5], function(e) { return e * 2; });").equals("[2, 4, 6, 8, 10]");
@@ -373,6 +374,7 @@ public class TestArray extends TestCommon {
 		code_v10("return string(function(){var t=[1,2,3]; arrayPartition(t, function(@v){ v=3; }); return t;}())").equals("[3, 3, 3]");
 		code_v10("return string(function(){var t=[1,2,3]; arrayPartition(t, function(k, @v){ v=3; }); return t;}())").equals("[3, 3, 3]");
 		code_v10("return string(arrayPartition([4,3,2,1], function(k,@v){ v=3; return k<v;}))").equals("[[3, 3, 3], [3 : 3]]");
+		code_v11("class A { name part constructor(name, part) { this.name = name this.part = part } } var list = [new A('foo', true), new A('bar', false), new A('baz', true)] return arrayPartition(list, function(a) { return a.part })").equals("[[0 : A {part: true, name: foo}, 2 : A {part: true, name: baz}], [1 : A {part: false, name: bar}]]");
 
 		section("Array.concat()");
 		code("return [0] + [1, 2]").equals("[0, 1, 2]");
@@ -384,6 +386,7 @@ public class TestArray extends TestCommon {
 		code_v10("var t = [1,2,3,4]; arrayIter(t, function(@v){ v=2; }); return t;").equals("[2, 2, 2, 2]");
 		code_v10("var t = [1,2,3,4]; arrayIter(t, function(k, @v){ v=k; }); return t;").equals("[0, 1, 2, 3]");
 		code("var t = [1,2,3,4]; arrayIter(t, function(k, v){ v=k; }); return t;").equals("[1, 2, 3, 4]");
+		code_v11("class A { name part constructor(name, part) { this.name = name this.part = part } } var list = [new A('foo', true), new A('bar', false), new A('baz', true)] var r = [] arrayIter(list, function(a) { push(r, a.name) }) return r").equals("[foo, bar, baz]");
 
 		section("Array.sort()");
 		code("var t = [0,1,2]; return arraySort(t,function(e, f){return (e>f)?(-1):(e<f)?1:0;})").equals("[2, 1, 0]");

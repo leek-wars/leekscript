@@ -926,14 +926,22 @@ public enum LeekFunctions implements ILeekFunction {
 	},
 	arrayPartition(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
 		@Override
-		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			return leekIA.arrayPartition((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			if (ai.getVersion() >= 11) {
+				return ai.arrayPartition((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+			} else {
+				return ai.arrayPartitionV10((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+			}
 		}
 	},
 	arrayIter(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
 		@Override
-		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			return leekIA.arrayIter((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			if (ai.getVersion() >= 11) {
+				return ai.arrayIter((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+			} else {
+				return ai.arrayIterV10((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+			}
 		}
 	},
 	arrayConcat(2, new int[] { AI.ARRAY, AI.ARRAY }) {
