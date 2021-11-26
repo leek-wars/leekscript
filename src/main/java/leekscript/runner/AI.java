@@ -407,7 +407,7 @@ public abstract class AI {
 		return result;
 	}
 
-	public ArrayLeekValue arrayPartition(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
+	public ArrayLeekValue arrayPartitionV10(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
 		ArrayLeekValue list1 = new ArrayLeekValue();
 		ArrayLeekValue list2 = new ArrayLeekValue();
 		int nb = function.getArgumentsCount(this);
@@ -417,6 +417,26 @@ public abstract class AI {
 		boolean b;
 		while (!iterator.ended()) {
 			var value = iterator.getValueBox();
+			if (nb == 1)
+				b = bool(LeekValueManager.execute(this, function, new Object[] { value }));
+			else
+				b = bool(LeekValueManager.execute(this, function, new Object[] { iterator.getKey(this), value }));
+			(b ? list1 : list2).getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
+			iterator.next();
+		}
+		return new ArrayLeekValue(this, new Object[] { list1, list2 }, false);
+	}
+
+	public ArrayLeekValue arrayPartition(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
+		ArrayLeekValue list1 = new ArrayLeekValue();
+		ArrayLeekValue list2 = new ArrayLeekValue();
+		int nb = function.getArgumentsCount(this);
+		if (nb != 1 && nb != 2)
+			return new ArrayLeekValue();
+		ArrayIterator iterator = array.getArrayIterator();
+		boolean b;
+		while (!iterator.ended()) {
+			var value = iterator.value();
 			if (nb == 1)
 				b = bool(LeekValueManager.execute(this, function, new Object[] { value }));
 			else
@@ -506,7 +526,7 @@ public abstract class AI {
 		return retour;
 	}
 
-	public Object arrayIter(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
+	public Object arrayIterV10(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
 		ArrayIterator iterator = array.getArrayIterator();
 		if (function == null) {
 			return null;
@@ -516,6 +536,26 @@ public abstract class AI {
 			return null;
 		while (!iterator.ended()) {
 			var value = iterator.getValueBox();
+			if (nb == 1) {
+				function.execute(this, value);
+			} else {
+				function.execute(this, iterator.getKey(this), value);
+			}
+			iterator.next();
+		}
+		return null;
+	}
+
+	public Object arrayIter(ArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
+		ArrayIterator iterator = array.getArrayIterator();
+		if (function == null) {
+			return null;
+		}
+		int nb = function.getArgumentsCount(this);
+		if (nb != 1 && nb != 2)
+			return null;
+		while (!iterator.ended()) {
+			var value = iterator.value();
 			if (nb == 1) {
 				function.execute(this, value);
 			} else {
