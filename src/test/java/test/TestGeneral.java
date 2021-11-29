@@ -39,9 +39,9 @@ public class TestGeneral extends TestCommon {
 		code("var a return a = 12").equals("12");
 		code("var a a = 12 return a").equals("12");
 		code_v1("var a return a = 12.5").equals("12,5");
-		code_v2("var a return a = 12.5").equals("12.5");
+		code_v2_("var a return a = 12.5").equals("12.5");
 		code_v1("var a a = 12.5 return a").equals("12,5");
-		code_v2("var a a = 12.5 return a").equals("12.5");
+		code_v2_("var a a = 12.5 return a").equals("12.5");
 		code("var a return a = 'a'").equals("a");
 		code("var a a = 'a' return a").equals("a");
 		// code("var a return a = 12m").equals("12");
@@ -50,7 +50,7 @@ public class TestGeneral extends TestCommon {
 		code("var a = 'hello' return a = 2").equals("2");
 		code("var a = 2 a = 'hello' return a").equals("hello");
 		code("var a = 2 a = [1, 2] return a").equals("[1, 2]");
-		code_v2("var a = 5.5 a = {} return a").equals("{}");
+		code_v2_("var a = 5.5 a = {} return a").equals("{}");
 		// code("var a = [5, 7] a = 7 System.print(a)").output("7\n");
 		// code("var a = 7 a = [5, 12] a").equals("[5, 12]");
 		// code("var a = 7 System.print(a) a = <5, 12> System.print(a)").output("7\n<5, 12>\n");
@@ -89,7 +89,7 @@ public class TestGeneral extends TestCommon {
 		code("var b = 5 if (0) { b = 'salut' } return b").equals("5");
 		code("var a = 12 if (1) { a = 5 a++ } else { a = 3 } return a").equals("6");
 		code_v1("var a = 12 if (0) { a = 5 a++ } else { a = 5.5 } return a").equals("5,5");
-		code_v2("var a = 12 if (0) { a = 5 a++ } else { a = 5.5 } return a").equals("5.5");
+		code_v2_("var a = 12 if (0) { a = 5 a++ } else { a = 5.5 } return a").equals("5.5");
 		// code("var a = 12 if (0) { a = 5 a++ } else { a = 7l } return a").equals("7");
 		code("var b = 5 if (1) {} else { b = 'salut' } return b").equals("5");
 		code("var b = 5 if (0) {} else { b = 'salut' } return b").equals("salut");
@@ -103,7 +103,7 @@ public class TestGeneral extends TestCommon {
 
 		section("Assignments with +=");
 		code_v1("var a = 10 a += 0.5 return a").equals("10,5");
-		code_v2("var a = 10 a += 0.5 return a").equals("10.5");
+		code_v2_("var a = 10 a += 0.5 return a").equals("10.5");
 
 		section("File");
 		file("ai/code/trivial.leek").equals("2");
