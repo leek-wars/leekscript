@@ -1,6 +1,7 @@
 package leekscript.compiler;
 
 public class IAWord {
+
 	private final int type;
 	private final String word;
 	private final int line;

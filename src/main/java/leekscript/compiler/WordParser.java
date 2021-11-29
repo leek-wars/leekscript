@@ -6,11 +6,22 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.common.Error;
 
+/**
+ * Son but est de convertir le LeekCode en un "bytecode" plus rapide à
+ * exécuter Il doit aussi trouver les erreurs dans le LeekCode
+ */
 public class WordParser {
-	/**
-	 * Son but est de convertir le LeekCode en un "bytecode" plus rapide à
-	 * exécuter Il doit aussi trouver les erreurs dans le LeekCode
-	 */
+
+	public static final String[] reservedWords = new String[] {
+		"abstract", "arguments", "await", "break", "byte", "case", "catch",
+		"char", "class", "const", "continue", "default", "do", "double", "else", "enum", "eval",
+		"export", "extends", "false", "final", "finally", "float", "for", "function",
+		"goto", "if", "implements", "import", "in", "instanceof", "int", "interface",
+		"let", "long", "native", "new", "null", "package", "private", "protected",
+		"public", "return", "short", "static", "super", "switch", "synchronized", "this",
+		"throw", "throws", "transient", "true", "try", "typeof", "var", "void",
+		"volatile", "while", "with", "yield"
+	};
 
 	/**
 	 * Instructions byte(0) (0-255) byte => instruction
@@ -358,17 +369,24 @@ public class WordParser {
 		// }
 	}
 
+	private boolean wordEquals(String word, String expected) {
+		if (version <= 2) {
+			return word.equalsIgnoreCase(expected);
+		}
+		return word.equals(expected);
+	}
+
 	private void newWord(String word, int type) {
-		if(type == T_STRING){
-			if(word.equalsIgnoreCase("or")){
+		if (type == T_STRING) {
+			if (wordEquals(word, "or")) {
 				type = T_OPERATOR;
 				word = "||";
 			}
-			else if(word.equalsIgnoreCase("and")){
+			else if (wordEquals(word, "and")) {
 				type = T_OPERATOR;
 				word = "&&";
 			}
-			else if (word.equalsIgnoreCase("instanceof")) {
+			else if (wordEquals(word, "instanceof")) {
 				type = T_OPERATOR;
 				word = "instanceof";
 			}
@@ -379,8 +397,8 @@ public class WordParser {
 			 * }
 			 */
 		}
-		else if(type == T_OPERATOR){
-			if(word.equals("=!")){
+		else if (type == T_OPERATOR) {
+			if (word.equals("=!")) {
 				words.add(new IAWord(mAI, type, "=", line_counter, char_counter));
 				words.add(new IAWord(mAI, type, "!", line_counter, char_counter));
 				return;
