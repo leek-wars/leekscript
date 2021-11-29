@@ -239,6 +239,22 @@ public class ObjectLeekValue {
 	}
 
 	public Object callMethod(String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
+		if (clazz.ai.getVersion() >= 3 && method.equals("keys_0")) {
+			String[] values = new String[fields.size()];
+			int i = 0;
+			for (var key : fields.keySet()) {
+				values[i++] = key;
+			}
+			return new ArrayLeekValue(clazz.ai, values);
+		}
+		if (clazz.ai.getVersion() >= 3 && method.equals("values_0")) {
+			Object[] values = new Object[fields.size()];
+			int i = 0;
+			for (var value : fields.values()) {
+				values[i++] = value;
+			}
+			return new ArrayLeekValue(clazz.ai, values);
+		}
 		var result = clazz.getMethod(clazz.ai, method, fromClass);
 		if (result == null) {
 			int underscore = method.lastIndexOf("_");
