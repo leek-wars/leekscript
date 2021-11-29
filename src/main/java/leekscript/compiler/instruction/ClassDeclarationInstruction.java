@@ -1,6 +1,7 @@
 package leekscript.compiler.instruction;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
 import leekscript.compiler.AIFile;
@@ -45,7 +46,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 	private final IAWord token;
 	private IAWord parentToken;
 	private ClassDeclarationInstruction parent;
-	private HashMap<String, ClassDeclarationField> fields = new HashMap<>();
+	private LinkedHashMap<String, ClassDeclarationField> fields = new LinkedHashMap<>();
 	private HashMap<String, ClassDeclarationField> staticFields = new HashMap<>();
 	private HashMap<String, LeekVariable> fieldVariables = new HashMap<>();
 	private HashMap<String, LeekVariable> staticFieldVariables = new HashMap<>();

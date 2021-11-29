@@ -1,6 +1,7 @@
 package leekscript.runner.values;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import leekscript.AILog;
 import leekscript.runner.AI;
@@ -42,7 +43,7 @@ public class ClassLeekValue {
 	public AI ai;
 	public String name;
 	public ClassLeekValue parent;
-	public HashMap<String, ClassField> fields = new HashMap<>();
+	public LinkedHashMap<String, ClassField> fields = new LinkedHashMap<>();
 	public HashMap<String, ObjectVariableValue> staticFields = new HashMap<>();
 	public HashMap<Integer, ClassMethod> constructors = new HashMap<>();
 	public HashMap<String, ClassMethod> methods = new HashMap<>();

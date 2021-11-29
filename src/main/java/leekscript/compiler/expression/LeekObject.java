@@ -1,6 +1,6 @@
 package leekscript.compiler.expression;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
@@ -9,7 +9,7 @@ import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekObject extends AbstractExpression {
 
-	private final HashMap<String, AbstractExpression> mValues = new HashMap<>();
+	private final LinkedHashMap<String, AbstractExpression> mValues = new LinkedHashMap<>();
 
 	public void addEntry(String key, AbstractExpression value) {
 		mValues.put(key, value);

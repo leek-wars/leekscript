@@ -1,6 +1,7 @@
 package leekscript.runner.values;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 import leekscript.AILog;
@@ -14,7 +15,7 @@ import leekscript.common.Error;
 public class ObjectLeekValue {
 
 	public final ClassLeekValue clazz;
-	public final HashMap<String, ObjectVariableValue> fields = new HashMap<>();
+	public final LinkedHashMap<String, ObjectVariableValue> fields = new LinkedHashMap<>();
 
 	public ObjectLeekValue(ClassLeekValue clazz) {
 		this.clazz = clazz;
