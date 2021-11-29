@@ -21,8 +21,8 @@ public class TestIf extends TestCommon {
 		code("if (true) null else {}").equals("null");
 		// code("if true").error(ls::Error::UNEXPECTED_TOKEN, {""});
 		// code("if true else").error(ls::Error::UNEXPECTED_TOKEN, {"else"});
-		DISABLED_code_v2("if (true) {a: 12} else {b: 5}").equals("{a: 12}");
-		code_v2("if (true) { return {a: 12} } else { return {b: 5} }").equals("{a: 12}");
+		DISABLED_code_v2_("if (true) {a: 12} else {b: 5}").equals("{a: 12}");
+		code_v2_("if (true) { return {a: 12} } else { return {b: 5} }").equals("{a: 12}");
 		code("if (true) return 12 else return 5;").equals("12");
 		code("if (false) return 12 else return 5;").equals("5");
 		code("if (true) return 12;").equals("12");
@@ -70,7 +70,7 @@ public class TestIf extends TestCommon {
 		code("if (1) return ['a'] else if (0) return [2] else return [5.5];").equals("[a]");
 		code("if (0) return ['a'] else if (1) return [2] else return [5.5];").equals("[2]");
 		code_v1("if (0) return ['a'] else if (0) return [2] else return [5.5];").equals("[5,5]");
-		code_v2("if (0) return ['a'] else if (0) return [2] else return [5.5];").equals("[5.5]");
+		code_v2_("if (0) return ['a'] else if (0) return [2] else return [5.5];").equals("[5.5]");
 
 		section("Ternary conditions");
 		code("return true ? 5 : 12;").equals("5");

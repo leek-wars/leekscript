@@ -7,7 +7,7 @@ public class TestFiles extends TestCommon {
 		/** Complex codes */
 		header("Files");
 		section("General");
-		file_v2("ai/code/primes.leek").equals("78498");
+		file_v2_("ai/code/primes.leek").equals("78498");
 		// DISABLED_file("test/code/primes_gmp.leek").equals("9591");
 		file("ai/code/gcd.leek").equals("151");
 		file("ai/code/strings.leek").equals("true");
@@ -32,12 +32,12 @@ public class TestFiles extends TestCommon {
 		// file("ai/code/euler1.leek").equals("2333316668");
 		// DISABLED_file("ai/code/text_analysis.leek").equals("[3, 47, 338]");
 		// DISABLED_file("ai/code/divisors.leek").equals("[1, 3, 9, 13, 17, 39]");
-		file_v2("ai/code/two_functions.leek").equals("[{p: 2, v: 5}, [{p: 3, v: 6}]]");
+		file_v2_("ai/code/two_functions.leek").equals("[{p: 2, v: 5}, [{p: 3, v: 6}]]");
 		// file("test/code/product_n.leek").equals("5040");
 		// file("test/code/product_n_return.leek").equals("265252859812191058636308480000000");
 		// file("test/code/product_n_arrays.leek").equals("[5040]");
 		// file("test/code/product_coproduct.leek").equals("171122452428141311372468338881272839092270544893520369393648040923257279754140647424000000000000000");
-		file_v2("ai/code/fold_left.leek").equals("[{w: 1}, {w: 3}, {w: 4}, {w: 2}, {w: 7}, {w: 5}, {w: 8}, {w: 9}, {w: 6}]");
+		file_v2_("ai/code/fold_left.leek").equals("[{w: 1}, {w: 3}, {w: 4}, {w: 2}, {w: 7}, {w: 5}, {w: 8}, {w: 9}, {w: 6}]");
 		// file("test/code/fold_left_2.leek").equals("{p: 6, v: {p: 9, v: {p: 8, v: {p: 5, v: {p: 7, v: { ... }}}}}}");
 		// file("test/code/fold_right.leek").equals("[{w: 6}, {w: 9}, {w: 8}, {w: 5}, {w: 7}, {w: 2}, {w: 4}, {w: 3}, {w: 1}]");
 		// file("test/code/fold_right_2.leek").equals("{p: {p: {p: {p: {p: { ... }, v: 7}, v: 2}, v: 4}, v: 3}, v: 1}");
@@ -48,8 +48,8 @@ public class TestFiles extends TestCommon {
 		file("ai/code/recursive_2_functions.leek").equals("10");
 		// DISABLED_file("test/code/recursive_2_versions.leek").equals("9.5");
 		// DISABLED_file("test/code/swap.leek").equals("[{p: 1}, {p: 3}, {p: 4}, {p: 12}, {p: 5}]");
-		file_v2("ai/code/classes_simple.leek").equals("[Ferrari, Maserati, Lamborghini]");
-		file_v2("ai/code/classes_multiple.leek").equals("[4, 40, 80]");
+		file_v2_("ai/code/classes_simple.leek").equals("[Ferrari, Maserati, Lamborghini]");
+		file_v2_("ai/code/classes_multiple.leek").equals("[4, 40, 80]");
 		// DISABLED_file("test/code/match.leek").output("Yeah!\n");
 		file("ai/code/fibonacci.leek").equals("832040");
 		// file("ai/code/fibonacci_long.leek").equals("1346269");

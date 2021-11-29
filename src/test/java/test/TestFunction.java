@@ -18,7 +18,7 @@ public class TestFunction extends TestCommon {
 		// code("var fact = (x, a) -> { if x == 0m then return a end return fact(x - 1, x * a) } fact(10m, 1m)").equals("3628800");
 		// code("function test() { var fact = x -> if x == 1 { 1 } else { fact(x - 1) * x } fact(8) } test()").equals("40320");
 		file_v1("ai/code/knapsack.leek").equals("761");
-		file_v2("ai/code/knapsack_2.leek").equals("761");
+		file_v2_("ai/code/knapsack_2.leek").equals("761");
 		code("function cellsInRange(i) { var areaInRange = []; if (i == 0) { return cellsInRange(10); } else { return areaInRange; } } var myRange = cellsInRange(0); return myRange").equals("[]");
 
 		section("Redefinition");
@@ -27,7 +27,7 @@ public class TestFunction extends TestCommon {
 
 		section("System function as argument");
 		code_v1("function t(@f) { return function(@a) { return arrayMap(a, f); } } return t(sqrt)([1, 4, 9, 16, 25]);").equals("[1, 2, 3, 4, 5]");
-		code_v2("function t(f) { return function(a) { return arrayMap(a, f); } } return t(sqrt)([1, 4, 9, 16, 25]);").equals("[1.0, 2.0, 3.0, 4.0, 5.0]");
+		code_v2_("function t(f) { return function(a) { return arrayMap(a, f); } } return t(sqrt)([1, 4, 9, 16, 25]);").equals("[1.0, 2.0, 3.0, 4.0, 5.0]");
 
 		section("Single null argument");
 		code("function f(a) { return 12; } return f(null);").equals("12");
@@ -35,9 +35,9 @@ public class TestFunction extends TestCommon {
 
 		section("Capture argument");
 		code_v1("function f(@a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("12");
-		code_v2("function f(a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("10");
+		code_v2_("function f(a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("10");
 		code_v1("var f = function(@a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("12");
-		code_v2("var f = function(a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("10");
+		code_v2_("var f = function(a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("10");
 
 		section("Capture loop variable");
 		code("var sum = 0 for (var i = 0; i < 10; ++i) { sum += (function() { return i })() } return sum").equals("45");
@@ -49,7 +49,7 @@ public class TestFunction extends TestCommon {
 		code("var x = 10 var f = function() { return x } var a = f() a += 5 return x").equals("10");
 		code_v1("var x = [] var f = function() { return @x } var a = f() push(a, 5) return x").equals("[5]");
 		code_v1("var x = [] var f = function() { return x } var a = f() push(a, 5) return x").equals("[]");
-		code_v2("var x = [] var f = function() { return x } var a = f() push(a, 5) return x").equals("[5]");
+		code_v2_("var x = [] var f = function() { return x } var a = f() push(a, 5) return x").equals("[5]");
 
 		section("Misc");
 		code("function f(x) { var s = 0 s |= 12 return s } f(12);").equals("null");
@@ -57,16 +57,16 @@ public class TestFunction extends TestCommon {
 		code("function te(a){ return function(b){ return function(c){return a*b*c;}; }; } return te(2)(1)(2);").equals("4");
 		code("var tab = [2, 3, 4, 5, 6]; var r = []; for (var i : var j in tab) { r[i] = function() { return j; }; } return 4;").equals("4");
 		code_v1("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return string(retour);").equals("[2, 1, 2, 1, 2]");
-		code_v2("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return string(retour);").equals("[2.0, 1, 2.0, 1, 2.0]");
+		code_v2_("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return string(retour);").equals("[2.0, 1, 2.0, 1, 2.0]");
 		code_v1("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3]");
-		code_v2("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3, 12]");
+		code_v2_("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3, 12]");
 		code("function f() { return [1, 2, 3] } var x = f();").equals("null");
 		code("var x = arrayMap([1, 2, 3], function(x) { return x });").equals("null");
 		code("var x = arrayMap([1, 2, 3], function(x) { return x }); debug(x);").equals("null");
 		code("var toto = 12; var f = function() { toto = 'salut'; }; [true, 12, f][2](); return toto").equals("salut");
 		code("var toto = 12; var f = function() { toto = 'salut'; }; var g = function() { return f; }; g()() return toto").equals("salut");
 		code_v1("function Coordonate(@par_x, @par_y) { var x = par_x; var y = par_y; var getX = function(){ return x; }; var getY = function(){ return y; };return @(function(@method) { if(method === 'getX'){ return getX; } if(method === 'getY'){ return getY;	} }); } var c = Coordonate(5, 12) return [c('getX')(), c('getY')()]").equals("[5, 12]");
-		code_v2("function Coordonate(par_x, par_y) { var x = par_x; var y = par_y; var getX = function(){ return x; }; var getY = function(){ return y; };return (function(method) { if(method === 'getX'){ return getX; } if(method === 'getY'){ return getY;	} }); } var c = Coordonate(5, 12) return [c('getX')(), c('getY')()]").equals("[5, 12]");
+		code_v2_("function Coordonate(par_x, par_y) { var x = par_x; var y = par_y; var getX = function(){ return x; }; var getY = function(){ return y; };return (function(method) { if(method === 'getX'){ return getX; } if(method === 'getY'){ return getY;	} }); } var c = Coordonate(5, 12) return [c('getX')(), c('getY')()]").equals("[5, 12]");
 		code("function test() { var r = [1, 2, 3] return (r); } return test()").equals("[1, 2, 3]");
 		code("function test() { var r = [1, 2, 3] return (r); } var a = test() return a").equals("[1, 2, 3]");
 		code("function t(a) {} t([ [12], [12] ])").equals("null");
@@ -79,7 +79,7 @@ public class TestFunction extends TestCommon {
 		code("getOperations()").equals("null");
 		code("var a = [function() { return 12 }] return a[0]()").equals("12");
 		code_v1("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[]");
-		code_v2("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[0, 1, 2, 3, 4]");
+		code_v2_("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[0, 1, 2, 3, 4]");
 
 		section("Modify argument");
 		code("function test(x) { x += 10 return x } return test(5)").equals("15");

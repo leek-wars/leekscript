@@ -25,6 +25,8 @@ public class TestCommon {
 	private static String C_PINK = "\033[1;95m";
 	private static String C_GREY = "\033[0;90m";
 
+	private static int LATEST_VERSION = 3;
+
 	private static int tests = 0;
 	private static int success = 0;
 	private static int disabled = 0;
@@ -42,21 +44,23 @@ public class TestCommon {
 	public static class Case {
 		String code;
 		boolean enabled = true;
-		int version = -1;
+		int version_min = 1;
+		int version_max = 3;
 
 		public Case(String code, boolean enabled) {
 			this.code = code;
 			this.enabled = enabled;
 		}
 
-		public Case(String code, boolean enabled, int version) {
+		public Case(String code, boolean enabled, int version_min, int version_max) {
 			this.code = code;
 			this.enabled = enabled;
-			this.version = version;
+			this.version_min = version_min;
+			this.version_max = version_max;
 		}
 
 		public String equals(String expected) {
-			return run(version, new Checker() {
+			return run(new Checker() {
 				public boolean check(Result result) {
 					return result.result.equals(expected);
 				}
@@ -66,7 +70,7 @@ public class TestCommon {
 		}
 
 		public String error(Error type) {
-			return run(version, new Checker() {
+			return run(new Checker() {
 				public boolean check(Result result) {
 					return result.error == type;
 				}
@@ -80,7 +84,7 @@ public class TestCommon {
 		}
 
 		public void almost(double expected, double delta) {
-			run(version, new Checker() {
+			run(new Checker() {
 				public boolean check(Result result) {
 					try {
 						double r = Double.parseDouble(result.result);
@@ -94,20 +98,18 @@ public class TestCommon {
 			});
 		}
 
-		public String run(int version, Checker checker) {
+		public String run(Checker checker) {
 			if (!enabled) {
 				disabled++;
-				var s = C_PINK + "[DISA] " + END_COLOR + "[v" + version + "] " + code;
+				var s = C_PINK + "[DISA] " + END_COLOR + "[v" + version_min + "-" + version_max + "] " + code;
 				System.out.println(s);
 				disabledTests.add(s);
 				return "disabled";
 			}
-			if (version == -1) {
-				run_version(1, checker);
-				return run_version(2, checker);
-			} else {
-				return run_version(version, checker);
+			for (int v = version_min; v <= version_max - 1; ++v) {
+				run_version(v, checker);
 			}
+			return run_version(version_max, checker);
 		}
 		public String run_version(int version, Checker checker) {
 			tests++;
@@ -193,28 +195,31 @@ public class TestCommon {
 		return new Case(code, true);
 	}
 	public Case file_v1(String code) {
-		return new Case(code, true, 1);
+		return new Case(code, true, 1, 1);
 	}
-	public Case file_v2(String code) {
-		return new Case(code, true, 2);
+	public Case file_v2_(String code) {
+		return new Case(code, true, 2, LATEST_VERSION);
 	}
 	public Case DISABLED_file(String code) {
 		return new Case(code, false);
 	}
-	public Case DISABLED_file_v2(String code) {
-		return new Case(code, false, 2);
+	public Case DISABLED_file_v2_(String code) {
+		return new Case(code, false, 2, LATEST_VERSION);
 	}
 	public Case code_v1(String code) {
-		return new Case(code, true, 1);
+		return new Case(code, true, 1, 1);
 	}
-	public Case code_v2(String code) {
-		return new Case(code, true, 2);
+	public Case code_v2_(String code) {
+		return new Case(code, true, 2, LATEST_VERSION);
+	}
+	public Case code_v3_(String code) {
+		return new Case(code, true, 3, LATEST_VERSION);
 	}
 	public Case DISABLED_code(String code) {
 		return new Case(code, false);
 	}
-	public Case DISABLED_code_v2(String code) {
-		return new Case(code, false, 2);
+	public Case DISABLED_code_v2_(String code) {
+		return new Case(code, false, 2, LATEST_VERSION);
 	}
 
 	public void section(String title) {
