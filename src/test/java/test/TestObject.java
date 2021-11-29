@@ -226,6 +226,9 @@ public class TestObject extends TestCommon {
 		code_v3_("return Function").equals("Function");
 		code_v3_("return Class").equals("Class");
 
+		code_v2("return Array").equals("null");
+		code_v2("class Array {} return Array").equals("Array");
+
 		section(".class");
 		code_v2("return null.class").equals("null");
 		code_v3_("return null.class").equals("Null");
@@ -250,7 +253,8 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { class }").error(Error.RESERVED_FIELD);
 		code_v2_("class A { class() {} }").error(Error.RESERVED_FIELD);
 		code_v2_("class A { } return new A().class").equals("A");
-		code_v2_("class A { } return A.class").equals("Class");
+		code_v2("class A { } return A.class").equals("null");
+		code_v3_("class A { } return A.class").equals("Class");
 
 		section("Class.super");
 		code_v2_("class A { super }").error(Error.RESERVED_FIELD);
@@ -258,7 +262,8 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { } class B extends A {} return B.super").equals("A");
 		code_v2_("class A { } class B extends A {} return B.super.name").equals("A");
 		code_v2_("class A { } class B extends A {} return new B().class.super.name").equals("A");
-		code_v2_("class A { } return A.class.super").equals("Value");
+		code_v2("class A { } return A.class.super").equals("null");
+		code_v3_("class A { } return A.class.super").equals("Value");
 
 		section("Class.name");
 		code_v2_("class A { static name }").error(Error.RESERVED_FIELD);

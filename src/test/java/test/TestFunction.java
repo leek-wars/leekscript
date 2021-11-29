@@ -6,6 +6,14 @@ public class TestFunction extends TestCommon {
 
 	public void run() {
 
+		section("Function");
+		code_v1_2("return function() {}").equals("#Anonymous Function");
+		code_v1_2("return Function() {}").equals("#Anonymous Function");
+		code_v1_2("return FUNCTION() {}").equals("#Anonymous Function");
+		code_v3_("return function() {}").equals("#Anonymous Function");
+		code_v3_("return Function() {}").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v3_("return FUNCTION() {}").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+
 		section("Recursive");
 		code("var fact = function(x) { if (x == 1) { return 1 } else { return fact(x - 1) * x } } return fact(8);").equals("40320");
 		// code("var fact = function(x) { if (x == 1) { return 1m } else { return fact(x - 1) * x } } return fact(30m);").equals("265252859812191058636308480000000");

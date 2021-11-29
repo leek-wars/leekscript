@@ -1,10 +1,20 @@
 package test;
 
 import leekscript.runner.LeekConstants;
+import leekscript.common.Error;
+import leekscript.compiler.WordParser;
 
 public class TestGeneral extends TestCommon {
 
 	public void run() {
+
+		section("null");
+		code_v1_2("return null").equals("null");
+		code_v1_2("return Null").equals("null");
+		code_v1_2("return NULL").equals("null");
+		code_v3_("return null").equals("null");
+		code_v3_("return Null").equals("Null");
+		code_v3_("return NULL").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 
 		section("typeOf()");
 		// Test nombre
@@ -34,6 +44,24 @@ public class TestGeneral extends TestCommon {
 		code("return getGreen(" + 0xAF00 + ")").equals("175");
 		// Blue
 		code("return getBlue(" + 0xAD + ")").equals("173");
+
+		section("Variables with keywords");
+		for (var word : WordParser.reservedWords) {
+			if (word.equals("this")) {
+				code_v1("var " + word + " = 2;").error(Error.NONE);
+				code_v2("var " + word + " = 2;").error(Error.THIS_NOT_ALLOWED_HERE);
+				code_v3_("var " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
+			} else if (word.equals("instanceof")) {
+				code_v1_2("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
+				code_v3_("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
+			} else if (word.equals("function")) {
+				code_v1_2("var " + word + " = 2;").error(Error.OPENING_PARENTHESIS_EXPECTED);
+				code_v3_("var " + word + " = 2;").error(Error.OPENING_PARENTHESIS_EXPECTED);
+			} else {
+				code_v1_2("var " + word + " = 2;").error(Error.NONE);
+				code_v3_("var " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
+			}
+		}
 
 		section("Type changes");
 		code("var a return a = 12").equals("12");

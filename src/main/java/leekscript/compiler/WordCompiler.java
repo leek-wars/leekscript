@@ -74,7 +74,7 @@ public class WordCompiler {
 					mCompiler.skipWord();
 					var global = mCompiler.readWord();
 					// System.out.println("global = " + global.getWord() + " " + global.getLine());
-					if (!isGlobalAvailable(global.getWord()) || mMain.hasDeclaredGlobal(global.getWord())) {
+					if (!isGlobalAvailable(global) || mMain.hasDeclaredGlobal(global.getWord())) {
 						addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 					} else {
 						mMain.addGlobal(global.getWord());
@@ -86,7 +86,7 @@ public class WordCompiler {
 					while (mCompiler.haveWords() && mCompiler.getWord().getType() == WordParser.T_VIRG) {
 						mCompiler.skipWord();
 						global = mCompiler.readWord();
-						if (!isGlobalAvailable(global.getWord()) || mMain.hasDeclaredGlobal(global.getWord())) {
+						if (!isGlobalAvailable(global) || mMain.hasDeclaredGlobal(global.getWord())) {
 							addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 						} else {
 							mMain.addGlobal(global.getWord());
@@ -98,8 +98,8 @@ public class WordCompiler {
 					}
 				} else if (mCompiler.getWord().getWord().equals("function")) {
 					mCompiler.skipWord();
-					String funcName = mCompiler.readWord().getWord();
-					if (funcName.equals("("))
+					var funcName = mCompiler.readWord();
+					if (funcName.getWord().equals("("))
 						continue;
 					if (!isAvailable(funcName, false))
 						throw new LeekCompilerException(mCompiler.getWord(), Error.FUNCTION_NAME_UNAVAILABLE);
@@ -130,7 +130,7 @@ public class WordCompiler {
 						throw new LeekCompilerException(mCompiler.getWord(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
 					}
 
-					mMain.addFunctionDeclaration(funcName, param_count);
+					mMain.addFunctionDeclaration(funcName.getWord(), param_count);
 				} else
 					mCompiler.skipWord();
 			}
@@ -330,7 +330,7 @@ public class WordCompiler {
 		if (mCompiler.getWord().getType() != WordParser.T_STRING)
 			throw new LeekCompilerException(mCompiler.getWord(), Error.FUNCTION_NAME_EXPECTED);
 		IAWord funcName = mCompiler.readWord();
-		if (!isAvailable(funcName.getWord(), false))
+		if (!isAvailable(funcName, false))
 			throw new LeekCompilerException(mCompiler.getWord(), Error.FUNCTION_NAME_UNAVAILABLE);
 
 		if (mCompiler.readWord().getType() != WordParser.T_PAR_LEFT) {
@@ -643,10 +643,12 @@ public class WordCompiler {
 	private void variableDeclaration() throws LeekCompilerException {
 		// Il y a au moins une premiere variable
 		IAWord word = mCompiler.readWord();
-		if (word.getType() != WordParser.T_STRING)
+		if (word.getType() != WordParser.T_STRING) {
 			throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED);
-		// if (!isAvailable(word.getWord(), true))
-		// 	throw new LeekCompilerException(word, Error.VARIABLE_NAME_UNAVAILABLE);
+		}
+		if (getVersion() >= 3 && isKeyword(word)) {
+			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+		}
 		LeekVariableDeclarationInstruction variable = new LeekVariableDeclarationInstruction(this, word, mLine, mAI, getCurrentFunction());
 		// On regarde si une valeur est assignée
 		if (mCompiler.getWord().getWord().equals("=")) {
@@ -1008,17 +1010,17 @@ public class WordCompiler {
 
 					if (mMain.hasGlobal(word.getWord())) {
 						retour.addExpression(new LeekVariable(this, word, VariableType.GLOBAL));
-					} else if (word.getWord().equalsIgnoreCase("function")) {
+					} else if (wordEquals(word, "function")) {
 						retour.addExpression(readAnonymousFunction());
-					} else if (word.getWord().equalsIgnoreCase("true"))
+					} else if (wordEquals(word, "true"))
 						retour.addExpression(new LeekBoolean(true));
-					else if (word.getWord().equalsIgnoreCase("false"))
+					else if (wordEquals(word, "false"))
 						retour.addExpression(new LeekBoolean(false));
-					else if (word.getWord().equalsIgnoreCase("null"))
+					else if (wordEquals(word, "null"))
 						retour.addExpression(new LeekNull());
-					else if (word.getWord().equalsIgnoreCase("not"))
+					else if (wordEquals(word, "not"))
 						retour.addUnaryPrefix(Operators.NOT, word);
-					else if (getVersion() >= 2 && word.getWord().equalsIgnoreCase("new")) {
+					else if (getVersion() >= 2 && word.getWord().equals("new")) {
 						retour.addUnaryPrefix(Operators.NEW, word);
 					} else if (getVersion() >= 2 && word.getWord().equals("super")) {
 						// super doit être dans une méthode
@@ -1036,8 +1038,7 @@ public class WordCompiler {
 						// throw new LeekCompilerException(word, Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 					}
 				} else if (word.getType() == WordParser.T_PAR_LEFT) {
-					mCompiler.skipWord();// On avance le curseur pour bien être
-											// au début de l'expression
+					mCompiler.skipWord(); // On avance le curseur pour bien être au début de l'expression
 
 					AbstractExpression exp = readExpression();
 					if (mCompiler.haveWords() && mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
@@ -1090,6 +1091,13 @@ public class WordCompiler {
 			throw new LeekCompilerException(mCompiler.lastWord(), e.getError(), new String[] { e.getExpression() });
 		}
 		return result;
+	}
+
+	private boolean wordEquals(IAWord word, String expected) {
+		if (getVersion() <= 2) {
+			return word.getWord().equalsIgnoreCase(expected);
+		}
+		return word.getWord().equals(expected);
 	}
 
 	private LeekAnonymousFunction readAnonymousFunction() throws LeekCompilerException {
@@ -1170,27 +1178,28 @@ public class WordCompiler {
 		return new LeekAnonymousFunction(block);
 	}
 
-	public boolean isAvailable(String word, boolean allFunctions) {
-		if (word.equalsIgnoreCase("in") || word.equalsIgnoreCase("global") || word.equalsIgnoreCase("var") || word.equalsIgnoreCase("for") || word.equalsIgnoreCase("else")
-				|| word.equalsIgnoreCase("if") || word.equalsIgnoreCase("break") || word.equalsIgnoreCase("return") || word.equalsIgnoreCase("do") || word.equalsIgnoreCase("while")
-				|| word.equalsIgnoreCase("function") || word.equalsIgnoreCase("true") || word.equalsIgnoreCase("false") || word.equalsIgnoreCase("null"))
-			return false;
+	public boolean isKeyword(IAWord word) {
+		for (var w : WordParser.reservedWords) {
+			if (wordEquals(word, w)) return true;
+		}
+		return false;
+	}
+
+	public boolean isAvailable(IAWord word, boolean allFunctions) {
+		if (isKeyword(word)) return false;
 		// if(LeekFunctions.isFunction(word) >= 0 || mMain.hasGlobal(word) ||
 		// mMain.hasUserFunction(word, allFunctions) ||
 		// mCurentBlock.hasVariable(word)) return false;
-		if (mMain.hasGlobal(word) || mMain.hasUserFunction(word, allFunctions) || mCurentBlock.hasVariable(word))
+		if (mMain.hasGlobal(word.getWord()) || mMain.hasUserFunction(word.getWord(), allFunctions) || mCurentBlock.hasVariable(word.getWord()))
 			return false;
 		return true;
 	}
 
-	public boolean isGlobalAvailable(String word) {
-		if (word.equalsIgnoreCase("in") || word.equalsIgnoreCase("global") || word.equalsIgnoreCase("var") || word.equalsIgnoreCase("for") || word.equalsIgnoreCase("else")
-				|| word.equalsIgnoreCase("if") || word.equalsIgnoreCase("break") || word.equalsIgnoreCase("return") || word.equalsIgnoreCase("do") || word.equalsIgnoreCase("while")
-				|| word.equalsIgnoreCase("function") || word.equalsIgnoreCase("true") || word.equalsIgnoreCase("false") || word.equalsIgnoreCase("null"))
-			return false;
+	public boolean isGlobalAvailable(IAWord word) {
+		if (isKeyword(word)) return false;
 		// if(LeekFunctions.isFunction(word) >= 0 || mMain.hasUserFunction(word,
 		// false) || mCurentBlock.hasVariable(word)) return false;
-		if (mMain.hasUserFunction(word, false) || mCurentBlock.hasVariable(word))
+		if (mMain.hasUserFunction(word.getWord(), false) || mCurentBlock.hasVariable(word.getWord()))
 			return false;
 		return true;
 	}
