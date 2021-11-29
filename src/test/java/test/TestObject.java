@@ -287,16 +287,19 @@ public class TestObject extends TestCommon {
 		* Methods
 		*/
 		section("Object.keys()");
-		// code("return {}.keys()").equals("[]");
-		// code("return {a: 5, b: 'toto', c: true, d: -> 5}.keys()").equals("['a', 'b', 'c', 'd']");
-		// code("return 'x' in {x: 5, y: 'yo'}.keys()").equals("true");
-		// code("return 'x' in {a: 5, y: 'yo'}.keys()").equals("false");
+		code_v3_("return {}.keys()").equals("[]");
+		code_v3_("return {a: 5, b: 'toto', c: true, d: function() { return 5 } }.keys()").equals("[a, b, c, d]");
+		code_v3_("class A { x y z } return new A().keys()").equals("[x, y, z]");
+		code_v3_("class A { z y x } return new A().keys()").equals("[z, y, x]");
+		// code_v2_("return 'x' in {x: 5, y: 'yo'}.keys()").equals("true");
+		// code_v2_("return 'x' in {a: 5, y: 'yo'}.keys()").equals("false");
 
 		section("Object.values()");
-		// code("return {}.values()").equals("[]");
-		// code("return {a: 1}.values()").equals("[1]");
-		// code("return {a: 1, b: 1}.values()").equals("[1, 1]");
-		// code("return {a: 5, b: 'toto', c: true, d: -> 5}.values()").equals("[5, 'toto', true, <function>]");
+		code_v3_("return {}.values()").equals("[]");
+		code_v3_("return {a: 1}.values()").equals("[1]");
+		code_v3_("return {a: 1, b: 1}.values()").equals("[1, 1]");
+		code_v3_("return {a: 5, b: 'toto', c: true, d: function() { return 5 } }.values()").equals("[5, toto, true, #Anonymous Function]");
+		code_v3_("return {c: 5, a: 'toto', d: true, b: function() { return 5 } }.values()").equals("[5, toto, true, #Anonymous Function]");
 
 		section("Object.isTrue()");
 		code_v2_("if ({x: 12}) { return 5 } else { return 12 }").equals("5");
