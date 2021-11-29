@@ -57,14 +57,37 @@ public abstract class AI {
 	private long compileTime;
 	private long loadTime;
 	private File filesLines;
-	public ClassLeekValue objectClass;
+
+	public final ClassLeekValue valueClass;
+	public final ClassLeekValue nullClass;
+	public final ClassLeekValue booleanClass;
+	public final ClassLeekValue integerClass;
+	public final ClassLeekValue realClass;
+	public final ClassLeekValue numberClass;
+	public final ClassLeekValue arrayClass;
+	public final ClassLeekValue stringClass;
+	public final ClassLeekValue objectClass;
+	public final ClassLeekValue functionClass;
+	public final ClassLeekValue classClass;
 
 	public AI(int instructions, int version) {
 		this.mInstructions = instructions;
 		this.version = version;
 		logs = new AILog();
 		randomGenerator = LeekScript.getRandom();
-		objectClass = new ClassLeekValue(this, "Object");
+
+		valueClass = new ClassLeekValue(this, "Value");
+		nullClass = new ClassLeekValue(this, "Null", valueClass);
+		booleanClass = new ClassLeekValue(this, "Boolean", valueClass);
+		numberClass = new ClassLeekValue(this, "Number", valueClass);
+		integerClass = new ClassLeekValue(this, "Integer", numberClass);
+		realClass= new ClassLeekValue(this, "Real", numberClass);
+		arrayClass = new ClassLeekValue(this, "Array", valueClass);
+		stringClass = new ClassLeekValue(this, "String", valueClass);
+		objectClass = new ClassLeekValue(this, "Object", valueClass);
+		functionClass = new ClassLeekValue(this, "Function", valueClass);
+		classClass = new ClassLeekValue(this, "Class", valueClass);
+
 		try {
 			init();
 		} catch (Exception e) {}
@@ -1680,6 +1703,19 @@ public abstract class AI {
 			case NUMBER: return value instanceof Integer || value instanceof Double;
 		}
 		return true;
+	}
+
+	public ClassLeekValue getClass(Object value) {
+		if (value == null) return nullClass;
+		if (value instanceof Integer) return integerClass;
+		if (value instanceof Double) return realClass;
+		if (value instanceof Boolean) return booleanClass;
+		if (value instanceof ArrayLeekValue) return arrayClass;
+		if (value instanceof String) return stringClass;
+		if (value instanceof ObjectLeekValue) return ((ObjectLeekValue) value).clazz;
+		if (value instanceof FunctionLeekValue) return functionClass;
+		if (value instanceof ClassLeekValue) return classClass;
+		return valueClass;
 	}
 
 	public boolean instanceOf(Object value, Object clazz) throws LeekRunException {

@@ -214,6 +214,78 @@ public class TestObject extends TestCommon {
 		section("Constant in static field");
 		code_v2_("class A { static bulbsNameChip = ['puny_bulb': PI] } return A.bulbsNameChip").equals("[puny_bulb : 3.141592653589793]");
 
+		section("Base classes");
+		code_v3_("return Value").equals("Value");
+		code_v3_("return Null").equals("Null");
+		code_v3_("return Number").equals("Number");
+		code_v3_("return Integer").equals("Integer");
+		code_v3_("return Real").equals("Real");
+		code_v3_("return String").equals("String");
+		code_v3_("return Array").equals("Array");
+		code_v3_("return Object").equals("Object");
+		code_v3_("return Function").equals("Function");
+		code_v3_("return Class").equals("Class");
+
+		section(".class");
+		code_v2("return null.class").equals("null");
+		code_v3_("return null.class").equals("Null");
+		code_v2("return true.class").equals("null");
+		code_v3_("return true.class").equals("Boolean");
+		code_v2("return (12).class").equals("null");
+		code_v3_("return (12).class").equals("Integer");
+		code_v2("return (12.5).class").equals("null");
+		code_v3_("return (12.5).class").equals("Real");
+		code_v2("return 'salut'.class").equals("null");
+		code_v3_("return 'salut'.class").equals("String");
+		code_v2("return [].class").equals("null");
+		code_v3_("return [].class").equals("Array");
+		code_v2_("return {}.class").equals("Object");
+		code_v2("return (function() {}).class").equals("null");
+		code_v3_("return (function() {}).class").equals("Function");
+		code_v2("class A {} return A.class").equals("null");
+		code_v3_("class A {} return A.class").equals("Class");
+		code_v2_("class A {} return new A().class").equals("A");
+
+		section("Class.class");
+		code_v2_("class A { class }").error(Error.RESERVED_FIELD);
+		code_v2_("class A { class() {} }").error(Error.RESERVED_FIELD);
+		code_v2_("class A { } return new A().class").equals("A");
+		code_v2_("class A { } return A.class").equals("Class");
+
+		section("Class.super");
+		code_v2_("class A { super }").error(Error.RESERVED_FIELD);
+		code_v2_("class A { super() {} }").error(Error.RESERVED_FIELD);
+		code_v2_("class A { } class B extends A {} return B.super").equals("A");
+		code_v2_("class A { } class B extends A {} return B.super.name").equals("A");
+		code_v2_("class A { } class B extends A {} return new B().class.super.name").equals("A");
+		code_v2_("class A { } return A.class.super").equals("Value");
+
+		section("Class.name");
+		code_v2_("class A { static name }").error(Error.RESERVED_FIELD);
+		code_v2_("class A { static name() {} }").error(Error.NONE);
+		code_v2_("class A {} return A.name").equals("A");
+		code_v2_("class A {} return new A().class.name").equals("A");
+
+		section("Class.fields");
+		code_v2_("class A { static fields }").error(Error.RESERVED_FIELD);
+		code_v2_("class A { } return A.fields").equals("[]");
+		code_v2_("class A { x y z } return A.fields").equals("[x, y, z]");
+		code_v2_("class A { z y x } return A.fields").equals("[z, y, x]");
+		code_v2_("class A { a b c static d m() {} n() {} o() {} } return A.fields").equals("[a, b, c]");
+
+		section("Class.staticFields");
+		code_v2_("class A { static staticFields }").error(Error.RESERVED_FIELD);
+		code_v2_("class A { } return A.staticFields").equals("[]");
+		code_v2_("class A { static x static y static z } return A.staticFields").equals("[x, y, z]");
+		code_v2_("class A { static z static y static x } return A.staticFields").equals("[z, y, x]");
+		code_v2_("class A { static a static b c d m() {} n() {} o() {} } return A.staticFields").equals("[a, b]");
+
+		section("Class.methods");
+		code_v2_("class A { static methods }").error(Error.RESERVED_FIELD);
+
+		section("Class.staticMethods");
+		code_v2_("class A { static staticMethods }").error(Error.RESERVED_FIELD);
+
 		section("Object.string()");
 		code_v2_("return string({x: 1, y: 2, z: 3})").equals("{x: 1, y: 2, z: 3}");
 		code_v2_("return string({z: 1, y: 2, x: 3})").equals("{z: 1, y: 2, x: 3}");

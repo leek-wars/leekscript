@@ -1,5 +1,6 @@
 package leekscript.compiler.instruction;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
@@ -47,7 +48,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 	private IAWord parentToken;
 	private ClassDeclarationInstruction parent;
 	private LinkedHashMap<String, ClassDeclarationField> fields = new LinkedHashMap<>();
-	private HashMap<String, ClassDeclarationField> staticFields = new HashMap<>();
+	private LinkedHashMap<String, ClassDeclarationField> staticFields = new LinkedHashMap<>();
 	private HashMap<String, LeekVariable> fieldVariables = new HashMap<>();
 	private HashMap<String, LeekVariable> staticFieldVariables = new HashMap<>();
 	private HashMap<String, LeekVariable> methodVariables = new HashMap<>();
@@ -389,8 +390,14 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		writer.addCode(className + ".initFields = new LeekAnonymousFunction() {");
 		writer.addLine("public Object run(ObjectLeekValue u_this, Object... values) throws LeekRunException {");
 		ClassDeclarationInstruction current = this;
+		ArrayList<ClassDeclarationInstruction> classes = new ArrayList<>();
 		while (current != null) {
-			for (var field : current.fields.entrySet()) {
+			classes.add(current);
+			current = current.parent;
+		}
+		for (int i = classes.size() - 1; i >= 0; --i) {
+			var clazz = classes.get(i);
+			for (var field : clazz.fields.entrySet()) {
 				writer.addCode("u_this.addField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
 				if (field.getValue().expression != null) {
 					field.getValue().expression.writeJavaCode(mainblock, writer);
@@ -399,7 +406,6 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				}
 				writer.addLine(", AccessLevel." + field.getValue().level + ");");
 			}
-			current = current.parent;
 		}
 		writer.addLine("return null;");
 		writer.addLine("}};");

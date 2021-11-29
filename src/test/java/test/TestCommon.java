@@ -154,10 +154,10 @@ public class TestCommon {
 			// long referenceOperations = operationsReference.get(operationsReferenceIndex++);
 
 			if (checker.check(result)) {
-				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "] " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops" + END_COLOR);
+				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version_min + "-" + version_max + "] " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops" + END_COLOR);
 				success++;
 			} else {
-				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "] " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
+				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version_min + "-" + version_max + "] " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
 				"/home/pierre/dev/leek-wars/server/daemon/generator-v1/leekscript-v1/ai/AI_" + aiID + ".java";
 				System.out.println(err);
 				failedTests.add(err);
@@ -208,6 +208,9 @@ public class TestCommon {
 	}
 	public Case code_v1(String code) {
 		return new Case(code, true, 1, 1);
+	}
+	public Case code_v2(String code) {
+		return new Case(code, true, 2, 2);
 	}
 	public Case code_v2_(String code) {
 		return new Case(code, true, 2, LATEST_VERSION);

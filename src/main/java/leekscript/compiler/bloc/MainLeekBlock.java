@@ -9,6 +9,7 @@ import java.util.TreeMap;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.IACompiler;
+import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.WordCompiler;
@@ -54,6 +55,18 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mAIName = ai.getPath();
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
+		if (ai.getVersion() >= 3) {
+			addClass(new ClassDeclarationInstruction(new IAWord("Value"), 0, ai));
+			addClass(new ClassDeclarationInstruction(new IAWord("Null"), 0, ai));
+			addClass(new ClassDeclarationInstruction(new IAWord("Integer"), 0, ai));
+			addClass(new ClassDeclarationInstruction(new IAWord("Real"), 0, ai));
+			addClass(new ClassDeclarationInstruction(new IAWord("Number"), 0, ai));
+			addClass(new ClassDeclarationInstruction(new IAWord("Array"), 0, ai));
+			addClass(new ClassDeclarationInstruction(new IAWord("String"), 0, ai));
+			addClass(new ClassDeclarationInstruction(new IAWord("Object"), 0, ai));
+			addClass(new ClassDeclarationInstruction(new IAWord("Function"), 0, ai));
+			addClass(new ClassDeclarationInstruction(new IAWord("Class"), 0, ai));
+		}
 	}
 
 	public void addRedefinedFunction(String function) {
