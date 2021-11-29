@@ -61,6 +61,10 @@ public class LeekObjectAccess extends AbstractExpression {
 		object.analyze(compiler);
 		operations = 1 + object.operations;
 
+		if (field.getWord().equals("class")) {
+			return; // .class is available everywhere
+		}
+
 		if (object instanceof LeekVariable) {
 			var v = (LeekVariable) object;
 			if (v.getName().equals("this")) {
@@ -71,6 +75,9 @@ public class LeekObjectAccess extends AbstractExpression {
 				}
 			} else if (v.getVariableType() == VariableType.CLASS && v.getClassDeclaration() != null) {
 				operations -= 1;
+				if (field.getWord().equals("name") || field.getWord().equals("super") || field.getWord().equals("fields") || field.getWord().equals("staticFields") || field.getWord().equals("methods") || field.getWord().equals("staticMethods")) {
+					return; // OK
+				}
 				if (!v.getClassDeclaration().hasStaticMember(field.getWord())) {
 					compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { v.getClassDeclaration().getName(), field.getWord() }));
 				}
@@ -88,20 +95,32 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("getField(");
-		object.writeJavaCode(mainblock, writer);
-		var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
-		writer.addCode(", \"" + field.getWord() + "\", " + from_class + ")");
+		if (mainblock.getWordCompiler().getVersion() >= 3 && field.getWord().equals("class")) {
+			writer.addCode("getClass(");
+			object.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+		} else {
+			writer.addCode("getField(");
+			object.writeJavaCode(mainblock, writer);
+			var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
+			writer.addCode(", \"" + field.getWord() + "\", " + from_class + ")");
+		}
 	}
 
 	@Override
 	public void compileL(MainLeekBlock mainblock, JavaWriter writer) {
 		assert (object.isLeftValue() && !object.nullable());
 
-		writer.addCode("getField(");
-		object.writeJavaCode(mainblock, writer);
-		var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
-		writer.addCode(", \"" + field.getWord() + "\", " + from_class + ")");
+		if (mainblock.getWordCompiler().getVersion() >= 3 && field.getWord().equals("class")) {
+			writer.addCode("getClass(");
+			object.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+		} else {
+			writer.addCode("getField(");
+			object.writeJavaCode(mainblock, writer);
+			var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
+			writer.addCode(", \"" + field.getWord() + "\", " + from_class + ")");
+		}
 	}
 
 	@Override

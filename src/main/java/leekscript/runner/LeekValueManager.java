@@ -116,6 +116,8 @@ public class LeekValueManager {
 			return ((FunctionLeekValue) value).getString(ai);
 		} else if (value instanceof Box) {
 			return getString(ai, ((Box) value).getValue());
+		} else if (value instanceof ClassLeekValue) {
+			return ((ClassLeekValue) value).name;
 		}
 		return "null";
 	}
@@ -136,6 +138,8 @@ public class LeekValueManager {
 			return (String) value;
 		} else if (value instanceof Box) {
 			return getString(ai, ((Box) value).getValue());
+		} else if (value instanceof ClassLeekValue) {
+			return ((ClassLeekValue) value).name;
 		}
 		return "null";
 	}

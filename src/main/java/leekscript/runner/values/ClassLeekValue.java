@@ -44,7 +44,7 @@ public class ClassLeekValue {
 	public String name;
 	public ClassLeekValue parent;
 	public LinkedHashMap<String, ClassField> fields = new LinkedHashMap<>();
-	public HashMap<String, ObjectVariableValue> staticFields = new HashMap<>();
+	public LinkedHashMap<String, ObjectVariableValue> staticFields = new LinkedHashMap<>();
 	public HashMap<Integer, ClassMethod> constructors = new HashMap<>();
 	public HashMap<String, ClassMethod> methods = new HashMap<>();
 	public HashMap<String, Object> genericMethods = new HashMap<>();
@@ -59,6 +59,12 @@ public class ClassLeekValue {
 		this.ai = ai;
 		this.name = name;
 		this.parent = null;
+	}
+
+	public ClassLeekValue(AI ai, String name, ClassLeekValue parent) {
+		this.ai = ai;
+		this.name = name;
+		this.parent = parent;
 	}
 
 	public void setParent(ClassLeekValue parent) {
@@ -118,6 +124,17 @@ public class ClassLeekValue {
 	}
 
 	public Object getField(AI ai, String field, ClassLeekValue fromClass) throws LeekRunException {
+		if (field.equals("fields")) {
+			return getFieldsArray();
+		} else if (field.equals("staticFields")) {
+			return getStaticFieldsArray();
+		} else if (field.equals("methods")) {
+			return getMethodsArray();
+		} else if (field.equals("name")) {
+			return name;
+		} else if (field.equals("super")) {
+			return parent;
+		}
 		// Private
 		var result = staticFields.get(field);
 		if (result != null) {
@@ -140,15 +157,6 @@ public class ClassLeekValue {
 					return result.getValue();
 				}
 			}
-		}
-		if (field.equals("name")) {
-			return name;
-		} else if (field.equals("fields")) {
-			return getFieldsArray();
-		} else if (field.equals("methods")) {
-			return getMethodsArray();
-		} else if (field.equals("parent")) {
-			return parent;
 		}
 		if (parent instanceof ClassLeekValue) {
 			return parent.getField(ai, field, fromClass);
@@ -362,6 +370,18 @@ public class ClassLeekValue {
 			Object[] values = new Object[fields.size()];
 			int i = 0;
 			for (var f : fields.entrySet()) {
+				values[i++] = f.getKey();
+			}
+			fieldsArray = new ArrayLeekValue(ai, values);
+		}
+		return fieldsArray;
+	}
+
+	private ArrayLeekValue getStaticFieldsArray() throws LeekRunException {
+		if (fieldsArray == null) {
+			Object[] values = new Object[staticFields.size()];
+			int i = 0;
+			for (var f : staticFields.entrySet()) {
 				values[i++] = f.getKey();
 			}
 			fieldsArray = new ArrayLeekValue(ai, values);

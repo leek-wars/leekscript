@@ -684,9 +684,9 @@ public class WordCompiler {
 		if (word.getType() != WordParser.T_STRING) {
 			throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED);
 		}
-		// if (!isAvailable(word.getWord(), true)) {
-		// 	throw new LeekCompilerException(word, Error.VARIABLE_NAME_UNAVAILABLE);
-		// }
+		if (mMain.hasUserClass(word.getWord())) {
+			throw new LeekCompilerException(word, Error.VARIABLE_NAME_UNAVAILABLE);
+		}
 		ClassDeclarationInstruction classDeclaration = new ClassDeclarationInstruction(word, mLine, mAI);
 		mMain.addClass(classDeclaration);
 		mCurrentClass = classDeclaration;
@@ -747,6 +747,9 @@ public class WordCompiler {
 				classStaticMember(classDeclaration, accessLevel);
 				return;
 		}
+		if (name.getWord().equals("class") || name.getWord().equals("super")) {
+			errors.add(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.RESERVED_FIELD, new String[] { name.getWord() }));
+		}
 		IAWord word2 = mCompiler.getWord();
 		if (word2.getType() == WordParser.T_PAR_LEFT) {
 			// Méthode
@@ -767,6 +770,7 @@ public class WordCompiler {
 
 	public void classStaticMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel) throws LeekCompilerException {
 		IAWord name = mCompiler.readWord();
+
 		// Static field
 		AbstractExpression expr = null;
 		if (mCompiler.getWord().getType() == WordParser.T_OPERATOR && mCompiler.getWord().getWord().equals("=")) {
@@ -779,6 +783,9 @@ public class WordCompiler {
 			if (mCompiler.getWord().getType() == WordParser.T_END_INSTRUCTION)
 				mCompiler.skipWord();
 			return;
+		}
+		if (name.getWord().equals("name") || name.getWord().equals("super") || name.getWord().equals("fields") || name.getWord().equals("staticFields") || name.getWord().equals("methods") || name.getWord().equals("staticMethods")) {
+			errors.add(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.RESERVED_FIELD, new String[] { name.getWord() }));
 		}
 		classDeclaration.addStaticField(name, expr, accessLevel);
 

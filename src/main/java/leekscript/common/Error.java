@@ -92,4 +92,5 @@ public enum Error {
 	CANNOT_LOAD_AI, // 88
 	TRANSPILE_TO_JAVA, // 89
 	CANNOT_WRITE_AI, // 90
+	RESERVED_FIELD, // 91
 }
