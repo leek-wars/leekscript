@@ -214,6 +214,12 @@ public class TestObject extends TestCommon {
 		section("Constant in static field");
 		code_v2("class A { static bulbsNameChip = ['puny_bulb': PI] } return A.bulbsNameChip").equals("[puny_bulb : 3.141592653589793]");
 
+		section("Object.string()");
+		code_v2("return string({x: 1, y: 2, z: 3})").equals("{x: 1, y: 2, z: 3}");
+		code_v2("return string({z: 1, y: 2, x: 3})").equals("{z: 1, y: 2, x: 3}");
+		code_v2("class A { z = 1 y = 2 x = 3 } return string(new A())").equals("A {z: 1, y: 2, x: 3}");
+		code_v2("class A { x = 1 y = 2 z = 3 } return string(new A())").equals("A {x: 1, y: 2, z: 3}");
+
 		/*
 		* Operators
 		*/
