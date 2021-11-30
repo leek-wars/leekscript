@@ -56,16 +56,18 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
 		if (ai.getVersion() >= 3) {
-			addClass(new ClassDeclarationInstruction(new IAWord("Value"), 0, ai));
-			addClass(new ClassDeclarationInstruction(new IAWord("Null"), 0, ai));
-			addClass(new ClassDeclarationInstruction(new IAWord("Integer"), 0, ai));
-			addClass(new ClassDeclarationInstruction(new IAWord("Real"), 0, ai));
-			addClass(new ClassDeclarationInstruction(new IAWord("Number"), 0, ai));
-			addClass(new ClassDeclarationInstruction(new IAWord("Array"), 0, ai));
-			addClass(new ClassDeclarationInstruction(new IAWord("String"), 0, ai));
-			addClass(new ClassDeclarationInstruction(new IAWord("Object"), 0, ai));
-			addClass(new ClassDeclarationInstruction(new IAWord("Function"), 0, ai));
-			addClass(new ClassDeclarationInstruction(new IAWord("Class"), 0, ai));
+			addClass(new ClassDeclarationInstruction(new IAWord("Value"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new IAWord("Null"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new IAWord("Integer"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new IAWord("Real"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new IAWord("Number"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new IAWord("Array"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new IAWord("String"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new IAWord("Object"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new IAWord("Function"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new IAWord("Class"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new IAWord("JSON"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new IAWord("System"), 0, ai, true));
 		}
 	}
 
@@ -201,6 +203,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 		// Classes
 		for (var clazz : mUserClassesList) {
+			if (clazz.internal) continue;
 			clazz.declareJava(this, writer);
 		}
 
@@ -209,6 +212,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("super(" + mInstructions.size() + ", " + mCompiler.getCurrentAI().getVersion() + ");");
 
 		for (var clazz : mUserClassesList) {
+			if (clazz.internal) continue;
 			clazz.createJava(this, writer);
 		}
 		writer.addLine("}");

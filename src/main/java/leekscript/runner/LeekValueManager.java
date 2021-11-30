@@ -112,12 +112,12 @@ public class LeekValueManager {
 			return ((ArrayLeekValue) value).getString(ai, new HashSet<Object>());
 		} else if (value instanceof String) {
 			return (String) value;
+		} else if (value instanceof ClassLeekValue) {
+			return ((ClassLeekValue) value).getString(ai);
 		} else if (value instanceof FunctionLeekValue) {
 			return ((FunctionLeekValue) value).getString(ai);
 		} else if (value instanceof Box) {
 			return getString(ai, ((Box) value).getValue());
-		} else if (value instanceof ClassLeekValue) {
-			return ((ClassLeekValue) value).name;
 		}
 		return "null";
 	}
@@ -136,12 +136,12 @@ public class LeekValueManager {
 			return ((ArrayLeekValue) value).getString(ai, visited);
 		} else if (value instanceof String) {
 			return (String) value;
+		} else if (value instanceof ClassLeekValue) {
+			return ((ClassLeekValue) value).getString(ai);
 		} else if (value instanceof FunctionLeekValue) {
 			return ((FunctionLeekValue) value).getString(ai);
 		} else if (value instanceof Box) {
 			return getString(ai, ((Box) value).getValue());
-		} else if (value instanceof ClassLeekValue) {
-			return ((ClassLeekValue) value).name;
 		}
 		return "null";
 	}

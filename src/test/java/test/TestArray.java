@@ -5,11 +5,11 @@ public class TestArray extends TestCommon {
 	public void run() throws Exception {
 
 		section("Array.constructor()");
-		// DISABLED_code("Array").equals("<class Array>");
-		// DISABLED_code("Array()").equals("[]");
-		// DISABLED_code("new Array").equals("[]");
-		// DISABLED_code("new Array()").equals("[]");
-		// DISABLED_code("new Array() + 1").equals("[1]");
+		code_v3_("return Array").equals("<class Array>");
+		code_v3_("return Array()").equals("[]");
+		code_v3_("return new Array").equals("[]");
+		code_v3_("return new Array()").equals("[]");
+		code_v3_("return new Array() + 1").equals("[1]");
 		code("return [];").equals("[]");
 		code("return [1];").equals("[1]");
 		code("return [1, 2, 3];").equals("[1, 2, 3]");
@@ -30,16 +30,20 @@ public class TestArray extends TestCommon {
 
 		section("Array.operator +");
 		code("return [1, 2, 3] + [4, 5, 6];").equals("[1, 2, 3, 4, 5, 6]");
-		// DISABLED_code("return [] + 1;").equals("[1]");
-		// DISABLED_code("return [] + 1 + 2 + 3;").equals("[1, 2, 3]");
-		// DISABLED_code("return [1] + 2;").equals("[1, 2]");
-		// DISABLED_code("return [1] + 0.5;").equals("[1, 0.5]");
-		// DISABLED_code("return [0.5] + 'a';").equals("[0.5, 'a']");
+		code("return [] + 1;").equals("[1]");
+		code("return [] + 1 + 2 + 3;").equals("[1, 2, 3]");
+		code("return [1] + 2;").equals("[1, 2]");
+		code_v1("return [1] + 0.5;").equals("[1, 0,5]");
+		code_v2_("return [1] + 0.5;").equals("[1, 0.5]");
+		// code_v1("return [0.5] + 'a';").equals("[0,5, a]");
+		// code_v2_("return [0.5] + 'a';").equals("[0.5, a]");
 		code("return ['a'] + ['b'];").equals("[a, b]");
-		// DISABLED_code("return [1] + 0.5 + 'a';").equals("[1, 0.5, 'a']");
-		// DISABLED_code("return [1] + 0.5 + 'a' + 'b';").equals("[1, 0.5, 'a', 'b']");
-		// DISABLED_code("return [1] + null;").equals("[1, null]");
-		// DISABLED_code("return [1] + true;").equals("[1, true]");
+		// code_v1("return [1] + 0.5 + 'a';").equals("[1, 0,5, a]");
+		// code_v2_("return [1] + 0.5 + 'a';").equals("[1, 0.5, a]");
+		// code_v1("return [1] + 0.5 + 'a' + 'b';").equals("[1, 0,5, a, b]");
+		// code_v2_("return [1] + 0.5 + 'a' + 'b';").equals("[1, 0.5, a, b]");
+		code("return [1] + null;").equals("[1, null]");
+		code("return [1] + true;").equals("[1, true]");
 		code("return [1] + [2] + [3];").equals("[1, 2, 3]");
 		code_v1("return [1] + [2.5] + ['a'];").equals("[1, 2,5, a]");
 		code_v2_("return [1] + [2.5] + ['a'];").equals("[1, 2.5, a]");

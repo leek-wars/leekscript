@@ -17,6 +17,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.runner.values.ClassLeekValue.ClassMethod;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 
@@ -47,6 +48,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 	private final IAWord token;
 	private IAWord parentToken;
 	private ClassDeclarationInstruction parent;
+	public boolean internal;
 	private LinkedHashMap<String, ClassDeclarationField> fields = new LinkedHashMap<>();
 	private LinkedHashMap<String, ClassDeclarationField> staticFields = new LinkedHashMap<>();
 	private HashMap<String, LeekVariable> fieldVariables = new HashMap<>();
@@ -57,8 +59,9 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> methods = new HashMap<>();
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> staticMethods = new HashMap<>();
 
-	public ClassDeclarationInstruction(IAWord token, int line, AIFile<?> ai) {
+	public ClassDeclarationInstruction(IAWord token, int line, AIFile<?> ai, boolean internal) {
 		this.token = token;
+		this.internal = internal;
 	}
 
 	public HashMap<String, ClassDeclarationField> getFields() {
@@ -186,6 +189,10 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			return hasConstructor(paramCount);
 		}
 		return methods.containsKey(name + "_" + paramCount);
+	}
+
+	public boolean hasMethod(String name) {
+		return methods.containsKey(name);
 	}
 
 	public void addStaticMethod(WordCompiler compiler, IAWord token, ClassMethodBlock method, AccessLevel level) {
@@ -545,6 +552,10 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			return parent.getStaticMember(token);
 		}
 		return null;
+	}
+
+	public HashMap<Integer, ClassDeclarationMethod> getMethod(String name) {
+		return methods.get(name);
 	}
 
 	public String getMethodName(String name, int argumentCount) {

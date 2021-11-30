@@ -13,7 +13,7 @@ public class TestGeneral extends TestCommon {
 		code_v1_2("return Null").equals("null");
 		code_v1_2("return NULL").equals("null");
 		code_v3_("return null").equals("null");
-		code_v3_("return Null").equals("Null");
+		code_v3_("return Null").equals("<class Null>");
 		code_v3_("return NULL").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 
 		section("typeOf()");
