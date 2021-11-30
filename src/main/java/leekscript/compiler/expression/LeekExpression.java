@@ -697,7 +697,17 @@ public class LeekExpression extends AbstractExpression {
 			}
 			return;
 		case Operators.NEW:
-			mExpression2.writeJavaCode(mainblock, writer);
+			if (mExpression2 instanceof LeekVariable) {
+				if (mainblock.getWordCompiler().getVersion() >= 3 && ((LeekVariable) mExpression2).getString().equals("Array")) {
+					writer.addCode("new ArrayLeekValue()");
+				} else {
+					writer.addCode("execute(");
+					mExpression2.writeJavaCode(mainblock, writer);
+					writer.addCode(")");
+				}
+			} else {
+				mExpression2.writeJavaCode(mainblock, writer);
+			}
 			return;
 			// Les unaires suffixés (++, --), Il a été vérifié au préalable
 			// qu'on avait bien une L-Value

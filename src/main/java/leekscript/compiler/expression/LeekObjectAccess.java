@@ -78,9 +78,13 @@ public class LeekObjectAccess extends AbstractExpression {
 				if (field.getWord().equals("name") || field.getWord().equals("super") || field.getWord().equals("fields") || field.getWord().equals("staticFields") || field.getWord().equals("methods") || field.getWord().equals("staticMethods")) {
 					return; // OK
 				}
-				if (!v.getClassDeclaration().hasStaticMember(field.getWord())) {
-					compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { v.getClassDeclaration().getName(), field.getWord() }));
+				if (v.getClassDeclaration().hasStaticMember(field.getWord())) {
+					return; // OK
 				}
+				if (v.getClassDeclaration().hasMethod(field.getWord())) {
+					return; // OK
+				}
+				compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { v.getClassDeclaration().getName(), field.getWord() }));
 			}
 		}
 	}

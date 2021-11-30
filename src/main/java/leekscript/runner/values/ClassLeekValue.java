@@ -1,5 +1,6 @@
 package leekscript.runner.values;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -11,7 +12,7 @@ import leekscript.common.AccessLevel;
 import leekscript.runner.LeekFunction;
 import leekscript.common.Error;
 
-public class ClassLeekValue {
+public class ClassLeekValue extends FunctionLeekValue {
 
 	public static class ClassField {
 		Object value;
@@ -56,12 +57,17 @@ public class ClassLeekValue {
 	private ArrayLeekValue methodsArray;
 
 	public ClassLeekValue(AI ai, String name) {
-		this.ai = ai;
-		this.name = name;
-		this.parent = null;
+		this(ai, name, null);
 	}
 
 	public ClassLeekValue(AI ai, String name, ClassLeekValue parent) {
+		super(null, FunctionLeekValue.STATIC_METHOD, -1);
+		this.mAnonymous = new LeekAnonymousFunction() {
+			@Override
+			public Object run(ObjectLeekValue thiz, Object... values) throws LeekRunException {
+				return execute(values);
+			}
+		};
 		this.ai = ai;
 		this.name = name;
 		this.parent = parent;
@@ -98,7 +104,7 @@ public class ClassLeekValue {
 				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
 				return null;
 			}
-		}));
+		}, FunctionLeekValue.METHOD, -1));
 	}
 
 	public void addStaticMethod(String method, int argCount, LeekFunction function, AccessLevel level) {
@@ -109,14 +115,14 @@ public class ClassLeekValue {
 		genericMethods.put(method, new FunctionLeekValue(new LeekAnonymousFunction() {
 			public Object run(ObjectLeekValue thiz, Object... arguments) throws LeekRunException {
 				final var methodCode = method + "_" + arguments.length;
-				final var m = methods.get(methodCode);
+				final var m = staticMethods.get(methodCode);
 				if (m != null) {
 					return m.value.run(null, arguments);
 				}
 				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
 				return null;
 			}
-		}));
+		}, FunctionLeekValue.STATIC_METHOD, -1));
 	}
 
 	public Object getField(String field) throws LeekRunException {
@@ -158,6 +164,9 @@ public class ClassLeekValue {
 				}
 			}
 		}
+		var generic = genericMethods.get(field);
+		if (generic != null) return generic;
+
 		if (parent instanceof ClassLeekValue) {
 			return parent.getField(ai, field, fromClass);
 		}
@@ -352,7 +361,9 @@ public class ClassLeekValue {
 		ai.ops(1);
 		ObjectLeekValue object = new ObjectLeekValue(this);
 		// Init fields
-		this.initFields.run(object);
+		if (this.initFields != null) {
+			this.initFields.run(object);
+		}
 
 		int arg_count = arguments.length;
 		if (constructors.containsKey(arg_count)) {
@@ -363,6 +374,10 @@ public class ClassLeekValue {
 			}
 			return object;
 		}
+	}
+
+	public Object run(ObjectLeekValue thiz, Object... arguments) throws LeekRunException {
+		return execute(ai, arguments);
 	}
 
 	private ArrayLeekValue getFieldsArray() throws LeekRunException {

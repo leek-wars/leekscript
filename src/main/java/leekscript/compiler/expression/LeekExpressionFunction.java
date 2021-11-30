@@ -14,6 +14,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.runner.CallableVersion;
 import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekFunctions;
+import leekscript.runner.values.ClassLeekValue.ClassMethod;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.Type;
@@ -81,28 +82,31 @@ public class LeekExpressionFunction extends AbstractExpression {
 		boolean addBrace = false;
 		FunctionBlock user_function = null;
 		ILeekFunction system_function = null;
+
 		if (mExpression instanceof LeekObjectAccess) {
+			// Object access : object.field()
 			var object = ((LeekObjectAccess) mExpression).getObject();
 			var field = ((LeekObjectAccess) mExpression).getField();
+			
 			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
+				// super.field()
 				var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
 				writer.addCode("u_this.callSuperMethod(this, \"" + field + "_" + mParameters.size() + "\", " + from_class);
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.CLASS) {
-				// Méthode statique connue
+				// Class.method() : Méthode statique connue
 				var v = (LeekVariable) object;
 				String methodName = "u_" + v.getClassDeclaration().getStaticMethodName(field, mParameters.size());
 				writer.addCode(methodName + "(");
 				addComma = false;
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
-				// Méthode connue
-				// String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getMethodName(field, mParameters.size());
-				// writer.addCode(methodName + "(u_this");
-				writer.addCode("callMethod(u_this, \"" + field + "_" + mParameters.size() + "\", u_class");
+				// this.method() : Méthode connue
+				writer.addCode("callObjectAccess(u_this, \"" + field + "\", \"" + field + "_" + mParameters.size() + "\", u_class");
 			} else {
-				writer.addCode("callMethod(");
+				// object.field() : Méthode ou bien appel d'un champ
+				writer.addCode("callObjectAccess(");
 				object.writeJavaCode(mainblock, writer);
 				var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
-				writer.addCode(", \"" + field + "_" + mParameters.size() + "\", " + from_class);
+				writer.addCode(", \"" + field + "\", \"" + field + "_" + mParameters.size() + "\", " + from_class);
 			}
 		} else if (mExpression instanceof LeekTabularValue) {
 			var object = ((LeekTabularValue) mExpression).getTabular();
@@ -230,7 +234,28 @@ public class LeekExpressionFunction extends AbstractExpression {
 
 		if (mExpression instanceof LeekVariable) {
 			var v = (LeekVariable) mExpression;
-			if (v.getVariableType() == VariableType.FUNCTION) {
+
+			if (v.getVariableType() == VariableType.METHOD) { // La variable est analysée comme une méthode, mais ça peut être une fonction système, 
+
+				// on regarde si le nombre d'arguments est correct
+				var methods = compiler.getCurrentClass().getMethod(v.getName());
+				for (var count : methods.keySet()) {
+					if (count == mParameters.size()) {
+						return; // OK
+					}
+				}
+				// Est-ce que c'est une fonction système ?
+				var f = LeekFunctions.getValue(v.getName());
+				if (f != null) {
+					if (mParameters.size() >= f.getArgumentsMin() && mParameters.size() <= f.getArguments()) {
+						v.setVariableType(VariableType.SYSTEM_FUNCTION);
+						return; // OK, fonction système
+					}
+				}
+				// Sinon, erreur de méthode
+				compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
+
+			} else if (v.getVariableType() == VariableType.FUNCTION) {
 				int nb_params = LeekFunctions.isFunction(v.getName());
 				if (nb_params == -1) {
 					nb_params = compiler.getMainBlock().getUserFunctionParametersCount(v.getName());
@@ -248,6 +273,13 @@ public class LeekExpressionFunction extends AbstractExpression {
 					}
 				}
 			} else if (v.getVariableType() == VariableType.SYSTEM_FUNCTION) {
+
+				if (compiler.getVersion() >= 3) {
+					var f = LeekFunctions.getValue(v.getName());
+					if (mParameters.size() > f.getArguments() || mParameters.size() < f.getArgumentsMin()) {
+						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
+					}
+				}
 				var system_function = LeekFunctions.getValue(v.getName());
 				if (system_function.getReturnType() != null) {
 					type = system_function.getReturnType();

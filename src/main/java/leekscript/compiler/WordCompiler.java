@@ -689,7 +689,7 @@ public class WordCompiler {
 		if (mMain.hasUserClass(word.getWord())) {
 			throw new LeekCompilerException(word, Error.VARIABLE_NAME_UNAVAILABLE);
 		}
-		ClassDeclarationInstruction classDeclaration = new ClassDeclarationInstruction(word, mLine, mAI);
+		ClassDeclarationInstruction classDeclaration = new ClassDeclarationInstruction(word, mLine, mAI, false);
 		mMain.addClass(classDeclaration);
 		mCurrentClass = classDeclaration;
 
