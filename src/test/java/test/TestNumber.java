@@ -143,7 +143,7 @@ public class TestNumber extends TestCommon {
 		 */
 		// header("Number standard library");
 		section("Constructor");
-		// DISABLED_code("Number").equals("<class Number>");
+		code_v3_("return Number").equals("<class Number>");
 		// DISABLED_code("Number()").equals("0");
 		// DISABLED_code("Number(12)").equals("12");
 		// DISABLED_code("Number(12.5)").equals("12.5");

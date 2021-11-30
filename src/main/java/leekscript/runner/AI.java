@@ -69,6 +69,8 @@ public abstract class AI {
 	public final ClassLeekValue objectClass;
 	public final ClassLeekValue functionClass;
 	public final ClassLeekValue classClass;
+	public final ClassLeekValue jsonClass;
+	public final ClassLeekValue systemClass;
 
 	public AI(int instructions, int version) {
 		this.mInstructions = instructions;
@@ -87,6 +89,8 @@ public abstract class AI {
 		objectClass = new ClassLeekValue(this, "Object", valueClass);
 		functionClass = new ClassLeekValue(this, "Function", valueClass);
 		classClass = new ClassLeekValue(this, "Class", valueClass);
+		jsonClass = new ClassLeekValue(this, "JSON");
+		systemClass = new ClassLeekValue(this, "System");
 
 		try {
 			init();
@@ -476,14 +480,13 @@ public abstract class AI {
 		ArrayLeekValue retour = new ArrayLeekValue();
 		ArrayIterator iterator = array.getArrayIterator();
 		int nb = function.getArgumentsCount(this);
-		if (nb != 1 && nb != 2)
-			return retour;
 		while (!iterator.ended()) {
 			var value = iterator.value();
-			if (nb == 1)
-				retour.getOrCreate(this, iterator.getKey(this)).set(LeekValueManager.execute(this, function, value));
-			else
-				retour.getOrCreate(this, iterator.getKey(this)).set(LeekValueManager.execute(this, function, iterator.getKey(this), value));
+			if (nb >= 2) {
+				retour.getOrCreate(this, iterator.getKey(this)).set(function.execute(this, iterator.getKey(this), value));
+			} else {
+				retour.getOrCreate(this, iterator.getKey(this)).set(function.execute(this, value));
+			}
 			iterator.next();
 		}
 		return retour;
@@ -493,14 +496,12 @@ public abstract class AI {
 		ArrayLeekValue retour = new ArrayLeekValue();
 		ArrayIterator iterator = array.getArrayIterator();
 		int nb = function.getArgumentsCount(this);
-		if (nb != 1 && nb != 2)
-			return retour;
 		while (!iterator.ended()) {
 			var value = iterator.getValueBox();
-			if (nb == 1)
-				retour.getOrCreate(this, iterator.getKey(this)).setRef(LeekValueManager.execute(this, function, value));
-			else
+			if (nb >= 2)
 				retour.getOrCreate(this, iterator.getKey(this)).setRef(LeekValueManager.execute(this, function, iterator.getKey(this), value));
+			else
+				retour.getOrCreate(this, iterator.getKey(this)).setRef(LeekValueManager.execute(this, function, value));
 			iterator.next();
 		}
 		return retour;
@@ -888,8 +889,6 @@ public abstract class AI {
 			return !s.isEmpty();
 		} else if (value instanceof Box) {
 			return bool(((Box) value).getValue());
-		// } else if (value instanceof ReferenceLeekValue) {
-		// 	return bool(((ReferenceLeekValue) value).getValue());
 		}
 		return false;
 	}
@@ -1424,6 +1423,10 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put(this, key, value);
 		}
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).setField(field, value);
+		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
 			return ((ClassLeekValue) array).setField(field, value);
@@ -1643,9 +1646,19 @@ public abstract class AI {
 		return null;
 	}
 
+	public Object callObjectAccess(Object value, String field, String method, ClassLeekValue fromClass, Object... args) throws LeekRunException {
+		if (value instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) value).callAccess(field, method, fromClass, args);
+		}
+		return null;
+	}
+
 	public Object execute(Object function, Object... args) throws LeekRunException {
 		if (function instanceof FunctionLeekValue) {
 			return ((FunctionLeekValue) function).execute(this, args);
+		}
+		if (function == arrayClass) {
+			return new ArrayLeekValue();
 		}
 		if (function instanceof ClassLeekValue) {
 			return ((ClassLeekValue) function).execute(args);
@@ -1653,7 +1666,6 @@ public abstract class AI {
 		addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { string(function) });
 		return null;
 	}
-
 
 	public Object sysexec(ILeekFunction function, Object... arguments) throws LeekRunException {
 		// Vérification parametres
@@ -1713,8 +1725,8 @@ public abstract class AI {
 		if (value instanceof ArrayLeekValue) return arrayClass;
 		if (value instanceof String) return stringClass;
 		if (value instanceof ObjectLeekValue) return ((ObjectLeekValue) value).clazz;
-		if (value instanceof FunctionLeekValue) return functionClass;
 		if (value instanceof ClassLeekValue) return classClass;
+		if (value instanceof FunctionLeekValue) return functionClass;
 		return valueClass;
 	}
 

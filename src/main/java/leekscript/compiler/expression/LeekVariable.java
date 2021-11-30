@@ -100,6 +100,10 @@ public class LeekVariable extends AbstractExpression {
 		return type;
 	}
 
+	public void setVariableType(VariableType type) {
+		this.type = type;
+	}
+
 	public String getName() {
 		return token.getWord();
 	}
@@ -206,7 +210,11 @@ public class LeekVariable extends AbstractExpression {
 				writer.addCode("g_" + token.getWord());
 			}
 		} else if (type == VariableType.CLASS) {
-			writer.addCode("u_" + token.getWord());
+			if (classDeclaration.internal) {
+				writer.addCode(token.getWord().toLowerCase() + "Class");
+			} else {
+				writer.addCode("u_" + token.getWord());
+			}
 		} else {
 			if (isWrapper()) {
 				writer.addCode("u_" + token.getWord() + ".getValue()");
@@ -250,6 +258,12 @@ public class LeekVariable extends AbstractExpression {
 		} else if (type == VariableType.FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
 			writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
+		} else if (type == VariableType.CLASS) {
+			if (classDeclaration.internal) {
+				writer.addCode(token.getWord().toLowerCase() + "Class");
+			} else {
+				writer.addCode("u_" + token.getWord());
+			}
 		} else {
 			if (isWrapper()) {
 				writer.addCode("u_" + token.getWord() + ".getVariable()");

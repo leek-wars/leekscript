@@ -238,6 +238,25 @@ public class ObjectLeekValue {
 		return getFieldL(LeekValueManager.getString(ai, value));
 	}
 
+	public Object callAccess(String field, String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			// Private : Access from same class
+			if (result.level == AccessLevel.PRIVATE && fromClass != clazz) {
+				clazz.ai.addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new String[] { clazz.name, field });
+				return null;
+			}
+			// Protected : Access from descendant
+			if (result.level == AccessLevel.PROTECTED && (fromClass != clazz && !clazz.descendsFrom(fromClass))) {
+				clazz.ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_FIELD : Error.PRIVATE_FIELD, new String[] { clazz.name, field });
+				return null;
+			}
+			// Call the value
+			return clazz.ai.execute(result.mValue, arguments);
+		}
+		return callMethod(method, fromClass, arguments);
+	}
+
 	public Object callMethod(String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
 		var result = clazz.getMethod(clazz.ai, method, fromClass);
 		if (result == null) {

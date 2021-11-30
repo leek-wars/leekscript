@@ -13,15 +13,17 @@ import leekscript.common.Error;
 
 public class FunctionLeekValue {
 
-	private final static int LEEK_FUNCTION = 1;
-	private final static int USER_FUNCTION = 2;
-	private final static int ANONYMOUS_FUNCTION = 3;
-	private final static int METHOD = 4;
+	public final static int LEEK_FUNCTION = 1;
+	public final static int USER_FUNCTION = 2;
+	public final static int ANONYMOUS_FUNCTION = 3;
+	public final static int METHOD = 4;
+	public final static int STATIC_METHOD = 5;
 
 	private final int mType;
 	private final int mId;
 	private ILeekFunction mFunction;
-	private LeekAnonymousFunction mAnonymous;
+	protected LeekAnonymousFunction mAnonymous;
+	protected int mParametersCount = -1;
 
 	public FunctionLeekValue(int id) {
 		mType = USER_FUNCTION;
@@ -40,13 +42,14 @@ public class FunctionLeekValue {
 		mId = 0;
 	}
 
-	public FunctionLeekValue(LeekAnonymousFunction fonction) {
+	public FunctionLeekValue(LeekAnonymousFunction fonction, int type, int parametersCount) {
 		mAnonymous = fonction;
-		mType = METHOD;
+		mType = type;
 		mId = 0;
+		mParametersCount = parametersCount;
 	}
 
-	public boolean equals(AI ai, Object comp) {
+	public boolean equals(AI ai, Object comp) throws LeekRunException {
 		if (LeekValueManager.getType(comp) != LeekValue.FUNCTION) {
 			return false;
 		}
@@ -89,7 +92,7 @@ public class FunctionLeekValue {
 			return ai.userFunctionCount(mId);
 		else if (mType == ANONYMOUS_FUNCTION)
 			return ai.anonymousFunctionCount(mId);
-		return -1;
+		return mParametersCount;
 	}
 
 	public Object execute(AI ai, Object... values) throws LeekRunException {
@@ -113,9 +116,11 @@ public class FunctionLeekValue {
 			} else {
 				return mAnonymous.run(null, values);
 			}
+		} else if (mType == STATIC_METHOD) {
+			return mAnonymous.run(null, values);
 		} else if (mType == METHOD) {
 			if (values.length == 0) {
-				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { "", "1+" });
+				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(values), "1+" });
 			} else {
 				return mAnonymous.run((ObjectLeekValue) values[0], Arrays.copyOfRange(values, 1, values.length));
 			}
@@ -145,5 +150,9 @@ public class FunctionLeekValue {
 
 	public Object toJSON(AI ai) {
 		return "<function>";
+	}
+
+	public String toString() {
+		return "<function " + mType + ">";
 	}
 }
