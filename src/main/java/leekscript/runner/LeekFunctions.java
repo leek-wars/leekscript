@@ -1,5 +1,6 @@
 package leekscript.runner;
 
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import leekscript.AILog;
@@ -323,7 +324,7 @@ public enum LeekFunctions implements ILeekFunction {
 			String s = LeekValueManager.getString(ai, parameters[0]);
 			String pattern = LeekValueManager.getString(ai, parameters[1]);
 			String replacement = LeekValueManager.getString(ai, parameters[2]);
-			return s.replaceAll(Pattern.quote(pattern),	replacement);
+			return s.replaceAll(Pattern.quote(pattern),	Matcher.quoteReplacement(replacement));
 		}
 
 		@Override

@@ -63,6 +63,23 @@ public class TestGeneral extends TestCommon {
 			}
 		}
 
+		section("Globals with keywords");
+		code_v1_2("global break = 2").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		for (var word : WordParser.reservedWords) {
+			if (word.equals("this")) {
+				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
+			} else if (word.equals("instanceof")) {
+				code_v3_("global " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
+			} else if (word.equals("function")) {
+				code_v3_("global " + word + " = 2;").error(Error.OPENING_PARENTHESIS_EXPECTED);
+			} else {
+				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
+			}
+		}
+
+		code_v1("var new = 12 var b = @new return b").equals("12");
+		code_v1("global final = 2").error(Error.NONE);
+
 		section("Type changes");
 		code("var a return a = 12").equals("12");
 		code("var a a = 12 return a").equals("12");

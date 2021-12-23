@@ -15,6 +15,8 @@ public class TestString extends TestCommon {
 
 		section("String.replace()");
 		code("return replace('bonjour','onj','pro')").equals("bproour");
+		code("return replace('testtest', 'test', '{id}')").equals("{id}{id}");
+		code("return replace('testtest', 'test', '$id')").equals("$id$id");
 
 		section("String.indexOf()");
 		code("return indexOf('bonjour','o')").equals("1");

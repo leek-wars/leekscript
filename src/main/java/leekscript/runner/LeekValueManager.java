@@ -52,7 +52,8 @@ public class LeekValueManager {
 			return o;
 		}
 		if (o instanceof BigInteger) {
-			throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+			ai.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "jsonDecode(" + LeekValueManager.getString(ai, o) + ")" });
+			return null;
 		}
 		if (o instanceof BigDecimal) {
 			return ((BigDecimal) o).doubleValue();

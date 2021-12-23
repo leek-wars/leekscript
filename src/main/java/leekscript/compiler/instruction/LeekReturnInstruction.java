@@ -31,7 +31,11 @@ public class LeekReturnInstruction implements LeekInstruction {
 		} else {
 			if (mExpression.getOperations() > 0) writer.addCode("ops(");
 			var finalExpression = mExpression.trim();
-			finalExpression.compileL(mainblock, writer);
+			if (mainblock.getWordCompiler().getVersion() == 1) {
+				finalExpression.compileL(mainblock, writer);
+			} else {
+				finalExpression.writeJavaCode(mainblock, writer);
+			}
 			if (finalExpression.getOperations() > 0) writer.addCode(", " + finalExpression.getOperations() + ")");
 			writer.addLine(";", mLine, mAI);
 		}

@@ -221,7 +221,7 @@ public class WordCompiler {
 				mCompiler.skipWord();
 				globalDeclaration();
 				return;
-			} else if (version >= 2 && word.getWord().equals("class")) {
+			} else if (version >= 2 && getCurrentBlock() instanceof MainLeekBlock && word.getWord().equals("class")) {
 				// Déclaration de classe
 				mCompiler.skipWord();
 				classDeclaration();
@@ -663,8 +663,9 @@ public class WordCompiler {
 			word = mCompiler.readWord();
 			if (word.getType() != WordParser.T_STRING)
 				throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED);
-			// if (!isAvailable(word.getWord(), true))
-			// 	throw new LeekCompilerException(word, Error.VARIABLE_NAME_UNAVAILABLE);
+			if (getVersion() >= 3 && isKeyword(word)) {
+				addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+			}
 			variable = new LeekVariableDeclarationInstruction(this, word, mLine, mAI, getCurrentFunction());
 			// On regarde si une valeur est assignée
 			if (mCompiler.getWord().getWord().equals("=")) {
@@ -689,6 +690,9 @@ public class WordCompiler {
 		if (mMain.hasUserClass(word.getWord())) {
 			throw new LeekCompilerException(word, Error.VARIABLE_NAME_UNAVAILABLE);
 		}
+		if (getVersion() >= 3 && isKeyword(word)) {
+			errors.add(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() }));
+		}
 		ClassDeclarationInstruction classDeclaration = new ClassDeclarationInstruction(word, mLine, mAI, false);
 		mMain.addClass(classDeclaration);
 		mCurrentClass = classDeclaration;
@@ -696,9 +700,6 @@ public class WordCompiler {
 		if (mCompiler.getWord().getWord().equals("extends")) {
 			mCompiler.skipWord();
 			IAWord parent = mCompiler.readWord();
-			// if (!mMain.hasUserClass(parentName)) {
-			// 	throw new LeekCompilerException(word, Error.NO_SUCH_CLASS);
-			// }
 			classDeclaration.setParent(parent);
 		}
 		if (mCompiler.getWord().getType() != WordParser.T_ACCOLADE_LEFT) {
@@ -751,6 +752,8 @@ public class WordCompiler {
 		}
 		if (name.getWord().equals("class") || name.getWord().equals("super")) {
 			errors.add(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.RESERVED_FIELD, new String[] { name.getWord() }));
+		} else if (getVersion() >= 3 && isKeyword(name)) {
+			errors.add(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { name.getWord() }));
 		}
 		IAWord word2 = mCompiler.getWord();
 		if (word2.getType() == WordParser.T_PAR_LEFT) {
@@ -788,6 +791,8 @@ public class WordCompiler {
 		}
 		if (name.getWord().equals("name") || name.getWord().equals("super") || name.getWord().equals("fields") || name.getWord().equals("staticFields") || name.getWord().equals("methods") || name.getWord().equals("staticMethods")) {
 			errors.add(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.RESERVED_FIELD, new String[] { name.getWord() }));
+		} else if (getVersion() >= 3 && isKeyword(name)) {
+			errors.add(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { name.getWord() }));
 		}
 		classDeclaration.addStaticField(name, expr, accessLevel);
 
@@ -1186,7 +1191,7 @@ public class WordCompiler {
 	}
 
 	public boolean isAvailable(IAWord word, boolean allFunctions) {
-		if (isKeyword(word)) return false;
+		if (getVersion() >= 3 && isKeyword(word)) return false;
 		// if(LeekFunctions.isFunction(word) >= 0 || mMain.hasGlobal(word) ||
 		// mMain.hasUserFunction(word, allFunctions) ||
 		// mCurentBlock.hasVariable(word)) return false;
@@ -1196,7 +1201,11 @@ public class WordCompiler {
 	}
 
 	public boolean isGlobalAvailable(IAWord word) {
-		if (isKeyword(word)) return false;
+		if (getVersion() <= 2) {
+			if (word.getWord().equalsIgnoreCase("in") || word.getWord().equalsIgnoreCase("global") || word.getWord().equalsIgnoreCase("var") || word.getWord().equalsIgnoreCase("for") || word.getWord().equalsIgnoreCase("else") || word.getWord().equalsIgnoreCase("if") || word.getWord().equalsIgnoreCase("break") || word.getWord().equalsIgnoreCase("return") || word.getWord().equalsIgnoreCase("do") || word.getWord().equalsIgnoreCase("while") || word.getWord().equalsIgnoreCase("function") || word.getWord().equalsIgnoreCase("true") || word.getWord().equalsIgnoreCase("false") || word.getWord().equalsIgnoreCase("null"))
+				return false;
+		}
+		if (getVersion() >= 3 && isKeyword(word)) return false;
 		// if(LeekFunctions.isFunction(word) >= 0 || mMain.hasUserFunction(word,
 		// false) || mCurentBlock.hasVariable(word)) return false;
 		if (mMain.hasUserFunction(word.getWord(), false) || mCurentBlock.hasVariable(word.getWord()))

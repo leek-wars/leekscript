@@ -1,7 +1,5 @@
 package test;
 
-import leekscript.common.Error;
-
 public class TestGlobals extends TestCommon {
 
 	public void run() throws Exception {
