@@ -1,9 +1,11 @@
 package leekscript.runner.values;
 
+import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
+import leekscript.common.Error;
 
 public class Box {
 
@@ -67,7 +69,6 @@ public class Box {
 	}
 
 	public Object increment() throws LeekRunException {
-		// mUAI.ops(1);
 		if (mValue instanceof Integer) {
 			int value = (Integer) mValue;
 			mValue = value + 1;
@@ -78,12 +79,11 @@ public class Box {
 			mValue = value + 1;
 			return value;
 		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
-		// ai.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { LeekValueManager.getString(ai, mValue), "++" });
+		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { LeekValueManager.getString(mUAI, mValue), "++" });
+		return null;
 	}
 
 	public Object decrement() throws LeekRunException {
-		// mUAI.ops(1);
 		if (mValue instanceof Integer) {
 			int value = (Integer) mValue;
 			mValue = value - 1;
@@ -94,29 +94,30 @@ public class Box {
 			mValue = value - 1;
 			return value;
 		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { LeekValueManager.getString(mUAI, mValue) + "--" });
+		return null;
 	}
 
 	public Object pre_increment() throws LeekRunException {
-		// mUAI.ops(1);
 		if (mValue instanceof Integer) {
 			return mValue = (Integer) mValue + 1;
 		}
 		if (mValue instanceof Double) {
 			return mValue = (Double) mValue + 1;
 		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "++" + LeekValueManager.getString(mUAI, mValue) });
+		return null;
 	}
 
 	public Object pre_decrement() throws LeekRunException {
-		// mUAI.ops(1);
 		if (mValue instanceof Integer) {
 			return mValue = (Integer) mValue - 1;
 		}
 		if (mValue instanceof Double) {
 			return mValue = (Double) mValue - 1;
 		}
-		throw new LeekRunException(LeekRunException.INVALID_OPERATOR);
+		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "--" + LeekValueManager.getString(mUAI, mValue) });
+		return null;
 	}
 
 	public Object not() throws LeekRunException {

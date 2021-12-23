@@ -93,4 +93,5 @@ public enum Error {
 	TRANSPILE_TO_JAVA, // 89
 	CANNOT_WRITE_AI, // 90
 	RESERVED_FIELD, // 91
+	VALUE_IS_NOT_AN_ARRAY, // 92
 }

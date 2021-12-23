@@ -99,11 +99,14 @@ public class ObjectLeekValue {
 		// Pour un objet anonyme (classe Object), on peut rajouter des proprietés à la volée
 		if (result == null && clazz == clazz.ai.objectClass) {
 			addField(clazz.ai, field, value, AccessLevel.PUBLIC);
+			return value;
 		}
 		if (result != null) {
 			result.set(value);
+			return value;
 		}
-		return value;
+		clazz.ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { clazz.name, field });
+		return null;
 	}
 
 	public Object field_inc(String field) throws LeekRunException {
@@ -239,22 +242,56 @@ public class ObjectLeekValue {
 	}
 
 	public Object callAccess(String field, String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
-		var result = fields.get(field);
-		if (result != null) {
-			// Private : Access from same class
-			if (result.level == AccessLevel.PRIVATE && fromClass != clazz) {
-				clazz.ai.addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new String[] { clazz.name, field });
-				return null;
+		var resultM = clazz.getMethod(clazz.ai, method, fromClass);
+		if (resultM == null) {
+			if (method.equals("keys_0")) {
+				String[] values = new String[fields.size()];
+				int i = 0;
+				for (var key : fields.keySet()) {
+					values[i++] = key;
+				}
+				return new ArrayLeekValue(clazz.ai, values);
 			}
-			// Protected : Access from descendant
-			if (result.level == AccessLevel.PROTECTED && (fromClass != clazz && !clazz.descendsFrom(fromClass))) {
-				clazz.ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_FIELD : Error.PRIVATE_FIELD, new String[] { clazz.name, field });
-				return null;
+			if (method.equals("values_0")) {
+				Object[] values = new Object[fields.size()];
+				int i = 0;
+				for (var value : fields.values()) {
+					values[i++] = value;
+				}
+				return new ArrayLeekValue(clazz.ai, values);
 			}
-			// Call the value
-			return clazz.ai.execute(result.mValue, arguments);
 		}
-		return callMethod(method, fromClass, arguments);
+		if (resultM == null) {
+			var result = fields.get(field);
+			if (result != null) {
+				// Private : Access from same class
+				if (result.level == AccessLevel.PRIVATE && fromClass != clazz) {
+					clazz.ai.addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new String[] { clazz.name, field });
+					return null;
+				}
+				// Protected : Access from descendant
+				if (result.level == AccessLevel.PROTECTED && (fromClass != clazz && !clazz.descendsFrom(fromClass))) {
+					clazz.ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_FIELD : Error.PRIVATE_FIELD, new String[] { clazz.name, field });
+					return null;
+				}
+				// Call the value
+				return clazz.ai.execute(result.mValue, arguments);
+			}
+			// Pas de méthode
+			int underscore = method.lastIndexOf("_");
+			int argCount = Integer.parseInt(method.substring(underscore + 1));
+			String methodRealName = method.substring(0, underscore) + "(";
+			for (int i = 0; i < argCount; ++i) {
+				if (i > 0) methodRealName += ", ";
+				methodRealName += "x";
+			}
+			methodRealName += ")";
+			clazz.ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { clazz.name, methodRealName });
+			return null;
+		}
+
+		// Call method with new arguments, add the object at the beginning
+		return resultM.run(this, arguments);
 	}
 
 	public Object callMethod(String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {

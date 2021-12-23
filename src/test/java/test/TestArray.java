@@ -129,6 +129,7 @@ public class TestArray extends TestCommon {
 		code("var a = [] return a[0] + 2").equals("2");
 		code("var a = 5 return a[0] + 2").equals("2");
 		code("var a = [1] return a[0] = 10").equals("10");
+		code("var a = null return a[0]").equals("null");
 
 		section("[] operator on unknown arrays");
 		code("var v = [['a', 'b'], 12] return v[0][0]").equals("a");

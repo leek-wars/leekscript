@@ -58,6 +58,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		if (ai.getVersion() >= 3) {
 			addClass(new ClassDeclarationInstruction(new IAWord("Value"), 0, ai, true));
 			addClass(new ClassDeclarationInstruction(new IAWord("Null"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new IAWord("Boolean"), 0, ai, true));
 			addClass(new ClassDeclarationInstruction(new IAWord("Integer"), 0, ai, true));
 			addClass(new ClassDeclarationInstruction(new IAWord("Real"), 0, ai, true));
 			addClass(new ClassDeclarationInstruction(new IAWord("Number"), 0, ai, true));

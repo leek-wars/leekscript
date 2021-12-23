@@ -82,8 +82,8 @@ public abstract class AI {
 		nullClass = new ClassLeekValue(this, "Null", valueClass);
 		booleanClass = new ClassLeekValue(this, "Boolean", valueClass);
 		numberClass = new ClassLeekValue(this, "Number", valueClass);
-		integerClass = new ClassLeekValue(this, "Integer", numberClass);
-		realClass= new ClassLeekValue(this, "Real", numberClass);
+		realClass = new ClassLeekValue(this, "Real", numberClass);
+		integerClass = new ClassLeekValue(this, "Integer", realClass);
 		arrayClass = new ClassLeekValue(this, "Array", valueClass);
 		stringClass = new ClassLeekValue(this, "String", valueClass);
 		objectClass = new ClassLeekValue(this, "Object", valueClass);
@@ -1226,6 +1226,7 @@ public abstract class AI {
 	public boolean isPrimitive(Object value) {
 		return !(value instanceof ArrayLeekValue || value instanceof ObjectLeekValue);
 	}
+
 	public boolean isIterable(Object value) throws LeekRunException {
 		boolean ok = value instanceof ArrayLeekValue;
 		if (!ok) {
@@ -1233,6 +1234,7 @@ public abstract class AI {
 		}
 		return ok;
 	}
+
 	public boolean getBooleanTernary(Object value) throws LeekRunException {
 		ops(1);
 		return bool(value);
@@ -1256,7 +1258,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).setField(field, value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_inc(Object object, String field) throws LeekRunException {
@@ -1266,7 +1269,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).increment();
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_pre_inc(Object object, String field) throws LeekRunException {
@@ -1276,7 +1280,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).pre_increment();
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_dec(Object object, String field) throws LeekRunException {
@@ -1286,7 +1291,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).decrement();
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_pre_dec(Object object, String field) throws LeekRunException {
@@ -1296,7 +1302,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).pre_decrement();
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_add_eq(Object object, String field, Object value) throws LeekRunException {
@@ -1306,7 +1313,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).add_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_sub_eq(Object object, String field, Object value) throws LeekRunException {
@@ -1316,7 +1324,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).sub_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_mul_eq(Object object, String field, Object value) throws LeekRunException {
@@ -1326,7 +1335,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).mul_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_pow_eq(Object object, String field, Object value) throws LeekRunException {
@@ -1336,7 +1346,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).pow_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_div_eq(Object object, String field, Object value) throws LeekRunException {
@@ -1346,7 +1357,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).div_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_mod_eq(Object object, String field, Object value) throws LeekRunException {
@@ -1356,7 +1368,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).mod_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_bor_eq(Object object, String field, Object value) throws LeekRunException {
@@ -1366,7 +1379,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).bor_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_band_eq(Object object, String field, Object value) throws LeekRunException {
@@ -1376,7 +1390,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).band_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_bxor_eq(Object object, String field, Object value) throws LeekRunException {
@@ -1386,7 +1401,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).bxor_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_shl_eq(Object object, String field, Object value) throws LeekRunException {
@@ -1396,7 +1412,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).shl_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_shr_eq(Object object, String field, Object value) throws LeekRunException {
@@ -1406,7 +1423,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).shr_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object field_ushr_eq(Object object, String field, Object value) throws LeekRunException {
@@ -1416,7 +1434,8 @@ public abstract class AI {
 		if (object instanceof ClassLeekValue) {
 			return ((ClassLeekValue) object).getFieldL(field).ushr_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
 	}
 
 	public Object put(Object array, Object key, Object value) throws LeekRunException {
@@ -1431,6 +1450,7 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).setField(field, value);
 		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1438,10 +1458,15 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_inc(this, key);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_inc(field);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_inc(field);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1449,10 +1474,15 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_pre_inc(this, key);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_pre_inc(field);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_pre_inc(field);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1460,10 +1490,15 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_dec(this, key);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_dec(field);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_dec(field);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1471,10 +1506,15 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_pre_dec(this, key);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_pre_dec(field);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_pre_dec(field);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1482,10 +1522,15 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_add_eq(this, key, value);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_add_eq(field, value);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_add_eq(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1493,20 +1538,31 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_sub_eq(this, key, value);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_sub_eq(field, value);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_sub_eq(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
+
 	public Object put_mul_eq(Object array, Object key, Object value) throws LeekRunException {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_mul_eq(this, key, value);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_mul_eq(field, value);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_mul_eq(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1514,10 +1570,15 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_pow_eq(this, key, value);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_pow_eq(field, value);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_pow_eq(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1525,10 +1586,15 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_mod_eq(this, key, value);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_mod_eq(field, value);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_mod_eq(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1536,34 +1602,47 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_div_eq(this, key, value);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_div_eq(field, value);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_div_eq(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
-
 
 	public Object put_bor_eq(Object array, Object key, Object value) throws LeekRunException {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_bor_eq(this, key, value);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_bor_eq(field, value);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_bor_eq(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
-
 
 	public Object put_band_eq(Object array, Object key, Object value) throws LeekRunException {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_band_eq(this, key, value);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_band_eq(field, value);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_band_eq(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1571,10 +1650,15 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_shl_eq(this, key, value);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_shl_eq(field, value);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_shl_eq(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1582,10 +1666,15 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_shr_eq(this, key, value);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_shr_eq(field, value);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_shr_eq(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1593,10 +1682,15 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_ushr_eq(this, key, value);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_ushr_eq(field, value);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_ushr_eq(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1604,10 +1698,15 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_bxor_eq(this, key, value);
 		}
-		if (array instanceof ClassLeekValue) {
-			// var field = string(key);
-			// return ((ClassLeekValue) array).getField(field), value);
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_bxor_eq(field, value);
 		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_bxor_eq(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1626,6 +1725,11 @@ public abstract class AI {
 			ops(1);
 			return ((ObjectLeekValue) value).getField(string(index), fromClass);
 		}
+		if (value instanceof ClassLeekValue) {
+			ops(1);
+			return ((ClassLeekValue) value).getField(string(index));
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1633,6 +1737,7 @@ public abstract class AI {
 		if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getBox(this, index);
 		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1647,21 +1752,22 @@ public abstract class AI {
 	}
 
 	public Object callObjectAccess(Object value, String field, String method, ClassLeekValue fromClass, Object... args) throws LeekRunException {
+		if (value instanceof ClassLeekValue) {
+			return ((ClassLeekValue) value).callMethod(method, fromClass, args);
+		}
 		if (value instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) value).callAccess(field, method, fromClass, args);
 		}
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(value), field });
 		return null;
 	}
 
 	public Object execute(Object function, Object... args) throws LeekRunException {
-		if (function instanceof FunctionLeekValue) {
-			return ((FunctionLeekValue) function).execute(this, args);
-		}
-		if (function == arrayClass) {
-			return new ArrayLeekValue();
-		}
 		if (function instanceof ClassLeekValue) {
 			return ((ClassLeekValue) function).execute(args);
+		}
+		if (function instanceof FunctionLeekValue) {
+			return ((FunctionLeekValue) function).execute(this, args);
 		}
 		addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { string(function) });
 		return null;
@@ -1738,7 +1844,8 @@ public abstract class AI {
 			return false;
 		}
 		var v = load(value);
-		if (v instanceof ObjectLeekValue && ((ObjectLeekValue) v).getClazz().descendsFrom((ClassLeekValue) clazz)) {
+		var vClass = getClass(v);
+		if (vClass.descendsFrom((ClassLeekValue) clazz)) {
 			return true;
 		}
 		return false;

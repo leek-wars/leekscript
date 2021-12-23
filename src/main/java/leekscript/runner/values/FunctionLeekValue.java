@@ -121,6 +121,8 @@ public class FunctionLeekValue {
 		} else if (mType == METHOD) {
 			if (values.length == 0) {
 				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(values), "1+" });
+			} else if (!(values[0] instanceof ObjectLeekValue)) {
+				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(values), "object" });
 			} else {
 				return mAnonymous.run((ObjectLeekValue) values[0], Arrays.copyOfRange(values, 1, values.length));
 			}
