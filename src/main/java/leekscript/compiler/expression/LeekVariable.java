@@ -182,7 +182,9 @@ public class LeekVariable extends AbstractExpression {
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode("u_class.getField(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.METHOD) {
-			writer.addCode("###");
+			writer.addCode("u_class.getField(\"" + token.getWord() + "\")");
+		} else if (type == VariableType.STATIC_METHOD) {
+			writer.addCode("u_class.getField(\"" + token.getWord() + "\")");
 		} else if (mainblock.isRedefinedFunction(token.getWord())) {
 			writer.addCode("rfunction_" + token.getWord());
 		} else if (type == VariableType.FUNCTION) {

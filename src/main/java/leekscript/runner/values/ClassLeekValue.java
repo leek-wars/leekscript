@@ -1,6 +1,5 @@
 package leekscript.runner.values;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -193,131 +192,83 @@ public class ClassLeekValue extends FunctionLeekValue {
 	}
 
 	public Object field_inc(String field) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.increment();
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.increment();
 	}
 
 	public Object field_pre_inc(String field) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.pre_increment();
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.pre_increment();
 	}
 
 	public Object field_dec(String field) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.decrement();
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.decrement();
 	}
 
 	public Object field_pre_dec(String field) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.pre_decrement();
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.pre_decrement();
 	}
 
 	public Object field_add_eq(String field, Object value) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.add_eq(value);
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.add_eq(value);
 	}
 
 	public Object field_sub_eq(String field, Object value) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.sub_eq(value);
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.sub_eq(value);
 	}
 
 	public Object field_mul_eq(String field, Object value) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.mul_eq(value);
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.mul_eq(value);
 	}
 
 	public Object field_pow_eq(String field, Object value) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.pow_eq(value);
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.pow_eq(value);
 	}
 
 	public Object field_div_eq(String field, Object value) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.div_eq(value);
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.div_eq(value);
 	}
 
 	public Object field_mod_eq(String field, Object value) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.mod_eq(value);
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.mod_eq(value);
 	}
 
 	public Object field_bor_eq(String field, Object value) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.bor_eq(value);
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.bor_eq(value);
 	}
 
 	public Object field_bxor_eq(String field, Object value) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.bxor_eq(value);
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.bxor_eq(value);
 	}
 
 	public Object field_band_eq(String field, Object value) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.band_eq(value);
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.band_eq(value);
 	}
 
 	public Object field_shl_eq(String field, Object value) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.shl_eq(value);
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.shl_eq(value);
 	}
 
 	public Object field_shr_eq(String field, Object value) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.shr_eq(value);
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.shr_eq(value);
 	}
 
 	public Object field_ushr_eq(String field, Object value) throws LeekRunException {
-		var result = staticFields.get(field);
-		if (result != null) {
-			return result.ushr_eq(value);
-		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		var result = getFieldL(field);
+		return result.ushr_eq(value);
 	}
 
 	public Object callMethod(String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
@@ -357,6 +308,18 @@ public class ClassLeekValue extends FunctionLeekValue {
 	 * Constructors
 	 */
 	public Object execute(Object... arguments) throws LeekRunException {
+		if (this == ai.valueClass || this == ai.jsonClass || this == ai.systemClass || this == ai.functionClass || this == ai.classClass) {
+			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
+			return null;
+		}
+		if (this == ai.nullClass) return null;
+		if (this == ai.booleanClass) return false;
+		if (this == ai.integerClass) return 0;
+		if (this == ai.realClass || this == ai.numberClass) return 0.0;
+		if (this == ai.stringClass) return "";
+		if (this == ai.arrayClass) return new ArrayLeekValue();
+		if (this == ai.objectClass) return new ObjectLeekValue(ai.objectClass);
+
 		// Create the actual object
 		ai.ops(1);
 		ObjectLeekValue object = new ObjectLeekValue(this);
@@ -367,7 +330,8 @@ public class ClassLeekValue extends FunctionLeekValue {
 
 		int arg_count = arguments.length;
 		if (constructors.containsKey(arg_count)) {
-			return constructors.get(arg_count).value.run(object, arguments);
+			constructors.get(arg_count).value.run(object, arguments);
+			return object;
 		} else {
 			if (arg_count > 0) {
 				ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });

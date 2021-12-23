@@ -14,7 +14,6 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.runner.CallableVersion;
 import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekFunctions;
-import leekscript.runner.values.ClassLeekValue.ClassMethod;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.Type;
@@ -87,7 +86,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 			// Object access : object.field()
 			var object = ((LeekObjectAccess) mExpression).getObject();
 			var field = ((LeekObjectAccess) mExpression).getField();
-			
+
 			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
 				// super.field()
 				var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
@@ -235,14 +234,46 @@ public class LeekExpressionFunction extends AbstractExpression {
 		if (mExpression instanceof LeekVariable) {
 			var v = (LeekVariable) mExpression;
 
-			if (v.getVariableType() == VariableType.METHOD) { // La variable est analysée comme une méthode, mais ça peut être une fonction système, 
+			if (v.getVariableType() == VariableType.METHOD) { // La variable est analysée comme une méthode, mais ça peut être une fonction système,
 
 				// on regarde si le nombre d'arguments est correct
-				var methods = compiler.getCurrentClass().getMethod(v.getName());
-				for (var count : methods.keySet()) {
-					if (count == mParameters.size()) {
-						return; // OK
+				var current = compiler.getCurrentClass();
+				while (current != null) {
+					var methods = current.getMethod(v.getName());
+					if (methods != null) {
+						for (var count : methods.keySet()) {
+							if (count == mParameters.size()) {
+								return; // OK
+							}
+						}
 					}
+					current = current.getParent();
+				}
+				// Est-ce que c'est une fonction système ?
+				var f = LeekFunctions.getValue(v.getName());
+				if (f != null) {
+					if (mParameters.size() >= f.getArgumentsMin() && mParameters.size() <= f.getArguments()) {
+						v.setVariableType(VariableType.SYSTEM_FUNCTION);
+						return; // OK, fonction système
+					}
+				}
+				// Sinon, erreur de méthode
+				compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
+
+			} else if (v.getVariableType() == VariableType.STATIC_METHOD) {
+
+				// on regarde si le nombre d'arguments est correct
+				var current = compiler.getCurrentClass();
+				while (current != null) {
+					var methods = current.getStaticMethod(v.getName());
+					if (methods != null) {
+						for (var count : methods.keySet()) {
+							if (count == mParameters.size()) {
+								return; // OK
+							}
+						}
+					}
+					current = current.getParent();
 				}
 				// Est-ce que c'est une fonction système ?
 				var f = LeekFunctions.getValue(v.getName());
@@ -316,8 +347,8 @@ public class LeekExpressionFunction extends AbstractExpression {
 			var oa = (LeekObjectAccess) mExpression;
 			if (oa.getObject() instanceof LeekVariable) {
 				var v = (LeekVariable) oa.getObject();
-				if (v.getVariableType() == VariableType.CLASS) {
-					var clazz = v.getClassDeclaration();
+				if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS) {
+					var clazz = v.getVariableType() == VariableType.CLASS ? v.getClassDeclaration() : compiler.getCurrentClass();
 					var staticMethod = clazz.getStaticMethod(oa.getField(), mParameters.size());
 					operations += 1;
 					if (staticMethod == null) {

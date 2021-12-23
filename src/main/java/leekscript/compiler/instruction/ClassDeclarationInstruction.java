@@ -17,7 +17,6 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
-import leekscript.runner.values.ClassLeekValue.ClassMethod;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 
@@ -365,9 +364,6 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 					writer.addCode(", Object u_" + arg);
 				}
 			}
-			// if (construct.getValue().getParameters().size() == 0) {
-			// 	writer.addCode(", Object __");
-			// }
 			writer.addCode(") throws LeekRunException {");
 			writer.addLine("final var u_class = " + className + ";");
 			if (parent != null) {
@@ -376,7 +372,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			if (construct.getValue().block != null) {
 				construct.getValue().block.writeJavaCode(mainblock, writer);
 			} else {
-				writer.addLine("return u_this;");
+				writer.addLine("return null;");
 			}
 			writer.addLine("}");
 			writer.currentBlock = null;
@@ -440,14 +436,14 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		for (var construct : constructors.entrySet()) {
 			String methodName = className + "_" + construct.getKey();
 			writer.addCode(className);
-			writer.addCode(".addConstructor(" + construct.getKey() + ", new LeekAnonymousFunction() { public Object run(ObjectLeekValue thiz, Object... args) throws LeekRunException { return " + methodName + "(thiz");
+			writer.addCode(".addConstructor(" + construct.getKey() + ", new LeekAnonymousFunction() { public Object run(ObjectLeekValue thiz, Object... args) throws LeekRunException { " + methodName + "(thiz");
 			int i = 0;
 			if (construct.getValue().block != null) {
 				for (var a = 0; a < construct.getValue().block.getParameters().size(); ++a) {
 					writer.addCode(", args[" + i++ + "]");
 				}
 			}
-			writer.addLine("); }}, AccessLevel." + construct.getValue().level + ");");
+			writer.addLine("); return thiz; }}, AccessLevel." + construct.getValue().level + ");");
 		}
 
 		for (var method : methods.entrySet()) {
@@ -567,6 +563,10 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			return parent.getMethodName(name, argumentCount);
 		}
 		return null;
+	}
+
+	public HashMap<Integer, ClassDeclarationMethod> getStaticMethod(String name) {
+		return staticMethods.get(name);
 	}
 
 	public String getStaticMethodName(String name, int argumentCount) {

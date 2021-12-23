@@ -10,7 +10,6 @@ public class LeekRunException extends Exception {
 	public final static int ARRAY_EMPTY = 2;
 	public final static int INVALID_INDEX = 3;
 	public final static int UNKNOWN_FUNCTION = 4;
-	public final static int INVALID_OPERATOR = 5;
 	public final static int INVALID_LEVEL = 6;
 	public final static int OUT_OF_MEMORY = 7;
 	public final static int UNKNOWN_FIELD = 8;
@@ -38,8 +37,6 @@ public class LeekRunException extends Exception {
 			return "Erreur d'exécution : Indice invalide";
 		case UNKNOWN_FUNCTION:
 			return "Erreur d'exécution : Fonction inconnue";
-		case INVALID_OPERATOR:
-			return "Erreur d'exécution : Impossible d'utiliser cet opérateur";
 		case INVALID_LEVEL:
 			return "Erreur d'exécution : Niveau invalide";
 		case OUT_OF_MEMORY:
