@@ -1466,7 +1466,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_inc(field);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1482,7 +1483,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_pre_inc(field);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1498,7 +1500,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_dec(field);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1514,7 +1517,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_pre_dec(field);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1530,7 +1534,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_add_eq(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1546,7 +1551,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_sub_eq(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1562,7 +1568,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_mul_eq(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1578,7 +1585,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_pow_eq(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1594,7 +1602,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_mod_eq(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1610,7 +1619,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_div_eq(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1626,7 +1636,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_bor_eq(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1642,7 +1653,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_band_eq(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1658,7 +1670,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_shl_eq(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1674,7 +1687,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_shr_eq(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1690,7 +1704,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_ushr_eq(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1706,7 +1721,8 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).field_bxor_eq(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
