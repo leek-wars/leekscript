@@ -30,6 +30,7 @@ public class TestMain {
 		new TestArray().run();
 		new TestMap().run();
 		new TestObject().run();
+		new TestClass().run();
 		new TestComments().run();
 		new TestOperators().run();
 		new TestReference().run();
