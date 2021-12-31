@@ -14,6 +14,10 @@ public class TestFunction extends TestCommon {
 		code_v3_("return Function() {}").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
 		code_v3_("return FUNCTION() {}").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
 
+		section("Function toBoolean");
+		code("var a = function() {} return !!a").equals("true");
+		code("var a = function() {} if (a) { return 12 } return null").equals("12");
+
 		section("Recursive");
 		code("var fact = function(x) { if (x == 1) { return 1 } else { return fact(x - 1) * x } } return fact(8);").equals("40320");
 		// code("var fact = function(x) { if (x == 1) { return 1m } else { return fact(x - 1) * x } } return fact(30m);").equals("265252859812191058636308480000000");

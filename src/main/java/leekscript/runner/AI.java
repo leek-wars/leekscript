@@ -887,6 +887,10 @@ public abstract class AI {
 				return false;
 			}
 			return !s.isEmpty();
+		} else if (value instanceof FunctionLeekValue) {
+			return true;
+		} else if (value instanceof ClassLeekValue) {
+			return true;
 		} else if (value instanceof Box) {
 			return bool(((Box) value).getValue());
 		}
