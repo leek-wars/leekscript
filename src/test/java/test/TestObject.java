@@ -441,9 +441,11 @@ public class TestObject extends TestCommon {
 
 		section("Class.methods");
 		code_v2_("class A { static methods }").error(Error.RESERVED_FIELD);
+		code_v2_("class A { a() {} b() {} static c() {} } return A.methods").equals("[a, b]");
 
 		section("Class.staticMethods");
 		code_v2_("class A { static staticMethods }").error(Error.RESERVED_FIELD);
+		code_v2_("class A { a() {} b() {} static c() {} static d() {} } return A.staticMethods").equals("[c, d]");
 
 		section("Object.string()");
 		code_v2_("return string({x: 1, y: 2, z: 3})").equals("{x: 1, y: 2, z: 3}");
