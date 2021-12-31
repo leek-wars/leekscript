@@ -111,7 +111,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 	}
 
 	public void addGenericStaticMethod(String method) {
-		genericMethods.put(method, new FunctionLeekValue(new LeekAnonymousFunction() {
+		genericStaticMethods.put(method, new FunctionLeekValue(new LeekAnonymousFunction() {
 			public Object run(ObjectLeekValue thiz, Object... arguments) throws LeekRunException {
 				final var methodCode = method + "_" + arguments.length;
 				final var m = staticMethods.get(methodCode);
@@ -135,6 +135,8 @@ public class ClassLeekValue extends FunctionLeekValue {
 			return getStaticFieldsArray();
 		} else if (field.equals("methods")) {
 			return getMethodsArray();
+		} else if (field.equals("staticMethods")) {
+			return getStaticMethodsArray();
 		} else if (field.equals("name")) {
 			return name;
 		} else if (field.equals("super")) {
@@ -164,6 +166,8 @@ public class ClassLeekValue extends FunctionLeekValue {
 			}
 		}
 		var generic = genericMethods.get(field);
+		if (generic != null) return generic;
+		generic = genericStaticMethods.get(field);
 		if (generic != null) return generic;
 
 		if (parent instanceof ClassLeekValue) {
@@ -373,6 +377,18 @@ public class ClassLeekValue extends FunctionLeekValue {
 			Object[] values = new Object[genericMethods.size()];
 			int i = 0;
 			for (var f : genericMethods.entrySet()) {
+				values[i++] = f.getKey();
+			}
+			methodsArray = new ArrayLeekValue(ai, values);
+		}
+		return methodsArray;
+	}
+
+	private ArrayLeekValue getStaticMethodsArray() throws LeekRunException {
+		if (methodsArray == null) {
+			Object[] values = new Object[genericStaticMethods.size()];
+			int i = 0;
+			for (var f : genericStaticMethods.entrySet()) {
 				values[i++] = f.getKey();
 			}
 			methodsArray = new ArrayLeekValue(ai, values);
