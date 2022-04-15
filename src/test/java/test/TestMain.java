@@ -23,7 +23,7 @@ public class TestMain {
 
 		// TestCommon.loadReferenceOperations();
 
-		// new TestCommon().code_v11("return 5 + 5;").equals("10");
+		// new TestCommon().code("abs = 2").equals("10");
 		new TestGeneral().run();
 		new TestNumber().run();
 		new TestString().run();

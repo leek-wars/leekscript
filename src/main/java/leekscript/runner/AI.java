@@ -1233,7 +1233,7 @@ public abstract class AI {
 
 	public boolean isIterable(Object value) throws LeekRunException {
 		boolean ok = value instanceof ArrayLeekValue;
-		if (!ok) {
+		if (!ok && version >= 2) {
 			addSystemLog(AILog.ERROR, Error.NOT_ITERABLE, new String[] { string(value) });
 		}
 		return ok;
@@ -1454,7 +1454,7 @@ public abstract class AI {
 			var field = string(key);
 			return ((ClassLeekValue) array).setField(field, value);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
 		return null;
 	}
 
@@ -1749,7 +1749,8 @@ public abstract class AI {
 			ops(1);
 			return ((ClassLeekValue) value).getField(string(index));
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 
@@ -1757,7 +1758,8 @@ public abstract class AI {
 		if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getBox(this, index);
 		}
-		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
 		return null;
 	}
 

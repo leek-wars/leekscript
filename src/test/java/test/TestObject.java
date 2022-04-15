@@ -163,14 +163,19 @@ public class TestObject extends TestCommon {
 
 		section("Static methods");
 		code_v2_("class A { static a() { return 12 } } return A.a()").equals("12");
-		code_v2_("class A { static a(x) { return 12 } } return A.a()").error(Error.UNKNOWN_STATIC_METHOD);
+		code_v2_("class A { static a(x) { return 12 } } return A.a()").error(Error.INVALID_PARAMETER_COUNT);
 		code_v2_("class A { static a() { return 12 } } return A.b()").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
 		code_v2_("class A { static f(x) {} static g() { f(1) } }").error(Error.NONE);
 		code_v2_("class A { static f(x) {} static g() { f() } }").error(Error.INVALID_PARAMETER_COUNT);
+		code_v2_("class A { static f(x) {} static g() { class.f() } }").error(Error.INVALID_PARAMETER_COUNT);
 
 		section("Static method calls with with class.");
 		code_v2_("class A { static m() { return 'x' } t() { return class.m() } } var a = new A() return a.t()").equals("x");
 		code_v2_("class A { static m() { return 'x' } t() { return class.zz() } } var a = new A() return a.t()").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
+
+		section("Methods");
+		code_v2_("class A { a(x) { b(x) } b(x, y) {} }").error(Error.INVALID_PARAMETER_COUNT);
+		code_v2_("class A { a(x) { this.b(x) } b(x, y) {} }").error(Error.INVALID_PARAMETER_COUNT);
 
 		section("Field access by array access");
 		code_v2_("var test = {} test['a'] = 8 return test").equals("{a: 8}");
@@ -220,6 +225,11 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static a = 10 } return A['a'] <<= 5").equals("320");
 		code_v2_("class A { static a = 10 } return A['a'] >>= 5").equals("0");
 		code_v2_("class A { static a = 10 } return A['a'] >>>= 5").equals("0");
+
+		section("Assign this/class/super");
+		code_v2_("class A { m() { this = 12 } }").error(Error.CANT_ASSIGN_VALUE);
+		code_v2_("class A { m() { class = 12 } }").error(Error.CANT_ASSIGN_VALUE);
+		code_v2_("class B {} class A extends B { m() { super = 12 } }").error(Error.CANT_ASSIGN_VALUE);
 
 		section("Inheritance");
 		code_v2_("class A { x = 10 } class B extends A {} var a = new B() return a.x").equals("10");

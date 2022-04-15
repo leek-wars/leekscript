@@ -87,6 +87,9 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	public boolean isLeftValue() {
+		if (type == VariableType.CLASS || type == VariableType.THIS || type == VariableType.THIS_CLASS || type == VariableType.SUPER || type == VariableType.SYSTEM_CONSTANT) {
+			return false;
+		}
 		return true;
 	}
 
