@@ -36,6 +36,8 @@ public class TestFunction extends TestCommon {
 		section("Redefinition");
 		code("var count = count([1, 2, 3]) return count;").equals("3");
 		code("var d = debug d('salut')").equals("null");
+		code("abs = 2 return abs").equals("2");
+		code("arrayFoldRight = 'salut' return arrayFoldRight").equals("salut");
 
 		section("System function as argument");
 		code_v1("function t(@f) { return function(@a) { return arrayMap(a, f); } } return t(sqrt)([1, 4, 9, 16, 25]);").equals("[1, 2, 3, 4, 5]");

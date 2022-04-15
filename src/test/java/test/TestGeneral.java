@@ -142,9 +142,9 @@ public class TestGeneral extends TestCommon {
 		code("var x = 5 if (true) if (true) if (true) if (true) if (true) x = 'a' return x").equals("a");
 		// code("var x = 2 var y = { if (x == 0) { return 'error' } 7 * x } return y").equals("14");
 		code("var y if (false) { if (true) {;} else { y = 2 } } else { y = 5 } return y").equals("5");
-		DISABLED_code("PI = PI + 12; return PI").equals("3,142");
-		DISABLED_code("PI = PI + 12; return PI").equals("3.141592653589793");
+		code("PI = PI + 12; return PI").error(Error.CANT_ASSIGN_VALUE);
 		code_v1("var grow = []; var n = []; grow = @n; return grow").equals("[]");
+		code("var PI = 3 return PI").equals("3");
 
 		section("Assignments with +=");
 		code_v1("var a = 10 a += 0.5 return a").equals("10,5");

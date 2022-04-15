@@ -608,4 +608,18 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		}
 		return false;
 	}
+
+	public boolean hasField(String field) {
+		return getField(field) != null;
+	}
+
+	public LeekVariable getField(String token) {
+		var f = fieldVariables.get(token);
+		if (f != null) return f;
+
+		if (parent != null) {
+			return parent.getField(token);
+		}
+		return null;
+	}
 }
