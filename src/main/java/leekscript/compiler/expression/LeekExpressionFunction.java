@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.IAWord;
@@ -11,6 +12,7 @@ import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.compiler.instruction.ClassDeclarationInstruction.ClassDeclarationMethod;
 import leekscript.runner.CallableVersion;
 import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekFunctions;
@@ -347,16 +349,57 @@ public class LeekExpressionFunction extends AbstractExpression {
 			var oa = (LeekObjectAccess) mExpression;
 			if (oa.getObject() instanceof LeekVariable) {
 				var v = (LeekVariable) oa.getObject();
-				if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS) {
+
+				if (v.getVariableType() == VariableType.THIS) {
+
+					// on regarde si le nombre d'arguments est correct
+					var current = compiler.getCurrentClass();
+					while (current != null) {
+						var methods = current.getMethod(oa.getField());
+						if (methods != null) {
+							for (var count : methods.keySet()) {
+								if (count == mParameters.size()) {
+									return; // OK
+								}
+							}
+						}
+						current = current.getParent();
+					}
+					// Si la classe a un field du même nom, pas d'erreur
+					if (!compiler.getCurrentClass().hasField(oa.getField())) {
+						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
+					}
+
+				} else if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS) {
+
 					var clazz = v.getVariableType() == VariableType.CLASS ? v.getClassDeclaration() : compiler.getCurrentClass();
-					var staticMethod = clazz.getStaticMethod(oa.getField(), mParameters.size());
 					operations += 1;
-					if (staticMethod == null) {
+					// on regarde si le nombre d'arguments est correct
+					var current = clazz;
+					HashMap<Integer, ClassDeclarationMethod> methods = null;
+					while (current != null) {
+						methods = current.getStaticMethod(oa.getField());
+						if (methods != null) {
+							for (var count : methods.keySet()) {
+								if (count == mParameters.size()) {
+									var staticMethod = methods.get(count);
+
+									if (staticMethod.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != clazz) {
+										compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
+									} else if (staticMethod.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
+										compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
+									}
+									return; // OK
+								}
+							}
+						}
+						current = current.getParent();
+					}
+
+					if (methods != null) { // Trouvée mais mauvais nombre d'arguments
+						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT, new String[] { clazz.getName(), oa.getField() }));
+					} else { // Pas trouvée
 						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
-					} else if (staticMethod.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != clazz) {
-						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
-					} else if (staticMethod.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
-						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
 					}
 				}
 			}

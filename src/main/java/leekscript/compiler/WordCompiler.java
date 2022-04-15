@@ -657,7 +657,7 @@ public class WordCompiler {
 			variable.setValue(readExpression());
 		}
 		mCurentBlock.addInstruction(this, variable);
-		while (mCompiler.getWord().getType() == WordParser.T_VIRG) {
+		while (mCompiler.haveWords() && mCompiler.getWord().getType() == WordParser.T_VIRG) {
 			// On regarde si y'en a d'autres
 			mCompiler.skipWord();// On passe la virgule
 			word = mCompiler.readWord();
