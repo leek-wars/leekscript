@@ -1260,11 +1260,6 @@ public abstract class AI {
 		return ok;
 	}
 
-	public boolean getBooleanTernary(Object value) throws LeekRunException {
-		ops(1);
-		return bool(value);
-	}
-
 	public Object getField(Object value, String field, ClassLeekValue fromClass) throws LeekRunException {
 		if (value instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) value).getField(field, fromClass);
