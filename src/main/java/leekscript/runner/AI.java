@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
@@ -76,7 +77,27 @@ public abstract class AI {
 		this.mInstructions = instructions;
 		this.version = version;
 		logs = new AILog();
-		randomGenerator = LeekScript.getRandom();
+
+		randomGenerator = new RandomGenerator() {
+			private Random random = new Random();
+
+			@Override
+			public void seed(long seed) {
+				random.setSeed(seed);
+			}
+
+			@Override
+			public int getInt(int min, int max) {
+				if (max - min + 1 <= 0)
+					return 0;
+				return min + random.nextInt(max - min + 1);
+			}
+
+			@Override
+			public double getDouble() {
+				return random.nextDouble();
+			}
+		};
 
 		valueClass = new ClassLeekValue(this, "Value");
 		nullClass = new ClassLeekValue(this, "Null", valueClass);
