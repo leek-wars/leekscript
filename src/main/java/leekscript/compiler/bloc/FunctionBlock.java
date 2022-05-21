@@ -123,7 +123,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 					if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
 						sb.append("new Box(" + writer.getAIThis() + ", copy(p_").append(parameter).append("));");
 					} else {
-						sb.append("p_").append(parameter).append("; ops(1); ");
+						sb.append("p_").append(parameter).append(";");
 					}
 				}
 			}
