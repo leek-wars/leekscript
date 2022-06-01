@@ -63,6 +63,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		// On prend un nombre unique pour les noms de variables temporaires
 		int block_count = getCount();
 		String var = "i" + block_count;
+		String key = "k" + block_count;
 		String ar = "ar" + block_count;
 
 		String key_iterator = mainblock.hasGlobal(mKeyIterator.getWord()) ? ("g_" + mKeyIterator) : ("u_" + mKeyIterator);
@@ -105,45 +106,59 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		} else {
 			sb.append("ops(1);");
 		}
+
 		// On fait le parcours
 		// Déclaration de la variable
-		sb.append("var ").append(var).append(" = ((LegacyArrayLeekValue) ").append(ar).append(").getArrayIterator(); ");
-		sb.append("while (!").append(var).append(".ended()) { ops(1); ");
+		if (mainblock.getVersion() >= 4) {
+			sb.append("for (int ").append(key).append(" = 0; ").append(key).append(" < ((ArrayLeekValue) ").append(ar).append(").size(); ++").append(key).append(") { var ").append(var).append(" = ((ArrayLeekValue) ").append(ar).append(").get(").append(key).append(");");
+		} else {
+			sb.append("for (var ").append(var).append(" : (LegacyArrayLeekValue) ").append(ar).append(") {");
+		}
+
 		// Maj de la clé
-		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
+		if (mainblock.getVersion() >= 4) {
 			if (mIsKeyDeclaration && iteratorKeyDeclaration.isCaptured()) {
-				sb.append(key_iterator).append(".set(").append(var).append(".getKeyRef());");
+				sb.append(key_iterator).append(".set(").append(key).append(");");
 			} else {
-				sb.append(key_iterator).append(" = ").append(var).append(".getKeyRef();");
+				sb.append(key_iterator).append(" = ").append(key).append(";");
+			}
+		} else if (mainblock.getVersion() >= 2) {
+			if (mIsKeyDeclaration && iteratorKeyDeclaration.isCaptured()) {
+				sb.append(key_iterator).append(".set(").append(var).append(".key());");
+			} else {
+				sb.append(key_iterator).append(" = ").append(var).append(".key();");
 			}
 		} else {
 			if (mIsKeyDeclaration && iteratorKeyDeclaration.isCaptured()) {
-				sb.append(key_iterator).append(".set(").append(var).append(".getKeyRef()); ops(1); ");
+				sb.append(key_iterator).append(".set(").append(var).append(".key()); ops(1); ");
 			} else if (mKeyReference) {
-				sb.append(key_iterator).append(".set(").append(var).append(".getKeyRef());");
+				sb.append(key_iterator).append(".set(").append(var).append(".key());");
 			} else {
-				sb.append(key_iterator).append(".set(").append(var).append(".getKeyRef()); ops(1); ");
+				sb.append(key_iterator).append(".set(").append(var).append(".key()); ops(1); ");
 			}
 		}
 		// Maj de la valeur
-		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
-			if (mValueReference) {
-				sb.append(val_iterator).append(" = ").append(var).append(".value();");
-			} else if (mIsDeclaration && iteratorDeclaration.isCaptured()) {
-				sb.append(val_iterator).append(".set(").append(var).append(".value());");
+		if (mainblock.getVersion() >= 4) {
+			if (mIsDeclaration && iteratorDeclaration.isCaptured()) {
+				sb.append(val_iterator).append(".set(").append(var).append(");");
 			} else {
-				sb.append(val_iterator).append(" = ").append(var).append(".value();");
+				sb.append(val_iterator).append(" = ").append(var).append(";");
+			}
+		} else if (mainblock.getVersion() >= 2) {
+			if (mIsDeclaration && iteratorDeclaration.isCaptured()) {
+				sb.append(val_iterator).append(".set(").append(var).append(".getValue());");
+			} else {
+				sb.append(val_iterator).append(" = ").append(var).append(".getValue();");
 			}
 		} else {
 			if (mValueReference) {
-				sb.append(val_iterator).append(".set(").append(var).append(".value());");
+				sb.append(val_iterator).append(".set(").append(var).append(".getValue());");
 			} else if (mIsDeclaration && iteratorDeclaration.isCaptured()) {
-				sb.append(val_iterator).append(".set(").append(var).append(".value()); ops(1);");
+				sb.append(val_iterator).append(".set(").append(var).append(".getValue()); ops(1);");
 			} else {
-				sb.append(val_iterator).append(".set(").append(var).append(".value()); ops(1);");
+				sb.append(val_iterator).append(".set(").append(var).append(".getValue()); ops(1);");
 			}
 		}
-		sb.append(var).append(".next();");
 
 		writer.addLine(sb.toString(), mLine, mAI);
 		// Instructions

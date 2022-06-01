@@ -93,6 +93,8 @@ public class TestMap extends TestCommon {
 		code_v1("return ['', [1: 2.5][1]]").equals("[, 2,5]");
 		code_v2_("return ['', [1: 2.5][1]]").equals("[, 2.5]");
 		code("var m = [] var ns = '01234566' return m[ns] = 1").equals("1");
+		code("var a = [12: 5] return a[5] = 7").equals("7");
+		code("var a = [12: 5] var b = 7 return a[5] = b").equals("7");
 
 		section("Map.operator [] left-value");
 		code("var m = [1: 2] m[1]++ return m").equals("[1 : 3]");
@@ -123,5 +125,54 @@ public class TestMap extends TestCommon {
 		// code("for k, v in ['a':'b'] { System.print(k + ' ' + v) }").output("a b\n");
 		// code("for k, v in ['a':'b','c':'d'] { System.print(k + ' ' + v) }").output("a b\nc d\n");
 		// code("for k, v in ['a':'b','c':'d','e':'f'] { System.print(k + ' ' + v) }").output("a b\nc d\ne f\n");
+
+		section("mapMap");
+		code_v2_("return arrayMap(['a': 1, 'b': 2], function(k, v) { return k + v; });").equals("[a : a1, b : b2]");
+		code_v2_("return function() { var t = ['a': 1, 'b': 2]; arrayMap(t, function(k, v) { v = 'tomate'; k = 'ctus'; return 3; }); return t; }();").equals("[a : 1, b : 2]");
+
+		section("mapRemoveKey()");
+		code("var a = ['a':'va','b':'vb','c':'vc','d':'vd']; removeKey(a,'a'); return a").equals("[b : vb, c : vc, d : vd]");
+
+		section("mapSort()");
+		code("var t = [2:0,1:1,0:2]; return arraySort(t,function(k1, v1, k2, v2){return (k1>k2)?(-1):(k1<k2)?1:0;})").equals("[2 : 0, 1 : 1, 0 : 2]");
+		code("var a = ['b':'vb','c':'vc','a':'va','d':'vd']; assocSort(a); return a").equals("[a : va, b : vb, c : vc, d : vd]");
+		code("var a = ['b':'vb','c':'vc','a':'va','d':'vd']; assocSort(a, SORT_DESC); return a").equals("[d : vd, c : vc, b : vb, a : va]");
+		code("var a = [8,6,2,3,7,1,0]; assocSort(a); return a").equals("[6 : 0, 5 : 1, 2 : 2, 3 : 3, 1 : 6, 4 : 7, 0 : 8]");
+		code_v1("var a = [0, 1, 1, 1, 2, 2, 2, 2, 2, null, 3, 3, 3, 3, 3, 3, 3, 3, 3, null, 4, 4, 4, null, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, null, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, null, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6] assocSort(a) return a").equals("[0 : 0, 1 : 1, 2 : 1, 3 : 1, 4 : 2, 5 : 2, 6 : 2, 7 : 2, 8 : 2, 10 : 3, 11 : 3, 12 : 3, 13 : 3, 14 : 3, 15 : 3, 16 : 3, 17 : 3, 18 : 3, 20 : 4, 21 : 4, 22 : 4, 24 : 4, 25 : 4, 26 : 4, 27 : 4, 28 : 4, 29 : 4, 30 : 4, 31 : 4, 32 : 4, 33 : 5, 34 : 5, 35 : 5, 37 : 5, 38 : 5, 39 : 5, 40 : 5, 41 : 5, 42 : 5, 43 : 5, 44 : 5, 45 : 5, 46 : 5, 47 : 5, 48 : 5, 49 : 5, 51 : 6, 52 : 6, 53 : 6, 54 : 6, 55 : 6, 56 : 6, 57 : 6, 58 : 6, 59 : 6, 60 : 6, 61 : 6, 62 : 6, 63 : 6, 64 : 6, 65 : 6, 66 : 6, 67 : 6, 68 : 6, 69 : 6, 70 : 6, 9 : null, 19 : null, 23 : null, 36 : null, 50 : null]");
+		code_v2_("var a = [0, 1, 1, 1, 2, 2, 2, 2, 2, null, 3, 3, 3, 3, 3, 3, 3, 3, 3, null, 4, 4, 4, null, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, null, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, null, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6] assocSort(a) return a").equals("[9 : null, 19 : null, 23 : null, 36 : null, 50 : null, 0 : 0, 1 : 1, 2 : 1, 3 : 1, 4 : 2, 5 : 2, 6 : 2, 7 : 2, 8 : 2, 10 : 3, 11 : 3, 12 : 3, 13 : 3, 14 : 3, 15 : 3, 16 : 3, 17 : 3, 18 : 3, 20 : 4, 21 : 4, 22 : 4, 24 : 4, 25 : 4, 26 : 4, 27 : 4, 28 : 4, 29 : 4, 30 : 4, 31 : 4, 32 : 4, 33 : 5, 34 : 5, 35 : 5, 37 : 5, 38 : 5, 39 : 5, 40 : 5, 41 : 5, 42 : 5, 43 : 5, 44 : 5, 45 : 5, 46 : 5, 47 : 5, 48 : 5, 49 : 5, 51 : 6, 52 : 6, 53 : 6, 54 : 6, 55 : 6, 56 : 6, 57 : 6, 58 : 6, 59 : 6, 60 : 6, 61 : 6, 62 : 6, 63 : 6, 64 : 6, 65 : 6, 66 : 6, 67 : 6, 68 : 6, 69 : 6, 70 : 6]");
+		code_v1("var a = [162: 0, 144: 1, 145: 1, 180: 1, 179: 1, 128: 2, 197: 2, 161: 2, 181: null, 143: 3, 110: 3, 146: 3, 214: 3, 234: null, 230: null, 199: null, 125: 4, 92: 4, 164: 4, 232: 4, 160: 4, 93: 4, 231: 4, 77: null, 252: null, 247: null, 217: null, 251: null, 74: 5, 182: 5, 250: 5, 142: 5, 75: 5, 147: 5, 249: 5, 177: 5, 76: 5, 248: 5, 212: null, 54: null, 60: null, 270: null, 235: null, 269: null, 56: 6, 200: 6, 268: 6, 57: 6, 165: 6, 267: 6, 159: 6, 130: 6, 266: 6, 194: 6, 59: 6, 265: 6, 229: null] assocSort(a) return a").equals("[162 : 0, 144 : 1, 145 : 1, 180 : 1, 179 : 1, 128 : 2, 197 : 2, 161 : 2, 143 : 3, 110 : 3, 146 : 3, 214 : 3, 125 : 4, 92 : 4, 164 : 4, 232 : 4, 160 : 4, 93 : 4, 231 : 4, 74 : 5, 182 : 5, 250 : 5, 142 : 5, 75 : 5, 147 : 5, 249 : 5, 177 : 5, 76 : 5, 248 : 5, 56 : 6, 200 : 6, 268 : 6, 57 : 6, 165 : 6, 267 : 6, 159 : 6, 130 : 6, 266 : 6, 194 : 6, 59 : 6, 265 : 6, 181 : null, 234 : null, 230 : null, 199 : null, 77 : null, 252 : null, 247 : null, 217 : null, 251 : null, 212 : null, 54 : null, 60 : null, 270 : null, 235 : null, 269 : null, 229 : null]");
+		code_v2_("var a = [162: 0, 144: 1, 145: 1, 180: 1, 179: 1, 128: 2, 197: 2, 161: 2, 181: null, 143: 3, 110: 3, 146: 3, 214: 3, 234: null, 230: null, 199: null, 125: 4, 92: 4, 164: 4, 232: 4, 160: 4, 93: 4, 231: 4, 77: null, 252: null, 247: null, 217: null, 251: null, 74: 5, 182: 5, 250: 5, 142: 5, 75: 5, 147: 5, 249: 5, 177: 5, 76: 5, 248: 5, 212: null, 54: null, 60: null, 270: null, 235: null, 269: null, 56: 6, 200: 6, 268: 6, 57: 6, 165: 6, 267: 6, 159: 6, 130: 6, 266: 6, 194: 6, 59: 6, 265: 6, 229: null] assocSort(a) return a").equals("[181 : null, 234 : null, 230 : null, 199 : null, 77 : null, 252 : null, 247 : null, 217 : null, 251 : null, 212 : null, 54 : null, 60 : null, 270 : null, 235 : null, 269 : null, 229 : null, 162 : 0, 144 : 1, 145 : 1, 180 : 1, 179 : 1, 128 : 2, 197 : 2, 161 : 2, 143 : 3, 110 : 3, 146 : 3, 214 : 3, 125 : 4, 92 : 4, 164 : 4, 232 : 4, 160 : 4, 93 : 4, 231 : 4, 74 : 5, 182 : 5, 250 : 5, 142 : 5, 75 : 5, 147 : 5, 249 : 5, 177 : 5, 76 : 5, 248 : 5, 56 : 6, 200 : 6, 268 : 6, 57 : 6, 165 : 6, 267 : 6, 159 : 6, 130 : 6, 266 : 6, 194 : 6, 59 : 6, 265 : 6]");
+		code_v1("var a = [162: 0, 144: 1, 145: 1, 180: 1, 179: 1, 128: 2, 197: 2, 161: 2, 181: null, 143: 3, 110: 3, 146: 3, 214: 3, 234: null, 230: null, 199: null, 125: 4, 92: 4, 164: 4, 232: 4, 160: 4, 93: 4, 231: 4, 77: null, 252: null, 247: null, 217: null, 251: null, 74: 5, 182: 5, 250: 5, 142: 5, 75: 5, 147: 5, 249: 5, 177: 5, 76: 5, 248: 5, 212: null, 54: null, 60: null, 270: null, 235: null, 269: null, 56: 6, 200: 6, 268: 6, 57: 6, 165: 6, 267: 6, 159: 6, 130: 6, 266: 6, 194: 6, 59: 6, 265: 6, 229: null] assocSort(a, SORT_DESC) return a").equals("[181 : null, 234 : null, 230 : null, 199 : null, 77 : null, 252 : null, 247 : null, 217 : null, 251 : null, 212 : null, 54 : null, 60 : null, 270 : null, 235 : null, 269 : null, 229 : null, 56 : 6, 200 : 6, 268 : 6, 57 : 6, 165 : 6, 267 : 6, 159 : 6, 130 : 6, 266 : 6, 194 : 6, 59 : 6, 265 : 6, 74 : 5, 182 : 5, 250 : 5, 142 : 5, 75 : 5, 147 : 5, 249 : 5, 177 : 5, 76 : 5, 248 : 5, 125 : 4, 92 : 4, 164 : 4, 232 : 4, 160 : 4, 93 : 4, 231 : 4, 143 : 3, 110 : 3, 146 : 3, 214 : 3, 128 : 2, 197 : 2, 161 : 2, 144 : 1, 145 : 1, 180 : 1, 179 : 1, 162 : 0]");
+		code_v2_("var a = [162: 0, 144: 1, 145: 1, 180: 1, 179: 1, 128: 2, 197: 2, 161: 2, 181: null, 143: 3, 110: 3, 146: 3, 214: 3, 234: null, 230: null, 199: null, 125: 4, 92: 4, 164: 4, 232: 4, 160: 4, 93: 4, 231: 4, 77: null, 252: null, 247: null, 217: null, 251: null, 74: 5, 182: 5, 250: 5, 142: 5, 75: 5, 147: 5, 249: 5, 177: 5, 76: 5, 248: 5, 212: null, 54: null, 60: null, 270: null, 235: null, 269: null, 56: 6, 200: 6, 268: 6, 57: 6, 165: 6, 267: 6, 159: 6, 130: 6, 266: 6, 194: 6, 59: 6, 265: 6, 229: null] assocSort(a, SORT_DESC) return a").equals("[56 : 6, 200 : 6, 268 : 6, 57 : 6, 165 : 6, 267 : 6, 159 : 6, 130 : 6, 266 : 6, 194 : 6, 59 : 6, 265 : 6, 74 : 5, 182 : 5, 250 : 5, 142 : 5, 75 : 5, 147 : 5, 249 : 5, 177 : 5, 76 : 5, 248 : 5, 125 : 4, 92 : 4, 164 : 4, 232 : 4, 160 : 4, 93 : 4, 231 : 4, 143 : 3, 110 : 3, 146 : 3, 214 : 3, 128 : 2, 197 : 2, 161 : 2, 144 : 1, 145 : 1, 180 : 1, 179 : 1, 162 : 0, 181 : null, 234 : null, 230 : null, 199 : null, 77 : null, 252 : null, 247 : null, 217 : null, 251 : null, 212 : null, 54 : null, 60 : null, 270 : null, 235 : null, 269 : null, 229 : null]");
+
+		section("mapKeySort");
+		code("var a = ['b':'vb','c':'vc','a':'va','d':'vd']; keySort(a); return a").equals("[a : va, b : vb, c : vc, d : vd]");
+		code("var a = ['b':'vb','c':'vc','a':'va','d':'vd']; keySort(a, SORT_DESC); return a").equals("[d : vd, c : vc, b : vb, a : va]");
+		code("var a = [6 : 0, 5 : 1, 2 : 2, 3 : 3, 1 : 6, 4 : 7, 0 : 8]; keySort(a); return a").equals("[8, 6, 2, 3, 7, 1, 0]");
+
+		section("mapSearchValue");
+		code("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return search(a,'c')").equals("cle3");
+		code("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return search(a,'454')").equals("null");
+
+		section("mapContainsValue");
+		code("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return inArray(a, 'c')").equals("true");
+		code("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return inArray(a,' cle3')").equals("false");
+		code("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return inArray(a, '454')").equals("false");
+
+		section("mapMin()");
+		code("return arrayMin([0:7,8:9,'a':2])").equals("2");
+		code("var a = [560 : null, 595 : null, 601 : 15, 566 : 13, 531 : 13] return arrayMin(a)").equals("null");
+
+		section("mapMax()");
+		code("return arrayMax([0:7,8:9,'a':2])").equals("9");
+		code("var a = [560 : null, 595 : null, 601 : 15, 566 : 13, 531 : 13] return arrayMax(a)").equals("15");
+
+		section("mapSum()");
+		code_v1("return sum([0:1,'a':5,'test':7])").equals("13");
+		code_v2_("return sum([0:1,'a':5,'test':7])").equals("13.0");
+
+		section("mapAverage()");
+		code_v1("return average([0: 2, 'a': 4, 'test': 6])").equals("4");
+		code_v2_("return average([0: 2, 'a': 4, 'test': 6])").equals("4.0");
 	}
 }

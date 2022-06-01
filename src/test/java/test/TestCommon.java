@@ -210,6 +210,9 @@ public class TestCommon {
 	public Case file_v2_(String code) {
 		return new Case(code, true, 2, LATEST_VERSION);
 	}
+	public Case file_v4_(String code) {
+		return new Case(code, true, 4, LATEST_VERSION);
+	}
 	public Case DISABLED_file(String code) {
 		return new Case(code, false);
 	}
@@ -230,6 +233,9 @@ public class TestCommon {
 	}
 	public Case code_v2_(String code) {
 		return new Case(code, true, 2, LATEST_VERSION);
+	}
+	public Case code_v2_3(String code) {
+		return new Case(code, true, 2, 3);
 	}
 	public Case code_v3_(String code) {
 		return new Case(code, true, 3, LATEST_VERSION);

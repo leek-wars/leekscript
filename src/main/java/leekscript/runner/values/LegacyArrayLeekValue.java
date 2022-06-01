@@ -18,7 +18,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-public class LegacyArrayLeekValue implements Iterable<Box> {
+public class LegacyArrayLeekValue implements Iterable<LegacyArrayLeekValue.Element> {
 
 	public final static int ARRAY_CELL_ACCESS_OPERATIONS = 2;
 	public final static int ARRAY_CELL_CREATE_OPERATIONS = 2; // + sqrt(size) / 5
@@ -34,7 +34,7 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 	public final static int ASC_K = 6;
 	public final static int DESC_K = 7;
 
-	public static class ArrayIterator {
+	public static class ArrayIterator implements Iterator<Element> {
 
 		Element mElement;
 
@@ -42,12 +42,17 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 			mElement = head;
 		}
 
-		public boolean ended() {
-			return mElement == null;
+		@Override
+		public boolean hasNext() {
+			return mElement != null;
 		}
 
-		public void next() {
-			mElement = mElement.next();
+		@Override
+		public Element next() {
+			var v = mElement;
+			if (mElement != null)
+				mElement = mElement.next;
+			return v;
 		}
 
 		public Object getKey(AI ai) throws LeekRunException {
@@ -64,14 +69,14 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 
 		public Object getValue(AI ai) throws LeekRunException {
 			if (ai.getVersion() >= 2) {
-				return mElement.value();
+				return mElement.getValue();
 			} else {
-				return LeekOperations.clone(ai, mElement.value());
+				return LeekOperations.clone(ai, mElement.getValue());
 			}
 		}
 
-		public Object value() {
-			return mElement.value();
+		public Object getValue() {
+			return mElement.getValue();
 		}
 
 		public Object getKeyRef() throws LeekRunException {
@@ -242,27 +247,6 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 		}
 	}
 
-	private class PhpIterator implements Iterator<Box> {
-
-		private Element e = mHead;
-
-		@Override
-		public boolean hasNext() {
-			return e != null;
-		}
-
-		@Override
-		public Box next() {
-			var v = e.value;
-			if (e != null)
-				e = e.next;
-			return v;
-		}
-
-		@Override
-		public void remove() {}
-	}
-
 	private class ReversedPhpIterator implements Iterator<Object> {
 
 		private Element e = mEnd;
@@ -306,7 +290,7 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 			return key;
 		}
 
-		public Object value() {
+		public Object getValue() {
 			return value.getValue();
 		}
 
@@ -322,7 +306,7 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 			return value.getValue().toString();
 		}
 	}
-	
+
 	private Element mHead = null;
 	private Element mEnd = null;
 	private int mIndex = 0;
@@ -481,12 +465,12 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 	public String join(AI ai, String sep) throws LeekRunException {
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
-		for (Object val : this) {
+		for (var val : this) {
 			if (!first)
 				sb.append(sep);
 			else
 				first = false;
-			sb.append(LeekValueManager.getString(ai, val));
+			sb.append(LeekValueManager.getString(ai, val.getValue()));
 		}
 		return sb.toString();
 	}
@@ -500,7 +484,7 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 		if (comp instanceof LegacyArrayLeekValue) {
 			return equals(ai, ((LegacyArrayLeekValue) comp));
 		} else if (size() == 1) { // Si y'a un seul élément dans le tableau
-			var firstValue = getHeadElement().value();
+			var firstValue = getHeadElement().getValue();
 			if (firstValue == null && comp == null) {
 				return ai.getVersion() == 1; // Bug in LS1, [null] == null
 			}
@@ -523,9 +507,8 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 
 	public Object add_eq(AI ai, Object value) throws LeekRunException {
 		if (value instanceof LegacyArrayLeekValue) {
-			// mValues.reindex(ai);
-			ArrayIterator iterator = ((LegacyArrayLeekValue) value).getArrayIterator();
-			while (!iterator.ended()) {
+			var iterator = ((LegacyArrayLeekValue) value).iterator();
+			while (iterator.hasNext()) {
 				if (iterator.key() instanceof String || iterator.key() instanceof ObjectLeekValue)
 					getOrCreate(ai, ai.string(iterator.getKey(ai))).set(iterator.getValue(ai));
 				else
@@ -538,7 +521,7 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 		return this;
 	}
 
-	public ArrayIterator getArrayIterator() {
+	public ArrayIterator iterator() {
 		return new ArrayIterator(getHeadElement());
 	}
 
@@ -550,13 +533,13 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 		return toJSON(ai, new HashSet<>());
 	}
 
-	public JSON toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
+	public JSON toJSON(AI ai, Set<Object> visited) throws LeekRunException {
 		visited.add(this);
 
 		if (isAssociative()) {
 			JSONObject o = new JSONObject();
-			ArrayIterator i = getArrayIterator();
-			while (!i.ended()) {
+			var i = iterator();
+			while (i.hasNext()) {
 				var v = i.getValue(ai);
 				if (!visited.contains(v)) {
 					if (!ai.isPrimitive(v)) {
@@ -585,14 +568,14 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 	public String toString() {
 		var r = "[";
 		boolean first = true;
-		ArrayIterator i = getArrayIterator();
-		while (!i.ended()) {
+		var i = iterator();
+		while (i.hasNext()) {
 			if (first) first = false;
 			else r += ", ";
 			if (isAssociative()) {
 				r += i.key().toString() + ": ";
 			}
-			r += i.value();
+			r += i.getValue();
 			i.next();
 		}
 		return r + "]";
@@ -1254,11 +1237,6 @@ public class LegacyArrayLeekValue implements Iterable<Box> {
 			e = e.next;
 		}
 		return false;
-	}
-
-	@Override
-	public Iterator<Box> iterator() {
-		return new PhpIterator();
 	}
 
 	public Iterator<Object> reversedIterator() {

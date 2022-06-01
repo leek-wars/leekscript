@@ -90,6 +90,12 @@ public class TestArray extends TestCommon {
 		code_v1("var effects = [[1], [1]];\n\nreturn (effects[0] + effects[2]) /2;").equals("1");
 		code_v2_("var effects = [[1], [1]];\n\nreturn (effects[0] + effects[2]) /2;").equals("1.0");
 
+		section("Infinite array");
+		code_v1("var a = [] push(a, a) return a").equals("[[]]");
+		code_v2_("var a = [] push(a, a) return a").equals("[<...>]");
+		code_v1("var a = [] push(a, [a]) return a").equals("[[[]]]");
+		code_v2_("var a = [] push(a, [a]) return a").equals("[[<...>]]");
+
 		section("Array.operator []");
 		code("return [1, 2, 3][1]").equals("2");
 		code("var a = [1, 2, 3] return a[0]").equals("1");
@@ -124,8 +130,6 @@ public class TestArray extends TestCommon {
 		code("return [1, true][0]").equals("1");
 		code("return [1, true][1]").equals("true");
 		// code("return [5l, 7l, 9l][2l]").equals("9");
-		code("var a = [12: 5] return a[5] = 7").equals("7");
-		code("var a = [12: 5] var b = 7 return a[5] = b").equals("7");
 		code("var a = [] return a[0] + 2").equals("2");
 		code("var a = 5 return a[0] + 2").equals("2");
 		code("var a = [1] return a[0] = 10").equals("10");
@@ -138,7 +142,8 @@ public class TestArray extends TestCommon {
 		// code("[['a', 'b'], 12][0][['yolo', 1][0]]").exception(ls::vm::Exception::ARRAY_KEY_IS_NOT_NUMBER);
 		code("return [['a', 'b'], 12][0][2]").equals("null");
 		code("var v = [['a', 'b'], 12] v[0][0] = 5 return v").equals("[[5, b], 12]");
-		code("var v = [['a', 'b'], 12] v[0][2] = 5 return v").equals("[[a, b, 5], 12]");
+		code_v1_3("var v = [['a', 'b'], 12] v[0][2] = 5 return v").equals("[[a, b, 5], 12]");
+		code_v4_("var v = [['a', 'b'], 12] v[0][2] = 5 return v").equals("[[a, b], 12]");
 		// code("var a = [[12], [1..10]][1] return a[5]").equals("6");
 
 		section("Out of bounds exception");
@@ -147,10 +152,14 @@ public class TestArray extends TestCommon {
 		code("var a = [1, 2, 3] return a[10]").equals("null");
 		code("return [5.6, 7.2][-5]").equals("null");
 		code("return ['hello', true][2]").equals("null");
-		code("var a = [1, 2, 3] return a[100] = 12").equals("12");
-		code("var a = [1, 2, 3] return a[-100] = 12").equals("12");
-		code("var a = [] a[100] = true return a").equals("[100 : true]");
-		code("var a = [1, 2, 3] a[100] = true return a").equals("[0 : 1, 1 : 2, 2 : 3, 100 : true]");
+		code_v1_3("var a = [1, 2, 3] return a[100] = 12").equals("12");
+		code_v4_("var a = [1, 2, 3] return a[100] = 12").equals("null");
+		code_v1_3("var a = [1, 2, 3] return a[-100] = 12").equals("12");
+		code_v4_("var a = [1, 2, 3] return a[-100] = 12").equals("null");
+		code_v1_3("var a = [] a[100] = true return a").equals("[100 : true]");
+		code_v4_("var a = [] a[100] = true return a").equals("[]");
+		code_v1_3("var a = [1, 2, 3] a[100] = true return a").equals("[0 : 1, 1 : 2, 2 : 3, 100 : true]");
+		code_v4_("var a = [1, 2, 3] a[100] = true return a").equals("[1, 2, 3]");
 		// code("var a = [[12], ''][0]; a[100]++; return a").equals("null");
 		// code("var a = [5] var e = a[1] !? 5 return e").equals("5");
 
@@ -219,7 +228,8 @@ public class TestArray extends TestCommon {
 		code("var a = [5] a[0] += 1 return a;").equals("[6]");
 		code("var a = [5, 6, 7] a[0] += 10 a[1] += 10 return a;").equals("[15, 16, 7]");
 		code("var a = [[5]] a[0][0] += 1 return a;").equals("[[6]]");
-		code("var a = [] a[0] += 1 return a;").equals("[1]");
+		code_v1_3("var a = [] a[0] += 1 return a;").equals("[1]");
+		code_v4_("var a = [] a[0] += 1 return a;").equals("[]");
 
 		section("Array.operator ++ on element");
 		code("var a = [5]; a[0]++; return a;").equals("[6]");
@@ -249,7 +259,8 @@ public class TestArray extends TestCommon {
 		code("var a = [5] a[0] -= 1 return a;").equals("[4]");
 		code("var a = [5, 6, 7] a[0] -= 10 a[1] -= 10 return a;").equals("[-5, -4, 7]");
 		code("var a = [[5]] a[0][0] -= 1 return a;").equals("[[4]]");
-		code("var a = [] a[0] -= 1 return a;").equals("[-1]");
+		code_v1_3("var a = [] a[0] -= 1 return a;").equals("[-1]");
+		code_v4_("var a = [] a[0] -= 1 return a;").equals("[]");
 
 		section("Array.operator *= on element");
 		code("var a = [5] a[0] *= 10 return a;").equals("[50]");
@@ -270,7 +281,8 @@ public class TestArray extends TestCommon {
 		code("var a = [5] a[0] |= 2 return a;").equals("[7]");
 		code("var a = [5, 6, 7] a[0] |= 8 a[1] |= 8 return a;").equals("[13, 14, 7]");
 		code("var a = [[5]] a[0][0] |= 2 return a;").equals("[[7]]");
-		code("var a = [] a[0] |= 1 return a;").equals("[1]");
+		code_v1_3("var a = [] a[0] |= 1 return a;").equals("[1]");
+		code_v4_("var a = [] a[0] |= 1 return a;").equals("[]");
 
 		section("Array.operator &= on element");
 		code("var a = [87619] a[0] &= 18431 return a;").equals("[17987]");
@@ -324,12 +336,17 @@ public class TestArray extends TestCommon {
 		section("Array.filter() v1.1");
 		code_v2_("return arrayFilter([1, 2, 3, 4, 5, 6, 7, 8, 9], function(e) { return e > 5; });").equals("[6, 7, 8, 9]");
 		code_v2_("return arrayFilter([4, 5, 6, 'test', 8, 9], function(e) { return e == 'test'; });").equals("[test]");
-		code_v2_("return string(arrayFilter(['a', 'b', 'c', 'd'], function(k, v) { return k == 3; }));").equals("[d]");
+		code_v2_3("return arrayFilter(['a', 'b', 'c', 'd'], function(k, v) { return k == 3; });").equals("[d]");
+		code_v4_("return arrayFilter(['a', 'b', 'c', 'd'], function(v, k) { return k == 3; });").equals("[d]");
 
 		section("Array.flatten()");
-		code("return arrayFlatten([6,7,[8,9]],99);").equals("[6, 7, 8, 9]");
-		code("return arrayFlatten([6,[[7]],[8,9]],2);").equals("[6, 7, 8, 9]");
-		code("return arrayFlatten([6,[[7]],[8,9]]);").equals("[6, [7], 8, 9]");
+		code("return arrayFlatten([6, 7, [8, 9]], 99)").equals("[6, 7, 8, 9]");
+		code("return arrayFlatten([6, [[7]], [8, 9]], 2)").equals("[6, 7, 8, 9]");
+		code("return arrayFlatten([6, [[7]], [8, 9]])").equals("[6, [7], 8, 9]");
+		code_v1("var a = [] push(a, a) return arrayFlatten(a)").equals("[]");
+		// Le niveau d'affichage est pas super important, tant que ça casse pas
+		code_v2_3("var a = [] push(a, a) return arrayFlatten(a)").equals("[[[<...>]]]");
+		code_v4_("var a = [] push(a, a) return arrayFlatten(a)").equals("[[<...>]]");
 
 		section("Array.sort");
 		code_v1("return function() { var t = [null, null, 4, 8, 9]; sort(t); return t; }();").equals("[4, 8, 9, null, null]");
@@ -349,20 +366,17 @@ public class TestArray extends TestCommon {
 		section("Array.map()");
 		code("return arrayMap([1, 2, 3], function(v) { var r = [] return r })").equals("[[], [], []]");
 		code("return arrayMap([1, 2, 3], function(v) { var r = [1, 2, 3] return r })").equals("[[1, 2, 3], [1, 2, 3], [1, 2, 3]]");
+		code("var x = arrayMap([1, 2, 3], function(v) { var r = [1, 2, 3] return r }) push(x[0], 4) return x").equals("[[1, 2, 3, 4], [1, 2, 3], [1, 2, 3]]");
 		code("var r = [] var a = arrayMap([1, 2, 3], function(v) { return r }) push(r, 1) return a").equals("[[1], <...>, <...>]");
 		code_v2_("class A { name part constructor(name, part) { this.name = name this.part = part } } var list = [new A('foo', true), new A('bar', false), new A('baz', true)] return arrayMap(list, function(a) { return a.name })").equals("[foo, bar, baz]");
 
 		section("Array.map() v1.0");
 		code_v1("return arrayMap([1, 2, 3, 4, 5], function(e) { return e * 2; });").equals("[2, 4, 6, 8, 10]");
 		code_v1("return arrayMap([4, 9, 16], sqrt);").equals("[2, 3, 4]");
-		code_v1("return arrayMap(['a': 1,'b': 2], function(k, v) { return k + v; });").equals("[a : a1, b : b2]");
-		code_v1("return function() { var t = ['a':1,'b':2]; arrayMap(t, function(@k, @v) { v = 'tomate'; k = 'ctus'; return 3; }); return t; }();").equals("[a : tomate, b : tomate]");
 
 		section("Array.map() v1.1");
 		code_v2_("return arrayMap([1, 2, 3, 4, 5], function(e) { return e * 2; });").equals("[2, 4, 6, 8, 10]");
 		code_v2_("return arrayMap([4, 9, 16], sqrt);").equals("[2.0, 3.0, 4.0]");
-		code_v2_("return arrayMap(['a': 1, 'b': 2], function(k, v) { return k + v; });").equals("[a : a1, b : b2]");
-		code_v2_("return function() { var t = ['a': 1, 'b': 2]; arrayMap(t, function(k, v) { v = 'tomate'; k = 'ctus'; return 3; }); return t; }();").equals("[a : 1, b : 2]");
 
 		section("Array.foldLeft()");
 		code("return arrayFoldLeft([6, 7, 8, 9], function(a, b) { return a + b; }, 0)").equals("30");
@@ -373,13 +387,17 @@ public class TestArray extends TestCommon {
 		code("return arrayFoldRight([1,0,1,2,5,7,9], function(a,b){return a+','+b;},'')").equals("1,0,1,2,5,7,9,");
 
 		section("Array.partition()");
-		code("return arrayPartition([6,7,8,9], function(a){return a&1;})").equals("[[1 : 7, 3 : 9], [0 : 6, 2 : 8]]");
-		code("return string(arrayPartition([6,7,8,9], function(k,v){return k;}))").equals("[[1 : 7, 2 : 8, 3 : 9], [6]]");
-		code("return string(arrayPartition([4,3,2,1], function(k,v){return k<v;}))").equals("[[4, 3], [2 : 2, 3 : 1]]");
+		code_v1_3("return arrayPartition([6,7,8,9], function(a) { return a & 1 })").equals("[[1 : 7, 3 : 9], [0 : 6, 2 : 8]]");
+		code_v4_("return arrayPartition([6,7,8,9], function(a) { return a & 1 })").equals("[[7, 9], [6, 8]]");
+		code_v1_3("return arrayPartition([6,7,8,9], function(k, v) { return k })").equals("[[1 : 7, 2 : 8, 3 : 9], [6]]");
+		code_v4_("return arrayPartition([6,7,8,9], function(v, k) { return k })").equals("[[7, 8, 9], [6]]");
+		code_v1_3("return arrayPartition([4,3,2,1], function(k, v) { return k < v;})").equals("[[4, 3], [2 : 2, 3 : 1]]");
+		code_v4_("return arrayPartition([4,3,2,1], function(v, k) { return k < v;})").equals("[[4, 3], [2, 1]]");
 		code_v1("return string(function(){var t=[1,2,3]; arrayPartition(t, function(@v){ v=3; }); return t;}())").equals("[3, 3, 3]");
 		code_v1("return string(function(){var t=[1,2,3]; arrayPartition(t, function(k, @v){ v=3; }); return t;}())").equals("[3, 3, 3]");
 		code_v1("return string(arrayPartition([4,3,2,1], function(k,@v){ v=3; return k<v;}))").equals("[[3, 3, 3], [3 : 3]]");
-		code_v2_("class A { name part constructor(name, part) { this.name = name this.part = part } } var list = [new A('foo', true), new A('bar', false), new A('baz', true)] return arrayPartition(list, function(a) { return a.part })").equals("[[0 : A {name: foo, part: true}, 2 : A {name: baz, part: true}], [1 : A {name: bar, part: false}]]");
+		code_v2_3("class A { name part constructor(name, part) { this.name = name this.part = part } } var list = [new A('foo', true), new A('bar', false), new A('baz', true)] return arrayPartition(list, function(a) { return a.part })").equals("[[0 : A {name: foo, part: true}, 2 : A {name: baz, part: true}], [1 : A {name: bar, part: false}]]");
+		code_v4_("class A { name part constructor(name, part) { this.name = name this.part = part } } var list = [new A('foo', true), new A('bar', false), new A('baz', true)] return arrayPartition(list, function(a) { return a.part })").equals("[[A {name: foo, part: true}, A {name: baz, part: true}], [A {name: bar, part: false}]]");
 
 		section("Array.concat()");
 		code("return [0] + [1, 2]").equals("[0, 1, 2]");
@@ -387,21 +405,21 @@ public class TestArray extends TestCommon {
 		code("return arrayConcat([0], [1, 2])").equals("[0, 1, 2]");
 
 		section("Array.iter()");
-		code("var t = [1,2,3,4]; arrayIter(t, function(v){ v=2; }); return t;").equals("[1, 2, 3, 4]");
-		code_v1("var t = [1,2,3,4]; arrayIter(t, function(@v){ v=2; }); return t;").equals("[2, 2, 2, 2]");
-		code_v1("var t = [1,2,3,4]; arrayIter(t, function(k, @v){ v=k; }); return t;").equals("[0, 1, 2, 3]");
-		code("var t = [1,2,3,4]; arrayIter(t, function(k, v){ v=k; }); return t;").equals("[1, 2, 3, 4]");
+		code("var t = [1,2,3,4]; arrayIter(t, function(v) { v = 2; }); return t;").equals("[1, 2, 3, 4]");
+		code_v1("var t = [1,2,3,4]; arrayIter(t, function(@v) { v = 2; }); return t;").equals("[2, 2, 2, 2]");
+		code_v1("var t = [1,2,3,4]; arrayIter(t, function(k, @v){ v = k; }); return t;").equals("[0, 1, 2, 3]");
+		code_v1_3("var t = [1, 2, 3, 4]; arrayIter(t, function(k, v) { v = k; }); return t;").equals("[1, 2, 3, 4]");
+		code_v4_("var t = [1, 2, 3, 4]; arrayIter(t, function(v, k) { v = k; }); return t;").equals("[1, 2, 3, 4]");
 		code_v2_("class A { name part constructor(name, part) { this.name = name this.part = part } } var list = [new A('foo', true), new A('bar', false), new A('baz', true)] var r = [] arrayIter(list, function(a) { push(r, a.name) }) return r").equals("[foo, bar, baz]");
 
 		section("Array.sort()");
-		code("var t = [0,1,2]; return arraySort(t,function(e, f){return (e>f)?(-1):(e<f)?1:0;})").equals("[2, 1, 0]");
-		code("var t = [2:0,1:1,0:2]; return arraySort(t,function(k1, v1, k2, v2){return (k1>k2)?(-1):(k1<k2)?1:0;})").equals("[2 : 0, 1 : 1, 0 : 2]");
-		code("var t = ['test','t']; return arraySort(t,function(k1, v1, k2, v2){return (k1>k2)?(-1):(k1<k2)?1:0;})").equals("[t, test]");
+		code("var t = [0, 1, 2]; return arraySort(t,function(e, f){return (e>f)?(-1):(e<f)?1:0;})").equals("[2, 1, 0]");
+		code_v1_3("var t = ['test', 't']; return arraySort(t,function(k1, v1, k2, v2){return (k1>k2)?(-1):(k1<k2)?1:0;})").equals("[t, test]");
 
 		section("Array.remove()");
-		code("var r = ['a','b','c','d','e']; return remove(r,1);").equals("b");
-		code("var r = ['a','b','c','d','e']; return remove(r,55);").equals("null");
-		code("var r = ['a','b','c','d','e']; remove(r,1); return r;").equals("[a, c, d, e]");
+		code("var r = ['a','b','c','d','e']; return remove(r, 1);").equals("b");
+		code("var r = ['a','b','c','d','e']; return remove(r, 55);").equals("null");
+		code("var r = ['a','b','c','d','e']; remove(r, 1); return r;").equals("[a, c, d, e]");
 
 		section("Array.count()");
 		code("return count(['a','b','c','d','e'])").equals("5");
@@ -423,10 +441,8 @@ public class TestArray extends TestCommon {
 		code("var a = ['a','b','c','d']; pop(a); return a;").equals("[a, b, c]");
 
 		section("Array.removeElement()");
-		code("var a = ['a','b','c','d']; removeElement(a,'c'); return a").equals("[0 : a, 1 : b, 3 : d]");
-
-		section("Array.removeKey()");
-		code("var a = ['a':'va','b':'vb','c':'vc','d':'vd']; removeKey(a,'a'); return a").equals("[b : vb, c : vc, d : vd]");
+		code_v1_3("var a = ['a', 'b', 'c', 'd']; removeElement(a, 'c'); return a").equals("[0 : a, 1 : b, 3 : d]");
+		code_v4_("var a = ['a', 'b', 'c', 'd']; removeElement(a, 'c'); return a").equals("[a, b, d]");
 
 		section("Array.sort()");
 		code("var a = [8,6,2,3,7,1,0]; sort(a); return a").equals("[0, 1, 2, 3, 6, 7, 8]");
@@ -435,72 +451,43 @@ public class TestArray extends TestCommon {
 		code_v1("var a = [0, 1, 1, 1, 2, 2, 2, 2, 2, null, 3, 3, 3, 3, 3, 3, 3, 3, 3, null, 4, 4, 4, null, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, null, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, null, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6] sort(a) return a").equals("[0, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, null, null, null, null, null]");
 		code_v2_("var a = [0, 1, 1, 1, 2, 2, 2, 2, 2, null, 3, 3, 3, 3, 3, 3, 3, 3, 3, null, 4, 4, 4, null, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, null, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, null, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6] sort(a) return a").equals("[null, null, null, null, null, 0, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]");
 
-		section("Array.assocSort()");
-		code("var a = ['b':'vb','c':'vc','a':'va','d':'vd']; assocSort(a); return a").equals("[a : va, b : vb, c : vc, d : vd]");
-		code("var a = ['b':'vb','c':'vc','a':'va','d':'vd']; assocSort(a, SORT_DESC); return a").equals("[d : vd, c : vc, b : vb, a : va]");
-		code("var a = [8,6,2,3,7,1,0]; assocSort(a); return a").equals("[6 : 0, 5 : 1, 2 : 2, 3 : 3, 1 : 6, 4 : 7, 0 : 8]");
-		code_v1("var a = [0, 1, 1, 1, 2, 2, 2, 2, 2, null, 3, 3, 3, 3, 3, 3, 3, 3, 3, null, 4, 4, 4, null, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, null, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, null, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6] assocSort(a) return a").equals("[0 : 0, 1 : 1, 2 : 1, 3 : 1, 4 : 2, 5 : 2, 6 : 2, 7 : 2, 8 : 2, 10 : 3, 11 : 3, 12 : 3, 13 : 3, 14 : 3, 15 : 3, 16 : 3, 17 : 3, 18 : 3, 20 : 4, 21 : 4, 22 : 4, 24 : 4, 25 : 4, 26 : 4, 27 : 4, 28 : 4, 29 : 4, 30 : 4, 31 : 4, 32 : 4, 33 : 5, 34 : 5, 35 : 5, 37 : 5, 38 : 5, 39 : 5, 40 : 5, 41 : 5, 42 : 5, 43 : 5, 44 : 5, 45 : 5, 46 : 5, 47 : 5, 48 : 5, 49 : 5, 51 : 6, 52 : 6, 53 : 6, 54 : 6, 55 : 6, 56 : 6, 57 : 6, 58 : 6, 59 : 6, 60 : 6, 61 : 6, 62 : 6, 63 : 6, 64 : 6, 65 : 6, 66 : 6, 67 : 6, 68 : 6, 69 : 6, 70 : 6, 9 : null, 19 : null, 23 : null, 36 : null, 50 : null]");
-		code_v2_("var a = [0, 1, 1, 1, 2, 2, 2, 2, 2, null, 3, 3, 3, 3, 3, 3, 3, 3, 3, null, 4, 4, 4, null, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, null, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, null, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6] assocSort(a) return a").equals("[9 : null, 19 : null, 23 : null, 36 : null, 50 : null, 0 : 0, 1 : 1, 2 : 1, 3 : 1, 4 : 2, 5 : 2, 6 : 2, 7 : 2, 8 : 2, 10 : 3, 11 : 3, 12 : 3, 13 : 3, 14 : 3, 15 : 3, 16 : 3, 17 : 3, 18 : 3, 20 : 4, 21 : 4, 22 : 4, 24 : 4, 25 : 4, 26 : 4, 27 : 4, 28 : 4, 29 : 4, 30 : 4, 31 : 4, 32 : 4, 33 : 5, 34 : 5, 35 : 5, 37 : 5, 38 : 5, 39 : 5, 40 : 5, 41 : 5, 42 : 5, 43 : 5, 44 : 5, 45 : 5, 46 : 5, 47 : 5, 48 : 5, 49 : 5, 51 : 6, 52 : 6, 53 : 6, 54 : 6, 55 : 6, 56 : 6, 57 : 6, 58 : 6, 59 : 6, 60 : 6, 61 : 6, 62 : 6, 63 : 6, 64 : 6, 65 : 6, 66 : 6, 67 : 6, 68 : 6, 69 : 6, 70 : 6]");
-		code_v1("var a = [162: 0, 144: 1, 145: 1, 180: 1, 179: 1, 128: 2, 197: 2, 161: 2, 181: null, 143: 3, 110: 3, 146: 3, 214: 3, 234: null, 230: null, 199: null, 125: 4, 92: 4, 164: 4, 232: 4, 160: 4, 93: 4, 231: 4, 77: null, 252: null, 247: null, 217: null, 251: null, 74: 5, 182: 5, 250: 5, 142: 5, 75: 5, 147: 5, 249: 5, 177: 5, 76: 5, 248: 5, 212: null, 54: null, 60: null, 270: null, 235: null, 269: null, 56: 6, 200: 6, 268: 6, 57: 6, 165: 6, 267: 6, 159: 6, 130: 6, 266: 6, 194: 6, 59: 6, 265: 6, 229: null] assocSort(a) return a").equals("[162 : 0, 144 : 1, 145 : 1, 180 : 1, 179 : 1, 128 : 2, 197 : 2, 161 : 2, 143 : 3, 110 : 3, 146 : 3, 214 : 3, 125 : 4, 92 : 4, 164 : 4, 232 : 4, 160 : 4, 93 : 4, 231 : 4, 74 : 5, 182 : 5, 250 : 5, 142 : 5, 75 : 5, 147 : 5, 249 : 5, 177 : 5, 76 : 5, 248 : 5, 56 : 6, 200 : 6, 268 : 6, 57 : 6, 165 : 6, 267 : 6, 159 : 6, 130 : 6, 266 : 6, 194 : 6, 59 : 6, 265 : 6, 181 : null, 234 : null, 230 : null, 199 : null, 77 : null, 252 : null, 247 : null, 217 : null, 251 : null, 212 : null, 54 : null, 60 : null, 270 : null, 235 : null, 269 : null, 229 : null]");
-		code_v2_("var a = [162: 0, 144: 1, 145: 1, 180: 1, 179: 1, 128: 2, 197: 2, 161: 2, 181: null, 143: 3, 110: 3, 146: 3, 214: 3, 234: null, 230: null, 199: null, 125: 4, 92: 4, 164: 4, 232: 4, 160: 4, 93: 4, 231: 4, 77: null, 252: null, 247: null, 217: null, 251: null, 74: 5, 182: 5, 250: 5, 142: 5, 75: 5, 147: 5, 249: 5, 177: 5, 76: 5, 248: 5, 212: null, 54: null, 60: null, 270: null, 235: null, 269: null, 56: 6, 200: 6, 268: 6, 57: 6, 165: 6, 267: 6, 159: 6, 130: 6, 266: 6, 194: 6, 59: 6, 265: 6, 229: null] assocSort(a) return a").equals("[181 : null, 234 : null, 230 : null, 199 : null, 77 : null, 252 : null, 247 : null, 217 : null, 251 : null, 212 : null, 54 : null, 60 : null, 270 : null, 235 : null, 269 : null, 229 : null, 162 : 0, 144 : 1, 145 : 1, 180 : 1, 179 : 1, 128 : 2, 197 : 2, 161 : 2, 143 : 3, 110 : 3, 146 : 3, 214 : 3, 125 : 4, 92 : 4, 164 : 4, 232 : 4, 160 : 4, 93 : 4, 231 : 4, 74 : 5, 182 : 5, 250 : 5, 142 : 5, 75 : 5, 147 : 5, 249 : 5, 177 : 5, 76 : 5, 248 : 5, 56 : 6, 200 : 6, 268 : 6, 57 : 6, 165 : 6, 267 : 6, 159 : 6, 130 : 6, 266 : 6, 194 : 6, 59 : 6, 265 : 6]");
-		code_v1("var a = [162: 0, 144: 1, 145: 1, 180: 1, 179: 1, 128: 2, 197: 2, 161: 2, 181: null, 143: 3, 110: 3, 146: 3, 214: 3, 234: null, 230: null, 199: null, 125: 4, 92: 4, 164: 4, 232: 4, 160: 4, 93: 4, 231: 4, 77: null, 252: null, 247: null, 217: null, 251: null, 74: 5, 182: 5, 250: 5, 142: 5, 75: 5, 147: 5, 249: 5, 177: 5, 76: 5, 248: 5, 212: null, 54: null, 60: null, 270: null, 235: null, 269: null, 56: 6, 200: 6, 268: 6, 57: 6, 165: 6, 267: 6, 159: 6, 130: 6, 266: 6, 194: 6, 59: 6, 265: 6, 229: null] assocSort(a, SORT_DESC) return a").equals("[181 : null, 234 : null, 230 : null, 199 : null, 77 : null, 252 : null, 247 : null, 217 : null, 251 : null, 212 : null, 54 : null, 60 : null, 270 : null, 235 : null, 269 : null, 229 : null, 56 : 6, 200 : 6, 268 : 6, 57 : 6, 165 : 6, 267 : 6, 159 : 6, 130 : 6, 266 : 6, 194 : 6, 59 : 6, 265 : 6, 74 : 5, 182 : 5, 250 : 5, 142 : 5, 75 : 5, 147 : 5, 249 : 5, 177 : 5, 76 : 5, 248 : 5, 125 : 4, 92 : 4, 164 : 4, 232 : 4, 160 : 4, 93 : 4, 231 : 4, 143 : 3, 110 : 3, 146 : 3, 214 : 3, 128 : 2, 197 : 2, 161 : 2, 144 : 1, 145 : 1, 180 : 1, 179 : 1, 162 : 0]");
-		code_v2_("var a = [162: 0, 144: 1, 145: 1, 180: 1, 179: 1, 128: 2, 197: 2, 161: 2, 181: null, 143: 3, 110: 3, 146: 3, 214: 3, 234: null, 230: null, 199: null, 125: 4, 92: 4, 164: 4, 232: 4, 160: 4, 93: 4, 231: 4, 77: null, 252: null, 247: null, 217: null, 251: null, 74: 5, 182: 5, 250: 5, 142: 5, 75: 5, 147: 5, 249: 5, 177: 5, 76: 5, 248: 5, 212: null, 54: null, 60: null, 270: null, 235: null, 269: null, 56: 6, 200: 6, 268: 6, 57: 6, 165: 6, 267: 6, 159: 6, 130: 6, 266: 6, 194: 6, 59: 6, 265: 6, 229: null] assocSort(a, SORT_DESC) return a").equals("[56 : 6, 200 : 6, 268 : 6, 57 : 6, 165 : 6, 267 : 6, 159 : 6, 130 : 6, 266 : 6, 194 : 6, 59 : 6, 265 : 6, 74 : 5, 182 : 5, 250 : 5, 142 : 5, 75 : 5, 147 : 5, 249 : 5, 177 : 5, 76 : 5, 248 : 5, 125 : 4, 92 : 4, 164 : 4, 232 : 4, 160 : 4, 93 : 4, 231 : 4, 143 : 3, 110 : 3, 146 : 3, 214 : 3, 128 : 2, 197 : 2, 161 : 2, 144 : 1, 145 : 1, 180 : 1, 179 : 1, 162 : 0, 181 : null, 234 : null, 230 : null, 199 : null, 77 : null, 252 : null, 247 : null, 217 : null, 251 : null, 212 : null, 54 : null, 60 : null, 270 : null, 235 : null, 269 : null, 229 : null]");
-
-		section("Array.keySort()");
-		code("var a = ['b':'vb','c':'vc','a':'va','d':'vd']; keySort(a); return a").equals("[a : va, b : vb, c : vc, d : vd]");
-		code("var a = ['b':'vb','c':'vc','a':'va','d':'vd']; keySort(a, SORT_DESC); return a").equals("[d : vd, c : vc, b : vb, a : va]");
-		code("var a = [6 : 0, 5 : 1, 2 : 2, 3 : 3, 1 : 6, 4 : 7, 0 : 8]; keySort(a); return a").equals("[8, 6, 2, 3, 7, 1, 0]");
-
 		section("Array.search()");
 		code("var a = ['a','b','c','d']; return search(a,'c')").equals("2");
-		code("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return search(a,'c')").equals("cle3");
-		code("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return search(a,'454')").equals("null");
 
 		section("Array.inArray()");
 		code("var a = ['a','b','c','d']; return inArray(a,'c')").equals("true");
-		code("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return inArray(a,'c')").equals("true");
-		code("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return inArray(a,'cle3')").equals("false");
-		code("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return inArray(a,'454')").equals("false");
 
 		section("Array.reverse()");
 		code("var a = ['a','b','c','d']; reverse(a); return a").equals("[d, c, b, a]");
 
 		section("Array.arrayMin()");
 		code("return arrayMin([])").equals("null");
-		code("return arrayMin([8,4,3,-1,8,44])").equals("-1");
-		code("return arrayMin([0:7,8:9,'a':2])").equals("2");
+		code("return arrayMin([8, 4, 3, -1, 8, 44])").equals("-1");
 		code("return arrayMin([1, 2, 3, 4, 5, null])").equals("null");
 		code("var a = arrayMin([1, 2, 3, 4, 5, null]) return a").equals("null");
 		code("return arrayMin([1, 2, 3, 4, 5, null])").equals("null");
 		code("return arrayMin([1, 2, 3, null, 4, 5])").equals("null");
 		code("return arrayMin([1, null, 5, 3, null, 2])").equals("null");
 		code("return arrayMin([null, 3, 4, 5, null, 1])").equals("null");
-		code("var a = [560 : null, 595 : null, 601 : 15, 566 : 13, 531 : 13] return arrayMin(a)").equals("null");
 
 		section("Array.arrayMax()");
 		code("return arrayMax([])").equals("null");
-		code("return arrayMax([8,4,3,-1,8,44])").equals("44");
-		code("return arrayMax([0:7,8:9,'a':2])").equals("9");
+		code("return arrayMax([8, 4, 3, -1, 8, 44])").equals("44");
 		code("return arrayMax([1, 2, 3, 4, 5, null])").equals("5");
 		code("return arrayMax([1, 2, 3, null, 4, 5])").equals("5");
 		code("return arrayMax([1, null, 5, 3, null, 2])").equals("5");
 		code("return arrayMax([null, 3, 4, 5, null, 1])").equals("5");
 		code("var a = arrayMax([1, 2, 3, 4, 5, null]) return a").equals("5");
-		code("var a = [560 : null, 595 : null, 601 : 15, 566 : 13, 531 : 13] return arrayMax(a)").equals("15");
 
 		section("Array.sum()");
 		code_v1("return sum([1,5,7])").equals("13");
 		code_v2_("return sum([1,5,7])").equals("13.0");
-		code_v1("return sum([0:1,'a':5,'test':7])").equals("13");
-		code_v2_("return sum([0:1,'a':5,'test':7])").equals("13.0");
 		code_v1("return sum([])").equals("0");
 		code_v2_("return sum([])").equals("0.0");
 
 		section("Array.average()");
 		code_v1("return average([2, 4, 6])").equals("4");
 		code_v2_("return average([2, 4, 6])").equals("4.0");
-		code_v1("return average([0: 2, 'a': 4, 'test': 6])").equals("4");
-		code_v2_("return average([0: 2, 'a': 4, 'test': 6])").equals("4.0");
 		code_v1("return average([])").equals("0");
 		code_v2_("return average([])").equals("0.0");
 
@@ -515,10 +502,12 @@ public class TestArray extends TestCommon {
 		code("return isEmpty([])").equals("true");
 
 		section("Array.subArray()");
-		code("return subArray([1,2,3,4,5,6,7,8],1,3)").equals("[2, 3, 4]");
-		code("return subArray([1,2,3,4,5,6,7,8],3,3)").equals("[4]");
+		code_v1_3("return subArray([1,2,3,4,5,6,7,8], 1, 3)").equals("[2, 3, 4]");
+		code_v4_("return subArray([1,2,3,4,5,6,7,8], 1, 3)").equals("[2, 3]");
+		code_v1_3("return subArray([1,2,3,4,5,6,7,8], 3, 3)").equals("[4]");
+		code_v4_("return subArray([1,2,3,4,5,6,7,8], 3, 3)").equals("[]");
 
 		section("Array.assocReverse()");
-		code("var a = [1,2,3]; assocReverse(a); return a;").equals("[2 : 3, 1 : 2, 0 : 1]");
+		code_v1_3("var a = [1, 2, 3]; assocReverse(a); return a;").equals("[2 : 3, 1 : 2, 0 : 1]");
 	}
 }

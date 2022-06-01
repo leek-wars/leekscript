@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import leekscript.AILog;
+import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
@@ -111,6 +112,8 @@ public class LeekValueManager {
 			return ((ObjectLeekValue) value).getString(ai, new HashSet<Object>());
 		} else if (value instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) value).getString(ai, new HashSet<Object>());
+		} else if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).getString(ai, new HashSet<Object>());
 		} else if (value instanceof String) {
 			return (String) value;
 		} else if (value instanceof ClassLeekValue) {
@@ -135,6 +138,8 @@ public class LeekValueManager {
 			return ((ObjectLeekValue) value).getString(ai, visited);
 		} else if (value instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) value).getString(ai, visited);
+		} else if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).getString(ai, visited);
 		} else if (value instanceof String) {
 			return (String) value;
 		} else if (value instanceof ClassLeekValue) {
@@ -205,7 +210,7 @@ public class LeekValueManager {
 		if (v instanceof Boolean) return LeekValue.BOOLEAN;
 		if (v instanceof Number) return LeekValue.NUMBER;
 		if (v instanceof String) return LeekValue.STRING;
-		if (v instanceof LegacyArrayLeekValue) return LeekValue.ARRAY;
+		if (v instanceof LegacyArrayLeekValue || v instanceof ArrayLeekValue) return LeekValue.ARRAY;
 		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT;
 		if (v instanceof ClassLeekValue) return LeekValue.CLASS;
 		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION;

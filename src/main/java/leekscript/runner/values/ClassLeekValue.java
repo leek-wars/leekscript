@@ -321,7 +321,13 @@ public class ClassLeekValue extends FunctionLeekValue {
 		if (this == ai.integerClass) return 0;
 		if (this == ai.realClass || this == ai.numberClass) return 0.0;
 		if (this == ai.stringClass) return "";
-		if (this == ai.arrayClass) return new LegacyArrayLeekValue();
+		if (this == ai.arrayClass) {
+			if (ai.getVersion() >= 4) {
+				return new ArrayLeekValue();
+			} else {
+				return new LegacyArrayLeekValue();
+			}
+		}
 		if (this == ai.objectClass) return new ObjectLeekValue(ai.objectClass);
 
 		// Create the actual object
