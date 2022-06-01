@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import leekscript.AILog;
-import leekscript.runner.values.ArrayLeekValue;
+import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
 import leekscript.runner.values.LeekValue;
@@ -60,7 +60,7 @@ public class LeekValueManager {
 		}
 		if (o instanceof JSONArray) {
 			JSONArray a = (JSONArray) o;
-			ArrayLeekValue array = new ArrayLeekValue();
+			var array = new LegacyArrayLeekValue();
 			for (Object oo : a) {
 				array.push(ai, parseJSON(oo, ai));
 			}
@@ -68,7 +68,7 @@ public class LeekValueManager {
 		}
 		if (o instanceof JSONObject) {
 			JSONObject a = (JSONObject) o;
-			ArrayLeekValue array = new ArrayLeekValue();
+			var array = new LegacyArrayLeekValue();
 			for (String key : a.keySet()) {
 				array.getOrCreate(ai, key).set(parseJSON(a.get(key), ai));
 			}
@@ -109,8 +109,8 @@ public class LeekValueManager {
 			return String.valueOf((Boolean) value);
 		} else if (value instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) value).getString(ai, new HashSet<Object>());
-		} else if (value instanceof ArrayLeekValue) {
-			return ((ArrayLeekValue) value).getString(ai, new HashSet<Object>());
+		} else if (value instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) value).getString(ai, new HashSet<Object>());
 		} else if (value instanceof String) {
 			return (String) value;
 		} else if (value instanceof ClassLeekValue) {
@@ -133,8 +133,8 @@ public class LeekValueManager {
 			return String.valueOf((Boolean) value);
 		} else if (value instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) value).getString(ai, visited);
-		} else if (value instanceof ArrayLeekValue) {
-			return ((ArrayLeekValue) value).getString(ai, visited);
+		} else if (value instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) value).getString(ai, visited);
 		} else if (value instanceof String) {
 			return (String) value;
 		} else if (value instanceof ClassLeekValue) {
@@ -171,8 +171,8 @@ public class LeekValueManager {
 	}
 
 	public static Box getOrCreate(AI ai, Object value, Object index) throws LeekRunException {
-		if (value instanceof ArrayLeekValue) {
-			return ((ArrayLeekValue) value).getOrCreate(ai, index);
+		if (value instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) value).getOrCreate(ai, index);
 		}
 		throw new LeekRunException(LeekRunException.UNKNOWN_FUNCTION);
 	}
@@ -205,7 +205,7 @@ public class LeekValueManager {
 		if (v instanceof Boolean) return LeekValue.BOOLEAN;
 		if (v instanceof Number) return LeekValue.NUMBER;
 		if (v instanceof String) return LeekValue.STRING;
-		if (v instanceof ArrayLeekValue) return LeekValue.ARRAY;
+		if (v instanceof LegacyArrayLeekValue) return LeekValue.ARRAY;
 		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT;
 		if (v instanceof ClassLeekValue) return LeekValue.CLASS;
 		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION;
@@ -218,7 +218,7 @@ public class LeekValueManager {
 		if (v instanceof Boolean) return LeekValue.BOOLEAN_V1;
 		if (v instanceof Number) return LeekValue.NUMBER_V1;
 		if (v instanceof String) return LeekValue.STRING_V1;
-		if (v instanceof ArrayLeekValue) return LeekValue.ARRAY_V1;
+		if (v instanceof LegacyArrayLeekValue) return LeekValue.ARRAY_V1;
 		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT_V1;
 		if (v instanceof ClassLeekValue) return LeekValue.CLASS_V1;
 		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION_V1;

@@ -107,7 +107,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		}
 		// On fait le parcours
 		// Déclaration de la variable
-		sb.append("var ").append(var).append(" = ((ArrayLeekValue) ").append(ar).append(").getArrayIterator(); ");
+		sb.append("var ").append(var).append(" = ((LegacyArrayLeekValue) ").append(ar).append(").getArrayIterator(); ");
 		sb.append("while (!").append(var).append(".ended()) { ops(1); ");
 		// Maj de la clé
 		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {

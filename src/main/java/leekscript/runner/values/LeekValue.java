@@ -40,7 +40,7 @@ public class LeekValue {
 				ret += "boolean";
 			else if (v instanceof String)
 				ret += "string";
-			else if (v instanceof ArrayLeekValue)
+			else if (v instanceof LegacyArrayLeekValue)
 				ret += "array";
 			else if (v instanceof FunctionLeekValue)
 				ret += "function";

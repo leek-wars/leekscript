@@ -2,7 +2,7 @@ package leekscript.runner;
 
 import java.util.Comparator;
 
-import leekscript.runner.values.ArrayLeekValue;
+import leekscript.runner.values.LegacyArrayLeekValue;
 
 public class LeekValueComparator {
 
@@ -66,11 +66,11 @@ public class LeekValueComparator {
 					return 1;
 				else
 					return -1;
-			} else if (v1 instanceof ArrayLeekValue) {
-				if (v2 instanceof ArrayLeekValue) {
-					if (((ArrayLeekValue) v1).size() == ((ArrayLeekValue) v2).size())
+			} else if (v1 instanceof LegacyArrayLeekValue) {
+				if (v2 instanceof LegacyArrayLeekValue) {
+					if (((LegacyArrayLeekValue) v1).size() == ((LegacyArrayLeekValue) v2).size())
 						return 0;
-					else if (((ArrayLeekValue) v1).size() < ((ArrayLeekValue) v2).size())
+					else if (((LegacyArrayLeekValue) v1).size() < ((LegacyArrayLeekValue) v2).size())
 						return -1;
 					else
 						return 1;

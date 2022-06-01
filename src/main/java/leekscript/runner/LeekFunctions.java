@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 import leekscript.AILog;
 import leekscript.functions.Functions;
 import leekscript.functions.VariableOperations;
-import leekscript.runner.values.ArrayLeekValue;
+import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
 import leekscript.common.Error;
 import leekscript.common.Type;
@@ -360,14 +360,14 @@ public enum LeekFunctions implements ILeekFunction {
 			if (AI.verifyParameters(new int[] { AI.STRING, AI.STRING, AI.NUMBER }, parameters)) {
 				int limit = ai.integer(parameters[2]);
 				String[] elements = s.split(delimiter, limit);
-				ArrayLeekValue array = new ArrayLeekValue();
+				var array = new LegacyArrayLeekValue();
 				for (short i = 0; i < elements.length; i++) {
 					array.push(ai, elements[i]);
 				}
 				return array;
 			} else {
 				String[] elements = s.split(Pattern.quote(delimiter));
-				ArrayLeekValue array = new ArrayLeekValue();
+				var array = new LegacyArrayLeekValue();
 				for (short i = 0; i < elements.length; i++) {
 					array.push(ai, elements[i]);
 				}
@@ -380,8 +380,8 @@ public enum LeekFunctions implements ILeekFunction {
 			String s = LeekValueManager.getString(ai, parameters[0]);
 			String delimiter = LeekValueManager.getString(ai, parameters[1]);
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations((int) (s.length() * Math.log(delimiter.length() + 1))) : 1);
-			if (retour instanceof ArrayLeekValue) {
-				ai.ops(((ArrayLeekValue) retour).size());
+			if (retour instanceof LegacyArrayLeekValue) {
+				ai.ops(((LegacyArrayLeekValue) retour).size());
 			}
 		}
 	},
@@ -483,14 +483,14 @@ public enum LeekFunctions implements ILeekFunction {
 	remove(2, new int[] { AI.ARRAY, AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			var index = ((Number) parameters[1]).intValue();
 			return array.remove(ai, index);
 		}
 
 		@Override
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			var index = ((Number) parameters[1]).intValue();
 			if (index >= 0 && index < array.size()) {
 				ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(index + 1) : 1);
@@ -503,7 +503,7 @@ public enum LeekFunctions implements ILeekFunction {
 	count(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			return array.size();
 		}
 	},
@@ -511,7 +511,7 @@ public enum LeekFunctions implements ILeekFunction {
 	join(2, new int[] { AI.ARRAY, AI.STRING }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			var delimiter = (String) parameters[1];
 			return array.join(leekIA, delimiter);
 		}
@@ -525,7 +525,7 @@ public enum LeekFunctions implements ILeekFunction {
 	insert(3, new int[] { AI.ARRAY, -1, AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			var index = ((Number) parameters[2]).intValue();
 			if (ai.getVersion() == 1) {
 				array.insert(ai, index, LeekOperations.clone(ai, parameters[1]));
@@ -537,7 +537,7 @@ public enum LeekFunctions implements ILeekFunction {
 
 		@Override
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			var index = ((Number) parameters[2]).intValue();
 			ai.ops(1 + (array.size() - index) * 4);
 		}
@@ -545,7 +545,7 @@ public enum LeekFunctions implements ILeekFunction {
 	push(2, new int[] { AI.ARRAY, -1 }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			if (ai.getVersion() >= 2) {
 				array.push(ai, parameters[1]);
 			} else {
@@ -557,7 +557,7 @@ public enum LeekFunctions implements ILeekFunction {
 	unshift(2, new int[] { AI.ARRAY, -1 }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			if (leekIA.getVersion() == 1) {
 				var value = LeekOperations.clone(leekIA, parameters[1]);
 				array.insert(leekIA, 0, value);
@@ -570,35 +570,35 @@ public enum LeekFunctions implements ILeekFunction {
 	shift(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			return array.remove(leekIA, 0);
 		}
 	},
 	pop(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			return array.remove(leekIA, array.size() - 1);
 		}
 	},
 	removeElement(2, new int[] { AI.ARRAY, -1 }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			array.removeObject(ai, parameters[1]);
 			return null;
 		}
 
 		@Override
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
 	removeKey(2, new int[] { AI.ARRAY, -1 }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			array.removeByKey(leekIA, parameters[1]);
 			return null;
 		}
@@ -606,7 +606,7 @@ public enum LeekFunctions implements ILeekFunction {
 	sort(1, 2, new int[] { AI.ARRAY, -1 }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			int type = LeekValueComparator.SortComparator.SORT_ASC;
 			if (leekIA.bool(parameters[1]))
 				type = LeekValueComparator.SortComparator.SORT_DESC;
@@ -616,17 +616,17 @@ public enum LeekFunctions implements ILeekFunction {
 
 		@Override
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
 	assocSort(1, 2, new int[] { AI.ARRAY, -1 }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
-			int type = ArrayLeekValue.ASC_A;
+			var array = (LegacyArrayLeekValue) parameters[0];
+			int type = LegacyArrayLeekValue.ASC_A;
 			if (leekIA.bool(parameters[1]))
-				type = ArrayLeekValue.DESC_A;
+				type = LegacyArrayLeekValue.DESC_A;
 			// try {
 			array.sort(leekIA, type);
 			// } catch (Exception e) {
@@ -638,45 +638,45 @@ public enum LeekFunctions implements ILeekFunction {
 
 		@Override
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
 	keySort(1, 2, new int[] { AI.ARRAY, -1 }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
-			int type = ArrayLeekValue.ASC_K;
+			var array = (LegacyArrayLeekValue) parameters[0];
+			int type = LegacyArrayLeekValue.ASC_K;
 			if (leekIA.bool(parameters[1]))
-				type = ArrayLeekValue.DESC_K;
+				type = LegacyArrayLeekValue.DESC_K;
 			array.sort(leekIA, type);
 			return null;
 		}
 
 		@Override
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
 	shuffle(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			array.shuffle(leekIA);
 			return null;
 		}
 
 		@Override
 		public void addOperations(AI leekIA, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			leekIA.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
 	search(2, 3, new int[] { AI.ARRAY, -1, -1 }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			if (AI.verifyParameters(new int[] { AI.ARRAY, -1, AI.NUMBER }, parameters)) {
 				var index = ai.integer(parameters[2]);
 				return array.search(ai, parameters[1], index);
@@ -687,41 +687,41 @@ public enum LeekFunctions implements ILeekFunction {
 
 		@Override
 		public void addOperations(AI leekIA, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			leekIA.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
 	inArray(2, new int[] { AI.ARRAY, -1 }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			return array.contains(leekIA, parameters[1]);
 		}
 
 		@Override
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
 	reverse(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			array.reverse(leekIA);
 			return null;
 		}
 
 		@Override
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
 	arrayMin(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			if (array.size() > 0) {
 				var comp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
 				var iterator = array.iterator();
@@ -746,7 +746,7 @@ public enum LeekFunctions implements ILeekFunction {
 	arrayMax(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			Object min_c = null;
 			var mincomp = new LeekValueComparator.SortComparator(leekIA, LeekValueComparator.SortComparator.SORT_ASC);
 			for (var val : array) {
@@ -763,14 +763,14 @@ public enum LeekFunctions implements ILeekFunction {
 
 		@Override
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
 	sum(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			double somme = 0;
 			for (var val : array) {
 				somme += ai.real(val.getValue());
@@ -780,14 +780,14 @@ public enum LeekFunctions implements ILeekFunction {
 
 		@Override
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
 	average(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			double average = 0;
 			for (var val : array) {
 				average += ai.real(val.getValue());
@@ -799,14 +799,14 @@ public enum LeekFunctions implements ILeekFunction {
 
 		@Override
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
 	},
 	fill(2, 3, new int[] { AI.ARRAY, -1, -1 }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			int size = array.size();
 			if (AI.isType(parameters[2], AI.NUMBER))
 				size = ai.integer(parameters[2]);
@@ -823,19 +823,19 @@ public enum LeekFunctions implements ILeekFunction {
 	isEmpty(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			return array.size() == 0;
 		}
 	},
 	subArray(3, new int[] { AI.ARRAY, AI.NUMBER, AI.NUMBER }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			int start = ai.integer(parameters[1]);
 			int end = ai.integer(parameters[2]);
 			if (start < 0 || end < start || end >= array.size())
 				return null;
-			ArrayLeekValue retour = new ArrayLeekValue();
+			LegacyArrayLeekValue retour = new LegacyArrayLeekValue();
 			int i = 0;
 			for (var val : array) {
 				if (i >= start && i <= end) {
@@ -853,8 +853,8 @@ public enum LeekFunctions implements ILeekFunction {
 	pushAll(2, new int[] { AI.ARRAY, AI.ARRAY }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
-			var array2 = (ArrayLeekValue) parameters[1];
+			var array = (LegacyArrayLeekValue) parameters[0];
+			var array2 = (LegacyArrayLeekValue) parameters[1];
 			for (var value : array2) {
 				if (leekIA.getVersion() == 1) {
 					array.push(leekIA, LeekOperations.clone(leekIA, value.getValue()));
@@ -872,20 +872,20 @@ public enum LeekFunctions implements ILeekFunction {
 	assocReverse(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			array.assocReverse();
 			return null;
 		}
 
 		@Override
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(((ArrayLeekValue) parameters[0]).size() + 1) : 1);
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(((LegacyArrayLeekValue) parameters[0]).size() + 1) : 1);
 		}
 	},
 	arrayMap(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			var fun = (FunctionLeekValue) parameters[1];
 			if (leekIA.getVersion() >= 2) {
 				return leekIA.arrayMap(array, fun);
@@ -898,9 +898,9 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			if (ai.getVersion() >= 2) {
-				return ai.arrayFilter((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+				return ai.arrayFilter((LegacyArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 			} else {
-				return ai.arrayFilterV1((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+				return ai.arrayFilterV1((LegacyArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 			}
 		}
 	},
@@ -908,26 +908,26 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			int maxDepth = AI.isType(parameters[1], AI.NUMBER) ? ai.integer(parameters[1]) : 1;
-			ArrayLeekValue retour = new ArrayLeekValue();
-			ai.arrayFlatten((ArrayLeekValue) parameters[0], retour, maxDepth);
+			LegacyArrayLeekValue retour = new LegacyArrayLeekValue();
+			ai.arrayFlatten((LegacyArrayLeekValue) parameters[0], retour, maxDepth);
 			return retour;
 		}
 
 		@Override
 		public void addOperations(AI leekIA, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
-			leekIA.ops(hasVariableOperations() ? mVariableOperations.getOperations(((ArrayLeekValue) retour).size() + 1) : 1);
+			leekIA.ops(hasVariableOperations() ? mVariableOperations.getOperations(((LegacyArrayLeekValue) retour).size() + 1) : 1);
 		}
 	},
 	arrayFoldLeft(2, 3, new int[] { AI.ARRAY, AI.FUNCTION, -1 }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			return leekIA.arrayFoldLeft((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1], parameters[2]);
+			return leekIA.arrayFoldLeft((LegacyArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1], parameters[2]);
 		}
 	},
 	arrayFoldRight(2, 3, new int[] { AI.ARRAY, AI.FUNCTION, -1 }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			var array = (ArrayLeekValue) parameters[0];
+			var array = (LegacyArrayLeekValue) parameters[0];
 			return leekIA.arrayFoldRight(array, (FunctionLeekValue) parameters[1], parameters[2]);
 		}
 	},
@@ -935,9 +935,9 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			if (ai.getVersion() >= 2) {
-				return ai.arrayPartition((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+				return ai.arrayPartition((LegacyArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 			} else {
-				return ai.arrayPartitionV1((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+				return ai.arrayPartitionV1((LegacyArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 			}
 		}
 	},
@@ -945,9 +945,9 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			if (ai.getVersion() >= 2) {
-				return ai.arrayIter((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+				return ai.arrayIter((LegacyArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 			} else {
-				return ai.arrayIterV1((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+				return ai.arrayIterV1((LegacyArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 			}
 		}
 	},
@@ -961,7 +961,7 @@ public enum LeekFunctions implements ILeekFunction {
 	arraySort(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
-			return leekIA.arraySort((ArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
+			return leekIA.arraySort((LegacyArrayLeekValue) parameters[0], (FunctionLeekValue) parameters[1]);
 		}
 	},
 

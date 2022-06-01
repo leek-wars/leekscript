@@ -707,7 +707,7 @@ public class LeekExpression extends AbstractExpression {
 		case Operators.NEW:
 			if (mExpression2 instanceof LeekVariable) {
 				if (mainblock.getWordCompiler().getVersion() >= 3 && ((LeekVariable) mExpression2).getString().equals("Array")) {
-					writer.addCode("new ArrayLeekValue()");
+					writer.addCode("new LegacyArrayLeekValue()");
 				} else {
 					writer.addCode("execute(");
 					mExpression2.writeJavaCode(mainblock, writer);

@@ -250,7 +250,7 @@ public class ObjectLeekValue {
 				for (var key : fields.keySet()) {
 					values[i++] = key;
 				}
-				return new ArrayLeekValue(clazz.ai, values);
+				return new LegacyArrayLeekValue(clazz.ai, values);
 			}
 			if (method.equals("values_0")) {
 				Object[] values = new Object[fields.size()];
@@ -258,7 +258,7 @@ public class ObjectLeekValue {
 				for (var value : fields.values()) {
 					values[i++] = value;
 				}
-				return new ArrayLeekValue(clazz.ai, values);
+				return new LegacyArrayLeekValue(clazz.ai, values);
 			}
 		}
 		if (resultM == null) {
@@ -303,7 +303,7 @@ public class ObjectLeekValue {
 				for (var key : fields.keySet()) {
 					values[i++] = key;
 				}
-				return new ArrayLeekValue(clazz.ai, values);
+				return new LegacyArrayLeekValue(clazz.ai, values);
 			}
 			if (method.equals("values_0")) {
 				Object[] values = new Object[fields.size()];
@@ -311,7 +311,7 @@ public class ObjectLeekValue {
 				for (var value : fields.values()) {
 					values[i++] = value;
 				}
-				return new ArrayLeekValue(clazz.ai, values);
+				return new LegacyArrayLeekValue(clazz.ai, values);
 			}
 		}
 		if (result == null) {

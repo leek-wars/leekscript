@@ -1,6 +1,6 @@
 package leekscript.runner;
 
-import leekscript.runner.values.ArrayLeekValue;
+import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 
 public class LeekOperations {
@@ -50,16 +50,16 @@ public class LeekOperations {
 	}
 
 	public static Object clone(AI ai, Object value, int level) throws LeekRunException {
-		if (value instanceof ArrayLeekValue) {
+		if (value instanceof LegacyArrayLeekValue) {
 			if (level == 0) return value;
 			// System.out.println("ops Clone Array begin");
 			ai.ops(1);
-			var array = (ArrayLeekValue) value;
+			var array = (LegacyArrayLeekValue) value;
 			if (array.size() > 0) {
 				// System.out.println("ops Clone Array");
-				ai.ops(array.size() * (ArrayLeekValue.ARRAY_CELL_CREATE_OPERATIONS));
+				ai.ops(array.size() * (LegacyArrayLeekValue.ARRAY_CELL_CREATE_OPERATIONS));
 			}
-			return new ArrayLeekValue(ai, array, level);
+			return new LegacyArrayLeekValue(ai, array, level);
 		} else if (value instanceof ObjectLeekValue) {
 			if (level == 0) return value;
 			ai.ops(1);
