@@ -25,7 +25,7 @@ public class TestCommon {
 	private static String C_PINK = "\033[1;95m";
 	private static String C_GREY = "\033[0;90m";
 
-	private static int LATEST_VERSION = 3;
+	private static int LATEST_VERSION = 4;
 
 	private static int tests = 0;
 	private static int success = 0;
@@ -45,7 +45,7 @@ public class TestCommon {
 		String code;
 		boolean enabled = true;
 		int version_min = 1;
-		int version_max = 3;
+		int version_max = LATEST_VERSION;
 
 		public Case(String code, boolean enabled) {
 			this.code = code;
@@ -221,6 +221,9 @@ public class TestCommon {
 	}
 	public Case code_v1_2(String code) {
 		return new Case(code, true, 1, 2);
+	}
+	public Case code_v1_3(String code) {
+		return new Case(code, true, 1, 3);
 	}
 	public Case code_v2(String code) {
 		return new Case(code, true, 2, 2);

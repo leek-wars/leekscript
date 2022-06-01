@@ -1,7 +1,6 @@
 package leekscript.runner;
 
 import leekscript.AILog;
-import leekscript.compiler.LeekScript;
 import leekscript.compiler.LineMapping;
 import leekscript.compiler.RandomGenerator;
 import leekscript.runner.PhpArray.Element;
