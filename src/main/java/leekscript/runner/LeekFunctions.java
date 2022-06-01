@@ -528,9 +528,9 @@ public enum LeekFunctions implements ILeekFunction {
 			var array = (ArrayLeekValue) parameters[0];
 			var index = ((Number) parameters[2]).intValue();
 			if (ai.getVersion() == 1) {
-				array.insert(ai, LeekOperations.clone(ai, parameters[1]), index);
+				array.insert(ai, index, LeekOperations.clone(ai, parameters[1]));
 			} else {
-				array.insert(ai, parameters[1], index);
+				array.insert(ai, index, parameters[1]);
 			}
 			return null;
 		}
@@ -560,9 +560,9 @@ public enum LeekFunctions implements ILeekFunction {
 			var array = (ArrayLeekValue) parameters[0];
 			if (leekIA.getVersion() == 1) {
 				var value = LeekOperations.clone(leekIA, parameters[1]);
-				array.insert(leekIA, value, 0);
+				array.insert(leekIA, 0, value);
 			} else {
-				array.insert(leekIA, parameters[1], 0);
+				array.insert(leekIA, 0, parameters[1]);
 			}
 			return null;
 		}
@@ -624,9 +624,9 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
 			var array = (ArrayLeekValue) parameters[0];
-			int type = PhpArray.ASC_A;
+			int type = ArrayLeekValue.ASC_A;
 			if (leekIA.bool(parameters[1]))
-				type = PhpArray.DESC_A;
+				type = ArrayLeekValue.DESC_A;
 			// try {
 			array.sort(leekIA, type);
 			// } catch (Exception e) {
@@ -646,9 +646,9 @@ public enum LeekFunctions implements ILeekFunction {
 		@Override
 		public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException {
 			var array = (ArrayLeekValue) parameters[0];
-			int type = PhpArray.ASC_K;
+			int type = ArrayLeekValue.ASC_K;
 			if (leekIA.bool(parameters[1]))
-				type = PhpArray.DESC_K;
+				type = ArrayLeekValue.DESC_K;
 			array.sort(leekIA, type);
 			return null;
 		}

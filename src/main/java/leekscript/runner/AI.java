@@ -3,7 +3,6 @@ package leekscript.runner;
 import leekscript.AILog;
 import leekscript.compiler.LineMapping;
 import leekscript.compiler.RandomGenerator;
-import leekscript.runner.PhpArray.Element;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
@@ -11,6 +10,7 @@ import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.Box;
 import leekscript.runner.values.ArrayLeekValue.ArrayIterator;
+import leekscript.runner.values.ArrayLeekValue.Element;
 import leekscript.common.Error;
 
 import java.io.File;
@@ -617,7 +617,7 @@ public abstract class AI {
 			int nb = function.getArgumentsCount(this);
 			if (nb == 2) {
 				ArrayLeekValue array = (ArrayLeekValue) LeekOperations.clone(this, origin);
-				array.sort(this, new Comparator<PhpArray.Element>() {
+				array.sort(this, new Comparator<ArrayLeekValue.Element>() {
 					@Override
 					public int compare(Element o1, Element o2) {
 						try {
@@ -630,7 +630,7 @@ public abstract class AI {
 				return array;
 			} else if (nb == 4) {
 				ArrayLeekValue array = (ArrayLeekValue) LeekOperations.clone(this, origin);
-				array.sort(this, new Comparator<PhpArray.Element>() {
+				array.sort(this, new Comparator<Element>() {
 					@Override
 					public int compare(Element o1, Element o2) {
 						try {
