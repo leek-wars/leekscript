@@ -86,6 +86,242 @@ public class ArrayLeekValue implements Iterable<Box> {
 			mElement.setValue(ai, value);
 		}
 	}
+
+	private static class ElementComparatorV1 implements Comparator<Element> {
+
+		private final int mOrder;
+
+		public final static int SORT_ASC = 1;
+		public final static int SORT_DESC = 2;
+
+		public ElementComparatorV1(int order) {
+			mOrder = order;
+		}
+
+		@Override
+		public int compare(Element v1, Element v2) {
+			try {
+			if (mOrder == SORT_ASC)
+				return compareAsc(v1.value.getValue(), v2.value.getValue());
+			else if (mOrder == SORT_DESC)
+				return compareAsc(v2.value.getValue(), v1.value.getValue());
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return 0;
+		}
+
+		public int compareAsc(Object v1, Object v2) throws LeekRunException {
+			int type1 = LeekValueManager.getV1Type(v1);
+			int type2 = LeekValueManager.getV1Type(v2);
+			if (type1 < type2)
+				return -1;
+			else if (type1 > type2)
+				return 1;
+			if (type1 == LeekValue.BOOLEAN_V1) {
+				if ((Boolean) v1 == (Boolean) v2)
+					return 0;
+				else if ((Boolean) v1)
+					return 1;
+				else
+					return -1;
+			} else if (type1 == LeekValue.NUMBER_V1) {
+				var d = ((Number) v2).doubleValue();
+				if (((Number) v1).doubleValue() == d)
+					return 0;
+				else if (((Number) v1).doubleValue() < d)
+					return -1;
+				else
+					return 1;
+			} else if (type1 == LeekValue.STRING_V1) {
+				return ((String) v1).compareTo((String) v2);
+			} else if (type1 == LeekValue.ARRAY_V1) {
+				var a = (ArrayLeekValue) v2;
+				if (((ArrayLeekValue) v1).size() == a.size())
+					return 0;
+				else if (((ArrayLeekValue) v1).size() < a.size())
+					return -1;
+				else
+					return 1;
+			} else {
+				return 0;
+			}
+		}
+	}
+
+	private static class ElementComparator implements Comparator<Element> {
+
+		private final int mOrder;
+
+		public final static int SORT_ASC = 1;
+		public final static int SORT_DESC = 2;
+
+		public ElementComparator(int order) {
+			mOrder = order;
+		}
+
+		@Override
+		public int compare(Element v1, Element v2) {
+			try {
+			if (mOrder == SORT_ASC)
+				return compareAsc(v1.value.getValue(), v2.value.getValue());
+			else if (mOrder == SORT_DESC)
+				return compareAsc(v2.value.getValue(), v1.value.getValue());
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return 0;
+		}
+
+		public int compareAsc(Object v1, Object v2) throws LeekRunException {
+			int type1 = LeekValueManager.getType(v1);
+			int type2 = LeekValueManager.getType(v2);
+			if (type1 < type2)
+				return -1;
+			else if (type1 > type2)
+				return 1;
+			if (type1 == LeekValue.BOOLEAN) {
+				if ((Boolean) v1 == (Boolean) v2)
+					return 0;
+				else if ((Boolean) v1)
+					return 1;
+				else
+					return -1;
+			} else if (type1 == LeekValue.NUMBER) {
+				var d = ((Number) v2).doubleValue();
+				if (((Number) v1).doubleValue() == d)
+					return 0;
+				else if (((Number) v1).doubleValue() < d)
+					return -1;
+				else
+					return 1;
+			} else if (type1 == LeekValue.STRING) {
+				return ((String) v1).compareTo((String) v2);
+			} else if (type1 == LeekValue.ARRAY) {
+				var a = (ArrayLeekValue) v2;
+				if (((ArrayLeekValue) v1).size() == a.size())
+					return 0;
+				else if (((ArrayLeekValue) v1).size() < a.size())
+					return -1;
+				else
+					return 1;
+			} else {
+				return 0;
+			}
+		}
+	}
+
+	private static class KeyComparator implements Comparator<Element> {
+
+		private final int mOrder;
+
+		public final static int SORT_ASC = 1;
+		public final static int SORT_DESC = 2;
+
+		public KeyComparator(int order) {
+			mOrder = order;
+		}
+
+		@Override
+		public int compare(Element v1, Element v2) {
+			if (mOrder == SORT_ASC)
+				return compareAsc(v1.key, v2.key);
+			else if (mOrder == SORT_DESC)
+				return compareAsc(v2.key, v1.key);
+			return 0;
+		}
+
+		public int compareAsc(Object v1, Object v2) {
+			if (v1 instanceof String && v2 instanceof String)
+				return ((String) v1).compareTo((String) v2);
+			else if (v1 instanceof Integer && v2 instanceof Integer)
+				return ((Integer) v1).compareTo((Integer) v2);
+			else if (v1 instanceof Integer)
+				return -1;
+			return 1;
+		}
+	}
+
+	private class PhpIterator implements Iterator<Box> {
+
+		private Element e = mHead;
+
+		@Override
+		public boolean hasNext() {
+			return e != null;
+		}
+
+		@Override
+		public Box next() {
+			var v = e.value;
+			if (e != null)
+				e = e.next;
+			return v;
+		}
+
+		@Override
+		public void remove() {}
+	}
+
+	private class ReversedPhpIterator implements Iterator<Object> {
+
+		private Element e = mEnd;
+
+		@Override
+		public boolean hasNext() {
+			return e != null;
+		}
+		@Override
+		public Object next() {
+			var v = e.value.getValue();
+			if (e != null)
+				e = e.prev;
+			return v;
+		}
+		@Override
+		public void remove() {}
+	}
+
+	public static class Element {
+
+		private Object key;
+		private int hash;
+		private boolean numeric = false;
+		private Box value = null;
+
+		private Element next = null;
+		private Element prev = null;
+
+		private Element hashNext = null;
+
+		public Element next() {
+			return next;
+		}
+
+		public Object key() {
+			return key;
+		}
+
+		public Object keyObject() {
+			return key;
+		}
+
+		public Object value() {
+			return value.getValue();
+		}
+
+		public Object valueBox() {
+			return value;
+		}
+
+		public void setValue(AI ai, Object v) throws LeekRunException {
+			value.set(v);
+		}
+
+		public String toString() {
+			return value.getValue().toString();
+		}
+	}
 	
 	private Element mHead = null;
 	private Element mEnd = null;
@@ -362,242 +598,6 @@ public class ArrayLeekValue implements Iterable<Box> {
 		return r + "]";
 	}
 
-	private static class ElementComparatorV1 implements Comparator<Element> {
-
-		private final int mOrder;
-
-		public final static int SORT_ASC = 1;
-		public final static int SORT_DESC = 2;
-
-		public ElementComparatorV1(int order) {
-			mOrder = order;
-		}
-
-		@Override
-		public int compare(Element v1, Element v2) {
-			try {
-			if (mOrder == SORT_ASC)
-				return compareAsc(v1.value.getValue(), v2.value.getValue());
-			else if (mOrder == SORT_DESC)
-				return compareAsc(v2.value.getValue(), v1.value.getValue());
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			return 0;
-		}
-
-		public int compareAsc(Object v1, Object v2) throws LeekRunException {
-			int type1 = LeekValueManager.getV1Type(v1);
-			int type2 = LeekValueManager.getV1Type(v2);
-			if (type1 < type2)
-				return -1;
-			else if (type1 > type2)
-				return 1;
-			if (type1 == LeekValue.BOOLEAN_V1) {
-				if ((Boolean) v1 == (Boolean) v2)
-					return 0;
-				else if ((Boolean) v1)
-					return 1;
-				else
-					return -1;
-			} else if (type1 == LeekValue.NUMBER_V1) {
-				var d = ((Number) v2).doubleValue();
-				if (((Number) v1).doubleValue() == d)
-					return 0;
-				else if (((Number) v1).doubleValue() < d)
-					return -1;
-				else
-					return 1;
-			} else if (type1 == LeekValue.STRING_V1) {
-				return ((String) v1).compareTo((String) v2);
-			} else if (type1 == LeekValue.ARRAY_V1) {
-				var a = (ArrayLeekValue) v2;
-				if (((ArrayLeekValue) v1).size() == a.size())
-					return 0;
-				else if (((ArrayLeekValue) v1).size() < a.size())
-					return -1;
-				else
-					return 1;
-			} else {
-				return 0;
-			}
-		}
-	}
-
-	private static class ElementComparator implements Comparator<Element> {
-
-		private final int mOrder;
-
-		public final static int SORT_ASC = 1;
-		public final static int SORT_DESC = 2;
-
-		public ElementComparator(int order) {
-			mOrder = order;
-		}
-
-		@Override
-		public int compare(Element v1, Element v2) {
-			try {
-			if (mOrder == SORT_ASC)
-				return compareAsc(v1.value.getValue(), v2.value.getValue());
-			else if (mOrder == SORT_DESC)
-				return compareAsc(v2.value.getValue(), v1.value.getValue());
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			return 0;
-		}
-
-		public int compareAsc(Object v1, Object v2) throws LeekRunException {
-			int type1 = LeekValueManager.getType(v1);
-			int type2 = LeekValueManager.getType(v2);
-			if (type1 < type2)
-				return -1;
-			else if (type1 > type2)
-				return 1;
-			if (type1 == LeekValue.BOOLEAN) {
-				if ((Boolean) v1 == (Boolean) v2)
-					return 0;
-				else if ((Boolean) v1)
-					return 1;
-				else
-					return -1;
-			} else if (type1 == LeekValue.NUMBER) {
-				var d = ((Number) v2).doubleValue();
-				if (((Number) v1).doubleValue() == d)
-					return 0;
-				else if (((Number) v1).doubleValue() < d)
-					return -1;
-				else
-					return 1;
-			} else if (type1 == LeekValue.STRING) {
-				return ((String) v1).compareTo((String) v2);
-			} else if (type1 == LeekValue.ARRAY) {
-				var a = (ArrayLeekValue) v2;
-				if (((ArrayLeekValue) v1).size() == a.size())
-					return 0;
-				else if (((ArrayLeekValue) v1).size() < a.size())
-					return -1;
-				else
-					return 1;
-			} else {
-				return 0;
-			}
-		}
-	}
-
-	private static class KeyComparator implements Comparator<Element> {
-
-		private final int mOrder;
-
-		public final static int SORT_ASC = 1;
-		public final static int SORT_DESC = 2;
-
-		public KeyComparator(int order) {
-			mOrder = order;
-		}
-
-		@Override
-		public int compare(Element v1, Element v2) {
-			if (mOrder == SORT_ASC)
-				return compareAsc(v1.key, v2.key);
-			else if (mOrder == SORT_DESC)
-				return compareAsc(v2.key, v1.key);
-			return 0;
-		}
-
-		public int compareAsc(Object v1, Object v2) {
-			if (v1 instanceof String && v2 instanceof String)
-				return ((String) v1).compareTo((String) v2);
-			else if (v1 instanceof Integer && v2 instanceof Integer)
-				return ((Integer) v1).compareTo((Integer) v2);
-			else if (v1 instanceof Integer)
-				return -1;
-			return 1;
-		}
-	}
-
-	private class PhpIterator implements Iterator<Box> {
-
-		private Element e = mHead;
-
-		@Override
-		public boolean hasNext() {
-			return e != null;
-		}
-
-		@Override
-		public Box next() {
-			var v = e.value;
-			if (e != null)
-				e = e.next;
-			return v;
-		}
-
-		@Override
-		public void remove() {}
-	}
-
-	private class ReversedPhpIterator implements Iterator<Object> {
-
-		private Element e = mEnd;
-
-		@Override
-		public boolean hasNext() {
-			return e != null;
-		}
-		@Override
-		public Object next() {
-			var v = e.value.getValue();
-			if (e != null)
-				e = e.prev;
-			return v;
-		}
-		@Override
-		public void remove() {}
-	}
-
-	public static class Element {
-
-		private Object key;
-		private int hash;
-		private boolean numeric = false;
-		private Box value = null;
-
-		private Element next = null;
-		private Element prev = null;
-
-		private Element hashNext = null;
-
-		public Element next() {
-			return next;
-		}
-
-		public Object key() {
-			return key;
-		}
-
-		public Object keyObject() {
-			return key;
-		}
-
-		public Object value() {
-			return value.getValue();
-		}
-
-		public Object valueBox() {
-			return value;
-		}
-
-		public void setValue(AI ai, Object v) throws LeekRunException {
-			value.set(v);
-		}
-
-		public String toString() {
-			return value.getValue().toString();
-		}
-	}
-	
 	private void initTable(AI ai, int capacity) throws LeekRunException {
 		int realCapacity = Math.max(START_CAPACITY, capacity);
 		// System.out.println("ops initTable");
