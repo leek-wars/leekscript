@@ -569,7 +569,7 @@ public class LeekExpression extends AbstractExpression {
 			writer.getInt(mainblock, mExpression2);
 			return;
 
-			// Les logiques
+		// Les logiques
 		case Operators.EQUALS_EQUALS:
 			if (mExpression2 instanceof LeekNull) {
 				if (mExpression1.getType() == Type.BOOL || mExpression1.getType().isNumber()) {
@@ -594,11 +594,19 @@ public class LeekExpression extends AbstractExpression {
 			writer.addCode(")");
 			return;
 		case Operators.EQUALS:
-			writer.addCode("eq(");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			if (mainblock.getWordCompiler().getVersion() >= 4) {
+				writer.addCode("equals_equals(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			} else {
+				writer.addCode("eq(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 			return;
 		case Operators.MORE:
 			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
@@ -796,8 +804,13 @@ public class LeekExpression extends AbstractExpression {
 	@Override
 	public void analyze(WordCompiler compiler) {
 
+		// Opérateur @ déprécié en LS 2+
 		if (mOperator == Operators.REFERENCE && compiler.getVersion() >= 2) {
 			compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.WARNING, Error.REFERENCE_DEPRECATED));
+		}
+		// Opérateurs === et !== déprécié en LS 4+
+		if ((mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.NOT_EQUALS_EQUALS) && compiler.getVersion() >= 4) {
+			compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.WARNING, Error.TRIPLE_EQUALS_DEPRECATED));
 		}
 
 		if (mExpression1 != null) mExpression1.analyze(compiler);
