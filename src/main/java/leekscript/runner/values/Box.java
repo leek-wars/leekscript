@@ -134,7 +134,7 @@ public class Box {
 	}
 
 	public Object add_eq(Object val) throws LeekRunException {
-		if (mValue instanceof ArrayLeekValue && !(val instanceof String)) {
+		if (mValue instanceof LegacyArrayLeekValue && !(val instanceof String)) {
 			return mValue = mUAI.add_eq(mValue, val);
 		}
 		return mValue = mUAI.add(mValue, val);
@@ -207,8 +207,8 @@ public class Box {
 	}
 
 	public Object put(AI ai, Object key, Object value) throws LeekRunException {
-		if (mValue instanceof ArrayLeekValue) {
-			return ((ArrayLeekValue) mValue).put(ai, key, value);
+		if (mValue instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) mValue).put(ai, key, value);
 		}
 		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
 	}

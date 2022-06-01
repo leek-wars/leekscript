@@ -52,8 +52,8 @@ public class ClassLeekValue extends FunctionLeekValue {
 	public HashMap<String, Object> genericStaticMethods = new HashMap<>();
 	public LeekAnonymousFunction initFields = null;
 
-	private ArrayLeekValue fieldsArray;
-	private ArrayLeekValue methodsArray;
+	private LegacyArrayLeekValue fieldsArray;
+	private LegacyArrayLeekValue methodsArray;
 
 	public ClassLeekValue(AI ai, String name) {
 		this(ai, name, null);
@@ -321,7 +321,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 		if (this == ai.integerClass) return 0;
 		if (this == ai.realClass || this == ai.numberClass) return 0.0;
 		if (this == ai.stringClass) return "";
-		if (this == ai.arrayClass) return new ArrayLeekValue();
+		if (this == ai.arrayClass) return new LegacyArrayLeekValue();
 		if (this == ai.objectClass) return new ObjectLeekValue(ai.objectClass);
 
 		// Create the actual object
@@ -348,50 +348,50 @@ public class ClassLeekValue extends FunctionLeekValue {
 		return execute(ai, arguments);
 	}
 
-	private ArrayLeekValue getFieldsArray() throws LeekRunException {
+	private LegacyArrayLeekValue getFieldsArray() throws LeekRunException {
 		if (fieldsArray == null) {
 			Object[] values = new Object[fields.size()];
 			int i = 0;
 			for (var f : fields.entrySet()) {
 				values[i++] = f.getKey();
 			}
-			fieldsArray = new ArrayLeekValue(ai, values);
+			fieldsArray = new LegacyArrayLeekValue(ai, values);
 		}
 		return fieldsArray;
 	}
 
-	private ArrayLeekValue getStaticFieldsArray() throws LeekRunException {
+	private LegacyArrayLeekValue getStaticFieldsArray() throws LeekRunException {
 		if (fieldsArray == null) {
 			Object[] values = new Object[staticFields.size()];
 			int i = 0;
 			for (var f : staticFields.entrySet()) {
 				values[i++] = f.getKey();
 			}
-			fieldsArray = new ArrayLeekValue(ai, values);
+			fieldsArray = new LegacyArrayLeekValue(ai, values);
 		}
 		return fieldsArray;
 	}
 
-	private ArrayLeekValue getMethodsArray() throws LeekRunException {
+	private LegacyArrayLeekValue getMethodsArray() throws LeekRunException {
 		if (methodsArray == null) {
 			Object[] values = new Object[genericMethods.size()];
 			int i = 0;
 			for (var f : genericMethods.entrySet()) {
 				values[i++] = f.getKey();
 			}
-			methodsArray = new ArrayLeekValue(ai, values);
+			methodsArray = new LegacyArrayLeekValue(ai, values);
 		}
 		return methodsArray;
 	}
 
-	private ArrayLeekValue getStaticMethodsArray() throws LeekRunException {
+	private LegacyArrayLeekValue getStaticMethodsArray() throws LeekRunException {
 		if (methodsArray == null) {
 			Object[] values = new Object[genericStaticMethods.size()];
 			int i = 0;
 			for (var f : genericStaticMethods.entrySet()) {
 				values[i++] = f.getKey();
 			}
-			methodsArray = new ArrayLeekValue(ai, values);
+			methodsArray = new LegacyArrayLeekValue(ai, values);
 		}
 		return methodsArray;
 	}

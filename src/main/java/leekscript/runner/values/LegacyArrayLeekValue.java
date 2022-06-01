@@ -18,7 +18,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-public class ArrayLeekValue implements Iterable<Box> {
+public class LegacyArrayLeekValue implements Iterable<Box> {
 
 	public final static int ARRAY_CELL_ACCESS_OPERATIONS = 2;
 	public final static int ARRAY_CELL_CREATE_OPERATIONS = 2; // + sqrt(size) / 5
@@ -136,10 +136,10 @@ public class ArrayLeekValue implements Iterable<Box> {
 			} else if (type1 == LeekValue.STRING_V1) {
 				return ((String) v1).compareTo((String) v2);
 			} else if (type1 == LeekValue.ARRAY_V1) {
-				var a = (ArrayLeekValue) v2;
-				if (((ArrayLeekValue) v1).size() == a.size())
+				var a = (LegacyArrayLeekValue) v2;
+				if (((LegacyArrayLeekValue) v1).size() == a.size())
 					return 0;
-				else if (((ArrayLeekValue) v1).size() < a.size())
+				else if (((LegacyArrayLeekValue) v1).size() < a.size())
 					return -1;
 				else
 					return 1;
@@ -198,10 +198,10 @@ public class ArrayLeekValue implements Iterable<Box> {
 			} else if (type1 == LeekValue.STRING) {
 				return ((String) v1).compareTo((String) v2);
 			} else if (type1 == LeekValue.ARRAY) {
-				var a = (ArrayLeekValue) v2;
-				if (((ArrayLeekValue) v1).size() == a.size())
+				var a = (LegacyArrayLeekValue) v2;
+				if (((LegacyArrayLeekValue) v1).size() == a.size())
 					return 0;
-				else if (((ArrayLeekValue) v1).size() < a.size())
+				else if (((LegacyArrayLeekValue) v1).size() < a.size())
 					return -1;
 				else
 					return 1;
@@ -330,13 +330,13 @@ public class ArrayLeekValue implements Iterable<Box> {
 	private int capacity = 0;
 	private Element[] mTable = null;
 
-	public ArrayLeekValue() {}
+	public LegacyArrayLeekValue() {}
 
-	public ArrayLeekValue(AI ai, Object values[]) throws LeekRunException {
+	public LegacyArrayLeekValue(AI ai, Object values[]) throws LeekRunException {
 		this(ai, values, false);
 	}
 
-	public ArrayLeekValue(AI ai, Object values[], boolean isKeyValue) throws LeekRunException {
+	public LegacyArrayLeekValue(AI ai, Object values[], boolean isKeyValue) throws LeekRunException {
 		if (capacity > 0) {
 			initTable(ai, values.length);
 		}
@@ -353,7 +353,7 @@ public class ArrayLeekValue implements Iterable<Box> {
 		}
 	}
 
-	public ArrayLeekValue(AI ai, ArrayLeekValue array, int level) throws LeekRunException {
+	public LegacyArrayLeekValue(AI ai, LegacyArrayLeekValue array, int level) throws LeekRunException {
 		if (array.size() > 0) {
 			initTable(ai, array.size());
 			Element e = array.mHead;
@@ -497,8 +497,8 @@ public class ArrayLeekValue implements Iterable<Box> {
 	}
 
 	public boolean equals(AI ai, Object comp) throws LeekRunException {
-		if (comp instanceof ArrayLeekValue) {
-			return equals(ai, ((ArrayLeekValue) comp));
+		if (comp instanceof LegacyArrayLeekValue) {
+			return equals(ai, ((LegacyArrayLeekValue) comp));
 		} else if (size() == 1) { // Si y'a un seul élément dans le tableau
 			var firstValue = getHeadElement().value();
 			if (firstValue == null && comp == null) {
@@ -522,9 +522,9 @@ public class ArrayLeekValue implements Iterable<Box> {
 	}
 
 	public Object add_eq(AI ai, Object value) throws LeekRunException {
-		if (value instanceof ArrayLeekValue) {
+		if (value instanceof LegacyArrayLeekValue) {
 			// mValues.reindex(ai);
-			ArrayIterator iterator = ((ArrayLeekValue) value).getArrayIterator();
+			ArrayIterator iterator = ((LegacyArrayLeekValue) value).getArrayIterator();
 			while (!iterator.ended()) {
 				if (iterator.key() instanceof String || iterator.key() instanceof ObjectLeekValue)
 					getOrCreate(ai, ai.string(iterator.getKey(ai))).set(iterator.getValue(ai));
@@ -1117,7 +1117,7 @@ public class ArrayLeekValue implements Iterable<Box> {
 		addToHashMap(ai, e);
 
 		// System.out.println("ops createElement");
-		int operations = ArrayLeekValue.ARRAY_CELL_CREATE_OPERATIONS + (int) Math.sqrt(mSize) / 3;
+		int operations = LegacyArrayLeekValue.ARRAY_CELL_CREATE_OPERATIONS + (int) Math.sqrt(mSize) / 3;
 		ai.addOperationsNoCheck(operations);
 
 		return e;
@@ -1171,7 +1171,7 @@ public class ArrayLeekValue implements Iterable<Box> {
 	private Element getElement(AI ai, Object key) throws LeekRunException {
 
 		// System.out.println("ops getElement");
-		int operations = ArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS;
+		int operations = LegacyArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS;
 		ai.addOperationsNoCheck(operations);
 
 		if (mTable == null) {
@@ -1265,7 +1265,7 @@ public class ArrayLeekValue implements Iterable<Box> {
 		return new ReversedPhpIterator();
 	}
 
-	public boolean equals(AI ai, ArrayLeekValue array) throws LeekRunException {
+	public boolean equals(AI ai, LegacyArrayLeekValue array) throws LeekRunException {
 
 		ai.ops(1);
 
