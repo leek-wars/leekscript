@@ -421,4 +421,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public WordCompiler getWordCompiler() {
 		return this.wordCompiler;
 	}
+
+	public int getVersion() {
+		return this.wordCompiler.getVersion();
+	}
 }

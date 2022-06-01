@@ -57,14 +57,26 @@ public class LeekArray extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if (mValues.size() == 0) writer.addCode("new LegacyArrayLeekValue()");
-		else {
-			writer.addCode("new LegacyArrayLeekValue(" + writer.getAIThis() + ", new Object[] { ");
-			for (int i = 0; i < mValues.size(); i++) {
-				if (i != 0) writer.addCode(", ");
-				mValues.get(i).writeJavaCode(mainblock, writer);
+		if (mainblock.getVersion() >= 4) {
+			if (mValues.size() == 0) writer.addCode("new ArrayLeekValue()");
+			else {
+				writer.addCode("new ArrayLeekValue(new Object[] { ");
+				for (int i = 0; i < mValues.size(); i++) {
+					if (i != 0) writer.addCode(", ");
+					mValues.get(i).writeJavaCode(mainblock, writer);
+				}
+				writer.addCode(" })");
 			}
-			writer.addCode(" }, " + (mIsKeyVal ? "true" : "false") + ")");
+		} else {
+			if (mValues.size() == 0) writer.addCode("new LegacyArrayLeekValue()");
+			else {
+				writer.addCode("new LegacyArrayLeekValue(" + writer.getAIThis() + ", new Object[] { ");
+				for (int i = 0; i < mValues.size(); i++) {
+					if (i != 0) writer.addCode(", ");
+					mValues.get(i).writeJavaCode(mainblock, writer);
+				}
+				writer.addCode(" }, " + (mIsKeyVal ? "true" : "false") + ")");
+			}
 		}
 	}
 

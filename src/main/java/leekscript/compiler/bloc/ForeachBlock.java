@@ -72,14 +72,18 @@ public class ForeachBlock extends AbstractLeekBlock {
 		} else {
 			writer.addCounter(1);
 		}
-		writer.addLine("for (var " + var + " : (LegacyArrayLeekValue) " + ar + ") {");
+		var array_class = mainblock.getVersion() >= 4 ? "ArrayLeekValue" : "LegacyArrayLeekValue";
+		writer.addLine("for (var " + var + " : (" + array_class + ") " + ar + ") {");
 
-		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
+		if (mainblock.getVersion() >= 4) {
+			if (mIsDeclaration && declaration.isCaptured()) {
+				writer.addLine(iterator_name + ".set(" + var + ");");
+			} else {
+				writer.addLine(iterator_name + " = " + var + ";");
+			}
+		} else if (mainblock.getVersion() >= 2) {
 			if (mIsDeclaration && declaration.isCaptured()) {
 				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
-			} else if (mReference) {
-				writer.addLine(iterator_name + " = " + var + ".getValue();");
-				writer.addCounter(1);
 			} else {
 				writer.addLine(iterator_name + " = " + var + ".getValue();");
 			}

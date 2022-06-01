@@ -108,10 +108,14 @@ public class TestLoops extends TestCommon {
 		// DISABLED_code("var s = 0 for (var i = 0; i < 10; i += 1) { var j = 0 for (; j < 10; j += 1) { s++ }} return s;").equals("100");
 		// file("test/code/loops/lot_of_fors_int.leek").equals("15015");
 		// file("test/code/loops/lot_of_fors_array.leek").equals("15015");
-		code("var tabmulti=[]; for (var i = 0; i < 8; ++i) tabmulti[i]=1; return tabmulti").equals("[1, 1, 1, 1, 1, 1, 1, 1]");
-		code("var tabmulti=[]; for (var i = 0; i < 9; ++i) tabmulti[i]=1; return tabmulti").equals("[1, 1, 1, 1, 1, 1, 1, 1, 1]");
-		code("var tabmulti=[]; for (var i = 0; i < 50; ++i) tabmulti[i]=1; return tabmulti").equals("[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]");
-		code("var tabmulti=[[],[],[],[],[]]; var i = 3, j = -2 tabmulti[i][j]=i*j; return tabmulti").equals("[[], [], [], [-2 : -6], []]");
+		code_v1_3("var tabmulti=[]; for (var i = 0; i < 8; ++i) tabmulti[i]=1; return tabmulti").equals("[1, 1, 1, 1, 1, 1, 1, 1]");
+		code_v4_("var tabmulti=[]; for (var i = 0; i < 8; ++i) tabmulti[i]=1; return tabmulti").equals("[]");
+		code_v1_3("var tabmulti=[]; for (var i = 0; i < 9; ++i) tabmulti[i]=1; return tabmulti").equals("[1, 1, 1, 1, 1, 1, 1, 1, 1]");
+		code_v4_("var tabmulti=[]; for (var i = 0; i < 9; ++i) tabmulti[i]=1; return tabmulti").equals("[]");
+		code_v1_3("var tabmulti=[]; for (var i = 0; i < 50; ++i) tabmulti[i]=1; return tabmulti").equals("[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]");
+		code_v4_("var tabmulti=[]; for (var i = 0; i < 50; ++i) tabmulti[i]=1; return tabmulti").equals("[]");
+		code_v1_3("var tabmulti=[[],[],[],[],[]]; var i = 3, j = -2 tabmulti[i][j]=i*j; return tabmulti").equals("[[], [], [], [-2 : -6], []]");
+		code_v4_("var tabmulti=[[],[],[],[],[]]; var i = 3, j = -2 tabmulti[i][j]=i*j; return tabmulti").equals("[[], [], [], [], []]");
 		code("var tabmulti=[[],[],[],[],[]]; var vPM=4; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ }} return tabmulti").equals("[[], [], [], [], []]");
 		code("var tabmulti=[[],[],[],[],[]]; var vPM=1; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-1 : 0, 0 : 0, 1 : 0], [-1 : -1, 0 : 0, 1 : 1], [], [], []]");
 		code("var tabmulti=[[],[],[],[],[]]; var vPM=2; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-2 : 0, -1 : 0, 0 : 0, 1 : 0, 2 : 0], [-2 : -2, -1 : -1, 0 : 0, 1 : 1, 2 : 2], [-2 : -4, -1 : -2, 0 : 0, 1 : 2, 2 : 4], [], []]");
