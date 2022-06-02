@@ -362,12 +362,15 @@ public class TestObject extends TestCommon {
 		code_v2_("class a { static method() { return '42' } } class b { toto constructor() { this.toto = a.method } } var o = new b() return o.toto()").equals("42");
 		code_v2_("class a { static method() { return '42' } } class b { toto constructor() { this.toto = a.method } m() { return this.toto() } } var o = new b() return o.m()").equals("42");
 		code_v2_("class Test { private static method_1() { return 4 } private static method_2() { return 9 } public static array = [1: Test.method_1, 2: Test.method_2] } return [Test.array[1](), Test.array[2]()]").equals("[4, 9]");
-		code_v2_("class Test { private static method_1() { return 4 } private static method_2() { return 9 } public static array = [1: Test.method_1, 2: Test.method_2] } return arrayMap(Test.array, function(x) { return x() })").equals("[1 : 4, 2 : 9]");
+		code_v2_3("class Test { private static method_1() { return 4 } private static method_2() { return 9 } public static array = [1: Test.method_1, 2: Test.method_2] } return arrayMap(Test.array, function(x) { return x() })").equals("[1 : 4, 2 : 9]");
+		code_v4_("class Test { private static method_1() { return 4 } private static method_2() { return 9 } public static map = [1: Test.method_1, 2: Test.method_2] } return mapMap(Test.map, function(x) { return x() })").equals("[1 : 4, 2 : 9]");
 		code_v2_("class A { a a() { return 12 } } return new A().a()").equals("12");
 
 		section("Return of field");
-		code_v2_("class R { f = [] m(k, r) { return this.f[k] = r } } var x = new R() return x.m(1, 2)").equals("2");
-		code_v2_("class R { private f = [] m(k, r) { return this.f[k] = r } } var x = new R() return x.m(1, 'hello')").equals("hello");
+		code_v2_3("class R { f = [] m(k, r) { return this.f[k] = r } } var x = new R() return x.m(1, 2)").equals("2");
+		code_v4_("class R { f = [:] m(k, r) { return this.f[k] = r } } var x = new R() return x.m(1, 2)").equals("2");
+		code_v2_3("class R { private f = [] m(k, r) { return this.f[k] = r } } var x = new R() return x.m(1, 'hello')").equals("hello");
+		code_v4_("class R { private f = [:] m(k, r) { return this.f[k] = r } } var x = new R() return x.m(1, 'hello')").equals("hello");
 
 		section("Constant in static field");
 		code_v2_("class A { static bulbsNameChip = ['puny_bulb': PI] } return A.bulbsNameChip").equals("[puny_bulb : 3.141592653589793]");

@@ -1,11 +1,15 @@
 package leekscript.runner.values;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
@@ -82,6 +86,28 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			} else {
 				return 0;
 			}
+		}
+	}
+
+	public static class ArrayIterator implements Iterator<Entry<Object, Object>> {
+
+		private ArrayLeekValue array;
+		private int i = 0;
+
+		public ArrayIterator(ArrayLeekValue array) {
+			this.array = array;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return i < array.size();
+		}
+
+		@Override
+		public Entry<Object, Object> next() {
+			var e = new AbstractMap.SimpleEntry<Object, Object>(i, array.get(i));
+			i++;
+			return e;
 		}
 	}
 
@@ -519,15 +545,16 @@ public class ArrayLeekValue extends ArrayList<Object> {
 
 	public ArrayLeekValue map(AI ai, FunctionLeekValue function) throws LeekRunException {
 		int nb = function.getArgumentsCount(ai);
+		System.out.println("Function arg count = " + nb);
 		if (nb != 1 && nb != 2) {
 			return null;
 		}
 		var result = new ArrayLeekValue(size());
 		for (int i = 0; i < size(); ++i) {
 			if (nb == 1)
-				result.add(function.execute(ai, get(i)));
+				result.add(ai.execute(function, get(i)));
 			else
-				result.add(function.execute(ai, get(i), i));
+				result.add(ai.execute(function, get(i), i));
 		}
 		return result;
 	}
@@ -707,5 +734,9 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			hashCode = 31 * hashCode + eh;
 		}
 		return hashCode;
+	}
+
+	public Iterator<Entry<Object, Object>> genericIterator() {
+		return new ArrayIterator(this);
 	}
 }

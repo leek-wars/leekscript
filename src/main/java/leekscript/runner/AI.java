@@ -4,6 +4,7 @@ import leekscript.AILog;
 import leekscript.compiler.LineMapping;
 import leekscript.compiler.RandomGenerator;
 import leekscript.runner.values.LegacyArrayLeekValue;
+import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
@@ -19,9 +20,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.Map.Entry;
 import java.util.stream.Stream;
 
 import com.alibaba.fastjson.JSON;
@@ -37,6 +40,7 @@ public abstract class AI {
 	public static final int NUMBER = 7;
 	public static final int FUNCTION = 8;
 	public static final int ARRAY = 9;
+	public static final int MAP = 10;
 
 	public static final int ERROR_LOG_COST = 10000;
 
@@ -450,7 +454,6 @@ public abstract class AI {
 
 	public Object arrayFoldRight(LegacyArrayLeekValue array, FunctionLeekValue function, Object start_value) throws LeekRunException {
 		Object result = LeekOperations.clone(this, start_value);
-		// Object prev = null;
 		var it = array.getReversedIterator();
 		while (it.hasNext()) {
 			result = function.execute(this, it.next(), result);
@@ -636,7 +639,7 @@ public abstract class AI {
 					@Override
 					public int compare(Element o1, Element o2) {
 						try {
-							return integer(LeekValueManager.execute(AI.this, function, o1.key(), o1.getValue(), o2.key(), o2.getValue()));
+							return integer(LeekValueManager.execute(AI.this, function, o1.getKey(), o1.getValue(), o2.getKey(), o2.getValue()));
 						} catch (Exception e) {
 							throw new RuntimeException(e);
 						}
@@ -910,6 +913,8 @@ public abstract class AI {
 			return ((LegacyArrayLeekValue) value).size() != 0;
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).size() != 0;
+		} else if (value instanceof MapLeekValue) {
+			return ((MapLeekValue) value).size() != 0;
 		} else if (value instanceof String) {
 			var s = (String) value;
 			if (s.equals("false") || s.equals("0")) {
@@ -1282,15 +1287,26 @@ public abstract class AI {
 	}
 
 	public boolean isPrimitive(Object value) {
-		return !(value instanceof ArrayLeekValue || value instanceof LegacyArrayLeekValue || value instanceof ObjectLeekValue);
+		return !(value instanceof ArrayLeekValue || value instanceof MapLeekValue || value instanceof LegacyArrayLeekValue || value instanceof ObjectLeekValue);
 	}
 
 	public boolean isIterable(Object value) throws LeekRunException {
-		boolean ok = value instanceof LegacyArrayLeekValue || value instanceof ArrayLeekValue;
+		boolean ok = value instanceof LegacyArrayLeekValue || value instanceof ArrayLeekValue || value instanceof MapLeekValue;
 		if (!ok && version >= 2) {
 			addSystemLog(AILog.ERROR, Error.NOT_ITERABLE, new String[] { string(value) });
 		}
 		return ok;
+	}
+
+	public Iterator<Entry<Object, Object>> iterator(Object value) {
+		if (value instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) value).iterator();
+		} else if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).genericIterator();
+		} else if (value instanceof MapLeekValue) {
+			return ((MapLeekValue) value).entrySet().iterator();
+		}
+		return null;
 	}
 
 	public Object getField(Object value, String field, ClassLeekValue fromClass) throws LeekRunException {
@@ -1498,6 +1514,9 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put(this, key, value);
 		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put(this, key, value);
+		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
 			return ((ObjectLeekValue) array).setField(field, value);
@@ -1516,6 +1535,9 @@ public abstract class AI {
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_inc(this, key);
+		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_inc(this, key);
 		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
@@ -1536,6 +1558,9 @@ public abstract class AI {
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_pre_inc(this, key);
+		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_pre_inc(this, key);
 		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
@@ -1596,6 +1621,9 @@ public abstract class AI {
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_add_eq(this, key, value);
+		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_add_eq(this, key, value);
 		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
@@ -1844,6 +1872,9 @@ public abstract class AI {
 		if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).get(this, index);
 		}
+		if (value instanceof MapLeekValue) {
+			return ((MapLeekValue) value).get(this, index);
+		}
 		if (value instanceof ObjectLeekValue) {
 			ops(1);
 			return ((ObjectLeekValue) value).getField(string(index), fromClass);
@@ -1943,6 +1974,7 @@ public abstract class AI {
 			case NULL: return value == null;
 			case LEGACY_ARRAY: return value instanceof LegacyArrayLeekValue;
 			case ARRAY: return value instanceof LegacyArrayLeekValue || value instanceof ArrayLeekValue;
+			case MAP: return value instanceof MapLeekValue;
 			case FUNCTION: return value instanceof FunctionLeekValue;
 			case NUMBER: return value instanceof Integer || value instanceof Double;
 		}

@@ -11,7 +11,7 @@ public class LeekArray extends AbstractExpression {
 
 	private final ArrayList<AbstractExpression> mValues = new ArrayList<AbstractExpression>();
 
-	private boolean mIsKeyVal = false;
+	public boolean mIsKeyVal = false;
 
 	public void addValue(AbstractExpression param) {
 		mValues.add(param);
@@ -58,14 +58,26 @@ public class LeekArray extends AbstractExpression {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		if (mainblock.getVersion() >= 4) {
-			if (mValues.size() == 0) writer.addCode("new ArrayLeekValue()");
-			else {
-				writer.addCode("new ArrayLeekValue(new Object[] { ");
-				for (int i = 0; i < mValues.size(); i++) {
-					if (i != 0) writer.addCode(", ");
-					mValues.get(i).writeJavaCode(mainblock, writer);
+			if (mIsKeyVal) {
+				if (mValues.size() == 0) writer.addCode("new MapLeekValue()");
+				else {
+					writer.addCode("new MapLeekValue(new Object[] { ");
+					for (int i = 0; i < mValues.size(); i++) {
+						if (i != 0) writer.addCode(", ");
+						mValues.get(i).writeJavaCode(mainblock, writer);
+					}
+					writer.addCode(" })");
 				}
-				writer.addCode(" })");
+			} else {
+				if (mValues.size() == 0) writer.addCode("new ArrayLeekValue()");
+				else {
+					writer.addCode("new ArrayLeekValue(new Object[] { ");
+					for (int i = 0; i < mValues.size(); i++) {
+						if (i != 0) writer.addCode(", ");
+						mValues.get(i).writeJavaCode(mainblock, writer);
+					}
+					writer.addCode(" })");
+				}
 			}
 		} else {
 			if (mValues.size() == 0) writer.addCode("new LegacyArrayLeekValue()");
