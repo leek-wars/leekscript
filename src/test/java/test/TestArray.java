@@ -498,7 +498,6 @@ public class TestArray extends TestCommon {
 
 		section("Array.isEmpty()");
 		code("return isEmpty([2,4,6])").equals("false");
-		code("return isEmpty([2:8])").equals("false");
 		code("return isEmpty([])").equals("true");
 
 		section("Array.subArray()");

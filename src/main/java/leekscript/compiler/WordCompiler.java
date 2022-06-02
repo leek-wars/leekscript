@@ -954,31 +954,39 @@ public class WordCompiler {
 					}
 				} else if (word.getType() == WordParser.T_VAR_STRING) {
 					retour.addExpression(new LeekString(word.getWord()));
+
 				} else if (word.getType() == WordParser.T_BRACKET_LEFT) {
 					// Déclaration d'un tableau
 					mCompiler.skipWord();
 					LeekArray array = new LeekArray();
-					int type = 0;// 0 => A déterminer, 1=> Simple, 2 =>
-									// Clé:valeur
-					while (mCompiler.getWord().getType() != WordParser.T_BRACKET_RIGHT) {
-						AbstractExpression exp = readExpression();
-						if (mCompiler.getWord().getWord().equals(":")) {
-							if (type == 0)
-								type = 2;
-							else if (type == 1)
-								throw new LeekCompilerException(mCompiler.getWord(), Error.SIMPLE_ARRAY);
-							mCompiler.skipWord();
-							AbstractExpression value = readExpression();
-							array.addValue(exp, value);
-						} else {
-							if (type == 0)
-								type = 1;
-							else if (type == 2)
-								throw new LeekCompilerException(mCompiler.getWord(), Error.ASSOCIATIVE_ARRAY);
-							array.addValue(exp);
+
+					if (mCompiler.getWord().getWord().equals(":")) {
+						// [:] map vide
+						array.mIsKeyVal = true;
+						mCompiler.skipWord();
+					} else {
+
+						int type = 0;// 0 => A déterminer, 1 => Simple, 2 => Clé:valeur
+						while (mCompiler.getWord().getType() != WordParser.T_BRACKET_RIGHT) {
+							AbstractExpression exp = readExpression();
+							if (mCompiler.getWord().getWord().equals(":")) {
+								if (type == 0)
+									type = 2;
+								else if (type == 1)
+									throw new LeekCompilerException(mCompiler.getWord(), Error.SIMPLE_ARRAY);
+								mCompiler.skipWord();
+								AbstractExpression value = readExpression();
+								array.addValue(exp, value);
+							} else {
+								if (type == 0)
+									type = 1;
+								else if (type == 2)
+									throw new LeekCompilerException(mCompiler.getWord(), Error.ASSOCIATIVE_ARRAY);
+								array.addValue(exp);
+							}
+							if (mCompiler.getWord().getType() == WordParser.T_VIRG)
+								mCompiler.skipWord();
 						}
-						if (mCompiler.getWord().getType() == WordParser.T_VIRG)
-							mCompiler.skipWord();
 					}
 					if (mCompiler.getWord().getType() != WordParser.T_BRACKET_RIGHT) {
 						throw new LeekCompilerException(mCompiler.getWord(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);

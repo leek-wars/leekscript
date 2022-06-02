@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
@@ -18,7 +19,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-public class LegacyArrayLeekValue implements Iterable<LegacyArrayLeekValue.Element> {
+public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>> {
 
 	public final static int ARRAY_CELL_ACCESS_OPERATIONS = 2;
 	public final static int ARRAY_CELL_CREATE_OPERATIONS = 2; // + sqrt(size) / 5
@@ -34,7 +35,7 @@ public class LegacyArrayLeekValue implements Iterable<LegacyArrayLeekValue.Eleme
 	public final static int ASC_K = 6;
 	public final static int DESC_K = 7;
 
-	public static class ArrayIterator implements Iterator<Element> {
+	public static class ArrayIterator implements Iterator<Entry<Object, Object>> {
 
 		Element mElement;
 
@@ -48,7 +49,7 @@ public class LegacyArrayLeekValue implements Iterable<LegacyArrayLeekValue.Eleme
 		}
 
 		@Override
-		public Element next() {
+		public Entry<Object, Object> next() {
 			var v = mElement;
 			if (mElement != null)
 				mElement = mElement.next;
@@ -57,9 +58,9 @@ public class LegacyArrayLeekValue implements Iterable<LegacyArrayLeekValue.Eleme
 
 		public Object getKey(AI ai) throws LeekRunException {
 			if (ai.getVersion() >= 2) {
-				return mElement.key();
+				return mElement.getKey();
 			} else {
-				return LeekOperations.clone(ai, mElement.key());
+				return LeekOperations.clone(ai, mElement.getKey());
 			}
 		}
 
@@ -80,7 +81,7 @@ public class LegacyArrayLeekValue implements Iterable<LegacyArrayLeekValue.Eleme
 		}
 
 		public Object getKeyRef() throws LeekRunException {
-			return mElement.key();
+			return mElement.getKey();
 		}
 
 		public Object getValueBox() throws LeekRunException {
@@ -266,7 +267,7 @@ public class LegacyArrayLeekValue implements Iterable<LegacyArrayLeekValue.Eleme
 		public void remove() {}
 	}
 
-	public static class Element {
+	public static class Element implements Entry<Object, Object> {
 
 		private Object key;
 		private int hash;
@@ -282,7 +283,8 @@ public class LegacyArrayLeekValue implements Iterable<LegacyArrayLeekValue.Eleme
 			return next;
 		}
 
-		public Object key() {
+		@Override
+		public Object getKey() {
 			return key;
 		}
 
@@ -290,6 +292,7 @@ public class LegacyArrayLeekValue implements Iterable<LegacyArrayLeekValue.Eleme
 			return key;
 		}
 
+		@Override
 		public Object getValue() {
 			return value.getValue();
 		}
@@ -304,6 +307,11 @@ public class LegacyArrayLeekValue implements Iterable<LegacyArrayLeekValue.Eleme
 
 		public String toString() {
 			return value.getValue().toString();
+		}
+
+		@Override
+		public Object setValue(Object arg0) {
+			return null;
 		}
 	}
 

@@ -10,6 +10,7 @@ import java.util.TreeMap;
 import leekscript.AILog;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.LegacyArrayLeekValue;
+import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
 import leekscript.runner.values.LeekValue;
@@ -140,6 +141,8 @@ public class LeekValueManager {
 			return ((LegacyArrayLeekValue) value).getString(ai, visited);
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getString(ai, visited);
+		} else if (value instanceof MapLeekValue) {
+			return ((MapLeekValue) value).getString(ai, visited);
 		} else if (value instanceof String) {
 			return (String) value;
 		} else if (value instanceof ClassLeekValue) {
@@ -211,6 +214,7 @@ public class LeekValueManager {
 		if (v instanceof Number) return LeekValue.NUMBER;
 		if (v instanceof String) return LeekValue.STRING;
 		if (v instanceof LegacyArrayLeekValue || v instanceof ArrayLeekValue) return LeekValue.ARRAY;
+		if (v instanceof MapLeekValue) return LeekValue.MAP;
 		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT;
 		if (v instanceof ClassLeekValue) return LeekValue.CLASS;
 		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION;

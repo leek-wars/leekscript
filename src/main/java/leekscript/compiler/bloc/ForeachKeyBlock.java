@@ -62,8 +62,8 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		// On prend un nombre unique pour les noms de variables temporaires
 		int block_count = getCount();
-		String var = "i" + block_count;
-		String key = "k" + block_count;
+		String var = "v" + block_count;
+		String it = "i" + block_count;
 		String ar = "ar" + block_count;
 
 		String key_iterator = mainblock.hasGlobal(mKeyIterator.getWord()) ? ("g_" + mKeyIterator) : ("u_" + mKeyIterator);
@@ -89,8 +89,6 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			} else {
 				sb.append("Object ").append(key_iterator).append(" = null; ops(1); ");
 			}
-		} else {
-			sb.append("ops(1);");
 		}
 		// Valeur
 		if (mIsDeclaration) {
@@ -103,46 +101,39 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			} else {
 				sb.append("Object ").append(val_iterator).append(" = null; ops(1);");
 			}
-		} else {
-			sb.append("ops(1);");
 		}
 
 		// On fait le parcours
-		// Déclaration de la variable
-		if (mainblock.getVersion() >= 4) {
-			sb.append("for (int ").append(key).append(" = 0; ").append(key).append(" < ((ArrayLeekValue) ").append(ar).append(").size(); ++").append(key).append(") { var ").append(var).append(" = ((ArrayLeekValue) ").append(ar).append(").get(").append(key).append(");");
-		} else {
-			sb.append("for (var ").append(var).append(" : (LegacyArrayLeekValue) ").append(ar).append(") {");
-		}
+		sb.append("var ").append(it).append(" = iterator(").append(ar).append("); while (").append(it).append(".hasNext()) { var ").append(var).append(" = ").append(it).append(".next(); ");
 
 		// Maj de la clé
 		if (mainblock.getVersion() >= 4) {
 			if (mIsKeyDeclaration && iteratorKeyDeclaration.isCaptured()) {
-				sb.append(key_iterator).append(".set(").append(key).append(");");
+				sb.append(key_iterator).append(".set(").append(var).append(".getKey()); ");
 			} else {
-				sb.append(key_iterator).append(" = ").append(key).append(";");
+				sb.append(key_iterator).append(" = ").append(var).append(".getKey(); ");
 			}
 		} else if (mainblock.getVersion() >= 2) {
 			if (mIsKeyDeclaration && iteratorKeyDeclaration.isCaptured()) {
-				sb.append(key_iterator).append(".set(").append(var).append(".key());");
+				sb.append(key_iterator).append(".set(").append(var).append(".getKey()); ");
 			} else {
-				sb.append(key_iterator).append(" = ").append(var).append(".key();");
+				sb.append(key_iterator).append(" = ").append(var).append(".getKey(); ");
 			}
 		} else {
 			if (mIsKeyDeclaration && iteratorKeyDeclaration.isCaptured()) {
-				sb.append(key_iterator).append(".set(").append(var).append(".key()); ops(1); ");
+				sb.append(key_iterator).append(".set(").append(var).append(".getKey()); ops(1); ");
 			} else if (mKeyReference) {
-				sb.append(key_iterator).append(".set(").append(var).append(".key());");
+				sb.append(key_iterator).append(".set(").append(var).append(".getKey()); ");
 			} else {
-				sb.append(key_iterator).append(".set(").append(var).append(".key()); ops(1); ");
+				sb.append(key_iterator).append(".set(").append(var).append(".getKey()); ops(1); ");
 			}
 		}
 		// Maj de la valeur
 		if (mainblock.getVersion() >= 4) {
 			if (mIsDeclaration && iteratorDeclaration.isCaptured()) {
-				sb.append(val_iterator).append(".set(").append(var).append(");");
+				sb.append(val_iterator).append(".set(").append(var).append(".getValue());");
 			} else {
-				sb.append(val_iterator).append(" = ").append(var).append(";");
+				sb.append(val_iterator).append(" = ").append(var).append(".getValue();");
 			}
 		} else if (mainblock.getVersion() >= 2) {
 			if (mIsDeclaration && iteratorDeclaration.isCaptured()) {

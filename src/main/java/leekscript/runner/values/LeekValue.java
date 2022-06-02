@@ -19,6 +19,9 @@ public class LeekValue {
 	public final static int FUNCTION = 5;
 	public final static int CLASS = 6;
 	public final static int OBJECT = 7;
+	public final static int MAP = 8;
+	public final static int SET = 9;
+	public final static int INTERVAL = 10;
 
 	public final static int ADD_COST = 1;
 	public final static int MUL_COST = 5;
