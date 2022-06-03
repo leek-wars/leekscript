@@ -22,12 +22,6 @@ public class LeekExpression extends AbstractExpression {
 
 	public LeekExpression() {}
 
-	public LeekExpression(AbstractExpression x, int operator, AbstractExpression y) {
-		mExpression1 = x;
-		mOperator = operator;
-		mExpression2 = y;
-	}
-
 	public void setParent(LeekExpression parent) {
 		mParent = parent;
 	}
@@ -320,16 +314,7 @@ public class LeekExpression extends AbstractExpression {
 	}
 
 	public void addOperator(int operator, IAWord token) {
-		// On doit trouver à quel endroit de l'arborescence on doit placer
-		// l'opérateur
-		/*
-		 * if(operator == Operators.TERNAIRE) addTernaire(); else if(operator ==
-		 * Operators.DOUBLE_POINT){ if(mExpression2 != null &&
-		 * mExpression2.getType() == EXPRESSION) ((LeekExpression)
-		 * mExpression2).addOperator(operator); else if(mExpression1 != null &&
-		 * mExpression1.getType() == EXPRESSION) ((LeekExpression)
-		 * mExpression1).addOperator(operator); } else
-		 */
+		// On doit trouver à quel endroit de l'arborescence on doit placer l'opérateur
 		if (mExpression1 != null && mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete(operator)) {
 			((LeekExpression) mExpression1).addOperator(operator, token);
 		}
@@ -346,8 +331,7 @@ public class LeekExpression extends AbstractExpression {
 					trn.setParent(this);
 					mExpression1 = trn;
 				}
-			}
-			else {
+			} else {
 				mOperator = operator;
 				mOperatorToken = token;
 			}
@@ -361,7 +345,7 @@ public class LeekExpression extends AbstractExpression {
 				new_e.setParent(this);
 				new_e.setExpression1(mExpression1);
 				new_e.setExpression2(mExpression2);
-				new_e.setOperator(mOperator, token);
+				new_e.setOperator(mOperator, mOperatorToken);
 				if (operator == Operators.TERNAIRE) {
 					LeekTernaire trn = new LeekTernaire();
 					if (mExpression1.getNature() == EXPRESSION)
@@ -381,6 +365,7 @@ public class LeekExpression extends AbstractExpression {
 					mExpression1 = new_e;
 					mExpression2 = null;
 					mOperator = operator;
+					mOperatorToken = token;
 				}
 			}
 			else if (mExpression2.getNature() != EXPRESSION) {
@@ -399,9 +384,9 @@ public class LeekExpression extends AbstractExpression {
 					new_e.setOperator(operator, token);
 					mExpression2 = new_e;
 				}
-			}
-			else
+			} else {
 				((LeekExpression) mExpression2).addOperator(operator, token);
+			}
 		}
 	}
 
