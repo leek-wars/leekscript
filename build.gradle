@@ -11,11 +11,10 @@ sourceSets {
     }
 }
 
-jar.baseName = 'leekscript'
 libsDirName = '..'
 
 jar {
-	baseName = 'leekscript'
+    archiveBaseName = "leekscript"
 	manifest {
         attributes "Main-Class": "leekscript.TopLevel"
     }
