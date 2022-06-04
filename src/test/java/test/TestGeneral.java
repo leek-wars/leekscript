@@ -145,6 +145,7 @@ public class TestGeneral extends TestCommon {
 		code("PI = PI + 12; return PI").error(Error.CANT_ASSIGN_VALUE);
 		code_v1("var grow = []; var n = []; grow = @n; return grow").equals("[]");
 		code("var PI = 3 return PI").equals("3");
+		code("var a = 2 var b = 5 var c = 7; a = b = c return [a, b, c]").equals("[7, 7, 7]");
 
 		section("Assignments with +=");
 		code_v1("var a = 10 a += 0.5 return a").equals("10,5");

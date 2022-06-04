@@ -339,7 +339,8 @@ public class LeekExpression extends AbstractExpression {
 		else {
 			int cur_p = Operators.getPriority(mOperator);
 			int p = Operators.getPriority(operator);
-			if (cur_p >= p) {
+			boolean higher_priority = mOperator == Operators.ASSIGN && operator == Operators.ASSIGN ? false : cur_p >= p;
+			if (higher_priority) {
 				// On doit englober l'expression actuelle
 				LeekExpression new_e = new LeekExpression();
 				new_e.setParent(this);
