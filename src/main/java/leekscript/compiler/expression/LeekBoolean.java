@@ -42,4 +42,11 @@ public class LeekBoolean extends AbstractExpression {
 	public void analyze(WordCompiler compiler) {
 
 	}
+
+	public boolean equals(Object o) {
+		if (o instanceof LeekBoolean) {
+			return mValue == ((LeekBoolean) o).mValue;
+		}
+		return false;
+	}
 }

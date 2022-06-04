@@ -69,4 +69,11 @@ public class LeekString extends AbstractExpression {
 	public void analyze(WordCompiler compiler) {
 
 	}
+
+	public boolean equals(Object o) {
+		if (o instanceof LeekString) {
+			return mString.equals(((LeekString) o).mString);
+		}
+		return false;
+	}
 }

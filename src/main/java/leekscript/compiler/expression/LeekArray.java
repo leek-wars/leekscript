@@ -3,8 +3,12 @@ package leekscript.compiler.expression;
 import java.util.ArrayList;
 
 import leekscript.common.Type;
+import leekscript.compiler.AnalyzeError;
+import leekscript.common.Error;
+import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekArray extends AbstractExpression {
@@ -17,7 +21,16 @@ public class LeekArray extends AbstractExpression {
 		mValues.add(param);
 	}
 
-	public void addValue(AbstractExpression key, AbstractExpression value) {
+	public void addValue(WordCompiler compiler, AbstractExpression key, IAWord keyToken, AbstractExpression value) {
+
+		// Clés dupliquée ?
+		for (int i = 0; i < mValues.size(); i += 2) {
+			if (key.equals(mValues.get(i))) {
+				var level = compiler.getVersion() >= 4 ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+				compiler.addError(new AnalyzeError(keyToken, level, Error.MAP_DUPLICATED_KEY));
+			}
+		}
+
 		mIsKeyVal = true;
 		mValues.add(key);
 		mValues.add(value);
