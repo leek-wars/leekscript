@@ -4,22 +4,23 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
+import leekscript.common.Error;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 
-public class ArrayLeekValue extends ArrayList<Object> {
+public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLeekValue {
 
 	private static final int ARRAY_CELL_ACCESS_OPERATIONS = 1;
 
@@ -136,11 +137,12 @@ public class ArrayLeekValue extends ArrayList<Object> {
 	}
 
 	public Object put(AI ai, Object keyValue, Object value) throws LeekRunException {
-		int key = ai.integer(keyValue);
+		int i = ai.integer(keyValue);
 		try {
-			set(key, value);
+			set(i, value);
 			return value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -152,6 +154,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, ai.add(previous_value, 1));
 			return previous_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -163,6 +166,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -174,6 +178,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, ai.sub(previous_value, 1));
 			return previous_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -185,6 +190,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -196,6 +202,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -207,6 +214,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -218,6 +226,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -229,6 +238,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -240,6 +250,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -251,6 +262,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -262,6 +274,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -273,6 +286,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -284,6 +298,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -295,6 +310,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -306,6 +322,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -317,6 +334,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -406,13 +424,39 @@ public class ArrayLeekValue extends ArrayList<Object> {
 	 * @throws LeekRunException
 	 */
 	public Object get(AI ai, Object key) throws LeekRunException {
-
 		ai.addOperationsNoCheck(ArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS);
-
 		int i = ai.integer(key);
 		try {
 			return get(i);
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
+			return null;
+		}
+	}
+
+	public Object getOrDefault(AI ai, Object key, Object defaultValue) throws LeekRunException {
+		ai.addOperationsNoCheck(ArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS);
+		int i = ai.integer(key);
+		try {
+			return get(i);
+		} catch (IndexOutOfBoundsException e) {
+			return defaultValue;
+		}
+	}
+
+	private void wrongIndexError(AI ai, int i) throws LeekRunException {
+		ai.addSystemLog(AILog.ERROR, Error.ARRAY_OUT_OF_BOUND, new String[] {
+			String.valueOf(i),
+			String.valueOf(size())
+		});
+	}
+
+	public Object get(AI ai, int index) throws LeekRunException {
+		ai.addOperationsNoCheck(ArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS);
+		try {
+			return get(index);
+		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, index);
 			return null;
 		}
 	}
@@ -449,6 +493,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 		try {
 			return remove(i);
 		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
 			return null;
 		}
 	}
@@ -483,7 +528,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 			@Override
 			public int compare(Object o1, Object o2) {
 				try {
-					return ai.integer(LeekValueManager.execute(ai, function, o1, o2));
+					return ai.integer(function.execute(ai, o1, o2));
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
@@ -512,6 +557,7 @@ public class ArrayLeekValue extends ArrayList<Object> {
 	 *            Element à ajouter
 	 * @throws LeekRunException
 	 */
+	@Override
 	public void push(AI ai, Object value) throws LeekRunException {
 		add(value);
 	}
@@ -532,11 +578,12 @@ public class ArrayLeekValue extends ArrayList<Object> {
 	}
 
 	public void fill(Object value, int size) {
-		if (size() <= size) { // Plus petit ou égal
+		if (size >= size()) { // Plus petit ou égal
 			Collections.fill(this, value);
 			int to_add = size - size();
 			for (int i = 0; i < to_add; ++i) add(value);
 		} else { // Plus grand
+			this.ensureCapacity(size);
 			for (int i = 0; i < size; ++i) {
 				set(i, value);
 			}
@@ -544,17 +591,9 @@ public class ArrayLeekValue extends ArrayList<Object> {
 	}
 
 	public ArrayLeekValue map(AI ai, FunctionLeekValue function) throws LeekRunException {
-		int nb = function.getArgumentsCount(ai);
-		System.out.println("Function arg count = " + nb);
-		if (nb != 1 && nb != 2) {
-			return null;
-		}
 		var result = new ArrayLeekValue(size());
 		for (int i = 0; i < size(); ++i) {
-			if (nb == 1)
-				result.add(ai.execute(function, get(i)));
-			else
-				result.add(ai.execute(function, get(i), i));
+			result.add(function.execute(ai, get(i), i, this));
 		}
 		return result;
 	}
@@ -571,62 +610,33 @@ public class ArrayLeekValue extends ArrayList<Object> {
 	}
 
 	public void iter(AI ai, FunctionLeekValue function) throws LeekRunException {
-		int nb = function.getArgumentsCount(ai);
-		if (nb != 1 && nb != 2) {
-			return;
-		}
 		for (int i = 0; i < size(); ++i) {
-			if (nb == 1)
-				LeekValueManager.execute(ai, function, get(i));
-			else
-				LeekValueManager.execute(ai, function, get(i), i);
+			function.execute(ai, get(i), i, this);
 		}
 	}
 
 	public Object foldLeft(AI ai, FunctionLeekValue function, Object object) throws LeekRunException {
-		int nb = function.getArgumentsCount(ai);
-		if (nb != 2 && nb != 3) {
-			return null;
-		}
 		Object r = object;
 		for (int i = 0; i < size(); ++i) {
-			if (nb == 2)
-				r = LeekValueManager.execute(ai, function, r, get(i));
-			else
-				r = LeekValueManager.execute(ai, function, r, get(i), i);
+			r = function.execute(ai, r, get(i), i, this);
 		}
 		return r;
 	}
 
 	public Object foldRight(AI ai, FunctionLeekValue function, Object object) throws LeekRunException {
-		int nb = function.getArgumentsCount(ai);
-		if (nb != 2 && nb != 3) {
-			return null;
-		}
 		Object r = object;
 		for (int i = size() - 1; i >= 0; --i) {
-			if (nb == 2)
-				r = LeekValueManager.execute(ai, function, get(i), r);
-			else
-				r = LeekValueManager.execute(ai, function, get(i), r, i);
+			r = function.execute(ai, get(i), r, i, this);
 		}
 		return r;
 	}
 
 	public Object partition(AI ai, FunctionLeekValue function) throws LeekRunException {
-		int nb = function.getArgumentsCount(ai);
-		if (nb != 1 && nb != 2) {
-			return null;
-		}
 		var r1 = new ArrayLeekValue();
 		var r2 = new ArrayLeekValue();
 		for (int i = 0; i < size(); ++i) {
 			var v = get(i);
-			boolean b;
-			if (nb == 1)
-				b = ai.bool(LeekValueManager.execute(ai, function, new Object[] { v }));
-			else
-				b = ai.bool(LeekValueManager.execute(ai, function, new Object[] { v, i }));
+			boolean b = ai.bool(function.execute(ai, v, i, this));
 			if (b) {
 				r1.add(v);
 			} else {
@@ -654,22 +664,33 @@ public class ArrayLeekValue extends ArrayList<Object> {
 
 	public ArrayLeekValue filter(AI ai, FunctionLeekValue function) throws LeekRunException {
 		var result = new ArrayLeekValue();
-		int nb = function.getArgumentsCount(ai);
-		if (nb != 1 && nb != 2) {
-			return result;
-		}
 		for (int i = 0; i < size(); ++i) {
 			var v = get(i);
-			boolean b;
-			if (nb == 1)
-				b = ai.bool(LeekValueManager.execute(ai, function, v));
-			else
-				b = ai.bool(LeekValueManager.execute(ai, function, v, i));
-			if (b) {
+			if (ai.bool(function.execute(ai, v, i, this))) {
 				result.add(v);
 			}
 		}
 		return result;
+	}
+
+	public boolean some(AI ai, FunctionLeekValue function) throws LeekRunException {
+		for (int i = 0; i < size(); ++i) {
+			var v = get(i);
+			if (ai.bool(function.execute(ai, v, i, this))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean every(AI ai, FunctionLeekValue function) throws LeekRunException {
+		for (int i = 0; i < size(); ++i) {
+			var v = get(i);
+			if (!ai.bool(function.execute(ai, v, i, this))) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public String toString(AI ai, Set<Object> visited) throws LeekRunException {

@@ -31,6 +31,7 @@ import leekscript.common.Error;
 
 public class LeekScript {
 
+	public final static int LATEST_VERSION = 4;
 	private final static String IA_PATH = "ai";
 	private static long id = 1;
 

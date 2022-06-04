@@ -46,7 +46,8 @@ public class ForeachBlock extends AbstractLeekBlock {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		// On prend un nombre unique pour les noms de variables temporaires
 		int block_count = getCount();
-		String var = "i" + block_count;
+		String var = "v" + block_count;
+		String it = "i" + block_count;
 		String ar = "ar" + block_count;
 		String iterator_name = mainblock.hasGlobal(mIterator.getWord()) ? ("g_" + mIterator) : "u_" + mIterator;
 
@@ -72,14 +73,15 @@ public class ForeachBlock extends AbstractLeekBlock {
 		} else {
 			writer.addCounter(1);
 		}
-		var array_class = mainblock.getVersion() >= 4 ? "ArrayLeekValue" : "LegacyArrayLeekValue";
-		writer.addLine("for (var " + var + " : (" + array_class + ") " + ar + ") {");
+
+		// On fait le parcours
+		writer.addLine("var " + it + " = iterator(" + ar + "); while (" + it + ".hasNext()) { var " + var + " = " + it + ".next(); ");
 
 		if (mainblock.getVersion() >= 4) {
 			if (mIsDeclaration && declaration.isCaptured()) {
-				writer.addLine(iterator_name + ".set(" + var + ");");
+				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
 			} else {
-				writer.addLine(iterator_name + " = " + var + ";");
+				writer.addLine(iterator_name + " = " + var + ".getValue();");
 			}
 		} else if (mainblock.getVersion() >= 2) {
 			if (mIsDeclaration && declaration.isCaptured()) {

@@ -9,6 +9,8 @@ import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
+import leekscript.runner.values.GenericArrayLeekValue;
+import leekscript.runner.values.GenericMapLeekValue;
 import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.Box;
@@ -75,6 +77,7 @@ public abstract class AI {
 	public final ClassLeekValue realClass;
 	public final ClassLeekValue numberClass;
 	public final ClassLeekValue arrayClass;
+	public final ClassLeekValue mapClass;
 	public final ClassLeekValue stringClass;
 	public final ClassLeekValue objectClass;
 	public final ClassLeekValue functionClass;
@@ -115,6 +118,7 @@ public abstract class AI {
 		realClass = new ClassLeekValue(this, "Real", numberClass);
 		integerClass = new ClassLeekValue(this, "Integer", realClass);
 		arrayClass = new ClassLeekValue(this, "Array", valueClass);
+		mapClass = new ClassLeekValue(this, "Map", valueClass);
 		stringClass = new ClassLeekValue(this, "String", valueClass);
 		objectClass = new ClassLeekValue(this, "Object", valueClass);
 		functionClass = new ClassLeekValue(this, "Function", valueClass);
@@ -198,6 +202,38 @@ public abstract class AI {
 		return null;
 	}
 
+	public GenericArrayLeekValue newArray() {
+		if (version >= 4) {
+			return new ArrayLeekValue();
+		} else {
+			return new LegacyArrayLeekValue();
+		}
+	}
+
+	public GenericArrayLeekValue newArray(int capacity) {
+		if (version >= 4) {
+			return new ArrayLeekValue(capacity);
+		} else {
+			return new LegacyArrayLeekValue();
+		}
+	}
+
+	public GenericArrayLeekValue toGenericArray(List<?> array) throws LeekRunException {
+		var result = newArray(array.size());
+		for (var element : array) {
+			result.push(this, element);
+		}
+		return result;
+	}
+
+	public GenericMapLeekValue newMap() {
+		if (version >= 4) {
+			return new MapLeekValue();
+		} else {
+			return new LegacyArrayLeekValue();
+		}
+	}
+
 	public String getErrorMessage(StackTraceElement[] elements) {
 		StringBuilder sb = new StringBuilder();
 		int count = 0;
@@ -211,9 +247,9 @@ public abstract class AI {
 				}
 			}
 		}
-		// for (StackTraceElement element : elements) {
-		// 	sb.append("\t▶ " + element.getClassName() + "." + element.getMethodName() + ", line " + element.getLineNumber()).append("\n");
-		// }
+		for (StackTraceElement element : elements) {
+			sb.append("\t▶ " + element.getClassName() + "." + element.getMethodName() + ", line " + element.getLineNumber()).append("\n");
+		}
 		return sb.toString();
 	}
 
@@ -476,9 +512,9 @@ public abstract class AI {
 		while (iterator.hasNext()) {
 			var value = iterator.getValueBox();
 			if (nb == 1)
-				b = bool(LeekValueManager.execute(this, function, new Object[] { value }));
+				b = bool(function.execute(this, value));
 			else
-				b = bool(LeekValueManager.execute(this, function, new Object[] { iterator.getKey(this), value }));
+				b = bool(function.execute(this, iterator.getKey(this), value));
 			(b ? list1 : list2).getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 			iterator.next();
 		}
@@ -496,9 +532,9 @@ public abstract class AI {
 		while (iterator.hasNext()) {
 			var value = iterator.getValue();
 			if (nb == 1)
-				b = bool(LeekValueManager.execute(this, function, new Object[] { value }));
+				b = bool(function.execute(this, value));
 			else
-				b = bool(LeekValueManager.execute(this, function, new Object[] { iterator.getKey(this), value }));
+				b = bool(function.execute(this, iterator.getKey(this), value));
 			(b ? list1 : list2).getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 			iterator.next();
 		}
@@ -528,9 +564,9 @@ public abstract class AI {
 		while (iterator.hasNext()) {
 			var value = iterator.getValueBox();
 			if (nb >= 2)
-				retour.getOrCreate(this, iterator.getKey(this)).setRef(LeekValueManager.execute(this, function, iterator.getKey(this), value));
+				retour.getOrCreate(this, iterator.getKey(this)).setRef(function.execute(this, iterator.getKey(this), value));
 			else
-				retour.getOrCreate(this, iterator.getKey(this)).setRef(LeekValueManager.execute(this, function, value));
+				retour.getOrCreate(this, iterator.getKey(this)).setRef(function.execute(this, value));
 			iterator.next();
 		}
 		return retour;
@@ -545,12 +581,12 @@ public abstract class AI {
 		while (iterator.hasNext()) {
 			var value = iterator.getValueBox();
 			if (nb == 1) {
-				if (bool(LeekValueManager.execute(this, function, new Object[] { value }))) {
+				if (bool(function.execute(this, new Object[] { value }))) {
 					// In LeekScript < 1.0, arrayFilter had a bug, the result array was not reindexed
 					retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 				}
 			} else {
-				if (bool(LeekValueManager.execute(this, function, new Object[] { iterator.getKey(this), value }))) {
+				if (bool(function.execute(this, new Object[] { iterator.getKey(this), value }))) {
 					retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 				}
 			}
@@ -568,11 +604,11 @@ public abstract class AI {
 		while (iterator.hasNext()) {
 			var value = iterator.getValue();
 			if (nb == 1) {
-				if (bool(LeekValueManager.execute(this, function, new Object[] { value }))) {
+				if (bool(function.execute(this, value))) {
 					retour.push(this, iterator.getValue(this));
 				}
 			} else {
-				if (bool(LeekValueManager.execute(this, function, new Object[] { iterator.getKey(this), value }))) {
+				if (bool(function.execute(this, iterator.getKey(this), value))) {
 					retour.push(this, iterator.getValue(this));
 				}
 			}
@@ -630,7 +666,7 @@ public abstract class AI {
 					@Override
 					public int compare(Element o1, Element o2) {
 						try {
-							return integer(LeekValueManager.execute(AI.this, function, o1.getValue(), o2.getValue()));
+							return integer(function.execute(AI.this, o1.getValue(), o2.getValue()));
 						} catch (Exception e) {
 							throw new RuntimeException(e);
 						}
@@ -643,7 +679,7 @@ public abstract class AI {
 					@Override
 					public int compare(Element o1, Element o2) {
 						try {
-							return integer(LeekValueManager.execute(AI.this, function, o1.getKey(), o1.getValue(), o2.getKey(), o2.getValue()));
+							return integer(function.execute(AI.this, o1.getKey(), o1.getValue(), o2.getKey(), o2.getValue()));
 						} catch (Exception e) {
 							throw new RuntimeException(e);
 						}
@@ -948,6 +984,8 @@ public abstract class AI {
 			return ((LegacyArrayLeekValue) value).size();
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).size();
+		} else if (value instanceof MapLeekValue) {
+			return ((MapLeekValue) value).size();
 		} else if (value instanceof String) {
 			var s = (String) value;
 			// ops(2);
@@ -979,6 +1017,8 @@ public abstract class AI {
 			return ((LegacyArrayLeekValue) value).size();
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).size();
+		} else if (value instanceof MapLeekValue) {
+			return ((MapLeekValue) value).size();
 		} else if (value instanceof String) {
 			var s = (String) value;
 			// ai.ops(2);
@@ -1061,6 +1101,16 @@ public abstract class AI {
 			var result = new ArrayLeekValue(this, array1, 1);
 			result.add(y);
 			return result;
+		}
+
+		if (x instanceof MapLeekValue) {
+			var map1 = (MapLeekValue) x;
+			if (y instanceof MapLeekValue) {
+				var map2 = (MapLeekValue) y;
+
+				ops((map1.size() + map2.size()) * 2);
+				return map1.merge(map2);
+			}
 		}
 
 		// Concatenate arrays
@@ -1206,6 +1256,9 @@ public abstract class AI {
 		if (x instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) x).add_eq(this, y);
 		}
+		if (x instanceof MapLeekValue) {
+			return ((MapLeekValue) x).add_eq(this, y);
+		}
 		return add(x, y);
 	}
 
@@ -1284,8 +1337,18 @@ public abstract class AI {
 	}
 
 	public Object toJSON(Object v) throws LeekRunException {
+		return toJSON(v, new HashSet<>());
+	}
+
+	public Object toJSON(Object v, HashSet<Object> visited) throws LeekRunException {
+		if (v instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) v).toJSON(this, visited);
+		}
+		if (v instanceof MapLeekValue) {
+			return ((MapLeekValue) v).toJSON(this, visited);
+		}
 		if (v instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) v).toJSON(this, new HashSet<Object>());
+			return ((LegacyArrayLeekValue) v).toJSON(this, visited);
 		}
 		return v;
 	}
@@ -1924,11 +1987,12 @@ public abstract class AI {
 
 	public Object execute(Object function, Object... args) throws LeekRunException {
 		if (function instanceof ClassLeekValue) {
-			return ((ClassLeekValue) function).execute(args);
+			return ((ClassLeekValue) function).execute(this, args);
 		}
 		if (function instanceof FunctionLeekValue) {
 			return ((FunctionLeekValue) function).execute(this, args);
 		}
+		// On ne peux pas exécuter ce type de variable
 		addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { string(function) });
 		return null;
 	}
@@ -1991,6 +2055,7 @@ public abstract class AI {
 		if (value instanceof Double) return realClass;
 		if (value instanceof Boolean) return booleanClass;
 		if (value instanceof LegacyArrayLeekValue || value instanceof ArrayLeekValue) return arrayClass;
+		if (value instanceof MapLeekValue) return mapClass;
 		if (value instanceof String) return stringClass;
 		if (value instanceof ObjectLeekValue) return ((ObjectLeekValue) value).clazz;
 		if (value instanceof ClassLeekValue) return classClass;

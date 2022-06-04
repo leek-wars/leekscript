@@ -19,7 +19,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>> {
+public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, GenericArrayLeekValue, GenericMapLeekValue {
 
 	public final static int ARRAY_CELL_ACCESS_OPERATIONS = 2;
 	public final static int ARRAY_CELL_CREATE_OPERATIONS = 2; // + sqrt(size) / 5
@@ -541,7 +541,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>> {
 		return toJSON(ai, new HashSet<>());
 	}
 
-	public JSON toJSON(AI ai, Set<Object> visited) throws LeekRunException {
+	public JSON toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
 		visited.add(this);
 
 		if (isAssociative()) {
@@ -553,19 +553,20 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>> {
 					if (!ai.isPrimitive(v)) {
 						visited.add(v);
 					}
-					o.put(i.key().toString(), ai.toJSON(v));
+					o.put(i.key().toString(), ai.toJSON(v, visited));
 				}
 				i.next();
 			}
 			return o;
 		} else {
-			JSONArray a = new JSONArray();
-			for (var v : this) {
+			var a = new JSONArray();
+			for (var entry : this) {
+				var v = entry.getValue();
 				if (!visited.contains(v)) {
 					if (!ai.isPrimitive(v)) {
 						visited.add(v);
 					}
-					a.add(ai.toJSON(v.getValue()));
+					a.add(ai.toJSON(v, visited));
 				}
 			}
 			return a;
@@ -645,18 +646,6 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>> {
 		var key = transformKey(ai, keyValue);
 		Element e = getElement(ai, key);
 		return e == null ? new Box(ai) : e.value;
-	}
-
-	/**
-	 * Vérifie si une clé se trouve bien dans le tableau
-	 *
-	 * @param key
-	 *            Clé à rechercher
-	 * @return True si la clé existe
-	 * @throws LeekRunException
-	 */
-	public boolean containsKey(AI ai, Object key) throws LeekRunException {
-		return getElement(ai, key) != null;
 	}
 
 	/**
@@ -1185,6 +1174,24 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>> {
 
 	private int getIndex(int hash) {
 		return hash & (capacity - 1);
+	}
+
+	public boolean some(AI ai, FunctionLeekValue function) throws LeekRunException {
+		for (var entry : this) {
+			if (ai.bool(function.execute(ai, entry.getKey(), entry.getValue(), this))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean every(AI ai, FunctionLeekValue function) throws LeekRunException {
+		for (var entry : this) {
+			if (ai.bool(function.execute(ai, entry.getKey(), entry.getValue(), this))) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public String toString(AI ai, Set<Object> visited) throws LeekRunException {

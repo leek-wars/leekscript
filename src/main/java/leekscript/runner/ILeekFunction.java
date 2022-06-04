@@ -13,4 +13,8 @@ public interface ILeekFunction {
 	abstract public CallableVersion[] getVersions();
 	abstract public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException;
 	abstract public void addOperations(AI leekIA, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException;
+
+	abstract public int getMinVersion();
+
+	abstract public int getMaxVersion();
 }
