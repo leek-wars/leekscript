@@ -1,5 +1,6 @@
 package leekscript.runner.values;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -66,7 +67,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 		this.mAnonymous = new LeekAnonymousFunction() {
 			@Override
 			public Object run(ObjectLeekValue thiz, Object... values) throws LeekRunException {
-				return execute(values);
+				return execute(ai, values);
 			}
 		};
 		this.ai = ai;
@@ -313,7 +314,8 @@ public class ClassLeekValue extends FunctionLeekValue {
 	/**
 	 * Constructors
 	 */
-	public Object execute(Object... arguments) throws LeekRunException {
+	public Object execute(AI ai, Object... arguments) throws LeekRunException {
+		// System.out.println("Class " + name + " execute " + Arrays.toString(arguments));
 		if (this == ai.valueClass || this == ai.jsonClass || this == ai.systemClass || this == ai.functionClass || this == ai.classClass) {
 			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
 			return null;
@@ -340,20 +342,18 @@ public class ClassLeekValue extends FunctionLeekValue {
 			this.initFields.run(object);
 		}
 
+		// Recherche d'un constructeur à N arguments puis N - 1, N - 2 etc.
 		int arg_count = arguments.length;
-		if (constructors.containsKey(arg_count)) {
-			constructors.get(arg_count).value.run(object, arguments);
-			return object;
-		} else {
-			if (arg_count > 0) {
-				ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
+		for (var i = arg_count; i >= 0; --i) {
+			if (constructors.containsKey(i)) {
+				constructors.get(i).value.run(object, arguments);
+				return object;
 			}
-			return object;
 		}
-	}
-
-	public Object run(ObjectLeekValue thiz, Object... arguments) throws LeekRunException {
-		return execute(ai, arguments);
+		if (arg_count > 0) {
+			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
+		}
+		return object;
 	}
 
 	private Object getFieldsArray() throws LeekRunException {

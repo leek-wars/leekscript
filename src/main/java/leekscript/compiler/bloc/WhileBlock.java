@@ -40,7 +40,7 @@ public class WhileBlock extends AbstractLeekBlock {
 			writer.getBoolean(mainblock, mCondition);
 		}
 		writer.addCode(", " + (mCondition.getOperations()) + ")");
-		writer.addLine(") {");
+		writer.addLine(") {", mLine, mAI);
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
 		writer.addLine("}");

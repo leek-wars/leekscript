@@ -300,6 +300,28 @@ public class TestArray extends TestCommon {
 		section("Array.operator >>>= on element");
 		code("var a = [-155] a[0] >>>= 5 return a;").equals("[134217723]");
 
+		/**
+		 * Clone
+		 */
+		section("Array clone()");
+		code("var a = [1, 2, 3] var b = clone(a) push(b, 4) return [a, b]").equals("[[1, 2, 3], [1, 2, 3, 4]]");
+
+		/**
+		 * JSON
+		 */
+		section("Array JSON");
+		code("return jsonEncode([])").equals("[]");
+		code("return jsonEncode([1, 2])").equals("[1,2]");
+		code("return jsonEncode([1, 2, 3, 4, 5, 6])").equals("[1,2,3,4,5,6]");
+		code("return jsonEncode(['a', 'b', 'c', 'd', 'e', 'f'])").equals("[\"a\",\"b\",\"c\",\"d\",\"e\",\"f\"]");
+		code("var a = [1, 2, 3] return jsonEncode([1, a, 2, 3])").equals("[1,[1,2,3],2,3]");
+		code("var a = [1] return jsonEncode([1, a, 2, a])").equals("[1,[1],2]");
+		code_v1("var a = [] push(a, a) return jsonEncode(a)").equals("[[]]");
+		code_v2_("var a = [] push(a, a) return jsonEncode(a)").equals("[]");
+
+		/**
+		 * Méthodes
+		 */
 		section("Array.count()");
 		code("return count([1, 2, 3, 4, 5]);").equals("5");
 
@@ -508,5 +530,21 @@ public class TestArray extends TestCommon {
 
 		section("Array.assocReverse()");
 		code_v1_3("var a = [1, 2, 3]; assocReverse(a); return a;").equals("[2 : 3, 1 : 2, 0 : 1]");
+
+		section("Array.some");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arraySome(a, function(v, k) { return v == 6 })").equals("true");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arraySome(a, function(v, k) { return v == 10 })").equals("false");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arraySome(a, function(v, k) { return k == 5 })").equals("true");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arraySome(a, function(v, k) { return k == 10 })").equals("false");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arraySome(a, function(v, k) { return v * k == 30 })").equals("true");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arraySome(a, function(v, k) { return v * k == 77 })").equals("false");
+
+		section("Array.every");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arrayEvery(a, function(v, k) { return v >= 1 })").equals("true");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arrayEvery(a, function(v, k) { return v > 3 })").equals("false");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arrayEvery(a, function(v, k) { return k >= 0 })").equals("true");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arrayEvery(a, function(v, k) { return k > 2 })").equals("false");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arrayEvery(a, function(v, k) { return v * k == 30 })").equals("false");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arrayEvery(a, function(v, k) { return v == k + 1 })").equals("true");
 	}
 }

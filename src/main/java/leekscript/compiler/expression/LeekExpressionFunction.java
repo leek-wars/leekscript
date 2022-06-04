@@ -254,6 +254,8 @@ public class LeekExpressionFunction extends AbstractExpression {
 				// Est-ce que c'est une fonction système ?
 				var f = LeekFunctions.getValue(v.getName());
 				if (f != null) {
+					if (!checkFunctionVersion(compiler, v, f)) return;
+
 					if (mParameters.size() >= f.getArgumentsMin() && mParameters.size() <= f.getArguments()) {
 						v.setVariableType(VariableType.SYSTEM_FUNCTION);
 						return; // OK, fonction système
@@ -280,6 +282,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 				// Est-ce que c'est une fonction système ?
 				var f = LeekFunctions.getValue(v.getName());
 				if (f != null) {
+					if (!checkFunctionVersion(compiler, v, f)) return;
 					if (mParameters.size() >= f.getArgumentsMin() && mParameters.size() <= f.getArguments()) {
 						v.setVariableType(VariableType.SYSTEM_FUNCTION);
 						return; // OK, fonction système
@@ -297,6 +300,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 					}
 				} else {
 					var f = LeekFunctions.getValue(v.getName());
+					if (!checkFunctionVersion(compiler, v, f)) return;
 					if (mParameters.size() > nb_params || mParameters.size() < f.getArgumentsMin()) {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
 					}
@@ -309,11 +313,13 @@ public class LeekExpressionFunction extends AbstractExpression {
 
 				if (compiler.getVersion() >= 3) {
 					var f = LeekFunctions.getValue(v.getName());
+					if (!checkFunctionVersion(compiler, v, f)) return;
 					if (mParameters.size() > f.getArguments() || mParameters.size() < f.getArgumentsMin()) {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
 					}
 				}
 				var system_function = LeekFunctions.getValue(v.getName());
+				if (!checkFunctionVersion(compiler, v, system_function)) return;
 				if (system_function.getReturnType() != null) {
 					type = system_function.getReturnType();
 				}
@@ -404,6 +410,26 @@ public class LeekExpressionFunction extends AbstractExpression {
 				}
 			}
 		}
+	}
+
+	private boolean checkFunctionVersion(WordCompiler compiler, LeekVariable v, ILeekFunction f) {
+		if (compiler.getVersion() > f.getMaxVersion()) {
+			// Fonction supprimée
+			compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION, new String[] {
+				String.valueOf(f.getMinVersion()),
+				String.valueOf(compiler.getVersion())
+			}));
+			return false;
+		}
+		if (compiler.getVersion() < f.getMinVersion()) {
+			// Fonction non disponible
+			compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.FUNCTION_NOT_AVAILABLE, new String[] {
+				String.valueOf(f.getMinVersion()),
+				String.valueOf(compiler.getVersion())
+			}));
+			return false;
+		}
+		return true;
 	}
 
 	CallableVersion checkArgumentsStatically(ILeekFunction function) {

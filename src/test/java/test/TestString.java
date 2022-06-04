@@ -25,6 +25,7 @@ public class TestString extends TestCommon {
 		section("String.split()");
 		code("return split('1:2:3:4:5',':')").equals("[1, 2, 3, 4, 5]");
 		code("return split('1:2:3:4:5',':',2)").equals("[1, 2:3:4:5]");
+		code("var a = split('a b c d e f', ' ') return count(a)").equals("6");
 
 		section("String.toLower()");
 		code("return toLower('AbCDefgh')").equals("abcdefgh");

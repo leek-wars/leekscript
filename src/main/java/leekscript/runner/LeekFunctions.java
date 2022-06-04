@@ -12,6 +12,7 @@ import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
 import leekscript.common.Error;
 import leekscript.common.Type;
+import leekscript.compiler.LeekScript;
 
 public enum LeekFunctions implements ILeekFunction {
 
@@ -359,18 +360,22 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			String s = LeekValueManager.getString(ai, parameters[0]);
 			String delimiter = LeekValueManager.getString(ai, parameters[1]);
+			String[] elements;
 			if (AI.verifyParameters(new int[] { AI.STRING, AI.STRING, AI.NUMBER }, parameters)) {
 				int limit = ai.integer(parameters[2]);
-				String[] elements = s.split(delimiter, limit);
-				var array = new LegacyArrayLeekValue();
-				for (short i = 0; i < elements.length; i++) {
-					array.push(ai, elements[i]);
+				elements = s.split(delimiter, limit);
+			} else {
+				elements = s.split(Pattern.quote(delimiter));
+			}
+			if (ai.getVersion() >= 4) {
+				var array = new ArrayLeekValue();
+				for (int i = 0; i < elements.length; i++) {
+					array.add(elements[i]);
 				}
 				return array;
 			} else {
-				String[] elements = s.split(Pattern.quote(delimiter));
 				var array = new LegacyArrayLeekValue();
-				for (short i = 0; i < elements.length; i++) {
+				for (int i = 0; i < elements.length; i++) {
 					array.push(ai, elements[i]);
 				}
 				return array;
@@ -519,11 +524,10 @@ public enum LeekFunctions implements ILeekFunction {
 	count(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			if (ai.getVersion() >= 4) {
+			if (parameters[0] instanceof ArrayLeekValue) {
 				return ((ArrayLeekValue) parameters[0]).size();
 			}
-			var array = (LegacyArrayLeekValue) parameters[0];
-			return array.size();
+			return ((LegacyArrayLeekValue) parameters[0]).size();
 		}
 	},
 
@@ -671,6 +675,8 @@ public enum LeekFunctions implements ILeekFunction {
 			array.removeByKey(leekIA, parameters[1]);
 			return null;
 		}
+		@Override
+		public int getMaxVersion() { return 3; }
 	},
 	sort(1, 2, new int[] { AI.ARRAY, -1 }) {
 		@Override
@@ -718,6 +724,8 @@ public enum LeekFunctions implements ILeekFunction {
 			var array = (LegacyArrayLeekValue) parameters[0];
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
+		@Override
+		public int getMaxVersion() { return 3; }
 	},
 	keySort(1, 2, new int[] { AI.ARRAY, -1 }) {
 		@Override
@@ -735,6 +743,8 @@ public enum LeekFunctions implements ILeekFunction {
 			var array = (LegacyArrayLeekValue) parameters[0];
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
 		}
+		@Override
+		public int getMaxVersion() { return 3; }
 	},
 	shuffle(1, new int[] { AI.ARRAY }) {
 		@Override
@@ -1072,6 +1082,9 @@ public enum LeekFunctions implements ILeekFunction {
 		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
 			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(((LegacyArrayLeekValue) parameters[0]).size() + 1) : 1);
 		}
+
+		@Override
+		public int getMaxVersion() { return 3; }
 	},
 
 	arrayMap(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
@@ -1186,7 +1199,108 @@ public enum LeekFunctions implements ILeekFunction {
 		}
 	},
 
+	arraySome(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			if (ai.getVersion() >= 4) {
+				return ((ArrayLeekValue) parameters[0]).some(ai, (FunctionLeekValue) parameters[1]);
+			} else {
+				return ((LegacyArrayLeekValue) parameters[0]).some(ai, (FunctionLeekValue) parameters[1]);
+			}
+		}
+	},
+
+	arrayEvery(2, new int[] { AI.ARRAY, AI.FUNCTION }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			if (ai.getVersion() >= 4) {
+				return ((ArrayLeekValue) parameters[0]).every(ai, (FunctionLeekValue) parameters[1]);
+			} else {
+				return ((LegacyArrayLeekValue) parameters[0]).every(ai, (FunctionLeekValue) parameters[1]);
+			}
+		}
+	},
+
+	arrayGet(3, new int[] { AI.ARRAY, -1, -1 }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((ArrayLeekValue) parameters[0]).getOrDefault(ai, parameters[1], parameters[2]);
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
 	// Map functions
+
+	mapSize(1, new int[] { AI.MAP }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((MapLeekValue) parameters[0]).size();
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapIsEmpty(1, new int[] { AI.MAP }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((MapLeekValue) parameters[0]).isEmpty();
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapClear(1, new int[] { AI.MAP }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			((MapLeekValue) parameters[0]).clear();
+			return null;
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapGet(2, 3, new int[] { AI.MAP, -1, -1 }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			if (parameters.length == 3) {
+				return ((MapLeekValue) parameters[0]).getOrDefault(parameters[1], parameters[2]);
+			} else {
+				return ((MapLeekValue) parameters[0]).get(parameters[1]);
+			}
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapValues(1, new int[] { AI.MAP }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((MapLeekValue) parameters[0]).getValues();
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapKeys(1, new int[] { AI.MAP }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((MapLeekValue) parameters[0]).getKeys();
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapIter(2, new int[] { AI.MAP, AI.FUNCTION }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var fun = (FunctionLeekValue) parameters[1];
+			((MapLeekValue) parameters[0]).iter(ai, fun);
+			return null;
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
 
 	mapMap(2, new int[] { AI.MAP, AI.FUNCTION }) {
 		@Override
@@ -1194,6 +1308,8 @@ public enum LeekFunctions implements ILeekFunction {
 			var fun = (FunctionLeekValue) parameters[1];
 			return ((MapLeekValue) parameters[0]).map(ai, fun);
 		}
+		@Override
+		public int getMinVersion() { return 4; }
 	},
 
 	mapSum(1, new int[] { AI.MAP }) {
@@ -1201,6 +1317,8 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			return ((MapLeekValue) parameters[0]).sum(ai);
 		}
+		@Override
+		public int getMinVersion() { return 4; }
 	},
 
 	mapAverage(1, new int[] { AI.MAP }) {
@@ -1208,6 +1326,8 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			return ((MapLeekValue) parameters[0]).average(ai);
 		}
+		@Override
+		public int getMinVersion() { return 4; }
 	},
 
 	mapMin(1, new int[] { AI.MAP }) {
@@ -1215,6 +1335,8 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			return ((MapLeekValue) parameters[0]).min(ai);
 		}
+		@Override
+		public int getMinVersion() { return 4; }
 	},
 
 	mapMax(1, new int[] { AI.MAP }) {
@@ -1222,6 +1344,8 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			return ((MapLeekValue) parameters[0]).max(ai);
 		}
+		@Override
+		public int getMinVersion() { return 4; }
 	},
 
 	mapSearch(2, new int[] { AI.MAP, -1 }) {
@@ -1229,6 +1353,8 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			return ((MapLeekValue) parameters[0]).search(parameters[1]);
 		}
+		@Override
+		public int getMinVersion() { return 4; }
 	},
 
 	mapContains(2, new int[] { AI.MAP, -1 }) {
@@ -1236,6 +1362,8 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			return ((MapLeekValue) parameters[0]).containsValue(parameters[1]);
 		}
+		@Override
+		public int getMinVersion() { return 4; }
 	},
 
 	mapContainsKey(2, new int[] { AI.MAP, -1 }) {
@@ -1243,6 +1371,8 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			return ((MapLeekValue) parameters[0]).containsKey(parameters[1]);
 		}
+		@Override
+		public int getMinVersion() { return 4; }
 	},
 
 	mapRemove(2, new int[] { AI.MAP, -1 }) {
@@ -1250,6 +1380,8 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			return ((MapLeekValue) parameters[0]).remove(parameters[1]);
 		}
+		@Override
+		public int getMinVersion() { return 4; }
 	},
 
 	mapRemoveElement(2, new int[] { AI.MAP, -1 }) {
@@ -1257,6 +1389,111 @@ public enum LeekFunctions implements ILeekFunction {
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
 			return ((MapLeekValue) parameters[0]).removeElement(parameters[1]);
 		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapRemoveAll(2, new int[] { AI.MAP, -1 }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			((MapLeekValue) parameters[0]).removeAll(parameters[1]);
+			return null;
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapReplace(3, new int[] { AI.MAP, -1, -1 }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((MapLeekValue) parameters[0]).replace(parameters[1], parameters[2]);
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapReplaceAll(2, new int[] { AI.MAP, AI.MAP }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			((MapLeekValue) parameters[0]).replaceAll((MapLeekValue) parameters[1]);
+			return null;
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapFill(2, new int[] { AI.MAP, -1 }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			((MapLeekValue) parameters[0]).fill(parameters[1]);
+			return null;
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapEvery(2, new int[] { AI.MAP, AI.FUNCTION }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((MapLeekValue) parameters[0]).every(ai, (FunctionLeekValue) parameters[1]);
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapSome(2, new int[] { AI.MAP, AI.FUNCTION }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((MapLeekValue) parameters[0]).some(ai, (FunctionLeekValue) parameters[1]);
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapFold(3, new int[] { AI.MAP, AI.FUNCTION, -1 }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((MapLeekValue) parameters[0]).fold(ai, (FunctionLeekValue) parameters[1], parameters[2]);
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapFilter(2, new int[] { AI.MAP, AI.FUNCTION }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((MapLeekValue) parameters[0]).filter(ai, (FunctionLeekValue) parameters[1]);
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapMerge(2, new int[] { AI.MAP, AI.MAP }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((MapLeekValue) parameters[0]).merge((MapLeekValue) parameters[1]);
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapPut(3, new int[] { AI.MAP, -1, -1 }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			return ((MapLeekValue) parameters[0]).put(parameters[1], parameters[2]);
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	mapPutAll(2, new int[] { AI.MAP, AI.MAP }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			((MapLeekValue) parameters[0]).putAll((MapLeekValue) parameters[1]);
+			return null;
+		}
+		@Override
+		public int getMinVersion() { return 4; }
 	},
 
 	// Debug
@@ -1543,6 +1780,14 @@ public enum LeekFunctions implements ILeekFunction {
 
 	public int cost() {
 		return 1;
+	}
+
+	public int getMinVersion() {
+		return 1;
+	}
+
+	public int getMaxVersion() {
+		return LeekScript.LATEST_VERSION;
 	}
 
 	public void setOperations(int operations) {

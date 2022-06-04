@@ -115,6 +115,8 @@ public class LeekValueManager {
 			return ((LegacyArrayLeekValue) value).getString(ai, new HashSet<Object>());
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getString(ai, new HashSet<Object>());
+		} else if (value instanceof MapLeekValue) {
+			return ((MapLeekValue) value).getString(ai, new HashSet<Object>());
 		} else if (value instanceof String) {
 			return (String) value;
 		} else if (value instanceof ClassLeekValue) {
@@ -163,15 +165,6 @@ public class LeekValueManager {
 		var v = getValue(value);
 		if (v instanceof FunctionLeekValue) {
 			return (FunctionLeekValue) v;
-		}
-		// On ne peux pas exécuter ce type de variable
-		ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { getString(ai, value) });
-		return null;
-	}
-
-	public static Object execute(AI ai, Object value, Object... args) throws LeekRunException {
-		if (value instanceof FunctionLeekValue) {
-			return ((FunctionLeekValue) value).execute(ai, args);
 		}
 		// On ne peux pas exécuter ce type de variable
 		ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { getString(ai, value) });

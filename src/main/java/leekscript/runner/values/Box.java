@@ -218,7 +218,7 @@ public class Box {
 	}
 
 	public Object execute(Object... arguments) throws LeekRunException {
-		return LeekValueManager.execute(mUAI, mValue, arguments);
+		return mUAI.execute(mValue, arguments);
 	}
 
 	@Override
