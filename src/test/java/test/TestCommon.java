@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Locale;
 
 import leekscript.compiler.LeekScript;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.runner.AI;
 import leekscript.common.Error;
@@ -72,10 +73,44 @@ public class TestCommon {
 		public String error(Error type) {
 			return run(new Checker() {
 				public boolean check(Result result) {
-					return result.error == type;
+					if (result.error != null) {
+						return result.error == type;
+					} else if (result.ai != null) {
+						var errors = result.ai.getFile().getErrors();
+						return errors.size() > 0 && errors.get(0).level == AnalyzeErrorLevel.ERROR && errors.get(0).error == type;
+					}
+					return false;
 				}
-				public String getExpected() { return type.name(); }
-				public String getResult(Result result) { return result.error.name(); }
+				public String getExpected() { return "error " + type.name(); }
+				public String getResult(Result result) {
+					if (result.error != null) {
+						return "error " + result.error.name();
+					} else if (result.ai != null) {
+						var errors = result.ai.getFile().getErrors();
+						if (errors.size() > 0) return "error " + errors.get(0).error.name();
+					}
+					return "no error";
+				}
+			});
+		}
+
+		public String warning(Error type) {
+			return run(new Checker() {
+				public boolean check(Result result) {
+					if (result.ai != null) {
+						var errors = result.ai.getFile().getErrors();
+						return errors.size() > 0 && errors.get(0).level == AnalyzeErrorLevel.WARNING && errors.get(0).error == type;
+					}
+					return false;
+				}
+				public String getExpected() { return "warning " + type.name(); }
+				public String getResult(Result result) {
+					if (result.ai != null) {
+						var errors = result.ai.getFile().getErrors();
+						if (errors.size() > 0) return "warning " + errors.get(0).error.name();
+					}
+					return "no warning";
+				}
 			});
 		}
 
@@ -121,16 +156,18 @@ public class TestCommon {
 			}
 			return run_version(version_max, checker);
 		}
+
 		public String run_version(int version, Checker checker) {
 			tests++;
 			int aiID = 0;
 			Result result;
 			long compile_time = 0;
 			long ops = 0;
+			AI ai = null;
 			try {
 				boolean is_file = code.contains(".leek");
 
-				AI ai = is_file ? LeekScript.compileFile(code, "AI", version) : LeekScript.compileSnippet(code, "AI", version);
+				ai = is_file ? LeekScript.compileFile(code, "AI", version) : LeekScript.compileSnippet(code, "AI", version);
 				ai.staticInit();
 				aiID = ai.getId();
 
@@ -149,15 +186,15 @@ public class TestCommon {
 				ops = ai.operations();
 
 				var vs = ai.getString(v, new HashSet<>());
-				result = new Result(vs, Error.NONE, (int) ai.getOperations(), exec_time);
+				result = new Result(vs, ai, Error.NONE, (int) ai.getOperations(), exec_time);
 
 			} catch (LeekCompilerException e) {
-				e.printStackTrace();
+				// e.printStackTrace();
 				// System.out.println("Error = " + e.getError());
-				result = new Result(e.getError().toString(), e.getError(), 0, 0);
+				result = new Result(e.getError().toString(), ai, e.getError(), 0, 0);
 			} catch (Exception e) {
 				e.printStackTrace();
-				result = new Result("error", Error.NONE, 0, 0);
+				result = new Result("error", ai, Error.NONE, 0, 0);
 			}
 
 			operations.add(ops);
@@ -178,12 +215,14 @@ public class TestCommon {
 
 	public static class Result {
 		String result;
+		AI ai;
 		Error error;
 		int operations;
 		long exec_time;
 
-		public Result(String result, Error error, int operations, long exec_time) {
+		public Result(String result, AI ai, Error error, int operations, long exec_time) {
 			this.result = result;
+			this.ai = ai;
 			this.operations = operations;
 			this.exec_time = exec_time;
 			this.error = error;

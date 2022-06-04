@@ -52,8 +52,8 @@ public class IACompiler {
 			compiler.analyze();
 
 			// System.out.println("errors " + compiler.getErrors().size());
-			if (compiler.getErrors().size() > 0) {
-				for (var error : compiler.getErrors()) {
+			if (ai.getErrors().size() > 0) {
+				for (var error : ai.getErrors()) {
 					mInformations.add(error.toJSON());
 				}
 				result.success = false;
@@ -62,7 +62,8 @@ public class IACompiler {
 				result.success = true;
 			}
 		} catch (LeekCompilerException e) {
-			addError(e.getIA(), e.getLine(), e.getChar(), e.getWord(), e.getError(), e.getParameters());
+			ai.getErrors().add(new AnalyzeError(e.getWord(), AnalyzeErrorLevel.ERROR, e.getError()));
+			addError(e.getIA(), e.getLine(), e.getChar(), e.getString(), e.getError(), e.getParameters());
 			result.success = false;
 		}
 		result.informations = mInformations;
@@ -82,8 +83,8 @@ public class IACompiler {
 			compiler.analyze();
 			// System.out.println("errors " + compiler.getErrors().size());
 
-			if (compiler.getErrors().size() > 0) {
-				for (var error : compiler.getErrors()) {
+			if (ai.getErrors().size() > 0) {
+				for (var error : ai.getErrors()) {
 					if (error.level == AnalyzeErrorLevel.ERROR) {
 						throw new LeekCompilerException(error.token, error.error, error.parameters);
 					}
@@ -92,7 +93,8 @@ public class IACompiler {
 			compiler.writeJava(javaClassName, writer, AIClass);
 
 		} catch (LeekCompilerException e) {
-			addError(e.getIA(), e.getLine(), e.getChar(), e.getWord(), e.getError(), e.getParameters());
+			ai.getErrors().add(new AnalyzeError(e.getWord(), AnalyzeErrorLevel.ERROR, e.getError()));
+			addError(e.getIA(), e.getLine(), e.getChar(), e.getString(), e.getError(), e.getParameters());
 			throw e;
 		}
 		return writer.getCode();

@@ -13,7 +13,7 @@ public class LeekCompilerException extends Exception {
 
 	int mLine;
 	int mChar;
-	String mWord;
+	IAWord mWord;
 	Error mError;
 	AIFile<?> mIA;
 	private String[] mParameters = null;
@@ -21,7 +21,7 @@ public class LeekCompilerException extends Exception {
 	public LeekCompilerException(IAWord word, Error error) {
 		mLine = word.getLine();
 		mChar = word.getCharacter();
-		mWord = word.getWord();
+		mWord = word;
 		mIA = word.getAI();
 		mError = error;
 	}
@@ -29,25 +29,21 @@ public class LeekCompilerException extends Exception {
 	public LeekCompilerException(IAWord word, Error error, String[] parameters) {
 		mLine = word.getLine();
 		mChar = word.getCharacter();
-		mWord = word.getWord();
+		mWord = word;
 		mIA = word.getAI();
 		mError = error;
 		mParameters = parameters;
-	}
-
-	public LeekCompilerException(AIFile<?> ai, int line, int char_pos, String word, Error error) {
-		mLine = line;
-		mChar = char_pos;
-		mWord = word;
-		mIA = ai;
-		mError = error;
 	}
 
 	public String[] getParameters() {
 		return mParameters;
 	}
 
-	public String getWord() {
+	public String getString() {
+		return mWord.getWord();
+	}
+
+	public IAWord getWord() {
 		return mWord;
 	}
 

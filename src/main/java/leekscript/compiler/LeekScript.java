@@ -181,6 +181,7 @@ public class LeekScript {
 				aiCache.put(javaClassName, entry);
 				var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
 				ai.setId(file.getId());
+				ai.setFile(file);
 				ai.setLinesFile(lines);
 				return ai;
 			} catch (Exception e) {
@@ -228,7 +229,12 @@ public class LeekScript {
 		long compile_time = System.nanoTime() - t;
 
 		if (!result) { // Java compilation failed
-			throw new LeekScriptException(Error.COMPILE_JAVA, output.toString());
+			System.out.println(output.toString());
+			if (output.toString().contains("code too large")) {
+				throw new LeekScriptException(Error.CODE_TOO_LARGE, output.toString());
+			} else {
+				throw new LeekScriptException(Error.COMPILE_JAVA, output.toString());
+			}
 		}
 
 		t = System.nanoTime();
@@ -267,6 +273,7 @@ public class LeekScript {
 			var ai = (AI) clazz.getDeclaredConstructor().newInstance();
 			long load_time = System.nanoTime() - t;
 
+			ai.setFile(file);
 			ai.setId(file.getId());
 			ai.setAnalyzeTime(analyze_time);
 			ai.setCompileTime(compile_time);

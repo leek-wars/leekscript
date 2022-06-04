@@ -109,7 +109,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			WordParser words = new WordParser(ai, compiler.getVersion());
 			WordCompiler newCompiler = new WordCompiler(words, this, ai, compiler.getVersion());
 			newCompiler.readCode();
-			compiler.addErrors(newCompiler.getErrors());
+			compiler.getAI().getErrors().addAll(ai.getErrors());
 			mCompiler.setCurrentAI(previousAI);
 			return true;
 		} catch (FileNotFoundException e) {
