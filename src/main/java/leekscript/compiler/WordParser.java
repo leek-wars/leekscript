@@ -174,7 +174,7 @@ public class WordParser {
 						word = "" + c;
 						type = T_STRING;
 					} else if (type == T_NUMBER) {
-						throw new LeekCompilerException(mAI, line_counter, char_counter, word, Error.INVALID_NUMBER);
+						throw new LeekCompilerException(new IAWord(mAI, T_NOTHING, word, line_counter, char_counter), Error.INVALID_NUMBER);
 					}
 				}
 			}
@@ -391,7 +391,7 @@ public class WordParser {
 				if (type == T_VAR_STRING) {
 					word += c;
 				} else {
-					throw new LeekCompilerException(mAI, line_counter, char_counter, "" + c, Error.INVALID_CHAR);
+					throw new LeekCompilerException(new IAWord(mAI, T_NOTHING, "" + c, line_counter, char_counter), Error.INVALID_CHAR);
 				}
 			}
 		}

@@ -1,6 +1,7 @@
 package leekscript.runner;
 
 import leekscript.AILog;
+import leekscript.compiler.AIFile;
 import leekscript.compiler.LineMapping;
 import leekscript.compiler.RandomGenerator;
 import leekscript.runner.values.LegacyArrayLeekValue;
@@ -18,9 +19,11 @@ import leekscript.common.Error;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -63,6 +66,7 @@ public abstract class AI {
 	private long compileTime;
 	private long loadTime;
 	private File filesLines;
+	private AIFile<?> file;
 
 	public final ClassLeekValue valueClass;
 	public final ClassLeekValue nullClass;
@@ -2035,5 +2039,13 @@ public abstract class AI {
 
 	public void setLinesFile(File lines) {
 		this.filesLines = lines;
+	}
+
+	public void setFile(AIFile<?> file) {
+		this.file = file;
+	}
+
+	public AIFile<?> getFile() {
+		return file;
 	}
 }
