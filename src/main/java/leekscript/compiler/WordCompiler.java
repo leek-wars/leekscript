@@ -974,9 +974,10 @@ public class WordCompiler {
 									type = 2;
 								else if (type == 1)
 									throw new LeekCompilerException(mCompiler.getWord(), Error.SIMPLE_ARRAY);
+								var colon = mCompiler.getWord();
 								mCompiler.skipWord();
 								AbstractExpression value = readExpression();
-								array.addValue(exp, value);
+								array.addValue(this, exp, colon, value);
 							} else {
 								if (type == 0)
 									type = 1;

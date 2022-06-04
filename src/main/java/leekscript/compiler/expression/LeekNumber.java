@@ -60,4 +60,11 @@ public class LeekNumber extends AbstractExpression {
 	public void analyze(WordCompiler compiler) {
 
 	}
+
+	public boolean equals(Object o) {
+		if (o instanceof LeekNumber) {
+			return mValue == ((LeekNumber) o).mValue;
+		}
+		return false;
+	}
 }

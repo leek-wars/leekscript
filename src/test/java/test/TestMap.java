@@ -1,5 +1,7 @@
 package test;
 
+import leekscript.common.Error;
+
 public class TestMap extends TestCommon {
 
 	public void run() {
@@ -9,7 +11,6 @@ public class TestMap extends TestCommon {
 		code_v4_("return [:]").equals("[:]");
 		code("return [1: 1, 2: 2]").equals("[1 : 1, 2 : 2]");
 		code("return [1: 1, 2: 'a']").equals("[1 : 1, 2 : a]");
-		code("return ['1': 'a', '1': 'b', '1': 'c']").equals("[1 : c]");
 
 		section("Map::to_bool()");
 		// code("![:]").equals("true");
@@ -21,6 +22,14 @@ public class TestMap extends TestCommon {
 		code("return [[], [1: 1], [1: 2]]").equals("[[], [1 : 1], [1 : 2]]");
 		// code("return [[:], [1: 1], [1: 2]]").equals("[[:], [1: 1], [1: 2]]");
 		code("var m = ['a': 'b'] return [m]").equals("[[a : b]]");
+
+		section("Map duplicated key");
+		code_v1_3("return [1 : 2, 1 : 3]").warning(Error.MAP_DUPLICATED_KEY);
+		code_v4_("return [1 : 2, 1 : 3]").error(Error.MAP_DUPLICATED_KEY);
+		code_v1_3("return ['a' : 2, 'a' : 3]").warning(Error.MAP_DUPLICATED_KEY);
+		code_v4_("return ['a' : 2, 'a' : 3]").error(Error.MAP_DUPLICATED_KEY);
+		code_v1_3("return [true : 2, true : 3]").warning(Error.MAP_DUPLICATED_KEY);
+		code_v4_("return [true : 2, true : 3]").error(Error.MAP_DUPLICATED_KEY);
 
 		/*
 		* Operators
