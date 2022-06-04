@@ -82,6 +82,10 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 
 	}
 
+	public String getArgument(int i) {
+		return "(values.length > " + i + " ? values[" + i + "] : null)";
+	}
+
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		var previousFunction = mainblock.getWordCompiler().getCurrentFunction();
@@ -96,22 +100,21 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 			if (declaration.isCaptured()) {
 				sb.append("final var u_").append(parameter).append(" = new Wrapper(");
 				if (mReferences.get(i)) {
-					sb.append("(values[").append(i).append("] instanceof Box) ? (Box) values[").append(i).append("] : ");
+					sb.append("(" + getArgument(i) + " instanceof Box) ? (Box) " + getArgument(i) + " : ");
 				}
 				sb.append("new Box(" + writer.getAIThis() + ", ");
-				sb.append("values[").append(i).append("]));");
+				sb.append(getArgument(i) + "));");
 			} else {
 				sb.append("var u_").append(parameter).append(" = ");
 
 				if (mainblock.getWordCompiler().getVersion() >= 2) {
-					sb.append("values[").append(i).append("]; ops(1);");
+					sb.append(getArgument(i) + ";");
 				} else {
-					// In LeekScript 1.0, load the value or reference
+					// In LeekScript 1, load the value or reference
 					if (mReferences.get(i)) {
-						sb.append("values[").append(i).append("] instanceof Box ? (Box) values[").append(i).append("] : new Box(" + writer.getAIThis() + ", load(values[").append(i).append("]));");
+						sb.append(getArgument(i) + " instanceof Box ? (Box) " + getArgument(i) + " : new Box(" + writer.getAIThis() + ", load(" + getArgument(i) + "));");
 					} else {
-						// sb.append("new Box(" + writer.getAIThis() + ", values[").append(i).append("] instanceof Box ? copy(load(values[").append(i).append("])) : copy(load(values[").append(i).append("])));");
-						sb.append("new Box(" + writer.getAIThis() + ", values[").append(i).append("]);");
+						sb.append("new Box(" + writer.getAIThis() + ", " + getArgument(i) + ");");
 					}
 				}
 			}
@@ -119,8 +122,9 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		writer.addLine(sb.toString(), mLine, mAI);
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
-		if (mEndInstruction == 0)
+		if (mEndInstruction == 0) {
 			writer.addLine("return null;");
+		}
 		writer.addCode("}}");
 		mainblock.getWordCompiler().setCurrentFunction(previousFunction);
 	}

@@ -102,8 +102,7 @@ public class FunctionLeekValue {
 		else if (mType == USER_FUNCTION) {
 			if (values.length != ai.userFunctionCount(mId)) {
 				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(values), String.valueOf(ai.userFunctionCount(mId)) });
-			}
-			else {
+			} else {
 				if (ai.getVersion() >= 2) {
 					return ai.userFunctionExecute(mId, values);
 				} else {
@@ -111,11 +110,7 @@ public class FunctionLeekValue {
 				}
 			}
 		} else if (mType == ANONYMOUS_FUNCTION) {
-			if (values.length != ai.anonymousFunctionCount(mId)) {
-				ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(values), String.valueOf(ai.anonymousFunctionCount(mId)) });
-			} else {
-				return mAnonymous.run(null, values);
-			}
+			return mAnonymous.run(null, values);
 		} else if (mType == STATIC_METHOD) {
 			return mAnonymous.run(null, values);
 		} else if (mType == METHOD) {
