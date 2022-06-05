@@ -1,5 +1,7 @@
 package leekscript.runner.values;
 
+import java.util.Arrays;
+
 import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
@@ -69,13 +71,13 @@ public class Box {
 	}
 
 	public Object increment() throws LeekRunException {
-		if (mValue instanceof Integer) {
-			int value = (Integer) mValue;
+		if (mValue instanceof Long) {
+			var value = (Long) mValue;
 			mValue = value + 1;
 			return value;
 		}
 		if (mValue instanceof Double) {
-			double value = (Double) mValue;
+			var value = (Double) mValue;
 			mValue = value + 1;
 			return value;
 		}
@@ -84,8 +86,8 @@ public class Box {
 	}
 
 	public Object decrement() throws LeekRunException {
-		if (mValue instanceof Integer) {
-			int value = (Integer) mValue;
+		if (mValue instanceof Long) {
+			var value = (Long) mValue;
 			mValue = value - 1;
 			return value;
 		}
@@ -99,8 +101,8 @@ public class Box {
 	}
 
 	public Object pre_increment() throws LeekRunException {
-		if (mValue instanceof Integer) {
-			return mValue = (Integer) mValue + 1;
+		if (mValue instanceof Long) {
+			return mValue = (Long) mValue + 1;
 		}
 		if (mValue instanceof Double) {
 			return mValue = (Double) mValue + 1;
@@ -110,8 +112,8 @@ public class Box {
 	}
 
 	public Object pre_decrement() throws LeekRunException {
-		if (mValue instanceof Integer) {
-			return mValue = (Integer) mValue - 1;
+		if (mValue instanceof Long) {
+			return mValue = (Long) mValue - 1;
 		}
 		if (mValue instanceof Double) {
 			return mValue = (Double) mValue - 1;
@@ -130,7 +132,7 @@ public class Box {
 		if (mValue instanceof Double) {
 			return -(Double) mValue;
 		}
-		return -mUAI.integer(mValue);
+		return -mUAI.longint(mValue);
 	}
 
 	public Object add_eq(Object val) throws LeekRunException {
@@ -152,28 +154,28 @@ public class Box {
 		return mValue = mUAI.pow(mValue, val);
 	}
 
-	public int band_eq(Object val) throws LeekRunException {
-		return (int) (mValue = mUAI.band(mValue, val));
+	public long band_eq(Object val) throws LeekRunException {
+		return (long) (mValue = mUAI.band(mValue, val));
 	}
 
-	public int bor_eq(Object val) throws LeekRunException {
-		return (int) (mValue = mUAI.bor(mValue, val));
+	public long bor_eq(Object val) throws LeekRunException {
+		return (long) (mValue = mUAI.bor(mValue, val));
 	}
 
-	public int bxor_eq(Object val) throws LeekRunException {
-		return (int) (mValue = mUAI.bxor(mValue, val));
+	public long bxor_eq(Object val) throws LeekRunException {
+		return (long) (mValue = mUAI.bxor(mValue, val));
 	}
 
-	public int shl_eq(Object val) throws LeekRunException {
-		return (int) (mValue = mUAI.shl(mValue, val));
+	public long shl_eq(Object val) throws LeekRunException {
+		return (long) (mValue = mUAI.shl(mValue, val));
 	}
 
-	public int shr_eq(Object val) throws LeekRunException {
-		return (int) (mValue = mUAI.shr(mValue, val));
+	public long shr_eq(Object val) throws LeekRunException {
+		return (long) (mValue = mUAI.shr(mValue, val));
 	}
 
-	public int ushr_eq(Object val) throws LeekRunException {
-		return (int) (mValue = mUAI.ushr(mValue, val));
+	public long ushr_eq(Object val) throws LeekRunException {
+		return (long) (mValue = mUAI.ushr(mValue, val));
 	}
 
 	public Object div_eq(Object val) throws LeekRunException {

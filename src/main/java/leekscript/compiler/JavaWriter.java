@@ -136,7 +136,7 @@ public class JavaWriter {
 		if (expression.getType() == Type.INT) {
 			expression.writeJavaCode(mainblock, this);
 		} else {
-			addCode("integer(");
+			addCode("longint(");
 			expression.writeJavaCode(mainblock, this);
 			addCode(")");
 		}

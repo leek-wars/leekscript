@@ -7,46 +7,6 @@ import leekscript.runner.values.ObjectLeekValue;
 
 public class LeekOperations {
 
-	public static Object and(AI ai, Object v1, Object v2) throws LeekRunException {
-		// ai.ops(1);
-		return ai.bool(v1) && ai.bool(v2);
-	}
-
-	public static Object or(AI ai, Object v1, Object v2) throws LeekRunException {
-		// ai.ops(1);
-		return ai.bool(v1) || ai.bool(v2);
-	}
-
-	public static int band(AI ai, Object v1, Object v2) throws LeekRunException {
-		// ai.ops(1);
-		return ai.integer(v1) & ai.integer(v2);
-	}
-
-	public static int bleft(AI ai, Object v1, Object v2) throws LeekRunException {
-		// ai.ops(1);
-		return ai.integer(v1) << ai.integer(v2);
-	}
-
-	public static int bright(AI ai, Object v1, Object v2) throws LeekRunException {
-		// ai.ops(1);
-		return ai.integer(v1) >> ai.integer(v2);
-	}
-
-	public static int buright(AI ai, Object v1, Object v2) throws LeekRunException {
-		// ai.ops(1);
-		return ai.integer(v1) >>> ai.integer(v2);
-	}
-
-	public static boolean equals(AI ai, Object v1, Object v2) throws LeekRunException {
-		// ai.ops(1);
-		return ai.eq(v1, v2);
-	}
-
-	public static boolean notequals(AI ai, Object v1, Object v2) throws LeekRunException {
-		// ai.ops(1);
-		return !ai.eq(v1, v2);
-	}
-
 	public static Object clone(AI ai, Object value) throws LeekRunException {
 		return clone(ai, value, 1);
 	}

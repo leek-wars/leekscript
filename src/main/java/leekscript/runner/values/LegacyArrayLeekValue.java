@@ -107,10 +107,10 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		@Override
 		public int compare(Element v1, Element v2) {
 			try {
-			if (mOrder == SORT_ASC)
-				return compareAsc(v1.value.getValue(), v2.value.getValue());
-			else if (mOrder == SORT_DESC)
-				return compareAsc(v2.value.getValue(), v1.value.getValue());
+				if (mOrder == SORT_ASC)
+					return compareAsc(v1.value.getValue(), v2.value.getValue());
+				else if (mOrder == SORT_DESC)
+					return compareAsc(v2.value.getValue(), v1.value.getValue());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -118,8 +118,8 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 
 		public int compareAsc(Object v1, Object v2) throws LeekRunException {
-			int type1 = LeekValueManager.getV1Type(v1);
-			int type2 = LeekValueManager.getV1Type(v2);
+			var type1 = LeekValueManager.getV1Type(v1);
+			var type2 = LeekValueManager.getV1Type(v2);
 			if (type1 < type2)
 				return -1;
 			else if (type1 > type2)
@@ -180,8 +180,8 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 
 		public int compareAsc(Object v1, Object v2) throws LeekRunException {
-			int type1 = LeekValueManager.getType(v1);
-			int type2 = LeekValueManager.getType(v2);
+			var type1 = LeekValueManager.getType(v1);
+			var type2 = LeekValueManager.getType(v2);
 			if (type1 < type2)
 				return -1;
 			else if (type1 > type2)
@@ -240,9 +240,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		public int compareAsc(Object v1, Object v2) {
 			if (v1 instanceof String && v2 instanceof String)
 				return ((String) v1).compareTo((String) v2);
-			else if (v1 instanceof Integer && v2 instanceof Integer)
-				return ((Integer) v1).compareTo((Integer) v2);
-			else if (v1 instanceof Integer)
+			else if (v1 instanceof Long && v2 instanceof Long)
+				return ((Long) v1).compareTo((Long) v2);
+			else if (v1 instanceof Long)
 				return -1;
 			return 1;
 		}
@@ -317,7 +317,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	private Element mHead = null;
 	private Element mEnd = null;
-	private int mIndex = 0;
+	private long mIndex = 0;
 	private int mSize = 0;
 	private int capacity = 0;
 	private Element[] mTable = null;
@@ -450,12 +450,12 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		if (key instanceof String || key instanceof ObjectLeekValue) {
 			return key;
 		} else {
-			return ai.integer(key);
+			return ai.longint(key);
 		}
 	}
 
 	public Box get(AI ai, int value) throws LeekRunException {
-		return getOrCreate(ai, Integer.valueOf(value));
+		return getOrCreate(ai, (long) value);
 	}
 
 	public Object remove(AI ai, int index) throws LeekRunException {
@@ -798,9 +798,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 		Element e = mHead;
 		boolean isInOrder = true;
-		int value = 0;
+		var value = 0l;
 		while (e != null) {
-			if (!(e.key instanceof Integer) || (Integer) e.key != value) {
+			if (!(e.key instanceof Long) || (Long) e.key != value) {
 				isInOrder = false;
 				break;
 			}
@@ -919,14 +919,14 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 * @throws LeekRunException
 	 */
 	public void push(AI ai, Object value) throws LeekRunException {
-		if (value instanceof Long) {
+		if (value instanceof Integer) {
 			throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
 		}
 		if (mSize >= capacity) {
 			growCapacity(ai);
 		}
 		mSize++;
-		Integer key = Integer.valueOf(mIndex);
+		var key = Long.valueOf(mIndex);
 		Element e = createElement(ai, key, value);
 		pushElement(e);
 	}
@@ -943,7 +943,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			growCapacity(ai);
 		}
 		mSize++;
-		Integer key = 0;
+		var key = 0l;
 		Element e = createElement(ai, key, value);
 		unshiftElement(e);
 		reindex(ai);
@@ -953,13 +953,13 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 * Mettre à jour la valeur pour une clé donnée
 	 *
 	 * @param key
-	 *            Clé (Integer, Double ou String)
+	 *            Clé (long, Double ou String)
 	 * @param value
 	 *            Valeur
 	 * @throws LeekRunException
 	 */
 	public void set(AI ai, Object key, Object value) throws LeekRunException {
-		if (value instanceof Long) {
+		if (value instanceof Integer) {
 			throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
 		}
 		Element e = getElement(ai, key);
@@ -990,10 +990,6 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return e.value;
 	}
 
-	public void set(int key, Object value) throws LeekRunException {
-		set(Integer.valueOf(key), value);
-	}
-
 	public Box end() {
 		return mEnd == null ? null : mEnd.value;
 	}
@@ -1015,7 +1011,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			}
 			mSize++;
 			// On crée notre nouvel élément
-			Element e = createElement(ai, Integer.valueOf(mIndex), value);
+			Element e = createElement(ai, mIndex, value);
 			// On va rechercher l'élément avant lequel insérer
 			Element i = mHead;
 			for (int k = 0; k < position; k++)
@@ -1036,14 +1032,14 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public void reindex(AI ai) throws LeekRunException {
 		// Réindexer le tableau (Change l'index de toutes les valeurs numériques)
-		int new_index = 0;
+		Long new_index = 0l;
 
 		ai.addOperationsNoCheck(mSize);
 
 		Element e = mHead;
 		while (e != null) {
 			if (e.numeric) {
-				Integer new_key = new_index;
+				var new_key = new_index;
 				// Changement de clé
 				if (!e.key.equals(new_key)) {
 					// On regarde si le hashCode change
@@ -1090,9 +1086,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		e.key = key;
 
 		e.value = new Box(ai, value);
-		if (key instanceof Integer) {
+		if (key instanceof Long) {
 			// On met à jour l'index suivant
-			int index = ((Integer) key).intValue();
+			var index = (Long) key;
 			if (index >= mIndex)
 				mIndex = index + 1;
 			e.numeric = true;
@@ -1208,9 +1204,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		Element e = mHead;
 
 		boolean isInOrder = true;
-		int value = 0;
+		var value = 0l;
 		while (e != null) {
-			if (!(e.key instanceof Integer) || (Integer) e.key != value) {
+			if (!(e.key instanceof Long) || (Long) e.key != value) {
 				isInOrder = false;
 				break;
 			}
@@ -1248,9 +1244,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	public boolean isAssociative() {
 
 		Element e = mHead;
-		int value = 0;
+		var value = 0l;
 		while (e != null) {
-			if (!(e.key instanceof Integer) || (Integer) e.key != value) {
+			if (!(e.key instanceof Long) || (Long) e.key != value) {
 				return true;
 			}
 			value++;

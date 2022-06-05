@@ -262,9 +262,6 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 					this.parent = parentVar.getClassDeclaration();
 				}
 			}
-			if (parent == null) {
-				System.out.println("issue");
-			}
 		}
 
 		// Fields
