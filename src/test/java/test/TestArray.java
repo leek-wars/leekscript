@@ -379,6 +379,8 @@ public class TestArray extends TestCommon {
 		code_v4_("var a = [] push(a, a) return arrayFlatten(a)").equals("[[<...>]]");
 
 		section("Array.sort");
+		code("return SORT_ASC").equals("0");
+		code("return SORT_DESC").equals("1");
 		code_v1("return function() { var t = [null, null, 4, 8, 9]; sort(t); return t; }();").equals("[4, 8, 9, null, null]");
 		code_v2_("return function() { var t = [null, null, 4, 8, 9]; sort(t); return t; }();").equals("[null, null, 4, 8, 9]");
 		code_v1("return function() { var t = [4, null, 4, null, 4]; sort(t); return t; }();").equals("[4, 4, 4, null, null]");

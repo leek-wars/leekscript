@@ -278,8 +278,8 @@ public class ObjectLeekValue {
 				return clazz.ai.execute(result.mValue, arguments);
 			}
 			// Pas de méthode
-			int underscore = method.lastIndexOf("_");
-			int argCount = Integer.parseInt(method.substring(underscore + 1));
+			var underscore = method.lastIndexOf("_");
+			var argCount = Integer.parseInt(method.substring(underscore + 1));
 			String methodRealName = method.substring(0, underscore) + "(";
 			for (int i = 0; i < argCount; ++i) {
 				if (i > 0) methodRealName += ", ";

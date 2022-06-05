@@ -944,15 +944,16 @@ public class WordCompiler {
 						var s = word.getWord();
 						var radix = s.startsWith("0x") ? 16 : s.startsWith("0b") ? 2 : 10;
 						if (radix != 10) s = s.substring(2);
-						retour.addExpression(new LeekNumber(Integer.parseInt(s, radix), Type.INT));
+						retour.addExpression(new LeekNumber(0, Long.parseLong(s, radix), Type.INT));
 					} catch (NumberFormatException e) {
 						try {
-							retour.addExpression(new LeekNumber(Double.parseDouble(word.getWord()), Type.REAL));
+							retour.addExpression(new LeekNumber(Double.parseDouble(word.getWord()), 0, Type.REAL));
 						} catch (NumberFormatException e2) {
 							throw new LeekCompilerException(word, Error.INVALID_NUMBER);
 						}
 					}
 				} else if (word.getType() == WordParser.T_VAR_STRING) {
+
 					retour.addExpression(new LeekString(word.getWord()));
 
 				} else if (word.getType() == WordParser.T_BRACKET_LEFT) {

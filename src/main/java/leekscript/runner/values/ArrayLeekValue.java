@@ -44,10 +44,10 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		@Override
 		public int compare(Object v1, Object v2) {
 			try {
-			if (mOrder == SORT_ASC)
-				return compareAsc(v1, v2);
-			else if (mOrder == SORT_DESC)
-				return compareAsc(v2, v1);
+				if (mOrder == SORT_ASC)
+					return compareAsc(v1, v2);
+				else if (mOrder == SORT_DESC)
+					return compareAsc(v2, v1);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -55,12 +55,11 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 
 		public int compareAsc(Object v1, Object v2) throws LeekRunException {
-			int type1 = LeekValueManager.getType(v1);
-			int type2 = LeekValueManager.getType(v2);
-			if (type1 < type2)
-				return -1;
-			else if (type1 > type2)
-				return 1;
+			var type1 = LeekValueManager.getType(v1);
+			var type2 = LeekValueManager.getType(v2);
+			if (type1 != type2)
+				return type1 - type2;
+
 			if (type1 == LeekValue.BOOLEAN) {
 				if ((Boolean) v1 == (Boolean) v2)
 					return 0;
@@ -69,26 +68,15 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 				else
 					return -1;
 			} else if (type1 == LeekValue.NUMBER) {
-				var d = ((Number) v2).doubleValue();
-				if (((Number) v1).doubleValue() == d)
-					return 0;
-				else if (((Number) v1).doubleValue() < d)
-					return -1;
-				else
-					return 1;
+				var d1 = ((Number) v1).doubleValue();
+				var d2 = ((Number) v2).doubleValue();
+				return Double.compare(d1, d2);
 			} else if (type1 == LeekValue.STRING) {
 				return ((String) v1).compareTo((String) v2);
 			} else if (type1 == LeekValue.ARRAY) {
-				var a = (LegacyArrayLeekValue) v2;
-				if (((LegacyArrayLeekValue) v1).size() == a.size())
-					return 0;
-				else if (((LegacyArrayLeekValue) v1).size() < a.size())
-					return -1;
-				else
-					return 1;
-			} else {
-				return 0;
+				return ((LegacyArrayLeekValue) v1).size() - ((LegacyArrayLeekValue) v2).size();
 			}
+			return 0;
 		}
 	}
 
@@ -108,7 +96,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 
 		@Override
 		public Entry<Object, Object> next() {
-			var e = new AbstractMap.SimpleEntry<Object, Object>(i, array.get(i));
+			var e = new AbstractMap.SimpleEntry<Object, Object>((long) i, array.get(i));
 			i++;
 			return e;
 		}
@@ -143,7 +131,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put(AI ai, Object keyValue, Object value) throws LeekRunException {
-		if (value instanceof Long) {
+		if (value instanceof Integer) {
 			throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
 		}
 		int i = ai.integer(keyValue);
@@ -157,10 +145,10 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_inc(AI ai, Object key) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var previous_value = get(i);
-			set(i, ai.add(previous_value, 1));
+			set(i, ai.add(previous_value, 1l));
 			return previous_value;
 		} catch (IndexOutOfBoundsException e) {
 			wrongIndexError(ai, i);
@@ -169,9 +157,9 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_pre_inc(AI ai, Object key) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
-			var new_value = ai.add(get(i), 1);
+			var new_value = ai.add(get(i), 1l);
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
@@ -181,10 +169,10 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_dec(AI ai, Object key) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var previous_value = get(i);
-			set(i, ai.sub(previous_value, 1));
+			set(i, ai.sub(previous_value, 1l));
 			return previous_value;
 		} catch (IndexOutOfBoundsException e) {
 			wrongIndexError(ai, i);
@@ -193,9 +181,9 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_pre_dec(AI ai, Object key) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
-			var new_value = ai.sub(get(i), 1);
+			var new_value = ai.sub(get(i), 1l);
 			set(i, new_value);
 			return new_value;
 		} catch (IndexOutOfBoundsException e) {
@@ -205,7 +193,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_add_eq(AI ai, Object key, Object value) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var new_value = ai.add(get(i), value);
 			set(i, new_value);
@@ -217,7 +205,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_sub_eq(AI ai, Object key, Object value) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var new_value = ai.sub(get(i), value);
 			set(i, new_value);
@@ -229,7 +217,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_mul_eq(AI ai, Object key, Object value) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var new_value = ai.mul(get(i), value);
 			set(i, new_value);
@@ -241,7 +229,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_pow_eq(AI ai, Object key, Object value) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var new_value = ai.pow(get(i), value);
 			set(i, new_value);
@@ -253,7 +241,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_div_eq(AI ai, Object key, Object value) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var new_value = ai.div(get(i), value);
 			set(i, new_value);
@@ -265,7 +253,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_mod_eq(AI ai, Object key, Object value) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var new_value = ai.mod(get(i), value);
 			set(i, new_value);
@@ -277,7 +265,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var new_value = ai.bor(get(i), value);
 			set(i, new_value);
@@ -289,7 +277,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var new_value = ai.band(get(i), value);
 			set(i, new_value);
@@ -301,7 +289,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var new_value = ai.bxor(get(i), value);
 			set(i, new_value);
@@ -313,7 +301,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var new_value = ai.shl(get(i), value);
 			set(i, new_value);
@@ -325,7 +313,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var new_value = ai.shr(get(i), value);
 			set(i, new_value);
@@ -337,7 +325,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			var new_value = ai.ushr(get(i), value);
 			set(i, new_value);
@@ -434,7 +422,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	 */
 	public Object get(AI ai, Object key) throws LeekRunException {
 		ai.addOperationsNoCheck(ArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS);
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			return get(i);
 		} catch (IndexOutOfBoundsException e) {
@@ -445,7 +433,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 
 	public Object getOrDefault(AI ai, Object key, Object defaultValue) throws LeekRunException {
 		ai.addOperationsNoCheck(ArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS);
-		int i = ai.integer(key);
+		int i = (int) ai.integer(key);
 		try {
 			return get(i);
 		} catch (IndexOutOfBoundsException e) {
@@ -480,10 +468,10 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	 * @throws LeekRunException
 	 */
 	public Object search(AI ai, Object value, int pos) throws LeekRunException {
-		for (int i = pos; i < size(); ++i) {
-			if (get(i) == value) return i;
+		for (var i = pos; i < size(); ++i) {
+			if (get(i) == value) return (long) i;
 		}
-		return -1;
+		return -1l;
 	}
 
 	public Object removeIndex(AI ai, int index) throws LeekRunException {
@@ -503,6 +491,15 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 			return remove(i);
 		} catch (IndexOutOfBoundsException e) {
 			wrongIndexError(ai, i);
+			return null;
+		}
+	}
+
+	public Object remove(AI ai, int key) throws LeekRunException {
+		try {
+			return remove(key);
+		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, key);
 			return null;
 		}
 	}
@@ -537,7 +534,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 			@Override
 			public int compare(Object o1, Object o2) {
 				try {
-					return ai.integer(function.execute(ai, o1, o2));
+					return (int) ai.integer(function.execute(ai, o1, o2));
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
@@ -568,7 +565,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	 */
 	@Override
 	public void push(AI ai, Object value) throws LeekRunException {
-		if (value instanceof Long) {
+		if (value instanceof Integer) {
 			throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
 		}
 		add(value);
@@ -589,13 +586,13 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		add(position, value);
 	}
 
-	public void fill(Object value, int size) {
+	public void fill(Object value, long size) {
 		if (size >= size()) { // Plus petit ou égal
 			Collections.fill(this, value);
-			int to_add = size - size();
+			var to_add = size - size();
 			for (int i = 0; i < to_add; ++i) add(value);
 		} else { // Plus grand
-			this.ensureCapacity(size);
+			this.ensureCapacity((int) size);
 			for (int i = 0; i < size; ++i) {
 				set(i, value);
 			}
@@ -605,7 +602,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	public ArrayLeekValue map(AI ai, FunctionLeekValue function) throws LeekRunException {
 		var result = new ArrayLeekValue(size());
 		for (int i = 0; i < size(); ++i) {
-			result.add(function.execute(ai, get(i), i, this));
+			result.add(function.execute(ai, get(i), (long) i, this));
 		}
 		return result;
 	}
@@ -623,14 +620,14 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 
 	public void iter(AI ai, FunctionLeekValue function) throws LeekRunException {
 		for (int i = 0; i < size(); ++i) {
-			function.execute(ai, get(i), i, this);
+			function.execute(ai, get(i), (long) i, this);
 		}
 	}
 
 	public Object foldLeft(AI ai, FunctionLeekValue function, Object object) throws LeekRunException {
 		Object r = object;
 		for (int i = 0; i < size(); ++i) {
-			r = function.execute(ai, r, get(i), i, this);
+			r = function.execute(ai, r, get(i), (long) i, this);
 		}
 		return r;
 	}
@@ -638,7 +635,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	public Object foldRight(AI ai, FunctionLeekValue function, Object object) throws LeekRunException {
 		Object r = object;
 		for (int i = size() - 1; i >= 0; --i) {
-			r = function.execute(ai, get(i), r, i, this);
+			r = function.execute(ai, get(i), r, (long) i, this);
 		}
 		return r;
 	}
@@ -648,7 +645,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		var r2 = new ArrayLeekValue();
 		for (int i = 0; i < size(); ++i) {
 			var v = get(i);
-			boolean b = ai.bool(function.execute(ai, v, i, this));
+			boolean b = ai.bool(function.execute(ai, v, (long) i, this));
 			if (b) {
 				r1.add(v);
 			} else {
@@ -678,7 +675,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		var result = new ArrayLeekValue();
 		for (int i = 0; i < size(); ++i) {
 			var v = get(i);
-			if (ai.bool(function.execute(ai, v, i, this))) {
+			if (ai.bool(function.execute(ai, v, (long) i, this))) {
 				result.add(v);
 			}
 		}
@@ -688,7 +685,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	public boolean some(AI ai, FunctionLeekValue function) throws LeekRunException {
 		for (int i = 0; i < size(); ++i) {
 			var v = get(i);
-			if (ai.bool(function.execute(ai, v, i, this))) {
+			if (ai.bool(function.execute(ai, v, (long) i, this))) {
 				return true;
 			}
 		}
@@ -698,7 +695,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	public boolean every(AI ai, FunctionLeekValue function) throws LeekRunException {
 		for (int i = 0; i < size(); ++i) {
 			var v = get(i);
-			if (!ai.bool(function.execute(ai, v, i, this))) {
+			if (!ai.bool(function.execute(ai, v, (long) i, this))) {
 				return false;
 			}
 		}
@@ -712,7 +709,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	public MapLeekValue frequencies() {
 		var frequencies = new MapLeekValue();
 		for (var value : this) {
-			frequencies.merge(value, 1, (x, y) -> (Integer) x + (Integer) y);
+			frequencies.merge(value, 1l, (x, y) -> (Long) x + (Long) y);
 		}
 		return frequencies;
 	}

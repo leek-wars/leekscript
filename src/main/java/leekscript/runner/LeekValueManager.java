@@ -50,7 +50,13 @@ public class LeekValueManager {
 		if (o instanceof String) {
 			return o;
 		}
+		if (o instanceof Double) {
+			return o;
+		}
 		if (o instanceof Integer) {
+			return (long) (Integer) o;
+		}
+		if (o instanceof Long) {
 			return o;
 		}
 		if (o instanceof BigInteger) {
@@ -104,9 +110,9 @@ public class LeekValueManager {
 	public static String getString(AI ai, Object value) throws LeekRunException {
 		if (value instanceof Double) {
 			return doubleToString(ai, (Double) value);
-		} else if (value instanceof Integer) {
+		} else if (value instanceof Long) {
 			ai.ops(3);
-			return String.valueOf((Integer) value);
+			return String.valueOf((Long) value);
 		} else if (value instanceof Boolean) {
 			return String.valueOf((Boolean) value);
 		} else if (value instanceof ObjectLeekValue) {
@@ -125,16 +131,18 @@ public class LeekValueManager {
 			return ((FunctionLeekValue) value).getString(ai);
 		} else if (value instanceof Box) {
 			return getString(ai, ((Box) value).getValue());
+		} else if (value == null) {
+			return "null";
 		}
-		return "null";
+		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
 	}
 
 	public static String getString(AI ai, Object value, Set<Object> visited) throws LeekRunException {
 		if (value instanceof Double) {
 			return doubleToString(ai, (Double) value);
-		} else if (value instanceof Integer) {
+		} else if (value instanceof Long) {
 			ai.ops(3);
-			return String.valueOf((Integer) value);
+			return String.valueOf((Long) value);
 		} else if (value instanceof Boolean) {
 			return String.valueOf((Boolean) value);
 		} else if (value instanceof ObjectLeekValue) {
@@ -153,12 +161,14 @@ public class LeekValueManager {
 			return ((FunctionLeekValue) value).getString(ai);
 		} else if (value instanceof Box) {
 			return getString(ai, ((Box) value).getValue());
+		} else if (value == null) {
+			return "null";
 		}
-		return "null";
+		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
 	}
 
-	public static int bnot(AI ai, Object value) throws LeekRunException {
-		return ~ai.integer(value);
+	public static long bnot(AI ai, Object value) throws LeekRunException {
+		return ~ai.longint(value);
 	}
 
 	public static FunctionLeekValue getFunction(AI ai, Object value) throws LeekRunException {
@@ -218,7 +228,7 @@ public class LeekValueManager {
 	public static int getV1Type(Object v) {
 		if (v == null) return LeekValue.NULL_V1;
 		if (v instanceof Boolean) return LeekValue.BOOLEAN_V1;
-		if (v instanceof Number) return LeekValue.NUMBER_V1;
+		if (v instanceof Long) return LeekValue.NUMBER_V1;
 		if (v instanceof String) return LeekValue.STRING_V1;
 		if (v instanceof LegacyArrayLeekValue) return LeekValue.ARRAY_V1;
 		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT_V1;

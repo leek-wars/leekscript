@@ -78,6 +78,14 @@ public class LeekScript {
 		}
 
 		@Override
+		public long getLong(long min, long max) {
+			if (max - min + 1 <= 0)
+				return 0;
+			// return min + Math.abs(random.nextLong()) % (max - min + 1);
+			return min + random.nextInt((int) max - (int) min + 1);
+		}
+
+		@Override
 		public double getDouble() {
 			return random.nextDouble();
 		}

@@ -11,11 +11,13 @@ import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekNumber extends AbstractExpression {
 
-	private final double mValue;
+	private final double doubleValue;
+	private final long longValue;
 	private Type type;
 
-	public LeekNumber(double value, Type type) {
-		mValue = value;
+	public LeekNumber(double doubleValue, long longValue, Type type) {
+		this.doubleValue = doubleValue;
+		this.longValue = longValue;
 		this.type = type;
 	}
 
@@ -35,9 +37,9 @@ public class LeekNumber extends AbstractExpression {
 			var formatter = (DecimalFormat) NumberFormat.getNumberInstance(Locale.US);
 			formatter.setMaximumFractionDigits(15);
 			formatter.setGroupingUsed(false);
-			return formatter.format(mValue);
+			return formatter.format(doubleValue);
 		} else {
-			return String.valueOf((int) mValue);
+			return String.valueOf(longValue);
 		}
 	}
 
@@ -50,9 +52,9 @@ public class LeekNumber extends AbstractExpression {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		if (type == Type.INT) {
-			writer.addCode(String.valueOf((int) mValue));
+			writer.addCode(String.valueOf(longValue) + "l");
 		} else {
-			writer.addCode(String.valueOf(mValue));
+			writer.addCode(String.valueOf(doubleValue));
 		}
 	}
 
@@ -63,7 +65,10 @@ public class LeekNumber extends AbstractExpression {
 
 	public boolean equals(Object o) {
 		if (o instanceof LeekNumber) {
-			return mValue == ((LeekNumber) o).mValue;
+			var n = (LeekNumber) o;
+			if (type != n.type) return false;
+			if (type == Type.INT) return longValue == n.longValue;
+			return doubleValue == n.doubleValue;
 		}
 		return false;
 	}

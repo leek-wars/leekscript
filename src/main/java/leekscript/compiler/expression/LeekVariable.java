@@ -194,9 +194,7 @@ public class LeekVariable extends AbstractExpression {
 			writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
 			var constant = LeekConstants.get(token.getWord());
-			// if (constant.getType() == LeekFunctions.INT) writer.addCode("LeekValueManager.getLeekIntValue(" + constant.getIntValue() + ")");
-			if (constant.getType() == Type.INT) writer.addCode(String.valueOf(constant.getIntValue()));
-			// else if (constant.getType() == LeekFunctions.DOUBLE) writer.addCode("new DoubleLeekValue(" + constant.getValue() + ")");
+			if (constant.getType() == Type.INT) writer.addCode(String.valueOf(constant.getIntValue()) + "l");
 			else if (constant.getType() == Type.REAL) writer.addCode(String.valueOf(constant.getValue()));
 			else writer.addCode("null");
 		} else if (type == VariableType.SYSTEM_FUNCTION) {
@@ -256,7 +254,7 @@ public class LeekVariable extends AbstractExpression {
 			}
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
 			var constant = LeekConstants.get(token.getWord());
-			if (constant.getType() == Type.INT) writer.addCode(String.valueOf(constant.getIntValue()));
+			if (constant.getType() == Type.INT) writer.addCode(String.valueOf(constant.getIntValue()) + "l");
 			else if (constant.getType() == Type.REAL) writer.addCode(String.valueOf(constant.getValue()));
 			else writer.addCode("null");
 		} else if (type == VariableType.FUNCTION) {
@@ -381,13 +379,13 @@ public class LeekVariable extends AbstractExpression {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".increment()");
 			} else {
-				writer.addCode("sub(g_" + token.getWord() + " = add(g_" + token.getWord() + ", 1), 1)");
+				writer.addCode("sub(g_" + token.getWord() + " = add(g_" + token.getWord() + ", 1l), 1l)");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".increment()");
 			} else {
-				writer.addCode("sub(u_" + token.getWord() + " = add(u_" + token.getWord() + ", 1), 1)");
+				writer.addCode("sub(u_" + token.getWord() + " = add(u_" + token.getWord() + ", 1l), 1l)");
 			}
 		}
 	}
@@ -402,13 +400,13 @@ public class LeekVariable extends AbstractExpression {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".decrement()");
 			} else {
-				writer.addCode("add(g_" + token.getWord() + " = sub(g_" + token.getWord() + ", 1), 1)");
+				writer.addCode("add(g_" + token.getWord() + " = sub(g_" + token.getWord() + ", 1l), 1l)");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".decrement()");
 			} else {
-				writer.addCode("add(u_" + token.getWord() + " = sub(u_" + token.getWord() + ", 1), 1)");
+				writer.addCode("add(u_" + token.getWord() + " = sub(u_" + token.getWord() + ", 1l), 1l)");
 			}
 		}
 	}
@@ -423,13 +421,13 @@ public class LeekVariable extends AbstractExpression {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".pre_increment()");
 			} else {
-				writer.addCode("g_" + token.getWord() + " = add(g_" + token.getWord() + ", 1)");
+				writer.addCode("g_" + token.getWord() + " = add(g_" + token.getWord() + ", 1l)");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".pre_increment()");
 			} else {
-				writer.addCode("u_" + token.getWord() + " = add(u_" + token.getWord() + ", 1)");
+				writer.addCode("u_" + token.getWord() + " = add(u_" + token.getWord() + ", 1l)");
 			}
 		}
 	}
@@ -444,13 +442,13 @@ public class LeekVariable extends AbstractExpression {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".pre_decrement()");
 			} else {
-				writer.addCode("g_" + token.getWord() + " = sub(g_" + token.getWord() + ", 1)");
+				writer.addCode("g_" + token.getWord() + " = sub(g_" + token.getWord() + ", 1l)");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".pre_decrement()");
 			} else {
-				writer.addCode("u_" + token.getWord() + " = sub(u_" + token.getWord() + ", 1)");
+				writer.addCode("u_" + token.getWord() + " = sub(u_" + token.getWord() + ", 1l)");
 			}
 		}
 	}
