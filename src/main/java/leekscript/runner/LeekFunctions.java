@@ -521,6 +521,19 @@ public enum LeekFunctions implements ILeekFunction {
 		}
 	},
 
+	arrayRemoveAll(2, new int[] { AI.ARRAY, -1 }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(array.size() * 2);
+			array.removeAll(parameters[1]);
+			return null;
+		}
+
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
 	count(1, new int[] { AI.ARRAY }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
@@ -1221,10 +1234,57 @@ public enum LeekFunctions implements ILeekFunction {
 		}
 	},
 
-	arrayGet(3, new int[] { AI.ARRAY, -1, -1 }) {
+	arrayGet(2, 3, new int[] { AI.ARRAY, -1, -1 }) {
 		@Override
 		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
-			return ((ArrayLeekValue) parameters[0]).getOrDefault(ai, parameters[1], parameters[2]);
+			if (parameters.length >= 3) {
+				return ((ArrayLeekValue) parameters[0]).getOrDefault(ai, parameters[1], parameters[2]);
+			}
+			return ((ArrayLeekValue) parameters[0]).get(ai, parameters[1]);
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	arrayRandom(2, new int[] { AI.ARRAY, AI.NUMBER }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(array.size() * 3);
+			return array.random(ai, ai.integer(parameters[1]));
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	arrayFrequencies(1, new int[] { AI.ARRAY }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(array.size() * 3);
+			return array.frequencies();
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	arrayChunk(2, new int[] { AI.ARRAY, AI.NUMBER }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(array.size() * 3);
+			return array.chunk(ai.integer(parameters[1]));
+		}
+		@Override
+		public int getMinVersion() { return 4; }
+	},
+
+	arrayUnique(1, new int[] { AI.ARRAY }) {
+		@Override
+		public Object run(AI ai, ILeekFunction function, Object... parameters) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(array.size() * 3);
+			return array.unique(ai);
 		}
 		@Override
 		public int getMinVersion() { return 4; }
