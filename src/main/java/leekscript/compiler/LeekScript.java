@@ -53,7 +53,7 @@ public class LeekScript {
 	private static HashMap<String, AIClassEntry> aiCache = new HashMap<>();
 	static {
 		classpath = new File(LeekScript.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getPath();
-		System.out.println(classpath);
+		// System.out.println(classpath);
 		classpath += ":/home/pierre/dev/leek-wars/generator/bin/main";
 		arguments.addAll(Arrays.asList("-classpath", classpath, "-nowarn"));
 		try {
