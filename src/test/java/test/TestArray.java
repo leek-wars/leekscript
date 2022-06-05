@@ -1,5 +1,7 @@
 package test;
 
+import leekscript.common.Error;
+
 public class TestArray extends TestCommon {
 
 	public void run() throws Exception {
@@ -325,6 +327,12 @@ public class TestArray extends TestCommon {
 		section("Array.count()");
 		code("return count([1, 2, 3, 4, 5]);").equals("5");
 
+		section("Array.get");
+		code_v1_3("var a = [1, 2, 3, 4, 5] return arrayGet(a, 0)").error(Error.FUNCTION_NOT_AVAILABLE);
+		code_v4_("var a = [1, 2, 3, 4, 5] return arrayGet(a, 0)").equals("1");
+		code_v4_("var a = [1, 2, 3, 4, 5] return arrayGet(a, 8)").equals("null");
+		code_v4_("var a = [1, 2, 3, 4, 5] return arrayGet(a, 8, 'default')").equals("default");
+
 		section("Array.push()");
 		code("var a = [] push(a, 12) return a;").equals("[12]");
 		code("var a = [] push(a, 1) push(a, 2) push(a, 3) return a;").equals("[1, 2, 3]");
@@ -443,6 +451,11 @@ public class TestArray extends TestCommon {
 		code("var r = ['a','b','c','d','e']; return remove(r, 55);").equals("null");
 		code("var r = ['a','b','c','d','e']; remove(r, 1); return r;").equals("[a, c, d, e]");
 
+		section("Array.removeAll()");
+		code_v4_("var r = ['a','b','c','a','a']; arrayRemoveAll(r, 'a'); return r").equals("[b, c]");
+		code_v4_("var r = ['a','b','c','d','e']; arrayRemoveAll(r, 'c'); return r").equals("[a, b, d, e]");
+		code_v4_("var r = ['a','b','c','d','e']; arrayRemoveAll(r, 1); return r;").equals("[a, b, c, d, e]");
+
 		section("Array.count()");
 		code("return count(['a','b','c','d','e'])").equals("5");
 
@@ -546,5 +559,30 @@ public class TestArray extends TestCommon {
 		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arrayEvery(a, function(v, k) { return k > 2 })").equals("false");
 		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arrayEvery(a, function(v, k) { return v * k == 30 })").equals("false");
 		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arrayEvery(a, function(v, k) { return v == k + 1 })").equals("true");
+
+		section("Array.random");
+		code_v4_("var a = [] return count(arrayRandom(a, 3))").equals("0");
+		code_v4_("var a = [1, 2, 3, 4, 5] return arrayRandom(a, 0)").equals("[]");
+		code_v4_("var a = [1, 2, 3, 4, 5] return count(arrayRandom(a, 3))").equals("3");
+
+		section("Array.frequencies");
+		code_v4_("var a = [] return arrayFrequencies(a)").equals("[:]");
+		code_v4_("var a = [1, 2, 1, 2, 1] return arrayFrequencies(a)").equals("[1 : 3, 2 : 2]");
+		code_v4_("var a = ['a', 'b', 'c', 'b', 'c'] return arrayFrequencies(a)").equals("[a : 1, b : 2, c : 2]");
+
+		section("Array.chunk");
+		code_v4_("var a = [] return arrayChunk(a, 5)").equals("[]");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6, 7, 8, 9] return arrayChunk(a, 3)").equals("[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6, 7, 8, 9] return arrayChunk(a, 1)").equals("[[1], [2], [3], [4], [5], [6], [7], [8], [9]]");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6, 7, 8, 9] return arrayChunk(a, 0)").equals("[[1], [2], [3], [4], [5], [6], [7], [8], [9]]");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6, 7, 8, 9] return arrayChunk(a, 100)").equals("[[1, 2, 3, 4, 5, 6, 7, 8, 9]]");
+		code_v4_("var a = ['a', 'b', 'c', 'd', 'e', 'f'] return arrayChunk(a, 4)").equals("[[a, b, c, d], [e, f]]");
+
+		section("Array.unique");
+		code_v4_("var a = [] return arrayUnique(a)").equals("[]");
+		code_v4_("var a = [1, 2] return arrayUnique(a)").equals("[1, 2]");
+		code_v4_("var a = [1, 1, 1, 2, 2, 2] return arrayUnique(a)").equals("[1, 2]");
+		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arrayUnique(a)").equals("[1, 2, 3, 4, 5, 6]");
+		code_v4_("var a = [1, 2, 3, 4, 3, 2, 1] return arrayUnique(a)").equals("[1, 2, 3, 4]");
 	}
 }

@@ -2,10 +2,12 @@ package leekscript.runner.values;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -120,10 +122,14 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		super(capacity);
 	}
 
-	public ArrayLeekValue(Object values[]) throws LeekRunException {
+	public ArrayLeekValue(Object values[]) {
 		for (var value : values) {
 			add(value);
 		}
+	}
+
+	public ArrayLeekValue(List<Object> values) {
+		super(values);
 	}
 
 	public ArrayLeekValue(AI ai, ArrayLeekValue array, int level) throws LeekRunException {
@@ -691,6 +697,45 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 			}
 		}
 		return true;
+	}
+
+	public void removeAll(Object value) {
+		removeIf(v -> v == value);
+	}
+
+	public MapLeekValue frequencies() {
+		var frequencies = new MapLeekValue();
+		for (var value : this) {
+			frequencies.merge(value, 1, (x, y) -> (Integer) x + (Integer) y);
+		}
+		return frequencies;
+	}
+
+	public ArrayLeekValue chunk(int size) {
+		size = Math.max(1, Math.min(size(), size));
+		var chunks = new ArrayLeekValue();
+		int n = (int) Math.ceil((float) size() / size);
+		for (var c = 0; c < n; ++c) {
+			int to = Math.min(size(), (c + 1) * size);
+			var chunk = new ArrayLeekValue(subList(c * size, to));
+			chunks.add(chunk);
+		}
+		return chunks;
+	}
+
+	public ArrayLeekValue unique(AI ai) {
+		var set = new HashSet<Object>();
+		for (var value : this) {
+			set.add(value);
+		}
+		return new ArrayLeekValue(set.toArray());
+	}
+
+	public ArrayLeekValue random(AI ai, int count) throws LeekRunException {
+		var result = (ArrayLeekValue) clone();
+		shuffle(ai);
+		result.removeRange(Math.max(0, Math.min(count, size())), size());
+		return result;
 	}
 
 	public String toString(AI ai, Set<Object> visited) throws LeekRunException {
