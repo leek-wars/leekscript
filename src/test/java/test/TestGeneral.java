@@ -69,9 +69,9 @@ public class TestGeneral extends TestCommon {
 			if (word.equals("this")) {
 				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
 			} else if (word.equals("instanceof")) {
-				code_v3_("global " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
+				code_v3_("global " + word + " = 2;").error(Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
 			} else if (word.equals("function")) {
-				code_v3_("global " + word + " = 2;").error(Error.OPENING_PARENTHESIS_EXPECTED);
+				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
 			} else {
 				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
 			}
