@@ -315,14 +315,20 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
 				writer.addCode("private final Object " + methodName + "(");
 				int i = 0;
-				for (var arg : version.getValue().block.getParameters()) {
+				for (var arg : version.getValue().block.getParametersDeclarations()) {
 					if (i++ > 0) writer.addCode(", ");
-					writer.addCode("Object u_" + arg);
+					var letter = arg.isCaptured() ? "p" : "u";
+					writer.addCode("Object " + letter + "_" + arg.getToken());
 				}
-				writer.addCode(") throws LeekRunException {");
+				writer.addLine(") throws LeekRunException {");
 				writer.addLine("final var u_class = " + className + ";", version.getValue().block.getLine(), version.getValue().block.getFile());
 				if (parent != null) {
 					writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
+				}
+				for (var arg : version.getValue().block.getParametersDeclarations()) {
+					if (arg.isCaptured()) {
+						writer.addLine("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", p_" + arg.getToken() + ");");
+					}
 				}
 				version.getValue().block.writeJavaCode(mainblock, writer);
 				writer.addLine("}");
@@ -336,16 +342,19 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				writer.currentBlock = version.getValue().block;
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
 				writer.addCode("private final Object " + methodName + "(ObjectLeekValue u_this");
-				for (var arg : version.getValue().block.getParameters()) {
-					writer.addCode(", Object u_" + arg);
+				for (var arg : version.getValue().block.getParametersDeclarations()) {
+					var letter = arg.isCaptured() ? "p" : "u";
+					writer.addCode(", Object " + letter + "_" + arg.getToken());
 				}
-				// if (version.getValue().getParameters().size() == 0) {
-				// 	writer.addCode(", Object __");
-				// }
 				writer.addCode(") throws LeekRunException {");
 				writer.addLine("final var u_class = " + className + ";", version.getValue().block.getLine(), version.getValue().block.getFile());
 				if (parent != null) {
 					writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
+				}
+				for (var arg : version.getValue().block.getParametersDeclarations()) {
+					if (arg.isCaptured()) {
+						writer.addLine("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", p_" + arg.getToken() + ");");
+					}
 				}
 				writer.addCounter(1);
 				version.getValue().block.writeJavaCode(mainblock, writer);
@@ -360,8 +369,9 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			String methodName = className + "_" + construct.getKey();
 			writer.addCode("private final Object " + methodName + "(ObjectLeekValue u_this");
 			if (construct.getValue().block != null) {
-				for (var arg : construct.getValue().block.getParameters()) {
-					writer.addCode(", Object u_" + arg);
+				for (var arg : construct.getValue().block.getParametersDeclarations()) {
+					var letter = arg.isCaptured() ? "p" : "u";
+					writer.addCode(", Object " + letter + "_" + arg.getToken());
 				}
 			}
 			writer.addCode(") throws LeekRunException {");
@@ -370,6 +380,11 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
 			}
 			if (construct.getValue().block != null) {
+				for (var arg : construct.getValue().block.getParametersDeclarations()) {
+					if (arg.isCaptured()) {
+						writer.addLine("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", p_" + arg.getToken() + ");");
+					}
+				}
 				construct.getValue().block.writeJavaCode(mainblock, writer);
 			} else {
 				writer.addLine("return null;");
