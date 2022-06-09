@@ -6,15 +6,18 @@ import java.util.List;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.IAWord;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
+import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 
 public class ClassMethodBlock extends AbstractLeekBlock {
 
 	private final ClassDeclarationInstruction clazz;
 	private final boolean isStatic;
 	private final ArrayList<IAWord> mParameters = new ArrayList<>();
+	private final ArrayList<LeekVariableDeclarationInstruction> mParameterDeclarations = new ArrayList<>();
 	private int mId = 0;
 
 	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
@@ -44,9 +47,11 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void addParameter(IAWord token) {
+	public void addParameter(WordCompiler compiler, IAWord token) {
 		mParameters.add(token);
-		addVariable(new LeekVariable(token, VariableType.ARGUMENT));
+		var declaration = new LeekVariableDeclarationInstruction(compiler, token, token.getLine(), token.getAI(), this);
+		mParameterDeclarations.add(declaration);
+		addVariable(new LeekVariable(token, VariableType.ARGUMENT, declaration));
 	}
 
 	public LeekVariable getVariable(String variable, boolean includeClassMembers) {
@@ -109,5 +114,9 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 
 	public List<IAWord> getParameters() {
 		return mParameters;
+	}
+
+	public ArrayList<LeekVariableDeclarationInstruction> getParametersDeclarations() {
+		return mParameterDeclarations;
 	}
 }

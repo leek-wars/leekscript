@@ -821,7 +821,7 @@ public class WordCompiler {
 			}
 			if (mCompiler.getWord().getType() != WordParser.T_STRING)
 				throw new LeekCompilerException(mCompiler.getWord(), Error.PARAMETER_NAME_EXPECTED);
-			method.addParameter(mCompiler.getWord());
+			method.addParameter(this, mCompiler.getWord());
 			mCompiler.skipWord();
 			param_count++;
 			if (mCompiler.getWord().getType() == WordParser.T_VIRG)
@@ -1263,5 +1263,9 @@ public class WordCompiler {
 
 	public void setCurrentFunction(AbstractLeekBlock block) {
 		this.mCurrentFunction = block;
+	}
+
+	public AIFile<?> getAI() {
+		return mAI;
 	}
 }
