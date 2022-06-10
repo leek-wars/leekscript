@@ -247,9 +247,10 @@ public abstract class AI {
 				}
 			}
 		}
-		for (StackTraceElement element : elements) {
-			sb.append("\t▶ " + element.getClassName() + "." + element.getMethodName() + ", line " + element.getLineNumber()).append("\n");
-		}
+		// Java stacktrace
+		// for (StackTraceElement element : elements) {
+		// 	sb.append("\t▶ " + element.getClassName() + "." + element.getMethodName() + ", line " + element.getLineNumber()).append("\n");
+		// }
 		return sb.toString();
 	}
 
