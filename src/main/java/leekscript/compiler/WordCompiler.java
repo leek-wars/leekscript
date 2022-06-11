@@ -940,14 +940,18 @@ public class WordCompiler {
 					break;
 			} else {
 				if (word.getType() == WordParser.T_NUMBER) {
-					var s = word.getWord();
-					var type = s.contains(".") ? Type.REAL : Type.INT;
 					try {
-						Integer.parseInt(s);
+						var s = word.getWord();
+						var radix = s.startsWith("0x") ? 16 : s.startsWith("0b") ? 2 : 10;
+						if (radix != 10) s = s.substring(2);
+						retour.addExpression(new LeekNumber(Integer.parseInt(s, radix), Type.INT));
 					} catch (NumberFormatException e) {
-						type = Type.REAL;
+						try {
+							retour.addExpression(new LeekNumber(Double.parseDouble(word.getWord()), Type.REAL));
+						} catch (NumberFormatException e2) {
+							throw new LeekCompilerException(word, Error.INVALID_NUMBER);
+						}
 					}
-					retour.addExpression(new LeekNumber(Double.parseDouble(word.getWord()), type));
 				} else if (word.getType() == WordParser.T_VAR_STRING) {
 					retour.addExpression(new LeekString(word.getWord()));
 				} else if (word.getType() == WordParser.T_BRACKET_LEFT) {

@@ -51,6 +51,9 @@ public class WordParser {
 	public final static int T_DOUBLE_POINT = 14;
 	public final static int T_DOT = 15;
 
+	public final static int T_HEX_NUMBER = 16;
+	public final static int T_BIN_NUMBER = 17;
+
 	private final AIFile<?> mAI;
 	private final ArrayList<IAWord> words = new ArrayList<IAWord>();
 
@@ -146,7 +149,20 @@ public class WordParser {
 				if (version >= 2) i++;
 				continue;
 			}
-			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_') {
+			if (type == T_HEX_NUMBER && ((c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f') || (c >= '0' &&  c <= '9') || c == 'p' || c == '.' || word.endsWith("p") && (c == '+' || c == '-'))) {
+				// format: 0x123afdf.04f5fep+45;
+				if (c == '.' && (word.contains(".") || word.contains("p")) || // only 1 . and cannot be after p
+				    c == 'p' && (word.contains("p")) || // only 1 p
+					word.contains("p") && !(c >= '0' &&  c <= '9') && c != '-' && c != '+') { // after p, only decimal and +/- allowed
+					compiler.addError(new AnalyzeError(new IAWord(mAI, 0, ""+c, line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
+				} else {
+					word += c;
+				}
+			} else if (type == T_BIN_NUMBER && (c == '0' || c == '1')) {
+				word += c;
+			} else if (type == T_NUMBER && (c == 'e' || word.endsWith("e") && (c == '+' || c == '-'))) {
+				word += c;
+			} else if (type != T_HEX_NUMBER && type != T_BIN_NUMBER && ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_')) {
 				if (type == T_NOTHING) {
 					word += c;
 					type = T_STRING;
@@ -162,10 +178,20 @@ public class WordParser {
 					}
 				}
 			}
-			else if(c >= '0' && c <= '9'){
+			else if (type != T_HEX_NUMBER && type != T_BIN_NUMBER && (c >= '0' && c <= '9')) {
 				if(type == T_NOTHING){
 					word += c;
-					type = T_NUMBER;
+					if (c == '0' && code.charAt(i + 1) == 'x') {
+						word += 'x';
+						type = T_HEX_NUMBER;
+						i++;
+					} else if (c == '0' && code.charAt(i + 1) == 'b') {
+						word += 'b';
+						type = T_BIN_NUMBER;
+						i++;
+					} else {
+						type = T_NUMBER;
+					}
 				}
 				else if(type == T_NUMBER || type == T_STRING || type == T_VAR_STRING){
 					word += c;
@@ -173,7 +199,17 @@ public class WordParser {
 				else{
 					if(type != T_NOTHING) newWord(word, type);
 					word = "" + c;
-					type = T_NUMBER;
+					if (c == '0' && code.charAt(i + 1) == 'x') {
+						word += 'x';
+						type = T_HEX_NUMBER;
+						i++;
+					} else if (c == '0' && code.charAt(i + 1) == 'b') {
+						word += 'b';
+						type = T_BIN_NUMBER;
+						i++;
+					} else {
+						type = T_NUMBER;
+					}
 				}
 			}
 			else if(c == ':'){
@@ -396,8 +432,9 @@ public class WordParser {
 			 * word = "!";
 			 * }
 			 */
-		}
-		else if (type == T_OPERATOR) {
+		} else if (type == T_HEX_NUMBER || type == T_BIN_NUMBER) {
+			type = T_NUMBER;
+		} else if (type == T_OPERATOR) {
 			if (word.equals("=!")) {
 				words.add(new IAWord(mAI, type, "=", line_counter, char_counter));
 				words.add(new IAWord(mAI, type, "!", line_counter, char_counter));

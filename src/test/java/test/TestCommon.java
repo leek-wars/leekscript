@@ -231,6 +231,9 @@ public class TestCommon {
 	public Case code_v3_(String code) {
 		return new Case(code, true, 3, LATEST_VERSION);
 	}
+	public Case code_v4_(String code) {
+		return new Case(code, true, 4, LATEST_VERSION);
+	}
 	public Case DISABLED_code(String code) {
 		return new Case(code, false);
 	}
