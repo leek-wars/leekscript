@@ -604,12 +604,12 @@ public class TestNumber extends TestCommon {
 
 		section("Number.operator >>>");
 		code("return 155 >>> 3;").equals("19");
-		code("return -155 >>> 3;").equals("536870892");
-		code("return [-155, ''][0] >>> 3;").equals("536870892");
-		code("var a = -155 return a >>>= 4;").equals("268435446");
-		code("var a = -155 a >>>= 5 return a;").equals("134217723");
-		code("var a = [-155, ''] return a[0] >>>= 5;").equals("134217723");
-		code("var a = -155 return ['', a >>>= 5];").equals("[, 134217723]");
+		code("return -155 >>> 3;").equals("2305843009213693932");
+		code("return [-155, ''][0] >>> 3;").equals("2305843009213693932");
+		code("var a = -155 return a >>>= 4;").equals("1152921504606846966");
+		code("var a = -155 a >>>= 5 return a;").equals("576460752303423483");
+		code("var a = [-155, ''] return a[0] >>>= 5;").equals("576460752303423483");
+		code("var a = -155 return ['', a >>>= 5];").equals("[, 576460752303423483]");
 		// code("'salut' >>> 5").error(ls::Error::NO_SUCH_OPERATOR, {env.tmp_string->to_string(), ">>>", env.integer->to_string()});
 
 		section("Not a statement errors");
