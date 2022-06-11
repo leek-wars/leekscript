@@ -143,6 +143,9 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object put(AI ai, Object keyValue, Object value) throws LeekRunException {
+		if (value instanceof Long) {
+			throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+		}
 		int i = ai.integer(keyValue);
 		try {
 			set(i, value);
@@ -565,6 +568,9 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	 */
 	@Override
 	public void push(AI ai, Object value) throws LeekRunException {
+		if (value instanceof Long) {
+			throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+		}
 		add(value);
 	}
 
