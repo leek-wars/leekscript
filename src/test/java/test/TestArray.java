@@ -300,7 +300,7 @@ public class TestArray extends TestCommon {
 		code("var a = [123123123] a[0] >>= 5 return a;").equals("[3847597]");
 
 		section("Array.operator >>>= on element");
-		code("var a = [-155] a[0] >>>= 5 return a;").equals("[134217723]");
+		code("var a = [-155] a[0] >>>= 5 return a;").equals("[576460752303423483]");
 
 		/**
 		 * Clone
