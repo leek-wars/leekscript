@@ -651,7 +651,7 @@ public class WordCompiler {
 		}
 		LeekVariableDeclarationInstruction variable = new LeekVariableDeclarationInstruction(this, word, mLine, mAI, getCurrentFunction());
 		// On regarde si une valeur est assignée
-		if (mCompiler.getWord().getWord().equals("=")) {
+		if (mCompiler.haveWords() && mCompiler.getWord().getWord().equals("=")) {
 			mCompiler.skipWord();
 			// Si oui on récupère la valeur en question
 			variable.setValue(readExpression());

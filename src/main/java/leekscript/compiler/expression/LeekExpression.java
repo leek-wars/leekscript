@@ -655,19 +655,41 @@ public class LeekExpression extends AbstractExpression {
 			return;
 		case Operators.AND:
 			writer.addCode("(");
-			writer.addCode("ops(");
+			if (mExpression1.operations > 0) {
+				writer.addCode("ops(");
+			}
 			writer.getBoolean(mainblock, mExpression1);
-			writer.addCode(", " + mExpression1.operations + ") && ops(");
+			if (mExpression1.operations > 0) {
+				writer.addCode(", " + mExpression1.operations + ")");
+			}
+			writer.addCode(" && ");
+			if (mExpression2.operations > 0) {
+				writer.addCode("ops(");
+			}
 			writer.getBoolean(mainblock, mExpression2);
-			writer.addCode(", " + mExpression2.operations + "))");
+			if (mExpression2.operations > 0) {
+				writer.addCode(", " + mExpression2.operations + ")");
+			}
+			writer.addCode(")");
 			return;
 		case Operators.OR:
 			writer.addCode("(");
-			writer.addCode("ops(");
+			if (mExpression1.operations > 0) {
+				writer.addCode("ops(");
+			}
 			writer.getBoolean(mainblock, mExpression1);
-			writer.addCode(", " + mExpression1.operations + ") || ops(");
+			if (mExpression1.operations > 0) {
+				writer.addCode(", " + mExpression1.operations + ")");
+			}
+			writer.addCode(" || ");
+			if (mExpression2.operations > 0) {
+				writer.addCode("ops(");
+			}
 			writer.getBoolean(mainblock, mExpression2);
-			writer.addCode(", " + mExpression2.operations + "))");
+			if (mExpression2.operations > 0) {
+				writer.addCode(", " + mExpression2.operations + ")");
+			}
+			writer.addCode(")");
 			return;
 
 			// Les unaires préfixés (!)
