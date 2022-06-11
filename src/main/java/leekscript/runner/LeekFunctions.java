@@ -736,6 +736,12 @@ public enum LeekFunctions implements ILeekFunction {
 			}
 			return null;
 		}
+
+		@Override
+		public void addOperations(AI ai, ILeekFunction function, Object parameters[], Object retour) throws LeekRunException {
+			var array = (ArrayLeekValue) parameters[0];
+			ai.ops(hasVariableOperations() ? mVariableOperations.getOperations(array.size() + 1) : 1);
+		}
 	},
 	arrayMax(1, new int[] { AI.ARRAY }) {
 		@Override
