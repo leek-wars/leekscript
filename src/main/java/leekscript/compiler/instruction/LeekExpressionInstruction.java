@@ -48,9 +48,11 @@ public class LeekExpressionInstruction implements LeekInstruction {
 
 		// Wrap an expression with a function call to avoid 'error: not a statement' error
 		if (trimmed instanceof LeekTernaire || (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).needsWrapper())) {
-			writer.addCode("ops(");
+			if (trimmed.getOperations() > 0) writer.addCode("ops(");
+			else writer.addCode("nothing(");
 			trimmed.writeJavaCode(mainblock, writer);
-			writer.addCode(", " + trimmed.getOperations() + ")");
+			if (trimmed.getOperations() > 0) writer.addCode(", " + trimmed.getOperations() + ")");
+			else writer.addCode(")");
 		} else {
 			if (trimmed.getOperations() > 0) writer.addCode("ops(");
 			trimmed.writeJavaCode(mainblock, writer);

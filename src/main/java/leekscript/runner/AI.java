@@ -207,8 +207,8 @@ public abstract class AI {
 		mOperations = 0;
 	}
 
-	protected Object nothing(Object obj) throws LeekRunException {
-		return null;
+	protected void nothing(Object obj) {
+
 	}
 
 	public GenericArrayLeekValue newArray() {

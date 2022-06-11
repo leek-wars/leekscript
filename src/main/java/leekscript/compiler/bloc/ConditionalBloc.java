@@ -46,16 +46,24 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		if (mParentCondition == null) {
 			writer.addCode("if (");
-			writer.addCode("ops(");
+			if (mCondition.getOperations() > 0) {
+				writer.addCode("ops(");
+			}
 			writer.getBoolean(mainblock, mCondition);
-			writer.addCode(", " + mCondition.getOperations());
-			writer.addLine(")) {", mLine, mAI);
+			if (mCondition.getOperations() > 0) {
+				writer.addCode(", " + mCondition.getOperations() + ")");
+			}
+			writer.addLine(") {", mLine, mAI);
 		} else if (mCondition != null) {
 			writer.addCode("else if (");
-			writer.addCode("ops(");
+			if (mCondition.getOperations() > 0) {
+				writer.addCode("ops(");
+			}
 			writer.getBoolean(mainblock, mCondition);
-			writer.addCode(", " + mCondition.getOperations());
-			writer.addLine(")) {", mLine, mAI);
+			if (mCondition.getOperations() > 0) {
+				writer.addCode(", " + mCondition.getOperations() + ")");
+			}
+			writer.addLine(") {", mLine, mAI);
 		}
 		else writer.addLine("else {", mLine, mAI);
 		super.writeJavaCode(mainblock, writer);
