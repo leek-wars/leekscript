@@ -2007,13 +2007,13 @@ public abstract class AI {
 		int[] parameters = function.getParameters();
 		if (parameters == null || verifyParameters(parameters, arguments)) {
 			for (var arg : arguments) {
-				if (arg instanceof Long) {
+				if (arg instanceof Integer) {
 					throw new LeekRunException(LeekRunException.INVALID_VALUE, arg);
 				}
 			}
 			Object retour = function.run(this, function, arguments);
 			function.addOperations(this, function, arguments, retour);
-			if (retour instanceof Long) {
+			if (retour instanceof Integer) {
 				throw new LeekRunException(LeekRunException.INVALID_VALUE, retour);
 			}
 			return retour;
