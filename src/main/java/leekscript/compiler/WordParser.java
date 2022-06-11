@@ -51,9 +51,6 @@ public class WordParser {
 	public final static int T_DOUBLE_POINT = 14;
 	public final static int T_DOT = 15;
 
-	public final static int T_HEX_NUMBER = 16;
-	public final static int T_BIN_NUMBER = 17;
-
 	private final AIFile<?> mAI;
 	private final ArrayList<IAWord> words = new ArrayList<IAWord>();
 
@@ -83,9 +80,10 @@ public class WordParser {
 
 		// Boucle qui détecte les mots clés, valeurs, opérateurs... utilisés
 		int length = code.length();
-		for(int i = 0; i < code.length(); i++){
+		for (int i = 0; i < code.length(); i++) {
 			c = code.charAt(i);
-			if (c == '\r') continue;
+			if (c == '\r')
+				continue;
 			// Compteur caractères/lignes
 			if (c == '\n') {
 				if (type != T_NOTHING) {
@@ -96,19 +94,20 @@ public class WordParser {
 				char_counter = 0;
 				line_counter++;
 				comment_line = false;
-			}
-			else char_counter++;
+			} else
+				char_counter++;
 			if ((c == '"' || c == '\'') && !comment_block && !comment_line) {
 				if (type == T_NOTHING) {
 					word = "";
 					type = T_VAR_STRING;
 					opener = c;
-				}
-				else if (type == T_VAR_STRING && opener == c) {
+				} else if (type == T_VAR_STRING && opener == c) {
 					boolean isEscaped = false;
 					for (int j = word.length() - 1; j >= 0; j--) {
-						if(word.charAt(j) == '\\') isEscaped = !isEscaped;
-						else break;
+						if (word.charAt(j) == '\\')
+							isEscaped = !isEscaped;
+						else
+							break;
 					}
 					if (isEscaped) {
 						word = word.substring(0, word.length() - 1);
@@ -118,8 +117,8 @@ public class WordParser {
 						word = "";
 						type = T_NOTHING;
 					}
-				}
-				else if (type == T_VAR_STRING) word += c;
+				} else if (type == T_VAR_STRING)
+					word += c;
 				else {
 					newWord(word, type);
 					word = "";
@@ -133,92 +132,65 @@ public class WordParser {
 				continue;
 			}
 
+			// Comments
 			if (comment_block && c == '*' && length > i + 1 && code.charAt(i + 1) == '/') {
 				comment_block = false;
 				i++;
 				continue;
 			}
-			if (comment_line || comment_block) continue;
+			if (comment_line || comment_block)
+				continue;
 			if (c == '/' && length > i + 1 && code.charAt(i + 1) == '/') {
 				comment_line = true;
-				if (version >= 2) i++;
+				if (version >= 2)
+					i++;
 				continue;
-			}
-			else if (c == '/' && length > i + 1 && code.charAt(i + 1) == '*') {
+			} else if (c == '/' && length > i + 1 && code.charAt(i + 1) == '*') {
 				comment_block = true;
-				if (version >= 2) i++;
+				if (version >= 2)
+					i++;
 				continue;
 			}
-			if (type == T_HEX_NUMBER && ((c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f') || (c >= '0' &&  c <= '9') || c == 'p' || c == '.' || word.endsWith("p") && (c == '+' || c == '-'))) {
-				// format: 0x123afdf.04f5fep+45;
-				if (c == '.' && (word.contains(".") || word.contains("p")) || // only 1 . and cannot be after p
-				    c == 'p' && (word.contains("p")) || // only 1 p
-					word.contains("p") && !(c >= '0' &&  c <= '9') && c != '-' && c != '+') { // after p, only decimal and +/- allowed
-					compiler.addError(new AnalyzeError(new IAWord(mAI, 0, ""+c, line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
-				} else {
-					word += c;
-				}
-			} else if (type == T_BIN_NUMBER && (c == '0' || c == '1')) {
-				word += c;
-			} else if (type == T_NUMBER && (c == 'e' || word.endsWith("e") && (c == '+' || c == '-'))) {
-				word += c;
-			} else if (type != T_HEX_NUMBER && type != T_BIN_NUMBER && ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_')) {
+
+			// Identifier
+			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_') {
 				if (type == T_NOTHING) {
 					word += c;
 					type = T_STRING;
 				} else if (type == T_STRING || type == T_VAR_STRING) {
 					word += c;
-				} else {
-					if (type == T_OPERATOR) {
-						newWord(word, type);
-						word = "" + c;
-						type = T_STRING;
-					} else if (type == T_NUMBER) {
-						throw new LeekCompilerException(new IAWord(mAI, T_NOTHING, word, line_counter, char_counter), Error.INVALID_NUMBER);
-					}
-				}
-			}
-			else if (type != T_HEX_NUMBER && type != T_BIN_NUMBER && (c >= '0' && c <= '9')) {
-				if(type == T_NOTHING){
-					word += c;
-					if (c == '0' && length > i + 1 && code.charAt(i + 1) == 'x') {
-						word += 'x';
-						type = T_HEX_NUMBER;
-						i++;
-					} else if (c == '0' && length > i + 1 && code.charAt(i + 1) == 'b') {
-						word += 'b';
-						type = T_BIN_NUMBER;
-						i++;
-					} else {
-						type = T_NUMBER;
-					}
-				}
-				else if(type == T_NUMBER || type == T_STRING || type == T_VAR_STRING){
-					word += c;
-				}
-				else{
-					if(type != T_NOTHING) newWord(word, type);
+				} else if (type == T_OPERATOR) {
+					newWord(word, type);
 					word = "" + c;
-					if (c == '0' && length > i + 1 && code.charAt(i + 1) == 'x') {
-						word += 'x';
-						type = T_HEX_NUMBER;
-						i++;
-					} else if (c == '0' && length > i + 1 && code.charAt(i + 1) == 'b') {
-						word += 'b';
-						type = T_BIN_NUMBER;
-						i++;
-					} else {
-						type = T_NUMBER;
-					}
+					type = T_STRING;
+				} else if (type == T_NUMBER) {
+
+					word += c;
+
+					// compiler.addError(new AnalyzeError(new IAWord(mAI, 0, ".", line_counter,
+					// char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
 				}
-			}
-			else if(c == ':'){
-				if(type != T_NOTHING) newWord(word, type);
+			} else if (c >= '0' && c <= '9') {
+				if (type == T_NOTHING) {
+					word += c;
+					type = T_NUMBER;
+				} else if (type == T_NUMBER || type == T_STRING || type == T_VAR_STRING) {
+					word += c;
+				} else {
+					if (type != T_NOTHING) {
+						newWord(word, type);
+					}
+					word = "" + c;
+					type = T_NUMBER;
+				}
+			} else if (c == ':') {
+				if (type != T_NOTHING) {
+					newWord(word, type);
+				}
 				newWord(":", T_OPERATOR);
 				word = "";
 				type = T_NOTHING;
-			}
-			else if(c == '.') {
+			} else if (c == '.') {
 				if (type == T_VAR_STRING) {
 					word += c;
 				} else if (type == T_NUMBER) {
@@ -227,8 +199,7 @@ public class WordParser {
 					} else {
 						word += c;
 					}
-				}
-				else if (version >= 2) {
+				} else if (version >= 2) {
 					if (type == T_STRING) {
 						newWord(word, type);
 					}
@@ -237,150 +208,157 @@ public class WordParser {
 					type = T_NOTHING;
 				} else {
 					compiler.addError(new AnalyzeError(new IAWord(mAI, 0, ".", line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
-					// throw new LeekCompilerException(mAI, line_counter, char_counter + 1, ".", Error.INVALID_CHAR);
 				}
-			}
-			else if(c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-' || c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~' || c == '.'){
-				if(type == T_VAR_STRING){
+			} else if (c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-' || c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~' || c == '.') {
+				if (type == T_VAR_STRING) {
 					word += c;
-				}
-				else if(type == T_OPERATOR){
-					if(word.equals("&")){
-						if(c == '&' || c == '=') word += c;
-						else{
+				} else if (type == T_OPERATOR) {
+					if (word.equals("&")) {
+						if (c == '&' || c == '=')
+							word += c;
+						else {
 							newWord(word, type);
 							word = "" + c;
 						}
-					}
-					else if(word.equals("|")){
-						if(c == '|' || c == '=') word += c;
-						else{
+					} else if (word.equals("|")) {
+						if (c == '|' || c == '=')
+							word += c;
+						else {
 							newWord(word, type);
 							word = "" + c;
 						}
-					}
-					else if(word.equals("+")){
-						if(c == '=' || c == '+') word += c;
-						else{
+					} else if (word.equals("+")) {
+						if (c == '=' || c == '+')
+							word += c;
+						else {
 							newWord(word, type);
 							word = "" + c;
 						}
-					}
-					else if(word.equals("-")){
-						if(c == '=' || c == '-') word += c;
-						else{
+					} else if (word.equals("-")) {
+						if (c == '=' || c == '-')
+							word += c;
+						else {
 							newWord(word, type);
 							word = "" + c;
 						}
-					}
-					else if(word.equals("*")){
-						if(c == '=' || c == '*') word += c;
-						else{
+					} else if (word.equals("*")) {
+						if (c == '=' || c == '*')
+							word += c;
+						else {
 							newWord(word, type);
 							word = "" + c;
 						}
-					}
-					else if(word.equals(">")){
-						if(c == '=' || c == '>') word += c;
-						else{
+					} else if (word.equals(">")) {
+						if (c == '=' || c == '>')
+							word += c;
+						else {
 							newWord(word, type);
 							word = "" + c;
 						}
-					}
-					else if(word.equals("<")){
-						if(c == '=' || c == '<') word += c;
-						else{
+					} else if (word.equals("<")) {
+						if (c == '=' || c == '<')
+							word += c;
+						else {
 							newWord(word, type);
 							word = "" + c;
 						}
-					}
-					else if(word.equals(">>")){
-						if(c == '=' || c == '>') word += c;
-						else{
+					} else if (word.equals(">>")) {
+						if (c == '=' || c == '>')
+							word += c;
+						else {
 							newWord(word, type);
 							word = "" + c;
 						}
-					}
-					else if(word.equals(">>>")){
-						if(c == '=') word += c;
-						else{
+					} else if (word.equals(">>>")) {
+						if (c == '=')
+							word += c;
+						else {
 							newWord(word, type);
 							word = "" + c;
 						}
-					}
-					else if(word.equals("<<")){
-						if(c == '=') word += c;
-						else{
+					} else if (word.equals("<<")) {
+						if (c == '=')
+							word += c;
+						else {
 							newWord(word, type);
 							word = "" + c;
 						}
-					}
-					else if(word.equals("*") || word.equals("**") || word.equals("/") || word.equals("%") || word.equals("=") || word.equals("!") || word.equals("<") || word.equals(">") || word.equals("^") || word.equals("==") || word.equals("!=")){
-						if(c == '=') word += c;
-						else{
+					} else if (word.equals("*") || word.equals("**") || word.equals("/") || word.equals("%")
+							|| word.equals("=") || word.equals("!") || word.equals("<") || word.equals(">")
+							|| word.equals("^") || word.equals("==") || word.equals("!=")) {
+						if (c == '=')
+							word += c;
+						else {
 							newWord(word, type);
 							word = "" + c;
 						}
-					}
-					else{
+					} else {
 						newWord(word, type);
 						word = "" + c;
 					}
 				}
-				//else if(type == T_NUMBER || type == T_STRING){
-				else{
-					if(type != T_NOTHING) newWord(word, type);
+				else if (type == T_NUMBER) {
+					if ((c == '-' || c == '+') && (word.endsWith("e") || word.endsWith("p"))) {
+						word += c;
+					} else {
+						newWord(word, type);
+						word = "" + c;
+						type = T_OPERATOR;
+					}
+				} else {
+					if (type != T_NOTHING) {
+						newWord(word, type);
+					}
 					word = "" + c;
 					type = T_OPERATOR;
 				}
-			}
-			else if(c == '(' || c == ')'){
-				if(type != T_NOTHING){
+			} else if (c == '(' || c == ')') {
+				if (type != T_NOTHING) {
 					newWord(word, type);
 					word = "";
 					type = T_NOTHING;
 				}
-				if(c == '(') newWord("(", T_PAR_LEFT);
-				else newWord(")", T_PAR_RIGHT);
-			}
-			else if(c == '[' || c == ']'){
-				if(type != T_NOTHING){
+				if (c == '(')
+					newWord("(", T_PAR_LEFT);
+				else
+					newWord(")", T_PAR_RIGHT);
+			} else if (c == '[' || c == ']') {
+				if (type != T_NOTHING) {
 					newWord(word, type);
 					word = "";
 					type = T_NOTHING;
 				}
-				if(c == '[') newWord("[", T_BRACKET_LEFT);
-				else newWord("]", T_BRACKET_RIGHT);
-			}
-			else if(c == '{' || c == '}'){
-				if(type != T_NOTHING){
+				if (c == '[')
+					newWord("[", T_BRACKET_LEFT);
+				else
+					newWord("]", T_BRACKET_RIGHT);
+			} else if (c == '{' || c == '}') {
+				if (type != T_NOTHING) {
 					newWord(word, type);
 					word = "";
 					type = T_NOTHING;
 				}
-				if(c == '{') newWord("{", T_ACCOLADE_LEFT);
-				else newWord("}", T_ACCOLADE_RIGHT);
-			}
-			else if(c == ' ' || c == '\n' || c == '\t' || c == 160 /* NBSP */){
-				if(type == T_VAR_STRING){
+				if (c == '{')
+					newWord("{", T_ACCOLADE_LEFT);
+				else
+					newWord("}", T_ACCOLADE_RIGHT);
+			} else if (c == ' ' || c == '\n' || c == '\t' || c == 160 /* NBSP */) {
+				if (type == T_VAR_STRING) {
 					word += c;
-				}
-				else if(type != T_NOTHING){
+				} else if (type != T_NOTHING) {
 					newWord(word, type);
 					word = "";
 					type = T_NOTHING;
 				}
-			}
-			else if(c == ';'){
-				if(type != T_NOTHING){
+			} else if (c == ';') {
+				if (type != T_NOTHING) {
 					newWord(word, type);
 					word = "";
 					type = T_NOTHING;
 				}
 				newWord(";", T_END_INSTRUCTION);
-			}
-			else if(c == ','){
-				if(type != T_NOTHING){
+			} else if (c == ',') {
+				if (type != T_NOTHING) {
 					newWord(word, type);
 					word = "";
 					type = T_NOTHING;
@@ -396,7 +374,7 @@ public class WordParser {
 			}
 		}
 
-		if(type != T_NOTHING){
+		if (type != T_NOTHING) {
 			newWord(word, type);
 		}
 
@@ -417,12 +395,10 @@ public class WordParser {
 			if (wordEquals(word, "or")) {
 				type = T_OPERATOR;
 				word = "||";
-			}
-			else if (wordEquals(word, "and")) {
+			} else if (wordEquals(word, "and")) {
 				type = T_OPERATOR;
 				word = "&&";
-			}
-			else if (wordEquals(word, "instanceof")) {
+			} else if (wordEquals(word, "instanceof")) {
 				type = T_OPERATOR;
 				word = "instanceof";
 			}
@@ -432,8 +408,6 @@ public class WordParser {
 			 * word = "!";
 			 * }
 			 */
-		} else if (type == T_HEX_NUMBER || type == T_BIN_NUMBER) {
-			type = T_NUMBER;
 		} else if (type == T_OPERATOR) {
 			if (word.equals("=!")) {
 				words.add(new IAWord(mAI, type, "=", line_counter, char_counter));
