@@ -1,5 +1,7 @@
 package test;
 
+import leekscript.common.Error;
+
 public class TestNumber extends TestCommon {
 
 	public void run() throws Exception {
@@ -10,17 +12,20 @@ public class TestNumber extends TestCommon {
 		code("return 0;").equals("0");
 		code("return -1;").equals("-1");
 		code("return -(-1);").equals("1");
+		code_v4_("return -1e3;").equals("-1000.0");
+		code_v4_("return 1e-3;").equals("0.001");
+		code_v4_("return 1.5e-3;").equals("0.0015");
 		// code("π").almost(3.141592653589793116);
 
 		section("Lexical errors");
-		// code("12345r").error(ls::Error::Type::NUMBER_INVALID_REPRESENTATION);
-		// code("0b011001711").error(ls::Error::Type::NUMBER_INVALID_REPRESENTATION);
-		// code("0b").error(ls::Error::Type::NUMBER_INVALID_REPRESENTATION);
-		// code("0x").error(ls::Error::Type::NUMBER_INVALID_REPRESENTATION);
-		// code("0x+").error(ls::Error::Type::NUMBER_INVALID_REPRESENTATION);
-		// code("0b#").error(ls::Error::Type::NUMBER_INVALID_REPRESENTATION);
-		// code("0b'").error(ls::Error::Type::NUMBER_INVALID_REPRESENTATION);
-		// code("0b\"").error(ls::Error::Type::NUMBER_INVALID_REPRESENTATION);
+		code("12345r").error(Error.INVALID_NUMBER);
+		code("0b011001711").error(Error.INVALID_CHAR);
+		code("0b").error(Error.INVALID_NUMBER);
+		code("0x").error(Error.INVALID_NUMBER);
+		code("0x+").error(Error.INVALID_NUMBER);
+		code("0b#").error(Error.INVALID_CHAR);
+		code("0b'").error(Error.INVALID_NUMBER);
+		code("0b\"").error(Error.INVALID_NUMBER);
 
 		section("Basic operations");
 		code("return 0 + 5;").equals("5");
@@ -49,28 +54,30 @@ public class TestNumber extends TestCommon {
 		// DISABLED_code("var a = [2, 'a'] return [-a[0], +a[0], ~a[0]] == [-2, 2, ~2];").equals("true");
 
 		section("Hexadecimal representation");
-		// DISABLED_code("0x0").equals("0");
-		// DISABLED_code("0x00000000").equals("0");
-		// DISABLED_code("0x1").equals("1");
-		// DISABLED_code("0x00000001").equals("1");
-		// DISABLED_code("0xf").equals("15");
-		// DISABLED_code("0x0000000f").equals("15");
-		// DISABLED_code("-0xf").equals("-15");
-		// DISABLED_code("0xff").equals("255");
-		// DISABLED_code("0x10").equals("16");
-		// DISABLED_code("-0xffff").equals("-65535");
-		// DISABLED_code("0xffffffff").equals("4294967295");
-		// DISABLED_code("0x8fa6cd83e41a6f4ec").equals("165618988158544180460");
-		// DISABLED_code("-0xa71ed8fa6cd83e41a6f4eaf4ed9dff8cc3ab1e9a4ec6baf1ea77db4fa1c").equals("-72088955549248787618860543269425825306377186794534918826231778059287068");
-		// DISABLED_code("0xfe54c4ceabf93c4eaeafcde94eba4c79741a7cc8ef43daec6a71ed8fa6cd8b3e41a6f4ea7f4ed9dff8cc3ab61e9a4ec6baf1ea77deb4fa1c").equals("722100440055342029825617696009879717719483550913608718409456486549003139646247155371523487552495527165084677501327990299146441654073884");
+		code_v4_("return 0x0;").equals("0");
+		code_v4_("return 0x00000000").equals("0");
+		code_v4_("return 0x1").equals("1");
+		code_v4_("return 0x00000001").equals("1");
+		code_v4_("return 0xf").equals("15");
+		code_v4_("return 0x0000000f").equals("15");
+		code_v4_("return -0xf").equals("-15");
+		code_v4_("return 0xff").equals("255");
+		code_v4_("return 0x10").equals("16");
+		code_v4_("return -0xffff").equals("-65535");
+		code_v4_("return -0x1.p53").equals(""+(-0x1.p53));
+		code_v4_("return -0xa.bcdp-42").equals(""+(-0xa.bcdp-42));
+		//code("return 0xffffffff").equals("4294967295");
+		//code("return 0x8fa6cd83e41a6f4ec").equals("165618988158544180460");
+		//code("-0xa71ed8fa6cd83e41a6f4eaf4ed9dff8cc3ab1e9a4ec6baf1ea77db4fa1c").equals("-72088955549248787618860543269425825306377186794534918826231778059287068");
+		//code("0xfe54c4ceabf93c4eaeafcde94eba4c79741a7cc8ef43daec6a71ed8fa6cd8b3e41a6f4ea7f4ed9dff8cc3ab61e9a4ec6baf1ea77deb4fa1c").equals("722100440055342029825617696009879717719483550913608718409456486549003139646247155371523487552495527165084677501327990299146441654073884");
 
 		section("Binary representation");
-		// DISABLED_code("0b0").equals("0");
-		// DISABLED_code("0b00001").equals("1");
-		// DISABLED_code("0b1001010110").equals("598");
-		// DISABLED_code("-0b0101101001111").equals("-2895");
-		// DISABLED_code("0b010101010101110101010101011111111110111110111110000000011101101010101001").equals("1574698668551521295017");
-		// DISABLED_code("-0b101010101011101010101010111111111101111101111100000000111011010101010010011111100000011111111111110000").equals("-3381639641241763826573319995376");
+		code_v4_("return 0b0").equals("0");
+		code_v4_("return 0b00001").equals("1");
+		code_v4_("return 0b1001010110").equals("598");
+		code_v4_("return -0b0101101001111").equals("-2895");
+		//code("return 0b010101010101110101010101011111111110111110111110000000011101101010101001").equals("1574698668551521295017");
+		//code("return -0b101010101011101010101010111111111101111101111100000000111011010101010010011111100000011111111111110000").equals("-3381639641241763826573319995376");
 
 		section("null must not be considered as 0");
 		code("return null == 0;").equals("false");
