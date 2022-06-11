@@ -181,11 +181,11 @@ public class WordParser {
 			else if (type != T_HEX_NUMBER && type != T_BIN_NUMBER && (c >= '0' && c <= '9')) {
 				if(type == T_NOTHING){
 					word += c;
-					if (c == '0' && code.charAt(i + 1) == 'x') {
+					if (c == '0' && length > i + 1 && code.charAt(i + 1) == 'x') {
 						word += 'x';
 						type = T_HEX_NUMBER;
 						i++;
-					} else if (c == '0' && code.charAt(i + 1) == 'b') {
+					} else if (c == '0' && length > i + 1 && code.charAt(i + 1) == 'b') {
 						word += 'b';
 						type = T_BIN_NUMBER;
 						i++;
@@ -199,11 +199,11 @@ public class WordParser {
 				else{
 					if(type != T_NOTHING) newWord(word, type);
 					word = "" + c;
-					if (c == '0' && code.charAt(i + 1) == 'x') {
+					if (c == '0' && length > i + 1 && code.charAt(i + 1) == 'x') {
 						word += 'x';
 						type = T_HEX_NUMBER;
 						i++;
-					} else if (c == '0' && code.charAt(i + 1) == 'b') {
+					} else if (c == '0' && length > i + 1 && code.charAt(i + 1) == 'b') {
 						word += 'b';
 						type = T_BIN_NUMBER;
 						i++;
