@@ -919,6 +919,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 * @throws LeekRunException
 	 */
 	public void push(AI ai, Object value) throws LeekRunException {
+		if (value instanceof Long) {
+			throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+		}
 		if (mSize >= capacity) {
 			growCapacity(ai);
 		}
@@ -956,7 +959,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 * @throws LeekRunException
 	 */
 	public void set(AI ai, Object key, Object value) throws LeekRunException {
-
+		if (value instanceof Long) {
+			throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+		}
 		Element e = getElement(ai, key);
 		// Si l'élément n'existe pas on le crée
 		if (e == null) {

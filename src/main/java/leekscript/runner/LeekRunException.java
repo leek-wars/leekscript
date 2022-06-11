@@ -5,6 +5,7 @@ public class LeekRunException extends Exception {
 	private static final long serialVersionUID = 3760370673897923713L;
 
 	private final int mError;
+	private Object param = null;
 
 	public final static int TOO_MUCH_OPERATIONS = 1;
 	public final static int ARRAY_EMPTY = 2;
@@ -13,9 +14,15 @@ public class LeekRunException extends Exception {
 	public final static int INVALID_LEVEL = 6;
 	public final static int OUT_OF_MEMORY = 7;
 	public final static int UNKNOWN_FIELD = 8;
+	public final static int INVALID_VALUE = 9;
 
 	public LeekRunException(int error) {
 		mError = error;
+	}
+
+	public LeekRunException(int error, Object param) {
+		mError = error;
+		this.param = param;
 	}
 
 	public LeekRunException(LeekRunException e) {
@@ -43,6 +50,8 @@ public class LeekRunException extends Exception {
 			return "Erreur d'exécution : Trop de RAM utilisée";
 		case UNKNOWN_FIELD:
 			return "Erreur d'exécution : Champ inconnu";
+		case INVALID_VALUE:
+			return "Erreur d'exécution : Valeur invalide : " + this.param + " (class " + (this.param == null ? "null" : this.param.getClass().getSimpleName()) + ")";
 		}
 		return "Erreur d'exécution";
 	}

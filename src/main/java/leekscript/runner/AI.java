@@ -248,9 +248,9 @@ public abstract class AI {
 			}
 		}
 		// Java stacktrace
-		// for (StackTraceElement element : elements) {
-		// 	sb.append("\t▶ " + element.getClassName() + "." + element.getMethodName() + ", line " + element.getLineNumber()).append("\n");
-		// }
+		for (StackTraceElement element : elements) {
+			sb.append("\t▶ " + element.getClassName() + "." + element.getMethodName() + ", line " + element.getLineNumber()).append("\n");
+		}
 		return sb.toString();
 	}
 
@@ -1001,8 +1001,10 @@ public abstract class AI {
 			}
 		} else if (value instanceof Box) {
 			return integer(((Box) value).getValue());
+		} else if (value == null) {
+			return 0;
 		}
-		return 0;
+		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
 	}
 
 	public double real(Object value) throws LeekRunException {
@@ -1034,8 +1036,10 @@ public abstract class AI {
 			}
 		} else if (value instanceof Box) {
 			return real(((Box) value).getValue());
+		} else if (value == null) {
+			return 0;
 		}
-		return 0;
+		throw new LeekRunException(LeekRunException.INVALID_VALUE);
 	}
 
 	public boolean not(Object value) throws LeekRunException {
@@ -2002,8 +2006,16 @@ public abstract class AI {
 		// Vérification parametres
 		int[] parameters = function.getParameters();
 		if (parameters == null || verifyParameters(parameters, arguments)) {
+			for (var arg : arguments) {
+				if (arg instanceof Long) {
+					throw new LeekRunException(LeekRunException.INVALID_VALUE, arg);
+				}
+			}
 			Object retour = function.run(this, function, arguments);
 			function.addOperations(this, function, arguments, retour);
+			if (retour instanceof Long) {
+				throw new LeekRunException(LeekRunException.INVALID_VALUE, retour);
+			}
 			return retour;
 		} else {
 			// Message d'erreur
