@@ -100,15 +100,15 @@ public class FunctionBlock extends AbstractLeekBlock {
 			var parameter = mParameters.get(i);
 			var declaration = mParameterDeclarations.get(i);
 			if (declaration.isCaptured()) {
-				sb.append("final var u_").append(parameter).append(" = new Wrapper(");
 				if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
+					sb.append("final var u_").append(parameter).append(" = new Wrapper(");
 					if (mReferences.get(i)) {
 						sb.append("(p_").append(parameter).append(" instanceof Box) ? (Box) p_").append(parameter).append(" : new Box(" + writer.getAIThis() + ", ").append("p_").append(parameter).append("));");
 					} else {
 						sb.append("new Box(").append(writer.getAIThis()).append(", copy(p_").append(parameter).append(")));");
 					}
 				} else {
-					sb.append("new Box(").append(writer.getAIThis()).append(", p_").append(parameter).append("));");
+					sb.append("final var u_").append(parameter).append(" = new Box(").append(writer.getAIThis()).append(", p_").append(parameter).append(");");
 				}
 			} else {
 				sb.append("var u_").append(parameter).append(" = ");

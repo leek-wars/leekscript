@@ -52,7 +52,7 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 	}
 
 	public boolean isWrapper() {
-		return this.captured;
+		return mAI.getVersion() == 1 && this.captured;
 	}
 
 	@Override

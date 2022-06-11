@@ -375,6 +375,9 @@ public class TestObject extends TestCommon {
 		section("Misc");
 		code_v2_("class A { static x() {} static m(item) { return x == item } } return A.m(12)").equals("false");
 		code_v2_("class A { static x() {} static m(item) { return x == item } } return A.m(A.x)").equals("true");
+		code_v2_("class A { static f(x) { x = 2 var g = function() { f(x) } } }").equals("null");
+		code_v2_("class A { f(x) { x = 2 var g = function() { f(x) } } }").equals("null");
+		code_v2_("class A { constructor(x) { x = 2 var g = function() { f(x) } } }").equals("null");
 
 		section("Base classes");
 		code_v3_("return Value").equals("<class Value>");

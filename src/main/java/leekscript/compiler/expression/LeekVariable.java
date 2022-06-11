@@ -171,7 +171,6 @@ public class LeekVariable extends AbstractExpression {
 		return declaration != null && declaration.isWrapper();
 	}
 
-
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		if (type == VariableType.THIS) {
