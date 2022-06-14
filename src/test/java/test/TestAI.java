@@ -20,31 +20,6 @@ public class TestAI extends AI {
 	}
 
 	@Override
-	public int userFunctionCount(int id) {
-		return 0;
-	}
-
-	@Override
-	public boolean[] userFunctionReference(int id) {
-		return null;
-	}
-
-	@Override
-	public Object userFunctionExecute(int id, Object[] value) throws LeekRunException {
-		return null;
-	}
-
-	@Override
-	public int anonymousFunctionCount(int id) {
-		return 0;
-	}
-
-	@Override
-	public boolean[] anonymousFunctionReference(int id) {
-		return null;
-	}
-
-	@Override
 	public int getVersion() {
 		return 2;
 	}

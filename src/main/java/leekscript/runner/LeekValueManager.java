@@ -5,7 +5,6 @@ import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.TreeMap;
 
 import leekscript.AILog;
 import leekscript.runner.values.ArrayLeekValue;
@@ -22,26 +21,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 public class LeekValueManager {
-
-	static {
-		init();
-	}
-
-	private static TreeMap<String, FunctionLeekValue> mFunctions;
-
-	public static void init() {
-		mFunctions = new TreeMap<String, FunctionLeekValue>();
-		for (LeekFunctions function : LeekFunctions.values()) {
-			mFunctions.put(function.toString(), new FunctionLeekValue(function));
-		}
-		for (Object function : LeekFunctions.getExtraFunctions()) {
-			mFunctions.put(function.toString(), new FunctionLeekValue((ILeekFunction) function));
-		}
-	}
-
-	public static FunctionLeekValue getFunction(ILeekFunction function) {
-		return mFunctions.get(function.toString());
-	}
 
 	public static Object parseJSON(Object o, AI ai) throws LeekRunException {
 		if (o instanceof Boolean) {
@@ -70,7 +49,7 @@ public class LeekValueManager {
 			JSONArray a = (JSONArray) o;
 			var array = new LegacyArrayLeekValue();
 			for (Object oo : a) {
-				array.push(ai, parseJSON(oo, ai));
+				array.pushNoClone(ai, parseJSON(oo, ai));
 			}
 			return array;
 		}

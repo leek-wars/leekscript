@@ -36,9 +36,9 @@ public class LeekAnonymousFunction extends AbstractExpression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("new FunctionLeekValue(" + mBlock.getId() + ", ");
+		writer.addCode("new FunctionLeekValue(" + mBlock.countParameters() + ") {");
 		mBlock.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode("}");
 	}
 
 	@Override

@@ -191,7 +191,7 @@ public class LeekVariable extends AbstractExpression {
 			writer.addCode("rfunction_" + token.getWord());
 		} else if (type == VariableType.FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
-			writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
+			user_function.compileAnonymousFunction(mainblock, writer);
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
 			var constant = LeekConstants.get(token.getWord());
 			if (constant.getType() == Type.INT) writer.addCode(String.valueOf(constant.getIntValue()) + "l");
@@ -200,10 +200,13 @@ public class LeekVariable extends AbstractExpression {
 		} else if (type == VariableType.SYSTEM_FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
 			if (user_function != null) {
-				writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
+				user_function.compileAnonymousFunction(mainblock, writer);
 			} else {
-				String namespace = LeekFunctions.getNamespace(token.getWord());
-				writer.addCode("LeekValueManager.getFunction(" + namespace + "." + token.getWord() + ")");
+				var system_function = LeekFunctions.getValue(token.getWord());
+				writer.generateAnonymousSystemFunction(system_function);
+				// String namespace = LeekFunctions.getNamespace(token.getWord());
+				writer.addCode(system_function.getStandardClass() + "_" + token.getWord());
+				// writer.addCode("LeekValueManager.getFunction(" + namespace + "." + token.getWord() + ")");
 			}
 		} else if (type == VariableType.GLOBAL) {
 			if (mainblock.getWordCompiler().getVersion() <= 1) {
@@ -247,10 +250,13 @@ public class LeekVariable extends AbstractExpression {
 		} else if (type == VariableType.SYSTEM_FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
 			if (user_function != null) {
-				writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
+				user_function.compileAnonymousFunction(mainblock, writer);
 			} else {
-				String namespace = LeekFunctions.getNamespace(token.getWord());
-				writer.addCode("LeekValueManager.getFunction(" + namespace + "." + token.getWord() + ")");
+				var system_function = LeekFunctions.getValue(token.getWord());
+				writer.generateAnonymousSystemFunction(system_function);
+				// String namespace = LeekFunctions.getNamespace(token.getWord());
+				writer.addCode(system_function.getStandardClass() + "_" + token.getWord());
+				// writer.addCode("LeekValueManager.getFunction(" + namespace + "." + token.getWord() + ")");
 			}
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
 			var constant = LeekConstants.get(token.getWord());
@@ -259,7 +265,7 @@ public class LeekVariable extends AbstractExpression {
 			else writer.addCode("null");
 		} else if (type == VariableType.FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
-			writer.addCode("new FunctionLeekValue(" + user_function.getId() + ")");
+			user_function.compileAnonymousFunction(mainblock, writer);
 		} else if (type == VariableType.CLASS) {
 			if (classDeclaration.internal) {
 				writer.addCode(token.getWord().toLowerCase() + "Class");

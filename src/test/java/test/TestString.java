@@ -45,10 +45,5 @@ public class TestString extends TestCommon {
 		code("return contains('bonjour','bon')").equals("true");
 		code("return contains('bonjour','jour')").equals("true");
 		code("return contains('bonjour','jourr')").equals("false");
-
-		section("String.number()");
-		code("return contains('bonjour','bon')").equals("true");
-		code("return contains('bonjour','jour')").equals("true");
-		code("return contains('bonjour','jourr')").equals("false");
 	}
 }

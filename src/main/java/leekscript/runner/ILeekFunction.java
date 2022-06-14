@@ -8,7 +8,6 @@ public interface ILeekFunction {
 	abstract public int getArgumentsMin();
 	abstract public boolean isExtra();
 	abstract public String getNamespace();
-	abstract public int[] getParameters();
 	abstract public Type getReturnType();
 	abstract public CallableVersion[] getVersions();
 	abstract public Object run(AI leekIA, ILeekFunction function, Object... parameters) throws LeekRunException;
@@ -17,4 +16,8 @@ public interface ILeekFunction {
 	abstract public int getMinVersion();
 
 	abstract public int getMaxVersion();
+	public abstract String getStandardClass();
+
+	public abstract int getOperations();
+	public abstract boolean isStatic();
 }

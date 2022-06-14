@@ -23,7 +23,14 @@ public class TestMain {
 
 		// TestCommon.loadReferenceOperations();
 
-		// new TestCommon().code("abs = 2").equals("10");
+		// new TestCommon().code("var a = [1, 2, 3] return count(a)").equals("3");
+		// new TestCommon().code("return arrayMin([1, 2, 3])").equals("1");
+		// new TestCommon().code("var a = [1, 2, 3] return arrayMin(a)").equals("1");
+		// new TestCommon().code("var a = [1, 2, 3] fill(a, 'a') return a").equals("[a, a, a]");
+		// new TestCommon().code("return sum(arrayFlatten(arrayMap([1, 2, 3], function(x) { return x })))").equals("6");
+		// new TestCommon().code("return arrayMap([4, 9, 16], function(x) { return x });").equals("[4, 9, 16]");
+		// new TestCommon().code("return arrayMap([4, 9, 16], sqrt);").equals("3");
+
 		new TestGeneral().run();
 		new TestNumber().run();
 		new TestString().run();

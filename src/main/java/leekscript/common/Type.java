@@ -2,43 +2,75 @@ package leekscript.common;
 
 public class Type {
 
-	public static Type ANY = new Type("any", '?');
-	public static Type NULL = new Type("null", 'u');
-	public static Type BOOL = new Type("bool", 'b');
-	public static Type NUMBER = new Type("number", 'n');
-	public static Type INT = new Type("int", 'i');
-	public static Type REAL = new Type("real", 'r');
-	public static Type STRING = new Type("string", 's');
-	public static Type ARRAY = new Type("array", 'a');
-	public static Type OBJECT = new Type("object", 'o');
-	public static Type FUNCTION = new Type("function", 'f');
+	public static Type ANY = new Type("any", "Object", "null");
+	public static Type NULL = new Type("null", "Object", "null");
+	public static Type BOOL = new Type("bool", "boolean", "false");
+	public static Type NUMBER = new Type("number", "Number", "0.0");
+	public static Type INT = new Type("int", "long", "0l");
+	public static Type REAL = new Type("real", "double", "0.0");
+	public static Type STRING = new Type("string", "String", "\"\"");
+	public static Type ARRAY = new Type("array", "ArrayLeekValue", "new ArrayLeekValue()");
+	public static Type OBJECT = new Type("object", "ObjectLeekValue", "new ObjectLeekValue()");
+	public static Type FUNCTION = new Type("function", "FunctionLeekValue", "new FunctionLeekValue(-1)");
+	public static Type MAP = new Type("map", "MapLeekValue", "new MapLeekValue()");
+	public static Type CLASS = new Type("class", "ClassLeekValue", "new ClassLeekValue()");
+	public static Type VOID = new Type("void", "Object", "null");
 
-	public String name;
-	public char signature;
-
-	public Type(String name, char signature) {
-		this.name = name;
-		this.signature = signature;
+	public static enum CastType {
+		EQUALS,
+		UPCAST,
+		SAFE_DOWNCAST,
+		UNSAFE_DOWNCAST,
+		INCOMPATIBLE
 	}
 
-	public boolean accepts(Type type) {
-		if (type == this) return true;
-		if (this == ANY) return true;
+	public String name;
+	private String javaName;
+	private String defaultValue;
+
+	public Type(String name, String javaName, String defaultValue) {
+		this.name = name;
+		this.javaName = javaName;
+		this.defaultValue = defaultValue;
+	}
+
+	public CastType compare(Type type) {
+		if (type == this) return CastType.EQUALS;
+		if (this == ANY) return CastType.UPCAST;
+		if (type == ANY) return CastType.UNSAFE_DOWNCAST;
 		if (this == NUMBER) {
-			if (type == BOOL || type == INT || type == REAL) return true;
+			if (type == BOOL || type == INT || type == REAL) return CastType.UPCAST;
 		}
 		if (this == REAL) {
-			if (type == INT) return true;
+			if (type == INT) {
+				return CastType.UPCAST;
+			}
 		}
-		if (this == BOOL) return true;
-		return false;
+		if (this == BOOL) {
+			return CastType.UPCAST;
+		}
+		return CastType.INCOMPATIBLE;
 	}
 
 	public boolean isNumber() {
 		return this == NUMBER || this == INT || this == REAL;
 	}
 
-	public char getSignature() {
-		return signature;
+	public String toString() {
+		return name;
+	}
+
+	public String getJavaName(int version) {
+		if (this == Type.ARRAY) {
+			return version >= 4 ? "ArrayLeekValue" : "LegacyArrayLeekValue";
+		}
+		return javaName;
+	}
+
+	public String getDefaultValue(int version) {
+		if (this == Type.ARRAY) {
+			return version >= 4 ? "new ArrayLeekValue()" : "new LegacyArrayLeekValue()";
+		}
+		return defaultValue;
 	}
 }

@@ -15,6 +15,7 @@ public class Functions {
 	public static void addFunctionOperations(String function, int operations, String variableOperations) {
 		ILeekFunction f = LeekFunctions.getValue(function);
 		if (f != null) {
+			System.out.println("Function " + f + " ops : " + operations);
 			f.setOperations(Math.max(1, operations));
 		}
 		if (variableOperations != null) {

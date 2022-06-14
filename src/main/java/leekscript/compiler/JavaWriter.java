@@ -2,6 +2,7 @@ package leekscript.compiler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.TreeMap;
 
 import com.alibaba.fastjson.JSON;
@@ -10,8 +11,11 @@ import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.common.Type;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
+import leekscript.runner.CallableVersion;
+import leekscript.runner.ILeekFunction;
 
 public class JavaWriter {
+
 	private final StringBuilder mCode;
 	private final StringBuilder mLinesFile;
 	private int mLine;
@@ -21,6 +25,8 @@ public class JavaWriter {
 	private final boolean mWithDebug;
 	private final String className;
 	public AbstractLeekBlock currentBlock = null;
+	public HashSet<CallableVersion> genericFunctions = new HashSet<>();
+	public HashSet<ILeekFunction> anonymousSystemFunctions = new HashSet<>();
 
 	public JavaWriter(boolean debug, String className) {
 		mCode = new StringBuilder();
@@ -84,7 +90,7 @@ public class JavaWriter {
 			mCode.append("\"" + f.getPath().replaceAll("\\\\/", "/").replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"");
 			mCode.append(", ");
 		}
-		mCode.append("};}\n");
+		mCode.append("};}\n\n");
 	}
 
 	public void addCounter(int count) {
@@ -160,5 +166,136 @@ public class JavaWriter {
 			expr.writeJavaCode(mainblock, this);
 			addCode(")");
 		}
+	}
+
+	public void compileConvert(MainLeekBlock mainblock, AbstractExpression value, Type type) {
+		// var v_type = value.getType();
+		// System.out.println("convert " + v_type + " to " + type);
+		if (type == Type.ARRAY) {
+			addCode(mainblock.getVersion() >= 4 ? "toArray(" : "toLegacyArray(");
+			value.writeJavaCode(mainblock, this);
+			addCode(")");
+			return;
+		}
+		value.writeJavaCode(mainblock, this);
+	}
+
+	public void generateGenericFunction(CallableVersion system_function) {
+		genericFunctions.add(system_function);
+	}
+
+	public void generateAnonymousSystemFunction(ILeekFunction system_function) {
+		anonymousSystemFunctions.add(system_function);
+		var added = new HashSet<Integer>();
+		for (var version : system_function.getVersions()) {
+			if (!added.contains(version.arguments.length)) {
+				genericFunctions.add(version);
+				added.add(version.arguments.length);
+			}
+		}
+	}
+
+	public void writeGenericFunctions(MainLeekBlock block) {
+
+		for (var version : genericFunctions) {
+			addCode("private " + version.return_type.getJavaName(block.getVersion()) + " " + version.function.getStandardClass() + "_" + version.function.toString() + "_" + version.arguments.length + "(");
+			for (int a = 0; a < version.arguments.length; ++a) {
+				if (a > 0) addCode(", ");
+				addCode("Object a" + a);
+			}
+			addLine(") throws LeekRunException {");
+			int a = 0;
+			for (var argument : version.arguments) {
+				if (argument != Type.ANY) {
+					addLine(argument.getJavaName(block.getVersion()) + " x" + a + "; try { x" + a + " = " + convert("a" + a, argument, block.getVersion()) + "; } catch (ClassCastException e) { return " + version.return_type.getDefaultValue(block.getVersion()) + "; }");
+				}
+				a++;
+			}
+			// if (function.getOperations() >= 0) {
+			// 	addCode("return x0." + function.toString() + "(");
+			// } else {
+			if (version.function.isStatic()) {
+				var function_name = version.function.toString();
+				if (version.return_type == Type.ARRAY && block.getVersion() <= 3) {
+					function_name += "_v1_3";
+				}
+				addCode("return " + version.function.getStandardClass() + "Class." + function_name + "(");
+			} else {
+				addCode("return x0." + version.function.toString() + "(");
+			}
+			ArrayList<String> args = new ArrayList<>();
+			args.add("this");
+			int start_index = version.function.isStatic() ? 0 : 1;
+			for (a = start_index; a < version.arguments.length; ++a) {
+				if (version.arguments[a] != Type.ANY) {
+					args.add("x" + a);
+				} else {
+					args.add("a" + a);
+				}
+			}
+			addCode(String.join(", ", args));
+			addLine(");");
+			addLine("}");
+			addLine();
+		}
+	}
+
+	public void writeAnonymousSystemFunctions(MainLeekBlock block) {
+
+		for (var function : anonymousSystemFunctions) {
+			addLine("private FunctionLeekValue " + function.getStandardClass() + "_" + function.toString() + " = new FunctionLeekValue(" + function.getVersions()[0].arguments.length + ", \"#Function " + function + "\") { public Object run(AI ai, ObjectLeekValue thiz, Object... values) throws LeekRunException {");
+			if (function.getOperations() >= 0) {
+				addLine("ops(" + function.getOperations() + ");");
+			}
+			if (function.getVersions().length > 1) {
+				for (var version : function.getVersions()) {
+					addCode("if (values.length == " + version.arguments.length + ") return " + function.getStandardClass() + "_" + function.toString() + "_" + version.arguments.length + "(");
+					for (var a = 0; a < version.arguments.length; ++a) {
+						if (a > 0) addCode(", ");
+						if (block.getVersion() == 1) {
+							addCode("load(values[" + a + "])");
+						} else {
+							addCode("values[" + a + "]");
+						}
+					}
+					addLine(");");
+				}
+			}
+			addCode("return " + function.getStandardClass() + "_" + function.toString() + "_" + function.getVersions()[0].arguments.length + "(");
+			for (var a = 0; a < function.getVersions()[0].arguments.length; ++a) {
+				if (a > 0) addCode(", ");
+				if (block.getVersion() == 1) {
+					addCode("load(values[" + a + "])");
+				} else {
+					addCode("values[" + a + "]");
+				}
+			}
+			addLine(");");
+			addLine("}};");
+			addLine();
+		}
+	}
+
+	private String convert(String v, Type type, int version) {
+		if (type == Type.ARRAY) {
+			if (version >= 4) return "toArray(" + v + ")";
+			else return "toLegacyArray(" + v + ")";
+		}
+		if (type == Type.MAP) {
+			return "toMap(" + v + ")";
+		}
+		if (type == Type.FUNCTION) {
+			return "toFunction(" + v + ")";
+		}
+		if (type == Type.INT) {
+			return "longint(" + v + ")";
+		}
+		if (type == Type.REAL) {
+			return "real(" + v + ")";
+		}
+		if (type == Type.STRING) {
+			return "string(" + v + ")";
+		}
+		return v;
 	}
 }

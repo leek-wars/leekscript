@@ -14,8 +14,8 @@ import leekscript.compiler.bloc.MainLeekBlock;
 public class LeekArray extends AbstractExpression {
 
 	private final ArrayList<AbstractExpression> mValues = new ArrayList<AbstractExpression>();
-
 	public boolean mIsKeyVal = false;
+	public Type type = Type.ARRAY;
 
 	public void addValue(AbstractExpression param) {
 		mValues.add(param);
@@ -34,6 +34,10 @@ public class LeekArray extends AbstractExpression {
 		mIsKeyVal = true;
 		mValues.add(key);
 		mValues.add(value);
+
+		if (compiler.getVersion() >= 4) {
+			type = Type.MAP;
+		}
 	}
 
 	@Override
@@ -43,7 +47,7 @@ public class LeekArray extends AbstractExpression {
 
 	@Override
 	public Type getType() {
-		return Type.ARRAY;
+		return type;
 	}
 
 	@Override

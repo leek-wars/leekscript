@@ -1,9 +1,6 @@
 package leekscript.compiler;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Set;
-import java.util.TreeSet;
 
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
@@ -964,6 +961,7 @@ public class WordCompiler {
 					if (mCompiler.getWord().getWord().equals(":")) {
 						// [:] map vide
 						array.mIsKeyVal = true;
+						array.type = Type.MAP;
 						mCompiler.skipWord();
 					} else {
 

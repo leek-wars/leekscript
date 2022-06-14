@@ -1,7 +1,5 @@
 package leekscript.runner.values;
 
-import java.util.Arrays;
-
 import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;

@@ -49,8 +49,21 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return value;
 	}
 
+	public Object mapPut(AI ai, Object key, Object value) {
+		put(key, value);
+		return value;
+	}
+
 	public Object get(AI ai, Object index) {
 		return get(index);
+	}
+
+	public Object mapGet(AI ai, Object key) {
+		return get(key);
+	}
+
+	public Object mapGet(AI ai, Object key, Object defaultValue) {
+		return getOrDefault(key, defaultValue);
 	}
 
 	public Object add_eq(AI ai, Object y) {
@@ -76,21 +89,26 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return v;
 	}
 
-	public MapLeekValue map(AI ai, FunctionLeekValue function) throws LeekRunException {
+	public boolean mapIsEmpty(AI ai) {
+		return size() == 0;
+	}
+
+	public MapLeekValue mapMap(AI ai, FunctionLeekValue function) throws LeekRunException {
 		var result = new MapLeekValue(size());
 		for (var entry : this.entrySet()) {
-			result.put(entry.getKey(), function.execute(ai, entry.getValue(), entry.getKey(), this));
+			result.put(entry.getKey(), function.run(ai, null, entry.getValue(), entry.getKey(), this));
 		}
 		return result;
 	}
 
-	public void iter(AI ai, FunctionLeekValue function) throws LeekRunException {
+	public Object mapIter(AI ai, FunctionLeekValue function) throws LeekRunException {
 		for (var entry : this.entrySet()) {
-			ai.execute(function, entry.getValue(), entry.getKey());
+			function.run(ai, null, entry.getValue(), entry.getKey());
 		}
+		return null;
 	}
 
-	public double sum(AI ai) throws LeekRunException {
+	public double mapSum(AI ai) throws LeekRunException {
 		double sum = 0;
 		for (var val : this.values()) {
 			sum += ai.real(val);
@@ -98,7 +116,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return sum;
 	}
 
-	public double average(AI ai) throws LeekRunException {
+	public double mapAverage(AI ai) throws LeekRunException {
 		double average = 0;
 		for (var val : this.values()) {
 			average += ai.real(val);
@@ -108,7 +126,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return average / size();
 	}
 
-	public Object min(AI ai) {
+	public Object mapMin(AI ai) {
 		if (size() == 0) return null;
 		var it = entrySet().iterator();
 		Object min_value = it.next().getValue();
@@ -121,7 +139,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return min_value;
 	}
 
-	public Object max(AI ai) throws LeekRunException {
+	public Object mapMax(AI ai) throws LeekRunException {
 		Object max_value = null;
 		var mincomp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
 		for (var val : this.values()) {
@@ -133,7 +151,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return max_value;
 	}
 
-	public Object search(Object value) {
+	public Object mapSearch(AI ai, Object value) {
 		for (var entry : entrySet()) {
 			if (entry.getValue().equals(value)) {
 				return entry.getKey();
@@ -142,7 +160,11 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return null;
 	}
 
-	public Object removeElement(Object value) {
+	public Object mapRemove(AI ai, Object key) {
+		return remove(key);
+	}
+
+	public Object mapRemoveElement(AI ai, Object value) {
 		for (var entry : entrySet()) {
 			if (entry.getValue().equals(value)) {
 				remove(entry.getKey());
@@ -151,68 +173,93 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return null;
 	}
 
-	public ArrayLeekValue getValues() throws LeekRunException {
+	public ArrayLeekValue mapGetValues(AI ai) throws LeekRunException {
 		return new ArrayLeekValue(values().toArray());
 	}
 
-	public ArrayLeekValue getKeys() throws LeekRunException {
+	public ArrayLeekValue mapGetKeys(AI ai) throws LeekRunException {
 		return new ArrayLeekValue(keySet().toArray());
 	}
 
-	public void removeAll(Object value) {
+	public Object mapRemoveAll(AI ai, Object value) {
 		entrySet().removeIf(entry -> entry.getValue().equals(value));
+		return null;
 	}
 
-	public void replaceAll(MapLeekValue map) {
+	public Object mapReplace(AI ai, Object key, Object value) {
+		return replace(key, value);
+	}
+
+	public Object mapReplaceAll(AI ai, MapLeekValue map) {
 		for (var entry : map) {
 			replace(entry.getKey(), entry.getValue());
 		}
+		return null;
 	}
 
-	public void fill(Object value) {
+	public Object mapFill(AI ai, Object value) {
 		for (var entry : entrySet()) {
 			entry.setValue(value);
 		}
+		return null;
 	}
 
-	public boolean every(AI ai, FunctionLeekValue function) throws LeekRunException {
+	public boolean mapEvery(AI ai, FunctionLeekValue function) throws LeekRunException {
 		for (var entry : entrySet()) {
-			if (!ai.bool(function.execute(ai, entry.getValue(), entry.getKey()))) return false;
+			if (!ai.bool(function.run(ai, null, entry.getValue(), entry.getKey()))) return false;
 		}
 		return true;
 	}
 
-	public boolean some(AI ai, FunctionLeekValue function) throws LeekRunException {
+	public boolean mapSome(AI ai, FunctionLeekValue function) throws LeekRunException {
 		for (var entry : entrySet()) {
-			if (ai.bool(function.execute(ai, entry.getValue(), entry.getKey(), this))) return true;
+			if (ai.bool(function.run(ai, null, entry.getValue(), entry.getKey(), this))) return true;
 		}
 		return false;
 	}
 
-	public Object fold(AI ai, FunctionLeekValue function, Object v) throws LeekRunException {
+	public Object mapFold(AI ai, FunctionLeekValue function, Object v) throws LeekRunException {
 		var result = v;
 		for (var entry : entrySet()) {
-			result = function.execute(ai, result, entry.getValue(), entry.getKey(), this);
+			result = function.run(ai, null, result, entry.getValue(), entry.getKey(), this);
 		}
 		return result;
 	}
 
-	public MapLeekValue filter(AI ai, FunctionLeekValue function) throws LeekRunException {
+	public MapLeekValue mapFilter(AI ai, FunctionLeekValue function) throws LeekRunException {
 		var result = new MapLeekValue();
 		for (var entry : entrySet()) {
-			if (ai.bool(function.execute(ai, entry.getValue(), entry.getKey(), this))) {
+			if (ai.bool(function.run(ai, null, entry.getValue(), entry.getKey(), this))) {
 				result.put(entry.getKey(), entry.getValue());
 			}
 		}
 		return result;
 	}
 
-	public MapLeekValue merge(MapLeekValue map) {
+	public MapLeekValue mapMerge(AI ai, MapLeekValue map) throws LeekRunException {
+		ai.ops((size() + map.size()) * 2);
 		var result = (MapLeekValue) this.clone();
 		for (var entry : map.entrySet()) {
 			result.putIfAbsent(entry.getKey(), entry.getValue());
 		}
 		return result;
+	}
+
+	public Object mapClear(AI ai) {
+		clear();
+		return null;
+	}
+
+	public boolean mapContains(AI ai, Object value) {
+		return containsValue(value);
+	}
+
+	public boolean mapContainsKey(AI ai, Object key) {
+		return containsKey(key);
+	}
+
+	public Object mapRemoveKey(AI ai, Object key) {
+		return remove(key);
 	}
 
 	public String getString(AI ai, Set<Object> visited) throws LeekRunException {

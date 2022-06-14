@@ -91,8 +91,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		var previousFunction = mainblock.getWordCompiler().getCurrentFunction();
 		mainblock.getWordCompiler().setCurrentFunction(this);
 		StringBuilder sb = new StringBuilder();
-		sb.append("new LeekAnonymousFunction() {");
-		sb.append("public Object run(ObjectLeekValue thiz, Object... values) throws LeekRunException {");
+		sb.append("public Object run(AI ai, ObjectLeekValue thiz, Object... values) throws LeekRunException {");
 
 		for (int i = 0; i < mParameters.size(); i++) {
 			var parameter = mParameters.get(i);
@@ -125,7 +124,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		if (mEndInstruction == 0) {
 			writer.addLine("return null;");
 		}
-		writer.addCode("}}");
+		writer.addCode("}");
 		mainblock.getWordCompiler().setCurrentFunction(previousFunction);
 	}
 

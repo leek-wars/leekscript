@@ -18,6 +18,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
+import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekFunctions;
 
 public class MainLeekBlock extends AbstractLeekBlock {
@@ -198,6 +199,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 		writer.addLine("import leekscript.runner.*;");
 		writer.addLine("import leekscript.runner.values.*;");
+		writer.addLine("import leekscript.runner.classes.*;");
 		writer.addLine("import leekscript.common.*;");
 		writer.addLine();
 		writer.addLine("public class " + className + " extends " + AIClass + " {");
@@ -246,11 +248,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (LeekInstruction instruction : mFunctions) {
 			instruction.writeJavaCode(this, writer);
 		}
-		/*
-		 * for(LeekInstruction instruction : mAnonymousFunctions){
-		 * instruction.writeJavaCode(this, writer); }
-		 */
-		writer.addLine("public Object runIA() throws LeekRunException { resetCounter();");
+
+		writer.addLine("public Object runIA() throws LeekRunException {");
+		writer.addLine("resetCounter();");
 
 		for (var clazz : mUserClassesList) {
 			clazz.writeJavaCode(this, writer);
@@ -272,102 +272,25 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				writer.addCode(redefined);
 				writer.addCode(" = new Box(" + writer.getAIThis() + ", ");
 				if (user_function != null) {
-					writer.addCode("new FunctionLeekValue(");
-					writer.addCode(String.valueOf(user_function.getId()));
-					writer.addCode(")");
+					user_function.compileAnonymousFunction(this, writer);
 				} else {
-					String namespace = LeekFunctions.getNamespace(redefined);
-					writer.addCode("new FunctionLeekValue(" + namespace + ".");
-					writer.addCode(redefined);
-					writer.addCode(")");
+					ILeekFunction system_function = LeekFunctions.getValue(redefined);
+					writer.generateAnonymousSystemFunction(system_function);
+					writer.addCode(system_function.getStandardClass() + "_" + redefined);
 				}
 				writer.addLine(");");
 			}
 			writer.addCode("}");
 		}
+
+		writer.writeGenericFunctions(this);
+		writer.writeAnonymousSystemFunctions(this);
+
 		writer.addLine("}");
 	}
 
 	public void printFunctionInformations(JavaWriter writer) {
-		if (mFunctions.size() > 0) {
-			// Compteur de parametres
-			writer.addLine("public int userFunctionCount(int id) {");
-			writer.addLine("switch(id) {");
-			for (FunctionBlock f : mFunctions) {
-				writer.addLine("case " + f.getId() + ": return " + f.countParameters() + ";");
-			}
-			writer.addLine("} return -1; }");
-			writer.addLine();
 
-			// Références
-			writer.addLine("public boolean[] userFunctionReference(int id) {");
-			writer.addLine("switch(id) {");
-			for (FunctionBlock f : mFunctions) {
-				writer.addLine("case " + f.getId() + ": return new boolean[]" + f.referenceArray() + ";");
-			}
-			writer.addLine("} return null; }");
-			writer.addLine();
-
-			// Execute
-			writer.addLine("public Object userFunctionExecute(int id, Object[] value) throws LeekRunException {");
-			writer.addLine("switch(id) {");
-			for (FunctionBlock f : mFunctions) {
-				String params = "";
-				for (int i = 0; i < f.countParameters(); i++) {
-					if (i != 0)
-						params += ",";
-					params += "value[" + i + "]";
-				}
-				writer.addLine("case " + f.getId() + ": return f_" + f.getName() + "(" + params + ");");
-			}
-			writer.addLine("} return null; }");
-		}
-		if (mAnonymousFunctions.size() > 0) {
-			writer.addLine();
-			writer.addLine("public int anonymousFunctionCount(int id) {");
-			writer.addLine("switch(id) {");
-			for (AnonymousFunctionBlock f : mAnonymousFunctions) {
-				writer.addLine("case " + f.getId() + ": return " + f.countParameters() + ";");
-			}
-			writer.addLine("} return -1; }");
-			writer.addLine();
-			// Références
-			writer.addLine("public boolean[] anonymousFunctionReference(int id) {");
-			writer.addLine("switch(id){");
-			for (AnonymousFunctionBlock f : mAnonymousFunctions) {
-				writer.addLine("case " + f.getId() + ": return new boolean[]" + f.referenceArray() + ";");
-			}
-			writer.addLine("} return null; }");
-		}
-		// writer.addLine("public int getVersion() {");
-		// writer.addLine("return " + mCompiler.getCurrentAI().getVersion() + ";");
-		// writer.addLine("}");
-		// Execute
-		/*
-		 * writer.addLine(
-		 * "public Object anonymousFunctionExecute(int id, Object[] value) throws Exception{"
-		 * ); writer.addLine("switch(id){"); for(AnonymousFunctionBlock f :
-		 * mAnonymousFunctions){ String params = ""; for(int i = 0; i <
-		 * f.countParameters(); i++){ if(i != 0) params += ","; params +=
-		 * "value[" + i + "]"; } writer.addLine("case " + f.getId() +
-		 * ": return anonymous_function_" + f.getId() + "(" + params + ");"); }
-		 * writer.addLine("} return null; }");
-		 */
-		/*
-		 * public abstract int userFunctionCount(int id);
-		 *
-		 * public abstract boolean[] userFunctionReference(int id);
-		 *
-		 * public abstract Object userFunctionExecute(int id,
-		 * Object[] value);
-		 *
-		 * public abstract int anonymousFunctionCount(int id);
-		 *
-		 * public abstract boolean[] anonymousFunctionReference(int id);
-		 *
-		 * public abstract Object anonymousFunctionExecute(int id,
-		 * Object[] value);
-		 */
 	}
 
 	public List<Integer> getIncludedAIs() {

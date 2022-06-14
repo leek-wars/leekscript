@@ -291,7 +291,7 @@ public class ObjectLeekValue {
 		}
 
 		// Call method with new arguments, add the object at the beginning
-		return resultM.run(this, arguments);
+		return resultM.run(clazz.ai, this, arguments);
 	}
 
 	public Object callMethod(String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
@@ -327,7 +327,7 @@ public class ObjectLeekValue {
 			return null;
 		}
 		// Call method with new arguments, add the object at the beginning
-		return result.run(this, arguments);
+		return result.run(clazz.ai, this, arguments);
 	}
 
 	public Object callSuperMethod(AI ai, String method, ClassLeekValue currentClass, Object... arguments) throws LeekRunException {
@@ -345,7 +345,7 @@ public class ObjectLeekValue {
 			return null;
 		}
 		// Call method with new arguments, add the object at the beginning
-		return result.run(this, arguments);
+		return result.run(clazz.ai, this, arguments);
 	}
 
 	public int getInt(AI ai) {
@@ -362,7 +362,7 @@ public class ObjectLeekValue {
 
 		var string_method = clazz.getMethod(ai, "string_0", null);
 		if (string_method != null) {
-			var result = string_method.run(this);
+			var result = string_method.run(clazz.ai, this);
 			if (!(result instanceof String)) {
 				ai.addSystemLog(AILog.ERROR, Error.STRING_METHOD_MUST_RETURN_STRING, new String[] { clazz.name });
 			} else {

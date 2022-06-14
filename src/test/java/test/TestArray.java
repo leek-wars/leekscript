@@ -326,6 +326,14 @@ public class TestArray extends TestCommon {
 		 */
 		section("Array.count()");
 		code("return count([1, 2, 3, 4, 5]);").equals("5");
+		code_v1_3("count([ 1 : 2, 3 : 4])").error(Error.NONE);
+		code_v4_("count([ 1 : 2, 3 : 4])").error(Error.WRONG_ARGUMENT_TYPE);
+		code_v1_3("count(12)").error(Error.NONE);
+		code_v4_("count(12)").error(Error.WRONG_ARGUMENT_TYPE);
+		code_v1_3("count('hello')").error(Error.NONE);
+		code_v4_("count('hello')").error(Error.WRONG_ARGUMENT_TYPE);
+		code("return count(unknown('hello'))").error(Error.NONE);
+		code("return count(unknown([1, 2, 3]))").equals("3");
 
 		section("Array.get");
 		code_v1_3("var a = [1, 2, 3, 4, 5] return arrayGet(a, 0)").error(Error.FUNCTION_NOT_AVAILABLE);
@@ -375,7 +383,7 @@ public class TestArray extends TestCommon {
 		code("return arrayFlatten([6, [[7]], [8, 9]])").equals("[6, [7], 8, 9]");
 		code_v1("var a = [] push(a, a) return arrayFlatten(a)").equals("[]");
 		// Le niveau d'affichage est pas super important, tant que ça casse pas
-		code_v2_3("var a = [] push(a, a) return arrayFlatten(a)").equals("[[[<...>]]]");
+		code_v2_3("var a = [] push(a, a) return arrayFlatten(a)").equals("[[<...>]]");
 		code_v4_("var a = [] push(a, a) return arrayFlatten(a)").equals("[[<...>]]");
 
 		section("Array.sort");
@@ -425,9 +433,9 @@ public class TestArray extends TestCommon {
 		code_v4_("return arrayPartition([6,7,8,9], function(v, k) { return k })").equals("[[7, 8, 9], [6]]");
 		code_v1_3("return arrayPartition([4,3,2,1], function(k, v) { return k < v;})").equals("[[4, 3], [2 : 2, 3 : 1]]");
 		code_v4_("return arrayPartition([4,3,2,1], function(v, k) { return k < v;})").equals("[[4, 3], [2, 1]]");
-		code_v1("return string(function(){var t=[1,2,3]; arrayPartition(t, function(@v){ v=3; }); return t;}())").equals("[3, 3, 3]");
-		code_v1("return string(function(){var t=[1,2,3]; arrayPartition(t, function(k, @v){ v=3; }); return t;}())").equals("[3, 3, 3]");
-		code_v1("return string(arrayPartition([4,3,2,1], function(k,@v){ v=3; return k<v;}))").equals("[[3, 3, 3], [3 : 3]]");
+		code_v1("return function(){var t=[1,2,3]; arrayPartition(t, function(@v){ v=3; }); return t;}()").equals("[3, 3, 3]");
+		code_v1("return function(){var t=[1,2,3]; arrayPartition(t, function(k, @v){ v=3; }); return t;}()").equals("[3, 3, 3]");
+		code_v1("return arrayPartition([4,3,2,1], function(k,@v){ v=3; return k<v;})").equals("[[3, 3, 3], [3 : 3]]");
 		code_v2_3("class A { name part constructor(name, part) { this.name = name this.part = part } } var list = [new A('foo', true), new A('bar', false), new A('baz', true)] return arrayPartition(list, function(a) { return a.part })").equals("[[0 : A {name: foo, part: true}, 2 : A {name: baz, part: true}], [1 : A {name: bar, part: false}]]");
 		code_v4_("class A { name part constructor(name, part) { this.name = name this.part = part } } var list = [new A('foo', true), new A('bar', false), new A('baz', true)] return arrayPartition(list, function(a) { return a.part })").equals("[[A {name: foo, part: true}, A {name: baz, part: true}], [A {name: bar, part: false}]]");
 
@@ -472,9 +480,13 @@ public class TestArray extends TestCommon {
 		code("var a = ['a','b','c','d']; unshift(a, 'b'); return a;").equals("[b, a, b, c, d]");
 
 		section("Array.shift()");
+		code("var a = [] return shift(a)").equals("null");
+		code("var a = [] shift(a) return a;").equals("[]");
 		code("var a = ['a','b','c','d']; shift(a); return a;").equals("[b, c, d]");
 
 		section("Array.pop()");
+		code("var a = [] return pop(a)").equals("null");
+		code("var a = [] pop(a) return a;").equals("[]");
 		code("var a = ['a','b','c','d']; pop(a); return a;").equals("[a, b, c]");
 
 		section("Array.removeElement()");
@@ -530,8 +542,8 @@ public class TestArray extends TestCommon {
 
 		section("Array.fill()");
 		code("var a = [1,2,3]; fill(a, 'a'); return a").equals("[a, a, a]");
-		code("var a = [1,2,3]; fill(a, 'a',2); return a").equals("[a, a, 3]");
-		code("var a = []; fill(a, 'a',2); return a").equals("[a, a]");
+		code("var a = [1,2,3]; fill(a, 'a', 2); return a").equals("[a, a, 3]");
+		code("var a = []; fill(a, 'a', 2); return a").equals("[a, a]");
 
 		section("Array.isEmpty()");
 		code("return isEmpty([2,4,6])").equals("false");

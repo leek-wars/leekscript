@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
+import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
 
 import com.alibaba.fastjson.JSON;
@@ -27,13 +28,13 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	private final static int START_CAPACITY = 8;
 	private final static int MAX_CAPACITY = 32000;
 
-	public final static int ASC = 1;
-	public final static int DESC = 2;
-	public final static int RANDOM = 3;
-	public final static int ASC_A = 4;
-	public final static int DESC_A = 5;
-	public final static int ASC_K = 6;
-	public final static int DESC_K = 7;
+	public final static int ASC = 0;
+	public final static int DESC = 1;
+	public final static int RANDOM = 2;
+	public final static int ASC_A = 3;
+	public final static int DESC_A = 4;
+	public final static int ASC_K = 5;
+	public final static int DESC_K = 6;
 
 	public static class ArrayIterator implements Iterator<Entry<Object, Object>> {
 
@@ -340,7 +341,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			}
 		} else {
 			for (int i = 0; i < values.length; i++) {
-				push(ai, values[i]);
+				pushNoClone(ai, values[i]);
 			}
 		}
 	}
@@ -458,16 +459,18 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return getOrCreate(ai, (long) value);
 	}
 
-	public Object remove(AI ai, int index) throws LeekRunException {
-		return removeIndex(ai, index);
+	public Object remove(AI ai, long index) throws LeekRunException {
+		return removeIndex(ai, (int) index);
 	}
 
-	public void removeByKey(AI ai, Object value) throws LeekRunException {
+	public Object removeKey(AI ai, Object value) throws LeekRunException {
 		remove(ai, value);
+		return null;
 	}
 
-	public void shuffle(AI ai) throws LeekRunException {
+	public Object shuffle(AI ai) throws LeekRunException {
 		sort(ai, RANDOM);
+		return null;
 	}
 
 	public String join(AI ai, String sep) throws LeekRunException {
@@ -628,6 +631,10 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return mSize;
 	}
 
+	public long count(AI ai) {
+		return mSize;
+	}
+
 	/**
 	 * Retourne la valeur à pour une clé donnée
 	 *
@@ -656,7 +663,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 * @return True si la valeur existe dans le tableau
 	 * @throws LeekRunException
 	 */
-	public boolean contains(AI ai, Object value) throws LeekRunException {
+	public boolean inArray(AI ai, Object value) throws LeekRunException {
 		Element e = mHead;
 		while (e != null) {
 			if (ai.eq(e.value.getValue(), value))
@@ -664,6 +671,17 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			e = e.next;
 		}
 		return false;
+	}
+
+	public Object search(AI ai, Object value) throws LeekRunException {
+		Element e = mHead;
+		while (e != null) {
+			if (LeekValueManager.getType(e.value) == LeekValueManager.getType(value) && ai.eq(e.value.getValue(), value)) {
+				return e.key;
+			}
+			e = e.next;
+		}
+		return null;
 	}
 
 	/**
@@ -675,7 +693,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 * @return Clé associée à la valeur ou null si la valeur n'existe pas
 	 * @throws LeekRunException
 	 */
-	public Object search(AI ai, Object value, int pos) throws LeekRunException {
+	public Object search(AI ai, Object value, long pos) throws LeekRunException {
 		Element e = mHead;
 		int p = 0;
 		while (e != null) {
@@ -732,15 +750,56 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			e.next.prev = e.prev;
 	}
 
+	public Object arrayMin(AI ai) throws LeekRunException {
+		if (size() > 0) {
+			var comp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
+			var iterator = iterator();
+			Object min_c = iterator.next().getValue();
+			while (iterator.hasNext()) {
+				var value = iterator.next().getValue();
+				if (comp.compare(value, min_c) == -1) {
+					min_c = value;
+				}
+			}
+			return LeekOperations.clone(ai, min_c);
+		}
+		return null;
+	}
+
+
+	public Object arrayMax(AI ai) throws LeekRunException {
+		Object min_c = null;
+		var mincomp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
+		for (var val : this) {
+			if (min_c == null)
+				min_c = val.getValue();
+			else if (mincomp.compare(val.getValue(), min_c) == 1)
+				min_c = val.getValue();
+		}
+		if (min_c == null)
+			return null;
+		else
+			return LeekOperations.clone(ai, min_c);
+	}
+
+	/**
+	 * Trie le tableau
+	 *
+	 * @throws LeekRunException
+	 */
+	public Object sort(AI ai) throws LeekRunException {
+		return sort(ai, ASC);
+	}
+
 	/**
 	 * Trie le tableau
 	 *
 	 * @param comparator
 	 * @throws LeekRunException
 	 */
-	public void sort(AI ai, int comparator) throws LeekRunException {
+	public Object sort(AI ai, long comparator) throws LeekRunException {
 		if (mSize == 0) {
-			return;
+			return null;
 		}
 		// System.out.println("sort " + comparator);
 		// création de la liste
@@ -784,6 +843,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		if (comparator == ASC || comparator == RANDOM || comparator == DESC) {
 			this.reindex(ai);
 		}
+		return null;
 	}
 
 	/**
@@ -835,14 +895,52 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			reindex(ai);
 	}
 
+	public LegacyArrayLeekValue arraySort(AI ai, final FunctionLeekValue function) throws LeekRunException {
+		try {
+			int nb = function.getArgumentsCount();
+			if (nb == 2) {
+				var array = (LegacyArrayLeekValue) LeekOperations.clone(ai, this);
+				array.sort(ai, new Comparator<Element>() {
+					@Override
+					public int compare(Element o1, Element o2) {
+						try {
+							return ai.integer(function.run(ai, null, o1.getValue(), o2.getValue()));
+						} catch (Exception e) {
+							throw new RuntimeException(e);
+						}
+					}
+				});
+				return array;
+			} else if (nb == 4) {
+				var array = (LegacyArrayLeekValue) LeekOperations.clone(ai, this);
+				array.sort(ai, new Comparator<Element>() {
+					@Override
+					public int compare(Element o1, Element o2) {
+						try {
+							return ai.integer(function.run(ai, null, o1.getKey(), o1.getValue(), o2.getKey(), o2.getValue()));
+						} catch (Exception e) {
+							throw new RuntimeException(e);
+						}
+					}
+				});
+				return array;
+			}
+		} catch (RuntimeException e) {
+			if (e.getCause() instanceof LeekRunException) {
+				throw (LeekRunException) e.getCause();
+			}
+		}
+		return null;
+	}
+
 	/**
 	 * Inverse l'ordre
 	 *
 	 * @throws LeekRunException
 	 */
-	public void reverse(AI ai) throws LeekRunException {
+	public Object reverse(AI ai) throws LeekRunException {
 		if (mSize == 0) {
-			return;
+			return null;
 		}
 		Element prev = null;
 		Element current = mEnd;
@@ -863,11 +961,12 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		mEnd = prev;
 
 		reindex(ai);
+		return null;
 	}
 
-	public void assocReverse() {
+	public Object assocReverse(AI ai) {
 		if (mSize == 0)
-			return;
+			return null;
 		Element prev = null;
 		Element current = mEnd;
 		Element tmp;
@@ -885,9 +984,10 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 		prev.next = null;
 		mEnd = prev;
+		return null;
 	}
 
-	public void removeObject(AI ai, Object value) throws LeekRunException {
+	public Object removeElement(AI ai, Object value) throws LeekRunException {
 		Element e = mHead;
 		while (e != null) {
 			if (LeekValueManager.getType(e.value) == LeekValueManager.getType(value) && ai.eq(e.value.getValue(), value)) {
@@ -905,10 +1005,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 					mEnd = e.prev;
 				else
 					e.next.prev = e.prev;
-				return;
+				return null;
 			}
 			e = e.next;
 		}
+		return null;
 	}
 
 	/**
@@ -918,7 +1019,14 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 *            Element à ajouter
 	 * @throws LeekRunException
 	 */
-	public void push(AI ai, Object value) throws LeekRunException {
+	public Object push(AI ai, Object value) throws LeekRunException {
+		if (ai.getVersion() == 1) {
+			value = LeekOperations.clone(ai, value);
+		}
+		return pushNoClone(ai, value);
+	}
+
+	public Object pushNoClone(AI ai, Object value) throws LeekRunException {
 		if (value instanceof Integer) {
 			throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
 		}
@@ -929,6 +1037,15 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		var key = Long.valueOf(mIndex);
 		Element e = createElement(ai, key, value);
 		pushElement(e);
+		return null;
+	}
+
+	public Object pushAll(AI ai, LegacyArrayLeekValue other) throws LeekRunException {
+		for (var value : other) {
+			push(ai, value.getValue());
+			ai.ops(1);
+		}
+		return null;
 	}
 
 	/**
@@ -938,7 +1055,10 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 *            Element à ajouter
 	 * @throws LeekRunException
 	 */
-	public void unshift(AI ai, Object value) throws LeekRunException {
+	public Object unshift(AI ai, Object value) throws LeekRunException {
+		if (ai.getVersion() == 1) {
+			value = LeekOperations.clone(ai, value);
+		}
 		if (mSize >= capacity) {
 			growCapacity(ai);
 		}
@@ -947,6 +1067,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		Element e = createElement(ai, key, value);
 		unshiftElement(e);
 		reindex(ai);
+		return null;
 	}
 
 	/**
@@ -998,9 +1119,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return mHead == null ? null : mHead.value;
 	}
 
-	public void insert(AI ai, int position, Object value) throws LeekRunException {
+	public Object insert(AI ai, Object value, long position) throws LeekRunException {
 		if (position < 0) {
-			return;
+			return null;
 		} else if (position >= mSize) {
 			push(ai, value);
 		} else if (position == 0) {
@@ -1026,6 +1147,281 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			// On réindexe
 			reindex(ai);
 		}
+		return null;
+	}
+
+	public LegacyArrayLeekValue subArray(AI ai, long start, long end) throws LeekRunException {
+		if (start < 0 || end < start || end >= size())
+			return null;
+		LegacyArrayLeekValue retour = new LegacyArrayLeekValue();
+		int i = 0;
+		for (var val : this) {
+			if (i >= start && i <= end) {
+				retour.push(ai, LeekOperations.clone(ai, val.getValue()));
+				ai.ops(1);
+			}
+			i++;
+		}
+		return retour;
+	}
+
+	public boolean isEmpty(AI ai) {
+		return size() == 0;
+	}
+
+	public Object fill(AI ai, Object value) throws LeekRunException {
+		return fill(ai, value, size());
+	}
+
+	public Object fill(AI ai, Object value, long size) throws LeekRunException {
+		for (long i = 0; i < size; i++) {
+			put(ai, i, value);
+			ai.ops(3);
+		}
+		return null;
+	}
+
+	public double average(AI ai) throws LeekRunException {
+		double average = 0;
+		for (var val : this) {
+			average += ai.real(val.getValue());
+		}
+		if (average == 0)
+			return 0.0;
+		return average / size();
+	}
+
+	public double sum(AI ai) throws LeekRunException {
+		double somme = 0;
+		for (var val : this) {
+			somme += ai.real(val.getValue());
+		}
+		return somme;
+	}
+
+	public Object pop(AI ai) throws LeekRunException {
+		return remove(ai, size() - 1);
+	}
+
+	public Object shift(AI ai) throws LeekRunException {
+		return remove(ai, 0);
+	}
+
+	public Object arrayIter(AI ai, FunctionLeekValue function) throws LeekRunException {
+		if (ai.getVersion() >= 2) {
+			var iterator = iterator();
+			if (function == null) {
+				return null;
+			}
+			int nb = function.getArgumentsCount();
+			if (nb != 1 && nb != 2)
+				return null;
+			while (iterator.hasNext()) {
+				var value = iterator.getValue();
+				if (nb == 1) {
+					function.run(ai, null, value);
+				} else {
+					function.run(ai, null, iterator.getKey(ai), value);
+				}
+				iterator.next();
+			}
+			return null;
+		} else {
+			var iterator = iterator();
+			if (function == null) {
+				return null;
+			}
+			int nb = function.getArgumentsCount();
+			if (nb != 1 && nb != 2)
+				return null;
+			while (iterator.hasNext()) {
+				var value = iterator.getValueBox();
+				if (nb == 1) {
+					function.run(ai, null, value);
+				} else {
+					function.run(ai, null, iterator.getKey(ai), value);
+				}
+				iterator.next();
+			}
+			return null;
+		}
+	}
+
+	public LegacyArrayLeekValue arrayConcat(AI ai, LegacyArrayLeekValue other) throws LeekRunException {
+		return (LegacyArrayLeekValue) ai.add(this, other);
+	}
+
+	public LegacyArrayLeekValue arrayPartition(AI ai, FunctionLeekValue function) throws LeekRunException {
+		if (ai.getVersion() >= 2) {
+			var list1 = new LegacyArrayLeekValue();
+			var list2 = new LegacyArrayLeekValue();
+			int nb = function.getArgumentsCount();
+			if (nb != 1 && nb != 2)
+				return new LegacyArrayLeekValue();
+			ArrayIterator iterator = iterator();
+			boolean b;
+			while (iterator.hasNext()) {
+				var value = iterator.getValue();
+				if (nb == 1)
+					b = ai.bool(function.run(ai, null, value));
+				else
+					b = ai.bool(function.run(ai, null, iterator.getKey(ai), value));
+				(b ? list1 : list2).getOrCreate(ai, iterator.getKey(ai)).set(iterator.getValue(ai));
+				iterator.next();
+			}
+			return new LegacyArrayLeekValue(ai, new Object[] { list1, list2 }, false);
+		} else {
+			var list1 = new LegacyArrayLeekValue();
+			var list2 = new LegacyArrayLeekValue();
+			int nb = function.getArgumentsCount();
+			if (nb != 1 && nb != 2)
+				return new LegacyArrayLeekValue();
+			var iterator = iterator();
+			boolean b;
+			while (iterator.hasNext()) {
+				var value = iterator.getValueBox();
+				if (nb == 1)
+					b = ai.bool(function.run(ai, null, value));
+				else
+					b = ai.bool(function.run(ai, null, iterator.getKey(ai), value));
+				(b ? list1 : list2).getOrCreate(ai, iterator.getKey(ai)).set(iterator.getValue(ai));
+				iterator.next();
+			}
+			return new LegacyArrayLeekValue(ai, new Object[] { list1, list2 }, false);
+		}
+	}
+
+	public Object arrayFoldLeft(AI ai, FunctionLeekValue function, Object start_value) throws LeekRunException {
+		Object result = LeekOperations.clone(ai, start_value);
+		for (var value : this) {
+			result = function.run(ai, null, result, value.getValue());
+		}
+		return result;
+	}
+
+	public Object arrayFoldRight(AI ai, FunctionLeekValue function, Object start_value) throws LeekRunException {
+		Object result = LeekOperations.clone(ai, start_value);
+		var it = getReversedIterator();
+		while (it.hasNext()) {
+			result = function.run(ai, null, it.next(), result);
+		}
+		return result;
+	}
+
+	public LegacyArrayLeekValue arrayMap(AI ai, FunctionLeekValue function) throws LeekRunException {
+		if (ai.getVersion() >= 2) {
+			var retour = new LegacyArrayLeekValue();
+			var iterator = iterator();
+			int nb = function.getArgumentsCount();
+			while (iterator.hasNext()) {
+				var value = iterator.getValue();
+				if (nb >= 2) {
+					retour.getOrCreate(ai, iterator.getKey(ai)).set(function.run(ai, null, iterator.getKey(ai), value));
+				} else {
+					retour.getOrCreate(ai, iterator.getKey(ai)).set(function.run(ai, null, value));
+				}
+				iterator.next();
+			}
+			return retour;
+		} else {
+			var retour = new LegacyArrayLeekValue();
+			var iterator = iterator();
+			int nb = function.getArgumentsCount();
+			while (iterator.hasNext()) {
+				var value = iterator.getValueBox();
+				if (nb >= 2)
+					retour.getOrCreate(ai, iterator.getKey(ai)).setRef(function.run(ai, null, iterator.getKey(ai), value));
+				else
+					retour.getOrCreate(ai, iterator.getKey(ai)).setRef(function.run(ai, null, value));
+				iterator.next();
+			}
+			return retour;
+		}
+	}
+
+	public LegacyArrayLeekValue arrayFilter(AI ai, FunctionLeekValue function) throws LeekRunException {
+		if (ai.getVersion() >= 2) {
+			var retour = new LegacyArrayLeekValue();
+			var iterator = iterator();
+			int nb = function.getArgumentsCount();
+			if (nb != 1 && nb != 2)
+				return retour;
+			while (iterator.hasNext()) {
+				var value = iterator.getValue();
+				if (nb == 1) {
+					if (ai.bool(function.run(ai, null, value))) {
+						retour.push(ai, iterator.getValue(ai));
+					}
+				} else {
+					if (ai.bool(function.run(ai, null, iterator.getKey(ai), value))) {
+						retour.push(ai, iterator.getValue(ai));
+					}
+				}
+				iterator.next();
+			}
+			return retour;
+		} else {
+			var retour = new LegacyArrayLeekValue();
+			var iterator = iterator();
+			int nb = function.getArgumentsCount();
+			if (nb != 1 && nb != 2)
+				return retour;
+			while (iterator.hasNext()) {
+				var value = iterator.getValueBox();
+				if (nb == 1) {
+					if (ai.bool(function.run(ai, null, new Object[] { value }))) {
+						// In LeekScript < 1.0, arrayFilter had a bug, the result array was not reindexed
+						retour.getOrCreate(ai, iterator.getKey(ai)).set(iterator.getValue(ai));
+					}
+				} else {
+					if (ai.bool(function.run(ai, null, new Object[] { iterator.getKey(ai), value }))) {
+						retour.getOrCreate(ai, iterator.getKey(ai)).set(iterator.getValue(ai));
+					}
+				}
+				iterator.next();
+			}
+			return retour;
+		}
+	}
+
+	public LegacyArrayLeekValue arrayFlatten(AI ai) throws LeekRunException {
+		return arrayFlatten(ai, 1);
+	}
+
+	public LegacyArrayLeekValue arrayFlatten(AI ai, long depth) throws LeekRunException {
+		var result = new LegacyArrayLeekValue();
+		flatten_rec(ai, this, result, depth);
+		return result;
+	}
+
+	private void flatten_rec(AI ai, LegacyArrayLeekValue array, LegacyArrayLeekValue result, long depth) throws LeekRunException {
+		for (var value : array) {
+			if (value.getValue() instanceof LegacyArrayLeekValue && depth > 0) {
+				flatten_rec(ai, (LegacyArrayLeekValue) value.getValue(), result, depth - 1);
+			} else {
+				result.push(ai, value.getValue());
+			}
+		}
+	}
+
+	public Object keySort(AI ai) throws LeekRunException {
+		return keySort(ai, 0);
+	}
+
+	public Object keySort(AI ai, long comparator) throws LeekRunException {
+		int type = comparator == 1 ? LegacyArrayLeekValue.DESC_K : LegacyArrayLeekValue.ASC_K;
+		sort(ai, type);
+		return null;
+	}
+
+	public Object assocSort(AI ai) throws LeekRunException {
+		return assocSort(ai, 0);
+	}
+
+	public Object assocSort(AI ai, long comparator) throws LeekRunException {
+		int type = comparator == 0 ? LegacyArrayLeekValue.ASC_A : LegacyArrayLeekValue.DESC_A;
+		sort(ai, type);
+		return null;
 	}
 
 	// Fonctions "briques de base"
@@ -1179,7 +1575,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public boolean some(AI ai, FunctionLeekValue function) throws LeekRunException {
 		for (var entry : this) {
-			if (ai.bool(function.execute(ai, entry.getKey(), entry.getValue(), this))) {
+			if (ai.bool(function.run(ai, null, entry.getKey(), entry.getValue(), this))) {
 				return true;
 			}
 		}
@@ -1188,7 +1584,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public boolean every(AI ai, FunctionLeekValue function) throws LeekRunException {
 		for (var entry : this) {
-			if (ai.bool(function.execute(ai, entry.getKey(), entry.getValue(), this))) {
+			if (ai.bool(function.run(ai, null, entry.getKey(), entry.getValue(), this))) {
 				return true;
 			}
 		}

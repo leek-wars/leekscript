@@ -34,9 +34,15 @@ public class TestGeneral extends TestCommon {
 		code("return typeOf(function(){ return 4; }())").equals(String.valueOf(LeekConstants.TYPE_NUMBER.getIntValue()));
 
 		section("color()");
-		code("return color(255,0,255)").equals(String.valueOf(0xFF00FF));
-		code("return color(255,255,0)").equals(String.valueOf(0xFFFF00));
-		code("return color(0,255,255)").equals(String.valueOf(0x00FFFF));
+		code_v4_("color(0, 0, 0)").error(Error.REMOVED_FUNCTION);
+		code_v1_3("return color(255,0,255)").equals(String.valueOf(0xFF00FF));
+		code_v1_3("return color(255,255,0)").equals(String.valueOf(0xFFFF00));
+		code_v1_3("return color(0,255,255)").equals(String.valueOf(0x00FFFF));
+
+		section("getColor()");
+		code("return getColor(255,0,255)").equals(String.valueOf(0xFF00FF));
+		code("return getColor(255,255,0)").equals(String.valueOf(0xFFFF00));
+		code("return getColor(0,255,255)").equals(String.valueOf(0x00FFFF));
 
 		// Red
 		code("return getRed(" + 0xAE0000 + ")").equals("174");
@@ -153,5 +159,10 @@ public class TestGeneral extends TestCommon {
 
 		section("File");
 		file("ai/code/trivial.leek").equals("2");
+
+		section("number()");
+		code("return number('12')").equals("12");
+		code_v1("return number('12.55')").equals("12,55");
+		code_v2_("return number('12.55')").equals("12.55");
 	}
 }

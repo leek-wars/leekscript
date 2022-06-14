@@ -38,6 +38,8 @@ public class TestFunction extends TestCommon {
 		code("var d = debug d('salut')").equals("null");
 		code("abs = 2 return abs").equals("2");
 		code("arrayFoldRight = 'salut' return arrayFoldRight").equals("salut");
+		code("cos = function(x, y, z) { return x + y * z } return cos(1, 2, 3)").equals("7");
+		code("function f(x, y, z) { return x + y * z } cos = f return cos(1, 2, 3)").equals("7");
 
 		section("System function as argument");
 		code_v1("function t(@f) { return function(@a) { return arrayMap(a, f); } } return t(sqrt)([1, 4, 9, 16, 25]);").equals("[1, 2, 3, 4, 5]");
@@ -55,6 +57,15 @@ public class TestFunction extends TestCommon {
 
 		section("Capture loop variable");
 		code("var sum = 0 for (var i = 0; i < 10; ++i) { sum += (function() { return i })() } return sum").equals("45");
+
+		section("Function with references");
+		code_v1("function f(@x) { push(x, 12) } var a = [] f(a) return a").equals("[12]");
+		code_v1("function f(x) { push(x, 12) } var a = [] f(a) return a").equals("[]");
+		code_v1("function f(x) { push(x, 12) } function g(@x) { push(x, 12) } var a = [] var b = [] f(a) g(b) return [a, b]").equals("[[], [12]]");
+		code_v1("function f(x) { push(x, 12) } function g(@x) { push(x, 12) } var a = [] var b = [] var t = [f, g]; t[0](a) t[1](b) return [a, b]").equals("[[], [12]]");
+		code_v1("var a = [1, 2, 3] arrayMap(a, function(@x) { x += 1 }) return a").equals("[2, 3, 4]");
+		code_v1("var f = function(@x) { x += 1 } var a = [1, 2, 3] arrayMap(a, f) return a").equals("[2, 3, 4]");
+		code_v1("function f(@x) { x += 1 } var a = [1, 2, 3] arrayMap(a, f) return a").equals("[2, 3, 4]");
 
 		section("Return reference");
 		code_v1("global x = 10 function f() { return @x } var a = f() a += 5 return x").equals("10");
@@ -166,5 +177,34 @@ public class TestFunction extends TestCommon {
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++ }").equals("null");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++ } return abs(100 * (count / tests) - 52) < 12;").equals("true");
 		code_v1("var items = [[37, 3], [47, 10], [28, 5]] var all = []; var aux; aux = function(@current, i, tp, added, last) { if (count(current[1])) push(all, current);	var item_count = count(items); for (var j = i; j < item_count; ++j) { var item = @items[j];	var item_id = item[0]; var cost = item[1]; if (cost > tp) continue;var new_added = added; new_added[item_id] = true; var copy = current; push(copy[1], @[item, cost, 1]); copy[0] += cost; aux(copy, j, tp - cost, new_added, item_id); } }; aux([0, []], 0, 25, [], -1); return count(all);").equals("44");
+
+		section("System function typing");
+		code_v1_3("count('hello')").equals("null");
+		code_v1_3("count('hello')").warning(Error.WRONG_ARGUMENT_TYPE);
+		code_v4_("count('hello')").error(Error.WRONG_ARGUMENT_TYPE);
+		code("return abs(12) < 50").equals("true");
+		code("return round(abs(cos(2)) + 5)").equals("5");
+		code("var a = cos return round(acos(a(2)))").equals("2");
+		code_v1("return arrayMap([1, 2, 3], cos)").equals("[0,54, -0,416, -0,99]");
+		code_v2_("return arrayMap([1, 2, 3], cos)").equals("[0.5403023058681398, -0.4161468365471424, -0.9899924966004454]");
+		code_v1("return arrayMap([1, 2, 3], atan2)").equals("[0, 0,464, 0,588]");
+		code_v2_3("return arrayMap([1, 2, 3], atan2)").equals("[0.0, 0.4636476090008061, 0.5880026035475675]");
+		code_v4_("return arrayMap([1, 2, 3], atan2)").equals("[1.5707963267948966, 1.1071487177940904, 0.982793723247329]");
+		code_v1("var a = [cos, sin, tan] return arrayMap(a, function(f) { return f(5) })").equals("[0,284, -0,959, -3,381]");
+		code_v2_("var a = [cos, sin, tan] return arrayMap(a, function(f) { return f(5) })").equals("[0.28366218546322625, -0.9589242746631385, -3.380515006246586]");
+		code("return arrayMap(split('salut', ''), length)").equals("[1, 1, 1, 1, 1]");
+		code("return count(arrayFlatten([[1],[2]]))").equals("2");
+		code("var a = toUpper, b = arrayMap return b(['a', 'b'], a)").equals("[A, B]");
+		code_v1("return sqrt()").equals("0");
+		code_v2("return sqrt()").equals("0.0");
+		code_v3_("return sqrt()").error(Error.INVALID_PARAMETER_COUNT);
+		code_v1("return sqrt(25, 16, 9)").equals("5");
+		code_v2("return sqrt(25, 16, 9)").equals("5.0");
+		code_v3_("return sqrt(25, 16, 9)").error(Error.INVALID_PARAMETER_COUNT);
+		code_v1("var a = sqrt return a(25, 16, 9)").equals("5");
+		code_v2_("var a = sqrt return a(25, 16, 9)").equals("5.0");
+		code("return count(unknown([1, 2, 3, 4, 5]))").equals("5");
+		code("return count(unknown(12))").equals("0");
+		code("return string(count)").equals("#Function count");
 	}
 }

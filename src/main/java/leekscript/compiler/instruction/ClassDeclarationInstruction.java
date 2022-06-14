@@ -402,8 +402,8 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			writer.addLine(className + ".setParent(u_" + parent.getName() + ");");
 		}
 
-		writer.addCode(className + ".initFields = new LeekAnonymousFunction() {");
-		writer.addLine("public Object run(ObjectLeekValue u_this, Object... values) throws LeekRunException {");
+		writer.addCode(className + ".initFields = new FunctionLeekValue(0) {");
+		writer.addLine("public Object run(AI ai, ObjectLeekValue u_this, Object... values) throws LeekRunException {");
 		ClassDeclarationInstruction current = this;
 		ArrayList<ClassDeclarationInstruction> classes = new ArrayList<>();
 		while (current != null) {
@@ -432,7 +432,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			for (var version : method.getValue().entrySet()) {
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
 				writer.addCode(className);
-				writer.addCode(".addStaticMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new LeekFunction() { public Object run(Object... args) throws LeekRunException { return " + methodName + "(");
+				writer.addCode(".addStaticMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(1) { public Object run(AI ai, ObjectLeekValue thiz, Object... args) throws LeekRunException { return " + methodName + "(");
 				int i = 0;
 				for (var a = 0; a < version.getValue().block.getParameters().size(); ++a) {
 					if (i > 0) writer.addCode(", ");
@@ -448,7 +448,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		for (var construct : constructors.entrySet()) {
 			String methodName = className + "_" + construct.getKey();
 			writer.addCode(className);
-			writer.addCode(".addConstructor(" + construct.getKey() + ", new LeekAnonymousFunction() { public Object run(ObjectLeekValue thiz, Object... args) throws LeekRunException { " + methodName + "(thiz");
+			writer.addCode(".addConstructor(" + construct.getKey() + ", new FunctionLeekValue(0) { public Object run(AI ai, ObjectLeekValue thiz, Object... args) throws LeekRunException { " + methodName + "(thiz");
 			int i = 0;
 			if (construct.getValue().block != null) {
 				for (var a = 0; a < construct.getValue().block.getParameters().size(); ++a) {
@@ -462,7 +462,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 			for (var version : method.getValue().entrySet()) {
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
 				writer.addCode(className);
-				writer.addCode(".addMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new LeekAnonymousFunction() { public Object run(ObjectLeekValue thiz, Object... args) throws LeekRunException { return " + methodName + "(thiz");
+				writer.addCode(".addMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(0) { public Object run(AI ai, ObjectLeekValue thiz, Object... args) throws LeekRunException { return " + methodName + "(thiz");
 				int i = 0;
 				for (var a = 0; a < version.getValue().block.getParameters().size(); ++a) {
 					writer.addCode(", args[" + i++ + "]");

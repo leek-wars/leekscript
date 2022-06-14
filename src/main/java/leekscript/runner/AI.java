@@ -6,6 +6,7 @@ import leekscript.compiler.LineMapping;
 import leekscript.compiler.RandomGenerator;
 import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.MapLeekValue;
+import leekscript.runner.classes.StandardClass;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
@@ -14,26 +15,19 @@ import leekscript.runner.values.GenericMapLeekValue;
 import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.Box;
-import leekscript.runner.values.LegacyArrayLeekValue.ArrayIterator;
-import leekscript.runner.values.LegacyArrayLeekValue.Element;
 import leekscript.common.Error;
+import leekscript.common.Type;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
-
-import com.alibaba.fastjson.JSON;
 
 public abstract class AI {
 
@@ -62,7 +56,6 @@ public abstract class AI {
 	protected int id;
 	protected int version;
 	protected AILog logs;
-	// protected AI mUAI;
 	protected int mInstructions;
 	protected RandomGenerator randomGenerator;
 	private long analyzeTime;
@@ -162,7 +155,7 @@ public abstract class AI {
 		return mOperations;
 	}
 
-	public int getOperations() throws LeekRunException {
+	public int getOperations() {
 		return mOperations;
 	}
 
@@ -346,104 +339,86 @@ public abstract class AI {
 		return (long) Math.round(x);
 	}
 
-	public long round(Object... args) throws LeekRunException {
-		if (check("round", new int[] { NUMBER }, args)) {
-			ops(LeekFunctions.round.getOperations());
-			return (long) Math.round(((Number) args[0]).doubleValue());
-		}
-		return 0;
-	}
+	// public long round(Object... args) throws LeekRunException {
+	// 	if (check("round", new int[] { NUMBER }, args)) {
+	// 		ops(LeekFunctions.round.getOperations());
+	// 		return (long) Math.round(((Number) args[0]).doubleValue());
+	// 	}
+	// 	return 0;
+	// }
 
 	public double cos(double x) throws LeekRunException {
 		ops(LeekFunctions.cos.getOperations());
 		return Math.cos(x);
 	}
 
-	public double cos(Object... args) throws LeekRunException {
-		if (check("cos", new int[] { NUMBER }, args)) {
-			ops(LeekFunctions.cos.getOperations());
-			return Math.cos(((Number) args[0]).doubleValue());
-		}
-		return 0;
-	}
+	// public double cos(Object... args) throws LeekRunException {
+	// 	if (check("cos", new int[] { NUMBER }, args)) {
+	// 		ops(LeekFunctions.cos.getOperations());
+	// 		return Math.cos(((Number) args[0]).doubleValue());
+	// 	}
+	// 	return 0;
+	// }
 
 	public double acos(double x) throws LeekRunException {
 		ops(LeekFunctions.acos.getOperations());
 		return Math.acos(x);
 	}
 
-	public double acos(Object... args) throws LeekRunException {
-		if (check("acos", new int[] { NUMBER }, args)) {
-			ops(LeekFunctions.acos.getOperations());
-			return Math.acos(((Number) args[0]).doubleValue());
-		}
-		return 0;
-	}
+	// public double acos(Object... args) throws LeekRunException {
+	// 	if (check("acos", new int[] { NUMBER }, args)) {
+	// 		ops(LeekFunctions.acos.getOperations());
+	// 		return Math.acos(((Number) args[0]).doubleValue());
+	// 	}
+	// 	return 0;
+	// }
 
 	public double sin(double x) throws LeekRunException {
 		ops(LeekFunctions.sin.getOperations());
 		return Math.sin(x);
 	}
 
-	public double sin(Object... args) throws LeekRunException {
-		if (check("sin", new int[] { NUMBER }, args)) {
-			ops(LeekFunctions.sin.getOperations());
-			return Math.sin(((Number) args[0]).doubleValue());
-		}
-		return 0;
-	}
+	// public double sin(Object... args) throws LeekRunException {
+	// 	if (check("sin", new int[] { NUMBER }, args)) {
+	// 		ops(LeekFunctions.sin.getOperations());
+	// 		return Math.sin(((Number) args[0]).doubleValue());
+	// 	}
+	// 	return 0;
+	// }
 
 	public double asin(double x) throws LeekRunException {
 		ops(LeekFunctions.asin.getOperations());
 		return Math.asin(x);
 	}
 
-	public double asin(Object... args) throws LeekRunException {
-		if (check("asin", new int[] { NUMBER }, args)) {
-			ops(LeekFunctions.asin.getOperations());
-			return Math.asin(((Number) args[0]).doubleValue());
-		}
-		return 0;
-	}
+	// public double asin(Object... args) throws LeekRunException {
+	// 	if (check("asin", new int[] { NUMBER }, args)) {
+	// 		ops(LeekFunctions.asin.getOperations());
+	// 		return Math.asin(((Number) args[0]).doubleValue());
+	// 	}
+	// 	return 0;
+	// }
 
 	public double tan(double x) throws LeekRunException {
 		ops(LeekFunctions.tan.getOperations());
 		return Math.tan(x);
 	}
 
-	public double tan(Object... args) throws LeekRunException {
-		if (check("tan", new int[] { NUMBER }, args)) {
-			ops(LeekFunctions.tan.getOperations());
-			return Math.tan(((Number) args[0]).doubleValue());
-		}
-		return 0;
-	}
+	// public double tan(Object... args) throws LeekRunException {
+	// 	if (check("tan", new int[] { NUMBER }, args)) {
+	// 		ops(LeekFunctions.tan.getOperations());
+	// 		return Math.tan(((Number) args[0]).doubleValue());
+	// 	}
+	// 	return 0;
+	// }
 
 	public double atan(double x) throws LeekRunException {
 		ops(LeekFunctions.atan.getOperations());
 		return Math.atan(x);
 	}
 
-	public double atan(Object... args) throws LeekRunException {
-		if (check("atan", new int[] { NUMBER }, args)) {
-			ops(LeekFunctions.atan.getOperations());
-			return Math.atan(((Number) args[0]).doubleValue());
-		}
-		return 0;
-	}
-
-	public long count(LegacyArrayLeekValue array) throws LeekRunException {
-		ops(LeekFunctions.count.getOperations());
-		return array.size();
-	}
-
-	public Object count(Object... args) throws LeekRunException {
-		if (check("count", new int[] { ARRAY }, args)) {
-			ops(LeekFunctions.count.getOperations());
-			var array = (LegacyArrayLeekValue) args[0];
-			return (long) array.size();
-		}
-		return null;
+	public Object unknown(Object x) {
+		return x;
 	}
 
 	public Object debug(Object x) throws LeekRunException {
@@ -468,271 +443,6 @@ public abstract class AI {
 		ops(p.length());
 		ops(LeekFunctions.debug.getOperations());
 		return null;
-	}
-
-	public long color(Object red, Object green, Object blue) throws LeekRunException {
-		var r = longint(red);
-		var g = longint(green);
-		var b = longint(blue);
-		return ((r & 255) << 16) | ((g & 255) << 8) | (b & 255);
-	}
-
-	public void arrayFlatten(LegacyArrayLeekValue array, LegacyArrayLeekValue retour, int depth) throws LeekRunException {
-		for (var value : array) {
-			if (value.getValue() instanceof LegacyArrayLeekValue && depth > 0) {
-				arrayFlatten((LegacyArrayLeekValue) value.getValue(), retour, depth - 1);
-			} else
-				retour.push(this, LeekOperations.clone(this, value.getValue()));
-		}
-	}
-
-	public Object arrayFoldLeft(LegacyArrayLeekValue array, FunctionLeekValue function, Object start_value) throws LeekRunException {
-		Object result = LeekOperations.clone(this, start_value);
-		for (var value : array) {
-			result = function.execute(this, result, value.getValue());
-		}
-		return result;
-	}
-
-	public Object arrayFoldRight(LegacyArrayLeekValue array, FunctionLeekValue function, Object start_value) throws LeekRunException {
-		Object result = LeekOperations.clone(this, start_value);
-		var it = array.getReversedIterator();
-		while (it.hasNext()) {
-			result = function.execute(this, it.next(), result);
-		}
-		return result;
-	}
-
-	public LegacyArrayLeekValue arrayPartitionV1(LegacyArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
-		var list1 = new LegacyArrayLeekValue();
-		var list2 = new LegacyArrayLeekValue();
-		int nb = function.getArgumentsCount(this);
-		if (nb != 1 && nb != 2)
-			return new LegacyArrayLeekValue();
-		var iterator = array.iterator();
-		boolean b;
-		while (iterator.hasNext()) {
-			var value = iterator.getValueBox();
-			if (nb == 1)
-				b = bool(function.execute(this, value));
-			else
-				b = bool(function.execute(this, iterator.getKey(this), value));
-			(b ? list1 : list2).getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
-			iterator.next();
-		}
-		return new LegacyArrayLeekValue(this, new Object[] { list1, list2 }, false);
-	}
-
-	public LegacyArrayLeekValue arrayPartition(LegacyArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
-		var list1 = new LegacyArrayLeekValue();
-		var list2 = new LegacyArrayLeekValue();
-		int nb = function.getArgumentsCount(this);
-		if (nb != 1 && nb != 2)
-			return new LegacyArrayLeekValue();
-		ArrayIterator iterator = array.iterator();
-		boolean b;
-		while (iterator.hasNext()) {
-			var value = iterator.getValue();
-			if (nb == 1)
-				b = bool(function.execute(this, value));
-			else
-				b = bool(function.execute(this, iterator.getKey(this), value));
-			(b ? list1 : list2).getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
-			iterator.next();
-		}
-		return new LegacyArrayLeekValue(this, new Object[] { list1, list2 }, false);
-	}
-
-	public LegacyArrayLeekValue arrayMap(LegacyArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
-		var retour = new LegacyArrayLeekValue();
-		var iterator = array.iterator();
-		int nb = function.getArgumentsCount(this);
-		while (iterator.hasNext()) {
-			var value = iterator.getValue();
-			if (nb >= 2) {
-				retour.getOrCreate(this, iterator.getKey(this)).set(function.execute(this, iterator.getKey(this), value));
-			} else {
-				retour.getOrCreate(this, iterator.getKey(this)).set(function.execute(this, value));
-			}
-			iterator.next();
-		}
-		return retour;
-	}
-
-	public LegacyArrayLeekValue arrayMapV1(LegacyArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
-		var retour = new LegacyArrayLeekValue();
-		var iterator = array.iterator();
-		int nb = function.getArgumentsCount(this);
-		while (iterator.hasNext()) {
-			var value = iterator.getValueBox();
-			if (nb >= 2)
-				retour.getOrCreate(this, iterator.getKey(this)).setRef(function.execute(this, iterator.getKey(this), value));
-			else
-				retour.getOrCreate(this, iterator.getKey(this)).setRef(function.execute(this, value));
-			iterator.next();
-		}
-		return retour;
-	}
-
-	public LegacyArrayLeekValue arrayFilterV1(LegacyArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
-		var retour = new LegacyArrayLeekValue();
-		var iterator = array.iterator();
-		int nb = function.getArgumentsCount(this);
-		if (nb != 1 && nb != 2)
-			return retour;
-		while (iterator.hasNext()) {
-			var value = iterator.getValueBox();
-			if (nb == 1) {
-				if (bool(function.execute(this, new Object[] { value }))) {
-					// In LeekScript < 1.0, arrayFilter had a bug, the result array was not reindexed
-					retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
-				}
-			} else {
-				if (bool(function.execute(this, new Object[] { iterator.getKey(this), value }))) {
-					retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
-				}
-			}
-			iterator.next();
-		}
-		return retour;
-	}
-
-	public LegacyArrayLeekValue arrayFilter(LegacyArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
-		var retour = new LegacyArrayLeekValue();
-		var iterator = array.iterator();
-		int nb = function.getArgumentsCount(this);
-		if (nb != 1 && nb != 2)
-			return retour;
-		while (iterator.hasNext()) {
-			var value = iterator.getValue();
-			if (nb == 1) {
-				if (bool(function.execute(this, value))) {
-					retour.push(this, iterator.getValue(this));
-				}
-			} else {
-				if (bool(function.execute(this, iterator.getKey(this), value))) {
-					retour.push(this, iterator.getValue(this));
-				}
-			}
-			iterator.next();
-		}
-		return retour;
-	}
-
-	public Object arrayIterV1(LegacyArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
-		var iterator = array.iterator();
-		if (function == null) {
-			return null;
-		}
-		int nb = function.getArgumentsCount(this);
-		if (nb != 1 && nb != 2)
-			return null;
-		while (iterator.hasNext()) {
-			var value = iterator.getValueBox();
-			if (nb == 1) {
-				function.execute(this, value);
-			} else {
-				function.execute(this, iterator.getKey(this), value);
-			}
-			iterator.next();
-		}
-		return null;
-	}
-
-	public Object arrayIter(LegacyArrayLeekValue array, FunctionLeekValue function) throws LeekRunException {
-		var iterator = array.iterator();
-		if (function == null) {
-			return null;
-		}
-		int nb = function.getArgumentsCount(this);
-		if (nb != 1 && nb != 2)
-			return null;
-		while (iterator.hasNext()) {
-			var value = iterator.getValue();
-			if (nb == 1) {
-				function.execute(this, value);
-			} else {
-				function.execute(this, iterator.getKey(this), value);
-			}
-			iterator.next();
-		}
-		return null;
-	}
-
-	public LegacyArrayLeekValue arraySort(LegacyArrayLeekValue origin, final FunctionLeekValue function) throws LeekRunException {
-		try {
-			int nb = function.getArgumentsCount(this);
-			if (nb == 2) {
-				var array = (LegacyArrayLeekValue) LeekOperations.clone(this, origin);
-				array.sort(this, new Comparator<Element>() {
-					@Override
-					public int compare(Element o1, Element o2) {
-						try {
-							return integer(function.execute(AI.this, o1.getValue(), o2.getValue()));
-						} catch (Exception e) {
-							throw new RuntimeException(e);
-						}
-					}
-				});
-				return array;
-			} else if (nb == 4) {
-				var array = (LegacyArrayLeekValue) LeekOperations.clone(this, origin);
-				array.sort(this, new Comparator<Element>() {
-					@Override
-					public int compare(Element o1, Element o2) {
-						try {
-							return integer(function.execute(AI.this, o1.getKey(), o1.getValue(), o2.getKey(), o2.getValue()));
-						} catch (Exception e) {
-							throw new RuntimeException(e);
-						}
-					}
-				});
-				return array;
-			}
-		} catch (RuntimeException e) {
-			if (e.getCause() instanceof LeekRunException) {
-				throw (LeekRunException) e.getCause();
-			}
-		}
-		return null;
-	}
-
-
-	public String jsonEncode(AI ai, Object object) {
-
-		try {
-
-			String json = JSON.toJSONString(toJSON(object));
-			ops(json.length() * 10);
-			return json;
-
-		} catch (Exception e) {
-
-			// e.printStackTrace();
-			getLogs().addLog(AILog.ERROR, "Cannot encode object \"" + object.toString() + "\"");
-			try {
-				ops(100);
-			} catch (Exception e1) {}
-			return null;
-		}
-	}
-
-	public Object jsonDecode(String json) {
-
-		try {
-
-			var obj = LeekValueManager.parseJSON(JSON.parse(json), this);
-			ops(json.length() * 10);
-			return obj;
-
-		} catch (Exception e) {
-
-			getLogs().addLog(AILog.ERROR, "Cannot parse json \"" + json + "\"");
-			try {
-				ops(100);
-			} catch (Exception e1) {}
-			return null;
-		}
 	}
 
 	public void addSystemLog(int type, Error error) throws LeekRunException {
@@ -764,16 +474,6 @@ public abstract class AI {
 	protected String getAIString() { return ""; }
 
 	public abstract Object runIA() throws LeekRunException;
-
-	public int userFunctionCount(int id) { return 0; }
-
-	public boolean[] userFunctionReference(int id) { return null; }
-
-	public Object userFunctionExecute(int id, Object[] value) throws LeekRunException { return null; }
-
-	public int anonymousFunctionCount(int id) { return 0; }
-
-	public boolean[] anonymousFunctionReference(int id) { return null; }
 
 	public RandomGenerator getRandom() {
 		return randomGenerator;
@@ -852,7 +552,7 @@ public abstract class AI {
 			}
 		}
 		if (x instanceof FunctionLeekValue) {
-			return ((FunctionLeekValue) x).equals(this, y);
+			return ((FunctionLeekValue) x).equals(y);
 		}
 		if (x instanceof String) {
 			var s = (String) x;
@@ -1148,8 +848,7 @@ public abstract class AI {
 			if (y instanceof MapLeekValue) {
 				var map2 = (MapLeekValue) y;
 
-				ops((map1.size() + map2.size()) * 2);
-				return map1.merge(map2);
+				return map1.mapMerge(this, map2);
 			}
 		}
 
@@ -1167,11 +866,7 @@ public abstract class AI {
 					if (iterator.key() instanceof String) {
 						retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 					} else {
-						if (getVersion() == 1) {
-							retour.push(this, LeekOperations.clone(this, iterator.getValue(this)));
-						} else {
-							retour.push(this, iterator.getValue(this));
-						}
+						retour.push(this, iterator.getValue(this));
 					}
 					iterator.next();
 				}
@@ -1180,11 +875,7 @@ public abstract class AI {
 					if (iterator.key() instanceof String) {
 						retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 					} else {
-						if (getVersion() == 1) {
-							retour.push(this, LeekOperations.clone(this, iterator.getValue(this)));
-						} else {
-							retour.push(this, iterator.getValue(this));
-						}
+						retour.push(this, iterator.getValue(this));
 					}
 					iterator.next();
 				}
@@ -1202,19 +893,11 @@ public abstract class AI {
 				if (iterator.key() instanceof String) {
 					retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
 				} else {
-					if (getVersion() == 1) {
-						retour.push(this, LeekOperations.clone(this, iterator.getValue(this)));
-					} else {
-						retour.push(this, iterator.getValue(this));
-					}
+					retour.push(this, iterator.getValue(this));
 				}
 				iterator.next();
 			}
-			if (getVersion() == 1) {
-				retour.push(this, LeekOperations.clone(this, y));
-			} else {
-				retour.push(this, y);
-			}
+			retour.push(this, y);
 
 			return retour;
 		}
@@ -2031,38 +1714,16 @@ public abstract class AI {
 	}
 
 	public Object execute(Object function, Object... args) throws LeekRunException {
+		// System.out.println("[AI] execute function=" + function + " args=" + Arrays.toString(args));
 		if (function instanceof ClassLeekValue) {
-			return ((ClassLeekValue) function).execute(this, args);
+			return ((ClassLeekValue) function).run(this, null, args);
 		}
 		if (function instanceof FunctionLeekValue) {
-			return ((FunctionLeekValue) function).execute(this, args);
+			return ((FunctionLeekValue) function).run(this, null, args);
 		}
 		// On ne peux pas exécuter ce type de variable
 		addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { string(function) });
 		return null;
-	}
-
-	public Object sysexec(ILeekFunction function, Object... arguments) throws LeekRunException {
-		// Vérification parametres
-		int[] parameters = function.getParameters();
-		if (parameters == null || verifyParameters(parameters, arguments)) {
-			for (var arg : arguments) {
-				if (arg instanceof Integer) {
-					throw new LeekRunException(LeekRunException.INVALID_VALUE, arg);
-				}
-			}
-			Object retour = function.run(this, function, arguments);
-			function.addOperations(this, function, arguments, retour);
-			if (retour instanceof Integer) {
-				throw new LeekRunException(LeekRunException.INVALID_VALUE, retour);
-			}
-			return retour;
-		} else {
-			// Message d'erreur
-			String ret = LeekValue.getParamString(arguments);
-			addSystemLog(AILog.ERROR, Error.UNKNOWN_FUNCTION, new String[] { function + "(" + ret + ")" });
-			return null;
-		}
 	}
 
 	public boolean check(String functionName, int[] types, Object... arguments) throws LeekRunException {
@@ -2072,6 +1733,54 @@ public abstract class AI {
 		String ret = LeekValue.getParamString(arguments);
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FUNCTION, new String[] { functionName + "(" + ret + ")" });
 		return false;
+	}
+
+	public ArrayLeekValue toArray(Object value) throws LeekRunException {
+		if (value instanceof ArrayLeekValue) {
+			return (ArrayLeekValue) value;
+		}
+		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new String[] {
+			string(value),
+			StandardClass.getType(value).toString(),
+			Type.ARRAY.toString()
+		});
+		throw new ClassCastException();
+	}
+
+	public MapLeekValue toMap(Object value) throws LeekRunException {
+		if (value instanceof MapLeekValue) {
+			return (MapLeekValue) value;
+		}
+		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new String[] {
+			string(value),
+			StandardClass.getType(value).toString(),
+			Type.MAP.toString()
+		});
+		throw new ClassCastException();
+	}
+
+	public FunctionLeekValue toFunction(Object value) throws LeekRunException {
+		if (value instanceof FunctionLeekValue) {
+			return (FunctionLeekValue) value;
+		}
+		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new String[] {
+			string(value),
+			StandardClass.getType(value).toString(),
+			Type.FUNCTION.toString()
+		});
+		throw new ClassCastException();
+	}
+
+	public LegacyArrayLeekValue toLegacyArray(Object value) throws LeekRunException {
+		if (value instanceof LegacyArrayLeekValue) {
+			return (LegacyArrayLeekValue) value;
+		}
+		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new String[] {
+			string(value),
+			StandardClass.getType(value).toString(),
+			Type.ARRAY.toString()
+		});
+		return new LegacyArrayLeekValue();
 	}
 
 	public static boolean verifyParameters(int[] types, Object... parameters) {

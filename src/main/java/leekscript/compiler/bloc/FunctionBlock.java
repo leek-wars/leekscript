@@ -136,6 +136,17 @@ public class FunctionBlock extends AbstractLeekBlock {
 		writer.addLine("}");
 	}
 
+	public void compileAnonymousFunction(MainLeekBlock mainblock, JavaWriter writer) {
+		writer.addCode("new FunctionLeekValue(" + this.countParameters() + ") { public Object run(AI ai, ObjectLeekValue thiz, Object... values) throws LeekRunException {");
+		writer.addCode("return f_" + this + "(");
+		for (int a = 0; a < this.countParameters(); ++a) {
+			if (a > 0) writer.addCode(", ");
+			writer.addCode("values[" + a + "]");
+		}
+		writer.addLine(");");
+		writer.addLine("}}");
+	}
+
 	public boolean isReference(int i) {
 		return mReferences.get(i);
 	}
