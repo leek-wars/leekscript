@@ -24,7 +24,7 @@ import leekscript.compiler.expression.LeekArray;
 import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
-import leekscript.compiler.expression.LeekExpressionFunction;
+import leekscript.compiler.expression.LeekFunctionCall;
 import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekObject;
@@ -888,7 +888,7 @@ public class WordCompiler {
 					retour.addBracket(exp);
 				} else if (word.getType() == WordParser.T_PAR_LEFT) {
 
-					LeekExpressionFunction function = new LeekExpressionFunction(word);
+					LeekFunctionCall function = new LeekFunctionCall(word);
 					mCompiler.skipWord();// On avance le curseur pour être au début de l'expression
 
 					while (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {

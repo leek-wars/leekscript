@@ -203,7 +203,7 @@ public class LeekExpression extends AbstractExpression {
 		}
 	}
 
-	public void addFunction(LeekExpressionFunction function) {
+	public void addFunction(LeekFunctionCall function) {
 		// On doit ajouter ce crochet au dernier élément ajouté
 		if (mExpression1 != null && mExpression2 == null) {
 			if (mExpression1.getNature() == EXPRESSION)

@@ -21,7 +21,7 @@ import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 
-public class LeekExpressionFunction extends AbstractExpression {
+public class LeekFunctionCall extends AbstractExpression {
 
 	private IAWord openParenthesis = null;
 	private final ArrayList<AbstractExpression> mParameters = new ArrayList<AbstractExpression>();
@@ -31,7 +31,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 	private CallableVersion callable_version = null;
 	private ILeekFunction system_function = null;
 
-	public LeekExpressionFunction(IAWord openParenthesis) {
+	public LeekFunctionCall(IAWord openParenthesis) {
 		this.openParenthesis = openParenthesis;
 	}
 
