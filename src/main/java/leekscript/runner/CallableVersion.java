@@ -6,7 +6,11 @@ public class CallableVersion {
 
 	public Type return_type;
 	public Type[] arguments;
-	public ILeekFunction function;
+	public LeekFunctions function;
+
+	public CallableVersion(Type return_type) {
+		this(return_type, new Type[0]);
+	}
 
 	public CallableVersion(Type return_type, Type[] arguments) {
 		this.return_type = return_type;

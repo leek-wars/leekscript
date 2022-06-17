@@ -444,7 +444,13 @@ public class LeekExpression extends AbstractExpression {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" + ");
 				mExpression2.writeJavaCode(mainblock, writer);
-			// } else if (mExpression1.getType() == Type.STRING || mExpression2.getType() == Type.STRING) {
+			} else if (mExpression1.getType() == Type.STRING || mExpression2.getType() == Type.STRING) {
+				writer.addCode("(String) add(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+
 			// 	if (mExpression1.getType() == Type.STRING)
 			// 		mExpression1.writeJavaCode(mainblock, writer);
 			// 	else

@@ -12,7 +12,7 @@ import leekscript.common.Type;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
 import leekscript.runner.CallableVersion;
-import leekscript.runner.ILeekFunction;
+import leekscript.runner.LeekFunctions;
 
 public class JavaWriter {
 
@@ -25,8 +25,8 @@ public class JavaWriter {
 	private final boolean mWithDebug;
 	private final String className;
 	public AbstractLeekBlock currentBlock = null;
-	public HashSet<CallableVersion> genericFunctions = new HashSet<>();
-	public HashSet<ILeekFunction> anonymousSystemFunctions = new HashSet<>();
+	public HashMap<String, CallableVersion> genericFunctions = new HashMap<>();
+	public HashSet<LeekFunctions> anonymousSystemFunctions = new HashSet<>();
 
 	public JavaWriter(boolean debug, String className) {
 		mCode = new StringBuilder();
@@ -177,28 +177,32 @@ public class JavaWriter {
 			addCode(")");
 			return;
 		}
+		if (type == Type.INT) {
+			if (value.getType() == Type.REAL) {
+				addCode("(long) (");
+				value.writeJavaCode(mainblock, this);
+				addCode(")");
+				return;
+			}
+		}
 		value.writeJavaCode(mainblock, this);
 	}
 
 	public void generateGenericFunction(CallableVersion system_function) {
-		genericFunctions.add(system_function);
+		genericFunctions.put(system_function.function.getName() + "_" + system_function.arguments.length, system_function);
 	}
 
-	public void generateAnonymousSystemFunction(ILeekFunction system_function) {
+	public void generateAnonymousSystemFunction(LeekFunctions system_function) {
 		anonymousSystemFunctions.add(system_function);
-		var added = new HashSet<Integer>();
 		for (var version : system_function.getVersions()) {
-			if (!added.contains(version.arguments.length)) {
-				genericFunctions.add(version);
-				added.add(version.arguments.length);
-			}
+			genericFunctions.put(system_function.getName() + "_" + version.arguments.length, version);
 		}
 	}
 
 	public void writeGenericFunctions(MainLeekBlock block) {
 
-		for (var version : genericFunctions) {
-			addCode("private " + version.return_type.getJavaName(block.getVersion()) + " " + version.function.getStandardClass() + "_" + version.function.toString() + "_" + version.arguments.length + "(");
+		for (var version : genericFunctions.values()) {
+			addCode("private " + version.return_type.getJavaName(block.getVersion()) + " " + version.function.getStandardClass() + "_" + version.function.getName() + "_" + version.arguments.length + "(");
 			for (int a = 0; a < version.arguments.length; ++a) {
 				if (a > 0) addCode(", ");
 				addCode("Object a" + a);
@@ -215,13 +219,13 @@ public class JavaWriter {
 			// 	addCode("return x0." + function.toString() + "(");
 			// } else {
 			if (version.function.isStatic()) {
-				var function_name = version.function.toString();
+				var function_name = version.function.getName();
 				if (version.return_type == Type.ARRAY && block.getVersion() <= 3) {
 					function_name += "_v1_3";
 				}
 				addCode("return " + version.function.getStandardClass() + "Class." + function_name + "(");
 			} else {
-				addCode("return x0." + version.function.toString() + "(");
+				addCode("return x0." + version.function.getName() + "(");
 			}
 			ArrayList<String> args = new ArrayList<>();
 			args.add("this");
@@ -243,13 +247,13 @@ public class JavaWriter {
 	public void writeAnonymousSystemFunctions(MainLeekBlock block) {
 
 		for (var function : anonymousSystemFunctions) {
-			addLine("private FunctionLeekValue " + function.getStandardClass() + "_" + function.toString() + " = new FunctionLeekValue(" + function.getVersions()[0].arguments.length + ", \"#Function " + function + "\") { public Object run(AI ai, ObjectLeekValue thiz, Object... values) throws LeekRunException {");
+			addLine("private FunctionLeekValue " + function.getStandardClass() + "_" + function.getName() + " = new FunctionLeekValue(" + function.getVersions()[0].arguments.length + ", \"#Function " + function.getName() + "\") { public Object run(AI ai, ObjectLeekValue thiz, Object... values) throws LeekRunException {");
 			if (function.getOperations() >= 0) {
 				addLine("ops(" + function.getOperations() + ");");
 			}
 			if (function.getVersions().length > 1) {
 				for (var version : function.getVersions()) {
-					addCode("if (values.length == " + version.arguments.length + ") return " + function.getStandardClass() + "_" + function.toString() + "_" + version.arguments.length + "(");
+					addCode("if (values.length == " + version.arguments.length + ") return " + function.getStandardClass() + "_" + function.getName() + "_" + version.arguments.length + "(");
 					for (var a = 0; a < version.arguments.length; ++a) {
 						if (a > 0) addCode(", ");
 						if (block.getVersion() == 1) {
@@ -261,7 +265,7 @@ public class JavaWriter {
 					addLine(");");
 				}
 			}
-			addCode("return " + function.getStandardClass() + "_" + function.toString() + "_" + function.getVersions()[0].arguments.length + "(");
+			addCode("return " + function.getStandardClass() + "_" + function.getName() + "_" + function.getVersions()[0].arguments.length + "(");
 			for (var a = 0; a < function.getVersions()[0].arguments.length; ++a) {
 				if (a > 0) addCode(", ");
 				if (block.getVersion() == 1) {

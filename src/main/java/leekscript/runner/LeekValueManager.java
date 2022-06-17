@@ -6,6 +6,9 @@ import java.text.DecimalFormat;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
 import leekscript.AILog;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.LegacyArrayLeekValue;
@@ -16,9 +19,6 @@ import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.Box;
 import leekscript.common.Error;
-
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 
 public class LeekValueManager {
 

@@ -29,6 +29,8 @@ import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
+import com.alibaba.fastjson.JSON;
+
 public abstract class AI {
 
 	public static final int DOUBLE = 1;
@@ -78,6 +80,7 @@ public abstract class AI {
 	public final ClassLeekValue classClass;
 	public final ClassLeekValue jsonClass;
 	public final ClassLeekValue systemClass;
+	private String x;
 
 	public AI(int instructions, int version) {
 		this.mInstructions = instructions;
@@ -176,6 +179,11 @@ public abstract class AI {
 		return x;
 	}
 
+	public String ops(String x, int nb) throws LeekRunException {
+		ops(nb);
+		return x;
+	}
+
 	public long ops(long x, int nb) throws LeekRunException {
 		ops(nb);
 		return x;
@@ -270,179 +278,6 @@ public abstract class AI {
 			return "\t▶ AI " + file + ", line " + lineMapping.getLeekScriptLine() + "\n"; // + ", java " + line;
 		}
 		return "";
-	}
-
-	public long abs(long x) throws LeekRunException {
-		ops(LeekFunctions.abs.getOperations());
-		return Math.abs(x);
-	}
-
-	public double abs(Number x) throws LeekRunException {
-		ops(LeekFunctions.abs.getOperations());
-		return Math.abs(x.doubleValue());
-	}
-
-	public Object abs(Object... args) throws LeekRunException {
-		if (check("abs", new int[] { NUMBER }, args)) {
-			ops(LeekFunctions.abs.getOperations());
-			if (args[0] instanceof Long) {
-				return Math.abs((Long) args[0]);
-			}
-			return Math.abs((Double) args[0]);
-		}
-		return 0;
-	}
-
-	public long ceil(long x) throws LeekRunException {
-		ops(LeekFunctions.ceil.getOperations());
-		return x;
-	}
-
-	public long ceil(double x) throws LeekRunException {
-		ops(LeekFunctions.ceil.getOperations());
-		return (long) Math.ceil(x);
-	}
-
-	public long ceil(Object... args) throws LeekRunException {
-		if (check("ceil", new int[] { NUMBER }, args)) {
-			ops(LeekFunctions.ceil.getOperations());
-			return (long) Math.ceil(((Number) args[0]).doubleValue());
-		}
-		return 0;
-	}
-
-	public long floor(Number x) throws LeekRunException {
-		ops(LeekFunctions.floor.getOperations());
-		return (long) Math.floor(x.doubleValue());
-	}
-
-	public long floor(double x) throws LeekRunException {
-		ops(LeekFunctions.floor.getOperations());
-		return (long) Math.floor(x);
-	}
-
-	public long floor(Object... args) throws LeekRunException {
-		if (check("floor", new int[] { NUMBER }, args)) {
-			ops(LeekFunctions.floor.getOperations());
-			return (long) Math.floor(((Number) args[0]).doubleValue());
-		}
-		return 0;
-	}
-
-	public long round(long x) throws LeekRunException {
-		ops(LeekFunctions.round.getOperations());
-		return x;
-	}
-
-	public long round(double x) throws LeekRunException {
-		ops(LeekFunctions.round.getOperations());
-		return (long) Math.round(x);
-	}
-
-	// public long round(Object... args) throws LeekRunException {
-	// 	if (check("round", new int[] { NUMBER }, args)) {
-	// 		ops(LeekFunctions.round.getOperations());
-	// 		return (long) Math.round(((Number) args[0]).doubleValue());
-	// 	}
-	// 	return 0;
-	// }
-
-	public double cos(double x) throws LeekRunException {
-		ops(LeekFunctions.cos.getOperations());
-		return Math.cos(x);
-	}
-
-	// public double cos(Object... args) throws LeekRunException {
-	// 	if (check("cos", new int[] { NUMBER }, args)) {
-	// 		ops(LeekFunctions.cos.getOperations());
-	// 		return Math.cos(((Number) args[0]).doubleValue());
-	// 	}
-	// 	return 0;
-	// }
-
-	public double acos(double x) throws LeekRunException {
-		ops(LeekFunctions.acos.getOperations());
-		return Math.acos(x);
-	}
-
-	// public double acos(Object... args) throws LeekRunException {
-	// 	if (check("acos", new int[] { NUMBER }, args)) {
-	// 		ops(LeekFunctions.acos.getOperations());
-	// 		return Math.acos(((Number) args[0]).doubleValue());
-	// 	}
-	// 	return 0;
-	// }
-
-	public double sin(double x) throws LeekRunException {
-		ops(LeekFunctions.sin.getOperations());
-		return Math.sin(x);
-	}
-
-	// public double sin(Object... args) throws LeekRunException {
-	// 	if (check("sin", new int[] { NUMBER }, args)) {
-	// 		ops(LeekFunctions.sin.getOperations());
-	// 		return Math.sin(((Number) args[0]).doubleValue());
-	// 	}
-	// 	return 0;
-	// }
-
-	public double asin(double x) throws LeekRunException {
-		ops(LeekFunctions.asin.getOperations());
-		return Math.asin(x);
-	}
-
-	// public double asin(Object... args) throws LeekRunException {
-	// 	if (check("asin", new int[] { NUMBER }, args)) {
-	// 		ops(LeekFunctions.asin.getOperations());
-	// 		return Math.asin(((Number) args[0]).doubleValue());
-	// 	}
-	// 	return 0;
-	// }
-
-	public double tan(double x) throws LeekRunException {
-		ops(LeekFunctions.tan.getOperations());
-		return Math.tan(x);
-	}
-
-	// public double tan(Object... args) throws LeekRunException {
-	// 	if (check("tan", new int[] { NUMBER }, args)) {
-	// 		ops(LeekFunctions.tan.getOperations());
-	// 		return Math.tan(((Number) args[0]).doubleValue());
-	// 	}
-	// 	return 0;
-	// }
-
-	public double atan(double x) throws LeekRunException {
-		ops(LeekFunctions.atan.getOperations());
-		return Math.atan(x);
-	}
-
-	public Object unknown(Object x) {
-		return x;
-	}
-
-	public Object debug(Object x) throws LeekRunException {
-		String p = LeekValueManager.getString(this, x);
-		getLogs().addLog(AILog.STANDARD, p);
-		ops(p.length());
-		ops(LeekFunctions.debug.getOperations());
-		return null;
-	}
-
-	public Object debugW(Object x) throws LeekRunException {
-		String p = LeekValueManager.getString(this, x);
-		getLogs().addLog(AILog.WARNING, p);
-		ops(p.length());
-		ops(LeekFunctions.debug.getOperations());
-		return null;
-	}
-
-	public Object debugE(Object x) throws LeekRunException {
-		String p = LeekValueManager.getString(this, x);
-		getLogs().addLog(AILog.ERROR, p);
-		ops(p.length());
-		ops(LeekFunctions.debug.getOperations());
-		return null;
 	}
 
 	public void addSystemLog(int type, Error error) throws LeekRunException {

@@ -144,7 +144,7 @@ public class LeekVariable extends AbstractExpression {
 			return;
 		}
 		// LS functions
-		if (LeekFunctions.isFunction(token.getWord()) != -1) {
+		if (LeekFunctions.getValue(token.getWord()) != null) {
 			this.type = VariableType.SYSTEM_FUNCTION;
 			return;
 		}

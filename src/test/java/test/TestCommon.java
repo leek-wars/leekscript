@@ -249,6 +249,9 @@ public class TestCommon {
 	public Case file_v2_(String code) {
 		return new Case(code, true, 2, LATEST_VERSION);
 	}
+	public Case file_v3(String code) {
+		return new Case(code, true, 3, 3);
+	}
 	public Case file_v4_(String code) {
 		return new Case(code, true, 4, LATEST_VERSION);
 	}

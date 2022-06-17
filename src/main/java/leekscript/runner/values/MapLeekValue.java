@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
 import java.util.Set;
@@ -87,6 +86,10 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		var v = ai.add(get(key), value);
 		put(key, v);
 		return v;
+	}
+
+	public long mapSize(AI ai) {
+		return size();
 	}
 
 	public boolean mapIsEmpty(AI ai) {
@@ -310,7 +313,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return entrySet().iterator();
 	}
 
-	public JSON toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
+	public JSONObject toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
 		visited.add(this);
 
 		var o = new JSONObject();

@@ -18,7 +18,6 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
-import leekscript.runner.ILeekFunction;
 import leekscript.runner.LeekFunctions;
 
 public class MainLeekBlock extends AbstractLeekBlock {
@@ -104,6 +103,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				return true;
 			}
 			// System.out.println("include " + ai.getPath());
+			ai.clearErrors();
 			mIncluded.add(ai.getId());
 			AIFile<?> previousAI = mCompiler.getCurrentAI();
 			mCompiler.setCurrentAI(ai);
@@ -201,6 +201,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("import leekscript.runner.values.*;");
 		writer.addLine("import leekscript.runner.classes.*;");
 		writer.addLine("import leekscript.common.*;");
+		if (LeekFunctions.getExtraFunctionsImport() != null) {
+			writer.addLine("import " + LeekFunctions.getExtraFunctionsImport() + ";");
+		}
 		writer.addLine();
 		writer.addLine("public class " + className + " extends " + AIClass + " {");
 
@@ -274,7 +277,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				if (user_function != null) {
 					user_function.compileAnonymousFunction(this, writer);
 				} else {
-					ILeekFunction system_function = LeekFunctions.getValue(redefined);
+					var system_function = LeekFunctions.getValue(redefined);
 					writer.generateAnonymousSystemFunction(system_function);
 					writer.addCode(system_function.getStandardClass() + "_" + redefined);
 				}

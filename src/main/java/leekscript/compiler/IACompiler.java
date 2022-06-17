@@ -21,7 +21,7 @@ public class IACompiler {
 		public boolean success;
 	}
 
-	private final JSONArray mInformations = new JSONArray();
+	private final JSONArray informations = new JSONArray();
 	private AIFile<?> mCurrentAI;
 
 	public IACompiler() {}
@@ -36,12 +36,13 @@ public class IACompiler {
 		error.add(errorType.ordinal());
 		if (parameters != null)
 			error.add(parameters);
-		mInformations.add(error);
+		informations.add(error);
 	}
 
 	public AnalyzeResult analyze(AIFile<?> ai) throws LeekCompilerException {
 		AnalyzeResult result = new AnalyzeResult();
 		try {
+			ai.clearErrors();
 			// On lance la compilation du code de l'IA
 			WordParser parser = new WordParser(ai, ai.getVersion());
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
@@ -51,10 +52,10 @@ public class IACompiler {
 			compiler.readCode();
 			compiler.analyze();
 
-			// System.out.println("errors " + compiler.getErrors().size());
+			System.out.println("errors " + ai.getPath() + " " + ai.getErrors().size());
 			if (ai.getErrors().size() > 0) {
 				for (var error : ai.getErrors()) {
-					mInformations.add(error.toJSON());
+					informations.add(error.toJSON());
 				}
 				result.success = false;
 			} else {
@@ -66,13 +67,14 @@ public class IACompiler {
 			addError(e.getIA(), e.getLine(), e.getChar(), e.getString(), e.getError(), e.getParameters());
 			result.success = false;
 		}
-		result.informations = mInformations;
+		result.informations = informations;
 		return result;
 	}
 
-	public AICode compile(AIFile<?> ai, String javaClassName, String AIClass) throws LeekCompilerException {
-		JavaWriter writer = new JavaWriter(true, javaClassName);
+	public AICode compile(AIFile<?> ai, String AIClass) throws LeekCompilerException {
+		JavaWriter writer = new JavaWriter(true, ai.getJavaClass());
 		try {
+			ai.clearErrors();
 			// On lance la compilation du code de l'IA
 			WordParser parser = new WordParser(ai, ai.getVersion());
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
@@ -90,7 +92,7 @@ public class IACompiler {
 					}
 				}
 			}
-			compiler.writeJava(javaClassName, writer, AIClass);
+			compiler.writeJava(ai.getJavaClass(), writer, ai.getRootClass());
 
 		} catch (LeekCompilerException e) {
 			ai.getErrors().add(new AnalyzeError(e.getWord(), AnalyzeErrorLevel.ERROR, e.getError()));
@@ -110,10 +112,6 @@ public class IACompiler {
 		String code = main.getCode();
 		// System.out.println("Code = " + code);
 		return code;
-	}
-
-	public String getInformations() {
-		return mInformations.toJSONString();
 	}
 
 	public AIFile<?> getCurrentAI() {

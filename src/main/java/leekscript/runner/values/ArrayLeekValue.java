@@ -11,6 +11,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import com.alibaba.fastjson.JSONArray;
+
 import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
@@ -18,9 +20,6 @@ import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
 import leekscript.common.Error;
-
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 
 public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLeekValue {
 
@@ -394,11 +393,11 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return this;
 	}
 
-	public JSON toJSON(AI ai) throws LeekRunException {
+	public JSONArray toJSON(AI ai) throws LeekRunException {
 		return toJSON(ai, new HashSet<>());
 	}
 
-	public JSON toJSON(AI ai, Set<Object> visited) throws LeekRunException {
+	public JSONArray toJSON(AI ai, Set<Object> visited) throws LeekRunException {
 		visited.add(this);
 
 		JSONArray a = new JSONArray();

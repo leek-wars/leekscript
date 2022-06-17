@@ -46,6 +46,11 @@ public class Type {
 				return CastType.UPCAST;
 			}
 		}
+		if (this == INT) {
+			if (type == REAL) {
+				return CastType.SAFE_DOWNCAST;
+			}
+		}
 		if (this == BOOL) {
 			return CastType.UPCAST;
 		}
