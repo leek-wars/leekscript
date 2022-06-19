@@ -49,7 +49,7 @@ public class TestMain {
 		new TestFiles().run();
 		new TestEuler().run();
 
-		TestCommon.ouputOperationsFile();
+		// TestCommon.ouputOperationsFile();
 		Assert.assertTrue(TestCommon.summary());
 
     }
