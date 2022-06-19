@@ -37,6 +37,7 @@ public class TestMain {
 		new TestArray().run();
 		new TestArrayStress().run();
 		new TestMap().run();
+		new TestMapStress().run();
 		new TestObject().run();
 		new TestClass().run();
 		new TestComments().run();

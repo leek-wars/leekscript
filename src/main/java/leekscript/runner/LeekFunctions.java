@@ -223,11 +223,14 @@ public class LeekFunctions {
 		 * System functions
 		 */
 		method("getOperations", "System", 1, true, Type.INT, new Type[0]);
+		method("getMaxOperations", "System", 1, true, Type.INT, new Type[0]);
 		method("getInstructionsCount", "System", 1, true, Type.INT, new Type[0]);
 		method("debug", "System", 100, true, Type.VOID, new Type[] { Type.ANY });
 		method("debugW", "System", 100, true, Type.VOID, new Type[] { Type.ANY });
 		method("debugE", "System", 100, true, Type.VOID, new Type[] { Type.ANY });
 		method("debugC", "System", 100, true, Type.VOID, new Type[] { Type.ANY, Type.INT });
+		method("getUsedRAM", "System", 1, true, Type.INT, new Type[0]);
+		method("getMaxRAM", "System", 1, true, Type.INT, new Type[0]);
 	}
 
 	private static LeekFunctions method(String name, String clazz, Type return_type, Type[] arguments) {

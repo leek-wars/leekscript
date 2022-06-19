@@ -44,14 +44,13 @@ public abstract class AI {
 
 	public static final int ERROR_LOG_COST = 10000;
 
-	public final static int MAX_MEMORY = 100000;
-
 	protected long mOperations = 0;
 	public final static int MAX_OPERATIONS = 20_000_000;
 	public long maxOperations = MAX_OPERATIONS;
 
 	protected long mRAM = 0;
-	public final static int MAX_RAM = 10_000_000; // x 8 bytes
+	public final static int MAX_RAM = 1_000_000; // x 8 bytes
+	public long maxRAM = MAX_RAM;
 
 	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
 	protected String thisObject = null;
@@ -160,6 +159,18 @@ public abstract class AI {
 		return mOperations;
 	}
 
+	public long getMaxOperations() {
+		return maxOperations;
+	}
+
+	public long getUsedRAM() {
+		return mRAM;
+	}
+
+	public long getMaxRAM() {
+		return maxRAM;
+	}
+
 	public AILog getLogs() {
 		return logs;
 	}
@@ -208,22 +219,22 @@ public abstract class AI {
 
 	public void increaseRAM(int ram) throws LeekRunException {
 		mRAM += ram;
-		if (mRAM > MAX_RAM) {
+		if (mRAM > maxRAM) {
 			// System.out.println("RAM before = " + mRAM);
 			System.gc();
 			try {
-				Thread.sleep(1);
+				Thread.sleep(0, 1);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 			// System.out.println("RAM after  = " + mRAM);
-			if (mRAM > MAX_RAM) {
+			if (mRAM > maxRAM) {
 				throw new LeekRunException(Error.OUT_OF_MEMORY);
 			}
 		}
 	}
 
-	public void decreaseRAM(int ram) throws LeekRunException {
+	public void decreaseRAM(int ram) {
 		mRAM -= ram;
 	}
 
@@ -247,9 +258,9 @@ public abstract class AI {
 		}
 	}
 
-	public GenericMapLeekValue newMap() {
+	public GenericMapLeekValue newMap(AI ai) {
 		if (version >= 4) {
-			return new MapLeekValue();
+			return new MapLeekValue(ai);
 		} else {
 			return new LegacyArrayLeekValue();
 		}

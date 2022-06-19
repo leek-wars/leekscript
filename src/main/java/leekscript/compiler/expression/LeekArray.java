@@ -92,9 +92,9 @@ public class LeekArray extends AbstractExpression {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		if (mainblock.getVersion() >= 4) {
 			if (mIsKeyVal) {
-				if (mValues.size() == 0) writer.addCode("new MapLeekValue()");
+				if (mValues.size() == 0) writer.addCode("new MapLeekValue(" + writer.getAIThis() + ")");
 				else {
-					writer.addCode("new MapLeekValue(new Object[] { ");
+					writer.addCode("new MapLeekValue(" + writer.getAIThis() + ", new Object[] { ");
 					for (int i = 0; i < mValues.size(); i++) {
 						if (i != 0) writer.addCode(", ");
 						mValues.get(i).writeJavaCode(mainblock, writer);

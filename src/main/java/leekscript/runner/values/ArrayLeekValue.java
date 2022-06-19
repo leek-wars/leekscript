@@ -874,10 +874,11 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 
 	public MapLeekValue arrayFrequencies(AI ai) throws LeekRunException {
 		ai.ops(size() * 3);
-		var frequencies = new MapLeekValue();
+		var frequencies = new MapLeekValue(ai);
 		for (var value : this) {
 			frequencies.merge(value, 1l, (x, y) -> (Long) x + (Long) y);
 		}
+		ai.increaseRAM(frequencies.size());
 		return frequencies;
 	}
 
@@ -952,7 +953,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return result;
 	}
 
-	public ArrayLeekValue arrayClear(AI ai) throws LeekRunException {
+	public ArrayLeekValue arrayClear(AI ai) {
 		ai.decreaseRAM(size());
 		clear();
 		return this;

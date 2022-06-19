@@ -49,6 +49,7 @@ public class TestCommon {
 		int version_min = 1;
 		int version_max = LATEST_VERSION;
 		long maxOperations = Long.MAX_VALUE;
+		long maxRAM = AI.MAX_RAM;
 
 		public Case(String code, boolean enabled) {
 			this.code = code;
@@ -181,6 +182,7 @@ public class TestCommon {
 				// TestCommon.load_time += ai.getLoadTime() / 1000000;
 
 				ai.maxOperations = this.maxOperations;
+				ai.maxRAM = this.maxRAM;
 
 				t = System.nanoTime();
 				var v = ai.runIA();
@@ -222,6 +224,11 @@ public class TestCommon {
 
 		public Case max_ops(long ops) {
 			this.maxOperations = ops;
+			return this;
+		}
+
+		public Case max_ram(long ram) {
+			this.maxRAM = ram;
 			return this;
 		}
 	}

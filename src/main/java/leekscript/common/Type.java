@@ -82,6 +82,9 @@ public class Type {
 		if (this == Type.ARRAY) {
 			return version >= 4 ? "new ArrayLeekValue(" + writer.getAIThis() + ")" : "new LegacyArrayLeekValue()";
 		}
+		if (this == Type.MAP) {
+			return "new MapLeekValue(" + writer.getAIThis() + ")";
+		}
 		return defaultValue;
 	}
 }
