@@ -541,6 +541,39 @@ public abstract class AI {
 		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
 	}
 
+	public Number number(Object value) throws LeekRunException {
+		if (value instanceof Number) {
+			return (Number) value;
+		} else if (value instanceof Boolean) {
+			return ((Boolean) value) ? 1l : 0l;
+		} else if (value instanceof ObjectLeekValue) {
+			return (long) ((ObjectLeekValue) value).size();
+		} else if (value instanceof LegacyArrayLeekValue) {
+			return (long) ((LegacyArrayLeekValue) value).size();
+		} else if (value instanceof ArrayLeekValue) {
+			return (long) ((ArrayLeekValue) value).size();
+		} else if (value instanceof MapLeekValue) {
+			return (long) ((MapLeekValue) value).size();
+		} else if (value instanceof String) {
+			var s = (String) value;
+			// ai.ops(2);
+			if (s.equals("true")) return 1l;
+			if (s.equals("false")) return 0l;
+			if (s.isEmpty()) return 0l;
+			ops(s.length());
+			try {
+				return Double.parseDouble(s);
+			} catch (Exception e) {
+				return (long) s.length();
+			}
+		} else if (value instanceof Box) {
+			return number(((Box) value).getValue());
+		} else if (value == null) {
+			return 0l;
+		}
+		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+	}
+
 	public long longint(Object value) throws LeekRunException {
 		if (value instanceof Double) {
 			return (long) (double) value;

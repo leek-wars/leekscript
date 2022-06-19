@@ -27,14 +27,17 @@ public class LeekFunctions {
 		 * Fonctions Number (mathématiques)
 		 */
 		method("abs", "Number", 2, true, new CallableVersion[] {
+			new CallableVersion(Type.NUMBER, new Type[] { Type.NUMBER }),
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT }),
 		});
 		method("min", "Number", 2, true, new CallableVersion[] {
+			new CallableVersion(Type.NUMBER, new Type[] { Type.NUMBER, Type.NUMBER }),
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL, Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT, Type.INT }),
 		});
 		method("max", "Number", 2, true, new CallableVersion[] {
+			new CallableVersion(Type.NUMBER, new Type[] { Type.NUMBER, Type.NUMBER }),
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL, Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT, Type.INT }),
 		});

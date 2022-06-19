@@ -298,6 +298,9 @@ public class JavaWriter {
 		if (type == Type.REAL) {
 			return "real(" + v + ")";
 		}
+		if (type == Type.NUMBER) {
+			return "number(" + v + ")";
+		}
 		if (type == Type.STRING) {
 			return "string(" + v + ")";
 		}
