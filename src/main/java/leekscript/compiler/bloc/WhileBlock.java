@@ -56,6 +56,13 @@ public class WhileBlock extends AbstractLeekBlock {
 		return 0;
 	}
 
+	public void preAnalyze(WordCompiler compiler) {
+		if (mCondition != null) {
+			mCondition.preAnalyze(compiler);
+		}
+		super.preAnalyze(compiler);
+	}
+
 	public void analyze(WordCompiler compiler) {
 		if (mCondition != null) {
 			mCondition.analyze(compiler);

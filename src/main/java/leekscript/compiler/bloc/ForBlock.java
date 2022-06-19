@@ -52,6 +52,28 @@ public class ForBlock extends AbstractLeekBlock {
 	}
 
 	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
+		compiler.setCurrentBlock(this);
+		if (mInitialisation != null) mInitialisation.preAnalyze(compiler);
+		if (mCondition != null) mCondition.preAnalyze(compiler);
+		if (mIncrementation != null) mIncrementation.preAnalyze(compiler);
+		compiler.setCurrentBlock(initialBlock);
+		super.preAnalyze(compiler);
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
+		compiler.setCurrentBlock(this);
+		if (mInitialisation != null) mInitialisation.analyze(compiler);
+		if (mCondition != null) mCondition.analyze(compiler);
+		if (mIncrementation != null) mIncrementation.analyze(compiler);
+		compiler.setCurrentBlock(initialBlock);
+		super.analyze(compiler);
+	}
+
+	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 
 		writer.addCode("for (");
@@ -82,15 +104,5 @@ public class ForBlock extends AbstractLeekBlock {
 	@Override
 	public int getEndBlock() {
 		return 0;
-	}
-
-	public void analyze(WordCompiler compiler) {
-		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
-		compiler.setCurrentBlock(this);
-		if (mInitialisation != null) mInitialisation.analyze(compiler);
-		if (mCondition != null) mCondition.analyze(compiler);
-		if (mIncrementation != null) mIncrementation.analyze(compiler);
-		compiler.setCurrentBlock(initialBlock);
-		super.analyze(compiler);
 	}
 }

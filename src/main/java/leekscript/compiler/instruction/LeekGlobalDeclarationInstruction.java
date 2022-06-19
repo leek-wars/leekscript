@@ -9,7 +9,7 @@ import leekscript.compiler.expression.AbstractExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 
-public class LeekGlobalDeclarationInstruction implements LeekInstruction {
+public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 
 	private final IAWord token;
 	private AbstractExpression mValue = null;
@@ -74,6 +74,13 @@ public class LeekGlobalDeclarationInstruction implements LeekInstruction {
 	public void declare(WordCompiler compiler) {
 		// On ajoute la variable
 		compiler.getCurrentBlock().addVariable(new LeekVariable(compiler, token, VariableType.GLOBAL));
+	}
+
+	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		if (mValue != null) {
+			mValue.preAnalyze(compiler);
+		}
 	}
 
 	@Override

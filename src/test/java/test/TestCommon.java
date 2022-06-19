@@ -168,6 +168,7 @@ public class TestCommon {
 				boolean is_file = code.contains(".leek");
 
 				ai = is_file ? LeekScript.compileFile(code, "AI", version) : LeekScript.compileSnippet(code, "AI", version);
+				ai.init();
 				ai.staticInit();
 				aiID = ai.getId();
 

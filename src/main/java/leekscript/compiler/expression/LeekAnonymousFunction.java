@@ -42,6 +42,14 @@ public class LeekAnonymousFunction extends AbstractExpression {
 	}
 
 	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		var previousFunction = compiler.getCurrentFunction();
+		compiler.setCurrentFunction(mBlock);
+		mBlock.preAnalyze(compiler);
+		compiler.setCurrentFunction(previousFunction);
+	}
+
+	@Override
 	public void analyze(WordCompiler compiler) {
 		var previousFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(mBlock);

@@ -36,6 +36,7 @@ public class TopLevel {
 			long compileTime = System.currentTimeMillis() - ct;
 
 			long et = System.currentTimeMillis();
+			ai.init();
 			ai.staticInit();
 			var v = ai.runIA();
 			long executionTime = System.currentTimeMillis() - et;

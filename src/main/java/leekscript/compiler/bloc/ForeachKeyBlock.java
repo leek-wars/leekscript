@@ -58,6 +58,54 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		return "for (" + (mIsKeyDeclaration ? "var " : "") + mKeyIterator + " : " + (mIsDeclaration ? "var " : "") + mIterator + " in " + mArray.getString() + ") {\n" + super.getCode() + "}";
 	}
 
+	public void preAnalyze(WordCompiler compiler) {
+		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
+		compiler.setCurrentBlock(this);
+
+		// Si c'est une déclaration on vérifie que le nom est disponible
+		if (mIsKeyDeclaration) {
+			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mKeyIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mKeyIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mKeyIterator.getWord())) {
+				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+			} else {
+				this.addVariable(new LeekVariable(mKeyIterator, VariableType.LOCAL, iteratorKeyDeclaration));
+			}
+		} else {
+			var v = compiler.getCurrentBlock().getVariable(mKeyIterator.getWord(), true);
+			if (v == null) {
+				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
+			}
+		}
+		// Si c'est une déclaration on vérifie que le nom est disponnible
+		if (mIsDeclaration) {
+			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
+				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+			} else {
+				this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL, iteratorDeclaration));
+			}
+		} else {
+			var v = compiler.getCurrentBlock().getVariable(mIterator.getWord(), true);
+			if (v == null) {
+				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
+			}
+		}
+		if (iteratorDeclaration != null)
+			iteratorDeclaration.setFunction(compiler.getCurrentFunction());
+		if (iteratorKeyDeclaration != null)
+			iteratorKeyDeclaration.setFunction(compiler.getCurrentFunction());
+
+		mArray.preAnalyze(compiler);
+		compiler.setCurrentBlock(initialBlock);
+		super.preAnalyze(compiler);
+	}
+
+	public void analyze(WordCompiler compiler) {
+		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
+		compiler.setCurrentBlock(this);
+		mArray.analyze(compiler);
+		compiler.setCurrentBlock(initialBlock);
+		super.analyze(compiler);
+	}
+
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		// On prend un nombre unique pour les noms de variables temporaires
@@ -167,45 +215,5 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	@Override
 	public int getEndBlock() {
 		return 0;
-	}
-
-	public void analyze(WordCompiler compiler) {
-		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
-		compiler.setCurrentBlock(this);
-
-		// Si c'est une déclaration on vérifie que le nom est disponnible
-		if (mIsKeyDeclaration) {
-			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mKeyIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mKeyIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mKeyIterator.getWord())) {
-				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
-			} else {
-				this.addVariable(new LeekVariable(mKeyIterator, VariableType.LOCAL, iteratorKeyDeclaration));
-			}
-		} else {
-			var v = compiler.getCurrentBlock().getVariable(mKeyIterator.getWord(), true);
-			if (v == null) {
-				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
-			}
-		}
-		// Si c'est une déclaration on vérifie que le nom est disponnible
-		if (mIsDeclaration) {
-			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
-				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
-			} else {
-				this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL, iteratorDeclaration));
-			}
-		} else {
-			var v = compiler.getCurrentBlock().getVariable(mIterator.getWord(), true);
-			if (v == null) {
-				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
-			}
-		}
-		if (iteratorDeclaration != null)
-			iteratorDeclaration.setFunction(compiler.getCurrentFunction());
-		if (iteratorKeyDeclaration != null)
-			iteratorKeyDeclaration.setFunction(compiler.getCurrentFunction());
-
-		mArray.analyze(compiler);
-		compiler.setCurrentBlock(initialBlock);
-		super.analyze(compiler);
 	}
 }

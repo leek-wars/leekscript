@@ -234,6 +234,15 @@ public class LeekTernaire extends LeekExpression {
 	}
 
 	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		if (mCondition != null) {
+			mCondition.preAnalyze(compiler);
+		}
+		mExpression1.preAnalyze(compiler);
+		mExpression2.preAnalyze(compiler);
+	}
+
+	@Override
 	public void analyze(WordCompiler compiler) {
 		if (mCondition != null) {
 			mCondition.analyze(compiler);

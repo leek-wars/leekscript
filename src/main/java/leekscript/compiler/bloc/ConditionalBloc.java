@@ -43,6 +43,22 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	}
 
 	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		if (mCondition != null) {
+			mCondition.preAnalyze(compiler);
+		}
+		super.preAnalyze(compiler);
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		if (mCondition != null) {
+			mCondition.analyze(compiler);
+		}
+		super.analyze(compiler);
+	}
+
+	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		if (mParentCondition == null) {
 			writer.addCode("if (");
@@ -99,13 +115,5 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	private void setPutCounterBefore(boolean value) {
 		if (mParentCondition != null) mParentCondition.setPutCounterBefore(value);
 		else mPutCounterBefore = value;
-	}
-
-	@Override
-	public void analyze(WordCompiler compiler) {
-		if (mCondition != null) {
-			mCondition.analyze(compiler);
-		}
-		super.analyze(compiler);
 	}
 }

@@ -61,6 +61,10 @@ public class Type {
 		return this == NUMBER || this == INT || this == REAL;
 	}
 
+	public boolean isPrimitiveNumber() {
+		return this == INT || this == REAL;
+	}
+
 	public String toString() {
 		return name;
 	}

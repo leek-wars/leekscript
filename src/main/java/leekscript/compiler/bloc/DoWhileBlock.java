@@ -50,6 +50,13 @@ public class DoWhileBlock extends AbstractLeekBlock {
 		return true;
 	}
 
+	public void preAnalyze(WordCompiler compiler) {
+		if (mCondition != null) {
+			mCondition.preAnalyze(compiler);
+		}
+		super.preAnalyze(compiler);
+	}
+
 	public void analyze(WordCompiler compiler) {
 		if (mCondition != null) {
 			mCondition.analyze(compiler);

@@ -27,6 +27,10 @@ public abstract class FunctionLeekValue {
 		return "<function>";
 	}
 
+	public String toString() {
+		return this.name;
+	}
+
 	public String getString(AI ai) {
 		return this.name;
 	}

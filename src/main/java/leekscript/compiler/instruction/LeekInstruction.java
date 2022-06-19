@@ -4,17 +4,19 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public interface LeekInstruction {
+public abstract class LeekInstruction {
 
-	public String getCode();
+	public abstract String getCode();
 
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer);
+	public abstract void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer);
 
-	public int getEndBlock();
+	public abstract int getEndBlock();
 
-	public boolean putCounterBefore();
+	public abstract boolean putCounterBefore();
 
-	public void analyze(WordCompiler compiler);
+	public void preAnalyze(WordCompiler compiler) {}
 
-	public int getOperations();
+	public abstract void analyze(WordCompiler compiler);
+
+	public abstract int getOperations();
 }

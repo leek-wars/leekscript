@@ -40,6 +40,14 @@ public class TestFunction extends TestCommon {
 		code("arrayFoldRight = 'salut' return arrayFoldRight").equals("salut");
 		code("cos = function(x, y, z) { return x + y * z } return cos(1, 2, 3)").equals("7");
 		code("function f(x, y, z) { return x + y * z } cos = f return cos(1, 2, 3)").equals("7");
+		code("isEmpty = function() { return 'salut' } if (!isEmpty()) { return 'wrong' } return 'ok'").equals("ok");
+		code("var _count = count; count = function(x) { return _count(x) } return count([1, 2, 3])").equals("3");
+		code("var _count = count; count = function(x) { return _count(x) } return count([1, 2, 3]) > count([])").equals("true");
+		code("function f() { return count([1, 2, 3]) } var _count = count; count = function(x) { return _count(x) } return f()").equals("3");
+		code("function f() { return count([1, 2, 3]) > count([]) } var _count = count; count = function(x) { return _count(x) } return f()").equals("true");
+		code("function isEmpty(x) { return 12 } return !isEmpty(1) && !isEmpty(2)").equals("false");
+		code("var max = 0 return max < 12").equals("true");
+		code("var max = 0 if (max < 12) { max = 5 } return max").equals("5");
 
 		section("System function as argument");
 		code_v1("function t(@f) { return function(@a) { return arrayMap(a, f); } } return t(sqrt)([1, 4, 9, 16, 25]);").equals("[1, 2, 3, 4, 5]");

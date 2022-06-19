@@ -17,7 +17,7 @@ import leekscript.compiler.expression.LeekTernaire;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
 
-public class LeekExpressionInstruction implements LeekInstruction {
+public class LeekExpressionInstruction extends LeekInstruction {
 
 	private final AbstractExpression mExpression;
 	private final AIFile<?> mAI;
@@ -72,6 +72,11 @@ public class LeekExpressionInstruction implements LeekInstruction {
 	@Override
 	public boolean putCounterBefore() {
 		return false;
+	}
+
+	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		mExpression.preAnalyze(compiler);
 	}
 
 	@Override

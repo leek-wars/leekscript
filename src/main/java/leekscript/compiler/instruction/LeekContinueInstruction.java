@@ -5,7 +5,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class LeekContinueInstruction implements LeekInstruction {
+public class LeekContinueInstruction extends LeekInstruction {
 
 	// private final int mCount;
 	private final int mLine;

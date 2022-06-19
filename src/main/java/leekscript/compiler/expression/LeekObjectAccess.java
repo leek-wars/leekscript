@@ -55,11 +55,11 @@ public class LeekObjectAccess extends AbstractExpression {
 		return object.nullable();
 	}
 
+
 	@Override
-	public void analyze(WordCompiler compiler) {
-		// System.out.println("oa " + getString());
-		object.analyze(compiler);
-		operations = 1 + object.operations;
+	public void preAnalyze(WordCompiler compiler) {
+
+		object.preAnalyze(compiler);
 
 		if (field.getWord().equals("class")) {
 			return; // .class is available everywhere
@@ -75,7 +75,6 @@ public class LeekObjectAccess extends AbstractExpression {
 				}
 			} else if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS) {
 				var clazz = v.getVariableType() == VariableType.CLASS ? v.getClassDeclaration() : compiler.getCurrentClass();
-				operations -= 1;
 				if (field.getWord().equals("name") || field.getWord().equals("super") || field.getWord().equals("fields") || field.getWord().equals("staticFields") || field.getWord().equals("methods") || field.getWord().equals("staticMethods")) {
 					return; // OK
 				}
@@ -86,6 +85,23 @@ public class LeekObjectAccess extends AbstractExpression {
 					return; // OK
 				}
 				compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), field.getWord() }));
+			}
+		}
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		// System.out.println("oa " + getString());
+		object.analyze(compiler);
+		operations = 1 + object.operations;
+
+		if (field.getWord().equals("class")) {
+			return; // .class is available everywhere
+		}
+		if (object instanceof LeekVariable) {
+			var v = (LeekVariable) object;
+			if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS) {
+				operations -= 1;
 			}
 		}
 	}

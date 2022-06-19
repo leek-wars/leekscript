@@ -4,7 +4,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class BlankInstruction implements LeekInstruction {
+public class BlankInstruction extends LeekInstruction {
 
 	@Override
 	public String getCode() {

@@ -19,7 +19,6 @@ public class Box {
 
 	public Box(AI ai, Object value) throws LeekRunException {
 		mUAI = ai;
-		// System.out.println("ops Box");
 		ai.ops(1);
 		if (ai.getVersion() >= 2) {
 			mValue = value;

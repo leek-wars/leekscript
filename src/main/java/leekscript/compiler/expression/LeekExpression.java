@@ -7,6 +7,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.runner.LeekFunctions;
 import leekscript.runner.values.LeekValue;
 import leekscript.common.Error;
 import leekscript.common.Type;
@@ -440,7 +441,7 @@ public class LeekExpression extends AbstractExpression {
 
 		// Les classiques
 		case Operators.ADD: // Addition (on commence facile)
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" + ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -469,7 +470,7 @@ public class LeekExpression extends AbstractExpression {
 			}
 			return;
 		case Operators.MINUS: // Soustraction
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" - ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -482,7 +483,7 @@ public class LeekExpression extends AbstractExpression {
 			}
 			return;
 		case Operators.MULTIPLIE: // Multiplication
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" * ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -495,7 +496,7 @@ public class LeekExpression extends AbstractExpression {
 			}
 			return;
 		case Operators.MODULUS:// Modulo
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" % ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -601,7 +602,7 @@ public class LeekExpression extends AbstractExpression {
 			}
 			return;
 		case Operators.MORE:
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" > ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -614,7 +615,7 @@ public class LeekExpression extends AbstractExpression {
 			}
 			return;
 		case Operators.LESS:
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" < ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -627,7 +628,7 @@ public class LeekExpression extends AbstractExpression {
 			}
 			return;
 		case Operators.MOREEQUALS:
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" >= ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -640,7 +641,7 @@ public class LeekExpression extends AbstractExpression {
 			}
 			return;
 		case Operators.LESSEQUALS:
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" <= ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -709,7 +710,7 @@ public class LeekExpression extends AbstractExpression {
 			writer.addCode(")");
 			return;
 		case Operators.UNARY_MINUS:
-			if (mExpression2.getType().isNumber()) {
+			if (mExpression2.getType().isPrimitiveNumber()) {
 				writer.addCode("-");
 				mExpression2.writeJavaCode(mainblock, writer);
 			} else {
@@ -816,6 +817,23 @@ public class LeekExpression extends AbstractExpression {
 	}
 
 	@Override
+	public void preAnalyze(WordCompiler compiler) {
+
+		if (mExpression1 != null) mExpression1.preAnalyze(compiler);
+		if (mExpression2 != null) mExpression2.preAnalyze(compiler);
+
+		if (mOperator == Operators.ASSIGN) {
+			if (mExpression1 instanceof LeekVariable) {
+				var v = (LeekVariable) mExpression1;
+
+				if (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION) {
+					compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression1).getName());
+				}
+			}
+		}
+	}
+
+	@Override
 	public void analyze(WordCompiler compiler) {
 
 		// Opérateur @ déprécié en LS 2+
@@ -835,13 +853,7 @@ public class LeekExpression extends AbstractExpression {
 		if (mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.ASSIGN || mOperator == Operators.MODULUSASSIGN || mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.POWERASSIGN || mOperator == Operators.BITOR_ASSIGN || mOperator == Operators.BITAND_ASSIGN || mOperator == Operators.BITXOR_ASSIGN || mOperator == Operators.SHIFT_LEFT_ASSIGN || mOperator == Operators.SHIFT_RIGHT_ASSIGN || mOperator == Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN) {
 			if (!mExpression1.isLeftValue())
 				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, Error.CANT_ASSIGN_VALUE));
-				// throw new LeekExpressionException(mExpression1, LeekCompilerException.CANT_ASSIGN_VALUE);
-			if (mExpression1 instanceof LeekVariable) {
-				var v = (LeekVariable) mExpression1;
-				if (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION) {
-					compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression1).getName());
-				}
-			}
+
 			if (mExpression1 instanceof LeekTabularValue)
 				((LeekTabularValue) mExpression1).setLeftValue(true);
 		}
@@ -849,13 +861,6 @@ public class LeekExpression extends AbstractExpression {
 		if (mOperator == Operators.INCREMENT || mOperator == Operators.DECREMENT || mOperator == Operators.PRE_INCREMENT || mOperator == Operators.PRE_DECREMENT) {
 			if (!mExpression2.isLeftValue())
 				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, Error.CANT_ASSIGN_VALUE));
-				// throw new LeekExpressionException(mExpression2, LeekCompilerException.CANT_ASSIGN_VALUE);
-			if (mExpression2 instanceof LeekVariable) {
-				var v = (LeekVariable) mExpression2;
-				if (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION) {
-					compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression2).getName());
-				}
-			}
 			if (mExpression2 instanceof LeekTabularValue)
 				((LeekTabularValue) mExpression2).setLeftValue(true);
 		}
@@ -879,7 +884,7 @@ public class LeekExpression extends AbstractExpression {
 			}
 		}
 		if (mOperator == Operators.MULTIPLIE) {
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				if (mExpression1.getType() == Type.INT && mExpression2.getType() == Type.INT) {
 					type = Type.INT;
 				} else {

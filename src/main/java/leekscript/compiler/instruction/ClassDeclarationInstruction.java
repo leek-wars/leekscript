@@ -20,7 +20,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 
-public class ClassDeclarationInstruction implements LeekInstruction {
+public class ClassDeclarationInstruction extends LeekInstruction {
 
 	public static class ClassDeclarationField {
 
@@ -238,7 +238,7 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.CLASS, this));
 	}
 
-	public void analyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) {
 		compiler.setCurrentClass(this);
 		// Parent
 		if (parentToken != null) {
@@ -263,7 +263,36 @@ public class ClassDeclarationInstruction implements LeekInstruction {
 				}
 			}
 		}
+		// Fields
+		for (var field : fields.entrySet()) {
+			if (field.getValue().expression != null) {
+				field.getValue().expression.preAnalyze(compiler);
+			}
+		}
+		// Static fields
+		for (var field : staticFields.entrySet()) {
+			if (field.getValue().expression != null) {
+				field.getValue().expression.preAnalyze(compiler);
+			}
+		}
+		for (var constructor : constructors.values()) {
+			constructor.block.preAnalyze(compiler);
+		}
+		for (var method : methods.values()) {
+			for (var version : method.values()) {
+				version.block.preAnalyze(compiler);
+			}
+		}
+		for (var method : staticMethods.values()) {
+			for (var version : method.values()) {
+				version.block.preAnalyze(compiler);
+			}
+		}
+		compiler.setCurrentClass(null);
+	}
 
+	public void analyze(WordCompiler compiler) {
+		compiler.setCurrentClass(this);
 		// Fields
 		for (var field : fields.entrySet()) {
 			if (field.getValue().expression != null) {

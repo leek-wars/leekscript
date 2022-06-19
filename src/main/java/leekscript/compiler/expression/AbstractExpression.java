@@ -152,6 +152,8 @@ public abstract class AbstractExpression {
 		return true;
 	}
 
+	public void preAnalyze(WordCompiler compiler) {}
+
 	public abstract void analyze(WordCompiler compiler);
 
 	public int getOperations() {

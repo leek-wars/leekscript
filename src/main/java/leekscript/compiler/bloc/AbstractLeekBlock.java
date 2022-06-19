@@ -12,7 +12,7 @@ import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.common.Error;
 
-public abstract class AbstractLeekBlock implements LeekInstruction {
+public abstract class AbstractLeekBlock extends LeekInstruction {
 
 	protected ArrayList<LeekInstruction> mInstructions = new ArrayList<LeekInstruction>();
 	protected AbstractLeekBlock mParent = null;
@@ -181,6 +181,15 @@ public abstract class AbstractLeekBlock implements LeekInstruction {
 	@Override
 	public boolean putCounterBefore() {
 		return mEndInstruction != 0;
+	}
+
+	public void preAnalyze(WordCompiler compiler) {
+		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
+		compiler.setCurrentBlock(this);
+		for (var instruction : mInstructions) {
+			instruction.preAnalyze(compiler);
+		}
+		compiler.setCurrentBlock(initialBlock);
 	}
 
 	public void analyze(WordCompiler compiler) {

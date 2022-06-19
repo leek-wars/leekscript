@@ -6,7 +6,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.AbstractExpression;
 
-public class LeekReturnInstruction implements LeekInstruction {
+public class LeekReturnInstruction extends LeekInstruction {
 
 	private final AIFile<?> mAI;
 	private final int mLine;
@@ -21,6 +21,21 @@ public class LeekReturnInstruction implements LeekInstruction {
 	@Override
 	public String getCode() {
 		return "return " + (mExpression == null ? "null" : mExpression.getString()) + ";";
+	}
+
+
+	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		if (mExpression != null) {
+			mExpression.preAnalyze(compiler);
+		}
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		if (mExpression != null) {
+			mExpression.analyze(compiler);
+		}
 	}
 
 	@Override
@@ -49,13 +64,6 @@ public class LeekReturnInstruction implements LeekInstruction {
 	@Override
 	public boolean putCounterBefore() {
 		return true;
-	}
-
-	@Override
-	public void analyze(WordCompiler compiler) {
-		if (mExpression != null) {
-			mExpression.analyze(compiler);
-		}
 	}
 
 	@Override

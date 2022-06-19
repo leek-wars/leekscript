@@ -128,8 +128,9 @@ public class WordCompiler {
 					}
 
 					mMain.addFunctionDeclaration(funcName.getWord(), param_count);
-				} else
+				} else {
 					mCompiler.skipWord();
+				}
 			}
 			mCompiler.reset();
 			// Vraie compilation
@@ -175,7 +176,8 @@ public class WordCompiler {
 	public void analyze() {
 		// Analyse sémantique
 		mCurentBlock = mMain;
-		mCurrentFunction = mMain;
+		setCurrentFunction(mMain);
+		mMain.preAnalyze(this);
 		mMain.analyze(this);
 	}
 
@@ -337,7 +339,7 @@ public class WordCompiler {
 		var previousFunction = mCurrentFunction;
 		FunctionBlock block = new FunctionBlock(mCurentBlock, mMain, mLine, mAI, funcName);
 		mCurentBlock = block;
-		mCurrentFunction = block;
+		setCurrentFunction(block);
 		while (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
 			boolean is_reference = false;
 			if (mCompiler.getWord().getType() == WordParser.T_OPERATOR && mCompiler.getWord().getWord().equals("@")) {
@@ -363,7 +365,7 @@ public class WordCompiler {
 		if (mCompiler.readWord().getType() != WordParser.T_ACCOLADE_LEFT)
 			throw new LeekCompilerException(mCompiler.lastWord(), Error.OPENING_CURLY_BRACKET_EXPECTED);
 		mMain.addFunction(block);
-		mCurrentFunction = previousFunction;
+		setCurrentFunction(previousFunction);
 	}
 
 	private void forBlock() throws LeekCompilerException {
@@ -1129,7 +1131,7 @@ public class WordCompiler {
 		// if (initialBlock.getDeclaringVariable() != null)
 		// 	block.addVariable(new LeekVariable(initialBlock.getDeclaringVariable(), VariableType.LOCAL));
 		mCurentBlock = block;
-		mCurrentFunction = block;
+		setCurrentFunction(block);
 
 		// Lecture des paramètres
 		while (mCompiler.getWord().getType() != WordParser.T_PAR_RIGHT) {
@@ -1188,7 +1190,7 @@ public class WordCompiler {
 		mCurentBlock = initialBlock;
 		mLine = initialLine;
 		mAI = initialAI;
-		mCurrentFunction = previousFunction;
+		setCurrentFunction(previousFunction);
 
 		return new LeekAnonymousFunction(block);
 	}
@@ -1264,6 +1266,7 @@ public class WordCompiler {
 	}
 
 	public void setCurrentFunction(AbstractLeekBlock block) {
+		// System.out.println("setCurrentFunction " + block);
 		this.mCurrentFunction = block;
 	}
 

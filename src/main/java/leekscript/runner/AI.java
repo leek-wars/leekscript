@@ -21,6 +21,7 @@ import leekscript.common.Type;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
@@ -131,9 +132,6 @@ public abstract class AI {
 		jsonClass = new ClassLeekValue(this, "JSON");
 		systemClass = new ClassLeekValue(this, "System");
 
-		try {
-			init();
-		} catch (Exception e) {}
 	}
 
 	public void setId(int id) {
@@ -145,7 +143,7 @@ public abstract class AI {
 	}
 
 	// Method that can be overriden in each AI
-	protected void init() throws Exception {}
+	public void init() throws Exception {}
 
 	// Method that can be overriden in each AI
 	public void staticInit() throws Exception {}
@@ -575,7 +573,7 @@ public abstract class AI {
 		} else if (value == null) {
 			return 0;
 		}
-		throw new LeekRunException(LeekRunException.INVALID_VALUE);
+		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
 	}
 
 	public double real(Object value) throws LeekRunException {
@@ -610,7 +608,7 @@ public abstract class AI {
 		} else if (value == null) {
 			return 0.0;
 		}
-		throw new LeekRunException(LeekRunException.INVALID_VALUE);
+		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
 	}
 
 	public boolean not(Object value) throws LeekRunException {
@@ -1570,23 +1568,25 @@ public abstract class AI {
 		return false;
 	}
 
-	public ArrayLeekValue toArray(Object value) throws LeekRunException {
+	public ArrayLeekValue toArray(int index, Object value) throws LeekRunException {
 		if (value instanceof ArrayLeekValue) {
 			return (ArrayLeekValue) value;
 		}
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new String[] {
+			String.valueOf(index),
 			string(value),
 			StandardClass.getType(value).toString(),
-			Type.ARRAY.toString()
+			Type.ARRAY.toString() + " (V4+)"
 		});
 		throw new ClassCastException();
 	}
 
-	public MapLeekValue toMap(Object value) throws LeekRunException {
+	public MapLeekValue toMap(int index, Object value) throws LeekRunException {
 		if (value instanceof MapLeekValue) {
 			return (MapLeekValue) value;
 		}
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new String[] {
+			String.valueOf(index),
 			string(value),
 			StandardClass.getType(value).toString(),
 			Type.MAP.toString()
@@ -1594,11 +1594,12 @@ public abstract class AI {
 		throw new ClassCastException();
 	}
 
-	public FunctionLeekValue toFunction(Object value) throws LeekRunException {
+	public FunctionLeekValue toFunction(int index, Object value) throws LeekRunException {
 		if (value instanceof FunctionLeekValue) {
 			return (FunctionLeekValue) value;
 		}
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new String[] {
+			String.valueOf(index),
 			string(value),
 			StandardClass.getType(value).toString(),
 			Type.FUNCTION.toString()
@@ -1606,11 +1607,12 @@ public abstract class AI {
 		throw new ClassCastException();
 	}
 
-	public LegacyArrayLeekValue toLegacyArray(Object value) throws LeekRunException {
+	public LegacyArrayLeekValue toLegacyArray(int index, Object value) throws LeekRunException {
 		if (value instanceof LegacyArrayLeekValue) {
 			return (LegacyArrayLeekValue) value;
 		}
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new String[] {
+			String.valueOf(index),
 			string(value),
 			StandardClass.getType(value).toString(),
 			Type.ARRAY.toString()

@@ -58,6 +58,19 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		mTabular.preAnalyze(compiler);
+		mCase.preAnalyze(compiler);
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		mTabular.analyze(compiler);
+		mCase.analyze(compiler);
+		operations = mTabular.getOperations() + mCase.getOperations();
+	}
+
+	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		writer.addCode("get(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -321,12 +334,5 @@ public class LeekTabularValue extends AbstractExpression {
 	@Override
 	public boolean nullable() {
 		return true;
-	}
-
-	@Override
-	public void analyze(WordCompiler compiler) {
-		mTabular.analyze(compiler);
-		mCase.analyze(compiler);
-		operations = mTabular.getOperations() + mCase.getOperations();
 	}
 }

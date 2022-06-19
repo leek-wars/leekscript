@@ -17,7 +17,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
-public class LeekVariableDeclarationInstruction implements LeekInstruction {
+public class LeekVariableDeclarationInstruction extends LeekInstruction {
 
 	private final IAWord token;
 	private final int mLine;
@@ -84,7 +84,7 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 				writer.addCode("final var u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", ");
 				if (mValue != null) mValue.compileL(mainblock, writer);
 				else writer.addCode("null");
-				writer.addLine(")");
+				writer.addCode(")");
 				if (mValue != null && mValue.getOperations() > 0) {
 					writer.addCode(", " + mValue.getOperations());
 				}
@@ -93,7 +93,7 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 				writer.addCode("final var u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", ");
 				if (mValue != null) mValue.writeJavaCode(mainblock, writer);
 				else writer.addCode("null");
-				writer.addLine(")");
+				writer.addCode(")");
 				if (mValue != null && mValue.getOperations() > 0) {
 					writer.addCode(", " + mValue.getOperations());
 				}
@@ -170,14 +170,22 @@ public class LeekVariableDeclarationInstruction implements LeekInstruction {
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
-		function = compiler.getCurrentFunction();
+	public void preAnalyze(WordCompiler compiler) {
+		// System.out.println("VD preAnalyze " + token.getWord());
+		this.function = compiler.getCurrentFunction();
 		if (mValue != null && mValue.getType() == Type.FUNCTION) {
 			registerVariable(compiler);
-			mValue.analyze(compiler);
+			mValue.preAnalyze(compiler);
 		} else {
-			if (mValue != null) mValue.analyze(compiler);
+			if (mValue != null) mValue.preAnalyze(compiler);
 			registerVariable(compiler);
+		}
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		if (mValue != null) {
+			mValue.analyze(compiler);
 		}
 	}
 

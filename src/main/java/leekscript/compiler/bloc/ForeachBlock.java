@@ -116,7 +116,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		return 0;
 	}
 
-	public void analyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		// Si c'est une déclaration on vérifie que le nom est disponnible
@@ -133,9 +133,17 @@ public class ForeachBlock extends AbstractLeekBlock {
 				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
 			}
 		}
-		mArray.analyze(compiler);
+		mArray.preAnalyze(compiler);
 		compiler.setCurrentBlock(initialBlock);
 
+		super.preAnalyze(compiler);
+	}
+
+	public void analyze(WordCompiler compiler) {
+		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
+		compiler.setCurrentBlock(this);
+		mArray.analyze(compiler);
+		compiler.setCurrentBlock(initialBlock);
 		super.analyze(compiler);
 	}
 }

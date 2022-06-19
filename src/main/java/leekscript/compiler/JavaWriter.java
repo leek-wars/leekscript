@@ -168,11 +168,12 @@ public class JavaWriter {
 		}
 	}
 
-	public void compileConvert(MainLeekBlock mainblock, AbstractExpression value, Type type) {
+	public void compileConvert(MainLeekBlock mainblock, int index, AbstractExpression value, Type type) {
 		// var v_type = value.getType();
 		// System.out.println("convert " + v_type + " to " + type);
 		if (type == Type.ARRAY) {
 			addCode(mainblock.getVersion() >= 4 ? "toArray(" : "toLegacyArray(");
+			addCode(index + ", ");
 			value.writeJavaCode(mainblock, this);
 			addCode(")");
 			return;
@@ -211,7 +212,7 @@ public class JavaWriter {
 			int a = 0;
 			for (var argument : version.arguments) {
 				if (argument != Type.ANY) {
-					addLine(argument.getJavaName(block.getVersion()) + " x" + a + "; try { x" + a + " = " + convert("a" + a, argument, block.getVersion()) + "; } catch (ClassCastException e) { return " + version.return_type.getDefaultValue(block.getVersion()) + "; }");
+					addLine(argument.getJavaName(block.getVersion()) + " x" + a + "; try { x" + a + " = " + convert(a + 1, "a" + a, argument, block.getVersion()) + "; } catch (ClassCastException e) { return " + version.return_type.getDefaultValue(block.getVersion()) + "; }");
 				}
 				a++;
 			}
@@ -280,16 +281,16 @@ public class JavaWriter {
 		}
 	}
 
-	private String convert(String v, Type type, int version) {
+	private String convert(int index, String v, Type type, int version) {
 		if (type == Type.ARRAY) {
-			if (version >= 4) return "toArray(" + v + ")";
-			else return "toLegacyArray(" + v + ")";
+			if (version >= 4) return "toArray(" + index + ", " + v + ")";
+			else return "toLegacyArray(" + index + ", " + v + ")";
 		}
 		if (type == Type.MAP) {
-			return "toMap(" + v + ")";
+			return "toMap(" + index + ", " + v + ")";
 		}
 		if (type == Type.FUNCTION) {
-			return "toFunction(" + v + ")";
+			return "toFunction(" + index + ", " + v + ")";
 		}
 		if (type == Type.INT) {
 			return "longint(" + v + ")";

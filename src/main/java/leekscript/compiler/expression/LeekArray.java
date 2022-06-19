@@ -66,10 +66,26 @@ public class LeekArray extends AbstractExpression {
 
 	@Override
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
-		for(AbstractExpression parameter : mValues){
+		for (AbstractExpression parameter : mValues) {
 			parameter.validExpression(compiler, mainblock);
 		}
 		return true;
+	}
+
+	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		for (var value : mValues) {
+			value.preAnalyze(compiler);
+		}
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		operations = 0;
+		for (var value : mValues) {
+			value.analyze(compiler);
+			operations += value.getOperations();
+		}
 	}
 
 	@Override
@@ -106,15 +122,6 @@ public class LeekArray extends AbstractExpression {
 				}
 				writer.addCode(" }, " + (mIsKeyVal ? "true" : "false") + ")");
 			}
-		}
-	}
-
-	@Override
-	public void analyze(WordCompiler compiler) {
-		operations = 0;
-		for (var value : mValues) {
-			value.analyze(compiler);
-			operations += value.getOperations();
 		}
 	}
 }

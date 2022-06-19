@@ -50,6 +50,11 @@ public class LeekParenthesis extends AbstractExpression {
 	}
 
 	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		mExpression.preAnalyze(compiler);
+	}
+
+	@Override
 	public void analyze(WordCompiler compiler) {
 		mExpression.analyze(compiler);
 		operations = mExpression.getOperations();

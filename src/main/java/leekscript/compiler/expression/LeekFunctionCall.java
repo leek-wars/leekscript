@@ -154,7 +154,6 @@ public class LeekFunctionCall extends AbstractExpression {
 			writer.addCode(".execute(");
 			addComma = false;
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SYSTEM_FUNCTION) {
-
 			if (unsafe || mainblock.getVersion() <= 3) {
 				if (callable_version != null) {
 					writer.generateGenericFunction(callable_version);
@@ -207,7 +206,7 @@ public class LeekFunctionCall extends AbstractExpression {
 				if (mainblock.getVersion() >= 2) {
 					if (system_function != null && callable_version != null && !unsafe) {
 						var type = callable_version.arguments[i];
-						writer.compileConvert(mainblock, parameter, type);
+						writer.compileConvert(mainblock, i, parameter, type);
 					} else {
 						parameter.writeJavaCode(mainblock, writer);
 					}
@@ -220,7 +219,7 @@ public class LeekFunctionCall extends AbstractExpression {
 						} else {
 							if (callable_version != null) {
 								var type = callable_version.arguments[i];
-								writer.compileConvert(mainblock, parameter, type);
+								writer.compileConvert(mainblock, i, parameter, type);
 							} else {
 								parameter.writeJavaCode(mainblock, writer);
 							}
@@ -243,6 +242,14 @@ public class LeekFunctionCall extends AbstractExpression {
 		}
 		writer.addCode(")");
 		writer.addPosition(openParenthesis);
+	}
+
+	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		mExpression.preAnalyze(compiler);
+		for (AbstractExpression parameter : mParameters) {
+			parameter.preAnalyze(compiler);
+		}
 	}
 
 	@Override
@@ -318,22 +325,9 @@ public class LeekFunctionCall extends AbstractExpression {
 
 			} else if (v.getVariableType() == VariableType.FUNCTION) {
 
-				system_function = LeekFunctions.getValue(v.getName());
-				if (system_function == null) {
-					int nb_params = compiler.getMainBlock().getUserFunctionParametersCount(v.getName());
-					if (mParameters.size() != nb_params) {
-						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
-					}
-				} else {
-					system_function = LeekFunctions.getValue(v.getName());
-					verifyFunctionCall(compiler, v, system_function);
-					if (mParameters.size() > system_function.getArguments() || mParameters.size() < system_function.getArgumentsMin()) {
-						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
-					}
-					var version = checkArgumentsStatically(system_function);
-					if (version != null) {
-						type = version.return_type;
-					}
+				int nb_params = compiler.getMainBlock().getUserFunctionParametersCount(v.getName());
+				if (mParameters.size() != nb_params) {
+					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
 				}
 			} else if (v.getVariableType() == VariableType.SYSTEM_FUNCTION) {
 
@@ -441,7 +435,7 @@ public class LeekFunctionCall extends AbstractExpression {
 	private void verifyFunctionCall(WordCompiler compiler, LeekVariable v, LeekFunctions f) {
 
 		if (f.getOperations() > 0) {
-			// System.out.println("cost of " + f + " : " + f.getOperations());
+			// System.out.println("cost of " + f.getName() + " : " + f.getOperations());
 			operations += f.getOperations();
 		}
 

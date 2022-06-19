@@ -70,6 +70,14 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	}
 
 	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		var initialFunction = compiler.getCurrentFunction();
+		compiler.setCurrentFunction(this);
+		super.preAnalyze(compiler);
+		compiler.setCurrentFunction(initialFunction);
+	}
+
+	@Override
 	public void analyze(WordCompiler compiler) {
 		var initialFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(this);

@@ -268,7 +268,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		printFunctionInformations(writer);
 
 		if (mRedefinedFunctions.size() > 0) {
-			writer.addCode("protected void init() throws LeekRunException {\n");
+			writer.addCode("public void init() throws LeekRunException {\n");
 			for (String redefined : mRedefinedFunctions) {
 				FunctionBlock user_function = getUserFunction(redefined);
 				writer.addCode("rfunction_");
@@ -317,7 +317,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return mUserClasses.get(name);
 	}
 
-	public void analyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) {
 		for (var clazz : mUserClassesList) {
 			clazz.declare(compiler);
 		}
@@ -327,6 +327,16 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var global : mGlobalesDeclarations) {
 			global.declare(compiler);
 		}
+		for (var clazz : mUserClassesList) {
+			clazz.preAnalyze(compiler);
+		}
+		for (var function : mFunctions) {
+			function.preAnalyze(compiler);
+		}
+		super.preAnalyze(compiler);
+	}
+
+	public void analyze(WordCompiler compiler) {
 		for (var clazz : mUserClassesList) {
 			clazz.analyze(compiler);
 		}

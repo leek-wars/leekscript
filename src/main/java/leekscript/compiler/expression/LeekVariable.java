@@ -112,7 +112,7 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) {
 		if (this.type == VariableType.SUPER) {
 			return; // Déjà OK
 		}
@@ -149,6 +149,11 @@ public class LeekVariable extends AbstractExpression {
 			return;
 		}
 		compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+
 	}
 
 	public ClassDeclarationInstruction getClassDeclaration() {
@@ -188,7 +193,7 @@ public class LeekVariable extends AbstractExpression {
 		} else if (type == VariableType.STATIC_METHOD) {
 			writer.addCode("u_class.getField(\"" + token.getWord() + "\")");
 		} else if (mainblock.isRedefinedFunction(token.getWord())) {
-			writer.addCode("rfunction_" + token.getWord());
+			writer.addCode("rfunction_" + token.getWord() + ".getValue()");
 		} else if (type == VariableType.FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
 			user_function.compileAnonymousFunction(mainblock, writer);
