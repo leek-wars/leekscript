@@ -28,7 +28,7 @@ public class ValueClass {
 				}
 			} catch (Exception e) {}
 		}
-		return 0;
+		return 0l;
 	}
 
 	public static long typeOf(AI ai, Object value) throws LeekRunException {

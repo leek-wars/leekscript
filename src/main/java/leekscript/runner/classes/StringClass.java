@@ -22,7 +22,7 @@ public class StringClass {
 	}
 
 	public static String substring(AI ai, String string, long index) throws LeekRunException {
-		ai.ops(Math.max(1, string.length() - (int) index));
+		ai.ops(1 + Math.max(0, string.length() - (int) index) / 10);
 		if (string.length() <= index || index < 0) {
 			return null;
 		}
@@ -30,7 +30,7 @@ public class StringClass {
 	}
 
 	public static String substring(AI ai, String string, long index, long length) throws LeekRunException {
-		ai.ops(Math.max(1, (int) length));
+		ai.ops(1 + Math.max(0, (int) length) / 10);
 		if (string.length() <= index || index < 0 || index + length > string.length() || length < 0) {
 			return null;
 		}
@@ -43,16 +43,17 @@ public class StringClass {
 	}
 
 	public static long indexOf(AI ai, String string, String needle) throws LeekRunException {
-		ai.ops(string.length());
+		ai.ops(1 + string.length() / 10);
 		return string.indexOf(needle);
 	}
 
 	public static long indexOf(AI ai, String string, String needle, long from) throws LeekRunException {
-		ai.ops(string.length());
+		ai.ops(1 + string.length() / 10);
 		return string.indexOf(needle, (int) from);
 	}
 
-	public static boolean contains(AI ai, String string, String needle) {
+	public static boolean contains(AI ai, String string, String needle) throws LeekRunException {
+		ai.ops(1 + string.length() / 10);
 		return string.contains(needle);
 	}
 
@@ -61,6 +62,7 @@ public class StringClass {
 	}
 
 	public static LegacyArrayLeekValue split_v1_3(AI ai, String string, String delimiter, long limit) throws LeekRunException {
+		ai.ops(1 + string.length());
 		var result = new LegacyArrayLeekValue();
 		for (var element : string.split(Pattern.quote(delimiter), (int) limit)) {
 			result.pushNoClone(ai, element);
@@ -73,6 +75,7 @@ public class StringClass {
 	}
 
 	public static ArrayLeekValue split(AI ai, String string, String delimiter, long limit) throws LeekRunException {
+		ai.ops(1 + string.length());
 		var result = new ArrayLeekValue();
 		for (var element : string.split(Pattern.quote(delimiter), (int) limit)) {
 			result.pushNoClone(ai, element);
@@ -80,19 +83,23 @@ public class StringClass {
 		return result;
 	}
 
-	public static String toLower(AI ai, String string) {
+	public static String toLower(AI ai, String string) throws LeekRunException {
+		ai.ops(1 + string.length());
 		return string.toLowerCase();
 	}
 
-	public static String toUpper(AI ai, String string) {
+	public static String toUpper(AI ai, String string) throws LeekRunException {
+		ai.ops(1 + string.length());
 		return string.toUpperCase();
 	}
 
-	public static boolean startsWith(AI ai, String string, String prefix) {
+	public static boolean startsWith(AI ai, String string, String prefix) throws LeekRunException {
+		ai.ops(1 + string.length());
 		return string.startsWith(prefix);
 	}
 
-	public static boolean endsWith(AI ai, String string, String prefix) {
+	public static boolean endsWith(AI ai, String string, String prefix) throws LeekRunException {
+		ai.ops(1 + string.length());
 		return string.endsWith(prefix);
 	}
 

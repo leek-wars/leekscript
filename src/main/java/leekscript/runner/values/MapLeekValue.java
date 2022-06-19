@@ -97,6 +97,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public MapLeekValue mapMap(AI ai, FunctionLeekValue function) throws LeekRunException {
+		ai.ops(1 + 3 * size());
 		var result = new MapLeekValue(size());
 		for (var entry : this.entrySet()) {
 			result.put(entry.getKey(), function.run(ai, null, entry.getValue(), entry.getKey(), this));
@@ -105,6 +106,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public Object mapIter(AI ai, FunctionLeekValue function) throws LeekRunException {
+		ai.ops(1 + 2 * size());
 		for (var entry : this.entrySet()) {
 			function.run(ai, null, entry.getValue(), entry.getKey());
 		}
@@ -112,6 +114,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public double mapSum(AI ai) throws LeekRunException {
+		ai.ops(1 + 3 * size());
 		double sum = 0;
 		for (var val : this.values()) {
 			sum += ai.real(val);
@@ -120,6 +123,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public double mapAverage(AI ai) throws LeekRunException {
+		ai.ops(1 + 3 * size());
 		double average = 0;
 		for (var val : this.values()) {
 			average += ai.real(val);
@@ -129,7 +133,8 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return average / size();
 	}
 
-	public Object mapMin(AI ai) {
+	public Object mapMin(AI ai) throws LeekRunException {
+		ai.ops(1 + 3 * size());
 		if (size() == 0) return null;
 		var it = entrySet().iterator();
 		Object min_value = it.next().getValue();
@@ -143,6 +148,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public Object mapMax(AI ai) throws LeekRunException {
+		ai.ops(1 + 3 * size());
 		Object max_value = null;
 		var mincomp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
 		for (var val : this.values()) {
@@ -154,20 +160,25 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return max_value;
 	}
 
-	public Object mapSearch(AI ai, Object value) {
+	public Object mapSearch(AI ai, Object value) throws LeekRunException {
+		ai.addOperationsNoCheck(1);
+		int i = 0;
 		for (var entry : entrySet()) {
 			if (entry.getValue().equals(value)) {
+				ai.ops(2 * i);
 				return entry.getKey();
 			}
 		}
+		ai.ops(2 * size());
 		return null;
 	}
 
-	public Object mapRemove(AI ai, Object key) {
+	public Object mapRemove(AI ai, Object key) throws LeekRunException {
 		return remove(key);
 	}
 
-	public Object mapRemoveElement(AI ai, Object value) {
+	public Object mapRemoveElement(AI ai, Object value) throws LeekRunException {
+		ai.ops(1 + 3 * size());
 		for (var entry : entrySet()) {
 			if (entry.getValue().equals(value)) {
 				remove(entry.getKey());
@@ -177,14 +188,17 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public ArrayLeekValue mapGetValues(AI ai) throws LeekRunException {
+		ai.ops(1 + 2 * size());
 		return new ArrayLeekValue(values().toArray());
 	}
 
 	public ArrayLeekValue mapGetKeys(AI ai) throws LeekRunException {
+		ai.ops(1 + 2 * size());
 		return new ArrayLeekValue(keySet().toArray());
 	}
 
-	public Object mapRemoveAll(AI ai, Object value) {
+	public Object mapRemoveAll(AI ai, Object value) throws LeekRunException {
+		ai.ops(1 + 2 * size());
 		entrySet().removeIf(entry -> entry.getValue().equals(value));
 		return null;
 	}
@@ -193,14 +207,16 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return replace(key, value);
 	}
 
-	public Object mapReplaceAll(AI ai, MapLeekValue map) {
+	public Object mapReplaceAll(AI ai, MapLeekValue map) throws LeekRunException {
+		ai.ops(1 + 2 * size());
 		for (var entry : map) {
 			replace(entry.getKey(), entry.getValue());
 		}
 		return null;
 	}
 
-	public Object mapFill(AI ai, Object value) {
+	public Object mapFill(AI ai, Object value) throws LeekRunException {
+		ai.ops(1 + 2 * size());
 		for (var entry : entrySet()) {
 			entry.setValue(value);
 		}
@@ -208,20 +224,35 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public boolean mapEvery(AI ai, FunctionLeekValue function) throws LeekRunException {
+		ai.addOperationsNoCheck(1);
+		int i = 0;
 		for (var entry : entrySet()) {
-			if (!ai.bool(function.run(ai, null, entry.getValue(), entry.getKey()))) return false;
+			if (!ai.bool(function.run(ai, null, entry.getValue(), entry.getKey()))) {
+				ai.ops(2 * i);
+				return false;
+			}
+			i++;
 		}
+		ai.ops(2 * size());
 		return true;
 	}
 
 	public boolean mapSome(AI ai, FunctionLeekValue function) throws LeekRunException {
+		ai.addOperationsNoCheck(1);
+		int i = 0;
 		for (var entry : entrySet()) {
-			if (ai.bool(function.run(ai, null, entry.getValue(), entry.getKey(), this))) return true;
+			if (ai.bool(function.run(ai, null, entry.getValue(), entry.getKey(), this))) {
+				ai.ops(2 * i);
+				return true;
+			}
+			i++;
 		}
+		ai.ops(2 * size());
 		return false;
 	}
 
 	public Object mapFold(AI ai, FunctionLeekValue function, Object v) throws LeekRunException {
+		ai.ops(1 + 3 * size());
 		var result = v;
 		for (var entry : entrySet()) {
 			result = function.run(ai, null, result, entry.getValue(), entry.getKey(), this);
@@ -230,6 +261,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public MapLeekValue mapFilter(AI ai, FunctionLeekValue function) throws LeekRunException {
+		ai.ops(1 + 3 * size());
 		var result = new MapLeekValue();
 		for (var entry : entrySet()) {
 			if (ai.bool(function.run(ai, null, entry.getValue(), entry.getKey(), this))) {
@@ -240,7 +272,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public MapLeekValue mapMerge(AI ai, MapLeekValue map) throws LeekRunException {
-		ai.ops((size() + map.size()) * 2);
+		ai.ops((size() + map.size()) * 3);
 		var result = (MapLeekValue) this.clone();
 		for (var entry : map.entrySet()) {
 			result.putIfAbsent(entry.getKey(), entry.getValue());
@@ -248,12 +280,13 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return result;
 	}
 
-	public Object mapClear(AI ai) {
+	public MapLeekValue mapClear(AI ai) {
 		clear();
-		return null;
+		return this;
 	}
 
-	public boolean mapContains(AI ai, Object value) {
+	public boolean mapContains(AI ai, Object value) throws LeekRunException {
+		ai.ops(1 + 2 * size());
 		return containsValue(value);
 	}
 
