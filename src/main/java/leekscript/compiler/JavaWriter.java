@@ -212,7 +212,7 @@ public class JavaWriter {
 			int a = 0;
 			for (var argument : version.arguments) {
 				if (argument != Type.ANY) {
-					addLine(argument.getJavaName(block.getVersion()) + " x" + a + "; try { x" + a + " = " + convert(a + 1, "a" + a, argument, block.getVersion()) + "; } catch (ClassCastException e) { return " + version.return_type.getDefaultValue(block.getVersion()) + "; }");
+					addLine(argument.getJavaName(block.getVersion()) + " x" + a + "; try { x" + a + " = " + convert(a + 1, "a" + a, argument, block.getVersion()) + "; } catch (ClassCastException e) { return " + version.return_type.getDefaultValue(this, block.getVersion()) + "; }");
 				}
 				a++;
 			}

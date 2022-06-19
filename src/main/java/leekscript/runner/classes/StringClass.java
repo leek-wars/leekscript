@@ -76,7 +76,7 @@ public class StringClass {
 
 	public static ArrayLeekValue split(AI ai, String string, String delimiter, long limit) throws LeekRunException {
 		ai.ops(1 + string.length());
-		var result = new ArrayLeekValue();
+		var result = new ArrayLeekValue(ai);
 		for (var element : string.split(Pattern.quote(delimiter), (int) limit)) {
 			result.pushNoClone(ai, element);
 		}

@@ -189,12 +189,12 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 
 	public ArrayLeekValue mapGetValues(AI ai) throws LeekRunException {
 		ai.ops(1 + 2 * size());
-		return new ArrayLeekValue(values().toArray());
+		return new ArrayLeekValue(ai, values().toArray());
 	}
 
 	public ArrayLeekValue mapGetKeys(AI ai) throws LeekRunException {
 		ai.ops(1 + 2 * size());
-		return new ArrayLeekValue(keySet().toArray());
+		return new ArrayLeekValue(ai, keySet().toArray());
 	}
 
 	public Object mapRemoveAll(AI ai, Object value) throws LeekRunException {

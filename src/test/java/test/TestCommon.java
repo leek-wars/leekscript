@@ -16,6 +16,7 @@ import leekscript.compiler.LeekScript;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.runner.AI;
+import leekscript.runner.LeekRunException;
 import leekscript.common.Error;
 
 public class TestCommon {
@@ -47,6 +48,7 @@ public class TestCommon {
 		boolean enabled = true;
 		int version_min = 1;
 		int version_max = LATEST_VERSION;
+		long maxOperations = Long.MAX_VALUE;
 
 		public Case(String code, boolean enabled) {
 			this.code = code;
@@ -164,6 +166,7 @@ public class TestCommon {
 			long compile_time = 0;
 			long ops = 0;
 			AI ai = null;
+			long t = System.nanoTime();
 			try {
 				boolean is_file = code.contains(".leek");
 
@@ -177,9 +180,9 @@ public class TestCommon {
 				TestCommon.compile_time += ai.getCompileTime() / 1000000;
 				// TestCommon.load_time += ai.getLoadTime() / 1000000;
 
-				ai.maxOperations = Integer.MAX_VALUE;
+				ai.maxOperations = this.maxOperations;
 
-				long t = System.nanoTime();
+				t = System.nanoTime();
 				var v = ai.runIA();
 				long exec_time = (System.nanoTime() - t) / 1000;
 				TestCommon.execution_time += exec_time / 1000;
@@ -187,22 +190,26 @@ public class TestCommon {
 				ops = ai.operations();
 
 				var vs = ai.getString(v, new HashSet<>());
-				result = new Result(vs, ai, Error.NONE, (int) ai.getOperations(), exec_time);
+				result = new Result(vs, ai, Error.NONE, ai.getOperations(), exec_time);
 
 			} catch (LeekCompilerException e) {
 				// e.printStackTrace();
 				// System.out.println("Error = " + e.getError());
 				result = new Result(e.getError().toString(), ai, e.getError(), 0, 0);
+			} catch (LeekRunException e) {
+				long exec_time = (System.nanoTime() - t) / 1000;
+				result = new Result(e.getError().toString(), ai, e.getError(), ai.getOperations(), exec_time);
 			} catch (Exception e) {
 				e.printStackTrace();
-				result = new Result("error", ai, Error.NONE, 0, 0);
+				result = new Result("unknown error!", ai, Error.UNKNOWN_ERROR, 0, 0);
 			}
 
 			operations.add(ops);
 			// long referenceOperations = operationsReference.get(operationsReferenceIndex++);
 
 			if (checker.check(result)) {
-				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "] " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops" + END_COLOR);
+				int ops_per_ms = (int) Math.round(1000 * (double) result.operations / result.exec_time);
+				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "] " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops, " + ops_per_ms + " ops/ms" + END_COLOR);
 				success++;
 			} else {
 				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "] " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
@@ -212,16 +219,21 @@ public class TestCommon {
 			}
 			return result.result;
 		}
+
+		public Case max_ops(long ops) {
+			this.maxOperations = ops;
+			return this;
+		}
 	}
 
 	public static class Result {
 		String result;
 		AI ai;
 		Error error;
-		int operations;
+		long operations;
 		long exec_time;
 
-		public Result(String result, AI ai, Error error, int operations, long exec_time) {
+		public Result(String result, AI ai, Error error, long operations, long exec_time) {
 			this.result = result;
 			this.ai = ai;
 			this.operations = operations;

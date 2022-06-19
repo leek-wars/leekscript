@@ -113,7 +113,7 @@ public class LeekValueManager {
 		} else if (value == null) {
 			return "null";
 		}
-		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+		throw new LeekRunException(Error.INVALID_VALUE, value);
 	}
 
 	public static String getString(AI ai, Object value, Set<Object> visited) throws LeekRunException {
@@ -143,7 +143,7 @@ public class LeekValueManager {
 		} else if (value == null) {
 			return "null";
 		}
-		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+		throw new LeekRunException(Error.INVALID_VALUE, value);
 	}
 
 	public static long bnot(AI ai, Object value) throws LeekRunException {
@@ -164,7 +164,7 @@ public class LeekValueManager {
 		if (value instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) value).getOrCreate(ai, index);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FUNCTION);
+		throw new LeekRunException(Error.UNKNOWN_FUNCTION);
 	}
 
 	public static Box getFieldL(AI ai, Object value, String field) throws LeekRunException {
@@ -175,7 +175,7 @@ public class LeekValueManager {
 		if (value instanceof ClassLeekValue) {
 			return ((ClassLeekValue) value).getFieldL(field);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public static Object callMethod(AI ai, Object value, String method, Object... arguments) throws LeekRunException {

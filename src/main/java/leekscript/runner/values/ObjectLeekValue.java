@@ -89,7 +89,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result;
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 		// ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { clazz.name, field });
 		// return null;
 	}
@@ -114,7 +114,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.increment();
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_pre_inc(String field) throws LeekRunException {
@@ -122,7 +122,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.pre_increment();
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_dec(String field) throws LeekRunException {
@@ -130,7 +130,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.decrement();
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_pre_dec(String field) throws LeekRunException {
@@ -138,7 +138,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.pre_decrement();
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_add_eq(String field, Object value) throws LeekRunException {
@@ -146,7 +146,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.add_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_sub_eq(String field, Object value) throws LeekRunException {
@@ -154,7 +154,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.sub_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_mul_eq(String field, Object value) throws LeekRunException {
@@ -162,7 +162,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.mul_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_pow_eq(String field, Object value) throws LeekRunException {
@@ -170,7 +170,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.pow_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_div_eq(String field, Object value) throws LeekRunException {
@@ -178,7 +178,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.div_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_mod_eq(String field, Object value) throws LeekRunException {
@@ -186,7 +186,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.mod_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_bor_eq(String field, Object value) throws LeekRunException {
@@ -194,7 +194,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.bor_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_bxor_eq(String field, Object value) throws LeekRunException {
@@ -202,7 +202,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.bxor_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_band_eq(String field, Object value) throws LeekRunException {
@@ -210,7 +210,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.band_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_shl_eq(String field, Object value) throws LeekRunException {
@@ -218,7 +218,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.shl_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_shr_eq(String field, Object value) throws LeekRunException {
@@ -226,7 +226,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.shr_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_ushr_eq(String field, Object value) throws LeekRunException {
@@ -234,7 +234,7 @@ public class ObjectLeekValue {
 		if (result != null) {
 			return result.ushr_eq(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Box getOrCreate(AI ai, Object value) throws LeekRunException {

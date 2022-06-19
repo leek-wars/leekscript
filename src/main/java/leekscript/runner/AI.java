@@ -21,7 +21,6 @@ import leekscript.common.Type;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
@@ -29,8 +28,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
-
-import com.alibaba.fastjson.JSON;
 
 public abstract class AI {
 
@@ -49,9 +46,12 @@ public abstract class AI {
 
 	public final static int MAX_MEMORY = 100000;
 
-	protected int mOperations = 0;
-	public final static int MAX_OPERATIONS = 20000000;
-	public int maxOperations = MAX_OPERATIONS;
+	protected long mOperations = 0;
+	public final static int MAX_OPERATIONS = 20_000_000;
+	public long maxOperations = MAX_OPERATIONS;
+
+	protected long mRAM = 0;
+	public final static int MAX_RAM = 10_000_000; // x 8 bytes
 
 	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
 	protected String thisObject = null;
@@ -152,11 +152,11 @@ public abstract class AI {
 		return mInstructions;
 	}
 
-	public int operations() {
+	public long operations() {
 		return mOperations;
 	}
 
-	public int getOperations() {
+	public long getOperations() {
 		return mOperations;
 	}
 
@@ -168,7 +168,7 @@ public abstract class AI {
 		// System.out.println("ops " + nb);
 		mOperations += nb;
 		if (mOperations >= maxOperations) {
-			throw new LeekRunException(LeekRunException.TOO_MUCH_OPERATIONS);
+			throw new LeekRunException(Error.TOO_MUCH_OPERATIONS);
 		}
 	}
 
@@ -206,13 +206,34 @@ public abstract class AI {
 		mOperations = 0;
 	}
 
+	public void increaseRAM(int ram) throws LeekRunException {
+		mRAM += ram;
+		if (mRAM > MAX_RAM) {
+			// System.out.println("RAM before = " + mRAM);
+			System.gc();
+			try {
+				Thread.sleep(1);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			// System.out.println("RAM after  = " + mRAM);
+			if (mRAM > MAX_RAM) {
+				throw new LeekRunException(Error.OUT_OF_MEMORY);
+			}
+		}
+	}
+
+	public void decreaseRAM(int ram) throws LeekRunException {
+		mRAM -= ram;
+	}
+
 	protected void nothing(Object obj) {
 
 	}
 
 	public GenericArrayLeekValue newArray() {
 		if (version >= 4) {
-			return new ArrayLeekValue();
+			return new ArrayLeekValue(this);
 		} else {
 			return new LegacyArrayLeekValue();
 		}
@@ -220,7 +241,7 @@ public abstract class AI {
 
 	public GenericArrayLeekValue newArray(int capacity) {
 		if (version >= 4) {
-			return new ArrayLeekValue(capacity);
+			return new ArrayLeekValue(this, capacity);
 		} else {
 			return new LegacyArrayLeekValue();
 		}
@@ -538,7 +559,7 @@ public abstract class AI {
 		} else if (value == null) {
 			return 0;
 		}
-		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+		throw new LeekRunException(Error.INVALID_VALUE, value);
 	}
 
 	public Number number(Object value) throws LeekRunException {
@@ -571,7 +592,7 @@ public abstract class AI {
 		} else if (value == null) {
 			return 0l;
 		}
-		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+		throw new LeekRunException(Error.INVALID_VALUE, value);
 	}
 
 	public long longint(Object value) throws LeekRunException {
@@ -606,7 +627,7 @@ public abstract class AI {
 		} else if (value == null) {
 			return 0;
 		}
-		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+		throw new LeekRunException(Error.INVALID_VALUE, value);
 	}
 
 	public double real(Object value) throws LeekRunException {
@@ -641,7 +662,7 @@ public abstract class AI {
 		} else if (value == null) {
 			return 0.0;
 		}
-		throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+		throw new LeekRunException(Error.INVALID_VALUE, value);
 	}
 
 	public boolean not(Object value) throws LeekRunException {
@@ -694,18 +715,12 @@ public abstract class AI {
 			var array1 = (ArrayLeekValue) x;
 			if (y instanceof ArrayLeekValue) {
 				var array2 = (ArrayLeekValue) y;
-
-				ops((array1.size() + array2.size()) * 2);
-
-				var result = new ArrayLeekValue(array1.size() + array2.size());
-				result.addAll(array1);
-				result.addAll(array2);
-				return result;
+				return array1.arrayConcat(this, array2);
 			}
 
 			ops(array1.size() * 2);
 			var result = new ArrayLeekValue(this, array1, 1);
-			result.add(y);
+			result.push(this, y);
 			return result;
 		}
 

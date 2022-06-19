@@ -84,7 +84,7 @@ public class LeekArray extends AbstractExpression {
 		operations = 0;
 		for (var value : mValues) {
 			value.analyze(compiler);
-			operations += value.getOperations();
+			operations += 2 + value.getOperations();
 		}
 	}
 
@@ -102,9 +102,9 @@ public class LeekArray extends AbstractExpression {
 					writer.addCode(" })");
 				}
 			} else {
-				if (mValues.size() == 0) writer.addCode("new ArrayLeekValue()");
+				if (mValues.size() == 0) writer.addCode("new ArrayLeekValue(" + writer.getAIThis() + ")");
 				else {
-					writer.addCode("new ArrayLeekValue(new Object[] { ");
+					writer.addCode("new ArrayLeekValue(" + writer.getAIThis() + ", new Object[] { ");
 					for (int i = 0; i < mValues.size(); i++) {
 						if (i != 0) writer.addCode(", ");
 						mValues.get(i).writeJavaCode(mainblock, writer);

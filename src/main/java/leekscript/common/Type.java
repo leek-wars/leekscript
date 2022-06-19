@@ -1,5 +1,7 @@
 package leekscript.common;
 
+import leekscript.compiler.JavaWriter;
+
 public class Type {
 
 	public static Type ANY = new Type("any", "Object", "null");
@@ -76,9 +78,9 @@ public class Type {
 		return javaName;
 	}
 
-	public String getDefaultValue(int version) {
+	public String getDefaultValue(JavaWriter writer, int version) {
 		if (this == Type.ARRAY) {
-			return version >= 4 ? "new ArrayLeekValue()" : "new LegacyArrayLeekValue()";
+			return version >= 4 ? "new ArrayLeekValue(" + writer.getAIThis() + ")" : "new LegacyArrayLeekValue()";
 		}
 		return defaultValue;
 	}

@@ -202,14 +202,14 @@ public class Box {
 		if (mValue instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) mValue).getFieldL(field);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object put(AI ai, Object key, Object value) throws LeekRunException {
 		if (mValue instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) mValue).put(ai, key, value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public AI getAI() {

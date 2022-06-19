@@ -195,7 +195,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 		if (parent instanceof ClassLeekValue) {
 			return parent.getFieldL(field);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object setField(String field, Object value) throws LeekRunException {
@@ -203,7 +203,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 		if (result != null) {
 			return result.set(value);
 		}
-		throw new LeekRunException(LeekRunException.UNKNOWN_FIELD);
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
 	public Object field_inc(String field) throws LeekRunException {
@@ -335,7 +335,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 		if (this == ai.stringClass) return "";
 		if (this == ai.arrayClass) {
 			if (ai.getVersion() >= 4) {
-				return new ArrayLeekValue();
+				return new ArrayLeekValue(ai);
 			} else {
 				return new LegacyArrayLeekValue();
 			}
@@ -367,7 +367,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 	private Object getFieldsArray() throws LeekRunException {
 		if (fieldsArray == null) {
 			if (ai.getVersion() >= 4) {
-				var r = new ArrayLeekValue(fields.size());
+				var r = new ArrayLeekValue(ai, fields.size());
 				for (var f : fields.entrySet()) {
 					r.add(f.getKey());
 				}
@@ -387,7 +387,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 	private Object getStaticFieldsArray() throws LeekRunException {
 		if (staticFieldsArray == null) {
 			if (ai.getVersion() >= 4) {
-				var r = new ArrayLeekValue(staticFields.size());
+				var r = new ArrayLeekValue(ai, staticFields.size());
 				for (var f : staticFields.entrySet()) {
 					r.add(f.getKey());
 				}
@@ -407,7 +407,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 	private Object getMethodsArray() throws LeekRunException {
 		if (methodsArray == null) {
 			if (ai.getVersion() >= 4) {
-				var r = new ArrayLeekValue(genericMethods.size());
+				var r = new ArrayLeekValue(ai, genericMethods.size());
 				for (var f : genericMethods.entrySet()) {
 					r.add(f.getKey());
 				}
@@ -427,7 +427,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 	private Object getStaticMethodsArray() throws LeekRunException {
 		if (staticMethodsArray == null) {
 			if (ai.getVersion() >= 4) {
-				var r = new ArrayLeekValue(genericStaticMethods.size());
+				var r = new ArrayLeekValue(ai, genericStaticMethods.size());
 				for (var f : genericStaticMethods.entrySet()) {
 					r.add(f.getKey());
 				}

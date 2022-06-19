@@ -108,7 +108,7 @@ public class LeekFunctions {
 		method("count", "Array", 1, Type.INT, new Type[] { Type.ARRAY });
 		method("join", "Array", Type.STRING, new Type[] { Type.ARRAY, Type.STRING });
 		method("insert", "Array", Type.VOID, new Type[] { Type.ARRAY, Type.ANY, Type.INT });
-		method("push", "Array", 4, Type.VOID, new Type[] { Type.ARRAY, Type.ANY });
+		method("push", "Array", 2, Type.VOID, new Type[] { Type.ARRAY, Type.ANY });
 		method("unshift", "Array", Type.VOID, new Type[] { Type.ARRAY, Type.ANY });
 		method("shift", "Array", Type.ANY, new Type[] { Type.ARRAY });
 		method("pop", "Array", 2, Type.ANY, new Type[] { Type.ARRAY });

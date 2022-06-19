@@ -15,6 +15,7 @@ import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
+import leekscript.common.Error;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -1050,7 +1051,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public Object pushNoClone(AI ai, Object value) throws LeekRunException {
 		if (value instanceof Integer) {
-			throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+			throw new LeekRunException(Error.INVALID_VALUE, value);
 		}
 		if (mSize >= capacity) {
 			growCapacity(ai);
@@ -1104,7 +1105,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 */
 	public void set(AI ai, Object key, Object value) throws LeekRunException {
 		if (value instanceof Integer) {
-			throw new LeekRunException(LeekRunException.INVALID_VALUE, value);
+			throw new LeekRunException(Error.INVALID_VALUE, value);
 		}
 		Element e = getElement(ai, key);
 		// Si l'élément n'existe pas on le crée
