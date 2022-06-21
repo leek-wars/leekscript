@@ -1,10 +1,11 @@
 package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
-import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekVariable;
@@ -16,17 +17,19 @@ import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 
 public class ForBlock extends AbstractLeekBlock {
 
+	private final Token token;
 	private LeekInstruction mInitialisation = null;
-	private AbstractExpression mCondition = null;
-	private AbstractExpression mIncrementation = null;
+	private Expression mCondition = null;
+	private Expression mIncrementation = null;
 
-	public ForBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
-		super(parent, main, line, ai);
+	public ForBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
+		super(parent, main);
+		this.token = token;
 	}
 
-	public void setInitialisation(WordCompiler compiler, IAWord token, AbstractExpression value, boolean isDeclaration, boolean isGlobal) {
+	public void setInitialisation(WordCompiler compiler, Token token, Expression value, boolean isDeclaration, boolean isGlobal) {
 		if (isDeclaration) {
-			LeekVariableDeclarationInstruction init = new LeekVariableDeclarationInstruction(compiler, token, mLine, mAI, compiler.getCurrentFunction());
+			LeekVariableDeclarationInstruction init = new LeekVariableDeclarationInstruction(compiler, token, compiler.getCurrentFunction());
 			init.setValue(value);
 			mInitialisation = init;
 		} else {
@@ -34,15 +37,15 @@ public class ForBlock extends AbstractLeekBlock {
 			exp.addExpression(isGlobal ? new LeekVariable(token, VariableType.GLOBAL) : new LeekVariable(token, VariableType.LOCAL));
 			exp.addOperator(Operators.ASSIGN, token);
 			exp.addExpression(value);
-			mInitialisation = new LeekExpressionInstruction(exp, mLine, mAI);
+			mInitialisation = new LeekExpressionInstruction(exp);
 		}
 	}
 
-	public void setCondition(AbstractExpression value) {
+	public void setCondition(Expression value) {
 		mCondition = value;
 	}
 
-	public void setIncrementation(AbstractExpression incrementation) {
+	public void setIncrementation(Expression incrementation) {
 		mIncrementation = incrementation;
 	}
 
@@ -90,7 +93,7 @@ public class ForBlock extends AbstractLeekBlock {
 		}
 		writer.addCode(", " + mCondition.getOperations() + "); ops(");
 		mIncrementation.writeJavaCode(mainblock, writer);
-		writer.addLine(", " + mIncrementation.getOperations() + ")) {", mLine, mAI);
+		writer.addLine(", " + mIncrementation.getOperations() + ")) {", getLocation());
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
 		writer.addLine("}");
@@ -104,5 +107,10 @@ public class ForBlock extends AbstractLeekBlock {
 	@Override
 	public int getEndBlock() {
 		return 0;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

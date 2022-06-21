@@ -1,8 +1,9 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.AnalyzeError;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.ClassMethodBlock;
@@ -11,12 +12,12 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
-public class LeekObjectAccess extends AbstractExpression {
+public class LeekObjectAccess extends Expression {
 
-	private AbstractExpression object;
-	private IAWord field;
+	private Expression object;
+	private Token field;
 
-	public LeekObjectAccess(AbstractExpression object, IAWord field) {
+	public LeekObjectAccess(Expression object, Token field) {
 		this.object = object;
 		this.field = field;
 	}
@@ -36,7 +37,7 @@ public class LeekObjectAccess extends AbstractExpression {
 		return object.getString() + "." + field.getWord();
 	}
 
-	public AbstractExpression getObject() {
+	public Expression getObject() {
 		return object;
 	}
 
@@ -110,7 +111,7 @@ public class LeekObjectAccess extends AbstractExpression {
 		return field.getWord();
 	}
 
-	public IAWord getFieldToken() {
+	public Token getFieldToken() {
 		return field;
 	}
 
@@ -145,7 +146,7 @@ public class LeekObjectAccess extends AbstractExpression {
 	}
 
 	@Override
-	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("setField(");
@@ -192,7 +193,7 @@ public class LeekObjectAccess extends AbstractExpression {
 	}
 
 	@Override
-	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_add_eq(");
@@ -204,7 +205,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 
-	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_sub_eq(");
@@ -216,7 +217,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 
-	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_mul_eq(");
@@ -228,7 +229,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 
-	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_pow_eq(");
@@ -240,7 +241,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 
-	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_div_eq(");
@@ -252,7 +253,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 
-	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_mod_eq(");
@@ -264,7 +265,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 
-	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_bor_eq(");
@@ -276,7 +277,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 
-	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_band_eq(");
@@ -288,7 +289,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 
-	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_bxor_eq(");
@@ -300,7 +301,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 
-	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_shl_eq(");
@@ -313,7 +314,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 
-	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_shr_eq(");
@@ -326,7 +327,7 @@ public class LeekObjectAccess extends AbstractExpression {
 
 	@Override
 
-	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_ushr_eq(");
@@ -334,5 +335,10 @@ public class LeekObjectAccess extends AbstractExpression {
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
 		writer.addCode(")");
+	}
+
+	@Override
+	public Location getLocation() {
+		return new Location(object.getLocation(), field.getLocation());
 	}
 }

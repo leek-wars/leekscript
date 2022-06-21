@@ -2,11 +2,12 @@ package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.AnalyzeError;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
-import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
@@ -14,42 +15,43 @@ import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 
 public class ForeachKeyBlock extends AbstractLeekBlock {
 
-	private IAWord mIterator;
-	private AbstractExpression mArray;
+	private final Token token;
+	private Token mIterator;
+	private Expression mArray;
 	private boolean mIsDeclaration = false;
-
-	private IAWord mKeyIterator = null;
+	private Token mKeyIterator = null;
 	private boolean mIsKeyDeclaration = false;
 	private boolean mKeyReference = false;
 	private boolean mValueReference = false;
 	private LeekVariableDeclarationInstruction iteratorDeclaration;
 	private LeekVariableDeclarationInstruction iteratorKeyDeclaration;
 
-	public ForeachKeyBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isKeyDeclaration, boolean isValueDeclaration, int line, AIFile<?> ai, boolean keyReference, boolean valueReference) {
-		super(parent, main, line, ai);
+	public ForeachKeyBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isKeyDeclaration, boolean isValueDeclaration, Token token, boolean keyReference, boolean valueReference) {
+		super(parent, main);
 		mIsDeclaration = isValueDeclaration;
 		mIsKeyDeclaration = isKeyDeclaration;
 		mKeyReference = keyReference;
 		mValueReference = valueReference;
+		this.token = token;
 	}
 
-	public void setValueIterator(WordCompiler compiler, IAWord iterator, boolean declaration) {
+	public void setValueIterator(WordCompiler compiler, Token iterator, boolean declaration) {
 		if (declaration) {
-			iteratorDeclaration = new LeekVariableDeclarationInstruction(compiler, iterator, 0, compiler.getAI(), compiler.getCurrentFunction());
+			iteratorDeclaration = new LeekVariableDeclarationInstruction(compiler, iterator, compiler.getCurrentFunction());
 			// addVariable(new LeekVariable(iterator, VariableType.ITERATOR, iteratorDeclaration));
 		}
 		mIterator = iterator;
 	}
 
-	public void setKeyIterator(WordCompiler compiler, IAWord iterator, boolean declaration) {
+	public void setKeyIterator(WordCompiler compiler, Token iterator, boolean declaration) {
 		if (declaration) {
-			iteratorKeyDeclaration = new LeekVariableDeclarationInstruction(compiler, iterator, 0, compiler.getAI(), compiler.getCurrentFunction());
+			iteratorKeyDeclaration = new LeekVariableDeclarationInstruction(compiler, iterator, compiler.getCurrentFunction());
 			// addVariable(new LeekVariable(iterator, VariableType.ITERATOR, iteratorKeyDeclaration));
 		}
 		mKeyIterator = iterator;
 	}
 
-	public void setArray(AbstractExpression exp) {
+	public void setArray(Expression exp) {
 		mArray = exp;
 	}
 
@@ -199,7 +201,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			}
 		}
 
-		writer.addLine(sb.toString(), mLine, mAI);
+		writer.addLine(sb.toString(), getLocation());
 		// Instructions
 		super.writeJavaCode(mainblock, writer);
 
@@ -215,5 +217,10 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	@Override
 	public int getEndBlock() {
 		return 0;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

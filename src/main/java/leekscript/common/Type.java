@@ -41,7 +41,7 @@ public class Type {
 		if (this == ANY) return CastType.UPCAST;
 		if (type == ANY) return CastType.UNSAFE_DOWNCAST;
 		if (this == NUMBER) {
-			if (type == BOOL || type == INT || type == REAL) return CastType.UPCAST;
+			if (type == INT || type == REAL) return CastType.UPCAST;
 		}
 		if (this == REAL) {
 			if (type == INT) {
@@ -52,9 +52,6 @@ public class Type {
 			if (type == REAL) {
 				return CastType.SAFE_DOWNCAST;
 			}
-		}
-		if (this == BOOL) {
-			return CastType.UPCAST;
 		}
 		return CastType.INCOMPATIBLE;
 	}

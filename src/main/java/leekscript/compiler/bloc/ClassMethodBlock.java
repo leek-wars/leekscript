@@ -4,8 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import leekscript.compiler.AIFile;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -16,14 +17,16 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 
 	private final ClassDeclarationInstruction clazz;
 	private final boolean isStatic;
-	private final ArrayList<IAWord> mParameters = new ArrayList<>();
+	private final ArrayList<Token> mParameters = new ArrayList<>();
 	private final ArrayList<LeekVariableDeclarationInstruction> mParameterDeclarations = new ArrayList<>();
 	private int mId = 0;
+	private final Token token;
 
-	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
-		super(parent, main, line, ai);
+	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, Token token) {
+		super(parent, main);
 		this.clazz = clazz;
 		this.isStatic = isStatic;
+		this.token = token;
 	}
 
 	public void setId(int id) {
@@ -47,9 +50,9 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void addParameter(WordCompiler compiler, IAWord token) {
+	public void addParameter(WordCompiler compiler, Token token) {
 		mParameters.add(token);
-		var declaration = new LeekVariableDeclarationInstruction(compiler, token, token.getLine(), token.getAI(), this);
+		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this);
 		mParameterDeclarations.add(declaration);
 		addVariable(new LeekVariable(token, VariableType.ARGUMENT, declaration));
 	}
@@ -66,9 +69,9 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		if (v != null) return v;
 
 		// Search in fields
-		if (variable.equals("class")) return new LeekVariable(new IAWord("class"), VariableType.THIS_CLASS);
+		if (variable.equals("class")) return new LeekVariable(new Token("class"), VariableType.THIS_CLASS);
 		if (!isStatic) {
-			if (variable.equals("this")) return new LeekVariable(new IAWord("this"), VariableType.THIS);
+			if (variable.equals("this")) return new LeekVariable(new Token("this"), VariableType.THIS);
 			if (includeClassMembers) {
 				v = clazz.getMember(variable);
 				if (v != null) return v;
@@ -100,7 +103,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 
-		writer.addLine("", mLine, mAI);
+		writer.addLine("", getLocation());
 
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0) {
@@ -112,11 +115,16 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		return this.clazz;
 	}
 
-	public List<IAWord> getParameters() {
+	public List<Token> getParameters() {
 		return mParameters;
 	}
 
 	public ArrayList<LeekVariableDeclarationInstruction> getParametersDeclarations() {
 		return mParameterDeclarations;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

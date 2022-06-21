@@ -2,14 +2,18 @@ package leekscript.compiler.expression;
 
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class LeekBoolean extends AbstractExpression {
+public class LeekBoolean extends Expression {
 
+	private final Token token;
 	private final boolean mValue;
 
-	public LeekBoolean(boolean value) {
+	public LeekBoolean(Token token, boolean value) {
+		this.token = token;
 		mValue = value;
 	}
 
@@ -48,5 +52,10 @@ public class LeekBoolean extends AbstractExpression {
 			return mValue == ((LeekBoolean) o).mValue;
 		}
 		return false;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

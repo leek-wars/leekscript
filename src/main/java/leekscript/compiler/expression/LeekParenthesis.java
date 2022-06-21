@@ -2,18 +2,19 @@ package leekscript.compiler.expression;
 
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class LeekParenthesis extends AbstractExpression {
+public class LeekParenthesis extends Expression {
 
-	private final AbstractExpression mExpression;
+	private final Expression mExpression;
 
-	public LeekParenthesis(AbstractExpression exp) {
+	public LeekParenthesis(Expression exp) {
 		mExpression = exp;
 	}
 
-	public AbstractExpression getExpression() {
+	public Expression getExpression() {
 		return mExpression;
 	}
 
@@ -28,7 +29,7 @@ public class LeekParenthesis extends AbstractExpression {
 	}
 
 	@Override
-	public AbstractExpression trim() {
+	public Expression trim() {
 		return mExpression.trim();
 	}
 
@@ -58,5 +59,10 @@ public class LeekParenthesis extends AbstractExpression {
 	public void analyze(WordCompiler compiler) {
 		mExpression.analyze(compiler);
 		operations = mExpression.getOperations();
+	}
+
+	@Override
+	public Location getLocation() {
+		return mExpression.getLocation();
 	}
 }

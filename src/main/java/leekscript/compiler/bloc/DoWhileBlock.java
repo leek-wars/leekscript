@@ -2,23 +2,27 @@ package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
-import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekBoolean;
 
 public class DoWhileBlock extends AbstractLeekBlock {
 
-	private AbstractExpression mCondition = null;
+	private Expression mCondition = null;
+	private final Token token;
 
-	public DoWhileBlock(AbstractLeekBlock parent, MainLeekBlock main, AIFile<?> ai) {
-		super(parent, main, 0, ai);
+	public DoWhileBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
+		super(parent, main);
+		this.token = token;
 	}
 
-	public void setCondition(AbstractExpression condition) {
+	public void setCondition(Expression condition) {
 		mCondition = condition;
 	}
 
-	public AbstractExpression getCondition() {
+	public Expression getCondition() {
 		return mCondition;
 	}
 
@@ -42,7 +46,7 @@ public class DoWhileBlock extends AbstractLeekBlock {
 			writer.getBoolean(mainblock, mCondition);
 		}
 		writer.addCode(", " + mCondition.getOperations() + ")");
-		writer.addLine(");", mLine, mAI);
+		writer.addLine(");", getLocation());
 	}
 
 	@Override
@@ -62,5 +66,10 @@ public class DoWhileBlock extends AbstractLeekBlock {
 			mCondition.analyze(compiler);
 		}
 		super.analyze(compiler);
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

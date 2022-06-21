@@ -1,7 +1,8 @@
 package leekscript.compiler.expression;
 
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.common.Error;
@@ -9,12 +10,12 @@ import leekscript.common.Type;
 
 public class LeekTernaire extends LeekExpression {
 
-	private AbstractExpression mCondition;
+	private Expression mCondition;
 
 	private int mOperator = 0;
 	private Type type = Type.ANY;
 
-	public LeekTernaire() {
+	public LeekTernaire(Token questionMark) {
 		mCondition = null;
 		mExpression1 = null;
 		mExpression2 = null;
@@ -100,7 +101,7 @@ public class LeekTernaire extends LeekExpression {
 	}
 
 	@Override
-	public void addExpression(AbstractExpression expression) {
+	public void addExpression(Expression expression) {
 		if(mCondition == null) mCondition = expression;
 		else if(mCondition.getNature() == EXPRESSION && !((LeekExpression) mCondition).complete()){
 			((LeekExpression) mCondition).addExpression(expression);
@@ -116,7 +117,7 @@ public class LeekTernaire extends LeekExpression {
 	}
 
 	@Override
-	public void addUnarySuffix(int suffix, IAWord token) {
+	public void addUnarySuffix(int suffix, Token token) {
 		//On doit ajouter ce suffix au dernier élément ajouté
 		if(mCondition != null && mExpression1 == null && mExpression2 == null){
 			if(mCondition.getNature() == EXPRESSION) ((LeekExpression) mCondition).addUnarySuffix(suffix, token);
@@ -124,7 +125,7 @@ public class LeekTernaire extends LeekExpression {
 				//On doit ajouter à l'élément mExpression1
 				LeekExpression exp = new LeekExpression();
 				exp.setParent(this);
-				exp.setExpression1(new LeekNull());
+				exp.setExpression1(new LeekNull(token));
 				exp.setOperator(suffix, token);
 				exp.setExpression2(mCondition);
 				mCondition = exp;
@@ -136,7 +137,7 @@ public class LeekTernaire extends LeekExpression {
 				//On doit ajouter à l'élément mExpression1
 				LeekExpression exp = new LeekExpression();
 				exp.setParent(this);
-				exp.setExpression1(new LeekNull());
+				exp.setExpression1(new LeekNull(token));
 				exp.setOperator(suffix, token);
 				exp.setExpression2(mExpression1);
 				mExpression1 = exp;
@@ -148,7 +149,7 @@ public class LeekTernaire extends LeekExpression {
 				//On doit ajouter à l'élément mExpression2
 				LeekExpression exp = new LeekExpression();
 				exp.setParent(this);
-				exp.setExpression1(new LeekNull());
+				exp.setExpression1(new LeekNull(token));
 				exp.setOperator(suffix, token);
 				exp.setExpression2(mExpression2);
 				mExpression2 = exp;
@@ -172,7 +173,7 @@ public class LeekTernaire extends LeekExpression {
 	}
 
 	@Override
-	public void addOperator(int operator, IAWord token) {
+	public void addOperator(int operator, Token token) {
 		//On doit trouver à quel endroit de l'arborescence on doit placer l'opérateur
 		if(mOperator == 0 && operator == Operators.TERNAIRE){
 			mOperator = 1;
@@ -196,7 +197,7 @@ public class LeekTernaire extends LeekExpression {
 				if(mExpression1.getNature() == EXPRESSION) ((LeekExpression) mExpression1).addOperator(operator, token);
 				else{
 					if(operator == Operators.TERNAIRE){
-						LeekTernaire new_e = new LeekTernaire();
+						LeekTernaire new_e = new LeekTernaire(token);
 						new_e.setParent(this);
 						new_e.addExpression(mExpression1);
 						new_e.addOperator(operator, token);
@@ -215,7 +216,7 @@ public class LeekTernaire extends LeekExpression {
 				if(mExpression2.getNature() == EXPRESSION) ((LeekExpression) mExpression2).addOperator(operator, token);
 				else{
 					if(operator == Operators.TERNAIRE){
-						LeekTernaire new_e = new LeekTernaire();
+						LeekTernaire new_e = new LeekTernaire(token);
 						new_e.setParent(this);
 						new_e.addExpression(mExpression2);
 						new_e.addOperator(operator, token);
@@ -258,5 +259,10 @@ public class LeekTernaire extends LeekExpression {
 		if (mExpression1 != null && mExpression2 != null && mExpression1.getType() == mExpression2.getType()) {
 			type = mExpression1.getType();
 		}
+	}
+
+	@Override
+	public Location getLocation() {
+		return new Location(mCondition.getLocation(), mExpression2.getLocation());
 	}
 }

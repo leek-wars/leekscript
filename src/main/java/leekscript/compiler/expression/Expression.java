@@ -2,10 +2,11 @@ package leekscript.compiler.expression;
 
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public abstract class AbstractExpression {
+public abstract class Expression {
 
 	public final static int EXPRESSION = 1;
 	public final static int NUMBER = 2;
@@ -34,13 +35,13 @@ public abstract class AbstractExpression {
 		writeJavaCode(mainblock, writer);
 	}
 
-	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" = ");
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" = ");
 		writer.compileClone(mainblock, expr);
@@ -66,73 +67,73 @@ public abstract class AbstractExpression {
 		writeJavaCode(mainblock, writer);
 	}
 
-	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" += ");
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" -= ");
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" *= ");
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" /= ");
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" **= ");
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" %= ");
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" |= ");
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" &= ");
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" ^= ");
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" <<= ");
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" >>= ");
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" >>>= ");
 		expr.writeJavaCode(mainblock, writer);
@@ -140,7 +141,7 @@ public abstract class AbstractExpression {
 
 	public abstract boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException;
 
-	public AbstractExpression trim() {
+	public Expression trim() {
 		return this;
 	}
 
@@ -159,4 +160,6 @@ public abstract class AbstractExpression {
 	public int getOperations() {
 		return operations;
 	}
+
+	public abstract Location getLocation();
 }

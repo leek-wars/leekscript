@@ -26,13 +26,14 @@ public class IACompiler {
 
 	public IACompiler() {}
 
-	public void addError(AIFile<?> ia_context, int line, int pos, String word, Error errorType, String[] parameters) {
+	public void addError(Location location, Error errorType, String[] parameters) {
 		JSONArray error = new JSONArray();
 		error.add(0); // level
-		error.add(ia_context.getId());
-		error.add(line);
-		error.add(pos);
-		error.add(word);
+		error.add(location.getFile().getId());
+		error.add(location.getStartLine());
+		error.add(location.getStartColumn());
+		error.add(location.getEndLine());
+		error.add(location.getEndColumn());
 		error.add(errorType.ordinal());
 		if (parameters != null)
 			error.add(parameters);
@@ -63,8 +64,8 @@ public class IACompiler {
 				result.success = true;
 			}
 		} catch (LeekCompilerException e) {
-			ai.getErrors().add(new AnalyzeError(e.getWord(), AnalyzeErrorLevel.ERROR, e.getError()));
-			addError(e.getIA(), e.getLine(), e.getChar(), e.getString(), e.getError(), e.getParameters());
+			ai.getErrors().add(new AnalyzeError(e.getLocation(), AnalyzeErrorLevel.ERROR, e.getError()));
+			addError(e.getLocation(), e.getError(), e.getParameters());
 			result.success = false;
 		}
 		result.informations = informations;
@@ -88,15 +89,15 @@ public class IACompiler {
 			if (ai.getErrors().size() > 0) {
 				for (var error : ai.getErrors()) {
 					if (error.level == AnalyzeErrorLevel.ERROR) {
-						throw new LeekCompilerException(error.token, error.error, error.parameters);
+						throw new LeekCompilerException(error.location, error.error, error.parameters);
 					}
 				}
 			}
 			compiler.writeJava(ai.getJavaClass(), writer, ai.getRootClass());
 
 		} catch (LeekCompilerException e) {
-			ai.getErrors().add(new AnalyzeError(e.getWord(), AnalyzeErrorLevel.ERROR, e.getError()));
-			addError(e.getIA(), e.getLine(), e.getChar(), e.getString(), e.getError(), e.getParameters());
+			ai.getErrors().add(new AnalyzeError(e.getLocation(), AnalyzeErrorLevel.ERROR, e.getError()));
+			addError(e.getLocation(), e.getError(), e.getParameters());
 			throw e;
 		}
 		return writer.getCode();

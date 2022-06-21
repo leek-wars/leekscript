@@ -2,16 +2,20 @@ package leekscript.compiler.expression;
 
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.AnonymousFunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class LeekAnonymousFunction extends AbstractExpression {
+public class LeekAnonymousFunction extends Expression {
 
 	private final AnonymousFunctionBlock mBlock;
+	private final Token token;
 
-	public LeekAnonymousFunction(AnonymousFunctionBlock block) {
+	public LeekAnonymousFunction(AnonymousFunctionBlock block, Token token) {
 		mBlock = block;
+		this.token = token;
 	}
 
 	@Override
@@ -55,5 +59,10 @@ public class LeekAnonymousFunction extends AbstractExpression {
 		compiler.setCurrentFunction(mBlock);
 		mBlock.analyze(compiler);
 		compiler.setCurrentFunction(previousFunction);
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

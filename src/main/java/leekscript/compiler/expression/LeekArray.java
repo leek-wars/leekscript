@@ -5,23 +5,34 @@ import java.util.ArrayList;
 import leekscript.common.Type;
 import leekscript.compiler.AnalyzeError;
 import leekscript.common.Error;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class LeekArray extends AbstractExpression {
+public class LeekArray extends Expression {
 
-	private final ArrayList<AbstractExpression> mValues = new ArrayList<AbstractExpression>();
+	private final ArrayList<Expression> mValues = new ArrayList<Expression>();
 	public boolean mIsKeyVal = false;
 	public Type type = Type.ARRAY;
+	private Token openingBracket;
+	private Token closingBracket;
 
-	public void addValue(AbstractExpression param) {
+	public LeekArray(Token openingBracket) {
+		this.openingBracket = openingBracket;
+	}
+
+	public void addValue(Expression param) {
 		mValues.add(param);
 	}
 
-	public void addValue(WordCompiler compiler, AbstractExpression key, IAWord keyToken, AbstractExpression value) {
+	public void setClosingBracket(Token closingBracket) {
+		this.closingBracket = closingBracket;
+	}
+
+	public void addValue(WordCompiler compiler, Expression key, Token keyToken, Expression value) {
 
 		// Clés dupliquée ?
 		for (int i = 0; i < mValues.size(); i += 2) {
@@ -66,7 +77,7 @@ public class LeekArray extends AbstractExpression {
 
 	@Override
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
-		for (AbstractExpression parameter : mValues) {
+		for (Expression parameter : mValues) {
 			parameter.validExpression(compiler, mainblock);
 		}
 		return true;
@@ -123,5 +134,10 @@ public class LeekArray extends AbstractExpression {
 				writer.addCode(" }, " + (mIsKeyVal ? "true" : "false") + ")");
 			}
 		}
+	}
+
+	@Override
+	public Location getLocation() {
+		return new Location(openingBracket.getLocation(), closingBracket.getLocation());
 	}
 }

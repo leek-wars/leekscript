@@ -1,58 +1,58 @@
 package leekscript.compiler.instruction;
 
 import leekscript.compiler.AIFile;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
-import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.Expression;
 
 public class LeekReturnInstruction extends LeekInstruction {
 
-	private final AIFile<?> mAI;
-	private final int mLine;
-	private AbstractExpression mExpression = null;
+	private final Token token;
+	private final Expression expression;
 
-	public LeekReturnInstruction(int count, AbstractExpression exp, int line, AIFile<?> ai) {
-		mExpression = exp;
-		mLine = line;
-		mAI = ai;
+	public LeekReturnInstruction(Token token, Expression exp) {
+		this.token = token;
+		this.expression = exp;
 	}
 
 	@Override
 	public String getCode() {
-		return "return " + (mExpression == null ? "null" : mExpression.getString()) + ";";
+		return "return " + (expression == null ? "null" : expression.getString()) + ";";
 	}
 
 
 	@Override
 	public void preAnalyze(WordCompiler compiler) {
-		if (mExpression != null) {
-			mExpression.preAnalyze(compiler);
+		if (expression != null) {
+			expression.preAnalyze(compiler);
 		}
 	}
 
 	@Override
 	public void analyze(WordCompiler compiler) {
-		if (mExpression != null) {
-			mExpression.analyze(compiler);
+		if (expression != null) {
+			expression.analyze(compiler);
 		}
 	}
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		writer.addCode("return ");
-		if (mExpression == null) {
+		if (expression == null) {
 			writer.addCode("null;");
 		} else {
-			if (mExpression.getOperations() > 0) writer.addCode("ops(");
-			var finalExpression = mExpression.trim();
+			if (expression.getOperations() > 0) writer.addCode("ops(");
+			var finalExpression = expression.trim();
 			if (mainblock.getWordCompiler().getVersion() == 1) {
 				finalExpression.compileL(mainblock, writer);
 			} else {
 				finalExpression.writeJavaCode(mainblock, writer);
 			}
 			if (finalExpression.getOperations() > 0) writer.addCode(", " + finalExpression.getOperations() + ")");
-			writer.addLine(";", mLine, mAI);
+			writer.addLine(";", getLocation());
 		}
 	}
 
@@ -69,5 +69,9 @@ public class LeekReturnInstruction extends LeekInstruction {
 	@Override
 	public int getOperations() {
 		return 0;
+	}
+
+	public Location getLocation() {
+		return new Location(token.getLocation(), expression.getLocation());
 	}
 }

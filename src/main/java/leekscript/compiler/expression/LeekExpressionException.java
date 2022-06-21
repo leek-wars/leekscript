@@ -8,10 +8,10 @@ public class LeekExpressionException extends Exception {
 	 *
 	 */
 	private static final long serialVersionUID = 5724420043991763088L;
-	private final AbstractExpression mExpression;
+	private final Expression mExpression;
 	private final Error mError;
 
-	public LeekExpressionException(AbstractExpression exp, Error error) {
+	public LeekExpressionException(Expression exp, Error error) {
 		mExpression = exp;
 		mError = error;
 	}

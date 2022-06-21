@@ -1,49 +1,47 @@
 package leekscript.compiler.instruction;
 
-import leekscript.compiler.AIFile;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
-import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 
 public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 
-	private final IAWord token;
-	private AbstractExpression mValue = null;
-	private final int mLine;
-	private final AIFile<?> mAI;
+	private final Token token;
+	private final Token variableToken;
+	private Expression mValue = null;
 
-	public LeekGlobalDeclarationInstruction(IAWord token, int line, AIFile<?> ai) {
+	public LeekGlobalDeclarationInstruction(Token token, Token variableToken) {
 		this.token = token;
-		mLine = line;
-		mAI = ai;
+		this.variableToken = variableToken;
 	}
 
-	public void setValue(AbstractExpression value) {
+	public void setValue(Expression value) {
 		mValue = value;
 	}
 
 	public String getName() {
-		return token.getWord();
+		return variableToken.getWord();
 	}
 
 	@Override
 	public String getCode() {
 		if (mValue != null) {
-			return "global " + token.getWord() + " = " + mValue.getString() + ";";
+			return "global " + variableToken.getWord() + " = " + mValue.getString() + ";";
 		} else {
-			return "global " + token.getWord() + ";";
+			return "global " + variableToken.getWord() + ";";
 		}
 	}
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("if (!g_init_" + token.getWord() + ") { ");
+		writer.addCode("if (!g_init_" + variableToken.getWord() + ") { ");
 		if (mainblock.getWordCompiler().getVersion() >= 2) {
-			writer.addCode("g_" + token.getWord() + " = ");
+			writer.addCode("g_" + variableToken.getWord() + " = ");
 			if (mValue != null) {
 				if (mValue.getOperations() > 0) writer.addCode("ops(");
 				mValue.writeJavaCode(mainblock, writer);
@@ -51,14 +49,14 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 			}
 			else writer.addCode("null");
 		} else {
-			writer.addCode("g_" + token.getWord() + " = new Box(" + writer.getAIThis() + ", ");
+			writer.addCode("g_" + variableToken.getWord() + " = new Box(" + writer.getAIThis() + ", ");
 			if (mValue != null) mValue.compileL(mainblock, writer);
 			else writer.addCode("null");
 			writer.addCode(", " + (mValue != null ? mValue.getOperations() : 0) + ")");
 		}
-		writer.addCode("; g_init_" + token.getWord() + " = true;");
+		writer.addCode("; g_init_" + variableToken.getWord() + " = true;");
 		if (mainblock.getWordCompiler().getVersion() >= 2) writer.addCode(" ops(1);");
-		writer.addLine(" }", mLine, mAI);
+		writer.addLine(" }", getLocation());
 	}
 
 	@Override
@@ -73,7 +71,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 
 	public void declare(WordCompiler compiler) {
 		// On ajoute la variable
-		compiler.getCurrentBlock().addVariable(new LeekVariable(compiler, token, VariableType.GLOBAL));
+		compiler.getCurrentBlock().addVariable(new LeekVariable(compiler, variableToken, VariableType.GLOBAL));
 	}
 
 	@Override
@@ -93,5 +91,10 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 	@Override
 	public int getOperations() {
 		return 0;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

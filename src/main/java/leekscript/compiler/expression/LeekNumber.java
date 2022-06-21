@@ -6,16 +6,20 @@ import java.util.Locale;
 
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class LeekNumber extends AbstractExpression {
+public class LeekNumber extends Expression {
 
+	private final Token token;
 	private final double doubleValue;
 	private final long longValue;
 	private Type type;
 
-	public LeekNumber(double doubleValue, long longValue, Type type) {
+	public LeekNumber(Token token, double doubleValue, long longValue, Type type) {
+		this.token = token;
 		this.doubleValue = doubleValue;
 		this.longValue = longValue;
 		this.type = type;
@@ -71,5 +75,10 @@ public class LeekNumber extends AbstractExpression {
 			return doubleValue == n.doubleValue;
 		}
 		return false;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

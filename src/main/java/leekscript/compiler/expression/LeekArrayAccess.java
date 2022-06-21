@@ -2,29 +2,40 @@ package leekscript.compiler.expression;
 
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class LeekTabularValue extends AbstractExpression {
+public class LeekArrayAccess extends Expression {
 
-	private AbstractExpression mTabular;
-	private AbstractExpression mCase;
+	private Expression mTabular;
+	private Expression mCase;
 	private boolean mLeftValue = false;
+	private Token closingBracket;
 
-	public void setTabular(AbstractExpression tabular) {
+	public LeekArrayAccess(Token openingBracket) {
+
+	}
+
+	public void setTabular(Expression tabular) {
 		mTabular = tabular;
 	}
 
-	public void setCase(AbstractExpression caseexp) {
+	public void setCase(Expression caseexp) {
 		mCase = caseexp;
 	}
 
-	public AbstractExpression getTabular() {
+	public void setClosingBracket(Token closingBracket) {
+		this.closingBracket = closingBracket;
+	}
+
+	public Expression getTabular() {
 		return mTabular;
 	}
 
-	public AbstractExpression getCase() {
+	public Expression getCase() {
 		return mCase;
 	}
 
@@ -92,7 +103,7 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put(");
@@ -105,7 +116,7 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put(");
@@ -165,7 +176,7 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_add_eq(");
@@ -178,7 +189,7 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_sub_eq(");
@@ -191,7 +202,7 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_mul_eq(");
@@ -204,7 +215,7 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_mod_eq(");
@@ -217,7 +228,7 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_div_eq(");
@@ -230,7 +241,7 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_pow_eq(");
@@ -243,7 +254,7 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_bor_eq(");
@@ -257,7 +268,7 @@ public class LeekTabularValue extends AbstractExpression {
 
 
 	@Override
-	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_band_eq(");
@@ -271,7 +282,7 @@ public class LeekTabularValue extends AbstractExpression {
 
 
 	@Override
-	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_bxor_eq(");
@@ -284,7 +295,7 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_shl_eq(");
@@ -297,7 +308,7 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_shr_eq(");
@@ -310,7 +321,7 @@ public class LeekTabularValue extends AbstractExpression {
 	}
 
 	@Override
-	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_ushr_eq(");
@@ -334,5 +345,10 @@ public class LeekTabularValue extends AbstractExpression {
 	@Override
 	public boolean nullable() {
 		return true;
+	}
+
+	@Override
+	public Location getLocation() {
+		return new Location(mTabular.getLocation(), closingBracket.getLocation());
 	}
 }

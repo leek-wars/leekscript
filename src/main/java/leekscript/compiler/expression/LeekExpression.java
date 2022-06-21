@@ -1,23 +1,23 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.AnalyzeError;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
-import leekscript.runner.LeekFunctions;
 import leekscript.runner.values.LeekValue;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
-public class LeekExpression extends AbstractExpression {
+public class LeekExpression extends Expression {
 
 	private int mOperator = -1;
-	private IAWord mOperatorToken;
-	protected AbstractExpression mExpression1 = null;
-	protected AbstractExpression mExpression2 = null;
+	private Token mOperatorToken;
+	protected Expression mExpression1 = null;
+	protected Expression mExpression2 = null;
 	protected LeekExpression mParent = null;
 	private Type type = Type.ANY;
 
@@ -39,19 +39,19 @@ public class LeekExpression extends AbstractExpression {
 		return mParent;
 	}
 
-	public AbstractExpression getExpression1() {
+	public Expression getExpression1() {
 		return mExpression1;
 	}
 
-	public void setExpression1(AbstractExpression e) {
+	public void setExpression1(Expression e) {
 		mExpression1 = e;
 	}
 
-	public void setExpression2(AbstractExpression e) {
+	public void setExpression2(Expression e) {
 		mExpression2 = e;
 	}
 
-	public AbstractExpression getExpression2() {
+	public Expression getExpression2() {
 		return mExpression2;
 	}
 
@@ -59,7 +59,7 @@ public class LeekExpression extends AbstractExpression {
 		return mOperator;
 	}
 
-	public IAWord getOperatorToken() {
+	public Token getOperatorToken() {
 		return mOperatorToken;
 	}
 
@@ -70,7 +70,7 @@ public class LeekExpression extends AbstractExpression {
 		return mOperator;
 	}
 
-	public AbstractExpression getLastExpression() {
+	public Expression getLastExpression() {
 		if (mExpression2 != null) {
 			if (mExpression2 instanceof LeekExpression) {
 				return ((LeekExpression) mExpression2).getLastExpression();
@@ -86,7 +86,7 @@ public class LeekExpression extends AbstractExpression {
 		return mExpression1;
 	}
 
-	public void setOperator(int operator, IAWord operatorToken) {
+	public void setOperator(int operator, Token operatorToken) {
 		mOperator = operator;
 		mOperatorToken = operatorToken;
 	}
@@ -115,7 +115,7 @@ public class LeekExpression extends AbstractExpression {
 
 	@Override
 	public int getNature() {
-		return AbstractExpression.EXPRESSION;
+		return Expression.EXPRESSION;
 	}
 
 	@Override
@@ -137,7 +137,7 @@ public class LeekExpression extends AbstractExpression {
 		return true;
 	}
 
-	public void addExpression(AbstractExpression expression) {
+	public void addExpression(Expression expression) {
 		if (mExpression1 == null)
 			mExpression1 = expression;
 		else if (mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete()) {
@@ -151,44 +151,46 @@ public class LeekExpression extends AbstractExpression {
 		}
 	}
 
-	public void addUnaryPrefix(int operator, IAWord operatorToken) {
+	public void addUnaryPrefix(int operator, Token operatorToken) {
 		// On doit trouver à quel endroit de l'arborescence on doit placer le
 		// préfix
 		// En général c'est un => !
 		LeekExpression exp = new LeekExpression();
 		exp.setOperator(operator, operatorToken);
 		exp.setParent(this);
-		exp.setExpression1(new LeekNull());
+		exp.setExpression1(new LeekNull(operatorToken));
 		addExpression(exp);
 	}
 
-	public void addBracket(AbstractExpression casevalue) {
+	public void addBracket(Token bracket, Expression casevalue, Token closingBracket) {
 		// On doit ajouter ce crochet au dernier élément ajouté
 		if (mExpression1 != null && mExpression2 == null) {
 			if (mExpression1.getNature() == EXPRESSION)
-				((LeekExpression) mExpression1).addBracket(casevalue);
+				((LeekExpression) mExpression1).addBracket(bracket, casevalue, closingBracket);
 			else {
 				// On doit ajouter à l'élément mExpression1
-				LeekTabularValue exp = new LeekTabularValue();
+				var exp = new LeekArrayAccess(bracket);
 				exp.setCase(casevalue);
 				exp.setTabular(mExpression1);
+				exp.setClosingBracket(closingBracket);
 				mExpression1 = exp;
 			}
 		}
 		else if (mExpression2 != null) {
 			if (mExpression2.getNature() == EXPRESSION)
-				((LeekExpression) mExpression2).addBracket(casevalue);
+				((LeekExpression) mExpression2).addBracket(bracket, casevalue, closingBracket);
 			else {
 				// On doit ajouter à l'élément mExpression2
-				LeekTabularValue exp = new LeekTabularValue();
+				var exp = new LeekArrayAccess(bracket);
 				exp.setCase(casevalue);
 				exp.setTabular(mExpression2);
+				exp.setClosingBracket(closingBracket);
 				mExpression2 = exp;
 			}
 		}
 	}
 
-	public void addObjectAccess(IAWord name) {
+	public void addObjectAccess(Token name) {
 		if (mExpression1 != null && mExpression2 == null) {
 			if (mExpression1.getNature() == EXPRESSION)
 				((LeekExpression) mExpression1).addObjectAccess(name);
@@ -226,7 +228,7 @@ public class LeekExpression extends AbstractExpression {
 		}
 	}
 
-	public void addUnarySuffix(int suffix, IAWord token) {
+	public void addUnarySuffix(int suffix, Token token) {
 		// On doit ajouter ce suffix au dernier élément ajouté
 		if (mExpression1 != null && mExpression2 == null) {
 			if (mExpression1.getNature() == EXPRESSION)
@@ -235,7 +237,7 @@ public class LeekExpression extends AbstractExpression {
 				// On doit ajouter à l'élément mExpression1
 				LeekExpression exp = new LeekExpression();
 				exp.setParent(this);
-				exp.setExpression1(new LeekNull());
+				exp.setExpression1(new LeekNull(token));
 				exp.setOperator(suffix, token);
 				exp.setExpression2(mExpression1);
 				mExpression1 = exp;
@@ -248,7 +250,7 @@ public class LeekExpression extends AbstractExpression {
 				// On doit ajouter à l'élément mExpression2
 				LeekExpression exp = new LeekExpression();
 				exp.setParent(this);
-				exp.setExpression1(new LeekNull());
+				exp.setExpression1(new LeekNull(token));
 				exp.setOperator(suffix, token);
 				exp.setExpression2(mExpression2);
 				mExpression2 = exp;
@@ -256,11 +258,11 @@ public class LeekExpression extends AbstractExpression {
 		}
 	}
 
-	public void addTernaire() {
+	public void addTernaire(Token token) {
 		// On a ajotué un opérateur ?
 		if (mOperator == -1) {
 			if (mExpression1 != null) {
-				LeekTernaire ternaire = new LeekTernaire();
+				LeekTernaire ternaire = new LeekTernaire(token);
 				ternaire.addExpression(mExpression1);
 				ternaire.addOperator(Operators.TERNAIRE, null);
 				ternaire.setParent(this);
@@ -280,7 +282,7 @@ public class LeekExpression extends AbstractExpression {
 				new_e.setOperator(mOperator, null);
 
 				// Et la mettre en condition de ternaire
-				LeekTernaire ternaire = new LeekTernaire();
+				LeekTernaire ternaire = new LeekTernaire(token);
 				ternaire.addExpression(new_e);
 				ternaire.addOperator(Operators.TERNAIRE, null);
 				ternaire.setParent(this);
@@ -290,7 +292,7 @@ public class LeekExpression extends AbstractExpression {
 			}
 			else if (mExpression2.getNature() != EXPRESSION) {
 				// On doit englober l'expression de droite
-				LeekTernaire ternaire = new LeekTernaire();
+				LeekTernaire ternaire = new LeekTernaire(token);
 				ternaire.addExpression(mExpression2);
 				ternaire.addOperator(Operators.TERNAIRE, null);
 				ternaire.setParent(this);
@@ -301,7 +303,7 @@ public class LeekExpression extends AbstractExpression {
 		}
 	}
 
-	public void replaceExpression(AbstractExpression base, AbstractExpression replacement) {
+	public void replaceExpression(Expression base, Expression replacement) {
 		if (mExpression1 == base) {
 			if (replacement.getNature() == EXPRESSION)
 				((LeekExpression) replacement).setParent(this);
@@ -314,14 +316,14 @@ public class LeekExpression extends AbstractExpression {
 		}
 	}
 
-	public void addOperator(int operator, IAWord token) {
+	public void addOperator(int operator, Token token) {
 		// On doit trouver à quel endroit de l'arborescence on doit placer l'opérateur
 		if (mExpression1 != null && mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete(operator)) {
 			((LeekExpression) mExpression1).addOperator(operator, token);
 		}
 		else if (mOperator == -1) {
 			if (operator == Operators.TERNAIRE) {
-				LeekTernaire trn = new LeekTernaire();
+				LeekTernaire trn = new LeekTernaire(token);
 				if (mExpression1.getNature() == EXPRESSION)
 					((LeekExpression) mExpression1).setParent(trn);
 				trn.addExpression(mExpression1);
@@ -349,7 +351,7 @@ public class LeekExpression extends AbstractExpression {
 				new_e.setExpression2(mExpression2);
 				new_e.setOperator(mOperator, mOperatorToken);
 				if (operator == Operators.TERNAIRE) {
-					LeekTernaire trn = new LeekTernaire();
+					LeekTernaire trn = new LeekTernaire(token);
 					if (mExpression1.getNature() == EXPRESSION)
 						((LeekExpression) mExpression1).setParent(trn);
 					trn.addExpression(new_e);
@@ -373,7 +375,7 @@ public class LeekExpression extends AbstractExpression {
 			else if (mExpression2.getNature() != EXPRESSION) {
 				// On doit englober l'expression de droite
 				if (operator == Operators.TERNAIRE) {
-					LeekTernaire trn = new LeekTernaire();
+					LeekTernaire trn = new LeekTernaire(token);
 					trn.setParent(this);
 					trn.addExpression(mExpression2);
 					trn.addOperator(operator, token);
@@ -396,17 +398,17 @@ public class LeekExpression extends AbstractExpression {
 	public String getString() {
 		String retour = "";
 		if (Operators.isUnaryPrefix(mOperator)) {
-			retour += Operators.getString(mOperator, mOperatorToken.getAI().getVersion());
+			retour += Operators.getString(mOperator, mOperatorToken.getLocation().getFile().getVersion());
 			if (mOperator == Operators.NEW) retour += " ";
 			retour += mExpression2 == null ? "null" : mExpression2.getString();
 		}
 		else if (Operators.isUnarySuffix(mOperator)) {
 			retour += mExpression2 == null ? "null" : mExpression2.getString();
-			retour += Operators.getString(mOperator, mOperatorToken.getAI().getVersion());
+			retour += Operators.getString(mOperator, mOperatorToken.getLocation().getFile().getVersion());
 		}
 		else {
 			retour += mExpression1 == null ? "null" : mExpression1.getString();
-			retour += " " + Operators.getString(mOperator, mOperatorToken.getAI().getVersion()) + " ";
+			retour += " " + Operators.getString(mOperator, mOperatorToken.getLocation().getFile().getVersion()) + " ";
 			retour += mExpression2 == null ? "null" : mExpression2.getString();
 		}
 		return retour + "";
@@ -424,7 +426,7 @@ public class LeekExpression extends AbstractExpression {
 	}
 
 	@Override
-	public AbstractExpression trim() {
+	public Expression trim() {
 		if (mExpression2 == null)
 			return mExpression1.trim();
 		// if (mOperator == Operators.REFERENCE) {
@@ -854,15 +856,15 @@ public class LeekExpression extends AbstractExpression {
 			if (!mExpression1.isLeftValue())
 				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, Error.CANT_ASSIGN_VALUE));
 
-			if (mExpression1 instanceof LeekTabularValue)
-				((LeekTabularValue) mExpression1).setLeftValue(true);
+			if (mExpression1 instanceof LeekArrayAccess)
+				((LeekArrayAccess) mExpression1).setLeftValue(true);
 		}
 
 		if (mOperator == Operators.INCREMENT || mOperator == Operators.DECREMENT || mOperator == Operators.PRE_INCREMENT || mOperator == Operators.PRE_DECREMENT) {
 			if (!mExpression2.isLeftValue())
 				compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.ERROR, Error.CANT_ASSIGN_VALUE));
-			if (mExpression2 instanceof LeekTabularValue)
-				((LeekTabularValue) mExpression2).setLeftValue(true);
+			if (mExpression2 instanceof LeekArrayAccess)
+				((LeekArrayAccess) mExpression2).setLeftValue(true);
 		}
 
 		if (mOperator == Operators.NOT || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.MOREEQUALS || mOperator == Operators.LESSEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.AND || mOperator == Operators.OR || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS || mOperator == Operators.INSTANCEOF) {
@@ -927,5 +929,12 @@ public class LeekExpression extends AbstractExpression {
 
 	public boolean needsWrapper() {
 		return mOperator == Operators.OR || mOperator == Operators.AND || mOperator == Operators.ADD || mOperator == Operators.MINUS || mOperator == Operators.MULTIPLIE || mOperator == Operators.DIVIDE || mOperator == Operators.MODULUS || mOperator == Operators.POWER || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.LESSEQUALS || mOperator == Operators.MOREEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS;
+	}
+
+	@Override
+	public Location getLocation() {
+		var startLocation = mExpression1 != null ? mExpression1.getLocation() : mOperatorToken.getLocation();
+		var endLocation = mExpression2 != null ? mExpression2.getLocation() : mOperatorToken.getLocation();
+		return new Location(startLocation, endLocation);
 	}
 }

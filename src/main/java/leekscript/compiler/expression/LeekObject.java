@@ -4,15 +4,27 @@ import java.util.LinkedHashMap;
 
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class LeekObject extends AbstractExpression {
+public class LeekObject extends Expression {
 
-	private final LinkedHashMap<String, AbstractExpression> mValues = new LinkedHashMap<>();
+	private final Token openingBrace;
+	private Token closingBrace;
+	private final LinkedHashMap<String, Expression> mValues = new LinkedHashMap<>();
 
-	public void addEntry(String key, AbstractExpression value) {
+	public LeekObject(Token openingBrace) {
+		this.openingBrace = openingBrace;
+	}
+
+	public void addEntry(String key, Expression value) {
 		mValues.put(key, value);
+	}
+
+	public void setClosingBrace(Token closingBrace) {
+		this.closingBrace = closingBrace;
 	}
 
 	@Override
@@ -69,5 +81,10 @@ public class LeekObject extends AbstractExpression {
 			value.getValue().analyze(compiler);
 			operations += value.getValue().getOperations();
 		}
+	}
+
+	@Override
+	public Location getLocation() {
+		return new Location(openingBrace.getLocation(), closingBrace.getLocation());
 	}
 }

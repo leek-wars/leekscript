@@ -4,6 +4,12 @@ public class TestString extends TestCommon {
 
 	public void run() {
 
+		section("Operator +");
+		code("return 1+','+2").equals("1,2");
+		code("return 1 + ',' + 2").equals("1,2");
+		code("return 1 + ', ' + 2").equals("1, 2");
+		code("return 1 + \", \" + 2").equals("1, 2");
+
 		section("String.charAt()");
 		code("return charAt('bonjour', 1)").equals("o");
 

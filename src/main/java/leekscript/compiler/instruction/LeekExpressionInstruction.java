@@ -1,10 +1,10 @@
 package leekscript.compiler.instruction;
 
-import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
-import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekAnonymousFunction;
 import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekExpression;
@@ -12,21 +12,17 @@ import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekObjectAccess;
 import leekscript.compiler.expression.LeekString;
-import leekscript.compiler.expression.LeekTabularValue;
+import leekscript.compiler.expression.LeekArrayAccess;
 import leekscript.compiler.expression.LeekTernaire;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
 
 public class LeekExpressionInstruction extends LeekInstruction {
 
-	private final AbstractExpression mExpression;
-	private final AIFile<?> mAI;
-	private final int mLine;
+	private final Expression mExpression;
 
-	public LeekExpressionInstruction(AbstractExpression expression, int line, AIFile<?> ai) {
+	public LeekExpressionInstruction(Expression expression) {
 		mExpression = expression;
-		mLine = line;
-		mAI = ai;
 	}
 
 	@Override
@@ -42,7 +38,7 @@ public class LeekExpressionInstruction extends LeekInstruction {
 		if (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).getOperator() == Operators.REFERENCE) {
 			trimmed = ((LeekExpression) trimmed).getExpression2().trim();
 		}
-		if (trimmed instanceof LeekNull || trimmed instanceof LeekBoolean || trimmed instanceof LeekNumber || trimmed instanceof LeekString || trimmed instanceof LeekVariable || trimmed instanceof LeekObjectAccess || trimmed instanceof LeekTabularValue || trimmed instanceof LeekAnonymousFunction) {
+		if (trimmed instanceof LeekNull || trimmed instanceof LeekBoolean || trimmed instanceof LeekNumber || trimmed instanceof LeekString || trimmed instanceof LeekVariable || trimmed instanceof LeekObjectAccess || trimmed instanceof LeekArrayAccess || trimmed instanceof LeekAnonymousFunction) {
 			return;
 		}
 
@@ -61,7 +57,7 @@ public class LeekExpressionInstruction extends LeekInstruction {
 		// if (trimmed.getOperations() > 0) {
 		// 	writer.addCode("; ops(" + trimmed.getOperations() + ")");
 		// }
-		writer.addLine(";", mLine, mAI);
+		writer.addLine(";", getLocation());
 	}
 
 	@Override
@@ -87,5 +83,10 @@ public class LeekExpressionInstruction extends LeekInstruction {
 	@Override
 	public int getOperations() {
 		return 0;
+	}
+
+	@Override
+	public Location getLocation() {
+		return mExpression.getLocation();
 	}
 }

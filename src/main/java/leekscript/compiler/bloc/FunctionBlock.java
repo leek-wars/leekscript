@@ -2,24 +2,32 @@ package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
 
+import leekscript.common.Type;
+import leekscript.common.Error;
 import leekscript.compiler.AIFile;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
+import leekscript.runner.CallableVersion;
 
 public class FunctionBlock extends AbstractLeekBlock {
 
-	private IAWord token;
+	private Token token;
 	private int mId;
 	private final ArrayList<String> mParameters = new ArrayList<String>();
 	private final ArrayList<LeekVariableDeclarationInstruction> mParameterDeclarations = new ArrayList<>();
 	private final ArrayList<Boolean> mReferences = new ArrayList<Boolean>();
+	private final ArrayList<Type> mTypes = new ArrayList<>();
+	private CallableVersion[] versions;
 
-	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai, IAWord token) {
-		super(parent, main, line, ai);
+	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
+		super(parent, main);
 		this.token = token;
 	}
 
@@ -49,12 +57,20 @@ public class FunctionBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void addParameter(WordCompiler compiler, IAWord parameter, boolean is_reference) {
-		mParameters.add(parameter.getWord());
+	public void addParameter(WordCompiler compiler, Token token, boolean is_reference, Type type) {
+
+		for (var parameter : mParameters) {
+			if (parameter.equals(token.getWord())) {
+				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.PARAMETER_NAME_UNAVAILABLE));
+			}
+		}
+
+		mParameters.add(token.getWord());
 		mReferences.add(is_reference);
-		var declaration = new LeekVariableDeclarationInstruction(compiler, parameter, parameter.getLine(), parameter.getAI(), this);
+		mTypes.add(type);
+		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this);
 		mParameterDeclarations.add(declaration);
-		addVariable(new LeekVariable(parameter, VariableType.ARGUMENT, declaration));
+		addVariable(new LeekVariable(token, VariableType.ARGUMENT, declaration));
 	}
 
 	@Override
@@ -75,6 +91,11 @@ public class FunctionBlock extends AbstractLeekBlock {
 
 	@Override
 	public void preAnalyze(WordCompiler compiler) {
+
+		var types = new Type[mTypes.size()];
+		for (int t = 0; t < types.length; ++t) types[t] = mTypes.get(t);
+		this.versions = new CallableVersion[] { new CallableVersion(Type.ANY, types) };
+
 		var initialFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(this);
 		super.preAnalyze(compiler);
@@ -136,7 +157,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 				}
 			}
 		}
-		writer.addLine(sb.toString(), mLine, mAI);
+		writer.addLine(sb.toString(), getLocation());
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0)
@@ -166,5 +187,14 @@ public class FunctionBlock extends AbstractLeekBlock {
 
 	public String toString() {
 		return token.getWord();
+	}
+
+	public CallableVersion[] getVersions() {
+		return versions;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

@@ -4,8 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import leekscript.compiler.AIFile;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable;
@@ -18,14 +19,17 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	protected AbstractLeekBlock mParent = null;
 	protected HashMap<String, LeekVariable> mVariables = new HashMap<>();
 
-	protected IAWord mDeclaringVariable = null;
+	protected Token mDeclaringVariable = null;
 	protected boolean mDeclaringVariableUsed = false;
 	protected boolean mAccolade = true;
 	protected MainLeekBlock mMain = null;
 	protected int mEndInstruction = 0;
-	protected int mLine = 0;
-	protected AIFile<?> mAI = null;
 	protected boolean full = false;
+
+	public AbstractLeekBlock(AbstractLeekBlock parent, MainLeekBlock main) {
+		mParent = parent;
+		mMain = main;
+	}
 
 	public AbstractLeekBlock getParent() {
 		return mParent;
@@ -54,16 +58,9 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		return 1;
 	}
 
-	public AbstractLeekBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
-		mParent = parent;
-		mMain = main;
-		mLine = line;
-		mAI = ai;
-	}
-
 	public void addInstruction(WordCompiler compiler, LeekInstruction instruction) throws LeekCompilerException {
 		if (mEndInstruction != 0) {
-			throw new LeekCompilerException(compiler.getParser().lastWord(), Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+			throw new LeekCompilerException(instruction.getLocation(), Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
 		}
 		mEndInstruction = instruction.getEndBlock();
 		mInstructions.add(instruction);
@@ -77,12 +74,12 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		return mAccolade;
 	}
 
-	public void setDeclaringVariable(IAWord variable) {
+	public void setDeclaringVariable(Token variable) {
 		mDeclaringVariable = variable;
 		mDeclaringVariableUsed = false;
 	}
 
-	public IAWord getDeclaringVariable() {
+	public Token getDeclaringVariable() {
 		mDeclaringVariableUsed = true;
 		return mDeclaringVariable;
 	}
@@ -199,13 +196,6 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 			instruction.analyze(compiler);
 		}
 		compiler.setCurrentBlock(initialBlock);
-	}
-
-	public int getLine() {
-		return mLine;
-	}
-	public AIFile<?> getFile() {
-		return mAI;
 	}
 
 	public void setFull(boolean full) {

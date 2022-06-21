@@ -52,7 +52,7 @@ public class WordParser {
 	public final static int T_DOT = 15;
 
 	private final AIFile<?> mAI;
-	private final ArrayList<IAWord> words = new ArrayList<IAWord>();
+	private final ArrayList<Token> words = new ArrayList<Token>();
 
 	private int instructions = 0;
 	private int cursor = 0;
@@ -87,7 +87,7 @@ public class WordParser {
 			// Compteur caractères/lignes
 			if (c == '\n') {
 				if (type != T_NOTHING) {
-					newWord(word, type);
+					newWord(word, type, -1);
 					type = T_NOTHING;
 					word = "";
 				}
@@ -98,7 +98,7 @@ public class WordParser {
 				char_counter++;
 			if ((c == '"' || c == '\'') && !comment_block && !comment_line) {
 				if (type == T_NOTHING) {
-					word = "";
+					word = "" + c;
 					type = T_VAR_STRING;
 					opener = c;
 				} else if (type == T_VAR_STRING && opener == c) {
@@ -109,19 +109,17 @@ public class WordParser {
 						else
 							break;
 					}
-					if (isEscaped) {
-						word = word.substring(0, word.length() - 1);
-						word += c;
-					} else {
+					word += c;
+					if (!isEscaped) {
 						newWord(word, type);
 						word = "";
 						type = T_NOTHING;
 					}
-				} else if (type == T_VAR_STRING)
+				} else if (type == T_VAR_STRING) {
 					word += c;
-				else {
-					newWord(word, type);
-					word = "";
+				} else {
+					newWord(word, type, -1);
+					word = "" + c;
 					opener = c;
 					type = T_VAR_STRING;
 				}
@@ -160,7 +158,7 @@ public class WordParser {
 				} else if (type == T_STRING || type == T_VAR_STRING) {
 					word += c;
 				} else if (type == T_OPERATOR) {
-					newWord(word, type);
+					newWord(word, type, -1);
 					word = "" + c;
 					type = T_STRING;
 				} else if (type == T_NUMBER) {
@@ -178,14 +176,14 @@ public class WordParser {
 					word += c;
 				} else {
 					if (type != T_NOTHING) {
-						newWord(word, type);
+						newWord(word, type, -1);
 					}
 					word = "" + c;
 					type = T_NUMBER;
 				}
 			} else if (c == ':') {
 				if (type != T_NOTHING) {
-					newWord(word, type);
+					newWord(word, type, -1);
 				}
 				newWord(":", T_OPERATOR);
 				word = "";
@@ -195,19 +193,19 @@ public class WordParser {
 					word += c;
 				} else if (type == T_NUMBER) {
 					if (word.contains(".")) {
-						compiler.addError(new AnalyzeError(new IAWord(mAI, 0, ".", line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
+						compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 					} else {
 						word += c;
 					}
 				} else if (version >= 2) {
 					if (type == T_STRING) {
-						newWord(word, type);
+						newWord(word, type, -1);
 					}
 					newWord(".", T_DOT);
 					word = "";
 					type = T_NOTHING;
 				} else {
-					compiler.addError(new AnalyzeError(new IAWord(mAI, 0, ".", line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
+					compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 				}
 			} else if (c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-' || c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~' || c == '.') {
 				if (type == T_VAR_STRING) {
@@ -217,70 +215,70 @@ public class WordParser {
 						if (c == '&' || c == '=')
 							word += c;
 						else {
-							newWord(word, type);
+							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("|")) {
 						if (c == '|' || c == '=')
 							word += c;
 						else {
-							newWord(word, type);
+							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("+")) {
 						if (c == '=' || c == '+')
 							word += c;
 						else {
-							newWord(word, type);
+							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("-")) {
 						if (c == '=' || c == '-')
 							word += c;
 						else {
-							newWord(word, type);
+							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("*")) {
 						if (c == '=' || c == '*')
 							word += c;
 						else {
-							newWord(word, type);
+							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals(">")) {
 						if (c == '=' || c == '>')
 							word += c;
 						else {
-							newWord(word, type);
+							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("<")) {
 						if (c == '=' || c == '<')
 							word += c;
 						else {
-							newWord(word, type);
+							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals(">>")) {
 						if (c == '=' || c == '>')
 							word += c;
 						else {
-							newWord(word, type);
+							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals(">>>")) {
 						if (c == '=')
 							word += c;
 						else {
-							newWord(word, type);
+							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("<<")) {
 						if (c == '=')
 							word += c;
 						else {
-							newWord(word, type);
+							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("*") || word.equals("**") || word.equals("/") || word.equals("%")
@@ -289,11 +287,11 @@ public class WordParser {
 						if (c == '=')
 							word += c;
 						else {
-							newWord(word, type);
+							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else {
-						newWord(word, type);
+						newWord(word, type, -1);
 						word = "" + c;
 					}
 				}
@@ -301,20 +299,20 @@ public class WordParser {
 					if ((c == '-' || c == '+') && (word.endsWith("e") || word.endsWith("p"))) {
 						word += c;
 					} else {
-						newWord(word, type);
+						newWord(word, type, -1);
 						word = "" + c;
 						type = T_OPERATOR;
 					}
 				} else {
 					if (type != T_NOTHING) {
-						newWord(word, type);
+						newWord(word, type, -1);
 					}
 					word = "" + c;
 					type = T_OPERATOR;
 				}
 			} else if (c == '(' || c == ')') {
 				if (type != T_NOTHING) {
-					newWord(word, type);
+					newWord(word, type, -1);
 					word = "";
 					type = T_NOTHING;
 				}
@@ -324,7 +322,7 @@ public class WordParser {
 					newWord(")", T_PAR_RIGHT);
 			} else if (c == '[' || c == ']') {
 				if (type != T_NOTHING) {
-					newWord(word, type);
+					newWord(word, type, -1);
 					word = "";
 					type = T_NOTHING;
 				}
@@ -346,20 +344,20 @@ public class WordParser {
 				if (type == T_VAR_STRING) {
 					word += c;
 				} else if (type != T_NOTHING) {
-					newWord(word, type);
+					newWord(word, type, -1);
 					word = "";
 					type = T_NOTHING;
 				}
 			} else if (c == ';') {
 				if (type != T_NOTHING) {
-					newWord(word, type);
+					newWord(word, type, -1);
 					word = "";
 					type = T_NOTHING;
 				}
 				newWord(";", T_END_INSTRUCTION);
 			} else if (c == ',') {
 				if (type != T_NOTHING) {
-					newWord(word, type);
+					newWord(word, type, -1);
 					word = "";
 					type = T_NOTHING;
 				}
@@ -369,7 +367,7 @@ public class WordParser {
 				if (type == T_VAR_STRING) {
 					word += c;
 				} else {
-					throw new LeekCompilerException(new IAWord(mAI, T_NOTHING, "" + c, line_counter, char_counter), Error.INVALID_CHAR);
+					throw new LeekCompilerException(new Location(mAI, line_counter, char_counter), Error.INVALID_CHAR);
 				}
 			}
 		}
@@ -391,6 +389,10 @@ public class WordParser {
 	}
 
 	private void newWord(String word, int type) {
+		newWord(word, type, 0);
+	}
+
+	private void newWord(String word, int type, int offset) {
 		if (type == T_STRING) {
 			if (wordEquals(word, "or")) {
 				type = T_OPERATOR;
@@ -410,32 +412,32 @@ public class WordParser {
 			 */
 		} else if (type == T_OPERATOR) {
 			if (word.equals("=!")) {
-				words.add(new IAWord(mAI, type, "=", line_counter, char_counter));
-				words.add(new IAWord(mAI, type, "!", line_counter, char_counter));
+				words.add(new Token(type, "=", mAI, line_counter, char_counter));
+				words.add(new Token(type, "!", mAI, line_counter, char_counter));
 				return;
 			}
 		}
-		words.add(new IAWord(mAI, type, word, line_counter, char_counter));
+		words.add(new Token(type, word, mAI, line_counter, char_counter + offset));
 	}
 
-	public IAWord getWord() {
+	public Token token() {
 		return words.get(cursor);
 	}
 
-	public IAWord lastWord() {
+	public Token lastToken() {
 		return words.get(cursor - 1);
 	}
 
-	public IAWord endWord() {
+	public Token endToken() {
 		return words.isEmpty() ? null : words.get(words.size() - 1);
 	}
 
-	public IAWord readWord() {
+	public Token eatToken() {
 		cursor++;
 		return words.get(cursor - 1);
 	}
 
-	public void skipWord() {
+	public void skipToken() {
 		cursor++;
 	}
 

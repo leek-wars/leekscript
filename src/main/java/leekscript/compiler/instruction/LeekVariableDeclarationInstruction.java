@@ -2,13 +2,14 @@ package leekscript.compiler.instruction;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.AnalyzeError;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
-import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekAnonymousFunction;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekVariable;
@@ -19,23 +20,19 @@ import leekscript.common.Type;
 
 public class LeekVariableDeclarationInstruction extends LeekInstruction {
 
-	private final IAWord token;
-	private final int mLine;
-	private final AIFile<?> mAI;
-	private AbstractExpression mValue = null;
+	private final Token token;
+	private Expression mValue = null;
 	private boolean captured = false;
 	private AbstractLeekBlock function;
 	private boolean box = false;
 
-	public LeekVariableDeclarationInstruction(WordCompiler compiler, IAWord token, int line, AIFile<?> ai, AbstractLeekBlock function) {
+	public LeekVariableDeclarationInstruction(WordCompiler compiler, Token token, AbstractLeekBlock function) {
 		this.token = token;
-		mLine = line;
-		mAI = ai;
 		this.function = function;
 		this.box = compiler.getVersion() <= 1;
 	}
 
-	public void setValue(AbstractExpression value) {
+	public void setValue(Expression value) {
 		mValue = value;
 	}
 
@@ -43,7 +40,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 		return token.getWord();
 	}
 
-	public IAWord getToken() {
+	public Token getToken() {
 		return this.token;
 	}
 
@@ -52,7 +49,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	}
 
 	public boolean isWrapper() {
-		return mAI.getVersion() == 1 && this.captured;
+		return token.getLocation().getFile().getVersion() == 1 && this.captured;
 	}
 
 	@Override
@@ -67,7 +64,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 			if (mValue != null && mValue.trim() instanceof LeekAnonymousFunction) {
 				writer.addCode("final Wrapper u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", null)); u_" + token.getWord() + ".set(");
 				mValue.writeJavaCode(mainblock, writer);
-				writer.addLine(");", mLine, mAI);
+				writer.addLine(");", getLocation());
 			} else if (mValue instanceof LeekExpression && ((LeekExpression) mValue).getOperator() == Operators.REFERENCE) {
 				var e = ((LeekExpression) mValue).getExpression2();
 				if (e.isLeftValue()) {
@@ -79,7 +76,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 					e.writeJavaCode(mainblock, writer);
 					writer.addLine("), " + e.getOperations() + ")");
 				}
-				writer.addLine(";", mLine, mAI);
+				writer.addLine(";", getLocation());
 			} else if (mainblock.getWordCompiler().getVersion() <= 1) {
 				writer.addCode("final var u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", ");
 				if (mValue != null) mValue.compileL(mainblock, writer);
@@ -88,7 +85,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 				if (mValue != null && mValue.getOperations() > 0) {
 					writer.addCode(", " + mValue.getOperations());
 				}
-				writer.addLine(");", mLine, mAI);
+				writer.addLine(");", getLocation());
 			} else {
 				writer.addCode("final var u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", ");
 				if (mValue != null) mValue.writeJavaCode(mainblock, writer);
@@ -97,7 +94,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 				if (mValue != null && mValue.getOperations() > 0) {
 					writer.addCode(", " + mValue.getOperations());
 				}
-				writer.addLine(");", mLine, mAI);
+				writer.addLine(");", getLocation());
 			}
 		} else {
 			if (mainblock.getWordCompiler().getVersion() <= 1) {
@@ -122,7 +119,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 						}
 						writer.addLine(")");
 					}
-					writer.addLine(";", mLine, mAI);
+					writer.addLine(";", getLocation());
 				} else {
 					writer.addCode("var u_" + token.getWord() + " = new Box(" + writer.getAIThis() + ", ");
 					if (mValue != null) {
@@ -138,7 +135,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 					} else {
 						writer.addCode("null");
 					}
-					writer.addLine(");", mLine, mAI);
+					writer.addLine(");", getLocation());
 				}
 			} else {
 				writer.addCode("Object u_" + token.getWord() + " = ");
@@ -146,7 +143,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 				if (mValue != null) mValue.writeJavaCode(mainblock, writer);
 				else writer.addCode("null");
 				writer.addCode(", " + (1 + (mValue == null ? 0 : mValue.getOperations())) + ")");
-				writer.addLine(";", mLine, mAI);
+				writer.addLine(";", getLocation());
 			}
 		}
 	}
@@ -215,5 +212,10 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	@Override
 	public int getOperations() {
 		return 0;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

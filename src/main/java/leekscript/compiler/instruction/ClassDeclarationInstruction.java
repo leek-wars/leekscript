@@ -7,14 +7,15 @@ import java.util.Map.Entry;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.AnalyzeError;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
-import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.AccessLevel;
@@ -24,10 +25,10 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 	public static class ClassDeclarationField {
 
-		AbstractExpression expression;
+		Expression expression;
 		AccessLevel level;
 
-		public ClassDeclarationField(AbstractExpression expr, AccessLevel level) {
+		public ClassDeclarationField(Expression expr, AccessLevel level) {
 			this.expression = expr;
 			this.level = level;
 		}
@@ -44,8 +45,8 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 	}
 
-	private final IAWord token;
-	private IAWord parentToken;
+	private final Token token;
+	private Token parentToken;
 	private ClassDeclarationInstruction parent;
 	public boolean internal;
 	private LinkedHashMap<String, ClassDeclarationField> fields = new LinkedHashMap<>();
@@ -58,7 +59,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> methods = new HashMap<>();
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> staticMethods = new HashMap<>();
 
-	public ClassDeclarationInstruction(IAWord token, int line, AIFile<?> ai, boolean internal) {
+	public ClassDeclarationInstruction(Token token, int line, AIFile<?> ai, boolean internal) {
 		this.token = token;
 		this.internal = internal;
 	}
@@ -147,7 +148,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		return false;
 	}
 
-	public void setParent(IAWord userClass) {
+	public void setParent(Token userClass) {
 		this.parentToken = userClass;
 	}
 
@@ -171,7 +172,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		constructors.put(block.countParameters(), new ClassDeclarationMethod(block, level));
 	}
 
-	public void addMethod(WordCompiler compiler, IAWord token, ClassMethodBlock method, AccessLevel level) {
+	public void addMethod(WordCompiler compiler, Token token, ClassMethodBlock method, AccessLevel level) {
 		// On regarde si il n'y a pas déjà une méthode statique du même nom
 		if (staticMethods.containsKey(token.getWord())) {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.DUPLICATED_METHOD));
@@ -194,7 +195,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		return methods.containsKey(name);
 	}
 
-	public void addStaticMethod(WordCompiler compiler, IAWord token, ClassMethodBlock method, AccessLevel level) {
+	public void addStaticMethod(WordCompiler compiler, Token token, ClassMethodBlock method, AccessLevel level) {
 		// On regarde si il n'y a pas déjà une méthode du même nom
 		if (methods.containsKey(token.getWord())) {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.DUPLICATED_METHOD));
@@ -216,7 +217,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		return false;
 	}
 
-	public void addField(WordCompiler compiler, IAWord word, AbstractExpression expr, AccessLevel level) throws LeekCompilerException {
+	public void addField(WordCompiler compiler, Token word, Expression expr, AccessLevel level) throws LeekCompilerException {
 		if (fields.containsKey(word.getWord()) || staticFields.containsKey(word.getWord())) {
 			compiler.addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.FIELD_ALREADY_EXISTS));
 			return;
@@ -225,9 +226,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		fieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.FIELD));
 	}
 
-	public void addStaticField(IAWord word, AbstractExpression expr, AccessLevel level) throws LeekCompilerException {
+	public void addStaticField(Token word, Expression expr, AccessLevel level) throws LeekCompilerException {
 		if (staticFields.containsKey(word.getWord()) || fields.containsKey(word.getWord())) {
-			throw new LeekCompilerException(word, Error.FIELD_ALREADY_EXISTS);
+			throw new LeekCompilerException(word.getLocation(), Error.FIELD_ALREADY_EXISTS);
 		}
 		staticFields.put(word.getWord(), new ClassDeclarationField(expr, level));
 		staticFieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.STATIC_FIELD));
@@ -347,7 +348,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					writer.addCode("Object " + letter + "_" + arg.getToken());
 				}
 				writer.addLine(") throws LeekRunException {");
-				writer.addLine("final var u_class = " + className + ";", version.getValue().block.getLine(), version.getValue().block.getFile());
+				writer.addLine("final var u_class = " + className + ";", version.getValue().block.getLocation());
 				if (parent != null) {
 					writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
 				}
@@ -373,7 +374,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					writer.addCode(", Object " + letter + "_" + arg.getToken());
 				}
 				writer.addCode(") throws LeekRunException {");
-				writer.addLine("final var u_class = " + className + ";", version.getValue().block.getLine(), version.getValue().block.getFile());
+				writer.addLine("final var u_class = " + className + ";", version.getValue().block.getLocation());
 				if (parent != null) {
 					writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
 				}
@@ -549,7 +550,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 	}
 
-	public IAWord getParentToken() {
+	public Token getParentToken() {
 		return parentToken;
 	}
 
@@ -662,5 +663,10 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			return parent.getField(token);
 		}
 		return null;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

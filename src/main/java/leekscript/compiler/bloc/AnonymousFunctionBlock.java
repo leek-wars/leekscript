@@ -2,10 +2,14 @@ package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
 
-import leekscript.compiler.AIFile;
-import leekscript.compiler.IAWord;
+import leekscript.common.Type;
+import leekscript.common.Error;
+import leekscript.compiler.Token;
+import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
@@ -15,10 +19,13 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	private final ArrayList<String> mParameters = new ArrayList<String>();
 	private final ArrayList<LeekVariableDeclarationInstruction> mParameterDeclarations = new ArrayList<>();
 	private final ArrayList<Boolean> mReferences = new ArrayList<Boolean>();
+	private final ArrayList<Type> mTypes = new ArrayList<>();
 	private int mId = 0;
+	private final Token token;
 
-	public AnonymousFunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
-		super(parent, main, line, ai);
+	public AnonymousFunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
+		super(parent, main);
+		this.token = token;
 	}
 
 	public void setId(int id) {
@@ -43,10 +50,18 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void addParameter(WordCompiler compiler, IAWord token, boolean is_reference) {
+	public void addParameter(WordCompiler compiler, Token token, boolean is_reference, Type type) {
+
+		for (var parameter : mParameters) {
+			if (parameter.equals(token.getWord())) {
+				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.PARAMETER_NAME_UNAVAILABLE));
+			}
+		}
+
 		mParameters.add(token.getWord());
 		mReferences.add(is_reference);
-		var declaration = new LeekVariableDeclarationInstruction(compiler, token, token.getLine(), token.getAI(), this);
+		mTypes.add(type);
+		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this);
 		mParameterDeclarations.add(declaration);
 		addVariable(new LeekVariable(token, VariableType.ARGUMENT, declaration));
 	}
@@ -126,7 +141,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 				}
 			}
 		}
-		writer.addLine(sb.toString(), mLine, mAI);
+		writer.addLine(sb.toString(), getLocation());
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0) {
@@ -143,5 +158,10 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	@Override
 	public int getOperations() {
 		return 0;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

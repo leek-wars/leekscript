@@ -2,6 +2,7 @@ package leekscript.compiler.bloc;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -9,15 +10,15 @@ import java.util.TreeMap;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.IACompiler;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.LeekScript;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.WordParser;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
-import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.runner.LeekFunctions;
 
 public class MainLeekBlock extends AbstractLeekBlock {
@@ -25,7 +26,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final ArrayList<String> mGlobales = new ArrayList<>();
 	private final ArrayList<LeekGlobalDeclarationInstruction> mGlobalesDeclarations = new ArrayList<>();
 	private final HashSet<String> mRedefinedFunctions = new HashSet<String>();
-	private final ArrayList<FunctionBlock> mFunctions = new ArrayList<FunctionBlock>();
+	private final HashMap<String, FunctionBlock> mFunctions = new HashMap<>();
 	private final ArrayList<AnonymousFunctionBlock> mAnonymousFunctions = new ArrayList<AnonymousFunctionBlock>();
 	private final Map<String, Integer> mUserFunctions = new TreeMap<String, Integer>();
 	private final Map<String, ClassDeclarationInstruction> mUserClasses = new TreeMap<String, ClassDeclarationInstruction>();
@@ -33,9 +34,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private int mMinLevel = 1;
 	private int mAnonymousId = 1;
 	private int mFunctionId = 1;
-
 	private final ArrayList<Integer> mIncluded = new ArrayList<Integer>();
-
 	private int mCounter = 0;
 	private int mCountInstruction = 0;
 	private final IACompiler mCompiler;
@@ -43,33 +42,33 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private String className;
 	private WordCompiler wordCompiler;
 
-	@Override
-	public int getCount() {
-		return mCounter++;
-	}
-
 	public MainLeekBlock(IACompiler compiler, AIFile<?> ai) {
-		super(null, null, 0, null);
+		super(null, null);
 		// On ajoute l'IA pour pas pouvoir l'include
 		mIncluded.add(ai.getId());
 		mAIName = ai.getPath();
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
 		if (ai.getVersion() >= 3) {
-			addClass(new ClassDeclarationInstruction(new IAWord("Value"), 0, ai, true));
-			addClass(new ClassDeclarationInstruction(new IAWord("Null"), 0, ai, true));
-			addClass(new ClassDeclarationInstruction(new IAWord("Boolean"), 0, ai, true));
-			addClass(new ClassDeclarationInstruction(new IAWord("Integer"), 0, ai, true));
-			addClass(new ClassDeclarationInstruction(new IAWord("Real"), 0, ai, true));
-			addClass(new ClassDeclarationInstruction(new IAWord("Number"), 0, ai, true));
-			addClass(new ClassDeclarationInstruction(new IAWord("Array"), 0, ai, true));
-			addClass(new ClassDeclarationInstruction(new IAWord("String"), 0, ai, true));
-			addClass(new ClassDeclarationInstruction(new IAWord("Object"), 0, ai, true));
-			addClass(new ClassDeclarationInstruction(new IAWord("Function"), 0, ai, true));
-			addClass(new ClassDeclarationInstruction(new IAWord("Class"), 0, ai, true));
-			addClass(new ClassDeclarationInstruction(new IAWord("JSON"), 0, ai, true));
-			addClass(new ClassDeclarationInstruction(new IAWord("System"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("Value"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("Null"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("Boolean"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("Integer"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("Real"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("Number"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("Array"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("String"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("Object"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("Function"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("Class"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("JSON"), 0, ai, true));
+			addClass(new ClassDeclarationInstruction(new Token("System"), 0, ai, true));
 		}
+	}
+
+	@Override
+	public int getCount() {
+		return mCounter++;
 	}
 
 	public void addRedefinedFunction(String function) {
@@ -119,12 +118,12 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public boolean hasUserFunction(String name, boolean use_declarations) {
-		for (FunctionBlock block : mFunctions) {
-			if (block.getName().equals(name))
-				return true;
-		}
-		if (use_declarations && mUserFunctions.containsKey(name))
+		if (mFunctions.containsKey(name)) {
 			return true;
+		}
+		if (use_declarations && mUserFunctions.containsKey(name)) {
+			return true;
+		}
 		return false;
 	}
 
@@ -142,23 +141,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mAnonymousId++;
 	}
 
-	public int getUserFunctionParametersCount(String name) {
-
-		for (FunctionBlock block : mFunctions) {
-			if (block.getName().equals(name))
-				return block.countParameters();
-		}
-		var f = mUserFunctions.get(name);
-		if (f != null) return f;
-		return -1;
-	}
-
 	public FunctionBlock getUserFunction(String name) {
-		for (FunctionBlock block : mFunctions) {
-			if (block.getName().equals(name))
-				return block;
-		}
-		return null;
+		return mFunctions.get(name);
 	}
 
 	@Override
@@ -179,13 +163,13 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public void addFunction(FunctionBlock block) {
 		block.setId(mFunctionId);
 		mFunctionId++;
-		mFunctions.add(block);
+		mFunctions.put(block.getName(), block);
 	}
 
 	@Override
 	public String getCode() {
 		String str = "";
-		for (LeekInstruction instruction : mFunctions) {
+		for (var instruction : mFunctions.values()) {
 			str += instruction.getCode() + "\n";
 		}
 		for (var clazz : mUserClasses.values()) {
@@ -248,7 +232,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			writer.addLine(";");
 		}
 		// Fonctions
-		for (LeekInstruction instruction : mFunctions) {
+		for (var instruction : mFunctions.values()) {
 			instruction.writeJavaCode(this, writer);
 		}
 
@@ -321,7 +305,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var clazz : mUserClassesList) {
 			clazz.declare(compiler);
 		}
-		for (var function : mFunctions) {
+		for (var function : mFunctions.values()) {
 			function.declare(compiler);
 		}
 		for (var global : mGlobalesDeclarations) {
@@ -330,7 +314,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var clazz : mUserClassesList) {
 			clazz.preAnalyze(compiler);
 		}
-		for (var function : mFunctions) {
+		for (var function : mFunctions.values()) {
 			function.preAnalyze(compiler);
 		}
 		super.preAnalyze(compiler);
@@ -340,7 +324,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var clazz : mUserClassesList) {
 			clazz.analyze(compiler);
 		}
-		for (var function : mFunctions) {
+		for (var function : mFunctions.values()) {
 			function.analyze(compiler);
 		}
 		super.analyze(compiler);
@@ -360,5 +344,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public int getVersion() {
 		return this.wordCompiler.getVersion();
+	}
+
+	@Override
+	public Location getLocation() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

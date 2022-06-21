@@ -2,11 +2,12 @@ package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.AnalyzeError;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
-import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
@@ -14,26 +15,28 @@ import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 
 public class ForeachBlock extends AbstractLeekBlock {
 
-	private IAWord mIterator;
-	private AbstractExpression mArray;
+	private final Token token;
+	private Token mIterator;
+	private Expression mArray;
 	private final boolean mIsDeclaration;
 	private boolean mReference = false;
 	private LeekVariableDeclarationInstruction declaration;
 
-	public ForeachBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isDeclaration, int line, AIFile<?> ai, boolean reference) {
-		super(parent, main, line, ai);
+	public ForeachBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isDeclaration, Token token, boolean reference) {
+		super(parent, main);
 		mIsDeclaration = isDeclaration;
 		mReference = reference;
+		this.token = token;
 	}
 
-	public void setIterator(WordCompiler compiler, IAWord iterator) {
+	public void setIterator(WordCompiler compiler, Token iterator) {
 		mIterator = iterator;
 		if (mIsDeclaration) {
-			declaration = new LeekVariableDeclarationInstruction(compiler, iterator, iterator.getLine(), iterator.getAI(), compiler.getCurrentFunction());
+			declaration = new LeekVariableDeclarationInstruction(compiler, iterator, compiler.getCurrentFunction());
 		}
 	}
 
-	public void setArray(AbstractExpression exp) {
+	public void setArray(Expression exp) {
 		mArray = exp;
 	}
 
@@ -60,7 +63,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		}
 		writer.addCode(", " + mArray.getOperations() + ");");
 
-		writer.addLine("if (isIterable(" + ar + ")) {", mIterator.getLine(), mIterator.getAI());
+		writer.addLine("if (isIterable(" + ar + ")) {", mIterator.getLocation());
 		if (mIsDeclaration) {
 			if (mIsDeclaration && declaration.isCaptured()) {
 				writer.addCode("final Wrapper " + iterator_name + " = new Wrapper(new Box(" + writer.getAIThis() + ", null));");
@@ -145,5 +148,10 @@ public class ForeachBlock extends AbstractLeekBlock {
 		mArray.analyze(compiler);
 		compiler.setCurrentBlock(initialBlock);
 		super.analyze(compiler);
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

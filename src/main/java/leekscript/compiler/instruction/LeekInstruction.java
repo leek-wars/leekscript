@@ -1,6 +1,7 @@
 package leekscript.compiler.instruction;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
@@ -16,7 +17,11 @@ public abstract class LeekInstruction {
 
 	public void preAnalyze(WordCompiler compiler) {}
 
-	public abstract void analyze(WordCompiler compiler);
+	public void analyze(WordCompiler compiler) {}
 
-	public abstract int getOperations();
+	public abstract Location getLocation();
+
+	public int getOperations() {
+		return 0;
+	}
 }

@@ -10,7 +10,7 @@ import com.alibaba.fastjson.JSON;
 import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.common.Type;
 import leekscript.compiler.bloc.MainLeekBlock;
-import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.Expression;
 import leekscript.runner.CallableVersion;
 import leekscript.runner.LeekFunctions;
 
@@ -44,6 +44,13 @@ public class JavaWriter {
 		mCode.append(datas).append("\n");
 		int fileIndex = getFileIndex(ai);
 		mLines.put(mLine, new LineMapping(line, fileIndex));
+		mLine++;
+	}
+
+	public void addLine(String datas, Location location) {
+		mCode.append(datas).append("\n");
+		int fileIndex = getFileIndex(location.getFile());
+		mLines.put(mLine, new LineMapping(location.getStartLine(), fileIndex));
 		mLine++;
 	}
 
@@ -101,9 +108,9 @@ public class JavaWriter {
 		return mLine;
 	}
 
-	public void addPosition(IAWord token) {
-		var index = getFileIndex(token.getAI());
-		mLines.put(mLine, new LineMapping(token.getLine(), index));
+	public void addPosition(Token token) {
+		var index = getFileIndex(token.getLocation().getFile());
+		mLines.put(mLine, new LineMapping(token.getLocation().getStartLine(), index));
 	}
 
 	public String getAIThis() {
@@ -114,7 +121,7 @@ public class JavaWriter {
 		return className;
 	}
 
-	public void getBoolean(MainLeekBlock mainblock, AbstractExpression expression) {
+	public void getBoolean(MainLeekBlock mainblock, Expression expression) {
 		if (expression.getType() == Type.BOOL) {
 			expression.writeJavaCode(mainblock, this);
 		} else if (expression.getType() == Type.INT) {
@@ -128,7 +135,7 @@ public class JavaWriter {
 		}
 	}
 
-	public void getString(MainLeekBlock mainblock, AbstractExpression expression) {
+	public void getString(MainLeekBlock mainblock, Expression expression) {
 		if (expression.getType() == Type.STRING) {
 			expression.writeJavaCode(mainblock, this);
 		} else {
@@ -138,7 +145,7 @@ public class JavaWriter {
 		}
 	}
 
-	public void getInt(MainLeekBlock mainblock, AbstractExpression expression) {
+	public void getInt(MainLeekBlock mainblock, Expression expression) {
 		if (expression.getType() == Type.INT) {
 			expression.writeJavaCode(mainblock, this);
 		} else {
@@ -148,7 +155,7 @@ public class JavaWriter {
 		}
 	}
 
-	public void compileLoad(MainLeekBlock mainblock, AbstractExpression expr) {
+	public void compileLoad(MainLeekBlock mainblock, Expression expr) {
 		if (expr.getType() == Type.NULL || expr.getType() == Type.BOOL || expr.getType().isNumber() || expr.getType() == Type.STRING || expr.getType() == Type.ARRAY) {
 			expr.writeJavaCode(mainblock, this);
 		} else {
@@ -158,7 +165,7 @@ public class JavaWriter {
 		}
 	}
 
-	public void compileClone(MainLeekBlock mainblock, AbstractExpression expr) {
+	public void compileClone(MainLeekBlock mainblock, Expression expr) {
 		if (expr.getType() == Type.NULL || expr.getType() == Type.BOOL || expr.getType().isNumber() || expr.getType() == Type.STRING) {
 			expr.writeJavaCode(mainblock, this);
 		} else {
@@ -168,7 +175,7 @@ public class JavaWriter {
 		}
 	}
 
-	public void compileConvert(MainLeekBlock mainblock, int index, AbstractExpression value, Type type) {
+	public void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type) {
 		// var v_type = value.getType();
 		// System.out.println("convert " + v_type + " to " + type);
 		if (type == Type.ARRAY) {

@@ -1,7 +1,7 @@
 package leekscript.compiler.instruction;
 
 import leekscript.compiler.JavaWriter;
-import leekscript.compiler.WordCompiler;
+import leekscript.compiler.Location;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class BlankInstruction extends LeekInstruction {
@@ -26,12 +26,7 @@ public class BlankInstruction extends LeekInstruction {
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
-
-	}
-
-	@Override
-	public int getOperations() {
-		return 0;
+	public Location getLocation() {
+		return null;
 	}
 }

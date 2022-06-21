@@ -15,28 +15,40 @@ public class AnalyzeError implements Comparable<AnalyzeError> {
 	// public int startCharacter;
 	// public int endLine;
 	// public int endCharacter;
-	public IAWord token;
+	public Location location;
 	public Error error;
 	public AnalyzeErrorLevel level;
 	public String[] parameters;
 
-	public AnalyzeError(IAWord token, AnalyzeErrorLevel level, Error error) {
-		this(token, level, error, null);
+	public AnalyzeError(Token token, AnalyzeErrorLevel level, Error error) {
+		this(token.getLocation(), level, error, null);
 	}
-	public AnalyzeError(IAWord token, AnalyzeErrorLevel level, Error error, String[] parameters) {
-		this.token = token;
+
+	public AnalyzeError(Token token, AnalyzeErrorLevel level, Error error, String[] parameters) {
+		this(token.getLocation(), level, error, parameters);
+	}
+
+	public AnalyzeError(Location location, AnalyzeErrorLevel level, Error error) {
+		this(location, level, error, null);
+	}
+
+	public AnalyzeError(Location location, AnalyzeErrorLevel level, Error error, String[] parameters) {
+		this.location = location;
 		this.error = error;
 		this.level = level;
 		this.parameters = parameters;
 	}
 
+
 	public JSONArray toJSON() {
 		JSONArray array = new JSONArray();
 		array.add(level.ordinal());
-		array.add(token.getAI().getId());
-		array.add(token.getLine());
-		array.add(token.getCharacter());
-		array.add(token.getWord());
+		array.add(location.getFile().getId());
+		array.add(location.getStartLine());
+		array.add(location.getStartColumn());
+		array.add(location.getEndLine());
+		array.add(location.getEndColumn());
+		// array.add(token.getWord());
 		array.add(this.error.ordinal());
 		if (parameters != null) {
 			array.add(parameters);
@@ -46,11 +58,11 @@ public class AnalyzeError implements Comparable<AnalyzeError> {
 
 	@Override
 	public int compareTo(AnalyzeError o) {
-		if (token.getLine() != o.token.getLine()) {
-			return token.getLine() - o.token.getLine();
+		if (location.getStartLine() != o.location.getStartLine()) {
+			return location.getStartLine() - o.location.getStartLine();
 		}
-		if (token.getCharacter() != o.token.getCharacter()) {
-			return token.getCharacter() - o.token.getCharacter();
+		if (location.getStartColumn() != o.location.getStartColumn()) {
+			return location.getStartColumn() - o.location.getStartColumn();
 		}
 		return 0;
 	}

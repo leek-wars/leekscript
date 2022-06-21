@@ -80,7 +80,6 @@ public abstract class AI {
 	public final ClassLeekValue classClass;
 	public final ClassLeekValue jsonClass;
 	public final ClassLeekValue systemClass;
-	private String x;
 
 	public AI(int instructions, int version) {
 		this.mInstructions = instructions;
@@ -588,7 +587,6 @@ public abstract class AI {
 			return (long) ((MapLeekValue) value).size();
 		} else if (value instanceof String) {
 			var s = (String) value;
-			// ai.ops(2);
 			if (s.equals("true")) return 1l;
 			if (s.equals("false")) return 0l;
 			if (s.isEmpty()) return 0l;
@@ -623,7 +621,6 @@ public abstract class AI {
 			return ((MapLeekValue) value).size();
 		} else if (value instanceof String) {
 			var s = (String) value;
-			// ops(2);
 			if (s.equals("true")) return 1;
 			if (s.equals("false")) return 0;
 			if (s.isEmpty()) return 0;
@@ -658,7 +655,6 @@ public abstract class AI {
 			return ((MapLeekValue) value).size();
 		} else if (value instanceof String) {
 			var s = (String) value;
-			// ai.ops(2);
 			if (s.equals("true")) return 1l;
 			if (s.equals("false")) return 0l;
 			if (s.isEmpty()) return 0l;

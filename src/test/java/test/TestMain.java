@@ -1,7 +1,5 @@
 package test;
 
-import java.util.Locale;
-
 import org.junit.Assert;
 
 public class TestMain {

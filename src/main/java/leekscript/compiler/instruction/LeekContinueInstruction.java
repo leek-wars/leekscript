@@ -1,20 +1,17 @@
 package leekscript.compiler.instruction;
 
-import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekContinueInstruction extends LeekInstruction {
 
-	// private final int mCount;
-	private final int mLine;
-	private final AIFile<?> mAI;
+	private final Token token;
 
-	public LeekContinueInstruction(int count, int line, AIFile<?> ai) {
-		// mCount = count;
-		mLine = line;
-		mAI = ai;
+	public LeekContinueInstruction(Token token) {
+		this.token = token;
 	}
 
 	@Override
@@ -25,7 +22,7 @@ public class LeekContinueInstruction extends LeekInstruction {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		writer.addCounter(1);
-		writer.addLine("continue;", mLine, mAI);
+		writer.addLine("continue;", getLocation());
 	}
 
 	@Override
@@ -46,5 +43,10 @@ public class LeekContinueInstruction extends LeekInstruction {
 	@Override
 	public int getOperations() {
 		return 0;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

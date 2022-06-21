@@ -2,10 +2,18 @@ package leekscript.compiler.expression;
 
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class LeekNull extends AbstractExpression {
+public class LeekNull extends Expression {
+
+	private final Token token;
+
+	public LeekNull(Token token) {
+		this.token = token;
+	}
 
 	@Override
 	public int getNature() {
@@ -36,5 +44,10 @@ public class LeekNull extends AbstractExpression {
 	@Override
 	public void analyze(WordCompiler compiler) {
 
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

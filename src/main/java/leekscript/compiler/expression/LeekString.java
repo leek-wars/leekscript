@@ -4,15 +4,19 @@ import com.alibaba.fastjson.JSON;
 
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class LeekString extends AbstractExpression {
+public class LeekString extends Expression {
 
+	private final Token token;
 	private final String mString;
 
-	public LeekString(String str) {
-		mString = str;
+	public LeekString(Token token, String str) {
+		this.token = token;
+		mString = str.substring(1, str.length() - 1);
 	}
 
 	@Override
@@ -75,5 +79,10 @@ public class LeekString extends AbstractExpression {
 			return mString.equals(((LeekString) o).mString);
 		}
 		return false;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

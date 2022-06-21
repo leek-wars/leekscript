@@ -2,23 +2,27 @@ package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
-import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekBoolean;
 
 public class WhileBlock extends AbstractLeekBlock {
 
-	private AbstractExpression mCondition = null;
+	private Expression mCondition = null;
+	private final Token token;
 
-	public WhileBlock(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
-		super(parent, main, line, ai);
+	public WhileBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
+		super(parent, main);
+		this.token = token;
 	}
 
-	public void setCondition(AbstractExpression condition) {
+	public void setCondition(Expression condition) {
 		mCondition = condition;
 	}
 
-	public AbstractExpression getCondition() {
+	public Expression getCondition() {
 		return mCondition;
 	}
 
@@ -40,7 +44,7 @@ public class WhileBlock extends AbstractLeekBlock {
 			writer.getBoolean(mainblock, mCondition);
 		}
 		writer.addCode(", " + (mCondition.getOperations()) + ")");
-		writer.addLine(") {", mLine, mAI);
+		writer.addLine(") {", getLocation());
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
 		writer.addLine("}");
@@ -68,5 +72,10 @@ public class WhileBlock extends AbstractLeekBlock {
 			mCondition.analyze(compiler);
 		}
 		super.analyze(compiler);
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

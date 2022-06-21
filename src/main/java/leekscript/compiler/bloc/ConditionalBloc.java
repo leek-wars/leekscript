@@ -2,18 +2,21 @@ package leekscript.compiler.bloc;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
-import leekscript.compiler.expression.AbstractExpression;
+import leekscript.compiler.expression.Expression;
 
 public class ConditionalBloc extends AbstractLeekBlock {
 
 	private ConditionalBloc mParentCondition = null;
-	private AbstractExpression mCondition = null;
-
+	private Expression mCondition = null;
+	private final Token token;
 	private boolean mPutCounterBefore = false;
 
-	public ConditionalBloc(AbstractLeekBlock parent, MainLeekBlock main, int line, AIFile<?> ai) {
-		super(parent, main, line, ai);
+	public ConditionalBloc(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
+		super(parent, main);
+		this.token = token;
 	}
 
 	public void setParentCondition(ConditionalBloc parent) {
@@ -24,11 +27,11 @@ public class ConditionalBloc extends AbstractLeekBlock {
 		return mParentCondition;
 	}
 
-	public void setCondition(AbstractExpression condition) {
+	public void setCondition(Expression condition) {
 		mCondition = condition;
 	}
 
-	public AbstractExpression getCondition() {
+	public Expression getCondition() {
 		return mCondition;
 	}
 
@@ -69,7 +72,7 @@ public class ConditionalBloc extends AbstractLeekBlock {
 			if (mCondition.getOperations() > 0) {
 				writer.addCode(", " + mCondition.getOperations() + ")");
 			}
-			writer.addLine(") {", mLine, mAI);
+			writer.addLine(") {", getLocation());
 		} else if (mCondition != null) {
 			writer.addCode("else if (");
 			if (mCondition.getOperations() > 0) {
@@ -79,9 +82,9 @@ public class ConditionalBloc extends AbstractLeekBlock {
 			if (mCondition.getOperations() > 0) {
 				writer.addCode(", " + mCondition.getOperations() + ")");
 			}
-			writer.addLine(") {", mLine, mAI);
+			writer.addLine(") {", getLocation());
 		}
-		else writer.addLine("else {", mLine, mAI);
+		else writer.addLine("else {", getLocation());
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0) writer.addCounter(1);
 		writer.addLine("}");
@@ -115,5 +118,10 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	private void setPutCounterBefore(boolean value) {
 		if (mParentCondition != null) mParentCondition.setPutCounterBefore(value);
 		else mPutCounterBefore = value;
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }

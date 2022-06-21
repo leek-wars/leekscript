@@ -1,8 +1,9 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.AnalyzeError;
-import leekscript.compiler.IAWord;
+import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.FunctionBlock;
@@ -14,20 +15,20 @@ import leekscript.runner.LeekFunctions;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
-public class LeekVariable extends AbstractExpression {
+public class LeekVariable extends Expression {
 
 	public static enum VariableType {
 		LOCAL, GLOBAL, ARGUMENT, FIELD, STATIC_FIELD, THIS, THIS_CLASS, CLASS, SUPER, METHOD, STATIC_METHOD, SYSTEM_CONSTANT, SYSTEM_FUNCTION, FUNCTION, ITERATOR
 	}
 
-	private final IAWord token;
+	private final Token token;
 	private VariableType type;
 	private Type variableType = Type.ANY;
 	private LeekVariableDeclarationInstruction declaration;
 	private ClassDeclarationInstruction classDeclaration;
 	private boolean box;
 
-	public LeekVariable(IAWord token, VariableType type) {
+	public LeekVariable(Token token, VariableType type) {
 		this.token = token;
 		this.type = type;
 		this.declaration = null;
@@ -35,7 +36,7 @@ public class LeekVariable extends AbstractExpression {
 		this.box = false;
 	}
 
-	public LeekVariable(WordCompiler compiler, IAWord token, VariableType type) {
+	public LeekVariable(WordCompiler compiler, Token token, VariableType type) {
 		this.token = token;
 		this.type = type;
 		this.declaration = null;
@@ -43,7 +44,7 @@ public class LeekVariable extends AbstractExpression {
 		this.box = compiler.getVersion() <= 1;
 	}
 
-	public LeekVariable(IAWord token, VariableType type, boolean box) {
+	public LeekVariable(Token token, VariableType type, boolean box) {
 		this.token = token;
 		this.type = type;
 		this.declaration = null;
@@ -51,7 +52,7 @@ public class LeekVariable extends AbstractExpression {
 		this.box = box;
 	}
 
-	public LeekVariable(IAWord token, VariableType type, LeekVariableDeclarationInstruction declaration) {
+	public LeekVariable(Token token, VariableType type, LeekVariableDeclarationInstruction declaration) {
 		this.token = token;
 		this.type = type;
 		this.declaration = declaration;
@@ -59,7 +60,7 @@ public class LeekVariable extends AbstractExpression {
 		this.box = declaration.isCaptured();
 	}
 
-	public LeekVariable(IAWord token, VariableType type, ClassDeclarationInstruction classDeclaration) {
+	public LeekVariable(Token token, VariableType type, ClassDeclarationInstruction classDeclaration) {
 		this.token = token;
 		this.type = type;
 		this.classDeclaration = classDeclaration;
@@ -148,7 +149,9 @@ public class LeekVariable extends AbstractExpression {
 			this.type = VariableType.SYSTEM_FUNCTION;
 			return;
 		}
-		compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
+		compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
+			token.getWord()
+		}));
 	}
 
 	@Override
@@ -164,7 +167,7 @@ public class LeekVariable extends AbstractExpression {
 		return declaration;
 	}
 
-	public IAWord getToken() {
+	public Token getToken() {
 		return token;
 	}
 
@@ -287,7 +290,7 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	@Override
-	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.setField(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -341,7 +344,7 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	@Override
-	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.setField(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -465,7 +468,7 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	@Override
-	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.field_add_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -501,7 +504,7 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	@Override
-	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.field_sub_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -534,7 +537,7 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	@Override
-	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.field_mul_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -568,7 +571,7 @@ public class LeekVariable extends AbstractExpression {
 
 
 	@Override
-	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.field_pow_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -601,7 +604,7 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	@Override
-	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.field_div_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -634,7 +637,7 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	@Override
-	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.field_mod_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -667,7 +670,7 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	@Override
-	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.field_bor_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -701,7 +704,7 @@ public class LeekVariable extends AbstractExpression {
 
 
 	@Override
-	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.field_band_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -735,7 +738,7 @@ public class LeekVariable extends AbstractExpression {
 
 
 	@Override
-	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.field_bxor_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -768,7 +771,7 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	@Override
-	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.field_shl_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -801,7 +804,7 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	@Override
-	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.field_shr_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -834,7 +837,7 @@ public class LeekVariable extends AbstractExpression {
 	}
 
 	@Override
-	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, AbstractExpression expr) {
+	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("u_this.field_ushr_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
@@ -864,5 +867,10 @@ public class LeekVariable extends AbstractExpression {
 				writer.addCode(")");
 			}
 		}
+	}
+
+	@Override
+	public Location getLocation() {
+		return token.getLocation();
 	}
 }
