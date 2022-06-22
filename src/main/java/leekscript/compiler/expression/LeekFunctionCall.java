@@ -30,7 +30,7 @@ public class LeekFunctionCall extends Expression {
 	private Expression mExpression = null;
 	private Type type = Type.ANY;
 	private boolean unsafe = false;
-	private CallableVersion callable_version = null;
+	private ArrayList<CallableVersion> callable_versions = null;
 	private LeekFunctions system_function = null;
 
 	public LeekFunctionCall(Token openParenthesis) {
@@ -161,13 +161,15 @@ public class LeekFunctionCall extends Expression {
 			addComma = false;
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SYSTEM_FUNCTION) {
 			if (unsafe || mainblock.getVersion() <= 3) {
-				if (callable_version != null) {
-					writer.generateGenericFunction(callable_version);
-					writer.addCode(system_function.getStandardClass() + "_" + system_function.getName() + "_" + callable_version.arguments.length + "(");
+				if (callable_versions != null) {
+					var key = writer.generateGenericFunction(callable_versions);
+					writer.addCode(system_function.getStandardClass() + "_" + key + "(");
 					addComma = false;
 				} else {
-					writer.generateGenericFunction(system_function.getVersions()[0]);
-					writer.addCode(system_function.getStandardClass() + "_" + system_function.getName() + "_" + system_function.getVersions()[0].arguments.length + "(");
+					var list = new ArrayList<CallableVersion>();
+					list.add(system_function.getVersions()[0]);
+					writer.generateGenericFunction(list);
+					writer.addCode(system_function.getStandardClass() + "_" + system_function.getName() + "_" + system_function.getVersions()[0].getParametersSignature() + "(");
 					addComma = false;
 				}
 			} else if (system_function.isStatic()) {
@@ -197,7 +199,7 @@ public class LeekFunctionCall extends Expression {
 
 		int argCount = mParameters.size();
 		if (system_function != null) {
-			argCount = callable_version != null ? callable_version.arguments.length : system_function.getVersions()[0].arguments.length;
+			argCount = callable_versions != null ? callable_versions.get(0).arguments.length : system_function.getVersions()[0].arguments.length;
 		}
 		for (int i = 0; i < argCount; i++) {
 			if (i == 0 && skipFirstArg) continue;
@@ -210,8 +212,8 @@ public class LeekFunctionCall extends Expression {
 					continue;
 				}
 				if (mainblock.getVersion() >= 2) {
-					if (system_function != null && callable_version != null && !unsafe) {
-						var type = callable_version.arguments[i];
+					if (system_function != null && callable_versions != null && !unsafe) {
+						var type = callable_versions.get(0).arguments[i];
 						writer.compileConvert(mainblock, i, parameter, type);
 					} else {
 						parameter.writeJavaCode(mainblock, writer);
@@ -223,8 +225,8 @@ public class LeekFunctionCall extends Expression {
 						if (unsafe) {
 							writer.compileLoad(mainblock, parameter);
 						} else {
-							if (callable_version != null) {
-								var type = callable_version.arguments[i];
+							if (callable_versions != null) {
+								var type = callable_versions.get(0).arguments[i];
 								writer.compileConvert(mainblock, i, parameter, type);
 							} else {
 								parameter.writeJavaCode(mainblock, writer);
@@ -475,7 +477,7 @@ public class LeekFunctionCall extends Expression {
 
 	public void verifyVersions(WordCompiler compiler, CallableVersion[] versions) {
 		// Find best version
-		CallableVersion best_version = null;
+		ArrayList<CallableVersion> best_versions = new ArrayList<>();
 		int best_distance = Integer.MAX_VALUE;
 		List<AnalyzeError> errors = null;
 		for (var version : versions) {
@@ -503,9 +505,12 @@ public class LeekFunctionCall extends Expression {
 				else if (cast_type == CastType.UNSAFE_DOWNCAST) distance += 1000;
 				else if (cast_type == CastType.INCOMPATIBLE) distance += 10000;
 			}
-			if (distance < best_distance) {
+			if (distance == best_distance) {
+				best_versions.add(version);
+			} else if (distance < best_distance) {
 				best_distance = distance;
-				best_version = version;
+				best_versions.clear();
+				best_versions.add(version);
 				unsafe = version_unsafe;
 				errors = version_errors;
 			}
@@ -515,9 +520,13 @@ public class LeekFunctionCall extends Expression {
 				compiler.addError(error);
 			}
 		}
-		callable_version = best_version;
-		if (callable_version != null) {
-			type = callable_version.return_type;
+		if (best_versions.size() > 0) {
+			callable_versions = best_versions;
+			type = Type.VOID;
+			for (var version : callable_versions) {
+				type = type.union(version.return_type);
+			}
+			// System.out.println("type = " + type);
 		}
 	}
 

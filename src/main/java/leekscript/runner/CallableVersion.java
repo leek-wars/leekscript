@@ -16,4 +16,12 @@ public class CallableVersion {
 		this.return_type = return_type;
 		this.arguments = arguments;
 	}
+
+	public String getParametersSignature() {
+		String r = "";
+		for (var argument : arguments) {
+			r += argument.getSignature();
+		}
+		return r;
+	}
 }

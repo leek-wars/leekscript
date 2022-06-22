@@ -4,13 +4,6 @@ import leekscript.runner.AI;
 
 public class NumberClass {
 
-	public static Number abs(AI ai, Number x) {
-		if (x instanceof Long) {
-			return Math.abs(x.longValue());
-		}
-		return Math.abs(x.doubleValue());
-	}
-
 	public static long abs(AI ai, long x) {
 		return Math.abs(x);
 	}
@@ -19,26 +12,12 @@ public class NumberClass {
 		return Math.abs(x);
 	}
 
-	public static Number min(AI ai, Number x, Number y) {
-		if (x instanceof Long && y instanceof Long) {
-			return Math.min(x.longValue(), y.longValue());
-		}
-		return Math.min(x.doubleValue(), y.doubleValue());
-	}
-
 	public static long min(AI ai, long x, long y) {
 		return Math.min(x, y);
 	}
 
 	public static double min(AI ai, double x, double y) {
 		return Math.min(x, y);
-	}
-
-	public static Number max(AI ai, Number x, Number y) {
-		if (x instanceof Long && y instanceof Long) {
-			return Math.max(x.longValue(), y.longValue());
-		}
-		return Math.max(x.doubleValue(), y.doubleValue());
 	}
 
 	public static long max(AI ai, long x, long y) {

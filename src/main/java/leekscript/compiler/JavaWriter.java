@@ -25,7 +25,7 @@ public class JavaWriter {
 	private final boolean mWithDebug;
 	private final String className;
 	public AbstractLeekBlock currentBlock = null;
-	public HashMap<String, CallableVersion> genericFunctions = new HashMap<>();
+	public HashMap<String, ArrayList<CallableVersion>> genericFunctions = new HashMap<>();
 	public HashSet<LeekFunctions> anonymousSystemFunctions = new HashSet<>();
 
 	public JavaWriter(boolean debug, String className) {
@@ -196,62 +196,102 @@ public class JavaWriter {
 		value.writeJavaCode(mainblock, this);
 	}
 
-	public void generateGenericFunction(CallableVersion system_function) {
-		genericFunctions.put(system_function.function.getName() + "_" + system_function.arguments.length, system_function);
+	public String generateGenericFunction(ArrayList<CallableVersion> versions) {
+		String key = versions.get(0).function.getName();
+		for (var version : versions) key += "_" + version.getParametersSignature();
+		genericFunctions.put(key, versions);
+		return key;
 	}
 
 	public void generateAnonymousSystemFunction(LeekFunctions system_function) {
 		anonymousSystemFunctions.add(system_function);
 		for (var version : system_function.getVersions()) {
-			genericFunctions.put(system_function.getName() + "_" + version.arguments.length, version);
+			var list = new ArrayList<CallableVersion>();
+			list.add(version);
+			generateGenericFunction(list);
 		}
 	}
 
+	/**
+	 * Writes generic functions (generate checks), example :
+	 * var x = unknown(...)
+	 * cos(x)
+	 * Generates cos_1(Object x)
+	 */
 	public void writeGenericFunctions(MainLeekBlock block) {
 
-		for (var version : genericFunctions.values()) {
-			addCode("private " + version.return_type.getJavaName(block.getVersion()) + " " + version.function.getStandardClass() + "_" + version.function.getName() + "_" + version.arguments.length + "(");
-			for (int a = 0; a < version.arguments.length; ++a) {
+		for (var entry : genericFunctions.entrySet()) {
+
+			var signature = entry.getKey();
+			var versions = entry.getValue();
+			var first_version = versions.get(0);
+			var function = first_version.function;
+			var return_type = versions.size() == 1 ? versions.get(0).return_type : Type.NUMBER;
+
+			addCode("private " + return_type.getJavaPrimitiveName(block.getVersion()) + " " + function.getStandardClass() + "_" + signature + "(");
+			for (int a = 0; a < first_version.arguments.length; ++a) {
 				if (a > 0) addCode(", ");
 				addCode("Object a" + a);
 			}
 			addLine(") throws LeekRunException {");
+
+			// Conflicting versions ?
+			if (versions.size() > 1) {
+				var other_version = versions.get(1);
+				addCode("if (");
+				for (int a = 0; a < other_version.arguments.length; ++a) {
+					if (a > 0) addCode(" && ");
+					addCode("a" + a + " instanceof " + other_version.arguments[a].getJavaName(block.getVersion()));
+				}
+				addLine(") {");
+				writeFunctionCall(block, other_version, true);
+				addLine("}");
+			}
+
 			int a = 0;
-			for (var argument : version.arguments) {
+			for (var argument : first_version.arguments) {
 				if (argument != Type.ANY) {
-					addLine(argument.getJavaName(block.getVersion()) + " x" + a + "; try { x" + a + " = " + convert(a + 1, "a" + a, argument, block.getVersion()) + "; } catch (ClassCastException e) { return " + version.return_type.getDefaultValue(this, block.getVersion()) + "; }");
+					addLine(argument.getJavaPrimitiveName(block.getVersion()) + " x" + a + "; try { x" + a + " = " + convert(a + 1, "a" + a, argument, block.getVersion()) + "; } catch (ClassCastException e) { return " + first_version.return_type.getDefaultValue(this, block.getVersion()) + "; }");
 				}
 				a++;
 			}
-			// if (function.getOperations() >= 0) {
-			// 	addCode("return x0." + function.toString() + "(");
-			// } else {
-			if (version.function.isStatic()) {
-				var function_name = version.function.getName();
-				if (version.return_type == Type.ARRAY && block.getVersion() <= 3) {
-					function_name += "_v1_3";
-				}
-				addCode("return " + version.function.getStandardClass() + "Class." + function_name + "(");
-			} else {
-				addCode("return x0." + version.function.getName() + "(");
-			}
-			ArrayList<String> args = new ArrayList<>();
-			args.add("this");
-			int start_index = version.function.isStatic() ? 0 : 1;
-			for (a = start_index; a < version.arguments.length; ++a) {
-				if (version.arguments[a] != Type.ANY) {
-					args.add("x" + a);
-				} else {
-					args.add("a" + a);
-				}
-			}
-			addCode(String.join(", ", args));
-			addLine(");");
+			writeFunctionCall(block, first_version, false);
 			addLine("}");
 			addLine();
 		}
 	}
 
+	private void writeFunctionCall(MainLeekBlock block, CallableVersion version, boolean cast) {
+		if (version.function.isStatic()) {
+			var function_name = version.function.getName();
+			if (version.return_type == Type.ARRAY && block.getVersion() <= 3) {
+				function_name += "_v1_3";
+			}
+			addCode("return " + version.function.getStandardClass() + "Class." + function_name + "(");
+		} else {
+			addCode("return x0." + version.function.getName() + "(");
+		}
+		ArrayList<String> args = new ArrayList<>();
+		args.add("this");
+		int start_index = version.function.isStatic() ? 0 : 1;
+		for (int a = start_index; a < version.arguments.length; ++a) {
+			if (cast) {
+				args.add("(" + version.arguments[a].getJavaName(block.getVersion()) + ") a" + a);
+			} else if (version.arguments[a] != Type.ANY) {
+				args.add("x" + a);
+			} else {
+				args.add("a" + a);
+			}
+		}
+		addCode(String.join(", ", args));
+		addLine(");");
+	}
+
+	/**
+	 * Write anonymous functions, example :
+	 * var a = [ sin, cos ]
+	 * a[x](y)
+	 */
 	public void writeAnonymousSystemFunctions(MainLeekBlock block) {
 
 		for (var function : anonymousSystemFunctions) {
@@ -261,7 +301,7 @@ public class JavaWriter {
 			}
 			if (function.getVersions().length > 1) {
 				for (var version : function.getVersions()) {
-					addCode("if (values.length == " + version.arguments.length + ") return " + function.getStandardClass() + "_" + function.getName() + "_" + version.arguments.length + "(");
+					addCode("if (values.length == " + version.arguments.length + ") return " + function.getStandardClass() + "_" + function.getName() + "_" + version.getParametersSignature() + "(");
 					for (var a = 0; a < version.arguments.length; ++a) {
 						if (a > 0) addCode(", ");
 						if (block.getVersion() == 1) {
@@ -273,7 +313,7 @@ public class JavaWriter {
 					addLine(");");
 				}
 			}
-			addCode("return " + function.getStandardClass() + "_" + function.getName() + "_" + function.getVersions()[0].arguments.length + "(");
+			addCode("return " + function.getStandardClass() + "_" + function.getName() + "_" + function.getVersions()[0].getParametersSignature() + "(");
 			for (var a = 0; a < function.getVersions()[0].arguments.length; ++a) {
 				if (a > 0) addCode(", ");
 				if (block.getVersion() == 1) {

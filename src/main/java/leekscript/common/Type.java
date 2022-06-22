@@ -1,22 +1,23 @@
 package leekscript.common;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.runner.CallableVersion;
 
 public class Type {
 
-	public static Type ANY = new Type("any", "Object", "null");
-	public static Type NULL = new Type("null", "Object", "null");
-	public static Type BOOL = new Type("bool", "boolean", "false");
-	public static Type NUMBER = new Type("number", "Number", "0.0");
-	public static Type INT = new Type("int", "long", "0l");
-	public static Type REAL = new Type("real", "double", "0.0");
-	public static Type STRING = new Type("string", "String", "\"\"");
-	public static Type ARRAY = new Type("array", "ArrayLeekValue", "new ArrayLeekValue()");
-	public static Type OBJECT = new Type("object", "ObjectLeekValue", "new ObjectLeekValue()");
-	public static Type FUNCTION = new Type("function", "FunctionLeekValue", "new FunctionLeekValue(-1)");
-	public static Type MAP = new Type("map", "MapLeekValue", "new MapLeekValue()");
-	public static Type CLASS = new Type("class", "ClassLeekValue", "new ClassLeekValue()");
-	public static Type VOID = new Type("void", "Object", "null");
+	public static Type ANY = new Type("any", "x", "Object", "Object", "null");
+	public static Type NULL = new Type("null", "u", "Object", "Object", "null");
+	public static Type BOOL = new Type("bool", "b", "boolean", "Boolean", "false");
+	public static Type NUMBER = new Type("number", "n", "Number", "Number", "0.0");
+	public static Type INT = new Type("int", "i", "long", "Long", "0l");
+	public static Type REAL = new Type("real", "r", "double", "Double", "0.0");
+	public static Type STRING = new Type("string", "s", "String", "String", "\"\"");
+	public static Type ARRAY = new Type("array", "a", "ArrayLeekValue", "ArrayLeekValue", "new ArrayLeekValue()");
+	public static Type OBJECT = new Type("object", "o", "ObjectLeekValue", "ObjectLeekValue", "new ObjectLeekValue()");
+	public static Type FUNCTION = new Type("function", "f", "FunctionLeekValue", "FunctionLeekValue", "new FunctionLeekValue(-1)");
+	public static Type MAP = new Type("map", "m", "MapLeekValue", "MapLeekValue", "new MapLeekValue()");
+	public static Type CLASS = new Type("class", "c", "ClassLeekValue", "ClassLeekValue", "new ClassLeekValue()");
+	public static Type VOID = new Type("void", "v", "Object", "Object", "null");
 
 	public static enum CastType {
 		EQUALS,
@@ -27,11 +28,15 @@ public class Type {
 	}
 
 	public String name;
+	public String signature;
+	private String javaPrimitiveName;
 	private String javaName;
 	private String defaultValue;
 
-	public Type(String name, String javaName, String defaultValue) {
+	public Type(String name, String signature, String javaPrimitiveName, String javaName, String defaultValue) {
 		this.name = name;
+		this.signature = signature;
+		this.javaPrimitiveName = javaPrimitiveName;
 		this.javaName = javaName;
 		this.defaultValue = defaultValue;
 	}
@@ -68,6 +73,17 @@ public class Type {
 		return name;
 	}
 
+	public String getSignature() {
+		return signature;
+	}
+
+	public String getJavaPrimitiveName(int version) {
+		if (this == Type.ARRAY) {
+			return version >= 4 ? "ArrayLeekValue" : "LegacyArrayLeekValue";
+		}
+		return javaPrimitiveName;
+	}
+
 	public String getJavaName(int version) {
 		if (this == Type.ARRAY) {
 			return version >= 4 ? "ArrayLeekValue" : "LegacyArrayLeekValue";
@@ -83,5 +99,21 @@ public class Type {
 			return "new MapLeekValue(" + writer.getAIThis() + ")";
 		}
 		return defaultValue;
+	}
+
+	public Type union(Type type) {
+		if (this == Type.VOID) return type;
+		if (type == Type.VOID) return this;
+		if (this == Type.INT) {
+			if (type == Type.REAL) {
+				return Type.NUMBER;
+			}
+		}
+		if (this == Type.REAL) {
+			if (type == Type.INT) {
+				return Type.NUMBER;
+			}
+		}
+		return Type.ANY;
 	}
 }

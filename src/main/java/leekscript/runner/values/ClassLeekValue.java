@@ -73,7 +73,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 		this.ai = ai;
 		this.name = name;
 		this.parent = parent;
-		this.type = new Type(name, "ClassLeekValue", "new ClassLeekValue()");
+		this.type = new Type(name, "c", "ClassLeekValue", "ClassLeekValue", "new ClassLeekValue()");
 	}
 
 	public void setParent(ClassLeekValue parent) {
