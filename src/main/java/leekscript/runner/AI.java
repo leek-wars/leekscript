@@ -15,6 +15,7 @@ import leekscript.runner.values.ArrayLeekValue.ArrayIterator;
 import leekscript.common.Error;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Comparator;
@@ -22,6 +23,11 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.stream.Stream;
 
 import com.alibaba.fastjson.JSON;
@@ -72,6 +78,9 @@ public abstract class AI {
 	public final ClassLeekValue classClass;
 	public final ClassLeekValue jsonClass;
 	public final ClassLeekValue systemClass;
+
+	private final Map<String, Long> callstackOperations = new HashMap<String, Long>();
+	private boolean doProfile = false;
 
 	public AI(int instructions, int version) {
 		this.mInstructions = instructions;
@@ -142,6 +151,14 @@ public abstract class AI {
 
 	public int getOperations() throws LeekRunException {
 		return mOperations;
+	}
+
+	public boolean isProfileEnabled() {
+		return doProfile;
+	}
+
+	public void enableProfile(boolean p) {
+		doProfile = p;
 	}
 
 	public AILog getLogs() {
@@ -1770,6 +1787,49 @@ public abstract class AI {
 		return null;
 	}
 
+	public void profile(String function, long operations) {
+		if (!doProfile) return;
+		
+		String key = function;
+		for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+			if (element.getClassName().startsWith("AI_") && element.getMethodName() != "run") {
+				key = element.getMethodName() + ";" + key;
+			}
+		}
+		if (callstackOperations.containsKey(key)) {
+			callstackOperations.put(key, callstackOperations.get(key) + operations);
+		} else {
+			callstackOperations.put(key, operations);
+		}
+	}
+
+	public Object profileStatic(String name, int startOp, Object value) {
+		profile(name, mOperations - startOp);
+		return value;
+	}
+
+	public void generateProfile(String path) {
+		if (!doProfile) return;
+		List<String> callstacks = new ArrayList<>(callstackOperations.keySet());
+		Collections.sort(callstacks);
+		for (String key : callstacks) {
+			String parent = key.substring(0, key.lastIndexOf(";"));
+			if (callstackOperations.containsKey(parent)) {
+				callstackOperations.put(parent, callstackOperations.get(parent) - callstackOperations.get(key));
+			}
+		}
+		try {
+			FileWriter myWriter = new FileWriter(path);
+			for (String key : callstacks) {
+				myWriter.write(key + " " + callstackOperations.get(key) + "\n");
+			}
+			myWriter.close();
+		} catch (IOException e) {
+			System.out.println("An error occurred.");
+			e.printStackTrace();
+		}
+	}
+
 	public Box getBox(Object value, Object index) throws LeekRunException {
 		if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getBox(this, index);
@@ -1781,7 +1841,10 @@ public abstract class AI {
 
 	public Object callMethod(Object value, String method, ClassLeekValue fromClass, Object... args) throws LeekRunException {
 		if (value instanceof ObjectLeekValue) {
-			return ((ObjectLeekValue) value).callMethod(method, fromClass, args);
+			int startOp = mOperations;
+			Object retvalue = ((ObjectLeekValue) value).callMethod(method, fromClass, args);
+			profile("u_"+fromClass.name+"_"+method, mOperations - startOp);
+			return retvalue;
 		}
 		// if (value instanceof ClassLeekValue) {
 		// 	return ((ClassLeekValue) value).callMethod(method, args);
@@ -1791,10 +1854,16 @@ public abstract class AI {
 
 	public Object callObjectAccess(Object value, String field, String method, ClassLeekValue fromClass, Object... args) throws LeekRunException {
 		if (value instanceof ClassLeekValue) {
-			return ((ClassLeekValue) value).callMethod(method, fromClass, args);
+			int startOp = mOperations;
+			Object retvalue = ((ClassLeekValue) value).callMethod(method, fromClass, args);
+			profile("u_"+fromClass.name+"_"+method, mOperations - startOp);
+			return retvalue;
 		}
 		if (value instanceof ObjectLeekValue) {
-			return ((ObjectLeekValue) value).callAccess(field, method, fromClass, args);
+			int startOp = mOperations;
+			Object retvalue = ((ObjectLeekValue) value).callAccess(field, method, fromClass, args);
+			profile("u_"+((ObjectLeekValue) value).clazz.name+"_"+method, mOperations - startOp);
+			return retvalue;
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(value), field });
 		return null;
@@ -1802,7 +1871,10 @@ public abstract class AI {
 
 	public Object execute(Object function, Object... args) throws LeekRunException {
 		if (function instanceof ClassLeekValue) {
-			return ((ClassLeekValue) function).execute(args);
+			int startOp = mOperations;
+			Object retvalue = ((ClassLeekValue) function).execute(args);
+			profile("u_"+((ClassLeekValue) function).name+"_"+args.length, mOperations - startOp);
+			return retvalue;
 		}
 		if (function instanceof FunctionLeekValue) {
 			return ((FunctionLeekValue) function).execute(this, args);
@@ -1816,7 +1888,9 @@ public abstract class AI {
 		int[] parameters = function.getParameters();
 		if (parameters == null || verifyParameters(parameters, arguments)) {
 			Object retour = function.run(this, function, arguments);
+			int startOp = mOperations;
 			function.addOperations(this, function, arguments, retour);
+			profile(((Enum)function).name(), mOperations - startOp);
 			return retour;
 		} else {
 			// Message d'erreur
