@@ -87,7 +87,7 @@ public class WordParser {
 			// Compteur caractères/lignes
 			if (c == '\n') {
 				if (type != T_NOTHING) {
-					newWord(word, type, -1);
+					newWord(word, type);
 					type = T_NOTHING;
 					word = "";
 				}
@@ -162,13 +162,11 @@ public class WordParser {
 					word = "" + c;
 					type = T_STRING;
 				} else if (type == T_NUMBER) {
-
 					word += c;
-
 					// compiler.addError(new AnalyzeError(new IAWord(mAI, 0, ".", line_counter,
 					// char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
 				}
-			} else if (c >= '0' && c <= '9') {
+			} else if ((c >= '0' && c <= '9') || c == '_') {
 				if (type == T_NOTHING) {
 					word += c;
 					type = T_NUMBER;
@@ -332,7 +330,7 @@ public class WordParser {
 					newWord("]", T_BRACKET_RIGHT);
 			} else if (c == '{' || c == '}') {
 				if (type != T_NOTHING) {
-					newWord(word, type);
+					newWord(word, type, -1);
 					word = "";
 					type = T_NOTHING;
 				}
@@ -367,13 +365,13 @@ public class WordParser {
 				if (type == T_VAR_STRING) {
 					word += c;
 				} else {
-					throw new LeekCompilerException(new Location(mAI, line_counter, char_counter), Error.INVALID_CHAR);
+					compiler.addError(new AnalyzeError(new Location(mAI, line_counter, char_counter - 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 				}
 			}
 		}
 
 		if (type != T_NOTHING) {
-			newWord(word, type);
+			newWord(word, type, -1);
 		}
 
 		// for(int i=0;i<words.size();i++){

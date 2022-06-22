@@ -12,7 +12,7 @@ public class Token {
 
 	public Token(int type, String word, AIFile<?> file, int line, int column) {
 		this.location = new Location(file, line, column - word.length(), line, column - 1);
-		// System.out.println("Token type=" + type + " word=" + word + " line=" + line + " column=" + this.location.getStartColumn() + " to=" + this.location.getEndColumn());
+		// System.out.println("Token type=" + type + " word=" + word + " len=" + word.length() + " line=" + line + " column=" + this.location.getStartColumn() + " to=" + this.location.getEndColumn());
 		this.type = type;
 		this.word = word;
 	}

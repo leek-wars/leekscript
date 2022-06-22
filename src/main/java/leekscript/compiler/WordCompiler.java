@@ -969,16 +969,22 @@ public class WordCompiler {
 					break;
 			} else {
 				if (word.getType() == WordParser.T_NUMBER) {
+					var s = word.getWord();
+					if (s.contains("__")) {
+						addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.MULTIPLE_NUMERIC_SEPARATORS));
+					}
 					try {
-						var s = word.getWord();
 						var radix = s.startsWith("0x") ? 16 : s.startsWith("0b") ? 2 : 10;
+						s = word.getWord().replace("_", "");
 						if (radix != 10) s = s.substring(2);
 						retour.addExpression(new LeekNumber(word, 0, Long.parseLong(s, radix), Type.INT));
 					} catch (NumberFormatException e) {
+						s = word.getWord().replace("_", "");
 						try {
-							retour.addExpression(new LeekNumber(word, Double.parseDouble(word.getWord()), 0, Type.REAL));
+							retour.addExpression(new LeekNumber(word, Double.parseDouble(s), 0, Type.REAL));
 						} catch (NumberFormatException e2) {
-							throw new LeekCompilerException(word, Error.INVALID_NUMBER);
+							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
+							retour.addExpression(new LeekNumber(word, 0, 0, Type.INT));
 						}
 					}
 				} else if (word.getType() == WordParser.T_VAR_STRING) {

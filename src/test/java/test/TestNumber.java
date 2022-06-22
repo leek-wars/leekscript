@@ -34,11 +34,11 @@ public class TestNumber extends TestCommon {
 		code("0b011001711").error(Error.INVALID_NUMBER);
 		code("0b").error(Error.INVALID_NUMBER);
 		code("0x").error(Error.INVALID_NUMBER);
-		code("0x+").error(Error.INVALID_NUMBER);
+		code("0x+").error(Error.UNCOMPLETE_EXPRESSION);
 		code("0x;").error(Error.INVALID_NUMBER);
 		code("0b#").error(Error.INVALID_CHAR);
-		code("0b'").error(Error.INVALID_NUMBER);
-		code("0b\"").error(Error.INVALID_NUMBER);
+		code("0b'").error(Error.END_OF_SCRIPT_UNEXPECTED);
+		code("0b\"").error(Error.END_OF_SCRIPT_UNEXPECTED);
 		code("0xeazblqzd").error(Error.INVALID_NUMBER);
 		code("0xPMQBTRAZ").error(Error.INVALID_NUMBER);
 		code("0xffxff").error(Error.INVALID_NUMBER);
@@ -106,6 +106,17 @@ public class TestNumber extends TestCommon {
 		// TODO Arbitrary precision numbers
 		// code("return 0b010101010101110101010101011111111110111110111110000000011101101010101001").equals("1574698668551521295017");
 		//code("return -0b101010101011101010101010111111111101111101111100000000111011010101010010011111100000011111111111110000").equals("-3381639641241763826573319995376");
+
+		section("Underscore delimiters");
+		code("return 1_000_123").equals("1000123");
+		code("return 1_000__123").error(Error.MULTIPLE_NUMERIC_SEPARATORS);
+		code("return 0x_ff").equals("255");
+		code("return 0_x_ff").error(Error.INVALID_NUMBER);
+		code("return 0xff_ff_ff_ff").equals("4294967295");
+		code("return 0b1001_0101_10").equals("598");
+		code_v1("return 5.001_002_003").equals("5,001");
+		code_v2_("return 5.001_002_003").equals("5.001002003");
+		code("return _1_000_000").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 
 		section("null must not be considered as 0");
 		code("return null == 0;").equals("false");
