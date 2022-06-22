@@ -81,6 +81,7 @@ public class LeekExpressionFunction extends AbstractExpression {
 	public void compileL(MainLeekBlock mainblock, JavaWriter writer) {
 		boolean addComma = true;
 		boolean addBrace = false;
+		boolean addParen = false;
 		FunctionBlock user_function = null;
 		ILeekFunction system_function = null;
 
@@ -97,8 +98,10 @@ public class LeekExpressionFunction extends AbstractExpression {
 				// Class.method() : Méthode statique connue
 				var v = (LeekVariable) object;
 				String methodName = "u_" + v.getClassDeclaration().getStaticMethodName(field, mParameters.size());
+				writer.addCode("profileStatic(\"" + methodName + "\", getOperations(), ");
 				writer.addCode(methodName + "(");
 				addComma = false;
+				addParen = true;
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
 				// this.method() : Méthode connue
 				writer.addCode("callObjectAccess(u_this, \"" + field + "\", \"" + field + "_" + mParameters.size() + "\", u_class");
@@ -218,6 +221,9 @@ public class LeekExpressionFunction extends AbstractExpression {
 		}
 		if (addBrace) {
 			writer.addCode("}");
+		}
+		if (addParen) {
+			writer.addCode(")");
 		}
 		writer.addCode(")");
 		writer.addPosition(openParenthesis);
