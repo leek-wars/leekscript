@@ -367,7 +367,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 				sb.append(sep);
 			else
 				first = false;
-			sb.append(LeekValueManager.getString(ai, val));
+			sb.append(ai.string(val));
 		}
 		return sb.toString();
 	}
@@ -975,7 +975,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 				if (!ai.isPrimitive(value)) {
 					visited.add(value);
 				}
-				sb.append(ai.getString(value, visited));
+				sb.append(ai.export(value, visited));
 			}
 		}
 		sb.append("]");

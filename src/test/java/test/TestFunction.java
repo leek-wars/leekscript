@@ -37,10 +37,10 @@ public class TestFunction extends TestCommon {
 		code("var count = count([1, 2, 3]) return count;").equals("3");
 		code("var d = debug d('salut')").equals("null");
 		code("abs = 2 return abs").equals("2");
-		code("arrayFoldRight = 'salut' return arrayFoldRight").equals("salut");
+		code("arrayFoldRight = 'salut' return arrayFoldRight").equals("\"salut\"");
 		code("cos = function(x, y, z) { return x + y * z } return cos(1, 2, 3)").equals("7");
 		code("function f(x, y, z) { return x + y * z } cos = f return cos(1, 2, 3)").equals("7");
-		code("isEmpty = function() { return 'salut' } if (!isEmpty()) { return 'wrong' } return 'ok'").equals("ok");
+		code("isEmpty = function() { return 'salut' } if (!isEmpty()) { return 'wrong' } return 'ok'").equals("\"ok\"");
 		code("var _count = count; count = function(x) { return _count(x) } return count([1, 2, 3])").equals("3");
 		code("var _count = count; count = function(x) { return _count(x) } return count([1, 2, 3]) > count([])").equals("true");
 		code("function f() { return count([1, 2, 3]) } var _count = count; count = function(x) { return _count(x) } return f()").equals("3");
@@ -89,15 +89,15 @@ public class TestFunction extends TestCommon {
 		code("function te(a){ return function(){ return a**2; }; } return te(2)();").equals("4");
 		code("function te(a){ return function(b){ return function(c){return a*b*c;}; }; } return te(2)(1)(2);").equals("4");
 		code("var tab = [2, 3, 4, 5, 6]; var r = []; for (var i : var j in tab) { r[i] = function() { return j; }; } return 4;").equals("4");
-		code_v1("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return string(retour);").equals("[2, 1, 2, 1, 2]");
-		code_v2_("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return string(retour);").equals("[2.0, 1, 2.0, 1, 2.0]");
+		code_v1("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return retour").equals("[2, 1, 2, 1, 2]");
+		code_v2_("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return retour").equals("[2.0, 1, 2.0, 1, 2.0]");
 		code_v1("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3]");
 		code_v2_("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3, 12]");
 		code("function f() { return [1, 2, 3] } var x = f();").equals("null");
 		code("var x = arrayMap([1, 2, 3], function(x) { return x });").equals("null");
 		code("var x = arrayMap([1, 2, 3], function(x) { return x }); debug(x);").equals("null");
-		code("var toto = 12; var f = function() { toto = 'salut'; }; [true, 12, f][2](); return toto").equals("salut");
-		code("var toto = 12; var f = function() { toto = 'salut'; }; var g = function() { return f; }; g()() return toto").equals("salut");
+		code("var toto = 12; var f = function() { toto = 'salut'; }; [true, 12, f][2](); return toto").equals("\"salut\"");
+		code("var toto = 12; var f = function() { toto = 'salut'; }; var g = function() { return f; }; g()() return toto").equals("\"salut\"");
 		code_v1("function Coordonate(@par_x, @par_y) { var x = par_x; var y = par_y; var getX = function(){ return x; }; var getY = function(){ return y; };return @(function(@method) { if(method === 'getX'){ return getX; } if(method === 'getY'){ return getY;	} }); } var c = Coordonate(5, 12) return [c('getX')(), c('getY')()]").equals("[5, 12]");
 		code_v2_("function Coordonate(par_x, par_y) { var x = par_x; var y = par_y; var getX = function(){ return x; }; var getY = function(){ return y; };return (function(method) { if(method === 'getX'){ return getX; } if(method === 'getY'){ return getY;	} }); } var c = Coordonate(5, 12) return [c('getX')(), c('getY')()]").equals("[5, 12]");
 		code("function test() { var r = [1, 2, 3] return (r); } return test()").equals("[1, 2, 3]");
@@ -108,7 +108,7 @@ public class TestFunction extends TestCommon {
 		code("function t() { var a = [1, 2, 3] return a } var x = t() var f = function() { return x } return x").equals("[1, 2, 3]");
 		code("push = 1 return push").equals("1");
 		code_v1("function LamaSwag() {} @LamaSwag();").equals("null");
-		code("function f() { distance = 12 } function distance() { return 'salut' } return distance()").equals("salut");
+		code("function f() { distance = 12 } function distance() { return 'salut' } return distance()").equals("\"salut\"");
 		code("getOperations()").equals("null");
 		code("var a = [function() { return 12 }] return a[0]()").equals("12");
 		code_v1("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[]");
@@ -202,7 +202,7 @@ public class TestFunction extends TestCommon {
 		code_v2_("var a = [cos, sin, tan] return arrayMap(a, function(f) { return f(5) })").equals("[0.28366218546322625, -0.9589242746631385, -3.380515006246586]");
 		code("return arrayMap(split('salut', ''), length)").equals("[1, 1, 1, 1, 1]");
 		code("return count(arrayFlatten([[1],[2]]))").equals("2");
-		code("var a = toUpper, b = arrayMap return b(['a', 'b'], a)").equals("[A, B]");
+		code("var a = toUpper, b = arrayMap return b(['a', 'b'], a)").equals("[\"A\", \"B\"]");
 		code_v1("return sqrt()").equals("0");
 		code_v2("return sqrt()").equals("0.0");
 		code_v3_("return sqrt()").error(Error.INVALID_PARAMETER_COUNT);
@@ -213,6 +213,6 @@ public class TestFunction extends TestCommon {
 		code_v2_("var a = sqrt return a(25, 16, 9)").equals("5.0");
 		code("return count(unknown([1, 2, 3, 4, 5]))").equals("5");
 		code("return count(unknown(12))").equals("0");
-		code("return string(count)").equals("#Function count");
+		code("return string(count)").equals("\"#Function count\"");
 	}
 }

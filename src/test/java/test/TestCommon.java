@@ -191,7 +191,7 @@ public class TestCommon {
 
 				ops = ai.operations();
 
-				var vs = ai.getString(v, new HashSet<>());
+				var vs = ai.export(v, new HashSet<>());
 				result = new Result(vs, ai, Error.NONE, ai.getOperations(), exec_time);
 
 			} catch (LeekCompilerException e) {
@@ -298,6 +298,9 @@ public class TestCommon {
 	}
 	public Case code_v2_3(String code) {
 		return new Case(code, true, 2, 3);
+	}
+	public Case code_v3(String code) {
+		return new Case(code, true, 3, 3);
 	}
 	public Case code_v3_(String code) {
 		return new Case(code, true, 3, LATEST_VERSION);

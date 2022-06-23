@@ -352,7 +352,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 				if (!ai.isPrimitive(k)) {
 					visited.add(k);
 				}
-				sb.append(ai.getString(k, visited));
+				sb.append(ai.export(k, visited));
 			}
 
 			sb.append(" : ");
@@ -364,7 +364,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 				if (!ai.isPrimitive(v)) {
 					visited.add(v);
 				}
-				sb.append(ai.getString(v, visited));
+				sb.append(ai.export(v, visited));
 			}
 		}
 		sb.append("]");

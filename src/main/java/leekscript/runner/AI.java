@@ -21,6 +21,7 @@ import leekscript.common.Type;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.text.DecimalFormat;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
@@ -712,8 +713,8 @@ public abstract class AI {
 	public Object add(Object x, Object y) throws LeekRunException {
 
 		if (x instanceof String || y instanceof String) {
-			String v1_string = LeekValueManager.getString(this, x);
-			String v2_string = LeekValueManager.getString(this, y);
+			var v1_string = string(x);
+			var v2_string = string(y);
 			ops(v1_string.length() + v2_string.length());
 			return v1_string + v2_string;
 		}
@@ -945,11 +946,134 @@ public abstract class AI {
 	}
 
 	public String string(Object value) throws LeekRunException {
-		return LeekValueManager.getString(this, value);
+		if (value instanceof Double) {
+			return doubleToString(this, (Double) value);
+		} else if (value instanceof Long) {
+			this.ops(3);
+			return String.valueOf((Long) value);
+		} else if (value instanceof Boolean) {
+			return String.valueOf((Boolean) value);
+		} else if (value instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) value).string(this, new HashSet<Object>());
+		} else if (value instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) value).string(this, new HashSet<Object>());
+		} else if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).getString(this, new HashSet<Object>());
+		} else if (value instanceof MapLeekValue) {
+			return ((MapLeekValue) value).getString(this, new HashSet<Object>());
+		} else if (value instanceof String) {
+			return (String) value;
+		} else if (value instanceof ClassLeekValue) {
+			return ((ClassLeekValue) value).getString(this);
+		} else if (value instanceof FunctionLeekValue) {
+			return ((FunctionLeekValue) value).getString(this);
+		} else if (value instanceof Box) {
+			return string(((Box) value).getValue());
+		} else if (value == null) {
+			return "null";
+		}
+		throw new LeekRunException(Error.INVALID_VALUE, value);
 	}
 
-	public String getString(Object value, Set<Object> visited) throws LeekRunException {
-		return LeekValueManager.getString(this, value, visited);
+	public String string(Object value, Set<Object> visited) throws LeekRunException {
+		if (value instanceof Double) {
+			return doubleToString(this, (Double) value);
+		} else if (value instanceof Long) {
+			this.ops(3);
+			return String.valueOf((Long) value);
+		} else if (value instanceof Boolean) {
+			return String.valueOf((Boolean) value);
+		} else if (value instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) value).string(this, visited);
+		} else if (value instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) value).string(this, visited);
+		} else if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).getString(this, visited);
+		} else if (value instanceof MapLeekValue) {
+			return ((MapLeekValue) value).getString(this, visited);
+		} else if (value instanceof String) {
+			return (String) value;
+		} else if (value instanceof ClassLeekValue) {
+			return ((ClassLeekValue) value).getString(this);
+		} else if (value instanceof FunctionLeekValue) {
+			return ((FunctionLeekValue) value).getString(this);
+		} else if (value instanceof Box) {
+			return string(((Box) value).getValue());
+		} else if (value == null) {
+			return "null";
+		}
+		throw new LeekRunException(Error.INVALID_VALUE, value);
+	}
+
+	public static String doubleToString(AI ai, double value) throws LeekRunException {
+		ai.ops(3);
+		if (ai.getVersion() >= 2) {
+			return String.valueOf((Double) value);
+		} else {
+			DecimalFormat df = new DecimalFormat();
+			df.setMinimumFractionDigits(0);
+			return df.format((Double) value);
+		}
+	}
+
+	public String export(Object value) throws LeekRunException {
+		if (value instanceof Double) {
+			return doubleToString(this, (Double) value);
+		} else if (value instanceof Long) {
+			this.ops(3);
+			return String.valueOf((Long) value);
+		} else if (value instanceof Boolean) {
+			return String.valueOf((Boolean) value);
+		} else if (value instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) value).export(this, new HashSet<Object>());
+		} else if (value instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) value).export(this, new HashSet<Object>());
+		} else if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).getString(this, new HashSet<Object>());
+		} else if (value instanceof MapLeekValue) {
+			return ((MapLeekValue) value).getString(this, new HashSet<Object>());
+		} else if (value instanceof String) {
+			return "\"" + value + "\"";
+		} else if (value instanceof ClassLeekValue) {
+			return ((ClassLeekValue) value).getString(this);
+		} else if (value instanceof FunctionLeekValue) {
+			return ((FunctionLeekValue) value).getString(this);
+		} else if (value instanceof Box) {
+			return export(((Box) value).getValue());
+		} else if (value == null) {
+			return "null";
+		}
+		throw new LeekRunException(Error.INVALID_VALUE, value);
+	}
+
+	public String export(Object value, Set<Object> visited) throws LeekRunException {
+		if (value instanceof Double) {
+			return doubleToString(this, (Double) value);
+		} else if (value instanceof Long) {
+			this.ops(3);
+			return String.valueOf((Long) value);
+		} else if (value instanceof Boolean) {
+			return String.valueOf((Boolean) value);
+		} else if (value instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) value).export(this, visited);
+		} else if (value instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) value).export(this, visited);
+		} else if (value instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) value).getString(this, visited);
+		} else if (value instanceof MapLeekValue) {
+			return ((MapLeekValue) value).getString(this, visited);
+		} else if (value instanceof String) {
+			return "\"" + value + "\"";
+		} else if (value instanceof ClassLeekValue) {
+			return ((ClassLeekValue) value).getString(this);
+		} else if (value instanceof FunctionLeekValue) {
+			return ((FunctionLeekValue) value).getString(this);
+		} else if (value instanceof Box) {
+			return export(((Box) value).getValue());
+		} else if (value == null) {
+			return "null";
+		}
+		throw new LeekRunException(Error.INVALID_VALUE, value);
 	}
 
 	public Object toJSON(Object v) throws LeekRunException {

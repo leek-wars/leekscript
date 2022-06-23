@@ -78,7 +78,7 @@ public class Box {
 			mValue = value + 1;
 			return value;
 		}
-		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { LeekValueManager.getString(mUAI, mValue), "++" });
+		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { mUAI.export(mValue), "++" });
 		return null;
 	}
 
@@ -93,7 +93,7 @@ public class Box {
 			mValue = value - 1;
 			return value;
 		}
-		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { LeekValueManager.getString(mUAI, mValue) + "--" });
+		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { mUAI.export(mValue) + "--" });
 		return null;
 	}
 
@@ -104,7 +104,7 @@ public class Box {
 		if (mValue instanceof Double) {
 			return mValue = (Double) mValue + 1;
 		}
-		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "++" + LeekValueManager.getString(mUAI, mValue) });
+		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "++" + mUAI.export(mValue) });
 		return null;
 	}
 
@@ -115,7 +115,7 @@ public class Box {
 		if (mValue instanceof Double) {
 			return mValue = (Double) mValue - 1;
 		}
-		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "--" + LeekValueManager.getString(mUAI, mValue) });
+		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "--" + mUAI.export(mValue) });
 		return null;
 	}
 

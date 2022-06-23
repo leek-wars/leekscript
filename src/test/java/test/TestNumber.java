@@ -233,7 +233,7 @@ public class TestNumber extends TestCommon {
 
 		section("Number.operator unary ~");
 		code("var a = [12, ''] var b = a[0]; return ~b;").equals("-13");
-		code("var a = 12 return ['', ~a];").equals("[, -13]");
+		code("var a = 12 return ['', ~a];").equals("[\"\", -13]");
 
 		section("Number.operator ++x");
 		code("var a = 20; return ++a;").equals("21");
@@ -242,13 +242,13 @@ public class TestNumber extends TestCommon {
 		// DISABLED_code("var a = 20m; ++a return a;").equals("21");
 		// DISABLED_code("var a = 20m; let b = ++a return b;").equals("21");
 		// code("++5").error(ls::Error::Type::VALUE_MUST_BE_A_LVALUE, {"5"});
-		code("var a = 5 return ['', ++a];").equals("[, 6]");
+		code("var a = 5 return ['', ++a];").equals("[\"\", 6]");
 
 		section("Number.operator --x");
 		code("var a = 20; return --a;").equals("19");
 		code("var a = 30; --a return a;").equals("29");
 		// code("--5").error(ls::Error::Type::VALUE_MUST_BE_A_LVALUE, {"5"});
-		code("var a = 5 return ['', --a];").equals("[, 4]");
+		code("var a = 5 return ['', --a];").equals("[\"\", 4]");
 
 		section("Number.operator x++");
 		code("var a = 20; return a++;").equals("20");
@@ -315,7 +315,7 @@ public class TestNumber extends TestCommon {
 		// code("var a = 15$ a += [] a").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		code("var a = 10 return a += 4;").equals("14");
 		code("var a = 10 a += 4 return a;").equals("14");
-		code("var a = 15 return ['', a += 7];").equals("[, 22]");
+		code("var a = 15 return ['', a += 7];").equals("[\"\", 22]");
 		code("var a = 10 a += 5 return a;").equals("15");
 		code("var a = 10 a += 78 return a;").equals("88");
 		code("var a = 10 a += (-6) return a;").equals("4");
@@ -356,7 +356,7 @@ public class TestNumber extends TestCommon {
 		code("var a = 15 a -= true return a;").equals("14");
 		// code("var a = 15$ a -= []").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		// code("var a = 15$ a -= [] a").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
-		code("var a = 15 return ['', a -= 6];").equals("[, 9]");
+		code("var a = 15 return ['', a -= 6];").equals("[\"\", 9]");
 
 		section("Number.operator *");
 		code("return 3 * 4;").equals("12");
@@ -387,7 +387,7 @@ public class TestNumber extends TestCommon {
 		code("var a = 15 a *= null return a;").equals("0");
 		// code("var a = 15$ a *= []").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		// code("var a = 15$ a *= [] a").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
-		code("var a = 15; return ['', a *= 2];").equals("[, 30]");
+		code("var a = 15; return ['', a *= 2];").equals("[\"\", 30]");
 		code("var a = 5 a *= 0 return a;").equals("0");
 		code("var a = 5 a *= 12 return a;").equals("60");
 		code("var a = 5 a *= 5 return a;").equals("25");
@@ -500,8 +500,8 @@ public class TestNumber extends TestCommon {
 		// code("var a = 12 a /= false return a;").equals("nan");
 		// code("var a = 12$ a /= []").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		// code("var a = 12$ a /= [] a").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
-		code_v1("var a = 15; return ['', a /= 2];").equals("[, 7,5]");
-		code_v2_("var a = 15; return ['', a /= 2];").equals("[, 7.5]");
+		code_v1("var a = 15; return ['', a /= 2];").equals("[\"\", 7,5]");
+		code_v2_("var a = 15; return ['', a /= 2];").equals("[\"\", 7.5]");
 
 		section("Number.operator <");
 		code("return 5 < 2;").equals("false");
@@ -621,7 +621,7 @@ public class TestNumber extends TestCommon {
 		code("var a = 123 return a <<= 11;").equals("251904");
 		code("var a = 123 a <<= 13 return a;").equals("1007616");
 		code("var a = [123, ''] return a[0] <<= 13;").equals("1007616");
-		code("var a = 123 return ['', a <<= 13];").equals("[, 1007616]");
+		code("var a = 123 return ['', a <<= 13];").equals("[\"\", 1007616]");
 		// code("'salut' << 5").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 
 		section("Number.operator >>");
@@ -638,7 +638,7 @@ public class TestNumber extends TestCommon {
 		code("var a = 123123123 return a >>= 6;").equals("1923798");
 		code("var a = 123123123 a >>= 7 return a;").equals("961899");
 		code("var a = [123123123, ''] return a[0] >>= 7;").equals("961899");
-		code("var a = 12345 return ['', a >>= 8];").equals("[, 48]");
+		code("var a = 12345 return ['', a >>= 8];").equals("[\"\", 48]");
 		// code("'salut' >> 5").error(ls::Error::NO_SUCH_OPERATOR, {env.tmp_string->to_string(), ">>", env.integer->to_string()});
 
 		section("Number.operator >>>");
@@ -648,7 +648,7 @@ public class TestNumber extends TestCommon {
 		code("var a = -155 return a >>>= 4;").equals("1152921504606846966");
 		code("var a = -155 a >>>= 5 return a;").equals("576460752303423483");
 		code("var a = [-155, ''] return a[0] >>>= 5;").equals("576460752303423483");
-		code("var a = -155 return ['', a >>>= 5];").equals("[, 576460752303423483]");
+		code("var a = -155 return ['', a >>>= 5];").equals("[\"\", 576460752303423483]");
 		// code("'salut' >>> 5").error(ls::Error::NO_SUCH_OPERATOR, {env.tmp_string->to_string(), ">>>", env.integer->to_string()});
 
 		section("Not a statement errors");

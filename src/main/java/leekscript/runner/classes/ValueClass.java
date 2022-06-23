@@ -12,7 +12,13 @@ public class ValueClass {
 	}
 
 	public static String string(AI ai, Object value) throws LeekRunException {
-		return LeekValueManager.getString(ai, value);
+		if (value instanceof String) {
+			return (String) value;
+		}
+		if (ai.getVersion() <= 3) {
+			return ai.string(value);
+		}
+		return ai.export(value);
 	}
 
 	public static Number number(AI ai, Object value) {

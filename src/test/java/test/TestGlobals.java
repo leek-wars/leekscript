@@ -15,8 +15,8 @@ public class TestGlobals extends TestCommon {
 		code("var r = x; global x = 12; return r;").equals("null");
 		code("global r = 2 + 2; return r").equals("4");
 		code("global r = [1, 2, 3]; return r").equals("[1, 2, 3]");
-		code("global r = 'salut'; return r").equals("salut");
-		code("global r = ['a': 12, 'b': 5]; return r").equals("[a : 12, b : 5]");
+		code("global r = 'salut'; return r").equals("\"salut\"");
+		code("global r = ['a': 12, 'b': 5]; return r").equals("[\"a\" : 12, \"b\" : 5]");
 		code_v1_3("global r = [] return r[1] = 12").equals("12");
 		code_v4_("global r = [] return r[1] = 12").equals("null");
 		code_v4_("global r = [:] return r[1] = 12").equals("12");

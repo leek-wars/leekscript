@@ -238,7 +238,7 @@ public class ObjectLeekValue {
 	}
 
 	public Box getOrCreate(AI ai, Object value) throws LeekRunException {
-		return getFieldL(LeekValueManager.getString(ai, value));
+		return getFieldL(ai.string(value));
 	}
 
 	public Object callAccess(String field, String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
@@ -356,8 +356,15 @@ public class ObjectLeekValue {
 		return fields.size();
 	}
 
-	public String getString(AI ai, Set<Object> visited) throws LeekRunException {
+	public String export(AI ai, Set<Object> visited) throws LeekRunException {
+		return getStringBase(ai, visited, true);
+	}
 
+	public String string(AI ai, Set<Object> visited) throws LeekRunException {
+		return getStringBase(ai, visited, false);
+	}
+
+	public String getStringBase(AI ai, Set<Object> visited, boolean export) throws LeekRunException {
 		visited.add(this);
 
 		var string_method = clazz.getMethod(ai, "string_0", null);
@@ -366,7 +373,7 @@ public class ObjectLeekValue {
 			if (!(result instanceof String)) {
 				ai.addSystemLog(AILog.ERROR, Error.STRING_METHOD_MUST_RETURN_STRING, new String[] { clazz.name });
 			} else {
-				return LeekValueManager.getString(ai, result, visited);
+				return ai.string(result, visited);
 			}
 		}
 
@@ -389,7 +396,11 @@ public class ObjectLeekValue {
 				if (!ai.isPrimitive(field.getValue().getValue())) {
 					visited.add(field.getValue().getValue());
 				}
-				sb.append(ai.getString(field.getValue().getValue(), visited));
+				if (export) {
+					sb.append(ai.export(field.getValue().getValue(), visited));
+				} else {
+					sb.append(ai.string(field.getValue().getValue(), visited));
+				}
 			}
 		}
 		sb.append("}");

@@ -61,12 +61,12 @@ public class TestIf extends TestCommon {
 		code_v1("function t(@c) { var cell = c return cell != null } for (var i = 0; i < 10; ++i) return t(i);").equals("true");
 
 		section("Conditions with other types");
-		code("if (1212) { return 'ok' } else { return 5 }").equals("ok");
+		code("if (1212) { return 'ok' } else { return 5 }").equals("\"ok\"");
 		code("if (['str', true][0]) { return 12 } else { return 5 }").equals("12");
 		code("if (null) { return 12 } else { return 5 }").equals("5");
 
 		section("Different branch types");
-		code("if (1) return ['a'] else if (0) return [2] else return [5.5];").equals("[a]");
+		code("if (1) return ['a'] else if (0) return [2] else return [5.5];").equals("[\"a\"]");
 		code("if (0) return ['a'] else if (1) return [2] else return [5.5];").equals("[2]");
 		code_v1("if (0) return ['a'] else if (0) return [2] else return [5.5];").equals("[5,5]");
 		code_v2_("if (0) return ['a'] else if (0) return [2] else return [5.5];").equals("[5.5]");
@@ -74,15 +74,15 @@ public class TestIf extends TestCommon {
 		section("Ternary conditions");
 		code("return true ? 5 : 12;").equals("5");
 		code("return false ? 5 : 12;").equals("12");
-		code("return true ? 'a' : 'b';").equals("a");
-		code("return false ? 'a' : 'b';").equals("b");
-		code("return true ? 'a' : 5;").equals("a");
+		code("return true ? 'a' : 'b';").equals("\"a\"");
+		code("return false ? 'a' : 'b';").equals("\"b\"");
+		code("return true ? 'a' : 5;").equals("\"a\"");
 		code("return false ? 'a' : 5;").equals("5");
 		code("return true ? 5 : 'b';").equals("5");
-		code("return false ? 5 : 'b';").equals("b");
+		code("return false ? 5 : 'b';").equals("\"b\"");
 		code("return 'good' ? 5 : 12;").equals("5");
 		code("return '' ? 5 : 12;").equals("12");
-		code("return 'good' ? 'a' : 'b';").equals("a");
+		code("return 'good' ? 'a' : 'b';").equals("\"a\"");
 		code("return true ? true ? 5 : 12 : 7;").equals("5");
 		code("return true ? false ? 5 : 12 : 7;").equals("12");
 		code("return false ? false ? 5 : 12 : 7;").equals("7");
@@ -90,6 +90,6 @@ public class TestIf extends TestCommon {
 		code("return true ? true ? true ? 5 : 12 : 7 : 8;").equals("5");
 		code("return true ? true ? false ? 5 : 12 : 7 : 8;").equals("12");
 		code("return true ? false ? false ? 5 : 12 : 7 : 8;").equals("7");
-		code("return (5 > 10) ? 'a' : (4 == 2 ** 2) ? 'yes' : 'no';").equals("yes");
+		code("return (5 > 10) ? 'a' : (4 == 2 ** 2) ? 'yes' : 'no';").equals("\"yes\"");
 	}
 }

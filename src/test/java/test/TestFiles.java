@@ -23,9 +23,9 @@ public class TestFiles extends TestCommon {
 		file("ai/code/reachable_cells_variant_8.leek").equals("null");
 		file("ai/code/reachable_cells_variant_9.leek").equals("null");
 		file("ai/code/reachable_cells_variant_10.leek").equals("null");
-		file("ai/code/french.leek").equals("cent-soixante-huit millions quatre-cent-quatre-vingt-neuf-mille-neuf-cent-quatre-vingt-dix-neuf");
+		file("ai/code/french.leek").equals("\"cent-soixante-huit millions quatre-cent-quatre-vingt-neuf-mille-neuf-cent-quatre-vingt-dix-neuf\"");
 		// DISABLED_file("test/code/break_and_continue.leek").equals("2504");
-		file("ai/code/french.min.leek").equals("neuf-cent-quatre-vingt-sept milliards six-cent-cinquante-quatre millions trois-cent-vingt-et-un-mille-douze");
+		file("ai/code/french.min.leek").equals("\"neuf-cent-quatre-vingt-sept milliards six-cent-cinquante-quatre millions trois-cent-vingt-et-un-mille-douze\"");
 		// file("test/code/quine.leek").quine();
 		// file_v1("test/code/quine_zwik.leek").quine();
 		// file("test/code/dynamic_operators").works();
@@ -48,7 +48,7 @@ public class TestFiles extends TestCommon {
 		file("ai/code/recursive_2_functions.leek").equals("10");
 		// DISABLED_file("test/code/recursive_2_versions.leek").equals("9.5");
 		// DISABLED_file("test/code/swap.leek").equals("[{p: 1}, {p: 3}, {p: 4}, {p: 12}, {p: 5}]");
-		file_v2_("ai/code/classes_simple.leek").equals("[Ferrari, Maserati, Lamborghini]");
+		file_v2_("ai/code/classes_simple.leek").equals("[\"Ferrari\", \"Maserati\", \"Lamborghini\"]");
 		file_v2_("ai/code/classes_multiple.leek").equals("[4, 40, 80]");
 		// DISABLED_file("test/code/match.leek").output("Yeah!\n");
 		file("ai/code/fibonacci.leek").equals("832040");

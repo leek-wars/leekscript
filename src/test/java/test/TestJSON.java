@@ -7,12 +7,12 @@ public class TestJSON extends TestCommon {
 		section("jsonEncode()");
 		// code("jsonEncode()").error(ls::Error::Type::WRONG_ARGUMENT_COUNT, {"jsonEncode", "1", "0"});
 		// integer
-		code("return jsonEncode(0)").equals("0");
-		code("return jsonEncode(12)").equals("12");
-		code("return jsonEncode(-589)").equals("-589");
+		code("return jsonEncode(0)").equals("\"0\"");
+		code("return jsonEncode(12)").equals("\"12\"");
+		code("return jsonEncode(-589)").equals("\"-589\"");
 		// real
-		code("return jsonEncode(54.123)").equals("54.123");
-		code("return jsonEncode(-65.89)").equals("-65.89");
+		code("return jsonEncode(54.123)").equals("\"54.123\"");
+		code("return jsonEncode(-65.89)").equals("\"-65.89\"");
 		// long
 		// code("return jsonEncode(1l)").equals("1");
 		// code("return jsonEncode(1234567890987)").equals("1234567890987");
@@ -21,15 +21,15 @@ public class TestJSON extends TestCommon {
 		// code("return jsonEncode(123456789098712345678909871234567890987m)").equals("'123456789098712345678909871234567890987'");
 		// code("return jsonEncode(15m ** 5)").equals("'759375'");
 		// boolean
-		code("return jsonEncode(true)").equals("true");
-		code("return jsonEncode(false)").equals("false");
-		code("return jsonEncode(12 > 5)").equals("true");
+		code("return jsonEncode(true)").equals("\"true\"");
+		code("return jsonEncode(false)").equals("\"false\"");
+		code("return jsonEncode(12 > 5)").equals("\"true\"");
 		// string
-		code("return jsonEncode('')").equals("\"\"");
-		code("return jsonEncode('hello')").equals("\"hello\"");
+		code("return jsonEncode('')").equals("\"\"\"\"");
+		code("return jsonEncode('hello')").equals("\"\"hello\"\"");
 		// array
-		code("return jsonEncode([])").equals("[]");
-		code("return jsonEncode([1, 2, 3])").equals("[1,2,3]");
+		code("return jsonEncode([])").equals("\"[]\"");
+		code("return jsonEncode([1, 2, 3])").equals("\"[1,2,3]\"");
 		// object
 		// code("return jsonEncode({})").equals("'{}'");
 		// code("return jsonEncode({a: 1, b: 2, c: 3})").equals("'{\"a\":1,\"b\":2,\"c\":3}'");
@@ -91,14 +91,14 @@ public class TestJSON extends TestCommon {
 		code_v2_("return jsonDecode('-65.89')").equals("-65.89");
 		// code("return jsonDecode('1234567890987')").equals("1234567890987");
 
-		code("return jsonDecode('\"\"')").equals("");
-		code("return jsonDecode('\"hello\"')").equals("hello");
+		code("return jsonDecode('\"\"')").equals("\"\"");
+		code("return jsonDecode('\"hello\"')").equals("\"hello\"");
 
 		code("return jsonDecode('[]')").equals("[]");
 		code("return jsonDecode('[1,2,3]')").equals("[1, 2, 3]");
 		code_v1("return jsonDecode('[1.6,2.1,3.77]')").equals("[1,6, 2,1, 3,77]");
 		code_v2_("return jsonDecode('[1.6,2.1,3.77]')").equals("[1.6, 2.1, 3.77]");
-		code("return jsonDecode('[\"a\",\"b\",\"c\"]')").equals("[a, b, c]");
+		code("return jsonDecode('[\"a\",\"b\",\"c\"]')").equals("[\"a\", \"b\", \"c\"]");
 		code("return jsonDecode('[[],[[],[]],[]]')").equals("[[], [[], []], []]");
 
 		// code("return jsonDecode('{}')").equals("{}");
@@ -108,6 +108,6 @@ public class TestJSON extends TestCommon {
 		section("Combinations");
 		code("var v = 'salut' return jsonDecode(jsonEncode(v)) == v").equals("true");
 		// code("var v = {b: {d: 12}, cc: [[], 4], h: []} return jsonDecode(jsonEncode(v)) == v").equals("true");
-		code("var v = 'salut' return jsonEncode(jsonEncode(v))").equals("\"\\\"salut\\\"\"");
+		code("var v = 'salut' return jsonEncode(jsonEncode(v))").equals("\"\"\\\"salut\\\"\"\"");
 	}
 }

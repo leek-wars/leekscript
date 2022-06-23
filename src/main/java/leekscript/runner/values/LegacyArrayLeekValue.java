@@ -486,14 +486,19 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 				sb.append(sep);
 			else
 				first = false;
-			sb.append(LeekValueManager.getString(ai, val.getValue()));
+			sb.append(ai.string(val.getValue()));
 		}
 		return sb.toString();
 	}
 
-	public String getString(AI ai, Set<Object> visited) throws LeekRunException {
+	public String export(AI ai, Set<Object> visited) throws LeekRunException {
 		visited.add(this);
-		return toString(ai, visited);
+		return toString(ai, visited, true);
+	}
+
+	public String string(AI ai, Set<Object> visited) throws LeekRunException {
+		visited.add(this);
+		return toString(ai, visited, false);
 	}
 
 	public boolean equals(AI ai, Object comp) throws LeekRunException {
@@ -1636,7 +1641,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return false;
 	}
 
-	public String toString(AI ai, Set<Object> visited) throws LeekRunException {
+	public String toString(AI ai, Set<Object> visited, boolean export) throws LeekRunException {
 
 		ai.ops(1 + mSize * 2);
 
@@ -1661,10 +1666,10 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			if (e != mHead)
 				sb.append(", ");
 			if (!isInOrder) {
-				if (e.key instanceof ObjectLeekValue) {
-					sb.append(ai.getString((ObjectLeekValue) e.key, visited));
+				if (export) {
+					sb.append(ai.export(e.key, visited));
 				} else {
-					sb.append(e.key);
+					sb.append(ai.string(e.key, visited));
 				}
 				sb.append(" : ");
 			}
@@ -1674,7 +1679,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 				if (!ai.isPrimitive(e.value.getValue())) {
 					visited.add(e.value.getValue());
 				}
-				sb.append(ai.getString(e.value.getValue(), visited));
+				if (export) {
+					sb.append(ai.export(e.value.getValue(), visited));
+				} else {
+					sb.append(ai.string(e.value.getValue(), visited));
+				}
 			}
 			e = e.next;
 		}

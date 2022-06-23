@@ -39,7 +39,7 @@ public class LeekValueManager {
 			return o;
 		}
 		if (o instanceof BigInteger) {
-			ai.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "jsonDecode(" + LeekValueManager.getString(ai, o) + ")" });
+			ai.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "jsonDecode(" + ai.export(o) + ")" });
 			return null;
 		}
 		if (o instanceof BigDecimal) {
@@ -72,80 +72,6 @@ public class LeekValueManager {
 		return value;
 	}
 
-	public static String doubleToString(AI ai, double value) throws LeekRunException {
-		ai.ops(3);
-		if (ai.getVersion() >= 2) {
-			return String.valueOf((Double) value);
-		} else {
-			// if (((Double) value) == ((Double) value).intValue()) {
-			// 	return String.valueOf(((Double) value).intValue());
-			// }
-			DecimalFormat df = new DecimalFormat();
-			df.setMinimumFractionDigits(0);
-			return df.format((Double) value);
-		}
-	}
-
-	public static String getString(AI ai, Object value) throws LeekRunException {
-		if (value instanceof Double) {
-			return doubleToString(ai, (Double) value);
-		} else if (value instanceof Long) {
-			ai.ops(3);
-			return String.valueOf((Long) value);
-		} else if (value instanceof Boolean) {
-			return String.valueOf((Boolean) value);
-		} else if (value instanceof ObjectLeekValue) {
-			return ((ObjectLeekValue) value).getString(ai, new HashSet<Object>());
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).getString(ai, new HashSet<Object>());
-		} else if (value instanceof ArrayLeekValue) {
-			return ((ArrayLeekValue) value).getString(ai, new HashSet<Object>());
-		} else if (value instanceof MapLeekValue) {
-			return ((MapLeekValue) value).getString(ai, new HashSet<Object>());
-		} else if (value instanceof String) {
-			return (String) value;
-		} else if (value instanceof ClassLeekValue) {
-			return ((ClassLeekValue) value).getString(ai);
-		} else if (value instanceof FunctionLeekValue) {
-			return ((FunctionLeekValue) value).getString(ai);
-		} else if (value instanceof Box) {
-			return getString(ai, ((Box) value).getValue());
-		} else if (value == null) {
-			return "null";
-		}
-		throw new LeekRunException(Error.INVALID_VALUE, value);
-	}
-
-	public static String getString(AI ai, Object value, Set<Object> visited) throws LeekRunException {
-		if (value instanceof Double) {
-			return doubleToString(ai, (Double) value);
-		} else if (value instanceof Long) {
-			ai.ops(3);
-			return String.valueOf((Long) value);
-		} else if (value instanceof Boolean) {
-			return String.valueOf((Boolean) value);
-		} else if (value instanceof ObjectLeekValue) {
-			return ((ObjectLeekValue) value).getString(ai, visited);
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).getString(ai, visited);
-		} else if (value instanceof ArrayLeekValue) {
-			return ((ArrayLeekValue) value).getString(ai, visited);
-		} else if (value instanceof MapLeekValue) {
-			return ((MapLeekValue) value).getString(ai, visited);
-		} else if (value instanceof String) {
-			return (String) value;
-		} else if (value instanceof ClassLeekValue) {
-			return ((ClassLeekValue) value).getString(ai);
-		} else if (value instanceof FunctionLeekValue) {
-			return ((FunctionLeekValue) value).getString(ai);
-		} else if (value instanceof Box) {
-			return getString(ai, ((Box) value).getValue());
-		} else if (value == null) {
-			return "null";
-		}
-		throw new LeekRunException(Error.INVALID_VALUE, value);
-	}
-
 	public static long bnot(AI ai, Object value) throws LeekRunException {
 		return ~ai.longint(value);
 	}
@@ -156,7 +82,7 @@ public class LeekValueManager {
 			return (FunctionLeekValue) v;
 		}
 		// On ne peux pas exécuter ce type de variable
-		ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { getString(ai, value) });
+		ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { ai.export(value) });
 		return null;
 	}
 
@@ -180,13 +106,13 @@ public class LeekValueManager {
 
 	public static Object callMethod(AI ai, Object value, String method, Object... arguments) throws LeekRunException {
 		// Aucune méthode
-		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { getString(ai, value), method });
+		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { ai.export(value), method });
 		return null;
 	}
 
 	public static Object callSuperMethod(AI ai, Object value, String method, Object... arguments) throws LeekRunException {
 		// Aucune méthode
-		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { getString(ai, value), method });
+		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { ai.export(value), method });
 		return null;
 	}
 

@@ -150,7 +150,7 @@ public class TestLoops extends TestCommon {
 		// code("var s = 0 for v in [1l, 2l, 3l, 4l] { s += v } return s;").equals("10");
 		// code("var s = 0.0 for v in [1.2, 2, 3.76, 4.01] { s += v } s").almost(10.97);
 		// code("var s = 0 for v in [1.2, 2, 3.76, 4.01] { s += v } s").almost(10.97);
-		code("var s = '' for (var v in ['salut ', 'ça ', 'va ?']) { s += v } return s;").equals("salut ça va ?");
+		code("var s = '' for (var v in ['salut ', 'ça ', 'va ?']) { s += v } return s;").equals("\"salut ça va ?\"");
 		code("var a = 0 var x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] for (var i in x) { if (i < 5) { continue } a++ } return a;").equals("5");
 		code("var s = 0 for (var k : var v in [1, 2, 3, 4]) { s += k * v } return s;").equals("20");
 		// code("var s = '' for (var k : var v in ['a': 1, 'b': 2, 'c': 3, 'd': 4]) { s += v * k } return s;").equals("abbcccdddd");
