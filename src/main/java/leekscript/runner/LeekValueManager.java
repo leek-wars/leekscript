@@ -2,9 +2,9 @@ package leekscript.runner;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.text.DecimalFormat;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -18,6 +18,7 @@ import leekscript.runner.values.FunctionLeekValue;
 import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.Box;
+import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 
 public class LeekValueManager {
@@ -47,19 +48,30 @@ public class LeekValueManager {
 		}
 		if (o instanceof JSONArray) {
 			JSONArray a = (JSONArray) o;
-			var array = new LegacyArrayLeekValue();
-			for (Object oo : a) {
+			var array = ai.newArray();
+			for (var oo : a) {
 				array.pushNoClone(ai, parseJSON(oo, ai));
 			}
 			return array;
 		}
 		if (o instanceof JSONObject) {
 			JSONObject a = (JSONObject) o;
-			var array = new LegacyArrayLeekValue();
-			for (String key : a.keySet()) {
-				array.getOrCreate(ai, key).set(parseJSON(a.get(key), ai));
+
+			var keys = new ArrayList<String>(a.keySet());
+			Collections.sort(keys);
+
+			if (ai.getVersion() <= 3) {
+				var array = new LegacyArrayLeekValue();
+				for (var key : keys) {
+					array.getOrCreate(ai, key).set(parseJSON(a.get(key), ai));
+				}
+				return array;
 			}
-			return array;
+			var object = new ObjectLeekValue(ai.objectClass);
+			for (String key : keys) {
+				object.addField(ai, key, parseJSON(a.get(key), ai), AccessLevel.PUBLIC);
+			}
+			return object;
 		}
 
 		return "Class " + o.getClass().getSimpleName();

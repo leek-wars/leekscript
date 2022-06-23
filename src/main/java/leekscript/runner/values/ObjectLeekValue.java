@@ -1,8 +1,11 @@
 package leekscript.runner.values;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Set;
+
+import com.alibaba.fastjson.JSONObject;
 
 import leekscript.AILog;
 import leekscript.runner.AI;
@@ -428,8 +431,20 @@ public class ObjectLeekValue {
 		return false;
 	}
 
-	public Object toJSON(AI ai) {
-		return "object";
+	public Object toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
+		visited.add(this);
+
+		var o = new JSONObject();
+		for (var entry : fields.entrySet()) {
+			var v = entry.getValue().getValue();
+			if (!visited.contains(v)) {
+				if (!ai.isPrimitive(v)) {
+					visited.add(v);
+				}
+				o.put(ai.string(entry.getKey()), ai.toJSON(v, visited));
+			}
+		}
+		return o;
 	}
 
 	public ClassLeekValue getClazz() {

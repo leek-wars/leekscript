@@ -1090,6 +1090,9 @@ public abstract class AI {
 		if (v instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) v).toJSON(this, visited);
 		}
+		if (v instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) v).toJSON(this, visited);
+		}
 		return v;
 	}
 

@@ -31,9 +31,9 @@ public class TestJSON extends TestCommon {
 		code("return jsonEncode([])").equals("\"[]\"");
 		code("return jsonEncode([1, 2, 3])").equals("\"[1,2,3]\"");
 		// object
-		// code("return jsonEncode({})").equals("'{}'");
-		// code("return jsonEncode({a: 1, b: 2, c: 3})").equals("'{\"a\":1,\"b\":2,\"c\":3}'");
-		// code("return jsonEncode({hello: [], b: {d: 12}, ccccc: [1, 2, [], 4]})").equals("'{\"b\":{\"d\":12},\"ccccc\":[1, 2, [], 4],\"hello\":[]}'");
+		code_v3_("return jsonEncode({})").equals("\"{}\"");
+		code_v3_("return jsonEncode({a: 1, b: 2, c: 3})").equals("\"{\"a\":1,\"b\":2,\"c\":3}\"");
+		code_v3_("return jsonEncode({hello: [], b: {d: 12}, ccccc: [1, 2, [], 4]})").equals("\"{\"b\":{\"d\":12},\"ccccc\":[1,2,[],4],\"hello\":[]}\"");
 		// function : not transformable into JSON
 		// code("return jsonEncode(x -> x)").equals("''");
 		// code("return jsonEncode([1, x -> x, 3])").equals("'[1, 3]'");
@@ -89,7 +89,7 @@ public class TestJSON extends TestCommon {
 		code_v2_("return jsonDecode('54.123')").equals("54.123");
 		code_v1("return jsonDecode('-65.89')").equals("-65,89");
 		code_v2_("return jsonDecode('-65.89')").equals("-65.89");
-		// code("return jsonDecode('1234567890987')").equals("1234567890987");
+		code("return jsonDecode('1234567890987')").equals("1234567890987");
 
 		code("return jsonDecode('\"\"')").equals("\"\"");
 		code("return jsonDecode('\"hello\"')").equals("\"hello\"");
@@ -100,14 +100,21 @@ public class TestJSON extends TestCommon {
 		code_v2_("return jsonDecode('[1.6,2.1,3.77]')").equals("[1.6, 2.1, 3.77]");
 		code("return jsonDecode('[\"a\",\"b\",\"c\"]')").equals("[\"a\", \"b\", \"c\"]");
 		code("return jsonDecode('[[],[[],[]],[]]')").equals("[[], [[], []], []]");
+		code_v1("return average(jsonDecode('[1, 2, 3, 4, 5]'))").equals("3");
+		code_v2_("return average(jsonDecode('[1, 2, 3, 4, 5]'))").equals("3.0");
 
-		// code("return jsonDecode('{}')").equals("{}");
-		// code("return jsonDecode('{\"a\":1,\"b\":2,\"c\":3}')").equals("{a: 1, b: 2, c: 3}");
-		// code("return jsonDecode('{\"b\":{\"d\":12},\"ccccc\":[1,2,[],4],\"hello\":[]}')").equals("{b: {d: 12}, ccccc: [1, 2, [], 4], hello: []}");
+		code_v1_3("return jsonDecode('{}')").equals("[]");
+		code_v1_3("return jsonDecode('{\"a\":1,\"b\":2,\"c\":3}')").equals("[\"a\" : 1, \"b\" : 2, \"c\" : 3]");
+		code_v1_3("return jsonDecode('{\"c\":1,\"b\":2,\"a\":3}')").equals("[\"a\" : 3, \"b\" : 2, \"c\" : 1]");
+		code_v1_3("return jsonDecode('{\"b\":{\"d\":12},\"ccccc\":[1,2,[],4],\"hello\":[]}')").equals("[\"b\" : [\"d\" : 12], \"ccccc\" : [1, 2, [], 4], \"hello\" : []]");
+		code_v4_("return jsonDecode('{}')").equals("{}");
+		code_v4_("return jsonDecode('{\"a\":1,\"b\":2,\"c\":3}')").equals("{a: 1, b: 2, c: 3}");
+		code_v4_("return jsonDecode('{\"b\":{\"d\":12},\"ccccc\":[1,2,[],4],\"hello\":[]}')").equals("{b: {d: 12}, ccccc: [1, 2, [], 4], hello: []}");
 
 		section("Combinations");
 		code("var v = 'salut' return jsonDecode(jsonEncode(v)) == v").equals("true");
-		// code("var v = {b: {d: 12}, cc: [[], 4], h: []} return jsonDecode(jsonEncode(v)) == v").equals("true");
+		code_v3("var v = {b: {d: 12}, cc: [[], 4], h: []} return string(jsonDecode(jsonEncode(v))) == string(v)").equals("false");
+		code_v4_("var v = {b: {d: 12}, cc: [[], 4], h: []} return string(jsonDecode(jsonEncode(v))) == string(v)").equals("true");
 		code("var v = 'salut' return jsonEncode(jsonEncode(v))").equals("\"\"\\\"salut\\\"\"\"");
 	}
 }
