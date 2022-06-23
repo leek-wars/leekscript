@@ -134,6 +134,13 @@ public class NumberClass {
 			return a + ai.getRandom().getDouble() * (b - a);
 	}
 
+	public static double randReal(AI ai, double a, double b) {
+		if (a > b)
+			return b + ai.getRandom().getDouble() * (a - b);
+		else
+			return a + ai.getRandom().getDouble() * (b - a);
+	}
+
 	public static double hypot(AI ai, double x, double y) {
 		return Math.hypot(x, y);
 	}

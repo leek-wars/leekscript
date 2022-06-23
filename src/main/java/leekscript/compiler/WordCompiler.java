@@ -107,12 +107,12 @@ public class WordCompiler {
 					}
 					int param_count = 0;
 					var parameters = new HashSet<String>();
-					while (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
+					while (mCompiler.haveWords() && mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
 						if (mCompiler.token().getType() == WordParser.T_OPERATOR && mCompiler.token().getWord().equals("@")) {
 							mCompiler.skipToken();
 						}
 						if (mCompiler.token().getType() != WordParser.T_STRING) {
-							throw new LeekCompilerException(mCompiler.token(), Error.PARAMETER_NAME_EXPECTED);
+							addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.PARAMETER_NAME_EXPECTED));
 						}
 						var parameter = mCompiler.eatToken();
 						// if (parameters.contains(parameter.getWord())) {
@@ -121,11 +121,11 @@ public class WordCompiler {
 						parameters.add(parameter.getWord());
 						param_count++;
 
-						if (mCompiler.token().getType() == WordParser.T_VIRG) {
+						if (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_VIRG) {
 							mCompiler.skipToken();
 						}
 					}
-					if (mCompiler.eatToken().getType() != WordParser.T_PAR_RIGHT) {
+					if (mCompiler.haveWords() && mCompiler.eatToken().getType() != WordParser.T_PAR_RIGHT) {
 						throw new LeekCompilerException(mCompiler.token(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
 					}
 
@@ -343,8 +343,9 @@ public class WordCompiler {
 				}
 				mCompiler.skipToken();
 			}
-			if (mCompiler.token().getType() != WordParser.T_STRING)
-				throw new LeekCompilerException(mCompiler.token(), Error.PARAMETER_NAME_EXPECTED);
+			if (mCompiler.token().getType() != WordParser.T_STRING) {
+				addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.PARAMETER_NAME_EXPECTED));
+			}
 
 			var parameter = mCompiler.token();
 			mCompiler.skipToken();

@@ -68,7 +68,8 @@ public class LeekFunctions {
 		method("pow", "Number", 140, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
 		method("rand", "Number", 30, true, Type.REAL, new Type[0]);
 		method("randInt", "Number", 30, true, Type.INT, new Type[] { Type.INT, Type.INT });
-		method("randFloat", "Number", 30, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
+		method("randFloat", "Number", 30, true, Type.REAL, new Type[] { Type.REAL, Type.REAL }).setMaxVersion(3, "randReal");
+		method("randReal", "Number", 30, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
 		method("hypot", "Number", 187, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
 		method("signum", "Number", 2, true, Type.INT, new Type[] { Type.REAL });
 
@@ -199,7 +200,7 @@ public class LeekFunctions {
 			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY }),
 			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY, Type.INT }),
 		}).setMaxVersion(3);
-		method("removeKey", "Map", Type.VOID, new Type[] { Type.ARRAY, Type.ANY }).setMaxVersion(3);
+		method("removeKey", "Map", Type.VOID, new Type[] { Type.ARRAY, Type.ANY }).setMaxVersion(3, "mapRemove");
 
 		/**
 		 * JSON functions
@@ -210,7 +211,7 @@ public class LeekFunctions {
 		/**
 		 * Color functions
 		 */
-		method("color", "Color", 7, true, Type.INT, new Type[] { Type.INT, Type.INT, Type.INT }).setMaxVersion(3);
+		method("color", "Color", 7, true, Type.INT, new Type[] { Type.INT, Type.INT, Type.INT }).setMaxVersion(3, "getColor");
 		method("getColor", "Color", 7, true, Type.INT, new Type[] { Type.INT, Type.INT, Type.INT });
 		method("getRed", "Color", 2, true, Type.INT, new Type[] { Type.INT });
 		method("getGreen", "Color", 2, true, Type.INT, new Type[] { Type.INT });
@@ -272,6 +273,7 @@ public class LeekFunctions {
 	private boolean isStatic = false;
 	private int minVersion = 1;
 	private int maxVersion = LeekScript.LATEST_VERSION;
+	private String replacement = null;
 
 	public LeekFunctions(String standardClass, String name, int operations, boolean isStatic, Type return_type, Type[] arguments) {
 		this(standardClass, name, operations, isStatic, new CallableVersion[] { new CallableVersion(return_type, arguments) });
@@ -377,6 +379,11 @@ public class LeekFunctions {
 		this.maxVersion = max_version;
 	}
 
+	public void setMaxVersion(int max_version, String replacement) {
+		this.maxVersion = max_version;
+		this.replacement = replacement;
+	}
+
 	public void setOperations(int operations) {
 		mOperations = operations;
 	}
@@ -393,5 +400,8 @@ public class LeekFunctions {
 	}
 	public static String getExtraFunctionsImport() {
 		return extraFunctionsImport;
+	}
+	public String getReplacement() {
+		return replacement;
 	}
 }

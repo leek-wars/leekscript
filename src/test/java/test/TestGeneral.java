@@ -34,7 +34,7 @@ public class TestGeneral extends TestCommon {
 		code("return typeOf(function(){ return 4; }())").equals(String.valueOf(LeekConstants.TYPE_NUMBER.getIntValue()));
 
 		section("color()");
-		code_v4_("color(0, 0, 0)").error(Error.REMOVED_FUNCTION);
+		code_v4_("color(0, 0, 0)").error(Error.REMOVED_FUNCTION_REPLACEMENT);
 		code_v1_3("return color(255,0,255)").equals(String.valueOf(0xFF00FF));
 		code_v1_3("return color(255,255,0)").equals(String.valueOf(0xFFFF00));
 		code_v1_3("return color(0,255,255)").equals(String.valueOf(0x00FFFF));

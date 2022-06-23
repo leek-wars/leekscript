@@ -230,7 +230,7 @@ public class TestMap extends TestCommon {
 
 		section("mapRemove()");
 		code_v1_3("var a = ['a':'va','b':'vb','c':'vc','d':'vd']; removeKey(a,'a'); return a").equals("[\"b\" : \"vb\", \"c\" : \"vc\", \"d\" : \"vd\"]");
-		code_v4_("removeKey([1, 2, 3])").error(Error.REMOVED_FUNCTION);
+		code_v4_("removeKey([1, 2, 3])").error(Error.REMOVED_FUNCTION_REPLACEMENT);
 		code_v4_("var a = ['a':'va','b':'vb','c':'vc','d':'vd']; mapRemove(a,'a'); return a").equals("[\"b\" : \"vb\", \"c\" : \"vc\", \"d\" : \"vd\"]");
 
 		section("Map.removeAll()");

@@ -1081,6 +1081,7 @@ public class TestNumber extends TestCommon {
 		code("var a = rand() return a >= 0 and a <= 1").equals("true");
 		code("var a = rand() return a > 1").equals("false");
 		code("var a = randInt(2067, 2070) return a >= 2067 and a < 2070").equals("true");
-		code("var a = randFloat(500, 510) return a >= 500 and a < 510").equals("true");
+		code_v1_3("var a = randFloat(500, 510) return a >= 500 and a < 510").equals("true");
+		code_v4_("var a = randReal(500, 510) return a >= 500 and a < 510").equals("true");
 	}
 }

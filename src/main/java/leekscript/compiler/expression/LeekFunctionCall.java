@@ -447,10 +447,18 @@ public class LeekFunctionCall extends Expression {
 
 		if (compiler.getVersion() > f.getMaxVersion()) {
 			// Fonction supprimée
-			compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION, new String[] {
-				String.valueOf(f.getMaxVersion()),
-				String.valueOf(compiler.getVersion())
-			}));
+			if (f.getReplacement() != null) {
+				compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION_REPLACEMENT, new String[] {
+					String.valueOf(f.getMaxVersion()),
+					String.valueOf(compiler.getVersion()),
+					f.getReplacement()
+				}));
+			} else {
+				compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION, new String[] {
+					String.valueOf(f.getMaxVersion()),
+					String.valueOf(compiler.getVersion())
+				}));
+			}
 			return;
 		}
 		if (compiler.getVersion() < f.getMinVersion()) {
