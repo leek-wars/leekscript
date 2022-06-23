@@ -103,7 +103,7 @@ public class WordCompiler {
 						throw new LeekCompilerException(mCompiler.token(), Error.FUNCTION_NAME_UNAVAILABLE);
 					}
 					if (mCompiler.eatToken().getType() != WordParser.T_PAR_LEFT) {
-						throw new LeekCompilerException(mCompiler.lastToken(), Error.OPENING_PARENTHESIS_EXPECTED);
+						addError(new AnalyzeError(mCompiler.lastToken(), AnalyzeErrorLevel.ERROR, Error.OPENING_PARENTHESIS_EXPECTED));
 					}
 					int param_count = 0;
 					var parameters = new HashSet<String>();
@@ -247,21 +247,21 @@ public class WordCompiler {
 				return;
 			} else if (word.getWord().equals("break")) {
 				if (!mCurentBlock.isBreakable()) {
-					throw new LeekCompilerException(mCompiler.lastToken(), Error.BREAK_OUT_OF_LOOP);
+					addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.BREAK_OUT_OF_LOOP));
 				}
 				mCompiler.skipToken();
-				if (mCompiler.token().getType() == WordParser.T_END_INSTRUCTION) {
+				if (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_END_INSTRUCTION) {
 					mCompiler.skipToken();
 				}
-				mCurentBlock.addInstruction(this, new LeekBreakInstruction(mCompiler.lastToken()));
+				mCurentBlock.addInstruction(this, new LeekBreakInstruction(word));
 
 				return;
 			} else if (word.getWord().equals("continue")) {
 				if (!mCurentBlock.isBreakable()) {
-					throw new LeekCompilerException(mCompiler.lastToken(), Error.CONTINUE_OUT_OF_LOOP);
+					addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.CONTINUE_OUT_OF_LOOP));
 				}
 				var token = mCompiler.eatToken();
-				if (mCompiler.token().getType() == WordParser.T_END_INSTRUCTION) {
+				if (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_END_INSTRUCTION) {
 					mCompiler.skipToken();
 				}
 				mCurentBlock.addInstruction(this, new LeekContinueInstruction(token));
@@ -1158,7 +1158,7 @@ public class WordCompiler {
 	private LeekAnonymousFunction readAnonymousFunction() throws LeekCompilerException {
 		var token = mCompiler.eatToken();
 		if (mCompiler.token().getType() != WordParser.T_PAR_LEFT) {
-			throw new LeekCompilerException(mCompiler.token().getLocation(), Error.PARENTHESIS_EXPECTED_AFTER_FUNCTION);
+			addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.PARENTHESIS_EXPECTED_AFTER_FUNCTION));
 		}
 		mCompiler.skipToken(); // Left parenthesis
 
@@ -1184,7 +1184,7 @@ public class WordCompiler {
 				mCompiler.skipToken();
 			}
 			if (mCompiler.token().getType() != WordParser.T_STRING) {
-				throw new LeekCompilerException(mCompiler.token(), Error.PARAMETER_NAME_EXPECTED);
+				addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.PARAMETER_NAME_EXPECTED));
 			}
 
 			var parameter = mCompiler.token();

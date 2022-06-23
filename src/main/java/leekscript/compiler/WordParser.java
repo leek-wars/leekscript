@@ -371,7 +371,7 @@ public class WordParser {
 		}
 
 		if (type != T_NOTHING) {
-			newWord(word, type, -1);
+			newWord(word, type);
 		}
 
 		// for(int i=0;i<words.size();i++){

@@ -165,7 +165,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	}
 
 	public boolean isBreakable() {
-		if (mParent == null)
+		if (mParent == null || this instanceof AnonymousFunctionBlock)
 			return false;
 		return mParent.isBreakable();
 	}

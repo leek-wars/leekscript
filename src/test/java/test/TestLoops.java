@@ -227,9 +227,9 @@ public class TestLoops extends TestCommon {
 		// DISABLED_code("function f() { [for x in [1, 2, 3] { x }] } f()").equals("[1, 2, 3]");
 		// DISABLED_code("function f() { for x in [1, 2, 3] { print(x) } } f()").output("1\n2\n3\n");
 
-		// header("Breaks and Continues");
-		// code("break").error(ls::Error::Type::BREAK_MUST_BE_IN_LOOP, {});
-		// code("continue").error(ls::Error::Type::CONTINUE_MUST_BE_IN_LOOP, {});
+		header("Breaks and Continues");
+		code("break").error(Error.BREAK_OUT_OF_LOOP);
+		code("continue").error(Error.CONTINUE_OUT_OF_LOOP);
 		// code("while (true) { break 2 }").error(ls::Error::Type::BREAK_MUST_BE_IN_LOOP, {});
 		// code("while (true) { continue 2 }").error(ls::Error::Type::CONTINUE_MUST_BE_IN_LOOP, {});
 		// code("var r = 0 for (var x in [1, 2]) { for (var y in [3, 4]) { r = 10 * x + y if (x + y) >= 5 break 2 }} r").equals("14");
@@ -242,6 +242,7 @@ public class TestLoops extends TestCommon {
 		// code("for (var x = 0; x < 2; ++x) { var a = 'a' for (var y = 0; y < 2; ++y) { var b = 'b' break 2 var c = 'c' } var d = 'd' } return 0;").equals("0");
 		// code("while (true) { break 0 }").error(ls::Error::Type::BREAK_LEVEL_ZERO, {});
 		// code("while (true) { continue 0 }").error(ls::Error::Type::CONTINUE_LEVEL_ZERO, {});
-
+		code("arrayMap([1, 2, 3], function(arr) { if (1) continue })").error(Error.CONTINUE_OUT_OF_LOOP);
+		code("for (var i in [1, 2, 3]) { arrayMap([1, 2, 3], function(arr) { if (1) continue }) }").error(Error.CONTINUE_OUT_OF_LOOP);
 	}
 }
