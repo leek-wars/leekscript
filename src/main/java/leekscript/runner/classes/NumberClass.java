@@ -148,4 +148,60 @@ public class NumberClass {
 	public static long signum(AI ai, double x) {
 		return (long) Math.signum(x);
 	}
+
+	public static long bitCount(AI ai, long x) {
+		return Long.bitCount(x);
+	}
+
+	public static long tzCount(AI ai, long x) {
+		return Long.numberOfTrailingZeros(x);
+	}
+
+	public static long lzCount(AI ai, long x) {
+		return Long.numberOfLeadingZeros(x);
+	}
+
+	public static long bitRev(AI ai, long x) {
+		return Long.reverse(x);
+	}
+
+	public static long byteRev(AI ai, long x) {
+		return Long.reverseBytes(x);
+	}
+
+	public static long rotLeft(AI ai, long x, long y) {
+		return Long.rotateLeft(x, (int) y);
+	}
+
+	public static long rotRight(AI ai, long x, long y) {
+		return Long.rotateRight(x, (int) y);
+	}
+
+	public static String binString(AI ai, long x) {
+		return Long.toBinaryString(x);
+	}
+
+	public static String hexString(AI ai, long x) {
+		return Long.toHexString(x);
+	}
+
+	public static long realBits(AI ai, double x) {
+		return Double.doubleToRawLongBits(x);
+	}
+
+	public static double bitsToReal(AI ai, long x) {
+		return Double.longBitsToDouble(x);
+	}
+
+	public static boolean isFinite(AI ai, double x) {
+		return Double.isFinite(x);
+	}
+
+	public static boolean isInfinite(AI ai, double x) {
+		return Double.isInfinite(x);
+	}
+
+	public static boolean isNaN(AI ai, double x) {
+		return Double.isNaN(x);
+	}
 }

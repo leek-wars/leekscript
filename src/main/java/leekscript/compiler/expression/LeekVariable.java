@@ -214,7 +214,15 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
 			var constant = LeekConstants.get(token.getWord());
 			if (constant.getType() == Type.INT) writer.addCode(String.valueOf(constant.getIntValue()) + "l");
-			else if (constant.getType() == Type.REAL) writer.addCode(String.valueOf(constant.getValue()));
+			else if (constant.getType() == Type.REAL) {
+				if (constant == LeekConstants.NaN) {
+					writer.addCode("Double.NaN");
+				} else if (constant == LeekConstants.Infinity) {
+					writer.addCode("Double.POSITIVE_INFINITY");
+				} else {
+					writer.addCode(String.valueOf(constant.getValue()));
+				}
+			}
 			else writer.addCode("null");
 		} else if (type == VariableType.SYSTEM_FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
@@ -280,7 +288,15 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
 			var constant = LeekConstants.get(token.getWord());
 			if (constant.getType() == Type.INT) writer.addCode(String.valueOf(constant.getIntValue()) + "l");
-			else if (constant.getType() == Type.REAL) writer.addCode(String.valueOf(constant.getValue()));
+			else if (constant.getType() == Type.REAL) {
+				if (constant == LeekConstants.NaN) {
+					writer.addCode("Double.NaN");
+				} else if (constant == LeekConstants.Infinity) {
+					writer.addCode("Double.POSITIVE_INFINITY");
+				} else {
+					writer.addCode(String.valueOf(constant.getValue()));
+				}
+			}
 			else writer.addCode("null");
 		} else if (type == VariableType.FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());

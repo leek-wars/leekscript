@@ -206,18 +206,23 @@ public class TestNumber extends TestCommon {
 		// DISABLED_code("['', Number(12)]").equals("['', 12]");
 
 		section("Constants");
-		// code("pi").almost(3.141592653589793116);
-		// code("['', pi]").equals("['', 3.1415926536]");
-		// code("2 × pi").almost(6.283185307179586232);
-		// code("e").almost(2.718281828459045091);
-		// code("phi").almost(1.618033988749894903);
-		// code("epsilon").almost(0.000000000000000222);
-		// code("pi").almost(3.141592653589793116);
-		// code("e").almost(2.718281828459045091);
+		code_v1("return PI").equals("3,142");
+		code_v2_("return PI").almost(3.141592653589793116);
+		code_v1("return ['', PI]").equals("[\"\", 3,142]");
+		code_v2_("return ['', PI]").equals("[\"\", 3.141592653589793]");
+		code_v1("return 2 * PI").equals("6,283");
+		code_v2_("return 2 * PI").almost(6.283185307179586232);
+		code_v1("return E").equals("2,718");
+		code_v2_("return E").almost(2.718281828459045091);
 		// code("phi").almost(1.618033988749894903);
 		// code("epsilon").almost(0.000000000000000222);
 		// code("let pi = 3 pi").equals("3");
 		// code("{ let pi = 3 } pi").almost(3.141592653589793116);
+		code_v1("return Infinity").equals("∞");
+		code_v2_("return Infinity").equals("Infinity");
+		code("return NaN").equals("NaN");
+		code("return NaN === NaN").equals("false");
+		code("return 0 / 0 === NaN").equals("false");
 
 		/*
 		 * Operators
@@ -1083,5 +1088,101 @@ public class TestNumber extends TestCommon {
 		code("var a = randInt(2067, 2070) return a >= 2067 and a < 2070").equals("true");
 		code_v1_3("var a = randFloat(500, 510) return a >= 500 and a < 510").equals("true");
 		code_v4_("var a = randReal(500, 510) return a >= 500 and a < 510").equals("true");
+
+		section("Number.bitCount()");
+		code_v4_("return bitCount(0)").equals("0");
+		code_v4_("return bitCount(0b11001110011)").equals("7");
+		code_v4_("return bitCount(0b111100111001111)").equals("11");
+		code_v4_("return bitCount(0xff)").equals("8");
+
+		section("Number.tzCount()");
+		code_v4_("return tzCount(0)").equals("64");
+		code_v4_("return tzCount(0b00001100110000)").equals("4");
+		code_v4_("return tzCount(0b100000000000)").equals("11");
+		code_v4_("return tzCount(0xff00)").equals("8");
+
+		section("Number.lzCount()");
+		code_v4_("return lzCount(0)").equals("64");
+		code_v4_("return lzCount(0b0000110011)").equals("58");
+		code_v4_("return lzCount(0b000000001)").equals("63");
+		code_v4_("return lzCount(0b11111111111111111111111111111111111111111111111110000110011)").equals("5");
+		code_v4_("return lzCount(0xff)").equals("56");
+
+		section("Number.bitRev()");
+		code_v4_("return binString(bitRev(0))").equals("\"0\"");
+		code_v4_("return binString(bitRev(0b0000110011))").equals("\"1100110000000000000000000000000000000000000000000000000000000000\"");
+		code_v4_("return binString(bitRev(0b000000001))").equals("\"1000000000000000000000000000000000000000000000000000000000000000\"");
+		code_v4_("return binString(bitRev(0b11111111111111111111111111111111111111111111111110000110011))").equals("\"1100110000111111111111111111111111111111111111111111111111100000\"");
+		code_v4_("return binString(bitRev(0xff))").equals("\"1111111100000000000000000000000000000000000000000000000000000000\"");
+
+		section("Number.byteRev()");
+		code_v4_("return hexString(byteRev(0))").equals("\"0\"");
+		code_v4_("return hexString(byteRev(0xaabbccddeeff))").equals("\"ffeeddccbbaa0000\"");
+		code_v4_("return hexString(byteRev(0xabcdef))").equals("\"efcdab0000000000\"");
+		code_v4_("return hexString(byteRev(0xfffaaafff))").equals("\"ffafaaff0f000000\"");
+
+		section("Number.binString()");
+		code_v4_("return binString(0)").equals("\"0\"");
+		code_v4_("return binString(0b0000110011)").equals("\"110011\"");
+		code_v4_("return binString(0b000000001)").equals("\"1\"");
+		code_v4_("return binString(0b11001111000111001011101101110000110011)").equals("\"11001111000111001011101101110000110011\"");
+		code_v4_("return binString(0xff)").equals("\"11111111\"");
+
+		section("Number.hexString()");
+		code_v4_("return hexString(0)").equals("\"0\"");
+		code_v4_("return hexString(0xAABBCCDDEEFF)").equals("\"aabbccddeeff\"");
+		code_v4_("return hexString(0xABCDEF00FEDCBA)").equals("\"abcdef00fedcba\"");
+		code_v4_("return hexString(0xAAAAAAA0000000)").equals("\"aaaaaaa0000000\"");
+		code_v4_("return hexString(0xFF)").equals("\"ff\"");
+
+		section("Number.rotLeft");
+		code_v4_("return rotLeft(0, 0)").equals("0");
+		code_v4_("return rotLeft(0, 5)").equals("0");
+		code_v4_("return rotLeft(0, -5)").equals("0");
+		code_v4_("return rotLeft(12345678, 10)").equals("12641974272");
+		code_v4_("return rotLeft(99999999999, 40)").equals("8568097191560746824");
+
+		section("Number.rotRight");
+		code_v4_("return rotRight(0, 0)").equals("0");
+		code_v4_("return rotRight(0, 5)").equals("0");
+		code_v4_("return rotRight(0, -5)").equals("0");
+		code_v4_("return rotRight(12345678, 10)").equals("6016809102166994712");
+		code_v4_("return rotRight(99999999999, 40)").equals("1677721599983222784");
+		code_v4_("return rotRight(99999999999, 40) === rotLeft(99999999999, -40)").equals("true");
+
+		section("Number.realBits");
+		code_v4_("return realBits(0.0)").equals("0");
+		code_v4_("return realBits(1.0)").equals("4607182418800017408");
+		code_v4_("return realBits(-1.0)").equals("-4616189618054758400");
+		code_v4_("return realBits(PI)").equals("4614256656552045848");
+		code_v4_("return realBits(5.12345)").equals("4617454510305100746");
+		code_v4_("return realBits(5434323.213213)").equals("4707593071093958692");
+
+		section("Number.bitsToReal");
+		code_v4_("return bitsToReal(0)").equals("0.0");
+		code_v4_("return bitsToReal(4607182418800017408)").equals("1.0");
+		code_v4_("return bitsToReal(-4616189618054758400)").equals("-1.0");
+		code_v4_("return bitsToReal(4614256656552045848)").equals("3.141592653589793");
+		code_v4_("return bitsToReal(4617454510305100746)").equals("5.12345");
+		code_v4_("return bitsToReal(4707593071093958692)").equals("5434323.213213");
+
+		section("Number.isFinite");
+		code_v4_("return isFinite(0)").equals("true");
+		code_v4_("return isFinite(12)").equals("true");
+		code_v4_("return isFinite(42143.344324)").equals("true");
+		code_v4_("return isFinite(1 / 0)").equals("false");
+
+		section("Number.isInfinite");
+		code_v4_("return isInfinite(0)").equals("false");
+		code_v4_("return isInfinite(12)").equals("false");
+		code_v4_("return isInfinite(42143.344324)").equals("false");
+		code_v4_("return isInfinite(1 / 0)").equals("true");
+
+		section("Number.isNaN");
+		code_v4_("return isNaN(0)").equals("false");
+		code_v4_("return isNaN(12)").equals("false");
+		code_v4_("return isNaN(42143.344324)").equals("false");
+		code_v4_("return isNaN(0 / 0)").equals("true");
+		code_v4_("return isNaN(NaN)").equals("true");
 	}
 }

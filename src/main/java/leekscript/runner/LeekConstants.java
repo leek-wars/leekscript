@@ -8,6 +8,8 @@ public enum LeekConstants implements ILeekConstant {
 
 	PI(Math.PI, Type.REAL),
 	E(Math.E, Type.REAL),
+	Infinity(Double.POSITIVE_INFINITY, Type.REAL),
+	NaN(Double.NaN, Type.REAL),
 
 	INSTRUCTIONS_LIMIT(300000, Type.INT),
 	OPERATIONS_LIMIT(20000000, Type.INT),

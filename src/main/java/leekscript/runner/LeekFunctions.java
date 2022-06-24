@@ -72,6 +72,20 @@ public class LeekFunctions {
 		method("randReal", "Number", 30, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
 		method("hypot", "Number", 187, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
 		method("signum", "Number", 2, true, Type.INT, new Type[] { Type.REAL });
+		method("bitCount", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
+		method("tzCount", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
+		method("lzCount", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
+		method("bitRev", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
+		method("byteRev", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
+		method("rotLeft", "Number", 1, true, Type.INT, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
+		method("rotRight", "Number", 1, true, Type.INT, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
+		method("binString", "Number", 10, true, Type.STRING, new Type[] { Type.INT }).setMinVersion(4);
+		method("hexString", "Number", 10, true, Type.STRING, new Type[] { Type.INT }).setMinVersion(4);
+		method("realBits", "Number", 1, true, Type.INT, new Type[] { Type.REAL }).setMinVersion(4);
+		method("bitsToReal", "Number", 1, true, Type.REAL, new Type[] { Type.INT }).setMinVersion(4);
+		method("isFinite", "Number", 1, true, Type.BOOL, new Type[] { Type.REAL }).setMinVersion(4);
+		method("isInfinite", "Number", 1, true, Type.BOOL, new Type[] { Type.REAL }).setMinVersion(4);
+		method("isNaN", "Number", 1, true, Type.BOOL, new Type[] { Type.REAL }).setMinVersion(4);
 
 		/**
 		 * Fonctions String
