@@ -829,7 +829,12 @@ public class LeekExpression extends Expression {
 				var v = (LeekVariable) mExpression1;
 
 				if (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION) {
-					compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression1).getName());
+
+					if (compiler.getVersion() <= 3) {
+						compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression1).getName());
+					} else {
+						compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_REDEFINE_FUNCTION));
+					}
 				}
 			}
 		}
