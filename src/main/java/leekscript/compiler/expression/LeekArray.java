@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import leekscript.common.Type;
 import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.Hover;
 import leekscript.common.Error;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
@@ -22,6 +23,7 @@ public class LeekArray extends Expression {
 
 	public LeekArray(Token openingBracket) {
 		this.openingBracket = openingBracket;
+		openingBracket.setExpression(this);
 	}
 
 	public void addValue(Expression param) {
@@ -30,6 +32,7 @@ public class LeekArray extends Expression {
 
 	public void setClosingBracket(Token closingBracket) {
 		this.closingBracket = closingBracket;
+		closingBracket.setExpression(this);
 	}
 
 	public void addValue(WordCompiler compiler, Expression key, Token keyToken, Expression value) {
@@ -62,15 +65,16 @@ public class LeekArray extends Expression {
 	}
 
 	@Override
-	public String getString() {
+	public String toString() {
+		if (mIsKeyVal && mValues.size() == 0) return "[:]";
 		String str = "[";
-		for(int i = 0; i < mValues.size(); i++){
+		for (int i = 0; i < mValues.size(); i++){
 			if (i > 0) str += ", ";
 			if (mIsKeyVal) {
-				str += mValues.get(i).getString() + ": ";
+				str += mValues.get(i).toString() + ": ";
 				i++;
 			}
-			str += mValues.get(i).getString();
+			str += mValues.get(i).toString();
 		}
 		return str + "]";
 	}
@@ -139,5 +143,12 @@ public class LeekArray extends Expression {
 	@Override
 	public Location getLocation() {
 		return new Location(openingBracket.getLocation(), closingBracket.getLocation());
+	}
+
+	@Override
+	public Hover hover(Token token) {
+		var hover = new Hover(getType(), getLocation(), toString());
+		hover.setSize(mIsKeyVal ? mValues.size() / 2 : mValues.size());
+		return hover;
 	}
 }

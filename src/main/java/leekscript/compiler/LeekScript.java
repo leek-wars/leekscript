@@ -1,5 +1,6 @@
 package leekscript.compiler;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Random;
 
@@ -50,6 +51,18 @@ public class LeekScript {
 			return random.nextDouble();
 		}
 	};
+
+	public static boolean isLoaded(int id) {
+		return getResolver().isLoaded(id);
+	}
+
+	public static Hover hover(int id, int line, int column) throws FileNotFoundException {
+		AIFile<?> file = getResolver().getById(id);
+		if (file == null) {
+			throw new FileNotFoundException();
+		}
+		return file.hover(line, column);
+	}
 
 	public static AI compileFile(String filepath, String AIClass, boolean useClassCache) throws LeekScriptException, LeekCompilerException, IOException {
 		AIFile<?> file = getResolver().resolve(filepath, null);

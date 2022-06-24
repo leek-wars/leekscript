@@ -16,7 +16,7 @@ public class LeekArrayAccess extends Expression {
 	private Token closingBracket;
 
 	public LeekArrayAccess(Token openingBracket) {
-
+		openingBracket.setExpression(this);
 	}
 
 	public void setTabular(Expression tabular) {
@@ -29,6 +29,7 @@ public class LeekArrayAccess extends Expression {
 
 	public void setClosingBracket(Token closingBracket) {
 		this.closingBracket = closingBracket;
+		closingBracket.setExpression(this);
 	}
 
 	public Expression getTabular() {
@@ -50,8 +51,8 @@ public class LeekArrayAccess extends Expression {
 	}
 
 	@Override
-	public String getString() {
-		return (mTabular == null ? "null" : mTabular.getString()) + "[" + (mCase == null ? "null" : mCase.getString()) + "]";
+	public String toString() {
+		return (mTabular == null ? "null" : mTabular.toString()) + "[" + (mCase == null ? "null" : mCase.toString()) + "]";
 	}
 
 	@Override

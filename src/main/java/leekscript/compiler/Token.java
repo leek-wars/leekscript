@@ -1,10 +1,13 @@
 package leekscript.compiler;
 
+import leekscript.compiler.expression.Expression;
+
 public class Token {
 
 	private final Location location;
 	private final int type;
 	private final String word;
+	private Expression expression;
 
 	public Token(String word) {
 		this(0, word, null);
@@ -38,5 +41,13 @@ public class Token {
 
 	public Location getLocation() {
 		return location;
+	}
+
+	public void setExpression(Expression expression) {
+		this.expression = expression;
+	}
+
+	public Expression getExpression() {
+		return this.expression;
 	}
 }

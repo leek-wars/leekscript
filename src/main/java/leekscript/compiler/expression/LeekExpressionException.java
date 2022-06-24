@@ -22,7 +22,7 @@ public class LeekExpressionException extends Exception {
 	}
 
 	public String getExpression() {
-		return mExpression.getString();
+		return mExpression.toString();
 	}
 
 	public Error getError() {

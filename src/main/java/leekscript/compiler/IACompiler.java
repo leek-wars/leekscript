@@ -4,6 +4,7 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.common.Error;
+import leekscript.common.Type;
 
 import java.util.ArrayList;
 import java.util.List;

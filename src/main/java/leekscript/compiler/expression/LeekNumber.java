@@ -5,6 +5,7 @@ import java.text.NumberFormat;
 import java.util.Locale;
 
 import leekscript.common.Type;
+import leekscript.compiler.Hover;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
@@ -23,6 +24,7 @@ public class LeekNumber extends Expression {
 		this.doubleValue = doubleValue;
 		this.longValue = longValue;
 		this.type = type;
+		this.token.setExpression(this);
 	}
 
 	@Override
@@ -36,7 +38,7 @@ public class LeekNumber extends Expression {
 	}
 
 	@Override
-	public String getString() {
+	public String toString() {
 		if (type == Type.REAL) {
 			var formatter = (DecimalFormat) NumberFormat.getNumberInstance(Locale.US);
 			formatter.setMaximumFractionDigits(15);
@@ -80,5 +82,10 @@ public class LeekNumber extends Expression {
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
+	}
+
+	@Override
+	public Hover hover(Token token) {
+		return new Hover(getType(), getLocation(), toString());
 	}
 }

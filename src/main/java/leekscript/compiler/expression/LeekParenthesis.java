@@ -34,8 +34,8 @@ public class LeekParenthesis extends Expression {
 	}
 
 	@Override
-	public String getString() {
-		return "(" + mExpression.getString() + ")";
+	public String toString() {
+		return "(" + mExpression.toString() + ")";
 	}
 
 	@Override

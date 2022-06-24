@@ -3,6 +3,7 @@ package leekscript.compiler.expression;
 import com.alibaba.fastjson.JSON;
 
 import leekscript.common.Type;
+import leekscript.compiler.Hover;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
@@ -17,6 +18,7 @@ public class LeekString extends Expression {
 	public LeekString(Token token, String str) {
 		this.token = token;
 		mString = str.substring(1, str.length() - 1);
+		token.setExpression(this);
 	}
 
 	@Override
@@ -30,7 +32,7 @@ public class LeekString extends Expression {
 	}
 
 	@Override
-	public String getString() {
+	public String toString() {
 		return JSON.toJSONString(mString);
 	}
 
@@ -84,5 +86,12 @@ public class LeekString extends Expression {
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
+	}
+
+	@Override
+	public Hover hover(Token token) {
+		var hover = new Hover(getType(), getLocation(), toString());
+		hover.setSize(mString.length() - 2);
+		return hover;
 	}
 }

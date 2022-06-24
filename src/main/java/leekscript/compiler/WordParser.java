@@ -52,7 +52,6 @@ public class WordParser {
 	public final static int T_DOT = 15;
 
 	private final AIFile<?> mAI;
-	private final ArrayList<Token> words = new ArrayList<Token>();
 
 	private int instructions = 0;
 	private int cursor = 0;
@@ -68,7 +67,7 @@ public class WordParser {
 	}
 
 	public void compile(WordCompiler compiler) throws LeekCompilerException {
-		words.clear();
+		mAI.getTokens().clear();
 		line_counter = 1;
 		char_counter = 0;
 		char opener = 0;
@@ -410,29 +409,29 @@ public class WordParser {
 			 */
 		} else if (type == T_OPERATOR) {
 			if (word.equals("=!")) {
-				words.add(new Token(type, "=", mAI, line_counter, char_counter));
-				words.add(new Token(type, "!", mAI, line_counter, char_counter));
+				mAI.getTokens().add(new Token(type, "=", mAI, line_counter, char_counter));
+				mAI.getTokens().add(new Token(type, "!", mAI, line_counter, char_counter));
 				return;
 			}
 		}
-		words.add(new Token(type, word, mAI, line_counter, char_counter + offset));
+		mAI.getTokens().add(new Token(type, word, mAI, line_counter, char_counter + offset));
 	}
 
 	public Token token() {
-		return words.get(cursor);
+		return mAI.getTokens().get(cursor);
 	}
 
 	public Token lastToken() {
-		return words.get(cursor - 1);
+		return mAI.getTokens().get(cursor - 1);
 	}
 
 	public Token endToken() {
-		return words.isEmpty() ? null : words.get(words.size() - 1);
+		return mAI.getTokens().isEmpty() ? null : mAI.getTokens().get(mAI.getTokens().size() - 1);
 	}
 
 	public Token eatToken() {
 		cursor++;
-		return words.get(cursor - 1);
+		return mAI.getTokens().get(cursor - 1);
 	}
 
 	public void skipToken() {
@@ -444,7 +443,7 @@ public class WordParser {
 	}
 
 	public boolean haveWords() {
-		return cursor < words.size();
+		return cursor < mAI.getTokens().size();
 	}
 
 	public void reset() {

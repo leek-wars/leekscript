@@ -59,13 +59,13 @@ public class LeekTernaire extends LeekExpression {
 	}
 
 	@Override
-	public String getString() {
+	public String toString() {
 		String retour = "";
-		retour += mCondition == null ? "null" : mCondition.getString();
+		retour += mCondition == null ? "null" : mCondition.toString();
 		retour += " ? ";
-		retour += mExpression1 == null ? "null" : mExpression1.getString();
+		retour += mExpression1 == null ? "null" : mExpression1.toString();
 		retour += " : ";
-		retour += mExpression2 == null ? "null" : mExpression2.getString();
+		retour += mExpression2 == null ? "null" : mExpression2.toString();
 		return retour;
 	}
 
@@ -74,7 +74,7 @@ public class LeekTernaire extends LeekExpression {
 		// if(mCondition instanceof LeekExpression) mCondition = ((LeekExpression) mCondition).getAbstractExpression();
 		// if(mExpression1 instanceof LeekExpression) mExpression1 = ((LeekExpression) mExpression1).getAbstractExpression();
 		// if(mExpression2 instanceof LeekExpression) mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
-		if (!complete()) writer.addCode("/* " + getString() + " */");
+		if (!complete()) writer.addCode("/* " + toString() + " */");
 		else {
 			var branch_ops = mExpression1.operations != mExpression2.operations;
 			writer.getBoolean(mainblock, mCondition);
@@ -174,8 +174,8 @@ public class LeekTernaire extends LeekExpression {
 
 	@Override
 	public void addOperator(int operator, Token token) {
-		//On doit trouver à quel endroit de l'arborescence on doit placer l'opérateur
-		if(mOperator == 0 && operator == Operators.TERNAIRE){
+		// On doit trouver à quel endroit de l'arborescence on doit placer l'opérateur
+		if (mOperator == 0 && operator == Operators.TERNAIRE) {
 			mOperator = 1;
 		}
 		else if(mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete()) ((LeekExpression) mExpression1).addOperator(operator, token);

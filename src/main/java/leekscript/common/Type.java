@@ -1,5 +1,7 @@
 package leekscript.common;
 
+import com.alibaba.fastjson.JSON;
+
 import leekscript.compiler.JavaWriter;
 import leekscript.runner.CallableVersion;
 
@@ -12,11 +14,11 @@ public class Type {
 	public static Type INT = new Type("int", "i", "long", "Long", "0l");
 	public static Type REAL = new Type("real", "r", "double", "Double", "0.0");
 	public static Type STRING = new Type("string", "s", "String", "String", "\"\"");
-	public static Type ARRAY = new Type("array", "a", "ArrayLeekValue", "ArrayLeekValue", "new ArrayLeekValue()");
-	public static Type OBJECT = new Type("object", "o", "ObjectLeekValue", "ObjectLeekValue", "new ObjectLeekValue()");
-	public static Type FUNCTION = new Type("function", "f", "FunctionLeekValue", "FunctionLeekValue", "new FunctionLeekValue(-1)");
-	public static Type MAP = new Type("map", "m", "MapLeekValue", "MapLeekValue", "new MapLeekValue()");
-	public static Type CLASS = new Type("class", "c", "ClassLeekValue", "ClassLeekValue", "new ClassLeekValue()");
+	public static Type ARRAY = new Type("Array", "a", "ArrayLeekValue", "ArrayLeekValue", "new ArrayLeekValue()");
+	public static Type OBJECT = new Type("Object", "o", "ObjectLeekValue", "ObjectLeekValue", "new ObjectLeekValue()");
+	public static Type FUNCTION = new Type("Function", "f", "FunctionLeekValue", "FunctionLeekValue", "new FunctionLeekValue(-1)");
+	public static Type MAP = new Type("Map", "m", "MapLeekValue", "MapLeekValue", "new MapLeekValue()");
+	public static Type CLASS = new Type("Class", "c", "ClassLeekValue", "ClassLeekValue", "new ClassLeekValue()");
 	public static Type VOID = new Type("void", "v", "Object", "Object", "null");
 
 	public static enum CastType {
@@ -52,9 +54,12 @@ public class Type {
 			if (type == INT) {
 				return CastType.UPCAST;
 			}
+			if (type == NUMBER) {
+				return CastType.SAFE_DOWNCAST;
+			}
 		}
 		if (this == INT) {
-			if (type == REAL) {
+			if (type == REAL || type == NUMBER) {
 				return CastType.SAFE_DOWNCAST;
 			}
 		}
@@ -115,5 +120,9 @@ public class Type {
 			}
 		}
 		return Type.ANY;
+	}
+
+	public Object toJSON() {
+		return this.name;
 	}
 }

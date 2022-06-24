@@ -1,5 +1,6 @@
 package leekscript.compiler.bloc;
 
+import leekscript.common.Type;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
@@ -8,6 +9,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekExpression;
+import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -51,7 +53,7 @@ public class ForBlock extends AbstractLeekBlock {
 
 	@Override
 	public String getCode() {
-		return "for (" + mInitialisation.getCode() + mCondition.getString() + "; " + mIncrementation.getString() + ") {\n" + super.getCode() + "}";
+		return "for (" + mInitialisation.getCode() + mCondition.toString() + "; " + mIncrementation.toString() + ") {\n" + super.getCode() + "}";
 	}
 
 	@Override
@@ -112,5 +114,29 @@ public class ForBlock extends AbstractLeekBlock {
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
+	}
+
+	@Override
+	public int getNature() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Type getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

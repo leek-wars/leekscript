@@ -12,6 +12,7 @@ import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekAnonymousFunction;
 import leekscript.compiler.expression.LeekExpression;
+import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -55,7 +56,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	@Override
 	public String getCode() {
 		if (mValue == null) return "var " + token.getWord();
-		return "var " + token.getWord() + " = " + mValue.getString() + ";";
+		return "var " + token.getWord() + " = " + mValue.toString() + ";";
 	}
 
 	@Override
@@ -217,5 +218,29 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
+	}
+
+	@Override
+	public int getNature() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Type getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

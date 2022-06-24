@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import com.alibaba.fastjson.JSONObject;
 
+import leekscript.common.Type;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.resolver.ResolverContext;
 import leekscript.runner.AI;
@@ -21,6 +22,7 @@ public class AIFile<C extends ResolverContext> {
 	private AICode compiledCode;
 	private String clazz;
 	private String rootClazz;
+	private ArrayList<Token> tokens = new ArrayList<Token>();
 
 	public AIFile(String path, String code, long timestamp, int version, C context) {
 		this(path, code, timestamp, version, context, (context + "/" + path).hashCode() & 0xfffffff);
@@ -116,5 +118,50 @@ public class AIFile<C extends ResolverContext> {
 
 	public void clearErrors() {
 		this.errors.clear();
+	}
+
+	public ArrayList<Token> getTokens() {
+		return tokens;
+	}
+
+	public Hover hover(int line, int column) {
+
+		// Find token
+		var token = findToken(line, column);
+
+		if (token.getExpression() != null) {
+			return token.getExpression().hover(token);
+		}
+
+		return new Hover(token.getLocation(), token.getWord());
+	}
+
+	public Token findToken(int line, int column) {
+		// Find token
+		int start = 0;
+		int end = tokens.size() - 1;
+		while (true) {
+			int p = (end + start) / 2;
+			var token = tokens.get(p);
+			// System.out.println("findToken start=" + start + " end=" + end + " token=" + token);
+			if (start >= end) return token;
+			var tLine = token.getLocation().getStartLine();
+			if (line > tLine) {
+				start = p + 1;
+			} else if (line < tLine) {
+				end = p - 1;
+			} else { // Même ligne
+				var startColumn = token.getLocation().getStartColumn();
+				var endColumn = token.getLocation().getEndColumn();
+				if (column >= startColumn && column <= endColumn) {
+					return token;
+				}
+				if (column > endColumn) {
+					start = p + 1;
+				} else {
+					end = p - 1;
+				}
+			}
+		}
 	}
 }

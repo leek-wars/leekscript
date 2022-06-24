@@ -1,5 +1,7 @@
 package leekscript.compiler;
 
+import com.alibaba.fastjson.JSONArray;
+
 public class Location {
 
 	private final AIFile<?> file;
@@ -49,5 +51,15 @@ public class Location {
 	}
 	public int getEndColumn() {
 		return this.endColumn;
+	}
+
+	public Object toJSON() {
+		JSONArray a = new JSONArray();
+		a.add(this.file.getId());
+		a.add(this.startLine);
+		a.add(this.startColumn);
+		a.add(this.endLine);
+		a.add(this.endColumn);
+		return a;
 	}
 }

@@ -29,7 +29,7 @@ public class LeekAnonymousFunction extends Expression {
 	}
 
 	@Override
-	public String getString() {
+	public String toString() {
 		return mBlock.getCode();
 	}
 

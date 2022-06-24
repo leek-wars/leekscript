@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import leekscript.common.Type;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.IACompiler;
 import leekscript.compiler.Token;
@@ -17,6 +18,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.WordParser;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.runner.LeekFunctions;
@@ -350,5 +352,29 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public Location getLocation() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public int getNature() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Type getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

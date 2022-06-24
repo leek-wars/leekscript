@@ -40,4 +40,14 @@ public class ResourceResolver implements Resolver<ResourceContext> {
 	public ResolverContext createContext(int parameter1, int parameter2, int parameter3) {
 		return new FileSystemContext(Paths.get(".").toFile());
 	}
+
+	@Override
+	public boolean isLoaded(int id) {
+		return false;
+	}
+
+	@Override
+	public AIFile<?> getById(int id) {
+		return null;
+	}
 }

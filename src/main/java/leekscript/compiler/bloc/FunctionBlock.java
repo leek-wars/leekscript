@@ -11,6 +11,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
@@ -182,7 +183,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 
 	public void declare(WordCompiler compiler) {
 		// On ajoute la fonction
-		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.FUNCTION));
+		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.FUNCTION, Type.FUNCTION, this));
 	}
 
 	public String toString() {
@@ -196,5 +197,23 @@ public class FunctionBlock extends AbstractLeekBlock {
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
+	}
+
+	@Override
+	public int getNature() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Type getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

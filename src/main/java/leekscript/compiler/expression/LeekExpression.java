@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -89,6 +90,7 @@ public class LeekExpression extends Expression {
 	public void setOperator(int operator, Token operatorToken) {
 		mOperator = operator;
 		mOperatorToken = operatorToken;
+		operatorToken.setExpression(this);
 	}
 
 	public boolean needOperator() {
@@ -190,18 +192,18 @@ public class LeekExpression extends Expression {
 		}
 	}
 
-	public void addObjectAccess(Token name) {
+	public void addObjectAccess(Token dot, Token name) {
 		if (mExpression1 != null && mExpression2 == null) {
 			if (mExpression1.getNature() == EXPRESSION)
-				((LeekExpression) mExpression1).addObjectAccess(name);
+				((LeekExpression) mExpression1).addObjectAccess(dot, name);
 			else {
-				mExpression1 = new LeekObjectAccess(mExpression1, name);
+				mExpression1 = new LeekObjectAccess(mExpression1, dot, name);
 			}
 		} else if (mExpression2 != null) {
 			if (mExpression2.getNature() == EXPRESSION)
-				((LeekExpression) mExpression2).addObjectAccess(name);
+				((LeekExpression) mExpression2).addObjectAccess(dot, name);
 			else {
-				mExpression2 = new LeekObjectAccess(mExpression2, name);
+				mExpression2 = new LeekObjectAccess(mExpression2, dot, name);
 			}
 		}
 	}
@@ -268,8 +270,7 @@ public class LeekExpression extends Expression {
 				ternaire.setParent(this);
 				mExpression1 = ternaire;
 			}
-		}
-		else {
+		} else {
 			int operator = Operators.TERNAIRE;
 			int cur_p = Operators.getPriority(mOperator);
 			int p = Operators.getPriority(operator);
@@ -289,17 +290,16 @@ public class LeekExpression extends Expression {
 				mExpression1 = ternaire;
 				mExpression2 = null;
 				mOperator = -1;
-			}
-			else if (mExpression2.getNature() != EXPRESSION) {
+			} else if (mExpression2.getNature() != EXPRESSION) {
 				// On doit englober l'expression de droite
 				LeekTernaire ternaire = new LeekTernaire(token);
 				ternaire.addExpression(mExpression2);
 				ternaire.addOperator(Operators.TERNAIRE, null);
 				ternaire.setParent(this);
 				mExpression2 = ternaire;
+			} else {
+				((LeekExpression) mExpression2).addOperator(operator, mOperatorToken);
 			}
-			else
-				((LeekExpression) mExpression2).addOperator(operator, null);
 		}
 	}
 
@@ -335,8 +335,7 @@ public class LeekExpression extends Expression {
 					mExpression1 = trn;
 				}
 			} else {
-				mOperator = operator;
-				mOperatorToken = token;
+				setOperator(operator, token);
 			}
 		}
 		else {
@@ -364,12 +363,10 @@ public class LeekExpression extends Expression {
 						mExpression2 = null;
 						mOperator = -1;
 					}
-				}
-				else {
+				} else {
 					mExpression1 = new_e;
 					mExpression2 = null;
-					mOperator = operator;
-					mOperatorToken = token;
+					setOperator(operator, token);
 				}
 			}
 			else if (mExpression2.getNature() != EXPRESSION) {
@@ -395,21 +392,21 @@ public class LeekExpression extends Expression {
 	}
 
 	@Override
-	public String getString() {
+	public String toString() {
 		String retour = "";
 		if (Operators.isUnaryPrefix(mOperator)) {
 			retour += Operators.getString(mOperator, mOperatorToken.getLocation().getFile().getVersion());
 			if (mOperator == Operators.NEW) retour += " ";
-			retour += mExpression2 == null ? "null" : mExpression2.getString();
+			retour += mExpression2 == null ? "null" : mExpression2.toString();
 		}
 		else if (Operators.isUnarySuffix(mOperator)) {
-			retour += mExpression2 == null ? "null" : mExpression2.getString();
+			retour += mExpression2 == null ? "null" : mExpression2.toString();
 			retour += Operators.getString(mOperator, mOperatorToken.getLocation().getFile().getVersion());
 		}
 		else {
-			retour += mExpression1 == null ? "null" : mExpression1.getString();
+			retour += mExpression1 == null ? "null" : mExpression1.toString();
 			retour += " " + Operators.getString(mOperator, mOperatorToken.getLocation().getFile().getVersion()) + " ";
-			retour += mExpression2 == null ? "null" : mExpression2.getString();
+			retour += mExpression2 == null ? "null" : mExpression2.toString();
 		}
 		return retour + "";
 	}
@@ -723,7 +720,7 @@ public class LeekExpression extends Expression {
 			return;
 		case Operators.NEW:
 			if (mExpression2 instanceof LeekVariable) {
-				if (mainblock.getWordCompiler().getVersion() >= 3 && ((LeekVariable) mExpression2).getString().equals("Array")) {
+				if (mainblock.getWordCompiler().getVersion() >= 3 && ((LeekVariable) mExpression2).toString().equals("Array")) {
 					writer.addCode("new LegacyArrayLeekValue()");
 				} else {
 					writer.addCode("execute(");

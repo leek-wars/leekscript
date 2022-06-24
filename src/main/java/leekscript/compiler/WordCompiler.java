@@ -306,7 +306,7 @@ public class WordCompiler {
 		if (mCompiler.token().getType() != WordParser.T_VAR_STRING)
 			throw new LeekCompilerException(mCompiler.token(), Error.AI_NAME_EXPECTED);
 		String iaName = mCompiler.eatToken().getWord();
-
+		iaName = iaName.substring(1, iaName.length() - 1);
 		if (!mMain.includeAI(this, iaName)) {
 			addError(new AnalyzeError(mCompiler.lastToken(), AnalyzeErrorLevel.ERROR, Error.AI_NOT_EXISTING, new String[] { iaName }));
 		}
@@ -935,9 +935,9 @@ public class WordCompiler {
 
 				} else if (word.getType() == WordParser.T_DOT) {
 					// Object access
-					mCompiler.skipToken();
-					Token name = mCompiler.token();
-					retour.addObjectAccess(name);
+					var dot = mCompiler.eatToken();
+					var name = mCompiler.token();
+					retour.addObjectAccess(dot, name);
 
 				} else if (word.getType() == WordParser.T_OPERATOR) {
 					int operator = Operators.getOperator(word.getWord(), getVersion());
@@ -1089,7 +1089,7 @@ public class WordCompiler {
 							if (((ClassMethodBlock) mCurentBlock).getClassDeclaration().getParentToken() == null) {
 								addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.SUPER_NOT_AVAILABLE_PARENT));
 							}
-							retour.addExpression(new LeekVariable(word, VariableType.SUPER, ((ClassMethodBlock) mCurentBlock).getClassDeclaration()));
+							retour.addExpression(new LeekVariable(word, VariableType.SUPER, Type.CLASS, ((ClassMethodBlock) mCurentBlock).getClassDeclaration()));
 						}
 					} else {
 						retour.addExpression(new LeekVariable(this, word, VariableType.LOCAL));

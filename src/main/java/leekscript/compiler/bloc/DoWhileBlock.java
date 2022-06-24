@@ -1,5 +1,6 @@
 package leekscript.compiler.bloc;
 
+import leekscript.common.Type;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -7,6 +8,7 @@ import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekBoolean;
+import leekscript.compiler.expression.LeekExpressionException;
 
 public class DoWhileBlock extends AbstractLeekBlock {
 
@@ -28,7 +30,7 @@ public class DoWhileBlock extends AbstractLeekBlock {
 
 	@Override
 	public String getCode() {
-		return "do{\n" + super.getCode() + "}while(" + mCondition.getString() + ");";
+		return "do{\n" + super.getCode() + "}while(" + mCondition.toString() + ");";
 	}
 
 	@Override
@@ -71,5 +73,29 @@ public class DoWhileBlock extends AbstractLeekBlock {
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
+	}
+
+	@Override
+	public int getNature() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Type getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

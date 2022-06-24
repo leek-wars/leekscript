@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -16,10 +17,13 @@ public class LeekObjectAccess extends Expression {
 
 	private Expression object;
 	private Token field;
+	private Type type = Type.ANY;
 
-	public LeekObjectAccess(Expression object, Token field) {
+	public LeekObjectAccess(Expression object, Token dot, Token field) {
 		this.object = object;
 		this.field = field;
+		dot.setExpression(this);
+		field.setExpression(this);
 	}
 
 	@Override
@@ -29,12 +33,12 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public Type getType() {
-		return Type.ANY;
+		return type;
 	}
 
 	@Override
-	public String getString() {
-		return object.getString() + "." + field.getWord();
+	public String toString() {
+		return object.toString() + "." + field.getWord();
 	}
 
 	public Expression getObject() {
@@ -77,12 +81,18 @@ public class LeekObjectAccess extends Expression {
 			} else if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS) {
 				var clazz = v.getVariableType() == VariableType.CLASS ? v.getClassDeclaration() : compiler.getCurrentClass();
 				if (field.getWord().equals("name") || field.getWord().equals("super") || field.getWord().equals("fields") || field.getWord().equals("staticFields") || field.getWord().equals("methods") || field.getWord().equals("staticMethods")) {
+					if (field.getWord().equals("name")) {
+						this.type = Type.STRING;
+					}
+					this.type = Type.ARRAY;
 					return; // OK
 				}
 				if (clazz.hasStaticMember(field.getWord())) {
+					this.type = Type.FUNCTION;
 					return; // OK
 				}
 				if (clazz.hasMethod(field.getWord())) {
+					this.type = Type.FUNCTION;
 					return; // OK
 				}
 				compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), field.getWord() }));
@@ -340,5 +350,25 @@ public class LeekObjectAccess extends Expression {
 	@Override
 	public Location getLocation() {
 		return new Location(object.getLocation(), field.getLocation());
+	}
+
+	@Override
+	public Hover hover(Token token) {
+		if (object instanceof LeekVariable) {
+			var v = (LeekVariable) object;
+			if (v.getVariableType() == VariableType.CLASS) {
+				var clazz = v.getClassDeclaration();
+
+				var member = clazz.getMember(field.getWord());
+				if (member != null) {
+					return new Hover(member.getType(), getLocation(), member.getLocation());
+				}
+				var staticMember = clazz.getStaticMember(field.getWord());
+				if (staticMember != null) {
+					return new Hover(staticMember.getType(), getLocation(), staticMember.getLocation());
+				}
+			}
+		}
+		return new Hover(getType(), getLocation());
 	}
 }

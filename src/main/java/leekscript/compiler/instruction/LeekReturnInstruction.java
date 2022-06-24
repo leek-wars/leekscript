@@ -1,5 +1,6 @@
 package leekscript.compiler.instruction;
 
+import leekscript.common.Type;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
@@ -7,6 +8,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.Expression;
+import leekscript.compiler.expression.LeekExpressionException;
 
 public class LeekReturnInstruction extends LeekInstruction {
 
@@ -20,7 +22,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 
 	@Override
 	public String getCode() {
-		return "return " + (expression == null ? "null" : expression.getString()) + ";";
+		return "return " + (expression == null ? "null" : expression.toString()) + ";";
 	}
 
 
@@ -73,5 +75,29 @@ public class LeekReturnInstruction extends LeekInstruction {
 
 	public Location getLocation() {
 		return new Location(token.getLocation(), expression.getLocation());
+	}
+
+	@Override
+	public int getNature() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Type getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

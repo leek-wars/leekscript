@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -12,6 +13,9 @@ import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.LeekConstants;
 import leekscript.runner.LeekFunctions;
+
+import java.util.function.Function;
+
 import leekscript.common.Error;
 import leekscript.common.Type;
 
@@ -24,47 +28,48 @@ public class LeekVariable extends Expression {
 	private final Token token;
 	private VariableType type;
 	private Type variableType = Type.ANY;
-	private LeekVariableDeclarationInstruction declaration;
-	private ClassDeclarationInstruction classDeclaration;
-	private boolean box;
+	private LeekVariableDeclarationInstruction declaration = null;
+	private ClassDeclarationInstruction classDeclaration = null;
+	private FunctionBlock functionDeclaration = null;
+	private boolean box = false;
 
 	public LeekVariable(Token token, VariableType type) {
 		this.token = token;
+		token.setExpression(this);
 		this.type = type;
-		this.declaration = null;
-		this.classDeclaration = null;
-		this.box = false;
+	}
+
+	public LeekVariable(Token token, VariableType variableType, Type type) {
+		this(token, variableType);
+		this.variableType = type;
 	}
 
 	public LeekVariable(WordCompiler compiler, Token token, VariableType type) {
-		this.token = token;
-		this.type = type;
-		this.declaration = null;
-		this.classDeclaration = null;
+		this(token, type);
 		this.box = compiler.getVersion() <= 1;
 	}
 
 	public LeekVariable(Token token, VariableType type, boolean box) {
-		this.token = token;
-		this.type = type;
-		this.declaration = null;
-		this.classDeclaration = null;
+		this(token, type);
 		this.box = box;
 	}
 
 	public LeekVariable(Token token, VariableType type, LeekVariableDeclarationInstruction declaration) {
-		this.token = token;
-		this.type = type;
+		this(token, type);
 		this.declaration = declaration;
-		this.classDeclaration = null;
 		this.box = declaration.isCaptured();
 	}
 
-	public LeekVariable(Token token, VariableType type, ClassDeclarationInstruction classDeclaration) {
-		this.token = token;
-		this.type = type;
+	public LeekVariable(Token token, VariableType type, Type variableType, ClassDeclarationInstruction classDeclaration) {
+		this(token, type);
 		this.classDeclaration = classDeclaration;
-		this.box = false;
+		this.variableType = variableType;
+	}
+
+	public LeekVariable(Token token, VariableType type, Type variableType, FunctionBlock functionDeclaration) {
+		this(token, type);
+		this.functionDeclaration = functionDeclaration;
+		this.variableType = variableType;
 	}
 
 	@Override
@@ -78,7 +83,7 @@ public class LeekVariable extends Expression {
 	}
 
 	@Override
-	public String getString() {
+	public String toString() {
 		return token.getWord();
 	}
 
@@ -121,8 +126,10 @@ public class LeekVariable extends Expression {
 		var v = compiler.getCurrentBlock().getVariable(token.getWord(), true);
 		if (v != null) {
 			this.type = v.getVariableType();
+			this.variableType = v.getType();
 			this.declaration = v.getDeclaration();
 			this.classDeclaration = v.getClassDeclaration();
+			this.functionDeclaration = v.getFunctionDeclaration();
 			this.box = v.box;
 			if (v.getDeclaration() != null && v.getDeclaration().getFunction() != compiler.getCurrentFunction()) {
 				v.getDeclaration().setCaptured();
@@ -165,6 +172,10 @@ public class LeekVariable extends Expression {
 
 	public LeekVariableDeclarationInstruction getDeclaration() {
 		return declaration;
+	}
+
+	public FunctionBlock getFunctionDeclaration() {
+		return functionDeclaration;
 	}
 
 	public Token getToken() {
@@ -872,5 +883,19 @@ public class LeekVariable extends Expression {
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
+	}
+
+	@Override
+	public Hover hover(Token token) {
+		if (classDeclaration != null) {
+			return new Hover(getType(), getLocation(), classDeclaration.getLocation());
+		}
+		if (declaration != null) {
+			return new Hover(getType(), getLocation(), declaration.getLocation());
+		}
+		if (functionDeclaration != null) {
+			return new Hover(getType(), getLocation(), functionDeclaration.getLocation());
+		}
+		return new Hover(getType(), getLocation());
 	}
 }

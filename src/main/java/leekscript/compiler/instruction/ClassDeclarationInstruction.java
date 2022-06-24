@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -16,10 +17,12 @@ import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
+import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
+import leekscript.common.Type;
 
 public class ClassDeclarationInstruction extends LeekInstruction {
 
@@ -99,7 +102,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		for (Entry<String, ClassDeclarationField> field : staticFields.entrySet()) {
 			r += "\t" + field.getValue().level.toString().toLowerCase() + " static " + field.getKey();
 			if (field.getValue().expression != null) {
-				r += " = " + field.getValue().expression.getString();
+				r += " = " + field.getValue().expression.toString();
 			}
 			r += "\n";
 		}
@@ -116,7 +119,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		for (Entry<String, ClassDeclarationField> field : fields.entrySet()) {
 			r += "\t" + field.getValue().level.toString().toLowerCase() + " " + field.getKey();
 			if (field.getValue().expression != null) {
-				r += " = " + field.getValue().expression.getString();
+				r += " = " + field.getValue().expression.toString();
 			}
 			r += "\n";
 		}
@@ -179,7 +182,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 		if (!methods.containsKey(token.getWord())) {
 			methods.put(token.getWord(), new HashMap<>());
-			methodVariables.put(token.getWord(), new LeekVariable(token, VariableType.METHOD));
+			methodVariables.put(token.getWord(), new LeekVariable(token, VariableType.METHOD, Type.FUNCTION));
 		}
 		methods.get(token.getWord()).put(method.countParameters(), new ClassDeclarationMethod(method, level));
 	}
@@ -202,7 +205,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 		if (!staticMethods.containsKey(token.getWord())) {
 			staticMethods.put(token.getWord(), new HashMap<>());
-			staticMethodVariables.put(token.getWord(), new LeekVariable(token, VariableType.STATIC_METHOD));
+			staticMethodVariables.put(token.getWord(), new LeekVariable(token, VariableType.STATIC_METHOD, Type.FUNCTION));
 		}
 		staticMethods.get(token.getWord()).put(method.countParameters(), new ClassDeclarationMethod(method, level));
 	}
@@ -223,7 +226,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			return;
 		}
 		fields.put(word.getWord(), new ClassDeclarationField(expr, level));
-		fieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.FIELD));
+		fieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.FIELD, Type.ANY));
 	}
 
 	public void addStaticField(Token word, Expression expr, AccessLevel level) throws LeekCompilerException {
@@ -231,12 +234,12 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			throw new LeekCompilerException(word.getLocation(), Error.FIELD_ALREADY_EXISTS);
 		}
 		staticFields.put(word.getWord(), new ClassDeclarationField(expr, level));
-		staticFieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.STATIC_FIELD));
+		staticFieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.STATIC_FIELD, Type.ANY));
 	}
 
 	public void declare(WordCompiler compiler) {
 		// On ajoute la classe
-		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.CLASS, this));
+		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.CLASS, Type.CLASS, this));
 	}
 
 	public void preAnalyze(WordCompiler compiler) {
@@ -668,5 +671,29 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
+	}
+
+	@Override
+	public int getNature() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Type getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

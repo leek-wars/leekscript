@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.common.Type;
+import leekscript.compiler.Hover;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
@@ -15,6 +16,7 @@ public class LeekBoolean extends Expression {
 	public LeekBoolean(Token token, boolean value) {
 		this.token = token;
 		mValue = value;
+		token.setExpression(this);
 	}
 
 	@Override
@@ -28,7 +30,7 @@ public class LeekBoolean extends Expression {
 	}
 
 	@Override
-	public String getString() {
+	public String toString() {
 		return mValue ? "true" : "false";
 	}
 
@@ -57,5 +59,10 @@ public class LeekBoolean extends Expression {
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
+	}
+
+	@Override
+	public Hover hover(Token token) {
+		return new Hover(getType(), getLocation(), toString());
 	}
 }

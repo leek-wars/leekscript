@@ -3,6 +3,7 @@ package leekscript.compiler.expression;
 import java.util.LinkedHashMap;
 
 import leekscript.common.Type;
+import leekscript.compiler.Hover;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
@@ -17,6 +18,7 @@ public class LeekObject extends Expression {
 
 	public LeekObject(Token openingBrace) {
 		this.openingBrace = openingBrace;
+		this.openingBrace.setExpression(this);
 	}
 
 	public void addEntry(String key, Expression value) {
@@ -25,6 +27,7 @@ public class LeekObject extends Expression {
 
 	public void setClosingBrace(Token closingBrace) {
 		this.closingBrace = closingBrace;
+		this.closingBrace.setExpression(this);
 	}
 
 	@Override
@@ -38,13 +41,13 @@ public class LeekObject extends Expression {
 	}
 
 	@Override
-	public String getString() {
+	public String toString() {
 		String str = "{";
 		int i = 0;
 		for (var entry : mValues.entrySet()) {
 			if (i++ > 0) str += ", ";
 			str += entry.getKey() + ": ";
-			str += entry.getValue().getString();
+			str += entry.getValue().toString();
 		}
 		return str + "}";
 	}
@@ -86,5 +89,10 @@ public class LeekObject extends Expression {
 	@Override
 	public Location getLocation() {
 		return new Location(openingBrace.getLocation(), closingBrace.getLocation());
+	}
+
+	@Override
+	public Hover hover(Token token) {
+		return new Hover(getType(), getLocation(), toString());
 	}
 }

@@ -1,12 +1,13 @@
 package leekscript.compiler.bloc;
 
-import leekscript.compiler.AIFile;
+import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekBoolean;
+import leekscript.compiler.expression.LeekExpressionException;
 
 public class WhileBlock extends AbstractLeekBlock {
 
@@ -28,7 +29,7 @@ public class WhileBlock extends AbstractLeekBlock {
 
 	@Override
 	public String getCode() {
-		return "while(" + mCondition.getString() + "){\n" + super.getCode() + "}";
+		return "while(" + mCondition.toString() + "){\n" + super.getCode() + "}";
 	}
 
 	@Override
@@ -77,5 +78,29 @@ public class WhileBlock extends AbstractLeekBlock {
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
+	}
+
+	@Override
+	public int getNature() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Type getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

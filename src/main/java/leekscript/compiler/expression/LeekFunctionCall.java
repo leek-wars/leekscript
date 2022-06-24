@@ -35,6 +35,7 @@ public class LeekFunctionCall extends Expression {
 
 	public LeekFunctionCall(Token openParenthesis) {
 		this.openParenthesis = openParenthesis;
+		this.openParenthesis.setExpression(this);
 	}
 
 	public void setExpression(Expression expression) {
@@ -43,6 +44,7 @@ public class LeekFunctionCall extends Expression {
 
 	public void setClosingParenthesis(Token closingParenthesis) {
 		this.closingParenthesis = closingParenthesis;
+		this.closingParenthesis.setExpression(this);
 	}
 
 	public void addParameter(Expression param) {
@@ -60,11 +62,11 @@ public class LeekFunctionCall extends Expression {
 	}
 
 	@Override
-	public String getString() {
-		String str = mExpression.getString() + "(";
+	public String toString() {
+		String str = mExpression.toString() + "(";
 		for(int i = 0; i < mParameters.size(); i++){
 			if(i > 0) str += ", ";
-			str += mParameters.get(i).getString();
+			str += mParameters.get(i).toString();
 		}
 		return str + ")";
 	}
@@ -501,7 +503,7 @@ public class LeekFunctionCall extends Expression {
 					AnalyzeErrorLevel level = compiler.getVersion() >= 4 ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 					version_errors.add(new AnalyzeError(mParameters.get(i).getLocation(), level, Error.WRONG_ARGUMENT_TYPE, new String[] {
 						String.valueOf(i + 1),
-						mParameters.get(i).getString(),
+						mParameters.get(i).toString(),
 						a_type.name,
 						f_type.name
 					}));

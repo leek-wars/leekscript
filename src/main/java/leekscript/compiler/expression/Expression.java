@@ -1,8 +1,10 @@
 package leekscript.compiler.expression;
 
 import leekscript.common.Type;
+import leekscript.compiler.Hover;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
@@ -26,8 +28,6 @@ public abstract class Expression {
 	public abstract int getNature();
 
 	public abstract Type getType();
-
-	public abstract String getString();
 
 	public abstract void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer);
 
@@ -162,4 +162,8 @@ public abstract class Expression {
 	}
 
 	public abstract Location getLocation();
+
+	public Hover hover(Token token) {
+		return new Hover(getType(), getLocation());
+	}
 }

@@ -1,11 +1,13 @@
 package leekscript.compiler.bloc;
 
+import leekscript.common.Type;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.Expression;
+import leekscript.compiler.expression.LeekExpressionException;
 
 public class ConditionalBloc extends AbstractLeekBlock {
 
@@ -38,8 +40,8 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	@Override
 	public String getCode() {
 		String str = "";
-		if(mParentCondition == null) str = "if (" + mCondition.getString() + ") {";
-		else if(mCondition != null) str = "else if (" + mCondition.getString() + ") {";
+		if(mParentCondition == null) str = "if (" + mCondition.toString() + ") {";
+		else if(mCondition != null) str = "else if (" + mCondition.toString() + ") {";
 		else str = "else {";
 		str += "\n" + super.getCode();
 		return str + "}";
@@ -123,5 +125,29 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
+	}
+
+	@Override
+	public int getNature() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Type getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }
