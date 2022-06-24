@@ -353,14 +353,15 @@ public class WordCompiler {
 
 			if (mCompiler.token().getType() == WordParser.T_VIRG) {
 				mCompiler.skipToken();
-			} else if (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
-				type = parseType(parameter.getWord());
-				parameter = mCompiler.token();
-				mCompiler.skipToken();
-				if (mCompiler.token().getType() == WordParser.T_VIRG) {
-					mCompiler.skipToken();
-				}
 			}
+			// else if (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
+				// type = parseType(parameter.getWord());
+				// parameter = mCompiler.token();
+			// 	mCompiler.skipToken();
+			// 	if (mCompiler.token().getType() == WordParser.T_VIRG) {
+			// 		mCompiler.skipToken();
+			// 	}
+			// }
 
 			block.addParameter(this, parameter, is_reference, type);
 		}
@@ -1194,14 +1195,15 @@ public class WordCompiler {
 
 			if (mCompiler.token().getType() == WordParser.T_VIRG) {
 				mCompiler.skipToken();
-			} else if (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
-				type = parseType(parameter.getWord());
-				parameter = mCompiler.token();
-				mCompiler.skipToken();
-				if (mCompiler.token().getType() == WordParser.T_VIRG) {
-					mCompiler.skipToken();
-				}
 			}
+			// else if (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
+			// 	type = parseType(parameter.getWord());
+			// 	parameter = mCompiler.token();
+			// 	mCompiler.skipToken();
+			// 	if (mCompiler.token().getType() == WordParser.T_VIRG) {
+			// 		mCompiler.skipToken();
+			// 	}
+			// }
 
 			block.addParameter(this, parameter, is_reference, type);
 		}
