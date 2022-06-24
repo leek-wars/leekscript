@@ -142,6 +142,7 @@ public class LeekVariable extends Expression {
 		// Global user functions
 		if (compiler.getMainBlock().hasUserFunction(token.getWord(), true)) {
 			this.type = VariableType.FUNCTION;
+			this.variableType = Type.FUNCTION;
 			return;
 		}
 		// LS constants
@@ -154,6 +155,7 @@ public class LeekVariable extends Expression {
 		// LS functions
 		if (LeekFunctions.getValue(token.getWord()) != null) {
 			this.type = VariableType.SYSTEM_FUNCTION;
+			this.variableType = Type.FUNCTION;
 			return;
 		}
 		compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
