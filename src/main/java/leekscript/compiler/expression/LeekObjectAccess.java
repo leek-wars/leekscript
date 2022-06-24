@@ -88,7 +88,6 @@ public class LeekObjectAccess extends Expression {
 					return; // OK
 				}
 				if (clazz.hasStaticMember(field.getWord())) {
-					this.type = Type.FUNCTION;
 					return; // OK
 				}
 				if (clazz.hasMethod(field.getWord())) {

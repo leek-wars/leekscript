@@ -563,6 +563,7 @@ public class TestObject extends TestCommon {
 		code_v3_("return {a: 1, b: 1}.values()").equals("[1, 1]");
 		code_v3_("return {a: 5, b: 'toto', c: true, d: function() { return 5 } }.values()").equals("[5, \"toto\", true, #Anonymous Function]");
 		code_v3_("return {c: 5, a: 'toto', d: true, b: function() { return 5 } }.values()").equals("[5, \"toto\", true, #Anonymous Function]");
+		code_v3_("return count({a: 1, b: 1}.values())").equals("2");
 
 		section("Object.isTrue()");
 		code_v2_("if ({x: 12}) { return 5 } else { return 12 }").equals("5");

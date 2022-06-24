@@ -63,6 +63,11 @@ public class Type {
 				return CastType.SAFE_DOWNCAST;
 			}
 		}
+		if (this == FUNCTION) {
+			if (type == Type.CLASS) {
+				return CastType.UPCAST;
+			}
+		}
 		return CastType.INCOMPATIBLE;
 	}
 

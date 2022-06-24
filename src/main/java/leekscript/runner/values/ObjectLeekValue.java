@@ -41,10 +41,12 @@ public class ObjectLeekValue {
 				fields.put(field.getKey(), new ObjectVariableValue(ai, LeekOperations.clone(ai, field.getValue().getValue(), level - 1), field.getValue().level));
 			}
 		}
+		ai.increaseRAM(value.fields.size());
 	}
 
 	public void addField(AI ai, String field, Object value, AccessLevel level) throws LeekRunException {
 		fields.put(field, new ObjectVariableValue(ai, LeekOperations.clone(ai, value), level));
+		ai.increaseRAM(1);
 	}
 
 	public Object getField(String field) throws LeekRunException {
@@ -248,20 +250,18 @@ public class ObjectLeekValue {
 		var resultM = clazz.getMethod(clazz.ai, method, fromClass);
 		if (resultM == null) {
 			if (method.equals("keys_0")) {
-				String[] values = new String[fields.size()];
-				int i = 0;
+				var result = clazz.ai.newArray(fields.size());
 				for (var key : fields.keySet()) {
-					values[i++] = key;
+					result.pushNoClone(clazz.ai, key);
 				}
-				return new LegacyArrayLeekValue(clazz.ai, values);
+				return result;
 			}
 			if (method.equals("values_0")) {
-				Object[] values = new Object[fields.size()];
-				int i = 0;
-				for (var value : fields.values()) {
-					values[i++] = value;
+				var result = clazz.ai.newArray(fields.size());
+				for (var key : fields.values()) {
+					result.pushNoClone(clazz.ai, key);
 				}
-				return new LegacyArrayLeekValue(clazz.ai, values);
+				return result;
 			}
 		}
 		if (resultM == null) {
@@ -471,5 +471,13 @@ public class ObjectLeekValue {
 		}
 		sb.append("}");
 		return sb.toString();
+	}
+
+	@Override
+	@SuppressWarnings("deprecated")
+	protected void finalize() throws Throwable {
+		super.finalize();
+		// System.out.println("Finalize array " + size());
+		clazz.ai.decreaseRAM(size());
 	}
 }

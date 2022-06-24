@@ -37,6 +37,7 @@ public class TestMain {
 		new TestMap().run();
 		new TestMapStress().run();
 		new TestObject().run();
+		new TestObjectStress().run();
 		new TestClass().run();
 		new TestComments().run();
 		new TestOperators().run();
