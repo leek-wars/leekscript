@@ -44,7 +44,7 @@ import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 
 public class WordCompiler {
 
-	private final MainLeekBlock mMain;
+	private MainLeekBlock mMain;
 	private AbstractLeekBlock mCurentBlock;
 	private AbstractLeekBlock mCurrentFunction;
 	private ClassDeclarationInstruction mCurrentClass;
@@ -53,11 +53,8 @@ public class WordCompiler {
 	private AIFile<?> mAI = null;
 	private final int version;
 
-	public WordCompiler(WordParser cmp, MainLeekBlock main, AIFile<?> ai, int version) {
+	public WordCompiler(WordParser cmp, AIFile<?> ai, int version) {
 		mCompiler = cmp;
-		mMain = main;
-		mCurentBlock = main;
-		mCurrentFunction = main;
 		mAI = ai;
 		this.version = version;
 	}
@@ -376,22 +373,22 @@ public class WordCompiler {
 		setCurrentFunction(previousFunction);
 	}
 
-	private Type parseType(String word) {
-		if (word.equals("void")) return Type.VOID;
-		if (word.equals("bool")) return Type.BOOL;
-		if (word.equals("any")) return Type.ANY;
-		if (word.equals("int")) return Type.INT;
-		if (word.equals("real")) return Type.REAL;
-		if (word.equals("number")) return Type.NUMBER;
-		if (word.equals("string")) return Type.STRING;
-		if (word.equals("array")) return Type.ARRAY;
-		if (word.equals("map")) return Type.MAP;
-		if (word.equals("function")) return Type.FUNCTION;
-		if (word.equals("object")) return Type.OBJECT;
-		if (word.equals("class")) return Type.CLASS;
-		if (word.equals("null")) return Type.NULL;
-		return Type.ANY;
-	}
+	// private Type parseType(String word) {
+	// 	if (word.equals("void")) return Type.VOID;
+	// 	if (word.equals("bool")) return Type.BOOL;
+	// 	if (word.equals("any")) return Type.ANY;
+	// 	if (word.equals("int")) return Type.INT;
+	// 	if (word.equals("real")) return Type.REAL;
+	// 	if (word.equals("number")) return Type.NUMBER;
+	// 	if (word.equals("string")) return Type.STRING;
+	// 	if (word.equals("array")) return Type.ARRAY;
+	// 	if (word.equals("map")) return Type.MAP;
+	// 	if (word.equals("function")) return Type.FUNCTION;
+	// 	if (word.equals("object")) return Type.OBJECT;
+	// 	if (word.equals("class")) return Type.CLASS;
+	// 	if (word.equals("null")) return Type.NULL;
+	// 	return Type.ANY;
+	// }
 
 	private void forBlock() throws LeekCompilerException {
 		var token = mCompiler.eatToken();
@@ -722,7 +719,7 @@ public class WordCompiler {
 		if (getVersion() >= 3 && isKeyword(word)) {
 			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() }));
 		}
-		ClassDeclarationInstruction classDeclaration = new ClassDeclarationInstruction(word, mLine, mAI, false);
+		ClassDeclarationInstruction classDeclaration = new ClassDeclarationInstruction(word, mLine, mAI, false, getMainBlock());
 		mMain.addClass(classDeclaration);
 		mCurrentClass = classDeclaration;
 
@@ -736,94 +733,112 @@ public class WordCompiler {
 		}
 		mCompiler.skipToken();
 
-		word = mCompiler.eatToken();
-		while (word.getType() != WordParser.T_ACCOLADE_RIGHT) {
+		while (mCompiler.token().getType() != WordParser.T_ACCOLADE_RIGHT) {
+			word = mCompiler.token();
 			switch (word.getWord()) {
 				case "public":
 				case "private":
 				case "protected":
 				{
 					AccessLevel level = AccessLevel.fromString(word.getWord());
+					mCompiler.skipToken();
 					classAccessLevelMember(classDeclaration, level);
 					break;
 				}
+				case "static": {
+					mCompiler.skipToken();
+					classStaticMember(classDeclaration, AccessLevel.PUBLIC);
+					break;
+				}
+				case "final": {
+					mCompiler.skipToken();
+					endClassMember(classDeclaration, AccessLevel.PUBLIC, false, true);
+					break;
+				}
 				case "constructor": {
+					mCompiler.skipToken();
 					classConstructor(classDeclaration, AccessLevel.PUBLIC, word);
 					break;
 				}
 				default: {
-					if (word.getType() == WordParser.T_STRING) {
-						mCompiler.back();
-						classAccessLevelMember(classDeclaration, AccessLevel.PUBLIC);
-					} else {
-						throw new LeekCompilerException(word, Error.KEYWORD_UNEXPECTED);
-					}
+					endClassMember(classDeclaration, AccessLevel.PUBLIC, false, false);
+					// if (word.getType() == WordParser.T_STRING) {
+					// 	mCompiler.back();
+					// 	classAccessLevelMember(classDeclaration, AccessLevel.PUBLIC);
+					// } else {
+					// 	throw new LeekCompilerException(word, Error.KEYWORD_UNEXPECTED);
+					// }
 				}
 			}
-			word = mCompiler.eatToken();
 		}
-		if (word.getType() != WordParser.T_ACCOLADE_RIGHT) {
+		if (mCompiler.eatToken().getType() != WordParser.T_ACCOLADE_RIGHT) {
 			throw new LeekCompilerException(word, Error.END_OF_CLASS_EXPECTED);
 		}
 		mCurrentClass = null;
-		// mMain.addInstruction(this, classDeclaration);
-	}
-
-	public void classAccessLevelMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel) throws LeekCompilerException {
-		Token token = mCompiler.eatToken();
-		switch (token.getWord()) {
-			case "constructor":
-				classConstructor(classDeclaration, accessLevel, token);
-				return;
-			case "static":
-				classStaticMember(classDeclaration, accessLevel);
-				return;
-		}
-		if (token.getWord().equals("class") || token.getWord().equals("super")) {
-			addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.RESERVED_FIELD, new String[] { token.getWord() }));
-		} else if (getVersion() >= 3 && isKeyword(token)) {
-			addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { token.getWord() }));
-		}
-		Token word2 = mCompiler.token();
-		if (word2.getType() == WordParser.T_PAR_LEFT) {
-			// Méthode
-			ClassMethodBlock method = classMethod(classDeclaration, token, false);
-			classDeclaration.addMethod(this, token, method, accessLevel);
-		} else {
-			// Field
-			Expression expr = null;
-			if (mCompiler.token().getType() == WordParser.T_OPERATOR && mCompiler.token().getWord().equals("=")) {
-				mCompiler.skipToken();
-				expr = readExpression();
-			}
-			classDeclaration.addField(this, token, expr, accessLevel);
-			if (mCompiler.token().getType() == WordParser.T_END_INSTRUCTION)
-				mCompiler.skipToken();
-		}
 	}
 
 	public void classStaticMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel) throws LeekCompilerException {
+		Token token = mCompiler.token();
+		switch (token.getWord()) {
+			case "final":
+				mCompiler.skipToken();
+				endClassMember(classDeclaration, accessLevel, true, true);
+				return;
+		}
+		endClassMember(classDeclaration, accessLevel, true, false);
+	}
+
+	public void classAccessLevelMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel) throws LeekCompilerException {
+		Token token = mCompiler.token();
+		switch (token.getWord()) {
+			case "constructor":
+				mCompiler.skipToken();
+				classConstructor(classDeclaration, accessLevel, token);
+				return;
+			case "static":
+				mCompiler.skipToken();
+				classStaticMember(classDeclaration, accessLevel);
+				return;
+			case "final":
+				mCompiler.skipToken();
+				endClassMember(classDeclaration, accessLevel, false, true);
+				return;
+		}
+		endClassMember(classDeclaration, accessLevel, false, false);
+	}
+
+	public void endClassMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, boolean isStatic, boolean isFinal) throws LeekCompilerException {
 		Token name = mCompiler.eatToken();
 
-		// Static field
+		if (name.getWord().equals("super") || name.getWord().equals("class")) {
+			addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { name.getWord() }));
+		} else if (getVersion() >= 3 && isKeyword(name)) {
+			addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { name.getWord() }));
+		}
+
+		// Field
 		Expression expr = null;
 		if (mCompiler.token().getType() == WordParser.T_OPERATOR && mCompiler.token().getWord().equals("=")) {
 			mCompiler.skipToken();
 			expr = readExpression();
 		} else if (mCompiler.token().getType() == WordParser.T_PAR_LEFT) {
 			// Méthode
-			ClassMethodBlock method = classMethod(classDeclaration, name, true);
-			classDeclaration.addStaticMethod(this, name, method, accessLevel);
+			ClassMethodBlock method = classMethod(classDeclaration, name, isStatic);
+			if (isStatic) {
+				classDeclaration.addStaticMethod(this, name, method, accessLevel);
+			} else {
+				classDeclaration.addMethod(this, name, method, accessLevel);
+			}
 			if (mCompiler.token().getType() == WordParser.T_END_INSTRUCTION)
 				mCompiler.skipToken();
 			return;
 		}
-		if (name.getWord().equals("name") || name.getWord().equals("super") || name.getWord().equals("fields") || name.getWord().equals("staticFields") || name.getWord().equals("methods") || name.getWord().equals("staticMethods")) {
-			addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.RESERVED_FIELD, new String[] { name.getWord() }));
-		} else if (getVersion() >= 3 && isKeyword(name)) {
-			addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { name.getWord() }));
+
+		if (isStatic) {
+			classDeclaration.addStaticField(this, name, expr, accessLevel, isFinal);
+		} else {
+			classDeclaration.addField(this, name, expr, accessLevel, isFinal);
 		}
-		classDeclaration.addStaticField(name, expr, accessLevel);
 
 		if (mCompiler.token().getType() == WordParser.T_END_INSTRUCTION)
 			mCompiler.skipToken();
@@ -1325,5 +1340,11 @@ public class WordCompiler {
 
 	public AIFile<?> getAI() {
 		return mAI;
+	}
+
+	public void setMainBlock(MainLeekBlock main) {
+		this.mMain = main;
+		mCurentBlock = main;
+		mCurrentFunction = main;
 	}
 }

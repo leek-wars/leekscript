@@ -1,9 +1,6 @@
 package leekscript.common;
 
-import com.alibaba.fastjson.JSON;
-
 import leekscript.compiler.JavaWriter;
-import leekscript.runner.CallableVersion;
 
 public class Type {
 
@@ -129,5 +126,9 @@ public class Type {
 
 	public Object toJSON() {
 		return this.name;
+	}
+
+	public boolean isArray() {
+		return this == Type.ARRAY;
 	}
 }

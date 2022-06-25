@@ -3,10 +3,8 @@ package leekscript.compiler.bloc;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import leekscript.compiler.AIFile;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
-import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable;

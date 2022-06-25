@@ -18,6 +18,8 @@ public class LeekObjectAccess extends Expression {
 	private Expression object;
 	private Token field;
 	private Type type = Type.ANY;
+	private boolean isFinal = false;
+	private boolean isLeftValue = true;
 
 	public LeekObjectAccess(Expression object, Token dot, Token field) {
 		this.object = object;
@@ -52,7 +54,12 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public boolean isLeftValue() {
-		return true;
+		return isLeftValue;
+	}
+
+	@Override
+	public boolean isFinal() {
+		return isFinal;
 	}
 
 	@Override
@@ -80,18 +87,16 @@ public class LeekObjectAccess extends Expression {
 				}
 			} else if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS) {
 				var clazz = v.getVariableType() == VariableType.CLASS ? v.getClassDeclaration() : compiler.getCurrentClass();
-				if (field.getWord().equals("name") || field.getWord().equals("super") || field.getWord().equals("fields") || field.getWord().equals("staticFields") || field.getWord().equals("methods") || field.getWord().equals("staticMethods")) {
-					if (field.getWord().equals("name")) {
-						this.type = Type.STRING;
-					}
-					this.type = Type.ARRAY;
-					return; // OK
-				}
-				if (clazz.hasStaticMember(field.getWord())) {
+
+				var member = clazz.getStaticMember(field.getWord());
+				if (member != null) {
+					type = member.getType();
+					this.isFinal = member.isFinal();
 					return; // OK
 				}
 				if (clazz.hasMethod(field.getWord())) {
 					this.type = Type.FUNCTION;
+					this.isLeftValue = false;
 					return; // OK
 				}
 				compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), field.getWord() }));
@@ -131,10 +136,16 @@ public class LeekObjectAccess extends Expression {
 			object.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else {
+			if (type != Type.ANY) {
+				writer.addCode("((" + type.getJavaName(mainblock.getVersion()) + ") ");
+			}
 			writer.addCode("getField(");
 			object.writeJavaCode(mainblock, writer);
 			var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
 			writer.addCode(", \"" + field.getWord() + "\", " + from_class + ")");
+			if (type != Type.ANY) {
+				writer.addCode(")");
+			}
 		}
 	}
 

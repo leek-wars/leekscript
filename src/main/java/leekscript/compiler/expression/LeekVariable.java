@@ -14,8 +14,6 @@ import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.LeekConstants;
 import leekscript.runner.LeekFunctions;
 
-import java.util.function.Function;
-
 import leekscript.common.Error;
 import leekscript.common.Type;
 
@@ -32,6 +30,7 @@ public class LeekVariable extends Expression {
 	private ClassDeclarationInstruction classDeclaration = null;
 	private FunctionBlock functionDeclaration = null;
 	private boolean box = false;
+	private boolean isFinal = false;
 
 	public LeekVariable(Token token, VariableType type) {
 		this.token = token;
@@ -39,9 +38,10 @@ public class LeekVariable extends Expression {
 		this.type = type;
 	}
 
-	public LeekVariable(Token token, VariableType variableType, Type type) {
+	public LeekVariable(Token token, VariableType variableType, Type type, boolean isFinal) {
 		this(token, variableType);
 		this.variableType = type;
+		this.isFinal = isFinal;
 	}
 
 	public LeekVariable(WordCompiler compiler, Token token, VariableType type) {
@@ -915,5 +915,9 @@ public class LeekVariable extends Expression {
 			return new Hover(getType(), getLocation(), functionDeclaration.getLocation());
 		}
 		return new Hover(getType(), getLocation());
+	}
+
+	public boolean isFinal() {
+		return isFinal;
 	}
 }

@@ -1,7 +1,5 @@
 package leekscript.compiler;
 
-import java.util.ArrayList;
-
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.common.Error;

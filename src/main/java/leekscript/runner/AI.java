@@ -15,6 +15,7 @@ import leekscript.runner.values.GenericMapLeekValue;
 import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.Box;
+import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
@@ -130,6 +131,14 @@ public abstract class AI {
 		classClass = new ClassLeekValue(this, "Class", valueClass);
 		jsonClass = new ClassLeekValue(this, "JSON");
 		systemClass = new ClassLeekValue(this, "System");
+		try {
+			integerClass.addStaticField(this, "MIN_VALUE", Type.INT, Long.MIN_VALUE, AccessLevel.PUBLIC, true);
+			integerClass.addStaticField(this, "MAX_VALUE", Type.INT, Long.MAX_VALUE, AccessLevel.PUBLIC, true);
+			realClass.addStaticField(this, "MIN_VALUE", Type.REAL, Double.MIN_VALUE, AccessLevel.PUBLIC, true);
+			realClass.addStaticField(this, "MAX_VALUE", Type.REAL, Double.MAX_VALUE, AccessLevel.PUBLIC, true);
+		} catch (LeekRunException e) {
+			// No exception possible for LS2+
+		}
 
 	}
 

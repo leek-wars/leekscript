@@ -16,9 +16,11 @@ public class ClassLeekValue extends FunctionLeekValue {
 	public static class ClassField {
 		Object value;
 		AccessLevel level;
-		public ClassField(Object value, AccessLevel level) {
+		boolean isFinal;
+		public ClassField(Object value, AccessLevel level, boolean isFinal) {
 			this.value = value;
 			this.level = level;
+			this.isFinal = isFinal;
 		}
 	};
 
@@ -84,12 +86,16 @@ public class ClassLeekValue extends FunctionLeekValue {
 		constructors.put(arg_count, new ClassMethod(function, level));
 	}
 
-	public void addField(String field, AccessLevel level) {
-		fields.put(field, new ClassField(null, level));
+	public void addField(String field, AccessLevel level, boolean isFinal) {
+		fields.put(field, new ClassField(null, level, isFinal));
 	}
 
-	public void addStaticField(AI ai, String field, Object value, AccessLevel level) throws LeekRunException {
-		staticFields.put(field, new ObjectVariableValue(ai, value, level));
+	public void addStaticField(AI ai, String field, Object value, AccessLevel level, boolean isFinal) throws LeekRunException {
+		staticFields.put(field, new ObjectVariableValue(ai, value, level, isFinal));
+	}
+
+	public void addStaticField(AI ai, String field, Type type, Object value, AccessLevel level, boolean isFinal) throws LeekRunException {
+		staticFields.put(field, new ObjectVariableValue(ai, type, value, level, isFinal));
 	}
 
 	public void addMethod(String method, int argCount, FunctionLeekValue function, AccessLevel level) {
@@ -188,8 +194,11 @@ public class ClassLeekValue extends FunctionLeekValue {
 	}
 
 	public Box getFieldL(String field) throws LeekRunException {
-		Box result = staticFields.get(field);
+		var result = staticFields.get(field);
 		if (result != null) {
+			if (result.isFinal) {
+				throw new LeekRunException(Error.CANNOT_ASSIGN_FINAL_FIELD);
+			}
 			return result;
 		}
 		if (parent instanceof ClassLeekValue) {
@@ -198,9 +207,20 @@ public class ClassLeekValue extends FunctionLeekValue {
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
+	public Object initField(String field, Object value) throws LeekRunException {
+		var result = staticFields.get(field);
+		if (result != null) {
+			return result.set(value);
+		}
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
+	}
+
 	public Object setField(String field, Object value) throws LeekRunException {
 		var result = staticFields.get(field);
 		if (result != null) {
+			if (result.isFinal) {
+				throw new LeekRunException(Error.CANNOT_ASSIGN_FINAL_FIELD);
+			}
 			return result.set(value);
 		}
 		throw new LeekRunException(Error.UNKNOWN_FIELD);

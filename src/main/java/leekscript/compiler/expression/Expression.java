@@ -166,4 +166,8 @@ public abstract class Expression {
 	public Hover hover(Token token) {
 		return new Hover(getType(), getLocation());
 	}
+
+	public boolean isFinal() {
+		return false;
+	}
 }

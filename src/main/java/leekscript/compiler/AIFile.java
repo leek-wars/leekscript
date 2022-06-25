@@ -5,7 +5,6 @@ import java.util.ArrayList;
 
 import com.alibaba.fastjson.JSONObject;
 
-import leekscript.common.Type;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.resolver.ResolverContext;
 import leekscript.runner.AI;

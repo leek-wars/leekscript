@@ -3,7 +3,6 @@ package leekscript.runner;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 
 import com.alibaba.fastjson.JSONArray;
@@ -69,7 +68,7 @@ public class LeekValueManager {
 			}
 			var object = new ObjectLeekValue(ai.objectClass);
 			for (String key : keys) {
-				object.addField(ai, key, parseJSON(a.get(key), ai), AccessLevel.PUBLIC);
+				object.addField(ai, key, parseJSON(a.get(key), ai), AccessLevel.PUBLIC, false);
 			}
 			return object;
 		}

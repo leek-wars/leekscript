@@ -224,6 +224,26 @@ public class TestNumber extends TestCommon {
 		code("return NaN === NaN").equals("false");
 		code("return 0 / 0 === NaN").equals("false");
 
+		section("Constants in class");
+		code_v3_("return Real.MIN_VALUE").equals("4.9E-324");
+		code_v3_("return Real.MIN_VALUE.class").equals("<class Real>");
+		code_v3_("return Real.MAX_VALUE").equals("1.7976931348623157E308");
+		code_v3_("return Real.MAX_VALUE.class").equals("<class Real>");
+		code_v3_("return Real.MAX_VALUE + Real.MIN_VALUE").equals("1.7976931348623157E308");
+		code_v3_("return Integer.MIN_VALUE").equals("-9223372036854775808");
+		code_v3_("return Integer.MIN_VALUE.class").equals("<class Integer>");
+		code_v3_("return Integer.MAX_VALUE").equals("9223372036854775807");
+		code_v3_("return Integer.MIN_VALUE + Integer.MAX_VALUE").equals("-1");
+		code_v3_("return Integer.MAX_VALUE.class").equals("<class Integer>");
+		code_v3_("Integer.MIN_VALUE = 0").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v3_("Integer.MIN_VALUE += 10").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v3_("Integer.MAX_VALUE = 0").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v3_("Integer.MAX_VALUE += 10").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v3_("Real.MIN_VALUE = 0").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v3_("Real.MIN_VALUE += 0").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v3_("Real.MAX_VALUE = 0").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v3_("Real.MAX_VALUE += 0").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+
 		/*
 		 * Operators
 		 */

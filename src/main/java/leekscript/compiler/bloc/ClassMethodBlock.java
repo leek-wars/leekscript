@@ -4,10 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import leekscript.common.Type;
-import leekscript.compiler.AIFile;
-import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
@@ -59,6 +58,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		addVariable(new LeekVariable(token, VariableType.ARGUMENT, declaration));
 	}
 
+	@Override
 	public LeekVariable getVariable(String variable, boolean includeClassMembers) {
 		// Arguments
 		// for (var parameter : mParameters) {

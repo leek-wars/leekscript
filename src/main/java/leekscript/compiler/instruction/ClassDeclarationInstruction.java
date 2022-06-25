@@ -7,7 +7,6 @@ import java.util.Map.Entry;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.AnalyzeError;
-import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -30,10 +29,12 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 		Expression expression;
 		AccessLevel level;
+		boolean isFinal;
 
-		public ClassDeclarationField(Expression expr, AccessLevel level) {
+		public ClassDeclarationField(Expression expr, AccessLevel level, boolean isFinal) {
 			this.expression = expr;
 			this.level = level;
+			this.isFinal = isFinal;
 		}
 	}
 
@@ -51,6 +52,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	private final Token token;
 	private Token parentToken;
 	private ClassDeclarationInstruction parent;
+	private MainLeekBlock mainBlock;
 	public boolean internal;
 	private LinkedHashMap<String, ClassDeclarationField> fields = new LinkedHashMap<>();
 	private LinkedHashMap<String, ClassDeclarationField> staticFields = new LinkedHashMap<>();
@@ -62,9 +64,10 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> methods = new HashMap<>();
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> staticMethods = new HashMap<>();
 
-	public ClassDeclarationInstruction(Token token, int line, AIFile<?> ai, boolean internal) {
+	public ClassDeclarationInstruction(Token token, int line, AIFile<?> ai, boolean internal, MainLeekBlock block) {
 		this.token = token;
 		this.internal = internal;
+		this.mainBlock = block;
 	}
 
 	public HashMap<String, ClassDeclarationField> getFields() {
@@ -182,7 +185,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 		if (!methods.containsKey(token.getWord())) {
 			methods.put(token.getWord(), new HashMap<>());
-			methodVariables.put(token.getWord(), new LeekVariable(token, VariableType.METHOD, Type.FUNCTION));
+			methodVariables.put(token.getWord(), new LeekVariable(token, VariableType.METHOD, Type.FUNCTION, true));
 		}
 		methods.get(token.getWord()).put(method.countParameters(), new ClassDeclarationMethod(method, level));
 	}
@@ -205,7 +208,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 		if (!staticMethods.containsKey(token.getWord())) {
 			staticMethods.put(token.getWord(), new HashMap<>());
-			staticMethodVariables.put(token.getWord(), new LeekVariable(token, VariableType.STATIC_METHOD, Type.FUNCTION));
+			staticMethodVariables.put(token.getWord(), new LeekVariable(token, VariableType.STATIC_METHOD, Type.FUNCTION, true));
 		}
 		staticMethods.get(token.getWord()).put(method.countParameters(), new ClassDeclarationMethod(method, level));
 	}
@@ -220,21 +223,30 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		return false;
 	}
 
-	public void addField(WordCompiler compiler, Token word, Expression expr, AccessLevel level) throws LeekCompilerException {
-		if (fields.containsKey(word.getWord()) || staticFields.containsKey(word.getWord())) {
+	public void addField(WordCompiler compiler, Token word, Expression expr, AccessLevel level, boolean isFinal) throws LeekCompilerException {
+		addField(compiler, word, Type.ANY, expr, level, isFinal);
+	}
+
+	public void addField(WordCompiler compiler, Token word, Type type, Expression expr, AccessLevel level, boolean isFinal) throws LeekCompilerException {
+		if (hasMember(word.getWord())) {
 			compiler.addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.FIELD_ALREADY_EXISTS));
 			return;
 		}
-		fields.put(word.getWord(), new ClassDeclarationField(expr, level));
-		fieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.FIELD, Type.ANY));
+		fields.put(word.getWord(), new ClassDeclarationField(expr, level, isFinal));
+		fieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.FIELD, type, isFinal));
 	}
 
-	public void addStaticField(Token word, Expression expr, AccessLevel level) throws LeekCompilerException {
-		if (staticFields.containsKey(word.getWord()) || fields.containsKey(word.getWord())) {
-			throw new LeekCompilerException(word.getLocation(), Error.FIELD_ALREADY_EXISTS);
+	public void addStaticField(WordCompiler compiler, Token word, Expression expr, AccessLevel level, boolean isFinal) throws LeekCompilerException {
+		addStaticField(compiler, word, Type.ANY, expr, level, isFinal);
+	}
+
+	public void addStaticField(WordCompiler compiler, Token word, Type type, Expression expr, AccessLevel level, boolean isFinal) throws LeekCompilerException {
+		if (hasStaticMember(word.getWord())) {
+			compiler.addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.FIELD_ALREADY_EXISTS));
+			return;
 		}
-		staticFields.put(word.getWord(), new ClassDeclarationField(expr, level));
-		staticFieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.STATIC_FIELD, Type.ANY));
+		staticFields.put(word.getWord(), new ClassDeclarationField(expr, level, isFinal));
+		staticFieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.STATIC_FIELD, type, isFinal));
 	}
 
 	public void declare(WordCompiler compiler) {
@@ -452,7 +464,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				} else {
 					writer.addCode("null");
 				}
-				writer.addLine(", AccessLevel." + field.getValue().level + ");");
+				writer.addLine(", AccessLevel." + field.getValue().level + ", " + field.getValue().isFinal + ");");
 			}
 		}
 		writer.addLine("return null;");
@@ -519,7 +531,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			writer.addCode(className);
 			writer.addCode(".addStaticField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
 			writer.addCode("null");
-			writer.addCode(", AccessLevel." + field.getValue().level);
+			writer.addCode(", AccessLevel." + field.getValue().level + ", " + field.getValue().isFinal);
 			writer.addLine(");");
 		}
 
@@ -527,7 +539,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		for (var field : staticFields.entrySet()) {
 			if (field.getValue().expression != null) {
 				writer.addCode(className);
-				writer.addCode(".setField(\"" + field.getKey() + "\", ");
+				writer.addCode(".initField(\"" + field.getKey() + "\", ");
 				field.getValue().expression.writeJavaCode(mainblock, writer);
 				writer.addLine(");");
 			}
@@ -548,7 +560,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		for (Entry<String, ClassDeclarationField> field : fields.entrySet()) {
 			writer.addCode(className);
 			writer.addCode(".addField(\"" + field.getKey() + "\"");
-			writer.addCode(", AccessLevel." + field.getValue().level);
+			writer.addCode(", AccessLevel." + field.getValue().level + ", " + field.getValue().isFinal);
 			writer.addLine(");");
 		}
 	}
@@ -591,6 +603,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 		if (parent != null) {
 			return parent.getStaticMember(token);
+		}
+		if (!this.token.getWord().equals("Class")) {
+			return mainBlock.getUserClass("Class").getMember(token);
 		}
 		return null;
 	}

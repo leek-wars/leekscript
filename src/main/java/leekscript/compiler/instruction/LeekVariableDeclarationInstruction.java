@@ -1,6 +1,5 @@
 package leekscript.compiler.instruction;
 
-import leekscript.compiler.AIFile;
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;

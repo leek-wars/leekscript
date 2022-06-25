@@ -12,7 +12,7 @@ public class Box {
 	protected Object mValue;
 	protected AI mUAI = null;
 
-	public Box(AI ai) throws LeekRunException {
+	public Box(AI ai) {
 		mUAI = ai;
 		mValue = null;
 	}

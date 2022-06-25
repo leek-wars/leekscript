@@ -38,6 +38,7 @@ public class JavaCompiler {
 	private static List<String> arguments = new ArrayList<>();
 	private static URLClassLoader urlLoader;
 	private static HashMap<String, AIClassEntry> aiCache = new HashMap<>();
+	private static boolean outputJavaAndLines = false;
 
 	static {
 		classpath = new File(LeekScript.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getPath();
@@ -108,23 +109,24 @@ public class JavaCompiler {
 
 		// System.out.println(compiledJava);
 
-		// Sauvegarde du code java
+		if (outputJavaAndLines) {
+			// Sauvegarde du code java
+			try {
+				FileOutputStream javaOutput = new FileOutputStream(java);
+				javaOutput.write(file.getCompiledCode().getJavaCode().getBytes(StandardCharsets.UTF_8));
+				javaOutput.close();
+			} catch (IOException e) {
+				throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
+			}
 
-		try {
-			FileOutputStream javaOutput = new FileOutputStream(java);
-			javaOutput.write(file.getCompiledCode().getJavaCode().getBytes(StandardCharsets.UTF_8));
-			javaOutput.close();
-		} catch (IOException e) {
-			throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
-		}
-
-		// Sauvegarde du fichier de lignes
-		try {
-			FileOutputStream javaOutput = new FileOutputStream(lines);
-			javaOutput.write(file.getCompiledCode().getLines().getBytes(StandardCharsets.UTF_8));
-			javaOutput.close();
-		} catch (IOException e) {
-			throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
+			// Sauvegarde du fichier de lignes
+			try {
+				FileOutputStream javaOutput = new FileOutputStream(lines);
+				javaOutput.write(file.getCompiledCode().getLines().getBytes(StandardCharsets.UTF_8));
+				javaOutput.close();
+			} catch (IOException e) {
+				throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
+			}
 		}
 
 		t = System.nanoTime();

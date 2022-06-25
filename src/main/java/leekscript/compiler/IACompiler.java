@@ -4,7 +4,6 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.common.Error;
-import leekscript.common.Type;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,8 +47,8 @@ public class IACompiler {
 			// On lance la compilation du code de l'IA
 			WordParser parser = new WordParser(ai, ai.getVersion());
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
-			MainLeekBlock main = new MainLeekBlock(this, ai);
-			WordCompiler compiler = new WordCompiler(parser, main, ai, ai.getVersion());
+			WordCompiler compiler = new WordCompiler(parser, ai, ai.getVersion());
+			MainLeekBlock main = new MainLeekBlock(this, compiler, ai);
 			main.setWordCompiler(compiler);
 			compiler.readCode();
 			compiler.analyze();
@@ -80,8 +79,8 @@ public class IACompiler {
 			// On lance la compilation du code de l'IA
 			WordParser parser = new WordParser(ai, ai.getVersion());
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
-			MainLeekBlock main = new MainLeekBlock(this, ai);
-			WordCompiler compiler = new WordCompiler(parser, main, ai, ai.getVersion());
+			WordCompiler compiler = new WordCompiler(parser, ai, ai.getVersion());
+			MainLeekBlock main = new MainLeekBlock(this, compiler, ai);
 			main.setWordCompiler(compiler);
 			compiler.readCode();
 			compiler.analyze();
@@ -107,8 +106,8 @@ public class IACompiler {
 	public String merge(AIFile<?> ai) throws LeekCompilerException {
 		// System.out.println("Merge ai " + ai);
 		WordParser parser = new WordParser(ai, ai.getVersion());
-		MainLeekBlock main = new MainLeekBlock(this, ai);
-		WordCompiler compiler = new WordCompiler(parser, main, ai, ai.getVersion());
+		WordCompiler compiler = new WordCompiler(parser, ai, ai.getVersion());
+		MainLeekBlock main = new MainLeekBlock(this, compiler, ai);
 		main.setWordCompiler(compiler);
 		compiler.readCode();
 		String code = main.getCode();

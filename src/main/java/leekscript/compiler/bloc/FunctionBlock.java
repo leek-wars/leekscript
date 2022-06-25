@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 import leekscript.common.Type;
 import leekscript.common.Error;
-import leekscript.compiler.AIFile;
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
