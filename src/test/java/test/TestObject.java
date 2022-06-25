@@ -364,6 +364,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class Test { private static method_1() { return 4 } private static method_2() { return 9 } public static array = [1: Test.method_1, 2: Test.method_2] } return [Test.array[1](), Test.array[2]()]").equals("[4, 9]");
 		code_v2_("class Test { private static method_1() { return 4 } private static method_2() { return 9 } public static array = [1: Test.method_1, 2: Test.method_2] } return arrayMap(Test.array, function(x) { return x() })").equals("[1 : 4, 2 : 9]");
 		code_v2_("class A { a a() { return 12 } } return new A().a()").equals("12");
+		code_v2_("class A { static m(v) { return v } } var f = A.m return [A.m(5), A['m'](6), f(7)]").equals("[5, 6, 7]");
 
 		section("Return of field");
 		code_v2_("class R { f = [] m(k, r) { return this.f[k] = r } } var x = new R() return x.m(1, 2)").equals("2");

@@ -116,7 +116,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 				final var methodCode = method + "_" + arguments.length;
 				final var m = staticMethods.get(methodCode);
 				if (m != null) {
-					return m.value.run(null, arguments);
+					return m.value.run(arguments);
 				}
 				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
 				return null;

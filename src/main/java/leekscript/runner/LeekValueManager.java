@@ -234,6 +234,8 @@ public class LeekValueManager {
 		if (array instanceof ObjectLeekValue) {
 			ai.ops(1);
 			return ((ObjectLeekValue) array).callMethod(ai.string(key) + "_" + arguments.length, fromClass, arguments);
+		} else if (array instanceof ClassLeekValue) {
+			return ((ClassLeekValue) array).callMethod(ai.string(key) + "_" + arguments.length, fromClass, arguments);
 		} else {
 			return ai.execute(ai.get(array, key, fromClass), arguments);
 		}
