@@ -82,8 +82,14 @@ public class LeekObjectAccess extends Expression {
 			if (v.getName().equals("this")) {
 				// this, check field exists in class
 				var clazz = compiler.getCurrentClass();
-				if (clazz != null && !clazz.hasMember(field.getWord())) {
-					compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), field.getWord() }));
+				if (clazz != null) {
+					var member = clazz.getMember(field.getWord());
+					if (member == null) {
+						compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), field.getWord() }));
+					} else {
+						this.isFinal = member.isFinal();
+						this.isLeftValue = member.isLeftValue();
+					}
 				}
 			} else if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS) {
 				var clazz = v.getVariableType() == VariableType.CLASS ? v.getClassDeclaration() : compiler.getCurrentClass();
@@ -169,11 +175,19 @@ public class LeekObjectAccess extends Expression {
 	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
-		writer.addCode("setField(");
-		object.writeJavaCode(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS && writer.isInConstructor()) {
+			writer.addCode("initField(");
+			object.writeJavaCode(mainblock, writer);
+			writer.addCode(", \"" + field.getWord() + "\", ");
+			expr.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+		} else {
+			writer.addCode("setField(");
+			object.writeJavaCode(mainblock, writer);
+			writer.addCode(", \"" + field.getWord() + "\", ");
+			expr.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+		}
 	}
 
 	@Override

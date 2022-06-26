@@ -856,7 +856,15 @@ public class LeekExpression extends Expression {
 		if (mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.ASSIGN || mOperator == Operators.MODULUSASSIGN || mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.POWERASSIGN || mOperator == Operators.BITOR_ASSIGN || mOperator == Operators.BITAND_ASSIGN || mOperator == Operators.BITXOR_ASSIGN || mOperator == Operators.SHIFT_LEFT_ASSIGN || mOperator == Operators.SHIFT_RIGHT_ASSIGN || mOperator == Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN) {
 			if (mExpression1.isFinal()) {
 				if (mExpression1 instanceof LeekObjectAccess) {
-					compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD));
+					if (!compiler.isInConstructor()) {
+						compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD));
+					}
+				} else if (mExpression1 instanceof LeekVariable) {
+					if (((LeekVariable) mExpression1).getVariableType() == VariableType.FIELD) {
+						if (!compiler.isInConstructor()) {
+							compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD));
+						}
+					}
 				} else {
 					compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_ASSIGN_FINAL_VALUE));
 				}

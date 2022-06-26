@@ -167,6 +167,14 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { final a = [] } var a = new A() a.a += 10 return a.a").equals("[]");
 		code_v2_("class A { final a = 12 } var a = new A() a['a'] = 15 return a['a']").equals("12");
 		code_v2_("class A { final a = 12 } var a = new A() a['a'] += 15 return a['a']").equals("12");
+		code_v2_("class A { final a m(x) { this.a = x } } return new A(12)").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v2_("class A { final a m(x) { a = x } } return new A(12)").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v2_("class A { final a m(x) { if (2) { this.a = x } } } return new A(12)").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v2_("class A { final a m(x) { if (2) { a = x } } } return new A(12)").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v2_("class A { final a constructor(x) { this.a = x } } return new A(12)").equals("A {a: 12}");
+		code_v2_("class A { final a constructor(x) { if (1) { this.a = x } } } return new A(12)").equals("A {a: 12}");
+		code_v2_("class A { final a constructor(x) { a = x } } return new A(12)").equals("A {a: 12}");
+		code_v2_("class A { final a constructor(x) { if (1) { a = x } } } return new A(12)").equals("A {a: 12}");
 		code_v2_("class A { final a = 12 } var a = new A() a.a++ return a.a").equals("12");
 		code_v2_("class A { final a = 12 } var a = new A() a.a-- return a.a").equals("12");
 		code_v2_("class A { final a = 12 } var a = new A(); ++a.a return a.a").equals("12");

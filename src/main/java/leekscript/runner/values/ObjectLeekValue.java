@@ -99,6 +99,21 @@ public class ObjectLeekValue {
 		// return null;
 	}
 
+	public Object initField(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		// Pour un objet anonyme (classe Object), on peut rajouter des proprietés à la volée
+		if (result == null && clazz == clazz.ai.objectClass) {
+			addField(clazz.ai, field, value, AccessLevel.PUBLIC, false);
+			return value;
+		}
+		if (result != null) {
+			result.set(value);
+			return value;
+		}
+		clazz.ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { clazz.name, field });
+		return null;
+	}
+
 	public Object setField(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		// Pour un objet anonyme (classe Object), on peut rajouter des proprietés à la volée

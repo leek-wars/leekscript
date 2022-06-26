@@ -353,4 +353,8 @@ public class JavaWriter {
 		}
 		return v;
 	}
+
+	public boolean isInConstructor() {
+		return currentBlock != null && currentBlock.isInConstructor();
+	}
 }

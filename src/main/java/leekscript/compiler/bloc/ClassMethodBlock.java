@@ -22,10 +22,12 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	private final ArrayList<LeekVariableDeclarationInstruction> mParameterDeclarations = new ArrayList<>();
 	private int mId = 0;
 	private final Token token;
+	private final boolean isConstructor;
 
-	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, Token token) {
+	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isConstructor, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
 		this.clazz = clazz;
+		this.isConstructor = isConstructor;
 		this.isStatic = isStatic;
 		this.token = token;
 	}
@@ -151,6 +153,16 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	@Override
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		// TODO Auto-generated method stub
+		return false;
+	}
+
+	public boolean isInConstructor() {
+		if (isConstructor) {
+			return true;
+		}
+		if (mParent != null) {
+			return mParent.isInConstructor();
+		}
 		return false;
 	}
 }

@@ -130,6 +130,7 @@ public class LeekVariable extends Expression {
 			this.declaration = v.getDeclaration();
 			this.classDeclaration = v.getClassDeclaration();
 			this.functionDeclaration = v.getFunctionDeclaration();
+			this.isFinal = v.isFinal();
 			this.box = v.box;
 			if (v.getDeclaration() != null && v.getDeclaration().getFunction() != compiler.getCurrentFunction()) {
 				v.getDeclaration().setCaptured();
@@ -321,9 +322,15 @@ public class LeekVariable extends Expression {
 	@Override
 	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("u_this.setField(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			if (writer.isInConstructor()) {
+				writer.addCode("u_this.initField(\"" + token.getWord() + "\", ");
+				expr.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			} else {
+				writer.addCode("u_this.setField(\"" + token.getWord() + "\", ");
+				expr.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode("u_class.setField(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);

@@ -1139,6 +1139,14 @@ public abstract class AI {
 		return null;
 	}
 
+	public Object initField(Object object, String field, Object value) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).initField(field, value);
+		}
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
+	}
+
 	public Object setField(Object object, String field, Object value) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).setField(field, value);

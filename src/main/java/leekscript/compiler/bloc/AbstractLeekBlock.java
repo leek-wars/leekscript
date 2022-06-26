@@ -203,4 +203,8 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	public boolean isFull() {
 		return lastInstruction() != null || this.full;
 	}
+
+	public boolean isInConstructor() {
+		return mParent != null && mParent.isInConstructor();
+	}
 }

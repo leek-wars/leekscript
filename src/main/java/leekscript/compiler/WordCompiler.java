@@ -823,7 +823,7 @@ public class WordCompiler {
 			expr = readExpression();
 		} else if (mCompiler.token().getType() == WordParser.T_PAR_LEFT) {
 			// Méthode
-			ClassMethodBlock method = classMethod(classDeclaration, name, isStatic);
+			ClassMethodBlock method = classMethod(classDeclaration, name, false, isStatic);
 			if (isStatic) {
 				classDeclaration.addStaticMethod(this, name, method, accessLevel);
 			} else {
@@ -845,13 +845,13 @@ public class WordCompiler {
 	}
 
 	public void classConstructor(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, Token token) throws LeekCompilerException {
-		ClassMethodBlock constructor = classMethod(classDeclaration, token, false);
+		ClassMethodBlock constructor = classMethod(classDeclaration, token, true, false);
 		classDeclaration.addConstructor(constructor, accessLevel);
 	}
 
-	public ClassMethodBlock classMethod(ClassDeclarationInstruction classDeclaration, Token token, boolean isStatic) throws LeekCompilerException {
+	public ClassMethodBlock classMethod(ClassDeclarationInstruction classDeclaration, Token token, boolean isConstructor, boolean isStatic) throws LeekCompilerException {
 
-		ClassMethodBlock method = new ClassMethodBlock(classDeclaration, isStatic, mCurentBlock, mMain, token);
+		ClassMethodBlock method = new ClassMethodBlock(classDeclaration, isConstructor, isStatic, mCurentBlock, mMain, token);
 
 		Token word = mCompiler.eatToken();
 		if (word.getType() != WordParser.T_PAR_LEFT) {
@@ -1346,5 +1346,12 @@ public class WordCompiler {
 		this.mMain = main;
 		mCurentBlock = main;
 		mCurrentFunction = main;
+	}
+
+	public boolean isInConstructor() {
+		if (mCurrentClass != null) {
+			return mCurentBlock.isInConstructor();
+		}
+		return false;
 	}
 }
