@@ -62,5 +62,13 @@ public class TestString extends TestCommon {
 		code_v4_("return string(['a' : 'b', 'c' : 'd'])").equals("\"[\"a\" : \"b\", \"c\" : \"d\"]\"");
 		code_v3("return string({ a: 'a', b: 'b' })").equals("\"{a: a, b: b}\"");
 		code_v4_("return string({ a: 'a', b: 'b' })").equals("\"{a: \"a\", b: \"b\"}\"");
+
+		section("String codePointAt()");
+		code("return codePointAt('A', 0)").equals("65");
+		code("return codePointAt('ABC', 2)").equals("67");
+		code("return codePointAt('©', 0)").equals("169");
+		code("return codePointAt('é', 0)").equals("233");
+		code("return codePointAt('♫', 0)").equals("9835");
+		code("return codePointAt('🐨🐨', 2)").equals("128040");
 	}
 }

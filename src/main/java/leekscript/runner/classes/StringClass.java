@@ -16,6 +16,18 @@ public class StringClass {
 		return String.valueOf(string.charAt((int) index));
 	}
 
+	public static long codePointAt(AI ai, String string) {
+		if (string.length() == 0)
+			return 0;
+		return string.codePointAt(0);
+	}
+
+	public static long codePointAt(AI ai, String string, long index) {
+		if (index < 0 || index >= string.length())
+			return 0;
+		return string.codePointAt((int) index);
+	}
+
 	public static long length(AI ai, String string) throws LeekRunException {
 		ai.ops(1);
 		return string.length();

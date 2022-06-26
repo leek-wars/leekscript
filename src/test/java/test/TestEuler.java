@@ -12,7 +12,7 @@ public class TestEuler extends TestCommon {
 		file("ai/euler/pe005.leek").equals("232792560");
 		file("ai/euler/pe006.leek").equals("25164150");
 		file("ai/euler/pe007.leek").equals("104743");
-		// DISABLED_file("ai/euler/pe008.leek").equals("23514624000");
+		file_v4_("ai/euler/pe008.leek").equals("23514624000");
 		file("ai/euler/pe009.leek").equals("31875000");
 		// DISABLED_file("ai/euler/pe010.leek").equals("142913828922");
 		// DISABLED_file("ai/euler/pe011.leek").equals("70600674");

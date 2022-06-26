@@ -1,4 +1,4 @@
-let S =
+var S =
 "73167176531330624919225119674426574742355349194934" +
 "96983520312774506326239578318016984801869478851843" +
 "85861560789112949495459501737958331952853208805511" +
@@ -21,16 +21,15 @@ let S =
 "71636269561882670428252483600823257530420752963450"
 
 var N = []
-for var s in S.split('') {
-	N += String.code(s) - String.code('0')
+for (var s in split(S, '')) {
+	N += codePointAt(s) - codePointAt('0')
 }
 
-var max = 1l
-for var i = 0; i < N.size() - 12; ++i {
-	var prod = N[i : i + 12].foldLeft((x, y -> x × y), 1.0)
-	var prod_int = String.number('' + prod)
-	if max < prod_int {
-		max = prod_int
+var max = 1
+for (var i = 0; i < count(N) - 12; ++i) {
+	var prod = arrayFoldLeft(N[i : i + 13], function(x, y) { return x * y }, 1)
+	if (max < prod) {
+		max = prod
 	}
 }
 return max

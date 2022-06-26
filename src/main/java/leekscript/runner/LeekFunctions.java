@@ -111,6 +111,10 @@ public class LeekFunctions {
 		method("endsWith", "String", true, Type.BOOL, new Type[] { Type.STRING, Type.STRING });
 		method("contains", "String", true, Type.BOOL, new Type[] { Type.STRING, Type.STRING });
 		method("trim", "String", 10, true, Type.STRING, new Type[] { Type.STRING });
+		method("codePointAt", "String", 5, true, new CallableVersion[] {
+			new CallableVersion(Type.INT, new Type[] { Type.STRING, Type.INT }),
+			new CallableVersion(Type.INT, new Type[] { Type.STRING }),
+		});
 
 		/**
 		 * Fonctions array
