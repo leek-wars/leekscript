@@ -13,7 +13,11 @@ public class LeekArrayAccess extends Expression {
 	private Expression mTabular;
 	private Expression mCase;
 	private boolean mLeftValue = false;
+	private Token colon;
+	private Expression endIndex;
 	private Token closingBracket;
+	private Token colon2;
+	private Expression stride;
 
 	public LeekArrayAccess(Token openingBracket) {
 		openingBracket.setExpression(this);
@@ -25,6 +29,28 @@ public class LeekArrayAccess extends Expression {
 
 	public void setCase(Expression caseexp) {
 		mCase = caseexp;
+	}
+
+	public void setColon(Token colon) {
+		this.colon = colon;
+		if (this.colon != null) {
+			colon.setExpression(this);
+		}
+	}
+
+	public void setEndIndex(Expression endIndex) {
+		this.endIndex = endIndex;
+	}
+
+	public void setColon2(Token colon2) {
+		this.colon2 = colon2;
+		if (this.colon2 != null) {
+			this.colon2.setExpression(this);
+		}
+	}
+
+	public void setStride(Expression stride) {
+		this.stride = stride;
 	}
 
 	public void setClosingBracket(Token closingBracket) {
@@ -52,7 +78,13 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public String toString() {
-		return (mTabular == null ? "null" : mTabular.toString()) + "[" + (mCase == null ? "null" : mCase.toString()) + "]";
+		return (mTabular == null ? "null" : mTabular.toString()) + "["
+			+ (mCase != null ? mCase.toString() : "")
+			+ (colon != null ? ":" : "")
+			+ (endIndex != null ? endIndex.toString() : "")
+			+ (colon2 != null ? ":" : "")
+			+ (stride != null ? stride.toString() : "")
+		+ "]";
 	}
 
 	@Override
@@ -65,32 +97,85 @@ public class LeekArrayAccess extends Expression {
 
 		// Sinon on valide simplement les deux expressions
 		mTabular.validExpression(compiler, mainblock);
-		mCase.validExpression(compiler, mainblock);
+		if (mCase != null) {
+			mCase.validExpression(compiler, mainblock);
+		}
+		if (endIndex != null) {
+			endIndex.validExpression(compiler, mainblock);
+		}
+		if (stride != null) {
+			stride.validExpression(compiler, mainblock);
+		}
 		return true;
 	}
 
 	@Override
 	public void preAnalyze(WordCompiler compiler) {
 		mTabular.preAnalyze(compiler);
-		mCase.preAnalyze(compiler);
+		if (mCase != null) {
+			mCase.preAnalyze(compiler);
+		}
+		if (endIndex != null) {
+			endIndex.preAnalyze(compiler);
+		}
+		if (stride != null) {
+			stride.preAnalyze(compiler);
+		}
 	}
 
 	@Override
 	public void analyze(WordCompiler compiler) {
 		mTabular.analyze(compiler);
-		mCase.analyze(compiler);
-		operations = mTabular.getOperations() + mCase.getOperations();
+		operations = mTabular.getOperations();
+		if (mCase != null) {
+			mCase.analyze(compiler);
+			operations += mCase.getOperations();
+		}
+		if (endIndex != null) {
+			endIndex.analyze(compiler);
+			operations += endIndex.getOperations();
+		}
+		if (stride != null) {
+			stride.analyze(compiler);
+			operations += stride.getOperations();
+		}
 	}
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("get(");
-		mTabular.writeJavaCode(mainblock, writer);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
-		writer.addCode(", ");
-		writer.addCode(writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null");
-		writer.addCode(")");
+		if (colon != null) {
+			if (mCase != null && endIndex != null) {
+				writer.addCode("range(");
+			} else if (mCase != null) {
+				writer.addCode("range_start(");
+			} else if (endIndex != null) {
+				writer.addCode("range_end(");
+			} else {
+				writer.addCode("range_all(");
+			}
+			mTabular.writeJavaCode(mainblock, writer);
+			if (mCase != null) {
+				writer.addCode(", ");
+				mCase.writeJavaCode(mainblock, writer);
+			}
+			if (endIndex != null) {
+				writer.addCode(", ");
+				endIndex.writeJavaCode(mainblock, writer);
+			}
+			if (stride != null) {
+				writer.addCode(", ");
+				stride.writeJavaCode(mainblock, writer);
+			}
+			writer.addCode(")");
+		} else {
+			writer.addCode("get(");
+			mTabular.writeJavaCode(mainblock, writer);
+			writer.addCode(", ");
+			mCase.writeJavaCode(mainblock, writer);
+			writer.addCode(", ");
+			writer.addCode(writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null");
+			writer.addCode(")");
+		}
 	}
 
 	@Override

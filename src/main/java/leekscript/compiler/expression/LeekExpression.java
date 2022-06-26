@@ -163,28 +163,36 @@ public class LeekExpression extends Expression {
 		addExpression(exp);
 	}
 
-	public void addBracket(Token bracket, Expression casevalue, Token closingBracket) {
+	public void addBracket(Token bracket, Expression casevalue, Token colon, Expression endIndex, Token colon2, Expression stride, Token closingBracket) {
 		// On doit ajouter ce crochet au dernier élément ajouté
 		if (mExpression1 != null && mExpression2 == null) {
 			if (mExpression1.getNature() == EXPRESSION)
-				((LeekExpression) mExpression1).addBracket(bracket, casevalue, closingBracket);
+				((LeekExpression) mExpression1).addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket);
 			else {
 				// On doit ajouter à l'élément mExpression1
 				var exp = new LeekArrayAccess(bracket);
-				exp.setCase(casevalue);
 				exp.setTabular(mExpression1);
+				exp.setCase(casevalue);
+				exp.setColon(colon);
+				exp.setEndIndex(endIndex);
+				exp.setColon2(colon2);
+				exp.setStride(stride);
 				exp.setClosingBracket(closingBracket);
 				mExpression1 = exp;
 			}
 		}
 		else if (mExpression2 != null) {
 			if (mExpression2.getNature() == EXPRESSION)
-				((LeekExpression) mExpression2).addBracket(bracket, casevalue, closingBracket);
+				((LeekExpression) mExpression2).addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket);
 			else {
 				// On doit ajouter à l'élément mExpression2
 				var exp = new LeekArrayAccess(bracket);
-				exp.setCase(casevalue);
 				exp.setTabular(mExpression2);
+				exp.setCase(casevalue);
+				exp.setColon(colon);
+				exp.setEndIndex(endIndex);
+				exp.setColon2(colon2);
+				exp.setStride(stride);
 				exp.setClosingBracket(closingBracket);
 				mExpression2 = exp;
 			}

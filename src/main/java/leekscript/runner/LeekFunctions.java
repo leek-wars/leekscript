@@ -141,11 +141,16 @@ public class LeekFunctions {
 		method("sum", "Array", Type.REAL, new Type[] { Type.ARRAY });
 		method("average", "Array", Type.REAL, new Type[] { Type.ARRAY });
 		method("fill", "Array", new CallableVersion[] {
-			new CallableVersion(Type.VOID, 	new Type[] { Type.ARRAY, Type.ANY }),
 			new CallableVersion(Type.VOID, 	new Type[] { Type.ARRAY, Type.ANY, Type.INT }),
+			new CallableVersion(Type.VOID, 	new Type[] { Type.ARRAY, Type.ANY }),
 		});
 		method("isEmpty", "Array", 2, Type.BOOL, new Type[] { Type.ARRAY });
-		method("subArray", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.INT, Type.INT });
+		method("subArray", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.INT, Type.INT }).setMaxVersion(3, "arraySlice");
+		method("arraySlice", "Array", new CallableVersion[] {
+			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, Type.ANY, Type.ANY, Type.INT }),
+			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, Type.ANY, Type.ANY }),
+			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, Type.ANY }),
+		}).setMinVersion(4);
 		method("pushAll", "Array", Type.VOID, new Type[] { Type.ARRAY, Type.ARRAY });
 		method("assocReverse", "Array", Type.VOID, new Type[] { Type.ARRAY }).setMaxVersion(3);
 		method("arrayMap", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.FUNCTION });

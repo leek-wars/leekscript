@@ -927,12 +927,54 @@ public class WordCompiler {
 
 				if (word.getType() == WordParser.T_BRACKET_LEFT) {
 					var bracket = mCompiler.eatToken(); // On avance le curseur pour être au début de l'expression
+					Token colon = null;
+					Token colon2 = null;
+					Expression start = null;
+					Expression end = null;
+					Expression stride = null;
 
-					var exp = readExpression();
+					if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+						colon = mCompiler.eatToken();
+						if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+							colon2 = mCompiler.eatToken();
+							if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
+								stride = readExpression();
+							}
+						} else if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
+							end = readExpression();
+							if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+								colon2 = mCompiler.eatToken();
+								if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
+									stride = readExpression();
+								}
+							}
+						}
+					} else {
+						start = readExpression();
+						if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+							colon = mCompiler.eatToken();
+							if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+								colon2 = mCompiler.eatToken();
+								if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
+									stride = readExpression();
+								}
+							} else if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
+								end = readExpression();
+								if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+									colon2 = mCompiler.eatToken();
+									if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
+										stride = readExpression();
+									}
+								}
+							}
+						}
+					}
+
 					if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
 						throw new LeekCompilerException(mCompiler.token(), Error.CLOSING_SQUARE_BRACKET_EXPECTED);
 					}
-					retour.addBracket(bracket, exp, mCompiler.token());
+					retour.addBracket(bracket, start, colon, end, colon2, stride, mCompiler.token());
+
 				} else if (word.getType() == WordParser.T_PAR_LEFT) {
 
 					LeekFunctionCall function = new LeekFunctionCall(word);

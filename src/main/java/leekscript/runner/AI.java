@@ -1724,6 +1724,60 @@ public abstract class AI {
 		return null;
 	}
 
+	public ArrayLeekValue range(Object value, Object startIndex, Object endIndex) throws LeekRunException {
+		return range(value, startIndex, endIndex, 1l);
+	}
+
+	public ArrayLeekValue range(Object value, Object start, Object end, Object strideObject) throws LeekRunException {
+		if (value instanceof ArrayLeekValue) {
+			var stride = longint(strideObject);
+			return ((ArrayLeekValue) value).arraySlice(this, start, end, stride);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		return null;
+	}
+
+	public ArrayLeekValue range_start(Object value, Object endIndex) throws LeekRunException {
+		return range_start(value, endIndex, 1l);
+	}
+
+	public ArrayLeekValue range_start(Object value, Object start, Object strideObject) throws LeekRunException {
+		if (value instanceof ArrayLeekValue) {
+			var array = (ArrayLeekValue) value;
+			var stride = longint(strideObject);
+			return array.arraySlice(this, start, null, stride);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		return null;
+	}
+
+	public ArrayLeekValue range_end(Object value, Object endIndex) throws LeekRunException {
+		return range_end(value, endIndex, 1l);
+	}
+
+	public ArrayLeekValue range_end(Object value, Object end, Object strideObject) throws LeekRunException {
+		if (value instanceof ArrayLeekValue) {
+			var array = (ArrayLeekValue) value;
+			var stride = longint(strideObject);
+			return array.arraySlice(this, null, end, stride);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		return null;
+	}
+
+	public ArrayLeekValue range_all(Object value) throws LeekRunException {
+		return range_all(value, 1l);
+	}
+
+	public ArrayLeekValue range_all(Object value, Object strideObject) throws LeekRunException {
+		if (value instanceof ArrayLeekValue) {
+			var stride = longint(strideObject);
+			return ((ArrayLeekValue) value).arraySlice(this, null, null, stride);
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(value) });
+		return null;
+	}
+
 	public Object callMethod(Object value, String method, ClassLeekValue fromClass, Object... args) throws LeekRunException {
 		if (value instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) value).callMethod(method, fromClass, args);
