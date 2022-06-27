@@ -227,6 +227,12 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static f(x) {} static g() { f() } }").error(Error.INVALID_PARAMETER_COUNT);
 		code_v2_("class A { static f(x) {} static g() { class.f() } }").error(Error.INVALID_PARAMETER_COUNT);
 
+		section("Duplicated static method");
+		code_v2_3("class A { static m() {} static m() {} }").error(Error.NONE); // OK in LS2-3
+		code_v4_("class A { static m() {} static m() {} }").error(Error.DUPLICATED_METHOD); // Error in LS4+
+		code_v4_("class A { m() {} static m() {} }").error(Error.DUPLICATED_METHOD);
+		code_v2_("class A { static m() {} static m(x) {} }").error(Error.NONE);
+
 		section("Static method calls with with class.");
 		code_v2_("class A { static m() { return 'x' } t() { return class.m() } } var a = new A() return a.t()").equals("\"x\"");
 		code_v2_("class A { static m() { return 'x' } t() { return class.zz() } } var a = new A() return a.t()").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
@@ -234,6 +240,16 @@ public class TestObject extends TestCommon {
 		section("Methods");
 		code_v2_("class A { a(x) { b(x) } b(x, y) {} }").error(Error.INVALID_PARAMETER_COUNT);
 		code_v2_("class A { a(x) { this.b(x) } b(x, y) {} }").error(Error.INVALID_PARAMETER_COUNT);
+
+		section("Duplicated method");
+		code_v2_3("class A { m() {} m() {} }").error(Error.NONE); // OK in LS2-3
+		code_v4_("class A { m() {} m() {} }").error(Error.DUPLICATED_METHOD); // Error in LS4+
+		code_v4_("class A { static m() {} m() {} }").error(Error.DUPLICATED_METHOD);
+		code_v2_("class A { m() {} m(x) {} }").error(Error.NONE);
+
+		section("Default arguments on methods");
+		code_v4_("class A { m(x, y) {} m(x, y, z = 2) {} }").error(Error.DUPLICATED_METHOD);
+		code_v4_("class A { m(x) {} m(x, y, z = 2) {} }").error(Error.NONE);
 
 		section("Field access by array access");
 		code_v2_("var test = {} test['a'] = 8 return test").equals("{a: 8}");

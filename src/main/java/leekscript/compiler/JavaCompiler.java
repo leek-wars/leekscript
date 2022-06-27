@@ -38,7 +38,7 @@ public class JavaCompiler {
 	private static List<String> arguments = new ArrayList<>();
 	private static URLClassLoader urlLoader;
 	private static HashMap<String, AIClassEntry> aiCache = new HashMap<>();
-	private static boolean outputJavaAndLines = false;
+	private static boolean outputJavaAndLines = true;
 
 	static {
 		classpath = new File(LeekScript.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getPath();

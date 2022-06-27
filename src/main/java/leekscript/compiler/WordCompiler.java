@@ -762,12 +762,6 @@ public class WordCompiler {
 				}
 				default: {
 					endClassMember(classDeclaration, AccessLevel.PUBLIC, false, false);
-					// if (word.getType() == WordParser.T_STRING) {
-					// 	mCompiler.back();
-					// 	classAccessLevelMember(classDeclaration, AccessLevel.PUBLIC);
-					// } else {
-					// 	throw new LeekCompilerException(word, Error.KEYWORD_UNEXPECTED);
-					// }
 				}
 			}
 		}
@@ -863,13 +857,25 @@ public class WordCompiler {
 				addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.WARNING, Error.REFERENCE_DEPRECATED));
 				mCompiler.skipToken();
 			}
-			if (mCompiler.token().getType() != WordParser.T_STRING)
+			if (mCompiler.token().getType() != WordParser.T_STRING) {
 				throw new LeekCompilerException(mCompiler.token(), Error.PARAMETER_NAME_EXPECTED);
-			method.addParameter(this, mCompiler.token());
-			mCompiler.skipToken();
+			}
+			var param = mCompiler.eatToken();
+			Token equal = null;
+			Expression defaultValue = null;
+
+			// Default param
+			if (mCompiler.token().getWord().equals("=")) {
+				equal = mCompiler.eatToken();
+				defaultValue = readExpression();
+			}
+
+			method.addParameter(this, param, equal, defaultValue);
 			param_count++;
-			if (mCompiler.token().getType() == WordParser.T_VIRG)
+
+			if (mCompiler.token().getType() == WordParser.T_VIRG) {
 				mCompiler.skipToken();
+			}
 		}
 		if (mCompiler.eatToken().getType() != WordParser.T_PAR_RIGHT) {
 			throw new LeekCompilerException(mCompiler.token(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);

@@ -8,6 +8,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -19,10 +20,13 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	private final ClassDeclarationInstruction clazz;
 	private final boolean isStatic;
 	private final ArrayList<Token> mParameters = new ArrayList<>();
+	private final ArrayList<Expression> defaultValues = new ArrayList<>();
 	private final ArrayList<LeekVariableDeclarationInstruction> mParameterDeclarations = new ArrayList<>();
 	private int mId = 0;
 	private final Token token;
 	private final boolean isConstructor;
+	private int minParameters = 0;
+	private int maxParameters = 0;
 
 	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isConstructor, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -53,11 +57,16 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void addParameter(WordCompiler compiler, Token token) {
+	public void addParameter(WordCompiler compiler, Token token, Token equal, Expression defaultValue) {
 		mParameters.add(token);
+		defaultValues.add(defaultValue);
 		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this);
 		mParameterDeclarations.add(declaration);
 		addVariable(new LeekVariable(token, VariableType.ARGUMENT, declaration));
+		maxParameters++;
+		if (defaultValue == null) {
+			minParameters++;
+		}
 	}
 
 	@Override
@@ -123,6 +132,10 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		return mParameters;
 	}
 
+	public List<Expression> getDefaultValues() {
+		return defaultValues;
+	}
+
 	public ArrayList<LeekVariableDeclarationInstruction> getParametersDeclarations() {
 		return mParameterDeclarations;
 	}
@@ -134,26 +147,22 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 
 	@Override
 	public int getNature() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public Type getType() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
-		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 	public boolean isInConstructor() {
@@ -164,5 +173,13 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 			return mParent.isInConstructor();
 		}
 		return false;
+	}
+
+	public int getMinParameters() {
+		return minParameters;
+	}
+
+	public int getMaxParameters() {
+		return maxParameters;
 	}
 }

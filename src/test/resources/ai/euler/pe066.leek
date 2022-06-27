@@ -1,23 +1,92 @@
-function solve(D) {
-    var x = 1l
-    while x++ {
-        var s = ((x * x - 1) / D).sqrt()
-        if s.long() == s {
-            print((x * x - 1) / D)
-            print(s)
-            print(s.long())
-            return x
-        }
-    }
+function is_square(x) {
+	var s = sqrt(x) | 0
+    while (s * s < x) s++;
+    while (s * s > x) s--;
+    return s * s === x;
+}
+// function is_square(x) {
+//     var left = 0
+//     var right = x;
+//     while (left <= right) {
+//         // debug("left=" + left + " right=" + right)
+//         var mid = (left + right) / 2 | 0
+//         if (mid * mid == x)      {
+//             return true;
+//         }
+//         if (mid * mid < x)      {
+//             left = mid + 1;
+//         } else {
+//             right = mid - 1;
+//         }
+//     }
+//     return false;
+// }
+
+function solve_new(D) {
+    var a = 1 / D
+    var b = -(1 + 2 / D)
+    var c = (1 + D) / D
+    var X1 = (-b + sqrt(b * b - 4 * a * c)) / (2 * a)
+    var X2 = (-b - sqrt(b * b - 4 * a * c)) / (2 * a)
+    var x1 = sqrt(X1)
+    var x2 = sqrt(X2)
+    debug("D=" + D + " x1 = " + x1 + " x2 = " + x2 + " X1 = " + X1 + " X2 = " + X2)
 }
 
-solve(61)
-/*
-var max = 0
-var maxD = 0
-for D in [1..1000] {
-    if D.sqrt().isInteger() continue
-    var x = solve(D)
-    x > max ? { max = x maxD = D } : 0
+function solve(D) {
+	// x2 - D * y2 = 1
+	// y2 = (x2 - 1) / D
+	// x2 = D * y2 + 1
+    var x_max = 0
+	for (var y = 1; true; ++y) {
+        var x2 = D * y * y + 1
+        // debug("x2 = " + x2)
+		if (is_square(x2)) {
+            x_max = sqrt(x2) | 0
+            return x_max;
+            // debug("found max x " + x_max)
+            // break
+		}
+	}
+    // for (var x = x_max - 1; x >= 2; --x) {
+    //     var yp = x * x - 1
+    //     if (yp % D) continue
+    //     var y2 = yp \ D
+    //     if (is_square(y2)) {
+    //         debug("found smaller x! " + x)
+    //      	return x
+    //     }
+    // }
+
+    // for (var x = 2; true; ++x) {
+    //     var yp = x * x - 1
+    //     if (yp % D) continue
+	// 	var y2 = yp \ D
+    //     // debug("x = " + x + " y2 = " + y2)
+	// 	if (is_square(y2)) {
+	// 		return x
+	// 	}
+	// }
 }
-maxD
+
+debug("D = 5 : " + solve(13))
+
+debug("sq 20168126 " + is_square(20168126))
+//  solve(61)
+// if (true) return ;
+
+var maxX = 0
+var maxD = 0
+
+for (var D = 1; D < 1000; ++D) {
+	if (is_square(D)) continue
+	var x = solve(D)
+	debug("D = " + D + " x = " + x + " maxD = " + maxD + " maxX = " + maxX)
+	if (x > maxX) {
+		maxX = x
+		maxD = D
+	}
+}
+
+debug("Max D = " + maxD + " (with X = " + maxX + ")")
+

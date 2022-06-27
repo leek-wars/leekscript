@@ -182,12 +182,25 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		// On regarde si il n'y a pas déjà une méthode statique du même nom
 		if (staticMethods.containsKey(token.getWord())) {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.DUPLICATED_METHOD));
+		} else {
+			var m = methods.get(token.getWord());
+			if (m != null) {
+				for (int p = method.getMinParameters(); p <= method.getMaxParameters(); ++p) {
+					if (m.containsKey(p)) {
+						var l = compiler.getVersion() >= 4 ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+						compiler.addError(new AnalyzeError(token, l, Error.DUPLICATED_METHOD));
+						break;
+					}
+				}
+			}
 		}
 		if (!methods.containsKey(token.getWord())) {
 			methods.put(token.getWord(), new HashMap<>());
 			methodVariables.put(token.getWord(), new LeekVariable(token, VariableType.METHOD, Type.FUNCTION, true));
 		}
-		methods.get(token.getWord()).put(method.countParameters(), new ClassDeclarationMethod(method, level));
+		for (int p = method.getMinParameters(); p <= method.getMaxParameters(); ++p) {
+			methods.get(token.getWord()).put(p, new ClassDeclarationMethod(method, level));
+		}
 	}
 
 	public boolean hasMethod(String name, int paramCount) {
@@ -205,12 +218,25 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		// On regarde si il n'y a pas déjà une méthode du même nom
 		if (methods.containsKey(token.getWord())) {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.DUPLICATED_METHOD));
+		} else {
+			var sm = staticMethods.get(token.getWord());
+			if (sm != null) {
+				for (int p = method.getMinParameters(); p <= method.getMaxParameters(); ++p) {
+					if (sm.containsKey(p)) {
+						var l = compiler.getVersion() >= 4 ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+						compiler.addError(new AnalyzeError(token, l, Error.DUPLICATED_METHOD));
+						break;
+					}
+				}
+			}
 		}
 		if (!staticMethods.containsKey(token.getWord())) {
 			staticMethods.put(token.getWord(), new HashMap<>());
 			staticMethodVariables.put(token.getWord(), new LeekVariable(token, VariableType.STATIC_METHOD, Type.FUNCTION, true));
 		}
-		staticMethods.get(token.getWord()).put(method.countParameters(), new ClassDeclarationMethod(method, level));
+		for (int p = method.getMinParameters(); p <= method.getMaxParameters(); ++p) {
+			staticMethods.get(token.getWord()).put(p, new ClassDeclarationMethod(method, level));
+		}
 	}
 
 	public boolean hasStaticMethod(String name, int paramCount) {
@@ -357,7 +383,8 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
 				writer.addCode("private final Object " + methodName + "(");
 				int i = 0;
-				for (var arg : version.getValue().block.getParametersDeclarations()) {
+				for (int a = 0; a < version.getKey(); ++a) {
+					var arg = version.getValue().block.getParametersDeclarations().get(a);
 					if (i++ > 0) writer.addCode(", ");
 					var letter = arg.isCaptured() ? "p" : "u";
 					writer.addCode("Object " + letter + "_" + arg.getToken());
@@ -367,9 +394,16 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				if (parent != null) {
 					writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
 				}
-				for (var arg : version.getValue().block.getParametersDeclarations()) {
+				for (int a = 0; a < version.getValue().block.getParametersDeclarations().size(); ++a) {
+					var arg = version.getValue().block.getParametersDeclarations().get(a);
 					if (arg.isCaptured()) {
-						writer.addLine("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", p_" + arg.getToken() + ");");
+						writer.addCode("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", ");
+						if (a < version.getKey()) {
+							writer.addCode("p_" + arg.getToken());
+						} else {
+							version.getValue().block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
+						}
+						writer.addLine(");");
 					}
 				}
 				version.getValue().block.writeJavaCode(mainblock, writer);
@@ -378,7 +412,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			}
 		}
 
-		// Methods
+		// Déclaration des méthodes
 		for (var method : methods.entrySet()) {
 			for (var version : method.getValue().entrySet()) {
 				writer.currentBlock = version.getValue().block;
@@ -479,7 +513,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				writer.addCode(className);
 				writer.addCode(".addStaticMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(1) { public Object run(AI ai, ObjectLeekValue thiz, Object... args) throws LeekRunException { return " + methodName + "(");
 				int i = 0;
-				for (var a = 0; a < version.getValue().block.getParameters().size(); ++a) {
+				for (var a = 0; a < version.getKey(); ++a) {
 					if (i > 0) writer.addCode(", ");
 					writer.addCode("args[" + i + "]");
 					i++;

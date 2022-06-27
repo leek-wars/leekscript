@@ -8,6 +8,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -87,7 +88,7 @@ public class TestCommon {
 				public String getExpected() { return "error " + type.name(); }
 				public String getResult(Result result) {
 					if (result.error != null) {
-						return "error " + result.error.name();
+						return "error " + result.error.name() + " " + Arrays.toString(result.parameters);
 					} else if (result.ai != null) {
 						var errors = result.ai.getFile().getErrors();
 						if (errors.size() > 0) return "error " + errors.get(0).error.name();
@@ -192,18 +193,18 @@ public class TestCommon {
 				ops = ai.operations();
 
 				var vs = ai.export(v, new HashSet<>());
-				result = new Result(vs, ai, Error.NONE, ai.getOperations(), exec_time);
+				result = new Result(vs, ai, Error.NONE, new String[0], ai.getOperations(), exec_time);
 
 			} catch (LeekCompilerException e) {
 				// e.printStackTrace();
 				// System.out.println("Error = " + e.getError());
-				result = new Result(e.getError().toString(), ai, e.getError(), 0, 0);
+				result = new Result(e.getError().toString() + " " + Arrays.toString(e.getParameters()), ai, e.getError(), e.getParameters(), 0, 0);
 			} catch (LeekRunException e) {
 				long exec_time = (System.nanoTime() - t) / 1000;
-				result = new Result(e.getError().toString(), ai, e.getError(), ai.getOperations(), exec_time);
+				result = new Result(e.getError().toString(), ai, e.getError(), new String[0], ai.getOperations(), exec_time);
 			} catch (Exception e) {
 				e.printStackTrace();
-				result = new Result("unknown error!", ai, Error.UNKNOWN_ERROR, 0, 0);
+				result = new Result("unknown error!", ai, Error.UNKNOWN_ERROR, new String[0], 0, 0);
 			}
 
 			operations.add(ops);
@@ -237,15 +238,17 @@ public class TestCommon {
 		String result;
 		AI ai;
 		Error error;
+		String[] parameters;
 		long operations;
 		long exec_time;
 
-		public Result(String result, AI ai, Error error, long operations, long exec_time) {
+		public Result(String result, AI ai, Error error, String[] parameters, long operations, long exec_time) {
 			this.result = result;
 			this.ai = ai;
 			this.operations = operations;
 			this.exec_time = exec_time;
 			this.error = error;
+			this.parameters = parameters;
 		}
 	}
 
