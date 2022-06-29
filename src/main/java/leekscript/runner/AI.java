@@ -173,6 +173,12 @@ public abstract class AI {
 	}
 
 	public long getUsedRAM() {
+		System.gc();
+		try {
+			Thread.sleep(0, 1);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		return mRAM;
 	}
 
