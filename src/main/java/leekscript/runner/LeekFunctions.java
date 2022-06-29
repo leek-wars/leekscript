@@ -86,6 +86,7 @@ public class LeekFunctions {
 		method("isFinite", "Number", 1, true, Type.BOOL, new Type[] { Type.REAL }).setMinVersion(4);
 		method("isInfinite", "Number", 1, true, Type.BOOL, new Type[] { Type.REAL }).setMinVersion(4);
 		method("isNaN", "Number", 1, true, Type.BOOL, new Type[] { Type.REAL }).setMinVersion(4);
+		method("isPermutation", "Number", 50, true, Type.BOOL, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
 
 		/**
 		 * Fonctions String
