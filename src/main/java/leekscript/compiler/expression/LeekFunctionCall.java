@@ -500,7 +500,7 @@ public class LeekFunctionCall extends Expression {
 				var a_type = mParameters.get(i).getType();
 				var cast_type = f_type.compare(a_type);
 				if (cast_type == CastType.INCOMPATIBLE) {
-					AnalyzeErrorLevel level = compiler.getVersion() >= 4 ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+					AnalyzeErrorLevel level = compiler.getVersion() >= 5 ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 					version_errors.add(new AnalyzeError(mParameters.get(i).getLocation(), level, Error.WRONG_ARGUMENT_TYPE, new String[] {
 						String.valueOf(i + 1),
 						mParameters.get(i).toString(),

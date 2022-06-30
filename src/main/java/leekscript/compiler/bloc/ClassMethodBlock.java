@@ -109,6 +109,42 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	}
 
 	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		AbstractLeekBlock initialFunction = compiler.getCurrentFunction();
+		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
+		compiler.setCurrentFunction(this);
+		compiler.setCurrentBlock(this);
+		for (var value : defaultValues) {
+			if (value != null) {
+				value.preAnalyze(compiler);
+			}
+		}
+		for (var instruction : mInstructions) {
+			instruction.preAnalyze(compiler);
+		}
+		compiler.setCurrentBlock(initialBlock);
+		compiler.setCurrentFunction(initialFunction);
+	}
+
+	@Override
+	public void analyze(WordCompiler compiler) {
+		AbstractLeekBlock initialFunction = compiler.getCurrentFunction();
+		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
+		compiler.setCurrentFunction(this);
+		compiler.setCurrentBlock(this);
+		for (var value : defaultValues) {
+			if (value != null) {
+				value.analyze(compiler);
+			}
+		}
+		for (var instruction : mInstructions) {
+			instruction.analyze(compiler);
+		}
+		compiler.setCurrentBlock(initialBlock);
+		compiler.setCurrentFunction(initialFunction);
+	}
+
+	@Override
 	public void checkEndBlock() {
 
 	}

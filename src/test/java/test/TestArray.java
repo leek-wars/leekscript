@@ -393,9 +393,9 @@ public class TestArray extends TestCommon {
 		section("Array.count()");
 		code("return count([1, 2, 3, 4, 5]);").equals("5");
 		code_v1_3("count([ 1 : 2, 3 : 4])").error(Error.NONE);
-		code_v4_("count([ 1 : 2, 3 : 4])").error(Error.WRONG_ARGUMENT_TYPE);
+		code_v4_("count([ 1 : 2, 3 : 4])").warning(Error.WRONG_ARGUMENT_TYPE);
 		code_v1_3("count(12)").error(Error.NONE);
-		code_v4_("count(12)").error(Error.WRONG_ARGUMENT_TYPE);
+		code_v4_("count(12)").warning(Error.WRONG_ARGUMENT_TYPE);
 		code_v1_3("count('hello')").error(Error.NONE);
 		code_v4_("count('hello')").error(Error.WRONG_ARGUMENT_TYPE);
 		code("return count(unknown('hello'))").error(Error.NONE);

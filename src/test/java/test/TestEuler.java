@@ -5,7 +5,6 @@ public class TestEuler extends TestCommon {
 	public void run() {
 
 		section("Project Euler");
-		/*
 		file("ai/euler/pe001.leek").equals("233168");
 		file("ai/euler/pe002.leek").equals("4613732");
 		file("ai/euler/pe003.leek").equals("6857");
@@ -37,8 +36,7 @@ public class TestEuler extends TestCommon {
 		// file("ai/euler/pe062.leek").equals("127035954683");
 		// file("ai/euler/pe063.leek").equals("49");
 		// file("ai/euler/pe064.leek").equals("1322");
-		*/
-		file_v4_("ai/euler/pe066.leek").equals("1322");
+		// file_v4_("ai/euler/pe066.leek").equals("1322");
 		// DISABLED_file("ai/euler/pe206.leek").equals("1389019170");
 	}
 }

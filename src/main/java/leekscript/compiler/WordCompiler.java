@@ -840,7 +840,7 @@ public class WordCompiler {
 
 	public void classConstructor(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, Token token) throws LeekCompilerException {
 		ClassMethodBlock constructor = classMethod(classDeclaration, token, true, false);
-		classDeclaration.addConstructor(constructor, accessLevel);
+		classDeclaration.addConstructor(this, constructor, accessLevel);
 	}
 
 	public ClassMethodBlock classMethod(ClassDeclarationInstruction classDeclaration, Token token, boolean isConstructor, boolean isStatic) throws LeekCompilerException {

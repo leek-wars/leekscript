@@ -39,7 +39,7 @@ public class TestArrayStress extends TestCommon {
 		code_v4_("var a = [] for (var i = 0; i < 8000; ++i) push(a, i) arrayMap(a, function(x) { return x })").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("var a = [] for (var i = 0; i < 8000; ++i) push(a, i) arrayPartition(a, function(x) { return x % 2 })").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("var a = [] for (var i = 0; i < 8000; ++i) push(a, i) arrayFilter(a, function(x) { return x % 2 })").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
-		code_v4_("var a = [] for (var i = 0; i < 8000; ++i) push(a, i) return subArray(a, 1000, 7000)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
+		code_v4_("var a = [] for (var i = 0; i < 8000; ++i) push(a, i) return arraySlice(a, 1000, 7000)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("var a = [] for (var i = 0; i < 8000; ++i) push(a, i) return arrayConcat(a, a)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("var a = [] for (var i = 0; i < 8000; ++i) push(a, i) return clone(a)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 	}

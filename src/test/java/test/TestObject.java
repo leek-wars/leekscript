@@ -52,6 +52,20 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { constructor() {} } var a = new A() return a").equals("A {}");
 		code_v2_("class A { constructor() { return; } } var a = new A() return a").equals("A {}");
 
+		section("Default arguments on constructors");
+		code_v2_3("class A { constructor(x, y) {} constructor(x, y, z = 2) {} }").error(Error.NONE);
+		code_v4_("class A { constructor(x, y) {} constructor(x, y, z = 2) {} }").error(Error.DUPLICATED_CONSTRUCTOR);
+		code_v2_("class A { constructor(x) {} constructor(x, y, z = 2) {} }").error(Error.NONE);
+		code_v2_("class A { f constructor(x = 2) { f = x } } return A().f").equals("2");
+		code_v2_("class A { f constructor(x = 2) { f = x } } return A(9).f").equals("9");
+		code_v2_("class A { f constructor(x, y = 2) { f = x * y } } return A(9).f").equals("18");
+		code_v2_("class A { f constructor(x = 5, y = 7) { f = x * y } } return A().f").equals("35");
+		code_v2_("class A { f constructor(x = 5, y = 7, z = 10) { f = x * y * z } } return A().f").equals("350");
+		code_v2_("class A { f constructor(x = 5, y = 7, z = 10) { f = x * y * z } } return A(4).f").equals("280");
+		code_v2_("class A { f static v() { return 55 } constructor(x, y = v()) { f = x * y } } return A(9).f").equals("495");
+		code_v2_("class A { f constructor(x, y = x) { f = x * y } } return A(9).f").equals("81");
+		code_v2_("class A { f constructor(x, y = x, z = y) { f = x * y * z } } return A(9).f").equals("729");
+
 		section("Static fields");
 		code_v2_("class A { static x }").equals("null");
 		code_v2_("class A { static x } return A.x").equals("null");
@@ -237,6 +251,20 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static m() { return 'x' } t() { return class.m() } } var a = new A() return a.t()").equals("\"x\"");
 		code_v2_("class A { static m() { return 'x' } t() { return class.zz() } } var a = new A() return a.t()").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
 
+		section("Default arguments on static methods");
+		code_v2_3("class A { static m(x, y) {} static m(x, y, z = 2) {} }").error(Error.NONE);
+		code_v4_("class A { static m(x, y) {} static m(x, y, z = 2) {} }").error(Error.DUPLICATED_METHOD);
+		code_v2_("class A { static m(x) {} static m(x, y, z = 2) {} }").error(Error.NONE);
+		code_v2_("class A { static m(x = 2) { return x } } return A.m()").equals("2");
+		code_v2_("class A { static m(x = 2) { return x } } return A.m(9)").equals("9");
+		code_v2_("class A { static m(x, y = 2) { return x * y } } return A.m(9)").equals("18");
+		code_v2_("class A { static m(x = 5, y = 7) { return x * y } } return A.m()").equals("35");
+		code_v2_("class A { static m(x = 5, y = 7, z = 10) { return x * y * z } } return A.m()").equals("350");
+		code_v2_("class A { static m(x = 5, y = 7, z = 10) { return x * y * z } } return A.m(4)").equals("280");
+		code_v2_("class A { static v() { return 55 } static m(x, y = v()) { return x * y } } return A.m(9)").equals("495");
+		code_v2_("class A { static m(x, y = x) { return x * y } } return A.m(9)").equals("81");
+		code_v2_("class A { static m(x, y = x, z = y) { return x * y * z } } return A.m(9)").equals("729");
+
 		section("Methods");
 		code_v2_("class A { a(x) { b(x) } b(x, y) {} }").error(Error.INVALID_PARAMETER_COUNT);
 		code_v2_("class A { a(x) { this.b(x) } b(x, y) {} }").error(Error.INVALID_PARAMETER_COUNT);
@@ -248,8 +276,19 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { m() {} m(x) {} }").error(Error.NONE);
 
 		section("Default arguments on methods");
+		code_v2_3("class A { m(x, y) {} m(x, y, z = 2) {} }").error(Error.NONE);
 		code_v4_("class A { m(x, y) {} m(x, y, z = 2) {} }").error(Error.DUPLICATED_METHOD);
-		code_v4_("class A { m(x) {} m(x, y, z = 2) {} }").error(Error.NONE);
+		code_v2_("class A { m(x) {} m(x, y, z = 2) {} }").error(Error.NONE);
+		code_v2_("class A { m(x = 2) { return x } } return new A().m()").equals("2");
+		code_v2_("class A { m(x = 2) { return x } } return new A().m(9)").equals("9");
+		code_v2_("class A { m(x, y = 2) { return x * y } } return new A().m(9)").equals("18");
+		code_v2_("class A { m(x = 5, y = 7) { return x * y } } return new A().m()").equals("35");
+		code_v2_("class A { m(x = 5, y = 7, z = 10) { return x * y * z } } return new A().m()").equals("350");
+		code_v2_("class A { m(x = 5, y = 7, z = 10) { return x * y * z } } return new A().m(4)").equals("280");
+		code_v2_("class A { v() { return 55 } m(x, y = v()) { return x * y } } return new A().m(9)").equals("495");
+		code_v2_("class A { m(x, y = x) { return x * y } } return new A().m(9)").equals("81");
+		code_v2_("class A { m(x, y = x, z = y) { return x * y * z } } return new A().m(9)").equals("729");
+
 
 		section("Field access by array access");
 		code_v2_("var test = {} test['a'] = 8 return test").equals("{a: 8}");
