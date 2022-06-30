@@ -127,6 +127,7 @@ public class AIFile<C extends ResolverContext> {
 
 		// Find token
 		var token = findToken(line, column);
+		if (token == null) return new Hover(new Location(this), null);
 
 		if (token.getExpression() != null) {
 			return token.getExpression().hover(token);
@@ -142,9 +143,18 @@ public class AIFile<C extends ResolverContext> {
 		while (true) {
 			int p = (end + start) / 2;
 			var token = tokens.get(p);
-			// System.out.println("findToken start=" + start + " end=" + end + " token=" + token);
-			if (start >= end) return token;
 			var tLine = token.getLocation().getStartLine();
+			// System.out.println("findToken start=" + start + " end=" + end + " token=" + token);
+			if (start >= end) {
+				if (line == tLine) {
+					var startColumn = token.getLocation().getStartColumn();
+					var endColumn = token.getLocation().getEndColumn();
+					if (column >= startColumn && column <= endColumn) {
+						return token;
+					}
+				}
+				return null;
+			}
 			if (line > tLine) {
 				start = p + 1;
 			} else if (line < tLine) {
