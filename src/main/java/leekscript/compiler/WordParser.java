@@ -39,15 +39,14 @@ public class WordParser {
 	public final static int T_PAR_RIGHT = 7;
 	public final static int T_VIRG = 8;
 	public final static int T_CONDITION_OPERATOR = 9;
-
 	public final static int T_ACCOLADE_LEFT = 10;
 	public final static int T_ACCOLADE_RIGHT = 11;
-
 	public final static int T_BRACKET_LEFT = 12;
 	public final static int T_BRACKET_RIGHT = 13;
-
 	public final static int T_DOUBLE_POINT = 14;
 	public final static int T_DOT = 15;
+	public final static int T_ARROW = 16;
+	public final static int T_END_OF_FILE = 17;
 
 	private final AIFile<?> mAI;
 
@@ -206,7 +205,12 @@ public class WordParser {
 				if (type == T_VAR_STRING) {
 					word += c;
 				} else if (type == T_OPERATOR) {
-					if (word.equals("&")) {
+					if ((word.equals("-") || word.equals("=")) && c == '>') {
+						word += c;
+						newWord(word, T_ARROW);
+						word = "";
+						type = T_NOTHING;
+					} else if (word.equals("&")) {
 						if (c == '&' || c == '=')
 							word += c;
 						else {
@@ -416,7 +420,11 @@ public class WordParser {
 	}
 
 	public Token token() {
-		return mAI.getTokens().get(cursor);
+		return mAI.getTokenAt(cursor);
+	}
+
+	public Token token(int offset) {
+		return mAI.getTokenAt(cursor + offset);
 	}
 
 	public Token lastToken() {
@@ -446,6 +454,38 @@ public class WordParser {
 
 	public void reset() {
 		cursor = 0;
+	}
+
+	public int findNextClosingParenthesis() {
+		int p = cursor;
+		int level = 1;
+		while (level > 0) {
+			var t = mAI.getTokenAt(p++).getType();
+			if (t == WordParser.T_END_OF_FILE) return -1;
+			if (t == WordParser.T_PAR_LEFT) level++;
+			if (t == WordParser.T_PAR_RIGHT) level--;
+		}
+		return p - 1;
+	}
+
+	public int findNextArrow() {
+		int p = cursor;
+		while (true) {
+			var t = mAI.getTokenAt(p++).getType();
+			if (t == WordParser.T_END_OF_FILE) return -1;
+			if (t == WordParser.T_ARROW) break;
+		}
+		return p - 1;
+	}
+
+	int findNextColon() {
+		int p = cursor;
+		while (true) {
+			var t = mAI.getTokenAt(p++).getType();
+			if (t == WordParser.T_END_OF_FILE) return -1;
+			if (t == WordParser.T_DOUBLE_POINT) break;
+		}
+		return p - 1;
 	}
 
 	public void setInstructionCount(int count) {

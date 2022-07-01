@@ -16,6 +16,28 @@ public class TestGeneral extends TestCommon {
 		code_v3_("return Null").equals("<class Null>");
 		code_v3_("return NULL").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 
+		header("Variables");
+		// code("var a").equals("(void)");
+		// code("var a = 2").equals("(void)");
+		code("var a = 2 return a").equals("2");
+		code("var a, b, c = 3 return c").equals("3");
+		code("var a = 1, b = 2, c = 3 return c").equals("3");
+		code("var a = 1, b = 2, c return c").equals("null");
+		// code("var a = 1, b, c = 3").equals("(void)");
+		// code("var a, b, c = 3").equals("(void)");
+		// code("var a, b, c").equals("(void)");
+		code("var a return a").equals("null");
+		code("var a a = 12 return a").equals("12");
+		code("var a = 5 a = 13 return a").equals("13");
+		code("var a = 1 var b = (a = 12) return b").equals("12");
+		// code("var s = 'hello'").equals("(void)");
+		code("var s = 'hello' return s").equals("\"hello\"");
+		// code("var état = 12 return état").equals("12");
+		// code("var 韭 = 'leek' return 韭").equals("'leek'");
+		// code("var ♫☯🐖👽 = 5 var 🐨 = 2 return ♫☯🐖👽 ** 🐨").equals("25");
+		code("var a = 2 return [a = 10]").equals("[10]");
+		code("var a = 2 return ['a', a = 10]").equals("[\"a\", 10]");
+
 		section("typeOf()");
 		// Test nombre
 		code("return typeOf(255)").equals(String.valueOf(LeekConstants.TYPE_NUMBER.getIntValue()));

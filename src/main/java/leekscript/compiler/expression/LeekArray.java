@@ -41,7 +41,7 @@ public class LeekArray extends Expression {
 		for (int i = 0; i < mValues.size(); i += 2) {
 			if (key.equals(mValues.get(i))) {
 				var level = compiler.getVersion() >= 4 ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
-				compiler.addError(new AnalyzeError(keyToken, level, Error.MAP_DUPLICATED_KEY));
+				compiler.addError(new AnalyzeError(key.getLocation(), level, Error.MAP_DUPLICATED_KEY));
 			}
 		}
 

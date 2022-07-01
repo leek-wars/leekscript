@@ -22,6 +22,7 @@ public class AIFile<C extends ResolverContext> {
 	private String clazz;
 	private String rootClazz;
 	private ArrayList<Token> tokens = new ArrayList<Token>();
+	private Token endOfFileToken = new Token(WordParser.T_END_OF_FILE, "", new Location(this));
 
 	public AIFile(String path, String code, long timestamp, int version, C context) {
 		this(path, code, timestamp, version, context, (context + "/" + path).hashCode() & 0xfffffff);
@@ -121,6 +122,10 @@ public class AIFile<C extends ResolverContext> {
 
 	public ArrayList<Token> getTokens() {
 		return tokens;
+	}
+
+	public Token getTokenAt(int index) {
+		return index < tokens.size() ? tokens.get(index) : endOfFileToken;
 	}
 
 	public Hover hover(int line, int column) {

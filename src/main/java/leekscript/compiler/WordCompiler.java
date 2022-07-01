@@ -75,7 +75,7 @@ public class WordCompiler {
 					}
 					if (mCompiler.token().getWord().equals("=")) {
 						mCompiler.skipToken();
-						readExpression();
+						readExpression(true);
 					}
 					while (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_VIRG) {
 						mCompiler.skipToken();
@@ -87,7 +87,7 @@ public class WordCompiler {
 						}
 						if (mCompiler.token().getWord().equals("=")) {
 							mCompiler.skipToken();
-							readExpression();
+							readExpression(true);
 						}
 					}
 				} else if (mCompiler.token().getWord().equals("function")) {
@@ -637,7 +637,7 @@ public class WordCompiler {
 		if (mCompiler.token().getWord().equals("=")) {
 			mCompiler.skipToken();
 			// Si oui on récupère la valeur en question
-			variable.setValue(readExpression());
+			variable.setValue(readExpression(true));
 		}
 		// On ajoute la variable
 		mMain.addGlobalDeclaration(variable);
@@ -653,7 +653,7 @@ public class WordCompiler {
 			if (mCompiler.token().getWord().equals("=")) {
 				mCompiler.skipToken();
 				// Si oui on récupère la valeur en question
-				variable.setValue(readExpression());
+				variable.setValue(readExpression(true));
 			}
 			// On ajoute la variable
 			mMain.addGlobalDeclaration(variable);
@@ -672,6 +672,7 @@ public class WordCompiler {
 		if (word.getType() != WordParser.T_STRING) {
 			throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED);
 		}
+
 		if (getVersion() >= 3 && isKeyword(word)) {
 			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 		}
@@ -679,10 +680,20 @@ public class WordCompiler {
 		// On regarde si une valeur est assignée
 		if (mCompiler.haveWords() && mCompiler.token().getWord().equals("=")) {
 			mCompiler.skipToken();
+
+			// Arrow function?
+			int p = mCompiler.findNextClosingParenthesis();
+			int a = mCompiler.findNextArrow();
+			int c = mCompiler.findNextColon();
+			boolean parenthesis = false;
+			boolean isArrowFunction = parenthesis || (a != -1 && (a < p || p == -1) && (a < c || c == -1));
+
 			// Si oui on récupère la valeur en question
-			variable.setValue(readExpression());
+			variable.setValue(readExpression(!isArrowFunction));
 		}
 		mCurentBlock.addInstruction(this, variable);
+
+
 		while (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_VIRG) {
 			// On regarde si y'en a d'autres
 			mCompiler.skipToken();// On passe la virgule
@@ -697,7 +708,7 @@ public class WordCompiler {
 			if (mCompiler.token().getWord().equals("=")) {
 				mCompiler.skipToken();
 				// Si oui on récupère la valeur en question
-				variable.setValue(readExpression());
+				variable.setValue(readExpression(true));
 			}
 			// On ajoute la variable
 			mCurentBlock.addInstruction(this, variable);
@@ -867,7 +878,7 @@ public class WordCompiler {
 			// Default param
 			if (mCompiler.token().getWord().equals("=")) {
 				equal = mCompiler.eatToken();
-				defaultValue = readExpression();
+				defaultValue = readExpression(true);
 			}
 
 			method.addParameter(this, param, equal, defaultValue);
@@ -922,7 +933,111 @@ public class WordCompiler {
 	}
 
 	public Expression readExpression() throws LeekCompilerException {
+		return readExpression(false);
+	}
+
+	public Expression readExpression(boolean inList) throws LeekCompilerException {
+
 		var retour = new LeekExpression();
+
+		// Lambda
+		var t1 = mCompiler.token().getType();
+		var t2 = mCompiler.token(1).getType();
+		var t3 = mCompiler.token(2).getType();
+		var t4 = mCompiler.token(3).getType();
+		if (t1 == WordParser.T_ARROW // =>
+		 || (!inList && t1 == WordParser.T_STRING && t2 == WordParser.T_VIRG) // x,
+		 || (t1 == WordParser.T_PAR_LEFT && t2 == WordParser.T_STRING && t3 == WordParser.T_VIRG) // (x,
+		 || (t1 == WordParser.T_STRING && t2 == WordParser.T_ARROW) // x =>
+		 || (t1 == WordParser.T_PAR_LEFT && t2 == WordParser.T_STRING && t3 == WordParser.T_PAR_RIGHT && t4 == WordParser.T_ARROW) // (x) =>
+		) {
+			Token token = null;
+			boolean parenthesis = false;
+			if (t1 == WordParser.T_PAR_LEFT) {
+				token = mCompiler.eatToken();
+				parenthesis = true;
+			} else {
+				token = t1 == WordParser.T_ARROW ? mCompiler.token() : mCompiler.token(1); // , ou =>
+			}
+
+			var block = new AnonymousFunctionBlock(getCurrentBlock(), getMainBlock(), token);
+			AbstractLeekBlock initialBlock = mCurentBlock;
+			setCurrentBlock(block);
+
+			while (mCompiler.token().getType() != WordParser.T_PAR_RIGHT && mCompiler.token().getType() != WordParser.T_ARROW) {
+
+				if (mCompiler.token().getType() != WordParser.T_STRING) {
+					addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.PARAMETER_NAME_EXPECTED));
+				}
+				var parameter = mCompiler.token();
+				mCompiler.skipToken();
+				Type type = Type.ANY;
+
+				if (mCompiler.token().getType() == WordParser.T_VIRG) {
+					mCompiler.skipToken();
+				}
+				block.addParameter(this, parameter, false, type);
+			}
+
+			boolean surroudingParenthesis = false;
+			if (parenthesis) {
+				if (mCompiler.token().getType() == WordParser.T_ARROW) {
+					surroudingParenthesis = true;
+					mCompiler.skipToken();
+				} else if (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
+					throw new LeekCompilerException(mCompiler.token(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+				}
+			} else {
+				if (mCompiler.token().getType() != WordParser.T_ARROW) {
+					throw new LeekCompilerException(mCompiler.token(), Error.ARROW_EXPECTED);
+				}
+				mCompiler.skipToken();
+			}
+
+			boolean surroudingCurlyBracket = false;
+			if (mCompiler.token().getType() == WordParser.T_ACCOLADE_LEFT) {
+				surroudingCurlyBracket = true;
+				mCompiler.skipToken();
+
+				// Lecture du corps de la fonction
+				while (mCompiler.haveWords()) {
+					// Fermeture des blocs ouverts
+					if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
+						DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
+						mCurentBlock = mCurentBlock.endInstruction();
+						dowhileendBlock(do_block);
+						mCompiler.skipToken();
+					} else
+						mCurentBlock = mCurentBlock.endInstruction();
+					if (!mCompiler.haveWords())
+						break;
+
+					// On regarde si on veut fermer la fonction anonyme
+					if (mCompiler.token().getType() == WordParser.T_ACCOLADE_RIGHT && mCurentBlock == block) {
+						mCompiler.skipToken();
+						break; // Fermeture de la fonction anonyme
+					} else
+						compileWord();
+				}
+			} else {
+
+				// Expression seule
+				var body = readExpression();
+				block.addInstruction(this, new LeekReturnInstruction(token, body));
+			}
+
+			if (surroudingParenthesis) {
+				if (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
+					throw new LeekCompilerException(mCompiler.token(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+				}
+				mCompiler.skipToken();
+			}
+
+			setCurrentBlock(initialBlock);
+			var f = new LeekAnonymousFunction(block, token);
+			retour.addExpression(f);
+		}
+
 		while (mCompiler.haveWords()) {
 			Token word = mCompiler.token();
 			if (word.getType() == WordParser.T_PAR_RIGHT || word.getType() == WordParser.T_ACCOLADE_RIGHT || word.getType() == WordParser.T_END_INSTRUCTION) {
@@ -987,7 +1102,7 @@ public class WordCompiler {
 					mCompiler.skipToken(); // On avance le curseur pour être au début de l'expression
 
 					while (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
-						function.addParameter(readExpression());
+						function.addParameter(readExpression(true));
 						if (mCompiler.token().getType() == WordParser.T_VIRG)
 							mCompiler.skipToken();
 					}
@@ -1070,7 +1185,7 @@ public class WordCompiler {
 
 						int type = 0;// 0 => A déterminer, 1 => Simple, 2 => Clé:valeur
 						while (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
-							var exp = readExpression();
+							var exp = readExpression(true);
 							if (mCompiler.token().getWord().equals(":")) {
 								if (type == 0)
 									type = 2;
@@ -1078,7 +1193,7 @@ public class WordCompiler {
 									throw new LeekCompilerException(mCompiler.token(), Error.SIMPLE_ARRAY);
 								var colon = mCompiler.token();
 								mCompiler.skipToken();
-								var value = readExpression();
+								var value = readExpression(true);
 								array.addValue(this, exp, colon, value);
 							} else {
 								if (type == 0)
@@ -1115,7 +1230,7 @@ public class WordCompiler {
 						}
 						mCompiler.skipToken();
 
-						var value = readExpression();
+						var value = readExpression(true);
 						object.addEntry(key, value);
 
 						if (mCompiler.token().getType() == WordParser.T_VIRG) {

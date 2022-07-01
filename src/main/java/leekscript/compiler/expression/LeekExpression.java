@@ -6,6 +6,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.bloc.AnonymousFunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.runner.values.LeekValue;

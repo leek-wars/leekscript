@@ -486,9 +486,10 @@ public class LeekFunctionCall extends Expression {
 	}
 
 	public void verifyVersions(WordCompiler compiler, CallableVersion[] versions) {
+
 		// Find best version
 		ArrayList<CallableVersion> best_versions = new ArrayList<>();
-		int best_distance = Integer.MAX_VALUE;
+		int best_distance = 9999;
 		List<AnalyzeError> errors = null;
 		for (var version : versions) {
 			if (version.arguments.length != mParameters.size()) continue;
@@ -523,6 +524,8 @@ public class LeekFunctionCall extends Expression {
 				best_versions.add(version);
 				unsafe = version_unsafe;
 				errors = version_errors;
+			} else {
+				errors = version_errors;
 			}
 		}
 		if (errors != null) {
@@ -537,6 +540,8 @@ public class LeekFunctionCall extends Expression {
 				type = type.union(version.return_type);
 			}
 			// System.out.println("type = " + type);
+		} else {
+			unsafe = true;
 		}
 	}
 
