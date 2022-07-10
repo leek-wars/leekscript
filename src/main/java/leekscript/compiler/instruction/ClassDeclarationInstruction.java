@@ -327,17 +327,23 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				field.getValue().expression.preAnalyze(compiler);
 			}
 		}
-		for (var constructor : constructors.values()) {
-			constructor.block.preAnalyze(compiler);
+		for (var entry : constructors.entrySet()) {
+			if (entry.getKey() == entry.getValue().block.getMaxParameters()) {
+				entry.getValue().block.preAnalyze(compiler);
+			}
 		}
 		for (var method : methods.values()) {
-			for (var version : method.values()) {
-				version.block.preAnalyze(compiler);
+			for (var entry : method.entrySet()) {
+				if (entry.getKey() == entry.getValue().block.getMaxParameters()) {
+					entry.getValue().block.preAnalyze(compiler);
+				}
 			}
 		}
 		for (var method : staticMethods.values()) {
-			for (var version : method.values()) {
-				version.block.preAnalyze(compiler);
+			for (var entry : method.entrySet()) {
+				if (entry.getKey() == entry.getValue().block.getMaxParameters()) {
+					entry.getValue().block.preAnalyze(compiler);
+				}
 			}
 		}
 		compiler.setCurrentClass(null);
