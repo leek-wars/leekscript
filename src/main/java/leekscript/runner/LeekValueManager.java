@@ -144,7 +144,7 @@ public class LeekValueManager {
 	public static int getV1Type(Object v) {
 		if (v == null) return LeekValue.NULL_V1;
 		if (v instanceof Boolean) return LeekValue.BOOLEAN_V1;
-		if (v instanceof Long) return LeekValue.NUMBER_V1;
+		if (v instanceof Number) return LeekValue.NUMBER_V1;
 		if (v instanceof String) return LeekValue.STRING_V1;
 		if (v instanceof LegacyArrayLeekValue) return LeekValue.ARRAY_V1;
 		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT_V1;

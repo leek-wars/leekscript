@@ -832,18 +832,12 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		if (comparator == RANDOM)
 			Collections.shuffle(liste, new Random(ai.getRandom().getInt(0, Integer.MAX_VALUE - 1)));
 		else if (comparator == ASC_K || comparator == DESC_K) {
-			Collections.sort(liste, new KeyComparator(
-					(comparator == ASC_K) ? ElementComparator.SORT_ASC
-							: ElementComparator.SORT_DESC));
+			Collections.sort(liste, new KeyComparator((comparator == ASC_K) ? ElementComparator.SORT_ASC : ElementComparator.SORT_DESC));
 		} else {
 			if (ai.getVersion() == 1) {
-				Collections.sort(liste, new ElementComparatorV1(
-					(comparator == ASC || comparator == ASC_A) ? ElementComparator.SORT_ASC
-							: ElementComparator.SORT_DESC));
+				Collections.sort(liste, new ElementComparatorV1((comparator == ASC || comparator == ASC_A) ? ElementComparator.SORT_ASC : ElementComparator.SORT_DESC));
 			} else {
-				Collections.sort(liste, new ElementComparator(
-				(comparator == ASC || comparator == ASC_A) ? ElementComparator.SORT_ASC
-						: ElementComparator.SORT_DESC));
+				Collections.sort(liste, new ElementComparator((comparator == ASC || comparator == ASC_A) ? ElementComparator.SORT_ASC : ElementComparator.SORT_DESC));
 			}
 		}
 
