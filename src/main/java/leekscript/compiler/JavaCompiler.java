@@ -138,7 +138,6 @@ public class JavaCompiler {
 		long compile_time = System.nanoTime() - t;
 
 		if (!result) { // Java compilation failed
-			System.out.println(output.toString());
 			if (output.toString().contains("code too large")) {
 				throw new LeekScriptException(Error.CODE_TOO_LARGE, output.toString());
 			} else {
