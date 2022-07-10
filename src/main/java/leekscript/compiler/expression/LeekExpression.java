@@ -6,7 +6,6 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
-import leekscript.compiler.bloc.AnonymousFunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.runner.values.LeekValue;
@@ -15,7 +14,7 @@ import leekscript.common.Type;
 
 public class LeekExpression extends Expression {
 
-	private int mOperator = -1;
+	protected int mOperator = -1;
 	private Token mOperatorToken;
 	protected Expression mExpression1 = null;
 	protected Expression mExpression2 = null;
@@ -666,11 +665,19 @@ public class LeekExpression extends Expression {
 			}
 			return;
 		case Operators.NOTEQUALS:
-			writer.addCode("neq(");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			if (mainblock.getWordCompiler().getVersion() >= 4) {
+				writer.addCode("notequals_equals(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			} else {
+				writer.addCode("neq(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 			return;
 		case Operators.AND:
 			writer.addCode("(");
@@ -734,7 +741,13 @@ public class LeekExpression extends Expression {
 		case Operators.NEW:
 			if (mExpression2 instanceof LeekVariable) {
 				if (mainblock.getWordCompiler().getVersion() >= 3 && ((LeekVariable) mExpression2).toString().equals("Array")) {
-					writer.addCode("new LegacyArrayLeekValue()");
+					if (mainblock.getWordCompiler().getVersion() >= 4) {
+						writer.addCode("new LegacyArrayLeekValue()");
+					} else {
+						writer.addCode("new ArrayLeekValue(" + writer.getAIThis() + ")");
+					}
+				} else if (mainblock.getWordCompiler().getVersion() >= 4 && ((LeekVariable) mExpression2).toString().equals("Map")) {
+					writer.addCode("new MapLeekValue(" + writer.getAIThis() + ")");
 				} else {
 					writer.addCode("execute(");
 					mExpression2.writeJavaCode(mainblock, writer);
@@ -781,6 +794,9 @@ public class LeekExpression extends Expression {
 			return;
 		case Operators.DIVIDEASSIGN:
 			mExpression1.compileDivEq(mainblock, writer, mExpression2);
+			return;
+		case Operators.INTEGER_DIVISION_EQ:
+			mExpression1.compileIntDivEq(mainblock, writer, mExpression2);
 			return;
 		case Operators.MULTIPLIEASSIGN:
 			mExpression1.compileMulEq(mainblock, writer, mExpression2);
@@ -907,7 +923,7 @@ public class LeekExpression extends Expression {
 		if (mOperator == Operators.NOT || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.MOREEQUALS || mOperator == Operators.LESSEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.AND || mOperator == Operators.OR || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS || mOperator == Operators.INSTANCEOF) {
 			type = Type.BOOL;
 		}
-		if (mOperator == Operators.BITAND || mOperator == Operators.BITNOT || mOperator == Operators.BITOR  || mOperator == Operators.BITXOR || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT) {
+		if (mOperator == Operators.BITAND || mOperator == Operators.BITNOT || mOperator == Operators.BITOR  || mOperator == Operators.BITXOR || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT || mOperator == Operators.INTEGER_DIVISION) {
 			type = Type.INT;
 		}
 		if (mOperator == Operators.ADD && ((mExpression1.getType() == Type.STRING || mExpression2.getType() == Type.STRING))) {

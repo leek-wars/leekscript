@@ -91,6 +91,12 @@ public abstract class Expression {
 		expr.writeJavaCode(mainblock, writer);
 	}
 
+	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+		writeJavaCode(mainblock, writer);
+		writer.addCode(" /= ");
+		expr.writeJavaCode(mainblock, writer);
+	}
+
 	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" **= ");

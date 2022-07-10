@@ -40,7 +40,7 @@ public class Type {
 		this.defaultValue = defaultValue;
 	}
 
-	public CastType compare(Type type) {
+	public CastType accepts(Type type) {
 		if (type == this) return CastType.EQUALS;
 		if (this == ANY) return CastType.UPCAST;
 		if (type == ANY) return CastType.UNSAFE_DOWNCAST;
@@ -52,12 +52,15 @@ public class Type {
 				return CastType.UPCAST;
 			}
 			if (type == NUMBER) {
-				return CastType.SAFE_DOWNCAST;
+				return CastType.UNSAFE_DOWNCAST;
 			}
 		}
 		if (this == INT) {
-			if (type == REAL || type == NUMBER) {
+			if (type == REAL) {
 				return CastType.SAFE_DOWNCAST;
+			}
+			if (type == NUMBER) {
+				return CastType.UNSAFE_DOWNCAST;
 			}
 		}
 		if (this == FUNCTION) {

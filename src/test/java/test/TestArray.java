@@ -335,6 +335,19 @@ public class TestArray extends TestCommon {
 		code("var a = [5, 6, 7] a[0] *= 10 a[1] *= 10 return a;").equals("[50, 60, 7]");
 		code("var a = [[5]] a[0][0] *= 10 return a;").equals("[[50]]");
 
+		section("Array.operator /= on element");
+		code_v1("var a = [5] a[0] /= 10 return a;").equals("[0,5]");
+		code_v2_("var a = [5] a[0] /= 10 return a;").equals("[0.5]");
+		code_v1("var a = [5, 6, 7] a[0] /= 10 a[1] /= 10 return a;").equals("[0,5, 0,6, 7]");
+		code_v2_("var a = [5, 6, 7] a[0] /= 10 a[1] /= 10 return a;").equals("[0.5, 0.6, 7]");
+		code_v1("var a = [[5]] a[0][0] /= 10 return a;").equals("[[0,5]]");
+		code_v2_("var a = [[5]] a[0][0] /= 10 return a;").equals("[[0.5]]");
+
+		section("Array.operator \\= on element");
+		code("var a = [10] a[0] \\= 3 return a;").equals("[3]");
+		code("var a = [10, 12, 7] a[0] \\= 3 a[1] \\= 3 return a;").equals("[3, 4, 7]");
+		code("var a = [[10]] a[0][0] \\= 3 return a;").equals("[[3]]");
+
 		section("Array.operator %= on element");
 		code("var a = [5] a[0] %= 2 return a;").equals("[1]");
 		code("var a = [5, 6, 7] a[0] %= 2 a[1] %= 2 return a;").equals("[1, 0, 7]");
@@ -475,6 +488,9 @@ public class TestArray extends TestCommon {
 		code("var x = arrayMap([1, 2, 3], function(v) { var r = [1, 2, 3] return r }) push(x[0], 4) return x").equals("[[1, 2, 3, 4], [1, 2, 3], [1, 2, 3]]");
 		code("var r = [] var a = arrayMap([1, 2, 3], function(v) { return r }) push(r, 1) return a").equals("[[1], <...>, <...>]");
 		code_v2_("class A { name part constructor(name, part) { this.name = name this.part = part } } var list = [new A('foo', true), new A('bar', false), new A('baz', true)] return arrayMap(list, function(a) { return a.name })").equals("[\"foo\", \"bar\", \"baz\"]");
+		code("return arrayMap([1, 2, 3, 4], (v, k) => { return 12 })").equals("[12, 12, 12, 12]");
+		code_v1_3("return arrayMap([1, 2, 3, 4], (v, k) => { return k + ';' + v })").equals("[\"1;0\", \"2;1\", \"3;2\", \"4;3\"]");
+		code_v4_("return arrayMap([1, 2, 3, 4], (v, k) => { return k + ';' + v })").equals("[\"0;1\", \"1;2\", \"2;3\", \"3;4\"]");
 
 		section("Array.map() v1.0");
 		code_v1("return arrayMap([1, 2, 3, 4, 5], function(e) { return e * 2; });").equals("[2, 4, 6, 8, 10]");

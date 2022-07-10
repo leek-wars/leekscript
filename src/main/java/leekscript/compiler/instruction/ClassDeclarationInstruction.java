@@ -423,7 +423,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					for (int a = version.getKey(); a < block.getParametersDeclarations().size(); ++a) {
 						var arg = block.getParametersDeclarations().get(a);
 						var defaultValue = block.getDefaultValues().get(a);
-						writer.addCode("final var u_" + arg.getName() + " = ");
+						writer.addCode("final Object u_" + arg.getName() + " = ");
 						defaultValue.writeJavaCode(mainblock, writer);
 						writer.addLine(";");
 					}
@@ -471,7 +471,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					for (int a = version.getKey(); a < block.getParametersDeclarations().size(); ++a) {
 						var arg = block.getParametersDeclarations().get(a);
 						var defaultValue = block.getDefaultValues().get(a);
-						writer.addCode("final var u_" + arg.getName() + " = ");
+						writer.addCode("final Object u_" + arg.getName() + " = ");
 						defaultValue.writeJavaCode(mainblock, writer);
 						writer.addLine(";");
 					}
@@ -515,7 +515,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					for (int a = construct.getKey(); a < block.getParametersDeclarations().size(); ++a) {
 						var arg = block.getParametersDeclarations().get(a);
 						var defaultValue = block.getDefaultValues().get(a);
-						writer.addCode("final var u_" + arg.getName() + " = ");
+						writer.addCode("final Object u_" + arg.getName() + " = ");
 						defaultValue.writeJavaCode(mainblock, writer);
 						writer.addLine(";");
 					}

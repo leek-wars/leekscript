@@ -23,7 +23,6 @@ public class LeekArray extends Expression {
 
 	public LeekArray(Token openingBracket) {
 		this.openingBracket = openingBracket;
-		openingBracket.setExpression(this);
 	}
 
 	public void addValue(Expression param) {
@@ -33,6 +32,7 @@ public class LeekArray extends Expression {
 	public void setClosingBracket(Token closingBracket) {
 		this.closingBracket = closingBracket;
 		closingBracket.setExpression(this);
+		openingBracket.setExpression(this);
 	}
 
 	public void addValue(WordCompiler compiler, Expression key, Token keyToken, Expression value) {

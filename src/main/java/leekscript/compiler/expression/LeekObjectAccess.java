@@ -287,6 +287,18 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 
+	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+		assert (object.isLeftValue() && !object.nullable());
+
+		writer.addCode("field_intdiv_eq(");
+		object.writeJavaCode(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
+
 	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 

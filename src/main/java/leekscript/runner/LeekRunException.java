@@ -26,6 +26,10 @@ public class LeekRunException extends Exception {
 		return mError;
 	}
 
+	public Object getParam() {
+		return param;
+	}
+
 	// @Override
 	// public String getMessage() {
 	// 	switch (mError) {

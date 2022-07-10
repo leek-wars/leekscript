@@ -51,7 +51,7 @@ public abstract class AI {
 	public long maxOperations = MAX_OPERATIONS;
 
 	protected long mRAM = 0;
-	public final static int MAX_RAM = 1_000_000; // x 8 bytes
+	public final static int MAX_RAM = 25_000_000; // in 64 bits = 200 Mo
 	public long maxRAM = MAX_RAM;
 
 	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
@@ -173,12 +173,12 @@ public abstract class AI {
 	}
 
 	public long getUsedRAM() {
-		System.gc();
-		try {
-			Thread.sleep(0, 1);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		// System.gc();
+		// try {
+		// 	Thread.sleep(0, 1);
+		// } catch (InterruptedException e) {
+		// 	e.printStackTrace();
+		// }
 		return mRAM;
 	}
 
@@ -223,7 +223,7 @@ public abstract class AI {
 		return x;
 	}
 
-	public void addOperationsNoCheck(int nb) {
+	public void opsNoCheck(int nb) {
 		// System.out.println("ops " + nb);
 		mOperations += nb;
 	}
@@ -582,10 +582,12 @@ public abstract class AI {
 			}
 		} else if (value instanceof Box) {
 			return integer(((Box) value).getValue());
+		} else if (value instanceof FunctionLeekValue) {
+			return 0;
 		} else if (value == null) {
 			return 0;
 		}
-		throw new LeekRunException(Error.INVALID_VALUE, value);
+		throw new RuntimeException("Valeur invalide : " + value);
 	}
 
 	public Number number(Object value) throws LeekRunException {
@@ -614,10 +616,12 @@ public abstract class AI {
 			}
 		} else if (value instanceof Box) {
 			return number(((Box) value).getValue());
+		} else if (value instanceof FunctionLeekValue) {
+			return 0l;
 		} else if (value == null) {
 			return 0l;
 		}
-		throw new LeekRunException(Error.INVALID_VALUE, value);
+		throw new RuntimeException("Valeur invalide : " + value);
 	}
 
 	public long longint(Object value) throws LeekRunException {
@@ -648,10 +652,12 @@ public abstract class AI {
 			}
 		} else if (value instanceof Box) {
 			return longint(((Box) value).getValue());
+		} else if (value instanceof FunctionLeekValue) {
+			return 0;
 		} else if (value == null) {
 			return 0;
 		}
-		throw new LeekRunException(Error.INVALID_VALUE, value);
+		throw new RuntimeException("Valeur invalide : " + value);
 	}
 
 	public double real(Object value) throws LeekRunException {
@@ -682,10 +688,12 @@ public abstract class AI {
 			}
 		} else if (value instanceof Box) {
 			return real(((Box) value).getValue());
+		} else if (value instanceof FunctionLeekValue) {
+			return 0.0;
 		} else if (value == null) {
 			return 0.0;
 		}
-		throw new LeekRunException(Error.INVALID_VALUE, value);
+		throw new RuntimeException("Valeur invalide : " + value);
 	}
 
 	public boolean not(Object value) throws LeekRunException {
@@ -856,6 +864,10 @@ public abstract class AI {
 		return real(x) / real_y;
 	}
 
+	public long intdiv(Object x, Object y) throws LeekRunException {
+		return longint(x) / longint(y);
+	}
+
 	public Object mod(Object x, Object y) throws LeekRunException {
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) % real(y);
@@ -905,6 +917,13 @@ public abstract class AI {
 	public Object div_eq(Object x, Object y) throws LeekRunException {
 		if (x instanceof Box) {
 			return ((Box) x).div_eq(y);
+		}
+		return null;
+	}
+
+	public Object intdiv_eq(Object x, Object y) throws LeekRunException {
+		if (x instanceof Box) {
+			return ((Box) x).intdiv_eq(y);
 		}
 		return null;
 	}
@@ -987,7 +1006,7 @@ public abstract class AI {
 		} else if (value == null) {
 			return "null";
 		}
-		throw new LeekRunException(Error.INVALID_VALUE, value);
+		throw new RuntimeException("Valeur invalide : " + value);
 	}
 
 	public String string(Object value, Set<Object> visited) throws LeekRunException {
@@ -1017,11 +1036,11 @@ public abstract class AI {
 		} else if (value == null) {
 			return "null";
 		}
-		throw new LeekRunException(Error.INVALID_VALUE, value);
+		throw new RuntimeException("Valeur invalide : " + value);
 	}
 
-	public static String doubleToString(AI ai, double value) throws LeekRunException {
-		ai.ops(3);
+	public static String doubleToString(AI ai, double value) {
+		ai.opsNoCheck(3);
 		if (ai.getVersion() >= 2) {
 			return String.valueOf((Double) value);
 		} else {
@@ -1035,7 +1054,7 @@ public abstract class AI {
 		if (value instanceof Double) {
 			return doubleToString(this, (Double) value);
 		} else if (value instanceof Long) {
-			this.ops(3);
+			this.opsNoCheck(3);
 			return String.valueOf((Long) value);
 		} else if (value instanceof Boolean) {
 			return String.valueOf((Boolean) value);
@@ -1058,7 +1077,7 @@ public abstract class AI {
 		} else if (value == null) {
 			return "null";
 		}
-		throw new LeekRunException(Error.INVALID_VALUE, value);
+		throw new RuntimeException("Valeur invalide : " + value);
 	}
 
 	public String export(Object value, Set<Object> visited) throws LeekRunException {
@@ -1088,7 +1107,7 @@ public abstract class AI {
 		} else if (value == null) {
 			return "null";
 		}
-		throw new LeekRunException(Error.INVALID_VALUE, value);
+		throw new RuntimeException("Valeur invalide : " + value);
 	}
 
 	public Object toJSON(Object v) throws LeekRunException {
@@ -1263,6 +1282,17 @@ public abstract class AI {
 		return null;
 	}
 
+	public Object field_intdiv_eq(Object object, String field, Object value) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_intdiv_eq(field, value);
+		}
+		if (object instanceof ClassLeekValue) {
+			return ((ClassLeekValue) object).getFieldL(field).intdiv_eq(value);
+		}
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(object), field });
+		return null;
+	}
+
 	public Object field_mod_eq(Object object, String field, Object value) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_mod_eq(field, value);
@@ -1415,6 +1445,9 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_dec(this, key);
 		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_dec(this, key);
+		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
 			return ((ObjectLeekValue) array).field_dec(field);
@@ -1434,6 +1467,9 @@ public abstract class AI {
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_pre_dec(this, key);
+		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_pre_dec(this, key);
 		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
@@ -1478,6 +1514,9 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_sub_eq(this, key, value);
 		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_sub_eq(this, key, value);
+		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
 			return ((ObjectLeekValue) array).field_sub_eq(field, value);
@@ -1497,6 +1536,9 @@ public abstract class AI {
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_mul_eq(this, key, value);
+		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_mul_eq(this, key, value);
 		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
@@ -1518,6 +1560,9 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_pow_eq(this, key, value);
 		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_pow_eq(this, key, value);
+		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
 			return ((ObjectLeekValue) array).field_pow_eq(field, value);
@@ -1537,6 +1582,9 @@ public abstract class AI {
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_mod_eq(this, key, value);
+		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_mod_eq(this, key, value);
 		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
@@ -1558,6 +1606,9 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_div_eq(this, key, value);
 		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_div_eq(this, key, value);
+		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
 			return ((ObjectLeekValue) array).field_div_eq(field, value);
@@ -1571,12 +1622,38 @@ public abstract class AI {
 		return null;
 	}
 
+	public long put_intdiv_eq(Object array, Object key, Object value) throws LeekRunException {
+		if (array instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) array).put_intdiv_eq(this, key, value);
+		}
+		if (array instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) array).put_intdiv_eq(this, key, value);
+		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_intdiv_eq(this, key, value);
+		}
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_intdiv_eq(field, value);
+		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_intdiv_eq(field, value);
+		}
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new String[] { string(array) });
+		return 0;
+	}
+
 	public Object put_bor_eq(Object array, Object key, Object value) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_bor_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_bor_eq(this, key, value);
+		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_bor_eq(this, key, value);
 		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
@@ -1598,6 +1675,9 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_band_eq(this, key, value);
 		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_band_eq(this, key, value);
+		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
 			return ((ObjectLeekValue) array).field_band_eq(field, value);
@@ -1617,6 +1697,9 @@ public abstract class AI {
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_shl_eq(this, key, value);
+		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_shl_eq(this, key, value);
 		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
@@ -1638,6 +1721,9 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_shr_eq(this, key, value);
 		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_shr_eq(this, key, value);
+		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
 			return ((ObjectLeekValue) array).field_shr_eq(field, value);
@@ -1658,6 +1744,9 @@ public abstract class AI {
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_ushr_eq(this, key, value);
 		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_ushr_eq(this, key, value);
+		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
 			return ((ObjectLeekValue) array).field_ushr_eq(field, value);
@@ -1677,6 +1766,9 @@ public abstract class AI {
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_bxor_eq(this, key, value);
+		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_bxor_eq(this, key, value);
 		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
@@ -1874,7 +1966,7 @@ public abstract class AI {
 			String.valueOf(index),
 			string(value),
 			StandardClass.getType(value).toString(),
-			Type.ARRAY.toString()
+			Type.ARRAY.toString() + " (V1-3)"
 		});
 		return new LegacyArrayLeekValue();
 	}

@@ -8,7 +8,6 @@ import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.common.Type;
-import leekscript.common.Error;
 
 public class StandardClass {
 
@@ -23,6 +22,6 @@ public class StandardClass {
 		if (value instanceof ObjectLeekValue) return ((ObjectLeekValue) value).clazz.getType();
 		if (value instanceof ClassLeekValue) return Type.CLASS;
 		if (value instanceof FunctionLeekValue) return Type.FUNCTION;
-		throw new LeekRunException(Error.INVALID_VALUE, value);
+		throw new RuntimeException("Valeur invalide : " + value);
 	}
 }

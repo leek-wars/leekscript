@@ -27,8 +27,10 @@ public class TestOperators extends TestCommon {
 		code_v4_("return false == 0").equals("false");
 		code_v1_3("return true == 1").equals("true");
 		code_v4_("return true == 1").equals("false");
-		code("return false != 0").equals("false");
-		code("return true != 1").equals("false");
+		code_v1_3("return false != 0").equals("false");
+		code_v4_("return false != 0").equals("true");
+		code_v1_3("return true != 1").equals("false");
+		code_v4_("return true != 1").equals("true");
 		code_v1_3("return false == ''").equals("true");
 		code_v4_("return false == ''").equals("false");
 		code_v1_3("return false == '0'").equals("true");

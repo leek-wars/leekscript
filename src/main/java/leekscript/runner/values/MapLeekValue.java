@@ -16,6 +16,8 @@ import leekscript.runner.LeekValueComparator;
 
 public class MapLeekValue extends HashMap<Object, Object> implements Iterable<Entry<Object, Object>>, GenericMapLeekValue {
 
+	private static final int READ_OPERATIONS = 2;
+	private static final int WRITE_OPERATIONS = 3;
 	private final AI ai;
 
 	public MapLeekValue(AI ai) {
@@ -32,7 +34,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		for (int i = 0; i < values.length; i += 2) {
 			put(values[i], values[i + 1]);
 		}
-		ai.increaseRAM(values.length);
+		ai.increaseRAM(2 * values.length);
 	}
 
 	public MapLeekValue(AI ai, MapLeekValue map) throws LeekRunException {
@@ -48,7 +50,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 				put(entry.getKey(), LeekOperations.clone(ai, entry.getValue(), level - 1));
 			}
 		}
-		ai.increaseRAM(size());
+		ai.increaseRAM(2 * size());
 	}
 
 	@Override
@@ -57,8 +59,9 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public Object put(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		if (!containsKey(key)) {
-			ai.increaseRAM(1);
+			ai.increaseRAM(2);
 		}
 		put(key, value);
 		return value;
@@ -72,11 +75,12 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		ai.ops(1 + 3 * map.size());
 		var sizeBefore = size();
 		putAll(map);
-		ai.increaseRAM(size() - sizeBefore);
+		ai.increaseRAM(2 * (size() - sizeBefore));
 		return null;
 	}
 
 	public Object get(AI ai, Object index) {
+		ai.opsNoCheck(MapLeekValue.READ_OPERATIONS);
 		return get(index);
 	}
 
@@ -98,15 +102,118 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public Object put_inc(AI ai, Object key) throws LeekRunException {
-		return put(key, ai.add(get(key), 1l));
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = get(key);
+		put(key, ai.add(get(key), 1l));
+		return v;
 	}
 
 	public Object put_pre_inc(AI ai, Object key) throws LeekRunException {
-		return put(key, ai.add(get(key), 1l));
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.add(get(key), 1l);
+		put(key, v);
+		return v;
+	}
+
+	public Object put_dec(AI ai, Object key) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		return put(key, ai.sub(get(key), 1l));
+	}
+
+	public Object put_pre_dec(AI ai, Object key) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.sub(get(key), 1l);
+		put(key, v);
+		return v;
 	}
 
 	public Object put_add_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.add(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	public Object put_sub_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.sub(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	public Object put_mul_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.mul(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	public Object put_div_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.div(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	public long put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.intdiv(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	public Object put_mod_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.mod(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	public Object put_pow_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.pow(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	public Object put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.band(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	public Object put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.bor(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	public Object put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.bxor(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	public Object put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.shr(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	public Object put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.ushr(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	public Object put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.shl(get(key), value);
 		put(key, v);
 		return v;
 	}
@@ -119,13 +226,21 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return size() == 0;
 	}
 
+	public ArrayLeekValue mapKeys(AI ai) throws LeekRunException {
+		return new ArrayLeekValue(ai, keySet().toArray());
+	}
+
+	public ArrayLeekValue mapValues(AI ai) throws LeekRunException {
+		return new ArrayLeekValue(ai, values().toArray());
+	}
+
 	public MapLeekValue mapMap(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 3 * size());
 		var result = new MapLeekValue(ai, size());
 		for (var entry : this.entrySet()) {
 			result.put(entry.getKey(), function.run(ai, null, entry.getValue(), entry.getKey(), this));
 		}
-		ai.increaseRAM(size());
+		ai.increaseRAM(2 * size());
 		return result;
 	}
 
@@ -185,10 +300,10 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public Object mapSearch(AI ai, Object value) throws LeekRunException {
-		ai.addOperationsNoCheck(1);
+		ai.opsNoCheck(1);
 		int i = 0;
 		for (var entry : entrySet()) {
-			if (entry.getValue().equals(value)) {
+			if (ai.equals_equals(entry.getValue(), value)) {
 				ai.ops(2 * i);
 				return entry.getKey();
 			}
@@ -215,7 +330,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		ai.ops(1 + 2 * size());
 		var sizeBefore = size();
 		entrySet().removeIf(entry -> entry.getValue().equals(value));
-		ai.decreaseRAM(sizeBefore - size());
+		ai.decreaseRAM(2 * (sizeBefore - size()));
 		return null;
 	}
 
@@ -240,7 +355,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public boolean mapEvery(AI ai, FunctionLeekValue function) throws LeekRunException {
-		ai.addOperationsNoCheck(1);
+		ai.opsNoCheck(1);
 		int i = 0;
 		for (var entry : entrySet()) {
 			if (!ai.bool(function.run(ai, null, entry.getValue(), entry.getKey()))) {
@@ -254,7 +369,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public boolean mapSome(AI ai, FunctionLeekValue function) throws LeekRunException {
-		ai.addOperationsNoCheck(1);
+		ai.opsNoCheck(1);
 		int i = 0;
 		for (var entry : entrySet()) {
 			if (ai.bool(function.run(ai, null, entry.getValue(), entry.getKey(), this))) {
@@ -284,7 +399,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 				result.put(entry.getKey(), entry.getValue());
 			}
 		}
-		ai.increaseRAM(result.size());
+		ai.increaseRAM(2 * result.size());
 		return result;
 	}
 
@@ -294,12 +409,12 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		for (var entry : map.entrySet()) {
 			result.putIfAbsent(entry.getKey(), entry.getValue());
 		}
-		ai.increaseRAM(result.size() - size());
+		ai.increaseRAM(2 * (result.size() - size()));
 		return result;
 	}
 
 	public MapLeekValue mapClear(AI ai) {
-		ai.decreaseRAM(size());
+		ai.decreaseRAM(2 * size());
 		clear();
 		return this;
 	}
@@ -369,8 +484,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	@SuppressWarnings("deprecated")
 	protected void finalize() throws Throwable {
 		super.finalize();
-		// System.out.println("Finalize array " + size());
-		ai.decreaseRAM(size());
+		ai.decreaseRAM(2 * size());
 	}
 
 	public JSONObject toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
@@ -390,6 +504,35 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public int hashCode() {
-		return 0;
+		int hashCode = 1;
+		hashCode = 31 * hashCode + size();
+		for (var entry : this) {
+			var k = entry.getKey();
+			var kh = 0;
+			if (k instanceof ArrayLeekValue) {
+				kh = ((ArrayLeekValue) k).size();
+			} else if (k instanceof MapLeekValue) {
+				kh = ((MapLeekValue) k).size();
+			} else if (k instanceof ObjectLeekValue) {
+				kh = ((ObjectLeekValue) k).size();
+			} else {
+				kh = k == null ? 0 : k.hashCode();
+			}
+			hashCode = 31 * hashCode + kh;
+
+			var eh = 0;
+			var e = entry.getValue();
+			if (e instanceof ArrayLeekValue) {
+				eh = ((ArrayLeekValue) e).size();
+			} else if (e instanceof MapLeekValue) {
+				eh = ((MapLeekValue) e).size();
+			} else if (e instanceof ObjectLeekValue) {
+				eh = ((ObjectLeekValue) e).size();
+			} else {
+				eh = e == null ? 0 : e.hashCode();
+			}
+			hashCode = 31 * hashCode + eh;
+		}
+		return hashCode;
 	}
 }

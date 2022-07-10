@@ -314,6 +314,9 @@ public class TestCommon {
 	public Case code_v4_(String code) {
 		return new Case(code, true, 4, LATEST_VERSION);
 	}
+	public Case DISABLED_code_v4_(String code) {
+		return new Case(code, false, 4, LATEST_VERSION);
+	}
 	public Case DISABLED_code(String code) {
 		return new Case(code, false);
 	}

@@ -428,7 +428,7 @@ public class WordParser {
 	}
 
 	public Token lastToken() {
-		return mAI.getTokens().get(cursor - 1);
+		return mAI.getLastToken();
 	}
 
 	public Token endToken() {
@@ -460,10 +460,15 @@ public class WordParser {
 		int p = cursor;
 		int level = 1;
 		while (level > 0) {
-			var t = mAI.getTokenAt(p++).getType();
-			if (t == WordParser.T_END_OF_FILE) return -1;
-			if (t == WordParser.T_PAR_LEFT) level++;
-			if (t == WordParser.T_PAR_RIGHT) level--;
+
+			var t = mAI.getTokenAt(p++);
+			if (t == null) {
+				System.out.println("t is null");
+			}
+			var ty = t.getType();
+			if (ty == WordParser.T_END_OF_FILE) return -1;
+			if (ty == WordParser.T_PAR_LEFT) level++;
+			if (ty == WordParser.T_PAR_RIGHT) level--;
 		}
 		return p - 1;
 	}
@@ -471,9 +476,14 @@ public class WordParser {
 	public int findNextArrow() {
 		int p = cursor;
 		while (true) {
-			var t = mAI.getTokenAt(p++).getType();
-			if (t == WordParser.T_END_OF_FILE) return -1;
-			if (t == WordParser.T_ARROW) break;
+
+			var t = mAI.getTokenAt(p++);
+			if (t == null) {
+				System.out.println("t is null");
+			}
+			var ty = t.getType();
+			if (ty == WordParser.T_END_OF_FILE) return -1;
+			if (ty == WordParser.T_ARROW) break;
 		}
 		return p - 1;
 	}
@@ -481,9 +491,13 @@ public class WordParser {
 	int findNextColon() {
 		int p = cursor;
 		while (true) {
-			var t = mAI.getTokenAt(p++).getType();
-			if (t == WordParser.T_END_OF_FILE) return -1;
-			if (t == WordParser.T_DOUBLE_POINT) break;
+			var t = mAI.getTokenAt(p++);
+			if (t == null) {
+				System.out.println("t is null");
+			}
+			var ty = t.getType();
+			if (ty == WordParser.T_END_OF_FILE) return -1;
+			if (ty == WordParser.T_DOUBLE_POINT) break;
 		}
 		return p - 1;
 	}

@@ -179,6 +179,10 @@ public class Box {
 		return mValue = mUAI.div(mValue, val);
 	}
 
+	public long intdiv_eq(Object val) throws LeekRunException {
+		return (long) (mValue = mUAI.intdiv(mValue, val));
+	}
+
 	public Object mod_eq(Object val) throws LeekRunException {
 		return mValue = mUAI.mod(mValue, val);
 	}

@@ -487,6 +487,10 @@ public class LeekFunctionCall extends Expression {
 
 	public void verifyVersions(WordCompiler compiler, CallableVersion[] versions) {
 
+		var types = new ArrayList<Type>(mParameters.size());
+		for (var a : mParameters) types.add(a.getType());
+		// System.out.println("verifyVersions types = " + types);
+
 		// Find best version
 		ArrayList<CallableVersion> best_versions = new ArrayList<>();
 		int best_distance = 9999;
@@ -499,7 +503,7 @@ public class LeekFunctionCall extends Expression {
 			for (int i = 0; i < mParameters.size(); ++i) {
 				var f_type = version.arguments[i];
 				var a_type = mParameters.get(i).getType();
-				var cast_type = f_type.compare(a_type);
+				var cast_type = f_type.accepts(a_type);
 				if (cast_type == CastType.INCOMPATIBLE) {
 					AnalyzeErrorLevel level = compiler.getVersion() >= 5 ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 					version_errors.add(new AnalyzeError(mParameters.get(i).getLocation(), level, Error.WRONG_ARGUMENT_TYPE, new String[] {
@@ -516,6 +520,8 @@ public class LeekFunctionCall extends Expression {
 				else if (cast_type == CastType.UNSAFE_DOWNCAST) distance += 1000;
 				else if (cast_type == CastType.INCOMPATIBLE) distance += 10000;
 			}
+			if (distance >= 1000) distance = 1000;
+			// System.out.println("version = " + version + " distance = " + distance);
 			if (distance == best_distance) {
 				best_versions.add(version);
 			} else if (distance < best_distance) {
@@ -539,7 +545,7 @@ public class LeekFunctionCall extends Expression {
 			for (var version : callable_versions) {
 				type = type.union(version.return_type);
 			}
-			// System.out.println("type = " + type);
+			// System.out.println("version = " + best_versions.get(0) + " type = " + type);
 		} else {
 			unsafe = true;
 		}
@@ -559,7 +565,7 @@ public class LeekFunctionCall extends Expression {
 
 	private boolean checkArgumentsStatically(CallableVersion version) {
 		for (int i = 0; i < version.arguments.length; ++i) {
-			if (version.arguments[i].compare(mParameters.get(i).getType()) == CastType.INCOMPATIBLE) {
+			if (version.arguments[i].accepts(mParameters.get(i).getType()) == CastType.INCOMPATIBLE) {
 				return false;
 			}
 		}
@@ -568,6 +574,9 @@ public class LeekFunctionCall extends Expression {
 
 	@Override
 	public Location getLocation() {
+		if (mExpression == null) {
+			return new Location(openParenthesis.getLocation(), closingParenthesis.getLocation());
+		}
 		return new Location(mExpression.getLocation(), closingParenthesis.getLocation());
 	}
 }

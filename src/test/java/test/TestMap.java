@@ -11,6 +11,7 @@ public class TestMap extends TestCommon {
 		code_v4_("return [:]").equals("[:]");
 		code("return [1: 1, 2: 2]").equals("[1 : 1, 2 : 2]");
 		code("return [1: 1, 2: 'a']").equals("[1 : 1, 2 : \"a\"]");
+		code_v4_("var m = new Map() m[1] = 2 return m").equals("[1 : 2]");
 
 		section("Map::to_bool()");
 		// code("![:]").equals("true");
@@ -53,6 +54,7 @@ public class TestMap extends TestCommon {
 		section("Map.operator ==");
 		code("return ['a': 'b'] == [1: 1]").equals("false");
 		code("return ['a': 'b'] == ['a': 'b']").equals("true");
+		code("return [1: ['a': 'b']] == [1: ['a': 'b']]").equals("true");
 		code("return ['a': 'b'] == ['a': 'b', 'c': 'd']").equals("false");
 		// code("var x = ['a' : 'b'] var y = [1 : 1] return x.clear() == y.clear()").equals("true");
 		for (var m1 : maps)
@@ -121,6 +123,25 @@ public class TestMap extends TestCommon {
 		code("var m = ['a': 2] m['a']++ return m").equals("[\"a\" : 3]");
 		code("var k = ['a', 12][0] var m = ['a': 2] m[k]++ return m").equals("[\"a\" : 3]");
 
+		section("Operators on map element");
+		code_v2_("var m = [1: 10] return --m[1]").equals("9");
+		code_v2_("var m = [1: 10] m[1]-- return m[1]").equals("9");
+		code_v2_("var m = [1: 10] return ++m[1]").equals("11");
+		code_v2_("var m = [1: 10] m[1]++ return m[1]").equals("11");
+		code_v2_("var m = [1: 10] return m[1] += 5").equals("15");
+		code_v2_("var m = [1: 10] return m[1] -= 5").equals("5");
+		code_v2_("var m = [1: 10] return m[1] *= 5").equals("50");
+		code_v2_("var m = [1: 10] return m[1] /= 5").equals("2.0");
+		code_v2_("var m = [1: 10] return m[1] \\= 3").equals("3");
+		code_v2_("var m = [1: 10] return m[1] %= 5").equals("0");
+		code_v2_("var m = [1: 10] return m[1] **= 5").equals("100000");
+		code_v2_("var m = [1: 10] return m[1] |= 5").equals("15");
+		code_v2_("var m = [1: 10] return m[1] &= 5").equals("0");
+		code_v2_("var m = [1: 10] return m[1] ^= 5").equals("15");
+		code_v2_("var m = [1: 10] return m[1] <<= 5").equals("320");
+		code_v2_("var m = [1: 10] return m[1] >>= 5").equals("0");
+		code_v2_("var m = [1: 10] return m[1] >>>= 5").equals("0");
+
 		section("Map.operator +");
 		code_v4_("return [:] + [:]").equals("[:]");
 		code_v4_("return [1 : 2] + [3 : 4]").equals("[1 : 2, 3 : 4]");
@@ -149,6 +170,9 @@ public class TestMap extends TestCommon {
 		// code("var m = ptr([2: 2.8]) m[3] = 6 m").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		// code("var m = ptr([2: 'a']) m['toto'] = 'b' m").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		// code("var m = ptr([2.5: 'a']) m['toto'] = 'b' m").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
+
+		section("Map.instanceof");
+		code_v4_("return [:] instanceof Map").equals("true");
 
 		/**
 		 * Clone
@@ -219,6 +243,13 @@ public class TestMap extends TestCommon {
 		code_v4_("var m = [1 : 2, 3 : 4] mapPut(m, 3, 6) return m").equals("[1 : 2, 3 : 6]");
 		code_v4_("var m = ['a' : 'b', 'c' : 'd'] mapPut(m, 'e', 'f') return m").equals("[\"a\" : \"b\", \"c\" : \"d\", \"e\" : \"f\"]");
 
+		section("Map.keys");
+		code_v4_("return mapKeys([1: 2, 3: 4, 5: 6])").equals("[1, 3, 5]");
+		code_v4_("return mapKeys(['1': 2, '3': 4, '5': 6])").equals("[\"1\", \"3\", \"5\"]");
+
+		section("Map.values");
+		code_v4_("return mapValues([1: 2, 3: 4, 5: 6])").equals("[2, 4, 6]");
+
 		section("mapMap");
 		code_v2_3("return arrayMap(['a': 1, 'b': 2], function(k, v) { return k + v })").equals("[\"a\" : \"a1\", \"b\" : \"b2\"]");
 		code_v4_("return mapMap(['a': 1, 'b': 2], function(v) { return v * 10 })").equals("[\"a\" : 10, \"b\" : 20]");
@@ -284,6 +315,8 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return mapSearch(a,'c')").equals("\"cle3\"");
 		code_v1_3("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return search(a,'454')").equals("null");
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return mapSearch(a,'454')").equals("null");
+		code_v4_("var a = [1: null, 2: 5, 3: 12] return mapSearch(a, 12)").equals("3");
+		code_v4_("var a = [1: [1], 2: [2], 3: [3]] return mapSearch(a, [2])").equals("2");
 
 		section("mapContains");
 		code_v1_3("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return inArray(a, 'c')").equals("true");

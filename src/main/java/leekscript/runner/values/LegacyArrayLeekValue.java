@@ -15,7 +15,6 @@ import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
-import leekscript.common.Error;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -393,58 +392,54 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	}
 
 	public Object put_add_eq(AI ai, Object key, Object value) throws LeekRunException {
-		getOrCreate(ai, key).add_eq(value);
-		return value;
+		return getOrCreate(ai, key).add_eq(value);
 	}
 
 	public Object put_sub_eq(AI ai, Object key, Object value) throws LeekRunException {
-		getOrCreate(ai, key).sub_eq(value);
-		return value;
+		return getOrCreate(ai, key).sub_eq(value);
 	}
 
 	public Object put_mul_eq(AI ai, Object key, Object value) throws LeekRunException {
-		getOrCreate(ai, key).mul_eq(value);
-		return value;
+		return getOrCreate(ai, key).mul_eq(value);
 	}
 
 	public Object put_pow_eq(AI ai, Object key, Object value) throws LeekRunException {
-		getOrCreate(ai, key).pow_eq(value);
-		return value;
+		return getOrCreate(ai, key).pow_eq(value);
 	}
 
 	public Object put_div_eq(AI ai, Object key, Object value) throws LeekRunException {
-		getOrCreate(ai, key).div_eq(value);
-		return value;
+		return getOrCreate(ai, key).div_eq(value);
+	}
+
+	public long put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
+		return getOrCreate(ai, key).intdiv_eq(value);
 	}
 
 	public Object put_mod_eq(AI ai, Object key, Object value) throws LeekRunException {
-		getOrCreate(ai, key).mod_eq(value);
-		return value;
+		return getOrCreate(ai, key).mod_eq(value);
 	}
 
-	public Object put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
-		getOrCreate(ai, key).bor_eq(value);
-		return value;
+	public long put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
+		return getOrCreate(ai, key).bor_eq(value);
 	}
 
-	public Object put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
-		getOrCreate(ai, key).band_eq(value);
-		return value;
+	public long put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
+		return getOrCreate(ai, key).band_eq(value);
 	}
 
-	public Object put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public long put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		return getOrCreate(ai, key).bxor_eq(value);
 	}
 
-	public Object put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public long put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
 		return getOrCreate(ai, key).shl_eq(value);
 	}
 
-	public Object put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public long put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		return getOrCreate(ai, key).shr_eq(value);
 	}
 
-	public Object put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public long put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		return getOrCreate(ai, key).ushr_eq(value);
 	}
 
@@ -456,8 +451,8 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 	}
 
-	public Box get(AI ai, int value) throws LeekRunException {
-		return getOrCreate(ai, (long) value);
+	public Object get(AI ai, int value) throws LeekRunException {
+		return get(ai, (long) value);
 	}
 
 	public Object remove(AI ai, long index) throws LeekRunException {
@@ -606,7 +601,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	private void initTable(AI ai, int capacity) throws LeekRunException {
 		int realCapacity = Math.max(START_CAPACITY, capacity);
 		// System.out.println("ops initTable");
-		ai.addOperationsNoCheck(realCapacity / 5);
+		ai.opsNoCheck(realCapacity / 5);
 		this.capacity = realCapacity;
 		mTable = new Element[realCapacity];
 	}
@@ -674,7 +669,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 * @throws LeekRunException
 	 */
 	public boolean inArray(AI ai, Object value) throws LeekRunException {
-		ai.addOperationsNoCheck(1);
+		ai.opsNoCheck(1);
 		Element e = mHead;
 		int i = 0;
 		while (e != null) {
@@ -690,11 +685,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	}
 
 	public Object search(AI ai, Object value) throws LeekRunException {
-		ai.addOperationsNoCheck(1);
+		ai.opsNoCheck(1);
 		Element e = mHead;
 		int i = 0;
 		while (e != null) {
-			if (LeekValueManager.getType(e.value) == LeekValueManager.getType(value) && ai.eq(e.value.getValue(), value)) {
+			if (ai.equals_equals(e.value.getValue(), value)) {
 				ai.ops(i);
 				return e.key;
 			}
@@ -1055,9 +1050,6 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	}
 
 	public Object pushNoClone(AI ai, Object value) throws LeekRunException {
-		if (value instanceof Integer) {
-			throw new LeekRunException(Error.INVALID_VALUE, value);
-		}
 		if (mSize >= capacity) {
 			growCapacity(ai);
 		}
@@ -1109,9 +1101,6 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 * @throws LeekRunException
 	 */
 	public void set(AI ai, Object key, Object value) throws LeekRunException {
-		if (value instanceof Integer) {
-			throw new LeekRunException(Error.INVALID_VALUE, value);
-		}
 		Element e = getElement(ai, key);
 		// Si l'élément n'existe pas on le crée
 		if (e == null) {
@@ -1480,7 +1469,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		// Réindexer le tableau (Change l'index de toutes les valeurs numériques)
 		Long new_index = 0l;
 
-		ai.addOperationsNoCheck(mSize);
+		ai.opsNoCheck(mSize);
 
 		Element e = mHead;
 		while (e != null) {
@@ -1545,7 +1534,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 		// System.out.println("ops createElement");
 		int operations = LegacyArrayLeekValue.ARRAY_CELL_CREATE_OPERATIONS + (int) Math.sqrt(mSize) / 3;
-		ai.addOperationsNoCheck(operations);
+		ai.opsNoCheck(operations);
 
 		return e;
 	}
@@ -1599,7 +1588,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 		// System.out.println("ops getElement");
 		int operations = LegacyArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS;
-		ai.addOperationsNoCheck(operations);
+		ai.opsNoCheck(operations);
 
 		if (mTable == null) {
 			return null; // empty array

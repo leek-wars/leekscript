@@ -15,11 +15,11 @@ public class SystemClass {
 	}
 
 	public static long getUsedRAM(AI ai) {
-		return (long) ai.getUsedRAM();
+		return (long) ai.getUsedRAM() * 8;
 	}
 
 	public static long getMaxRAM(AI ai) {
-		return (long) ai.getMaxRAM();
+		return (long) ai.getMaxRAM() * 8;
 	}
 
 	public static long getInstructionsCount(AI ai) {

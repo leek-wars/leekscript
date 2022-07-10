@@ -99,12 +99,12 @@ public class LeekFunctions {
 		});
 		method("replace", "String", true, Type.STRING, new Type[] { Type.STRING, Type.STRING, Type.STRING });
 		method("indexOf", "String", true, new CallableVersion[] {
-			new CallableVersion(Type.INT, new Type[] { Type.STRING, Type.STRING }),
 			new CallableVersion(Type.INT, new Type[] { Type.STRING, Type.STRING, Type.INT }),
+			new CallableVersion(Type.INT, new Type[] { Type.STRING, Type.STRING }),
 		});
 		method("split", "String", true, new CallableVersion[] {
-			new CallableVersion(Type.ARRAY, new Type[] { Type.STRING, Type.STRING }),
 			new CallableVersion(Type.ARRAY, new Type[] { Type.STRING, Type.STRING, Type.INT }),
+			new CallableVersion(Type.ARRAY, new Type[] { Type.STRING, Type.STRING }),
 		});
 		method("toLower", "String", true, Type.STRING, new Type[] { Type.STRING });
 		method("toUpper", "String", true, Type.STRING, new Type[] { Type.STRING });
@@ -121,7 +121,7 @@ public class LeekFunctions {
 		 * Fonctions array
 		 */
 		method("remove", "Array", Type.ANY, new Type[] { Type.ARRAY, Type.INT });
-		method("arrayRemoveAll", "Array", Type.VOID, new Type[] { Type.ARRAY, Type.ANY });
+		method("arrayRemoveAll", "Array", Type.VOID, new Type[] { Type.ARRAY, Type.ANY }).setMinVersion(4);
 		method("count", "Array", 1, Type.INT, new Type[] { Type.ARRAY });
 		method("join", "Array", Type.STRING, new Type[] { Type.ARRAY, Type.STRING });
 		method("insert", "Array", Type.VOID, new Type[] { Type.ARRAY, Type.ANY, Type.INT });
@@ -131,13 +131,13 @@ public class LeekFunctions {
 		method("pop", "Array", 2, Type.ANY, new Type[] { Type.ARRAY });
 		method("removeElement", "Array", Type.VOID, new Type[] { Type.ARRAY, Type.ANY });
 		method("sort", "Array", new CallableVersion[] {
-			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY }),
 			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY, Type.INT }),
+			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY }),
 		});
 		method("shuffle", "Array", Type.VOID, new Type[] { Type.ARRAY });
 		method("search", "Array", new CallableVersion[] {
-			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.ANY}),
 			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.ANY, Type.INT }),
+			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.ANY}),
 		});
 		method("inArray", "Array", Type.BOOL, new Type[] { Type.ARRAY, Type.ANY });
 		method("reverse", "Array", Type.VOID, new Type[] { Type.ARRAY });
@@ -161,8 +161,8 @@ public class LeekFunctions {
 		method("arrayMap", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.FUNCTION });
 		method("arrayFilter", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.FUNCTION });
 		method("arrayFlatten", "Array", new CallableVersion[] {
-			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY }),
 			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, Type.INT }),
+			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY }),
 		});
 		method("arrayFoldLeft", "Array", Type.ANY, new Type[] { Type.ARRAY, Type.FUNCTION, Type.ANY });
 		method("arrayFoldRight", "Array", Type.ANY, new Type[] { Type.ARRAY, Type.FUNCTION, Type.ANY });
@@ -173,8 +173,8 @@ public class LeekFunctions {
 		method("arraySome", "Array", Type.BOOL, new Type[] { Type.ARRAY, Type.FUNCTION });
 		method("arrayEvery", "Array", Type.BOOL, new Type[] { Type.ARRAY, Type.FUNCTION });
 		method("arrayGet", "Array", 1, new CallableVersion[] {
-			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.INT }),
 			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.INT, Type.ANY }),
+			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.INT }),
 		}).setMinVersion(4);
 		method("arrayRandom", "Array", Type.ANY, new Type[] { Type.ARRAY, Type.INT }).setMinVersion(4);
 		method("arrayFrequencies", "Array", Type.MAP, new Type[] { Type.ARRAY }).setMinVersion(4);
@@ -189,8 +189,8 @@ public class LeekFunctions {
 		method("mapIsEmpty", "Map", 2, Type.BOOL, new Type[] { Type.MAP }).setMinVersion(4);
 		method("mapClear", "Map", 1, Type.MAP, new Type[] { Type.MAP }).setMinVersion(4);
 		method("mapGet", "Map", 2, new CallableVersion[] {
-			new CallableVersion(Type.ANY, new Type[] { Type.MAP, Type.ANY }),
 			new CallableVersion(Type.ANY, new Type[] { Type.MAP, Type.ANY, Type.ANY }),
+			new CallableVersion(Type.ANY, new Type[] { Type.MAP, Type.ANY }),
 		}).setMinVersion(4);
 		method("mapValues", "Map", Type.ARRAY, new Type[] { Type.MAP }).setMinVersion(4);
 		method("mapKeys", "Map", Type.ARRAY, new Type[] { Type.MAP }).setMinVersion(4);
@@ -216,12 +216,12 @@ public class LeekFunctions {
 		method("mapPut", "Map", 3, Type.ANY, new Type[] { Type.MAP, Type.ANY, Type.ANY }).setMinVersion(4);
 		method("mapPutAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.MAP }).setMinVersion(4);
 		method("assocSort", "Map", new CallableVersion[] {
-			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY }),
 			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY, Type.INT }),
+			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY }),
 		}).setMaxVersion(3);
 		method("keySort", "Map", new CallableVersion[] {
-			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY }),
 			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY, Type.INT }),
+			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY }),
 		}).setMaxVersion(3);
 		method("removeKey", "Map", Type.VOID, new Type[] { Type.ARRAY, Type.ANY }).setMaxVersion(3, "mapRemove");
 

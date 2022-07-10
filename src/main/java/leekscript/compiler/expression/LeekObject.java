@@ -18,7 +18,6 @@ public class LeekObject extends Expression {
 
 	public LeekObject(Token openingBrace) {
 		this.openingBrace = openingBrace;
-		this.openingBrace.setExpression(this);
 	}
 
 	public void addEntry(String key, Expression value) {
@@ -28,6 +27,7 @@ public class LeekObject extends Expression {
 	public void setClosingBrace(Token closingBrace) {
 		this.closingBrace = closingBrace;
 		this.closingBrace.setExpression(this);
+		this.openingBrace.setExpression(this);
 	}
 
 	@Override
@@ -75,6 +75,13 @@ public class LeekObject extends Expression {
 			entry.getValue().writeJavaCode(mainblock, writer);
 		}
 		writer.addCode(" })");
+	}
+
+	@Override
+	public void preAnalyze(WordCompiler compiler) {
+		for (var value : mValues.entrySet()) {
+			value.getValue().preAnalyze(compiler);
+		}
 	}
 
 	@Override

@@ -38,7 +38,6 @@ public class JavaCompiler {
 	private static List<String> arguments = new ArrayList<>();
 	private static URLClassLoader urlLoader;
 	private static HashMap<String, AIClassEntry> aiCache = new HashMap<>();
-	private static boolean outputJavaAndLines = false;
 
 	static {
 		classpath = new File(LeekScript.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getPath();
@@ -109,7 +108,7 @@ public class JavaCompiler {
 
 		// System.out.println(compiledJava);
 
-		if (outputJavaAndLines) {
+		if (useClassCache) {
 			// Sauvegarde du code java
 			try {
 				FileOutputStream javaOutput = new FileOutputStream(java);

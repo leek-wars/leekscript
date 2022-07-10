@@ -94,6 +94,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { a = 10 } var a = new A(); return a.a -= 5").equals("5");
 		code_v2_("class A { a = 10 } var a = new A(); return a.a *= 5").equals("50");
 		code_v2_("class A { a = 10 } var a = new A(); return a.a /= 5").equals("2.0");
+		code_v2_("class A { a = 10 } var a = new A(); return a.a \\= 3").equals("3");
 		code_v2_("class A { a = 10 } var a = new A(); return a.a %= 5").equals("0");
 		code_v2_("class A { a = 10 } var a = new A(); return a.a **= 5").equals("100000");
 		code_v2_("class A { a = 10 } var a = new A(); return a.a |= 5").equals("15");
@@ -440,7 +441,8 @@ public class TestObject extends TestCommon {
 		section("Initialization of static fields");
 		code_v2_("class A { public static x = arrayMap([1, 3, 5], function(y) { return y ** 3 }) } return A.x").equals("[1, 27, 125]");
 		code_v2_("class A { static x = arrayMap([1, 3, 5], function(y) { return y ** 3 }) } return A.x").equals("[1, 27, 125]");
-		code_v2_("class Map { public static obstacles = toUpper('hello') } return Map.obstacles").equals("\"HELLO\"");
+		code_v2_3("class Map { public static obstacles = toUpper('hello') } return Map.obstacles").equals("\"HELLO\"");
+		code_v4_("class Map { public static obstacles = toUpper('hello') } return Map.obstacles").error(Error.VARIABLE_NAME_UNAVAILABLE);
 
 		section("Method is a system method");
 		code_v2_("class A { sqrt() { return sqrt(25) } }").equals("null");

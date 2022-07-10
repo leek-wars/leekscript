@@ -1,5 +1,7 @@
 package leekscript.runner;
 
+import java.util.Arrays;
+
 import leekscript.common.Type;
 
 public class CallableVersion {
@@ -23,5 +25,9 @@ public class CallableVersion {
 			r += argument.getSignature();
 		}
 		return r;
+	}
+
+	public String toString() {
+		return Arrays.toString(this.arguments) + " => " + return_type;
 	}
 }

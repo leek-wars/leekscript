@@ -327,6 +327,19 @@ public class LeekArrayAccess extends Expression {
 	}
 
 	@Override
+	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+		assert(mLeftValue && !mTabular.nullable());
+
+		writer.addCode("put_intdiv_eq(");
+		mTabular.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer);
+		writer.addCode(")");
+	}
+
+	@Override
 	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 

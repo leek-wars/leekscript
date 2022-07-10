@@ -987,16 +987,16 @@ public class WordCompiler {
 				} else if (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
 					throw new LeekCompilerException(mCompiler.token(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
 				}
-			} else {
-				if (mCompiler.token().getType() != WordParser.T_ARROW) {
-					throw new LeekCompilerException(mCompiler.token(), Error.ARROW_EXPECTED);
-				}
 				mCompiler.skipToken();
 			}
+			if (mCompiler.token().getType() != WordParser.T_ARROW) {
+				throw new LeekCompilerException(mCompiler.token(), Error.ARROW_EXPECTED);
+			}
+			mCompiler.skipToken();
 
-			boolean surroudingCurlyBracket = false;
+			// boolean surroudingCurlyBracket = false;
 			if (mCompiler.token().getType() == WordParser.T_ACCOLADE_LEFT) {
-				surroudingCurlyBracket = true;
+				// surroudingCurlyBracket = true;
 				mCompiler.skipToken();
 
 				// Lecture du corps de la fonction

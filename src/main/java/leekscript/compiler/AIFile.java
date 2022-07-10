@@ -125,7 +125,11 @@ public class AIFile<C extends ResolverContext> {
 	}
 
 	public Token getTokenAt(int index) {
-		return index < tokens.size() ? tokens.get(index) : endOfFileToken;
+		return index < 0 || index < tokens.size() ? tokens.get(index) : endOfFileToken;
+	}
+
+	public Token getLastToken() {
+		return tokens.size() > 0 ? tokens.get(tokens.size() - 1) : endOfFileToken;
 	}
 
 	public Hover hover(int line, int column) {
@@ -142,6 +146,7 @@ public class AIFile<C extends ResolverContext> {
 	}
 
 	public Token findToken(int line, int column) {
+		if (tokens.size() == 0) return null;
 		// Find token
 		int start = 0;
 		int end = tokens.size() - 1;
