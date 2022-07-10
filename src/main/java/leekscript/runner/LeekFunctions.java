@@ -73,12 +73,12 @@ public class LeekFunctions {
 		method("hypot", "Number", 187, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
 		method("signum", "Number", 2, true, Type.INT, new Type[] { Type.REAL });
 		method("bitCount", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
-		method("tzCount", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
-		method("lzCount", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
-		method("bitRev", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
-		method("byteRev", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
-		method("rotLeft", "Number", 1, true, Type.INT, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
-		method("rotRight", "Number", 1, true, Type.INT, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
+		method("trailingZeros", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
+		method("leadingZeros", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
+		method("bitReverse", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
+		method("byteReverse", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
+		method("rotateLeft", "Number", 1, true, Type.INT, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
+		method("rotateRight", "Number", 1, true, Type.INT, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
 		method("binString", "Number", 10, true, Type.STRING, new Type[] { Type.INT }).setMinVersion(4);
 		method("hexString", "Number", 10, true, Type.STRING, new Type[] { Type.INT }).setMinVersion(4);
 		method("realBits", "Number", 1, true, Type.INT, new Type[] { Type.REAL }).setMinVersion(4);
@@ -204,7 +204,6 @@ public class LeekFunctions {
 		method("mapContains", "Map", Type.BOOL, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
 		method("mapContainsKey", "Map", 2, Type.BOOL, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
 		method("mapRemove", "Map", 2, Type.ANY, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
-		method("mapRemoveElement", "Map", Type.ANY, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
 		method("mapRemoveAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
 		method("mapReplace", "Map", 3, Type.ANY, new Type[] { Type.MAP, Type.ANY, Type.ANY }).setMinVersion(4);
 		method("mapReplaceAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.MAP }).setMinVersion(4);

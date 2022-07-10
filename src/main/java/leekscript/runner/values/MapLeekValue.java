@@ -201,17 +201,6 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return remove(key);
 	}
 
-	public Object mapRemoveElement(AI ai, Object value) throws LeekRunException {
-		ai.ops(1 + 3 * size());
-		for (var entry : entrySet()) {
-			if (entry.getValue().equals(value)) {
-				remove(entry.getKey());
-				ai.decreaseRAM(1);
-			}
-		}
-		return null;
-	}
-
 	public ArrayLeekValue mapGetValues(AI ai) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		return new ArrayLeekValue(ai, values().toArray());

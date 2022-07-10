@@ -1115,31 +1115,31 @@ public class TestNumber extends TestCommon {
 		code_v4_("return bitCount(0b111100111001111)").equals("11");
 		code_v4_("return bitCount(0xff)").equals("8");
 
-		section("Number.tzCount()");
-		code_v4_("return tzCount(0)").equals("64");
-		code_v4_("return tzCount(0b00001100110000)").equals("4");
-		code_v4_("return tzCount(0b100000000000)").equals("11");
-		code_v4_("return tzCount(0xff00)").equals("8");
+		section("Number.trailingZeros()");
+		code_v4_("return trailingZeros(0)").equals("64");
+		code_v4_("return trailingZeros(0b00001100110000)").equals("4");
+		code_v4_("return trailingZeros(0b100000000000)").equals("11");
+		code_v4_("return trailingZeros(0xff00)").equals("8");
 
-		section("Number.lzCount()");
-		code_v4_("return lzCount(0)").equals("64");
-		code_v4_("return lzCount(0b0000110011)").equals("58");
-		code_v4_("return lzCount(0b000000001)").equals("63");
-		code_v4_("return lzCount(0b11111111111111111111111111111111111111111111111110000110011)").equals("5");
-		code_v4_("return lzCount(0xff)").equals("56");
+		section("Number.leadingZeros()");
+		code_v4_("return leadingZeros(0)").equals("64");
+		code_v4_("return leadingZeros(0b0000110011)").equals("58");
+		code_v4_("return leadingZeros(0b000000001)").equals("63");
+		code_v4_("return leadingZeros(0b11111111111111111111111111111111111111111111111110000110011)").equals("5");
+		code_v4_("return leadingZeros(0xff)").equals("56");
 
-		section("Number.bitRev()");
-		code_v4_("return binString(bitRev(0))").equals("\"0\"");
-		code_v4_("return binString(bitRev(0b0000110011))").equals("\"1100110000000000000000000000000000000000000000000000000000000000\"");
-		code_v4_("return binString(bitRev(0b000000001))").equals("\"1000000000000000000000000000000000000000000000000000000000000000\"");
-		code_v4_("return binString(bitRev(0b11111111111111111111111111111111111111111111111110000110011))").equals("\"1100110000111111111111111111111111111111111111111111111111100000\"");
-		code_v4_("return binString(bitRev(0xff))").equals("\"1111111100000000000000000000000000000000000000000000000000000000\"");
+		section("Number.bitReverse()");
+		code_v4_("return binString(bitReverse(0))").equals("\"0\"");
+		code_v4_("return binString(bitReverse(0b0000110011))").equals("\"1100110000000000000000000000000000000000000000000000000000000000\"");
+		code_v4_("return binString(bitReverse(0b000000001))").equals("\"1000000000000000000000000000000000000000000000000000000000000000\"");
+		code_v4_("return binString(bitReverse(0b11111111111111111111111111111111111111111111111110000110011))").equals("\"1100110000111111111111111111111111111111111111111111111111100000\"");
+		code_v4_("return binString(bitReverse(0xff))").equals("\"1111111100000000000000000000000000000000000000000000000000000000\"");
 
-		section("Number.byteRev()");
-		code_v4_("return hexString(byteRev(0))").equals("\"0\"");
-		code_v4_("return hexString(byteRev(0xaabbccddeeff))").equals("\"ffeeddccbbaa0000\"");
-		code_v4_("return hexString(byteRev(0xabcdef))").equals("\"efcdab0000000000\"");
-		code_v4_("return hexString(byteRev(0xfffaaafff))").equals("\"ffafaaff0f000000\"");
+		section("Number.byteReverse()");
+		code_v4_("return hexString(byteReverse(0))").equals("\"0\"");
+		code_v4_("return hexString(byteReverse(0xaabbccddeeff))").equals("\"ffeeddccbbaa0000\"");
+		code_v4_("return hexString(byteReverse(0xabcdef))").equals("\"efcdab0000000000\"");
+		code_v4_("return hexString(byteReverse(0xfffaaafff))").equals("\"ffafaaff0f000000\"");
 
 		section("Number.binString()");
 		code_v4_("return binString(0)").equals("\"0\"");
@@ -1155,20 +1155,20 @@ public class TestNumber extends TestCommon {
 		code_v4_("return hexString(0xAAAAAAA0000000)").equals("\"aaaaaaa0000000\"");
 		code_v4_("return hexString(0xFF)").equals("\"ff\"");
 
-		section("Number.rotLeft");
-		code_v4_("return rotLeft(0, 0)").equals("0");
-		code_v4_("return rotLeft(0, 5)").equals("0");
-		code_v4_("return rotLeft(0, -5)").equals("0");
-		code_v4_("return rotLeft(12345678, 10)").equals("12641974272");
-		code_v4_("return rotLeft(99999999999, 40)").equals("8568097191560746824");
+		section("Number.rotateLeft");
+		code_v4_("return rotateLeft(0, 0)").equals("0");
+		code_v4_("return rotateLeft(0, 5)").equals("0");
+		code_v4_("return rotateLeft(0, -5)").equals("0");
+		code_v4_("return rotateLeft(12345678, 10)").equals("12641974272");
+		code_v4_("return rotateLeft(99999999999, 40)").equals("8568097191560746824");
 
-		section("Number.rotRight");
-		code_v4_("return rotRight(0, 0)").equals("0");
-		code_v4_("return rotRight(0, 5)").equals("0");
-		code_v4_("return rotRight(0, -5)").equals("0");
-		code_v4_("return rotRight(12345678, 10)").equals("6016809102166994712");
-		code_v4_("return rotRight(99999999999, 40)").equals("1677721599983222784");
-		code_v4_("return rotRight(99999999999, 40) === rotLeft(99999999999, -40)").equals("true");
+		section("Number.rotateRight");
+		code_v4_("return rotateRight(0, 0)").equals("0");
+		code_v4_("return rotateRight(0, 5)").equals("0");
+		code_v4_("return rotateRight(0, -5)").equals("0");
+		code_v4_("return rotateRight(12345678, 10)").equals("6016809102166994712");
+		code_v4_("return rotateRight(99999999999, 40)").equals("1677721599983222784");
+		code_v4_("return rotateRight(99999999999, 40) === rotateLeft(99999999999, -40)").equals("true");
 
 		section("Number.realBits");
 		code_v4_("return realBits(0.0)").equals("0");

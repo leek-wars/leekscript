@@ -153,27 +153,27 @@ public class NumberClass {
 		return Long.bitCount(x);
 	}
 
-	public static long tzCount(AI ai, long x) {
+	public static long trailingZeros(AI ai, long x) {
 		return Long.numberOfTrailingZeros(x);
 	}
 
-	public static long lzCount(AI ai, long x) {
+	public static long leadingZeros(AI ai, long x) {
 		return Long.numberOfLeadingZeros(x);
 	}
 
-	public static long bitRev(AI ai, long x) {
+	public static long bitReverse(AI ai, long x) {
 		return Long.reverse(x);
 	}
 
-	public static long byteRev(AI ai, long x) {
+	public static long byteReverse(AI ai, long x) {
 		return Long.reverseBytes(x);
 	}
 
-	public static long rotLeft(AI ai, long x, long y) {
+	public static long rotateLeft(AI ai, long x, long y) {
 		return Long.rotateLeft(x, (int) y);
 	}
 
-	public static long rotRight(AI ai, long x, long y) {
+	public static long rotateRight(AI ai, long x, long y) {
 		return Long.rotateRight(x, (int) y);
 	}
 
