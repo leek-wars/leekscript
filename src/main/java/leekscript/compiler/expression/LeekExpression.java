@@ -529,6 +529,11 @@ public class LeekExpression extends Expression {
 				writer.addCode(")");
 			// }
 			return;
+		case Operators.INTEGER_DIVISION: // Division entière
+			writer.getInt(mainblock, mExpression1);
+			writer.addCode(" / ");
+			writer.getInt(mainblock, mExpression2);
+			return;
 		case Operators.POWER: // Puissance
 			writer.addCode("pow(");
 			mExpression1.writeJavaCode(mainblock, writer);

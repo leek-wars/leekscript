@@ -202,7 +202,7 @@ public class WordParser {
 				} else {
 					compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 				}
-			} else if (c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-' || c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~' || c == '.') {
+			} else if (c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-' || c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~' || c == '.' || c == '\\') {
 				if (type == T_VAR_STRING) {
 					word += c;
 				} else if (type == T_OPERATOR) {
@@ -278,7 +278,7 @@ public class WordParser {
 						}
 					} else if (word.equals("*") || word.equals("**") || word.equals("/") || word.equals("%")
 							|| word.equals("=") || word.equals("!") || word.equals("<") || word.equals(">")
-							|| word.equals("^") || word.equals("==") || word.equals("!=")) {
+							|| word.equals("^") || word.equals("==") || word.equals("!=") || word.equals("\\")) {
 						if (c == '=')
 							word += c;
 						else {

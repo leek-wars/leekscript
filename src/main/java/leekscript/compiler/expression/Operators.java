@@ -51,6 +51,7 @@ public class Operators {
 	public final static int NEW = 48;
 	public final static int DOT = 49;
 	public final static int INSTANCEOF = 50;
+	public final static int INTEGER_DIVISION = 51;
 
 	public final static int getOperator(String operator, int version) {
 		if(operator.equals("[")) return CROCHET;
@@ -107,6 +108,7 @@ public class Operators {
 		if(operator.equals("new")) return NEW;
 		if(operator.equals(".")) return DOT;
 		if(operator.equals("instanceof")) return INSTANCEOF;
+		if(operator.equals("\\")) return INTEGER_DIVISION;
 		return -1;
 	}
 
