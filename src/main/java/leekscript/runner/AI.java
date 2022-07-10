@@ -51,7 +51,7 @@ public abstract class AI {
 	public long maxOperations = MAX_OPERATIONS;
 
 	protected long mRAM = 0;
-	public final static int MAX_RAM = 25_000_000; // in 64 bits = 200 Mo
+	public final static int MAX_RAM = 12_500_000; // in 64 bits "quads" = 100 Mo
 	public long maxRAM = MAX_RAM;
 
 	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
