@@ -135,6 +135,7 @@ public class Operators {
 			return 12;
 		case MULTIPLIE:
 		case DIVIDE:
+		case INTEGER_DIVISION:
 		case MODULUS:
 			return 11;
 		case ADD:
@@ -173,6 +174,7 @@ public class Operators {
 		case MINUSASSIGN:
 		case MULTIPLIEASSIGN:
 		case DIVIDEASSIGN:
+		case INTEGER_DIVISION_EQ:
 		case MODULUSASSIGN:
 		case POWERASSIGN:
 		case SHIFT_LEFT_ASSIGN:
@@ -229,6 +231,10 @@ public class Operators {
 			return "*";
 		case MULTIPLIEASSIGN:
 			return "*=";
+		case INTEGER_DIVISION:
+			return "\\";
+		case INTEGER_DIVISION_EQ:
+			return "\\=";
 		case DIVIDE:
 			return "/";
 		case DIVIDEASSIGN:

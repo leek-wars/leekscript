@@ -967,7 +967,7 @@ public class LeekExpression extends Expression {
 			operations += LeekValue.MUL_COST;
 		} else if (mOperator == Operators.MULTIPLIEASSIGN) {
 			operations += LeekValue.MUL_COST; //+ 1;
-		} else if (mOperator == Operators.DIVIDE || mOperator == Operators.DIVIDEASSIGN) {
+		} else if (mOperator == Operators.DIVIDE || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.INTEGER_DIVISION || mOperator == Operators.INTEGER_DIVISION_EQ) {
 			operations += LeekValue.DIV_COST;
 		} else if (mOperator == Operators.MODULUS || mOperator == Operators.MODULUSASSIGN) {
 			operations += LeekValue.MOD_COST;
