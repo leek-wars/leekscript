@@ -66,7 +66,7 @@ public class LeekValueManager {
 				}
 				return array;
 			}
-			var object = new ObjectLeekValue(ai.objectClass);
+			var object = new ObjectLeekValue(ai, ai.objectClass);
 			for (String key : keys) {
 				object.addField(ai, key, parseJSON(a.get(key), ai), AccessLevel.PUBLIC, false);
 			}

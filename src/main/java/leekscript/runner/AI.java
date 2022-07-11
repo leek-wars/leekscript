@@ -67,6 +67,7 @@ public abstract class AI {
 	private long loadTime;
 	private File filesLines;
 	private AIFile<?> file;
+	private int objectID = 0;
 
 	public final ClassLeekValue valueClass;
 	public final ClassLeekValue nullClass;
@@ -2062,5 +2063,9 @@ public abstract class AI {
 
 	public AIFile<?> getFile() {
 		return file;
+	}
+
+	public int getNextObjectID() {
+		return objectID++;
 	}
 }

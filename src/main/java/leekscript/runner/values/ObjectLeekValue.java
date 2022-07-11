@@ -17,21 +17,23 @@ import leekscript.common.Error;
 public class ObjectLeekValue {
 
 	public final ClassLeekValue clazz;
+	public final int id;
 	public final LinkedHashMap<String, ObjectVariableValue> fields = new LinkedHashMap<>();
 
-	public ObjectLeekValue(ClassLeekValue clazz) {
+	public ObjectLeekValue(AI ai, ClassLeekValue clazz) {
 		this.clazz = clazz;
+		this.id = ai.getNextObjectID();
 	}
 
 	public ObjectLeekValue(AI ai, String[] keys, Object[] values) throws LeekRunException {
-		this.clazz = ai.objectClass;
+		this(ai, ai.objectClass);
 		for (int i = 0; i < keys.length; ++i) {
 			addField(ai, keys[i], values[i], AccessLevel.PUBLIC, false);
 		}
 	}
 
 	public ObjectLeekValue(AI ai, ObjectLeekValue value, int level) throws LeekRunException {
-		this.clazz = value.clazz;
+		this(ai, value.clazz);
 		ai.ops(value.fields.size());
 		for (var field : value.fields.entrySet()) {
 			if (level == 1) {
@@ -572,5 +574,10 @@ public class ObjectLeekValue {
 	protected void finalize() throws Throwable {
 		super.finalize();
 		clazz.ai.decreaseRAM(2 * size());
+	}
+
+	@Override
+	public int hashCode() {
+		return this.id;
 	}
 }
