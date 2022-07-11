@@ -170,8 +170,8 @@ public class LeekFunctions {
 		method("arrayIter", "Array", Type.VOID, new Type[] { Type.ARRAY, Type.FUNCTION });
 		method("arrayConcat", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.ARRAY });
 		method("arraySort", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.FUNCTION });
-		method("arraySome", "Array", Type.BOOL, new Type[] { Type.ARRAY, Type.FUNCTION });
-		method("arrayEvery", "Array", Type.BOOL, new Type[] { Type.ARRAY, Type.FUNCTION });
+		method("arraySome", "Array", Type.BOOL, new Type[] { Type.ARRAY, Type.FUNCTION }).setMinVersion(4);
+		method("arrayEvery", "Array", Type.BOOL, new Type[] { Type.ARRAY, Type.FUNCTION }).setMinVersion(4);
 		method("arrayGet", "Array", 1, new CallableVersion[] {
 			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.INT, Type.ANY }),
 			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.INT }),
