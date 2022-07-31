@@ -239,15 +239,29 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 		writer.addLine("}");
 
+		// Classes initialize functions
+		for (var clazz : mUserClassesList) {
+			if (clazz.internal) continue;
+			clazz.writeCreateStaticFields(this, writer);
+			clazz.writeInitializeStaticFields(this, writer);
+		}
+
 		// Static init
 		writer.addLine("public void staticInit() throws LeekRunException {");
 
-		// Initialize classes static fields
+		// Create classes static fields
+		for (var clazz : mUserClassesList) {
+			if (clazz.internal) continue;
+			clazz.createStaticFields(this, writer);
+		}
+
+		// Initialize classes fields
 		for (var clazz : mUserClassesList) {
 			if (clazz.internal) continue;
 			clazz.initializeStaticFields(this, writer);
 		}
-		writer.addLine("}");
+
+		writer.addLine("}"); // Fin staticInit
 
 		// Variables globales
 		for (String global : mGlobales) {

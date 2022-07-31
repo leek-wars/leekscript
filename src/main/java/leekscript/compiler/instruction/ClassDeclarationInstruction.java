@@ -631,14 +631,20 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 	}
 
-	public void initializeStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
+	public void createStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
+		writer.addLine("createStaticClass_" + token.getWord() + "();");
+	}
+
+	public void writeCreateStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
+
+		writer.addLine("private void createStaticClass_" + token.getWord() + "() throws LeekRunException {");
 
 		mainblock.getWordCompiler().setCurrentClass(this);
 
 		// Create the class in the constructor of the AI
 		String className = "u_" + token.getWord();
 
-		// First declare all static fields
+		// First create all static fields
 		for (var field : staticFields.entrySet()) {
 			writer.addCode(className);
 			writer.addCode(".addStaticField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
@@ -646,6 +652,22 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			writer.addCode(", AccessLevel." + field.getValue().level + ", " + field.getValue().isFinal);
 			writer.addLine(");");
 		}
+
+		writer.addLine("}");
+	}
+
+	public void initializeStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
+		writer.addLine("initClass_" + token.getWord() + "();");
+	}
+
+	public void writeInitializeStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
+
+		writer.addLine("private void initClass_" + token.getWord() + "() throws LeekRunException {");
+
+		mainblock.getWordCompiler().setCurrentClass(this);
+
+		// Create the class in the constructor of the AI
+		String className = "u_" + token.getWord();
 
 		// Second assign values for fields with values
 		for (var field : staticFields.entrySet()) {
@@ -656,6 +678,8 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				writer.addLine(");");
 			}
 		}
+
+		writer.addLine("}");
 	}
 
 	@Override
