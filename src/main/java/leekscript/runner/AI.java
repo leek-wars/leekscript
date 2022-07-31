@@ -237,14 +237,17 @@ public abstract class AI {
 		mRAM += ram;
 		if (mRAM > maxRAM) {
 			// System.out.println("RAM before = " + mRAM);
+			long ramBefore = mRAM;
 			System.gc();
 			try {
 				Thread.sleep(0, 1);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			Runtime.getRuntime().runFinalization();
 			// System.out.println("RAM after  = " + mRAM);
 			if (mRAM > maxRAM) {
+				getLogs().addLog(AILog.WARNING, "[RAM error] RAM before: " + ramBefore + " RAM after: " + mRAM);
 				throw new LeekRunException(Error.OUT_OF_MEMORY);
 			}
 		}
