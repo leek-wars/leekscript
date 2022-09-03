@@ -968,6 +968,7 @@ public class WordCompiler {
 
 				if (mCompiler.token().getType() != WordParser.T_STRING) {
 					addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.PARAMETER_NAME_EXPECTED));
+					break;
 				}
 				var parameter = mCompiler.token();
 				mCompiler.skipToken();
