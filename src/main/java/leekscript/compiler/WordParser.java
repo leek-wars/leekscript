@@ -13,9 +13,9 @@ public class WordParser {
 	public static final String[] reservedWords = new String[] {
 		"abstract", "arguments", "await", "break", "byte", "case", "catch",
 		"char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval",
-		"export", "extends", "false", "final", "finally", "float", "for", "function",
+		"export", "extends", "false", "final", "finally", "float", "for", "function", "global",
 		"goto", "if", "implements", "import", "in", "instanceof", "int", "interface",
-		"let", "long", "native", "new", "null", "package", "private", "protected",
+		"let", "long", "native", "new", "not", "null", "package", "private", "protected",
 		"public", "return", "short", "static", "super", "switch", "synchronized", "this",
 		"throw", "throws", "transient", "true", "try", "typeof", "var", "void",
 		"volatile", "while", "with", "yield"
