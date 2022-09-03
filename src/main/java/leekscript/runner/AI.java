@@ -1162,7 +1162,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).getField(field, fromClass);
 		}
 		if (value instanceof ClassLeekValue) {
-			return ((ClassLeekValue) value).getField(this, field, fromClass);
+			return ((ClassLeekValue) value).getField(field, fromClass);
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { string(value), field });
 		return null;

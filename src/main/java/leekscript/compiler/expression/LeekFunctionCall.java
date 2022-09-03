@@ -112,9 +112,17 @@ public class LeekFunctionCall extends Expression {
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.CLASS) {
 				// Class.method() : Méthode statique connue
 				var v = (LeekVariable) object;
-				String methodName = "u_" + v.getClassDeclaration().getStaticMethodName(field, mParameters.size());
-				writer.addCode(methodName + "(");
-				addComma = false;
+				var method = v.getClassDeclaration().getStaticMethod(field, mParameters.size());
+				if (method != null) {
+					// Méthode statique
+					String methodName = "u_" + v.getClassDeclaration().getStaticMethodName(field, mParameters.size());
+					writer.addCode(methodName + "(");
+					addComma = false;
+				} else {
+					// Champ statique
+					var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
+					writer.addCode("u_" + v.getClassDeclaration().getName() + ".callStaticField(\"" + field + "\", " + from_class);
+				}
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
 				// this.method() : Méthode connue
 				writer.addCode("callObjectAccess(u_this, \"" + field + "\", \"" + field + "_" + mParameters.size() + "\", u_class");
@@ -435,7 +443,17 @@ public class LeekFunctionCall extends Expression {
 					if (methods != null) { // Trouvée mais mauvais nombre d'arguments
 						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT, new String[] { clazz.getName(), oa.getField() }));
 					} else { // Pas trouvée
-						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
+						// Si c'est un champ statique, on accepte de l'appeler
+						var field = clazz.getStaticField(oa.getField());
+						if (field != null) {
+							if (field.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != clazz) {
+								compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_FIELD, new String[] { clazz.getName(), oa.getField() }));
+							} else if (field.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
+								compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_FIELD, new String[] { clazz.getName(), oa.getField() }));
+							}
+							return; // OK
+						}
+						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), oa.getField() }));
 					}
 				}
 			}

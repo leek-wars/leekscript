@@ -142,10 +142,10 @@ public class ClassLeekValue extends FunctionLeekValue {
 	}
 
 	public Object getField(String field) throws LeekRunException {
-		return getField(ai, field, this);
+		return getField(field, this);
 	}
 
-	public Object getField(AI ai, String field, ClassLeekValue fromClass) throws LeekRunException {
+	public Object getField(String field, ClassLeekValue fromClass) throws LeekRunException {
 		if (field.equals("fields")) {
 			return getFieldsArray();
 		} else if (field.equals("staticFields")) {
@@ -160,27 +160,9 @@ public class ClassLeekValue extends FunctionLeekValue {
 			return parent;
 		}
 		// Private
-		var result = staticFields.get(field);
+		var result = getStaticField(field, fromClass);
 		if (result != null) {
-			if (fromClass == this) {
-				return result.getValue();
-			} else {
-				// Protected : Access from descendant
-				if (fromClass != null && fromClass.descendsFrom(this)) {
-					if (result.level == AccessLevel.PRIVATE) {
-						ai.addSystemLog(AILog.ERROR, Error.PRIVATE_STATIC_FIELD, new String[] { this.name, field });
-						return null;
-					}
-					return result.getValue();
-				} else {
-					// Public : Access from outside
-					if (result.level != AccessLevel.PUBLIC) {
-						ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_FIELD : Error.PRIVATE_STATIC_FIELD, new String[] { this.name, field });
-						return null;
-					}
-					return result.getValue();
-				}
-			}
+			return result.getValue();
 		}
 		var generic = genericMethods.get(field);
 		if (generic != null) return generic;
@@ -188,7 +170,33 @@ public class ClassLeekValue extends FunctionLeekValue {
 		if (generic != null) return generic;
 
 		if (parent instanceof ClassLeekValue) {
-			return parent.getField(ai, field, fromClass);
+			return parent.getField(field, fromClass);
+		}
+		return null;
+	}
+
+	public ObjectVariableValue getStaticField(String field, ClassLeekValue fromClass) throws LeekRunException {
+		var result = staticFields.get(field);
+		if (result != null) {
+			if (fromClass == this) {
+				return result;
+			} else {
+				// Protected : Access from descendant
+				if (fromClass != null && fromClass.descendsFrom(this)) {
+					if (result.level == AccessLevel.PRIVATE) {
+						ai.addSystemLog(AILog.ERROR, Error.PRIVATE_STATIC_FIELD, new String[] { this.name, field });
+						return null;
+					}
+					return result;
+				} else {
+					// Public : Access from outside
+					if (result.level != AccessLevel.PUBLIC) {
+						ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_FIELD : Error.PRIVATE_STATIC_FIELD, new String[] { this.name, field });
+						return null;
+					}
+					return result;
+				}
+			}
 		}
 		return null;
 	}
@@ -321,6 +329,15 @@ public class ClassLeekValue extends FunctionLeekValue {
 
 		// Call method with new arguments, add the object at the beginning
 		return result.run(ai, null, arguments);
+	}
+
+	public Object callStaticField(String field, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
+		ai.ops(1);
+		// Already check statically
+		var result = staticFields.get(field);
+
+		// Call the static field
+		return ai.execute(result.getValue(), arguments);
 	}
 
 	public Object callConstructor(ObjectLeekValue thiz, Object... arguments) throws LeekRunException {

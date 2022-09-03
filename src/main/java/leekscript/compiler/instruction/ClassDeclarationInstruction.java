@@ -28,7 +28,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	public static class ClassDeclarationField {
 
 		Expression expression;
-		AccessLevel level;
+		public AccessLevel level;
 		boolean isFinal;
 
 		public ClassDeclarationField(Expression expr, AccessLevel level, boolean isFinal) {
@@ -761,6 +761,16 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 		if (parent != null) {
 			return parent.getMethodName(name, argumentCount);
+		}
+		return null;
+	}
+
+	public ClassDeclarationField getStaticField(String name) {
+		var staticField = staticFields.get(name);
+		if (staticField != null) return staticField;
+
+		if (parent != null) {
+			return parent.getStaticField(name);
 		}
 		return null;
 	}

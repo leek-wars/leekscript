@@ -176,6 +176,11 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static a = 10 static m() { return class.a >>= 5 } } return A.m()").equals("0");
 		code_v2_("class A { static a = 10 static m() { return class.a >>>= 5 } } return A.m()").equals("0");
 
+		section("Call of static field");
+		code_v2_("class A { static a = -> 12 } return A.a()").equals("12");
+		code_v2_("class A { private static a = -> 12 } return A.a()").error(Error.PRIVATE_STATIC_FIELD);
+		code_v2_("class A { static a = -> 12 } return A.b()").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
+
 		section("Final fields");
 		code_v2_("class A { final a = 12 } var a = new A() a.a = 15 return a.a").equals("12");
 		code_v2_("class A { final a = 12 } var a = new A() a.a += 10 return a.a").equals("12");
@@ -289,7 +294,6 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { v() { return 55 } m(x, y = v()) { return x * y } } return new A().m(9)").equals("495");
 		code_v2_("class A { m(x, y = x) { return x * y } } return new A().m(9)").equals("81");
 		code_v2_("class A { m(x, y = x, z = y) { return x * y * z } } return new A().m(9)").equals("729");
-
 
 		section("Field access by array access");
 		code_v2_("var test = {} test['a'] = 8 return test").equals("{a: 8}");
