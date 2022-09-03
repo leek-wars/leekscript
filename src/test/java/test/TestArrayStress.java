@@ -20,7 +20,7 @@ public class TestArrayStress extends TestCommon {
 		// code_v1_3("var a = [] for (var i = 0; i < 1000000; ++i) push(a, i) return count(a)").max_ops(20000000).error(Error.TOO_MUCH_OPERATIONS);
 		// code_v4_("var a = [] for (var i = 0; i < 1000000; ++i) push(a, i) return count(a)").max_ops(20000000).equals("1000000");
 		// code_v4_("var a = [] for (var i = 0; i < 2000000; ++i) push(a, i) return count(a)").max_ops(20000000).error(Error.OUT_OF_MEMORY);
-		code_v4_("var a = [] for (var i = 0; i < 24_000_000; ++i) push(a, i) return count(a)").error(Error.OUT_OF_MEMORY);
+		code_v4_("var a = [] for (var i = 0; i < 24_000_000; ++i) push(a, i) return count(a)").max_ram(10000000).error(Error.OUT_OF_MEMORY);
 		// code_v4_("var a = [] for (var i = 0; i < 9000000; ++i) push(a, i) return count(a)").max_ops(fight_max_ops).error(Error.OUT_OF_MEMORY);
 		// code_v4_("var a = [] for (var i = 0; i < 100000000; ++i) push(a, i) return count(a)").error(Error.OUT_OF_MEMORY);
 		// code_v4_("var all = [] for (var j = 0; j < 20; ++j) { var a = [] for (var i = 0; i < 1000000; ++i) push(a, i) push(all, a) } return count(all)").error(Error.OUT_OF_MEMORY);

@@ -85,6 +85,9 @@ public class TestGeneral extends TestCommon {
 			} else if (word.equals("function")) {
 				code_v1_2("var " + word + " = 2;").error(Error.OPENING_PARENTHESIS_EXPECTED);
 				code_v3_("var " + word + " = 2;").error(Error.OPENING_PARENTHESIS_EXPECTED);
+			} else if (word.equals("global")) {
+				// code_v1_2("var " + word + " = 2;").error(Error.NONE); // Compilation error
+				code_v3_("var " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
 			} else {
 				code_v1_2("var " + word + " = 2;").error(Error.NONE);
 				code_v3_("var " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
