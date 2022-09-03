@@ -336,11 +336,13 @@ public class LeekFunctionCall extends Expression {
 			} else if (v.getVariableType() == VariableType.FUNCTION) {
 
 				var f = compiler.getMainBlock().getUserFunction(v.getName());
-				int nb_params = f.countParameters();
-				if (mParameters.size() != nb_params) {
-					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
+				if (f != null) {
+					int nb_params = f.countParameters();
+					if (mParameters.size() != nb_params) {
+						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
+					}
+					verifyVersions(compiler, f.getVersions());
 				}
-				verifyVersions(compiler, f.getVersions());
 
 			} else if (v.getVariableType() == VariableType.SYSTEM_FUNCTION) {
 
@@ -575,6 +577,9 @@ public class LeekFunctionCall extends Expression {
 	@Override
 	public Location getLocation() {
 		if (mExpression == null) {
+			if (closingParenthesis == null) {
+				return openParenthesis.getLocation();
+			}
 			return new Location(openParenthesis.getLocation(), closingParenthesis.getLocation());
 		}
 		return new Location(mExpression.getLocation(), closingParenthesis.getLocation());
