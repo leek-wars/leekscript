@@ -113,7 +113,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 		for (var method : staticMethods.entrySet()) {
 			for (var version : method.getValue().entrySet()) {
-				r += "\t" + version.getValue().level.toString().toLowerCase() + " static " + method.getKey() + version.getValue().block.getCode();
+				if (version.getKey() == version.getValue().block.getMaxParameters()) {
+					r += "\t" + version.getValue().level.toString().toLowerCase() + " static " + method.getKey() + version.getValue().block.getCode();
+				}
 			}
 			r += "\n";
 		}
@@ -135,7 +137,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 		for (var method : methods.entrySet()) {
 			for (var version : method.getValue().entrySet()) {
-				r += "\t" + version.getValue().level.toString().toLowerCase() + " " + method.getKey() + version.getValue().block.getCode();
+				if (version.getKey() == version.getValue().block.getMaxParameters()) {
+					r += "\t" + version.getValue().level.toString().toLowerCase() + " " + method.getKey() + version.getValue().block.getCode();
+				}
 			}
 			r += "\n";
 		}
