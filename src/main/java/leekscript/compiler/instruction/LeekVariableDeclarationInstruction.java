@@ -29,7 +29,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	public LeekVariableDeclarationInstruction(WordCompiler compiler, Token token, AbstractLeekBlock function) {
 		this.token = token;
 		this.function = function;
-		this.box = compiler.getVersion() <= 1;
+		this.box = compiler.getVersion() == 1;
 	}
 
 	public void setValue(Expression value) {
@@ -49,7 +49,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	}
 
 	public boolean isWrapper() {
-		return token.getLocation().getFile().getVersion() == 1 && this.captured;
+		return this.box && this.captured;
 	}
 
 	@Override

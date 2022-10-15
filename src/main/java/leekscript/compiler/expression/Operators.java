@@ -216,7 +216,7 @@ public class Operators {
 		return false;
 	}
 
-	public static String getString(int operator, int version) {
+	public static String getString(int operator) {
 		switch (operator) {
 		case ADD:
 			return "+";
@@ -298,7 +298,7 @@ public class Operators {
 		case POWER:
 			return "**";
 		case POWERASSIGN:
-			return version == 1 ? "^=" : "**=";
+			return "**=";
 		case NEW:
 			return "new";
 		case BITNOT:

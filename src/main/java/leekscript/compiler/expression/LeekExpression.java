@@ -402,17 +402,17 @@ public class LeekExpression extends Expression {
 	public String toString() {
 		String retour = "";
 		if (Operators.isUnaryPrefix(mOperator)) {
-			retour += Operators.getString(mOperator, mOperatorToken.getLocation().getFile().getVersion());
+			retour += Operators.getString(mOperator);
 			if (mOperator == Operators.NEW) retour += " ";
 			retour += mExpression2 == null ? "null" : mExpression2.toString();
 		}
 		else if (Operators.isUnarySuffix(mOperator)) {
 			retour += mExpression2 == null ? "null" : mExpression2.toString();
-			retour += Operators.getString(mOperator, mOperatorToken.getLocation().getFile().getVersion());
+			retour += Operators.getString(mOperator);
 		}
 		else {
 			retour += mExpression1 == null ? "null" : mExpression1.toString();
-			retour += " " + Operators.getString(mOperator, mOperatorToken.getLocation().getFile().getVersion()) + " ";
+			retour += " " + Operators.getString(mOperator) + " ";
 			retour += mExpression2 == null ? "null" : mExpression2.toString();
 		}
 		return retour + "";
