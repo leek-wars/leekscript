@@ -91,7 +91,7 @@ public class LeekString extends Expression {
 	@Override
 	public Hover hover(Token token) {
 		var hover = new Hover(getType(), getLocation(), toString());
-		hover.setSize(mString.length() - 2);
+		hover.setSize(mString.length());
 		return hover;
 	}
 }
