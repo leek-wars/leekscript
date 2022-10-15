@@ -21,8 +21,8 @@ public class TestMapStress extends TestCommon {
 		code_v4_("var a = [:] for (var i = 0; i < 1000000; ++i) a[i] = 1").max_ops(20000000).error(Error.NONE);
 		code_v4_("var a = [:] for (var i = 0; i < 900000; ++i) a[i] = 1").max_ops(fight_max_ops).error(Error.NONE);
 		code_v4_("var a = [:] for (var i = 0; i < 100000000; ++i) a[i] = 1").error(Error.OUT_OF_MEMORY);
-		code_v4_("var all = [] for (var j = 0; j < 20; ++j) { var a = [:] for (var i = 0; i < 100000; ++i) a[i] = 1 push(all, a) } return count(all)").max_ram(10000000).error(Error.OUT_OF_MEMORY);
-		code_v4_("for (var j = 0; j < 20; ++j) { var a = [:] for (var i = 0; i < 100000; ++i) a[i] = 1 } return 'ok'").max_ram(10000000).equals("\"ok\"");
+		code_v4_("var all = [] for (var j = 0; j < 20; ++j) { var a = [:] for (var i = 0; i < 100000; ++i) a[i] = 1 push(all, a) } return count(all)").max_ram(1000000).error(Error.OUT_OF_MEMORY);
+		code_v4_("for (var j = 0; j < 20; ++j) { var a = [:] for (var i = 0; i < 100000; ++i) a[i] = 1 } return 'ok'").max_ram(1000000).equals("\"ok\"");
 
 		/**
 		 * Stress test methods

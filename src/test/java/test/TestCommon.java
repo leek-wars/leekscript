@@ -203,7 +203,7 @@ public class TestCommon {
 				long exec_time = (System.nanoTime() - t) / 1000;
 				result = new Result(e.getError().toString(), ai, e.getError(), new String[0], ai.getOperations(), exec_time);
 			} catch (Exception e) {
-				e.printStackTrace();
+				e.printStackTrace(System.out);
 				result = new Result("unknown error!", ai, Error.UNKNOWN_ERROR, new String[0], 0, 0);
 			}
 

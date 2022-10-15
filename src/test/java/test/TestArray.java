@@ -410,7 +410,7 @@ public class TestArray extends TestCommon {
 		code_v1_3("count(12)").error(Error.NONE);
 		code_v4_("count(12)").warning(Error.WRONG_ARGUMENT_TYPE);
 		code_v1_3("count('hello')").error(Error.NONE);
-		code_v4_("count('hello')").error(Error.WRONG_ARGUMENT_TYPE);
+		code_v4_("count('hello')").warning(Error.WRONG_ARGUMENT_TYPE);
 		code("return count(unknown('hello'))").error(Error.NONE);
 		code("return count(unknown([1, 2, 3]))").equals("3");
 
