@@ -313,6 +313,7 @@ public class JavaWriter {
 					addLine(");");
 				}
 			}
+			addCode("if (values.length < " + function.getVersions()[0].arguments.length + ") return null;");
 			addCode("return " + function.getStandardClass() + "_" + function.getName() + "_" + function.getVersions()[0].getParametersSignature() + "(");
 			for (var a = 0; a < function.getVersions()[0].arguments.length; ++a) {
 				if (a > 0) addCode(", ");

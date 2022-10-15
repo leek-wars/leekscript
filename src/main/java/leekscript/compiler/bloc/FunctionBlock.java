@@ -170,7 +170,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 		writer.addCode("return f_" + this + "(");
 		for (int a = 0; a < this.countParameters(); ++a) {
 			if (a > 0) writer.addCode(", ");
-			writer.addCode("values[" + a + "]");
+			writer.addCode("values.length > " + a + " ? values[" + a + "] : null");
 		}
 		writer.addLine(");");
 		writer.addLine("}}");

@@ -270,5 +270,13 @@ public class TestFunction extends TestCommon {
 		code("return count(unknown([1, 2, 3, 4, 5]))").equals("5");
 		code("return count(unknown(12))").equals("0");
 		code("return string(count)").equals("\"#Function count\"");
+
+		section("Wrong number of arguments");
+		code("return (x => x)()").equals("null");
+		code("var f = (x) => x return f()").equals("null");
+		code("function f(x) { return x } return [f][0]()").equals("null");
+		code_v1_2("cos()").equals("null");
+		code_v3_("cos()").error(Error.INVALID_PARAMETER_COUNT);
+		code_v1("return [cos][0]()").equals("null");
 	}
 }
