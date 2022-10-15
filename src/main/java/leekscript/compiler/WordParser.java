@@ -64,7 +64,9 @@ public class WordParser {
 	}
 
 	public void compile(WordCompiler compiler) throws LeekCompilerException {
-		mAI.getTokens().clear();
+		if (mAI.getTokens().size() > 0) {
+			return; // Déjà parsé
+		}
 		line_counter = 1;
 		char_counter = 0;
 		char opener = 0;
