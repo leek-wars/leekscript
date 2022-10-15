@@ -64,7 +64,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> methods = new HashMap<>();
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> staticMethods = new HashMap<>();
 
-	public ClassDeclarationInstruction(Token token, int line, AIFile<?> ai, boolean internal, MainLeekBlock block) {
+	public ClassDeclarationInstruction(Token token, int line, AIFile ai, boolean internal, MainLeekBlock block) {
 		this.token = token;
 		this.internal = internal;
 		this.mainBlock = block;
@@ -415,6 +415,8 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				if (parent != null) {
 					writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
 				}
+
+				// Captures
 				for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
 					var arg = block.getParametersDeclarations().get(a);
 					if (arg.isCaptured()) {
@@ -425,23 +427,28 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
 						}
 						writer.addLine(");");
+					} else {
+						// Valeur par défaut
+						if (a >= version.getKey()) {
+							var defaultValue = block.getDefaultValues().get(a);
+							writer.addCode("final Object u_" + arg.getName() + " = ");
+							defaultValue.writeJavaCode(mainblock, writer);
+							writer.addLine(";");
+						}
 					}
 				}
 
 				// Sous-version
 				if (version.getKey() < block.getMaxParameters()) {
-					for (int a = version.getKey(); a < block.getParametersDeclarations().size(); ++a) {
-						var arg = block.getParametersDeclarations().get(a);
-						var defaultValue = block.getDefaultValues().get(a);
-						writer.addCode("final Object u_" + arg.getName() + " = ");
-						defaultValue.writeJavaCode(mainblock, writer);
-						writer.addLine(";");
-					}
 					writer.addCode("return " + className + "_" + method.getKey() + "_" + block.getMaxParameters() + "(");
 					for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
 						var arg = block.getParametersDeclarations().get(a);
 						if (a > 0) writer.addCode(", ");
-						writer.addCode("u_" + arg.getName());
+						if (arg.isCaptured()) {
+							writer.addCode("u_" + arg.getName() + ".getValue()");
+						} else {
+							writer.addCode("u_" + arg.getName());
+						}
 					}
 					writer.addLine(");");
 				} else {
@@ -470,26 +477,40 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				if (parent != null) {
 					writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
 				}
-				for (var arg : block.getParametersDeclarations()) {
+
+				// Captures
+				for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
+					var arg = block.getParametersDeclarations().get(a);
 					if (arg.isCaptured()) {
-						writer.addLine("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", p_" + arg.getToken() + ");");
+						writer.addCode("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", ");
+						if (a < version.getKey()) {
+							writer.addCode("p_" + arg.getToken());
+						} else {
+							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
+						}
+						writer.addLine(");");
+					} else {
+						// Valeur par défaut
+						if (a >= version.getKey()) {
+							var defaultValue = block.getDefaultValues().get(a);
+							writer.addCode("final Object u_" + arg.getName() + " = ");
+							defaultValue.writeJavaCode(mainblock, writer);
+							writer.addLine(";");
+						}
 					}
 				}
 				writer.addCounter(1);
 				// Sous-version
 				if (version.getKey() < block.getMaxParameters()) {
-					for (int a = version.getKey(); a < block.getParametersDeclarations().size(); ++a) {
-						var arg = block.getParametersDeclarations().get(a);
-						var defaultValue = block.getDefaultValues().get(a);
-						writer.addCode("final Object u_" + arg.getName() + " = ");
-						defaultValue.writeJavaCode(mainblock, writer);
-						writer.addLine(";");
-					}
 					writer.addCode("return " + className + "_" + method.getKey() + "_" + block.getMaxParameters() + "(u_this");
 					for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
 						var arg = block.getParametersDeclarations().get(a);
 						writer.addCode(", ");
-						writer.addCode("u_" + arg.getName());
+						if (arg.isCaptured()) {
+							writer.addCode("u_" + arg.getName() + ".getValue()");
+						} else {
+							writer.addCode("u_" + arg.getName());
+						}
 					}
 					writer.addLine(");");
 				} else {
@@ -519,29 +540,38 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
 			}
 			if (block != null) {
-
-				// Sous-version
-				if (construct.getKey() < block.getMaxParameters()) {
-					for (int a = construct.getKey(); a < block.getParametersDeclarations().size(); ++a) {
-						var arg = block.getParametersDeclarations().get(a);
+				for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
+					var arg = block.getParametersDeclarations().get(a);
+					if (arg.isCaptured()) {
+						writer.addCode("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", ");
+						if (a < construct.getKey()) {
+							writer.addCode("p_" + arg.getToken());
+						} else {
+							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
+						}
+						writer.addLine(");");
+					} else if (a >= construct.getKey()) {
 						var defaultValue = block.getDefaultValues().get(a);
 						writer.addCode("final Object u_" + arg.getName() + " = ");
 						defaultValue.writeJavaCode(mainblock, writer);
 						writer.addLine(";");
 					}
+				}
+				// Sous-version
+				if (construct.getKey() < block.getMaxParameters()) {
 					writer.addCode("return " + className + "_" + block.getMaxParameters() + "(u_this");
 					for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
 						var arg = block.getParametersDeclarations().get(a);
 						writer.addCode(", ");
-						writer.addCode("u_" + arg.getName());
+						if (arg.isCaptured()) {
+							writer.addCode("u_" + arg.getName() + ".getValue()");
+						} else {
+							writer.addCode("u_" + arg.getName());
+						}
 					}
 					writer.addLine(");");
 				} else {
-					for (var arg : block.getParametersDeclarations()) {
-						if (arg.isCaptured()) {
-							writer.addLine("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", p_" + arg.getToken() + ");");
-						}
-					}
+					// Version normale
 					block.writeJavaCode(mainblock, writer);
 				}
 			} else {

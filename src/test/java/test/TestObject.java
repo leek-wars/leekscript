@@ -65,6 +65,8 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { f static v() { return 55 } constructor(x, y = v()) { f = x * y } } return A(9).f").equals("495");
 		code_v2_("class A { f constructor(x, y = x) { f = x * y } } return A(9).f").equals("81");
 		code_v2_("class A { f constructor(x, y = x, z = y) { f = x * y * z } } return A(9).f").equals("729");
+		code_v2_("class A { f constructor(x = 12) { f = arrayMap([1, 1, 1], (_) => x) } } return new A().f").equals("[12, 12, 12]");
+		code_v2_("class A { f constructor(x = 12, y = x) { f = arrayMap([1, 1, 1], (_) => x + y) } } return new A().f").equals("[24, 24, 24]");
 
 		section("Static fields");
 		code_v2_("class A { static x }").equals("null");
@@ -270,6 +272,8 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static v() { return 55 } static m(x, y = v()) { return x * y } } return A.m(9)").equals("495");
 		code_v2_("class A { static m(x, y = x) { return x * y } } return A.m(9)").equals("81");
 		code_v2_("class A { static m(x, y = x, z = y) { return x * y * z } } return A.m(9)").equals("729");
+		code_v2_("class A { static m(x = 12) { return arrayMap([1, 1, 1], (_) => x) } } return A.m()").equals("[12, 12, 12]");
+		code_v2_("class A { static m(x = 12, y = x) { return arrayMap([1, 1, 1], (_) => x + y) } } return A.m()").equals("[24, 24, 24]");
 
 		section("Methods");
 		code_v2_("class A { a(x) { b(x) } b(x, y) {} }").error(Error.INVALID_PARAMETER_COUNT);
@@ -294,6 +298,8 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { v() { return 55 } m(x, y = v()) { return x * y } } return new A().m(9)").equals("495");
 		code_v2_("class A { m(x, y = x) { return x * y } } return new A().m(9)").equals("81");
 		code_v2_("class A { m(x, y = x, z = y) { return x * y * z } } return new A().m(9)").equals("729");
+		code_v2_("class A { m(x = 12) { return arrayMap([1, 1, 1], (_) => x) } } return new A().m()").equals("[12, 12, 12]");
+		code_v2_("class A { m(x = 12, y = x) { return arrayMap([1, 1, 1], (_) => x + y) } } return new A().m()").equals("[24, 24, 24]");
 
 		section("Field access by array access");
 		code_v2_("var test = {} test['a'] = 8 return test").equals("{a: 8}");
