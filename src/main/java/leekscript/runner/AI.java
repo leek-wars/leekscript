@@ -66,7 +66,7 @@ public abstract class AI {
 	private long compileTime;
 	private long loadTime;
 	private File filesLines;
-	private AIFile<?> file;
+	private AIFile file;
 	private int objectID = 0;
 
 	public final ClassLeekValue valueClass;
@@ -2060,11 +2060,11 @@ public abstract class AI {
 		this.filesLines = lines;
 	}
 
-	public void setFile(AIFile<?> file) {
+	public void setFile(AIFile file) {
 		this.file = file;
 	}
 
-	public AIFile<?> getFile() {
+	public AIFile getFile() {
 		return file;
 	}
 

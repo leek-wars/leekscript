@@ -4,13 +4,13 @@ import com.alibaba.fastjson.JSONArray;
 
 public class Location {
 
-	private final AIFile<?> file;
+	private final AIFile file;
 	private final int startLine;
 	private final int startColumn;
 	private final int endLine;
 	private final int endColumn;
 
-	public Location(AIFile<?> file) {
+	public Location(AIFile file) {
 		this.file = file;
 		this.startLine = 0;
 		this.startColumn = 0;
@@ -18,7 +18,7 @@ public class Location {
 		this.endColumn = 0;
 	}
 
-	public Location(AIFile<?> file, int startLine, int startColumn, int endLine, int endColumn) {
+	public Location(AIFile file, int startLine, int startColumn, int endLine, int endColumn) {
 		this.file = file;
 		this.startLine = startLine;
 		this.startColumn = startColumn;
@@ -26,7 +26,7 @@ public class Location {
 		this.endColumn = endColumn;
 	}
 
-	public Location(AIFile<?> file, int line, int column) {
+	public Location(AIFile file, int line, int column) {
 		this.file = file;
 		this.startLine = line;
 		this.startColumn = column;
@@ -45,7 +45,7 @@ public class Location {
 		this.endColumn = end.endColumn;
 	}
 
-	public AIFile<?> getFile() {
+	public AIFile getFile() {
 		return this.file;
 	}
 	public int getStartLine() {

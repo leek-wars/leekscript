@@ -48,7 +48,7 @@ public class WordParser {
 	public final static int T_ARROW = 16;
 	public final static int T_END_OF_FILE = 17;
 
-	private final AIFile<?> mAI;
+	private final AIFile mAI;
 
 	private int instructions = 0;
 	private int cursor = 0;
@@ -57,7 +57,7 @@ public class WordParser {
 	private final String code;
 	private int version;
 
-	public WordParser(AIFile<?> ai, int version) {
+	public WordParser(AIFile ai, int version) {
 		mAI = ai;
 		this.code = ai.getCode();
 		this.version = version;

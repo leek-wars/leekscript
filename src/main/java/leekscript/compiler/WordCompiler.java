@@ -50,10 +50,10 @@ public class WordCompiler {
 	private ClassDeclarationInstruction mCurrentClass;
 	private final WordParser mCompiler;
 	private int mLine;
-	private AIFile<?> mAI = null;
+	private AIFile mAI = null;
 	private final int version;
 
-	public WordCompiler(WordParser cmp, AIFile<?> ai, int version) {
+	public WordCompiler(WordParser cmp, AIFile ai, int version) {
 		mCompiler = cmp;
 		mAI = ai;
 		this.version = version;
@@ -898,7 +898,7 @@ public class WordCompiler {
 		// On enregistre les block actuels
 		AbstractLeekBlock initialBlock = mCurentBlock;
 		int initialLine = mLine;
-		AIFile<?> initialAI = mAI;
+		AIFile initialAI = mAI;
 		mCurentBlock = method;
 
 		// Ouverture des accolades
@@ -1347,7 +1347,7 @@ public class WordCompiler {
 		AbstractLeekBlock initialBlock = mCurentBlock;
 		var previousFunction = mCurrentFunction;
 		int initialLine = mLine;
-		AIFile<?> initialAI = mAI;
+		AIFile initialAI = mAI;
 		AnonymousFunctionBlock block = new AnonymousFunctionBlock(mCurentBlock, mMain, token);
 		// if (initialBlock.getDeclaringVariable() != null)
 		// 	block.addVariable(new LeekVariable(initialBlock.getDeclaringVariable(), VariableType.LOCAL));
@@ -1502,7 +1502,7 @@ public class WordCompiler {
 		this.mCurrentFunction = block;
 	}
 
-	public AIFile<?> getAI() {
+	public AIFile getAI() {
 		return mAI;
 	}
 

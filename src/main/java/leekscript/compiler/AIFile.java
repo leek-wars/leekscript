@@ -2,18 +2,19 @@ package leekscript.compiler;
 
 
 import java.util.ArrayList;
+import java.util.List;
 
 import com.alibaba.fastjson.JSONObject;
 
 import leekscript.compiler.exceptions.LeekCompilerException;
-import leekscript.compiler.resolver.ResolverContext;
 import leekscript.runner.AI;
 
-public class AIFile<C extends ResolverContext> {
+public class AIFile {
 
 	private String path;
 	private String code;
-	private C context;
+	private Folder folder;
+	private int owner;
 	private int id;
 	private long timestamp;
 	private int version;
@@ -24,14 +25,15 @@ public class AIFile<C extends ResolverContext> {
 	private ArrayList<Token> tokens = new ArrayList<Token>();
 	private Token endOfFileToken = new Token(WordParser.T_END_OF_FILE, "", new Location(this));
 
-	public AIFile(String path, String code, long timestamp, int version, C context) {
-		this(path, code, timestamp, version, context, (context + "/" + path).hashCode() & 0xfffffff);
+	public AIFile(String path, String code, long timestamp, int version, int owner) {
+		this(path, code, timestamp, version, null, owner, path.hashCode() & 0xfffffff);
 	}
 
-	public AIFile(String path, String code, long timestamp, int version, C context, int id) {
+	public AIFile(String path, String code, long timestamp, int version, Folder folder, int owner, int id) {
 		this.path = path;
 		this.code = code;
-		this.context = context;
+		this.folder = folder;
+		this.owner = owner;
 		this.timestamp = timestamp;
 		this.version = version;
 		this.id = id;
@@ -48,11 +50,8 @@ public class AIFile<C extends ResolverContext> {
 	public void setCode(String code) {
 		this.code = code;
 	}
-	public C getContext() {
-		return context;
-	}
-	public void setContext(C context) {
-		this.context = context;
+	public Folder getFolder() {
+		return folder;
 	}
 	public String getPath() {
 		return path;
@@ -98,18 +97,28 @@ public class AIFile<C extends ResolverContext> {
 		return this.rootClazz;
 	}
 
+	public int getOwner() {
+		return this.owner;
+	}
+
+	public String getName() {
+		return path;
+	}
+
 	public String toJson() {
 		JSONObject json = new JSONObject();
 		json.put("path", path);
 		json.put("timestamp", timestamp);
 		json.put("version", version);
-		context.toJson(json);
+		// context.toJson(json);
 		return json.toString();
 	}
 
 	public AI compile(boolean use_cache) throws LeekScriptException, LeekCompilerException {
 
-		// System.out.println("LeekScript compile AI " + file.getPath() + " timestamp : " + file.getTimestamp());
+		// System.out.println("LeekScript compile AI " + this.getPath() + " timestamp : " + this.getTimestamp());
+
+		LeekScript.getFileSystem().loadDependencies(this);
 
 		AI ai = JavaCompiler.compile(this, use_cache);
 
@@ -136,7 +145,7 @@ public class AIFile<C extends ResolverContext> {
 
 		// Find token
 		var token = findToken(line, column);
-		if (token == null) return new Hover(new Location(this), null);
+		if (token == null) return null;
 
 		if (token.getExpression() != null) {
 			return token.getExpression().hover(token);
@@ -183,4 +192,10 @@ public class AIFile<C extends ResolverContext> {
 			}
 		}
 	}
+
+	@Override
+	public String toString() {
+		return getName();
+	}
+
 }

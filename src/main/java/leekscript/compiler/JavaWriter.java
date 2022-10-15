@@ -20,8 +20,8 @@ public class JavaWriter {
 	private final StringBuilder mLinesFile;
 	private int mLine;
 	private final TreeMap<Integer, LineMapping> mLines = new TreeMap<>();
-	private final HashMap<AIFile<?>, Integer> mFiles = new HashMap<>();
-	private final ArrayList<AIFile<?>> mFilesList = new ArrayList<>();
+	private final HashMap<AIFile, Integer> mFiles = new HashMap<>();
+	private final ArrayList<AIFile> mFilesList = new ArrayList<>();
 	private final boolean mWithDebug;
 	private final String className;
 	public AbstractLeekBlock currentBlock = null;
@@ -40,7 +40,7 @@ public class JavaWriter {
 		return mWithDebug;
 	}
 
-	public void addLine(String datas, int line, AIFile<?> ai) {
+	public void addLine(String datas, int line, AIFile ai) {
 		mCode.append(datas).append("\n");
 		int fileIndex = getFileIndex(ai);
 		mLines.put(mLine, new LineMapping(line, fileIndex));
@@ -54,7 +54,7 @@ public class JavaWriter {
 		mLine++;
 	}
 
-	private int getFileIndex(AIFile<?> ai) {
+	private int getFileIndex(AIFile ai) {
 		var index = mFiles.get(ai);
 		if (index != null) return index;
 		var new_index = mFiles.size();

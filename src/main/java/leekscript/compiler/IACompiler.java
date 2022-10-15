@@ -5,8 +5,8 @@ import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.common.Error;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.alibaba.fastjson.JSONArray;
 
@@ -17,12 +17,12 @@ public class IACompiler {
 
 	public static class AnalyzeResult {
 		public JSONArray informations;
-		public List<Integer> includedAIs = new ArrayList<>();
+		public Set<AIFile> includedAIs = new HashSet<>();
 		public boolean success;
 	}
 
 	private final JSONArray informations = new JSONArray();
-	private AIFile<?> mCurrentAI;
+	private AIFile mCurrentAI;
 
 	public IACompiler() {}
 
@@ -40,7 +40,7 @@ public class IACompiler {
 		informations.add(error);
 	}
 
-	public AnalyzeResult analyze(AIFile<?> ai) throws LeekCompilerException {
+	public AnalyzeResult analyze(AIFile ai) throws LeekCompilerException {
 		AnalyzeResult result = new AnalyzeResult();
 		try {
 			ai.clearErrors();
@@ -53,7 +53,7 @@ public class IACompiler {
 			compiler.readCode();
 			compiler.analyze();
 
-			System.out.println("errors " + ai.getPath() + " " + ai.getErrors().size());
+			// System.out.println("errors " + ai.getPath() + " " + ai.getErrors().size());
 			if (ai.getErrors().size() > 0) {
 				for (var error : ai.getErrors()) {
 					informations.add(error.toJSON());
@@ -72,7 +72,7 @@ public class IACompiler {
 		return result;
 	}
 
-	public AICode compile(AIFile<?> ai, String AIClass) throws LeekCompilerException {
+	public AICode compile(AIFile ai, String AIClass) throws LeekCompilerException {
 		JavaWriter writer = new JavaWriter(true, ai.getJavaClass());
 		try {
 			ai.clearErrors();
@@ -103,7 +103,7 @@ public class IACompiler {
 		return writer.getCode();
 	}
 
-	public String merge(AIFile<?> ai) throws LeekCompilerException {
+	public String merge(AIFile ai) throws LeekCompilerException {
 		// System.out.println("Merge ai " + ai);
 		WordParser parser = new WordParser(ai, ai.getVersion());
 		WordCompiler compiler = new WordCompiler(parser, ai, ai.getVersion());
@@ -115,11 +115,11 @@ public class IACompiler {
 		return code;
 	}
 
-	public AIFile<?> getCurrentAI() {
+	public AIFile getCurrentAI() {
 		return mCurrentAI;
 	}
 
-	public void setCurrentAI(AIFile<?> ai) {
+	public void setCurrentAI(AIFile ai) {
 		mCurrentAI = ai;
 	}
 }

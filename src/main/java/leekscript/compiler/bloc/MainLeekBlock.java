@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import leekscript.common.AccessLevel;
@@ -38,7 +39,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private int mMinLevel = 1;
 	private int mAnonymousId = 1;
 	private int mFunctionId = 1;
-	private final ArrayList<Integer> mIncluded = new ArrayList<Integer>();
+	private final Set<AIFile> mIncluded = new HashSet<AIFile>();
 	private int mCounter = 0;
 	private int mCountInstruction = 0;
 	private final IACompiler mCompiler;
@@ -46,10 +47,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private String className;
 	private WordCompiler wordCompiler;
 
-	public MainLeekBlock(IACompiler compiler, WordCompiler wordCompiler, AIFile<?> ai) throws LeekCompilerException {
+	public MainLeekBlock(IACompiler compiler, WordCompiler wordCompiler, AIFile ai) throws LeekCompilerException {
 		super(null, null);
 		// On ajoute l'IA pour pas pouvoir l'include
-		mIncluded.add(ai.getId());
+		mIncluded.add(ai);
 		mAIName = ai.getPath();
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
@@ -128,14 +129,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public boolean includeAI(WordCompiler compiler, String path) throws LeekCompilerException {
 		try {
-			AIFile<?> ai = LeekScript.getResolver().resolve(path, mCompiler.getCurrentAI().getContext());
-			if (mIncluded.contains(ai.getId())) {
+			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
+			if (mIncluded.contains(ai)) {
 				return true;
 			}
-			// System.out.println("include " + ai.getPath());
+			// if (ai.getPath().equals("ia.leek"))
+			// System.out.println("include " + ai.getPath() + " " + ai.getCode());
 			ai.clearErrors();
-			mIncluded.add(ai.getId());
-			AIFile<?> previousAI = mCompiler.getCurrentAI();
+			mIncluded.add(ai);
+			var previousAI = mCompiler.getCurrentAI();
 			mCompiler.setCurrentAI(ai);
 			WordParser words = new WordParser(ai, compiler.getVersion());
 			WordCompiler newCompiler = new WordCompiler(words, ai, compiler.getVersion());
@@ -329,7 +331,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	}
 
-	public List<Integer> getIncludedAIs() {
+	public Set<AIFile> getIncludedAIs() {
 		return mIncluded;
 	}
 

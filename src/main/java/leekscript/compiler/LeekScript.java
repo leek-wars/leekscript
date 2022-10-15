@@ -5,12 +5,9 @@ import java.io.IOException;
 import java.util.Random;
 
 import leekscript.compiler.exceptions.LeekCompilerException;
-import leekscript.compiler.resolver.FileSystemContext;
-import leekscript.compiler.resolver.FileSystemResolver;
-import leekscript.compiler.resolver.Resolver;
-import leekscript.compiler.resolver.ResolverContext;
-import leekscript.compiler.resolver.ResourceContext;
-import leekscript.compiler.resolver.ResourceResolver;
+import leekscript.compiler.resolver.FileSystem;
+import leekscript.compiler.resolver.NativeFileSystem;
+import leekscript.compiler.resolver.ResourceFileSystem;
 import leekscript.runner.AI;
 import leekscript.common.Error;
 
@@ -19,9 +16,9 @@ public class LeekScript {
 	public final static int LATEST_VERSION = 4;
 	private static long id = 1;
 
-	private static Resolver<ResourceContext> defaultResolver = new ResourceResolver();
-	private static Resolver<FileSystemContext> fileSystemResolver = new FileSystemResolver();
-	private static Resolver<?> customResolver = null;
+	private static ResourceFileSystem defaultFileSystem = new ResourceFileSystem();
+	private static NativeFileSystem nativeFileSystem = new NativeFileSystem();
+	private static FileSystem customFileSystem = null;
 
 	private static RandomGenerator defaultRandomGenerator = new RandomGenerator() {
 		private Random random = new Random();
@@ -52,39 +49,27 @@ public class LeekScript {
 		}
 	};
 
-	public static boolean isLoaded(int id) {
-		return getResolver().isLoaded(id);
-	}
-
-	public static Hover hover(int id, int line, int column) throws FileNotFoundException {
-		AIFile<?> file = getResolver().getById(id);
-		if (file == null) {
-			throw new FileNotFoundException();
-		}
-		return file.hover(line, column);
-	}
-
 	public static AI compileFile(String filepath, String AIClass, boolean useClassCache) throws LeekScriptException, LeekCompilerException, IOException {
-		AIFile<?> file = getResolver().resolve(filepath, null);
+		var file = getFileSystem().getRoot().resolve(filepath);
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass(AIClass);
 		return file.compile(useClassCache);
 	}
 
 	public static AI compileFile(String filepath, String AIClass, int version) throws LeekScriptException, LeekCompilerException, IOException {
-		AIFile<?> file = getResolver().resolve(filepath, null);
+		var file = getFileSystem().getRoot().resolve(filepath);
 		file.setVersion(version);
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass(AIClass);
 		return file.compile(false);
 	}
 
-	public static AI compileFileContext(String filepath, String AIClass, ResolverContext context, boolean useClassCache) throws LeekScriptException, LeekCompilerException, IOException {
-		AIFile<?> file = getResolver().resolve(filepath, context);
-		file.setJavaClass("AI_" + file.getId());
-		file.setRootClass(AIClass);
-		return file.compile(useClassCache);
-	}
+	// public static AI compileFileContext(String filepath, String AIClass, ResolverContext context, boolean useClassCache) throws LeekScriptException, LeekCompilerException, IOException {
+	// 	var file = getRoot().resolve(filepath, context);
+	// 	file.setJavaClass("AI_" + file.getId());
+	// 	file.setRootClass(AIClass);
+	// 	return file.compile(useClassCache);
+	// }
 
 	public static AI compileSnippet(String snippet, String AIClass)	throws LeekScriptException, LeekCompilerException, IOException {
 		return compileSnippet(snippet, AIClass, 2);
@@ -92,15 +77,13 @@ public class LeekScript {
 
 	public static AI compileSnippet(String snippet, String AIClass, int version) throws LeekScriptException, LeekCompilerException, IOException {
 		long ai_id = id++;
-		AIFile<?> file = new AIFile<FileSystemContext>("<snippet " + ai_id + ">", snippet, System.currentTimeMillis(), version, null, (int) ai_id);
+		var file = new AIFile("<snippet " + ai_id + ">", snippet, System.currentTimeMillis(), version, (int) ai_id);
 		file.setJavaClass("AI_" + ai_id);
 		file.setRootClass(AIClass);
 		return file.compile(false);
 	}
 
-	public static String mergeFile(String filepath, ResolverContext context) throws LeekScriptException, LeekCompilerException, IOException {
-		AIFile<?> ai = getResolver().resolve(filepath, context);
-
+	public static String mergeFile(AIFile ai) throws LeekScriptException, LeekCompilerException, IOException {
 		return new IACompiler().merge(ai);
 	}
 
@@ -115,16 +98,16 @@ public class LeekScript {
 		return ai.string(v);
 	}
 
-	public static void setResolver(Resolver<?> resolver) {
-		customResolver = resolver;
+	public static void setFileSystem(FileSystem fileSystem) {
+		customFileSystem = fileSystem;
 	}
 
-	public static void resetResolver() {
-		customResolver = null;
+	public static void resetFileSystem() {
+		customFileSystem = null;
 	}
 
-	public static Resolver<?> getResolver() {
-		return customResolver != null ? customResolver : defaultResolver;
+	public static FileSystem getFileSystem() {
+		return customFileSystem != null ? customFileSystem : defaultFileSystem;
 	}
 
 	public static RandomGenerator getRandom() {
@@ -147,9 +130,7 @@ public class LeekScript {
 		throw new LeekScriptException(Error.COMPILE_JAVA, error);
 	}
 
-	public static Resolver<?> getFileSystemResolver() {
-		return fileSystemResolver;
+	public static NativeFileSystem getNativeFileSystem() {
+		return nativeFileSystem;
 	}
-
-
 }

@@ -50,7 +50,7 @@ public class JavaCompiler {
 		}
 	}
 
-	public static AI compile(AIFile<?> file, boolean useClassCache) throws LeekScriptException, LeekCompilerException {
+	public static AI compile(AIFile file, boolean useClassCache) throws LeekScriptException, LeekCompilerException {
 
 		var root = new File(IA_PATH);
 		if (!root.exists()) root.mkdir();
