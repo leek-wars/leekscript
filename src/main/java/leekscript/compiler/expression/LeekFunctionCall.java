@@ -217,7 +217,7 @@ public class LeekFunctionCall extends Expression {
 			if (i < mParameters.size()) {
 				var parameter = mParameters.get(i);
 				// Java doesn't like a single null for Object... argument
-				if (argCount == 1 && parameter.getType() == Type.NULL && user_function == null) {
+				if (argCount == 1 && parameter.getType() == Type.NULL && user_function == null && !unsafe) {
 					writer.addCode("new Object[] { null }");
 					continue;
 				}
@@ -248,7 +248,7 @@ public class LeekFunctionCall extends Expression {
 				}
 			} else {
 				// Java doesn't like a single null for Object... argument
-				if (argCount == 1 && system_function == null) {
+				if (argCount == 1 && system_function == null && !unsafe) {
 					writer.addCode("new Object[] { null }");
 				} else {
 					writer.addCode("null");
@@ -532,6 +532,7 @@ public class LeekFunctionCall extends Expression {
 						a_type.name,
 						f_type.name
 					}));
+					version_unsafe = true;
 				} else if (cast_type == CastType.UNSAFE_DOWNCAST) {
 					version_unsafe = true;
 				}
@@ -567,6 +568,7 @@ public class LeekFunctionCall extends Expression {
 			}
 			// System.out.println("version = " + best_versions.get(0) + " type = " + type);
 		} else {
+			System.out.println("Unsafe");
 			unsafe = true;
 		}
 	}

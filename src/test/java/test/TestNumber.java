@@ -722,6 +722,8 @@ public class TestNumber extends TestCommon {
 		// code("return (-19.5).abs()").equals("19.5");
 		// code("return 12.abs").equals("<function>");
 		// code("abs([1, 'salut'][1])").exception(ls::vm::Exception::WRONG_ARGUMENT_TYPE);
+		code_v1("return abs(null)").equals("0");
+		code_v2_("return abs(null)").equals("0.0");
 
 		section("Number.exp()");
 		code_v1("return exp(0)").equals("1");
