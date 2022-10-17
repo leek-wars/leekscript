@@ -1518,4 +1518,11 @@ public class WordCompiler {
 		}
 		return false;
 	}
+
+	public String getCurrentClassVariable() {
+		if (mCurentBlock instanceof ClassMethodBlock) {
+			return "u_" + ((ClassMethodBlock) mCurentBlock).getClassDeclaration().getName();
+		}
+		return "null";
+	}
 }

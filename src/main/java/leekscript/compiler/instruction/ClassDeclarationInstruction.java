@@ -63,11 +63,13 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	private HashMap<Integer, ClassDeclarationMethod> constructors = new HashMap<>();
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> methods = new HashMap<>();
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> staticMethods = new HashMap<>();
+	private ClassMethodBlock staticInitBlock;
 
 	public ClassDeclarationInstruction(Token token, int line, AIFile ai, boolean internal, MainLeekBlock block) {
 		this.token = token;
 		this.internal = internal;
 		this.mainBlock = block;
+		this.staticInitBlock = new ClassMethodBlock(this, false, true, block, block, null);
 	}
 
 	public HashMap<String, ClassDeclarationField> getFields() {
@@ -326,11 +328,15 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			}
 		}
 		// Static fields
+		var previousBlock = compiler.getCurrentBlock();
+		compiler.setCurrentBlock(staticInitBlock);
 		for (var field : staticFields.entrySet()) {
 			if (field.getValue().expression != null) {
 				field.getValue().expression.preAnalyze(compiler);
 			}
 		}
+		compiler.setCurrentBlock(previousBlock);
+
 		for (var entry : constructors.entrySet()) {
 			if (entry.getKey() == entry.getValue().block.getMaxParameters()) {
 				entry.getValue().block.preAnalyze(compiler);
@@ -400,6 +406,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		for (Entry<String, HashMap<Integer, ClassDeclarationMethod>> method : staticMethods.entrySet()) {
 			for (Entry<Integer, ClassDeclarationMethod> version : method.getValue().entrySet()) {
 				final var block = version.getValue().block;
+				mainblock.getWordCompiler().setCurrentBlock(block);
 				writer.currentBlock = block;
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
 				writer.addCode("private final Object " + methodName + "(");
@@ -411,7 +418,6 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					writer.addCode("Object " + letter + "_" + arg.getToken());
 				}
 				writer.addLine(") throws LeekRunException {");
-				writer.addLine("final var u_class = " + className + ";", version.getValue().block.getLocation());
 				if (parent != null) {
 					writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
 				}
@@ -457,6 +463,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				}
 				writer.addLine("}");
 				writer.currentBlock = null;
+				mainblock.getWordCompiler().setCurrentBlock(null);
 			}
 		}
 
@@ -464,7 +471,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		for (var method : methods.entrySet()) {
 			for (var version : method.getValue().entrySet()) {
 				final var block = version.getValue().block;
+				mainblock.getWordCompiler().setCurrentBlock(block);
 				writer.currentBlock = block;
+
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
 				writer.addCode("private final Object " + methodName + "(ObjectLeekValue u_this");
 				for (int a = 0; a < version.getKey(); ++a) {
@@ -473,7 +482,6 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					writer.addCode(", Object " + letter + "_" + arg.getToken());
 				}
 				writer.addCode(") throws LeekRunException {");
-				writer.addLine("final var u_class = " + className + ";", version.getValue().block.getLocation());
 				if (parent != null) {
 					writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
 				}
@@ -518,13 +526,16 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				}
 				writer.addLine("}");
 				writer.currentBlock = null;
+				mainblock.getWordCompiler().setCurrentBlock(null);
 			}
 		}
 
 		// Constructeurs
 		for (Entry<Integer, ClassDeclarationMethod> construct : constructors.entrySet()) {
 			final var block = construct.getValue().block;
+			mainblock.getWordCompiler().setCurrentBlock(block);
 			writer.currentBlock = block;
+
 			String methodName = className + "_" + construct.getKey();
 			writer.addCode("private final Object " + methodName + "(ObjectLeekValue u_this");
 			if (block != null) {
@@ -535,7 +546,6 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				}
 			}
 			writer.addCode(") throws LeekRunException {");
-			writer.addLine("final var u_class = " + className + ";");
 			if (parent != null) {
 				writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
 			}
@@ -579,7 +589,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			}
 			writer.addLine("}");
 			writer.currentBlock = null;
+			mainblock.getWordCompiler().setCurrentBlock(null);
 		}
+		mainblock.getWordCompiler().setCurrentClass(null);
 	}
 
 	public void createJava(MainLeekBlock mainblock, JavaWriter writer) {
@@ -663,6 +675,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			writer.addCode(className);
 			writer.addLine(".addGenericMethod(\"" + method.getKey() + "\");");
 		}
+		mainblock.getWordCompiler().setCurrentClass(null);
 	}
 
 	public void createStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
@@ -674,6 +687,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		writer.addLine("private void createStaticClass_" + token.getWord() + "() throws LeekRunException {");
 
 		mainblock.getWordCompiler().setCurrentClass(this);
+		mainblock.getWordCompiler().setCurrentBlock(staticInitBlock);
 
 		// Create the class in the constructor of the AI
 		String className = "u_" + token.getWord();
@@ -688,6 +702,8 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 
 		writer.addLine("}");
+		mainblock.getWordCompiler().setCurrentClass(null);
+		mainblock.getWordCompiler().setCurrentBlock(null);
 	}
 
 	public void initializeStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
@@ -699,6 +715,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		writer.addLine("private void initClass_" + token.getWord() + "() throws LeekRunException {");
 
 		mainblock.getWordCompiler().setCurrentClass(this);
+		mainblock.getWordCompiler().setCurrentBlock(staticInitBlock);
 
 		// Create the class in the constructor of the AI
 		String className = "u_" + token.getWord();
@@ -713,6 +730,8 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			}
 		}
 
+		mainblock.getWordCompiler().setCurrentClass(null);
+		mainblock.getWordCompiler().setCurrentBlock(null);
 		writer.addLine("}");
 	}
 

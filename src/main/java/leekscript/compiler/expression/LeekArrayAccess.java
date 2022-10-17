@@ -173,7 +173,7 @@ public class LeekArrayAccess extends Expression {
 			writer.addCode(", ");
 			mCase.writeJavaCode(mainblock, writer);
 			writer.addCode(", ");
-			writer.addCode(writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null");
+			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable());
 			writer.addCode(")");
 		}
 	}

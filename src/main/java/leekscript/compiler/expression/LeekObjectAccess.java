@@ -147,8 +147,7 @@ public class LeekObjectAccess extends Expression {
 			}
 			writer.addCode("getField(");
 			object.writeJavaCode(mainblock, writer);
-			var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
-			writer.addCode(", \"" + field.getWord() + "\", " + from_class + ")");
+			writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 			if (type != Type.ANY) {
 				writer.addCode(")");
 			}
@@ -166,8 +165,7 @@ public class LeekObjectAccess extends Expression {
 		} else {
 			writer.addCode("getField(");
 			object.writeJavaCode(mainblock, writer);
-			var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
-			writer.addCode(", \"" + field.getWord() + "\", " + from_class + ")");
+			writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 		}
 	}
 

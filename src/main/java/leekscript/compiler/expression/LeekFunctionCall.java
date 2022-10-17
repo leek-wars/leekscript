@@ -107,8 +107,7 @@ public class LeekFunctionCall extends Expression {
 
 			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
 				// super.field()
-				var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
-				writer.addCode("u_this.callSuperMethod(this, \"" + field + "_" + mParameters.size() + "\", " + from_class);
+				writer.addCode("u_this.callSuperMethod(this, \"" + field + "_" + mParameters.size() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.CLASS) {
 				// Class.method() : Méthode statique connue
 				var v = (LeekVariable) object;
@@ -120,34 +119,29 @@ public class LeekFunctionCall extends Expression {
 					addComma = false;
 				} else {
 					// Champ statique
-					var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
-					writer.addCode("u_" + v.getClassDeclaration().getName() + ".callStaticField(\"" + field + "\", " + from_class);
+					writer.addCode("u_" + v.getClassDeclaration().getName() + ".callStaticField(\"" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 				}
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
 				// this.method() : Méthode connue
-				writer.addCode("callObjectAccess(u_this, \"" + field + "\", \"" + field + "_" + mParameters.size() + "\", u_class");
+				writer.addCode("callObjectAccess(u_this, \"" + field + "\", \"" + field + "_" + mParameters.size() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 			} else {
 				// object.field() : Méthode ou bien appel d'un champ
 				writer.addCode("callObjectAccess(");
 				object.writeJavaCode(mainblock, writer);
-				var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
-				writer.addCode(", \"" + field + "\", \"" + field + "_" + mParameters.size() + "\", " + from_class);
+				writer.addCode(", \"" + field + "\", \"" + field + "_" + mParameters.size() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 			}
 		} else if (mExpression instanceof LeekArrayAccess) {
 			var object = ((LeekArrayAccess) mExpression).getTabular();
 			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
-				writer.addCode("u_this.callSuperMethod(mUAI, u_class, ");
+				writer.addCode("u_this.callSuperMethod(mUAI, " + mainblock.getWordCompiler().getCurrentClassVariable() + ", ");
 				((LeekArrayAccess) mExpression).getCase().writeJavaCode(mainblock, writer);
-				writer.addCode(".getString(mUAI) + \"_" + mParameters.size() + "\", ");
-				var from_class = writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null";
-				writer.addCode(from_class);
+				writer.addCode(".getString(mUAI) + \"_" + mParameters.size() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 			} else {
 				writer.addCode("LeekValueManager.executeArrayAccess(" + writer.getAIThis() + ", ");
 				object.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
 				((LeekArrayAccess) mExpression).getCase().writeJavaCode(mainblock, writer);
-				writer.addCode(", ");
-				writer.addCode(writer.currentBlock instanceof ClassMethodBlock ? "u_class" : "null");
+				writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable());
 			}
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SUPER) {
 			// Super constructor
@@ -158,7 +152,7 @@ public class LeekFunctionCall extends Expression {
 			// Méthode connue
 			// String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getMethodName(((LeekVariable) mExpression).getName(), mParameters.size());
 			// writer.addCode(methodName + "(u_this");
-			writer.addCode("callMethod(u_this, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\", u_class");
+			writer.addCode("callMethod(u_this, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.STATIC_METHOD) {
 			// Méthode statique connue

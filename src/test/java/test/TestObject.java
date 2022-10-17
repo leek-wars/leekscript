@@ -87,6 +87,11 @@ public class TestObject extends TestCommon {
 		code_v3_("class A { static var }").error(Error.VARIABLE_NAME_UNAVAILABLE);
 		code_v3_("class A { static this }").error(Error.VARIABLE_NAME_UNAVAILABLE);
 
+		section("Static field dependencies on other static fields");
+		code_v2_("class A { private static x = 1 static y = A.x } return A.y").equals("1");
+		code_v2_("class A { private static x = 1 static y = class.x } return A.y").equals("1");
+		code_v2_("class A { private static x = 1 static y = x } return A.y").equals("1");
+
 		section("Operators on field");
 		code_v2_("class A { a = 10 } var a = new A(); return --a.a").equals("9");
 		code_v2_("class A { a = 10 } var a = new A(); a.a-- return a.a").equals("9");
