@@ -429,10 +429,6 @@ public class WordParser {
 		return mAI.getTokenAt(cursor + offset);
 	}
 
-	public Token lastToken() {
-		return mAI.getLastToken();
-	}
-
 	public Token endToken() {
 		return mAI.getTokens().isEmpty() ? null : mAI.getTokens().get(mAI.getTokens().size() - 1);
 	}

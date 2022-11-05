@@ -23,6 +23,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	private final ArrayList<Type> mTypes = new ArrayList<>();
 	private int mId = 0;
 	private final Token token;
+	private Token endToken;
 
 	public AnonymousFunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -39,6 +40,10 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 
 	public int countParameters() {
 		return mParameters.size();
+	}
+
+	public void setEndToken(Token token) {
+		this.endToken = token;
 	}
 
 	public String referenceArray() {
@@ -163,6 +168,9 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 
 	@Override
 	public Location getLocation() {
+		if (this.endToken != null) {
+			return new Location(token.getLocation(), this.endToken.getLocation());
+		}
 		return token.getLocation();
 	}
 

@@ -748,7 +748,7 @@ public class WordCompiler {
 		}
 		mCompiler.skipToken();
 
-		while (mCompiler.token().getType() != WordParser.T_ACCOLADE_RIGHT) {
+		while (mCompiler.token().getType() != WordParser.T_ACCOLADE_RIGHT && mCompiler.token().getType() != WordParser.T_END_OF_FILE) {
 			word = mCompiler.token();
 			switch (word.getWord()) {
 				case "public":
@@ -780,9 +780,10 @@ public class WordCompiler {
 				}
 			}
 		}
-		if (mCompiler.eatToken().getType() != WordParser.T_ACCOLADE_RIGHT) {
-			throw new LeekCompilerException(word, Error.END_OF_CLASS_EXPECTED);
+		if (mCompiler.token().getType() != WordParser.T_ACCOLADE_RIGHT) {
+			throw new LeekCompilerException(mCompiler.token(), Error.END_OF_CLASS_EXPECTED);
 		}
+		mCompiler.skipToken();
 		mCurrentClass = null;
 	}
 
@@ -1413,10 +1414,12 @@ public class WordCompiler {
 				break;
 
 			// On regarde si on veut fermer la fonction anonyme
-			if (mCompiler.token().getType() == WordParser.T_ACCOLADE_RIGHT && mCurentBlock == block)
+			if (mCompiler.token().getType() == WordParser.T_ACCOLADE_RIGHT && mCurentBlock == block) {
+				block.setEndToken(mCompiler.token());
 				break;// Fermeture de la fonction anonyme
-			else
+			} else {
 				compileWord();
+			}
 		}
 
 		// Ajout de la fonction

@@ -567,27 +567,6 @@ public class LeekFunctionCall extends Expression {
 		}
 	}
 
-	CallableVersion checkArgumentsStatically(LeekFunctions function) {
-		var versions = function.getVersions();
-		if (versions == null) return null;
-
-		for (var version : versions) {
-			if (checkArgumentsStatically(version)) {
-				return version;
-			}
-		}
-		return null;
-	}
-
-	private boolean checkArgumentsStatically(CallableVersion version) {
-		for (int i = 0; i < version.arguments.length; ++i) {
-			if (version.arguments[i].accepts(mParameters.get(i).getType()) == CastType.INCOMPATIBLE) {
-				return false;
-			}
-		}
-		return true;
-	}
-
 	@Override
 	public Location getLocation() {
 		if (mExpression == null) {

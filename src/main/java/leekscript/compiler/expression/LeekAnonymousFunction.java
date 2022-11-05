@@ -63,6 +63,6 @@ public class LeekAnonymousFunction extends Expression {
 
 	@Override
 	public Location getLocation() {
-		return token.getLocation();
+		return new Location(token.getLocation(), mBlock.getLocation());
 	}
 }
