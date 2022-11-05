@@ -93,6 +93,9 @@ public class TestCommon {
 						var errors = result.ai.getFile().getErrors();
 						if (errors.size() > 0) return "error " + errors.get(0).error.name();
 					}
+					if (result.error != Error.NONE) {
+						return result.error.name();
+					}
 					return "no error";
 				}
 			});
@@ -112,6 +115,9 @@ public class TestCommon {
 					if (result.ai != null) {
 						var errors = result.ai.getFile().getErrors();
 						if (errors.size() > 0) return "warning " + errors.get(0).error.name();
+					}
+					if (result.error != Error.NONE) {
+						return result.error.name();
 					}
 					return "no warning";
 				}
