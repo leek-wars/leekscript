@@ -212,6 +212,17 @@ public class TestOperators extends TestCommon {
 		code("return false + null").equals("0");
 		code("return null + false").equals("0");
 
+		section("Assignment to itself");
+		code("var x = 2 x = x").warning(Error.ASSIGN_SAME_VARIABLE);
+		code_v2_("class A { x constructor(z) { x = x } }").warning(Error.ASSIGN_SAME_VARIABLE);
+		code_v2_("class A { x constructor(z) { this.x = x } }").warning(Error.ASSIGN_SAME_VARIABLE);
+		code_v2_("class A { x constructor(z) { this.x = this.x } }").warning(Error.ASSIGN_SAME_VARIABLE);
+		code_v2_("class A { x constructor(z) { x = this.x } }").warning(Error.ASSIGN_SAME_VARIABLE);
+		code_v2_("class A { static x constructor(z) { x = x } }").warning(Error.ASSIGN_SAME_VARIABLE);
+		code_v2_("class A { static x constructor(z) { class.x = x } }").warning(Error.ASSIGN_SAME_VARIABLE);
+		code_v2_("class A { static x constructor(z) { class.x = class.x } }").warning(Error.ASSIGN_SAME_VARIABLE);
+		code_v2_("class A { static x constructor(z) { x = class.x } }").warning(Error.ASSIGN_SAME_VARIABLE);
+
 		section("Assignment operators");
 		Object[] values2 = new Object[] {
 			"null", "true", "false", "12", "5.678", "false", "true", "'lama'", "[1, 2, 3, 4, 5]"

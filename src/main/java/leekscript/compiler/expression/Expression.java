@@ -176,4 +176,8 @@ public abstract class Expression {
 	public boolean isFinal() {
 		return false;
 	}
+
+	public LeekVariable getVariable() {
+		return null;
+	}
 }

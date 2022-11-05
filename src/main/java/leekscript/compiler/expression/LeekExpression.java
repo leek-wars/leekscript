@@ -920,6 +920,17 @@ public class LeekExpression extends Expression {
 				((LeekArrayAccess) mExpression2).setLeftValue(true);
 		}
 
+		// x = x : même variable
+		if (mOperator == Operators.ASSIGN) {
+			var variable1 = mExpression1.getVariable();
+			var variable2 = mExpression2.getVariable();
+			if (variable1 != null && variable1 == variable2) {
+				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.ASSIGN_SAME_VARIABLE, new String[] { variable1.getName() } ));
+			}
+		}
+
+		// Types
+
 		if (mOperator == Operators.NOT || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.MOREEQUALS || mOperator == Operators.LESSEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.AND || mOperator == Operators.OR || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS || mOperator == Operators.INSTANCEOF) {
 			type = Type.BOOL;
 		}

@@ -31,6 +31,7 @@ public class LeekVariable extends Expression {
 	private FunctionBlock functionDeclaration = null;
 	private boolean box = false;
 	private boolean isFinal = false;
+	private LeekVariable variable;
 
 	public LeekVariable(Token token, VariableType type) {
 		this.token = token;
@@ -132,6 +133,7 @@ public class LeekVariable extends Expression {
 			this.functionDeclaration = v.getFunctionDeclaration();
 			this.isFinal = v.isFinal();
 			this.box = v.box;
+			this.variable = v;
 			if (v.getDeclaration() != null && v.getDeclaration().getFunction() != compiler.getCurrentFunction()) {
 				v.getDeclaration().setCaptured();
 			}
@@ -959,5 +961,9 @@ public class LeekVariable extends Expression {
 
 	public boolean isFinal() {
 		return isFinal;
+	}
+
+	public LeekVariable getVariable() {
+		return variable;
 	}
 }

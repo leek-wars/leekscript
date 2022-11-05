@@ -7,7 +7,6 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
-import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
@@ -20,6 +19,7 @@ public class LeekObjectAccess extends Expression {
 	private Type type = Type.ANY;
 	private boolean isFinal = false;
 	private boolean isLeftValue = true;
+	private LeekVariable variable;
 
 	public LeekObjectAccess(Expression object, Token dot, Token field) {
 		this.object = object;
@@ -83,21 +83,21 @@ public class LeekObjectAccess extends Expression {
 				// this, check field exists in class
 				var clazz = compiler.getCurrentClass();
 				if (clazz != null) {
-					var member = clazz.getMember(field.getWord());
-					if (member == null) {
+					this.variable = clazz.getMember(field.getWord());
+					if (this.variable == null) {
 						compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), field.getWord() }));
 					} else {
-						this.isFinal = member.isFinal();
-						this.isLeftValue = member.isLeftValue();
+						this.isFinal = this.variable.isFinal();
+						this.isLeftValue = this.variable.isLeftValue();
 					}
 				}
 			} else if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS) {
 				var clazz = v.getVariableType() == VariableType.CLASS ? v.getClassDeclaration() : compiler.getCurrentClass();
 
-				var member = clazz.getStaticMember(field.getWord());
-				if (member != null) {
-					type = member.getType();
-					this.isFinal = member.isFinal();
+				this.variable = clazz.getStaticMember(field.getWord());
+				if (this.variable != null) {
+					type = this.variable.getType();
+					this.isFinal = this.variable.isFinal();
 					return; // OK
 				}
 				if (clazz.hasMethod(field.getWord())) {
@@ -117,6 +117,7 @@ public class LeekObjectAccess extends Expression {
 		operations = 1 + object.operations;
 
 		if (field.getWord().equals("class")) {
+			type = Type.CLASS;
 			return; // .class is available everywhere
 		}
 		if (object instanceof LeekVariable) {
@@ -404,5 +405,9 @@ public class LeekObjectAccess extends Expression {
 			}
 		}
 		return new Hover(getType(), getLocation());
+	}
+
+	public LeekVariable getVariable() {
+		return this.variable;
 	}
 }
