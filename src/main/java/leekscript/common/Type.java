@@ -56,14 +56,17 @@ public class Type {
 		if (type == ANY) return CastType.UNSAFE_DOWNCAST;
 
 		if (type instanceof CompoundType) {
-			var result = CastType.INCOMPATIBLE;
+			var best = CastType.INCOMPATIBLE;
+			var worst = CastType.EQUALS;
 			for (var t : ((CompoundType) type).getTypes()) {
 				var r = this.accepts(t);
-				if (r.ordinal() < result.ordinal()) {
-					result = r;
-				}
+				if (r.ordinal() > worst.ordinal()) worst = r;
+				if (r.ordinal() < best.ordinal()) best = r;
 			}
-			return result;
+			// Si un est compatible, le tout est compatible
+			if (worst == CastType.INCOMPATIBLE && best != CastType.INCOMPATIBLE) return CastType.UNSAFE_DOWNCAST;
+			// Sinon on prend le pire
+			return worst;
 		}
 
 		if (this == NUMBER) {

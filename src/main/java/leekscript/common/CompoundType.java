@@ -2,8 +2,6 @@ package leekscript.common;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class CompoundType extends Type {
@@ -18,14 +16,17 @@ public class CompoundType extends Type {
 
 	@Override
 	public CastType accepts(Type type) {
-		var result = CastType.INCOMPATIBLE;
+		var best = CastType.INCOMPATIBLE;
+		var worst = CastType.EQUALS;
 		for (var t : types) {
-			var r = t.accepts(type);
-			if (r.ordinal() < result.ordinal()) {
-				result = r;
-			}
+			var r = t.accepts(this);
+			if (r.ordinal() > worst.ordinal()) worst = r;
+			if (r.ordinal() < best.ordinal()) best = r;
 		}
-		return result;
+		// Si un est compatible, le tout est compatible
+		if (worst == CastType.INCOMPATIBLE && best != CastType.INCOMPATIBLE) return CastType.UNSAFE_DOWNCAST;
+		// Sinon on prend le pire
+		return worst;
 	}
 
 	@Override
