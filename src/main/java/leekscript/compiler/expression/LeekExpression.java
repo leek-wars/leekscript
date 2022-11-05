@@ -11,6 +11,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.runner.values.LeekValue;
 import leekscript.common.Error;
 import leekscript.common.Type;
+import leekscript.common.Type.CastType;
 
 public class LeekExpression extends Expression {
 
@@ -926,6 +927,19 @@ public class LeekExpression extends Expression {
 			var variable2 = mExpression2.getVariable();
 			if (variable1 != null && variable1 == variable2) {
 				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.ASSIGN_SAME_VARIABLE, new String[] { variable1.getName() } ));
+			}
+		}
+
+		// x == y : toujours faux si types incompatibles
+		if ((compiler.getVersion() == 4 && mOperator == Operators.EQUALS) || mOperator == Operators.EQUALS_EQUALS) {
+			if (mExpression1.getType().accepts(mExpression2.getType()) == CastType.INCOMPATIBLE) {
+				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.COMPARISON_ALWAYS_FALSE, new String[] { mExpression1.getType().name, mExpression2.getType().name }));
+			}
+		}
+		// x != y : toujours vrai si types incompatibles
+		if ((compiler.getVersion() == 4 && mOperator == Operators.NOTEQUALS) || mOperator == Operators.NOT_EQUALS_EQUALS) {
+			if (mExpression1.getType().accepts(mExpression2.getType()) == CastType.INCOMPATIBLE) {
+				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.COMPARISON_ALWAYS_TRUE, new String[] { mExpression1.getType().name, mExpression2.getType().name }));
 			}
 		}
 

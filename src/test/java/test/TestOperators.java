@@ -223,7 +223,22 @@ public class TestOperators extends TestCommon {
 		code_v2_("class A { static x constructor(z) { class.x = class.x } }").warning(Error.ASSIGN_SAME_VARIABLE);
 		code_v2_("class A { static x constructor(z) { x = class.x } }").warning(Error.ASSIGN_SAME_VARIABLE);
 
+		section("Comparison always false");
+		code_v4_("5.5 == true").warning(Error.COMPARISON_ALWAYS_FALSE);
+		code_v4_("count([]) == 'hello'").warning(Error.COMPARISON_ALWAYS_FALSE);
+		code_v4_("[:] == {}").warning(Error.COMPARISON_ALWAYS_FALSE);
+		code_v4_("(function() {}) == null").warning(Error.COMPARISON_ALWAYS_FALSE);
+		code_v4_("Array == 12").warning(Error.COMPARISON_ALWAYS_FALSE);
+
+		section("Comparison always true");
+		code_v4_("5.5 != true").warning(Error.COMPARISON_ALWAYS_TRUE);
+		code_v4_("count([]) != 'hello'").warning(Error.COMPARISON_ALWAYS_TRUE);
+		code_v4_("[:] != {}").warning(Error.COMPARISON_ALWAYS_TRUE);
+		code_v4_("(function() {}) != null").warning(Error.COMPARISON_ALWAYS_TRUE);
+		code_v4_("Array != 12").warning(Error.COMPARISON_ALWAYS_TRUE);
+
 		section("Assignment operators");
+
 		Object[] values2 = new Object[] {
 			"null", "true", "false", "12", "5.678", "false", "true", "'lama'", "[1, 2, 3, 4, 5]"
 		};
