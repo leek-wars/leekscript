@@ -1,22 +1,32 @@
 package leekscript.common;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+
 import leekscript.compiler.JavaWriter;
 
 public class Type {
 
-	public static Type ANY = new Type("any", "x", "Object", "Object", "null");
-	public static Type NULL = new Type("null", "u", "Object", "Object", "null");
-	public static Type BOOL = new Type("bool", "b", "boolean", "Boolean", "false");
-	public static Type NUMBER = new Type("number", "n", "Number", "Number", "0.0");
-	public static Type INT = new Type("int", "i", "long", "Long", "0l");
-	public static Type REAL = new Type("real", "r", "double", "Double", "0.0");
-	public static Type STRING = new Type("string", "s", "String", "String", "\"\"");
-	public static Type ARRAY = new Type("Array", "a", "ArrayLeekValue", "ArrayLeekValue", "new ArrayLeekValue()");
-	public static Type OBJECT = new Type("Object", "o", "ObjectLeekValue", "ObjectLeekValue", "new ObjectLeekValue()");
-	public static Type FUNCTION = new Type("Function", "f", "FunctionLeekValue", "FunctionLeekValue", "new FunctionLeekValue(-1)");
-	public static Type MAP = new Type("Map", "m", "MapLeekValue", "MapLeekValue", "new MapLeekValue()");
-	public static Type CLASS = new Type("Class", "c", "ClassLeekValue", "ClassLeekValue", "new ClassLeekValue()");
-	public static Type VOID = new Type("void", "v", "Object", "Object", "null");
+	public static final Map<HashSet<Type>, Type> compoundTypes = new HashMap<>();
+
+	public static final Type ANY = new Type("any", "x", "Object", "Object", "null");
+	public static final Type NULL = new Type("null", "u", "Object", "Object", "null");
+	public static final Type BOOL = new Type("bool", "b", "boolean", "Boolean", "false");
+	public static final Type NUMBER = new Type("number", "n", "Number", "Number", "0.0");
+	public static final Type INT = new Type("int", "i", "long", "Long", "0l");
+	public static final Type REAL = new Type("real", "r", "double", "Double", "0.0");
+	public static final Type STRING = new Type("string", "s", "String", "String", "\"\"");
+	public static final Type ARRAY = new Type("Array", "a", "ArrayLeekValue", "ArrayLeekValue", "new ArrayLeekValue()");
+	public static final Type OBJECT = new Type("Object", "o", "ObjectLeekValue", "ObjectLeekValue", "new ObjectLeekValue()");
+	public static final Type FUNCTION = new Type("Function", "f", "FunctionLeekValue", "FunctionLeekValue", "new FunctionLeekValue(-1)");
+	public static final Type MAP = new Type("Map", "m", "MapLeekValue", "MapLeekValue", "new MapLeekValue()");
+	public static final Type CLASS = new Type("Class", "c", "ClassLeekValue", "ClassLeekValue", "new ClassLeekValue()");
+	public static final Type VOID = new Type("void", "v", "Object", "Object", "null");
+	public static final Type INT_OR_NULL = compound(Type.INT, Type.NULL);
+	public static final Type ARRAY_OR_NULL = compound(Type.ARRAY, Type.NULL);
+	public static final Type STRING_OR_NULL = compound(Type.STRING, Type.NULL);
 
 	public static enum CastType {
 		EQUALS,
@@ -44,6 +54,18 @@ public class Type {
 		if (type == this) return CastType.EQUALS;
 		if (this == ANY) return CastType.UPCAST;
 		if (type == ANY) return CastType.UNSAFE_DOWNCAST;
+
+		if (type instanceof CompoundType) {
+			var result = CastType.INCOMPATIBLE;
+			for (var t : ((CompoundType) type).getTypes()) {
+				var r = this.accepts(t);
+				if (r.ordinal() < result.ordinal()) {
+					result = r;
+				}
+			}
+			return result;
+		}
+
 		if (this == NUMBER) {
 			if (type == INT || type == REAL) return CastType.UPCAST;
 		}
@@ -133,5 +155,14 @@ public class Type {
 
 	public boolean isArray() {
 		return this == Type.ARRAY;
+	}
+
+	public static Type compound(Type... types) {
+		var set = new HashSet<Type>(Arrays.asList(types));
+		var cached = compoundTypes.get(set);
+		if (cached != null) return cached;
+		var type = new CompoundType(types);
+		compoundTypes.put(set, type);
+		return type;
 	}
 }
