@@ -19,7 +19,7 @@ public class CompoundType extends Type {
 		var best = CastType.INCOMPATIBLE;
 		var worst = CastType.EQUALS;
 		for (var t : types) {
-			var r = t.accepts(this);
+			var r = t.accepts(type);
 			if (r.ordinal() > worst.ordinal()) worst = r;
 			if (r.ordinal() < best.ordinal()) best = r;
 		}

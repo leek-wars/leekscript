@@ -237,6 +237,11 @@ public class TestOperators extends TestCommon {
 		code_v4_("(function() {}) != null").warning(Error.COMPARISON_ALWAYS_TRUE);
 		code_v4_("Array != 12").warning(Error.COMPARISON_ALWAYS_TRUE);
 
+		section("Unknown operator");
+		code("'salut' - 2").warning(Error.UNKNOWN_OPERATOR);
+		code("2 / [1, 2, 3]").warning(Error.UNKNOWN_OPERATOR);
+		code("{} % 5").warning(Error.UNKNOWN_OPERATOR);
+
 		section("Assignment operators");
 
 		Object[] values2 = new Object[] {

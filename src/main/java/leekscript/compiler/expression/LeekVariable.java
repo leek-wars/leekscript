@@ -168,7 +168,9 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public void analyze(WordCompiler compiler) {
-
+		// if (this.variable != null) {
+		// 	this.variableType = this.variable.getType();
+		// }
 	}
 
 	public ClassDeclarationInstruction getClassDeclaration() {
@@ -965,5 +967,9 @@ public class LeekVariable extends Expression {
 
 	public LeekVariable getVariable() {
 		return variable;
+	}
+
+	public void setType(Type type) {
+		this.variableType = type;
 	}
 }

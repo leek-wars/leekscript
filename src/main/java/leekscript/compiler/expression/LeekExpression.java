@@ -943,6 +943,13 @@ public class LeekExpression extends Expression {
 			}
 		}
 
+		// Opérateurs inconnus (mathématiques avec un string par exemple)
+		if (mOperator == Operators.MINUS || mOperator == Operators.MULTIPLIE || mOperator == Operators.DIVIDE || mOperator == Operators.POWER || mOperator == Operators.MODULUS || mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT || mOperator == Operators.MORE || mOperator == Operators.LESS || mOperator == Operators.MOREEQUALS || mOperator == Operators.LESSEQUALS) {
+			if (Type.NUMBER.accepts(mExpression1.getType()) == CastType.INCOMPATIBLE || Type.NUMBER.accepts(mExpression2.getType()) == CastType.INCOMPATIBLE) {
+				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.UNKNOWN_OPERATOR, new String[] { mOperatorToken.getWord(), mExpression1.getType().name, mExpression2.getType().name }));
+			}
+		}
+
 		// Types
 
 		if (mOperator == Operators.NOT || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.MOREEQUALS || mOperator == Operators.LESSEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.AND || mOperator == Operators.OR || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS || mOperator == Operators.INSTANCEOF) {

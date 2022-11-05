@@ -25,6 +25,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	private boolean captured = false;
 	private AbstractLeekBlock function;
 	private boolean box = false;
+	private LeekVariable variable;
 
 	public LeekVariableDeclarationInstruction(WordCompiler compiler, Token token, AbstractLeekBlock function) {
 		this.token = token;
@@ -183,6 +184,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	public void analyze(WordCompiler compiler) {
 		if (mValue != null) {
 			mValue.analyze(compiler);
+			this.variable.setType(mValue.getType());
 		}
 	}
 
@@ -196,7 +198,8 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 			} else {
 				// On ajoute la variable
-				compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.LOCAL, this));
+				this.variable = new LeekVariable(token, VariableType.LOCAL, this);
+				compiler.getCurrentBlock().addVariable(this.variable);
 			}
 		}
 	}
