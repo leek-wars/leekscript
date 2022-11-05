@@ -65,6 +65,9 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 
+		// On analyse d'abord le container puis la variable
+		mArray.preAnalyze(compiler);
+
 		// Si c'est une déclaration on vérifie que le nom est disponible
 		if (mIsKeyDeclaration) {
 			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mKeyIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mKeyIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mKeyIterator.getWord())) {
@@ -96,7 +99,6 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		if (iteratorKeyDeclaration != null)
 			iteratorKeyDeclaration.setFunction(compiler.getCurrentFunction());
 
-		mArray.preAnalyze(compiler);
 		compiler.setCurrentBlock(initialBlock);
 		super.preAnalyze(compiler);
 	}

@@ -205,6 +205,17 @@ public class TestLoops extends TestCommon {
 		section("Foreach - argument");
 		code("function main(r) { for (var x in [1, 2, 3]) { for (var y in [4, 5, 6]) { push(r, x * y) }} return r } return main([]);").equals("[4, 5, 6, 8, 10, 12, 12, 15, 18]");
 
+		section("Foreach - variable used in container");
+		code("for (var x in x) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code("for (var x in [x]) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code("for (var x in arrayMap(x, => 12)) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code("for (var x : var y in x) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code("for (var x : var y in [x]) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code("for (var x : var y in arrayMap(x, => 12)) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code("for (var x : var y in y) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code("for (var x : var y in [y]) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code("for (var x : var y in arrayMap(y, => 12)) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+
 		// header("Foreach - unknown container");
 		// code("for x in ['hello', 12345][0] { print(x) }").equals("h\ne\nl\nl\no\n");
 

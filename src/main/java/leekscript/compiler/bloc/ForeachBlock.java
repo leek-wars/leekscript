@@ -123,6 +123,10 @@ public class ForeachBlock extends AbstractLeekBlock {
 	public void preAnalyze(WordCompiler compiler) {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
+
+		// On analyse d'abord le container puis la variable
+		mArray.preAnalyze(compiler);
+
 		// Si c'est une déclaration on vérifie que le nom est disponnible
 		if (mIsDeclaration) {
 			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
@@ -137,7 +141,6 @@ public class ForeachBlock extends AbstractLeekBlock {
 				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
 			}
 		}
-		mArray.preAnalyze(compiler);
 		compiler.setCurrentBlock(initialBlock);
 
 		super.preAnalyze(compiler);
