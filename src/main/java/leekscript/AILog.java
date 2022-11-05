@@ -1,7 +1,5 @@
 package leekscript;
 
-import java.io.UnsupportedEncodingException;
-
 import com.alibaba.fastjson.JSONArray;
 
 public class AILog {
@@ -67,11 +65,7 @@ public class AILog {
 		JSONArray obj = new JSONArray();
 		obj.add(0);
 		obj.add(type);
-		try {
-			obj.add(new String(message.getBytes("UTF-8"), "UTF-8"));
-		} catch (UnsupportedEncodingException e) {
-			ErrorManager.exception(e);
-		}
+		obj.add(message);
 		if (color != 0) {
 			obj.add(color);
 		}
