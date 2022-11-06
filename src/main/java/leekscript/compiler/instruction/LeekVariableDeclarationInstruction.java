@@ -184,7 +184,9 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	public void analyze(WordCompiler compiler) {
 		if (mValue != null) {
 			mValue.analyze(compiler);
-			this.variable.setType(mValue.getType());
+			if (this.variable != null) {
+				this.variable.setType(mValue.getType());
+			}
 		}
 	}
 
