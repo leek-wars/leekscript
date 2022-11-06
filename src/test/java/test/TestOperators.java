@@ -240,7 +240,7 @@ public class TestOperators extends TestCommon {
 		section("Unknown operator");
 		code("'salut' - 2").warning(Error.UNKNOWN_OPERATOR);
 		code("2 / [1, 2, 3]").warning(Error.UNKNOWN_OPERATOR);
-		code("{} % 5").warning(Error.UNKNOWN_OPERATOR);
+		code_v3_("{} % 5").warning(Error.UNKNOWN_OPERATOR);
 
 		section("Assignment operators");
 

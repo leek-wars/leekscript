@@ -66,8 +66,9 @@ public class Folder {
 			if (path.charAt(i) == '/' && path.charAt(i - 1) != '\\') {
 
 				var subFolder = getFolder(path.substring(0, i));
-				if (subFolder == null) return null;
-
+				if (subFolder == null) {
+					throw new FileNotFoundException();
+				}
 				return subFolder.resolve(path.substring(i + 1));
 			}
 		}

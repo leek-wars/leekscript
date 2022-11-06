@@ -133,8 +133,6 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			if (mIncluded.contains(ai)) {
 				return true;
 			}
-			// if (ai.getPath().equals("ia.leek"))
-			// System.out.println("include " + ai.getPath() + " " + ai.getCode());
 			ai.clearErrors();
 			mIncluded.add(ai);
 			var previousAI = mCompiler.getCurrentAI();

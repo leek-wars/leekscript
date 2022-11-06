@@ -562,7 +562,6 @@ public class LeekFunctionCall extends Expression {
 			}
 			// System.out.println("version = " + best_versions.get(0) + " type = " + type);
 		} else {
-			System.out.println("Unsafe");
 			unsafe = true;
 		}
 	}
