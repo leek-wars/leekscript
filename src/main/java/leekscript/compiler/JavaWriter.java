@@ -156,7 +156,7 @@ public class JavaWriter {
 	}
 
 	public void compileLoad(MainLeekBlock mainblock, Expression expr) {
-		if (expr.getType() == Type.NULL || expr.getType() == Type.BOOL || expr.getType().isNumber() || expr.getType() == Type.STRING || expr.getType() == Type.ARRAY) {
+		if (expr.getType() == Type.NULL || expr.getType() == Type.BOOL || expr.getType().isNumber() || expr.getType() == Type.STRING || expr.getType().isArray()) {
 			expr.writeJavaCode(mainblock, this);
 		} else {
 			addCode("load(");
@@ -178,7 +178,7 @@ public class JavaWriter {
 	public void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type) {
 		// var v_type = value.getType();
 		// System.out.println("convert " + v_type + " to " + type);
-		if (type == Type.ARRAY) {
+		if (type.isArray()) {
 			addCode(mainblock.getVersion() >= 4 ? "toArray(" : "toLegacyArray(");
 			addCode(index + ", ");
 			value.writeJavaCode(mainblock, this);
@@ -264,7 +264,7 @@ public class JavaWriter {
 	private void writeFunctionCall(MainLeekBlock block, CallableVersion version, boolean cast) {
 		if (version.function.isStatic()) {
 			var function_name = version.function.getName();
-			if (version.return_type == Type.ARRAY && block.getVersion() <= 3) {
+			if (version.return_type.isArray() && block.getVersion() <= 3) {
 				function_name += "_v1_3";
 			}
 			addCode("return " + version.function.getStandardClass() + "Class." + function_name + "(");
@@ -330,7 +330,7 @@ public class JavaWriter {
 	}
 
 	private String convert(int index, String v, Type type, int version) {
-		if (type == Type.ARRAY) {
+		if (type.isArray()) {
 			if (version >= 4) return "toArray(" + index + ", " + v + ")";
 			else return "toLegacyArray(" + index + ", " + v + ")";
 		}

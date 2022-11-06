@@ -5,7 +5,6 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
-import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekArrayAccess extends Expression {
@@ -73,7 +72,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public Type getType() {
-		return Type.ANY;
+		return mTabular.getType().element();
 	}
 
 	@Override

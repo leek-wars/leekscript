@@ -1,17 +1,21 @@
 package leekscript.common;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 public class CompoundType extends Type {
 
-	private List<Type> types;
+	private HashSet<Type> types;
+
+	public CompoundType(HashSet<Type> types) {
+		super(String.join(" | ", types.stream().map(t -> t.name).collect(Collectors.toList())), "x", "Object", "Object", "null");
+		this.types = types;
+	}
 
 	public CompoundType(Type... types) {
 		super(String.join(" | ", Arrays.asList(types).stream().map(t -> t.name).collect(Collectors.toList())), "x", "Object", "Object", "null");
-		// super("compound", "", "", "", "");
-		this.types = Arrays.asList(types);
+		this.types = new HashSet<Type>(Arrays.asList(types));
 	}
 
 	@Override
@@ -34,7 +38,12 @@ public class CompoundType extends Type {
 		return this.types.stream().allMatch(t -> t.isNumber());
 	}
 
-	public List<Type> getTypes() {
+	@Override
+	public Type element() {
+		return Type.compound(this.types.stream().map(t -> t.element()).collect(Collectors.toCollection(HashSet::new)));
+	}
+
+	public HashSet<Type> getTypes() {
 		return types;
 	}
 }

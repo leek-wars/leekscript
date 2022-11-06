@@ -10,6 +10,7 @@ import leekscript.compiler.JavaWriter;
 public class Type {
 
 	public static final Map<HashSet<Type>, Type> compoundTypes = new HashMap<>();
+	public static final Map<Type, Type> arrayTypes = new HashMap<>();
 
 	public static final Type ANY = new Type("any", "x", "Object", "Object", "null");
 	public static final Type NULL = new Type("null", "u", "Object", "Object", "null");
@@ -18,15 +19,21 @@ public class Type {
 	public static final Type INT = new Type("int", "i", "long", "Long", "0l");
 	public static final Type REAL = new Type("real", "r", "double", "Double", "0.0");
 	public static final Type STRING = new Type("string", "s", "String", "String", "\"\"");
-	public static final Type ARRAY = new Type("Array", "a", "ArrayLeekValue", "ArrayLeekValue", "new ArrayLeekValue()");
 	public static final Type OBJECT = new Type("Object", "o", "ObjectLeekValue", "ObjectLeekValue", "new ObjectLeekValue()");
 	public static final Type FUNCTION = new Type("Function", "f", "FunctionLeekValue", "FunctionLeekValue", "new FunctionLeekValue(-1)");
 	public static final Type MAP = new Type("Map", "m", "MapLeekValue", "MapLeekValue", "new MapLeekValue()");
 	public static final Type CLASS = new Type("Class", "c", "ClassLeekValue", "ClassLeekValue", "new ClassLeekValue()");
 	public static final Type VOID = new Type("void", "v", "Object", "Object", "null");
+	public static final Type ARRAY = array(Type.ANY);
+	public static final Type ARRAY_INT = array(Type.INT);
+	public static final Type ARRAY_STRING = array(Type.STRING);
 	public static final Type INT_OR_NULL = compound(Type.INT, Type.NULL);
+	public static final Type BOOL_OR_NULL = compound(Type.BOOL, Type.NULL);
+	public static final Type INT_OR_BOOL = compound(Type.INT, Type.BOOL);
 	public static final Type ARRAY_OR_NULL = compound(Type.ARRAY, Type.NULL);
+	public static final Type ARRAY_INT_OR_NULL = compound(Type.ARRAY_INT, Type.NULL);
 	public static final Type STRING_OR_NULL = compound(Type.STRING, Type.NULL);
+	public static final Type INT_OR_REAL = compound(Type.INT, Type.REAL);
 
 	public static enum CastType {
 		EQUALS,
@@ -113,23 +120,14 @@ public class Type {
 	}
 
 	public String getJavaPrimitiveName(int version) {
-		if (this == Type.ARRAY) {
-			return version >= 4 ? "ArrayLeekValue" : "LegacyArrayLeekValue";
-		}
 		return javaPrimitiveName;
 	}
 
 	public String getJavaName(int version) {
-		if (this == Type.ARRAY) {
-			return version >= 4 ? "ArrayLeekValue" : "LegacyArrayLeekValue";
-		}
 		return javaName;
 	}
 
 	public String getDefaultValue(JavaWriter writer, int version) {
-		if (this == Type.ARRAY) {
-			return version >= 4 ? "new ArrayLeekValue(" + writer.getAIThis() + ")" : "new LegacyArrayLeekValue()";
-		}
 		if (this == Type.MAP) {
 			return "new MapLeekValue(" + writer.getAIThis() + ")";
 		}
@@ -157,15 +155,41 @@ public class Type {
 	}
 
 	public boolean isArray() {
-		return this == Type.ARRAY;
+		return false;
+	}
+
+	public static Type compound(HashSet<Type> types) {
+		var all = new HashSet<Type>();
+		for (var t : types) {
+			if (t instanceof CompoundType) {
+				all.addAll(((CompoundType) t).getTypes());
+			} else {
+				all.add(t);
+			}
+		}
+		var cached = compoundTypes.get(all);
+		if (cached != null) return cached;
+		var type = new CompoundType(all);
+		compoundTypes.put(all, type);
+		return type;
 	}
 
 	public static Type compound(Type... types) {
-		var set = new HashSet<Type>(Arrays.asList(types));
-		var cached = compoundTypes.get(set);
+		return compound(new HashSet<Type>(Arrays.asList(types)));
+	}
+
+	public static Type array(Type type) {
+		var cached = arrayTypes.get(type);
 		if (cached != null) return cached;
-		var type = new CompoundType(types);
-		compoundTypes.put(set, type);
-		return type;
+		var array = new ArrayType(type);
+		arrayTypes.put(type, array);
+		return array;
+	}
+
+	public Type element() {
+		if (this == ANY) {
+			return Type.ANY;
+		}
+		return Type.NULL;
 	}
 }

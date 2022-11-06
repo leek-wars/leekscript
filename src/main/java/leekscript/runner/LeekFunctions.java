@@ -103,8 +103,8 @@ public class LeekFunctions {
 			new CallableVersion(Type.INT, new Type[] { Type.STRING, Type.STRING }),
 		});
 		method("split", "String", true, new CallableVersion[] {
-			new CallableVersion(Type.ARRAY, new Type[] { Type.STRING, Type.STRING, Type.INT }),
-			new CallableVersion(Type.ARRAY, new Type[] { Type.STRING, Type.STRING }),
+			new CallableVersion(Type.ARRAY_STRING, new Type[] { Type.STRING, Type.STRING, Type.INT }),
+			new CallableVersion(Type.ARRAY_STRING, new Type[] { Type.STRING, Type.STRING }),
 		});
 		method("toLower", "String", true, Type.STRING, new Type[] { Type.STRING });
 		method("toUpper", "String", true, Type.STRING, new Type[] { Type.STRING });
@@ -136,8 +136,8 @@ public class LeekFunctions {
 		});
 		method("shuffle", "Array", Type.VOID, new Type[] { Type.ARRAY });
 		method("search", "Array", new CallableVersion[] {
-			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.ANY, Type.INT }),
-			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.ANY}),
+			new CallableVersion(Type.INT_OR_NULL, new Type[] { Type.ARRAY, Type.ANY, Type.INT }), // Return int | null because of V3
+			new CallableVersion(Type.INT_OR_NULL, new Type[] { Type.ARRAY, Type.ANY}),
 		});
 		method("inArray", "Array", Type.BOOL, new Type[] { Type.ARRAY, Type.ANY });
 		method("reverse", "Array", Type.VOID, new Type[] { Type.ARRAY });
