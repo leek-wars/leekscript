@@ -27,6 +27,10 @@ public class TestObject extends TestCommon {
 		code_v2_("return {a: 12 - 2 yo: -6}").equals("{a: 10, yo: -6}");
 		code_v2_("return {a: 12 b: 'yo' c: true d: [1 2 3]}").equals("{a: 12, b: \"yo\", c: true, d: [1, 2, 3]}");
 
+		section("Object in object");
+		code_v2_("var a = {x: 1} var b = {v: a} return b").equals("{v: {x: 1}}");
+		code_v2_("var a = {x: 1} var b = {v: a}.v return a == b").equals("true");
+
 		section("Classes");
 		code_v2_("class A { } return new A();").equals("A {}");
 		code_v2_("class A { a = 10 } var a = [new A()]; a[0].a++ return a[0].a").equals("11");

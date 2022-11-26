@@ -46,7 +46,7 @@ public class ObjectLeekValue {
 	}
 
 	public void addField(AI ai, String field, Object value, AccessLevel level, boolean isFinal) throws LeekRunException {
-		fields.put(field, new ObjectVariableValue(ai, LeekOperations.clone(ai, value), level, isFinal));
+		fields.put(field, new ObjectVariableValue(ai, value, level, isFinal));
 		ai.increaseRAM(2);
 	}
 
