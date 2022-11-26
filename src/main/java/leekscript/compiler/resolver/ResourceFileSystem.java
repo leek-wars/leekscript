@@ -37,7 +37,7 @@ public class ResourceFileSystem extends FileSystem {
 			Path parent = resolvedPath.getParent();
 			if (parent == null) parent = Paths.get(".");
 
-			return new Folder(0, 0, resolvedPath.toString(), folder, this.root, this);
+			return new Folder(0, 0, resolvedPath.toString(), folder, this.root, this, System.currentTimeMillis());
 
 		} catch (Exception e) {
 			return null;
@@ -83,5 +83,10 @@ public class ResourceFileSystem extends FileSystem {
 	@Override
 	public void loadDependencies(AIFile ai) {
 		// Nothing to load
+	}
+
+	@Override
+	public long getFolderTimestamp(Folder folder) {
+		return System.currentTimeMillis(); // Toujours expiré
 	}
 }

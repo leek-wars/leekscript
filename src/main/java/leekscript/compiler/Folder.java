@@ -15,6 +15,7 @@ public class Folder {
 	private Folder root = null;
 	private HashMap<String, AIFile> files = new HashMap<>();
 	protected HashMap<String, Folder> folders = new HashMap<>();
+	private long timestamp;
 
 	public Folder(int owner, FileSystem fs) {
 		this.fs = fs;
@@ -23,15 +24,17 @@ public class Folder {
 		this.name = ".";
 		this.parent = this;
 		this.root = this;
+		this.timestamp = 0;
 	}
 
-	public Folder(int id, int owner, String name, Folder parent, Folder root, FileSystem fs) {
+	public Folder(int id, int owner, String name, Folder parent, Folder root, FileSystem fs, long timestamp) {
 		this.fs = fs;
 		this.id = id;
 		this.owner = owner;
 		this.name = name;
 		this.parent = parent;
 		this.root = root;
+		this.timestamp = timestamp;
 	}
 
 	public void setParent(Folder folder) {
@@ -43,6 +46,8 @@ public class Folder {
 	}
 
 	public AIFile resolve(String path) throws FileNotFoundException {
+
+		// System.out.println("Resolve " + path);
 
 		// Chemin qui commence par / : on repart de la racine
 		if (path.startsWith("/")) {
@@ -87,7 +92,7 @@ public class Folder {
 		}
 
 		// Recherche d'un nouveau fichier
-		ai = fs.findFile(name, this);
+		ai = fs.findFile(name, this); // Throw si pas trouvé
 
 		this.files.put(name, ai);
 		return ai;
@@ -96,13 +101,24 @@ public class Folder {
 	public Folder getFolder(String name) {
 
 		var folder = this.folders.get(name);
-		if (folder != null) return folder;
+		if (folder != null) {
+			// Dossier pas modifié (supprimé) ?
+			if (fs.getFolderTimestamp(folder) <= folder.getTimestamp()) {
+				// System.out.println("Dossier " + folder.getName() + " en cache " + folder.getTimestamp());
+				return folder;
+			}
+			// System.out.println("Dossier " + folder.getName() + " expiré");
+		}
 
-		folder = fs.findFolder(name, this);
-		if (folder == null) return null;
+		// Recherche du dossier
+		folder = fs.findFolder(name, this); // Throw si pas trouvé
 
 		this.folders.put(name, folder);
 		return folder;
+	}
+
+	public long getTimestamp() {
+		return this.timestamp;
 	}
 
 	public AIFile getFileById(int id) {
@@ -134,6 +150,10 @@ public class Folder {
 		files.remove(ai.getName());
 	}
 
+	public void removeFolder(Folder folder) {
+		folders.remove(folder.getName());
+	}
+
 	public String getName() {
 		return name;
 	}
@@ -141,5 +161,9 @@ public class Folder {
 	@Override
 	public String toString() {
 		return name;
+	}
+
+	public Folder getParent() {
+		return parent;
 	}
 }

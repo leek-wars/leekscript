@@ -24,4 +24,6 @@ public abstract class FileSystem {
 	public abstract long getAITimestamp(AIFile ai);
 
 	public abstract void loadDependencies(AIFile ai);
+
+	public abstract long getFolderTimestamp(Folder folder);
 }

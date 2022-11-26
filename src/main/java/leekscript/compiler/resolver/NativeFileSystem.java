@@ -60,4 +60,10 @@ public class NativeFileSystem extends FileSystem {
 
 	}
 
+	@Override
+	public long getFolderTimestamp(Folder folder) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 }
