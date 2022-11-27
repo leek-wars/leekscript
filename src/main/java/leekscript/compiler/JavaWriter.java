@@ -185,7 +185,14 @@ public class JavaWriter {
 			addCode(")");
 			return;
 		}
-		if (type == Type.INT) {
+		else if (type.isMap()) {
+			addCode("toMap(");
+			addCode(index + ", ");
+			value.writeJavaCode(mainblock, this);
+			addCode(")");
+			return;
+		}
+		else if (type == Type.INT) {
 			if (value.getType() == Type.REAL) {
 				addCode("(long) (");
 				value.writeJavaCode(mainblock, this);
@@ -226,7 +233,7 @@ public class JavaWriter {
 			var versions = entry.getValue();
 			var first_version = versions.get(0);
 			var function = first_version.function;
-			var return_type = versions.size() == 1 ? versions.get(0).return_type : Type.NUMBER;
+			var return_type = Type.union(versions.stream().map(v -> v.return_type).toList());
 
 			addCode("private " + return_type.getJavaPrimitiveName(block.getVersion()) + " " + function.getStandardClass() + "_" + signature + "(");
 			for (int a = 0; a < first_version.arguments.length; ++a) {
@@ -334,7 +341,7 @@ public class JavaWriter {
 			if (version >= 4) return "toArray(" + index + ", " + v + ")";
 			else return "toLegacyArray(" + index + ", " + v + ")";
 		}
-		if (type == Type.MAP) {
+		if (type.isMap()) {
 			return "toMap(" + index + ", " + v + ")";
 		}
 		if (type == Type.FUNCTION) {

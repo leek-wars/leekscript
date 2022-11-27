@@ -1,8 +1,10 @@
 package leekscript.common;
 
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 import leekscript.compiler.JavaWriter;
@@ -11,6 +13,7 @@ public class Type {
 
 	public static final Map<HashSet<Type>, Type> compoundTypes = new HashMap<>();
 	public static final Map<Type, Type> arrayTypes = new HashMap<>();
+	public static final Map<Map.Entry<Type, Type>, Type> mapTypes = new HashMap<>();
 
 	public static final Type ANY = new Type("any", "x", "Object", "Object", "null");
 	public static final Type NULL = new Type("null", "u", "Object", "Object", "null");
@@ -21,7 +24,7 @@ public class Type {
 	public static final Type STRING = new Type("string", "s", "String", "String", "\"\"");
 	public static final Type OBJECT = new Type("Object", "o", "ObjectLeekValue", "ObjectLeekValue", "new ObjectLeekValue()");
 	public static final Type FUNCTION = new Type("Function", "f", "FunctionLeekValue", "FunctionLeekValue", "new FunctionLeekValue(-1)");
-	public static final Type MAP = new Type("Map", "m", "MapLeekValue", "MapLeekValue", "new MapLeekValue()");
+	public static final Type MAP = map(Type.ANY, Type.ANY);
 	public static final Type CLASS = new Type("Class", "c", "ClassLeekValue", "ClassLeekValue", "new ClassLeekValue()");
 	public static final Type VOID = new Type("void", "v", "Object", "Object", "null");
 	public static final Type ARRAY = array(Type.ANY);
@@ -34,6 +37,7 @@ public class Type {
 	public static final Type ARRAY_INT_OR_NULL = compound(Type.ARRAY_INT, Type.NULL);
 	public static final Type STRING_OR_NULL = compound(Type.STRING, Type.NULL);
 	public static final Type INT_OR_REAL = compound(Type.INT, Type.REAL);
+	public static final Type MAP_INT_STRING = map(Type.INT, Type.STRING);
 
 	public static enum CastType {
 		EQUALS,
@@ -128,9 +132,6 @@ public class Type {
 	}
 
 	public String getDefaultValue(JavaWriter writer, int version) {
-		if (this == Type.MAP) {
-			return "new MapLeekValue(" + writer.getAIThis() + ")";
-		}
 		return defaultValue;
 	}
 
@@ -150,11 +151,24 @@ public class Type {
 		return Type.ANY;
 	}
 
+
+	public static Type union(List<Type> types) {
+		var r = types.get(0);
+		for (var t = 1; t < types.size(); ++t) {
+			r = r.union(types.get(t));
+		}
+		return r;
+	}
+
 	public Object toJSON() {
 		return this.name;
 	}
 
 	public boolean isArray() {
+		return false;
+	}
+
+	public boolean isMap() {
 		return false;
 	}
 
@@ -184,6 +198,15 @@ public class Type {
 		var array = new ArrayType(type);
 		arrayTypes.put(type, array);
 		return array;
+	}
+
+	public static Type map(Type key, Type value) {
+		var entry = new AbstractMap.SimpleEntry<Type, Type>(key, value);
+		var cached = mapTypes.get(entry);
+		if (cached != null) return cached;
+		var map = new MapType(key, value);
+		mapTypes.put(entry, map);
+		return map;
 	}
 
 	public Type element() {
