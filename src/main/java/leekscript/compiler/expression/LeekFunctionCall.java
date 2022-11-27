@@ -10,7 +10,6 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
-import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -211,7 +210,7 @@ public class LeekFunctionCall extends Expression {
 			if (i < mParameters.size()) {
 				var parameter = mParameters.get(i);
 				// Java doesn't like a single null for Object... argument
-				if (argCount == 1 && parameter.getType() == Type.NULL && user_function == null && !unsafe) {
+				if (argCount == 1 && parameter.getType() == Type.NULL && user_function == null && system_function == null && !unsafe) {
 					writer.addCode("new Object[] { null }");
 					continue;
 				}
