@@ -189,5 +189,10 @@ public class TestGeneral extends TestCommon {
 		code("return number('12')").equals("12");
 		code_v1("return number('12.55')").equals("12,55");
 		code_v2_("return number('12.55')").equals("12.55");
+
+		section("Variables with accents");
+		code("var état = 12 return état").equals("12");
+		code("var ÀÖØÝàöøýÿ = 'yo' return ÀÖØÝàöøýÿ").equals("\"yo\"");
+		code("var nœud = [] return nœud").equals("[]");
 	}
 }

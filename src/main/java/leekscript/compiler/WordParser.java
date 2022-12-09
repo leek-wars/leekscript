@@ -149,7 +149,7 @@ public class WordParser {
 			}
 
 			// Identifier
-			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_') {
+			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' || (c >= 'À' &&  c <= 'Ö') || (c >= 'Ø' && c <= 'Ý') || (c >= 'à' && c <= 'ö') || (c >= 'ø' && c <= 'ý') || c == 'ÿ' || (c >= 'Œ' && c <= 'œ')) {
 				if (type == T_NOTHING) {
 					word += c;
 					type = T_STRING;
