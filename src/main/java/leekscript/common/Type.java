@@ -168,6 +168,10 @@ public class Type {
 		return false;
 	}
 
+	public boolean isArrayOrNull() {
+		return false;
+	}
+
 	public boolean isMap() {
 		return false;
 	}

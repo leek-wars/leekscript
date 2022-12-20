@@ -271,7 +271,7 @@ public class JavaWriter {
 	private void writeFunctionCall(MainLeekBlock block, CallableVersion version, boolean cast) {
 		if (version.function.isStatic()) {
 			var function_name = version.function.getName();
-			if (version.return_type.isArray() && block.getVersion() <= 3) {
+			if ((version.return_type.isArray() /* || version.return_type.isArrayOrNull() */) && block.getVersion() <= 3) {
 				function_name += "_v1_3";
 			}
 			addCode("return " + version.function.getStandardClass() + "Class." + function_name + "(");

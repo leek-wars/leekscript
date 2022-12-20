@@ -46,4 +46,8 @@ public class CompoundType extends Type {
 	public HashSet<Type> getTypes() {
 		return types;
 	}
+
+	public boolean isArrayOrNull() {
+		return types.stream().anyMatch(t -> t.isArray()) && types.stream().anyMatch(t -> t == Type.NULL);
+	}
 }
