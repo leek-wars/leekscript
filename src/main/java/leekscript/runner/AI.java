@@ -700,6 +700,14 @@ public abstract class AI {
 		throw new RuntimeException("Valeur invalide : " + value);
 	}
 
+	public int signum(Object value) throws LeekRunException {
+		// Pour un float, on utile signum sinon ils sont castés en int 0
+		if (value instanceof Double) {
+			return (int) Math.signum((Double) value);
+		}
+		return integer(value);
+	}
+
 	public boolean not(Object value) throws LeekRunException {
 		return !bool(value);
 	}

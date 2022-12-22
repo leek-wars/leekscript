@@ -603,7 +603,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 			@Override
 			public int compare(Object o1, Object o2) {
 				try {
-					return (int) ai.integer(function.run(ai, null, o1, o2));
+					return ai.signum(function.run(ai, null, o1, o2));
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
