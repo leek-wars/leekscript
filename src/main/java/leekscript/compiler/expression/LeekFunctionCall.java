@@ -31,6 +31,7 @@ public class LeekFunctionCall extends Expression {
 	private boolean unsafe = false;
 	private ArrayList<CallableVersion> callable_versions = null;
 	private LeekFunctions system_function = null;
+	private boolean is_method = false;
 
 	public LeekFunctionCall(Token openParenthesis) {
 		this.openParenthesis = openParenthesis;
@@ -210,7 +211,7 @@ public class LeekFunctionCall extends Expression {
 			if (i < mParameters.size()) {
 				var parameter = mParameters.get(i);
 				// Java doesn't like a single null for Object... argument
-				if (argCount == 1 && parameter.getType() == Type.NULL && user_function == null && system_function == null && !unsafe) {
+				if (argCount == 1 && parameter.getType() == Type.NULL && user_function == null && system_function == null && !unsafe && !is_method) {
 					writer.addCode("new Object[] { null }");
 					continue;
 				}
@@ -426,6 +427,7 @@ public class LeekFunctionCall extends Expression {
 									} else if (staticMethod.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
 										compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
 									}
+									is_method = true;
 									return; // OK
 								}
 							}
@@ -444,6 +446,7 @@ public class LeekFunctionCall extends Expression {
 							} else if (field.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
 								compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_FIELD, new String[] { clazz.getName(), oa.getField() }));
 							}
+							is_method = true;
 							return; // OK
 						}
 						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), oa.getField() }));

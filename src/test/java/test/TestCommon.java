@@ -222,7 +222,7 @@ public class TestCommon {
 				success++;
 			} else {
 				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "] " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
-				"/home/pierre/dev/leek-wars/server/daemon/generator-v1/leekscript-v1/ai/AI_" + aiID + ".java";
+				"/home/pierre/dev/leek-wars/generator/leekscript/ai/AI_" + aiID + ".java";
 				System.out.println(err);
 				failedTests.add(err);
 			}

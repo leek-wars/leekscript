@@ -284,6 +284,9 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static m(x = 12) { return arrayMap([1, 1, 1], (_) => x) } } return A.m()").equals("[12, 12, 12]");
 		code_v2_("class A { static m(x = 12, y = x) { return arrayMap([1, 1, 1], (_) => x + y) } } return A.m()").equals("[24, 24, 24]");
 
+		section("Static method null argument");
+		code_v2_("class Debug { static log(x) { debug(x) } } Debug.log(null)").equals("null");
+
 		section("Methods");
 		code_v2_("class A { a(x) { b(x) } b(x, y) {} }").error(Error.INVALID_PARAMETER_COUNT);
 		code_v2_("class A { a(x) { this.b(x) } b(x, y) {} }").error(Error.INVALID_PARAMETER_COUNT);
