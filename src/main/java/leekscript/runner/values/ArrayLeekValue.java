@@ -962,9 +962,9 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public ArrayLeekValue arrayRandom(AI ai, long count) throws LeekRunException {
-		ai.ops(size());
+		ai.ops(5 + size());
 		var result = new ArrayLeekValue(ai, this);
-		shuffle(ai);
+		result.shuffle(ai);
 		var finalCount = Math.max(0, Math.min((int) count, size()));
 		result.removeRange(finalCount, size());
 		ai.decreaseRAM(size() - finalCount);
