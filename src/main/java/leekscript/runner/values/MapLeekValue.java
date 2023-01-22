@@ -329,7 +329,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	public Object mapRemoveAll(AI ai, Object value) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		var sizeBefore = size();
-		entrySet().removeIf(entry -> entry.getValue().equals(value));
+		entrySet().removeIf(entry -> (entry.getValue() == null && value == null) || entry.getValue().equals(value));
 		ai.decreaseRAM(2 * (sizeBefore - size()));
 		return null;
 	}

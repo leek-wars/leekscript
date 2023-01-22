@@ -270,6 +270,7 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = [1 : 2] mapRemoveAll(a, 2) return a").equals("[:]");
 		code_v4_("var a = [1 : 2, 2 : 2, 3 : 10] mapRemoveAll(a, 55) return a").equals("[1 : 2, 2 : 2, 3 : 10]");
 		code_v4_("var a = [1 : 2, 2 : 2, 3 : 10, 4 : 2] mapRemoveAll(a, 2) return a").equals("[3 : 10]");
+		code_v4_("var a = [1 : null, 2 : 2, 3 : null] mapRemoveAll(a, null) return a").equals("[2 : 2]");
 
 		section("Map.replace()");
 		code_v1_3("return mapReplace([2 : 8], 2, 10)").error(Error.FUNCTION_NOT_AVAILABLE);
