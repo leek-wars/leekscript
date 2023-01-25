@@ -37,4 +37,8 @@ public class MapType extends Type {
 	public boolean isMap() {
 		return true;
 	}
+
+	public boolean canBeIterable() {
+		return true;
+	}
 }

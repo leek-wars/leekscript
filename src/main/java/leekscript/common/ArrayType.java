@@ -41,4 +41,8 @@ public class ArrayType extends Type {
 	public boolean isArray() {
 		return true;
 	}
+
+	public boolean canBeIterable() {
+		return true;
+	}
 }

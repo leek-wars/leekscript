@@ -219,4 +219,11 @@ public class Type {
 		}
 		return Type.NULL;
 	}
+
+	public boolean canBeIterable() {
+		if (this == ANY) {
+			return true;
+		}
+		return false;
+	}
 }

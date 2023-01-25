@@ -50,4 +50,8 @@ public class CompoundType extends Type {
 	public boolean isArrayOrNull() {
 		return types.stream().anyMatch(t -> t.isArray()) && types.stream().anyMatch(t -> t == Type.NULL);
 	}
+
+	public boolean canBeIterable() {
+		return this.types.stream().anyMatch(t -> t.canBeIterable());
+	}
 }

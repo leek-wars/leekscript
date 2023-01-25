@@ -107,6 +107,11 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		mArray.analyze(compiler);
+
+		if (!mArray.getType().canBeIterable()) {
+			compiler.addError(new AnalyzeError(mArray.getLocation(), AnalyzeErrorLevel.WARNING, Error.NOT_ITERABLE, new String[] { mArray.getType().name } ));
+		}
+
 		compiler.setCurrentBlock(initialBlock);
 		super.analyze(compiler);
 	}

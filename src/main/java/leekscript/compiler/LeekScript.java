@@ -1,6 +1,5 @@
 package leekscript.compiler;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Random;
 
