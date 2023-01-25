@@ -247,7 +247,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	public Object mapIter(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		for (var entry : this.entrySet()) {
-			function.run(ai, null, entry.getValue(), entry.getKey());
+			function.run(ai, null, entry.getValue(), entry.getKey(), this);
 		}
 		return null;
 	}
