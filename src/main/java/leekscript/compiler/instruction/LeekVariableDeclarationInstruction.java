@@ -68,14 +68,14 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 				writer.addLine(");", getLocation());
 			} else if (mValue instanceof LeekExpression && ((LeekExpression) mValue).getOperator() == Operators.REFERENCE) {
 				var e = ((LeekExpression) mValue).getExpression2();
-				if (e.isLeftValue()) {
+				if (e.isLeftValue() && !(e instanceof LeekVariable v && v.getVariableType() == VariableType.GLOBAL)) {
 					writer.addCode("final Wrapper u_" + token.getWord() + " = new Wrapper(");
 					e.compileL(mainblock, writer);
-					writer.addLine(", " + e.getOperations() + ")");
+					writer.addCode(", " + e.getOperations() + ")");
 				} else {
 					writer.addCode("final var u_" + token.getWord() + " = new Wrapper(new Box(" + writer.getAIThis() + ", ");
 					e.writeJavaCode(mainblock, writer);
-					writer.addLine("), " + e.getOperations() + ")");
+					writer.addCode("), " + e.getOperations() + ")");
 				}
 				writer.addLine(";", getLocation());
 			} else if (mainblock.getWordCompiler().getVersion() <= 1) {

@@ -775,7 +775,7 @@ public class LeekExpression extends Expression {
 
 			// Les assignations
 		case Operators.ASSIGN:
-			// Assign without clone for LS 1.1 or reference
+			// Assign without clone for LS 2 or reference
 			if (mainblock.getVersion() >= 2) {
 				mExpression1.compileSet(mainblock, writer, mExpression2);
 			} else if (mExpression2 instanceof LeekExpression && ((LeekExpression) mExpression2).getOperator() == Operators.REFERENCE) {

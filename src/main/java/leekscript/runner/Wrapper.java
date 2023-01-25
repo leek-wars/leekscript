@@ -16,6 +16,11 @@ public class Wrapper {
 		this.variable.getAI().ops(ops);
 	}
 
+	public Wrapper(Wrapper wrapper, int ops) throws LeekRunException {
+		this.variable = wrapper.variable;
+		this.variable.getAI().ops(ops);
+	}
+
 	public Object setBox(Box variable) {
 		this.variable = variable;
 		return this.variable.getValue();
