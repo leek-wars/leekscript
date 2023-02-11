@@ -79,6 +79,7 @@ public class LeekScript {
 		var file = new AIFile("<snippet " + ai_id + ">", snippet, System.currentTimeMillis(), version, (int) ai_id);
 		file.setJavaClass("AI_" + ai_id);
 		file.setRootClass(AIClass);
+		file.setId((int) ai_id);
 		return file.compile(false);
 	}
 
