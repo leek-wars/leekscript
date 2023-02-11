@@ -1,7 +1,15 @@
 package leekscript.compiler.resolver;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import leekscript.compiler.AIFile;
 import leekscript.compiler.Folder;
+import leekscript.compiler.LeekScript;
 
 public class NativeFileSystem extends FileSystem {
 
@@ -20,49 +28,68 @@ public class NativeFileSystem extends FileSystem {
 
 	@Override
 	public AIFile getFileById(int id, int farmer) {
-		// TODO Auto-generated method stub
+		// System.out.println("NativeFileSystem.getFileById() " + id + " " + farmer);
 		return null;
 	}
 
 	@Override
 	public Folder getRoot(int owner) {
-		// TODO Auto-generated method stub
-		return null;
+		return root;
 	}
 
 	@Override
 	public Folder findFolder(String name, Folder folder) {
-		// TODO Auto-generated method stub
-		return null;
+		// System.out.println("NativeFileSystem.findFolder() " + name + " " + folder);
+		try {
+			var root = Paths.get(folder.getName()).toFile();
+			Path resolvedPath = root.toPath().resolve(name).normalize();
+
+			Path parent = resolvedPath.getParent();
+			if (parent == null) parent = Paths.get(".");
+
+			return new Folder(0, 0, resolvedPath.toString(), folder, this.root, this, System.currentTimeMillis());
+
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	@Override
-	public AIFile findFile(String name, Folder folder) {
-		// TODO Auto-generated method stub
-		return null;
+	public AIFile findFile(String name, Folder folder) throws FileNotFoundException {
+		// System.out.println("NativeFileSystem.findFile() " + name + " " + folder);
+		try {
+			var root = Paths.get(folder.getName()).toFile();
+			Path resolvedPath = root.toPath().resolve(name).normalize();
+
+			String code = Files.readString(resolvedPath, StandardCharsets.UTF_8);
+
+			Path parent = resolvedPath.getParent();
+			if (parent == null) parent = Paths.get(".");
+
+			long timestamp = resolvedPath.toFile().lastModified();
+
+			return new AIFile(name, code, timestamp, LeekScript.LATEST_VERSION, folder, folder.getOwner(), resolvedPath.toString().hashCode() & 0xfffffff);
+
+		} catch (Exception e) {
+			throw new FileNotFoundException();
+		}
 	}
 
 	@Override
 	public Folder getFolderById(int id, int farmer) {
-		// TODO Auto-generated method stub
-		return null;
+		return root;
 	}
 
 	@Override
 	public long getAITimestamp(AIFile ai) {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
-	public void loadDependencies(AIFile ai) {
-		// TODO Auto-generated method stub
-
-	}
+	public void loadDependencies(AIFile ai) {}
 
 	@Override
 	public long getFolderTimestamp(Folder folder) {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
