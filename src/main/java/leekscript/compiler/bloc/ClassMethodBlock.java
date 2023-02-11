@@ -4,16 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 import leekscript.common.Type;
+import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
+import leekscript.common.Error;
 
 public class ClassMethodBlock extends AbstractLeekBlock {
 
@@ -58,6 +61,14 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	}
 
 	public void addParameter(WordCompiler compiler, Token token, Token equal, Expression defaultValue) {
+
+		// Existe déjà ?
+		for (var param : mParameters) {
+			if (param.getWord().equals(token.getWord())) {
+				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.DUPLICATED_ARGUMENT, new String[] { token.getWord() }));
+			}
+		}
+
 		mParameters.add(token);
 		defaultValues.add(defaultValue);
 		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this);

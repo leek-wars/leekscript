@@ -313,6 +313,11 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { m(x = 12) { return arrayMap([1, 1, 1], (_) => x) } } return new A().m()").equals("[12, 12, 12]");
 		code_v2_("class A { m(x = 12, y = x) { return arrayMap([1, 1, 1], (_) => x + y) } } return new A().m()").equals("[24, 24, 24]");
 
+		section("Duplicated method argument");
+		code_v2_("class A { m(x, x) {} }").error(Error.DUPLICATED_ARGUMENT);
+		code_v2_("class A { static m(x, x) {} }").error(Error.DUPLICATED_ARGUMENT);
+		code_v2_("class A { constructor(x, x) {} }").error(Error.DUPLICATED_ARGUMENT);
+
 		section("Field access by array access");
 		code_v2_("var test = {} test['a'] = 8 return test").equals("{a: 8}");
 		code_v2_("var test = {} test['a'] = 8 test['b'] = 12 return test").equals("{a: 8, b: 12}");
