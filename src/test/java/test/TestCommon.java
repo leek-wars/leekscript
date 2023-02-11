@@ -153,6 +153,16 @@ public class TestCommon {
 			});
 		}
 
+		public void ops(long ops) {
+			run(new Checker() {
+				public boolean check(Result result) {
+					return result.operations == ops;
+				}
+				public String getExpected() { return String.valueOf(ops); }
+				public String getResult(Result result) { return String.valueOf(result.operations); }
+			});
+		}
+
 		public String run(Checker checker) {
 			if (!enabled) {
 				disabled++;

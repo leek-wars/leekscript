@@ -43,6 +43,7 @@ public class TestMain {
 		new TestFunction().run();
 		new TestSystem().run();
 		new TestJSON().run();
+		new TestOperations().run();
 		new TestFiles().run();
 		new TestEuler().run();
 
