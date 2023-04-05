@@ -200,7 +200,7 @@ public class LeekVariable extends Expression {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		if (type == VariableType.THIS) {
-			writer.addCode("this");
+			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".this");
 		} else if (type == VariableType.THIS_CLASS) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable());
 		} else if (type == VariableType.SUPER) {
@@ -268,7 +268,7 @@ public class LeekVariable extends Expression {
 	@Override
 	public void compileL(MainLeekBlock mainblock, JavaWriter writer) {
 		if (type == VariableType.THIS) {
-			writer.addCode("this");
+			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".this");
 		} else if (type == VariableType.THIS_CLASS) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable());
 		} else if (type == VariableType.SUPER) {
