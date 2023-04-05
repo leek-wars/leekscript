@@ -526,7 +526,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	 */
 	public long search(AI ai, Object value, long pos) throws LeekRunException {
 		ai.opsNoCheck(1);
-		for (var i = (int) pos; i < size(); ++i) {
+		for (var i = Math.max(0, (int) pos); i < size(); ++i) {
 			var e = get(i);
 			if (value == null ? e == value : value.equals(e)) {
 				ai.ops(i);
@@ -594,6 +594,13 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	public void sort(AI ai, Comparator<Object> comparator) throws LeekRunException {
 		ai.ops(1 + (int) (5 * size() * Math.log(size())));
 		Collections.sort(this, comparator);
+	}
+
+	public ArrayLeekValue arraySort(AI ai) throws LeekRunException {
+		ai.ops(1 + (int) (5 * size() * Math.log(size())));
+		var result = new ArrayLeekValue(ai, this, 1);
+		Collections.sort(result, new ElementComparator(ASC));
+		return result;
 	}
 
 	public ArrayLeekValue arraySort(AI ai, FunctionLeekValue function) throws LeekRunException {

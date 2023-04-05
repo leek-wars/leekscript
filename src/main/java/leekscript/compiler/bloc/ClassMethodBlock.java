@@ -165,7 +165,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 
-		writer.addLine("", getLocation());
+		// writer.addLine("", getLocation());
 
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0) {

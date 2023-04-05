@@ -23,7 +23,7 @@ public class Box {
 		if (ai.getVersion() >= 2) {
 			mValue = value;
 		} else if (value instanceof Box) {
-			mValue = LeekOperations.clone(ai, ((Box) value).getValue());
+			mValue = LeekOperations.clone(ai, ((Box) value).get());
 		} else {
 			mValue = value;
 		}
@@ -34,17 +34,21 @@ public class Box {
 		ai.ops(ops);
 	}
 
-	public Object getValue() {
+	public Object get() {
 		return mValue;
 	}
 
 	public Object set(Object value) throws LeekRunException {
 		// mUAI.ops(1);
 		if (mUAI.getVersion() >= 2) {
-			return mValue = LeekValueManager.getValue(value);
+			if (value instanceof Box) {
+				return mValue = ((Box) value).get();
+			} else {
+				return mValue = value;
+			}
 		} else {
 			if (value instanceof Box) {
-				return mValue = LeekOperations.clone(mUAI, ((Box) value).getValue());
+				return mValue = LeekOperations.clone(mUAI, ((Box) value).get());
 			} else {
 				return mValue = value;
 			}
@@ -52,7 +56,11 @@ public class Box {
 	}
 
 	public Object setRef(Object value) throws LeekRunException {
-		return mValue = LeekValueManager.getValue(value);
+		if (value instanceof Box box) {
+			return mValue = box.get();
+		} else {
+			return mValue = value;
+		}
 	}
 
 	public void initGlobal(Object value) throws LeekRunException {
@@ -196,15 +204,15 @@ public class Box {
 	}
 
 	public Object getField(String field, ClassLeekValue fromClass) throws LeekRunException {
-		if (mValue instanceof ObjectLeekValue) {
-			return ((ObjectLeekValue) mValue).getField(field, fromClass);
+		if (mValue instanceof ObjectLeekValue object) {
+			return object.getField(field, fromClass);
 		}
 		return null;
 	}
 
 	public Box getFieldL(String field) throws LeekRunException {
-		if (mValue instanceof ObjectLeekValue) {
-			return ((ObjectLeekValue) mValue).getFieldL(field);
+		if (mValue instanceof ObjectLeekValue object) {
+			return object.getFieldL(field);
 		}
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
@@ -226,6 +234,6 @@ public class Box {
 
 	@Override
 	public String toString() {
-		return mValue != null ? mValue.toString() : "null";
+		return "Box(" + (mValue != null ? mValue.toString() : "null") + ")";
 	}
 }

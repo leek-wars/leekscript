@@ -451,7 +451,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						var arg = block.getParametersDeclarations().get(a);
 						if (a > 0) writer.addCode(", ");
 						if (arg.isCaptured()) {
-							writer.addCode("u_" + arg.getName() + ".getValue()");
+							writer.addCode("u_" + arg.getName() + ".get()");
 						} else {
 							writer.addCode("u_" + arg.getName());
 						}
@@ -515,7 +515,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						var arg = block.getParametersDeclarations().get(a);
 						writer.addCode(", ");
 						if (arg.isCaptured()) {
-							writer.addCode("u_" + arg.getName() + ".getValue()");
+							writer.addCode("u_" + arg.getName() + ".get()");
 						} else {
 							writer.addCode("u_" + arg.getName());
 						}
@@ -574,7 +574,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						var arg = block.getParametersDeclarations().get(a);
 						writer.addCode(", ");
 						if (arg.isCaptured()) {
-							writer.addCode("u_" + arg.getName() + ".getValue()");
+							writer.addCode("u_" + arg.getName() + ".get()");
 						} else {
 							writer.addCode("u_" + arg.getName());
 						}
@@ -878,6 +878,33 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 		if (parent != null) {
 			return parent.getField(token);
+		}
+		return null;
+	}
+
+	public Error canAccessField(String field, ClassDeclarationInstruction fromClass) {
+		var f = fields.get(field);
+		if (f != null) {
+			if (fromClass == this || this.descendsFrom(fromClass)) {
+				return null;
+			} else {
+				// Protected : Access from descendant
+				if (fromClass != null && fromClass.descendsFrom(this)) {
+					if (f.level == AccessLevel.PRIVATE) {
+						return Error.PRIVATE_FIELD;
+					}
+					return null;
+				} else {
+					// Public : Access from outside
+					if (f.level != AccessLevel.PUBLIC) {
+						return f.level == AccessLevel.PROTECTED ? Error.PROTECTED_FIELD : Error.PRIVATE_FIELD;
+					}
+					return null;
+				}
+			}
+		}
+		if (parent != null) {
+			return parent.canAccessField(field, fromClass);
 		}
 		return null;
 	}

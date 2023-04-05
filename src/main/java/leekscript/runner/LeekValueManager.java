@@ -76,25 +76,8 @@ public class LeekValueManager {
 		return "Class " + o.getClass().getSimpleName();
 	}
 
-	public static Object getValue(Object value) {
-		if (value instanceof Box) {
-			return ((Box) value).getValue();
-		}
-		return value;
-	}
-
 	public static long bnot(AI ai, Object value) throws LeekRunException {
 		return ~ai.longint(value);
-	}
-
-	public static FunctionLeekValue getFunction(AI ai, Object value) throws LeekRunException {
-		var v = getValue(value);
-		if (v instanceof FunctionLeekValue) {
-			return (FunctionLeekValue) v;
-		}
-		// On ne peux pas exécuter ce type de variable
-		ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { ai.export(value) });
-		return null;
 	}
 
 	public static Box getOrCreate(AI ai, Object value, Object index) throws LeekRunException {
@@ -137,7 +120,7 @@ public class LeekValueManager {
 		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT;
 		if (v instanceof ClassLeekValue) return LeekValue.CLASS;
 		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION;
-		if (v instanceof Box) return getType(((Box) v).getValue());
+		if (v instanceof Box) return getType(((Box) v).get());
 		return 0;
 	}
 
@@ -150,7 +133,7 @@ public class LeekValueManager {
 		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT_V1;
 		if (v instanceof ClassLeekValue) return LeekValue.CLASS_V1;
 		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION_V1;
-		if (v instanceof Box) return getV1Type(((Box) v).getValue());
+		if (v instanceof Box box) return getV1Type(box.get());
 		return 0;
 	}
 

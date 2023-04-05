@@ -731,7 +731,7 @@ public class WordCompiler {
 		if (mMain.hasUserClass(word.getWord())) {
 			throw new LeekCompilerException(word, Error.VARIABLE_NAME_UNAVAILABLE);
 		}
-		if (getVersion() >= 3 && isKeyword(word)) {
+		if (isKeyword(word)) {
 			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() }));
 		}
 		ClassDeclarationInstruction classDeclaration = new ClassDeclarationInstruction(word, mLine, mAI, false, getMainBlock());
@@ -826,7 +826,7 @@ public class WordCompiler {
 
 		if (name.getWord().equals("super") || name.getWord().equals("class")) {
 			addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { name.getWord() }));
-		} else if (getVersion() >= 3 && isKeyword(name)) {
+		} else if (isKeyword(name)) {
 			addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { name.getWord() }));
 		}
 

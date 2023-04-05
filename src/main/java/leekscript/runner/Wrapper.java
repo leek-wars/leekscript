@@ -23,7 +23,7 @@ public class Wrapper {
 
 	public Object setBox(Box variable) {
 		this.variable = variable;
-		return this.variable.getValue();
+		return this.variable.get();
 	}
 
 	public Object set(Object value) throws LeekRunException {
@@ -32,9 +32,9 @@ public class Wrapper {
 	}
 
 	public Object setBoxOrValue(Object value) throws LeekRunException {
-		if (value instanceof Box) {
-			this.variable = (Box) value;
-			return this.variable.getValue();
+		if (value instanceof Box box) {
+			this.variable = box;
+			return this.variable.get();
 		} else {
 			return this.variable.set(value);
 		}
@@ -44,8 +44,8 @@ public class Wrapper {
 		return variable;
 	}
 
-	public Object getValue() {
-		return variable.getValue();
+	public Object get() {
+		return variable.get();
 	}
 
 	public Object increment() throws LeekRunException {
@@ -110,5 +110,10 @@ public class Wrapper {
 
 	public long ushr_eq(Object x) throws LeekRunException {
 		return variable.ushr_eq(x);
+	}
+
+	@Override
+	public String toString() {
+		return "Wrapper(" + variable.get() + ")";
 	}
 }

@@ -14,6 +14,9 @@ public class TestOperations extends TestCommon {
 		code("2 \\ 2").ops(5);
 		code("2 % 2").ops(5);
 
+		section("Conditions");
+		code("if (1) {}").ops(1);
+
 		section("Boolean operators");
 		code("1 or 2").ops(1);
 		code("1 and 2").ops(1);

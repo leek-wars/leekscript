@@ -87,6 +87,10 @@ public class LeekObjectAccess extends Expression {
 					if (this.variable == null) {
 						compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), field.getWord() }));
 					} else {
+						var error = clazz.canAccessField(field.getWord(), clazz);
+						if (error != null) {
+							compiler.addError(new AnalyzeError(this.getLocation(), AnalyzeErrorLevel.ERROR, error, new String[] { clazz.getName(), field.getWord() }));
+						}
 						this.isFinal = this.variable.isFinal();
 						this.isLeftValue = this.variable.isLeftValue();
 					}
@@ -138,8 +142,8 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if (mainblock.getWordCompiler().getVersion() >= 3 && field.getWord().equals("class")) {
-			writer.addCode("getClass(");
+		if (mainblock.getWordCompiler().getVersion() >= 2 && field.getWord().equals("class")) {
+			writer.addCode("classOf(");
 			object.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else {
@@ -159,8 +163,8 @@ public class LeekObjectAccess extends Expression {
 	public void compileL(MainLeekBlock mainblock, JavaWriter writer) {
 		assert (object.isLeftValue() && !object.nullable());
 
-		if (mainblock.getWordCompiler().getVersion() >= 3 && field.getWord().equals("class")) {
-			writer.addCode("getClass(");
+		if (mainblock.getWordCompiler().getVersion() >= 2 && field.getWord().equals("class")) {
+			writer.addCode("classOf(");
 			object.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else {

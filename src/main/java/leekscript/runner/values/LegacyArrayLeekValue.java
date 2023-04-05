@@ -109,9 +109,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		public int compare(Element v1, Element v2) {
 			try {
 				if (mOrder == SORT_ASC)
-					return compareAsc(v1.value.getValue(), v2.value.getValue());
+					return compareAsc(v1.value.get(), v2.value.get());
 				else if (mOrder == SORT_DESC)
-					return compareAsc(v2.value.getValue(), v1.value.getValue());
+					return compareAsc(v2.value.get(), v1.value.get());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -171,9 +171,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		public int compare(Element v1, Element v2) {
 			try {
 			if (mOrder == SORT_ASC)
-				return compareAsc(v1.value.getValue(), v2.value.getValue());
+				return compareAsc(v1.value.get(), v2.value.get());
 			else if (mOrder == SORT_DESC)
-				return compareAsc(v2.value.getValue(), v1.value.getValue());
+				return compareAsc(v2.value.get(), v1.value.get());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -259,7 +259,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 		@Override
 		public Object next() {
-			var v = e.value.getValue();
+			var v = e.value.get();
 			if (e != null)
 				e = e.prev;
 			return v;
@@ -295,7 +295,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 		@Override
 		public Object getValue() {
-			return value.getValue();
+			return value.get();
 		}
 
 		public Object valueBox() {
@@ -307,7 +307,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 
 		public String toString() {
-			return value.getValue().toString();
+			return value.get().toString();
 		}
 
 		@Override
@@ -353,12 +353,12 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			while (e != null) {
 				if (ai.getVersion() >= 2) {
 					if (level == 1) {
-						set(ai, e.key, e.value.getValue());
+						set(ai, e.key, e.value.get());
 					} else {
-						set(ai, e.key, LeekOperations.clone(ai, e.value.getValue(), level - 1));
+						set(ai, e.key, LeekOperations.clone(ai, e.value.get(), level - 1));
 					}
 				} else {
-					set(ai, e.key, LeekOperations.clone(ai, e.value.getValue()));
+					set(ai, e.key, LeekOperations.clone(ai, e.value.get()));
 				}
 				e = e.next;
 			}
@@ -618,7 +618,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		mEnd = null;
 		mSize = 0;
 		while (e != null) {
-			set(ai, e.key, e.value.getValue());
+			set(ai, e.key, e.value.get());
 			e = e.next;
 		}
 	}
@@ -651,7 +651,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	public Object get(AI ai, Object keyValue) throws LeekRunException {
 		var key = transformKey(ai, keyValue);
 		Element e = getElement(ai, key);
-		return e == null ? null : e.value.getValue();
+		return e == null ? null : e.value.get();
 	}
 
 	public Box getBox(AI ai, Object keyValue) throws LeekRunException {
@@ -673,7 +673,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		Element e = mHead;
 		int i = 0;
 		while (e != null) {
-			if (ai.eq(e.value.getValue(), value)) {
+			if (ai.eq(e.value.get(), value)) {
 				ai.ops(i);
 				return true;
 			}
@@ -689,7 +689,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		Element e = mHead;
 		int i = 0;
 		while (e != null) {
-			if (ai.equals_equals(e.value.getValue(), value)) {
+			if (ai.equals_equals(e.value.get(), value)) {
 				ai.ops(i);
 				return e.key;
 			}
@@ -713,7 +713,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		Element e = mHead;
 		int p = 0;
 		while (e != null) {
-			if (p >= pos && LeekValueManager.getType(e.value) == LeekValueManager.getType(value) && ai.eq(e.value.getValue(), value)) {
+			if (p >= pos && LeekValueManager.getType(e.value) == LeekValueManager.getType(value) && ai.eq(e.value.get(), value)) {
 				return e.key;
 			}
 			e = e.next;
@@ -731,7 +731,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			if (p == index) {
 				remove(ai, e.key);
 				reindex(ai);
-				return e.value.getValue();
+				return e.value.get();
 			}
 			e = e.next;
 			p++;
@@ -908,6 +908,15 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			reindex(ai);
 	}
 
+	public LegacyArrayLeekValue arraySort(AI ai) throws LeekRunException {
+		ai.ops(1 + (int) (5 * size() * Math.log(size())));
+
+		var array = (LegacyArrayLeekValue) LeekOperations.clone(ai, this);
+
+		array.sort(ai);
+		return array;
+	}
+
 	public LegacyArrayLeekValue arraySort(AI ai, final FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + (int) (5 * size() * Math.log(size())));
 		try {
@@ -1007,7 +1016,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		ai.ops(1 + size());
 		Element e = mHead;
 		while (e != null) {
-			if (LeekValueManager.getType(e.value) == LeekValueManager.getType(value) && ai.eq(e.value.getValue(), value)) {
+			if (LeekValueManager.getType(e.value) == LeekValueManager.getType(value) && ai.eq(e.value.get(), value)) {
 				// On a notre élément à supprimer
 				// On l'enleve de la HashMap
 				removeFromHashmap(ai, e);
@@ -1656,16 +1665,16 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 				}
 				sb.append(" : ");
 			}
-			if (visited.contains(e.value.getValue())) {
+			if (visited.contains(e.value.get())) {
 				sb.append("<...>");
 			} else {
-				if (!ai.isPrimitive(e.value.getValue())) {
-					visited.add(e.value.getValue());
+				if (!ai.isPrimitive(e.value.get())) {
+					visited.add(e.value.get());
 				}
 				if (export) {
-					sb.append(ai.export(e.value.getValue(), visited));
+					sb.append(ai.export(e.value.get(), visited));
 				} else {
-					sb.append(ai.string(e.value.getValue(), visited));
+					sb.append(ai.string(e.value.get(), visited));
 				}
 			}
 			e = e.next;
@@ -1710,7 +1719,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		while (e1 != null) {
 			if (!e1.key.equals(e2.key))
 				return false;
-			if (!ai.eq(e1.value.getValue(), e2.value.getValue()))
+			if (!ai.eq(e1.value.get(), e2.value.get()))
 				return false;
 			e1 = e1.next;
 			e2 = e2.next;

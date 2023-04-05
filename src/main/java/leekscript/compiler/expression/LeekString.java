@@ -94,4 +94,8 @@ public class LeekString extends Expression {
 		hover.setSize(mString.length());
 		return hover;
 	}
+
+	public String getText() {
+		return mString;
+	}
 }

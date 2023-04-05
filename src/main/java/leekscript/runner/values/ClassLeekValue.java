@@ -162,7 +162,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 		// Private
 		var result = getStaticField(field, fromClass);
 		if (result != null) {
-			return result.getValue();
+			return result.get();
 		}
 		var generic = genericMethods.get(field);
 		if (generic != null) return generic;
@@ -337,7 +337,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 		var result = staticFields.get(field);
 
 		// Call the static field
-		return ai.execute(result.getValue(), arguments);
+		return ai.execute(result.get(), arguments);
 	}
 
 	public Object callConstructor(ObjectLeekValue thiz, Object... arguments) throws LeekRunException {

@@ -367,7 +367,7 @@ public abstract class AI {
 
 	public static Object load(Object value) {
 		if (value instanceof Box) {
-			return ((Box) value).getValue();
+			return ((Box) value).get();
 		}
 		return value;
 	}
@@ -552,7 +552,7 @@ public abstract class AI {
 		} else if (value instanceof ClassLeekValue) {
 			return true;
 		} else if (value instanceof Box) {
-			return bool(((Box) value).getValue());
+			return bool(((Box) value).get());
 		}
 		return false;
 	}
@@ -585,7 +585,7 @@ public abstract class AI {
 				return (int) s.length();
 			}
 		} else if (value instanceof Box) {
-			return integer(((Box) value).getValue());
+			return integer(((Box) value).get());
 		} else if (value instanceof FunctionLeekValue) {
 			return 0;
 		} else if (value == null) {
@@ -619,7 +619,7 @@ public abstract class AI {
 				return (long) s.length();
 			}
 		} else if (value instanceof Box) {
-			return number(((Box) value).getValue());
+			return number(((Box) value).get());
 		} else if (value instanceof FunctionLeekValue) {
 			return 0l;
 		} else if (value == null) {
@@ -654,10 +654,10 @@ public abstract class AI {
 			} catch (Exception e) {
 				return (long) s.length();
 			}
-		} else if (value instanceof Box) {
-			return longint(((Box) value).getValue());
 		} else if (value instanceof FunctionLeekValue) {
 			return 0;
+		} else if (value instanceof Box box) {
+			return longint(box.get());
 		} else if (value == null) {
 			return 0;
 		}
@@ -691,7 +691,7 @@ public abstract class AI {
 				return s.length();
 			}
 		} else if (value instanceof Box) {
-			return real(((Box) value).getValue());
+			return real(((Box) value).get());
 		} else if (value instanceof FunctionLeekValue) {
 			return 0.0;
 		} else if (value == null) {
@@ -991,6 +991,10 @@ public abstract class AI {
 		return LeekOperations.clone(this, value);
 	}
 
+	public Object copy(Object value, int level) throws LeekRunException {
+		return LeekOperations.clone(this, value, level);
+	}
+
 	public String string(Object value) throws LeekRunException {
 		if (value instanceof Double) {
 			return doubleToString(this, (Double) value);
@@ -1014,7 +1018,7 @@ public abstract class AI {
 		} else if (value instanceof FunctionLeekValue) {
 			return ((FunctionLeekValue) value).getString(this);
 		} else if (value instanceof Box) {
-			return string(((Box) value).getValue());
+			return string(((Box) value).get());
 		} else if (value == null) {
 			return "null";
 		}
@@ -1044,7 +1048,7 @@ public abstract class AI {
 		} else if (value instanceof FunctionLeekValue) {
 			return ((FunctionLeekValue) value).getString(this);
 		} else if (value instanceof Box) {
-			return string(((Box) value).getValue());
+			return string(((Box) value).get());
 		} else if (value == null) {
 			return "null";
 		}
@@ -1085,11 +1089,11 @@ public abstract class AI {
 		} else if (value instanceof FunctionLeekValue) {
 			return ((FunctionLeekValue) value).getString(this);
 		} else if (value instanceof Box) {
-			return export(((Box) value).getValue());
+			return export(((Box) value).get());
 		} else if (value == null) {
 			return "null";
 		}
-		throw new RuntimeException("Valeur invalide : " + value);
+		throw new RuntimeException("Valeur invalide : " + value + " class=" + value.getClass());
 	}
 
 	public String export(Object value, Set<Object> visited) throws LeekRunException {
@@ -1115,11 +1119,11 @@ public abstract class AI {
 		} else if (value instanceof FunctionLeekValue) {
 			return ((FunctionLeekValue) value).getString(this);
 		} else if (value instanceof Box) {
-			return export(((Box) value).getValue());
+			return export(((Box) value).get());
 		} else if (value == null) {
 			return "null";
 		}
-		throw new RuntimeException("Valeur invalide : " + value);
+		throw new RuntimeException("Valeur invalide : " + value + " class=" + value.getClass());
 	}
 
 	public Object toJSON(Object v) throws LeekRunException {
@@ -1166,6 +1170,9 @@ public abstract class AI {
 	}
 
 	public Object getField(Object value, String field, ClassLeekValue fromClass) throws LeekRunException {
+		if (field.equals("class")) {
+			return classOf(value);
+		}
 		if (value instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) value).getField(field, fromClass);
 		}
@@ -1917,6 +1924,7 @@ public abstract class AI {
 		if (function instanceof FunctionLeekValue) {
 			return ((FunctionLeekValue) function).run(this, null, args);
 		}
+
 		// On ne peux pas exécuter ce type de variable
 		addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_VALUE, new String[] { string(function) });
 		return null;
@@ -1938,7 +1946,7 @@ public abstract class AI {
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new String[] {
 			String.valueOf(index),
 			string(value),
-			StandardClass.getType(value).toString(),
+			StandardClass.getType(this, value).toString(),
 			Type.ARRAY.toString() + " (V4+)"
 		});
 		throw new ClassCastException();
@@ -1951,7 +1959,7 @@ public abstract class AI {
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new String[] {
 			String.valueOf(index),
 			string(value),
-			StandardClass.getType(value).toString(),
+			StandardClass.getType(this, value).toString(),
 			Type.MAP.toString()
 		});
 		throw new ClassCastException();
@@ -1964,7 +1972,7 @@ public abstract class AI {
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new String[] {
 			String.valueOf(index),
 			string(value),
-			StandardClass.getType(value).toString(),
+			StandardClass.getType(this, value).toString(),
 			Type.FUNCTION.toString()
 		});
 		throw new ClassCastException();
@@ -1977,7 +1985,7 @@ public abstract class AI {
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new String[] {
 			String.valueOf(index),
 			string(value),
-			StandardClass.getType(value).toString(),
+			StandardClass.getType(this, value).toString(),
 			Type.ARRAY.toString() + " (V1-3)"
 		});
 		return new LegacyArrayLeekValue();
@@ -2011,7 +2019,7 @@ public abstract class AI {
 		return true;
 	}
 
-	public ClassLeekValue getClass(Object value) {
+	public ClassLeekValue classOf(Object value) {
 		if (value == null) return nullClass;
 		if (value instanceof Long) return integerClass;
 		if (value instanceof Double) return realClass;
@@ -2027,13 +2035,12 @@ public abstract class AI {
 
 	public boolean instanceOf(Object value, Object clazz) throws LeekRunException {
 		ops(2);
-		clazz = LeekValueManager.getValue(clazz);
 		if (!(clazz instanceof ClassLeekValue)) {
 			addSystemLog(AILog.ERROR, Error.INSTANCEOF_MUST_BE_CLASS);
 			return false;
 		}
 		var v = load(value);
-		var vClass = getClass(v);
+		var vClass = classOf(v);
 		if (vClass.descendsFrom((ClassLeekValue) clazz)) {
 			return true;
 		}

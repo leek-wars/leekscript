@@ -37,9 +37,9 @@ public class ObjectLeekValue {
 		ai.ops(value.fields.size());
 		for (var field : value.fields.entrySet()) {
 			if (level == 1) {
-				fields.put(field.getKey(), new ObjectVariableValue(ai, field.getValue().getValue(), field.getValue().level, field.getValue().isFinal));
+				fields.put(field.getKey(), new ObjectVariableValue(ai, field.getValue().get(), field.getValue().level, field.getValue().isFinal));
 			} else {
-				fields.put(field.getKey(), new ObjectVariableValue(ai, LeekOperations.clone(ai, field.getValue().getValue(), level - 1), field.getValue().level, field.getValue().isFinal));
+				fields.put(field.getKey(), new ObjectVariableValue(ai, LeekOperations.clone(ai, field.getValue().get(), level - 1), field.getValue().level, field.getValue().isFinal));
 			}
 		}
 		ai.increaseRAM(2 * value.fields.size());
@@ -489,16 +489,16 @@ public class ObjectLeekValue {
 			else sb.append(", ");
 			sb.append(field.getKey());
 			sb.append(": ");
-			if (visited.contains(field.getValue().getValue())) {
+			if (visited.contains(field.getValue().get())) {
 				sb.append("<...>");
 			} else {
-				if (!ai.isPrimitive(field.getValue().getValue())) {
-					visited.add(field.getValue().getValue());
+				if (!ai.isPrimitive(field.getValue().get())) {
+					visited.add(field.getValue().get());
 				}
 				if (export) {
-					sb.append(ai.export(field.getValue().getValue(), visited));
+					sb.append(ai.export(field.getValue().get(), visited));
 				} else {
-					sb.append(ai.string(field.getValue().getValue(), visited));
+					sb.append(ai.string(field.getValue().get(), visited));
 				}
 			}
 		}
@@ -518,7 +518,7 @@ public class ObjectLeekValue {
 			var o = (ObjectLeekValue) comp;
 			if (o.clazz != clazz) return false;
 			for (var f : fields.entrySet()) {
-				if (!ai.eq(f.getValue().getValue(), o.fields.get(f.getKey()))) {
+				if (!ai.eq(f.getValue().get(), o.fields.get(f.getKey()))) {
 					return false;
 				}
 			}
@@ -532,7 +532,7 @@ public class ObjectLeekValue {
 
 		var o = new JSONObject();
 		for (var entry : fields.entrySet()) {
-			var v = entry.getValue().getValue();
+			var v = entry.getValue().get();
 			if (!visited.contains(v)) {
 				if (!ai.isPrimitive(v)) {
 					visited.add(v);

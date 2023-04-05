@@ -583,7 +583,10 @@ public class TestArray extends TestCommon {
 		code_v2_("var a = [0, 1, 1, 1, 2, 2, 2, 2, 2, null, 3, 3, 3, 3, 3, 3, 3, 3, 3, null, 4, 4, 4, null, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, null, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, null, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6] sort(a) return a").equals("[null, null, null, null, null, 0, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]");
 
 		section("Array.search()");
-		code("var a = ['a','b','c','d']; return search(a,'c')").equals("2");
+		code("var a = ['a','b','c','d'] return search(a, 'c')").equals("2");
+		code_v1_3("var a = ['a','b','c','d'] return search(a, 'c', 4)").equals("null");
+		code_v4_("var a = ['a','b','c','d'] return search(a, 'c', 4)").equals("-1");
+		code("var a = ['a','b','c','d'] return search(a, 'c', -4)").equals("2");
 
 		section("Array.inArray()");
 		code("var a = ['a','b','c','d']; return inArray(a,'c')").equals("true");

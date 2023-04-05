@@ -51,6 +51,7 @@ public class TestCommon {
 		int version_max = LATEST_VERSION;
 		long maxOperations = Long.MAX_VALUE;
 		long maxRAM = AI.MAX_RAM;
+		boolean debug = false;
 
 		public Case(String code, boolean enabled) {
 			this.code = code;
@@ -188,7 +189,7 @@ public class TestCommon {
 			try {
 				boolean is_file = code.contains(".leek");
 
-				ai = is_file ? LeekScript.compileFile(code, "AI", version) : LeekScript.compileSnippet(code, "AI", version);
+				ai = is_file ? LeekScript.compileFile(code, "AI", version) : LeekScript.compileSnippet(code, "AI", version, this.debug);
 				ai.init();
 				ai.staticInit();
 				aiID = ai.getId();
@@ -246,6 +247,11 @@ public class TestCommon {
 
 		public Case max_ram(long ram) {
 			this.maxRAM = ram;
+			return this;
+		}
+
+		public Case debug() {
+			this.debug = true;
 			return this;
 		}
 	}

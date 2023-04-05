@@ -1,5 +1,6 @@
 package leekscript.runner.classes;
 
+import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.ClassLeekValue;
@@ -11,7 +12,7 @@ import leekscript.common.Type;
 
 public class StandardClass {
 
-	public static Type getType(Object value) throws LeekRunException {
+	public static Type getType(AI ai, Object value) throws LeekRunException {
 		if (value == null) return Type.NULL;
 		if (value instanceof Long) return Type.INT;
 		if (value instanceof Double) return Type.REAL;
