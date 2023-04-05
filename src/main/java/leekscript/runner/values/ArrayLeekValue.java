@@ -19,7 +19,6 @@ import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
-import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.common.Error;
 
 public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLeekValue {
@@ -105,18 +104,22 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	private final AI ai;
+	public final int id;
 
 	public ArrayLeekValue(AI ai) {
 		this.ai = ai;
+		this.id = ai.getNextObjectID();
 	}
 
 	public ArrayLeekValue(AI ai, int capacity) {
 		super(Math.min(MAX_SIZE, capacity));
 		this.ai = ai;
+		this.id = ai.getNextObjectID();
 	}
 
 	public ArrayLeekValue(AI ai, Object values[]) throws LeekRunException {
 		this.ai = ai;
+		this.id = ai.getNextObjectID();
 		for (var value : values) {
 			add(value);
 		}
@@ -126,6 +129,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	public ArrayLeekValue(AI ai, List<Object> values) throws LeekRunException {
 		super(values);
 		this.ai = ai;
+		this.id = ai.getNextObjectID();
 		ai.increaseRAM(values.size());
 	}
 
@@ -135,6 +139,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 
 	public ArrayLeekValue(AI ai, ArrayLeekValue array, int level) throws LeekRunException {
 		this.ai = ai;
+		this.id = ai.getNextObjectID();
 		ai.increaseRAM(array.size());
 		for (var value : array) {
 			if (level == 1) {
@@ -1079,25 +1084,9 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return object == this;
 	}
 
+	@Override
 	public int hashCode() {
-		int hashCode = 1;
-		hashCode = 31 * hashCode + size();
-		for (var e : this) {
-			var eh = 0;
-			if (e instanceof ArrayLeekValue) {
-				eh = ((ArrayLeekValue) e).size();
-			} else if (e instanceof MapLeekValue) {
-				eh = ((MapLeekValue) e).size();
-			} else if (e instanceof ObjectLeekValue) {
-				eh = ((ObjectLeekValue) e).size();
-			} else if (e instanceof NativeObjectLeekValue o) {
-				eh = o.size();
-			} else {
-				eh = e == null ? 0 : e.hashCode();
-			}
-			hashCode = 31 * hashCode + eh;
-		}
-		return hashCode;
+		return this.id;
 	}
 
 	public int hashCodeRec(ArrayLeekValue array) {
