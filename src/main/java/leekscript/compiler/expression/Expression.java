@@ -23,7 +23,7 @@ public abstract class Expression {
 	public final static int OBJECT = 11;
 	public final static int OBJECT_ACCESS = 12;
 
-	protected int operations = 0;
+	public int operations = 0;
 
 	public abstract int getNature();
 

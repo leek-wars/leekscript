@@ -58,6 +58,7 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	public void analyze(WordCompiler compiler) {
 		if (mCondition != null) {
 			mCondition.analyze(compiler);
+			mCondition.operations++; // On rajoute une opé pour le if sur la condition
 		}
 		super.analyze(compiler);
 	}
@@ -87,7 +88,6 @@ public class ConditionalBloc extends AbstractLeekBlock {
 		}
 		else writer.addLine("else {", getLocation());
 		super.writeJavaCode(mainblock, writer);
-		if (mEndInstruction == 0) writer.addCounter(1);
 		writer.addLine("}");
 	}
 
