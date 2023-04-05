@@ -345,14 +345,14 @@ public class ObjectLeekValue {
 	public Object callAccess(String field, String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
 		var resultM = clazz.getMethod(clazz.ai, method, fromClass);
 		if (resultM == null) {
-			if (method.equals("keys_0")) {
+			if (method.equals("u_keys")) {
 				var result = clazz.ai.newArray(fields.size());
 				for (var key : fields.keySet()) {
 					result.pushNoClone(clazz.ai, key);
 				}
 				return result;
 			}
-			if (method.equals("values_0")) {
+			if (method.equals("u_values")) {
 				var result = clazz.ai.newArray(fields.size());
 				for (var key : fields.values()) {
 					result.pushNoClone(clazz.ai, key);

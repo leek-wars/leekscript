@@ -1,10 +1,13 @@
 package leekscript.runner.values;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 import leekscript.AILog;
+import leekscript.ErrorManager;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.common.AccessLevel;
@@ -54,6 +57,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 	public HashMap<String, ClassStaticMethod> staticMethods = new HashMap<>();
 	public HashMap<String, Object> genericStaticMethods = new HashMap<>();
 	public FunctionLeekValue initFields = null;
+	public Class<?> clazz;
 
 	private Object fieldsArray;
 	private Object staticFieldsArray;
@@ -61,10 +65,14 @@ public class ClassLeekValue extends FunctionLeekValue {
 	private Object staticMethodsArray;
 
 	public ClassLeekValue(AI ai, String name) {
-		this(ai, name, null);
+		this(ai, name, null, null);
 	}
 
 	public ClassLeekValue(AI ai, String name, ClassLeekValue parent) {
+		this(ai, name, parent, null);
+	}
+
+	public ClassLeekValue(AI ai, String name, ClassLeekValue parent, Class<?> clazz) {
 		super(0);
 		// this.mAnonymous = new LeekAnonymousFunction() {
 		// 	@Override
@@ -76,6 +84,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 		this.name = name;
 		this.parent = parent;
 		this.type = new Type(name, "c", "ClassLeekValue", "ClassLeekValue", "new ClassLeekValue()");
+		this.clazz = clazz;
 	}
 
 	public void setParent(ClassLeekValue parent) {
@@ -104,18 +113,18 @@ public class ClassLeekValue extends FunctionLeekValue {
 
 	public void addGenericMethod(String method) {
 		genericMethods.put(method, new FunctionLeekValue(1) {
-			public Object run(AI ai, ObjectLeekValue thiz, Object... arguments) throws LeekRunException {
+			public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
 
 				if (arguments.length == 0) {
 					ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(arguments), "1+" });
-				} else if (!(arguments[0] instanceof ObjectLeekValue)) {
+				} else if (arguments[0].getClass() != clazz) {
 					ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(arguments), "object" });
 				}
 
 				final var methodCode = method + "_" + (arguments.length - 1);
 				final var m = methods.get(methodCode);
 				if (m != null) {
-					return m.value.run(ai, (ObjectLeekValue) arguments[0], Arrays.copyOfRange(arguments, 1, arguments.length));
+					return m.value.run(ai, arguments[0], Arrays.copyOfRange(arguments, 1, arguments.length));
 				}
 				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
 				return null;
@@ -124,13 +133,13 @@ public class ClassLeekValue extends FunctionLeekValue {
 	}
 
 	public void addStaticMethod(String method, int argCount, FunctionLeekValue function, AccessLevel level) {
-		staticMethods.put(method + "_" + argCount, new ClassStaticMethod(function, level));
+		staticMethods.put("u_" + method + "_" + argCount, new ClassStaticMethod(function, level));
 	}
 
 	public void addGenericStaticMethod(String method) {
 		genericStaticMethods.put(method, new FunctionLeekValue(0) {
-			public Object run(AI ai, ObjectLeekValue thiz, Object... arguments) throws LeekRunException {
-				final var methodCode = method + "_" + arguments.length;
+			public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
+				final var methodCode = "u_" + method + "_" + arguments.length;
 				final var m = staticMethods.get(methodCode);
 				if (m != null) {
 					return m.value.run(ai, null, arguments);
@@ -364,7 +373,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 	/**
 	 * Constructors
 	 */
-	public Object run(AI ai, ObjectLeekValue thiz, Object... arguments) throws LeekRunException {
+	public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
 		// System.out.println("Class " + name + " execute " + Arrays.toString(arguments));
 		if (this == ai.valueClass || this == ai.jsonClass || this == ai.systemClass || this == ai.functionClass || this == ai.classClass) {
 			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
@@ -389,39 +398,44 @@ public class ClassLeekValue extends FunctionLeekValue {
 
 		// Create the actual object
 		ai.ops(1);
-		ObjectLeekValue object = new ObjectLeekValue(ai, this);
-		// Init fields
-		if (this.initFields != null) {
-			this.initFields.run(ai, object);
+		Object object = null;
+		try {
+			object = this.clazz.getConstructor(ai.getClass()).newInstance(ai);
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e1) {
+			ErrorManager.exception(e1);
 		}
 
 		// Recherche d'un constructeur à N arguments puis N - 1, N - 2 etc.
 		int arg_count = arguments.length;
-		for (var i = arg_count; i >= 0; --i) {
-			if (constructors.containsKey(i)) {
-				constructors.get(i).value.run(ai, object, arguments);
+		for (var a = arg_count; a >= 0; --a) {
+			try {
+				var types = new Class<?>[a];
+				var args = new Object[a];
+				for (int i = 0; i < a; ++i) {
+					types[i] = Object.class;
+					args[i] = arguments[i];
+				}
+				this.clazz.getMethod("init", types).invoke(object, args);
 				return object;
-			}
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {}
 		}
-		if (arg_count > 0) {
-			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
-		}
+		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
 		return object;
 	}
 
 	private Object getFieldsArray() throws LeekRunException {
 		if (fieldsArray == null) {
 			if (ai.getVersion() >= 4) {
-				var r = new ArrayLeekValue(ai, fields.size());
-				for (var f : fields.entrySet()) {
-					r.add(f.getKey());
+				var r = new ArrayLeekValue(ai, clazz.getFields().length);
+				for (var f : clazz.getFields()) {
+					r.add(f.getName());
 				}
 				fieldsArray = r;
 			} else {
-				Object[] values = new Object[fields.size()];
+				Object[] values = new Object[clazz.getFields().length];
 				int i = 0;
-				for (var f : fields.entrySet()) {
-					values[i++] = f.getKey();
+				for (var f : clazz.getFields()) {
+					values[i++] = f.getName();
 				}
 				fieldsArray = new LegacyArrayLeekValue(ai, values);
 			}
@@ -452,16 +466,20 @@ public class ClassLeekValue extends FunctionLeekValue {
 	private Object getMethodsArray() throws LeekRunException {
 		if (methodsArray == null) {
 			if (ai.getVersion() >= 4) {
-				var r = new ArrayLeekValue(ai, genericMethods.size());
-				for (var f : genericMethods.entrySet()) {
-					r.add(f.getKey());
+				var r = new ArrayLeekValue(ai, clazz.getDeclaredMethods().length - 1);
+				for (var m : clazz.getDeclaredMethods()) {
+					if (m.getName().equals("init")) continue;
+					// if (m.getDeclaringClass() != clazz) continue;
+					r.add(m.getName().substring(2));
 				}
 				methodsArray = r;
 			} else {
-				Object[] values = new Object[genericMethods.size()];
+				Object[] values = new Object[clazz.getDeclaredMethods().length - 1];
 				int i = 0;
-				for (var f : genericMethods.entrySet()) {
-					values[i++] = f.getKey();
+				for (var m : clazz.getDeclaredMethods()) {
+					if (m.getName().equals("init")) continue;
+					// if (m.getDeclaringClass() != clazz) continue;
+					values[i++] = m.getName().substring(2);
 				}
 				methodsArray = new LegacyArrayLeekValue(ai, values);
 			}

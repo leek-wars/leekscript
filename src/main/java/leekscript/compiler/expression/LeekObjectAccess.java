@@ -150,9 +150,15 @@ public class LeekObjectAccess extends Expression {
 			if (type != Type.ANY) {
 				writer.addCode("((" + type.getJavaName(mainblock.getVersion()) + ") ");
 			}
-			writer.addCode("getField(");
-			object.writeJavaCode(mainblock, writer);
-			writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+			if (this.variable != null && this.variable.getVariableType() == VariableType.METHOD) {
+				writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + field.getWord() + "\")");
+			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
+				writer.addCode(field.getWord());
+			} else {
+				writer.addCode("getField(");
+				object.writeJavaCode(mainblock, writer);
+				writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+			}
 			if (type != Type.ANY) {
 				writer.addCode(")");
 			}
@@ -168,9 +174,15 @@ public class LeekObjectAccess extends Expression {
 			object.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else {
-			writer.addCode("getField(");
-			object.writeJavaCode(mainblock, writer);
-			writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+
+			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
+				writer.addCode(field.getWord());
+			} else {
+
+				writer.addCode("getField(");
+				object.writeJavaCode(mainblock, writer);
+				writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+			}
 		}
 	}
 
@@ -178,12 +190,9 @@ public class LeekObjectAccess extends Expression {
 	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert (object.isLeftValue() && !object.nullable());
 
-		if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS && writer.isInConstructor()) {
-			writer.addCode("initField(");
-			object.writeJavaCode(mainblock, writer);
-			writer.addCode(", \"" + field.getWord() + "\", ");
+		if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
+			writer.addCode(field.getWord() + " = ");
 			expr.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
 		} else {
 			writer.addCode("setField(");
 			object.writeJavaCode(mainblock, writer);

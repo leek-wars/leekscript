@@ -19,6 +19,7 @@ import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
+import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.common.Error;
 
 public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLeekValue {
@@ -1089,6 +1090,8 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 				eh = ((MapLeekValue) e).size();
 			} else if (e instanceof ObjectLeekValue) {
 				eh = ((ObjectLeekValue) e).size();
+			} else if (e instanceof NativeObjectLeekValue o) {
+				eh = o.size();
 			} else {
 				eh = e == null ? 0 : e.hashCode();
 			}

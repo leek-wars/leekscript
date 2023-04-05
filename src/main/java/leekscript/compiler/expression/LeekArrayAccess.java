@@ -6,6 +6,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.expression.LeekVariable.VariableType;
 
 public class LeekArrayAccess extends Expression {
 
@@ -166,6 +167,8 @@ public class LeekArrayAccess extends Expression {
 				stride.writeJavaCode(mainblock, writer);
 			}
 			writer.addCode(")");
+		} else if (mTabular instanceof LeekVariable v && v.getVariableType() == VariableType.THIS && mCase instanceof LeekString) {
+			writer.addCode(((LeekString) mCase).getText());
 		} else {
 			writer.addCode("get(");
 			mTabular.writeJavaCode(mainblock, writer);

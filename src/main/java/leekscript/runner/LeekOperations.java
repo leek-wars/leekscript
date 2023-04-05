@@ -1,5 +1,9 @@
 package leekscript.runner;
 
+import java.lang.reflect.InvocationTargetException;
+
+import leekscript.ErrorManager;
+import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.MapLeekValue;
@@ -31,6 +35,19 @@ public class LeekOperations {
 			if (level == 0) return value;
 			ai.ops(1);
 			return new ObjectLeekValue(ai, (ObjectLeekValue) value, level);
+		} else if (value instanceof NativeObjectLeekValue o) {
+			if (level == 0) return value;
+
+			ai.ops(1 + o.size());
+			ai.increaseRAM(2 * o.size());
+			// Call copy constructor
+			Object object = null;
+			try {
+				object = o.getClass().getConstructor(ai.getClass(), o.getClass(), int.class).newInstance(ai, o, level);
+			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e1) {
+				ErrorManager.exception(e1);
+			}
+			return object;
 		}
 		return value;
 	}
@@ -38,6 +55,9 @@ public class LeekOperations {
 	public static boolean equals_equals(AI ai, Object v1, Object v2) throws LeekRunException {
 		ai.ops(1);
 		if (v1 instanceof ObjectLeekValue && v2 instanceof ObjectLeekValue) {
+			return v1 == v2;
+		}
+		if (v1 instanceof NativeObjectLeekValue && v2 instanceof NativeObjectLeekValue) {
 			return v1 == v2;
 		}
 		return LeekValueManager.getType(v1) == LeekValueManager.getType(v2) && ai.eq(v1, v2);

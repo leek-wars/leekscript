@@ -1,5 +1,7 @@
 package leekscript.runner.values;
 
+import leekscript.runner.AI.NativeObjectLeekValue;
+
 public class LeekValue {
 
 	public final static int NUMBER_V1 = 1;
@@ -49,7 +51,7 @@ public class LeekValue {
 				ret += "map";
 			else if (v instanceof FunctionLeekValue)
 				ret += "function";
-			else if (v instanceof ObjectLeekValue)
+			else if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue)
 				ret += "object";
 			else
 				ret += "?";

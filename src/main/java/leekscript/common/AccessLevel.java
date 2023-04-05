@@ -11,4 +11,9 @@ public enum AccessLevel {
 		}
 		return AccessLevel.PUBLIC;
 	}
+
+	@Override
+	public String toString() {
+		return name().toLowerCase();
+	}
 }

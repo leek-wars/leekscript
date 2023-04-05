@@ -21,7 +21,7 @@ public abstract class FunctionLeekValue {
 		return mParametersCount;
 	}
 
-	public abstract Object run(AI ai, ObjectLeekValue thiz, Object... values) throws LeekRunException;
+	public abstract Object run(AI ai, Object thiz, Object... values) throws LeekRunException;
 
 	public Object toJSON(AI ai) {
 		return "<function>";

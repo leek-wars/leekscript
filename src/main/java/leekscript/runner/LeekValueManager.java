@@ -1,5 +1,6 @@
 package leekscript.runner;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 import leekscript.AILog;
+import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.MapLeekValue;
@@ -117,7 +119,7 @@ public class LeekValueManager {
 		if (v instanceof String) return LeekValue.STRING;
 		if (v instanceof LegacyArrayLeekValue || v instanceof ArrayLeekValue) return LeekValue.ARRAY;
 		if (v instanceof MapLeekValue) return LeekValue.MAP;
-		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT;
+		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue) return LeekValue.OBJECT;
 		if (v instanceof ClassLeekValue) return LeekValue.CLASS;
 		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION;
 		if (v instanceof Box) return getType(((Box) v).get());
@@ -130,7 +132,7 @@ public class LeekValueManager {
 		if (v instanceof Number) return LeekValue.NUMBER_V1;
 		if (v instanceof String) return LeekValue.STRING_V1;
 		if (v instanceof LegacyArrayLeekValue) return LeekValue.ARRAY_V1;
-		if (v instanceof ObjectLeekValue) return LeekValue.OBJECT_V1;
+		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue) return LeekValue.OBJECT_V1;
 		if (v instanceof ClassLeekValue) return LeekValue.CLASS_V1;
 		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION_V1;
 		if (v instanceof Box box) return getV1Type(box.get());
@@ -145,8 +147,22 @@ public class LeekValueManager {
 		if (array instanceof ObjectLeekValue) {
 			ai.ops(1);
 			return ((ObjectLeekValue) array).callMethod(ai.string(key) + "_" + arguments.length, fromClass, arguments);
+		} else if (array instanceof AI.NativeObjectLeekValue) {
+			ai.ops(1);
+			try {
+				var types = new Class<?>[arguments.length];
+				for (int i = 0; i < arguments.length; ++i) {
+					types[i] = Object.class;
+				}
+				var m = array.getClass().getMethod("u_" + ai.string(key), types);
+				m.setAccessible(true);
+				return m.invoke(array, arguments);
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+				e.printStackTrace(System.out);
+			}
+			return null;
 		} else if (array instanceof ClassLeekValue) {
-			return ((ClassLeekValue) array).callMethod(ai.string(key) + "_" + arguments.length, fromClass, arguments);
+			return ((ClassLeekValue) array).callMethod("u_" + ai.string(key) + "_" + arguments.length, fromClass, arguments);
 		} else {
 			return ai.execute(ai.get(array, key, fromClass), arguments);
 		}

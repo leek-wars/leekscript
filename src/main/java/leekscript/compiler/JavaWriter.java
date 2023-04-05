@@ -302,7 +302,7 @@ public class JavaWriter {
 	public void writeAnonymousSystemFunctions(MainLeekBlock block) {
 
 		for (var function : anonymousSystemFunctions) {
-			addLine("private FunctionLeekValue " + function.getStandardClass() + "_" + function.getName() + " = new FunctionLeekValue(" + function.getVersions()[0].arguments.length + ", \"#Function " + function.getName() + "\") { public Object run(AI ai, ObjectLeekValue thiz, Object... values) throws LeekRunException {");
+			addLine("private FunctionLeekValue " + function.getStandardClass() + "_" + function.getName() + " = new FunctionLeekValue(" + function.getVersions()[0].arguments.length + ", \"#Function " + function.getName() + "\") { public Object run(AI ai, Object thiz, Object... values) throws LeekRunException {");
 			if (function.getOperations() >= 0) {
 				addLine("ops(" + function.getOperations() + ");");
 			}

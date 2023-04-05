@@ -15,6 +15,7 @@ import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
+import leekscript.runner.AI.NativeObjectLeekValue;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -525,7 +526,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		if (value instanceof LegacyArrayLeekValue) {
 			var iterator = ((LegacyArrayLeekValue) value).iterator();
 			while (iterator.hasNext()) {
-				if (iterator.key() instanceof String || iterator.key() instanceof ObjectLeekValue)
+				if (iterator.key() instanceof String || iterator.key() instanceof ObjectLeekValue || iterator.key() instanceof NativeObjectLeekValue)
 					getOrCreate(ai, ai.string(iterator.getKey(ai))).set(iterator.getValue(ai));
 				else
 					push(ai, iterator.getValue(ai));

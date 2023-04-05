@@ -433,7 +433,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { protected m() { return 10 } } class B extends A {} var a = new B() return a.m()").equals("null");
 		code_v2_("class A { private m() { return 10 } } class B extends A {} var a = new B() return a.m()").equals("null");
 		code_v2_("class A { protected m() { return 10 } } class B extends A { m() { return super.m() } } var a = new B() return a.m()").equals("10");
-		code_v2_("class A { private m() { return 5 } public n() { var x = this return x.m() } } return new A().n()").debug().equals("5");
+		code_v2_("class A { private m() { return 5 } public n() { var x = this return x.m() } } return new A().n()").equals("5");
 
 		section("Access levels: constructors");
 		code_v2_("class A { constructor() { } } return new A()").equals("A {}");
@@ -505,7 +505,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { m(x, y) { return x * y } } var f = A.m return f(new A(), 5, 12)").equals("60");
 		code_v2_("class A { m(x, y) { return x * y } } var f = new A().m return f(new A(), 5, 12)").equals("60");
 		code_v2_("class A { m(x, y) { return x * y } } var f = A.m return f(new A(), 5)").equals("null");
-		code_v2_("class A { x constructor() { this.x = this.m } m() {} } return new A().x").debug().equals("#Anonymous Function");
+		code_v2_("class A { x constructor() { this.x = this.m } m() {} } return new A().x").equals("#Anonymous Function");
 
 		section("Assign to method");
 		code_v2_("class A { m() {} } A.m = 12").error(Error.CANT_ASSIGN_VALUE);

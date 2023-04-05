@@ -2,6 +2,7 @@ package leekscript.compiler.instruction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
@@ -397,10 +398,205 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 	public void declareJava(MainLeekBlock mainblock, JavaWriter writer) {
 		mainblock.getWordCompiler().setCurrentClass(this);
+		String className = "u_" + token.getWord();
+
+		// Declare the actuel class
+		var parentName = parent == null ? "NativeObjectLeekValue" : "u_" + parent.getName();
+		writer.addLine("public class " + className + " extends " + parentName + " {");
+
+		// Fields
+		for (var field : fields.entrySet()) {
+			if (field.getValue().isFinal) {
+				writer.addCode("@Final ");
+			}
+			writer.addCode("public Object " + field.getKey());
+			// if (field.getValue().expression != null) {
+			// 	writer.addCode(" = ");
+			// 	field.getValue().expression.writeJavaCode(mainblock, writer);
+			// }
+			writer.addLine(";");
+			// writer.addCode(", AccessLevel." + field.getValue().level + ", " + field.getValue().isFinal);
+			// writer.addLine(");");
+		}
+
+		// Constructeur par défaut
+		writer.addLine("public " + className + "() {}");
+
+		// Constructeur par copie
+		writer.addLine("public " + className + "(" + className + " o, int level) throws LeekRunException {");
+		if (parent != null) {
+			writer.addLine("super(o, level);");
+		}
+		for (var field : fields.entrySet()) {
+			writer.addLine("this." + field.getKey() + " = level == 1 ? o." + field.getKey() + " : copy(o." + field.getKey() + ", level - 1);");
+		}
+		writer.addLine("}");
+
+		// Vrais constructeurs
+		for (Entry<Integer, ClassDeclarationMethod> construct : constructors.entrySet()) {
+
+			final var block = construct.getValue().block;
+
+			mainblock.getWordCompiler().setCurrentBlock(block);
+			writer.currentBlock = block;
+
+			writer.addCode("public Object init(");
+			if (block != null) {
+				for (int a = 0; a < construct.getKey(); ++a) {
+					var arg = block.getParametersDeclarations().get(a);
+					var letter = arg.isCaptured() ? "p" : "u";
+					if (a > 0) writer.addCode(", ");
+					writer.addCode("Object " + letter + "_" + arg.getToken());
+				}
+			}
+			writer.addLine(") throws LeekRunException {");
+
+			if (parent != null) {
+				writer.addLine("super.init();");
+			}
+
+			// Init fields
+			// ClassDeclarationInstruction current = this;
+			// ArrayList<ClassDeclarationInstruction> classes = new ArrayList<>();
+			// while (current != null) {
+			// 	classes.add(current);
+			// 	current = current.parent;
+			// }
+			// for (int i = classes.size() - 1; i >= 0; --i) {
+			// 	var clazz = classes.get(i);
+				for (var field : fields.entrySet()) {
+					if (field.getValue().expression != null) {
+						writer.addCode(field.getKey());
+						writer.addCode(" = ");
+						field.getValue().expression.writeJavaCode(mainblock, writer);
+						writer.addLine(";");
+					}
+				}
+			// }
+
+			// Captures
+			if (block != null) {
+				for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
+					var arg = block.getParametersDeclarations().get(a);
+					if (arg.isCaptured()) {
+						writer.addCode("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", ");
+						if (a < construct.getKey()) {
+							writer.addCode("p_" + arg.getToken());
+						} else {
+							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
+						}
+						writer.addLine(");");
+					} else {
+						// Valeur par défaut
+						if (a >= construct.getKey()) {
+							var defaultValue = block.getDefaultValues().get(a);
+							writer.addCode("final Object u_" + arg.getName() + " = ");
+							defaultValue.writeJavaCode(mainblock, writer);
+							writer.addLine(";");
+						}
+					}
+				}
+			}
+
+			if (block != null) {
+
+				// Sous-version
+				if (construct.getKey() < block.getMaxParameters()) {
+					writer.addCode("return init(");
+					for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
+						var arg = block.getParametersDeclarations().get(a);
+						if (a > 0) writer.addCode(", ");
+						if (arg.isCaptured()) {
+							writer.addCode("u_" + arg.getName() + ".get()");
+						} else {
+							writer.addCode("u_" + arg.getName());
+						}
+					}
+					writer.addLine(");");
+				} else {
+
+					// Version normale
+					block.writeJavaCode(mainblock, writer);
+				}
+			} else {
+				writer.addLine("return null;");
+			}
+			writer.addLine("}");
+
+			writer.currentBlock = null;
+			mainblock.getWordCompiler().setCurrentBlock(null);
+		}
+
+		// Déclaration des méthodes
+		for (var method : methods.entrySet()) {
+			for (var version : method.getValue().entrySet()) {
+				final var block = version.getValue().block;
+				mainblock.getWordCompiler().setCurrentBlock(block);
+				writer.currentBlock = block;
+
+				String methodName = method.getKey();
+				writer.addCode("public Object u_" + methodName + "(");
+				for (int a = 0; a < version.getKey(); ++a) {
+					var arg = block.getParametersDeclarations().get(a);
+					var letter = arg.isCaptured() ? "p" : "u";
+					if (a > 0) writer.addCode(", ");
+					writer.addCode("Object " + letter + "_" + arg.getToken());
+				}
+				writer.addLine(") throws LeekRunException {");
+				if (parent != null) {
+					// writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
+				}
+
+				// Captures
+				for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
+					var arg = block.getParametersDeclarations().get(a);
+					if (arg.isCaptured()) {
+						writer.addCode("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", ");
+						if (a < version.getKey()) {
+							writer.addCode("p_" + arg.getToken());
+						} else {
+							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
+						}
+						writer.addLine(");");
+					} else {
+						// Valeur par défaut
+						if (a >= version.getKey()) {
+							var defaultValue = block.getDefaultValues().get(a);
+							writer.addCode("final Object u_" + arg.getName() + " = ");
+							defaultValue.writeJavaCode(mainblock, writer);
+							writer.addLine(";");
+						}
+					}
+				}
+				// writer.addCounter(1);
+				// Sous-version
+				if (version.getKey() < block.getMaxParameters()) {
+					writer.addCode("return u_" + method.getKey() + "(");
+					for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
+						var arg = block.getParametersDeclarations().get(a);
+						if (a > 0)
+							writer.addCode(", ");
+						if (arg.isCaptured()) {
+							writer.addCode("u_" + arg.getName() + ".get()");
+						} else {
+							writer.addCode("u_" + arg.getName());
+						}
+					}
+					writer.addLine(");");
+				} else {
+					version.getValue().block.writeJavaCode(mainblock, writer);
+				}
+				writer.addLine("}");
+				writer.currentBlock = null;
+				mainblock.getWordCompiler().setCurrentBlock(null);
+			}
+		}
+
+		// End of actual class
+		writer.addLine("}");
 
 		// Declare the class as a field of the AI
-		String className = "u_" + token.getWord();
-		writer.addLine("private ClassLeekValue " + className + " = new ClassLeekValue(this, \"" + token.getWord() + "\");");
+		writer.addLine("public ClassLeekValue " + className + " = new ClassLeekValue(this, \"" + token.getWord() + "\", null, " + className + ".class);");
 
 		// Static methods
 		for (Entry<String, HashMap<Integer, ClassDeclarationMethod>> method : staticMethods.entrySet()) {
@@ -419,7 +615,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				}
 				writer.addLine(") throws LeekRunException {");
 				if (parent != null) {
-					writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
+					// writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
 				}
 
 				// Captures
@@ -467,130 +663,6 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			}
 		}
 
-		// Déclaration des méthodes
-		for (var method : methods.entrySet()) {
-			for (var version : method.getValue().entrySet()) {
-				final var block = version.getValue().block;
-				mainblock.getWordCompiler().setCurrentBlock(block);
-				writer.currentBlock = block;
-
-				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
-				writer.addCode("private final Object " + methodName + "(ObjectLeekValue u_this");
-				for (int a = 0; a < version.getKey(); ++a) {
-					var arg = block.getParametersDeclarations().get(a);
-					var letter = arg.isCaptured() ? "p" : "u";
-					writer.addCode(", Object " + letter + "_" + arg.getToken());
-				}
-				writer.addCode(") throws LeekRunException {");
-				if (parent != null) {
-					writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
-				}
-
-				// Captures
-				for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
-					var arg = block.getParametersDeclarations().get(a);
-					if (arg.isCaptured()) {
-						writer.addCode("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", ");
-						if (a < version.getKey()) {
-							writer.addCode("p_" + arg.getToken());
-						} else {
-							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
-						}
-						writer.addLine(");");
-					} else {
-						// Valeur par défaut
-						if (a >= version.getKey()) {
-							var defaultValue = block.getDefaultValues().get(a);
-							writer.addCode("final Object u_" + arg.getName() + " = ");
-							defaultValue.writeJavaCode(mainblock, writer);
-							writer.addLine(";");
-						}
-					}
-				}
-				writer.addCounter(1);
-				// Sous-version
-				if (version.getKey() < block.getMaxParameters()) {
-					writer.addCode("return " + className + "_" + method.getKey() + "_" + block.getMaxParameters() + "(u_this");
-					for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
-						var arg = block.getParametersDeclarations().get(a);
-						writer.addCode(", ");
-						if (arg.isCaptured()) {
-							writer.addCode("u_" + arg.getName() + ".get()");
-						} else {
-							writer.addCode("u_" + arg.getName());
-						}
-					}
-					writer.addLine(");");
-				} else {
-					version.getValue().block.writeJavaCode(mainblock, writer);
-				}
-				writer.addLine("}");
-				writer.currentBlock = null;
-				mainblock.getWordCompiler().setCurrentBlock(null);
-			}
-		}
-
-		// Constructeurs
-		for (Entry<Integer, ClassDeclarationMethod> construct : constructors.entrySet()) {
-			final var block = construct.getValue().block;
-			mainblock.getWordCompiler().setCurrentBlock(block);
-			writer.currentBlock = block;
-
-			String methodName = className + "_" + construct.getKey();
-			writer.addCode("private final Object " + methodName + "(ObjectLeekValue u_this");
-			if (block != null) {
-				for (int a = 0; a < construct.getKey(); ++a) {
-					var arg = block.getParametersDeclarations().get(a);
-					var letter = arg.isCaptured() ? "p" : "u";
-					writer.addCode(", Object " + letter + "_" + arg.getToken());
-				}
-			}
-			writer.addCode(") throws LeekRunException {");
-			if (parent != null) {
-				writer.addLine("final var u_super = u_" + parent.token.getWord() + ";");
-			}
-			if (block != null) {
-				for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
-					var arg = block.getParametersDeclarations().get(a);
-					if (arg.isCaptured()) {
-						writer.addCode("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", ");
-						if (a < construct.getKey()) {
-							writer.addCode("p_" + arg.getToken());
-						} else {
-							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
-						}
-						writer.addLine(");");
-					} else if (a >= construct.getKey()) {
-						var defaultValue = block.getDefaultValues().get(a);
-						writer.addCode("final Object u_" + arg.getName() + " = ");
-						defaultValue.writeJavaCode(mainblock, writer);
-						writer.addLine(";");
-					}
-				}
-				// Sous-version
-				if (construct.getKey() < block.getMaxParameters()) {
-					writer.addCode("return " + className + "_" + block.getMaxParameters() + "(u_this");
-					for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
-						var arg = block.getParametersDeclarations().get(a);
-						writer.addCode(", ");
-						if (arg.isCaptured()) {
-							writer.addCode("u_" + arg.getName() + ".get()");
-						} else {
-							writer.addCode("u_" + arg.getName());
-						}
-					}
-					writer.addLine(");");
-				} else {
-					// Version normale
-					block.writeJavaCode(mainblock, writer);
-				}
-			} else {
-				writer.addLine("return null;");
-			}
-			writer.addLine("}");
-			writer.currentBlock = null;
-			mainblock.getWordCompiler().setCurrentBlock(null);
-		}
 		mainblock.getWordCompiler().setCurrentClass(null);
 	}
 
@@ -606,7 +678,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 
 		writer.addCode(className + ".initFields = new FunctionLeekValue(0) {");
-		writer.addLine("public Object run(AI ai, ObjectLeekValue u_this, Object... values) throws LeekRunException {");
+		writer.addLine("public Object run(AI ai, Object u_this, Object... values) throws LeekRunException {");
 		ClassDeclarationInstruction current = this;
 		ArrayList<ClassDeclarationInstruction> classes = new ArrayList<>();
 		while (current != null) {
@@ -616,13 +688,13 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		for (int i = classes.size() - 1; i >= 0; --i) {
 			var clazz = classes.get(i);
 			for (var field : clazz.fields.entrySet()) {
-				writer.addCode("u_this.addField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
-				if (field.getValue().expression != null) {
-					field.getValue().expression.writeJavaCode(mainblock, writer);
-				} else {
-					writer.addCode("null");
-				}
-				writer.addLine(", AccessLevel." + field.getValue().level + ", " + field.getValue().isFinal + ");");
+				// writer.addCode("u_this.addField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
+				// if (field.getValue().expression != null) {
+				// 	field.getValue().expression.writeJavaCode(mainblock, writer);
+				// } else {
+				// 	writer.addCode("null");
+				// }
+				// writer.addLine(", AccessLevel." + field.getValue().level + ", " + field.getValue().isFinal + ");");
 			}
 		}
 		writer.addLine("return null;");
@@ -635,42 +707,29 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			for (var version : method.getValue().entrySet()) {
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
 				writer.addCode(className);
-				writer.addCode(".addStaticMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(1) { public Object run(AI ai, ObjectLeekValue thiz, Object... args) throws LeekRunException { return " + methodName + "(");
+				writer.addCode(".addStaticMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(1) { public Object run(AI ai, Object thiz, Object... args) throws LeekRunException { return " + methodName + "(");
 				int i = 0;
 				for (var a = 0; a < version.getKey(); ++a) {
 					if (i > 0) writer.addCode(", ");
 					writer.addCode("args[" + i + "]");
 					i++;
 				}
-				writer.addLine("); }}, AccessLevel." + version.getValue().level + ");");
+				writer.addLine("); }}, AccessLevel." + version.getValue().level.name() + ");");
 			}
 			writer.addCode(className);
 			writer.addLine(".addGenericStaticMethod(\"" + method.getKey() + "\");");
 		}
 
-		for (var construct : constructors.entrySet()) {
-			String methodName = className + "_" + construct.getKey();
-			writer.addCode(className);
-			writer.addCode(".addConstructor(" + construct.getKey() + ", new FunctionLeekValue(0) { public Object run(AI ai, ObjectLeekValue thiz, Object... args) throws LeekRunException { " + methodName + "(thiz");
-			int i = 0;
-			if (construct.getValue().block != null) {
-				for (var a = 0; a < construct.getKey(); ++a) {
-					writer.addCode(", args[" + i++ + "]");
-				}
-			}
-			writer.addLine("); return thiz; }}, AccessLevel." + construct.getValue().level + ");");
-		}
-
 		for (var method : methods.entrySet()) {
 			for (var version : method.getValue().entrySet()) {
-				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
 				writer.addCode(className);
-				writer.addCode(".addMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(0) { public Object run(AI ai, ObjectLeekValue thiz, Object... args) throws LeekRunException { return " + methodName + "(thiz");
+				writer.addCode(".addMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(0) { public Object run(AI ai, Object thiz, Object... args) throws LeekRunException { return ((" + className + ") thiz).u_" + method.getKey() + "(");
 				int i = 0;
 				for (var a = 0; a < version.getKey(); ++a) {
-					writer.addCode(", args[" + i++ + "]");
+					if (a > 0) writer.addCode(", ");
+					writer.addCode("args[" + i++ + "]");
 				}
-				writer.addLine("); }}, AccessLevel." + version.getValue().level + ");");
+				writer.addLine("); }}, AccessLevel." + version.getValue().level.name() + ");");
 			}
 			writer.addCode(className);
 			writer.addLine(".addGenericMethod(\"" + method.getKey() + "\");");
@@ -697,7 +756,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			writer.addCode(className);
 			writer.addCode(".addStaticField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
 			writer.addCode("null");
-			writer.addCode(", AccessLevel." + field.getValue().level + ", " + field.getValue().isFinal);
+			writer.addCode(", AccessLevel." + field.getValue().level.name() + ", " + field.getValue().isFinal);
 			writer.addLine(");");
 		}
 
@@ -747,10 +806,10 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 
 		for (Entry<String, ClassDeclarationField> field : fields.entrySet()) {
-			writer.addCode(className);
-			writer.addCode(".addField(\"" + field.getKey() + "\"");
-			writer.addCode(", AccessLevel." + field.getValue().level + ", " + field.getValue().isFinal);
-			writer.addLine(");");
+			// writer.addCode(className);
+			// writer.addCode(".addField(\"" + field.getKey() + "\"");
+			// writer.addCode(", AccessLevel." + field.getValue().level + ", " + field.getValue().isFinal);
+			// writer.addLine(");");
 		}
 	}
 
@@ -933,4 +992,5 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		return false;
 	}
+
 }

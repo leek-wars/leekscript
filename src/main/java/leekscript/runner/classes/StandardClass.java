@@ -2,6 +2,7 @@ package leekscript.runner.classes;
 
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
+import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
@@ -20,7 +21,8 @@ public class StandardClass {
 		if (value instanceof LegacyArrayLeekValue || value instanceof ArrayLeekValue) return Type.ARRAY;
 		if (value instanceof MapLeekValue) return Type.MAP;
 		if (value instanceof String) return Type.STRING;
-		if (value instanceof ObjectLeekValue) return ((ObjectLeekValue) value).clazz.getType();
+		if (value instanceof ObjectLeekValue o) return o.clazz.getType();
+		if (value instanceof NativeObjectLeekValue o) return ai.classOf(o).getType();
 		if (value instanceof ClassLeekValue) return Type.CLASS;
 		if (value instanceof FunctionLeekValue) return Type.FUNCTION;
 		throw new RuntimeException("Valeur invalide : " + value);

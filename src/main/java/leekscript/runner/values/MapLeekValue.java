@@ -13,6 +13,7 @@ import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
+import leekscript.runner.AI.NativeObjectLeekValue;
 
 public class MapLeekValue extends HashMap<Object, Object> implements Iterable<Entry<Object, Object>>, GenericMapLeekValue {
 
@@ -515,6 +516,8 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 				kh = ((MapLeekValue) k).size();
 			} else if (k instanceof ObjectLeekValue) {
 				kh = ((ObjectLeekValue) k).size();
+			} else if (k instanceof NativeObjectLeekValue o) {
+				kh = o.size();
 			} else {
 				kh = k == null ? 0 : k.hashCode();
 			}
@@ -528,6 +531,8 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 				eh = ((MapLeekValue) e).size();
 			} else if (e instanceof ObjectLeekValue) {
 				eh = ((ObjectLeekValue) e).size();
+			} else if (e instanceof NativeObjectLeekValue o) {
+				eh = o.size();
 			} else {
 				eh = e == null ? 0 : e.hashCode();
 			}
