@@ -818,7 +818,11 @@ public class WordCompiler {
 	}
 
 	public void endClassMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, boolean isStatic, boolean isFinal) throws LeekCompilerException {
+
 		Token name = mCompiler.eatToken();
+		if (name.getType() != WordParser.T_STRING) {
+			addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_EXPECTED, new String[] { name.getWord() }));
+		}
 
 		if (name.getWord().equals("super") || name.getWord().equals("class")) {
 			addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { name.getWord() }));
