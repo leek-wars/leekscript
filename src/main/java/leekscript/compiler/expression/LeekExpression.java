@@ -682,13 +682,9 @@ public class LeekExpression extends Expression {
 			return;
 		case Operators.AND:
 			writer.addCode("(");
-			if (mExpression1.operations > 0) {
-				writer.addCode("ops(");
-			}
+			writer.addCode("ops(");
 			writer.getBoolean(mainblock, mExpression1);
-			if (mExpression1.operations > 0) {
-				writer.addCode(", " + mExpression1.operations + ")");
-			}
+			writer.addCode(", " + (mExpression1.operations + 1) + ")");
 			writer.addCode(" && ");
 			if (mExpression2.operations > 0) {
 				writer.addCode("ops(");
@@ -701,13 +697,9 @@ public class LeekExpression extends Expression {
 			return;
 		case Operators.OR:
 			writer.addCode("(");
-			if (mExpression1.operations > 0) {
-				writer.addCode("ops(");
-			}
+			writer.addCode("ops(");
 			writer.getBoolean(mainblock, mExpression1);
-			if (mExpression1.operations > 0) {
-				writer.addCode(", " + mExpression1.operations + ")");
-			}
+			writer.addCode(", " + (mExpression1.operations + 1) + ")");
 			writer.addCode(" || ");
 			if (mExpression2.operations > 0) {
 				writer.addCode("ops(");
@@ -1006,7 +998,7 @@ public class LeekExpression extends Expression {
 		} else if (mOperator == Operators.REFERENCE || mOperator == Operators.NEW) {
 			// 0
 		} else if (mOperator == Operators.AND || mOperator == Operators.OR) {
-			operations = 1;
+			operations = 0; // 1 op will be added to the first expression
 		} else {
 			operations += 1;
 		}
