@@ -102,13 +102,13 @@ public class LeekValueManager {
 
 	public static Object callMethod(AI ai, Object value, String method, Object... arguments) throws LeekRunException {
 		// Aucune méthode
-		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { ai.export(value), method });
+		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new Object[] { value, method });
 		return null;
 	}
 
 	public static Object callSuperMethod(AI ai, Object value, String method, Object... arguments) throws LeekRunException {
 		// Aucune méthode
-		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { ai.export(value), method });
+		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new Object[] { value, method });
 		return null;
 	}
 
