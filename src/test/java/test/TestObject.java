@@ -536,6 +536,7 @@ public class TestObject extends TestCommon {
 		section("Field access in lambda");
 		code_v2_("class A { x = 5 m() { return (-> this.x)() } } return new A().m()").equals("5");
 		code_v2_("class A { x = 5 m() { return (-> this.x = 7)() } } return new A().m()").equals("7");
+		code_v2_("class A { x = 5 m() { return (-> n(this))() } n(p) { return p.x } } return A().m()").equals("5");
 
 		section("Misc");
 		code_v2_("class A { static x() {} static m(item) { return x == item } } return A.m(12)").equals("false");
@@ -624,6 +625,8 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { z y x } return A.fields").equals("[\"z\", \"y\", \"x\"]");
 		code_v2_("class A { a b c static d m() {} n() {} o() {} } return A.fields").equals("[\"a\", \"b\", \"c\"]");
 		code_v2_("class A { } A.fields = [1, 2]").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v3_("return Array.fields").equals("[]");
+		code_v3_("return Integer.fields").equals("[]");
 
 		section("Class.staticFields");
 		code_v2_("class A { static staticFields }").error(Error.FIELD_ALREADY_EXISTS);
@@ -637,6 +640,8 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static methods }").error(Error.FIELD_ALREADY_EXISTS);
 		code_v2_("class A { a() {} b() {} static c() {} } return arraySort(A.methods)").equals("[\"a\", \"b\"]");
 		code_v2_("class A { } A.methods = 'toto'").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v3_("return Array.methods").equals("[]");
+		code_v3_("return Integer.methods").equals("[]");
 
 		section("Class.staticMethods");
 		code_v2_("class A { static staticMethods }").error(Error.FIELD_ALREADY_EXISTS);

@@ -425,19 +425,27 @@ public class ClassLeekValue extends FunctionLeekValue {
 
 	private Object getFieldsArray() throws LeekRunException {
 		if (fieldsArray == null) {
-			if (ai.getVersion() >= 4) {
-				var r = new ArrayLeekValue(ai, clazz.getFields().length);
-				for (var f : clazz.getFields()) {
-					r.add(f.getName());
+			if (clazz == null) {
+				if (ai.getVersion() >= 4) {
+					fieldsArray = new ArrayLeekValue(ai);
+				} else {
+					fieldsArray = new LegacyArrayLeekValue();
 				}
-				fieldsArray = r;
 			} else {
-				Object[] values = new Object[clazz.getFields().length];
-				int i = 0;
-				for (var f : clazz.getFields()) {
-					values[i++] = f.getName();
+				if (ai.getVersion() >= 4) {
+					var r = new ArrayLeekValue(ai, clazz.getFields().length);
+					for (var f : clazz.getFields()) {
+						r.add(f.getName());
+					}
+					fieldsArray = r;
+				} else {
+					Object[] values = new Object[clazz.getFields().length];
+					int i = 0;
+					for (var f : clazz.getFields()) {
+						values[i++] = f.getName();
+					}
+					fieldsArray = new LegacyArrayLeekValue(ai, values);
 				}
-				fieldsArray = new LegacyArrayLeekValue(ai, values);
 			}
 		}
 		return fieldsArray;
@@ -465,23 +473,31 @@ public class ClassLeekValue extends FunctionLeekValue {
 
 	private Object getMethodsArray() throws LeekRunException {
 		if (methodsArray == null) {
-			if (ai.getVersion() >= 4) {
-				var r = new ArrayLeekValue(ai, clazz.getDeclaredMethods().length - 1);
-				for (var m : clazz.getDeclaredMethods()) {
-					if (m.getName().equals("init")) continue;
-					// if (m.getDeclaringClass() != clazz) continue;
-					r.add(m.getName().substring(2));
+			if (clazz == null) {
+				if (ai.getVersion() >= 4) {
+					methodsArray = new ArrayLeekValue(ai);
+				} else {
+					methodsArray = new LegacyArrayLeekValue();
 				}
-				methodsArray = r;
 			} else {
-				Object[] values = new Object[clazz.getDeclaredMethods().length - 1];
-				int i = 0;
-				for (var m : clazz.getDeclaredMethods()) {
-					if (m.getName().equals("init")) continue;
-					// if (m.getDeclaringClass() != clazz) continue;
-					values[i++] = m.getName().substring(2);
+				if (ai.getVersion() >= 4) {
+					var r = new ArrayLeekValue(ai, clazz.getDeclaredMethods().length - 1);
+					for (var m : clazz.getDeclaredMethods()) {
+						if (m.getName().equals("init")) continue;
+						// if (m.getDeclaringClass() != clazz) continue;
+						r.add(m.getName().substring(2));
+					}
+					methodsArray = r;
+				} else {
+					Object[] values = new Object[clazz.getDeclaredMethods().length - 1];
+					int i = 0;
+					for (var m : clazz.getDeclaredMethods()) {
+						if (m.getName().equals("init")) continue;
+						// if (m.getDeclaringClass() != clazz) continue;
+						values[i++] = m.getName().substring(2);
+					}
+					methodsArray = new LegacyArrayLeekValue(ai, values);
 				}
-				methodsArray = new LegacyArrayLeekValue(ai, values);
 			}
 		}
 		return methodsArray;
