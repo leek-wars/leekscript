@@ -821,7 +821,8 @@ public class WordCompiler {
 
 		Token name = mCompiler.eatToken();
 		if (name.getType() != WordParser.T_STRING) {
-			addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_EXPECTED, new String[] { name.getWord() }));
+			addError(new AnalyzeError(name, AnalyzeErrorLevel.WARNING, Error.VARIABLE_NAME_EXPECTED, new String[] { name.getWord() }));
+			return;
 		}
 
 		if (name.getWord().equals("super") || name.getWord().equals("class")) {
