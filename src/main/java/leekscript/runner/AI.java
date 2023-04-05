@@ -209,6 +209,13 @@ public abstract class AI {
 			}
 			return o;
 		}
+
+		@Override
+		@SuppressWarnings("deprecated")
+		protected void finalize() throws Throwable {
+			super.finalize();
+			decreaseRAM(2 * size());
+		}
 	}
 
 	public AI(int instructions, int version) {
