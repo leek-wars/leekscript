@@ -462,9 +462,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return removeIndex(ai, (int) index);
 	}
 
-	public Object removeKey(AI ai, Object value) throws LeekRunException {
+	public Object removeKey(AI ai, Object key) throws LeekRunException {
 		ai.ops(1 + size());
-		remove(ai, value);
+		remove(ai, transformKey(ai, key));
 		return null;
 	}
 
