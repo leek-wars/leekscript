@@ -38,6 +38,7 @@ public class Type {
 	public static final Type STRING_OR_NULL = compound(Type.STRING, Type.NULL);
 	public static final Type INT_OR_REAL = compound(Type.INT, Type.REAL);
 	public static final Type MAP_INT_STRING = map(Type.INT, Type.STRING);
+	public static final Type MAP_STRING_STRING = map(Type.STRING, Type.STRING);
 
 	public static enum CastType {
 		EQUALS,
