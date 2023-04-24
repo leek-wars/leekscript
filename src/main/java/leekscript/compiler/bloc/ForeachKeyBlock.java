@@ -8,8 +8,6 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
-import leekscript.compiler.expression.LeekVariable;
-import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
@@ -73,8 +71,9 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mKeyIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mKeyIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mKeyIterator.getWord())) {
 				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 			} else {
-				this.addVariable(new LeekVariable(mKeyIterator, VariableType.LOCAL, iteratorKeyDeclaration));
+				// this.addVariable(new LeekVariable(mKeyIterator, VariableType.LOCAL, iteratorKeyDeclaration));
 			}
+			iteratorKeyDeclaration.preAnalyze(compiler);
 		} else {
 			var v = compiler.getCurrentBlock().getVariable(mKeyIterator.getWord(), true);
 			if (v == null) {
@@ -86,8 +85,9 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
 				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 			} else {
-				this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL, iteratorDeclaration));
+				// this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL, iteratorDeclaration));
 			}
+			iteratorDeclaration.preAnalyze(compiler);
 		} else {
 			var v = compiler.getCurrentBlock().getVariable(mIterator.getWord(), true);
 			if (v == null) {
@@ -111,6 +111,15 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		if (!mArray.getType().canBeIterable()) {
 			compiler.addError(new AnalyzeError(mArray.getLocation(), AnalyzeErrorLevel.WARNING, Error.NOT_ITERABLE, new String[] { mArray.getType().name } ));
 		}
+
+		// Le type n'est pas forcé par le conteneur
+		// if (mIsDeclaration && iteratorDeclaration.getVariable() != null) {
+		// 	iteratorDeclaration.getVariable().setType(mArray.getType().pureElement());
+		// }
+
+		// if (mIsKeyDeclaration && iteratorKeyDeclaration.getVariable() != null) {
+		// 	iteratorKeyDeclaration.getVariable().setType(mArray.getType().key());
+		// }
 
 		compiler.setCurrentBlock(initialBlock);
 		super.analyze(compiler);
@@ -152,7 +161,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			} else if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
 				sb.append("var " + key_iterator + " = new Box(" + writer.getAIThis() + ", null);");
 			} else {
-				sb.append("Object ").append(key_iterator).append(" = null; ops(1); ");
+				sb.append(iteratorKeyDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + " ").append(key_iterator).append(" = null; ops(1); ");
 			}
 		}
 		// Valeur
@@ -160,7 +169,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
 				sb.append("final Wrapper " + val_iterator + " = new Wrapper(new Box(" + writer.getAIThis() + ", null));");
 			} else if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
-				sb.append("Object " + val_iterator + " = null; ops(1);");
+				sb.append(iteratorDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + " " + val_iterator + " = null; ops(1);");
 			} else if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1 || (iteratorDeclaration != null && iteratorDeclaration.isCaptured())) {
 				sb.append("var " + val_iterator + " = new Box(" + writer.getAIThis() + ", null);");
 			} else {
@@ -175,12 +184,16 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		if (mainblock.getVersion() >= 4) {
 			if (iteratorKeyVariable != null && iteratorKeyVariable.getDeclaration() != null && iteratorKeyVariable.getDeclaration().isCaptured()) {
 				sb.append(key_iterator).append(".set(").append(var).append(".getKey()); ");
+			} else if (mIsKeyDeclaration) {
+				sb.append(key_iterator).append(" = (" + iteratorKeyDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + ")").append(var).append(".getKey(); ");
 			} else {
 				sb.append(key_iterator).append(" = ").append(var).append(".getKey(); ");
 			}
 		} else if (mainblock.getVersion() >= 2) {
 			if (iteratorKeyVariable != null && iteratorKeyVariable.getDeclaration() != null && iteratorKeyVariable.getDeclaration().isCaptured()) {
 				sb.append(key_iterator).append(".set(").append(var).append(".getKey()); ");
+			} else if (mIsKeyDeclaration) {
+				sb.append(key_iterator).append(" = (" + iteratorKeyDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + ")").append(var).append(".getKey(); ");
 			} else {
 				sb.append(key_iterator).append(" = ").append(var).append(".getKey(); ");
 			}
@@ -197,12 +210,16 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		if (mainblock.getVersion() >= 4) {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
 				sb.append(val_iterator).append(".set(").append(var).append(".getValue());");
+			} else if (mIsDeclaration) {
+				sb.append(val_iterator).append(" = (" + iteratorDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + ")").append(var).append(".getValue();");
 			} else {
 				sb.append(val_iterator).append(" = ").append(var).append(".getValue();");
 			}
 		} else if (mainblock.getVersion() >= 2) {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
 				sb.append(val_iterator).append(".set(").append(var).append(".getValue());");
+			} else if (mIsDeclaration) {
+				sb.append(val_iterator).append(" = (" + iteratorDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + ")").append(var).append(".getValue();");
 			} else {
 				sb.append(val_iterator).append(" = ").append(var).append(".getValue();");
 			}

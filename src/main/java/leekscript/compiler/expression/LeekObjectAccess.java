@@ -9,6 +9,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.common.ClassType;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
@@ -96,6 +97,7 @@ public class LeekObjectAccess extends Expression {
 					}
 				}
 			} else if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS) {
+
 				var clazz = v.getVariableType() == VariableType.CLASS ? v.getClassDeclaration() : compiler.getCurrentClass();
 
 				this.variable = clazz.getStaticMember(field.getWord());
@@ -130,6 +132,20 @@ public class LeekObjectAccess extends Expression {
 				operations -= 1;
 			}
 		}
+
+		// get type of member
+		if (object.getType() instanceof ClassType) {
+			var memberType = object.getType().member(field.getWord());
+			if (memberType == null) {
+				compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.WARNING, Error.CLASS_MEMBER_DOES_NOT_EXIST, new String[] {
+					object.getType().toString(),
+					field.getWord()
+				}));
+				this.type = Type.NULL;
+			} else {
+				this.type = memberType;
+			}
+		}
 	}
 
 	public String getField() {
@@ -147,20 +163,24 @@ public class LeekObjectAccess extends Expression {
 			object.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else {
-			if (type != Type.ANY) {
-				writer.addCode("((" + type.getJavaName(mainblock.getVersion()) + ") ");
-			}
 			if (this.variable != null && this.variable.getVariableType() == VariableType.METHOD) {
 				writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + field.getWord() + "\")");
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
 				writer.addCode(field.getWord());
+			} else if (object.getType() instanceof ClassType && type != Type.FUNCTION) { // TODO : mieux détecter les méthodes
+				object.writeJavaCode(mainblock, writer);
+				writer.addCode(".");
+				writer.addCode(field.getWord());
 			} else {
+				if (type != Type.ANY) {
+					writer.addCode("((" + type.getJavaName(mainblock.getVersion()) + ") (");
+				}
 				writer.addCode("getField(");
 				object.writeJavaCode(mainblock, writer);
 				writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
-			}
-			if (type != Type.ANY) {
-				writer.addCode(")");
+				if (type != Type.ANY) {
+					writer.addCode("))");
+				}
 			}
 		}
 	}
@@ -174,11 +194,13 @@ public class LeekObjectAccess extends Expression {
 			object.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else {
-
 			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
 				writer.addCode(field.getWord());
+			} else if (object.getType() instanceof ClassType) {
+				object.writeJavaCode(mainblock, writer);
+				writer.addCode(".");
+				writer.addCode(field.getWord());
 			} else {
-
 				writer.addCode("getField(");
 				object.writeJavaCode(mainblock, writer);
 				writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -192,7 +214,7 @@ public class LeekObjectAccess extends Expression {
 
 		if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
 			writer.addCode(field.getWord() + " = ");
-			expr.writeJavaCode(mainblock, writer);
+			writer.cast(mainblock, expr, type);
 		} else {
 			writer.addCode("setField(");
 			object.writeJavaCode(mainblock, writer);
@@ -405,14 +427,17 @@ public class LeekObjectAccess extends Expression {
 			if (v.getVariableType() == VariableType.CLASS) {
 				var clazz = v.getClassDeclaration();
 
-				var member = clazz.getMember(field.getWord());
-				if (member != null) {
-					return new Hover(member.getType(), getLocation(), member.getLocation());
-				}
 				var staticMember = clazz.getStaticMember(field.getWord());
 				if (staticMember != null) {
 					return new Hover(staticMember.getType(), getLocation(), staticMember.getLocation());
 				}
+			}
+		}
+		var clazz = object.getType().getClassDeclaration();
+		if (clazz != null) {
+			var member = clazz.getMember(field.getWord());
+			if (member != null) {
+				return new Hover(member.getType(), getLocation(), member.getLocation());
 			}
 		}
 		return new Hover(getType(), getLocation());

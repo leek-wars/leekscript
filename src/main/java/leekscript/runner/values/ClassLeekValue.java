@@ -380,7 +380,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 		}
 		if (this == ai.nullClass) return null;
 		if (this == ai.booleanClass) return false;
-		if (this == ai.integerClass) return 0;
+		if (this == ai.integerClass) return 0l;
 		if (this == ai.realClass || this == ai.numberClass) return 0.0;
 		if (this == ai.stringClass) return "";
 		if (this == ai.arrayClass) {
@@ -416,7 +416,9 @@ public class ClassLeekValue extends FunctionLeekValue {
 				}
 				this.clazz.getMethod("init", types).invoke(object, args);
 				return object;
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {}
+			} catch (IllegalAccessException | IllegalArgumentException | NoSuchMethodException | SecurityException | InvocationTargetException e) {
+				ai.addSystemLog(AILog.ERROR, e);
+			}
 		}
 		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
 		return object;

@@ -184,9 +184,9 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	public void analyze(WordCompiler compiler) {
 		if (mValue != null) {
 			mValue.analyze(compiler);
-			if (this.variable != null) {
-				this.variable.setType(mValue.getType());
-			}
+			// if (this.variable != null) {
+			// 	this.variable.setType(mValue.getType());
+			// }
 		}
 	}
 
@@ -246,5 +246,9 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	public LeekVariable getVariable() {
+		return this.variable;
 	}
 }

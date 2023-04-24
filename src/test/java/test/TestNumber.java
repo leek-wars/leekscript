@@ -29,6 +29,17 @@ public class TestNumber extends TestCommon {
 		// TODO special character constant
 		// code("π").almost(3.141592653589793116);
 
+		section("Class");
+		code_v3_("return new Integer").equals("0");
+		code_v3_("return new Integer()").equals("0");
+		code_v3_("return new Integer() + 1").equals("1");
+		code_v3_("return new Real").equals("0.0");
+		code_v3_("return new Real()").equals("0.0");
+		code_v3_("return new Real() + 1").equals("1.0");
+		code_v3_("return new Number").equals("0.0");
+		code_v3_("return new Number()").equals("0.0");
+		code_v3_("return new Number() + 1").equals("1.0");
+
 		section("Lexical errors");
 		code("12345r").error(Error.INVALID_NUMBER);
 		code("0b011001711").error(Error.INVALID_NUMBER);

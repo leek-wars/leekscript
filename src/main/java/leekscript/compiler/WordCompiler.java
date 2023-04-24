@@ -30,6 +30,7 @@ import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekObject;
 import leekscript.compiler.expression.LeekParenthesis;
 import leekscript.compiler.expression.LeekString;
+import leekscript.compiler.expression.LeekTypeExpression;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -62,7 +63,8 @@ public class WordCompiler {
 	public void readCode() throws LeekCompilerException {
 		try {
 			mCompiler.compile(this);
-			// Recherche des fonctions utilisateur
+
+			// Recherche des globales, classes et fonctions utilisateur
 			while (mCompiler.haveWords()) {
 				if (mCompiler.token().getType() == WordParser.T_STRING && mCompiler.token().getWord().equals("global")) {
 					mCompiler.skipToken();
@@ -127,11 +129,37 @@ public class WordCompiler {
 					}
 
 					mMain.addFunctionDeclaration(funcName.getWord(), param_count);
+
+				} else if (mCompiler.token().getWord().equals("class")) {
+
+					mCompiler.skipToken();
+					if (mCompiler.haveWords()) {
+						var className = mCompiler.eatToken();
+
+						if (className.getType() == WordParser.T_STRING) {
+
+							if (mMain.getDefinedClass(className.getWord()) != null) {
+								throw new LeekCompilerException(className, Error.VARIABLE_NAME_UNAVAILABLE, new String[] {
+									className.getWord()
+								});
+							}
+
+							var clazz = new ClassDeclarationInstruction(className, mLine, mAI, false, getMainBlock());
+							mMain.defineClass(clazz);
+							// System.out.println("Define class " + clazz.getName());
+						}
+					}
+
 				} else {
 					mCompiler.skipToken();
 				}
 			}
+
+			// Classes pré-définies :
+			// System.out.println(mMain.getDefinedClasses());
+
 			mCompiler.reset();
+
 			// Vraie compilation
 			while (mCompiler.haveWords()) {
 
@@ -377,22 +405,87 @@ public class WordCompiler {
 		setCurrentFunction(previousFunction);
 	}
 
-	// private Type parseType(String word) {
-	// 	if (word.equals("void")) return Type.VOID;
-	// 	if (word.equals("bool")) return Type.BOOL;
-	// 	if (word.equals("any")) return Type.ANY;
-	// 	if (word.equals("int")) return Type.INT;
-	// 	if (word.equals("real")) return Type.REAL;
-	// 	if (word.equals("number")) return Type.NUMBER;
-	// 	if (word.equals("string")) return Type.STRING;
-	// 	if (word.equals("array")) return Type.ARRAY;
-	// 	if (word.equals("map")) return Type.MAP;
-	// 	if (word.equals("function")) return Type.FUNCTION;
-	// 	if (word.equals("object")) return Type.OBJECT;
-	// 	if (word.equals("class")) return Type.CLASS;
-	// 	if (word.equals("null")) return Type.NULL;
-	// 	return Type.ANY;
-	// }
+	private LeekTypeExpression eatType(boolean mandatory) {
+
+		var type = eatPrimaryType(mandatory);
+		if (type == null) return null;
+
+		if (mCompiler.token().getWord().equals("|")) {
+			mCompiler.skipToken();
+
+			var type2 = eatPrimaryType(true);
+			if (type2 == null) {
+				addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+			} else {
+				return new LeekTypeExpression(type.token, Type.compound(type.getType(), type2.getType()));
+			}
+		}
+		return type;
+	}
+
+	private LeekTypeExpression eatPrimaryType(boolean mandatory) {
+		var word = mCompiler.token().getWord();
+		if (word.equals("void")) return new LeekTypeExpression(mCompiler.eatToken(), Type.VOID);
+		if (word.equals("null")) return new LeekTypeExpression(mCompiler.eatToken(), Type.NULL);
+		if (word.equals("boolean")) return new LeekTypeExpression(mCompiler.eatToken(), Type.BOOL);
+		if (word.equals("any")) return new LeekTypeExpression(mCompiler.eatToken(), Type.ANY);
+		if (word.equals("integer")) return new LeekTypeExpression(mCompiler.eatToken(), Type.INT);
+		if (word.equals("real")) return new LeekTypeExpression(mCompiler.eatToken(), Type.REAL);
+		if (word.equals("number")) return new LeekTypeExpression(mCompiler.eatToken(), Type.NUMBER);
+		if (word.equals("string")) return new LeekTypeExpression(mCompiler.eatToken(), Type.STRING);
+		if (word.equals("Class")) return new LeekTypeExpression(mCompiler.eatToken(), Type.CLASS);
+		if (word.equals("Function")) return new LeekTypeExpression(mCompiler.eatToken(), Type.FUNCTION);
+		if (word.equals("Object")) return new LeekTypeExpression(mCompiler.eatToken(), Type.OBJECT);
+		if (word.equals("Array")) {
+			var map = mCompiler.eatToken();
+			Type valueType = Type.ANY;
+			if (mCompiler.token().getType() == WordParser.T_OPERATOR && mCompiler.token().getWord().equals("<")) {
+				mCompiler.skipToken();
+				var value = eatType(true);
+				if (value != null) valueType = value.getType();
+
+				if (!mCompiler.token().getWord().startsWith(">"))
+					addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.CLOSING_CHEVRON_EXPECTED));
+				mCompiler.skipToken();
+			}
+			var type = Type.array(valueType);
+			return new LeekTypeExpression(map, type);
+		}
+		if (word.equals("Map")) {
+			var map = mCompiler.eatToken();
+			Type keyType = Type.ANY, valueType = Type.ANY;
+			if (mCompiler.token().getType() == WordParser.T_OPERATOR && mCompiler.token().getWord().equals("<")) {
+				mCompiler.skipToken(); // <
+				var key = eatType(true);
+				if (key != null) keyType = key.getType();
+
+				if (mCompiler.token().getWord().equals(",")) {
+					mCompiler.skipToken(); // ,
+				} else {
+					addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.COMMA_EXPECTED));
+				}
+				var value = eatType(true);
+				if (value != null) valueType = value.getType();
+
+				if (!mCompiler.token().getWord().startsWith(">"))
+					addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.CLOSING_CHEVRON_EXPECTED));
+				mCompiler.skipToken(); // >
+			}
+			var type = Type.map(keyType, valueType);
+			return new LeekTypeExpression(map, type);
+		}
+
+		var clazz = mMain.getDefinedClass(word);
+		if (clazz != null) {
+			return new LeekTypeExpression(mCompiler.eatToken(), clazz.getType());
+		}
+
+		if (mandatory) {
+			addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+		}
+
+		return null;
+	}
 
 	private void forBlock() throws LeekCompilerException {
 		var token = mCompiler.eatToken();
@@ -728,14 +821,11 @@ public class WordCompiler {
 		if (word.getType() != WordParser.T_STRING) {
 			throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED);
 		}
-		if (mMain.hasUserClass(word.getWord())) {
-			throw new LeekCompilerException(word, Error.VARIABLE_NAME_UNAVAILABLE);
-		}
 		if (isKeyword(word)) {
 			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() }));
 		}
-		ClassDeclarationInstruction classDeclaration = new ClassDeclarationInstruction(word, mLine, mAI, false, getMainBlock());
-		mMain.addClass(classDeclaration);
+		ClassDeclarationInstruction classDeclaration = mMain.getUserClass(word.getWord());
+		mMain.addClassList(classDeclaration);
 		mCurrentClass = classDeclaration;
 
 		if (mCompiler.token().getWord().equals("extends")) {
@@ -819,9 +909,13 @@ public class WordCompiler {
 
 	public void endClassMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, boolean isStatic, boolean isFinal) throws LeekCompilerException {
 
+		var isStringMethod = mCompiler.token().getWord().equals("string") && mCompiler.token(1).getType() == WordParser.T_PAR_LEFT;
+
+		var typeExpression = isStringMethod ? null : eatType(false);
+
 		Token name = mCompiler.eatToken();
 		if (name.getType() != WordParser.T_STRING) {
-			addError(new AnalyzeError(name, AnalyzeErrorLevel.WARNING, Error.VARIABLE_NAME_EXPECTED, new String[] { name.getWord() }));
+			addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_EXPECTED, new String[] { name.getWord() }));
 			return;
 		}
 
@@ -850,9 +944,9 @@ public class WordCompiler {
 		}
 
 		if (isStatic) {
-			classDeclaration.addStaticField(this, name, expr, accessLevel, isFinal);
+			classDeclaration.addStaticField(this, name, expr, accessLevel, isFinal, typeExpression != null ? typeExpression.getType() : Type.ANY);
 		} else {
-			classDeclaration.addField(this, name, expr, accessLevel, isFinal);
+			classDeclaration.addField(this, name, expr, accessLevel, isFinal, typeExpression != null ? typeExpression.getType() : Type.ANY);
 		}
 
 		if (mCompiler.token().getType() == WordParser.T_END_INSTRUCTION)
@@ -1130,7 +1224,32 @@ public class WordCompiler {
 					retour.addObjectAccess(dot, name);
 
 				} else if (word.getType() == WordParser.T_OPERATOR) {
+
 					int operator = Operators.getOperator(word.getWord(), getVersion());
+
+					// Handle ">>", ">>=", ">>>", ">>>=" operator
+					if (word.getWord().equals(">")) {
+						var nextToken = mCompiler.token(1);
+						if (nextToken.getType() == WordParser.T_OPERATOR && nextToken.getWord().equals(">")) {
+							operator = Operators.SHIFT_RIGHT;
+							mCompiler.skipToken();
+						}
+						else if (nextToken.getType() == WordParser.T_OPERATOR && nextToken.getWord().equals(">=")) {
+							operator = Operators.SHIFT_RIGHT_ASSIGN;
+							mCompiler.skipToken();
+						}
+					}
+					if (operator == Operators.SHIFT_RIGHT) {
+						var nextToken = mCompiler.token(1);
+						if (nextToken.getType() == WordParser.T_OPERATOR && nextToken.getWord().equals(">")) {
+							operator = Operators.SHIFT_UNSIGNED_RIGHT;
+							mCompiler.skipToken();
+						}
+						else if (nextToken.getType() == WordParser.T_OPERATOR && nextToken.getWord().equals(">=")) {
+							operator = Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN;
+							mCompiler.skipToken();
+						}
+					}
 
 					// Là c'est soit un opérateur (+ - ...) soit un suffix
 					// unaire (++ -- ) sinon on sort de l'expression

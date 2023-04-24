@@ -20,7 +20,7 @@ public class LeekExpression extends Expression {
 	protected Expression mExpression1 = null;
 	protected Expression mExpression2 = null;
 	protected LeekExpression mParent = null;
-	private Type type = Type.ANY;
+	protected Type type = Type.ANY;
 
 	public LeekExpression() {}
 
@@ -522,7 +522,11 @@ public class LeekExpression extends Expression {
 			// 	writer.addCode(" / ");
 			// 	mExpression2.writeJavaCode(mainblock, writer);
 			// } else {
-				writer.addCode("div(");
+				if (mainblock.getVersion() == 1) {
+					writer.addCode("div_v1(");
+				} else {
+					writer.addCode("div(");
+				}
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
 				writer.compileLoad(mainblock, mExpression2);
@@ -917,8 +921,18 @@ public class LeekExpression extends Expression {
 		if (mOperator == Operators.ASSIGN) {
 			var variable1 = mExpression1.getVariable();
 			var variable2 = mExpression2.getVariable();
+
 			if (variable1 != null && variable1 == variable2) {
 				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.ASSIGN_SAME_VARIABLE, new String[] { variable1.getName() } ));
+			}
+
+			if (mExpression1.getType().accepts(mExpression2.getType()).ordinal() >= CastType.INCOMPATIBLE.ordinal()) {
+				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.ASSIGNMENT_INCOMPATIBLE_TYPE, new String[] {
+					mExpression2.toString(),
+					mExpression2.getType().name,
+					mExpression1.toString(),
+					mExpression1.getType().name,
+				}));
 			}
 		}
 
@@ -971,13 +985,16 @@ public class LeekExpression extends Expression {
 				}
 			}
 		}
-		// if (mOperator == Operators.DIVIDE) {
-		// 	type = Type.REAL;
-		// }
-		if (mOperator == Operators.UNARY_MINUS) {
+		else if (mOperator == Operators.DIVIDE && compiler.getVersion() > 1) {
+			type = Type.REAL; // In V1, result can be null if division by 0
+		}
+		else if (mOperator == Operators.UNARY_MINUS) {
 			type = mExpression2.getType();
 		}
-		// if (mOperator == Operators.POWER) {
+		else if (mOperator == Operators.NEW) {
+			type = mExpression2.getType();
+		}
+		// else if (mOperator == Operators.POWER) {
 		// 	type = Type.REAL;
 		// }
 

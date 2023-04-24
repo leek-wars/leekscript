@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.instruction.ClassDeclarationInstruction;
 
 public class Type {
 
@@ -214,7 +215,21 @@ public class Type {
 		return map;
 	}
 
+	public Type key() {
+		if (this == ANY) {
+			return Type.ANY;
+		}
+		return Type.NULL;
+	}
+
 	public Type element() {
+		if (this == ANY) {
+			return Type.ANY;
+		}
+		return Type.NULL;
+	}
+
+	public Type pureElement() {
 		if (this == ANY) {
 			return Type.ANY;
 		}
@@ -226,5 +241,16 @@ public class Type {
 			return true;
 		}
 		return false;
+	}
+
+	public Type member(String member) {
+		if (this == ANY) {
+			return Type.ANY;
+		}
+		return Type.NULL;
+	}
+
+	public ClassDeclarationInstruction getClassDeclaration() {
+		return null;
 	}
 }

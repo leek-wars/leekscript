@@ -24,6 +24,7 @@ public class CompoundType extends Type {
 		var worst = CastType.EQUALS;
 		for (var t : types) {
 			var r = t.accepts(type);
+			if (r == CastType.EQUALS) return r;
 			if (r.ordinal() > worst.ordinal()) worst = r;
 			if (r.ordinal() < best.ordinal()) best = r;
 		}
@@ -41,6 +42,11 @@ public class CompoundType extends Type {
 	@Override
 	public Type element() {
 		return Type.compound(this.types.stream().map(t -> t.element()).collect(Collectors.toCollection(HashSet::new)));
+	}
+
+	@Override
+	public Type member(String member) {
+		return Type.compound(this.types.stream().map(t -> t.member(member)).collect(Collectors.toCollection(HashSet::new)));
 	}
 
 	public HashSet<Type> getTypes() {

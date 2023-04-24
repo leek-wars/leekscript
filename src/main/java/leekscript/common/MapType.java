@@ -29,8 +29,16 @@ public class MapType extends Type {
 		return "new MapLeekValue(" + writer.getAIThis() + ")";
 	}
 
+	public Type key() {
+		return key;
+	}
+
 	public Type element() {
 		return Type.compound(value, Type.NULL);
+	}
+
+	public Type pureElement() {
+		return value;
 	}
 
 	@Override

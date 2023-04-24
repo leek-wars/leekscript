@@ -34,8 +34,16 @@ public class ArrayType extends Type {
 		return version >= 4 ? "ArrayLeekValue" : "LegacyArrayLeekValue";
 	}
 
+	public Type key() {
+		return Type.INT;
+	}
+
 	public Type element() {
 		return Type.compound(type, Type.NULL);
+	}
+
+	public Type pureElement() {
+		return type;
 	}
 
 	public boolean isArray() {

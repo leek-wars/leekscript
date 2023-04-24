@@ -183,8 +183,12 @@ public class Box {
 		return (long) (mValue = mUAI.ushr(mValue, val));
 	}
 
-	public Object div_eq(Object val) throws LeekRunException {
-		return mValue = mUAI.div(mValue, val);
+	public double div_eq(Object val) throws LeekRunException {
+		return (double) (mValue = mUAI.div(mValue, val));
+	}
+
+	public Object div_eq_v1(Object val) throws LeekRunException {
+		return mValue = mUAI.div_v1(mValue, val);
 	}
 
 	public long intdiv_eq(Object val) throws LeekRunException {

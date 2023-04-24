@@ -17,6 +17,7 @@ import leekscript.compiler.instruction.ClassDeclarationInstruction.ClassDeclarat
 import leekscript.runner.CallableVersion;
 import leekscript.runner.LeekFunctions;
 import leekscript.common.AccessLevel;
+import leekscript.common.ClassType;
 import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
@@ -208,12 +209,20 @@ public class LeekFunctionCall extends Expression {
 			writer.addCode("(");
 			addComma = false;
 			user_function = mainblock.getUserFunction(((LeekVariable) mExpression).getName());
+		} else if (mExpression.getType() == Type.CLASS) {
+			writer.addCode("new_");
+			mExpression.writeJavaCode(mainblock, writer);
+			writer.addCode("(");
+			addComma = false;
 		} else {
 			if (mExpression.isLeftValue() && !mExpression.nullable()) {
 				writer.addCode("execute(");
 				mExpression.writeJavaCode(mainblock, writer);
 				// addComma = false;
 			} else {
+				// if (this.type != Type.ANY) {
+				// 	writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ")");
+				// }
 				writer.addCode("execute(");
 				mExpression.writeJavaCode(mainblock, writer);
 			}
@@ -384,6 +393,7 @@ public class LeekFunctionCall extends Expression {
 				} else if (constructor.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_CONSTRUCTOR, new String[] { clazz.getName() }));
 				}
+				this.type = clazz.getType();
 
 			} else if (v.getVariableType() == VariableType.SUPER) {
 

@@ -9,6 +9,7 @@ import com.alibaba.fastjson.JSON;
 
 import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.common.Type;
+import leekscript.common.Type.CastType;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.Expression;
 import leekscript.runner.CallableVersion;
@@ -360,6 +361,17 @@ public class JavaWriter {
 			return "string(" + v + ")";
 		}
 		return v;
+	}
+
+	public void cast(MainLeekBlock mainblock, Expression expr, Type type) {
+		var castType = type.accepts(expr.getType());
+		if (castType.ordinal() > CastType.EQUALS.ordinal()) {
+			addCode("((" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") (");
+		}
+		expr.writeJavaCode(mainblock, this);
+		if (castType.ordinal() > CastType.EQUALS.ordinal()) {
+			addCode("))");
+		}
 	}
 
 	public boolean isInConstructor() {

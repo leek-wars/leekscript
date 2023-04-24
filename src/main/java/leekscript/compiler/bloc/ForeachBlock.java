@@ -8,8 +8,6 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
-import leekscript.compiler.expression.LeekVariable;
-import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
@@ -73,8 +71,8 @@ public class ForeachBlock extends AbstractLeekBlock {
 		if (mIsDeclaration) {
 			if (declaration.isCaptured()) {
 				writer.addCode("final Wrapper " + iterator_name + " = new Wrapper(new Box(" + writer.getAIThis() + ", null));");
-			} else if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
-				writer.addLine("Object " + iterator_name + " = null;");
+			} else if (mainblock.getVersion() >= 2) {
+				writer.addLine(declaration.getVariable().getType().getJavaName(mainblock.getVersion()) + " " + iterator_name + " = null;");
 				writer.addCounter(1);
 			} else {
 				writer.addLine("var " + iterator_name + " = new Box(" + writer.getAIThis() + ", null);");
@@ -89,6 +87,8 @@ public class ForeachBlock extends AbstractLeekBlock {
 		if (mainblock.getVersion() >= 4) {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
 				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
+			} else if (mIsDeclaration) {
+				writer.addLine(iterator_name + " = (" + declaration.getVariable().getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
 			} else {
 				writer.addLine(iterator_name + " = " + var + ".getValue();");
 			}
@@ -135,14 +135,15 @@ public class ForeachBlock extends AbstractLeekBlock {
 		// On analyse d'abord le container puis la variable
 		mArray.preAnalyze(compiler);
 
-		// Si c'est une déclaration on vérifie que le nom est disponnible
+		// Si c'est une déclaration on vérifie que le nom est disponible
 		if (mIsDeclaration) {
 			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
 				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 			} else {
-				this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL, declaration));
+				// this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL, declaration));
 			}
 			declaration.setFunction(compiler.getCurrentFunction());
+			declaration.preAnalyze(compiler);
 		} else {
 			var v = compiler.getCurrentBlock().getVariable(mIterator.getWord(), true);
 			if (v == null) {
@@ -163,6 +164,11 @@ public class ForeachBlock extends AbstractLeekBlock {
 			compiler.addError(new AnalyzeError(mArray.getLocation(), AnalyzeErrorLevel.WARNING, Error.NOT_ITERABLE, new String[] { mArray.getType().name } ));
 		}
 
+		// Le type n'est pas forcé par le conteneur
+		// if (mIsDeclaration && declaration.getVariable() != null) {
+		// 	declaration.getVariable().setType(mArray.getType().pureElement());
+		// }
+
 		compiler.setCurrentBlock(initialBlock);
 		super.analyze(compiler);
 	}
@@ -174,7 +180,6 @@ public class ForeachBlock extends AbstractLeekBlock {
 
 	@Override
 	public int getNature() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 

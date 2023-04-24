@@ -33,6 +33,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final HashMap<String, FunctionBlock> mFunctions = new HashMap<>();
 	private final ArrayList<AnonymousFunctionBlock> mAnonymousFunctions = new ArrayList<AnonymousFunctionBlock>();
 	private final Map<String, Integer> mUserFunctions = new TreeMap<String, Integer>();
+	private final Map<String, ClassDeclarationInstruction> mDefinedClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final Map<String, ClassDeclarationInstruction> mUserClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final List<ClassDeclarationInstruction> mUserClassesList = new ArrayList<>();
 	private int mMinLevel = 1;
@@ -67,31 +68,31 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 		if (ai.getVersion() >= 3) {
 
-			var valueClass = new ClassDeclarationInstruction(new Token("Value"), 0, ai, true, this);
+			var valueClass = new ClassDeclarationInstruction(new Token("Value"), 0, ai, true, this, Type.ANY);
 			valueClass.addField(wordCompiler, new Token("class"), Type.CLASS, null, AccessLevel.PUBLIC, true);
 			addClass(valueClass);
 
-			addClass(new ClassDeclarationInstruction(new Token("Null"), 0, ai, true, this));
-			addClass(new ClassDeclarationInstruction(new Token("Boolean"), 0, ai, true, this));
+			addClass(new ClassDeclarationInstruction(new Token("Null"), 0, ai, true, this, Type.NULL));
+			addClass(new ClassDeclarationInstruction(new Token("Boolean"), 0, ai, true, this, Type.BOOL));
 
-			var integerClass = new ClassDeclarationInstruction(new Token("Integer"), 0, ai, true, this);
+			var integerClass = new ClassDeclarationInstruction(new Token("Integer"), 0, ai, true, this, Type.INT);
 			integerClass.addStaticField(wordCompiler, new Token("MIN_VALUE"), Type.INT, new LeekNumber(new Token(""), 0, Long.MIN_VALUE, Type.INT), AccessLevel.PUBLIC, true);
 			integerClass.addStaticField(wordCompiler, new Token("MAX_VALUE"), Type.INT, new LeekNumber(new Token(""), 0, Long.MAX_VALUE, Type.INT), AccessLevel.PUBLIC, true);
 			addClass(integerClass);
 
-			var realClass = new ClassDeclarationInstruction(new Token("Real"), 0, ai, true, this);
+			var realClass = new ClassDeclarationInstruction(new Token("Real"), 0, ai, true, this, Type.REAL);
 			realClass.addStaticField(wordCompiler, new Token("MIN_VALUE"), Type.REAL, new LeekNumber(new Token(""), Double.MIN_VALUE, 0, Type.REAL), AccessLevel.PUBLIC, true);
 			realClass.addStaticField(wordCompiler, new Token("MAX_VALUE"), Type.REAL, new LeekNumber(new Token(""), Double.MAX_VALUE, 0, Type.REAL), AccessLevel.PUBLIC, true);
 			addClass(realClass);
 
-			addClass(new ClassDeclarationInstruction(new Token("Number"), 0, ai, true, this));
-			addClass(new ClassDeclarationInstruction(new Token("Array"), 0, ai, true, this));
+			addClass(new ClassDeclarationInstruction(new Token("Number"), 0, ai, true, this, Type.NUMBER));
+			addClass(new ClassDeclarationInstruction(new Token("Array"), 0, ai, true, this, Type.ARRAY));
 			if (ai.getVersion() >= 4) {
-				addClass(new ClassDeclarationInstruction(new Token("Map"), 0, ai, true, this));
+				addClass(new ClassDeclarationInstruction(new Token("Map"), 0, ai, true, this, Type.MAP));
 			}
-			addClass(new ClassDeclarationInstruction(new Token("String"), 0, ai, true, this));
-			addClass(new ClassDeclarationInstruction(new Token("Object"), 0, ai, true, this));
-			addClass(new ClassDeclarationInstruction(new Token("Function"), 0, ai, true, this));
+			addClass(new ClassDeclarationInstruction(new Token("String"), 0, ai, true, this, Type.STRING));
+			addClass(new ClassDeclarationInstruction(new Token("Object"), 0, ai, true, this, Type.OBJECT));
+			addClass(new ClassDeclarationInstruction(new Token("Function"), 0, ai, true, this, Type.FUNCTION));
 			addClass(new ClassDeclarationInstruction(new Token("JSON"), 0, ai, true, this));
 			addClass(new ClassDeclarationInstruction(new Token("System"), 0, ai, true, this));
 		}
@@ -336,17 +337,31 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return mCompiler;
 	}
 
-	public boolean hasUserClass(String name) {
-		return mUserClasses.containsKey(name);
+	public void defineClass(ClassDeclarationInstruction classDeclaration) {
+		mUserClasses.put(classDeclaration.getName(), classDeclaration);
+		mDefinedClasses.put(classDeclaration.getName(), classDeclaration);
+	}
+
+	public void addClassList(ClassDeclarationInstruction classDeclaration) {
+		mUserClassesList.add(classDeclaration);
 	}
 
 	public void addClass(ClassDeclarationInstruction classDeclaration) {
 		mUserClasses.put(classDeclaration.getName(), classDeclaration);
 		mUserClassesList.add(classDeclaration);
+		mDefinedClasses.put(classDeclaration.getName(), classDeclaration);
 	}
 
 	public ClassDeclarationInstruction getUserClass(String name) {
 		return mUserClasses.get(name);
+	}
+
+	public ClassDeclarationInstruction getDefinedClass(String name) {
+		return mDefinedClasses.get(name);
+	}
+
+	public Map<String, ClassDeclarationInstruction> getDefinedClasses() {
+		return mDefinedClasses;
 	}
 
 	public void preAnalyze(WordCompiler compiler) {

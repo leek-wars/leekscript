@@ -168,9 +168,12 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public void analyze(WordCompiler compiler) {
-		// if (this.variable != null) {
-		// 	this.variableType = this.variable.getType();
-		// }
+		if (this.variable != null) {
+			this.variableType = this.variable.getType();
+		}
+		if (this.type == VariableType.THIS) {
+			this.variableType = compiler.getCurrentClass().getType();
+		}
 	}
 
 	public ClassDeclarationInstruction getClassDeclaration() {
@@ -208,7 +211,13 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.FIELD) {
 			writer.addCode(token.getWord());
 		} else if (type == VariableType.STATIC_FIELD) {
+			if (variableType != Type.ANY) {
+				writer.addCode("((" + variableType.getJavaName(mainblock.getVersion()) + ") ");
+			}
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + token.getWord() + "\")");
+			if (variableType != Type.ANY) {
+				writer.addCode(")");
+			}
 		} else if (type == VariableType.METHOD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.STATIC_METHOD) {
@@ -644,21 +653,37 @@ public class LeekVariable extends Expression {
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
-				writer.addCode("g_" + token.getWord() + ".div_eq(");
+				if (mainblock.getVersion() == 1) {
+					writer.addCode("g_" + token.getWord() + ".div_eq_v1(");
+				} else {
+					writer.addCode("g_" + token.getWord() + ".div_eq(");
+				}
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
 			} else {
-				writer.addCode("g_" + token.getWord() + " = div(g_" + token.getWord() + ", ");
+				if (mainblock.getVersion() == 1) {
+					writer.addCode("g_" + token.getWord() + " = div_v1(g_" + token.getWord() + ", ");
+				} else {
+					writer.addCode("g_" + token.getWord() + " = div(g_" + token.getWord() + ", ");
+				}
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".div_eq(");
+				if (mainblock.getVersion() == 1) {
+					writer.addCode("u_" + token.getWord() + ".div_eq_v1(");
+				} else {
+					writer.addCode("u_" + token.getWord() + ".div_eq(");
+				}
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
 			} else {
-				writer.addCode("u_" + token.getWord() + " = div(u_" + token.getWord() + ", ");
+				if (mainblock.getVersion() == 1) {
+					writer.addCode("u_" + token.getWord() + " = div_v1(u_" + token.getWord() + ", ");
+				} else {
+					writer.addCode("u_" + token.getWord() + " = div(u_" + token.getWord() + ", ");
+				}
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
 			}

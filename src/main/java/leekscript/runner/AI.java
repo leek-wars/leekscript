@@ -32,6 +32,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import com.alibaba.fastjson.JSONObject;
@@ -462,19 +464,89 @@ public abstract class AI {
 		return "";
 	}
 
+	public void addSystemLog(int type, Throwable throwable) throws LeekRunException {
+
+		if (throwable instanceof InvocationTargetException) {
+			addSystemLog(type, throwable.getCause());
+			return;
+		}
+
+		Error error = Error.UNKNOWN_ERROR;
+		Object[] parameters;
+
+		if (throwable instanceof ClassCastException) {
+			error = Error.IMPOSSIBLE_CAST;
+
+			Pattern r = Pattern.compile("class (.*) cannot be cast to class (.*) \\(");
+			Matcher m = r.matcher(throwable.getMessage());
+			if (m.find()) {
+				parameters = new Object[] { javaTypeToLS(m.group(1)), javaTypeToLS(m.group(2)) };
+			} else {
+				parameters = new Object[] { "?", "?" };
+			}
+		} else if (throwable instanceof IllegalArgumentException) {
+			error = Error.IMPOSSIBLE_CAST;
+
+			Pattern r = Pattern.compile("Can not set (.*) field .* to (.*)");
+			Matcher m = r.matcher(throwable.getMessage());
+			if (m.find()) {
+				parameters = new Object[] { javaTypeToLS(m.group(2)), javaTypeToLS(m.group(1)) };
+			} else {
+				parameters = new Object[] { "?", "?" };
+			}
+		} else if (throwable instanceof NullPointerException) {
+			error = Error.IMPOSSIBLE_CAST;
+
+			Pattern r = Pattern.compile("Cannot invoke \"(.*)\" because \".*\" is null");
+			Matcher m = r.matcher(throwable.getMessage());
+			if (m.find()) {
+				parameters = new Object[] { "null", javaTypeToLS(m.group(1)) };
+			} else {
+				parameters = new Object[] { "null", "?" };
+			}
+		} else {
+			// Erreur inconnue
+			parameters = throwable == null ? null : new Object[] { throwable.toString() };
+		}
+		addSystemLog(type, error.ordinal(), parameters, throwable);
+	}
+
+	private String javaTypeToLS(String type) {
+		switch (type) {
+			case "java.lang.Boolean": return "boolean";
+			case "java.lang.Long": return "integer";
+			case "java.lang.Double": return "real";
+			case "java.lang.String": return "string";
+			case "leekscript.runner.values.MapLeekValue": return "Map";
+			case "leekscript.runner.values.ArrayLeekValue":
+			case "leekscript.runner.values.LegacyArrayLeekValue": return "Array";
+			case "leekscript.runner.values.ObjectLeekValue": return "Object";
+			case "leekscript.runner.values.FunctionLeekValue": return "Function";
+		}
+		// AI_331043$u_Strategy
+		var prefix = "AI_" + this.id + "$u_";
+		if (type.startsWith(prefix)) return type.substring(prefix.length());
+
+		return type;
+	}
+
 	public void addSystemLog(int type, Error error) throws LeekRunException {
-		addSystemLog(type, error.ordinal(), null);
+		addSystemLog(type, error.ordinal(), null, null);
 	}
 
 	public void addSystemLog(int type, int error) throws LeekRunException {
-		addSystemLog(type, error, null);
+		addSystemLog(type, error, null, null);
 	}
 
 	public void addSystemLog(int type, Error error, Object[] parameters) throws LeekRunException {
-		addSystemLog(type, error.ordinal(), parameters);
+		addSystemLog(type, error.ordinal(), parameters, null);
 	}
 
-	public void addSystemLog(int type, int error, Object[] parameters) throws LeekRunException {
+	public void addSystemLog(int type, Error error, Object[] parameters, Throwable cause) throws LeekRunException {
+		addSystemLog(type, error.ordinal(), parameters, cause);
+	}
+
+	public void addSystemLog(int type, int error, Object[] parameters, Throwable cause) throws LeekRunException {
 		ops(AI.ERROR_LOG_COST);
 		if (type == AILog.WARNING)
 			type = AILog.SWARNING;
@@ -483,7 +555,8 @@ public abstract class AI {
 		else if (type == AILog.STANDARD)
 			type = AILog.SSTANDARD;
 
-		logs.addSystemLog(this, type, getErrorMessage(Thread.currentThread().getStackTrace()), error, parameters);
+		String stacktrace = cause == null ? getErrorMessage(Thread.currentThread().getStackTrace()) : getErrorMessage(cause.getStackTrace());
+		logs.addSystemLog(this, type, stacktrace, error, parameters);
 	}
 
 	protected String[] getErrorFiles() { return null; }
@@ -1010,13 +1083,17 @@ public abstract class AI {
 		return longint(x) * longint(y);
 	}
 
-	public Object div(Object x, Object y) throws LeekRunException {
+	public Object div_v1(Object x, Object y) throws LeekRunException {
 		double real_y = real(y);
 		if (version == 1 && real_y == 0) {
 			addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
 			return null;
 		}
 		return real(x) / real_y;
+	}
+
+	public double div(Object x, Object y) throws LeekRunException {
+		return real(x) / real(y);
 	}
 
 	public long intdiv(Object x, Object y) throws LeekRunException {
@@ -1069,9 +1146,16 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object div_eq(Object x, Object y) throws LeekRunException {
+	public double div_eq(Object x, Object y) throws LeekRunException {
 		if (x instanceof Box) {
 			return ((Box) x).div_eq(y);
+		}
+		return 0.0;
+	}
+
+	public Object div_eq_v1(Object x, Object y) throws LeekRunException {
+		if (x instanceof Box) {
+			return ((Box) x).div_eq_v1(y);
 		}
 		return null;
 	}
@@ -1346,7 +1430,9 @@ public abstract class AI {
 					var clazz = (ClassLeekValue) this.getClass().getField(value.getClass().getSimpleName()).get(this);
 					var method = clazz.genericMethods.get(field);
 					if (method != null) return method;
-				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {}
+				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
+					addSystemLog(AILog.ERROR, e1);
+				}
 			}
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { value, field });
@@ -1388,7 +1474,7 @@ public abstract class AI {
 			object.getClass().getField(field).set(object, value);
 			return value;
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-			e.printStackTrace();
+			addSystemLog(AILog.ERROR, e);
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
@@ -1414,7 +1500,7 @@ public abstract class AI {
 				f.set(object, value);
 				return value;
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-				e.printStackTrace(System.out);
+				addSystemLog(AILog.ERROR, e);
 			}
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
@@ -1440,7 +1526,9 @@ public abstract class AI {
 			var v = add(f.get(object), 1l);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
@@ -1465,7 +1553,9 @@ public abstract class AI {
 			var v = add(f.get(object), 1l);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1489,7 +1579,9 @@ public abstract class AI {
 			var v = sub(f.get(object), 1l);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1513,7 +1605,9 @@ public abstract class AI {
 			var v = sub(f.get(object), 1l);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1537,7 +1631,9 @@ public abstract class AI {
 			var v = add(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1561,7 +1657,9 @@ public abstract class AI {
 			var v = sub(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1585,7 +1683,9 @@ public abstract class AI {
 			var v = mul(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1609,7 +1709,9 @@ public abstract class AI {
 			var v = pow(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1633,7 +1735,9 @@ public abstract class AI {
 			var v = div(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1657,7 +1761,9 @@ public abstract class AI {
 			var v = intdiv(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1681,7 +1787,9 @@ public abstract class AI {
 			var v = mod(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1699,7 +1807,9 @@ public abstract class AI {
 			var v = bor(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1717,7 +1827,9 @@ public abstract class AI {
 			var v = band(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1735,7 +1847,9 @@ public abstract class AI {
 			var v = bxor(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1753,7 +1867,9 @@ public abstract class AI {
 			var v = shl(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1772,7 +1888,9 @@ public abstract class AI {
 				var v = shr(f.get(object), value);
 				f.set(object, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
@@ -1792,7 +1910,9 @@ public abstract class AI {
 				var v = ushr(f.get(object), value);
 				f.set(object, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
@@ -1822,7 +1942,9 @@ public abstract class AI {
 				if (f == null) return null;
 				f.set(array, value);
 				return value;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
 		return null;
@@ -1853,7 +1975,9 @@ public abstract class AI {
 				var v = f.get(array);
 				f.set(array, add(v, 1l));
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -1885,7 +2009,9 @@ public abstract class AI {
 				var v = add(f.get(array), 1l);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -1917,7 +2043,9 @@ public abstract class AI {
 				var v = f.get(array);
 				f.set(array, sub(v, 1l));
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -1949,7 +2077,9 @@ public abstract class AI {
 				var v = sub(f.get(array), 1l);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -1981,7 +2111,9 @@ public abstract class AI {
 				var v = add(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2013,7 +2145,9 @@ public abstract class AI {
 				var v = sub(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2045,7 +2179,9 @@ public abstract class AI {
 				var v = mul(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2077,7 +2213,9 @@ public abstract class AI {
 				var v = pow(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2109,7 +2247,9 @@ public abstract class AI {
 				var v = mod(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2141,7 +2281,9 @@ public abstract class AI {
 				var v = div(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2173,7 +2315,9 @@ public abstract class AI {
 				var v = intdiv(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2205,7 +2349,9 @@ public abstract class AI {
 				var v = bor(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2237,7 +2383,9 @@ public abstract class AI {
 				var v = band(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2269,7 +2417,9 @@ public abstract class AI {
 				var v = shl(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2301,7 +2451,9 @@ public abstract class AI {
 				var v = shr(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2333,7 +2485,9 @@ public abstract class AI {
 				var v = ushr(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2365,7 +2519,9 @@ public abstract class AI {
 				var v = bxor(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2411,7 +2567,9 @@ public abstract class AI {
 					var clazz = (ClassLeekValue) this.getClass().getField(value.getClass().getSimpleName()).get(this);
 					var method = clazz.genericMethods.get(string(index));
 					if (method != null) return method;
-				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {}
+				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
+					addSystemLog(AILog.ERROR, e1);
+				}
 			}
 		}
 		if (version >= 3)
@@ -2536,13 +2694,19 @@ public abstract class AI {
 				}
 				return m.invoke(value, args);
 			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-				try {
-					var f = value.getClass().getField(field);
-					if (!checkFieldAccessLevel(f, value, fromClass)) {
-						return null;
+				if (e instanceof InvocationTargetException) {
+					addSystemLog(AILog.ERROR, e);
+				} else {
+					try {
+						var f = value.getClass().getField(field);
+						if (!checkFieldAccessLevel(f, value, fromClass)) {
+							return null;
+						}
+						return execute(f.get(value), args);
+					} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
+						addSystemLog(AILog.ERROR, e1);
 					}
-					return execute(f.get(value), args);
-				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {}
+				}
 			}
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { value, field });
@@ -2725,5 +2889,37 @@ public abstract class AI {
 
 	public int getNextObjectID() {
 		return objectID++;
+	}
+
+	public Object new_nullClass() {
+		return null;
+	}
+
+	public boolean new_booleanClass() {
+		return false;
+	}
+
+	public long new_integerClass() {
+		return 0l;
+	}
+
+	public double new_realClass() {
+		return 0;
+	}
+
+	public double new_numberClass() {
+		return 0.0;
+	}
+
+	public ArrayLeekValue new_arrayClass() {
+		return new ArrayLeekValue(this);
+	}
+
+	public MapLeekValue new_mapClass() {
+		return new MapLeekValue(this);
+	}
+
+	public ObjectLeekValue new_objectClass() {
+		return new ObjectLeekValue(this, this.objectClass);
 	}
 }

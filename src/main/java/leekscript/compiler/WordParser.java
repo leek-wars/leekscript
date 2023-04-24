@@ -248,7 +248,7 @@ public class WordParser {
 							word = "" + c;
 						}
 					} else if (word.equals(">")) {
-						if (c == '=' || c == '>')
+						if (c == '=')
 							word += c;
 						else {
 							newWord(word, type, -1);
