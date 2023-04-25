@@ -3,9 +3,9 @@ package leekscript.runner;
 
 import leekscript.runner.values.Box;
 
-public class Wrapper {
+public class Wrapper<T> {
 
-	private Box variable;
+	private Box<T> variable;
 
 	public Wrapper(Box variable) {
 		this.variable = variable;
@@ -40,11 +40,11 @@ public class Wrapper {
 		}
 	}
 
-	public Box getVariable() {
+	public Box<T> getVariable() {
 		return variable;
 	}
 
-	public Object get() {
+	public T get() {
 		return variable.get();
 	}
 

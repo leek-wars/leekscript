@@ -7,7 +7,7 @@ import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
 import leekscript.common.Error;
 
-public class Box {
+public class Box<T> {
 
 	protected Object mValue;
 	protected AI mUAI = null;
@@ -34,8 +34,8 @@ public class Box {
 		ai.ops(ops);
 	}
 
-	public Object get() {
-		return mValue;
+	public T get() {
+		return (T) mValue;
 	}
 
 	public Object set(Object value) throws LeekRunException {

@@ -42,7 +42,7 @@ public class JavaCompiler {
 	static {
 		classpath = new File(LeekScript.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getPath();
 		classpath += ":/home/pierre/dev/leek-wars/generator/bin/main";
-		classpath += ":/home/pierre/dev/leek-wars/generator/leekwars-env/bin/main";
+		classpath += ":/home/pierre/dev/leek-wars/generator/leek-wars-env/bin/main";
 		arguments.addAll(Arrays.asList("-classpath", classpath, "-nowarn"));
 		try {
 			urlLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, new ClassLoader() {});
@@ -51,7 +51,7 @@ public class JavaCompiler {
 		}
 	}
 
-	public static AI compile(AIFile file, boolean useClassCache) throws LeekScriptException, LeekCompilerException {
+	public static AI compile(AIFile file, boolean useClassCache, boolean enableOperations) throws LeekScriptException, LeekCompilerException {
 
 		var root = new File(IA_PATH);
 		if (!root.exists()) root.mkdir();
@@ -100,7 +100,7 @@ public class JavaCompiler {
 		// On commence par la conversion LS -> Java
 		// System.out.println("Re-compile AI " + file.getPath());
 		long t = System.nanoTime();
-		file.setCompiledCode(new IACompiler().compile(file, file.getJavaClass()));
+		file.setCompiledCode(new IACompiler().compile(file, file.getJavaClass(), enableOperations));
 		long analyze_time = System.nanoTime() - t;
 
 		if (file.getCompiledCode().getJavaCode().isEmpty()) { // Rien ne compile, pas normal

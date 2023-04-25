@@ -10,7 +10,9 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.ClassType;
+import leekscript.common.ClassValueType;
 import leekscript.common.Error;
+import leekscript.common.FunctionType;
 import leekscript.common.Type;
 
 public class LeekObjectAccess extends Expression {
@@ -77,53 +79,18 @@ public class LeekObjectAccess extends Expression {
 		if (field.getWord().equals("class")) {
 			return; // .class is available everywhere
 		}
-
-		if (object instanceof LeekVariable) {
-			var v = (LeekVariable) object;
-			if (v.getName().equals("this")) {
-				// this, check field exists in class
-				var clazz = compiler.getCurrentClass();
-				if (clazz != null) {
-					this.variable = clazz.getMember(field.getWord());
-					if (this.variable == null) {
-						compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), field.getWord() }));
-					} else {
-						var error = clazz.canAccessField(field.getWord(), clazz);
-						if (error != null) {
-							compiler.addError(new AnalyzeError(this.getLocation(), AnalyzeErrorLevel.ERROR, error, new String[] { clazz.getName(), field.getWord() }));
-						}
-						this.isFinal = this.variable.isFinal();
-						this.isLeftValue = this.variable.isLeftValue();
-					}
-				}
-			} else if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS) {
-
-				var clazz = v.getVariableType() == VariableType.CLASS ? v.getClassDeclaration() : compiler.getCurrentClass();
-
-				this.variable = clazz.getStaticMember(field.getWord());
-				if (this.variable != null) {
-					type = this.variable.getType();
-					this.isFinal = this.variable.isFinal();
-					return; // OK
-				}
-				if (clazz.hasMethod(field.getWord())) {
-					this.type = Type.FUNCTION;
-					this.isLeftValue = false;
-					return; // OK
-				}
-				compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), field.getWord() }));
-			}
-		}
 	}
 
 	@Override
 	public void analyze(WordCompiler compiler) {
+
 		// System.out.println("oa " + getString());
 		object.analyze(compiler);
 		operations = 1 + object.operations;
 
 		if (field.getWord().equals("class")) {
-			type = Type.CLASS;
+			var clazz = object.getType().getClassDeclaration();
+			type = clazz == null ? Type.CLASS : clazz.getClassValueType();
 			return; // .class is available everywhere
 		}
 		if (object instanceof LeekVariable) {
@@ -133,19 +100,74 @@ public class LeekObjectAccess extends Expression {
 			}
 		}
 
-		// get type of member
-		if (object.getType() instanceof ClassType) {
-			var memberType = object.getType().member(field.getWord());
-			if (memberType == null) {
-				compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.WARNING, Error.CLASS_MEMBER_DOES_NOT_EXIST, new String[] {
-					object.getType().toString(),
-					field.getWord()
-				}));
-				this.type = Type.NULL;
+		boolean isSuper = object instanceof LeekVariable v && v.getVariableType() == VariableType.SUPER;
+		if (object.getType() instanceof ClassType || isSuper) {
+			// this, check field exists in class
+			var clazz = object.getType() instanceof ClassType ct ? ct.getClassDeclaration() : compiler.getCurrentClass().getParent();
+			if (clazz != null) {
+				this.variable = clazz.getMember(field.getWord());
+				if (this.variable == null) {
+					var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+					compiler.addError(new AnalyzeError(field, level, Error.CLASS_MEMBER_DOES_NOT_EXIST, new String[] {
+						field.getWord(),
+						object.toString(),
+						clazz.getName()
+					}));
+				} else {
+					var error = clazz.canAccessField(field.getWord(), compiler.getCurrentClass());
+					if (error != null) {
+						compiler.addError(new AnalyzeError(this.getLocation(), AnalyzeErrorLevel.ERROR, error, new String[] { clazz.getName(), field.getWord() }));
+					}
+					this.isFinal = this.variable.isFinal();
+					this.isLeftValue = this.variable.isLeftValue();
+					this.type = this.variable.getType();
+				}
+			}
+		} else if (object.getType() instanceof ClassValueType cvt) {
+
+			var clazz = cvt.getClassDeclaration();
+
+			this.variable = clazz != null ? clazz.getStaticMember(field.getWord()) : null;
+			if (this.variable != null) {
+				this.type = this.variable.getType();
+				this.isFinal = this.variable.isFinal();
 			} else {
-				this.type = memberType;
+				this.variable = compiler.getMainBlock().getUserClass("Class").getMember(field.getWord());
+				if (this.variable != null) {
+					this.type = this.variable.getType();
+					this.isFinal = this.variable.isFinal();
+				} else {
+					var m = clazz != null ? clazz.getMethod(field.getWord()) : null;
+					if (m != null) {
+						this.isLeftValue = false;
+						for (var mm : m.entrySet()) {
+							this.type = mm.getValue().block.getType();
+							break;
+						}
+					} else {
+						compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), field.getWord() }));
+					}
+				}
 			}
 		}
+
+		// get type of member
+		var memberType = isSuper ? object.getType().getClassDeclaration().getType().member(field.getWord()) : object.getType().member(field.getWord());
+		if (memberType.isWarning()) {
+
+			if (memberType == Type.ERROR || compiler.getMainBlock().isStrict()) {
+				var level = memberType == Type.ERROR && compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+				var error = memberType == Type.ERROR ? Error.CLASS_MEMBER_DOES_NOT_EXIST : Error.FIELD_MAY_NOT_EXIST;
+
+				compiler.addError(new AnalyzeError(field, level, error, new String[] {
+					field.getWord(),
+					object.toString(),
+					object.getType().toString(),
+				}));
+			}
+			memberType = Type.replaceErrors(memberType);
+		}
+		this.type = memberType;
 	}
 
 	public String getField() {
@@ -163,11 +185,11 @@ public class LeekObjectAccess extends Expression {
 			object.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else {
-			if (this.variable != null && this.variable.getVariableType() == VariableType.METHOD) {
+			if (this.variable != null && this.variable.getVariableType() == VariableType.METHOD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {
 				writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + field.getWord() + "\")");
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
 				writer.addCode(field.getWord());
-			} else if (object.getType() instanceof ClassType && type != Type.FUNCTION) { // TODO : mieux détecter les méthodes
+			} else if (object.getType() instanceof ClassType && !(type instanceof FunctionType)) { // TODO : mieux détecter les méthodes
 				object.writeJavaCode(mainblock, writer);
 				writer.addCode(".");
 				writer.addCode(field.getWord());
@@ -215,6 +237,10 @@ public class LeekObjectAccess extends Expression {
 		if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
 			writer.addCode(field.getWord() + " = ");
 			writer.cast(mainblock, expr, type);
+		} else if (object.getType() instanceof ClassType) {
+			object.writeJavaCode(mainblock, writer);
+			writer.addCode("." + field.getWord() + " = ");
+			expr.writeJavaCode(mainblock, writer);
 		} else {
 			writer.addCode("setField(");
 			object.writeJavaCode(mainblock, writer);
@@ -228,6 +254,9 @@ public class LeekObjectAccess extends Expression {
 	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer) {
 		assert (object.isLeftValue() && !object.nullable());
 
+		if (this.type != Type.ANY) {
+			writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+		}
 		writer.addCode("field_inc(");
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -261,7 +290,7 @@ public class LeekObjectAccess extends Expression {
 	}
 
 	@Override
-	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_add_eq(");
@@ -285,7 +314,7 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 
-	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_mul_eq(");
@@ -297,7 +326,7 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 
-	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
 		assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_pow_eq(");
@@ -436,6 +465,10 @@ public class LeekObjectAccess extends Expression {
 		var clazz = object.getType().getClassDeclaration();
 		if (clazz != null) {
 			var member = clazz.getMember(field.getWord());
+			if (member != null) {
+				return new Hover(member.getType(), getLocation(), member.getLocation());
+			}
+			member = clazz.getStaticMember(field.getWord());
 			if (member != null) {
 				return new Hover(member.getType(), getLocation(), member.getLocation());
 			}

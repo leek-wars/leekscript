@@ -16,10 +16,13 @@ public class TestReference extends TestCommon {
 		code("var t = 0; var f = function(a) { t = a }; f([]);").equals("null");
 		code("var t = 0; var f = function(a) { t = a }; var b = []; f(b);").equals("null");
 		code("var t = 0; var f = function(a) { t = a }; var b = []; f(b); push(t, 5);").equals("null");
+		code_strict("any t = 0; var f = function(a) { t = a }; var b = []; f(b); push(t, 5);").equals("null");
 		code_v1("var t = 0; var f = function(a) { t = a }; var b = []; f(b); push(t, 5); return [t, b];").equals("[[5], []]");
 		code_v2_("var t = 0; var f = function(a) { t = a }; var b = []; f(b); push(t, 5); return [t, b];").equals("[[5], <...>]");
+		code_strict_v2_("any t = 0; var f = function(a) { t = a }; var b = []; f(b); push(t, 5); return [t, b];").equals("[[5], <...>]");
 		code_v1("var t = 0; var f = function(a) { t = @a }; var b = []; f(b); push(t, 5); return b;").equals("[]");
 		code_v2_("var t = 0; var f = function(a) { t = @a }; var b = []; f(b); push(t, 5); return b;").equals("[5]");
+		code_strict_v2_("any t = 0; var f = function(a) { t = @a }; var b = []; f(b); push(t, 5); return b;").equals("[5]");
 		code("var t = 0; var f = function(@a) { t = @a }; var b = []; f(b); push(t, 5); return b;").equals("[5]");
 		code("var t = 0; var f = function(a) { t; }; f(t); return 'ok';").equals("\"ok\"");
 		code_v1("function ref() { var a = 2; return @a; } return 1 / ref();").equals("0,5");

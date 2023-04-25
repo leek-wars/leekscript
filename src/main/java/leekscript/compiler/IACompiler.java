@@ -53,6 +53,8 @@ public class IACompiler {
 			compiler.readCode();
 			compiler.analyze();
 
+			result.includedAIs = main.getIncludedAIs();
+
 			// System.out.println("errors " + ai.getPath() + " " + ai.getErrors().size());
 			if (ai.getErrors().size() > 0) {
 				for (var error : ai.getErrors()) {
@@ -60,7 +62,6 @@ public class IACompiler {
 				}
 				result.success = false;
 			} else {
-				result.includedAIs = main.getIncludedAIs();
 				result.success = true;
 			}
 		} catch (LeekCompilerException e) {
@@ -72,8 +73,8 @@ public class IACompiler {
 		return result;
 	}
 
-	public AICode compile(AIFile ai, String AIClass) throws LeekCompilerException {
-		JavaWriter writer = new JavaWriter(true, ai.getJavaClass());
+	public AICode compile(AIFile ai, String AIClass, boolean enableOperations) throws LeekCompilerException {
+		JavaWriter writer = new JavaWriter(true, ai.getJavaClass(), enableOperations);
 		try {
 			ai.clearErrors();
 			// On lance la compilation du code de l'IA

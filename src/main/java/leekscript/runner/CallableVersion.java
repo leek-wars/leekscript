@@ -9,6 +9,7 @@ public class CallableVersion {
 	public Type return_type;
 	public Type[] arguments;
 	public LeekFunctions function;
+	public Type type;
 
 	public CallableVersion(Type return_type) {
 		this(return_type, new Type[0]);
@@ -17,6 +18,7 @@ public class CallableVersion {
 	public CallableVersion(Type return_type, Type[] arguments) {
 		this.return_type = return_type;
 		this.arguments = arguments;
+		this.type = Type.function(return_type, arguments);
 	}
 
 	public String getParametersSignature() {
@@ -29,5 +31,9 @@ public class CallableVersion {
 
 	public String toString() {
 		return Arrays.toString(this.arguments) + " => " + return_type;
+	}
+
+	public Type getType() {
+		return type;
 	}
 }

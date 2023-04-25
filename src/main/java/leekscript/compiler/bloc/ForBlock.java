@@ -28,9 +28,9 @@ public class ForBlock extends AbstractLeekBlock {
 		this.token = token;
 	}
 
-	public void setInitialisation(WordCompiler compiler, Token token, Expression value, boolean isDeclaration, boolean isGlobal) {
+	public void setInitialisation(WordCompiler compiler, Token token, Expression value, boolean isDeclaration, boolean isGlobal, Type type) {
 		if (isDeclaration) {
-			LeekVariableDeclarationInstruction init = new LeekVariableDeclarationInstruction(compiler, token, compiler.getCurrentFunction());
+			LeekVariableDeclarationInstruction init = new LeekVariableDeclarationInstruction(compiler, token, compiler.getCurrentFunction(), type);
 			init.setValue(value);
 			mInitialisation = init;
 		} else {
@@ -83,7 +83,9 @@ public class ForBlock extends AbstractLeekBlock {
 		writer.addCode("for (");
 		mInitialisation.writeJavaCode(mainblock, writer);
 
-		writer.addCode("ops(");
+		if (writer.isOperationsEnabled()) {
+			writer.addCode("ops(");
+		}
 		// Prevent unreachable code error
 		if (mCondition instanceof LeekBoolean) {
 			writer.addCode("bool(");
@@ -92,9 +94,18 @@ public class ForBlock extends AbstractLeekBlock {
 		} else {
 			writer.getBoolean(mainblock, mCondition);
 		}
-		writer.addCode(", " + mCondition.getOperations() + "); ops(");
+		if (writer.isOperationsEnabled()) {
+			writer.addCode(", " + mCondition.getOperations() + ")");
+		}
+		writer.addCode("; ");
+		if (writer.isOperationsEnabled()) {
+			writer.addCode("ops(");
+		}
 		mIncrementation.writeJavaCode(mainblock, writer);
-		writer.addLine(", " + mIncrementation.getOperations() + ")) {", getLocation());
+		if (writer.isOperationsEnabled()) {
+			writer.addCode(", " + mIncrementation.getOperations() + ")");
+		}
+		writer.addLine(") {", getLocation());
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
 		writer.addLine("}");

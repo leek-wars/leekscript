@@ -22,6 +22,7 @@ public abstract class Expression {
 	public final static int ARRAY = 10;
 	public final static int OBJECT = 11;
 	public final static int OBJECT_ACCESS = 12;
+	public final static int TYPE = 13;
 
 	public int operations = 0;
 
@@ -67,7 +68,7 @@ public abstract class Expression {
 		writeJavaCode(mainblock, writer);
 	}
 
-	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" += ");
 		expr.writeJavaCode(mainblock, writer);
@@ -79,7 +80,7 @@ public abstract class Expression {
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type type) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" *= ");
 		expr.writeJavaCode(mainblock, writer);
@@ -97,7 +98,7 @@ public abstract class Expression {
 		expr.writeJavaCode(mainblock, writer);
 	}
 
-	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" **= ");
 		expr.writeJavaCode(mainblock, writer);

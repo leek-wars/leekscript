@@ -83,6 +83,7 @@ public class TestArray extends TestCommon {
 		code("var a = null return a[1]").equals("null");
 		code("var a = null return a['a']").equals("null");
 		code("var a = null return a[1] = 12").equals("null");
+		code_strict("var a = null return a[1] = 12").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
 
 		section("Array misc");
 		code("return [1, 2, 3] + null").equals("[1, 2, 3, null]");
@@ -144,8 +145,10 @@ public class TestArray extends TestCommon {
 		// code("[['a', 'b'], 12][0][['yolo', 1][0]]").exception(ls::vm::Exception::ARRAY_KEY_IS_NOT_NUMBER);
 		code("return [['a', 'b'], 12][0][2]").equals("null");
 		code("var v = [['a', 'b'], 12] v[0][0] = 5 return v").equals("[[5, \"b\"], 12]");
+		code_strict("any v = [['a', 'b'], 12] v[0][0] = 5 return v").equals("[[5, \"b\"], 12]");
 		code_v1_3("var v = [['a', 'b'], 12] v[0][2] = 5 return v").equals("[[\"a\", \"b\", 5], 12]");
 		code_v4_("var v = [['a', 'b'], 12] v[0][2] = 5 return v").equals("[[\"a\", \"b\"], 12]");
+		code_strict_v4_("any v = [['a', 'b'], 12] v[0][2] = 5 return v").error(Error.ARRAY_OUT_OF_BOUND);
 		// code("var a = [[12], [1..10]][1] return a[5]").equals("6");
 
 		section("Out of bounds exception");
@@ -156,12 +159,16 @@ public class TestArray extends TestCommon {
 		code("return ['hello', true][2]").equals("null");
 		code_v1_3("var a = [1, 2, 3] return a[100] = 12").equals("12");
 		code_v4_("var a = [1, 2, 3] return a[100] = 12").equals("null");
+		code_strict_v4_("var a = [1, 2, 3] return a[100] = 12").error(Error.ARRAY_OUT_OF_BOUND);
 		code_v1_3("var a = [1, 2, 3] return a[-100] = 12").equals("12");
 		code_v4_("var a = [1, 2, 3] return a[-100] = 12").equals("null");
+		code_strict_v4_("var a = [1, 2, 3] return a[-100] = 12").error(Error.ARRAY_OUT_OF_BOUND);
 		code_v1_3("var a = [] a[100] = true return a").equals("[100 : true]");
 		code_v4_("var a = [] a[100] = true return a").equals("[]");
+		code_strict_v4_("any a = [] a[100] = true return a").error(Error.ARRAY_OUT_OF_BOUND);
 		code_v1_3("var a = [1, 2, 3] a[100] = true return a").equals("[0 : 1, 1 : 2, 2 : 3, 100 : true]");
 		code_v4_("var a = [1, 2, 3] a[100] = true return a").equals("[1, 2, 3]");
+		code_strict_v4_("any a = [1, 2, 3] a[100] = true return a").error(Error.ARRAY_OUT_OF_BOUND);
 		// code("var a = [[12], ''][0]; a[100]++; return a").equals("null");
 		// code("var a = [5] var e = a[1] !? 5 return e").equals("5");
 
@@ -407,10 +414,13 @@ public class TestArray extends TestCommon {
 		code("return count([1, 2, 3, 4, 5]);").equals("5");
 		code_v1_3("count([ 1 : 2, 3 : 4])").error(Error.NONE);
 		code_v4_("count([ 1 : 2, 3 : 4])").warning(Error.WRONG_ARGUMENT_TYPE);
+		code_strict_v4_("count([ 1 : 2, 3 : 4])").error(Error.WRONG_ARGUMENT_TYPE);
 		code_v1_3("count(12)").error(Error.NONE);
 		code_v4_("count(12)").warning(Error.WRONG_ARGUMENT_TYPE);
+		code_strict("count(12)").error(Error.WRONG_ARGUMENT_TYPE);
 		code_v1_3("count('hello')").error(Error.NONE);
 		code_v4_("count('hello')").warning(Error.WRONG_ARGUMENT_TYPE);
+		code_strict("count('hello')").error(Error.WRONG_ARGUMENT_TYPE);
 		code("return count(unknown('hello'))").error(Error.NONE);
 		code("return count(unknown([1, 2, 3]))").equals("3");
 

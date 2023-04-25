@@ -8,6 +8,7 @@ public class LeekRunException extends Exception {
 
 	private final Error mError;
 	private Object param = null;
+	private String[] parameters;
 
 	public LeekRunException(Error error) {
 		mError = error;
@@ -16,6 +17,11 @@ public class LeekRunException extends Exception {
 	public LeekRunException(Error error, Object param) {
 		mError = error;
 		this.param = param;
+	}
+
+	public LeekRunException(Error error, String[] parameters) {
+		mError = error;
+		this.parameters = parameters;
 	}
 
 	public LeekRunException(LeekRunException e) {
@@ -28,6 +34,10 @@ public class LeekRunException extends Exception {
 
 	public Object getParam() {
 		return param;
+	}
+
+	public String[] getParameters() {
+		return this.parameters;
 	}
 
 	// @Override

@@ -198,9 +198,9 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static a = -> 12 } return A.b()").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
 
 		section("Final fields");
-		code_v2_("class A { final a = 12 } var a = new A() a.a = 15 return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a += 10 return a.a").equals("12");
-		code_v2_("class A { final a = [] } var a = new A() a.a += 10 return a.a").equals("[]");
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a = 15 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a += 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = [] } var a = new A() a.a += 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_v2_("class A { final a = 12 } var a = new A() a['a'] = 15 return a['a']").equals("12");
 		code_v2_("class A { final a = 12 } var a = new A() a['a'] += 15 return a['a']").equals("12");
 		code_v2_("class A { final a m(x) { this.a = x } } return new A(12)").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
@@ -211,22 +211,22 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { final a constructor(x) { if (1) { this.a = x } } } return new A(12)").equals("A {a: 12}");
 		code_v2_("class A { final a constructor(x) { a = x } } return new A(12)").equals("A {a: 12}");
 		code_v2_("class A { final a constructor(x) { if (1) { a = x } } } return new A(12)").equals("A {a: 12}");
-		code_v2_("class A { final a = 12 } var a = new A() a.a++ return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a-- return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A(); ++a.a return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A(); --a.a return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a += 10 return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a -= 10 return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a *= 10 return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a **= 10 return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a /= 10 return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a %= 10 return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a |= 10 return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a &= 10 return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a ^= 10 return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a >>= 10 return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a >>>= 10 return a.a").equals("12");
-		code_v2_("class A { final a = 12 } var a = new A() a.a <<= 10 return a.a").equals("12");
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a++ return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a-- return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A(); ++a.a return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A(); --a.a return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a += 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a -= 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a *= 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a **= 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a /= 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a %= 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a |= 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a &= 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a ^= 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a >>= 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a >>>= 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_strict_v2_("class A { final a = 12 } var a = new A() a.a <<= 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 
 		section("Final static fields");
 		code_v2_("class A { static final a = 12 } A.a = 15").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
@@ -399,12 +399,12 @@ public class TestObject extends TestCommon {
 		section("Access levels: fields");
 		code_v2_("class A { x = 10 } var a = new A() return a.x").equals("10");
 		code_v2_("class A { public x = 10 } var a = new A() return a.x").equals("10");
-		code_v2_("class A { protected x = 10 } var a = new A() return a.x").equals("null");
-		code_v2_("class A { protected x = 10 } var a = new A() return a.x = 10").equals("null");
-		code_v2_("class A { private x = 10 } var a = new A() return a.x").equals("null");
+		code_strict_v2_("class A { protected x = 10 } var a = new A() return a.x").error(Error.PROTECTED_FIELD);
+		code_strict_v2_("class A { protected x = 10 } var a = new A() return a.x = 10").error(Error.PROTECTED_FIELD);
+		code_strict_v2_("class A { private x = 10 } var a = new A() return a.x").error(Error.PRIVATE_FIELD);
 		code_v2_("class A { private x = 10 m() { return x } } var a = new A() return a.m()").equals("10");
-		code_v2_("class A { private x = 10 } class B extends A {} var a = new B() return a.x").equals("null");
-		code_v2_("class A { protected x = 10 } class B extends A {} var a = new B() return a.x").equals("null");
+		code_strict_v2_("class A { private x = 10 } class B extends A {} var a = new B() return a.x").error(Error.PRIVATE_FIELD);
+		code_strict_v2_("class A { protected x = 10 } class B extends A {} var a = new B() return a.x").error(Error.PROTECTED_FIELD);
 		code_v2_("class A { protected x = 10 } class B extends A { m() { return x } } var a = new B() return a.m()").equals("10");
 		code_v2_("class A { private x = 10 constructor() { x = 15 } } var a = new A() return a").equals("A {x: 15}");
 		code_v2_("class A { private x; constructor() { this.x = []; } } return new A()").equals("A {x: []}");
@@ -545,7 +545,8 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static f(x) { x = 2 var g = function() { f(x) } } }").equals("null");
 		code_v2_("class A { f(x) { x = 2 var g = function() { f(x) } } }").equals("null");
 		code_v2_("class A { f(x) {} constructor(x) { x = 2 var g = function() { f(x) } } }").equals("null");
-		code_v2_("return null.toto()").equals("null");
+		code_v2_("return null.toto()").warning(Error.CLASS_MEMBER_DOES_NOT_EXIST);
+		code_strict_v2_("return null.toto()").error(Error.CLASS_MEMBER_DOES_NOT_EXIST);
 
 		section("Field in method and in function");
 		code_v2_("class A { f = 155 m() { return (=> f)() } } return new A().m()").equals("155");
@@ -613,14 +614,14 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { } return A.class.super").equals("<class Value>");
 
 		section("Class.name");
-		code_v2_("class A { static name }").error(Error.FIELD_ALREADY_EXISTS);
+		code_v2_("class A { static name }").error(Error.NONE);
 		code_v2_("class A { static name() {} }").error(Error.NONE);
 		code_v2_("class A {} return A.name").equals("\"A\"");
 		code_v2_("class A {} return new A().class.name").equals("\"A\"");
 		code_v2_("class A { } A.name = 'toto'").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 
 		section("Class.fields");
-		code_v2_("class A { static fields }").error(Error.FIELD_ALREADY_EXISTS);
+		code_v2_("class A { static fields }").error(Error.NONE);
 		code_v2_("class A { } return A.fields").equals("[]");
 		code_v2_("class A { x y z } return A.fields").equals("[\"x\", \"y\", \"z\"]");
 		code_v2_("class A { z y x } return A.fields").equals("[\"z\", \"y\", \"x\"]");
@@ -630,7 +631,7 @@ public class TestObject extends TestCommon {
 		code_v3_("return Integer.fields").equals("[]");
 
 		section("Class.staticFields");
-		code_v2_("class A { static staticFields }").error(Error.FIELD_ALREADY_EXISTS);
+		code_v2_("class A { static staticFields }").error(Error.NONE);
 		code_v2_("class A { } return A.staticFields").equals("[]");
 		code_v2_("class A { static x static y static z } return A.staticFields").equals("[\"x\", \"y\", \"z\"]");
 		code_v2_("class A { static z static y static x } return A.staticFields").equals("[\"z\", \"y\", \"x\"]");
@@ -638,14 +639,14 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { } A.staticFields = 'toto'").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 
 		section("Class.methods");
-		code_v2_("class A { static methods }").error(Error.FIELD_ALREADY_EXISTS);
+		code_v2_("class A { static methods }").error(Error.NONE);
 		code_v2_("class A { a() {} b() {} static c() {} } return arraySort(A.methods)").equals("[\"a\", \"b\"]");
 		code_v2_("class A { } A.methods = 'toto'").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_v3_("return Array.methods").equals("[]");
 		code_v3_("return Integer.methods").equals("[]");
 
 		section("Class.staticMethods");
-		code_v2_("class A { static staticMethods }").error(Error.FIELD_ALREADY_EXISTS);
+		code_v2_("class A { static staticMethods }").error(Error.NONE);
 		code_v2_("class A { a() {} b() {} static c() {} static d() {} } return A.staticMethods").equals("[\"c\", \"d\"]");
 		code_v2_("class A { } A.staticMethods = 'toto'").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 

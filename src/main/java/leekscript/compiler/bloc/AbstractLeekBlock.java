@@ -8,6 +8,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.common.Error;
 
@@ -182,6 +183,9 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		for (var instruction : mInstructions) {
+			if (instruction instanceof LeekGlobalDeclarationInstruction) {
+				continue; // Analysé avant
+			}
 			instruction.preAnalyze(compiler);
 		}
 		compiler.setCurrentBlock(initialBlock);
@@ -191,6 +195,9 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		for (var instruction : mInstructions) {
+			if (instruction instanceof LeekGlobalDeclarationInstruction) {
+				continue; // Analysé avant
+			}
 			instruction.analyze(compiler);
 		}
 		compiler.setCurrentBlock(initialBlock);

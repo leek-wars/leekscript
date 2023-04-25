@@ -16,7 +16,34 @@ public class ClassType extends Type {
 		if (m != null) {
 			return m.getType();
 		}
-		return null;
+		return Type.ERROR;
+	}
+
+	@Override
+	public boolean isIndexable() {
+		return true;
+	}
+
+	@Override
+	public boolean canBeIndexable() {
+		return true;
+	}
+
+	@Override
+	public Type key() {
+		return Type.STRING;
+	}
+
+	@Override
+	public Type elementAccess(int version, boolean strict, String key) {
+		if (key != null) {
+			var m = clazz.getMember(key);
+			if (m != null) {
+				return m.getType();
+			}
+			return Type.VOID;
+		}
+		return Type.ANY;
 	}
 
 	public ClassDeclarationInstruction getClassDeclaration() {
@@ -35,5 +62,10 @@ public class ClassType extends Type {
 			return CastType.INCOMPATIBLE;
 		}
 		return super.accepts(type);
+	}
+
+	@Override
+	public Type returnType() {
+		return this.clazz.getType();
 	}
 }

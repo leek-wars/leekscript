@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -83,6 +84,7 @@ public abstract class AI {
 	public final ClassLeekValue realClass;
 	public final ClassLeekValue numberClass;
 	public final ClassLeekValue arrayClass;
+	public final ClassLeekValue legacyArrayClass;
 	public final ClassLeekValue mapClass;
 	public final ClassLeekValue stringClass;
 	public final ClassLeekValue objectClass;
@@ -124,8 +126,9 @@ public abstract class AI {
 				} else {
 					return AI.this.string(result, visited);
 				}
-			} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {}
-
+			} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+				addSystemLog(AILog.SERROR, e);
+			}
 
 			var classes = new ArrayList<Class<?>>();
 			Class<?> current = getClass();
@@ -260,6 +263,7 @@ public abstract class AI {
 		realClass = new ClassLeekValue(this, "Real", numberClass);
 		integerClass = new ClassLeekValue(this, "Integer", realClass);
 		arrayClass = new ClassLeekValue(this, "Array", valueClass);
+		legacyArrayClass = new ClassLeekValue(this, "Array", valueClass);
 		mapClass = new ClassLeekValue(this, "Map", valueClass);
 		stringClass = new ClassLeekValue(this, "String", valueClass);
 		objectClass = new ClassLeekValue(this, "Object", valueClass);
@@ -339,11 +343,6 @@ public abstract class AI {
 		return x;
 	}
 
-	public String ops(String x, int nb) throws LeekRunException {
-		ops(nb);
-		return x;
-	}
-
 	public long ops(long x, int nb) throws LeekRunException {
 		ops(nb);
 		return x;
@@ -400,7 +399,7 @@ public abstract class AI {
 		if (version >= 4) {
 			return new ArrayLeekValue(this);
 		} else {
-			return new LegacyArrayLeekValue();
+			return new LegacyArrayLeekValue(this);
 		}
 	}
 
@@ -408,7 +407,7 @@ public abstract class AI {
 		if (version >= 4) {
 			return new ArrayLeekValue(this, capacity);
 		} else {
-			return new LegacyArrayLeekValue();
+			return new LegacyArrayLeekValue(this);
 		}
 	}
 
@@ -416,7 +415,7 @@ public abstract class AI {
 		if (version >= 4) {
 			return new MapLeekValue(ai);
 		} else {
-			return new LegacyArrayLeekValue();
+			return new LegacyArrayLeekValue(ai);
 		}
 	}
 
@@ -502,7 +501,13 @@ public abstract class AI {
 			if (m.find()) {
 				parameters = new Object[] { "null", javaTypeToLS(m.group(1)) };
 			} else {
-				parameters = new Object[] { "null", "?" };
+				Pattern r2 = Pattern.compile("Cannot invoke \"(.*)\" because the return value of \".*\" is null");
+				Matcher m2 = r2.matcher(throwable.getMessage());
+				if (m2.find()) {
+					parameters = new Object[] { "null", javaTypeToLS(m2.group(1)) };
+				} else {
+					parameters = new Object[] { "null", "?" };
+				}
 			}
 		} else {
 			// Erreur inconnue
@@ -514,8 +519,12 @@ public abstract class AI {
 	private String javaTypeToLS(String type) {
 		switch (type) {
 			case "java.lang.Boolean": return "boolean";
-			case "java.lang.Long": return "integer";
-			case "java.lang.Double": return "real";
+			case "java.lang.Long":
+			case "java.lang.Long.longValue()":
+				return "integer";
+			case "java.lang.Double":
+			case "java.lang.Double.doubleValue()":
+				return "real";
 			case "java.lang.String": return "string";
 			case "leekscript.runner.values.MapLeekValue": return "Map";
 			case "leekscript.runner.values.ArrayLeekValue":
@@ -682,6 +691,7 @@ public abstract class AI {
 
 	public boolean equals_equals(Object x, Object y) throws LeekRunException {
 		if (x == null) return y == null;
+		if (y == null) return x == null;
 		if (x instanceof ObjectLeekValue && y instanceof ObjectLeekValue) {
 			return x.equals(y);
 		}
@@ -1000,7 +1010,7 @@ public abstract class AI {
 
 				ops((array1.size() + array2.size()) * 2);
 
-				var retour = new LegacyArrayLeekValue();
+				var retour = new LegacyArrayLeekValue(this);
 				var iterator = array1.iterator();
 				while (iterator.hasNext()) {
 					if (iterator.key() instanceof String) {
@@ -1026,7 +1036,7 @@ public abstract class AI {
 
 			ops(array1.size() * 2);
 
-			var retour = new LegacyArrayLeekValue();
+			var retour = new LegacyArrayLeekValue(this);
 			var iterator = array1.iterator();
 
 			while (iterator.hasNext()) {
@@ -1047,7 +1057,7 @@ public abstract class AI {
 
 			ops(array2.size() * 2);
 
-			var retour = new LegacyArrayLeekValue();
+			var retour = new LegacyArrayLeekValue(this);
 
 			retour.push(this, x);
 
@@ -1067,6 +1077,14 @@ public abstract class AI {
 			return real(x) + real(y);
 		}
 		return longint(x) + longint(y);
+	}
+
+	public long sub(Long x, Long y) throws LeekRunException {
+		return longint(x) - longint(y);
+	}
+
+	public double sub(Double x, Double y) throws LeekRunException {
+		return real(x) - real(y);
 	}
 
 	public Object sub(Object x, Object y) throws LeekRunException {
@@ -1110,6 +1128,14 @@ public abstract class AI {
 			return null;
 		}
 		return longint(x) % y_int;
+	}
+
+	public long pow(long x, long y) throws LeekRunException {
+		return (long) Math.pow(x, y);
+	}
+
+	public double pow(double x, double y) throws LeekRunException {
+		return Math.pow(x, y);
 	}
 
 	public Number pow(Object x, Object y) throws LeekRunException {
@@ -1917,16 +1943,47 @@ public abstract class AI {
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
+	public Object putv4(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
+		if (array instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) array).put(this, key, value);
+		}
+		if (array instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) array).putv4(key, value);
+		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).set(key, value);
+		}
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).setField(field, value);
+		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).setField(field, value);
+		}
+		if (array instanceof NativeObjectLeekValue) {
+			try {
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
+				f.set(array, value);
+				return value;
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
+		}
+		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
+		return null;
+	}
 
 	public Object put(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
-			return ((ArrayLeekValue) array).put(this, key, value);
+			return ((ArrayLeekValue) array).put(key, value);
 		}
 		if (array instanceof MapLeekValue) {
-			return ((MapLeekValue) array).put(this, key, value);
+			return ((MapLeekValue) array).set(key, value);
 		}
 		if (array instanceof ObjectLeekValue) {
 			var field = string(key);
@@ -2537,13 +2594,13 @@ public abstract class AI {
 
 	public Object get(Object value, Object index, ClassLeekValue fromClass) throws LeekRunException {
 		if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).get(this, index);
+			return ((LegacyArrayLeekValue) value).get(index);
 		}
 		if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).get(this, index);
 		}
 		if (value instanceof MapLeekValue) {
-			return ((MapLeekValue) value).get(this, index);
+			return ((MapLeekValue) value).get(index);
 		}
 		if (value instanceof ObjectLeekValue) {
 			ops(1);
@@ -2648,7 +2705,15 @@ public abstract class AI {
 		// 	return ((ClassLeekValue) value).callMethod(method, args);
 		// }
 		try {
-			var m = value.getClass().getMethod("u_" + method);
+			// var m = value.getClass().getMethod("u_" + method);
+			Method m = null;
+			for (var mm : value.getClass().getMethods()) {
+				if (mm.getName().equals("u_" + method) && mm.getParameterTypes().length == args.length) {
+					m = mm;
+					break;
+				}
+			}
+			if (m == null) throw new NoSuchMethodException(method);
 			if (m.isAnnotationPresent(Private.class)) {
 				if (fromClass == null || value.getClass() != fromClass.clazz) {
 					addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), method });
@@ -2676,11 +2741,19 @@ public abstract class AI {
 		}
 		if (value instanceof NativeObjectLeekValue) {
 			try {
-				var types = new Class<?>[args.length];
-				for (int i = 0; i < args.length; ++i) {
-					types[i] = Object.class;
+				// var types = new Class<?>[args.length];
+				// for (int i = 0; i < args.length; ++i) {
+				// 	types[i] = args[i] == null ? Object.class : args[i].getClass();
+				// }
+				// var m = value.getClass().getMethod(method, types);
+				Method m = null;
+				for (var mm : value.getClass().getMethods()) {
+					if (mm.getName().equals(method) && mm.getParameterTypes().length == args.length) {
+						m = mm;
+						break;
+					}
 				}
-				var m = value.getClass().getMethod(method, types);
+				if (m == null) throw new NoSuchMethodException(method);
 				if (m.isAnnotationPresent(Private.class)) {
 					if (fromClass == null || value.getClass() != fromClass.clazz) {
 						addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), field });
@@ -2785,7 +2858,7 @@ public abstract class AI {
 			StandardClass.getType(this, value).toString(),
 			Type.ARRAY.toString() + " (V1-3)"
 		});
-		return new LegacyArrayLeekValue();
+		return new LegacyArrayLeekValue(this);
 	}
 
 	public static boolean verifyParameters(int[] types, Object... parameters) {
@@ -2821,7 +2894,8 @@ public abstract class AI {
 		if (value instanceof Long) return integerClass;
 		if (value instanceof Double) return realClass;
 		if (value instanceof Boolean) return booleanClass;
-		if (value instanceof LegacyArrayLeekValue || value instanceof ArrayLeekValue) return arrayClass;
+		if (value instanceof LegacyArrayLeekValue) return legacyArrayClass;
+		if (value instanceof ArrayLeekValue) return arrayClass;
 		if (value instanceof MapLeekValue) return mapClass;
 		if (value instanceof String) return stringClass;
 		if (value instanceof ObjectLeekValue) return ((ObjectLeekValue) value).clazz;
@@ -2913,6 +2987,10 @@ public abstract class AI {
 
 	public ArrayLeekValue new_arrayClass() {
 		return new ArrayLeekValue(this);
+	}
+
+	public LegacyArrayLeekValue new_legacyArrayClass() {
+		return new LegacyArrayLeekValue(this);
 	}
 
 	public MapLeekValue new_mapClass() {

@@ -25,7 +25,7 @@ public class LeekAnonymousFunction extends Expression {
 
 	@Override
 	public Type getType() {
-		return Type.FUNCTION;
+		return mBlock.getType();
 	}
 
 	@Override

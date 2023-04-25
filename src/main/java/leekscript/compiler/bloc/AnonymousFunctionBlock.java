@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import leekscript.common.Type;
 import leekscript.common.Error;
+import leekscript.common.FunctionType;
 import leekscript.compiler.Token;
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.JavaWriter;
@@ -24,6 +25,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	private int mId = 0;
 	private final Token token;
 	private Token endToken;
+	private FunctionType type = new FunctionType(Type.ANY);
 
 	public AnonymousFunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -67,9 +69,14 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		mParameters.add(token.getWord());
 		mReferences.add(is_reference);
 		mTypes.add(type);
-		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this);
+		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this, type);
 		mParameterDeclarations.add(declaration);
-		addVariable(new LeekVariable(token, VariableType.ARGUMENT, declaration));
+		addVariable(new LeekVariable(token, VariableType.ARGUMENT, type, declaration));
+		this.type.add_argument(type, false);
+	}
+
+	public void setReturnType(Type type) {
+		this.type.setReturnType(type);
 	}
 
 	public boolean hasParameter(String name) {
@@ -111,8 +118,9 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 
 	}
 
-	public String getArgument(int i) {
-		return "(values.length > " + i + " ? values[" + i + "] : null)";
+	public String getArgument(int i, MainLeekBlock mainblock) {
+		var type = mParameterDeclarations.get(i).getType();
+		return "(values.length > " + i + " ? " + (type != Type.ANY ? "(" + type.getJavaName(mainblock.getVersion()) + ")" : "") + " values[" + i + "] : null)";
 	}
 
 	@Override
@@ -126,23 +134,23 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 			var parameter = mParameters.get(i);
 			var declaration = mParameterDeclarations.get(i);
 			if (declaration.isCaptured()) {
-				sb.append("final var u_").append(parameter).append(" = new Wrapper(");
+				sb.append("final var u_").append(parameter).append(" = new Wrapper<" + declaration.getType().getJavaName(mainblock.getVersion()) + ">(");
 				if (mReferences.get(i)) {
-					sb.append("(" + getArgument(i) + " instanceof Box) ? (Box) " + getArgument(i) + " : ");
+					sb.append("(" + getArgument(i, mainblock) + " instanceof Box) ? (Box) " + getArgument(i, mainblock) + " : ");
 				}
 				sb.append("new Box(" + writer.getAIThis() + ", ");
-				sb.append(getArgument(i) + "));");
+				sb.append(getArgument(i, mainblock) + "));");
 			} else {
 				sb.append("var u_").append(parameter).append(" = ");
 
 				if (mainblock.getWordCompiler().getVersion() >= 2) {
-					sb.append(getArgument(i) + ";");
+					sb.append(getArgument(i, mainblock) + ";");
 				} else {
 					// In LeekScript 1, load the value or reference
 					if (mReferences.get(i)) {
-						sb.append(getArgument(i) + " instanceof Box ? (Box) " + getArgument(i) + " : new Box(" + writer.getAIThis() + ", load(" + getArgument(i) + "));");
+						sb.append(getArgument(i, mainblock) + " instanceof Box ? (Box) " + getArgument(i, mainblock) + " : new Box(" + writer.getAIThis() + ", load(" + getArgument(i, mainblock) + "));");
 					} else {
-						sb.append("new Box(" + writer.getAIThis() + ", " + getArgument(i) + ");");
+						sb.append("new Box(" + writer.getAIThis() + ", " + getArgument(i, mainblock) + ");");
 					}
 				}
 			}
@@ -151,7 +159,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0) {
-			writer.addLine("return null;");
+			writer.addLine("return " + type.returnType().getDefaultValue(writer, mainblock.getVersion()) + ";");
 		}
 		writer.addCode("}");
 		mainblock.getWordCompiler().setCurrentFunction(previousFunction);
@@ -182,8 +190,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 
 	@Override
 	public Type getType() {
-		// TODO Auto-generated method stub
-		return null;
+		return type;
 	}
 
 	@Override

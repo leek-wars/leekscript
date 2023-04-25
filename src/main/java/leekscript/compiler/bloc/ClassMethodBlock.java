@@ -17,6 +17,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.common.Error;
+import leekscript.common.FunctionType;
 
 public class ClassMethodBlock extends AbstractLeekBlock {
 
@@ -30,13 +31,15 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	private final boolean isConstructor;
 	private int minParameters = 0;
 	private int maxParameters = 0;
+	private final FunctionType type;
 
-	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isConstructor, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, Token token) {
+	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isConstructor, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, Token token, Type returnType) {
 		super(parent, main);
 		this.clazz = clazz;
 		this.isConstructor = isConstructor;
 		this.isStatic = isStatic;
 		this.token = token;
+		this.type = new FunctionType(returnType);
 	}
 
 	public void setId(int id) {
@@ -60,7 +63,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void addParameter(WordCompiler compiler, Token token, Token equal, Expression defaultValue) {
+	public void addParameter(WordCompiler compiler, Token token, Token equal, Type type, Expression defaultValue) {
 
 		// Existe déjà ?
 		for (var param : mParameters) {
@@ -71,13 +74,15 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 
 		mParameters.add(token);
 		defaultValues.add(defaultValue);
-		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this);
+		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this, type);
 		mParameterDeclarations.add(declaration);
-		addVariable(new LeekVariable(token, VariableType.ARGUMENT, declaration));
+		addVariable(new LeekVariable(token, VariableType.ARGUMENT, type, declaration));
 		maxParameters++;
 		if (defaultValue == null) {
 			minParameters++;
 		}
+		this.type.add_argument(type, defaultValue != null);
+		// System.out.println("Method " + this.token.getWord() + " type = " + this.type);
 	}
 
 	@Override
@@ -169,7 +174,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0) {
-			writer.addLine("return null;");
+			writer.addLine("return " + type.returnType().getDefaultValue(writer, mainblock.getVersion()) + ";");
 		}
 	}
 
@@ -201,7 +206,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 
 	@Override
 	public Type getType() {
-		return null;
+		return type;
 	}
 
 	@Override

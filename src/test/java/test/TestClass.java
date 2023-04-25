@@ -22,6 +22,5 @@ public class TestClass extends TestCommon {
 		code_v2_("class A { public m() { return class.name }} return new A().m()").equals("\"A\"");
 		code_v2_("class A { public static m() { return name }} return A.m()").equals("\"A\"");
 		code_v2_("class A { public static m() { return class.name }} return A.m()").equals("\"A\"");
-
 	}
 }

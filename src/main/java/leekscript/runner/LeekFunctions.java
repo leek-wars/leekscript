@@ -3,6 +3,7 @@ package leekscript.runner;
 import java.util.HashMap;
 import java.util.Map;
 
+import leekscript.common.FunctionType;
 import leekscript.common.Type;
 import leekscript.compiler.LeekScript;
 
@@ -15,7 +16,7 @@ public class LeekFunctions {
 		 * Fonctions Value
 		 */
 		method("string", "Value", 8, true, Type.STRING, new Type[] { Type.ANY });
-		method("number", "Value", 10, true, Type.NUMBER, new Type[] { Type.ANY });
+		method("number", "Value", 10, true, Type.INT_OR_REAL, new Type[] { Type.ANY });
 		method("typeOf", "Value", 8, true, Type.INT, new Type[] { Type.ANY });
 		method("clone", "Value", true, new CallableVersion[] {
 			new CallableVersion(Type.ANY, new Type[] { Type.ANY, Type.INT }),
@@ -136,8 +137,8 @@ public class LeekFunctions {
 		});
 		method("shuffle", "Array", Type.VOID, new Type[] { Type.ARRAY });
 		method("search", "Array", new CallableVersion[] {
-			new CallableVersion(Type.INT_OR_NULL, new Type[] { Type.ARRAY, Type.ANY, Type.INT }), // Return int | null because of V3
-			new CallableVersion(Type.INT_OR_NULL, new Type[] { Type.ARRAY, Type.ANY}),
+			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.ANY, Type.INT }), // Return int | null because of V3
+			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.ANY}),
 		});
 		method("inArray", "Array", Type.BOOL, new Type[] { Type.ARRAY, Type.ANY });
 		method("reverse", "Array", Type.VOID, new Type[] { Type.ARRAY });
@@ -158,23 +159,23 @@ public class LeekFunctions {
 		}).setMinVersion(4);
 		method("pushAll", "Array", Type.VOID, new Type[] { Type.ARRAY, Type.ARRAY });
 		method("assocReverse", "Array", Type.VOID, new Type[] { Type.ARRAY }).setMaxVersion(3);
-		method("arrayMap", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.FUNCTION });
-		method("arrayFilter", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.FUNCTION });
+		method("arrayMap", "Array", Type.ARRAY, new Type[] { Type.ARRAY, new FunctionType(Type.ANY, 0, Type.ANY, Type.INT, Type.ARRAY) });
+		method("arrayFilter", "Array", Type.ARRAY, new Type[] { Type.ARRAY, new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY ) });
 		method("arrayFlatten", "Array", new CallableVersion[] {
 			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, Type.INT }),
 			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY }),
 		});
-		method("arrayFoldLeft", "Array", Type.ANY, new Type[] { Type.ARRAY, Type.FUNCTION, Type.ANY });
-		method("arrayFoldRight", "Array", Type.ANY, new Type[] { Type.ARRAY, Type.FUNCTION, Type.ANY });
-		method("arrayPartition", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.FUNCTION });
-		method("arrayIter", "Array", Type.VOID, new Type[] { Type.ARRAY, Type.FUNCTION });
+		method("arrayFoldLeft", "Array", Type.ANY, new Type[] { Type.ARRAY, new FunctionType(Type.ANY, 0, Type.ANY, Type.ANY, Type.INT, Type.ARRAY), Type.ANY });
+		method("arrayFoldRight", "Array", Type.ANY, new Type[] { Type.ARRAY, new FunctionType(Type.ANY, 0, Type.ANY, Type.ANY, Type.INT, Type.ARRAY), Type.ANY });
+		method("arrayPartition", "Array", Type.ARRAY, new Type[] { Type.ARRAY, new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY) });
+		method("arrayIter", "Array", Type.VOID, new Type[] { Type.ARRAY, new FunctionType(Type.ANY, 0, Type.ANY, Type.INT, Type.ARRAY) });
 		method("arrayConcat", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.ARRAY });
 		method("arraySort", "Array", new CallableVersion[] {
-			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, Type.FUNCTION }),
+			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, new FunctionType(Type.INT, Type.ANY, Type.ANY) }),
 			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY })
 		});
-		method("arraySome", "Array", Type.BOOL, new Type[] { Type.ARRAY, Type.FUNCTION }).setMinVersion(4);
-		method("arrayEvery", "Array", Type.BOOL, new Type[] { Type.ARRAY, Type.FUNCTION }).setMinVersion(4);
+		method("arraySome", "Array", Type.BOOL, new Type[] { Type.ARRAY, new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY) }).setMinVersion(4);
+		method("arrayEvery", "Array", Type.BOOL, new Type[] { Type.ARRAY, new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY) }).setMinVersion(4);
 		method("arrayGet", "Array", 1, new CallableVersion[] {
 			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.INT, Type.ANY }),
 			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.INT }),
@@ -197,8 +198,8 @@ public class LeekFunctions {
 		}).setMinVersion(4);
 		method("mapValues", "Map", Type.ARRAY, new Type[] { Type.MAP }).setMinVersion(4);
 		method("mapKeys", "Map", Type.ARRAY, new Type[] { Type.MAP }).setMinVersion(4);
-		method("mapIter", "Map", Type.VOID, new Type[] { Type.MAP, Type.FUNCTION }).setMinVersion(4);
-		method("mapMap", "Map", Type.MAP, new Type[] { Type.MAP, Type.FUNCTION }).setMinVersion(4);
+		method("mapIter", "Map", Type.VOID, new Type[] { Type.MAP, new FunctionType(Type.ANY, 0, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
+		method("mapMap", "Map", Type.MAP, new Type[] { Type.MAP, new FunctionType(Type.ANY, 0, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
 		method("mapSum", "Map", Type.REAL, new Type[] { Type.MAP }).setMinVersion(4);
 		method("mapAverage", "Map", Type.REAL, new Type[] { Type.MAP }).setMinVersion(4);
 		method("mapMin", "Map", Type.ANY, new Type[] { Type.MAP }).setMinVersion(4);
@@ -211,10 +212,10 @@ public class LeekFunctions {
 		method("mapReplace", "Map", 3, Type.ANY, new Type[] { Type.MAP, Type.ANY, Type.ANY }).setMinVersion(4);
 		method("mapReplaceAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.MAP }).setMinVersion(4);
 		method("mapFill", "Map", Type.VOID, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
-		method("mapEvery", "Map", Type.BOOL, new Type[] { Type.MAP, Type.FUNCTION }).setMinVersion(4);
-		method("mapSome", "Map", Type.BOOL, new Type[] { Type.MAP, Type.FUNCTION }).setMinVersion(4);
-		method("mapFold", "Map", Type.ANY, new Type[] { Type.MAP, Type.FUNCTION, Type.ANY }).setMinVersion(4);
-		method("mapFilter", "Map", Type.ANY,  new Type[] { Type.MAP, Type.FUNCTION }).setMinVersion(4);
+		method("mapEvery", "Map", Type.BOOL, new Type[] { Type.MAP, new FunctionType(Type.ANY, 1, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
+		method("mapSome", "Map", Type.BOOL, new Type[] { Type.MAP, new FunctionType(Type.ANY, 1, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
+		method("mapFold", "Map", Type.ANY, new Type[] { Type.MAP, new FunctionType(Type.ANY, 2, Type.ANY, Type.ANY, Type.ANY, Type.MAP), Type.ANY }).setMinVersion(4);
+		method("mapFilter", "Map", Type.ANY,  new Type[] { Type.MAP, new FunctionType(Type.BOOL, 0, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
 		method("mapMerge", "Map", Type.ANY, new Type[] { Type.MAP, Type.MAP }).setMinVersion(4);
 		method("mapPut", "Map", 3, Type.ANY, new Type[] { Type.MAP, Type.ANY, Type.ANY }).setMinVersion(4);
 		method("mapPutAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.MAP }).setMinVersion(4);

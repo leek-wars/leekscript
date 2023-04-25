@@ -67,21 +67,23 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		if (mParentCondition == null) {
 			writer.addCode("if (");
-			if (mCondition.getOperations() > 0) {
+			if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
+				writer.addCode("(boolean) ");
 				writer.addCode("ops(");
 			}
 			writer.getBoolean(mainblock, mCondition);
-			if (mCondition.getOperations() > 0) {
+			if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
 				writer.addCode(", " + mCondition.getOperations() + ")");
 			}
 			writer.addLine(") {", getLocation());
 		} else if (mCondition != null) {
 			writer.addCode("else if (");
-			if (mCondition.getOperations() > 0) {
+			if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
+				writer.addCode("(boolean) ");
 				writer.addCode("ops(");
 			}
 			writer.getBoolean(mainblock, mCondition);
-			if (mCondition.getOperations() > 0) {
+			if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
 				writer.addCode(", " + mCondition.getOperations() + ")");
 			}
 			writer.addLine(") {", getLocation());

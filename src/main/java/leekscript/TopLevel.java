@@ -32,7 +32,7 @@ public class TopLevel {
 	private static void executeSnippet(String code) {
 		try {
 			long ct = System.currentTimeMillis();
-			AI ai = LeekScript.compileSnippet(code, "AI");
+			AI ai = LeekScript.compileSnippet(code, "AI", false);
 			long compileTime = System.currentTimeMillis() - ct;
 
 			long et = System.currentTimeMillis();
@@ -53,9 +53,10 @@ public class TopLevel {
 	}
 
 	private static void executeFile(File file) {
+		LeekScript.setFileSystem(LeekScript.getNativeFileSystem());
 		try {
 			long ct = System.currentTimeMillis();
-			AI ai = LeekScript.compileFile(file.getPath(), "AI", false);
+			AI ai = LeekScript.compileFile(file.getPath(), "AI", false, false);
 			long compileTime = System.currentTimeMillis() - ct;
 
 			long et = System.currentTimeMillis();

@@ -8,6 +8,7 @@ public class TestFiles extends TestCommon {
 		header("Files");
 		section("General");
 		file_v2_("ai/code/primes.leek").equals("78498");
+		file_v2_("ai/code/primes_typed.leek").equals("78498");
 		// DISABLED_file("test/code/primes_gmp.leek").equals("9591");
 		file("ai/code/gcd.leek").equals("151");
 		file("ai/code/strings.leek").equals("true");

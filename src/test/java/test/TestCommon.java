@@ -28,8 +28,6 @@ public class TestCommon {
 	private static String C_PINK = "\033[1;95m";
 	private static String C_GREY = "\033[0;90m";
 
-	private static int LATEST_VERSION = 4;
-
 	private static int tests = 0;
 	private static int success = 0;
 	private static int disabled = 0;
@@ -48,10 +46,11 @@ public class TestCommon {
 		String code;
 		boolean enabled = true;
 		int version_min = 1;
-		int version_max = LATEST_VERSION;
+		int version_max = LeekScript.LATEST_VERSION;
 		long maxOperations = Long.MAX_VALUE;
 		long maxRAM = AI.MAX_RAM;
 		boolean debug = false;
+		boolean strict = false;
 
 		public Case(String code, boolean enabled) {
 			this.code = code;
@@ -63,6 +62,14 @@ public class TestCommon {
 			this.enabled = enabled;
 			this.version_min = version_min;
 			this.version_max = version_max;
+		}
+
+		public Case(String code, boolean enabled, int version_min, int version_max, boolean strict) {
+			this.code = code;
+			this.enabled = enabled;
+			this.version_min = version_min;
+			this.version_max = version_max;
+			this.strict = strict;
 		}
 
 		public String equals(String expected) {
@@ -189,7 +196,7 @@ public class TestCommon {
 			try {
 				boolean is_file = code.contains(".leek");
 
-				ai = is_file ? LeekScript.compileFile(code, "AI", version) : LeekScript.compileSnippet(code, "AI", version, this.debug);
+				ai = is_file ? LeekScript.compileFile(code, "AI", version, true) : LeekScript.compileSnippet(code, "AI", version, this.debug, true, strict);
 				ai.init();
 				ai.staticInit();
 				aiID = ai.getId();
@@ -229,10 +236,10 @@ public class TestCommon {
 
 			if (checker.check(result)) {
 				int ops_per_ms = (int) Math.round(1000 * (double) result.operations / result.exec_time);
-				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "] " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops, " + ops_per_ms + " ops/ms" + END_COLOR);
+				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops, " + ops_per_ms + " ops/ms" + END_COLOR);
 				success++;
 			} else {
-				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "] " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
+				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
 				"/home/pierre/dev/leek-wars/generator/leekscript/ai/AI_" + aiID + ".java";
 				System.out.println(err);
 				failedTests.add(err);
@@ -285,6 +292,9 @@ public class TestCommon {
 	public Case code(String code) {
 		return new Case(code, true);
 	}
+	public Case code_strict(String code) {
+		return new Case(code, true, 1, LeekScript.LATEST_VERSION, true);
+	}
 	public Case file(String code) {
 		return new Case(code, true);
 	}
@@ -292,22 +302,25 @@ public class TestCommon {
 		return new Case(code, true, 1, 1);
 	}
 	public Case file_v2_(String code) {
-		return new Case(code, true, 2, LATEST_VERSION);
+		return new Case(code, true, 2, LeekScript.LATEST_VERSION);
 	}
 	public Case file_v3(String code) {
 		return new Case(code, true, 3, 3);
 	}
 	public Case file_v4_(String code) {
-		return new Case(code, true, 4, LATEST_VERSION);
+		return new Case(code, true, 4, LeekScript.LATEST_VERSION);
 	}
 	public Case DISABLED_file(String code) {
 		return new Case(code, false);
 	}
 	public Case DISABLED_file_v2_(String code) {
-		return new Case(code, false, 2, LATEST_VERSION);
+		return new Case(code, false, 2, LeekScript.LATEST_VERSION);
 	}
 	public Case code_v1(String code) {
 		return new Case(code, true, 1, 1);
+	}
+	public Case code_strict_v1(String code) {
+		return new Case(code, true, 1, 1, true);
 	}
 	public Case code_v1_2(String code) {
 		return new Case(code, true, 1, 2);
@@ -319,31 +332,43 @@ public class TestCommon {
 		return new Case(code, true, 2, 2);
 	}
 	public Case code_v2_(String code) {
-		return new Case(code, true, 2, LATEST_VERSION);
+		return new Case(code, true, 2, LeekScript.LATEST_VERSION);
+	}
+	public Case code_strict_v2_(String code) {
+		return new Case(code, true, 2, LeekScript.LATEST_VERSION, true);
 	}
 	public Case code_v2_3(String code) {
 		return new Case(code, true, 2, 3);
+	}
+	public Case code_v2_4(String code) {
+		return new Case(code, true, 2, 4);
 	}
 	public Case code_v3(String code) {
 		return new Case(code, true, 3, 3);
 	}
 	public Case code_v3_(String code) {
-		return new Case(code, true, 3, LATEST_VERSION);
+		return new Case(code, true, 3, LeekScript.LATEST_VERSION);
 	}
 	public Case code_v1_4(String code) {
 		return new Case(code, true, 1, 4);
 	}
+	public Case code_v4(String code) {
+		return new Case(code, true, 4, 4);
+	}
 	public Case code_v4_(String code) {
-		return new Case(code, true, 4, LATEST_VERSION);
+		return new Case(code, true, 4, LeekScript.LATEST_VERSION);
+	}
+	public Case code_strict_v4_(String code) {
+		return new Case(code, true, 4, LeekScript.LATEST_VERSION, true);
 	}
 	public Case DISABLED_code_v4_(String code) {
-		return new Case(code, false, 4, LATEST_VERSION);
+		return new Case(code, false, 4, LeekScript.LATEST_VERSION);
 	}
 	public Case DISABLED_code(String code) {
 		return new Case(code, false);
 	}
 	public Case DISABLED_code_v2_(String code) {
-		return new Case(code, false, 2, LATEST_VERSION);
+		return new Case(code, false, 2, LeekScript.LATEST_VERSION);
 	}
 
 	public void section(String title) {

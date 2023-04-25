@@ -1,12 +1,19 @@
 package leekscript.compiler.expression;
 
+import leekscript.common.MapType;
 import leekscript.common.Type;
+import leekscript.common.Type.CastType;
+import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.common.ArrayType;
+import leekscript.common.Error;
+import leekscript.common.LegacyArrayType;
 
 public class LeekArrayAccess extends Expression {
 
@@ -18,6 +25,7 @@ public class LeekArrayAccess extends Expression {
 	private Token closingBracket;
 	private Token colon2;
 	private Expression stride;
+	private Type type;
 
 	public LeekArrayAccess(Token openingBracket) {
 		openingBracket.setExpression(this);
@@ -73,7 +81,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public Type getType() {
-		return mTabular.getType().element();
+		return type;
 	}
 
 	@Override
@@ -125,8 +133,24 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void analyze(WordCompiler compiler) {
+
 		mTabular.analyze(compiler);
 		operations = mTabular.getOperations();
+
+		// Vérification du type du tableau
+		if (compiler.getMainBlock().isStrict() && !mTabular.getType().isIndexable()) {
+			compiler.addError(new AnalyzeError(mTabular.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAY_NOT_BE_INDEXABLE, new String[] {
+				mTabular.toString(),
+				mTabular.getType().toString()
+			}));
+		} else if (!mTabular.getType().canBeIndexable()) {
+			var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+			compiler.addError(new AnalyzeError(mTabular.getLocation(), level, Error.NOT_INDEXABLE, new String[] {
+				mTabular.toString(),
+				mTabular.getType().toString()
+			}));
+		}
+
 		if (mCase != null) {
 			mCase.analyze(compiler);
 			operations += mCase.getOperations();
@@ -138,6 +162,29 @@ public class LeekArrayAccess extends Expression {
 		if (stride != null) {
 			stride.analyze(compiler);
 			operations += stride.getOperations();
+		}
+
+		// Vérification du type de clé
+		if (mCase != null) {
+			var cast = mTabular.getType().key().accepts(mCase.getType());
+			if (cast == CastType.INCOMPATIBLE) {
+				compiler.addError(new AnalyzeError(mCase.getLocation(), AnalyzeErrorLevel.WARNING, Error.INCOMPATIBLE_TYPE, new String[] {
+					mTabular.getType().key().toString(),
+					mCase.getType().toString()
+				}));
+			} else if (cast.ordinal() >= CastType.UNSAFE_DOWNCAST.ordinal()) {
+				compiler.addError(new AnalyzeError(mCase.getLocation(), AnalyzeErrorLevel.WARNING, Error.DANGEROUS_CONVERSION, new String[] {
+					mTabular.getType().key().toString(),
+					mCase.getType().toString()
+				}));
+			}
+		}
+
+		if (colon != null) {
+			this.type = mTabular.getType();
+		} else {
+			var key = mCase instanceof LeekString ls ? ls.getText() : null;
+			this.type = mTabular.getType().elementAccess(compiler.getMainBlock().getVersion(), compiler.getMainBlock().isStrict(), key);
 		}
 	}
 
@@ -169,7 +216,37 @@ public class LeekArrayAccess extends Expression {
 			writer.addCode(")");
 		} else if (mTabular instanceof LeekVariable v && v.getVariableType() == VariableType.THIS && mCase instanceof LeekString) {
 			writer.addCode(((LeekString) mCase).getText());
+		} else if (mTabular.getType() instanceof LegacyArrayType) {
+			mTabular.writeJavaCode(mainblock, writer);
+			writer.addCode(".get(");
+			mCase.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+		} else if (mTabular.getType() instanceof ArrayType) {
+			if (type != Type.ANY) {
+				writer.addCode("((" + type.getJavaName(mainblock.getVersion()) + ") ");
+			}
+			mTabular.writeJavaCode(mainblock, writer);
+			writer.addCode(".get(");
+			mCase.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+			if (this.type != Type.ANY) {
+				writer.addCode(")");
+			}
+		} else if (mTabular.getType() instanceof MapType) {
+			if (type != Type.ANY) {
+				writer.addCode("((" + type.getJavaName(mainblock.getVersion()) + ") ");
+			}
+			mTabular.writeJavaCode(mainblock, writer);
+			writer.addCode(".get(");
+			mCase.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+			if (this.type != Type.ANY) {
+				writer.addCode(")");
+			}
 		} else {
+			if (this.type != Type.ANY) {
+				writer.addCode("((" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+			}
 			writer.addCode("get(");
 			mTabular.writeJavaCode(mainblock, writer);
 			writer.addCode(", ");
@@ -177,6 +254,9 @@ public class LeekArrayAccess extends Expression {
 			writer.addCode(", ");
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable());
 			writer.addCode(")");
+			if (this.type != Type.ANY) {
+				writer.addCode(")");
+			}
 		}
 	}
 
@@ -194,25 +274,79 @@ public class LeekArrayAccess extends Expression {
 	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
-		writer.addCode("put(");
-		mTabular.writeJavaCode(mainblock, writer);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		if (expr.getType() != Type.ANY) {
+			writer.addCode("(" + expr.getType().getJavaName(mainblock.getVersion()) + ") ");
+		}
+		if (mTabular.getType() instanceof ArrayType) {
+			mTabular.writeJavaCode(mainblock, writer);
+			if (mainblock.isStrict()) {
+				writer.addCode(".put(");
+			} else {
+				writer.addCode(".putv4(");
+			}
+			mCase.writeJavaCode(mainblock, writer);
+			writer.addCode(", ");
+			expr.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+		} else if (mTabular.getType() instanceof MapType) {
+			mTabular.writeJavaCode(mainblock, writer);
+			writer.addCode(".set(");
+			mCase.writeJavaCode(mainblock, writer);
+			writer.addCode(", ");
+			expr.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+		} else {
+			if (mainblock.isStrict()) {
+				writer.addCode("put(");
+			} else {
+				writer.addCode("putv4(");
+			}
+			mTabular.writeJavaCode(mainblock, writer);
+			writer.addCode(", ");
+			mCase.writeJavaCode(mainblock, writer);
+			writer.addCode(", ");
+			expr.writeJavaCode(mainblock, writer);
+			writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		}
 	}
 
 	@Override
 	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
-		writer.addCode("put(");
-		mTabular.writeJavaCode(mainblock, writer);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		if (expr.getType() != Type.ANY) {
+			writer.addCode("(" + expr.getType().getJavaName(mainblock.getVersion()) + ") ");
+		}
+		if (mTabular.getType() instanceof ArrayType) {
+			mTabular.writeJavaCode(mainblock, writer);
+			if (mainblock.isStrict()) {
+				writer.addCode(".put(");
+			} else {
+				writer.addCode(".putv4(");
+			}
+			mCase.writeJavaCode(mainblock, writer);
+			writer.addCode(", ");
+			expr.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+		} else if (mTabular.getType() instanceof MapType) {
+			mTabular.writeJavaCode(mainblock, writer);
+			if (mainblock.isStrict()) {
+				writer.addCode(".set(");
+			} else {
+				writer.addCode(".setv4(");
+			}
+			mCase.writeJavaCode(mainblock, writer);
+			writer.addCode(", ");
+			expr.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+		} else {
+			writer.addCode("put(");
+			mTabular.writeJavaCode(mainblock, writer);
+			writer.addCode(", ");
+			mCase.writeJavaCode(mainblock, writer);
+			writer.addCode(", ");
+			expr.writeJavaCode(mainblock, writer);
+		}
 
 		// writer.compileClone(mainblock, expr);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -264,7 +398,7 @@ public class LeekArrayAccess extends Expression {
 	}
 
 	@Override
-	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_add_eq(");
@@ -290,7 +424,7 @@ public class LeekArrayAccess extends Expression {
 	}
 
 	@Override
-	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type type) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_mul_eq(");
@@ -342,7 +476,7 @@ public class LeekArrayAccess extends Expression {
 	}
 
 	@Override
-	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
 		assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_pow_eq(");

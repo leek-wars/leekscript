@@ -45,11 +45,11 @@ public class TestNumber extends TestCommon {
 		code("0b011001711").error(Error.INVALID_NUMBER);
 		code("0b").error(Error.INVALID_NUMBER);
 		code("0x").error(Error.INVALID_NUMBER);
-		code("0x+").error(Error.UNCOMPLETE_EXPRESSION);
+		code("0x+").error(Error.INVALID_NUMBER);
 		code("0x;").error(Error.INVALID_NUMBER);
 		code("0b#").error(Error.INVALID_CHAR);
-		code("0b'").error(Error.END_OF_SCRIPT_UNEXPECTED);
-		code("0b\"").error(Error.END_OF_SCRIPT_UNEXPECTED);
+		code("0b'").error(Error.INVALID_NUMBER);
+		code("0b\"").error(Error.INVALID_NUMBER);
 		code("0xeazblqzd").error(Error.INVALID_NUMBER);
 		code("0xPMQBTRAZ").error(Error.INVALID_NUMBER);
 		code("0xffxff").error(Error.INVALID_NUMBER);
@@ -148,7 +148,11 @@ public class TestNumber extends TestCommon {
 		code("var a = 2 return a -= 5;").equals("-3");
 		code("var a = 2 return a *= 5;").equals("10");
 		code_v1("var a = 100 return a /= 5;").equals("20");
+		code_strict_v1("var a = 100 return a /= 5;").equals("20");
+		code_strict_v1("any a = 100 return a /= 5;").equals("20");
 		code_v2_("var a = 100 return a /= 5;").equals("20.0");
+		code_strict_v2_("var a = 100 return a /= 5;").equals("20");
+		code_strict_v2_("any a = 100 return a /= 5;").equals("20.0");
 		code("var a = 56 return a %= 17;").equals("5");
 		code("var a = 15 return a **= 2;").equals("225");
 		code_v1("var a = 1.5 return a * 0.5;").equals("0,75");
@@ -428,9 +432,17 @@ public class TestNumber extends TestCommon {
 		code("var a = 5 a *= 12 return a;").equals("60");
 		code("var a = 5 a *= 5 return a;").equals("25");
 		code("var a = null a *= 5 return a;").equals("0");
+		code_strict("var a = null a *= 5 return a;").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict("any a = null a *= 5 return a;").equals("0");
 		code("var a = null a *= null return a;").equals("0");
+		code_strict("var a = null a *= null return a;").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict("any a = null a *= null return a;").equals("0");
 		code("var a = null return a *= 5").equals("0");
+		code_strict("var a = null return a *= 5").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict("any a = null return a *= 5").equals("0");
 		code("var a = null return a *= null").equals("0");
+		code_strict("var a = null return a *= null").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict("any a = null return a *= null").equals("0");
 		// DISABLED_code("var a = 5m a *= 0 a").equals("0");
 		// DISABLED_code("var a = 5m a *= 12 a").equals("60");
 		// DISABLED_code("var a = 5m a *= 5m a").equals("25");
@@ -461,7 +473,8 @@ public class TestNumber extends TestCommon {
 		code("var a = 5; return a **= 4").equals("625");
 		code("var a = 5; return a **= true").equals("5");
 		code("var a = null a **= 5 return a").equals("0");
-		code("var a = null return a **= 5").equals("0");
+		code_strict("var a = null a **= 5 return a").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict("any a = null return a **= 5").equals("0");
 		// DISABLED_code("var a = 5$; a **= false").equals("1");
 		// code("var a = 5$; a **= []").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		// DISABLED_code("var a = 5; ['', a **= 4]").equals("['', 625]");
@@ -527,10 +540,15 @@ public class TestNumber extends TestCommon {
 		section("Number.operator /=");
 		code_v1("var a = 12 a /= 3 return a;").equals("4");
 		code_v2_("var a = 12 a /= 3 return a;").equals("4.0");
+		code_strict("var a = 12 a /= 3 return a;").equals("4");
+		code_strict_v1("any a = 12 a /= 3 return a;").equals("4");
+		code_strict_v2_("any a = 12 a /= 3 return a;").equals("4.0");
 		code_v1("var a = 12 a /= 0.5 return a;").equals("24");
 		code_v2_("var a = 12 a /= 0.5 return a;").equals("24.0");
+		code_strict("var a = 12 a /= 0.5 return a;").equals("24");
 		code_v1("var a = 12 a /= true return a;").equals("12");
 		code_v2_("var a = 12 a /= true return a;").equals("12.0");
+		code_strict("var a = 12 a /= true return a;").equals("12");
 		code_v1("var a = null a /= 5 return a;").equals("0");
 		code_v2_("var a = null a /= 5 return a;").equals("0.0");
 		// code("var a = 12 a /= false return a;").equals("nan");
@@ -538,6 +556,8 @@ public class TestNumber extends TestCommon {
 		// code("var a = 12$ a /= [] a").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		code_v1("var a = 15; return ['', a /= 2];").equals("[\"\", 7,5]");
 		code_v2_("var a = 15; return ['', a /= 2];").equals("[\"\", 7.5]");
+		code_strict_v2_("var a = 15; return ['', a /= 2];").equals("[\"\", 7]");
+		code_strict_v2_("any a = 15; return ['', a /= 2];").equals("[\"\", 7.5]");
 
 		section("Number.operator <");
 		code("return 5 < 2;").equals("false");
@@ -735,6 +755,7 @@ public class TestNumber extends TestCommon {
 		// code("abs([1, 'salut'][1])").exception(ls::vm::Exception::WRONG_ARGUMENT_TYPE);
 		code_v1("return abs(null)").equals("0");
 		code_v2_("return abs(null)").equals("0.0");
+		code_strict("return abs(null)").error(Error.WRONG_ARGUMENT_TYPE);
 
 		section("Number.exp()");
 		code_v1("return exp(0)").equals("1");

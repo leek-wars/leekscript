@@ -3,15 +3,22 @@ package leekscript.compiler.expression;
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekParenthesis extends Expression {
 
 	private final Expression mExpression;
+	private final Token leftParenthesis;
+	private final Token rightParenthesis;
 
-	public LeekParenthesis(Expression exp) {
+	public LeekParenthesis(Expression exp, Token leftParenthesis, Token rightParenthesis) {
 		mExpression = exp;
+		this.leftParenthesis = leftParenthesis;
+		this.rightParenthesis = rightParenthesis;
+		leftParenthesis.setExpression(this);
+		rightParenthesis.setExpression(this);
 	}
 
 	public Expression getExpression() {
@@ -63,6 +70,6 @@ public class LeekParenthesis extends Expression {
 
 	@Override
 	public Location getLocation() {
-		return mExpression.getLocation();
+		return new Location(this.leftParenthesis.getLocation(), this.rightParenthesis.getLocation());
 	}
 }

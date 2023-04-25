@@ -40,6 +40,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private int mAnonymousId = 1;
 	private int mFunctionId = 1;
 	private final Set<AIFile> mIncluded = new HashSet<AIFile>();
+	private final Set<AIFile> mIncludedFirstPass = new HashSet<AIFile>();
 	private int mCounter = 0;
 	private int mCountInstruction = 0;
 	private final IACompiler mCompiler;
@@ -49,20 +50,22 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public MainLeekBlock(IACompiler compiler, WordCompiler wordCompiler, AIFile ai) throws LeekCompilerException {
 		super(null, null);
+
 		// On ajoute l'IA pour pas pouvoir l'include
 		mIncluded.add(ai);
+		mIncludedFirstPass.add(ai);
 		mAIName = ai.getPath();
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
 
 		if (ai.getVersion() >= 2) {
 			var classClass = new ClassDeclarationInstruction(new Token("Class"), 0, ai, true, this);
-			classClass.addStaticField(wordCompiler, new Token("name"), Type.STRING, null, AccessLevel.PUBLIC, true);
-			classClass.addStaticField(wordCompiler, new Token("super"), Type.CLASS, null, AccessLevel.PUBLIC, true);
-			classClass.addStaticField(wordCompiler, new Token("fields"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
-			classClass.addStaticField(wordCompiler, new Token("staticFields"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
-			classClass.addStaticField(wordCompiler, new Token("methods"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
-			classClass.addStaticField(wordCompiler, new Token("staticMethods"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
+			classClass.addField(wordCompiler, new Token("name"), Type.STRING, null, AccessLevel.PUBLIC, true);
+			classClass.addField(wordCompiler, new Token("super"), Type.CLASS, null, AccessLevel.PUBLIC, true);
+			classClass.addField(wordCompiler, new Token("fields"), Type.ARRAY_STRING, null, AccessLevel.PUBLIC, true);
+			classClass.addField(wordCompiler, new Token("staticFields"), Type.ARRAY_STRING, null, AccessLevel.PUBLIC, true);
+			classClass.addField(wordCompiler, new Token("methods"), Type.ARRAY_STRING, null, AccessLevel.PUBLIC, true);
+			classClass.addField(wordCompiler, new Token("staticMethods"), Type.ARRAY_STRING, null, AccessLevel.PUBLIC, true);
 			addClass(classClass);
 		}
 
@@ -85,13 +88,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			realClass.addStaticField(wordCompiler, new Token("MAX_VALUE"), Type.REAL, new LeekNumber(new Token(""), Double.MAX_VALUE, 0, Type.REAL), AccessLevel.PUBLIC, true);
 			addClass(realClass);
 
-			addClass(new ClassDeclarationInstruction(new Token("Number"), 0, ai, true, this, Type.NUMBER));
+			addClass(new ClassDeclarationInstruction(new Token("Number"), 0, ai, true, this, Type.INT_OR_REAL));
 			addClass(new ClassDeclarationInstruction(new Token("Array"), 0, ai, true, this, Type.ARRAY));
 			if (ai.getVersion() >= 4) {
 				addClass(new ClassDeclarationInstruction(new Token("Map"), 0, ai, true, this, Type.MAP));
 			}
 			addClass(new ClassDeclarationInstruction(new Token("String"), 0, ai, true, this, Type.STRING));
-			addClass(new ClassDeclarationInstruction(new Token("Object"), 0, ai, true, this, Type.OBJECT));
+			var objectClass = new ClassDeclarationInstruction(new Token("Object"), 0, ai, true, this, Type.OBJECT);
+			objectClass.addMethod(wordCompiler, new Token("keys"), new ClassMethodBlock(objectClass, false, false, wordCompiler.getCurrentBlock(), this, new Token("keys"), Type.ARRAY), AccessLevel.PUBLIC);
+			addClass(objectClass);
 			addClass(new ClassDeclarationInstruction(new Token("Function"), 0, ai, true, this, Type.FUNCTION));
 			addClass(new ClassDeclarationInstruction(new Token("JSON"), 0, ai, true, this));
 			addClass(new ClassDeclarationInstruction(new Token("System"), 0, ai, true, this));
@@ -127,20 +132,42 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMinLevel = min_level;
 	}
 
+	public boolean includeAIFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {
+		try {
+			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
+			if (mIncludedFirstPass.contains(ai)) {
+				return true;
+			}
+			ai.clearErrors();
+			mIncludedFirstPass.add(ai);
+			var previousAI = mCompiler.getCurrentAI();
+			mCompiler.setCurrentAI(ai);
+			WordParser words = new WordParser(ai, compiler.getVersion());
+			WordCompiler newCompiler = new WordCompiler(words, ai, compiler.getVersion());
+			newCompiler.setMainBlock(this);
+			newCompiler.firstPass();
+			compiler.getAI().getErrors().addAll(ai.getErrors());
+			mCompiler.setCurrentAI(previousAI);
+			return true;
+		} catch (FileNotFoundException e) {
+			return false;
+		}
+	}
+
 	public boolean includeAI(WordCompiler compiler, String path) throws LeekCompilerException {
 		try {
 			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
 			if (mIncluded.contains(ai)) {
 				return true;
 			}
-			ai.clearErrors();
+			// ai.clearErrors();
 			mIncluded.add(ai);
 			var previousAI = mCompiler.getCurrentAI();
 			mCompiler.setCurrentAI(ai);
 			WordParser words = new WordParser(ai, compiler.getVersion());
 			WordCompiler newCompiler = new WordCompiler(words, ai, compiler.getVersion());
 			newCompiler.setMainBlock(this);
-			newCompiler.readCode();
+			newCompiler.secondPass();
 			compiler.getAI().getErrors().addAll(ai.getErrors());
 			mCompiler.setCurrentAI(previousAI);
 			return true;
@@ -265,13 +292,14 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("}"); // Fin staticInit
 
 		// Variables globales
-		for (String global : mGlobales) {
+		for (var global : mGlobalesDeclarations) {
+			// System.out.println("declare global " + global.getName() + " type " + global.getType());
 			if (getWordCompiler().getVersion() >= 2) {
-				writer.addLine("private Object g_" + global + " = null;");
+				writer.addLine("private " + global.getType().getJavaPrimitiveName(getVersion()) + " g_" + global.getName() + " = " + global.getType().getDefaultValue(writer, getVersion()) + ";");
 			} else {
-				writer.addLine("private Box g_" + global + " = new Box(" + writer.getAIThis() + ");");
+				writer.addLine("private Box g_" + global.getName() + " = new Box(" + writer.getAIThis() + ");");
 			}
-			writer.addLine("private boolean g_init_" + global + " = false;");
+			writer.addLine("private boolean g_init_" + global.getName() + " = false;");
 		}
 		// Fonctions redéfinies
 		for (String redefined : mRedefinedFunctions) {
@@ -372,7 +400,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			function.declare(compiler);
 		}
 		for (var global : mGlobalesDeclarations) {
-			global.declare(compiler);
+			global.preAnalyze(compiler);
 		}
 		for (var clazz : mUserClassesList) {
 			clazz.preAnalyze(compiler);
@@ -384,6 +412,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public void analyze(WordCompiler compiler) {
+		for (var global : mGlobalesDeclarations) {
+			global.analyze(compiler);
+		}
 		for (var clazz : mUserClassesList) {
 			clazz.analyze(compiler);
 		}
@@ -438,5 +469,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	public boolean isStrict() {
+		return mCompiler.getCurrentAI().isStrict();
 	}
 }

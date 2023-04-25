@@ -8,6 +8,8 @@ import java.util.TreeMap;
 import com.alibaba.fastjson.JSON;
 
 import leekscript.compiler.bloc.AbstractLeekBlock;
+import leekscript.common.CompoundType;
+import leekscript.common.FunctionType;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 import leekscript.compiler.bloc.MainLeekBlock;
@@ -28,13 +30,15 @@ public class JavaWriter {
 	public AbstractLeekBlock currentBlock = null;
 	public HashMap<String, ArrayList<CallableVersion>> genericFunctions = new HashMap<>();
 	public HashSet<LeekFunctions> anonymousSystemFunctions = new HashSet<>();
+	private boolean operationsEnabled = true;
 
-	public JavaWriter(boolean debug, String className) {
+	public JavaWriter(boolean debug, String className, boolean enableOperations) {
 		mCode = new StringBuilder();
 		mLinesFile = new StringBuilder();
 		mLine = 1;
 		mWithDebug = debug;
 		this.className = className;
+		this.operationsEnabled = enableOperations;
 	}
 
 	public boolean hasDebug() {
@@ -102,7 +106,9 @@ public class JavaWriter {
 	}
 
 	public void addCounter(int count) {
-		addCode("ops(" + count + ");");
+		if (operationsEnabled) {
+			addCode("ops(" + count + ");");
+		}
 	}
 
 	public int getCurrentLine() {
@@ -128,7 +134,7 @@ public class JavaWriter {
 		} else if (expression.getType() == Type.INT) {
 			addCode("((");
 			expression.writeJavaCode(mainblock, this);
-			addCode(") != 0)");
+			addCode(") != 0l)");
 		} else {
 			addCode("bool(");
 			expression.writeJavaCode(mainblock, this);
@@ -196,6 +202,13 @@ public class JavaWriter {
 		else if (type == Type.INT) {
 			if (value.getType() == Type.REAL) {
 				addCode("(long) (");
+				value.writeJavaCode(mainblock, this);
+				addCode(")");
+				return;
+			}
+		} else if (type == Type.REAL) {
+			if (value.getType() == Type.INT) {
+				addCode("(double) (");
 				value.writeJavaCode(mainblock, this);
 				addCode(")");
 				return;
@@ -304,7 +317,7 @@ public class JavaWriter {
 
 		for (var function : anonymousSystemFunctions) {
 			addLine("private FunctionLeekValue " + function.getStandardClass() + "_" + function.getName() + " = new FunctionLeekValue(" + function.getVersions()[0].arguments.length + ", \"#Function " + function.getName() + "\") { public Object run(AI ai, Object thiz, Object... values) throws LeekRunException {");
-			if (function.getOperations() >= 0) {
+			if (operationsEnabled && function.getOperations() >= 0) {
 				addLine("ops(" + function.getOperations() + ");");
 			}
 			if (function.getVersions().length > 1) {
@@ -345,7 +358,7 @@ public class JavaWriter {
 		if (type.isMap()) {
 			return "toMap(" + index + ", " + v + ")";
 		}
-		if (type == Type.FUNCTION) {
+		if (type instanceof FunctionType) {
 			return "toFunction(" + index + ", " + v + ")";
 		}
 		if (type == Type.INT) {
@@ -354,11 +367,20 @@ public class JavaWriter {
 		if (type == Type.REAL) {
 			return "real(" + v + ")";
 		}
-		if (type == Type.NUMBER) {
-			return "number(" + v + ")";
-		}
 		if (type == Type.STRING) {
 			return "string(" + v + ")";
+		}
+		if (type instanceof CompoundType ct) {
+			if (ct.getTypes().size() == 2 && ct.getTypes().stream().anyMatch(t -> t == Type.NULL)) {
+				for (var t : ct.getTypes()) {
+					if (t != Type.NULL) {
+						if (t == Type.INT) return "(Long) " + v;
+						if (t == Type.REAL) return "(Double) " + v;
+						if (t == Type.BOOL) return "(Boolean) " + v;
+						if (t == Type.STRING) return "(String) " + v;
+					}
+				}
+			}
 		}
 		return v;
 	}
@@ -376,5 +398,9 @@ public class JavaWriter {
 
 	public boolean isInConstructor() {
 		return currentBlock != null && currentBlock.isInConstructor();
+	}
+
+	public boolean isOperationsEnabled() {
+		return operationsEnabled;
 	}
 }

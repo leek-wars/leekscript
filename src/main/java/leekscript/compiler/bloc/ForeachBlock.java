@@ -8,8 +8,10 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
+import leekscript.compiler.expression.LeekVariable;
 import leekscript.common.Error;
 import leekscript.common.Type;
+import leekscript.common.Type.CastType;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 
 public class ForeachBlock extends AbstractLeekBlock {
@@ -20,6 +22,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 	private final boolean mIsDeclaration;
 	private boolean mReference = false;
 	private LeekVariableDeclarationInstruction declaration;
+	private LeekVariable iteratorVariable;
 
 	public ForeachBlock(AbstractLeekBlock parent, MainLeekBlock main, boolean isDeclaration, Token token, boolean reference) {
 		super(parent, main);
@@ -28,10 +31,10 @@ public class ForeachBlock extends AbstractLeekBlock {
 		this.token = token;
 	}
 
-	public void setIterator(WordCompiler compiler, Token iterator) {
+	public void setIterator(WordCompiler compiler, Token iterator, Type type) {
 		mIterator = iterator;
 		if (mIsDeclaration) {
-			declaration = new LeekVariableDeclarationInstruction(compiler, iterator, compiler.getCurrentFunction());
+			declaration = new LeekVariableDeclarationInstruction(compiler, iterator, compiler.getCurrentFunction(), type);
 		}
 	}
 
@@ -42,80 +45,6 @@ public class ForeachBlock extends AbstractLeekBlock {
 	@Override
 	public String getCode() {
 		return "for (" + (mIsDeclaration ? "var " : "") + mIterator + " in " + mArray.toString() + ") {\n" + super.getCode() + "}";
-	}
-
-	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-
-		AbstractLeekBlock initialBlock = mainblock.getWordCompiler().getCurrentBlock();
-		mainblock.getWordCompiler().setCurrentBlock(this);
-
-		// On prend un nombre unique pour les noms de variables temporaires
-		int block_count = getCount();
-		String var = "v" + block_count;
-		String it = "i" + block_count;
-		String ar = "ar" + block_count;
-		String iterator_name = mainblock.hasGlobal(mIterator.getWord()) ? ("g_" + mIterator) : "u_" + mIterator;
-		var iteratorVariable = mainblock.getWordCompiler().getCurrentBlock().getVariable(mIterator.getWord(), false);
-
-		// Container
-		writer.addCode("final var " + ar + " = ops(");
-		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
-			mArray.writeJavaCode(mainblock, writer);
-		} else {
-			writer.compileLoad(mainblock, mArray);
-		}
-		writer.addCode(", " + mArray.getOperations() + ");");
-
-		writer.addLine("if (isIterable(" + ar + ")) {", mIterator.getLocation());
-		if (mIsDeclaration) {
-			if (declaration.isCaptured()) {
-				writer.addCode("final Wrapper " + iterator_name + " = new Wrapper(new Box(" + writer.getAIThis() + ", null));");
-			} else if (mainblock.getVersion() >= 2) {
-				writer.addLine(declaration.getVariable().getType().getJavaName() + " " + iterator_name + " = null;");
-				writer.addCounter(1);
-			} else {
-				writer.addLine("var " + iterator_name + " = new Box(" + writer.getAIThis() + ", null);");
-			}
-		} else {
-			writer.addCounter(1);
-		}
-
-		// On fait le parcours
-		writer.addLine("var " + it + " = iterator(" + ar + "); while (" + it + ".hasNext()) { var " + var + " = " + it + ".next(); ");
-
-		if (mainblock.getVersion() >= 4) {
-			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
-				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
-			} else if (mIsDeclaration) {
-				writer.addLine(iterator_name + " = (" + declaration.getVariable().getType().getJavaName() + ") " + var + ".getValue();");
-			} else {
-				writer.addLine(iterator_name + " = " + var + ".getValue();");
-			}
-		} else if (mainblock.getVersion() >= 2) {
-			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
-				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
-			} else {
-				writer.addLine(iterator_name + " = " + var + ".getValue();");
-			}
-		} else {
-			if (mReference) {
-				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
-			} else if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
-				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
-				writer.addCounter(1);
-			} else {
-				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
-				writer.addCounter(1);
-			}
-		}
-		writer.addCounter(1);
-
-		mainblock.getWordCompiler().setCurrentBlock(initialBlock);
-
-		super.writeJavaCode(mainblock, writer);
-
-		writer.addLine("}}");
 	}
 
 	@Override
@@ -159,18 +88,107 @@ public class ForeachBlock extends AbstractLeekBlock {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		mArray.analyze(compiler);
+		this.iteratorVariable = compiler.getCurrentBlock().getVariable(mIterator.getWord(), false);
 
-		if (!mArray.getType().canBeIterable()) {
-			compiler.addError(new AnalyzeError(mArray.getLocation(), AnalyzeErrorLevel.WARNING, Error.NOT_ITERABLE, new String[] { mArray.getType().name } ));
+		if (compiler.getMainBlock().isStrict() && !mArray.getType().isIterable()) {
+			compiler.addError(new AnalyzeError(mArray.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAY_NOT_BE_ITERABLE, new String[] {
+				mArray.toString(),
+				mArray.getType().toString()
+			} ));
+		} else if (!mArray.getType().canBeIterable()) {
+			var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+			compiler.addError(new AnalyzeError(mArray.getLocation(), level, Error.NOT_ITERABLE, new String[] { mArray.getType().toString() } ));
 		}
 
-		// Le type n'est pas forcé par le conteneur
-		// if (mIsDeclaration && declaration.getVariable() != null) {
-		// 	declaration.getVariable().setType(mArray.getType().pureElement());
-		// }
+
+		var cast = mArray.getType().element().accepts(iteratorVariable.getType());
+		if (cast == CastType.INCOMPATIBLE) {
+			compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.WARNING, Error.INCOMPATIBLE_TYPE, new String[] {
+				mArray.getType().element().toString(),
+				iteratorVariable.getType().toString()
+			}));
+		}
+		// LS5+ : Le type est forcé par le conteneur
+		if (compiler.getMainBlock().isStrict() && iteratorVariable.getType() == Type.ANY) {
+			iteratorVariable.setType(mArray.getType().element());
+		}
 
 		compiler.setCurrentBlock(initialBlock);
 		super.analyze(compiler);
+	}
+
+
+	@Override
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+
+		AbstractLeekBlock initialBlock = mainblock.getWordCompiler().getCurrentBlock();
+		mainblock.getWordCompiler().setCurrentBlock(this);
+
+		// On prend un nombre unique pour les noms de variables temporaires
+		int block_count = getCount();
+		String var = "v" + block_count;
+		String it = "i" + block_count;
+		String ar = "ar" + block_count;
+		String iterator_name = mainblock.hasGlobal(mIterator.getWord()) ? ("g_" + mIterator) : "u_" + mIterator;
+
+		// Container
+		writer.addCode("final var " + ar + " = ops(");
+		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
+			mArray.writeJavaCode(mainblock, writer);
+		} else {
+			writer.compileLoad(mainblock, mArray);
+		}
+		writer.addCode(", " + mArray.getOperations() + ");");
+
+		writer.addLine("if (isIterable(" + ar + ")) {", mIterator.getLocation());
+		if (mIsDeclaration) {
+			if (declaration.isCaptured()) {
+				writer.addCode("final Wrapper<" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + "> " + iterator_name + " = new Wrapper<" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ">(new Box(" + writer.getAIThis() + ", null));");
+			} else if (mainblock.getVersion() >= 2) {
+				writer.addLine(declaration.getVariable().getType().getJavaName(mainblock.getVersion()) + " " + iterator_name + " = null;");
+				writer.addCounter(1);
+			} else {
+				writer.addLine("var " + iterator_name + " = new Box(" + writer.getAIThis() + ", null);");
+			}
+		} else {
+			writer.addCounter(1);
+		}
+
+		// On fait le parcours
+		writer.addLine("var " + it + " = iterator(" + ar + "); while (" + it + ".hasNext()) { var " + var + " = " + it + ".next(); ");
+
+		if (mainblock.getVersion() >= 4) {
+			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
+				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
+			} else if (mIsDeclaration) {
+				writer.addLine(iterator_name + " = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
+			} else {
+				writer.addLine(iterator_name + " = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
+			}
+		} else if (mainblock.getVersion() >= 2) {
+			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
+				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
+			} else {
+				writer.addLine(iterator_name + " = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
+			}
+		} else {
+			if (mReference) {
+				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
+			} else if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
+				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
+				writer.addCounter(1);
+			} else {
+				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
+				writer.addCounter(1);
+			}
+		}
+		writer.addCounter(1);
+
+		mainblock.getWordCompiler().setCurrentBlock(initialBlock);
+
+		super.writeJavaCode(mainblock, writer);
+
+		writer.addLine("}}");
 	}
 
 	@Override

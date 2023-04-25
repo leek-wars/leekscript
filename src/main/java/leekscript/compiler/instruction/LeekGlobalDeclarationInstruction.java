@@ -8,6 +8,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
+import leekscript.compiler.expression.LeekType;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 
@@ -16,10 +17,14 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 	private final Token token;
 	private final Token variableToken;
 	private Expression mValue = null;
+	private Type type;
+	private LeekType leekType;
+	private LeekVariable variable;
 
-	public LeekGlobalDeclarationInstruction(Token token, Token variableToken) {
+	public LeekGlobalDeclarationInstruction(Token token, Token variableToken, LeekType leekType) {
 		this.token = token;
 		this.variableToken = variableToken;
+		this.leekType = leekType;
 	}
 
 	public void setValue(Expression value) {
@@ -45,11 +50,15 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 		if (mainblock.getWordCompiler().getVersion() >= 2) {
 			writer.addCode("g_" + variableToken.getWord() + " = ");
 			if (mValue != null) {
+				if (mValue.getType() != Type.ANY) {
+					writer.addCode("(" + mValue.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
 				if (mValue.getOperations() > 0) writer.addCode("ops(");
 				mValue.writeJavaCode(mainblock, writer);
 				if (mValue.getOperations() > 0) writer.addCode(", " + mValue.getOperations() + ")");
+			} else {
+				writer.addCode(this.variable.getType().getDefaultValue(writer, mainblock.getVersion()));
 			}
-			else writer.addCode("null");
 		} else {
 			writer.addCode("g_" + variableToken.getWord() + " = new Box(" + writer.getAIThis() + ", ");
 			if (mValue != null) mValue.compileL(mainblock, writer);
@@ -71,13 +80,13 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 		return false;
 	}
 
-	public void declare(WordCompiler compiler) {
-		// On ajoute la variable
-		compiler.getCurrentBlock().addVariable(new LeekVariable(compiler, variableToken, VariableType.GLOBAL));
-	}
-
 	@Override
 	public void preAnalyze(WordCompiler compiler) {
+		// On ajoute la variable
+		this.variable = new LeekVariable(compiler, variableToken, VariableType.GLOBAL, leekType == null ? Type.ANY : leekType.getType());
+		this.type = this.variable.getType();
+		compiler.getCurrentBlock().addVariable(this.variable);
+
 		if (mValue != null) {
 			mValue.preAnalyze(compiler);
 		}
@@ -87,6 +96,12 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 	public void analyze(WordCompiler compiler) {
 		if (mValue != null) {
 			mValue.analyze(compiler);
+
+			// LS5+ : la variable prend le type de l'expression si pas de type manuel
+			if (compiler.getMainBlock().isStrict() && this.variable != null && this.leekType == null) {
+				this.type = mValue.getType();
+				this.variable.setType(mValue.getType());
+			}
 		}
 	}
 
@@ -108,8 +123,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 
 	@Override
 	public Type getType() {
-		// TODO Auto-generated method stub
-		return null;
+		return type;
 	}
 
 	@Override

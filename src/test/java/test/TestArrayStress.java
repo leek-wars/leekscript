@@ -31,8 +31,10 @@ public class TestArrayStress extends TestCommon {
 		 */
 		long low_ram = 10_000;
 		code_v4_("var a = [] for (var i = 0; i < 1000000; ++i) a += i").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
+		code_strict_v4_("any a = [] for (var i = 0; i < 1000000; ++i) a += i").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("var a = [] for (var i = 0; i < 1000000; ++i) push(a, i)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("var a = [] for (var i = 0; i < 1000000; ++i) a += [i]").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
+		code_strict_v4_("any a = [] for (var i = 0; i < 1000000; ++i) a += [i]").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("var a = [] for (var i = 0; i < 1000000; ++i) pushAll(a, [1, 2, 3])").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("var a = [] for (var i = 0; i < 1000000; ++i) insert(a, i, 0)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("var a = [] for (var i = 0; i < 1000000; ++i) unshift(a, i)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);

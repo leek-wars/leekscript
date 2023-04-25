@@ -37,7 +37,10 @@ public class DoWhileBlock extends AbstractLeekBlock {
 		writer.addLine("do {");
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
-		writer.addCode("} while (ops(");
+		writer.addCode("} while (");
+		if (writer.isOperationsEnabled()) {
+			writer.addCode("ops(");
+		}
 		// Prevent unreachable code error
 		if (mCondition instanceof LeekBoolean) {
 			writer.addCode("bool(");
@@ -46,7 +49,9 @@ public class DoWhileBlock extends AbstractLeekBlock {
 		} else {
 			writer.getBoolean(mainblock, mCondition);
 		}
-		writer.addCode(", " + mCondition.getOperations() + ")");
+		if (writer.isOperationsEnabled()) {
+			writer.addCode(", " + mCondition.getOperations() + ")");
+		}
 		writer.addLine(");", getLocation());
 	}
 

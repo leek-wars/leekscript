@@ -55,11 +55,11 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	@Override
-	public void set(AI ai, Object key, Object value) {
-		put(key, value);
+	public void set(AI ai, Object key, Object value) throws LeekRunException {
+		set(key, value);
 	}
 
-	public Object put(AI ai, Object key, Object value) throws LeekRunException {
+	public Object set(Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		if (!containsKey(key)) {
 			ai.increaseRAM(2);
@@ -69,7 +69,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public Object mapPut(AI ai, Object key, Object value) throws LeekRunException {
-		return put(ai, key, value);
+		return set(key, value);
 	}
 
 	public Object mapPutAll(AI ai, MapLeekValue map) throws LeekRunException {
@@ -80,9 +80,9 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return null;
 	}
 
-	public Object get(AI ai, Object index) {
+	public Object get(Object index) {
 		ai.opsNoCheck(MapLeekValue.READ_OPERATIONS);
-		return get(index);
+		return super.get(index);
 	}
 
 	public Object mapGet(AI ai, Object key) {
@@ -239,7 +239,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		ai.ops(1 + 3 * size());
 		var result = new MapLeekValue(ai, size());
 		for (var entry : this.entrySet()) {
-			result.put(entry.getKey(), function.run(ai, null, entry.getValue(), entry.getKey(), this));
+			result.set(entry.getKey(), function.run(ai, null, entry.getValue(), entry.getKey(), this));
 		}
 		ai.increaseRAM(2 * size());
 		return result;
@@ -397,7 +397,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		var result = new MapLeekValue(ai);
 		for (var entry : entrySet()) {
 			if (ai.bool(function.run(ai, null, entry.getValue(), entry.getKey(), this))) {
-				result.put(entry.getKey(), entry.getValue());
+				result.set(entry.getKey(), entry.getValue());
 			}
 		}
 		ai.increaseRAM(2 * result.size());

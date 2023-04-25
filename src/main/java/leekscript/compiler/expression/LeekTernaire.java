@@ -12,30 +12,31 @@ public class LeekTernaire extends LeekExpression {
 
 	private Expression mCondition;
 
-	private int mOperator = 0;
+	private int mOp = 0;
 	private Type type = Type.ANY;
 
 	public LeekTernaire(Token questionMark) {
 		mCondition = null;
 		mExpression1 = null;
 		mExpression2 = null;
+		questionMark.setExpression(this);
 	}
 
 	@Override
 	public boolean needOperator() {
-		if(mCondition != null && mOperator == 0){
+		if(mCondition != null && mOp == 0){
 			if(mCondition.getNature() == EXPRESSION){
 				return ((LeekExpression) mCondition).needOperator();
 			}
 			return true;
 		}
-		if(mExpression1 != null && mOperator == 1){
+		if(mExpression1 != null && mOp == 1){
 			if(mExpression1.getNature() == EXPRESSION){
 				return ((LeekExpression) mExpression1).needOperator();
 			}
 			return true;
 		}
-		if(mExpression2 != null && mOperator == 2){
+		if(mExpression2 != null && mOp == 2){
 			if(mExpression2.getNature() == EXPRESSION){
 				return ((LeekExpression) mExpression2).needOperator();
 			}
@@ -79,13 +80,26 @@ public class LeekTernaire extends LeekExpression {
 			var branch_ops = mExpression1.operations != mExpression2.operations;
 			writer.getBoolean(mainblock, mCondition);
 			writer.addCode(" ? ");
-			if (mExpression1.getOperations() > 0 && branch_ops) writer.addCode("ops(");
-			else writer.addCode("(");
+			if (mExpression1.getOperations() > 0 && branch_ops) {
+				if (mExpression1.getType() != Type.ANY) {
+					writer.addCode("(" + mExpression1.getType().getJavaName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("ops(");
+			} else {
+				writer.addCode("(");
+			}
 			mExpression1.writeJavaCode(mainblock, writer);
-			if (mExpression1.getOperations() > 0 && branch_ops) writer.addCode(", " + mExpression1.getOperations() + ")");
+			if (mExpression1.getOperations() > 0 && branch_ops) {
+				writer.addCode(", " + mExpression1.getOperations() + ")");
+			}
 			else writer.addCode(")");
 			writer.addCode(" : ");
-			if (mExpression2.getOperations() > 0 && branch_ops) writer.addCode("ops(");
+			if (mExpression2.getOperations() > 0 && branch_ops) {
+				if (mExpression2.getType() != Type.ANY) {
+					writer.addCode("(" + mExpression2.getType().getJavaName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("ops(");
+			}
 			else writer.addCode("(");
 			mExpression2.writeJavaCode(mainblock, writer);
 			if (mExpression2.getOperations() > 0 && branch_ops) writer.addCode(", " + mExpression2.getOperations() + ")");
@@ -106,11 +120,11 @@ public class LeekTernaire extends LeekExpression {
 		else if(mCondition.getNature() == EXPRESSION && !((LeekExpression) mCondition).complete()){
 			((LeekExpression) mCondition).addExpression(expression);
 		}
-		else if(mOperator == 1){
+		else if(mOp == 1){
 			if(mExpression1 == null) mExpression1 = expression;
 			else ((LeekExpression) mExpression1).addExpression(expression);
 		}
-		else if(mOperator == 2){
+		else if(mOp == 2){
 			if(mExpression2 == null) mExpression2 = expression;
 			else ((LeekExpression) mExpression2).addExpression(expression);
 		}
@@ -159,8 +173,8 @@ public class LeekTernaire extends LeekExpression {
 
 	@Override
 	public boolean complete(int operator) {
-		if(!complete()) return false;
-		if(operator >= Operators.getPriority(Operators.DOUBLE_POINT)) return false;
+		if (!complete()) return false;
+		if (operator >= Operators.getPriority(Operators.DOUBLE_POINT)) return false;
 		return true;
 	}
 
@@ -175,15 +189,15 @@ public class LeekTernaire extends LeekExpression {
 	@Override
 	public void addOperator(int operator, Token token) {
 		// On doit trouver à quel endroit de l'arborescence on doit placer l'opérateur
-		if (mOperator == 0 && operator == Operators.TERNAIRE) {
-			mOperator = 1;
+		if (mOp == 0 && operator == Operators.TERNAIRE) {
+			mOp = 1;
 		}
 		else if(mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete()) ((LeekExpression) mExpression1).addOperator(operator, token);
-		else if(mOperator == 1 && operator == Operators.DOUBLE_POINT){
-			mOperator = 2;
+		else if(mOp == 1 && operator == Operators.DOUBLE_POINT){
+			mOp = 2;
 		}
 		else{
-			if(mOperator == 0){
+			if(mOp == 0){
 				if(mCondition.getNature() == EXPRESSION) ((LeekExpression) mCondition).addOperator(operator, token);
 				else{
 					LeekExpression new_e = new LeekExpression();
@@ -193,7 +207,7 @@ public class LeekTernaire extends LeekExpression {
 					mCondition = new_e;
 				}
 			}
-			else if(mOperator == 1){
+			else if(mOp == 1){
 				if(mExpression1.getNature() == EXPRESSION) ((LeekExpression) mExpression1).addOperator(operator, token);
 				else{
 					if(operator == Operators.TERNAIRE){
@@ -256,8 +270,8 @@ public class LeekTernaire extends LeekExpression {
 			operations += mExpression1.operations;
 		}
 
-		if (mExpression1 != null && mExpression2 != null && mExpression1.getType() == mExpression2.getType()) {
-			type = mExpression1.getType();
+		if (mExpression1 != null && mExpression2 != null) {
+			type = Type.compound(mExpression1.getType(), mExpression2.getType());
 		}
 	}
 

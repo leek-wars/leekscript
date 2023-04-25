@@ -1,5 +1,7 @@
 package test;
 
+import leekscript.common.Error;
+
 public class TestGlobals extends TestCommon {
 
 	public void run() throws Exception {
@@ -19,11 +21,14 @@ public class TestGlobals extends TestCommon {
 		code("global r = ['a': 12, 'b': 5]; return r").equals("[\"a\" : 12, \"b\" : 5]");
 		code_v1_3("global r = [] return r[1] = 12").equals("12");
 		code_v4_("global r = [] return r[1] = 12").equals("null");
+		code_strict_v4_("global any r = [] return r[1] = 12").error(Error.ARRAY_OUT_OF_BOUND);
 		code_v4_("global r = [:] return r[1] = 12").equals("12");
+		code_strict("global any r = [:] return r[1] = 12").equals("12");
 		code("global r = [0] return r[0] += 12").equals("12");
 		code_v1_3("global r = [] return r[5] += 12").equals("12");
 		code_v4_("global r = [] return r[5] += 12").equals("null");
 		code_v4_("global r = [:] return r[5] += 12").equals("12");
+		code_strict_v4_("global r = [:] return r[5] += 12").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
 		code_v1("global r = 12 r = @null").equals("null");
 		code("global m = [] return m = m").equals("[]");
 		code_v2_("global m = {} return m = m").equals("{}");

@@ -1,13 +1,17 @@
 package leekscript.compiler.instruction;
 
 import leekscript.common.Type;
+import leekscript.common.Type.CastType;
 import leekscript.compiler.Token;
+import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
+import leekscript.common.Error;
 
 public class LeekReturnInstruction extends LeekInstruction {
 
@@ -36,6 +40,22 @@ public class LeekReturnInstruction extends LeekInstruction {
 	public void analyze(WordCompiler compiler) {
 		if (expression != null) {
 			expression.analyze(compiler);
+
+			// Vérification du type de retour
+			var functionType = compiler.getCurrentFunction().getType();
+			if (functionType != null) {
+				var cast = functionType.returnType().accepts(expression.getType());
+				if (cast.ordinal() > CastType.UPCAST.ordinal()) {
+
+					var level = compiler.getMainBlock().isStrict() && cast == CastType.INCOMPATIBLE ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+					var error = cast == CastType.INCOMPATIBLE ? Error.INCOMPATIBLE_TYPE : Error.DANGEROUS_CONVERSION;
+
+					compiler.addError(new AnalyzeError(getLocation(), level, error, new String[] {
+						expression.getType().toString(),
+						compiler.getCurrentFunction().getType().returnType().toString()
+					}));
+				}
+			}
 		}
 	}
 
@@ -45,7 +65,12 @@ public class LeekReturnInstruction extends LeekInstruction {
 		if (expression == null) {
 			writer.addCode("null;");
 		} else {
-			if (expression.getOperations() > 0) writer.addCode("ops(");
+			if (expression.getOperations() > 0) {
+				if (expression.getType() != Type.ANY) {
+					writer.addCode("(" + expression.getType().getJavaName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("ops(");
+			}
 			var finalExpression = expression.trim();
 			if (mainblock.getWordCompiler().getVersion() == 1) {
 				finalExpression.compileL(mainblock, writer);
