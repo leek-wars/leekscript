@@ -139,7 +139,6 @@ public abstract class AI {
 			for (var clazz : classes) {
 				for (var f : clazz.getDeclaredFields()) {
 					if (f.isSynthetic()) continue;
-					f.setAccessible(true);
 					fields.add(f);
 				}
 			}
@@ -186,7 +185,6 @@ public abstract class AI {
 			while (current != null) {
 				for (var f : current.getDeclaredFields()) {
 					if (f.isSynthetic()) continue;
-					f.setAccessible(true);
 					fields.add(f);
 				}
 				current = current.getSuperclass();
@@ -1344,7 +1342,6 @@ public abstract class AI {
 				if (!checkFieldAccessLevel(f, value, fromClass)) {
 					return null;
 				}
-				f.setAccessible(true);
 				return f.get(value);
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				// Method ?
@@ -1410,7 +1407,7 @@ public abstract class AI {
 		if (object instanceof NativeObjectLeekValue) {
 			try {
 				var f = object.getClass().getField(field);
-				if (!checkFieldAccessLevel(f, value, fromClass)) {
+				if (!checkFieldAccessLevel(f, object, fromClass)) {
 					return null;
 				}
 				if (f.isAnnotationPresent(Final.class)) {
@@ -2508,7 +2505,6 @@ public abstract class AI {
 					return null;
 				}
 			}
-			m.setAccessible(true);
 			return m.invoke(value, args);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 			e.printStackTrace(System.out);
@@ -2541,7 +2537,6 @@ public abstract class AI {
 						return null;
 					}
 				}
-				// m.setAccessible(true);
 				return m.invoke(value, args);
 			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 				try {
