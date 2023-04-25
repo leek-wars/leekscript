@@ -199,7 +199,6 @@ public class TestLoops extends TestCommon {
 		code("var x for (x in [1, 2]) { return arrayMap([3, 4], function(y) { return x }) }").equals("[1, 1]");
 		code("var x var y for (x : y in [1, 2]) { return arrayMap([3, 4], function(z) { return x + y }) }").equals("[1, 1]");
 
-
 		section("Foreach - return");
 		code("for (var x in [1]) { return 12 }").equals("12");
 		// code("for (var x in 'salut') { return 13 }").equals("13");

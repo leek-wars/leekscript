@@ -72,7 +72,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 			if (declaration.isCaptured()) {
 				writer.addCode("final Wrapper " + iterator_name + " = new Wrapper(new Box(" + writer.getAIThis() + ", null));");
 			} else if (mainblock.getVersion() >= 2) {
-				writer.addLine(declaration.getVariable().getType().getJavaName(mainblock.getVersion()) + " " + iterator_name + " = null;");
+				writer.addLine(declaration.getVariable().getType().getJavaName() + " " + iterator_name + " = null;");
 				writer.addCounter(1);
 			} else {
 				writer.addLine("var " + iterator_name + " = new Box(" + writer.getAIThis() + ", null);");
@@ -88,7 +88,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
 				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
 			} else if (mIsDeclaration) {
-				writer.addLine(iterator_name + " = (" + declaration.getVariable().getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
+				writer.addLine(iterator_name + " = (" + declaration.getVariable().getType().getJavaName() + ") " + var + ".getValue();");
 			} else {
 				writer.addLine(iterator_name + " = " + var + ".getValue();");
 			}
