@@ -1338,9 +1338,12 @@ public abstract class AI {
 		if (value instanceof ClassLeekValue) {
 			return ((ClassLeekValue) value).getField(field, fromClass);
 		}
-		if (value instanceof NativeObjectLeekValue) {
+		if (value instanceof NativeObjectLeekValue object) {
 			try {
 				var f = value.getClass().getField(field);
+				if (!checkFieldAccessLevel(f, value, fromClass)) {
+					return null;
+				}
 				f.setAccessible(true);
 				return f.get(value);
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
@@ -1354,6 +1357,33 @@ public abstract class AI {
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { value, field });
 		return null;
+	}
+
+	private Field getWriteableField(Object object, String field, ClassLeekValue fromClass) throws LeekRunException, NoSuchFieldException, SecurityException {
+		var f = object.getClass().getField(field);
+		if (!checkFieldAccessLevel(f, object, fromClass)) {
+			return null;
+		}
+		if (f.isAnnotationPresent(Final.class)) {
+			this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getSimpleName().substring(2), field });
+			return null;
+		}
+		return f;
+	}
+
+	private boolean checkFieldAccessLevel(Field field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+		if (field.isAnnotationPresent(Private.class)) {
+			if (fromClass == null || value.getClass() != fromClass.clazz) {
+				addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new Object[] { value.getClass().getSimpleName().substring(2), field.getName() });
+				return false;
+			}
+		} else if (field.isAnnotationPresent(Protected.class)) {
+			if (fromClass == null || !value.getClass().isAssignableFrom(fromClass.clazz)) {
+				addSystemLog(AILog.ERROR, Error.PROTECTED_FIELD, new Object[] { value.getClass().getSimpleName().substring(2), field.getName() });
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public Object initField(Object object, String field, Object value) throws LeekRunException {
@@ -1370,7 +1400,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object setField(Object object, String field, Object value) throws LeekRunException {
+	public Object setField(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).setField(field, value);
 		}
@@ -1380,11 +1410,13 @@ public abstract class AI {
 		if (object instanceof NativeObjectLeekValue) {
 			try {
 				var f = object.getClass().getField(field);
+				if (!checkFieldAccessLevel(f, value, fromClass)) {
+					return null;
+				}
 				if (f.isAnnotationPresent(Final.class)) {
 					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 					return null;
 				}
-				// f.setAccessible(true);
 				f.set(object, value);
 				return value;
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
@@ -1395,7 +1427,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_inc(Object object, String field) throws LeekRunException {
+	public Object field_inc(Object object, String field, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_inc(field);
 		}
@@ -1404,6 +1436,9 @@ public abstract class AI {
 		}
 		try {
 			var f = object.getClass().getField(field);
+			if (!checkFieldAccessLevel(f, object, fromClass)) {
+				return null;
+			}
 			if (f.isAnnotationPresent(Final.class)) {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
@@ -1417,7 +1452,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_pre_inc(Object object, String field) throws LeekRunException {
+	public Object field_pre_inc(Object object, String field, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_pre_inc(field);
 		}
@@ -1426,6 +1461,9 @@ public abstract class AI {
 		}
 		try {
 			var f = object.getClass().getField(field);
+			if (!checkFieldAccessLevel(f, object, fromClass)) {
+				return null;
+			}
 			if (f.isAnnotationPresent(Final.class)) {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
@@ -1438,7 +1476,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_dec(Object object, String field) throws LeekRunException {
+	public Object field_dec(Object object, String field, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_dec(field);
 		}
@@ -1447,6 +1485,9 @@ public abstract class AI {
 		}
 		try {
 			var f = object.getClass().getField(field);
+			if (!checkFieldAccessLevel(f, object, fromClass)) {
+				return null;
+			}
 			if (f.isAnnotationPresent(Final.class)) {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
@@ -1459,7 +1500,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_pre_dec(Object object, String field) throws LeekRunException {
+	public Object field_pre_dec(Object object, String field, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_pre_dec(field);
 		}
@@ -1468,6 +1509,9 @@ public abstract class AI {
 		}
 		try {
 			var f = object.getClass().getField(field);
+			if (!checkFieldAccessLevel(f, object, fromClass)) {
+				return null;
+			}
 			if (f.isAnnotationPresent(Final.class)) {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
@@ -1480,7 +1524,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_add_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_add_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_add_eq(field, value);
 		}
@@ -1489,6 +1533,9 @@ public abstract class AI {
 		}
 		try {
 			var f = object.getClass().getField(field);
+			if (!checkFieldAccessLevel(f, object, fromClass)) {
+				return null;
+			}
 			if (f.isAnnotationPresent(Final.class)) {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
@@ -1501,7 +1548,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_sub_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_sub_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_sub_eq(field, value);
 		}
@@ -1510,6 +1557,9 @@ public abstract class AI {
 		}
 		try {
 			var f = object.getClass().getField(field);
+			if (!checkFieldAccessLevel(f, object, fromClass)) {
+				return null;
+			}
 			if (f.isAnnotationPresent(Final.class)) {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
@@ -1522,7 +1572,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_mul_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_mul_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_mul_eq(field, value);
 		}
@@ -1531,6 +1581,9 @@ public abstract class AI {
 		}
 		try {
 			var f = object.getClass().getField(field);
+			if (!checkFieldAccessLevel(f, object, fromClass)) {
+				return null;
+			}
 			if (f.isAnnotationPresent(Final.class)) {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
@@ -1543,7 +1596,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_pow_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_pow_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_pow_eq(field, value);
 		}
@@ -1552,6 +1605,9 @@ public abstract class AI {
 		}
 		try {
 			var f = object.getClass().getField(field);
+			if (!checkFieldAccessLevel(f, object, fromClass)) {
+				return null;
+			}
 			if (f.isAnnotationPresent(Final.class)) {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
@@ -1564,7 +1620,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_div_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_div_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_div_eq(field, value);
 		}
@@ -1573,6 +1629,9 @@ public abstract class AI {
 		}
 		try {
 			var f = object.getClass().getField(field);
+			if (!checkFieldAccessLevel(f, object, fromClass)) {
+				return null;
+			}
 			if (f.isAnnotationPresent(Final.class)) {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
@@ -1585,7 +1644,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_intdiv_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_intdiv_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_intdiv_eq(field, value);
 		}
@@ -1594,6 +1653,9 @@ public abstract class AI {
 		}
 		try {
 			var f = object.getClass().getField(field);
+			if (!checkFieldAccessLevel(f, object, fromClass)) {
+				return null;
+			}
 			if (f.isAnnotationPresent(Final.class)) {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
@@ -1606,7 +1668,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_mod_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_mod_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_mod_eq(field, value);
 		}
@@ -1615,6 +1677,9 @@ public abstract class AI {
 		}
 		try {
 			var f = object.getClass().getField(field);
+			if (!checkFieldAccessLevel(f, object, fromClass)) {
+				return null;
+			}
 			if (f.isAnnotationPresent(Final.class)) {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
@@ -1627,7 +1692,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_bor_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_bor_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_bor_eq(field, value);
 		}
@@ -1635,11 +1700,8 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).bor_eq(value);
 		}
 		try {
-			var f = object.getClass().getField(field);
-			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
-				return null;
-			}
+			var f = getWriteableField(object, field, fromClass);
+			if (f == null) return null;
 			var v = bor(f.get(object), value);
 			f.set(object, v);
 			return v;
@@ -1648,7 +1710,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_band_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_band_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_band_eq(field, value);
 		}
@@ -1656,11 +1718,8 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).band_eq(value);
 		}
 		try {
-			var f = object.getClass().getField(field);
-			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
-				return null;
-			}
+			var f = getWriteableField(object, field, fromClass);
+			if (f == null) return null;
 			var v = band(f.get(object), value);
 			f.set(object, v);
 			return v;
@@ -1669,7 +1728,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_bxor_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_bxor_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_bxor_eq(field, value);
 		}
@@ -1677,11 +1736,8 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).bxor_eq(value);
 		}
 		try {
-			var f = object.getClass().getField(field);
-			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
-				return null;
-			}
+			var f = getWriteableField(object, field, fromClass);
+			if (f == null) return null;
 			var v = bxor(f.get(object), value);
 			f.set(object, v);
 			return v;
@@ -1690,7 +1746,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_shl_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_shl_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_shl_eq(field, value);
 		}
@@ -1698,11 +1754,8 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).shl_eq(value);
 		}
 		try {
-			var f = object.getClass().getField(field);
-			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
-				return null;
-			}
+			var f = getWriteableField(object, field, fromClass);
+			if (f == null) return null;
 			var v = shl(f.get(object), value);
 			f.set(object, v);
 			return v;
@@ -1711,7 +1764,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_shr_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_shr_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_shr_eq(field, value);
 		}
@@ -1720,11 +1773,8 @@ public abstract class AI {
 		}
 		if (object instanceof NativeObjectLeekValue) {
 			try {
-				var f = object.getClass().getField(field);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
-					return null;
-				}
+				var f = getWriteableField(object, field, fromClass);
+			if (f == null) return null;
 				var v = shr(f.get(object), value);
 				f.set(object, v);
 				return v;
@@ -1734,7 +1784,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object field_ushr_eq(Object object, String field, Object value) throws LeekRunException {
+	public Object field_ushr_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_ushr_eq(field, value);
 		}
@@ -1743,11 +1793,8 @@ public abstract class AI {
 		}
 		if (object instanceof NativeObjectLeekValue) {
 			try {
-				var f = object.getClass().getField(field);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
-					return null;
-				}
+				var f = getWriteableField(object, field, fromClass);
+				if (f == null) return null;
 				var v = ushr(f.get(object), value);
 				f.set(object, v);
 				return v;
@@ -1757,7 +1804,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put(Object array, Object key, Object value) throws LeekRunException {
+	public Object put(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put(this, key, value);
 		}
@@ -1777,12 +1824,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				f.set(array, value);
 				return value;
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
@@ -1791,7 +1834,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_inc(Object array, Object key) throws LeekRunException {
+	public Object put_inc(Object array, Object key, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_inc(this, key);
 		}
@@ -1811,12 +1854,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = f.get(array);
 				f.set(array, add(v, 1l));
 				return v;
@@ -1827,7 +1866,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_pre_inc(Object array, Object key) throws LeekRunException {
+	public Object put_pre_inc(Object array, Object key, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_pre_inc(this, key);
 		}
@@ -1847,12 +1886,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = add(f.get(array), 1l);
 				f.set(array, v);
 				return v;
@@ -1863,7 +1898,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_dec(Object array, Object key) throws LeekRunException {
+	public Object put_dec(Object array, Object key, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_dec(this, key);
 		}
@@ -1883,12 +1918,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = f.get(array);
 				f.set(array, sub(v, 1l));
 				return v;
@@ -1899,7 +1930,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_pre_dec(Object array, Object key) throws LeekRunException {
+	public Object put_pre_dec(Object array, Object key, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_pre_dec(this, key);
 		}
@@ -1919,12 +1950,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = sub(f.get(array), 1l);
 				f.set(array, v);
 				return v;
@@ -1935,7 +1962,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_add_eq(Object array, Object key, Object value) throws LeekRunException {
+	public Object put_add_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_add_eq(this, key, value);
 		}
@@ -1955,12 +1982,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = add(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -1971,7 +1994,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_sub_eq(Object array, Object key, Object value) throws LeekRunException {
+	public Object put_sub_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_sub_eq(this, key, value);
 		}
@@ -1991,12 +2014,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = sub(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -2007,7 +2026,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_mul_eq(Object array, Object key, Object value) throws LeekRunException {
+	public Object put_mul_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_mul_eq(this, key, value);
 		}
@@ -2027,12 +2046,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = mul(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -2043,7 +2058,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_pow_eq(Object array, Object key, Object value) throws LeekRunException {
+	public Object put_pow_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_pow_eq(this, key, value);
 		}
@@ -2063,12 +2078,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = pow(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -2079,7 +2090,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_mod_eq(Object array, Object key, Object value) throws LeekRunException {
+	public Object put_mod_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_mod_eq(this, key, value);
 		}
@@ -2099,12 +2110,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = mod(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -2115,7 +2122,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_div_eq(Object array, Object key, Object value) throws LeekRunException {
+	public Object put_div_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_div_eq(this, key, value);
 		}
@@ -2135,12 +2142,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = div(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -2151,7 +2154,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public long put_intdiv_eq(Object array, Object key, Object value) throws LeekRunException {
+	public long put_intdiv_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_intdiv_eq(this, key, value);
 		}
@@ -2171,12 +2174,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return 0;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return 0;
 				var v = intdiv(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -2187,7 +2186,7 @@ public abstract class AI {
 		return 0;
 	}
 
-	public Object put_bor_eq(Object array, Object key, Object value) throws LeekRunException {
+	public Object put_bor_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_bor_eq(this, key, value);
 		}
@@ -2207,12 +2206,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = bor(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -2223,7 +2218,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_band_eq(Object array, Object key, Object value) throws LeekRunException {
+	public Object put_band_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_band_eq(this, key, value);
 		}
@@ -2243,12 +2238,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = band(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -2259,7 +2250,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_shl_eq(Object array, Object key, Object value) throws LeekRunException {
+	public Object put_shl_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_shl_eq(this, key, value);
 		}
@@ -2279,12 +2270,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = shl(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -2295,7 +2282,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_shr_eq(Object array, Object key, Object value) throws LeekRunException {
+	public Object put_shr_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_shr_eq(this, key, value);
 		}
@@ -2315,12 +2302,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = shr(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -2331,7 +2314,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_ushr_eq(Object array, Object key, Object value) throws LeekRunException {
+	public Object put_ushr_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_ushr_eq(this, key, value);
 		}
@@ -2351,12 +2334,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = ushr(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -2367,7 +2346,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object put_bxor_eq(Object array, Object key, Object value) throws LeekRunException {
+	public Object put_bxor_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_bxor_eq(this, key, value);
 		}
@@ -2387,12 +2366,8 @@ public abstract class AI {
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
-				var k = string(key);
-				var f = array.getClass().getField(k);
-				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { array.getClass().getName(), k });
-					return null;
-				}
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
 				var v = bxor(f.get(array), value);
 				f.set(array, v);
 				return v;
@@ -2431,7 +2406,11 @@ public abstract class AI {
 		if (value instanceof NativeObjectLeekValue) {
 			ops(1);
 			try {
-				return value.getClass().getField(string(index)).get(value);
+				var f = value.getClass().getField(string(index));
+				if (!checkFieldAccessLevel(f, value, fromClass)) {
+					return null;
+				}
+				return f.get(value);
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				// Method ?
 				try {
@@ -2518,6 +2497,17 @@ public abstract class AI {
 		// }
 		try {
 			var m = value.getClass().getMethod("u_" + method);
+			if (m.isAnnotationPresent(Private.class)) {
+				if (fromClass == null || value.getClass() != fromClass.clazz) {
+					addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), method });
+					return null;
+				}
+			} else if (m.isAnnotationPresent(Protected.class)) {
+				if (fromClass == null || !value.getClass().isAssignableFrom(fromClass.clazz)) {
+					addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), method });
+					return null;
+				}
+			}
 			m.setAccessible(true);
 			return m.invoke(value, args);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
@@ -2540,11 +2530,26 @@ public abstract class AI {
 					types[i] = Object.class;
 				}
 				var m = value.getClass().getMethod(method, types);
+				if (m.isAnnotationPresent(Private.class)) {
+					if (fromClass == null || value.getClass() != fromClass.clazz) {
+						addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), field });
+						return null;
+					}
+				} else if (m.isAnnotationPresent(Protected.class)) {
+					if (fromClass == null || !value.getClass().isAssignableFrom(fromClass.clazz)) {
+						addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), field });
+						return null;
+					}
+				}
 				// m.setAccessible(true);
 				return m.invoke(value, args);
 			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 				try {
-					return execute(value.getClass().getField(field).get(value), args);
+					var f = value.getClass().getField(field);
+					if (!checkFieldAccessLevel(f, value, fromClass)) {
+						return null;
+					}
+					return execute(f.get(value), args);
 				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {}
 			}
 		}

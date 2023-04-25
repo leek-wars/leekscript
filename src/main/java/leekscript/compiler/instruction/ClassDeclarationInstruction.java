@@ -409,6 +409,11 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			if (field.getValue().isFinal) {
 				writer.addCode("@Final ");
 			}
+			if (field.getValue().level == AccessLevel.PROTECTED) {
+				writer.addCode("@Protected ");
+			} else if (field.getValue().level == AccessLevel.PRIVATE) {
+				writer.addCode("@Private ");
+			}
 			writer.addCode("public Object " + field.getKey());
 			// if (field.getValue().expression != null) {
 			// 	writer.addCode(" = ");
@@ -535,6 +540,12 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				writer.currentBlock = block;
 
 				String methodName = method.getKey();
+
+				if (version.getValue().level == AccessLevel.PROTECTED) {
+					writer.addCode("@Protected ");
+				} else if (version.getValue().level == AccessLevel.PRIVATE) {
+					writer.addCode("@Private ");
+				}
 				writer.addCode("public Object u_" + methodName + "(");
 				for (int a = 0; a < version.getKey(); ++a) {
 					var arg = block.getParametersDeclarations().get(a);

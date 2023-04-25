@@ -198,7 +198,7 @@ public class LeekObjectAccess extends Expression {
 			object.writeJavaCode(mainblock, writer);
 			writer.addCode(", \"" + field.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 		}
 	}
 
@@ -208,7 +208,7 @@ public class LeekObjectAccess extends Expression {
 
 		writer.addCode("field_inc(");
 		object.writeJavaCode(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\")");
+		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -217,7 +217,7 @@ public class LeekObjectAccess extends Expression {
 
 		writer.addCode("field_pre_inc(");
 		object.writeJavaCode(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\")");
+		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -226,7 +226,7 @@ public class LeekObjectAccess extends Expression {
 
 		writer.addCode("field_dec(");
 		object.writeJavaCode(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\")");
+		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -235,7 +235,7 @@ public class LeekObjectAccess extends Expression {
 
 		writer.addCode("field_pre_dec(");
 		object.writeJavaCode(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\")");
+		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -246,7 +246,7 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -258,7 +258,7 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -270,7 +270,7 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -282,7 +282,7 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -294,7 +294,7 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -306,7 +306,7 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -318,7 +318,7 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -330,7 +330,7 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -342,7 +342,7 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -354,7 +354,7 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -366,9 +366,8 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
-
 
 	@Override
 
@@ -379,9 +378,8 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
-
 
 	@Override
 
@@ -392,7 +390,7 @@ public class LeekObjectAccess extends Expression {
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override

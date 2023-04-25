@@ -400,6 +400,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { x = 10 } var a = new A() return a.x").equals("10");
 		code_v2_("class A { public x = 10 } var a = new A() return a.x").equals("10");
 		code_v2_("class A { protected x = 10 } var a = new A() return a.x").equals("null");
+		code_v2_("class A { protected x = 10 } var a = new A() return a.x = 10").equals("null");
 		code_v2_("class A { private x = 10 } var a = new A() return a.x").equals("null");
 		code_v2_("class A { private x = 10 m() { return x } } var a = new A() return a.m()").equals("10");
 		code_v2_("class A { private x = 10 } class B extends A {} var a = new B() return a.x").equals("null");

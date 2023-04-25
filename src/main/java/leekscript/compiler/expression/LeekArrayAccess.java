@@ -200,7 +200,7 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -215,7 +215,7 @@ public class LeekArrayAccess extends Expression {
 		expr.writeJavaCode(mainblock, writer);
 
 		// writer.compileClone(mainblock, expr);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -226,7 +226,7 @@ public class LeekArrayAccess extends Expression {
 		mTabular.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		mCase.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 
@@ -238,7 +238,7 @@ public class LeekArrayAccess extends Expression {
 		mTabular.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		mCase.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -249,7 +249,7 @@ public class LeekArrayAccess extends Expression {
 		mTabular.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		mCase.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -260,7 +260,7 @@ public class LeekArrayAccess extends Expression {
 		mTabular.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		mCase.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -273,7 +273,7 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -286,7 +286,7 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -299,7 +299,7 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -312,7 +312,7 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -325,7 +325,7 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -338,7 +338,7 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -351,7 +351,7 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -364,9 +364,8 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
-
 
 	@Override
 	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
@@ -378,9 +377,8 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
-
 
 	@Override
 	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
@@ -392,7 +390,7 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -405,7 +403,7 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -418,7 +416,7 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
@@ -431,7 +429,7 @@ public class LeekArrayAccess extends Expression {
 		mCase.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer);
-		writer.addCode(")");
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	public void setLeftValue(boolean b) {
