@@ -1532,8 +1532,8 @@ public class WordCompiler {
 	}
 
 	public String getCurrentClassVariable() {
-		if (mCurentBlock instanceof ClassMethodBlock) {
-			return "u_" + ((ClassMethodBlock) mCurentBlock).getClassDeclaration().getName();
+		if (mCurrentClass != null) {
+			return "u_" + mCurrentClass.getName();
 		}
 		return "null";
 	}
