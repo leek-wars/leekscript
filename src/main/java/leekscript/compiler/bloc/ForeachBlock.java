@@ -87,13 +87,13 @@ public class ForeachBlock extends AbstractLeekBlock {
 		writer.addLine("var " + it + " = iterator(" + ar + "); while (" + it + ".hasNext()) { var " + var + " = " + it + ".next(); ");
 
 		if (mainblock.getVersion() >= 4) {
-			if (iteratorVariable.getDeclaration().isCaptured()) {
+			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
 				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
 			} else {
 				writer.addLine(iterator_name + " = " + var + ".getValue();");
 			}
 		} else if (mainblock.getVersion() >= 2) {
-			if (iteratorVariable.getDeclaration().isCaptured()) {
+			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
 				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
 			} else {
 				writer.addLine(iterator_name + " = " + var + ".getValue();");
@@ -101,7 +101,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		} else {
 			if (mReference) {
 				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
-			} else if (iteratorVariable.getDeclaration().isCaptured()) {
+			} else if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
 				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
 				writer.addCounter(1);
 			} else {
