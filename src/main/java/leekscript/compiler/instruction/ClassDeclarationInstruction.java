@@ -864,7 +864,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			return parent.getStaticMember(token);
 		}
 		if (!this.token.getWord().equals("Class")) {
-			return mainBlock.getUserClass("Class").getMember(token);
+			return mainBlock.getUserClass("Class").getStaticMember(token);
 		}
 		return null;
 	}

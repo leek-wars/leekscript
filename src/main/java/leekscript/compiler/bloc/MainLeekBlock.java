@@ -56,12 +56,12 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 		if (ai.getVersion() >= 2) {
 			var classClass = new ClassDeclarationInstruction(new Token("Class"), 0, ai, true, this);
-			classClass.addField(wordCompiler, new Token("name"), Type.STRING, null, AccessLevel.PUBLIC, true);
-			classClass.addField(wordCompiler, new Token("super"), Type.CLASS, null, AccessLevel.PUBLIC, true);
-			classClass.addField(wordCompiler, new Token("fields"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
-			classClass.addField(wordCompiler, new Token("staticFields"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
-			classClass.addField(wordCompiler, new Token("methods"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
-			classClass.addField(wordCompiler, new Token("staticMethods"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
+			classClass.addStaticField(wordCompiler, new Token("name"), Type.STRING, null, AccessLevel.PUBLIC, true);
+			classClass.addStaticField(wordCompiler, new Token("super"), Type.CLASS, null, AccessLevel.PUBLIC, true);
+			classClass.addStaticField(wordCompiler, new Token("fields"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
+			classClass.addStaticField(wordCompiler, new Token("staticFields"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
+			classClass.addStaticField(wordCompiler, new Token("methods"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
+			classClass.addStaticField(wordCompiler, new Token("staticMethods"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
 			addClass(classClass);
 		}
 
