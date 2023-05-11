@@ -1,7 +1,5 @@
 package leekscript;
 
-import com.alibaba.fastjson.JSONArray;
-
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
