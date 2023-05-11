@@ -696,8 +696,8 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			current = current.parent;
 		}
 		for (int i = classes.size() - 1; i >= 0; --i) {
-			var clazz = classes.get(i);
-			for (var field : clazz.fields.entrySet()) {
+			// var clazz = classes.get(i);
+			// for (var field : clazz.fields.entrySet()) {
 				// writer.addCode("u_this.addField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
 				// if (field.getValue().expression != null) {
 				// 	field.getValue().expression.writeJavaCode(mainblock, writer);
@@ -705,7 +705,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				// 	writer.addCode("null");
 				// }
 				// writer.addLine(", AccessLevel." + field.getValue().level + ", " + field.getValue().isFinal + ");");
-			}
+			// }
 		}
 		writer.addLine("return null;");
 		writer.addLine("}};");
@@ -815,12 +815,12 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			parent.writeFields(mainblock, writer, className);
 		}
 
-		for (Entry<String, ClassDeclarationField> field : fields.entrySet()) {
+		// for (Entry<String, ClassDeclarationField> field : fields.entrySet()) {
 			// writer.addCode(className);
 			// writer.addCode(".addField(\"" + field.getKey() + "\"");
 			// writer.addCode(", AccessLevel." + field.getValue().level + ", " + field.getValue().isFinal);
 			// writer.addLine(");");
-		}
+		// }
 	}
 
 	public Token getParentToken() {

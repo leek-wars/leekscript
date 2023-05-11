@@ -1,7 +1,6 @@
 package leekscript.runner;
 
 import leekscript.AILog;
-import leekscript.ErrorManager;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.LineMapping;
 import leekscript.compiler.RandomGenerator;
@@ -22,7 +21,6 @@ import leekscript.common.Type;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.annotation.Native;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
@@ -30,7 +28,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
