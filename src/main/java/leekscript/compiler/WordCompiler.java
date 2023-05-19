@@ -994,23 +994,18 @@ public class WordCompiler {
 			if (parenthesis) {
 				if (mCompiler.token().getType() == WordParser.T_ARROW) {
 					surroudingParenthesis = true;
-					mCompiler.skipToken();
 				} else {
 					if (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
 						throw new LeekCompilerException(mCompiler.token(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
 					}
 					mCompiler.skipToken();
-					if (mCompiler.token().getType() != WordParser.T_ARROW) {
-						throw new LeekCompilerException(mCompiler.token(), Error.ARROW_EXPECTED);
-					}
-					mCompiler.skipToken();
 				}
-			} else {
-				if (mCompiler.token().getType() != WordParser.T_ARROW) {
-					throw new LeekCompilerException(mCompiler.token(), Error.ARROW_EXPECTED);
-				}
-				mCompiler.skipToken();
 			}
+
+			if (mCompiler.token().getType() != WordParser.T_ARROW) {
+				throw new LeekCompilerException(mCompiler.token(), Error.ARROW_EXPECTED);
+			}
+			mCompiler.skipToken();
 
 			// boolean surroudingCurlyBracket = false;
 			if (mCompiler.token().getType() == WordParser.T_ACCOLADE_LEFT) {
