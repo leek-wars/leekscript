@@ -424,8 +424,9 @@ public class WordCompiler {
 			throw new LeekCompilerException(mCompiler.token(), Error.VARIABLE_NAME_EXPECTED);
 		Token varName = mCompiler.eatToken();
 
-		// Maintenant on va savoir si on a affaire à un for (i in array) ou à un for(i=0;i<...
-		if (mCompiler.token().getWord().equals(":")) { // C'est un for (key:value in array)
+		// Maintenant on va savoir si on a affaire à un for (i in array) ou à un
+		// for(i=0;i<...
+		if (mCompiler.token().getType() == WordParser.T_COLON) { // C'est un for (key:value in array)
 			mCompiler.skipToken();
 			boolean isValueDeclaration = false;
 			if (mCompiler.token().getWord().equals("var")) { // Il y a déclaration de la valeur
@@ -1065,16 +1066,16 @@ public class WordCompiler {
 					Expression end = null;
 					Expression stride = null;
 
-					if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+					if (getVersion() >= 4 && mCompiler.token().getType() == WordParser.T_COLON) {
 						colon = mCompiler.eatToken();
-						if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+						if (getVersion() >= 4 && mCompiler.token().getType() == WordParser.T_COLON) {
 							colon2 = mCompiler.eatToken();
 							if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
 								stride = readExpression();
 							}
 						} else if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
 							end = readExpression();
-							if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+							if (getVersion() >= 4 && mCompiler.token().getType() == WordParser.T_COLON) {
 								colon2 = mCompiler.eatToken();
 								if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
 									stride = readExpression();
@@ -1083,16 +1084,16 @@ public class WordCompiler {
 						}
 					} else {
 						start = readExpression();
-						if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+						if (getVersion() >= 4 && mCompiler.token().getType() == WordParser.T_COLON) {
 							colon = mCompiler.eatToken();
-							if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+							if (getVersion() >= 4 && mCompiler.token().getType() == WordParser.T_COLON) {
 								colon2 = mCompiler.eatToken();
 								if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
 									stride = readExpression();
 								}
 							} else if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
 								end = readExpression();
-								if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+								if (getVersion() >= 4 && mCompiler.token().getType() == WordParser.T_COLON) {
 									colon2 = mCompiler.eatToken();
 									if (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
 										stride = readExpression();
@@ -1187,7 +1188,7 @@ public class WordCompiler {
 					var token = mCompiler.eatToken();
 					var array = new LeekArray(token);
 
-					if (mCompiler.token().getWord().equals(":")) {
+					if (mCompiler.token().getType() == WordParser.T_COLON) {
 						// [:] map vide
 						array.mIsKeyVal = true;
 						array.type = Type.MAP;
@@ -1197,7 +1198,7 @@ public class WordCompiler {
 						int type = 0;// 0 => A déterminer, 1 => Simple, 2 => Clé:valeur
 						while (mCompiler.token().getType() != WordParser.T_BRACKET_RIGHT) {
 							var exp = readExpression(true);
-							if (mCompiler.token().getWord().equals(":")) {
+							if (mCompiler.token().getType() == WordParser.T_COLON) {
 								if (type == 0)
 									type = 2;
 								else if (type == 1)
@@ -1236,7 +1237,7 @@ public class WordCompiler {
 						String key = mCompiler.token().getWord();
 						mCompiler.skipToken();
 
-						if (!mCompiler.token().getWord().equals(":")) {
+						if (mCompiler.token().getType() != WordParser.T_COLON) {
 							throw new LeekCompilerException(mCompiler.token(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
 						}
 						mCompiler.skipToken();
