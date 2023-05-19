@@ -35,8 +35,6 @@ public enum LeekConstants implements ILeekConstant {
 	TYPE_OBJECT(7, Type.INT),
 	TYPE_MAP(8, Type.INT);
 
-	private static HashMap<String, ILeekConstant> extraConstants = new HashMap<String, ILeekConstant>();
-
 	private double value;
 	private Type type;
 
@@ -60,24 +58,10 @@ public enum LeekConstants implements ILeekConstant {
 		return type;
 	}
 
-	public static void setExtraConstants(String extraConstantsClass) {
-		try {
-			Class<?> extra = Class.forName(extraConstantsClass);
-			for (Object constant : extra.getEnumConstants()) {
-				extraConstants.put(constant.toString(), (ILeekConstant) constant);
-			}
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-	}
-
 	public static ILeekConstant get(String name) {
 		for (LeekConstants constant : LeekConstants.values()) {
 			if (constant.name().equals(name))
 				return constant;
-		}
-		if (extraConstants.containsKey(name)) {
-			return extraConstants.get(name);
 		}
 		return null;
 	}
