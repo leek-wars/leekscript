@@ -37,13 +37,13 @@ public class WordParser {
 	public final static int T_END_INSTRUCTION = 5;
 	public final static int T_PAR_LEFT = 6;
 	public final static int T_PAR_RIGHT = 7;
-	public final static int T_VIRG = 8;
+	public final static int T_COMMA = 8;
 	public final static int T_CONDITION_OPERATOR = 9;
 	public final static int T_ACCOLADE_LEFT = 10;
 	public final static int T_ACCOLADE_RIGHT = 11;
 	public final static int T_BRACKET_LEFT = 12;
 	public final static int T_BRACKET_RIGHT = 13;
-	public final static int T_DOUBLE_POINT = 14;
+	public final static int T_COLON = 14;
 	public final static int T_DOT = 15;
 	public final static int T_ARROW = 16;
 	public final static int T_END_OF_FILE = 17;
@@ -362,7 +362,7 @@ public class WordParser {
 					word = "";
 					type = T_NOTHING;
 				}
-				newWord(",", T_VIRG);
+				newWord(",", T_COMMA);
 			} else {
 				// Tout autre caractère
 				if (type == T_VAR_STRING) {
@@ -494,8 +494,10 @@ public class WordParser {
 				System.out.println("t is null");
 			}
 			var ty = t.getType();
-			if (ty == WordParser.T_END_OF_FILE) return -1;
-			if (ty == WordParser.T_DOUBLE_POINT) break;
+			if (ty == WordParser.T_END_OF_FILE)
+				return -1;
+			if (ty == WordParser.T_COLON)
+				break;
 		}
 		return p - 1;
 	}

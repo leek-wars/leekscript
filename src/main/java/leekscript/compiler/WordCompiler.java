@@ -77,7 +77,7 @@ public class WordCompiler {
 						mCompiler.skipToken();
 						readExpression(true);
 					}
-					while (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_VIRG) {
+					while (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_COMMA) {
 						mCompiler.skipToken();
 						global = mCompiler.eatToken();
 						if (!isGlobalAvailable(global) || mMain.hasDeclaredGlobal(global.getWord())) {
@@ -118,7 +118,7 @@ public class WordCompiler {
 						parameters.add(parameter.getWord());
 						param_count++;
 
-						if (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_VIRG) {
+						if (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_COMMA) {
 							mCompiler.skipToken();
 						}
 					}
@@ -352,16 +352,16 @@ public class WordCompiler {
 			mCompiler.skipToken();
 			Type type = Type.ANY;
 
-			if (mCompiler.token().getType() == WordParser.T_VIRG) {
+			if (mCompiler.token().getType() == WordParser.T_COMMA) {
 				mCompiler.skipToken();
 			}
 			// else if (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
-				// type = parseType(parameter.getWord());
-				// parameter = mCompiler.token();
-			// 	mCompiler.skipToken();
-			// 	if (mCompiler.token().getType() == WordParser.T_VIRG) {
-			// 		mCompiler.skipToken();
-			// 	}
+			// type = parseType(parameter.getWord());
+			// parameter = mCompiler.token();
+			// mCompiler.skipToken();
+			// if (mCompiler.token().getType() == WordParser.T_COMMA) {
+			// mCompiler.skipToken();
+			// }
 			// }
 
 			block.addParameter(this, parameter, is_reference, type);
@@ -646,7 +646,7 @@ public class WordCompiler {
 		// On ajoute la variable
 		mMain.addGlobalDeclaration(variable);
 		mCurentBlock.addInstruction(this, variable);
-		while (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_VIRG) {
+		while (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_COMMA) {
 			// On regarde si y'en a d'autres
 			mCompiler.skipToken();// On passe la virgule
 			word = mCompiler.eatToken();
@@ -697,8 +697,7 @@ public class WordCompiler {
 		}
 		mCurentBlock.addInstruction(this, variable);
 
-
-		while (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_VIRG) {
+		while (mCompiler.haveWords() && mCompiler.token().getType() == WordParser.T_COMMA) {
 			// On regarde si y'en a d'autres
 			mCompiler.skipToken();// On passe la virgule
 			word = mCompiler.eatToken();
@@ -894,7 +893,7 @@ public class WordCompiler {
 			method.addParameter(this, param, equal, defaultValue);
 			param_count++;
 
-			if (mCompiler.token().getType() == WordParser.T_VIRG) {
+			if (mCompiler.token().getType() == WordParser.T_COMMA) {
 				mCompiler.skipToken();
 			}
 		}
@@ -956,10 +955,11 @@ public class WordCompiler {
 		var t3 = mCompiler.token(2).getType();
 		var t4 = mCompiler.token(3).getType();
 		if (t1 == WordParser.T_ARROW // =>
-		 || (!inList && t1 == WordParser.T_STRING && t2 == WordParser.T_VIRG) // x,
-		 || (t1 == WordParser.T_PAR_LEFT && t2 == WordParser.T_STRING && t3 == WordParser.T_VIRG) // (x,
-		 || (t1 == WordParser.T_STRING && t2 == WordParser.T_ARROW) // x =>
-		 || (t1 == WordParser.T_PAR_LEFT && t2 == WordParser.T_STRING && t3 == WordParser.T_PAR_RIGHT && t4 == WordParser.T_ARROW) // (x) =>
+				|| (!inList && t1 == WordParser.T_STRING && t2 == WordParser.T_COMMA) // x,
+				|| (t1 == WordParser.T_PAR_LEFT && t2 == WordParser.T_STRING && t3 == WordParser.T_COMMA) // (x,
+				|| (t1 == WordParser.T_STRING && t2 == WordParser.T_ARROW) // x =>
+				|| (t1 == WordParser.T_PAR_LEFT && t2 == WordParser.T_STRING && t3 == WordParser.T_PAR_RIGHT
+						&& t4 == WordParser.T_ARROW) // (x) =>
 		) {
 			Token token = null;
 			boolean parenthesis = false;
@@ -984,7 +984,7 @@ public class WordCompiler {
 				mCompiler.skipToken();
 				Type type = Type.ANY;
 
-				if (mCompiler.token().getType() == WordParser.T_VIRG) {
+				if (mCompiler.token().getType() == WordParser.T_COMMA) {
 					mCompiler.skipToken();
 				}
 				block.addParameter(this, parameter, false, type);
@@ -1114,7 +1114,7 @@ public class WordCompiler {
 
 					while (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
 						function.addParameter(readExpression(true));
-						if (mCompiler.token().getType() == WordParser.T_VIRG)
+						if (mCompiler.token().getType() == WordParser.T_COMMA)
 							mCompiler.skipToken();
 					}
 					if (mCompiler.haveWords() && mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
@@ -1213,7 +1213,7 @@ public class WordCompiler {
 									throw new LeekCompilerException(mCompiler.token(), Error.ASSOCIATIVE_ARRAY);
 								array.addValue(exp);
 							}
-							if (mCompiler.token().getType() == WordParser.T_VIRG)
+							if (mCompiler.token().getType() == WordParser.T_COMMA)
 								mCompiler.skipToken();
 						}
 					}
@@ -1244,7 +1244,7 @@ public class WordCompiler {
 						var value = readExpression(true);
 						object.addEntry(key, value);
 
-						if (mCompiler.token().getType() == WordParser.T_VIRG) {
+						if (mCompiler.token().getType() == WordParser.T_COMMA) {
 							mCompiler.skipToken();
 						}
 					}
@@ -1382,16 +1382,16 @@ public class WordCompiler {
 			mCompiler.skipToken();
 			Type type = Type.ANY;
 
-			if (mCompiler.token().getType() == WordParser.T_VIRG) {
+			if (mCompiler.token().getType() == WordParser.T_COMMA) {
 				mCompiler.skipToken();
 			}
 			// else if (mCompiler.token().getType() != WordParser.T_PAR_RIGHT) {
-			// 	type = parseType(parameter.getWord());
-			// 	parameter = mCompiler.token();
-			// 	mCompiler.skipToken();
-			// 	if (mCompiler.token().getType() == WordParser.T_VIRG) {
-			// 		mCompiler.skipToken();
-			// 	}
+			// type = parseType(parameter.getWord());
+			// parameter = mCompiler.token();
+			// mCompiler.skipToken();
+			// if (mCompiler.token().getType() == WordParser.T_COMMA) {
+			// mCompiler.skipToken();
+			// }
 			// }
 
 			block.addParameter(this, parameter, is_reference, type);
