@@ -54,6 +54,12 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		ai.increaseRAM(2 * size());
 	}
 
+	public MapLeekValue withMapKeyValue(AI ai, Object key, Object value) throws LeekRunException {
+		put(key, value);
+		ai.increaseRAM(2);
+		return this;
+	}
+
 	@Override
 	public void set(AI ai, Object key, Object value) {
 		put(key, value);

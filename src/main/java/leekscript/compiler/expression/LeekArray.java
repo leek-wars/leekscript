@@ -108,24 +108,21 @@ public class LeekArray extends Expression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		boolean passIsKeyValAsParameter = mainblock.getVersion() < 4;
 		String klass = mainblock.getVersion() < 4 ? "LegacyArrayLeekValue"
 				: (mIsKeyVal ? "MapLeekValue" : "ArrayLeekValue");
 
-		writer.addCode("new " + klass + "(" + writer.getAIThis() + ", new Object[] { ");
+		// Passing the size in the constructor of MapLeekValue messed up the order of
+		// the keys, so tests fails, although it might be fine to still do it
+		boolean passSizeInConstructor = !klass.equals("MapLeekValue");
 
-		boolean first = true;
-		for (var element : mElements) {
-			if (!first)
-				writer.addCode(", ");
-			element.writeJavaCode(mainblock, writer);
-			first = false;
+		writer.addCode("new " + klass + "(" + writer.getAIThis());
+		if (passSizeInConstructor) {
+			writer.addCode(", " + mElements.size());
 		}
+		writer.addCode(")");
 
-		if (passIsKeyValAsParameter) {
-			writer.addCode(" }, " + (mIsKeyVal ? "true" : "false") + ")");
-		} else {
-			writer.addCode(" })");
+		for (var element : mElements) {
+			element.writeJavaCode(mainblock, writer);
 		}
 	}
 
@@ -184,7 +181,9 @@ public class LeekArray extends Expression {
 		}
 
 		public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+			writer.addCode(".withArrayValue(" + writer.getAIThis() + ", ");
 			value.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
 		}
 	}
 
@@ -224,9 +223,11 @@ public class LeekArray extends Expression {
 		}
 
 		public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+			writer.addCode(".withMapKeyValue(" + writer.getAIThis() + ", ");
 			key.writeJavaCode(mainblock, writer);
 			writer.addCode(", ");
 			value.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
 		}
 	}
 }

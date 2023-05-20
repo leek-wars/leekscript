@@ -150,6 +150,12 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
+	public ArrayLeekValue withArrayValue(AI ai, Object value) throws LeekRunException {
+		add(value);
+		ai.increaseRAM(1);
+		return this;
+	}
+
 	public long count(AI ai) {
 		return size();
 	}

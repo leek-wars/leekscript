@@ -324,7 +324,12 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	private int capacity = 0;
 	private Element[] mTable = null;
 
-	public LegacyArrayLeekValue() {}
+	public LegacyArrayLeekValue() {
+	}
+
+	public LegacyArrayLeekValue(AI ai, int capacity) throws LeekRunException {
+		initTable(ai, capacity);
+	}
 
 	public LegacyArrayLeekValue(AI ai, Object values[]) throws LeekRunException {
 		this(ai, values, false);
@@ -364,6 +369,16 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 				e = e.next;
 			}
 		}
+	}
+
+	public LegacyArrayLeekValue withArrayValue(AI ai, Object value) throws LeekRunException {
+		pushNoClone(ai, value);
+		return this;
+	}
+
+	public LegacyArrayLeekValue withMapKeyValue(AI ai, Object key, Object value) throws LeekRunException {
+		getOrCreate(ai, key).set(value);
+		return this;
 	}
 
 	public Object put(AI ai, Object keyValue, Object value) throws LeekRunException {
