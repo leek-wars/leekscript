@@ -181,7 +181,7 @@ public class WordParser {
 				if (type != T_NOTHING) {
 					newWord(word, type, -1);
 				}
-				newWord(":", T_OPERATOR);
+				newWord(":", T_COLON);
 				word = "";
 				type = T_NOTHING;
 			} else if (c == '.') {

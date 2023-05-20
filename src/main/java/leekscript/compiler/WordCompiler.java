@@ -1130,14 +1130,14 @@ public class WordCompiler {
 					var name = mCompiler.token();
 					retour.addObjectAccess(dot, name);
 
-				} else if (word.getType() == WordParser.T_OPERATOR) {
+				} else if (word.getType() == WordParser.T_OPERATOR || word.getType() == WordParser.T_COLON) {
 					int operator = Operators.getOperator(word.getWord(), getVersion());
 
 					// Là c'est soit un opérateur (+ - ...) soit un suffix
 					// unaire (++ -- ) sinon on sort de l'expression
 					if (Operators.isUnaryPrefix(operator))
 						break;
-					if (operator == Operators.DOUBLE_POINT && !retour.hasTernaire())
+					if (operator == Operators.COLON && !retour.hasTernaire())
 						break;
 
 					if (Operators.isUnarySuffix(operator))

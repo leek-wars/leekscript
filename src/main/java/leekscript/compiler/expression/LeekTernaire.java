@@ -160,7 +160,7 @@ public class LeekTernaire extends LeekExpression {
 	@Override
 	public boolean complete(int operator) {
 		if(!complete()) return false;
-		if(operator >= Operators.getPriority(Operators.DOUBLE_POINT)) return false;
+		if(operator >= Operators.getPriority(Operators.COLON)) return false;
 		return true;
 	}
 
@@ -179,7 +179,7 @@ public class LeekTernaire extends LeekExpression {
 			mOperator = 1;
 		}
 		else if(mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete()) ((LeekExpression) mExpression1).addOperator(operator, token);
-		else if(mOperator == 1 && operator == Operators.DOUBLE_POINT){
+		else if(mOperator == 1 && operator == Operators.COLON){
 			mOperator = 2;
 		}
 		else{
