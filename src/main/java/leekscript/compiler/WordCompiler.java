@@ -1208,7 +1208,10 @@ public class WordCompiler {
 								var value = readExpression(true);
 								array.addValue(this, exp, colon, value);
 							} else if (mCompiler.token().getType() == WordParser.T_DOT_DOT) {
-								// Interval
+								if (getVersion() < 4) {
+									throw new LeekCompilerException(mCompiler.token(), Error.UNKNOWN_OPERATOR);
+								}
+								
 								if (type == 2)
 									throw new LeekCompilerException(mCompiler.token(), Error.ASSOCIATIVE_ARRAY);
 								type = 1;
@@ -1218,7 +1221,6 @@ public class WordCompiler {
 								var start = exp;
 								var end = readExpression(true);
 								array.addInterval(this, start, end);
-								System.out.println("Interval");
 							} else {
 								if (type == 0)
 									type = 1;

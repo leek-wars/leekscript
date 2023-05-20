@@ -114,6 +114,10 @@ public class WordParser {
 						word = "";
 						type = T_NOTHING;
 					}
+				} else if (type == T_DOT) {
+					newWord(word, type, -1);
+					word = "" + c;
+					type = T_STRING;
 				} else if (type == T_VAR_STRING) {
 					word += c;
 				} else {
@@ -153,6 +157,10 @@ public class WordParser {
 			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' || (c >= 'À' &&  c <= 'Ö') || (c >= 'Ø' && c <= 'Ý') || (c >= 'à' && c <= 'ö') || (c >= 'ø' && c <= 'ý') || c == 'ÿ' || (c >= 'Œ' && c <= 'œ')) {
 				if (type == T_NOTHING) {
 					word += c;
+					type = T_STRING;
+				} else if (type == T_DOT) {
+					newWord(word, type, -1);
+					word = "" + c;
 					type = T_STRING;
 				} else if (type == T_STRING || type == T_VAR_STRING) {
 					word += c;
@@ -202,12 +210,12 @@ public class WordParser {
 						type = T_DOT;
 					}
 				} else if (version >= 2) {
-					if (type == T_STRING) {
+					if (type != T_NOTHING) {
+						System.out.println("Emit");
 						newWord(word, type, -1);
 					}
-					newWord(".", T_DOT);
-					word = "";
-					type = T_NOTHING;
+					word = "" + c;
+					type = T_DOT;
 				} else {
 					compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 				}

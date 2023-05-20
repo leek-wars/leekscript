@@ -27,6 +27,7 @@ public class TestMain {
 		new TestGeneral().run();
 		new TestNumber().run();
 		new TestString().run();
+		new TestInterval().run();
 		new TestArray().run();
 		new TestArrayStress().run();
 		new TestMap().run();
