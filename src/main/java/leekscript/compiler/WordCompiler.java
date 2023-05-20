@@ -1207,6 +1207,18 @@ public class WordCompiler {
 								mCompiler.skipToken();
 								var value = readExpression(true);
 								array.addValue(this, exp, colon, value);
+							} else if (mCompiler.token().getType() == WordParser.T_DOT_DOT) {
+								// Interval
+								if (type == 2)
+									throw new LeekCompilerException(mCompiler.token(), Error.ASSOCIATIVE_ARRAY);
+								type = 1;
+
+								mCompiler.skipToken();
+
+								var start = exp;
+								var end = readExpression(true);
+								array.addInterval(this, start, end);
+								System.out.println("Interval");
 							} else {
 								if (type == 0)
 									type = 1;

@@ -45,8 +45,9 @@ public class WordParser {
 	public final static int T_BRACKET_RIGHT = 13;
 	public final static int T_COLON = 14;
 	public final static int T_DOT = 15;
-	public final static int T_ARROW = 16;
-	public final static int T_END_OF_FILE = 17;
+	public final static int T_DOT_DOT = 16;
+	public final static int T_ARROW = 17;
+	public final static int T_END_OF_FILE = 18;
 
 	private final AIFile mAI;
 
@@ -185,13 +186,20 @@ public class WordParser {
 				word = "";
 				type = T_NOTHING;
 			} else if (c == '.') {
-				if (type == T_VAR_STRING) {
+				if (type == T_DOT) {
+					word += c;
+					newWord(word, T_DOT_DOT);
+					word = "";
+					type = T_NOTHING;
+				} else if (type == T_VAR_STRING) {
 					word += c;
 				} else if (type == T_NUMBER) {
-					if (word.contains(".")) {
-						compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
-					} else {
+					if (i + 1 < length && code.charAt(i + 1) >= '0' && code.charAt(i + 1) <= '9') {
 						word += c;
+					} else {
+						newWord(word, type, -1);
+						word = "" + c;
+						type = T_DOT;
 					}
 				} else if (version >= 2) {
 					if (type == T_STRING) {

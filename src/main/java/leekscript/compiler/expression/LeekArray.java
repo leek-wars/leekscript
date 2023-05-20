@@ -25,14 +25,14 @@ public class LeekArray extends Expression {
 		this.openingBracket = openingBracket;
 	}
 
-	public void addValue(Expression value) {
-		mElements.add(new LeekArrayValue(value));
-	}
-
 	public void setClosingBracket(Token closingBracket) {
 		this.closingBracket = closingBracket;
 		closingBracket.setExpression(this);
 		openingBracket.setExpression(this);
+	}
+
+	public void addValue(Expression value) {
+		mElements.add(new LeekArrayValue(value));
 	}
 
 	public void addValue(WordCompiler compiler, Expression key, Token keyToken, Expression value) {
@@ -44,6 +44,10 @@ public class LeekArray extends Expression {
 		if (compiler.getVersion() >= 4) {
 			type = Type.MAP;
 		}
+	}
+
+	public void addInterval(WordCompiler compiler, Expression start, Expression end) {
+		mElements.add(new LeekArrayInterval(start, end));
 	}
 
 	private void verifyDuplicatedKeys(WordCompiler compiler, Expression key, Token keyToken) {
@@ -183,6 +187,46 @@ public class LeekArray extends Expression {
 		public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 			writer.addCode(".withArrayValue(" + writer.getAIThis() + ", ");
 			value.writeJavaCode(mainblock, writer);
+			writer.addCode(")");
+		}
+	}
+
+	private final class LeekArrayInterval extends LeekArrayElement {
+		private final Expression start;
+		private final Expression end;
+
+		private LeekArrayInterval(Expression start, Expression end) {
+			this.start = start;
+			this.end = end;
+		}
+
+		public String toString() {
+			return start.toString() + ".." + end.toString();
+		}
+
+		public void preAnalyze(WordCompiler compiler) {
+			start.preAnalyze(compiler);
+			end.preAnalyze(compiler);
+		}
+
+		public void analyze(WordCompiler compiler) {
+			start.analyze(compiler);
+			end.analyze(compiler);
+		}
+
+		public int getOperations() {
+			return 2 + start.getOperations() + end.getOperations();
+		}
+
+		public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+			return start.validExpression(compiler, mainblock) && end.validExpression(compiler, mainblock);
+		}
+
+		public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+			writer.addCode(".withArrayInterval(" + writer.getAIThis() + ", ");
+			start.writeJavaCode(mainblock, writer);
+			writer.addCode(", ");
+			end.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		}
 	}

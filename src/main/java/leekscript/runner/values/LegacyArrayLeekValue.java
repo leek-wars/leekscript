@@ -376,6 +376,17 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return this;
 	}
 
+	public LegacyArrayLeekValue withArrayInterval(AI ai, Object start, Object end) throws LeekRunException {
+		var startInt = ai.longint(start);
+		var endInt = ai.longint(end);
+
+		for (long i = startInt; i <= endInt; i++) {
+			pushNoClone(ai, i);
+			ai.increaseRAM(1);
+		}
+		return this;
+	}
+
 	public LegacyArrayLeekValue withMapKeyValue(AI ai, Object key, Object value) throws LeekRunException {
 		getOrCreate(ai, key).set(value);
 		return this;

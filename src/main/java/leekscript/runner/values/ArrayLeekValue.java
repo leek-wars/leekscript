@@ -156,6 +156,17 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return this;
 	}
 
+	public ArrayLeekValue withArrayInterval(AI ai, Object start, Object end) throws LeekRunException {
+		var startInt = ai.longint(start);
+		var endInt = ai.longint(end);
+
+		for (long i = startInt; i <= endInt; i++) {
+			add(i);
+			ai.increaseRAM(1);
+		}
+		return this;
+	}
+
 	public long count(AI ai) {
 		return size();
 	}
