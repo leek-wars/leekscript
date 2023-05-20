@@ -41,5 +41,8 @@ public class TestInterval extends TestCommon {
 		code_v4_("return [[[1..2]]][0][0][0]").equals("1");
 		code_v4_("return [[-5..-2][-1]..[2..3][1]]").equals("[-2, -1, 0, 1, 2, 3]");
 
+		section("Interval available only in v4");
+		code_v1_3("return [1..3]").error(Error.UNKNOWN_OPERATOR);
+
 	}
 }
