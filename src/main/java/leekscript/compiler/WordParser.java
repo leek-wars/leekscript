@@ -202,7 +202,7 @@ public class WordParser {
 				} else if (type == T_VAR_STRING) {
 					word += c;
 				} else if (type == T_NUMBER) {
-					if (i + 1 < length && code.charAt(i + 1) >= '0' && code.charAt(i + 1) <= '9') {
+					if (i + 1 < length && code.charAt(i + 1) != '.') {
 						word += c;
 					} else {
 						newWord(word, type, -1);
