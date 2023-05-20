@@ -163,6 +163,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		for (long i = startInt; i <= endInt; i++) {
 			add(i);
 			ai.increaseRAM(1);
+			ai.ops(2);
 		}
 		return this;
 	}
