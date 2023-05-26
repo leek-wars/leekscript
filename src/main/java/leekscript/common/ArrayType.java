@@ -22,17 +22,17 @@ public class ArrayType extends Type {
 
 	@Override
 	public String getJavaPrimitiveName(int version) {
-		return version >= 4 ? "ArrayLeekValue" : "HybridContainerLeekValue";
+		return version >= 4 ? "ArrayLeekValue" : "LegacyHybridContainerLeekValue";
 	}
 
 	@Override
 	public String getDefaultValue(JavaWriter writer, int version) {
-		return version >= 4 ? "new ArrayLeekValue(" + writer.getAIThis() + ")" : "new HybridContainerLeekValue()";
+		return version >= 4 ? "new ArrayLeekValue(" + writer.getAIThis() + ")" : "new LegacyHybridContainerLeekValue()";
 	}
 
 	@Override
 	public String getJavaName(int version) {
-		return version >= 4 ? "ArrayLeekValue" : "HybridContainerLeekValue";
+		return version >= 4 ? "ArrayLeekValue" : "LegacyHybridContainerLeekValue";
 	}
 
 	public Type element() {

@@ -20,7 +20,7 @@ import leekscript.compiler.bloc.WhileBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekAnonymousFunction;
-import leekscript.compiler.expression.LeekHybridContainer;
+import leekscript.compiler.expression.LeekLegacyHybridContainer;
 import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
@@ -1208,7 +1208,7 @@ public class WordCompiler {
 				} else if (word.getType() == WordParser.T_BRACKET_LEFT) {
 					// Déclaration d'un tableau
 					var token = mCompiler.eatToken();
-					var array = new LeekHybridContainer(token);
+					var array = new LeekLegacyHybridContainer(token);
 
 					if (mCompiler.token().getWord().equals(":")) {
 						// [:] map vide

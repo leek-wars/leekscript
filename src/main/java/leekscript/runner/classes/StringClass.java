@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.values.ArrayLeekValue;
-import leekscript.runner.values.HybridContainerLeekValue;
+import leekscript.runner.values.LegacyHybridContainerLeekValue;
 
 public class StringClass {
 
@@ -69,14 +69,15 @@ public class StringClass {
 		return string.contains(needle);
 	}
 
-	public static HybridContainerLeekValue split_v1_3(AI ai, String string, String delimiter) throws LeekRunException {
+	public static LegacyHybridContainerLeekValue split_v1_3(AI ai, String string, String delimiter)
+			throws LeekRunException {
 		return split_v1_3(ai, string, delimiter, 0);
 	}
 
-	public static HybridContainerLeekValue split_v1_3(AI ai, String string, String delimiter, long limit)
+	public static LegacyHybridContainerLeekValue split_v1_3(AI ai, String string, String delimiter, long limit)
 			throws LeekRunException {
 		ai.ops(1 + string.length());
-		var result = new HybridContainerLeekValue();
+		var result = new LegacyHybridContainerLeekValue();
 		for (var element : string.split(Pattern.quote(delimiter), (int) limit)) {
 			result.pushNoClone(ai, element);
 		}

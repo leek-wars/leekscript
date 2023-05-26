@@ -21,7 +21,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-public class HybridContainerLeekValue
+public class LegacyHybridContainerLeekValue
 		implements Iterable<Entry<Object, Object>>, GenericArrayLeekValue, GenericMapLeekValue {
 
 	public final static int ARRAY_CELL_ACCESS_OPERATIONS = 2;
@@ -145,10 +145,10 @@ public class HybridContainerLeekValue
 			} else if (type1 == LeekValue.STRING_V1) {
 				return ((String) v1).compareTo((String) v2);
 			} else if (type1 == LeekValue.ARRAY_V1) {
-				var a = (HybridContainerLeekValue) v2;
-				if (((HybridContainerLeekValue) v1).size() == a.size())
+				var a = (LegacyHybridContainerLeekValue) v2;
+				if (((LegacyHybridContainerLeekValue) v1).size() == a.size())
 					return 0;
-				else if (((HybridContainerLeekValue) v1).size() < a.size())
+				else if (((LegacyHybridContainerLeekValue) v1).size() < a.size())
 					return -1;
 				else
 					return 1;
@@ -207,10 +207,10 @@ public class HybridContainerLeekValue
 			} else if (type1 == LeekValue.STRING) {
 				return ((String) v1).compareTo((String) v2);
 			} else if (type1 == LeekValue.ARRAY) {
-				var a = (HybridContainerLeekValue) v2;
-				if (((HybridContainerLeekValue) v1).size() == a.size())
+				var a = (LegacyHybridContainerLeekValue) v2;
+				if (((LegacyHybridContainerLeekValue) v1).size() == a.size())
 					return 0;
-				else if (((HybridContainerLeekValue) v1).size() < a.size())
+				else if (((LegacyHybridContainerLeekValue) v1).size() < a.size())
 					return -1;
 				else
 					return 1;
@@ -328,14 +328,14 @@ public class HybridContainerLeekValue
 	private int capacity = 0;
 	private Element[] mTable = null;
 
-	public HybridContainerLeekValue() {
+	public LegacyHybridContainerLeekValue() {
 	}
 
-	public HybridContainerLeekValue(AI ai, Object values[]) throws LeekRunException {
+	public LegacyHybridContainerLeekValue(AI ai, Object values[]) throws LeekRunException {
 		this(ai, values, false);
 	}
 
-	public HybridContainerLeekValue(AI ai, Object values[], boolean isKeyValue) throws LeekRunException {
+	public LegacyHybridContainerLeekValue(AI ai, Object values[], boolean isKeyValue) throws LeekRunException {
 		if (capacity > 0) {
 			initTable(ai, values.length);
 		}
@@ -352,7 +352,8 @@ public class HybridContainerLeekValue
 		}
 	}
 
-	public HybridContainerLeekValue(AI ai, HybridContainerLeekValue array, int level) throws LeekRunException {
+	public LegacyHybridContainerLeekValue(AI ai, LegacyHybridContainerLeekValue array, int level)
+			throws LeekRunException {
 		if (array.size() > 0) {
 			initTable(ai, array.size());
 			Element e = array.mHead;
@@ -503,8 +504,8 @@ public class HybridContainerLeekValue
 	}
 
 	public boolean equals(AI ai, Object comp) throws LeekRunException {
-		if (comp instanceof HybridContainerLeekValue) {
-			return equals(ai, ((HybridContainerLeekValue) comp));
+		if (comp instanceof LegacyHybridContainerLeekValue) {
+			return equals(ai, ((LegacyHybridContainerLeekValue) comp));
 		} else if (size() == 1) { // Si y'a un seul élément dans le tableau
 			var firstValue = getHeadElement().getValue();
 			if (firstValue == null && comp == null) {
@@ -528,8 +529,8 @@ public class HybridContainerLeekValue
 	}
 
 	public Object add_eq(AI ai, Object value) throws LeekRunException {
-		if (value instanceof HybridContainerLeekValue) {
-			var iterator = ((HybridContainerLeekValue) value).iterator();
+		if (value instanceof LegacyHybridContainerLeekValue) {
+			var iterator = ((LegacyHybridContainerLeekValue) value).iterator();
 			while (iterator.hasNext()) {
 				if (iterator.key() instanceof String || iterator.key() instanceof ObjectLeekValue
 						|| iterator.key() instanceof NativeObjectLeekValue)
@@ -921,21 +922,21 @@ public class HybridContainerLeekValue
 			reindex(ai);
 	}
 
-	public HybridContainerLeekValue arraySort(AI ai) throws LeekRunException {
+	public LegacyHybridContainerLeekValue arraySort(AI ai) throws LeekRunException {
 		ai.ops(1 + (int) (5 * size() * Math.log(size())));
 
-		var array = (HybridContainerLeekValue) LeekOperations.clone(ai, this);
+		var array = (LegacyHybridContainerLeekValue) LeekOperations.clone(ai, this);
 
 		array.sort(ai);
 		return array;
 	}
 
-	public HybridContainerLeekValue arraySort(AI ai, final FunctionLeekValue function) throws LeekRunException {
+	public LegacyHybridContainerLeekValue arraySort(AI ai, final FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + (int) (5 * size() * Math.log(size())));
 		try {
 			int nb = function.getArgumentsCount();
 			if (nb == 2) {
-				var array = (HybridContainerLeekValue) LeekOperations.clone(ai, this);
+				var array = (LegacyHybridContainerLeekValue) LeekOperations.clone(ai, this);
 				array.sort(ai, new Comparator<Element>() {
 					@Override
 					public int compare(Element o1, Element o2) {
@@ -948,7 +949,7 @@ public class HybridContainerLeekValue
 				});
 				return array;
 			} else if (nb == 4) {
-				var array = (HybridContainerLeekValue) LeekOperations.clone(ai, this);
+				var array = (LegacyHybridContainerLeekValue) LeekOperations.clone(ai, this);
 				array.sort(ai, new Comparator<Element>() {
 					@Override
 					public int compare(Element o1, Element o2) {
@@ -1076,7 +1077,7 @@ public class HybridContainerLeekValue
 		return null;
 	}
 
-	public Object pushAll(AI ai, HybridContainerLeekValue other) throws LeekRunException {
+	public Object pushAll(AI ai, LegacyHybridContainerLeekValue other) throws LeekRunException {
 		ai.ops(1 + other.size());
 		for (var value : other) {
 			push(ai, value.getValue());
@@ -1194,11 +1195,11 @@ public class HybridContainerLeekValue
 		return null;
 	}
 
-	public HybridContainerLeekValue subArray(AI ai, long start, long end) throws LeekRunException {
+	public LegacyHybridContainerLeekValue subArray(AI ai, long start, long end) throws LeekRunException {
 		ai.ops(1 + Math.max(0, (int) (end - start)));
 		if (start < 0 || end < start || end >= size())
 			return null;
-		HybridContainerLeekValue retour = new HybridContainerLeekValue();
+		LegacyHybridContainerLeekValue retour = new LegacyHybridContainerLeekValue();
 		int i = 0;
 		for (var val : this) {
 			if (i >= start && i <= end) {
@@ -1296,18 +1297,19 @@ public class HybridContainerLeekValue
 		}
 	}
 
-	public HybridContainerLeekValue arrayConcat(AI ai, HybridContainerLeekValue other) throws LeekRunException {
-		return (HybridContainerLeekValue) ai.add(this, other);
+	public LegacyHybridContainerLeekValue arrayConcat(AI ai, LegacyHybridContainerLeekValue other)
+			throws LeekRunException {
+		return (LegacyHybridContainerLeekValue) ai.add(this, other);
 	}
 
-	public HybridContainerLeekValue arrayPartition(AI ai, FunctionLeekValue function) throws LeekRunException {
+	public LegacyHybridContainerLeekValue arrayPartition(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		if (ai.getVersion() >= 2) {
-			var list1 = new HybridContainerLeekValue();
-			var list2 = new HybridContainerLeekValue();
+			var list1 = new LegacyHybridContainerLeekValue();
+			var list2 = new LegacyHybridContainerLeekValue();
 			int nb = function.getArgumentsCount();
 			if (nb != 1 && nb != 2)
-				return new HybridContainerLeekValue();
+				return new LegacyHybridContainerLeekValue();
 			ArrayIterator iterator = iterator();
 			boolean b;
 			while (iterator.hasNext()) {
@@ -1319,13 +1321,13 @@ public class HybridContainerLeekValue
 				(b ? list1 : list2).getOrCreate(ai, iterator.getKey(ai)).set(iterator.getValue(ai));
 				iterator.next();
 			}
-			return new HybridContainerLeekValue(ai, new Object[] { list1, list2 }, false);
+			return new LegacyHybridContainerLeekValue(ai, new Object[] { list1, list2 }, false);
 		} else {
-			var list1 = new HybridContainerLeekValue();
-			var list2 = new HybridContainerLeekValue();
+			var list1 = new LegacyHybridContainerLeekValue();
+			var list2 = new LegacyHybridContainerLeekValue();
 			int nb = function.getArgumentsCount();
 			if (nb != 1 && nb != 2)
-				return new HybridContainerLeekValue();
+				return new LegacyHybridContainerLeekValue();
 			var iterator = iterator();
 			boolean b;
 			while (iterator.hasNext()) {
@@ -1337,7 +1339,7 @@ public class HybridContainerLeekValue
 				(b ? list1 : list2).getOrCreate(ai, iterator.getKey(ai)).set(iterator.getValue(ai));
 				iterator.next();
 			}
-			return new HybridContainerLeekValue(ai, new Object[] { list1, list2 }, false);
+			return new LegacyHybridContainerLeekValue(ai, new Object[] { list1, list2 }, false);
 		}
 	}
 
@@ -1360,10 +1362,10 @@ public class HybridContainerLeekValue
 		return result;
 	}
 
-	public HybridContainerLeekValue arrayMap(AI ai, FunctionLeekValue function) throws LeekRunException {
+	public LegacyHybridContainerLeekValue arrayMap(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		if (ai.getVersion() >= 2) {
-			var retour = new HybridContainerLeekValue();
+			var retour = new LegacyHybridContainerLeekValue();
 			var iterator = iterator();
 			int nb = function.getArgumentsCount();
 			while (iterator.hasNext()) {
@@ -1377,7 +1379,7 @@ public class HybridContainerLeekValue
 			}
 			return retour;
 		} else {
-			var retour = new HybridContainerLeekValue();
+			var retour = new LegacyHybridContainerLeekValue();
 			var iterator = iterator();
 			int nb = function.getArgumentsCount();
 			while (iterator.hasNext()) {
@@ -1392,10 +1394,10 @@ public class HybridContainerLeekValue
 		}
 	}
 
-	public HybridContainerLeekValue arrayFilter(AI ai, FunctionLeekValue function) throws LeekRunException {
+	public LegacyHybridContainerLeekValue arrayFilter(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		if (ai.getVersion() >= 2) {
-			var retour = new HybridContainerLeekValue();
+			var retour = new LegacyHybridContainerLeekValue();
 			var iterator = iterator();
 			int nb = function.getArgumentsCount();
 			if (nb != 1 && nb != 2)
@@ -1415,7 +1417,7 @@ public class HybridContainerLeekValue
 			}
 			return retour;
 		} else {
-			var retour = new HybridContainerLeekValue();
+			var retour = new LegacyHybridContainerLeekValue();
 			var iterator = iterator();
 			int nb = function.getArgumentsCount();
 			if (nb != 1 && nb != 2)
@@ -1439,22 +1441,23 @@ public class HybridContainerLeekValue
 		}
 	}
 
-	public HybridContainerLeekValue arrayFlatten(AI ai) throws LeekRunException {
+	public LegacyHybridContainerLeekValue arrayFlatten(AI ai) throws LeekRunException {
 		return arrayFlatten(ai, 1);
 	}
 
-	public HybridContainerLeekValue arrayFlatten(AI ai, long depth) throws LeekRunException {
-		var result = new HybridContainerLeekValue();
+	public LegacyHybridContainerLeekValue arrayFlatten(AI ai, long depth) throws LeekRunException {
+		var result = new LegacyHybridContainerLeekValue();
 		flatten_rec(ai, this, result, depth);
 		return result;
 	}
 
-	private void flatten_rec(AI ai, HybridContainerLeekValue array, HybridContainerLeekValue result, long depth)
+	private void flatten_rec(AI ai, LegacyHybridContainerLeekValue array, LegacyHybridContainerLeekValue result,
+			long depth)
 			throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		for (var value : array) {
-			if (value.getValue() instanceof HybridContainerLeekValue && depth > 0) {
-				flatten_rec(ai, (HybridContainerLeekValue) value.getValue(), result, depth - 1);
+			if (value.getValue() instanceof LegacyHybridContainerLeekValue && depth > 0) {
+				flatten_rec(ai, (LegacyHybridContainerLeekValue) value.getValue(), result, depth - 1);
 			} else {
 				result.push(ai, value.getValue());
 			}
@@ -1466,7 +1469,7 @@ public class HybridContainerLeekValue
 	}
 
 	public Object keySort(AI ai, long comparator) throws LeekRunException {
-		int type = comparator == 1 ? HybridContainerLeekValue.DESC_K : HybridContainerLeekValue.ASC_K;
+		int type = comparator == 1 ? LegacyHybridContainerLeekValue.DESC_K : LegacyHybridContainerLeekValue.ASC_K;
 		sort(ai, type);
 		return null;
 	}
@@ -1476,7 +1479,7 @@ public class HybridContainerLeekValue
 	}
 
 	public Object assocSort(AI ai, long comparator) throws LeekRunException {
-		int type = comparator == 0 ? HybridContainerLeekValue.ASC_A : HybridContainerLeekValue.DESC_A;
+		int type = comparator == 0 ? LegacyHybridContainerLeekValue.ASC_A : LegacyHybridContainerLeekValue.DESC_A;
 		sort(ai, type);
 		return null;
 	}
@@ -1551,7 +1554,7 @@ public class HybridContainerLeekValue
 		addToHashMap(ai, e);
 
 		// System.out.println("ops createElement");
-		int operations = HybridContainerLeekValue.ARRAY_CELL_CREATE_OPERATIONS + (int) Math.sqrt(mSize) / 3;
+		int operations = LegacyHybridContainerLeekValue.ARRAY_CELL_CREATE_OPERATIONS + (int) Math.sqrt(mSize) / 3;
 		ai.opsNoCheck(operations);
 
 		return e;
@@ -1605,7 +1608,7 @@ public class HybridContainerLeekValue
 	private Element getElement(AI ai, Object key) throws LeekRunException {
 
 		// System.out.println("ops getElement");
-		int operations = HybridContainerLeekValue.ARRAY_CELL_ACCESS_OPERATIONS;
+		int operations = LegacyHybridContainerLeekValue.ARRAY_CELL_ACCESS_OPERATIONS;
 		ai.opsNoCheck(operations);
 
 		if (mTable == null) {
@@ -1716,7 +1719,7 @@ public class HybridContainerLeekValue
 		return new ReversedPhpIterator();
 	}
 
-	public boolean equals(AI ai, HybridContainerLeekValue array) throws LeekRunException {
+	public boolean equals(AI ai, LegacyHybridContainerLeekValue array) throws LeekRunException {
 
 		ai.ops(1);
 

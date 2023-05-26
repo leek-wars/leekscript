@@ -4,7 +4,7 @@ import leekscript.AILog;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.LineMapping;
 import leekscript.compiler.RandomGenerator;
-import leekscript.runner.values.HybridContainerLeekValue;
+import leekscript.runner.values.LegacyHybridContainerLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.classes.StandardClass;
 import leekscript.runner.values.ArrayLeekValue;
@@ -407,7 +407,7 @@ public abstract class AI {
 		if (version >= 4) {
 			return new ArrayLeekValue(this);
 		} else {
-			return new HybridContainerLeekValue();
+			return new LegacyHybridContainerLeekValue();
 		}
 	}
 
@@ -415,7 +415,7 @@ public abstract class AI {
 		if (version >= 4) {
 			return new ArrayLeekValue(this, capacity);
 		} else {
-			return new HybridContainerLeekValue();
+			return new LegacyHybridContainerLeekValue();
 		}
 	}
 
@@ -423,7 +423,7 @@ public abstract class AI {
 		if (version >= 4) {
 			return new MapLeekValue(ai);
 		} else {
-			return new HybridContainerLeekValue();
+			return new LegacyHybridContainerLeekValue();
 		}
 	}
 
@@ -562,8 +562,8 @@ public abstract class AI {
 					}
 				}
 			}
-			if (y instanceof HybridContainerLeekValue) {
-				return ((HybridContainerLeekValue) y).equals(this, (Number) x);
+			if (y instanceof LegacyHybridContainerLeekValue) {
+				return ((LegacyHybridContainerLeekValue) y).equals(this, (Number) x);
 			}
 			if (y == null)
 				return false;
@@ -575,20 +575,20 @@ public abstract class AI {
 					return ((Boolean) x) == false;
 				return ((Boolean) x) == true;
 			}
-			if (y instanceof HybridContainerLeekValue) {
-				return ((HybridContainerLeekValue) y).equals(this, (Boolean) x);
+			if (y instanceof LegacyHybridContainerLeekValue) {
+				return ((LegacyHybridContainerLeekValue) y).equals(this, (Boolean) x);
 			}
 			if (y instanceof Number) {
 				return (Boolean) x == (((Number) y).doubleValue() != 0);
 			}
 		}
-		if (x instanceof HybridContainerLeekValue) {
-			var array = (HybridContainerLeekValue) x;
+		if (x instanceof LegacyHybridContainerLeekValue) {
+			var array = (LegacyHybridContainerLeekValue) x;
 			if (y instanceof String) {
 				if (((String) y).length() == 0)
 					return array.size() == 0 || eq(array.iterator().next().getValue(), y);
 			}
-			return ((HybridContainerLeekValue) x).equals(this, y);
+			return ((LegacyHybridContainerLeekValue) x).equals(this, y);
 		}
 		if (x instanceof ArrayLeekValue) {
 			if (y instanceof ArrayLeekValue) {
@@ -624,12 +624,12 @@ public abstract class AI {
 					return ((Boolean) y) == false;
 				return ((Boolean) y) == true;
 			}
-			if (y instanceof HybridContainerLeekValue) {
-				var array = (HybridContainerLeekValue) y;
+			if (y instanceof LegacyHybridContainerLeekValue) {
+				var array = (LegacyHybridContainerLeekValue) y;
 				if (array.size() == 0)
 					return s.length() == 0 || s.equals("false");
 				if (array.size() == 1 || s.equals("true"))
-					return eq(((HybridContainerLeekValue) y).iterator().next().getValue(), x);
+					return eq(((LegacyHybridContainerLeekValue) y).iterator().next().getValue(), x);
 				return false;
 			}
 		}
@@ -704,8 +704,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).size() != 0;
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.size() != 0;
-		} else if (value instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) value).size() != 0;
+		} else if (value instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) value).size() != 0;
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).size() != 0;
 		} else if (value instanceof MapLeekValue) {
@@ -737,8 +737,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).size();
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.size();
-		} else if (value instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) value).size();
+		} else if (value instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) value).size();
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).size();
 		} else if (value instanceof MapLeekValue) {
@@ -777,8 +777,8 @@ public abstract class AI {
 			return (long) ((ObjectLeekValue) value).size();
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return (long) o.size();
-		} else if (value instanceof HybridContainerLeekValue) {
-			return (long) ((HybridContainerLeekValue) value).size();
+		} else if (value instanceof LegacyHybridContainerLeekValue) {
+			return (long) ((LegacyHybridContainerLeekValue) value).size();
 		} else if (value instanceof ArrayLeekValue) {
 			return (long) ((ArrayLeekValue) value).size();
 		} else if (value instanceof MapLeekValue) {
@@ -818,8 +818,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).size();
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.size();
-		} else if (value instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) value).size();
+		} else if (value instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) value).size();
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).size();
 		} else if (value instanceof MapLeekValue) {
@@ -859,8 +859,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).size();
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.size();
-		} else if (value instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) value).size();
+		} else if (value instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) value).size();
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).size();
 		} else if (value instanceof MapLeekValue) {
@@ -967,14 +967,14 @@ public abstract class AI {
 		}
 
 		// Concatenate arrays
-		if (x instanceof HybridContainerLeekValue) {
-			if (y instanceof HybridContainerLeekValue) {
-				var array1 = (HybridContainerLeekValue) x;
-				var array2 = (HybridContainerLeekValue) y;
+		if (x instanceof LegacyHybridContainerLeekValue) {
+			if (y instanceof LegacyHybridContainerLeekValue) {
+				var array1 = (LegacyHybridContainerLeekValue) x;
+				var array2 = (LegacyHybridContainerLeekValue) y;
 
 				ops((array1.size() + array2.size()) * 2);
 
-				var retour = new HybridContainerLeekValue();
+				var retour = new LegacyHybridContainerLeekValue();
 				var iterator = array1.iterator();
 				while (iterator.hasNext()) {
 					if (iterator.key() instanceof String) {
@@ -996,11 +996,11 @@ public abstract class AI {
 				return retour;
 			}
 
-			var array1 = (HybridContainerLeekValue) x;
+			var array1 = (LegacyHybridContainerLeekValue) x;
 
 			ops(array1.size() * 2);
 
-			var retour = new HybridContainerLeekValue();
+			var retour = new LegacyHybridContainerLeekValue();
 			var iterator = array1.iterator();
 
 			while (iterator.hasNext()) {
@@ -1016,12 +1016,12 @@ public abstract class AI {
 			return retour;
 		}
 
-		if (y instanceof HybridContainerLeekValue) {
-			var array2 = (HybridContainerLeekValue) y;
+		if (y instanceof LegacyHybridContainerLeekValue) {
+			var array2 = (LegacyHybridContainerLeekValue) y;
 
 			ops(array2.size() * 2);
 
-			var retour = new HybridContainerLeekValue();
+			var retour = new LegacyHybridContainerLeekValue();
 
 			retour.push(this, x);
 
@@ -1090,8 +1090,8 @@ public abstract class AI {
 	}
 
 	public Object add_eq(Object x, Object y) throws LeekRunException {
-		if (x instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) x).add_eq(this, y);
+		if (x instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) x).add_eq(this, y);
 		}
 		if (x instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) x).add_eq(this, y);
@@ -1197,8 +1197,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).string(this, new HashSet<Object>());
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.string(new HashSet<Object>());
-		} else if (value instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) value).string(this, new HashSet<Object>());
+		} else if (value instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) value).string(this, new HashSet<Object>());
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getString(this, new HashSet<Object>());
 		} else if (value instanceof MapLeekValue) {
@@ -1229,8 +1229,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).string(this, visited);
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.string(visited);
-		} else if (value instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) value).string(this, visited);
+		} else if (value instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) value).string(this, visited);
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getString(this, visited);
 		} else if (value instanceof MapLeekValue) {
@@ -1272,8 +1272,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).export(this, new HashSet<Object>());
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.export(new HashSet<Object>());
-		} else if (value instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) value).export(this, new HashSet<Object>());
+		} else if (value instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) value).export(this, new HashSet<Object>());
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getString(this, new HashSet<Object>());
 		} else if (value instanceof MapLeekValue) {
@@ -1304,8 +1304,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).export(this, visited);
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.export(visited);
-		} else if (value instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) value).export(this, visited);
+		} else if (value instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) value).export(this, visited);
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getString(this, visited);
 		} else if (value instanceof MapLeekValue) {
@@ -1335,8 +1335,8 @@ public abstract class AI {
 		if (v instanceof MapLeekValue) {
 			return ((MapLeekValue) v).toJSON(this, visited);
 		}
-		if (v instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) v).toJSON(this, visited);
+		if (v instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) v).toJSON(this, visited);
 		}
 		if (v instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) v).toJSON(this, visited);
@@ -1349,12 +1349,12 @@ public abstract class AI {
 
 	public boolean isPrimitive(Object value) {
 		return !(value instanceof ArrayLeekValue || value instanceof MapLeekValue
-				|| value instanceof HybridContainerLeekValue || value instanceof ObjectLeekValue
+				|| value instanceof LegacyHybridContainerLeekValue || value instanceof ObjectLeekValue
 				|| value instanceof NativeObjectLeekValue);
 	}
 
 	public boolean isIterable(Object value) throws LeekRunException {
-		boolean ok = value instanceof HybridContainerLeekValue || value instanceof ArrayLeekValue
+		boolean ok = value instanceof LegacyHybridContainerLeekValue || value instanceof ArrayLeekValue
 				|| value instanceof MapLeekValue;
 		if (!ok && version >= 2) {
 			addSystemLog(AILog.ERROR, Error.NOT_ITERABLE, new Object[] { value });
@@ -1363,8 +1363,8 @@ public abstract class AI {
 	}
 
 	public Iterator<Entry<Object, Object>> iterator(Object value) {
-		if (value instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) value).iterator();
+		if (value instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) value).iterator();
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).genericIterator();
 		} else if (value instanceof MapLeekValue) {
@@ -1903,8 +1903,8 @@ public abstract class AI {
 	}
 
 	public Object put(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put(this, key, value);
@@ -1935,8 +1935,8 @@ public abstract class AI {
 	}
 
 	public Object put_inc(Object array, Object key, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_inc(this, key);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_inc(this, key);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_inc(this, key);
@@ -1969,8 +1969,8 @@ public abstract class AI {
 	}
 
 	public Object put_pre_inc(Object array, Object key, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_pre_inc(this, key);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_pre_inc(this, key);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_pre_inc(this, key);
@@ -2003,8 +2003,8 @@ public abstract class AI {
 	}
 
 	public Object put_dec(Object array, Object key, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_dec(this, key);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_dec(this, key);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_dec(this, key);
@@ -2037,8 +2037,8 @@ public abstract class AI {
 	}
 
 	public Object put_pre_dec(Object array, Object key, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_pre_dec(this, key);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_pre_dec(this, key);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_pre_dec(this, key);
@@ -2071,8 +2071,8 @@ public abstract class AI {
 	}
 
 	public Object put_add_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_add_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_add_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_add_eq(this, key, value);
@@ -2105,8 +2105,8 @@ public abstract class AI {
 	}
 
 	public Object put_sub_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_sub_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_sub_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_sub_eq(this, key, value);
@@ -2139,8 +2139,8 @@ public abstract class AI {
 	}
 
 	public Object put_mul_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_mul_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_mul_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_mul_eq(this, key, value);
@@ -2173,8 +2173,8 @@ public abstract class AI {
 	}
 
 	public Object put_pow_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_pow_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_pow_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_pow_eq(this, key, value);
@@ -2207,8 +2207,8 @@ public abstract class AI {
 	}
 
 	public Object put_mod_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_mod_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_mod_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_mod_eq(this, key, value);
@@ -2241,8 +2241,8 @@ public abstract class AI {
 	}
 
 	public Object put_div_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_div_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_div_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_div_eq(this, key, value);
@@ -2275,8 +2275,8 @@ public abstract class AI {
 	}
 
 	public long put_intdiv_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_intdiv_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_intdiv_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_intdiv_eq(this, key, value);
@@ -2309,8 +2309,8 @@ public abstract class AI {
 	}
 
 	public Object put_bor_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_bor_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_bor_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_bor_eq(this, key, value);
@@ -2343,8 +2343,8 @@ public abstract class AI {
 	}
 
 	public Object put_band_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_band_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_band_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_band_eq(this, key, value);
@@ -2377,8 +2377,8 @@ public abstract class AI {
 	}
 
 	public Object put_shl_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_shl_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_shl_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_shl_eq(this, key, value);
@@ -2411,8 +2411,8 @@ public abstract class AI {
 	}
 
 	public Object put_shr_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_shr_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_shr_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_shr_eq(this, key, value);
@@ -2445,8 +2445,8 @@ public abstract class AI {
 	}
 
 	public Object put_ushr_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_ushr_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_ushr_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_ushr_eq(this, key, value);
@@ -2479,8 +2479,8 @@ public abstract class AI {
 	}
 
 	public Object put_bxor_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) array).put_bxor_eq(this, key, value);
+		if (array instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) array).put_bxor_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_bxor_eq(this, key, value);
@@ -2520,8 +2520,8 @@ public abstract class AI {
 	}
 
 	public Object get(Object value, Object index, ClassLeekValue fromClass) throws LeekRunException {
-		if (value instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) value).get(this, index);
+		if (value instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) value).get(this, index);
 		}
 		if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).get(this, index);
@@ -2562,8 +2562,8 @@ public abstract class AI {
 	}
 
 	public Box getBox(Object value, Object index) throws LeekRunException {
-		if (value instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) value).getBox(this, index);
+		if (value instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) value).getBox(this, index);
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { value });
@@ -2763,9 +2763,9 @@ public abstract class AI {
 		throw new ClassCastException();
 	}
 
-	public HybridContainerLeekValue toHybridContainer(int index, Object value) throws LeekRunException {
-		if (value instanceof HybridContainerLeekValue) {
-			return (HybridContainerLeekValue) value;
+	public LegacyHybridContainerLeekValue toHybridContainer(int index, Object value) throws LeekRunException {
+		if (value instanceof LegacyHybridContainerLeekValue) {
+			return (LegacyHybridContainerLeekValue) value;
 		}
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new Object[] {
 				String.valueOf(index),
@@ -2773,7 +2773,7 @@ public abstract class AI {
 				StandardClass.getType(this, value).toString(),
 				Type.ARRAY.toString() + " (V1-3)"
 		});
-		return new HybridContainerLeekValue();
+		return new LegacyHybridContainerLeekValue();
 	}
 
 	public static boolean verifyParameters(int[] types, Object... parameters) {
@@ -2803,9 +2803,9 @@ public abstract class AI {
 			case NULL:
 				return value == null;
 			case LEGACY_ARRAY:
-				return value instanceof HybridContainerLeekValue;
+				return value instanceof LegacyHybridContainerLeekValue;
 			case ARRAY:
-				return value instanceof HybridContainerLeekValue || value instanceof ArrayLeekValue;
+				return value instanceof LegacyHybridContainerLeekValue || value instanceof ArrayLeekValue;
 			case MAP:
 				return value instanceof MapLeekValue;
 			case FUNCTION:
@@ -2825,7 +2825,7 @@ public abstract class AI {
 			return realClass;
 		if (value instanceof Boolean)
 			return booleanClass;
-		if (value instanceof HybridContainerLeekValue || value instanceof ArrayLeekValue)
+		if (value instanceof LegacyHybridContainerLeekValue || value instanceof ArrayLeekValue)
 			return arrayClass;
 		if (value instanceof MapLeekValue)
 			return mapClass;

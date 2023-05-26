@@ -12,7 +12,7 @@ import com.alibaba.fastjson.JSONObject;
 import leekscript.AILog;
 import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
-import leekscript.runner.values.HybridContainerLeekValue;
+import leekscript.runner.values.LegacyHybridContainerLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
@@ -62,7 +62,7 @@ public class LeekValueManager {
 			Collections.sort(keys);
 
 			if (ai.getVersion() <= 3) {
-				var array = new HybridContainerLeekValue();
+				var array = new LegacyHybridContainerLeekValue();
 				for (var key : keys) {
 					array.getOrCreate(ai, key).set(parseJSON(a.get(key), ai));
 				}
@@ -83,8 +83,8 @@ public class LeekValueManager {
 	}
 
 	public static Box getOrCreate(AI ai, Object value, Object index) throws LeekRunException {
-		if (value instanceof HybridContainerLeekValue) {
-			return ((HybridContainerLeekValue) value).getOrCreate(ai, index);
+		if (value instanceof LegacyHybridContainerLeekValue) {
+			return ((LegacyHybridContainerLeekValue) value).getOrCreate(ai, index);
 		}
 		throw new LeekRunException(Error.UNKNOWN_FUNCTION);
 	}
@@ -122,7 +122,7 @@ public class LeekValueManager {
 			return LeekValue.NUMBER;
 		if (v instanceof String)
 			return LeekValue.STRING;
-		if (v instanceof HybridContainerLeekValue || v instanceof ArrayLeekValue)
+		if (v instanceof LegacyHybridContainerLeekValue || v instanceof ArrayLeekValue)
 			return LeekValue.ARRAY;
 		if (v instanceof MapLeekValue)
 			return LeekValue.MAP;
@@ -146,7 +146,7 @@ public class LeekValueManager {
 			return LeekValue.NUMBER_V1;
 		if (v instanceof String)
 			return LeekValue.STRING_V1;
-		if (v instanceof HybridContainerLeekValue)
+		if (v instanceof LegacyHybridContainerLeekValue)
 			return LeekValue.ARRAY_V1;
 		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue)
 			return LeekValue.OBJECT_V1;

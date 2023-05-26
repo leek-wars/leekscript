@@ -75,7 +75,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 			} else if (type1 == LeekValue.STRING) {
 				return ((String) v1).compareTo((String) v2);
 			} else if (type1 == LeekValue.ARRAY) {
-				return ((HybridContainerLeekValue) v1).size() - ((HybridContainerLeekValue) v2).size();
+				return ((LegacyHybridContainerLeekValue) v1).size() - ((LegacyHybridContainerLeekValue) v2).size();
 			}
 			return 0;
 		}

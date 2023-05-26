@@ -6,7 +6,7 @@ import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
-import leekscript.runner.values.HybridContainerLeekValue;
+import leekscript.runner.values.LegacyHybridContainerLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.common.Type;
@@ -22,7 +22,7 @@ public class StandardClass {
 			return Type.REAL;
 		if (value instanceof Boolean)
 			return Type.BOOL;
-		if (value instanceof HybridContainerLeekValue || value instanceof ArrayLeekValue)
+		if (value instanceof LegacyHybridContainerLeekValue || value instanceof ArrayLeekValue)
 			return Type.ARRAY;
 		if (value instanceof MapLeekValue)
 			return Type.MAP;

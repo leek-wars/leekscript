@@ -5,7 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import leekscript.ErrorManager;
 import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
-import leekscript.runner.values.HybridContainerLeekValue;
+import leekscript.runner.values.LegacyHybridContainerLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 
@@ -16,12 +16,12 @@ public class LeekOperations {
 	}
 
 	public static Object clone(AI ai, Object value, int level) throws LeekRunException {
-		if (value instanceof HybridContainerLeekValue) {
+		if (value instanceof LegacyHybridContainerLeekValue) {
 			if (level == 0)
 				return value;
-			var array = (HybridContainerLeekValue) value;
-			ai.ops(1 + array.size() * (HybridContainerLeekValue.ARRAY_CELL_CREATE_OPERATIONS));
-			return new HybridContainerLeekValue(ai, array, level);
+			var array = (LegacyHybridContainerLeekValue) value;
+			ai.ops(1 + array.size() * (LegacyHybridContainerLeekValue.ARRAY_CELL_CREATE_OPERATIONS));
+			return new LegacyHybridContainerLeekValue(ai, array, level);
 		} else if (value instanceof ArrayLeekValue) {
 			if (level == 0)
 				return value;

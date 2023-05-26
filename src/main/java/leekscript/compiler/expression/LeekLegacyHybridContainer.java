@@ -13,7 +13,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class LeekHybridContainer extends Expression {
+public class LeekLegacyHybridContainer extends Expression {
 
 	private final ArrayList<Expression> mValues = new ArrayList<Expression>();
 	public boolean mIsKeyVal = false;
@@ -21,7 +21,7 @@ public class LeekHybridContainer extends Expression {
 	private Token openingBracket;
 	private Token closingBracket;
 
-	public LeekHybridContainer(Token openingBracket) {
+	public LeekLegacyHybridContainer(Token openingBracket) {
 		this.openingBracket = openingBracket;
 	}
 
@@ -106,11 +106,11 @@ public class LeekHybridContainer extends Expression {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainBlock, JavaWriter writer) {
 		if (mValues.isEmpty()) {
-			writer.addCode("new HybridContainerLeekValue()");
+			writer.addCode("new LegacyHybridContainerLeekValue()");
 			return;
 		}
 
-		writer.addCode("new HybridContainerLeekValue(" + writer.getAIThis() + ", new Object[] { ");
+		writer.addCode("new LegacyHybridContainerLeekValue(" + writer.getAIThis() + ", new Object[] { ");
 		for (int i = 0; i < mValues.size(); i++) {
 			if (i != 0)
 				writer.addCode(", ");

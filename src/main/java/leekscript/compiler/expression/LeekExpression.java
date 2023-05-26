@@ -732,7 +732,7 @@ public class LeekExpression extends Expression {
 					if (mainblock.getWordCompiler().getVersion() >= 3
 							&& ((LeekVariable) mExpression2).toString().equals("Array")) {
 						if (mainblock.getWordCompiler().getVersion() >= 4) {
-							writer.addCode("new HybridContainerLeekValue()");
+							writer.addCode("new LegacyHybridContainerLeekValue()");
 						} else {
 							writer.addCode("new ArrayLeekValue(" + writer.getAIThis() + ")");
 						}

@@ -409,7 +409,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 			if (ai.getVersion() >= 4) {
 				return new ArrayLeekValue(ai);
 			} else {
-				return new HybridContainerLeekValue();
+				return new LegacyHybridContainerLeekValue();
 			}
 		}
 		if (this == ai.mapClass) {
@@ -454,7 +454,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 				if (ai.getVersion() >= 4) {
 					fieldsArray = new ArrayLeekValue(ai);
 				} else {
-					fieldsArray = new HybridContainerLeekValue();
+					fieldsArray = new LegacyHybridContainerLeekValue();
 				}
 			} else {
 				if (ai.getVersion() >= 4) {
@@ -469,7 +469,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 					for (var f : clazz.getFields()) {
 						values[i++] = f.getName();
 					}
-					fieldsArray = new HybridContainerLeekValue(ai, values);
+					fieldsArray = new LegacyHybridContainerLeekValue(ai, values);
 				}
 			}
 		}
@@ -490,7 +490,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 				for (var f : staticFields.entrySet()) {
 					values[i++] = f.getKey();
 				}
-				staticFieldsArray = new HybridContainerLeekValue(ai, values);
+				staticFieldsArray = new LegacyHybridContainerLeekValue(ai, values);
 			}
 		}
 		return staticFieldsArray;
@@ -502,7 +502,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 				if (ai.getVersion() >= 4) {
 					methodsArray = new ArrayLeekValue(ai);
 				} else {
-					methodsArray = new HybridContainerLeekValue();
+					methodsArray = new LegacyHybridContainerLeekValue();
 				}
 			} else {
 				if (ai.getVersion() >= 4) {
@@ -523,7 +523,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 						// if (m.getDeclaringClass() != clazz) continue;
 						values[i++] = m.getName().substring(2);
 					}
-					methodsArray = new HybridContainerLeekValue(ai, values);
+					methodsArray = new LegacyHybridContainerLeekValue(ai, values);
 				}
 			}
 		}
@@ -544,7 +544,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 				for (var f : genericStaticMethods.entrySet()) {
 					values[i++] = f.getKey();
 				}
-				staticMethodsArray = new HybridContainerLeekValue(ai, values);
+				staticMethodsArray = new LegacyHybridContainerLeekValue(ai, values);
 			}
 		}
 		return staticMethodsArray;
