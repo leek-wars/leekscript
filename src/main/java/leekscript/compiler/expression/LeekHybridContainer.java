@@ -36,12 +36,10 @@ public class LeekHybridContainer extends Expression {
 	}
 
 	public void addValue(WordCompiler compiler, Expression key, Token keyToken, Expression value) {
-
 		// Clés dupliquée ?
 		for (int i = 0; i < mValues.size(); i += 2) {
 			if (key.equals(mValues.get(i))) {
-				var level = compiler.getVersion() >= 4 ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
-				compiler.addError(new AnalyzeError(key.getLocation(), level, Error.MAP_DUPLICATED_KEY));
+				compiler.addError(new AnalyzeError(key.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAP_DUPLICATED_KEY));
 			}
 		}
 
@@ -82,9 +80,9 @@ public class LeekHybridContainer extends Expression {
 	}
 
 	@Override
-	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
+	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainBlock) throws LeekExpressionException {
 		for (Expression parameter : mValues) {
-			parameter.validExpression(compiler, mainblock);
+			parameter.validExpression(compiler, mainBlock);
 		}
 		return true;
 	}
@@ -106,46 +104,20 @@ public class LeekHybridContainer extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		if (mainblock.getVersion() >= 4) {
-			if (mIsKeyVal) {
-				if (mValues.size() == 0)
-					writer.addCode("new MapLeekValue(" + writer.getAIThis() + ")");
-				else {
-					writer.addCode("new MapLeekValue(" + writer.getAIThis() + ", new Object[] { ");
-					for (int i = 0; i < mValues.size(); i++) {
-						if (i != 0)
-							writer.addCode(", ");
-						mValues.get(i).writeJavaCode(mainblock, writer);
-					}
-					writer.addCode(" })");
-				}
-			} else {
-				if (mValues.size() == 0)
-					writer.addCode("new ArrayLeekValue(" + writer.getAIThis() + ")");
-				else {
-					writer.addCode("new ArrayLeekValue(" + writer.getAIThis() + ", new Object[] { ");
-					for (int i = 0; i < mValues.size(); i++) {
-						if (i != 0)
-							writer.addCode(", ");
-						mValues.get(i).writeJavaCode(mainblock, writer);
-					}
-					writer.addCode(" })");
-				}
-			}
-		} else {
-			if (mValues.size() == 0)
-				writer.addCode("new HybridContainerLeekValue()");
-			else {
-				writer.addCode("new HybridContainerLeekValue(" + writer.getAIThis() + ", new Object[] { ");
-				for (int i = 0; i < mValues.size(); i++) {
-					if (i != 0)
-						writer.addCode(", ");
-					mValues.get(i).writeJavaCode(mainblock, writer);
-				}
-				writer.addCode(" }, " + (mIsKeyVal ? "true" : "false") + ")");
-			}
+	public void writeJavaCode(MainLeekBlock mainBlock, JavaWriter writer) {
+		if (mValues.isEmpty()) {
+			writer.addCode("new HybridContainerLeekValue()");
+			return;
 		}
+
+		writer.addCode("new HybridContainerLeekValue(" + writer.getAIThis() + ", new Object[] { ");
+		for (int i = 0; i < mValues.size(); i++) {
+			if (i != 0)
+				writer.addCode(", ");
+			mValues.get(i).writeJavaCode(mainBlock, writer);
+		}
+		writer.addCode(" }, " + (mIsKeyVal ? "true" : "false") + ")");
+
 	}
 
 	@Override
