@@ -13,7 +13,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 
-public class LeekArray extends Expression {
+public class LeekHybridContainer extends Expression {
 
 	private final ArrayList<Expression> mValues = new ArrayList<Expression>();
 	public boolean mIsKeyVal = false;
@@ -21,7 +21,7 @@ public class LeekArray extends Expression {
 	private Token openingBracket;
 	private Token closingBracket;
 
-	public LeekArray(Token openingBracket) {
+	public LeekHybridContainer(Token openingBracket) {
 		this.openingBracket = openingBracket;
 	}
 
@@ -66,10 +66,12 @@ public class LeekArray extends Expression {
 
 	@Override
 	public String toString() {
-		if (mIsKeyVal && mValues.size() == 0) return "[:]";
+		if (mIsKeyVal && mValues.size() == 0)
+			return "[:]";
 		String str = "[";
-		for (int i = 0; i < mValues.size(); i++){
-			if (i > 0) str += ", ";
+		for (int i = 0; i < mValues.size(); i++) {
+			if (i > 0)
+				str += ", ";
 			if (mIsKeyVal) {
 				str += mValues.get(i).toString() + ": ";
 				i++;
@@ -107,32 +109,38 @@ public class LeekArray extends Expression {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		if (mainblock.getVersion() >= 4) {
 			if (mIsKeyVal) {
-				if (mValues.size() == 0) writer.addCode("new MapLeekValue(" + writer.getAIThis() + ")");
+				if (mValues.size() == 0)
+					writer.addCode("new MapLeekValue(" + writer.getAIThis() + ")");
 				else {
 					writer.addCode("new MapLeekValue(" + writer.getAIThis() + ", new Object[] { ");
 					for (int i = 0; i < mValues.size(); i++) {
-						if (i != 0) writer.addCode(", ");
+						if (i != 0)
+							writer.addCode(", ");
 						mValues.get(i).writeJavaCode(mainblock, writer);
 					}
 					writer.addCode(" })");
 				}
 			} else {
-				if (mValues.size() == 0) writer.addCode("new ArrayLeekValue(" + writer.getAIThis() + ")");
+				if (mValues.size() == 0)
+					writer.addCode("new ArrayLeekValue(" + writer.getAIThis() + ")");
 				else {
 					writer.addCode("new ArrayLeekValue(" + writer.getAIThis() + ", new Object[] { ");
 					for (int i = 0; i < mValues.size(); i++) {
-						if (i != 0) writer.addCode(", ");
+						if (i != 0)
+							writer.addCode(", ");
 						mValues.get(i).writeJavaCode(mainblock, writer);
 					}
 					writer.addCode(" })");
 				}
 			}
 		} else {
-			if (mValues.size() == 0) writer.addCode("new LegacyArrayLeekValue()");
+			if (mValues.size() == 0)
+				writer.addCode("new HybridContainerLeekValue()");
 			else {
-				writer.addCode("new LegacyArrayLeekValue(" + writer.getAIThis() + ", new Object[] { ");
+				writer.addCode("new HybridContainerLeekValue(" + writer.getAIThis() + ", new Object[] { ");
 				for (int i = 0; i < mValues.size(); i++) {
-					if (i != 0) writer.addCode(", ");
+					if (i != 0)
+						writer.addCode(", ");
 					mValues.get(i).writeJavaCode(mainblock, writer);
 				}
 				writer.addCode(" }, " + (mIsKeyVal ? "true" : "false") + ")");

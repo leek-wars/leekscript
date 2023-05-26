@@ -2,7 +2,7 @@ package leekscript.runner;
 
 import java.util.Comparator;
 
-import leekscript.runner.values.LegacyArrayLeekValue;
+import leekscript.runner.values.HybridContainerLeekValue;
 
 public class LeekValueComparator {
 
@@ -34,10 +34,12 @@ public class LeekValueComparator {
 
 		public int compareAsc(Object v1, Object v2) throws LeekRunException {
 			if (v1 == null) {
-				if (v2 == null) return 0;
+				if (v2 == null)
+					return 0;
 				return -1;
 			} else if (v1 instanceof Boolean) {
-				if (v2 == null) return 1;
+				if (v2 == null)
+					return 1;
 				if (v2 instanceof Boolean) {
 					if ((Boolean) v1 == (Boolean) v2)
 						return 0;
@@ -66,11 +68,11 @@ public class LeekValueComparator {
 					return 1;
 				else
 					return -1;
-			} else if (v1 instanceof LegacyArrayLeekValue) {
-				if (v2 instanceof LegacyArrayLeekValue) {
-					if (((LegacyArrayLeekValue) v1).size() == ((LegacyArrayLeekValue) v2).size())
+			} else if (v1 instanceof HybridContainerLeekValue) {
+				if (v2 instanceof HybridContainerLeekValue) {
+					if (((HybridContainerLeekValue) v1).size() == ((HybridContainerLeekValue) v2).size())
 						return 0;
-					else if (((LegacyArrayLeekValue) v1).size() < ((LegacyArrayLeekValue) v2).size())
+					else if (((HybridContainerLeekValue) v1).size() < ((HybridContainerLeekValue) v2).size())
 						return -1;
 					else
 						return 1;

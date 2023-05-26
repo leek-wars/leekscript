@@ -19,6 +19,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 		Object value;
 		AccessLevel level;
 		boolean isFinal;
+
 		public ClassField(Object value, AccessLevel level, boolean isFinal) {
 			this.value = value;
 			this.level = level;
@@ -29,6 +30,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 	public static class ClassMethod {
 		FunctionLeekValue value;
 		AccessLevel level;
+
 		public ClassMethod(FunctionLeekValue value, AccessLevel level) {
 			this.value = value;
 			this.level = level;
@@ -38,6 +40,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 	public static class ClassStaticMethod {
 		FunctionLeekValue value;
 		AccessLevel level;
+
 		public ClassStaticMethod(FunctionLeekValue value, AccessLevel level) {
 			this.value = value;
 			this.level = level;
@@ -74,10 +77,11 @@ public class ClassLeekValue extends FunctionLeekValue {
 	public ClassLeekValue(AI ai, String name, ClassLeekValue parent, Class<?> clazz) {
 		super(0);
 		// this.mAnonymous = new LeekAnonymousFunction() {
-		// 	@Override
-		// 	public Object run(ObjectLeekValue thiz, Object... values) throws LeekRunException {
-		// 		return execute(ai, values);
-		// 	}
+		// @Override
+		// public Object run(ObjectLeekValue thiz, Object... values) throws
+		// LeekRunException {
+		// return execute(ai, values);
+		// }
 		// };
 		this.ai = ai;
 		this.name = name;
@@ -98,11 +102,13 @@ public class ClassLeekValue extends FunctionLeekValue {
 		fields.put(field, new ClassField(null, level, isFinal));
 	}
 
-	public void addStaticField(AI ai, String field, Object value, AccessLevel level, boolean isFinal) throws LeekRunException {
+	public void addStaticField(AI ai, String field, Object value, AccessLevel level, boolean isFinal)
+			throws LeekRunException {
 		staticFields.put(field, new ObjectVariableValue(ai, value, level, isFinal));
 	}
 
-	public void addStaticField(AI ai, String field, Type type, Object value, AccessLevel level, boolean isFinal) throws LeekRunException {
+	public void addStaticField(AI ai, String field, Type type, Object value, AccessLevel level, boolean isFinal)
+			throws LeekRunException {
 		staticFields.put(field, new ObjectVariableValue(ai, type, value, level, isFinal));
 	}
 
@@ -115,9 +121,11 @@ public class ClassLeekValue extends FunctionLeekValue {
 			public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
 
 				if (arguments.length == 0) {
-					ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(arguments), "1+" });
+					ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS,
+							new String[] { LeekValue.getParamString(arguments), "1+" });
 				} else if (arguments[0].getClass() != clazz) {
-					ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(arguments), "object" });
+					ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS,
+							new String[] { LeekValue.getParamString(arguments), "object" });
 				}
 
 				final var methodCode = method + "_" + (arguments.length - 1);
@@ -125,7 +133,8 @@ public class ClassLeekValue extends FunctionLeekValue {
 				if (m != null) {
 					return m.value.run(ai, arguments[0], Arrays.copyOfRange(arguments, 1, arguments.length));
 				}
-				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
+				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD,
+						new String[] { name, createMethodError(methodCode) });
 				return null;
 			}
 		});
@@ -143,7 +152,8 @@ public class ClassLeekValue extends FunctionLeekValue {
 				if (m != null) {
 					return m.value.run(ai, null, arguments);
 				}
-				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
+				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD,
+						new String[] { name, createMethodError(methodCode) });
 				return null;
 			}
 		});
@@ -173,9 +183,11 @@ public class ClassLeekValue extends FunctionLeekValue {
 			return result.get();
 		}
 		var generic = genericMethods.get(field);
-		if (generic != null) return generic;
+		if (generic != null)
+			return generic;
 		generic = genericStaticMethods.get(field);
-		if (generic != null) return generic;
+		if (generic != null)
+			return generic;
 
 		if (parent instanceof ClassLeekValue) {
 			return parent.getField(field, fromClass);
@@ -199,7 +211,9 @@ public class ClassLeekValue extends FunctionLeekValue {
 				} else {
 					// Public : Access from outside
 					if (result.level != AccessLevel.PUBLIC) {
-						ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_FIELD : Error.PRIVATE_STATIC_FIELD, new String[] { this.name, field });
+						ai.addSystemLog(AILog.ERROR,
+								result.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_FIELD : Error.PRIVATE_STATIC_FIELD,
+								new String[] { this.name, field });
 						return null;
 					}
 					return result;
@@ -362,7 +376,8 @@ public class ClassLeekValue extends FunctionLeekValue {
 		int argCount = Integer.parseInt(method.substring(underscore + 1));
 		String methodRealName = method.substring(0, underscore) + "(";
 		for (int i = 0; i < argCount; ++i) {
-			if (i > 0) methodRealName += ", ";
+			if (i > 0)
+				methodRealName += ", ";
 			methodRealName += "x";
 		}
 		methodRealName += ")";
@@ -373,34 +388,43 @@ public class ClassLeekValue extends FunctionLeekValue {
 	 * Constructors
 	 */
 	public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
-		// System.out.println("Class " + name + " execute " + Arrays.toString(arguments));
-		if (this == ai.valueClass || this == ai.jsonClass || this == ai.systemClass || this == ai.functionClass || this == ai.classClass) {
+		// System.out.println("Class " + name + " execute " +
+		// Arrays.toString(arguments));
+		if (this == ai.valueClass || this == ai.jsonClass || this == ai.systemClass || this == ai.functionClass
+				|| this == ai.classClass) {
 			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
 			return null;
 		}
-		if (this == ai.nullClass) return null;
-		if (this == ai.booleanClass) return false;
-		if (this == ai.integerClass) return 0;
-		if (this == ai.realClass || this == ai.numberClass) return 0.0;
-		if (this == ai.stringClass) return "";
+		if (this == ai.nullClass)
+			return null;
+		if (this == ai.booleanClass)
+			return false;
+		if (this == ai.integerClass)
+			return 0;
+		if (this == ai.realClass || this == ai.numberClass)
+			return 0.0;
+		if (this == ai.stringClass)
+			return "";
 		if (this == ai.arrayClass) {
 			if (ai.getVersion() >= 4) {
 				return new ArrayLeekValue(ai);
 			} else {
-				return new LegacyArrayLeekValue();
+				return new HybridContainerLeekValue();
 			}
 		}
 		if (this == ai.mapClass) {
 			return new MapLeekValue(ai);
 		}
-		if (this == ai.objectClass) return new ObjectLeekValue(ai, ai.objectClass);
+		if (this == ai.objectClass)
+			return new ObjectLeekValue(ai, ai.objectClass);
 
 		// Create the actual object
 		ai.ops(1);
 		Object object = null;
 		try {
 			object = this.clazz.getConstructor(ai.getClass()).newInstance(ai);
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e1) {
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException e1) {
 			ErrorManager.exception(e1);
 		}
 
@@ -416,7 +440,9 @@ public class ClassLeekValue extends FunctionLeekValue {
 				}
 				this.clazz.getMethod("init", types).invoke(object, args);
 				return object;
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {}
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+					| SecurityException e) {
+			}
 		}
 		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
 		return object;
@@ -428,7 +454,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 				if (ai.getVersion() >= 4) {
 					fieldsArray = new ArrayLeekValue(ai);
 				} else {
-					fieldsArray = new LegacyArrayLeekValue();
+					fieldsArray = new HybridContainerLeekValue();
 				}
 			} else {
 				if (ai.getVersion() >= 4) {
@@ -443,7 +469,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 					for (var f : clazz.getFields()) {
 						values[i++] = f.getName();
 					}
-					fieldsArray = new LegacyArrayLeekValue(ai, values);
+					fieldsArray = new HybridContainerLeekValue(ai, values);
 				}
 			}
 		}
@@ -464,7 +490,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 				for (var f : staticFields.entrySet()) {
 					values[i++] = f.getKey();
 				}
-				staticFieldsArray = new LegacyArrayLeekValue(ai, values);
+				staticFieldsArray = new HybridContainerLeekValue(ai, values);
 			}
 		}
 		return staticFieldsArray;
@@ -476,13 +502,14 @@ public class ClassLeekValue extends FunctionLeekValue {
 				if (ai.getVersion() >= 4) {
 					methodsArray = new ArrayLeekValue(ai);
 				} else {
-					methodsArray = new LegacyArrayLeekValue();
+					methodsArray = new HybridContainerLeekValue();
 				}
 			} else {
 				if (ai.getVersion() >= 4) {
 					var r = new ArrayLeekValue(ai, clazz.getDeclaredMethods().length - 1);
 					for (var m : clazz.getDeclaredMethods()) {
-						if (m.getName().equals("init")) continue;
+						if (m.getName().equals("init"))
+							continue;
 						// if (m.getDeclaringClass() != clazz) continue;
 						r.add(m.getName().substring(2));
 					}
@@ -491,11 +518,12 @@ public class ClassLeekValue extends FunctionLeekValue {
 					Object[] values = new Object[clazz.getDeclaredMethods().length - 1];
 					int i = 0;
 					for (var m : clazz.getDeclaredMethods()) {
-						if (m.getName().equals("init")) continue;
+						if (m.getName().equals("init"))
+							continue;
 						// if (m.getDeclaringClass() != clazz) continue;
 						values[i++] = m.getName().substring(2);
 					}
-					methodsArray = new LegacyArrayLeekValue(ai, values);
+					methodsArray = new HybridContainerLeekValue(ai, values);
 				}
 			}
 		}
@@ -516,7 +544,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 				for (var f : genericStaticMethods.entrySet()) {
 					values[i++] = f.getKey();
 				}
-				staticMethodsArray = new LegacyArrayLeekValue(ai, values);
+				staticMethodsArray = new HybridContainerLeekValue(ai, values);
 			}
 		}
 		return staticMethodsArray;
@@ -539,7 +567,9 @@ public class ClassLeekValue extends FunctionLeekValue {
 				} else {
 					// Public : Access from outside
 					if (m.level != AccessLevel.PUBLIC) {
-						ai.addSystemLog(AILog.ERROR, m.level == AccessLevel.PROTECTED ? Error.PROTECTED_METHOD : Error.PRIVATE_METHOD, new String[] { this.name, method });
+						ai.addSystemLog(AILog.ERROR,
+								m.level == AccessLevel.PROTECTED ? Error.PROTECTED_METHOD : Error.PRIVATE_METHOD,
+								new String[] { this.name, method });
 						return null;
 					}
 					return m.value;
@@ -569,7 +599,9 @@ public class ClassLeekValue extends FunctionLeekValue {
 				} else {
 					// Public : Access from outside
 					if (m.level != AccessLevel.PUBLIC) {
-						ai.addSystemLog(AILog.ERROR, m.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_METHOD : Error.PRIVATE_STATIC_METHOD, new String[] { this.name, method });
+						ai.addSystemLog(AILog.ERROR,
+								m.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_METHOD : Error.PRIVATE_STATIC_METHOD,
+								new String[] { this.name, method });
 						return null;
 					}
 					return m.value;
@@ -607,7 +639,8 @@ public class ClassLeekValue extends FunctionLeekValue {
 	public boolean descendsFrom(ClassLeekValue clazz) {
 		var current = this;
 		while (current != null) {
-			if (current == clazz) return true;
+			if (current == clazz)
+				return true;
 			if (current.parent instanceof ClassLeekValue) {
 				current = (ClassLeekValue) current.parent;
 			} else {

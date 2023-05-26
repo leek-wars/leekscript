@@ -12,7 +12,7 @@ import com.alibaba.fastjson.JSONObject;
 import leekscript.AILog;
 import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
-import leekscript.runner.values.LegacyArrayLeekValue;
+import leekscript.runner.values.HybridContainerLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
@@ -62,7 +62,7 @@ public class LeekValueManager {
 			Collections.sort(keys);
 
 			if (ai.getVersion() <= 3) {
-				var array = new LegacyArrayLeekValue();
+				var array = new HybridContainerLeekValue();
 				for (var key : keys) {
 					array.getOrCreate(ai, key).set(parseJSON(a.get(key), ai));
 				}
@@ -83,8 +83,8 @@ public class LeekValueManager {
 	}
 
 	public static Box getOrCreate(AI ai, Object value, Object index) throws LeekRunException {
-		if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).getOrCreate(ai, index);
+		if (value instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) value).getOrCreate(ai, index);
 		}
 		throw new LeekRunException(Error.UNKNOWN_FUNCTION);
 	}
@@ -106,36 +106,56 @@ public class LeekValueManager {
 		return null;
 	}
 
-	public static Object callSuperMethod(AI ai, Object value, String method, Object... arguments) throws LeekRunException {
+	public static Object callSuperMethod(AI ai, Object value, String method, Object... arguments)
+			throws LeekRunException {
 		// Aucune méthode
 		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new Object[] { value, method });
 		return null;
 	}
 
 	public static int getType(Object v) {
-		if (v == null) return LeekValue.NULL;
-		if (v instanceof Boolean) return LeekValue.BOOLEAN;
-		if (v instanceof Number) return LeekValue.NUMBER;
-		if (v instanceof String) return LeekValue.STRING;
-		if (v instanceof LegacyArrayLeekValue || v instanceof ArrayLeekValue) return LeekValue.ARRAY;
-		if (v instanceof MapLeekValue) return LeekValue.MAP;
-		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue) return LeekValue.OBJECT;
-		if (v instanceof ClassLeekValue) return LeekValue.CLASS;
-		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION;
-		if (v instanceof Box) return getType(((Box) v).get());
+		if (v == null)
+			return LeekValue.NULL;
+		if (v instanceof Boolean)
+			return LeekValue.BOOLEAN;
+		if (v instanceof Number)
+			return LeekValue.NUMBER;
+		if (v instanceof String)
+			return LeekValue.STRING;
+		if (v instanceof HybridContainerLeekValue || v instanceof ArrayLeekValue)
+			return LeekValue.ARRAY;
+		if (v instanceof MapLeekValue)
+			return LeekValue.MAP;
+		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue)
+			return LeekValue.OBJECT;
+		if (v instanceof ClassLeekValue)
+			return LeekValue.CLASS;
+		if (v instanceof FunctionLeekValue)
+			return LeekValue.FUNCTION;
+		if (v instanceof Box)
+			return getType(((Box) v).get());
 		return 0;
 	}
 
 	public static int getV1Type(Object v) {
-		if (v == null) return LeekValue.NULL_V1;
-		if (v instanceof Boolean) return LeekValue.BOOLEAN_V1;
-		if (v instanceof Number) return LeekValue.NUMBER_V1;
-		if (v instanceof String) return LeekValue.STRING_V1;
-		if (v instanceof LegacyArrayLeekValue) return LeekValue.ARRAY_V1;
-		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue) return LeekValue.OBJECT_V1;
-		if (v instanceof ClassLeekValue) return LeekValue.CLASS_V1;
-		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION_V1;
-		if (v instanceof Box box) return getV1Type(box.get());
+		if (v == null)
+			return LeekValue.NULL_V1;
+		if (v instanceof Boolean)
+			return LeekValue.BOOLEAN_V1;
+		if (v instanceof Number)
+			return LeekValue.NUMBER_V1;
+		if (v instanceof String)
+			return LeekValue.STRING_V1;
+		if (v instanceof HybridContainerLeekValue)
+			return LeekValue.ARRAY_V1;
+		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue)
+			return LeekValue.OBJECT_V1;
+		if (v instanceof ClassLeekValue)
+			return LeekValue.CLASS_V1;
+		if (v instanceof FunctionLeekValue)
+			return LeekValue.FUNCTION_V1;
+		if (v instanceof Box box)
+			return getV1Type(box.get());
 		return 0;
 	}
 
@@ -143,7 +163,8 @@ public class LeekValueManager {
 		return null;
 	}
 
-	public static Object executeArrayAccess(AI ai, Object array, Object key, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
+	public static Object executeArrayAccess(AI ai, Object array, Object key, ClassLeekValue fromClass,
+			Object... arguments) throws LeekRunException {
 		if (array instanceof ObjectLeekValue) {
 			ai.ops(1);
 			return ((ObjectLeekValue) array).callMethod(ai.string(key) + "_" + arguments.length, fromClass, arguments);
@@ -157,7 +178,8 @@ public class LeekValueManager {
 				var m = array.getClass().getMethod("u_" + ai.string(key), types);
 				m.setAccessible(true);
 				return m.invoke(array, arguments);
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+					| SecurityException e) {
 				e.printStackTrace(System.out);
 			}
 			return null;

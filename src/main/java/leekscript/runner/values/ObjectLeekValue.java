@@ -37,9 +37,12 @@ public class ObjectLeekValue {
 		ai.ops(value.fields.size());
 		for (var field : value.fields.entrySet()) {
 			if (level == 1) {
-				fields.put(field.getKey(), new ObjectVariableValue(ai, field.getValue().get(), field.getValue().level, field.getValue().isFinal));
+				fields.put(field.getKey(),
+						new ObjectVariableValue(ai, field.getValue().get(), field.getValue().level, field.getValue().isFinal));
 			} else {
-				fields.put(field.getKey(), new ObjectVariableValue(ai, LeekOperations.clone(ai, field.getValue().get(), level - 1), field.getValue().level, field.getValue().isFinal));
+				fields.put(field.getKey(),
+						new ObjectVariableValue(ai, LeekOperations.clone(ai, field.getValue().get(), level - 1),
+								field.getValue().level, field.getValue().isFinal));
 			}
 		}
 		ai.increaseRAM(2 * value.fields.size());
@@ -75,7 +78,9 @@ public class ObjectLeekValue {
 				} else {
 					// Public : Access from outside
 					if (result.level != AccessLevel.PUBLIC) {
-						clazz.ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_FIELD : Error.PRIVATE_FIELD, new String[] { clazz.name, field });
+						clazz.ai.addSystemLog(AILog.ERROR,
+								result.level == AccessLevel.PROTECTED ? Error.PROTECTED_FIELD : Error.PRIVATE_FIELD,
+								new String[] { clazz.name, field });
 						return null;
 					}
 					return result.mValue;
@@ -83,7 +88,8 @@ public class ObjectLeekValue {
 			}
 		}
 		var method = clazz.genericMethods.get(field);
-		if (method != null) return method;
+		if (method != null)
+			return method;
 
 		clazz.ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { clazz.name, field });
 		return null;
@@ -96,13 +102,15 @@ public class ObjectLeekValue {
 			return result;
 		}
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
-		// ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { clazz.name, field });
+		// ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { clazz.name,
+		// field });
 		// return null;
 	}
 
 	public Object initField(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
-		// Pour un objet anonyme (classe Object), on peut rajouter des proprietés à la volée
+		// Pour un objet anonyme (classe Object), on peut rajouter des proprietés à la
+		// volée
 		if (result == null && clazz == clazz.ai.objectClass) {
 			addField(clazz.ai, field, value, AccessLevel.PUBLIC, false);
 			return value;
@@ -117,7 +125,8 @@ public class ObjectLeekValue {
 
 	public Object setField(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
-		// Pour un objet anonyme (classe Object), on peut rajouter des proprietés à la volée
+		// Pour un objet anonyme (classe Object), on peut rajouter des proprietés à la
+		// volée
 		if (result == null && clazz == clazz.ai.objectClass) {
 			addField(clazz.ai, field, value, AccessLevel.PUBLIC, false);
 			return value;
@@ -342,7 +351,8 @@ public class ObjectLeekValue {
 		return getFieldL(ai.string(value));
 	}
 
-	public Object callAccess(String field, String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
+	public Object callAccess(String field, String method, ClassLeekValue fromClass, Object... arguments)
+			throws LeekRunException {
 		var resultM = clazz.getMethod(clazz.ai, method, fromClass);
 		if (resultM == null) {
 			if (method.equals("u_keys")) {
@@ -370,7 +380,9 @@ public class ObjectLeekValue {
 				}
 				// Protected : Access from descendant
 				if (result.level == AccessLevel.PROTECTED && (fromClass != clazz && !clazz.descendsFrom(fromClass))) {
-					clazz.ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_FIELD : Error.PRIVATE_FIELD, new String[] { clazz.name, field });
+					clazz.ai.addSystemLog(AILog.ERROR,
+							result.level == AccessLevel.PROTECTED ? Error.PROTECTED_FIELD : Error.PRIVATE_FIELD,
+							new String[] { clazz.name, field });
 					return null;
 				}
 				// Call the value
@@ -381,7 +393,8 @@ public class ObjectLeekValue {
 			var argCount = Integer.parseInt(method.substring(underscore + 1));
 			String methodRealName = method.substring(0, underscore) + "(";
 			for (int i = 0; i < argCount; ++i) {
-				if (i > 0) methodRealName += ", ";
+				if (i > 0)
+					methodRealName += ", ";
 				methodRealName += "x";
 			}
 			methodRealName += ")";
@@ -402,7 +415,7 @@ public class ObjectLeekValue {
 				for (var key : fields.keySet()) {
 					values[i++] = key;
 				}
-				return new LegacyArrayLeekValue(clazz.ai, values);
+				return new HybridContainerLeekValue(clazz.ai, values);
 			}
 			if (method.equals("values_0")) {
 				Object[] values = new Object[fields.size()];
@@ -410,7 +423,7 @@ public class ObjectLeekValue {
 				for (var value : fields.values()) {
 					values[i++] = value;
 				}
-				return new LegacyArrayLeekValue(clazz.ai, values);
+				return new HybridContainerLeekValue(clazz.ai, values);
 			}
 		}
 		if (result == null) {
@@ -418,7 +431,8 @@ public class ObjectLeekValue {
 			int argCount = Integer.parseInt(method.substring(underscore + 1));
 			String methodRealName = method.substring(0, underscore) + "(";
 			for (int i = 0; i < argCount; ++i) {
-				if (i > 0) methodRealName += ", ";
+				if (i > 0)
+					methodRealName += ", ";
 				methodRealName += "x";
 			}
 			methodRealName += ")";
@@ -429,14 +443,16 @@ public class ObjectLeekValue {
 		return result.run(clazz.ai, this, arguments);
 	}
 
-	public Object callSuperMethod(AI ai, String method, ClassLeekValue currentClass, Object... arguments) throws LeekRunException {
+	public Object callSuperMethod(AI ai, String method, ClassLeekValue currentClass, Object... arguments)
+			throws LeekRunException {
 		var result = currentClass.getSuperMethod(ai, method, currentClass);
 		if (result == null) {
 			int underscore = method.lastIndexOf("_");
 			int argCount = Integer.parseInt(method.substring(underscore + 1));
 			String methodRealName = method.substring(0, underscore) + "(";
 			for (int i = 0; i < argCount; ++i) {
-				if (i > 0) methodRealName += ", ";
+				if (i > 0)
+					methodRealName += ", ";
 				methodRealName += "x";
 			}
 			methodRealName += ")";
@@ -485,8 +501,10 @@ public class ObjectLeekValue {
 		sb.append("{");
 		boolean first = true;
 		for (HashMap.Entry<String, ObjectVariableValue> field : fields.entrySet()) {
-			if (first) first = false;
-			else sb.append(", ");
+			if (first)
+				first = false;
+			else
+				sb.append(", ");
 			sb.append(field.getKey());
 			sb.append(": ");
 			if (visited.contains(field.getValue().get())) {
@@ -516,7 +534,8 @@ public class ObjectLeekValue {
 	public boolean equalsDeep(AI ai, Object comp) throws LeekRunException {
 		if (comp instanceof ObjectLeekValue) {
 			var o = (ObjectLeekValue) comp;
-			if (o.clazz != clazz) return false;
+			if (o.clazz != clazz)
+				return false;
 			for (var f : fields.entrySet()) {
 				if (!ai.eq(f.getValue().get(), o.fields.get(f.getKey()))) {
 					return false;
@@ -559,8 +578,10 @@ public class ObjectLeekValue {
 		sb.append("{");
 		boolean first = true;
 		for (HashMap.Entry<String, ObjectVariableValue> field : fields.entrySet()) {
-			if (first) first = false;
-			else sb.append(", ");
+			if (first)
+				first = false;
+			else
+				sb.append(", ");
 			sb.append(field.getKey());
 			sb.append(": ");
 			sb.append(field.getValue().toString());

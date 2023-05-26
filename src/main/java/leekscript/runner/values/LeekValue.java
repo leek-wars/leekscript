@@ -45,7 +45,7 @@ public class LeekValue {
 				ret += "boolean";
 			else if (v instanceof String)
 				ret += "string";
-			else if (v instanceof ArrayLeekValue || v instanceof LegacyArrayLeekValue)
+			else if (v instanceof ArrayLeekValue || v instanceof HybridContainerLeekValue)
 				ret += "array";
 			else if (v instanceof MapLeekValue)
 				ret += "map";

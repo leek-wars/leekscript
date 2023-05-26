@@ -56,7 +56,8 @@ public class JavaWriter {
 
 	private int getFileIndex(AIFile ai) {
 		var index = mFiles.get(ai);
-		if (index != null) return index;
+		if (index != null)
+			return index;
 		var new_index = mFiles.size();
 		mFiles.put(ai, new_index);
 		mFilesList.add(ai);
@@ -86,7 +87,8 @@ public class JavaWriter {
 		for (var e : mLines.entrySet()) {
 			var line = e.getValue();
 			mLinesFile.append(e.getKey() + " " + line.getAI() + " " + line.getLeekScriptLine() + "\n");
-			// System.out.println(l.mAI.getPath() + ":" + l.mCodeLine + " -> " + l.mJavaLine);
+			// System.out.println(l.mAI.getPath() + ":" + l.mCodeLine + " -> " +
+			// l.mJavaLine);
 		}
 		mCode.append("protected String getAIString() { return ");
 		mCode.append(aiJson);
@@ -94,7 +96,8 @@ public class JavaWriter {
 
 		mCode.append("protected String[] getErrorFiles() { return new String[] {");
 		for (var f : mFilesList) {
-			mCode.append("\"" + f.getPath().replaceAll("\\\\/", "/").replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"");
+			mCode.append(
+					"\"" + f.getPath().replaceAll("\\\\/", "/").replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"");
 			mCode.append(", ");
 		}
 		mCode.append("};}\n\n");
@@ -156,7 +159,8 @@ public class JavaWriter {
 	}
 
 	public void compileLoad(MainLeekBlock mainblock, Expression expr) {
-		if (expr.getType() == Type.NULL || expr.getType() == Type.BOOL || expr.getType().isNumber() || expr.getType() == Type.STRING || expr.getType().isArray()) {
+		if (expr.getType() == Type.NULL || expr.getType() == Type.BOOL || expr.getType().isNumber()
+				|| expr.getType() == Type.STRING || expr.getType().isArray()) {
 			expr.writeJavaCode(mainblock, this);
 		} else {
 			addCode("load(");
@@ -166,7 +170,8 @@ public class JavaWriter {
 	}
 
 	public void compileClone(MainLeekBlock mainblock, Expression expr) {
-		if (expr.getType() == Type.NULL || expr.getType() == Type.BOOL || expr.getType().isNumber() || expr.getType() == Type.STRING) {
+		if (expr.getType() == Type.NULL || expr.getType() == Type.BOOL || expr.getType().isNumber()
+				|| expr.getType() == Type.STRING) {
 			expr.writeJavaCode(mainblock, this);
 		} else {
 			addCode("copy(");
@@ -179,20 +184,18 @@ public class JavaWriter {
 		// var v_type = value.getType();
 		// System.out.println("convert " + v_type + " to " + type);
 		if (type.isArray()) {
-			addCode(mainblock.getVersion() >= 4 ? "toArray(" : "toLegacyArray(");
+			addCode(mainblock.getVersion() >= 4 ? "toArray(" : "toHybridContainer(");
 			addCode(index + ", ");
 			value.writeJavaCode(mainblock, this);
 			addCode(")");
 			return;
-		}
-		else if (type.isMap()) {
+		} else if (type.isMap()) {
 			addCode("toMap(");
 			addCode(index + ", ");
 			value.writeJavaCode(mainblock, this);
 			addCode(")");
 			return;
-		}
-		else if (type == Type.INT) {
+		} else if (type == Type.INT) {
 			if (value.getType() == Type.REAL) {
 				addCode("(long) (");
 				value.writeJavaCode(mainblock, this);
@@ -205,7 +208,8 @@ public class JavaWriter {
 
 	public String generateGenericFunction(ArrayList<CallableVersion> versions) {
 		String key = versions.get(0).function.getName();
-		for (var version : versions) key += "_" + version.getParametersSignature();
+		for (var version : versions)
+			key += "_" + version.getParametersSignature();
 		genericFunctions.put(key, versions);
 		return key;
 	}
@@ -235,9 +239,11 @@ public class JavaWriter {
 			var function = first_version.function;
 			var return_type = Type.union(versions.stream().map(v -> v.return_type).toList());
 
-			addCode("private " + return_type.getJavaPrimitiveName(block.getVersion()) + " " + function.getStandardClass() + "_" + signature + "(");
+			addCode("private " + return_type.getJavaPrimitiveName(block.getVersion()) + " " + function.getStandardClass()
+					+ "_" + signature + "(");
 			for (int a = 0; a < first_version.arguments.length; ++a) {
-				if (a > 0) addCode(", ");
+				if (a > 0)
+					addCode(", ");
 				addCode("Object a" + a);
 			}
 			addLine(") throws LeekRunException {");
@@ -247,7 +253,8 @@ public class JavaWriter {
 				var other_version = versions.get(1);
 				addCode("if (");
 				for (int a = 0; a < other_version.arguments.length; ++a) {
-					if (a > 0) addCode(" && ");
+					if (a > 0)
+						addCode(" && ");
 					addCode("a" + a + " instanceof " + other_version.arguments[a].getJavaName(block.getVersion()));
 				}
 				addLine(") {");
@@ -258,7 +265,9 @@ public class JavaWriter {
 			int a = 0;
 			for (var argument : first_version.arguments) {
 				if (argument != Type.ANY) {
-					addLine(argument.getJavaPrimitiveName(block.getVersion()) + " x" + a + "; try { x" + a + " = " + convert(a + 1, "a" + a, argument, block.getVersion()) + "; } catch (ClassCastException e) { return " + first_version.return_type.getDefaultValue(this, block.getVersion()) + "; }");
+					addLine(argument.getJavaPrimitiveName(block.getVersion()) + " x" + a + "; try { x" + a + " = "
+							+ convert(a + 1, "a" + a, argument, block.getVersion()) + "; } catch (ClassCastException e) { return "
+							+ first_version.return_type.getDefaultValue(this, block.getVersion()) + "; }");
 				}
 				a++;
 			}
@@ -302,15 +311,20 @@ public class JavaWriter {
 	public void writeAnonymousSystemFunctions(MainLeekBlock block) {
 
 		for (var function : anonymousSystemFunctions) {
-			addLine("private FunctionLeekValue " + function.getStandardClass() + "_" + function.getName() + " = new FunctionLeekValue(" + function.getVersions()[0].arguments.length + ", \"#Function " + function.getName() + "\") { public Object run(AI ai, Object thiz, Object... values) throws LeekRunException {");
+			addLine("private FunctionLeekValue " + function.getStandardClass() + "_" + function.getName()
+					+ " = new FunctionLeekValue(" + function.getVersions()[0].arguments.length + ", \"#Function "
+					+ function.getName()
+					+ "\") { public Object run(AI ai, Object thiz, Object... values) throws LeekRunException {");
 			if (function.getOperations() >= 0) {
 				addLine("ops(" + function.getOperations() + ");");
 			}
 			if (function.getVersions().length > 1) {
 				for (var version : function.getVersions()) {
-					addCode("if (values.length == " + version.arguments.length + ") return " + function.getStandardClass() + "_" + function.getName() + "_" + version.getParametersSignature() + "(");
+					addCode("if (values.length == " + version.arguments.length + ") return " + function.getStandardClass() + "_"
+							+ function.getName() + "_" + version.getParametersSignature() + "(");
 					for (var a = 0; a < version.arguments.length; ++a) {
-						if (a > 0) addCode(", ");
+						if (a > 0)
+							addCode(", ");
 						if (block.getVersion() == 1) {
 							addCode("load(values[" + a + "])");
 						} else {
@@ -321,9 +335,11 @@ public class JavaWriter {
 				}
 			}
 			addCode("if (values.length < " + function.getVersions()[0].arguments.length + ") return null;");
-			addCode("return " + function.getStandardClass() + "_" + function.getName() + "_" + function.getVersions()[0].getParametersSignature() + "(");
+			addCode("return " + function.getStandardClass() + "_" + function.getName() + "_"
+					+ function.getVersions()[0].getParametersSignature() + "(");
 			for (var a = 0; a < function.getVersions()[0].arguments.length; ++a) {
-				if (a > 0) addCode(", ");
+				if (a > 0)
+					addCode(", ");
 				if (block.getVersion() == 1) {
 					addCode("load(values[" + a + "])");
 				} else {
@@ -338,8 +354,10 @@ public class JavaWriter {
 
 	private String convert(int index, String v, Type type, int version) {
 		if (type.isArray()) {
-			if (version >= 4) return "toArray(" + index + ", " + v + ")";
-			else return "toLegacyArray(" + index + ", " + v + ")";
+			if (version >= 4)
+				return "toArray(" + index + ", " + v + ")";
+			else
+				return "toHybridContainer(" + index + ", " + v + ")";
 		}
 		if (type.isMap()) {
 			return "toMap(" + index + ", " + v + ")";

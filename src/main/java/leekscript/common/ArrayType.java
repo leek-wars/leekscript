@@ -7,7 +7,8 @@ public class ArrayType extends Type {
 	private Type type;
 
 	public ArrayType(Type type) {
-		super(type == Type.ANY ? "Array" : "Array<" + type.name + ">", "a", "ArrayLeekValue", "ArrayLeekValue", "new ArrayLeekValue()");
+		super(type == Type.ANY ? "Array" : "Array<" + type.name + ">", "a", "ArrayLeekValue", "ArrayLeekValue",
+				"new ArrayLeekValue()");
 		this.type = type;
 	}
 
@@ -21,17 +22,17 @@ public class ArrayType extends Type {
 
 	@Override
 	public String getJavaPrimitiveName(int version) {
-		return version >= 4 ? "ArrayLeekValue" : "LegacyArrayLeekValue";
+		return version >= 4 ? "ArrayLeekValue" : "HybridContainerLeekValue";
 	}
 
 	@Override
 	public String getDefaultValue(JavaWriter writer, int version) {
-		return version >= 4 ? "new ArrayLeekValue(" + writer.getAIThis() + ")" : "new LegacyArrayLeekValue()";
+		return version >= 4 ? "new ArrayLeekValue(" + writer.getAIThis() + ")" : "new HybridContainerLeekValue()";
 	}
 
 	@Override
 	public String getJavaName(int version) {
-		return version >= 4 ? "ArrayLeekValue" : "LegacyArrayLeekValue";
+		return version >= 4 ? "ArrayLeekValue" : "HybridContainerLeekValue";
 	}
 
 	public Type element() {

@@ -5,7 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import leekscript.ErrorManager;
 import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
-import leekscript.runner.values.LegacyArrayLeekValue;
+import leekscript.runner.values.HybridContainerLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 
@@ -16,27 +16,32 @@ public class LeekOperations {
 	}
 
 	public static Object clone(AI ai, Object value, int level) throws LeekRunException {
-		if (value instanceof LegacyArrayLeekValue) {
-			if (level == 0) return value;
-			var array = (LegacyArrayLeekValue) value;
-			ai.ops(1 + array.size() * (LegacyArrayLeekValue.ARRAY_CELL_CREATE_OPERATIONS));
-			return new LegacyArrayLeekValue(ai, array, level);
+		if (value instanceof HybridContainerLeekValue) {
+			if (level == 0)
+				return value;
+			var array = (HybridContainerLeekValue) value;
+			ai.ops(1 + array.size() * (HybridContainerLeekValue.ARRAY_CELL_CREATE_OPERATIONS));
+			return new HybridContainerLeekValue(ai, array, level);
 		} else if (value instanceof ArrayLeekValue) {
-			if (level == 0) return value;
+			if (level == 0)
+				return value;
 			var array = (ArrayLeekValue) value;
 			ai.ops(1 + array.size());
 			return new ArrayLeekValue(ai, array, level);
 		} else if (value instanceof MapLeekValue) {
-			if (level == 0) return value;
+			if (level == 0)
+				return value;
 			var map = (MapLeekValue) value;
 			ai.ops(1 + map.size());
 			return new MapLeekValue(ai, map, level);
 		} else if (value instanceof ObjectLeekValue) {
-			if (level == 0) return value;
+			if (level == 0)
+				return value;
 			ai.ops(1);
 			return new ObjectLeekValue(ai, (ObjectLeekValue) value, level);
 		} else if (value instanceof NativeObjectLeekValue o) {
-			if (level == 0) return value;
+			if (level == 0)
+				return value;
 
 			ai.ops(1 + o.size());
 			ai.increaseRAM(2 * o.size());
@@ -44,7 +49,8 @@ public class LeekOperations {
 			Object object = null;
 			try {
 				object = o.getClass().getConstructor(ai.getClass(), o.getClass(), int.class).newInstance(ai, o, level);
-			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e1) {
+			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+					| NoSuchMethodException | SecurityException e1) {
 				ErrorManager.exception(e1);
 			}
 			return object;

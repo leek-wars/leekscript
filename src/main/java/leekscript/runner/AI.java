@@ -4,7 +4,7 @@ import leekscript.AILog;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.LineMapping;
 import leekscript.compiler.RandomGenerator;
-import leekscript.runner.values.LegacyArrayLeekValue;
+import leekscript.runner.values.HybridContainerLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.classes.StandardClass;
 import leekscript.runner.values.ArrayLeekValue;
@@ -118,12 +118,14 @@ public abstract class AI {
 				var string_method = getClass().getMethod("u_string");
 				var result = string_method.invoke(this);
 				if (!(result instanceof String)) {
-					AI.this.addSystemLog(AILog.ERROR, Error.STRING_METHOD_MUST_RETURN_STRING, new String[] { getClass().getSimpleName() });
+					AI.this.addSystemLog(AILog.ERROR, Error.STRING_METHOD_MUST_RETURN_STRING,
+							new String[] { getClass().getSimpleName() });
 				} else {
 					return AI.this.string(result, visited);
 				}
-			} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {}
-
+			} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
+					| InvocationTargetException e) {
+			}
 
 			var classes = new ArrayList<Class<?>>();
 			Class<?> current = getClass();
@@ -135,7 +137,8 @@ public abstract class AI {
 			var fields = new ArrayList<Field>();
 			for (var clazz : classes) {
 				for (var f : clazz.getDeclaredFields()) {
-					if (f.isSynthetic()) continue;
+					if (f.isSynthetic())
+						continue;
 					fields.add(f);
 				}
 			}
@@ -149,14 +152,17 @@ public abstract class AI {
 			sb.append("{");
 			boolean first = true;
 			for (var field : fields) {
-				if (first) first = false;
-				else sb.append(", ");
+				if (first)
+					first = false;
+				else
+					sb.append(", ");
 				sb.append(field.getName());
 				sb.append(": ");
 				Object v = null;
 				try {
 					v = field.get(this);
-				} catch (IllegalArgumentException | IllegalAccessException e) {}
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+				}
 				if (visited.contains(v)) {
 					sb.append("<...>");
 				} else {
@@ -181,7 +187,8 @@ public abstract class AI {
 			Class<?> current = getClass();
 			while (current != null) {
 				for (var f : current.getDeclaredFields()) {
-					if (f.isSynthetic()) continue;
+					if (f.isSynthetic())
+						continue;
 					fields.add(f);
 				}
 				current = current.getSuperclass();
@@ -285,10 +292,12 @@ public abstract class AI {
 	}
 
 	// Method that can be overriden in each AI
-	public void init() throws Exception {}
+	public void init() throws Exception {
+	}
 
 	// Method that can be overriden in each AI
-	public void staticInit() throws Exception {}
+	public void staticInit() throws Exception {
+	}
 
 	public int getInstructions() {
 		return mInstructions;
@@ -309,9 +318,9 @@ public abstract class AI {
 	public long getUsedRAM() {
 		// System.gc();
 		// try {
-		// 	Thread.sleep(0, 1);
+		// Thread.sleep(0, 1);
 		// } catch (InterruptedException e) {
-		// 	e.printStackTrace();
+		// e.printStackTrace();
 		// }
 		return mRAM;
 	}
@@ -378,7 +387,7 @@ public abstract class AI {
 				e.printStackTrace();
 			}
 			Runtime.getRuntime().runFinalization();
-			// System.out.println("RAM after  = " + mRAM);
+			// System.out.println("RAM after = " + mRAM);
 			if (mRAM > maxRAM) {
 				getLogs().addLog(AILog.WARNING, "[RAM error] RAM before: " + ramBefore + " RAM after: " + mRAM);
 				throw new LeekRunException(Error.OUT_OF_MEMORY);
@@ -398,7 +407,7 @@ public abstract class AI {
 		if (version >= 4) {
 			return new ArrayLeekValue(this);
 		} else {
-			return new LegacyArrayLeekValue();
+			return new HybridContainerLeekValue();
 		}
 	}
 
@@ -406,7 +415,7 @@ public abstract class AI {
 		if (version >= 4) {
 			return new ArrayLeekValue(this, capacity);
 		} else {
-			return new LegacyArrayLeekValue();
+			return new HybridContainerLeekValue();
 		}
 	}
 
@@ -414,7 +423,7 @@ public abstract class AI {
 		if (version >= 4) {
 			return new MapLeekValue(ai);
 		} else {
-			return new LegacyArrayLeekValue();
+			return new HybridContainerLeekValue();
 		}
 	}
 
@@ -422,7 +431,8 @@ public abstract class AI {
 		StringBuilder sb = new StringBuilder();
 		int count = 0;
 		for (StackTraceElement element : elements) {
-			// System.out.println(element.getClassName() + " " + element.getMethodName() + " " + element.getLineNumber());
+			// System.out.println(element.getClassName() + " " + element.getMethodName() + "
+			// " + element.getLineNumber());
 			if (element.getClassName().startsWith("AI_")) {
 				sb.append(getErrorLocalisation(element.getLineNumber()));
 				if (count++ > 50) {
@@ -433,7 +443,8 @@ public abstract class AI {
 		}
 		// Java stacktrace
 		// for (StackTraceElement element : elements) {
-		// 	sb.append("\t▶ " + element.getClassName() + "." + element.getMethodName() + ", line " + element.getLineNumber()).append("\n");
+		// sb.append("\t▶ " + element.getClassName() + "." + element.getMethodName() +
+		// ", line " + element.getLineNumber()).append("\n");
 		// }
 		return sb.toString();
 	}
@@ -447,9 +458,11 @@ public abstract class AI {
 			try (Stream<String> stream = Files.lines(this.filesLines.toPath())) {
 				stream.forEach(l -> {
 					var parts = l.split(" ");
-					mLinesMapping.put(Integer.parseInt(parts[0]), new LineMapping(Integer.parseInt(parts[2]), Integer.parseInt(parts[1])));
+					mLinesMapping.put(Integer.parseInt(parts[0]),
+							new LineMapping(Integer.parseInt(parts[2]), Integer.parseInt(parts[1])));
 				});
-			} catch (IOException e) {}
+			} catch (IOException e) {
+			}
 			thisObject = getAIString();
 		}
 		var lineMapping = mLinesMapping.get(javaLine);
@@ -486,9 +499,13 @@ public abstract class AI {
 		logs.addSystemLog(this, type, getErrorMessage(Thread.currentThread().getStackTrace()), error, parameters);
 	}
 
-	protected String[] getErrorFiles() { return null; }
+	protected String[] getErrorFiles() {
+		return null;
+	}
 
-	protected String getAIString() { return ""; }
+	protected String getAIString() {
+		return "";
+	}
 
 	public abstract Object runIA() throws LeekRunException;
 
@@ -496,7 +513,9 @@ public abstract class AI {
 		return randomGenerator;
 	}
 
-	public int getVersion() { return this.version; }
+	public int getVersion() {
+		return this.version;
+	}
 
 	public static Object load(Object value) {
 		if (value instanceof Box) {
@@ -507,21 +526,26 @@ public abstract class AI {
 
 	public boolean eq(Object x, Object y) throws LeekRunException {
 		// ops(1);
-		if (x == null) return y == null;
+		if (x == null)
+			return y == null;
 		if (x instanceof Number) {
 			var n = ((Number) x).doubleValue();
 			if (y instanceof Number) {
 				return n == ((Number) y).doubleValue();
 			}
 			if (y instanceof Boolean) {
-				if ((Boolean) y) return n != 0;
+				if ((Boolean) y)
+					return n != 0;
 				return n == 0;
 			}
 			if (y instanceof String) {
 				var s = (String) y;
-				if (s.equals("false") || s.equals("0") || s.equals("")) return n == 0;
-				if (s.equals("true")) return n != 0;
-				if (s.equals("1") && n == 1) return true;
+				if (s.equals("false") || s.equals("0") || s.equals(""))
+					return n == 0;
+				if (s.equals("true"))
+					return n != 0;
+				if (s.equals("1") && n == 1)
+					return true;
 				if (x instanceof Double) {
 					try {
 						ops(((String) y).length());
@@ -538,30 +562,33 @@ public abstract class AI {
 					}
 				}
 			}
-			if (y instanceof LegacyArrayLeekValue) {
-				return ((LegacyArrayLeekValue) y).equals(this, (Number) x);
+			if (y instanceof HybridContainerLeekValue) {
+				return ((HybridContainerLeekValue) y).equals(this, (Number) x);
 			}
-			if (y == null) return false;
+			if (y == null)
+				return false;
 			return n == real(y);
 		}
 		if (x instanceof Boolean) {
 			if (y instanceof String) {
-				if (((String) y).equals("false") || ((String) y).equals("0") || ((String) y).length() == 0) return ((Boolean) x) == false;
+				if (((String) y).equals("false") || ((String) y).equals("0") || ((String) y).length() == 0)
+					return ((Boolean) x) == false;
 				return ((Boolean) x) == true;
 			}
-			if (y instanceof LegacyArrayLeekValue) {
-				return ((LegacyArrayLeekValue) y).equals(this, (Boolean) x);
+			if (y instanceof HybridContainerLeekValue) {
+				return ((HybridContainerLeekValue) y).equals(this, (Boolean) x);
 			}
 			if (y instanceof Number) {
 				return (Boolean) x == (((Number) y).doubleValue() != 0);
 			}
 		}
-		if (x instanceof LegacyArrayLeekValue) {
-			var array = (LegacyArrayLeekValue) x;
+		if (x instanceof HybridContainerLeekValue) {
+			var array = (HybridContainerLeekValue) x;
 			if (y instanceof String) {
-				if (((String) y).length() == 0) return array.size() == 0 || eq(array.iterator().next().getValue(), y);
+				if (((String) y).length() == 0)
+					return array.size() == 0 || eq(array.iterator().next().getValue(), y);
 			}
-			return ((LegacyArrayLeekValue) x).equals(this, y);
+			return ((HybridContainerLeekValue) x).equals(this, y);
 		}
 		if (x instanceof ArrayLeekValue) {
 			if (y instanceof ArrayLeekValue) {
@@ -579,9 +606,12 @@ public abstract class AI {
 			}
 			if (y instanceof Number) {
 				var n = ((Number) y).doubleValue();
-				if (s.equals("true")) return n != 0;
-				if (s.equals("false") || s.equals("0") || s.length() == 0) return n == 0;
-				if (s.equals("1") && n == 1) return true;
+				if (s.equals("true"))
+					return n != 0;
+				if (s.equals("false") || s.equals("0") || s.length() == 0)
+					return n == 0;
+				if (s.equals("1") && n == 1)
+					return true;
 				try {
 					ops(s.length());
 					return n == Double.parseDouble(s);
@@ -590,13 +620,16 @@ public abstract class AI {
 				}
 			}
 			if (y instanceof Boolean) {
-				if (s.equals("false") || s.equals("0") || s.length() == 0) return ((Boolean) y) == false;
+				if (s.equals("false") || s.equals("0") || s.length() == 0)
+					return ((Boolean) y) == false;
 				return ((Boolean) y) == true;
 			}
-			if (y instanceof LegacyArrayLeekValue) {
-				var array = (LegacyArrayLeekValue) y;
-				if (array.size() == 0) return s.length() == 0 || s.equals("false");
-				if (array.size() == 1 || s.equals("true")) return eq(((LegacyArrayLeekValue) y).iterator().next().getValue(), x);
+			if (y instanceof HybridContainerLeekValue) {
+				var array = (HybridContainerLeekValue) y;
+				if (array.size() == 0)
+					return s.length() == 0 || s.equals("false");
+				if (array.size() == 1 || s.equals("true"))
+					return eq(((HybridContainerLeekValue) y).iterator().next().getValue(), x);
 				return false;
 			}
 		}
@@ -608,7 +641,8 @@ public abstract class AI {
 	}
 
 	public boolean equals_equals(Object x, Object y) throws LeekRunException {
-		if (x == null) return y == null;
+		if (x == null)
+			return y == null;
 		if (x instanceof ObjectLeekValue && y instanceof ObjectLeekValue) {
 			return x.equals(y);
 		}
@@ -670,8 +704,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).size() != 0;
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.size() != 0;
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).size() != 0;
+		} else if (value instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) value).size() != 0;
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).size() != 0;
 		} else if (value instanceof MapLeekValue) {
@@ -703,8 +737,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).size();
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.size();
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).size();
+		} else if (value instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) value).size();
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).size();
 		} else if (value instanceof MapLeekValue) {
@@ -712,9 +746,12 @@ public abstract class AI {
 		} else if (value instanceof String) {
 			var s = (String) value;
 			// ops(2);
-			if (s.equals("true")) return 1;
-			if (s.equals("false")) return 0;
-			if (s.isEmpty()) return 0;
+			if (s.equals("true"))
+				return 1;
+			if (s.equals("false"))
+				return 0;
+			if (s.isEmpty())
+				return 0;
 			ops(s.length());
 			try {
 				return Integer.parseInt(s);
@@ -740,17 +777,20 @@ public abstract class AI {
 			return (long) ((ObjectLeekValue) value).size();
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return (long) o.size();
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return (long) ((LegacyArrayLeekValue) value).size();
+		} else if (value instanceof HybridContainerLeekValue) {
+			return (long) ((HybridContainerLeekValue) value).size();
 		} else if (value instanceof ArrayLeekValue) {
 			return (long) ((ArrayLeekValue) value).size();
 		} else if (value instanceof MapLeekValue) {
 			return (long) ((MapLeekValue) value).size();
 		} else if (value instanceof String) {
 			var s = (String) value;
-			if (s.equals("true")) return 1l;
-			if (s.equals("false")) return 0l;
-			if (s.isEmpty()) return 0l;
+			if (s.equals("true"))
+				return 1l;
+			if (s.equals("false"))
+				return 0l;
+			if (s.isEmpty())
+				return 0l;
 			ops(s.length());
 			try {
 				return Double.parseDouble(s);
@@ -778,17 +818,20 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).size();
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.size();
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).size();
+		} else if (value instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) value).size();
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).size();
 		} else if (value instanceof MapLeekValue) {
 			return ((MapLeekValue) value).size();
 		} else if (value instanceof String) {
 			var s = (String) value;
-			if (s.equals("true")) return 1;
-			if (s.equals("false")) return 0;
-			if (s.isEmpty()) return 0;
+			if (s.equals("true"))
+				return 1;
+			if (s.equals("false"))
+				return 0;
+			if (s.isEmpty())
+				return 0;
 			ops(s.length());
 			try {
 				return Long.parseLong(s);
@@ -816,17 +859,20 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).size();
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.size();
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).size();
+		} else if (value instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) value).size();
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).size();
 		} else if (value instanceof MapLeekValue) {
 			return ((MapLeekValue) value).size();
 		} else if (value instanceof String) {
 			var s = (String) value;
-			if (s.equals("true")) return 1l;
-			if (s.equals("false")) return 0l;
-			if (s.isEmpty()) return 0l;
+			if (s.equals("true"))
+				return 1l;
+			if (s.equals("false"))
+				return 0l;
+			if (s.isEmpty())
+				return 0l;
 			ops(s.length());
 			try {
 				return Double.parseDouble(s);
@@ -856,7 +902,8 @@ public abstract class AI {
 	}
 
 	public Object minus(Object value) throws LeekRunException {
-		if (value instanceof Double) return -((Double) value);
+		if (value instanceof Double)
+			return -((Double) value);
 		return -longint(value);
 	}
 
@@ -920,14 +967,14 @@ public abstract class AI {
 		}
 
 		// Concatenate arrays
-		if (x instanceof LegacyArrayLeekValue) {
-			if (y instanceof LegacyArrayLeekValue) {
-				var array1 = (LegacyArrayLeekValue) x;
-				var array2 = (LegacyArrayLeekValue) y;
+		if (x instanceof HybridContainerLeekValue) {
+			if (y instanceof HybridContainerLeekValue) {
+				var array1 = (HybridContainerLeekValue) x;
+				var array2 = (HybridContainerLeekValue) y;
 
 				ops((array1.size() + array2.size()) * 2);
 
-				var retour = new LegacyArrayLeekValue();
+				var retour = new HybridContainerLeekValue();
 				var iterator = array1.iterator();
 				while (iterator.hasNext()) {
 					if (iterator.key() instanceof String) {
@@ -949,11 +996,11 @@ public abstract class AI {
 				return retour;
 			}
 
-			var array1 = (LegacyArrayLeekValue) x;
+			var array1 = (HybridContainerLeekValue) x;
 
 			ops(array1.size() * 2);
 
-			var retour = new LegacyArrayLeekValue();
+			var retour = new HybridContainerLeekValue();
 			var iterator = array1.iterator();
 
 			while (iterator.hasNext()) {
@@ -969,12 +1016,12 @@ public abstract class AI {
 			return retour;
 		}
 
-		if (y instanceof LegacyArrayLeekValue) {
-			var array2 = (LegacyArrayLeekValue) y;
+		if (y instanceof HybridContainerLeekValue) {
+			var array2 = (HybridContainerLeekValue) y;
 
 			ops(array2.size() * 2);
 
-			var retour = new LegacyArrayLeekValue();
+			var retour = new HybridContainerLeekValue();
 
 			retour.push(this, x);
 
@@ -1043,8 +1090,8 @@ public abstract class AI {
 	}
 
 	public Object add_eq(Object x, Object y) throws LeekRunException {
-		if (x instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) x).add_eq(this, y);
+		if (x instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) x).add_eq(this, y);
 		}
 		if (x instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) x).add_eq(this, y);
@@ -1150,8 +1197,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).string(this, new HashSet<Object>());
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.string(new HashSet<Object>());
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).string(this, new HashSet<Object>());
+		} else if (value instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) value).string(this, new HashSet<Object>());
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getString(this, new HashSet<Object>());
 		} else if (value instanceof MapLeekValue) {
@@ -1182,8 +1229,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).string(this, visited);
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.string(visited);
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).string(this, visited);
+		} else if (value instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) value).string(this, visited);
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getString(this, visited);
 		} else if (value instanceof MapLeekValue) {
@@ -1225,8 +1272,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).export(this, new HashSet<Object>());
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.export(new HashSet<Object>());
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).export(this, new HashSet<Object>());
+		} else if (value instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) value).export(this, new HashSet<Object>());
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getString(this, new HashSet<Object>());
 		} else if (value instanceof MapLeekValue) {
@@ -1257,8 +1304,8 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).export(this, visited);
 		} else if (value instanceof NativeObjectLeekValue o) {
 			return o.export(visited);
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).export(this, visited);
+		} else if (value instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) value).export(this, visited);
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).getString(this, visited);
 		} else if (value instanceof MapLeekValue) {
@@ -1288,8 +1335,8 @@ public abstract class AI {
 		if (v instanceof MapLeekValue) {
 			return ((MapLeekValue) v).toJSON(this, visited);
 		}
-		if (v instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) v).toJSON(this, visited);
+		if (v instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) v).toJSON(this, visited);
 		}
 		if (v instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) v).toJSON(this, visited);
@@ -1301,11 +1348,14 @@ public abstract class AI {
 	}
 
 	public boolean isPrimitive(Object value) {
-		return !(value instanceof ArrayLeekValue || value instanceof MapLeekValue || value instanceof LegacyArrayLeekValue || value instanceof ObjectLeekValue || value instanceof NativeObjectLeekValue);
+		return !(value instanceof ArrayLeekValue || value instanceof MapLeekValue
+				|| value instanceof HybridContainerLeekValue || value instanceof ObjectLeekValue
+				|| value instanceof NativeObjectLeekValue);
 	}
 
 	public boolean isIterable(Object value) throws LeekRunException {
-		boolean ok = value instanceof LegacyArrayLeekValue || value instanceof ArrayLeekValue || value instanceof MapLeekValue;
+		boolean ok = value instanceof HybridContainerLeekValue || value instanceof ArrayLeekValue
+				|| value instanceof MapLeekValue;
 		if (!ok && version >= 2) {
 			addSystemLog(AILog.ERROR, Error.NOT_ITERABLE, new Object[] { value });
 		}
@@ -1313,8 +1363,8 @@ public abstract class AI {
 	}
 
 	public Iterator<Entry<Object, Object>> iterator(Object value) {
-		if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).iterator();
+		if (value instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) value).iterator();
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).genericIterator();
 		} else if (value instanceof MapLeekValue) {
@@ -1345,21 +1395,25 @@ public abstract class AI {
 				try {
 					var clazz = (ClassLeekValue) this.getClass().getField(value.getClass().getSimpleName()).get(this);
 					var method = clazz.genericMethods.get(field);
-					if (method != null) return method;
-				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {}
+					if (method != null)
+						return method;
+				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
+				}
 			}
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { value, field });
 		return null;
 	}
 
-	private Field getWriteableField(Object object, String field, ClassLeekValue fromClass) throws LeekRunException, NoSuchFieldException, SecurityException {
+	private Field getWriteableField(Object object, String field, ClassLeekValue fromClass)
+			throws LeekRunException, NoSuchFieldException, SecurityException {
 		var f = object.getClass().getField(field);
 		if (!checkFieldAccessLevel(f, object, fromClass)) {
 			return null;
 		}
 		if (f.isAnnotationPresent(Final.class)) {
-			this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getSimpleName().substring(2), field });
+			this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+					new String[] { object.getClass().getSimpleName().substring(2), field });
 			return null;
 		}
 		return f;
@@ -1368,12 +1422,14 @@ public abstract class AI {
 	private boolean checkFieldAccessLevel(Field field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (field.isAnnotationPresent(Private.class)) {
 			if (fromClass == null || value.getClass() != fromClass.clazz) {
-				addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new Object[] { value.getClass().getSimpleName().substring(2), field.getName() });
+				addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD,
+						new Object[] { value.getClass().getSimpleName().substring(2), field.getName() });
 				return false;
 			}
 		} else if (field.isAnnotationPresent(Protected.class)) {
 			if (fromClass == null || !value.getClass().isAssignableFrom(fromClass.clazz)) {
-				addSystemLog(AILog.ERROR, Error.PROTECTED_FIELD, new Object[] { value.getClass().getSimpleName().substring(2), field.getName() });
+				addSystemLog(AILog.ERROR, Error.PROTECTED_FIELD,
+						new Object[] { value.getClass().getSimpleName().substring(2), field.getName() });
 				return false;
 			}
 		}
@@ -1408,7 +1464,8 @@ public abstract class AI {
 					return null;
 				}
 				if (f.isAnnotationPresent(Final.class)) {
-					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+							new String[] { object.getClass().getName(), field });
 					return null;
 				}
 				f.set(object, value);
@@ -1434,13 +1491,15 @@ public abstract class AI {
 				return null;
 			}
 			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+						new String[] { object.getClass().getName(), field });
 				return null;
 			}
 			var v = add(f.get(object), 1l);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
@@ -1459,13 +1518,15 @@ public abstract class AI {
 				return null;
 			}
 			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+						new String[] { object.getClass().getName(), field });
 				return null;
 			}
 			var v = add(f.get(object), 1l);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1483,13 +1544,15 @@ public abstract class AI {
 				return null;
 			}
 			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+						new String[] { object.getClass().getName(), field });
 				return null;
 			}
 			var v = sub(f.get(object), 1l);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
@@ -1507,18 +1570,21 @@ public abstract class AI {
 				return null;
 			}
 			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+						new String[] { object.getClass().getName(), field });
 				return null;
 			}
 			var v = sub(f.get(object), 1l);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_add_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_add_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_add_eq(field, value);
 		}
@@ -1531,18 +1597,21 @@ public abstract class AI {
 				return null;
 			}
 			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+						new String[] { object.getClass().getName(), field });
 				return null;
 			}
 			var v = add(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_sub_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_sub_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_sub_eq(field, value);
 		}
@@ -1555,18 +1624,21 @@ public abstract class AI {
 				return null;
 			}
 			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+						new String[] { object.getClass().getName(), field });
 				return null;
 			}
 			var v = sub(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_mul_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_mul_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_mul_eq(field, value);
 		}
@@ -1579,18 +1651,21 @@ public abstract class AI {
 				return null;
 			}
 			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+						new String[] { object.getClass().getName(), field });
 				return null;
 			}
 			var v = mul(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_pow_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_pow_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_pow_eq(field, value);
 		}
@@ -1603,18 +1678,21 @@ public abstract class AI {
 				return null;
 			}
 			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+						new String[] { object.getClass().getName(), field });
 				return null;
 			}
 			var v = pow(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_div_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_div_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_div_eq(field, value);
 		}
@@ -1627,18 +1705,21 @@ public abstract class AI {
 				return null;
 			}
 			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+						new String[] { object.getClass().getName(), field });
 				return null;
 			}
 			var v = div(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_intdiv_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_intdiv_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_intdiv_eq(field, value);
 		}
@@ -1651,18 +1732,21 @@ public abstract class AI {
 				return null;
 			}
 			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+						new String[] { object.getClass().getName(), field });
 				return null;
 			}
 			var v = intdiv(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_mod_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_mod_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_mod_eq(field, value);
 		}
@@ -1675,18 +1759,21 @@ public abstract class AI {
 				return null;
 			}
 			if (f.isAnnotationPresent(Final.class)) {
-				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD,
+						new String[] { object.getClass().getName(), field });
 				return null;
 			}
 			var v = mod(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_bor_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_bor_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_bor_eq(field, value);
 		}
@@ -1695,16 +1782,19 @@ public abstract class AI {
 		}
 		try {
 			var f = getWriteableField(object, field, fromClass);
-			if (f == null) return null;
+			if (f == null)
+				return null;
 			var v = bor(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_band_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_band_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_band_eq(field, value);
 		}
@@ -1713,16 +1803,19 @@ public abstract class AI {
 		}
 		try {
 			var f = getWriteableField(object, field, fromClass);
-			if (f == null) return null;
+			if (f == null)
+				return null;
 			var v = band(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_bxor_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_bxor_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_bxor_eq(field, value);
 		}
@@ -1731,16 +1824,19 @@ public abstract class AI {
 		}
 		try {
 			var f = getWriteableField(object, field, fromClass);
-			if (f == null) return null;
+			if (f == null)
+				return null;
 			var v = bxor(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_shl_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_shl_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_shl_eq(field, value);
 		}
@@ -1749,16 +1845,19 @@ public abstract class AI {
 		}
 		try {
 			var f = getWriteableField(object, field, fromClass);
-			if (f == null) return null;
+			if (f == null)
+				return null;
 			var v = shl(f.get(object), value);
 			f.set(object, v);
 			return v;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_shr_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_shr_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_shr_eq(field, value);
 		}
@@ -1768,17 +1867,20 @@ public abstract class AI {
 		if (object instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(object, field, fromClass);
-			if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = shr(f.get(object), value);
 				f.set(object, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
-	public Object field_ushr_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object field_ushr_eq(Object object, String field, Object value, ClassLeekValue fromClass)
+			throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_ushr_eq(field, value);
 		}
@@ -1788,19 +1890,21 @@ public abstract class AI {
 		if (object instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(object, field, fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = ushr(f.get(object), value);
 				f.set(object, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
 	}
 
 	public Object put(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put(this, key, value);
@@ -1819,18 +1923,20 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				f.set(array, value);
 				return value;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
 		return null;
 	}
 
 	public Object put_inc(Object array, Object key, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_inc(this, key);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_inc(this, key);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_inc(this, key);
@@ -1849,11 +1955,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = f.get(array);
 				f.set(array, add(v, 1l));
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -1861,8 +1969,8 @@ public abstract class AI {
 	}
 
 	public Object put_pre_inc(Object array, Object key, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_pre_inc(this, key);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_pre_inc(this, key);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_pre_inc(this, key);
@@ -1881,11 +1989,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = add(f.get(array), 1l);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -1893,8 +2003,8 @@ public abstract class AI {
 	}
 
 	public Object put_dec(Object array, Object key, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_dec(this, key);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_dec(this, key);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_dec(this, key);
@@ -1913,11 +2023,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = f.get(array);
 				f.set(array, sub(v, 1l));
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -1925,8 +2037,8 @@ public abstract class AI {
 	}
 
 	public Object put_pre_dec(Object array, Object key, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_pre_dec(this, key);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_pre_dec(this, key);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_pre_dec(this, key);
@@ -1945,11 +2057,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = sub(f.get(array), 1l);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -1957,8 +2071,8 @@ public abstract class AI {
 	}
 
 	public Object put_add_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_add_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_add_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_add_eq(this, key, value);
@@ -1977,11 +2091,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = add(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -1989,8 +2105,8 @@ public abstract class AI {
 	}
 
 	public Object put_sub_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_sub_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_sub_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_sub_eq(this, key, value);
@@ -2009,11 +2125,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = sub(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2021,8 +2139,8 @@ public abstract class AI {
 	}
 
 	public Object put_mul_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_mul_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_mul_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_mul_eq(this, key, value);
@@ -2041,11 +2159,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = mul(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2053,8 +2173,8 @@ public abstract class AI {
 	}
 
 	public Object put_pow_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_pow_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_pow_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_pow_eq(this, key, value);
@@ -2073,11 +2193,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = pow(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2085,8 +2207,8 @@ public abstract class AI {
 	}
 
 	public Object put_mod_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_mod_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_mod_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_mod_eq(this, key, value);
@@ -2105,11 +2227,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = mod(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2117,8 +2241,8 @@ public abstract class AI {
 	}
 
 	public Object put_div_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_div_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_div_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_div_eq(this, key, value);
@@ -2137,11 +2261,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = div(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2149,8 +2275,8 @@ public abstract class AI {
 	}
 
 	public long put_intdiv_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_intdiv_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_intdiv_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_intdiv_eq(this, key, value);
@@ -2169,11 +2295,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return 0;
+				if (f == null)
+					return 0;
 				var v = intdiv(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2181,8 +2309,8 @@ public abstract class AI {
 	}
 
 	public Object put_bor_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_bor_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_bor_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_bor_eq(this, key, value);
@@ -2201,11 +2329,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = bor(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2213,8 +2343,8 @@ public abstract class AI {
 	}
 
 	public Object put_band_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_band_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_band_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_band_eq(this, key, value);
@@ -2233,11 +2363,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = band(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2245,8 +2377,8 @@ public abstract class AI {
 	}
 
 	public Object put_shl_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_shl_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_shl_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_shl_eq(this, key, value);
@@ -2265,11 +2397,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = shl(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2277,8 +2411,8 @@ public abstract class AI {
 	}
 
 	public Object put_shr_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_shr_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_shr_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_shr_eq(this, key, value);
@@ -2297,11 +2431,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = shr(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2309,8 +2445,8 @@ public abstract class AI {
 	}
 
 	public Object put_ushr_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_ushr_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_ushr_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_ushr_eq(this, key, value);
@@ -2329,11 +2465,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = ushr(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2341,8 +2479,8 @@ public abstract class AI {
 	}
 
 	public Object put_bxor_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put_bxor_eq(this, key, value);
+		if (array instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) array).put_bxor_eq(this, key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put_bxor_eq(this, key, value);
@@ -2361,11 +2499,13 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return null;
+				if (f == null)
+					return null;
 				var v = bxor(f.get(array), value);
 				f.set(array, v);
 				return v;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {}
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			}
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
@@ -2380,8 +2520,8 @@ public abstract class AI {
 	}
 
 	public Object get(Object value, Object index, ClassLeekValue fromClass) throws LeekRunException {
-		if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).get(this, index);
+		if (value instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) value).get(this, index);
 		}
 		if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).get(this, index);
@@ -2410,8 +2550,10 @@ public abstract class AI {
 				try {
 					var clazz = (ClassLeekValue) this.getClass().getField(value.getClass().getSimpleName()).get(this);
 					var method = clazz.genericMethods.get(string(index));
-					if (method != null) return method;
-				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {}
+					if (method != null)
+						return method;
+				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
+				}
 			}
 		}
 		if (version >= 3)
@@ -2420,8 +2562,8 @@ public abstract class AI {
 	}
 
 	public Box getBox(Object value, Object index) throws LeekRunException {
-		if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).getBox(this, index);
+		if (value instanceof HybridContainerLeekValue) {
+			return ((HybridContainerLeekValue) value).getBox(this, index);
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { value });
@@ -2482,34 +2624,39 @@ public abstract class AI {
 		return null;
 	}
 
-	public Object callMethod(Object value, String method, ClassLeekValue fromClass, Object... args) throws LeekRunException {
+	public Object callMethod(Object value, String method, ClassLeekValue fromClass, Object... args)
+			throws LeekRunException {
 		if (value instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) value).callMethod(method, fromClass, args);
 		}
 		// if (value instanceof ClassLeekValue) {
-		// 	return ((ClassLeekValue) value).callMethod(method, args);
+		// return ((ClassLeekValue) value).callMethod(method, args);
 		// }
 		try {
 			var m = value.getClass().getMethod("u_" + method);
 			if (m.isAnnotationPresent(Private.class)) {
 				if (fromClass == null || value.getClass() != fromClass.clazz) {
-					addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), method });
+					addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD,
+							new Object[] { value.getClass().getSimpleName().substring(2), method });
 					return null;
 				}
 			} else if (m.isAnnotationPresent(Protected.class)) {
 				if (fromClass == null || !value.getClass().isAssignableFrom(fromClass.clazz)) {
-					addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), method });
+					addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD,
+							new Object[] { value.getClass().getSimpleName().substring(2), method });
 					return null;
 				}
 			}
 			return m.invoke(value, args);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+				| SecurityException e) {
 			e.printStackTrace(System.out);
 		}
 		return null;
 	}
 
-	public Object callObjectAccess(Object value, String field, String method, ClassLeekValue fromClass, Object... args) throws LeekRunException {
+	public Object callObjectAccess(Object value, String field, String method, ClassLeekValue fromClass, Object... args)
+			throws LeekRunException {
 		if (value instanceof ClassLeekValue) {
 			return ((ClassLeekValue) value).callMethod(method + "_" + args.length, fromClass, args);
 		}
@@ -2525,24 +2672,28 @@ public abstract class AI {
 				var m = value.getClass().getMethod(method, types);
 				if (m.isAnnotationPresent(Private.class)) {
 					if (fromClass == null || value.getClass() != fromClass.clazz) {
-						addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), field });
+						addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD,
+								new Object[] { value.getClass().getSimpleName().substring(2), field });
 						return null;
 					}
 				} else if (m.isAnnotationPresent(Protected.class)) {
 					if (fromClass == null || !value.getClass().isAssignableFrom(fromClass.clazz)) {
-						addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), field });
+						addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD,
+								new Object[] { value.getClass().getSimpleName().substring(2), field });
 						return null;
 					}
 				}
 				return m.invoke(value, args);
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+					| SecurityException e) {
 				try {
 					var f = value.getClass().getField(field);
 					if (!checkFieldAccessLevel(f, value, fromClass)) {
 						return null;
 					}
 					return execute(f.get(value), args);
-				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {}
+				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
+				}
 			}
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { value, field });
@@ -2550,7 +2701,8 @@ public abstract class AI {
 	}
 
 	public Object execute(Object function, Object... args) throws LeekRunException {
-		// System.out.println("[AI] execute function=" + function + " args=" + Arrays.toString(args));
+		// System.out.println("[AI] execute function=" + function + " args=" +
+		// Arrays.toString(args));
 		if (function instanceof ClassLeekValue) {
 			return ((ClassLeekValue) function).run(this, null, args);
 		}
@@ -2577,10 +2729,10 @@ public abstract class AI {
 			return (ArrayLeekValue) value;
 		}
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new Object[] {
-			String.valueOf(index),
-			value,
-			StandardClass.getType(this, value).toString(),
-			Type.ARRAY.toString() + " (V4+)"
+				String.valueOf(index),
+				value,
+				StandardClass.getType(this, value).toString(),
+				Type.ARRAY.toString() + " (V4+)"
 		});
 		throw new ClassCastException();
 	}
@@ -2590,10 +2742,10 @@ public abstract class AI {
 			return (MapLeekValue) value;
 		}
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new Object[] {
-			String.valueOf(index),
-			value,
-			StandardClass.getType(this, value).toString(),
-			Type.MAP.toString()
+				String.valueOf(index),
+				value,
+				StandardClass.getType(this, value).toString(),
+				Type.MAP.toString()
 		});
 		throw new ClassCastException();
 	}
@@ -2603,31 +2755,33 @@ public abstract class AI {
 			return (FunctionLeekValue) value;
 		}
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new Object[] {
-			String.valueOf(index),
-			value,
-			StandardClass.getType(this, value).toString(),
-			Type.FUNCTION.toString()
+				String.valueOf(index),
+				value,
+				StandardClass.getType(this, value).toString(),
+				Type.FUNCTION.toString()
 		});
 		throw new ClassCastException();
 	}
 
-	public LegacyArrayLeekValue toLegacyArray(int index, Object value) throws LeekRunException {
-		if (value instanceof LegacyArrayLeekValue) {
-			return (LegacyArrayLeekValue) value;
+	public HybridContainerLeekValue toHybridContainer(int index, Object value) throws LeekRunException {
+		if (value instanceof HybridContainerLeekValue) {
+			return (HybridContainerLeekValue) value;
 		}
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new Object[] {
-			String.valueOf(index),
-			value,
-			StandardClass.getType(this, value).toString(),
-			Type.ARRAY.toString() + " (V1-3)"
+				String.valueOf(index),
+				value,
+				StandardClass.getType(this, value).toString(),
+				Type.ARRAY.toString() + " (V1-3)"
 		});
-		return new LegacyArrayLeekValue();
+		return new HybridContainerLeekValue();
 	}
 
 	public static boolean verifyParameters(int[] types, Object... parameters) {
-		if (types.length != parameters.length) return false;
+		if (types.length != parameters.length)
+			return false;
 		for (int i = 0; i < types.length; i++) {
-			if (types[i] == -1) continue;
+			if (types[i] == -1)
+				continue;
 			if (i >= parameters.length || !isType(parameters[i], types[i])) {
 				return false;
 			}
@@ -2638,38 +2792,60 @@ public abstract class AI {
 	public static boolean isType(Object value, int type) {
 		// value = LeekValueManager.getValue(value);
 		switch (type) {
-			case BOOLEAN: return value instanceof Boolean;
-			case INT: return value instanceof Long;
-			case DOUBLE: return value instanceof Double;
-			case STRING: return value instanceof String;
-			case NULL: return value == null;
-			case LEGACY_ARRAY: return value instanceof LegacyArrayLeekValue;
-			case ARRAY: return value instanceof LegacyArrayLeekValue || value instanceof ArrayLeekValue;
-			case MAP: return value instanceof MapLeekValue;
-			case FUNCTION: return value instanceof FunctionLeekValue;
-			case NUMBER: return value instanceof Long || value instanceof Double;
+			case BOOLEAN:
+				return value instanceof Boolean;
+			case INT:
+				return value instanceof Long;
+			case DOUBLE:
+				return value instanceof Double;
+			case STRING:
+				return value instanceof String;
+			case NULL:
+				return value == null;
+			case LEGACY_ARRAY:
+				return value instanceof HybridContainerLeekValue;
+			case ARRAY:
+				return value instanceof HybridContainerLeekValue || value instanceof ArrayLeekValue;
+			case MAP:
+				return value instanceof MapLeekValue;
+			case FUNCTION:
+				return value instanceof FunctionLeekValue;
+			case NUMBER:
+				return value instanceof Long || value instanceof Double;
 		}
 		return true;
 	}
 
 	public ClassLeekValue classOf(Object value) {
-		if (value == null) return nullClass;
-		if (value instanceof Long) return integerClass;
-		if (value instanceof Double) return realClass;
-		if (value instanceof Boolean) return booleanClass;
-		if (value instanceof LegacyArrayLeekValue || value instanceof ArrayLeekValue) return arrayClass;
-		if (value instanceof MapLeekValue) return mapClass;
-		if (value instanceof String) return stringClass;
-		if (value instanceof ObjectLeekValue) return ((ObjectLeekValue) value).clazz;
+		if (value == null)
+			return nullClass;
+		if (value instanceof Long)
+			return integerClass;
+		if (value instanceof Double)
+			return realClass;
+		if (value instanceof Boolean)
+			return booleanClass;
+		if (value instanceof HybridContainerLeekValue || value instanceof ArrayLeekValue)
+			return arrayClass;
+		if (value instanceof MapLeekValue)
+			return mapClass;
+		if (value instanceof String)
+			return stringClass;
+		if (value instanceof ObjectLeekValue)
+			return ((ObjectLeekValue) value).clazz;
 		if (value instanceof NativeObjectLeekValue)
 			try {
-				// System.out.println("get class " + ((NativeObjectLeekValue) value).getClass().getSimpleName());
-				return (ClassLeekValue) this.getClass().getField(((NativeObjectLeekValue) value).getClass().getSimpleName()).get(this);
+				// System.out.println("get class " + ((NativeObjectLeekValue)
+				// value).getClass().getSimpleName());
+				return (ClassLeekValue) this.getClass().getField(((NativeObjectLeekValue) value).getClass().getSimpleName())
+						.get(this);
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				return valueClass;
 			}
-		if (value instanceof ClassLeekValue) return classClass;
-		if (value instanceof FunctionLeekValue) return functionClass;
+		if (value instanceof ClassLeekValue)
+			return classClass;
+		if (value instanceof FunctionLeekValue)
+			return functionClass;
 		return valueClass;
 	}
 
