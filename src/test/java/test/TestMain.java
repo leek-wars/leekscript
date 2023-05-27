@@ -31,6 +31,7 @@ public class TestMain {
 		new TestArrayStress().run();
 		new TestMap().run();
 		new TestMapStress().run();
+		new TestInterval().run();
 		new TestObject().run();
 		new TestObjectStress().run();
 		new TestClass().run();

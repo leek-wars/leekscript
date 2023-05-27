@@ -28,7 +28,7 @@ public class TestCommon {
 	private static String C_PINK = "\033[1;95m";
 	private static String C_GREY = "\033[0;90m";
 
-	private static int LATEST_VERSION = 4;
+	private static int LATEST_VERSION = 5;
 
 	private static int tests = 0;
 	private static int success = 0;
@@ -335,6 +335,9 @@ public class TestCommon {
 	}
 	public Case code_v4_(String code) {
 		return new Case(code, true, 4, LATEST_VERSION);
+	}
+	public Case code_v5_(String code) {
+		return new Case(code, true, 5, LATEST_VERSION);
 	}
 	public Case DISABLED_code_v4_(String code) {
 		return new Case(code, false, 4, LATEST_VERSION);
