@@ -27,6 +27,7 @@ public class Type {
 	public static final Type MAP = map(Type.ANY, Type.ANY);
 	public static final Type CLASS = new Type("Class", "c", "ClassLeekValue", "ClassLeekValue", "new ClassLeekValue()");
 	public static final Type VOID = new Type("void", "v", "Object", "Object", "null");
+	public static final Type INTERVAL = new Type("interval", "t", "IntervalLeekValue", "IntervalLeekValue", "new IntervalLeekValue()");
 	public static final Type ARRAY = array(Type.ANY);
 	public static final Type ARRAY_INT = array(Type.INT);
 	public static final Type ARRAY_STRING = array(Type.STRING);

@@ -12,6 +12,7 @@ import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
 import leekscript.runner.values.GenericArrayLeekValue;
 import leekscript.runner.values.GenericMapLeekValue;
+import leekscript.runner.values.IntervalLeekValue;
 import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.Box;
@@ -1310,6 +1311,8 @@ public abstract class AI {
 			return ((ArrayLeekValue) value).getString(this, visited);
 		} else if (value instanceof MapLeekValue) {
 			return ((MapLeekValue) value).getString(this, visited);
+		} else if (value instanceof IntervalLeekValue) {
+			return ((IntervalLeekValue) value).getString(this, visited);
 		} else if (value instanceof String) {
 			return "\"" + value + "\"";
 		} else if (value instanceof ClassLeekValue) {

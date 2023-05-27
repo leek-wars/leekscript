@@ -15,7 +15,8 @@ import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.AI.NativeObjectLeekValue;
 
-public class MapLeekValue extends HashMap<Object, Object> implements Iterable<Entry<Object, Object>>, GenericMapLeekValue {
+public class MapLeekValue extends HashMap<Object, Object>
+		implements Iterable<Entry<Object, Object>>, GenericMapLeekValue {
 
 	private static final int READ_OPERATIONS = 2;
 	private static final int WRITE_OPERATIONS = 3;
@@ -275,7 +276,8 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 
 	public Object mapMin(AI ai) throws LeekRunException {
 		ai.ops(1 + 3 * size());
-		if (size() == 0) return null;
+		if (size() == 0)
+			return null;
 		var it = entrySet().iterator();
 		Object min_value = it.next().getValue();
 		var mincomp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);

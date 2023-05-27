@@ -27,6 +27,7 @@ import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekFunctionCall;
+import leekscript.compiler.expression.LeekInterval;
 import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekObject;
@@ -1352,17 +1353,19 @@ public class WordCompiler {
 		}
 
 		var firstExpression = readExpression(true);
-		boolean isMap = mCompiler.token().getWord().equals(":");
 
-		if (isMap) {
+		if (mCompiler.token().getWord().equals(":")) {
 			mCompiler.skipToken();
-			return readMap(openingBracket, firstExpression, mCompiler.token());
+			return readMap(openingBracket, firstExpression);
+		} else if (version >= 5 && mCompiler.token().getType() == WordParser.T_DOT_DOT) {
+			mCompiler.skipToken();
+			return readInterval(openingBracket, firstExpression);
 		} else {
-			return readArray(openingBracket, firstExpression, mCompiler.token());
+			return readArray(openingBracket, firstExpression);
 		}
 	}
 
-	private Expression readMap(Token openingBracket, Expression firstExpression, Token firstToken)
+	private Expression readMap(Token openingBracket, Expression firstExpression)
 			throws LeekCompilerException {
 		var container = new LeekMap(openingBracket);
 
@@ -1393,7 +1396,7 @@ public class WordCompiler {
 		return container;
 	}
 
-	private Expression readArray(Token openingBracket, Expression firstExpression, Token firstToken)
+	private Expression readArray(Token openingBracket, Expression firstExpression)
 			throws LeekCompilerException {
 		var container = new LeekArray(openingBracket);
 
@@ -1418,6 +1421,25 @@ public class WordCompiler {
 
 		container.setClosingBracket(mCompiler.token());
 		return container;
+	}
+
+	private Expression readInterval(Token openingBracket, Expression fromExpression)
+			throws LeekCompilerException {
+		// Although an interval is not comma separated, we still parse the second
+		// expression as if we did. This is in order to be more consitent as the first
+		// expression is parsed as if it was comma separated
+		var toExpression = readExpression(true);
+
+		var nextToken = mCompiler.token();
+		if (nextToken.getWord().equals(":")) {
+			throw new LeekCompilerException(mCompiler.token(), Error.ASSOCIATIVE_ARRAY);
+		} else if (nextToken.getType() == WordParser.T_VIRG) {
+			throw new LeekCompilerException(mCompiler.token(), Error.SIMPLE_ARRAY);
+		} else if (nextToken.getType() != WordParser.T_BRACKET_RIGHT) {
+			throw new LeekCompilerException(mCompiler.token(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+		}
+
+		return new LeekInterval(openingBracket, fromExpression, toExpression, mCompiler.eatToken());
 	}
 
 	private Expression readLegacyHybridContainer(Token openingBracket) throws LeekCompilerException {
