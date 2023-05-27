@@ -35,7 +35,7 @@ public class LeekLegacyHybridContainer extends Expression {
 		openingBracket.setExpression(this);
 	}
 
-	public void addValue(WordCompiler compiler, Expression key, Token keyToken, Expression value) {
+	public void addValue(WordCompiler compiler, Expression key, Expression value) {
 		// Clés dupliquée ?
 		for (int i = 0; i < mValues.size(); i += 2) {
 			if (key.equals(mValues.get(i))) {

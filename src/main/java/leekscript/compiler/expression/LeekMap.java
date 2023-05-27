@@ -40,7 +40,7 @@ public class LeekMap extends Expression {
 		openingBracket.setExpression(this);
 	}
 
-	public void addValue(WordCompiler compiler, Expression key, Token keyToken, Expression value) {
+	public void addValue(WordCompiler compiler, Expression key, Expression value) {
 		if (mEntries.stream().anyMatch(entry -> key.equals(entry.key))) {
 			compiler.addError(new AnalyzeError(key.getLocation(), AnalyzeErrorLevel.ERROR, Error.MAP_DUPLICATED_KEY));
 		}
