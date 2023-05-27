@@ -324,6 +324,9 @@ public class TestCommon {
 	public Case code_v2_3(String code) {
 		return new Case(code, true, 2, 3);
 	}
+	public Case code_v2_4(String code) {
+		return new Case(code, true, 2, 4);
+	}
 	public Case code_v3(String code) {
 		return new Case(code, true, 3, 3);
 	}
@@ -332,6 +335,9 @@ public class TestCommon {
 	}
 	public Case code_v1_4(String code) {
 		return new Case(code, true, 1, 4);
+	}
+	public Case code_v4(String code) {
+		return new Case(code, true, 4, 4);
 	}
 	public Case code_v4_(String code) {
 		return new Case(code, true, 4, LATEST_VERSION);

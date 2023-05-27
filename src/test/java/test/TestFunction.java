@@ -244,7 +244,8 @@ public class TestFunction extends TestCommon {
 
 		section("System function typing");
 		code_v1_3("count('hello')").equals("null");
-		code_v4_("count('hello')").warning(Error.WRONG_ARGUMENT_TYPE);
+		code_v4("count('hello')").warning(Error.WRONG_ARGUMENT_TYPE);
+		code_v5_("count('hello')").error(Error.WRONG_ARGUMENT_TYPE);
 		// code_v4_("count('hello')").error(Error.WRONG_ARGUMENT_TYPE);
 		code("return abs(12) < 50").equals("true");
 		code("return round(abs(cos(2)) + 5)").equals("5");

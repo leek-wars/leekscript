@@ -936,14 +936,14 @@ public class LeekExpression extends Expression {
 		}
 
 		// x == y : toujours faux si types incompatibles
-		if ((compiler.getVersion() == 4 && mOperator == Operators.EQUALS) || mOperator == Operators.EQUALS_EQUALS) {
+		if ((compiler.getVersion() >= 4 && mOperator == Operators.EQUALS) || mOperator == Operators.EQUALS_EQUALS) {
 			if (mExpression1.getType().accepts(mExpression2.getType()) == CastType.INCOMPATIBLE) {
 				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.COMPARISON_ALWAYS_FALSE,
 						new String[] { mExpression1.getType().name, mExpression2.getType().name }));
 			}
 		}
 		// x != y : toujours vrai si types incompatibles
-		if ((compiler.getVersion() == 4 && mOperator == Operators.NOTEQUALS) || mOperator == Operators.NOT_EQUALS_EQUALS) {
+		if ((compiler.getVersion() >= 4 && mOperator == Operators.NOTEQUALS) || mOperator == Operators.NOT_EQUALS_EQUALS) {
 			if (mExpression1.getType().accepts(mExpression2.getType()) == CastType.INCOMPATIBLE) {
 				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.COMPARISON_ALWAYS_TRUE,
 						new String[] { mExpression1.getType().name, mExpression2.getType().name }));
