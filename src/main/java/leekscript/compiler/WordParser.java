@@ -11,14 +11,14 @@ import leekscript.common.Error;
 public class WordParser {
 
 	public static final String[] reservedWords = new String[] {
-		"abstract", "arguments", "await", "break", "byte", "case", "catch",
-		"char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval",
-		"export", "extends", "false", "final", "finally", "float", "for", "function", "global",
-		"goto", "if", "implements", "import", "in", "instanceof", "int", "interface",
-		"let", "long", "native", "new", "not", "null", "package", "private", "protected",
-		"public", "return", "short", "static", "super", "switch", "synchronized", "this",
-		"throw", "throws", "transient", "true", "try", "typeof", "var", "void",
-		"volatile", "while", "with", "yield"
+			"abstract", "arguments", "await", "break", "byte", "case", "catch",
+			"char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval",
+			"export", "extends", "false", "final", "finally", "float", "for", "function", "global",
+			"goto", "if", "implements", "import", "in", "instanceof", "int", "interface",
+			"let", "long", "native", "new", "not", "null", "package", "private", "protected",
+			"public", "return", "short", "static", "super", "switch", "synchronized", "this",
+			"throw", "throws", "transient", "true", "try", "typeof", "var", "void",
+			"volatile", "while", "with", "yield"
 	};
 
 	/**
@@ -47,6 +47,7 @@ public class WordParser {
 	public final static int T_DOT = 15;
 	public final static int T_ARROW = 16;
 	public final static int T_END_OF_FILE = 17;
+	public final static int T_DOT_DOT = 18;
 
 	private final AIFile mAI;
 
@@ -80,6 +81,10 @@ public class WordParser {
 		int length = code.length();
 		for (int i = 0; i < code.length(); i++) {
 			c = code.charAt(i);
+
+			var hasNextChar = i + 1 < length;
+			var nextChar = hasNextChar ? code.charAt(i + 1) : 0;
+
 			if (c == '\r')
 				continue;
 			// Compteur caractères/lignes
@@ -149,7 +154,9 @@ public class WordParser {
 			}
 
 			// Identifier
-			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' || (c >= 'À' &&  c <= 'Ö') || (c >= 'Ø' && c <= 'Ý') || (c >= 'à' && c <= 'ö') || (c >= 'ø' && c <= 'ý') || c == 'ÿ' || (c >= 'Œ' && c <= 'œ')) {
+			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' || (c >= 'À' && c <= 'Ö')
+					|| (c >= 'Ø' && c <= 'Ý') || (c >= 'à' && c <= 'ö') || (c >= 'ø' && c <= 'ý') || c == 'ÿ'
+					|| (c >= 'Œ' && c <= 'œ')) {
 				if (type == T_NOTHING) {
 					word += c;
 					type = T_STRING;
@@ -185,25 +192,37 @@ public class WordParser {
 				word = "";
 				type = T_NOTHING;
 			} else if (c == '.') {
-				if (type == T_VAR_STRING) {
+				if (hasNextChar && nextChar == '.' && version >= 5) {
+					if (type != T_NOTHING) {
+						newWord(word, type, -1);
+					}
+					newWord("..", T_DOT_DOT);
+					word = "";
+					type = T_NOTHING;
+					++i;
+				} else if (type == T_VAR_STRING) {
 					word += c;
 				} else if (type == T_NUMBER) {
 					if (word.contains(".")) {
-						compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
+						compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1),
+								AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 					} else {
 						word += c;
 					}
 				} else if (version >= 2) {
-					if (type == T_STRING) {
+					if (type != T_NOTHING) {
 						newWord(word, type, -1);
 					}
 					newWord(".", T_DOT);
 					word = "";
 					type = T_NOTHING;
 				} else {
-					compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
+					compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1),
+							AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 				}
-			} else if (c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-' || c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~' || c == '.' || c == '\\') {
+			} else if (c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-'
+					|| c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~' || c == '.'
+					|| c == '\\') {
 				if (type == T_VAR_STRING) {
 					word += c;
 				} else if (type == T_OPERATOR) {
@@ -295,8 +314,7 @@ public class WordParser {
 						newWord(word, type, -1);
 						word = "" + c;
 					}
-				}
-				else if (type == T_NUMBER) {
+				} else if (type == T_NUMBER) {
 					if ((c == '-' || c == '+') && (word.endsWith("e") || word.endsWith("p"))) {
 						word += c;
 					} else {
@@ -368,7 +386,8 @@ public class WordParser {
 				if (type == T_VAR_STRING) {
 					word += c;
 				} else {
-					compiler.addError(new AnalyzeError(new Location(mAI, line_counter, char_counter - 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
+					compiler.addError(new AnalyzeError(new Location(mAI, line_counter, char_counter - 1), AnalyzeErrorLevel.ERROR,
+							Error.INVALID_CHAR));
 				}
 			}
 		}
@@ -378,7 +397,7 @@ public class WordParser {
 		}
 
 		// for(int i=0;i<words.size();i++){
-		// 	System.out.println(words.get(i).getType()+" => "+words.get(i).getWord());
+		// System.out.println(words.get(i).getType()+" => "+words.get(i).getWord());
 		// }
 	}
 
@@ -464,9 +483,12 @@ public class WordParser {
 				System.out.println("t is null");
 			}
 			var ty = t.getType();
-			if (ty == WordParser.T_END_OF_FILE) return -1;
-			if (ty == WordParser.T_PAR_LEFT) level++;
-			if (ty == WordParser.T_PAR_RIGHT) level--;
+			if (ty == WordParser.T_END_OF_FILE)
+				return -1;
+			if (ty == WordParser.T_PAR_LEFT)
+				level++;
+			if (ty == WordParser.T_PAR_RIGHT)
+				level--;
 		}
 		return p - 1;
 	}
@@ -480,8 +502,10 @@ public class WordParser {
 				System.out.println("t is null");
 			}
 			var ty = t.getType();
-			if (ty == WordParser.T_END_OF_FILE) return -1;
-			if (ty == WordParser.T_ARROW) break;
+			if (ty == WordParser.T_END_OF_FILE)
+				return -1;
+			if (ty == WordParser.T_ARROW)
+				break;
 		}
 		return p - 1;
 	}
@@ -494,8 +518,10 @@ public class WordParser {
 				System.out.println("t is null");
 			}
 			var ty = t.getType();
-			if (ty == WordParser.T_END_OF_FILE) return -1;
-			if (ty == WordParser.T_DOUBLE_POINT) break;
+			if (ty == WordParser.T_END_OF_FILE)
+				return -1;
+			if (ty == WordParser.T_DOUBLE_POINT)
+				break;
 		}
 		return p - 1;
 	}
