@@ -17,31 +17,26 @@ public class LeekOperations {
 
 	public static Object clone(AI ai, Object value, int level) throws LeekRunException {
 		if (value instanceof LegacyHybridContainerLeekValue) {
-			if (level == 0)
-				return value;
+			if (level == 0) return value;
 			var array = (LegacyHybridContainerLeekValue) value;
 			ai.ops(1 + array.size() * (LegacyHybridContainerLeekValue.ARRAY_CELL_CREATE_OPERATIONS));
 			return new LegacyHybridContainerLeekValue(ai, array, level);
 		} else if (value instanceof ArrayLeekValue) {
-			if (level == 0)
-				return value;
+			if (level == 0) return value;
 			var array = (ArrayLeekValue) value;
 			ai.ops(1 + array.size());
 			return new ArrayLeekValue(ai, array, level);
 		} else if (value instanceof MapLeekValue) {
-			if (level == 0)
-				return value;
+			if (level == 0) return value;
 			var map = (MapLeekValue) value;
 			ai.ops(1 + map.size());
 			return new MapLeekValue(ai, map, level);
 		} else if (value instanceof ObjectLeekValue) {
-			if (level == 0)
-				return value;
+			if (level == 0) return value;
 			ai.ops(1);
 			return new ObjectLeekValue(ai, (ObjectLeekValue) value, level);
 		} else if (value instanceof NativeObjectLeekValue o) {
-			if (level == 0)
-				return value;
+			if (level == 0) return value;
 
 			ai.ops(1 + o.size());
 			ai.increaseRAM(2 * o.size());
@@ -49,8 +44,7 @@ public class LeekOperations {
 			Object object = null;
 			try {
 				object = o.getClass().getConstructor(ai.getClass(), o.getClass(), int.class).newInstance(ai, o, level);
-			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-					| NoSuchMethodException | SecurityException e1) {
+			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e1) {
 				ErrorManager.exception(e1);
 			}
 			return object;

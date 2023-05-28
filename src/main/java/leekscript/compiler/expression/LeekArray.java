@@ -43,9 +43,7 @@ public class LeekArray extends Expression {
 
 	@Override
 	public String toString() {
-		return mValues.stream()
-				.map(value -> value.toString())
-				.collect(Collectors.joining(", ", "[", "]"));
+		return mValues.stream().map(value -> value.toString()).collect(Collectors.joining(", ", "[", "]"));
 
 	}
 
@@ -82,8 +80,7 @@ public class LeekArray extends Expression {
 
 		writer.addCode("new ArrayLeekValue(" + writer.getAIThis() + ", new Object[] { ");
 		for (int i = 0; i < mValues.size(); i++) {
-			if (i > 0)
-				writer.addCode(", ");
+			if (i > 0) writer.addCode(", ");
 			mValues.get(i).writeJavaCode(mainBlock, writer);
 		}
 		writer.addCode(" })");

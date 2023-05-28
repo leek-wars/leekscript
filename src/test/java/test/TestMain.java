@@ -18,7 +18,7 @@ public class TestMain {
 		// System.out.println(System.getProperty("user.country"));
 		// System.out.println(System.getProperty("user.language"));
 
-        System.out.println("Start tests...");
+		System.out.println("Start tests...");
 
 		// TestCommon.loadReferenceOperations();
 
@@ -51,5 +51,5 @@ public class TestMain {
 		// TestCommon.ouputOperationsFile();
 		Assert.assertTrue(TestCommon.summary());
 
-    }
+	}
 }

@@ -70,8 +70,14 @@ public class TestCommon {
 				public boolean check(Result result) {
 					return result.result.equals(expected);
 				}
-				public String getExpected() { return expected; }
-				public String getResult(Result result) { return result.result; }
+
+				public String getExpected() {
+					return expected;
+				}
+
+				public String getResult(Result result) {
+					return result.result;
+				}
 			});
 		}
 
@@ -86,7 +92,11 @@ public class TestCommon {
 					}
 					return false;
 				}
-				public String getExpected() { return "error " + type.name(); }
+
+				public String getExpected() {
+					return "error " + type.name();
+				}
+
 				public String getResult(Result result) {
 					if (result.error != null) {
 						return "error " + result.error.name() + " " + Arrays.toString(result.parameters);
@@ -111,7 +121,11 @@ public class TestCommon {
 					}
 					return false;
 				}
-				public String getExpected() { return "warning " + type.name(); }
+
+				public String getExpected() {
+					return "warning " + type.name();
+				}
+
 				public String getResult(Result result) {
 					if (result.ai != null) {
 						var errors = result.ai.getFile().getErrors();
@@ -130,8 +144,14 @@ public class TestCommon {
 				public boolean check(Result result) {
 					return result.error != Error.NONE;
 				}
-				public String getExpected() { return "no error"; }
-				public String getResult(Result result) { return result.error.name(); }
+
+				public String getExpected() {
+					return "no error";
+				}
+
+				public String getResult(Result result) {
+					return result.error.name();
+				}
 			});
 		}
 
@@ -149,8 +169,14 @@ public class TestCommon {
 						return false;
 					}
 				}
-				public String getExpected() { return String.valueOf(expected); }
-				public String getResult(Result result) { return result.result; }
+
+				public String getExpected() {
+					return String.valueOf(expected);
+				}
+
+				public String getResult(Result result) {
+					return result.result;
+				}
 			});
 		}
 
@@ -159,8 +185,14 @@ public class TestCommon {
 				public boolean check(Result result) {
 					return result.operations == ops;
 				}
-				public String getExpected() { return String.valueOf(ops); }
-				public String getResult(Result result) { return String.valueOf(result.operations); }
+
+				public String getExpected() {
+					return String.valueOf(ops);
+				}
+
+				public String getResult(Result result) {
+					return String.valueOf(result.operations);
+				}
 			});
 		}
 
@@ -232,8 +264,7 @@ public class TestCommon {
 				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "] " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops, " + ops_per_ms + " ops/ms" + END_COLOR);
 				success++;
 			} else {
-				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "] " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
-				"/home/pierre/dev/leek-wars/generator/leekscript/ai/AI_" + aiID + ".java";
+				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "] " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" + "/home/pierre/dev/leek-wars/generator/leekscript/ai/AI_" + aiID + ".java";
 				System.out.println(err);
 				failedTests.add(err);
 			}
@@ -285,72 +316,95 @@ public class TestCommon {
 	public Case code(String code) {
 		return new Case(code, true);
 	}
+
 	public Case file(String code) {
 		return new Case(code, true);
 	}
+
 	public Case file_v1(String code) {
 		return new Case(code, true, 1, 1);
 	}
+
 	public Case file_v2_(String code) {
 		return new Case(code, true, 2, LATEST_VERSION);
 	}
+
 	public Case file_v3(String code) {
 		return new Case(code, true, 3, 3);
 	}
+
 	public Case file_v4_(String code) {
 		return new Case(code, true, 4, LATEST_VERSION);
 	}
+
 	public Case DISABLED_file(String code) {
 		return new Case(code, false);
 	}
+
 	public Case DISABLED_file_v2_(String code) {
 		return new Case(code, false, 2, LATEST_VERSION);
 	}
+
 	public Case code_v1(String code) {
 		return new Case(code, true, 1, 1);
 	}
+
 	public Case code_v1_2(String code) {
 		return new Case(code, true, 1, 2);
 	}
+
 	public Case code_v1_3(String code) {
 		return new Case(code, true, 1, 3);
 	}
+
 	public Case code_v2(String code) {
 		return new Case(code, true, 2, 2);
 	}
+
 	public Case code_v2_(String code) {
 		return new Case(code, true, 2, LATEST_VERSION);
 	}
+
 	public Case code_v2_3(String code) {
 		return new Case(code, true, 2, 3);
 	}
+
 	public Case code_v2_4(String code) {
 		return new Case(code, true, 2, 4);
 	}
+
 	public Case code_v3(String code) {
 		return new Case(code, true, 3, 3);
 	}
+
 	public Case code_v3_(String code) {
 		return new Case(code, true, 3, LATEST_VERSION);
 	}
+
 	public Case code_v1_4(String code) {
 		return new Case(code, true, 1, 4);
 	}
+
 	public Case code_v4(String code) {
 		return new Case(code, true, 4, 4);
 	}
+
 	public Case code_v4_(String code) {
 		return new Case(code, true, 4, LATEST_VERSION);
 	}
+
 	public Case code_v5_(String code) {
 		return new Case(code, true, 5, LATEST_VERSION);
 	}
+
 	public Case DISABLED_code_v4_(String code) {
 		return new Case(code, false, 4, LATEST_VERSION);
 	}
+
 	public Case DISABLED_code(String code) {
 		return new Case(code, false);
 	}
+
 	public Case DISABLED_code_v2_(String code) {
 		return new Case(code, false, 2, LATEST_VERSION);
 	}
@@ -358,6 +412,7 @@ public class TestCommon {
 	public void section(String title) {
 		System.out.println("========== " + title + " ==========");
 	}
+
 	public void header(String title) {
 		System.out.println("================================================");
 		System.out.println("========== " + title + " ==========");
@@ -367,10 +422,7 @@ public class TestCommon {
 	public static boolean summary() {
 		System.out.println("================================================");
 		System.out.println(success + " / " + tests + " tests passed, " + (tests - success) + " errors, " + disabled + " disabled");
-		System.out.println("Total time: " + fn(analyze_time + compile_time + execution_time) + " ms"
-			+ " = Analyze: " + fn(analyze_time) + " ms"
-			+ " + Compile: " + fn(compile_time) + " ms"
-			+ " + Execution: " + fn(execution_time) + " ms");
+		System.out.println("Total time: " + fn(analyze_time + compile_time + execution_time) + " ms = Analyze: " + fn(analyze_time) + " ms + Compile: " + fn(compile_time) + " ms + Execution: " + fn(execution_time) + " ms");
 		System.out.println("================================================");
 
 		for (String test : disabledTests) {
@@ -390,6 +442,7 @@ public class TestCommon {
 		formatter.setDecimalFormatSymbols(symbols);
 		return formatter.format(n);
 	}
+
 	public static void ouputOperationsFile() {
 		try {
 			FileWriter myWriter = new FileWriter("opérations.txt");
@@ -402,6 +455,7 @@ public class TestCommon {
 			e.printStackTrace();
 		}
 	}
+
 	public static void loadReferenceOperations() {
 		BufferedReader reader;
 		try {

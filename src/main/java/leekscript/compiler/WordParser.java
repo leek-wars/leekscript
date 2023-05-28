@@ -10,16 +10,7 @@ import leekscript.common.Error;
  */
 public class WordParser {
 
-	public static final String[] reservedWords = new String[] {
-			"abstract", "arguments", "await", "break", "byte", "case", "catch",
-			"char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval",
-			"export", "extends", "false", "final", "finally", "float", "for", "function", "global",
-			"goto", "if", "implements", "import", "in", "instanceof", "int", "interface",
-			"let", "long", "native", "new", "not", "null", "package", "private", "protected",
-			"public", "return", "short", "static", "super", "switch", "synchronized", "this",
-			"throw", "throws", "transient", "true", "try", "typeof", "var", "void",
-			"volatile", "while", "with", "yield"
-	};
+	public static final String[] reservedWords = new String[] { "abstract", "arguments", "await", "break", "byte", "case", "catch", "char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval", "export", "extends", "false", "final", "finally", "float", "for", "function", "global", "goto", "if", "implements", "import", "in", "instanceof", "int", "interface", "let", "long", "native", "new", "not", "null", "package", "private", "protected", "public", "return", "short", "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "true", "try", "typeof", "var", "void", "volatile", "while", "with", "yield" };
 
 	/**
 	 * Instructions byte(0) (0-255) byte => instruction
@@ -85,8 +76,7 @@ public class WordParser {
 			var hasNextChar = i + 1 < length;
 			var nextChar = hasNextChar ? code.charAt(i + 1) : 0;
 
-			if (c == '\r')
-				continue;
+			if (c == '\r') continue;
 			// Compteur caractères/lignes
 			if (c == '\n') {
 				if (type != T_NOTHING) {
@@ -97,8 +87,7 @@ public class WordParser {
 				char_counter = 0;
 				line_counter++;
 				comment_line = false;
-			} else
-				char_counter++;
+			} else char_counter++;
 			if ((c == '"' || c == '\'') && !comment_block && !comment_line) {
 				if (type == T_NOTHING) {
 					word = "" + c;
@@ -107,10 +96,8 @@ public class WordParser {
 				} else if (type == T_VAR_STRING && opener == c) {
 					boolean isEscaped = false;
 					for (int j = word.length() - 1; j >= 0; j--) {
-						if (word.charAt(j) == '\\')
-							isEscaped = !isEscaped;
-						else
-							break;
+						if (word.charAt(j) == '\\') isEscaped = !isEscaped;
+						else break;
 					}
 					word += c;
 					if (!isEscaped) {
@@ -139,24 +126,19 @@ public class WordParser {
 				i++;
 				continue;
 			}
-			if (comment_line || comment_block)
-				continue;
+			if (comment_line || comment_block) continue;
 			if (c == '/' && length > i + 1 && code.charAt(i + 1) == '/') {
 				comment_line = true;
-				if (version >= 2)
-					i++;
+				if (version >= 2) i++;
 				continue;
 			} else if (c == '/' && length > i + 1 && code.charAt(i + 1) == '*') {
 				comment_block = true;
-				if (version >= 2)
-					i++;
+				if (version >= 2) i++;
 				continue;
 			}
 
 			// Identifier
-			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' || (c >= 'À' && c <= 'Ö')
-					|| (c >= 'Ø' && c <= 'Ý') || (c >= 'à' && c <= 'ö') || (c >= 'ø' && c <= 'ý') || c == 'ÿ'
-					|| (c >= 'Œ' && c <= 'œ')) {
+			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' || (c >= 'À' && c <= 'Ö') || (c >= 'Ø' && c <= 'Ý') || (c >= 'à' && c <= 'ö') || (c >= 'ø' && c <= 'ý') || c == 'ÿ' || (c >= 'Œ' && c <= 'œ')) {
 				if (type == T_NOTHING) {
 					word += c;
 					type = T_STRING;
@@ -204,8 +186,7 @@ public class WordParser {
 					word += c;
 				} else if (type == T_NUMBER) {
 					if (word.contains(".")) {
-						compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1),
-								AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
+						compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 					} else {
 						word += c;
 					}
@@ -217,12 +198,9 @@ public class WordParser {
 					word = "";
 					type = T_NOTHING;
 				} else {
-					compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1),
-							AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
+					compiler.addError(new AnalyzeError(new Token(0, ".", mAI, line_counter, char_counter + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 				}
-			} else if (c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-'
-					|| c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~' || c == '.'
-					|| c == '\\') {
+			} else if (c == '@' || c == '+' || c == '=' || c == '<' || c == '>' || c == '|' || c == '&' || c == '-' || c == '/' || c == '*' || c == '%' || c == '!' || c == '?' || c == '^' || c == '~' || c == '.' || c == '\\') {
 				if (type == T_VAR_STRING) {
 					word += c;
 				} else if (type == T_OPERATOR) {
@@ -232,80 +210,67 @@ public class WordParser {
 						word = "";
 						type = T_NOTHING;
 					} else if (word.equals("&")) {
-						if (c == '&' || c == '=')
-							word += c;
+						if (c == '&' || c == '=') word += c;
 						else {
 							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("|")) {
-						if (c == '|' || c == '=')
-							word += c;
+						if (c == '|' || c == '=') word += c;
 						else {
 							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("+")) {
-						if (c == '=' || c == '+')
-							word += c;
+						if (c == '=' || c == '+') word += c;
 						else {
 							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("-")) {
-						if (c == '=' || c == '-')
-							word += c;
+						if (c == '=' || c == '-') word += c;
 						else {
 							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("*")) {
-						if (c == '=' || c == '*')
-							word += c;
+						if (c == '=' || c == '*') word += c;
 						else {
 							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals(">")) {
-						if (c == '=' || c == '>')
-							word += c;
+						if (c == '=' || c == '>') word += c;
 						else {
 							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("<")) {
-						if (c == '=' || c == '<')
-							word += c;
+						if (c == '=' || c == '<') word += c;
 						else {
 							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals(">>")) {
-						if (c == '=' || c == '>')
-							word += c;
+						if (c == '=' || c == '>') word += c;
 						else {
 							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals(">>>")) {
-						if (c == '=')
-							word += c;
+						if (c == '=') word += c;
 						else {
 							newWord(word, type, -1);
 							word = "" + c;
 						}
 					} else if (word.equals("<<")) {
-						if (c == '=')
-							word += c;
+						if (c == '=') word += c;
 						else {
 							newWord(word, type, -1);
 							word = "" + c;
 						}
-					} else if (word.equals("*") || word.equals("**") || word.equals("/") || word.equals("%")
-							|| word.equals("=") || word.equals("!") || word.equals("<") || word.equals(">")
-							|| word.equals("^") || word.equals("==") || word.equals("!=") || word.equals("\\")) {
-						if (c == '=')
-							word += c;
+					} else if (word.equals("*") || word.equals("**") || word.equals("/") || word.equals("%") || word.equals("=") || word.equals("!") || word.equals("<") || word.equals(">") || word.equals("^") || word.equals("==") || word.equals("!=") || word.equals("\\")) {
+						if (c == '=') word += c;
 						else {
 							newWord(word, type, -1);
 							word = "" + c;
@@ -335,30 +300,24 @@ public class WordParser {
 					word = "";
 					type = T_NOTHING;
 				}
-				if (c == '(')
-					newWord("(", T_PAR_LEFT);
-				else
-					newWord(")", T_PAR_RIGHT);
+				if (c == '(') newWord("(", T_PAR_LEFT);
+				else newWord(")", T_PAR_RIGHT);
 			} else if (c == '[' || c == ']') {
 				if (type != T_NOTHING) {
 					newWord(word, type, -1);
 					word = "";
 					type = T_NOTHING;
 				}
-				if (c == '[')
-					newWord("[", T_BRACKET_LEFT);
-				else
-					newWord("]", T_BRACKET_RIGHT);
+				if (c == '[') newWord("[", T_BRACKET_LEFT);
+				else newWord("]", T_BRACKET_RIGHT);
 			} else if (c == '{' || c == '}') {
 				if (type != T_NOTHING) {
 					newWord(word, type, -1);
 					word = "";
 					type = T_NOTHING;
 				}
-				if (c == '{')
-					newWord("{", T_ACCOLADE_LEFT);
-				else
-					newWord("}", T_ACCOLADE_RIGHT);
+				if (c == '{') newWord("{", T_ACCOLADE_LEFT);
+				else newWord("}", T_ACCOLADE_RIGHT);
 			} else if (c == ' ' || c == '\n' || c == '\t' || c == 160 /* NBSP */) {
 				if (type == T_VAR_STRING) {
 					word += c;
@@ -386,8 +345,7 @@ public class WordParser {
 				if (type == T_VAR_STRING) {
 					word += c;
 				} else {
-					compiler.addError(new AnalyzeError(new Location(mAI, line_counter, char_counter - 1), AnalyzeErrorLevel.ERROR,
-							Error.INVALID_CHAR));
+					compiler.addError(new AnalyzeError(new Location(mAI, line_counter, char_counter - 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 				}
 			}
 		}
@@ -397,7 +355,7 @@ public class WordParser {
 		}
 
 		// for(int i=0;i<words.size();i++){
-		// System.out.println(words.get(i).getType()+" => "+words.get(i).getWord());
+		//   System.out.println(words.get(i).getType()+" => "+words.get(i).getWord());
 		// }
 	}
 
@@ -483,12 +441,9 @@ public class WordParser {
 				System.out.println("t is null");
 			}
 			var ty = t.getType();
-			if (ty == WordParser.T_END_OF_FILE)
-				return -1;
-			if (ty == WordParser.T_PAR_LEFT)
-				level++;
-			if (ty == WordParser.T_PAR_RIGHT)
-				level--;
+			if (ty == WordParser.T_END_OF_FILE) return -1;
+			if (ty == WordParser.T_PAR_LEFT) level++;
+			if (ty == WordParser.T_PAR_RIGHT) level--;
 		}
 		return p - 1;
 	}
@@ -502,10 +457,8 @@ public class WordParser {
 				System.out.println("t is null");
 			}
 			var ty = t.getType();
-			if (ty == WordParser.T_END_OF_FILE)
-				return -1;
-			if (ty == WordParser.T_ARROW)
-				break;
+			if (ty == WordParser.T_END_OF_FILE) return -1;
+			if (ty == WordParser.T_ARROW) break;
 		}
 		return p - 1;
 	}
@@ -518,10 +471,8 @@ public class WordParser {
 				System.out.println("t is null");
 			}
 			var ty = t.getType();
-			if (ty == WordParser.T_END_OF_FILE)
-				return -1;
-			if (ty == WordParser.T_DOUBLE_POINT)
-				break;
+			if (ty == WordParser.T_END_OF_FILE) return -1;
+			if (ty == WordParser.T_DOUBLE_POINT) break;
 		}
 		return p - 1;
 	}

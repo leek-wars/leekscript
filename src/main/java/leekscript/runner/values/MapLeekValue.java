@@ -15,8 +15,7 @@ import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.AI.NativeObjectLeekValue;
 
-public class MapLeekValue extends HashMap<Object, Object>
-		implements Iterable<Entry<Object, Object>>, GenericMapLeekValue {
+public class MapLeekValue extends HashMap<Object, Object> implements Iterable<Entry<Object, Object>>, GenericMapLeekValue {
 
 	private static final int READ_OPERATIONS = 2;
 	private static final int WRITE_OPERATIONS = 3;
@@ -269,22 +268,19 @@ public class MapLeekValue extends HashMap<Object, Object>
 		for (var val : this.values()) {
 			average += ai.real(val);
 		}
-		if (average == 0)
-			return 0.0;
+		if (average == 0) return 0.0;
 		return average / size();
 	}
 
 	public Object mapMin(AI ai) throws LeekRunException {
 		ai.ops(1 + 3 * size());
-		if (size() == 0)
-			return null;
+		if (size() == 0) return null;
 		var it = entrySet().iterator();
 		Object min_value = it.next().getValue();
 		var mincomp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
 		while (it.hasNext()) {
 			var val = it.next().getValue();
-			if (mincomp.compare(val, min_value) == -1)
-				min_value = val;
+			if (mincomp.compare(val, min_value) == -1) min_value = val;
 		}
 		return min_value;
 	}
@@ -294,10 +290,8 @@ public class MapLeekValue extends HashMap<Object, Object>
 		Object max_value = null;
 		var mincomp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
 		for (var val : this.values()) {
-			if (max_value == null)
-				max_value = val;
-			else if (mincomp.compare(val, max_value) == 1)
-				max_value = val;
+			if (max_value == null) max_value = val;
+			else if (mincomp.compare(val, max_value) == 1) max_value = val;
 		}
 		return max_value;
 	}
@@ -447,10 +441,8 @@ public class MapLeekValue extends HashMap<Object, Object>
 
 		boolean first = true;
 		for (var entry : this.entrySet()) {
-			if (!first)
-				sb.append(", ");
-			else
-				first = false;
+			if (!first) sb.append(", ");
+			else first = false;
 
 			var k = entry.getKey();
 			if (visited.contains(k)) {

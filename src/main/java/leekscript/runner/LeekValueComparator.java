@@ -22,10 +22,8 @@ public class LeekValueComparator {
 		@Override
 		public int compare(Object v1, Object v2) {
 			try {
-				if (mOrder == SORT_ASC)
-					return compareAsc(v1, v2);
-				else if (mOrder == SORT_DESC)
-					return compareAsc(v2, v1);
+				if (mOrder == SORT_ASC) return compareAsc(v1, v2);
+				else if (mOrder == SORT_DESC) return compareAsc(v2, v1);
 			} catch (LeekRunException e) {
 				// The operation limit may be exceeded here, but it's not too long
 			}
@@ -34,52 +32,35 @@ public class LeekValueComparator {
 
 		public int compareAsc(Object v1, Object v2) throws LeekRunException {
 			if (v1 == null) {
-				if (v2 == null)
-					return 0;
+				if (v2 == null) return 0;
 				return -1;
 			} else if (v1 instanceof Boolean) {
-				if (v2 == null)
-					return 1;
+				if (v2 == null) return 1;
 				if (v2 instanceof Boolean) {
-					if ((Boolean) v1 == (Boolean) v2)
-						return 0;
-					else if ((Boolean) v1)
-						return 1;
-					else
-						return -1;
+					if ((Boolean) v1 == (Boolean) v2) return 0;
+					else if ((Boolean) v1) return 1;
+					else return -1;
 				}
 				return -1;
 			} else if (v1 instanceof Number) {
 				if (v2 instanceof Number) {
-					if (((Number) v1).doubleValue() == ((Number) v2).doubleValue())
-						return 0;
-					else if (((Number) v1).doubleValue() < ((Number) v2).doubleValue())
-						return -1;
-					else
-						return 1;
-				} else if (v2 instanceof Boolean || v2 == null)
-					return 1;
-				else
-					return -1;
+					if (((Number) v1).doubleValue() == ((Number) v2).doubleValue()) return 0;
+					else if (((Number) v1).doubleValue() < ((Number) v2).doubleValue()) return -1;
+					else return 1;
+				} else if (v2 instanceof Boolean || v2 == null) return 1;
+				else return -1;
 			} else if (v1 instanceof String) {
 				if (v2 instanceof String) {
 					return ((String) v1).compareTo((String) v2);
-				} else if (v2 instanceof Number || v2 instanceof Boolean || v2 == null)
-					return 1;
-				else
-					return -1;
+				} else if (v2 instanceof Number || v2 instanceof Boolean || v2 == null) return 1;
+				else return -1;
 			} else if (v1 instanceof LegacyHybridContainerLeekValue) {
 				if (v2 instanceof LegacyHybridContainerLeekValue) {
-					if (((LegacyHybridContainerLeekValue) v1).size() == ((LegacyHybridContainerLeekValue) v2).size())
-						return 0;
-					else if (((LegacyHybridContainerLeekValue) v1).size() < ((LegacyHybridContainerLeekValue) v2).size())
-						return -1;
-					else
-						return 1;
-				} else if (v2 == null)
-					return -1;
-				else
-					return 1;
+					if (((LegacyHybridContainerLeekValue) v1).size() == ((LegacyHybridContainerLeekValue) v2).size()) return 0;
+					else if (((LegacyHybridContainerLeekValue) v1).size() < ((LegacyHybridContainerLeekValue) v2).size()) return -1;
+					else return 1;
+				} else if (v2 == null) return -1;
+				else return 1;
 			} else {
 				return -1;
 			}

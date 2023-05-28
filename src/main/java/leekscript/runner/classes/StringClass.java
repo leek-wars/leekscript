@@ -11,20 +11,17 @@ import leekscript.runner.values.LegacyHybridContainerLeekValue;
 public class StringClass {
 
 	public static String charAt(AI ai, String string, long index) {
-		if (index < 0 || index >= string.length())
-			return null;
+		if (index < 0 || index >= string.length()) return null;
 		return String.valueOf(string.charAt((int) index));
 	}
 
 	public static long codePointAt(AI ai, String string) {
-		if (string.length() == 0)
-			return 0;
+		if (string.length() == 0) return 0;
 		return string.codePointAt(0);
 	}
 
 	public static long codePointAt(AI ai, String string, long index) {
-		if (index < 0 || index >= string.length())
-			return 0;
+		if (index < 0 || index >= string.length()) return 0;
 		return string.codePointAt((int) index);
 	}
 
@@ -69,13 +66,11 @@ public class StringClass {
 		return string.contains(needle);
 	}
 
-	public static LegacyHybridContainerLeekValue split_v1_3(AI ai, String string, String delimiter)
-			throws LeekRunException {
+	public static LegacyHybridContainerLeekValue split_v1_3(AI ai, String string, String delimiter) throws LeekRunException {
 		return split_v1_3(ai, string, delimiter, 0);
 	}
 
-	public static LegacyHybridContainerLeekValue split_v1_3(AI ai, String string, String delimiter, long limit)
-			throws LeekRunException {
+	public static LegacyHybridContainerLeekValue split_v1_3(AI ai, String string, String delimiter, long limit) throws LeekRunException {
 		ai.ops(1 + string.length());
 		var result = new LegacyHybridContainerLeekValue();
 		for (var element : string.split(Pattern.quote(delimiter), (int) limit)) {

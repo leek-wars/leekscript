@@ -64,12 +64,10 @@ public class LeekLegacyHybridContainer extends Expression {
 
 	@Override
 	public String toString() {
-		if (mIsKeyVal && mValues.size() == 0)
-			return "[:]";
+		if (mIsKeyVal && mValues.size() == 0) return "[:]";
 		String str = "[";
 		for (int i = 0; i < mValues.size(); i++) {
-			if (i > 0)
-				str += ", ";
+			if (i > 0) str += ", ";
 			if (mIsKeyVal) {
 				str += mValues.get(i).toString() + ": ";
 				i++;
@@ -112,8 +110,7 @@ public class LeekLegacyHybridContainer extends Expression {
 
 		writer.addCode("new LegacyHybridContainerLeekValue(" + writer.getAIThis() + ", new Object[] { ");
 		for (int i = 0; i < mValues.size(); i++) {
-			if (i != 0)
-				writer.addCode(", ");
+			if (i != 0) writer.addCode(", ");
 			mValues.get(i).writeJavaCode(mainBlock, writer);
 		}
 		writer.addCode(" }, " + (mIsKeyVal ? "true" : "false") + ")");

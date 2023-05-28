@@ -7,8 +7,7 @@ public class ArrayType extends Type {
 	private Type type;
 
 	public ArrayType(Type type) {
-		super(type == Type.ANY ? "Array" : "Array<" + type.name + ">", "a", "ArrayLeekValue", "ArrayLeekValue",
-				"new ArrayLeekValue()");
+		super(type == Type.ANY ? "Array" : "Array<" + type.name + ">", "a", "ArrayLeekValue", "ArrayLeekValue", "new ArrayLeekValue()");
 		this.type = type;
 	}
 

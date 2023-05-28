@@ -64,9 +64,7 @@ public class LeekMap extends Expression {
 			return "[:]";
 		}
 
-		String str = mEntries.stream()
-				.map(entry -> entry.key + ": " + entry.value)
-				.collect(Collectors.joining(", ", "[", "]"));
+		String str = mEntries.stream().map(entry -> entry.key + ": " + entry.value).collect(Collectors.joining(", ", "[", "]"));
 
 		return str;
 	}
@@ -107,8 +105,7 @@ public class LeekMap extends Expression {
 
 		writer.addCode("new MapLeekValue(" + writer.getAIThis() + ", new Object[] { ");
 		for (int i = 0; i < mEntries.size(); i++) {
-			if (i > 0)
-				writer.addCode(", ");
+			if (i > 0) writer.addCode(", ");
 
 			mEntries.get(i).key.writeJavaCode(mainBlock, writer);
 			writer.addCode(", ");

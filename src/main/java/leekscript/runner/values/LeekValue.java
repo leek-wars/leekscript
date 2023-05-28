@@ -34,27 +34,17 @@ public class LeekValue {
 	public static String getParamString(Object[] parameters) {
 		String ret = "";
 		for (int j = 0; j < parameters.length; j++) {
-			if (j != 0)
-				ret += ", ";
+			if (j != 0) ret += ", ";
 			var v = parameters[j];
-			if (v == null)
-				ret += "null";
-			else if (v instanceof Number)
-				ret += "number";
-			else if (v instanceof Boolean)
-				ret += "boolean";
-			else if (v instanceof String)
-				ret += "string";
-			else if (v instanceof ArrayLeekValue || v instanceof LegacyHybridContainerLeekValue)
-				ret += "array";
-			else if (v instanceof MapLeekValue)
-				ret += "map";
-			else if (v instanceof FunctionLeekValue)
-				ret += "function";
-			else if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue)
-				ret += "object";
-			else
-				ret += "?";
+			if (v == null) ret += "null";
+			else if (v instanceof Number) ret += "number";
+			else if (v instanceof Boolean) ret += "boolean";
+			else if (v instanceof String) ret += "string";
+			else if (v instanceof ArrayLeekValue || v instanceof LegacyHybridContainerLeekValue) ret += "array";
+			else if (v instanceof MapLeekValue) ret += "map";
+			else if (v instanceof FunctionLeekValue) ret += "function";
+			else if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue) ret += "object";
+			else ret += "?";
 		}
 		return ret;
 	}
