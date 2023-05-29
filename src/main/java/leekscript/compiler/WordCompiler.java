@@ -1331,7 +1331,10 @@ public class WordCompiler {
 					Expression end = null;
 					Expression stride = null;
 
-					if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
+					if (mCompiler.token().getType() == WordParser.T_BRACKET_RIGHT) {
+						// Crochet fermant direct
+						addError(new AnalyzeError(mCompiler.token(), AnalyzeErrorLevel.ERROR, Error.VALUE_EXPECTED));
+					} else if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
 						colon = mCompiler.eatToken();
 						if (getVersion() >= 4 && mCompiler.token().getWord().equals(":")) {
 							colon2 = mCompiler.eatToken();
