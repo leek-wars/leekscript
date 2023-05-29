@@ -1392,8 +1392,14 @@ public class WordCompiler {
 				} else if (word.getType() == WordParser.T_DOT) {
 					// Object access
 					var dot = mCompiler.eatToken();
-					var name = mCompiler.token();
-					retour.addObjectAccess(dot, name);
+					if (mCompiler.token().getType() == WordParser.T_STRING) {
+						var name = mCompiler.token();
+						retour.addObjectAccess(dot, name);
+					} else {
+						addError(new AnalyzeError(dot, AnalyzeErrorLevel.ERROR, Error.VALUE_EXPECTED));
+						retour.addObjectAccess(dot, null);
+						mCompiler.back();
+					}
 
 				} else if (word.getType() == WordParser.T_OPERATOR) {
 
