@@ -392,7 +392,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return mDefinedClasses;
 	}
 
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		for (var clazz : mUserClassesList) {
 			clazz.declare(compiler);
 		}
@@ -400,7 +400,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			function.declare(compiler);
 		}
 		for (var global : mGlobalesDeclarations) {
-			global.preAnalyze(compiler);
+			global.declare(compiler);
 		}
 		for (var clazz : mUserClassesList) {
 			clazz.preAnalyze(compiler);
@@ -411,10 +411,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		super.preAnalyze(compiler);
 	}
 
-	public void analyze(WordCompiler compiler) {
-		for (var global : mGlobalesDeclarations) {
-			global.analyze(compiler);
-		}
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
+		// for (var global : mGlobalesDeclarations) {
+		// 	global.analyze(compiler);
+		// }
 		for (var clazz : mUserClassesList) {
 			clazz.analyze(compiler);
 		}

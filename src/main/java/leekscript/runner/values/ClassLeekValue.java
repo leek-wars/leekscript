@@ -425,12 +425,16 @@ public class ClassLeekValue extends FunctionLeekValue {
 						}
 					}
 				}
-				if (m == null) throw new NoSuchMethodException("init");
-				m.invoke(object, args);
-				return object;
-			} catch (IllegalAccessException | IllegalArgumentException | NoSuchMethodException | SecurityException | InvocationTargetException e) {
-				// e.printStackTrace(System.out);
-				ai.addSystemLog(AILog.ERROR, e);
+				if (m != null) {
+					m.invoke(object, args);
+					return object;
+				}
+			} catch (IllegalAccessException | IllegalArgumentException | SecurityException | InvocationTargetException e) {
+				if (e instanceof IllegalArgumentException || e instanceof NoSuchMethodException) {
+					ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
+				} else {
+					ai.addSystemLog(AILog.ERROR, e);
+				}
 			}
 		}
 		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });

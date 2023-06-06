@@ -7,9 +7,12 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.runner.values.LeekValue;
 import leekscript.common.ArrayType;
+import leekscript.common.ClassValueType;
+import leekscript.common.CompoundType;
 import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
@@ -448,7 +451,7 @@ public class LeekExpression extends Expression {
 
 		// Les classiques
 		case Operators.ADD: // Addition (on commence facile)
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" + ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -459,7 +462,10 @@ public class LeekExpression extends Expression {
 				mExpression2.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
 			} else {
-				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") add(");
+				if (type.isPrimitive()) {
+					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") add(");
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -467,11 +473,14 @@ public class LeekExpression extends Expression {
 			}
 			return;
 		case Operators.MINUS: // Soustraction
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" - ");
 				mExpression2.writeJavaCode(mainblock, writer);
 			} else {
+				if (type.isPrimitive()) {
+					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
 				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") sub(");
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
@@ -480,11 +489,14 @@ public class LeekExpression extends Expression {
 			}
 			return;
 		case Operators.MULTIPLIE: // Multiplication
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" * ");
 				mExpression2.writeJavaCode(mainblock, writer);
 			} else {
+				if (type.isPrimitive()) {
+					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
 				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") mul(");
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
@@ -493,11 +505,14 @@ public class LeekExpression extends Expression {
 			}
 			return;
 		case Operators.MODULUS:// Modulo
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" % ");
 				mExpression2.writeJavaCode(mainblock, writer);
 			} else {
+				if (type.isPrimitive()) {
+					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
 				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") mod(");
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
@@ -515,7 +530,10 @@ public class LeekExpression extends Expression {
 				if (mainblock.getVersion() == 1) {
 					writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") div_v1(");
 				} else {
-					writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") div(");
+					if (type.isPrimitive()) {
+						writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+					}
+					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") div(");
 				}
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
@@ -614,7 +632,7 @@ public class LeekExpression extends Expression {
 			}
 			return;
 		case Operators.MORE:
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" > ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -627,7 +645,7 @@ public class LeekExpression extends Expression {
 			}
 			return;
 		case Operators.LESS:
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" < ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -640,7 +658,7 @@ public class LeekExpression extends Expression {
 			}
 			return;
 		case Operators.MOREEQUALS:
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" >= ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -653,7 +671,7 @@ public class LeekExpression extends Expression {
 			}
 			return;
 		case Operators.LESSEQUALS:
-			if (mExpression1.getType().isNumber() && mExpression2.getType().isNumber()) {
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" <= ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -840,13 +858,17 @@ public class LeekExpression extends Expression {
 			writer.addCode(")");
 			return;
 		case Operators.AS:
-			writer.addCode("(");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(") ");
+			if (mExpression2 instanceof LeekType lt) {
+				if (lt.getType().accepts(mExpression1.getType()) != CastType.EQUALS) {
+					writer.addCode("(");
+					mExpression2.writeJavaCode(mainblock, writer);
+					writer.addCode(") ");
+				}
+			}
 			mExpression1.writeJavaCode(mainblock, writer);
 			return;
 		case Operators.NON_NULL_ASSERTION:
-			mExpression2.writeJavaCode(mainblock, writer);
+			writer.compileConvert(mainblock, 0, mExpression2, type);
 			return;
 		}
 		return;
@@ -860,7 +882,7 @@ public class LeekExpression extends Expression {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 
 		if (mExpression1 != null) mExpression1.preAnalyze(compiler);
 		if (mExpression2 != null) mExpression2.preAnalyze(compiler);
@@ -882,7 +904,7 @@ public class LeekExpression extends Expression {
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 
 		// Opérateur @ déprécié en LS 2+
 		if (mOperator == Operators.REFERENCE && compiler.getVersion() >= 2) {
@@ -960,14 +982,14 @@ public class LeekExpression extends Expression {
 			if (cast == CastType.INCOMPATIBLE) {
 				var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 				compiler.addError(new AnalyzeError(getLocation(), level, Error.ASSIGNMENT_INCOMPATIBLE_TYPE, new String[] {
-					toString(),
+					mExpression2.toString(),
 					expressionType.toString(),
 					mExpression1.toString(),
 					mExpression1.getType().toString(),
 				}));
-			} else if (cast.ordinal() >= CastType.SAFE_DOWNCAST.ordinal()) {
+			} else if (compiler.getMainBlock().isStrict() && cast.ordinal() >= CastType.SAFE_DOWNCAST.ordinal()) {
 				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.DANGEROUS_CONVERSION_VARIABLE, new String[] {
-					toString(),
+					mExpression2.toString(),
 					expressionType.toString(),
 					mExpression1.toString(),
 					mExpression1.getType().toString(),
@@ -976,14 +998,25 @@ public class LeekExpression extends Expression {
 		}
 
 		if (mOperator == Operators.AS) {
-			// Type totalement compatible
-			var cast = ((LeekType) mExpression2).getType().accepts(mExpression1.getType());
-			if (cast == CastType.INCOMPATIBLE) {
-				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.IMPOSSIBLE_CAST_VALUES, new String[] {
-					mExpression1.toString(),
-					mExpression1.getType().toString(),
-					mExpression2.toString(),
-				}));
+			if (mExpression2 instanceof LeekType lt) {
+
+				// Cast inutile
+				if (lt.getType().accepts(mExpression1.getType()) == CastType.EQUALS) {
+					compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.USELESS_CAST, new String[] {
+						mExpression1.toString(),
+						mExpression2.toString(),
+					}));
+				}
+
+				// Type totalement compatible
+				var cast = lt.getType().accepts(mExpression1.getType());
+				if (cast == CastType.INCOMPATIBLE) {
+					compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.IMPOSSIBLE_CAST_VALUES, new String[] {
+						mExpression1.toString(),
+						mExpression1.getType().toString(),
+						mExpression2.toString(),
+					}));
+				}
 			}
 		}
 
@@ -1023,6 +1056,9 @@ public class LeekExpression extends Expression {
 		if (mOperator == Operators.ASSIGN) {
 			// type = mExpression2.getType();
 			type = mExpression1.getType();
+			if (type instanceof CompoundType ct && ct.getTypes().stream().anyMatch(t -> t == Type.NULL) && !mExpression2.getType().canBeNull()) {
+				type = ct.assertNotNull();
+			}
 		} else if (mOperator == Operators.ADDASSIGN) {
 			type = mExpression1.getType().add(mExpression2.getType());
 		} else if (mOperator == Operators.MINUSASSIGN) {
@@ -1057,6 +1093,9 @@ public class LeekExpression extends Expression {
 		}
 		else if (mOperator == Operators.NEW) {
 			type = mExpression2.getType();
+			if (type instanceof ClassValueType cvt) {
+				type = cvt.getClassDeclaration().getType();
+			}
 		}
 		else if (mOperator == Operators.AS) {
 			if (mExpression2 instanceof LeekType lt) {

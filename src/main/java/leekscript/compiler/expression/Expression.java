@@ -1,12 +1,14 @@
 package leekscript.compiler.expression;
 
 import leekscript.common.Type;
+import leekscript.compiler.Complete;
 import leekscript.compiler.Hover;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 
 public abstract class Expression {
 
@@ -39,7 +41,7 @@ public abstract class Expression {
 	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		writeJavaCode(mainblock, writer);
 		writer.addCode(" = ");
-		expr.writeJavaCode(mainblock, writer);
+		writer.compileConvert(mainblock, 0, expr, this.getType());
 	}
 
 	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
@@ -160,9 +162,9 @@ public abstract class Expression {
 		return true;
 	}
 
-	public void preAnalyze(WordCompiler compiler) {}
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {}
 
-	public abstract void analyze(WordCompiler compiler);
+	public abstract void analyze(WordCompiler compiler) throws LeekCompilerException;
 
 	public int getOperations() {
 		return operations;
@@ -172,6 +174,10 @@ public abstract class Expression {
 
 	public Hover hover(Token token) {
 		return new Hover(getType(), getLocation());
+	}
+
+	public Complete complete(Token token) {
+		return new Complete(this.getType());
 	}
 
 	public boolean isFinal() {

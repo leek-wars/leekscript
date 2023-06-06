@@ -432,13 +432,9 @@ public class WordParser {
 		return mAI.getTokenAt(cursor + offset);
 	}
 
-	public Token endToken() {
-		return mAI.getTokens().isEmpty() ? null : mAI.getTokens().get(mAI.getTokens().size() - 1);
-	}
-
 	public Token eatToken() {
 		cursor++;
-		return mAI.getTokens().get(cursor - 1);
+		return mAI.getTokenAt(cursor - 1);
 	}
 
 	public void skipToken() {

@@ -18,9 +18,9 @@ public class TestClass extends TestCommon {
 		code_v2_("class A {} A = 12").error(Error.CANT_ASSIGN_VALUE);
 
 		section("Class.name");
-		code_v2_("class A { public m() { return name }} return new A().m()").debug().equals("\"A\"");
+		code_v2_("class A { public m() { return name }} return new A().m()").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 		code_v2_("class A { public m() { return class.name }} return new A().m()").equals("\"A\"");
-		code_v2_("class A { public static m() { return name }} return A.m()").equals("\"A\"");
+		code_v2_("class A { public static m() { return name }} return A.m()").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 		code_v2_("class A { public static m() { return class.name }} return A.m()").equals("\"A\"");
 	}
 }

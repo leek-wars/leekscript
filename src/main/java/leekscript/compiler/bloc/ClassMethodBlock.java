@@ -10,6 +10,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
@@ -63,7 +64,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void addParameter(WordCompiler compiler, Token token, Token equal, Type type, Expression defaultValue) {
+	public void addParameter(WordCompiler compiler, Token token, Token equal, Type type, Expression defaultValue) throws LeekCompilerException {
 
 		// Existe déjà ?
 		for (var param : mParameters) {
@@ -118,6 +119,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		String str = "(";
 		for (int i = 0; i < mParameters.size(); i++) {
 			if (i != 0) str += ", ";
+			str += this.type.getArgument(i).getCode() + " ";
 			str += mParameters.get(i);
 			if (defaultValues.get(i) != null) {
 				str += " = " + defaultValues.get(i).toString();
@@ -127,7 +129,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialFunction = compiler.getCurrentFunction();
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentFunction(this);
@@ -145,7 +147,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialFunction = compiler.getCurrentFunction();
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentFunction(this);

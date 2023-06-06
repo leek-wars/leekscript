@@ -6,6 +6,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
@@ -57,7 +58,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		return 0;
 	}
 
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 
@@ -76,7 +77,9 @@ public class ForeachBlock extends AbstractLeekBlock {
 		} else {
 			var v = compiler.getCurrentBlock().getVariable(mIterator.getWord(), true);
 			if (v == null) {
-				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
+				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
+					mIterator.getWord()
+				}));
 			}
 		}
 		compiler.setCurrentBlock(initialBlock);
@@ -84,7 +87,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		super.preAnalyze(compiler);
 	}
 
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		mArray.analyze(compiler);
@@ -100,17 +103,19 @@ public class ForeachBlock extends AbstractLeekBlock {
 			compiler.addError(new AnalyzeError(mArray.getLocation(), level, Error.NOT_ITERABLE, new String[] { mArray.getType().toString() } ));
 		}
 
+		if (this.iteratorVariable != null) {
 
-		var cast = mArray.getType().element().accepts(iteratorVariable.getType());
-		if (cast == CastType.INCOMPATIBLE) {
-			compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.WARNING, Error.INCOMPATIBLE_TYPE, new String[] {
-				mArray.getType().element().toString(),
-				iteratorVariable.getType().toString()
-			}));
-		}
-		// LS5+ : Le type est forcé par le conteneur
-		if (compiler.getMainBlock().isStrict() && iteratorVariable.getType() == Type.ANY) {
-			iteratorVariable.setType(mArray.getType().element());
+			var cast = mArray.getType().element().accepts(iteratorVariable.getType());
+			if (cast == CastType.INCOMPATIBLE) {
+				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.WARNING, Error.INCOMPATIBLE_TYPE, new String[] {
+					mArray.getType().element().toString(),
+					iteratorVariable.getType().toString()
+				}));
+			}
+			// LS5+ : Le type est forcé par le conteneur
+			if (compiler.getMainBlock().isStrict() && iteratorVariable.getType() == Type.ANY) {
+				iteratorVariable.setType(mArray.getType().element());
+			}
 		}
 
 		compiler.setCurrentBlock(initialBlock);

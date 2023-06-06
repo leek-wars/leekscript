@@ -1012,6 +1012,10 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return new ArrayLeekValue(ai, set.toArray());
 	}
 
+	public ArrayLeekValue arrayRandom(AI ai) throws LeekRunException {
+		return arrayRandom(ai, 1);
+	}
+
 	public ArrayLeekValue arrayRandom(AI ai, long count) throws LeekRunException {
 		ai.ops(5 + size());
 		var result = new ArrayLeekValue(ai, this);

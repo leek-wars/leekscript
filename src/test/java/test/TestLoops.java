@@ -60,7 +60,7 @@ public class TestLoops extends TestCommon {
 		// TODO catch error
 		// code("var t = 0; do { t++; return t;} while (t < 5); return 2;").equals("1");
 
-		// header("For loops");
+		section("For loops");
 		// code("for var i = 0; ; i++ {}").ops_limit(1000).exception(ls::vm::Exception::OPERATION_LIMIT_EXCEEDED);
 		code("for (var i = 0; false; i++) {}").equals("null");
 		code("for (var i = 0; i < 10; i++) {}").equals("null");
@@ -81,6 +81,7 @@ public class TestLoops extends TestCommon {
 		// code("for var i = 0m; i < 10m; i++ {}").equals("(void)");
 		// code("var s = 0m for var i = 0m; i < 10m; i++ { s += i } s").equals("45");
 		// code("var s = 0m for var i = 0m; i < 10m; i += 2m { s += i } s").equals("20");
+		code("function f() => Function< => void> { var a = 0; var b = 10; return function() => void { for (var range = a; range <= b; range += 1) {} } }").equals("null");
 
 		section("For variable defined before the loop");
 		// DISABLED_code("var i = 0 for (; i < 10; i++) { } return i;").equals("10");

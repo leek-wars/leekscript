@@ -12,6 +12,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 
 public class LeekArray extends Expression {
 
@@ -35,7 +36,7 @@ public class LeekArray extends Expression {
 		openingBracket.setExpression(this);
 	}
 
-	public void addValue(WordCompiler compiler, Expression key, Token keyToken, Expression value) {
+	public void addValue(WordCompiler compiler, Expression key, Token keyToken, Expression value) throws LeekCompilerException {
 
 		// Clés dupliquée ?
 		for (int i = 0; i < mValues.size(); i += 2) {
@@ -88,14 +89,14 @@ public class LeekArray extends Expression {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		for (var value : mValues) {
 			value.preAnalyze(compiler);
 		}
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		operations = 0;
 		if (mIsKeyVal) {
 			Type keyType = Type.VOID;

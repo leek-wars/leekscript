@@ -5,6 +5,7 @@ import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekExpression;
@@ -56,7 +57,7 @@ public class ForBlock extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		if (mInitialisation != null) mInitialisation.preAnalyze(compiler);
@@ -67,7 +68,7 @@ public class ForBlock extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		if (mInitialisation != null) mInitialisation.analyze(compiler);

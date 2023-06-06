@@ -6,6 +6,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 
 public class LeekParenthesis extends Expression {
 
@@ -58,12 +59,12 @@ public class LeekParenthesis extends Expression {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		mExpression.preAnalyze(compiler);
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		mExpression.analyze(compiler);
 		operations = mExpression.getOperations();
 	}

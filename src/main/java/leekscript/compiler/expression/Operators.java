@@ -124,6 +124,7 @@ public class Operators {
 			return 17;
 		case DOT:
 			return 16;
+		case AS:
 		case INCREMENT:
 		case DECREMENT:
 		case REFERENCE:
@@ -154,7 +155,6 @@ public class Operators {
 		case MORE:
 		case MOREEQUALS:
 		case INSTANCEOF:
-		case AS:
 			return 8;
 		case EQUALS:
 		case NOTEQUALS:

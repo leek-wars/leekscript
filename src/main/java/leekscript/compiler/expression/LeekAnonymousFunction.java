@@ -7,6 +7,7 @@ import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.AnonymousFunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 
 public class LeekAnonymousFunction extends Expression {
 
@@ -46,7 +47,7 @@ public class LeekAnonymousFunction extends Expression {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		var previousFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(mBlock);
 		mBlock.preAnalyze(compiler);
@@ -54,7 +55,7 @@ public class LeekAnonymousFunction extends Expression {
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		var previousFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(mBlock);
 		mBlock.analyze(compiler);

@@ -114,22 +114,6 @@ public class LeekScript {
 		return defaultRandomGenerator;
 	}
 
-	public static void throwException(String error) throws LeekScriptException {
-		if (error != null && !error.isEmpty()) {
-			if (error.contains("code too large")) {
-				String[] lines = error.split("\n", 3);
-				if (lines.length >= 2 && lines[1].split(" ").length > 4) {
-					String l = lines[1].split(" ")[2];
-					if (l.length() > 4 && !l.startsWith("runIA")) {
-						throw new LeekScriptException(Error.CODE_TOO_LARGE_FUNCTION, l.substring(14, l.length() - 2));
-					}
-				}
-				throw new LeekScriptException(Error.CODE_TOO_LARGE);
-			}
-		}
-		throw new LeekScriptException(Error.COMPILE_JAVA, error);
-	}
-
 	public static NativeFileSystem getNativeFileSystem() {
 		return nativeFileSystem;
 	}

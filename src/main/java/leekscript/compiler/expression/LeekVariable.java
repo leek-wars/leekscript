@@ -9,6 +9,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.LeekConstants;
@@ -132,7 +133,7 @@ public class LeekVariable extends Expression {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		if (this.type == VariableType.SUPER) {
 			return; // Déjà OK
 		}
@@ -198,7 +199,7 @@ public class LeekVariable extends Expression {
 			this.variableType = compiler.getCurrentClass().getType();
 		} else if (this.type == VariableType.THIS_CLASS) {
 			this.variableType = compiler.getCurrentClass().classValueType;
-		} else if (this.type == VariableType.SUPER) {
+		} else if (this.type == VariableType.SUPER && compiler.getCurrentClass().getParent() != null) {
 			this.variableType = compiler.getCurrentClass().getParent().getClassValueType();
 		}
 		// Redefined function
@@ -301,9 +302,10 @@ public class LeekVariable extends Expression {
 				writer.addCode("u_" + token.getWord());
 			}
 		} else {
-			if (isWrapper()) {
-				writer.addCode("u_" + token.getWord() + ".get()");
-			} else if (isBox()) {
+			if (isWrapper() || isBox()) {
+				if (this.variable.getType().isPrimitive()) {
+					writer.addCode("(" + this.variable.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
 				writer.addCode("u_" + token.getWord() + ".get()");
 			} else {
 				writer.addCode("u_" + token.getWord());
@@ -385,10 +387,13 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.GLOBAL) {
 			if (mainblock.getWordCompiler().getVersion() >= 2) {
 				writer.addCode("g_" + token.getWord() + " = ");
-				if (this.variable.getType() != Type.ANY) {
-					writer.addCode("(" + this.variable.getType().getJavaName(mainblock.getVersion()) + ") ");
+				if (this.variable.getType() != Type.ANY && this.variable.getType() != expr.getType()) {
+					writer.addCode("(" + this.variable.getType().getJavaName(mainblock.getVersion()) + ") (");
 				}
 				expr.writeJavaCode(mainblock, writer);
+				if (this.variable.getType() != Type.ANY && this.variable.getType() != expr.getType()) {
+					writer.addCode(")");
+				}
 			} else {
 				writer.addCode("g_" + token.getWord() + ".set(");
 				expr.writeJavaCode(mainblock, writer);

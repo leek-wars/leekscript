@@ -1,5 +1,9 @@
 package leekscript.common;
 
+import java.util.HashSet;
+
+import leekscript.compiler.Complete;
+import leekscript.compiler.Complete.CompleteCategory;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 
 public class ClassType extends Type {
@@ -67,5 +71,21 @@ public class ClassType extends Type {
 	@Override
 	public Type returnType() {
 		return this.clazz.getType();
+	}
+
+	@Override
+	public Complete complete() {
+		// System.out.println("ClassType " + clazz.getName() + " complete");
+		var complete = new Complete(this);
+		for (var field : this.clazz.getFields().entrySet()) {
+			complete.add(CompleteCategory.FIELD, field.getKey(), field.getValue().getType());
+		}
+		for (var method : this.clazz.getMethods().entrySet()) {
+			for (var version : method.getValue().entrySet()) {
+				complete.add(CompleteCategory.METHOD, method.getKey(), version.getValue().block.getType());
+			}
+		}
+		// System.out.println("complete = " + complete);
+		return complete;
 	}
 }

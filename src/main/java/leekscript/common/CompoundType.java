@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import leekscript.compiler.Complete;
+
 public class CompoundType extends Type {
 
 	protected HashSet<Type> types;
@@ -25,23 +27,34 @@ public class CompoundType extends Type {
 
 		if (type instanceof CompoundType ct) {
 			var worst = CastType.EQUALS;
+			boolean ok = false;
+			boolean nok = false;
 			for (var t2 : ct.types) {
 				var best = CastType.INCOMPATIBLE;
 				for (var t1 : types) {
 					var r = t1.accepts(t2);
 					if (r.ordinal() < best.ordinal()) best = r;
 				}
+				if (best != CastType.INCOMPATIBLE) ok = true;
+				if (best != CastType.EQUALS) nok = true;
 				if (best.ordinal() > worst.ordinal()) worst = best;
 			}
+			if (worst == CastType.INCOMPATIBLE && ok) return CastType.UNSAFE_DOWNCAST;
+			if (worst == CastType.EQUALS && nok) return CastType.UPCAST;
 			return worst;
 		}
 
 		var best = CastType.INCOMPATIBLE;
+		boolean ok = false;
+		boolean nok = false;
 		for (var t : types) {
 			var r = t.accepts(type);
-			if (r == CastType.EQUALS) return r;
 			if (r.ordinal() < best.ordinal()) best = r;
+			if (best != CastType.INCOMPATIBLE) ok = true;
+			if (best != CastType.EQUALS) nok = true;
 		}
+		if (best == CastType.INCOMPATIBLE && ok) return CastType.UNSAFE_DOWNCAST;
+		if (best == CastType.EQUALS && nok) return CastType.UPCAST;
 		return best;
 	}
 
@@ -126,12 +139,17 @@ public class CompoundType extends Type {
 
 	@Override
 	public CastType acceptsArguments(List<Type> types) {
-		var worst = CastType.EQUALS;
+		var best = CastType.INCOMPATIBLE;
 		for (var t : this.types) {
 			var r = t.acceptsArguments(types);
-			if (r.ordinal() > worst.ordinal()) worst = r;
+			if (r.ordinal() < best.ordinal()) best = r;
 		}
-		return worst;
+		return best;
+	}
+
+	@Override
+	public Type getArgument(int a) {
+		return Type.compound(this.types.stream().map(t -> t.getArgument(a)).collect(Collectors.toCollection(HashSet::new)));
 	}
 
 	@Override
@@ -161,21 +179,32 @@ public class CompoundType extends Type {
 		return this.types.stream().anyMatch(t -> t.isWarning());
 	}
 
+
+	public boolean isIntOrReal() {
+		return types.size() == 2 && types.contains(Type.INT) && types.contains(Type.REAL);
+	}
+
 	public String getJavaPrimitiveName(int version) {
 		var set = new HashSet<String>();
 		for (var t : types) {
 			set.add(t.getJavaPrimitiveName(version));
 		}
 		if (set.size() == 1) return set.iterator().next();
-		if (types.size() == 2 && types.stream().anyMatch(t -> t == Type.NULL)) {
-			for (var t : types)
-				if (t != Type.NULL) {
-					if (t == Type.BOOL || t == Type.INT || t == Type.REAL) {
-						return t.getJavaName(version);
-					} else {
-						return t.getJavaPrimitiveName(version);
+		if (types.size() == 2) {
+			if (types.stream().anyMatch(t -> t == Type.NULL)) {
+				for (var t : types) {
+					if (t != Type.NULL) {
+						if (t == Type.BOOL || t == Type.INT || t == Type.REAL) {
+							return t.getJavaName(version);
+						} else {
+							return t.getJavaPrimitiveName(version);
+						}
 					}
 				}
+			}
+			if (types.contains(Type.INT) && types.contains(Type.REAL)) {
+				return "Number";
+			}
 		}
 		return "Object";
 	}
@@ -186,11 +215,25 @@ public class CompoundType extends Type {
 			set.add(t.getJavaName(version));
 		}
 		if (set.size() == 1) return set.iterator().next();
-		if (types.size() == 2 && types.stream().anyMatch(t -> t == Type.NULL)) {
-			for (var t : types)
-				if (t != Type.NULL)
-					return t.getJavaName(version);
+		if (types.size() == 2) {
+			if (types.stream().anyMatch(t -> t == Type.NULL)) {
+				for (var t : types)
+					if (t != Type.NULL)
+						return t.getJavaName(version);
+			}
+			if (types.contains(Type.INT) && types.contains(Type.REAL)) {
+				return "Number";
+			}
 		}
 		return "Object";
+	}
+
+	@Override
+	public Complete complete() {
+		var complete = new Complete(this);
+		for (var type : types) {
+			complete.addAll(type.complete());
+		}
+		return complete;
 	}
 }

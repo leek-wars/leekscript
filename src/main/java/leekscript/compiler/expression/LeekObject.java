@@ -9,6 +9,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 
 public class LeekObject extends Expression {
 
@@ -62,6 +63,7 @@ public class LeekObject extends Expression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+		writer.addPosition(openingBrace);
 		writer.addCode("new ObjectLeekValue(" + writer.getAIThis() + ", new String[] { ");
 		int i = 0;
 		for (var entry : mValues.entrySet()) {
@@ -78,14 +80,14 @@ public class LeekObject extends Expression {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		for (var value : mValues.entrySet()) {
 			value.getValue().preAnalyze(compiler);
 		}
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		operations = 0;
 		for (var value : mValues.entrySet()) {
 			value.getValue().analyze(compiler);

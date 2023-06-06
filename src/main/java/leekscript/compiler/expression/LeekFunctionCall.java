@@ -14,6 +14,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction.ClassDeclarationMethod;
 import leekscript.runner.CallableVersion;
@@ -107,6 +108,7 @@ public class LeekFunctionCall extends Expression {
 		boolean skipFirstArg = false;
 		boolean addFinalParenthesis = true;
 		FunctionBlock user_function = null;
+		boolean convertPrimitive = false;
 
 		if (mExpression instanceof LeekObjectAccess) {
 			// Object access : object.field()
@@ -140,6 +142,12 @@ public class LeekFunctionCall extends Expression {
 					// writer.addCode("callObjectAccess(u_this, \"" + field + "\", \"" + field + "_" + mParameters.size() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 					writer.addCode("u_" + field + "(");
 					addComma = false;
+				} else if (this.functionType instanceof FunctionType ft) {
+					writer.addCode("this." + field);
+					writer.addCode(".run(");
+					writer.addCode(writer.getAIThis());
+					writer.addCode(", null");
+					convertPrimitive = true;
 				} else {
 					writer.addCode("execute(this." + field);
 				}
@@ -193,7 +201,7 @@ public class LeekFunctionCall extends Expression {
 
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.STATIC_METHOD) {
 			// Méthode statique connue
-			if (this.type != Type.ANY) {
+			if (this.type != Type.ANY && this.type != Type.VOID) {
 				writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
 			}
 			String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getStaticMethodName(((LeekVariable) mExpression).getName(), mParameters.size());
@@ -236,33 +244,34 @@ public class LeekFunctionCall extends Expression {
 			writer.addCode("(");
 			addComma = false;
 			user_function = mainblock.getUserFunction(((LeekVariable) mExpression).getName());
-		} else if (mExpression.getType() instanceof ClassValueType) {
+		} else if (mExpression.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null) {
 			writer.addCode("new_");
 			mExpression.writeJavaCode(mainblock, writer);
 			writer.addCode("(");
 			addComma = false;
 		} else if (mExpression instanceof LeekVariable v && v.getType() instanceof ClassValueType cvt) {
-			if (cvt.getClassDeclaration().getName() == "Integer") {
-				writer.addCode("0l");
-				addFinalParenthesis = false;
-			} else if (cvt.getClassDeclaration().getName() == "Real" || cvt.getClassDeclaration().getName() == "Number") {
-				writer.addCode("0.0");
-				addFinalParenthesis = false;
-			} else if (cvt.getClassDeclaration().getName() == "Boolean") {
-				writer.addCode("false");
-				addFinalParenthesis = false;
+			if (cvt.getClassDeclaration() != null) {
+				if (cvt.getClassDeclaration().getName() == "Integer") {
+					writer.addCode("0l");
+					addFinalParenthesis = false;
+				} else if (cvt.getClassDeclaration().getName() == "Real" || cvt.getClassDeclaration().getName() == "Number") {
+					writer.addCode("0.0");
+					addFinalParenthesis = false;
+				} else if (cvt.getClassDeclaration().getName() == "Boolean") {
+					writer.addCode("false");
+					addFinalParenthesis = false;
+				}
 			} else {
 				writer.addCode("execute(");
 				mExpression.writeJavaCode(mainblock, writer);
 			}
-		} else if (mExpression.isLeftValue() && !mExpression.nullable()) {
-			writer.addCode("execute(");
+		} else if (this.functionType instanceof FunctionType) {
 			mExpression.writeJavaCode(mainblock, writer);
-			// addComma = false;
+			writer.addCode(".run(");
+			writer.addCode(writer.getAIThis());
+			writer.addCode(", null");
+			convertPrimitive = true;
 		} else {
-			// if (this.type != Type.ANY) {
-			// 	writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ")");
-			// }
 			writer.addCode("execute(");
 			mExpression.writeJavaCode(mainblock, writer);
 		}
@@ -282,11 +291,10 @@ public class LeekFunctionCall extends Expression {
 					continue;
 				}
 				if (mainblock.getVersion() >= 2) {
-					if (system_function != null && callable_versions != null && !unsafe) {
-						var type = callable_versions.get(0).arguments[i];
-						writer.compileConvert(mainblock, i, parameter, type);
-					} else {
+					if (system_function != null) {
 						parameter.writeJavaCode(mainblock, writer);
+					} else {
+						writer.compileConvert(mainblock, i, parameter, functionType.getArgument(i));
 					}
 				} else {
 					if (user_function != null) {
@@ -295,12 +303,7 @@ public class LeekFunctionCall extends Expression {
 						if (unsafe) {
 							writer.compileLoad(mainblock, parameter);
 						} else {
-							if (callable_versions != null) {
-								var type = callable_versions.get(0).arguments[i];
-								writer.compileConvert(mainblock, i, parameter, type);
-							} else {
-								parameter.writeJavaCode(mainblock, writer);
-							}
+							writer.compileConvert(mainblock, i, parameter, functionType.getArgument(i));
 						}
 					} else {
 						parameter.compileL(mainblock, writer);
@@ -321,11 +324,20 @@ public class LeekFunctionCall extends Expression {
 		if (addFinalParenthesis) {
 			writer.addCode(")");
 		}
+		if (convertPrimitive) {
+			if (this.type == Type.INT) {
+				writer.addCode(".longValue()");
+			} else if (this.type == Type.REAL) {
+				writer.addCode(".doubleValue()");
+			} else if (this.type == Type.BOOL) {
+				writer.addCode(".booleanValue()");
+			}
+		}
 		writer.addPosition(openParenthesis);
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		mExpression.preAnalyze(compiler);
 		for (Expression parameter : mParameters) {
 			parameter.preAnalyze(compiler);
@@ -333,7 +345,7 @@ public class LeekFunctionCall extends Expression {
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 
 		// System.out.println("[FC] analyze " + this);
 
@@ -583,7 +595,7 @@ public class LeekFunctionCall extends Expression {
 		}
 	}
 
-	private void verifySystemFunction(WordCompiler compiler, LeekVariable v, LeekFunctions f) {
+	private void verifySystemFunction(WordCompiler compiler, LeekVariable v, LeekFunctions f) throws LeekCompilerException {
 
 		if (f.getOperations() > 0) {
 			// System.out.println("cost of " + f.getName() + " : " + f.getOperations());
@@ -628,7 +640,7 @@ public class LeekFunctionCall extends Expression {
 		}
 	}
 
-	public void verifyVersions(WordCompiler compiler, CallableVersion[] versions) {
+	public void verifyVersions(WordCompiler compiler, CallableVersion[] versions) throws LeekCompilerException {
 
 		var types = new ArrayList<Type>(mParameters.size());
 		for (var a : mParameters) types.add(a.getType());
@@ -656,7 +668,7 @@ public class LeekFunctionCall extends Expression {
 						f_type.toString()
 					}));
 					version_unsafe = true;
-				} else if (cast_type == CastType.UNSAFE_DOWNCAST) {
+				} else if (cast_type != CastType.EQUALS) {
 					version_unsafe = true;
 				}
 				if (cast_type == CastType.UPCAST) distance += 1;

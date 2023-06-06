@@ -9,6 +9,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.common.Error;
@@ -17,6 +18,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 
 	private final Token token;
 	private final Expression expression;
+	private Type returnType;
 
 	public LeekReturnInstruction(Token token, Expression exp) {
 		this.token = token;
@@ -25,59 +27,63 @@ public class LeekReturnInstruction extends LeekInstruction {
 
 	@Override
 	public String getCode() {
-		return "return " + (expression == null ? "null" : expression.toString()) + ";";
+		return "return" + (expression == null ? "" : " " + expression.toString()) + ";";
 	}
 
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		if (expression != null) {
 			expression.preAnalyze(compiler);
 		}
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
+		this.returnType = Type.ANY;
 		if (expression != null) {
 			expression.analyze(compiler);
+		}
 
-			// Vérification du type de retour
-			var functionType = compiler.getCurrentFunction().getType();
-			if (functionType != null) {
-				var cast = functionType.returnType().accepts(expression.getType());
-				if (cast.ordinal() > CastType.UPCAST.ordinal()) {
+		// Vérification du type de retour
+		var functionType = compiler.getCurrentFunction().getType();
+		if (functionType != null) {
+			this.returnType = functionType.returnType();
+		}
 
-					var level = compiler.getMainBlock().isStrict() && cast == CastType.INCOMPATIBLE ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
-					var error = cast == CastType.INCOMPATIBLE ? Error.INCOMPATIBLE_TYPE : Error.DANGEROUS_CONVERSION;
+		var actualType = expression == null ? Type.VOID : expression.getType();
 
-					compiler.addError(new AnalyzeError(getLocation(), level, error, new String[] {
-						expression.getType().toString(),
-						compiler.getCurrentFunction().getType().returnType().toString()
-					}));
-				}
+		var cast = returnType.accepts(actualType);
+		if (cast.ordinal() > CastType.UPCAST.ordinal()) {
+
+			if (cast == CastType.INCOMPATIBLE || compiler.getMainBlock().isStrict()) {
+				var level = compiler.getMainBlock().isStrict() && cast == CastType.INCOMPATIBLE ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+				var error = cast == CastType.INCOMPATIBLE ? Error.INCOMPATIBLE_TYPE : Error.DANGEROUS_CONVERSION;
+
+				compiler.addError(new AnalyzeError(getLocation(), level, error, new String[] {
+					actualType.toString(),
+					compiler.getCurrentFunction().getType().returnType().toString()
+				}));
 			}
 		}
 	}
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("return ");
 		if (expression == null) {
-			writer.addCode("null;");
+			writer.addPosition(token);
+			writer.addCode("return null;");
 		} else {
-			if (expression.getOperations() > 0) {
-				if (expression.getType() != Type.ANY) {
-					writer.addCode("(" + expression.getType().getJavaName(mainblock.getVersion()) + ") ");
-				}
-				writer.addCode("ops(");
-			}
 			var finalExpression = expression.trim();
+			if (finalExpression.getOperations() > 0) {
+				writer.addCode("ops(" + finalExpression.getOperations() + "); ");
+			}
+			writer.addCode("return ");
 			if (mainblock.getWordCompiler().getVersion() == 1) {
 				finalExpression.compileL(mainblock, writer);
 			} else {
-				finalExpression.writeJavaCode(mainblock, writer);
+				writer.compileConvert(mainblock, 0, finalExpression, returnType);
 			}
-			if (finalExpression.getOperations() > 0) writer.addCode(", " + finalExpression.getOperations() + ")");
 			writer.addLine(";", getLocation());
 		}
 	}
@@ -98,6 +104,9 @@ public class LeekReturnInstruction extends LeekInstruction {
 	}
 
 	public Location getLocation() {
+		if (expression == null) {
+			return token.getLocation();
+		}
 		return new Location(token.getLocation(), expression.getLocation());
 	}
 

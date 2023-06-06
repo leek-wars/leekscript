@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import leekscript.common.Error;
 import leekscript.compiler.exceptions.LeekCompilerException;
@@ -100,7 +102,8 @@ public class JavaCompiler {
 		// On commence par la conversion LS -> Java
 		// System.out.println("Re-compile AI " + file.getPath());
 		long t = System.nanoTime();
-		file.setCompiledCode(new IACompiler().compile(file, file.getJavaClass(), enableOperations));
+		var lsCompiler = new IACompiler();
+		file.setCompiledCode(lsCompiler.compile(file, file.getJavaClass(), enableOperations));
 		long analyze_time = System.nanoTime() - t;
 
 		if (file.getCompiledCode().getJavaCode().isEmpty()) { // Rien ne compile, pas normal
@@ -139,10 +142,24 @@ public class JavaCompiler {
 		long compile_time = System.nanoTime() - t;
 
 		if (!result) { // Java compilation failed
+
+			// On récupère la ligne
+			int javaLine = -1;
+			Pattern r = Pattern.compile("AI_" + file.getId() + ".java:(.*?):");
+			Matcher m = r.matcher(output.toString());
+			if (m.find()) {
+				javaLine = Integer.parseInt(m.group(1));
+			}
+			var mapping = file.getCompiledCode().getLinesMap().get(javaLine);
+			String location = null;
+			if (mapping != null) {
+				location = file.getCompiledCode().getFiles().get(mapping.getAI()) + ":" + mapping.getLeekScriptLine();
+			}
+
 			if (output.toString().contains("code too large")) {
-				throw new LeekScriptException(Error.CODE_TOO_LARGE, output.toString());
+				throw new LeekScriptException(Error.CODE_TOO_LARGE, output.toString(), location);
 			} else {
-				throw new LeekScriptException(Error.COMPILE_JAVA, output.toString());
+				throw new LeekScriptException(Error.COMPILE_JAVA, output.toString(), location);
 			}
 		}
 

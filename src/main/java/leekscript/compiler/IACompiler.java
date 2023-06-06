@@ -17,8 +17,9 @@ public class IACompiler {
 
 	public static class AnalyzeResult {
 		public JSONArray informations;
-		public Set<AIFile> includedAIs = new HashSet<>();
+		public Set<AIFile> includedAIs;
 		public boolean success;
+		public Throwable tooMuchErrors;
 	}
 
 	private final JSONArray informations = new JSONArray();
@@ -65,6 +66,12 @@ public class IACompiler {
 				result.success = true;
 			}
 		} catch (LeekCompilerException e) {
+			if (e.getError() == Error.TOO_MUCH_ERRORS) {
+				result.tooMuchErrors = e;
+			}
+			for (var error : ai.getErrors()) {
+				informations.add(error.toJSON());
+			}
 			ai.getErrors().add(new AnalyzeError(e.getLocation(), AnalyzeErrorLevel.ERROR, e.getError()));
 			addError(e.getLocation(), e.getError(), e.getParameters());
 			result.success = false;

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import leekscript.compiler.Complete;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 
@@ -77,15 +78,21 @@ public class Type {
 		if (type instanceof CompoundType) {
 			var best = CastType.INCOMPATIBLE;
 			var worst = CastType.EQUALS;
+			boolean ok = false;
+			boolean nok = false;
 			for (var t : ((CompoundType) type).getTypes()) {
 				var r = this.accepts(t);
 				if (r.ordinal() > worst.ordinal()) worst = r;
 				if (r.ordinal() < best.ordinal()) best = r;
+				if (r != CastType.INCOMPATIBLE) ok = true;
+				if (r != CastType.EQUALS) nok = true;
 			}
+			if (best == CastType.INCOMPATIBLE && ok) return CastType.UNSAFE_DOWNCAST;
+			if (best == CastType.EQUALS && nok) return CastType.UPCAST;
 			// Si un est compatible, le tout est compatible
-			if (worst == CastType.INCOMPATIBLE && best != CastType.INCOMPATIBLE) return CastType.UNSAFE_DOWNCAST;
+			// if (worst == CastType.INCOMPATIBLE && best != CastType.INCOMPATIBLE) return CastType.UNSAFE_DOWNCAST;
 			// Sinon on prend le pire
-			return worst;
+			return best;
 		}
 
 		if (this == REAL) {
@@ -106,12 +113,16 @@ public class Type {
 		return CastType.INCOMPATIBLE;
 	}
 
+	public boolean isPrimitiveNumber() {
+		return this == INT || this == REAL;
+	}
+
 	public boolean isNumber() {
 		return this == INT || this == REAL;
 	}
 
 	public String toString() {
-		return name;
+		return getCode();
 	}
 
 	public String getSignature() {
@@ -335,6 +346,13 @@ public class Type {
 		return CastType.INCOMPATIBLE;
 	}
 
+	public Type getArgument(int a) {
+		if (this == ANY) {
+			return Type.ANY;
+		}
+		return Type.NULL;
+	}
+
 	public Type returnType() {
 		if (this == ANY) {
 			return Type.ANY;
@@ -461,5 +479,22 @@ public class Type {
 
 	public boolean equals(Type type) {
 		return this == type;
+	}
+
+	public Complete complete() {
+		var complete = new Complete(this);
+		return complete;
+	}
+
+	public String getCode() {
+		return name;
+	}
+
+	public boolean isIntOrReal() {
+		return false;
+	}
+
+	public boolean isPrimitive() {
+		return this == Type.INT || this == Type.BOOL || this == Type.REAL;
 	}
 }

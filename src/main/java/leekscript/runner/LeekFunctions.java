@@ -171,7 +171,7 @@ public class LeekFunctions {
 		method("arrayIter", "Array", Type.VOID, new Type[] { Type.ARRAY, new FunctionType(Type.ANY, 0, Type.ANY, Type.INT, Type.ARRAY) });
 		method("arrayConcat", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.ARRAY });
 		method("arraySort", "Array", new CallableVersion[] {
-			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, new FunctionType(Type.INT, Type.ANY, Type.ANY) }),
+			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, new FunctionType(Type.INT_OR_REAL, Type.ANY, Type.ANY) }),
 			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY })
 		});
 		method("arraySome", "Array", Type.BOOL, new Type[] { Type.ARRAY, new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY) }).setMinVersion(4);
@@ -180,7 +180,10 @@ public class LeekFunctions {
 			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.INT, Type.ANY }),
 			new CallableVersion(Type.ANY, new Type[] { Type.ARRAY, Type.INT }),
 		}).setMinVersion(4);
-		method("arrayRandom", "Array", Type.ANY, new Type[] { Type.ARRAY, Type.INT }).setMinVersion(4);
+		method("arrayRandom", "Array", new CallableVersion[] {
+			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, Type.INT }),
+			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY }),
+		}).setMinVersion(4);
 		method("arrayFrequencies", "Array", Type.MAP, new Type[] { Type.ARRAY }).setMinVersion(4);
 		method("arrayChunk", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.INT }).setMinVersion(4);
 		method("arrayUnique", "Array", Type.ARRAY, new Type[] { Type.ARRAY }).setMinVersion(4);
@@ -384,10 +387,6 @@ public class LeekFunctions {
 	 */
 	public Object run(AI ai, LeekFunctions function, Object... parameters) throws LeekRunException {
 		return null;
-	}
-
-	public int cost() {
-		return 1;
 	}
 
 	public int getMinVersion() {

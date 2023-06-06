@@ -127,7 +127,8 @@ public abstract class AI {
 					return AI.this.string(result, visited);
 				}
 			} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-				addSystemLog(AILog.SERROR, e);
+				// addSystemLog(AILog.SERROR, e);
+				// Méthode pas trouvée, pas grave
 			}
 
 			var classes = new ArrayList<Class<?>>();
@@ -463,65 +464,74 @@ public abstract class AI {
 		return "";
 	}
 
-	public void addSystemLog(int type, Throwable throwable) throws LeekRunException {
+	public LeekError throwableToError(Throwable throwable) {
 
 		if (throwable instanceof InvocationTargetException) {
-			addSystemLog(type, throwable.getCause());
-			return;
+			return throwableToError(throwable.getCause());
 		}
 
-		Error error = Error.UNKNOWN_ERROR;
-		Object[] parameters;
+		LeekError error = new LeekError();
 
 		if (throwable instanceof ClassCastException) {
-			error = Error.IMPOSSIBLE_CAST;
+			error.type = Error.IMPOSSIBLE_CAST;
 
 			Pattern r = Pattern.compile("class (.*) cannot be cast to class (.*) \\(");
-			Matcher m = r.matcher(throwable.getMessage());
+			Matcher m = r.matcher(throwable.getMessage() != null ? throwable.getMessage() : "");
 			if (m.find()) {
-				parameters = new Object[] { javaTypeToLS(m.group(1)), javaTypeToLS(m.group(2)) };
+				error.parameters = new Object[] { javaTypeToLS(m.group(1)), javaTypeToLS(m.group(2)) };
 			} else {
-				parameters = new Object[] { "?", "?" };
+				error.parameters = new Object[] { "?", "?" };
 			}
 		} else if (throwable instanceof IllegalArgumentException) {
-			error = Error.IMPOSSIBLE_CAST;
+			throwable.printStackTrace(System.out);
+			error.type = Error.IMPOSSIBLE_CAST;
 
 			Pattern r = Pattern.compile("Can not set (.*) field .* to (.*)");
-			Matcher m = r.matcher(throwable.getMessage());
+			Matcher m = r.matcher(throwable.getMessage() != null ? throwable.getMessage() : "");
 			if (m.find()) {
-				parameters = new Object[] { javaTypeToLS(m.group(2)), javaTypeToLS(m.group(1)) };
+				error.parameters = new Object[] { javaTypeToLS(m.group(2)), javaTypeToLS(m.group(1)) };
 			} else {
-				parameters = new Object[] { "?", "?" };
+				error.parameters = new Object[] { "?", "?" };
 			}
 		} else if (throwable instanceof NullPointerException) {
-			error = Error.IMPOSSIBLE_CAST;
+			error.type = Error.IMPOSSIBLE_CAST;
 
 			Pattern r = Pattern.compile("Cannot invoke \"(.*)\" because \".*\" is null");
-			Matcher m = r.matcher(throwable.getMessage());
+			Matcher m = r.matcher(throwable.getMessage() != null ? throwable.getMessage() : "");
 			if (m.find()) {
-				parameters = new Object[] { "null", javaTypeToLS(m.group(1)) };
+				error.parameters = new Object[] { "null", javaTypeToLS(m.group(1)) };
 			} else {
 				Pattern r2 = Pattern.compile("Cannot invoke \"(.*)\" because the return value of \".*\" is null");
-				Matcher m2 = r2.matcher(throwable.getMessage());
+				Matcher m2 = r2.matcher(throwable.getMessage() != null ? throwable.getMessage() : "");
 				if (m2.find()) {
-					parameters = new Object[] { "null", javaTypeToLS(m2.group(1)) };
+					error.parameters = new Object[] { "null", javaTypeToLS(m2.group(1)) };
 				} else {
-					parameters = new Object[] { "null", "?" };
+					error.parameters = new Object[] { "null", "?" };
 				}
 			}
 		} else {
 			// Erreur inconnue
-			parameters = throwable == null ? null : new Object[] { throwable.toString() };
+			error.parameters = throwable == null ? null : new Object[] { throwable.toString() };
 		}
-		addSystemLog(type, error.ordinal(), parameters, throwable);
+		return error;
+	}
+
+	public void addSystemLog(int type, Throwable throwable) throws LeekRunException {
+
+		var error = throwableToError(throwable);
+
+		addSystemLog(type, error.type.ordinal(), error.parameters, throwable);
 	}
 
 	private String javaTypeToLS(String type) {
 		switch (type) {
+			case "boolean":
 			case "java.lang.Boolean": return "boolean";
+			case "long":
 			case "java.lang.Long":
 			case "java.lang.Long.longValue()":
 				return "integer";
+			case "double":
 			case "java.lang.Double":
 			case "java.lang.Double.doubleValue()":
 				return "real";
@@ -536,7 +546,7 @@ public abstract class AI {
 		var prefix = "AI_" + this.id + "$u_";
 		if (type.startsWith(prefix)) return type.substring(prefix.length());
 
-		return type;
+		return "?";
 	}
 
 	public void addSystemLog(int type, Error error) throws LeekRunException {
@@ -564,7 +574,16 @@ public abstract class AI {
 		else if (type == AILog.STANDARD)
 			type = AILog.SSTANDARD;
 
-		String stacktrace = cause == null ? getErrorMessage(Thread.currentThread().getStackTrace()) : getErrorMessage(cause.getStackTrace());
+		String stacktrace;
+		if (cause == null) {
+			 stacktrace = getErrorMessage(Thread.currentThread().getStackTrace());
+		} else {
+			if (cause.getCause() != null) {
+				stacktrace = getErrorMessage(cause.getCause().getStackTrace());
+			} else {
+				stacktrace = getErrorMessage(cause.getStackTrace());
+			}
+		}
 		logs.addSystemLog(this, type, stacktrace, error, parameters);
 	}
 
@@ -971,6 +990,22 @@ public abstract class AI {
 		return longint(x) >>> longint(y);
 	}
 
+	public long add(long x, long y) throws LeekRunException {
+		return x + y;
+	}
+
+	public long add(long x, Long y) throws LeekRunException {
+		return x + longint(y);
+	}
+
+	public long add(Long x, long y) throws LeekRunException {
+		return longint(x) + y;
+	}
+
+	public long add(Long x, Long y) throws LeekRunException {
+		return longint(x) + longint(y);
+	}
+
 	public Object add(Object x, Object y) throws LeekRunException {
 
 		if (x instanceof String || y instanceof String) {
@@ -1136,6 +1171,14 @@ public abstract class AI {
 
 	public double pow(double x, double y) throws LeekRunException {
 		return Math.pow(x, y);
+	}
+
+	public double pow(Double x, long y) throws LeekRunException {
+		return Math.pow(real(x), y);
+	}
+
+	public long pow(Long x, long y) throws LeekRunException {
+		return (long) Math.pow(longint(x), y);
 	}
 
 	public Number pow(Object x, Object y) throws LeekRunException {

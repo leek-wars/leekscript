@@ -3,7 +3,7 @@ package leekscript.common;
 public class ObjectType extends Type {
 
 	public ObjectType() {
-		super("Object", "o", "ObjectLeekValue", "ObjectLeekValue", "new ObjectLeekValue()");
+		super("Object", "o", "ObjectLeekValue", "ObjectLeekValue", "null");
 	}
 
 	@Override

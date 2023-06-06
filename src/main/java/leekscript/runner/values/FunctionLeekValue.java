@@ -3,7 +3,7 @@ package leekscript.runner.values;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
-public abstract class FunctionLeekValue {
+public abstract class FunctionLeekValue<T> {
 
 	protected int mParametersCount = -1;
 	protected String name;
@@ -21,7 +21,7 @@ public abstract class FunctionLeekValue {
 		return mParametersCount;
 	}
 
-	public abstract Object run(AI ai, Object thiz, Object... values) throws LeekRunException;
+	public abstract T run(AI ai, Object thiz, Object... values) throws LeekRunException;
 
 	public Object toJSON(AI ai) {
 		return "<function>";

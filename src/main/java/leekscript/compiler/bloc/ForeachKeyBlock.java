@@ -6,6 +6,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekType;
@@ -61,7 +62,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		return "for (" + (mIsKeyDeclaration ? "var " : "") + mKeyIterator + " : " + (mIsDeclaration ? "var " : "") + mIterator + " in " + mArray.toString() + ") {\n" + super.getCode() + "}";
 	}
 
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 
@@ -79,7 +80,9 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		} else {
 			var v = compiler.getCurrentBlock().getVariable(mKeyIterator.getWord(), true);
 			if (v == null) {
-				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
+				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
+					mKeyIterator.getWord()
+				}));
 			}
 		}
 		// Si c'est une déclaration on vérifie que le nom est disponnible
@@ -93,7 +96,9 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		} else {
 			var v = compiler.getCurrentBlock().getVariable(mIterator.getWord(), true);
 			if (v == null) {
-				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
+				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
+					mIterator.getWord()
+				}));
 			}
 		}
 		if (iteratorDeclaration != null)
@@ -105,7 +110,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		super.preAnalyze(compiler);
 	}
 
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		mArray.analyze(compiler);

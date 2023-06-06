@@ -32,7 +32,7 @@ public class LeekType extends Expression {
 
 	@Override
 	public String toString() {
-		return type.toString();
+		return type.getCode();
 	}
 
 	@Override

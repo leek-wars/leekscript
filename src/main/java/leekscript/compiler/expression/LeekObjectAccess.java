@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.Complete;
 import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
@@ -8,6 +9,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.ClassType;
 import leekscript.common.ClassValueType;
@@ -18,6 +20,7 @@ import leekscript.common.Type;
 public class LeekObjectAccess extends Expression {
 
 	private Expression object;
+	private Token dot;
 	private Token field;
 	private Type type = Type.ANY;
 	private boolean isFinal = false;
@@ -27,8 +30,11 @@ public class LeekObjectAccess extends Expression {
 	public LeekObjectAccess(Expression object, Token dot, Token field) {
 		this.object = object;
 		this.field = field;
+		this.dot = dot;
 		dot.setExpression(this);
-		field.setExpression(this);
+		if (field != null) {
+			field.setExpression(this);
+		}
 	}
 
 	@Override
@@ -43,7 +49,7 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public String toString() {
-		return object.toString() + "." + field.getWord();
+		return object.toString() + "." + (field != null ? field.getWord() : "");
 	}
 
 	public Expression getObject() {
@@ -72,21 +78,24 @@ public class LeekObjectAccess extends Expression {
 
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 
 		object.preAnalyze(compiler);
 
-		if (field.getWord().equals("class")) {
+		if (field != null && field.getWord().equals("class")) {
 			return; // .class is available everywhere
 		}
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 
 		// System.out.println("oa " + getString());
 		object.analyze(compiler);
 		operations = 1 + object.operations;
+
+		// Expression incomplète
+		if (field == null) return;
 
 		if (field.getWord().equals("class")) {
 			var clazz = object.getType().getClassDeclaration();
@@ -107,12 +116,12 @@ public class LeekObjectAccess extends Expression {
 			if (clazz != null) {
 				this.variable = clazz.getMember(field.getWord());
 				if (this.variable == null) {
-					var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
-					compiler.addError(new AnalyzeError(field, level, Error.CLASS_MEMBER_DOES_NOT_EXIST, new String[] {
-						field.getWord(),
-						object.toString(),
-						clazz.getName()
-					}));
+					// var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+					// compiler.addError(new AnalyzeError(field, level, Error.CLASS_MEMBER_DOES_NOT_EXIST, new String[] {
+					// 	field.getWord(),
+					// 	object.toString(),
+					// 	clazz.getName()
+					// }));
 				} else {
 					var error = clazz.canAccessField(field.getWord(), compiler.getCurrentClass());
 					if (error != null) {
@@ -145,14 +154,17 @@ public class LeekObjectAccess extends Expression {
 							break;
 						}
 					} else {
-						compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), field.getWord() }));
+						compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] {
+							clazz == null ? "?" : clazz.getName(),
+							field.getWord()
+						}));
 					}
 				}
 			}
 		}
 
 		// get type of member
-		var memberType = isSuper ? object.getType().getClassDeclaration().getType().member(field.getWord()) : object.getType().member(field.getWord());
+		var memberType = isSuper && object.getType().getClassDeclaration() != null ? object.getType().getClassDeclaration().getType().member(field.getWord()) : object.getType().member(field.getWord());
 		if (memberType.isWarning()) {
 
 			if (memberType == Type.ERROR || compiler.getMainBlock().isStrict()) {
@@ -195,7 +207,11 @@ public class LeekObjectAccess extends Expression {
 				writer.addCode(field.getWord());
 			} else {
 				if (type != Type.ANY) {
-					writer.addCode("((" + type.getJavaName(mainblock.getVersion()) + ") (");
+					writer.addCode("(");
+					if (type.isPrimitive()) {
+						writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+					}
+					writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") (");
 				}
 				writer.addCode("getField(");
 				object.writeJavaCode(mainblock, writer);
@@ -240,12 +256,13 @@ public class LeekObjectAccess extends Expression {
 		} else if (object.getType() instanceof ClassType) {
 			object.writeJavaCode(mainblock, writer);
 			writer.addCode("." + field.getWord() + " = ");
-			expr.writeJavaCode(mainblock, writer);
+			writer.compileConvert(mainblock, 0, expr, type);
 		} else {
 			writer.addCode("setField(");
 			object.writeJavaCode(mainblock, writer);
 			writer.addCode(", \"" + field.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			writer.compileConvert(mainblock, 0, expr, this.type);
+			// expr.writeJavaCode(mainblock, writer);
 			writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 		}
 	}
@@ -446,6 +463,9 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public Location getLocation() {
+		if (field == null) {
+			return new Location(object.getLocation(), dot.getLocation());
+		}
 		return new Location(object.getLocation(), field.getLocation());
 	}
 
@@ -474,6 +494,13 @@ public class LeekObjectAccess extends Expression {
 			}
 		}
 		return new Hover(getType(), getLocation());
+	}
+
+
+	@Override
+	public Complete complete(Token token) {
+		System.out.println("OA complete " + this.object.getType());
+		return this.object.getType().complete();
 	}
 
 	public LeekVariable getVariable() {

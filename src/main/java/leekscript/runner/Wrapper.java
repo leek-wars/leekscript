@@ -76,8 +76,12 @@ public class Wrapper<T> {
 		return variable.mul_eq(x);
 	}
 
-	public Object div_eq(Object x) throws LeekRunException {
+	public double div_eq(Object x) throws LeekRunException {
 		return variable.div_eq(x);
+	}
+
+	public Object div_eq_v1(Object x) throws LeekRunException {
+		return variable.div_eq_v1(x);
 	}
 
 	public Object mod_eq(Object x) throws LeekRunException {

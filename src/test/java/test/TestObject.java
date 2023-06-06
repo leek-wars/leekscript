@@ -87,6 +87,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class Affiche { static COULEUR = getColor(42, 125, 78) } return Affiche.COULEUR").equals("2784590");
 		code_v2_("class A { static b } A.c").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
 		code_v2_("class A { static b static m() { class.c } }").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
+		code_v2_("class titi { static real reel	} titi.reel = 10 return titi.reel.class").equals("<class Real>");
 
 		section("Reserved static fields");
 		code_v2("class A { static for static while static if static var static this }").error(Error.VARIABLE_NAME_UNAVAILABLE);
@@ -547,6 +548,9 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { f(x) {} constructor(x) { x = 2 var g = function() { f(x) } } }").equals("null");
 		code_v2_("return null.toto()").warning(Error.CLASS_MEMBER_DOES_NOT_EXIST);
 		code_strict_v2_("return null.toto()").error(Error.CLASS_MEMBER_DOES_NOT_EXIST);
+		code_v2_("class A { a = 12 public clone() { return clone(a, 2) }} return new A().clone()").equals("12");
+		code_v2_("class A {} Class clazz = A return clazz()").equals("A {}");
+		code_v2_("class C { private static void parse() {} static apply() { parse() } } C.apply()").equals("null");
 
 		section("Field in method and in function");
 		code_v2_("class A { f = 155 m() { return (=> f)() } } return new A().m()").equals("155");

@@ -5,6 +5,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
@@ -80,28 +81,28 @@ public class LeekTernaire extends LeekExpression {
 			var branch_ops = mExpression1.operations != mExpression2.operations;
 			writer.getBoolean(mainblock, mCondition);
 			writer.addCode(" ? ");
+			if (this.type != Type.ANY && !this.type.isPrimitive()) {
+				writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+			}
 			if (mExpression1.getOperations() > 0 && branch_ops) {
-				if (mExpression1.getType() != Type.ANY) {
-					writer.addCode("(" + mExpression1.getType().getJavaName(mainblock.getVersion()) + ") ");
-				}
 				writer.addCode("ops(");
 			} else {
 				writer.addCode("(");
 			}
-			mExpression1.writeJavaCode(mainblock, writer);
+			writer.compileConvert(mainblock, ARRAY, mExpression1, type);
 			if (mExpression1.getOperations() > 0 && branch_ops) {
 				writer.addCode(", " + mExpression1.getOperations() + ")");
 			}
 			else writer.addCode(")");
 			writer.addCode(" : ");
+			if (this.type != Type.ANY && !this.type.isPrimitive()) {
+				writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+			}
 			if (mExpression2.getOperations() > 0 && branch_ops) {
-				if (mExpression2.getType() != Type.ANY) {
-					writer.addCode("(" + mExpression2.getType().getJavaName(mainblock.getVersion()) + ") ");
-				}
 				writer.addCode("ops(");
 			}
 			else writer.addCode("(");
-			mExpression2.writeJavaCode(mainblock, writer);
+			writer.compileConvert(mainblock, ARRAY, mExpression2, type);
 			if (mExpression2.getOperations() > 0 && branch_ops) writer.addCode(", " + mExpression2.getOperations() + ")");
 			else writer.addCode(")");
 		}
@@ -249,7 +250,7 @@ public class LeekTernaire extends LeekExpression {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		if (mCondition != null) {
 			mCondition.preAnalyze(compiler);
 		}
@@ -258,7 +259,7 @@ public class LeekTernaire extends LeekExpression {
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		if (mCondition != null) {
 			mCondition.analyze(compiler);
 			operations = 1 + mCondition.getOperations();

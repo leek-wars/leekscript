@@ -75,53 +75,53 @@ public class Box<T> {
 		}
 	}
 
-	public Object increment() throws LeekRunException {
+	public T increment() throws LeekRunException {
 		if (mValue instanceof Long) {
 			var value = (Long) mValue;
 			mValue = value + 1;
-			return value;
+			return (T) value;
 		}
 		if (mValue instanceof Double) {
 			var value = (Double) mValue;
 			mValue = value + 1;
-			return value;
+			return (T) value;
 		}
 		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { mUAI.export(mValue), "++" });
 		return null;
 	}
 
-	public Object decrement() throws LeekRunException {
+	public T decrement() throws LeekRunException {
 		if (mValue instanceof Long) {
 			var value = (Long) mValue;
 			mValue = value - 1;
-			return value;
+			return (T) value;
 		}
 		if (mValue instanceof Double) {
-			double value = (Double) mValue;
+			var value = (Double) mValue;
 			mValue = value - 1;
-			return value;
+			return (T) value;
 		}
 		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { mUAI.export(mValue) + "--" });
 		return null;
 	}
 
-	public Object pre_increment() throws LeekRunException {
+	public T pre_increment() throws LeekRunException {
 		if (mValue instanceof Long) {
-			return mValue = (Long) mValue + 1;
+			return (T) (mValue = (Long) mValue + 1);
 		}
 		if (mValue instanceof Double) {
-			return mValue = (Double) mValue + 1;
+			return (T) (mValue = (Double) mValue + 1);
 		}
 		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "++" + mUAI.export(mValue) });
 		return null;
 	}
 
-	public Object pre_decrement() throws LeekRunException {
+	public T pre_decrement() throws LeekRunException {
 		if (mValue instanceof Long) {
-			return mValue = (Long) mValue - 1;
+			return (T) (mValue = (Long) mValue - 1);
 		}
 		if (mValue instanceof Double) {
-			return mValue = (Double) mValue - 1;
+			return (T) (mValue = (Double) mValue - 1);
 		}
 		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "--" + mUAI.export(mValue) });
 		return null;

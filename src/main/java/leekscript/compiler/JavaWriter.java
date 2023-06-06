@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeMap;
+import java.util.function.Function;
 
 import com.alibaba.fastjson.JSON;
 
@@ -83,7 +84,7 @@ public class JavaWriter {
 	}
 
 	public AICode getCode() {
-		return new AICode(mCode.toString(), mLinesFile.toString());
+		return new AICode(mCode.toString(), mLinesFile.toString(), mLines, mFilesList);
 	}
 
 	public void writeErrorFunction(IACompiler comp, String ai) {
@@ -185,6 +186,22 @@ public class JavaWriter {
 	public void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type) {
 		// var v_type = value.getType();
 		// System.out.println("convert " + v_type + " to " + type);
+		if (type == Type.REAL && value.getType().isIntOrReal()) {
+			addCode("(");
+			value.writeJavaCode(mainblock, this);
+			addCode(").doubleValue()");
+			return;
+		}
+		if (type == Type.INT && value.getType().isIntOrReal()) {
+			addCode("(");
+			value.writeJavaCode(mainblock, this);
+			addCode(").longValue()");
+			return;
+		}
+		if (type.accepts(value.getType()).ordinal() <= CastType.EQUALS.ordinal()) {
+			value.writeJavaCode(mainblock, this);
+			return;
+		}
 		if (type.isArray()) {
 			addCode(mainblock.getVersion() >= 4 ? "toArray(" : "toLegacyArray(");
 			addCode(index + ", ");
@@ -212,9 +229,23 @@ public class JavaWriter {
 				value.writeJavaCode(mainblock, this);
 				addCode(")");
 				return;
+			} else {
+				addCode("real(");
+				value.writeJavaCode(mainblock, this);
+				addCode(")");
+				return;
 			}
 		}
+		if (type instanceof FunctionType ft1 && value.getType() instanceof FunctionType ft2) {
+			addCode("((" + type.getJavaPrimitiveName(mainblock.getVersion()) + ")");
+			addCode(" (Object) (");
+			value.writeJavaCode(mainblock, this);
+			addCode("))");
+			return;
+		}
+		addCode("((" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") (");
 		value.writeJavaCode(mainblock, this);
+		addCode("))");
 	}
 
 	public String generateGenericFunction(ArrayList<CallableVersion> versions) {
@@ -382,7 +413,7 @@ public class JavaWriter {
 				}
 			}
 		}
-		return v;
+		return "(" + type.getJavaName(version) + ") " + v;
 	}
 
 	public void cast(MainLeekBlock mainblock, Expression expr, Type type) {

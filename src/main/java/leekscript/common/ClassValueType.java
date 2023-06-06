@@ -1,5 +1,6 @@
 package leekscript.common;
 
+import java.util.HashSet;
 import java.util.List;
 
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
@@ -14,6 +15,7 @@ public class ClassValueType extends Type {
 	}
 
 	public Type member(String member) {
+		if (member == null) return Type.VOID;
 		if (member.equals("name")) return Type.STRING;
 		if (member.equals("super")) return this.clazz != null && this.clazz.getParent() != null ? this.clazz.getParent().getClassValueType() : Type.CLASS;
 		if (member.equals("fields")) return Type.ARRAY_STRING;
@@ -43,22 +45,20 @@ public class ClassValueType extends Type {
 			if (this.clazz == c.clazz) return CastType.EQUALS;
 
 			return CastType.UPCAST;
-			// // this = Animal, type = Dog
-			// if (c.clazz.descendsFrom(this.clazz)) return CastType.UPCAST;
-			// // this = Dog, type = Animal
-			// if (this.clazz != null && this.clazz.descendsFrom(c.clazz)) return CastType.UNSAFE_DOWNCAST;
-			// // Incompatible
-			// return CastType.INCOMPATIBLE;
 		}
 		return super.accepts(type);
 	}
 
 	@Override
 	public CastType acceptsArguments(List<Type> types) {
-		if (types.size() == 0 || clazz == null || clazz.getConstructor(types.size()) != null) {
+		if (types.size() == 0 || clazz == null) {
 			return CastType.EQUALS;
 		}
-		return CastType.INCOMPATIBLE;
+		// Vérification constructeurs
+		var constructor = clazz.getConstructor(types.size());
+		if (constructor == null) return CastType.INCOMPATIBLE;
+
+		return constructor.block.getType().acceptsArguments(types);
 	}
 
 	@Override
@@ -94,5 +94,23 @@ public class ClassValueType extends Type {
 	@Override
 	public boolean canBeIndexable() {
 		return true;
+	}
+
+	@Override
+	public Type getArgument(int a) {
+		if (this.clazz == null) return Type.ANY;
+		HashSet<Type> types = new HashSet<Type>();
+		for (var construct : this.clazz.getConstructors().entrySet()) {
+			if (construct.getValue().block != null) {
+				types.add(construct.getValue().block.getType().getArgument(a));
+			}
+		}
+		return Type.compound(types);
+	}
+
+
+	@Override
+	public String getCode() {
+		return this.clazz == null ? "Class" : "Class<" + this.clazz.getName() + ">";
 	}
 }

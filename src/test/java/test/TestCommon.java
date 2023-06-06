@@ -227,8 +227,13 @@ public class TestCommon {
 				long exec_time = (System.nanoTime() - t) / 1000;
 				result = new Result(e.getError().toString(), ai, e.getError(), new String[0], ai.getOperations(), exec_time);
 			} catch (Exception e) {
-				e.printStackTrace(System.out);
-				result = new Result("unknown error!", ai, Error.UNKNOWN_ERROR, new String[0], 0, 0);
+				if (ai != null) {
+					var error = ai.throwableToError(e);
+					result = new Result(error.type.toString(), ai, error.type, error.parameters, 0, 0);
+				} else {
+					e.printStackTrace(System.out);
+					result = new Result("unknown error!", ai, Error.UNKNOWN_ERROR, new String[0], 0, 0);
+				}
 			}
 
 			operations.add(ops);
@@ -267,11 +272,11 @@ public class TestCommon {
 		String result;
 		AI ai;
 		Error error;
-		String[] parameters;
+		Object[] parameters;
 		long operations;
 		long exec_time;
 
-		public Result(String result, AI ai, Error error, String[] parameters, long operations, long exec_time) {
+		public Result(String result, AI ai, Error error, Object[] parameters, long operations, long exec_time) {
 			this.result = result;
 			this.ai = ai;
 			this.operations = operations;
