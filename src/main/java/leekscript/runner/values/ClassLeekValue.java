@@ -1,6 +1,7 @@
 package leekscript.runner.values;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -380,15 +381,14 @@ public class ClassLeekValue extends FunctionLeekValue {
 		}
 		if (this == ai.nullClass) return null;
 		if (this == ai.booleanClass) return false;
-		if (this == ai.integerClass) return 0;
+		if (this == ai.integerClass) return 0l;
 		if (this == ai.realClass || this == ai.numberClass) return 0.0;
 		if (this == ai.stringClass) return "";
+		if (this == ai.legacyArrayClass) {
+			return new LegacyArrayLeekValue(ai);
+		}
 		if (this == ai.arrayClass) {
-			if (ai.getVersion() >= 4) {
-				return new ArrayLeekValue(ai);
-			} else {
-				return new LegacyArrayLeekValue();
-			}
+			return new ArrayLeekValue(ai);
 		}
 		if (this == ai.mapClass) {
 			return new MapLeekValue(ai);
@@ -408,15 +408,34 @@ public class ClassLeekValue extends FunctionLeekValue {
 		int arg_count = arguments.length;
 		for (var a = arg_count; a >= 0; --a) {
 			try {
-				var types = new Class<?>[a];
+				// var types = new Class<?>[a];
 				var args = new Object[a];
 				for (int i = 0; i < a; ++i) {
-					types[i] = Object.class;
+				// 	types[i] = Object.class;
 					args[i] = arguments[i];
 				}
-				this.clazz.getMethod("init", types).invoke(object, args);
-				return object;
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {}
+				// var m = this.clazz.getMethod("init", types)
+				Method m = null;
+				for (var mm : this.clazz.getMethods()) {
+					if (mm.getName().equals("init")) {
+						// System.out.println(m);
+						if (mm.getParameterTypes().length == args.length) {
+							m = mm;
+							break;
+						}
+					}
+				}
+				if (m != null) {
+					m.invoke(object, args);
+					return object;
+				}
+			} catch (IllegalAccessException | IllegalArgumentException | SecurityException | InvocationTargetException e) {
+				if (e instanceof IllegalArgumentException || e instanceof NoSuchMethodException) {
+					ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
+				} else {
+					ai.addSystemLog(AILog.ERROR, e);
+				}
+			}
 		}
 		ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
 		return object;
@@ -428,7 +447,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 				if (ai.getVersion() >= 4) {
 					fieldsArray = new ArrayLeekValue(ai);
 				} else {
-					fieldsArray = new LegacyArrayLeekValue();
+					fieldsArray = new LegacyArrayLeekValue(ai);
 				}
 			} else {
 				if (ai.getVersion() >= 4) {
@@ -476,7 +495,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 				if (ai.getVersion() >= 4) {
 					methodsArray = new ArrayLeekValue(ai);
 				} else {
-					methodsArray = new LegacyArrayLeekValue();
+					methodsArray = new LegacyArrayLeekValue(ai);
 				}
 			} else {
 				if (ai.getVersion() >= 4) {

@@ -79,7 +79,7 @@ public class TestGeneral extends TestCommon {
 				code_v1("var " + word + " = 2;").error(Error.NONE);
 				code_v2("var " + word + " = 2;").error(Error.THIS_NOT_ALLOWED_HERE);
 				code_v3_("var " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
-			} else if (word.equals("instanceof")) {
+			} else if (word.equals("instanceof") || word.equals("as")) {
 				code_v1_2("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
 				code_v3_("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
 			} else if (word.equals("function")) {
@@ -99,7 +99,7 @@ public class TestGeneral extends TestCommon {
 		for (var word : WordParser.reservedWords) {
 			if (word.equals("this")) {
 				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
-			} else if (word.equals("instanceof")) {
+			} else if (word.equals("instanceof") || word.equals("as") || word.equals("void")) {
 				code_v3_("global " + word + " = 2;").error(Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
 			} else if (word.equals("function")) {
 				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
@@ -123,10 +123,20 @@ public class TestGeneral extends TestCommon {
 		// code("var a return a = 12m").equals("12");
 		// code("var a a = 12m return a").equals("12");
 		code("var a = 2 return a = 'hello'").equals("\"hello\"");
+		code_strict("var a = 2 return a = 'hello'").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict("any a = 2 return a = 'hello'").equals("\"hello\"");
 		code("var a = 'hello' return a = 2").equals("2");
+		code_strict("var a = 'hello' return a = 2").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict("any a = 'hello' return a = 2").equals("2");
 		code("var a = 2 a = 'hello' return a").equals("\"hello\"");
+		code_strict("var a = 2 a = 'hello' return a").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict("any a = 2 a = 'hello' return a").equals("\"hello\"");
 		code("var a = 2 a = [1, 2] return a").equals("[1, 2]");
+		code_strict("var a = 2 a = [1, 2] return a").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict("any a = 2 a = [1, 2] return a").equals("[1, 2]");
 		code_v2_("var a = 5.5 a = {} return a").equals("{}");
+		code_strict_v2_("var a = 5.5 a = {} return a").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v2_("any a = 5.5 a = {} return a").equals("{}");
 		// code("var a = [5, 7] a = 7 System.print(a)").output("7\n");
 		// code("var a = 7 a = [5, 12] a").equals("[5, 12]");
 		// code("var a = 7 System.print(a) a = <5, 12> System.print(a)").output("7\n<5, 12>\n");
@@ -136,6 +146,8 @@ public class TestGeneral extends TestCommon {
 		// code("var a = 200l a = 5 a").equals("5");
 		// code("var a = 5.5 a = 200l a").equals("200");
 		code("var a = 5.5 return a = 2").equals("2");
+		code_strict_v1("var a = 5.5 return a = 2").equals("2");
+		code_strict_v2_("var a = 5.5 return a = 2").equals("2.0");
 		// code("var a = 5.5 a = 1000m").equals("1000");
 		// code("var a = 5.5 a = 2m ** 100").equals("1267650600228229401496703205376");
 		// code("var a = 2m return a = 5").equals("5");
@@ -162,15 +174,24 @@ public class TestGeneral extends TestCommon {
 		// code("var i = 12 { i = 'salut' } return i").equals("salut");
 		// code("var i = 12 {{{ i = 'salut' }}} return i").equals("salut");
 		code("var b = 5 if (1) { b = 'salut' } return b").equals("\"salut\"");
+		code_strict("var b = 5 if (1) { b = 'salut' } return b").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict("any b = 5 if (1) { b = 'salut' } return b").equals("\"salut\"");
 		code("var b = 5 if (0) { b = 'salut' } return b").equals("5");
+		code_strict("var b = 5 if (0) { b = 'salut' } return b").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict("any b = 5 if (0) { b = 'salut' } return b").equals("5");
 		code("var a = 12 if (1) { a = 5 a++ } else { a = 3 } return a").equals("6");
 		code_v1("var a = 12 if (0) { a = 5 a++ } else { a = 5.5 } return a").equals("5,5");
 		code_v2_("var a = 12 if (0) { a = 5 a++ } else { a = 5.5 } return a").equals("5.5");
+		code_strict_v2_("real a = 12 if (0) { a = 5 a++ } else { a = 5.5 } return a").equals("5.5");
 		// code("var a = 12 if (0) { a = 5 a++ } else { a = 7l } return a").equals("7");
 		code("var b = 5 if (1) {} else { b = 'salut' } return b").equals("5");
+		code_strict("any b = 5 if (1) {} else { b = 'salut' } return b").equals("5");
 		code("var b = 5 if (0) {} else { b = 'salut' } return b").equals("\"salut\"");
+		code_strict("any b = 5 if (0) {} else { b = 'salut' } return b").equals("\"salut\"");
 		code("var x = 5 if (true) if (true) x = 'a' return x").equals("\"a\"");
+		code_strict("any x = 5 if (true) if (true) x = 'a' return x").equals("\"a\"");
 		code("var x = 5 if (true) if (true) if (true) if (true) if (true) x = 'a' return x").equals("\"a\"");
+		code_strict("any x = 5 if (true) if (true) if (true) if (true) if (true) x = 'a' return x").equals("\"a\"");
 		// code("var x = 2 var y = { if (x == 0) { return 'error' } 7 * x } return y").equals("14");
 		code("var y if (false) { if (true) {;} else { y = 2 } } else { y = 5 } return y").equals("5");
 		code("PI = PI + 12; return PI").error(Error.CANT_ASSIGN_VALUE);
@@ -181,6 +202,8 @@ public class TestGeneral extends TestCommon {
 		section("Assignments with +=");
 		code_v1("var a = 10 a += 0.5 return a").equals("10,5");
 		code_v2_("var a = 10 a += 0.5 return a").equals("10.5");
+		code_strict_v2_("var a = 10 a += 0.5 return a").equals("10");
+		code_strict_v2_("var a = 10 a += 4.5 return a").equals("14");
 
 		section("File");
 		file("ai/code/trivial.leek").equals("2");
@@ -194,5 +217,10 @@ public class TestGeneral extends TestCommon {
 		code("var état = 12 return état").equals("12");
 		code("var ÀÖØÝàöøýÿ = 'yo' return ÀÖØÝàöøýÿ").equals("\"yo\"");
 		code("var nœud = [] return nœud").equals("[]");
+
+		section("Variables and types");
+		code("real a = 1.1 integer b = a return b").equals("1");
+		code("real a = 1.9 integer b = a return b").equals("1");
+		code("integer|real a = 1.999; integer b = a; return b").equals("1");
 	}
 }

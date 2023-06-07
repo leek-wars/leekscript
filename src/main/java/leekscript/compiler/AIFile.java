@@ -1,9 +1,12 @@
 package leekscript.compiler;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.TreeMap;
 
 import com.alibaba.fastjson.JSONObject;
 
+import leekscript.common.Type;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.runner.AI;
 
@@ -22,12 +25,15 @@ public class AIFile {
 	private String rootClazz;
 	private ArrayList<Token> tokens = new ArrayList<Token>();
 	private Token endOfFileToken = new Token(WordParser.T_END_OF_FILE, "", new Location(this));
+	private boolean strict = false;
+	public TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
+	private File filesLines;
 
-	public AIFile(String path, String code, long timestamp, int version, int owner) {
-		this(path, code, timestamp, version, null, owner, path.hashCode() & 0xfffffff);
+	public AIFile(String path, String code, long timestamp, int version, int owner, boolean strict) {
+		this(path, code, timestamp, version, null, owner, path.hashCode() & 0xfffffff, strict);
 	}
 
-	public AIFile(String path, String code, long timestamp, int version, Folder folder, int owner, int id) {
+	public AIFile(String path, String code, long timestamp, int version, Folder folder, int owner, int id, boolean strict) {
 		this.path = path;
 		this.code = code;
 		this.folder = folder;
@@ -35,6 +41,7 @@ public class AIFile {
 		this.timestamp = timestamp;
 		this.version = version;
 		this.id = id;
+		this.strict = strict;
 	}
 	public int getId() {
 		return id;
@@ -112,13 +119,13 @@ public class AIFile {
 		return json.toString();
 	}
 
-	public AI compile(boolean use_cache) throws LeekScriptException, LeekCompilerException {
+	public AI compile(boolean use_cache, boolean enableOperations) throws LeekScriptException, LeekCompilerException {
 
 		// System.out.println("LeekScript compile AI " + this.getPath() + " timestamp : " + this.getTimestamp());
 
 		LeekScript.getFileSystem().loadDependencies(this);
 
-		AI ai = JavaCompiler.compile(this, use_cache);
+		AI ai = JavaCompiler.compile(this, use_cache, enableOperations);
 
 		return ai;
 	}
@@ -152,6 +159,20 @@ public class AIFile {
 		return new Hover(token.getLocation(), token.getWord());
 	}
 
+	public Complete complete(int line, int column) {
+
+		// Find token
+		var token = findToken(line, column);
+		System.out.println("token = " + token);
+		if (token == null) return null;
+
+		if (token.getExpression() != null) {
+			return token.getExpression().complete(token);
+		}
+
+		return new Complete(Type.VOID);
+	}
+
 	public Token findToken(int line, int column) {
 		if (tokens.size() == 0) return null;
 		// Find token
@@ -161,7 +182,7 @@ public class AIFile {
 			int p = (end + start) / 2;
 			var token = tokens.get(p);
 			var tLine = token.getLocation().getStartLine();
-			// System.out.println("findToken start=" + start + " end=" + end + " token=" + token);
+			// System.out.println("findToken start=" + start + " end=" + end + " token=" + token + " tline=" + token.getLocation().getStartLine() + " tcol=" + token.getLocation().getStartColumn());
 			if (start >= end) {
 				if (line == tLine) {
 					var startColumn = token.getLocation().getStartColumn();
@@ -196,4 +217,7 @@ public class AIFile {
 		return getName();
 	}
 
+	public boolean isStrict() {
+		return strict;
+	}
 }

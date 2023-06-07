@@ -317,6 +317,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 	}
 
+	private AI ai;
 	private Element mHead = null;
 	private Element mEnd = null;
 	private long mIndex = 0;
@@ -324,13 +325,16 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	private int capacity = 0;
 	private Element[] mTable = null;
 
-	public LegacyArrayLeekValue() {}
+	public LegacyArrayLeekValue(AI ai) {
+		this.ai = ai;
+	}
 
 	public LegacyArrayLeekValue(AI ai, Object values[]) throws LeekRunException {
 		this(ai, values, false);
 	}
 
 	public LegacyArrayLeekValue(AI ai, Object values[], boolean isKeyValue) throws LeekRunException {
+		this.ai = ai;
 		if (capacity > 0) {
 			initTable(ai, values.length);
 		}
@@ -348,6 +352,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	}
 
 	public LegacyArrayLeekValue(AI ai, LegacyArrayLeekValue array, int level) throws LeekRunException {
+		this.ai = ai;
 		if (array.size() > 0) {
 			initTable(ai, array.size());
 			Element e = array.mHead;
@@ -452,8 +457,8 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 	}
 
-	public Object get(AI ai, int value) throws LeekRunException {
-		return get(ai, (long) value);
+	public Object get(int value) throws LeekRunException {
+		return get((long) value);
 	}
 
 	public Object remove(AI ai, long index) throws LeekRunException {
@@ -649,7 +654,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 * @return Valeur à la clé donnée
 	 * @throws LeekRunException
 	 */
-	public Object get(AI ai, Object keyValue) throws LeekRunException {
+	public Object get(Object keyValue) throws LeekRunException {
 		var key = transformKey(ai, keyValue);
 		Element e = getElement(ai, key);
 		return e == null ? null : e.value.get();
@@ -1186,7 +1191,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		ai.ops(1 + Math.max(0, (int) (end - start)));
 		if (start < 0 || end < start || end >= size())
 			return null;
-		LegacyArrayLeekValue retour = new LegacyArrayLeekValue();
+		LegacyArrayLeekValue retour = new LegacyArrayLeekValue(ai);
 		int i = 0;
 		for (var val : this) {
 			if (i >= start && i <= end) {
@@ -1291,11 +1296,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	public LegacyArrayLeekValue arrayPartition(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		if (ai.getVersion() >= 2) {
-			var list1 = new LegacyArrayLeekValue();
-			var list2 = new LegacyArrayLeekValue();
+			var list1 = new LegacyArrayLeekValue(ai);
+			var list2 = new LegacyArrayLeekValue(ai);
 			int nb = function.getArgumentsCount();
 			if (nb != 1 && nb != 2)
-				return new LegacyArrayLeekValue();
+				return new LegacyArrayLeekValue(ai);
 			ArrayIterator iterator = iterator();
 			boolean b;
 			while (iterator.hasNext()) {
@@ -1309,11 +1314,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			}
 			return new LegacyArrayLeekValue(ai, new Object[] { list1, list2 }, false);
 		} else {
-			var list1 = new LegacyArrayLeekValue();
-			var list2 = new LegacyArrayLeekValue();
+			var list1 = new LegacyArrayLeekValue(ai);
+			var list2 = new LegacyArrayLeekValue(ai);
 			int nb = function.getArgumentsCount();
 			if (nb != 1 && nb != 2)
-				return new LegacyArrayLeekValue();
+				return new LegacyArrayLeekValue(ai);
 			var iterator = iterator();
 			boolean b;
 			while (iterator.hasNext()) {
@@ -1351,7 +1356,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	public LegacyArrayLeekValue arrayMap(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		if (ai.getVersion() >= 2) {
-			var retour = new LegacyArrayLeekValue();
+			var retour = new LegacyArrayLeekValue(ai);
 			var iterator = iterator();
 			int nb = function.getArgumentsCount();
 			while (iterator.hasNext()) {
@@ -1365,7 +1370,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			}
 			return retour;
 		} else {
-			var retour = new LegacyArrayLeekValue();
+			var retour = new LegacyArrayLeekValue(ai);
 			var iterator = iterator();
 			int nb = function.getArgumentsCount();
 			while (iterator.hasNext()) {
@@ -1383,7 +1388,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	public LegacyArrayLeekValue arrayFilter(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		if (ai.getVersion() >= 2) {
-			var retour = new LegacyArrayLeekValue();
+			var retour = new LegacyArrayLeekValue(ai);
 			var iterator = iterator();
 			int nb = function.getArgumentsCount();
 			if (nb != 1 && nb != 2)
@@ -1403,7 +1408,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			}
 			return retour;
 		} else {
-			var retour = new LegacyArrayLeekValue();
+			var retour = new LegacyArrayLeekValue(ai);
 			var iterator = iterator();
 			int nb = function.getArgumentsCount();
 			if (nb != 1 && nb != 2)
@@ -1431,7 +1436,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	}
 
 	public LegacyArrayLeekValue arrayFlatten(AI ai, long depth) throws LeekRunException {
-		var result = new LegacyArrayLeekValue();
+		var result = new LegacyArrayLeekValue(ai);
 		flatten_rec(ai, this, result, depth);
 		return result;
 	}

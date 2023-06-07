@@ -1,5 +1,7 @@
 package test;
 
+import leekscript.common.Error;
+
 public class TestGlobals extends TestCommon {
 
 	public void run() throws Exception {
@@ -19,11 +21,14 @@ public class TestGlobals extends TestCommon {
 		code("global r = ['a': 12, 'b': 5]; return r").equals("[\"a\" : 12, \"b\" : 5]");
 		code_v1_3("global r = [] return r[1] = 12").equals("12");
 		code_v4_("global r = [] return r[1] = 12").equals("null");
+		code_strict_v4_("global any r = [] return r[1] = 12").error(Error.ARRAY_OUT_OF_BOUND);
 		code_v4_("global r = [:] return r[1] = 12").equals("12");
+		code_strict("global any r = [:] return r[1] = 12").equals("12");
 		code("global r = [0] return r[0] += 12").equals("12");
 		code_v1_3("global r = [] return r[5] += 12").equals("12");
 		code_v4_("global r = [] return r[5] += 12").equals("null");
 		code_v4_("global r = [:] return r[5] += 12").equals("12");
+		code_strict_v4_("global r = [:] return r[5] += 12").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
 		code_v1("global r = 12 r = @null").equals("null");
 		code("global m = [] return m = m").equals("[]");
 		code_v2_("global m = {} return m = m").equals("{}");
@@ -47,5 +52,12 @@ public class TestGlobals extends TestCommon {
 		code_v2_("global x = 12; x ^= 5; return x;").equals("9");
 		code("global x = 12; return x == 5;").equals("false");
 		code("global x = 12; return x === 5;").equals("false");
+
+		section("Types");
+		code("global boolean? x = null; return x").equals("null");
+		code("global boolean x; x = count([]) == 0; return x").equals("true");
+		code("global boolean? x = null; x = 1 == 2; return x").equals("false");
+		code("global Array<string> w = split('hello', ''); return w").equals("[\"h\", \"e\", \"l\", \"l\", \"o\"]");
+		code_v4_("function f() { return [:] } global Map c = f(); return c").equals("[:]");
 	}
 }

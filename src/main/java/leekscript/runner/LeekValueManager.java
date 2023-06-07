@@ -62,7 +62,7 @@ public class LeekValueManager {
 			Collections.sort(keys);
 
 			if (ai.getVersion() <= 3) {
-				var array = new LegacyArrayLeekValue();
+				var array = new LegacyArrayLeekValue(ai);
 				for (var key : keys) {
 					array.getOrCreate(ai, key).set(parseJSON(a.get(key), ai));
 				}

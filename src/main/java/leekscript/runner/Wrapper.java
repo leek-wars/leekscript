@@ -3,9 +3,9 @@ package leekscript.runner;
 
 import leekscript.runner.values.Box;
 
-public class Wrapper {
+public class Wrapper<T> {
 
-	private Box variable;
+	private Box<T> variable;
 
 	public Wrapper(Box variable) {
 		this.variable = variable;
@@ -40,11 +40,11 @@ public class Wrapper {
 		}
 	}
 
-	public Box getVariable() {
+	public Box<T> getVariable() {
 		return variable;
 	}
 
-	public Object get() {
+	public T get() {
 		return variable.get();
 	}
 
@@ -76,8 +76,12 @@ public class Wrapper {
 		return variable.mul_eq(x);
 	}
 
-	public Object div_eq(Object x) throws LeekRunException {
+	public double div_eq(Object x) throws LeekRunException {
 		return variable.div_eq(x);
+	}
+
+	public Object div_eq_v1(Object x) throws LeekRunException {
+		return variable.div_eq_v1(x);
 	}
 
 	public Object mod_eq(Object x) throws LeekRunException {

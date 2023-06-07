@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import leekscript.compiler.Token;
+import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.instruction.LeekInstruction;
@@ -58,7 +60,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 
 	public void addInstruction(WordCompiler compiler, LeekInstruction instruction) throws LeekCompilerException {
 		if (mEndInstruction != 0) {
-			throw new LeekCompilerException(instruction.getLocation(), Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+			compiler.addError(new AnalyzeError(instruction.getLocation(), AnalyzeErrorLevel.ERROR, Error.CANT_ADD_INSTRUCTION_AFTER_BREAK));
 		}
 		mEndInstruction = instruction.getEndBlock();
 		mInstructions.add(instruction);
@@ -178,19 +180,25 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		return mEndInstruction != 0;
 	}
 
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		for (var instruction : mInstructions) {
+			// if (instruction instanceof LeekGlobalDeclarationInstruction) {
+			// 	continue; // Analysé avant
+			// }
 			instruction.preAnalyze(compiler);
 		}
 		compiler.setCurrentBlock(initialBlock);
 	}
 
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		for (var instruction : mInstructions) {
+			// if (instruction instanceof LeekGlobalDeclarationInstruction) {
+			// 	continue; // Analysé avant
+			// }
 			instruction.analyze(compiler);
 		}
 		compiler.setCurrentBlock(initialBlock);

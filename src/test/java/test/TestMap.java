@@ -28,15 +28,18 @@ public class TestMap extends TestCommon {
 		code_v1("var a = [:] a[0] = a return a").equals("[[]]");
 		code_v2_3("var a = [:] a[0] = a return a").equals("[<...>]");
 		code_v4_("var a = [:] a[0] = a return a").equals("[0 : [0 : <...>]]");
+		code_strict_v4_("any a = [:] a[0] = a return a").equals("[0 : [0 : <...>]]");
 		code_v1("var a = [:] a[a] = 1 return a").equals("[1]");
 		code_v2_3("var a = [:] a[a] = 1 return a").equals("[1]");
 		code_v4_("var a = [:] a[a] = 1 return a").equals("[[<...> : 1] : 1]");
+		code_strict_v4_("any a = [:] a[a] = 1 return a").equals("[[<...> : 1] : 1]");
 		code_v1_3("var a = [3 : 4] a[a] = 2 return a").equals("[3 : 4, 1 : 2]");
 		code_v1("var a = [:] a[a] = a return a").equals("[[]]");
 		code_v2_3("var a = [:] a[a] = a return a").equals("[<...>]");
 		code_v1("var a = [:] a[0] = [a] return a").equals("[[[]]]");
 		code_v2_3("var a = [:] a[0] = [a] return a").equals("[[<...>]]");
 		code_v4_("var a = [:] a[0] = [a] return a").equals("[0 : [[0 : <...>]]]");
+		code_strict_v4_("any a = [:] a[0] = [a] return a").equals("[0 : [[0 : <...>]]]");
 
 		section("Map duplicated key");
 		code_v1_3("return [1 : 2, 1 : 3]").warning(Error.MAP_DUPLICATED_KEY);
@@ -115,8 +118,11 @@ public class TestMap extends TestCommon {
 		code_v2_("return ['', [1: 2.5][1]]").equals("[\"\", 2.5]");
 		code_v1_3("var m = [] var ns = '01234566' return m[ns] = 1").equals("1");
 		code_v4_("var m = [] var ns = '01234566' return m[ns] = 1").equals("null");
+		code_strict_v4_("var m = [] var ns = '01234566' return m[ns] = 1").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
 		code("var a = [12: 5] return a[5] = 7").equals("7");
 		code("var a = [12: 5] var b = 7 return a[5] = b").equals("7");
+		code("var a = [1 : 2] integer b = a[1] return b").equals("2");
+		code("var a = [1 : 2] integer b = a[0] return b").error(Error.IMPOSSIBLE_CAST);
 
 		section("Map.operator [] left-value");
 		code("var m = [1: 2] m[1]++ return m").equals("[1 : 3]");
@@ -156,6 +162,7 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = [1 : 2] a += [1 : 4] return a").equals("[1 : 2]");
 		code_v4_("var a = ['a' : 2] a += ['a' : 4] return a").equals("[\"a\" : 2]");
 		code_v4_("var a = [:] a += [1 : 2, 3 : 4] return a").equals("[1 : 2, 3 : 4]");
+		code_strict_v4_("any a = [:] a += [1 : 2, 3 : 4] return a").equals("[1 : 2, 3 : 4]");
 		code_v4_("var a = [1 : 2, 3 : 4] a += [:] return a").equals("[1 : 2, 3 : 4]");
 
 		// section("Map.operator [] on unknown maps");
@@ -191,6 +198,7 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = [1, 2, 3] return jsonEncode([1 : a, 2 : 3])").equals("\"{\"1\":[1,2,3],\"2\":3}\"");
 		code_v4_("var a = [1] return jsonEncode([1 : a, 2 : a])").equals("\"{\"1\":[1]}\"");
 		code_v4_("var a = [:] a[a] = a return jsonEncode(a)").equals("\"{}\"");
+		code_strict_v4_("any a = [:] a[a] = a return jsonEncode(a)").equals("\"{}\"");
 
 		/*
 		* Iteration

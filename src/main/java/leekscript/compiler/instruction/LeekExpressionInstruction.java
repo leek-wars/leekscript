@@ -5,6 +5,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekAnonymousFunction;
 import leekscript.compiler.expression.LeekBoolean;
@@ -46,15 +47,15 @@ public class LeekExpressionInstruction extends LeekInstruction {
 
 		// Wrap an expression with a function call to avoid 'error: not a statement' error
 		if (trimmed instanceof LeekTernaire || (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).needsWrapper())) {
-			if (trimmed.getOperations() > 0) writer.addCode("ops(");
+			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode("ops(");
 			else writer.addCode("nothing(");
 			trimmed.writeJavaCode(mainblock, writer);
-			if (trimmed.getOperations() > 0) writer.addCode(", " + trimmed.getOperations() + ")");
+			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode(", " + trimmed.getOperations() + ")");
 			else writer.addCode(")");
 		} else {
-			if (trimmed.getOperations() > 0) writer.addCode("ops(");
+			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode("ops(");
 			trimmed.writeJavaCode(mainblock, writer);
-			if (trimmed.getOperations() > 0) writer.addCode(", " + trimmed.getOperations() + ")");
+			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode(", " + trimmed.getOperations() + ")");
 		}
 		// if (trimmed.getOperations() > 0) {
 		// 	writer.addCode("; ops(" + trimmed.getOperations() + ")");
@@ -73,12 +74,12 @@ public class LeekExpressionInstruction extends LeekInstruction {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		mExpression.preAnalyze(compiler);
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		mExpression.analyze(compiler);
 	}
 

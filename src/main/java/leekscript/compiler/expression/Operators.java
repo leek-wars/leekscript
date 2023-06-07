@@ -53,13 +53,15 @@ public class Operators {
 	public final static int INSTANCEOF = 50;
 	public final static int INTEGER_DIVISION = 51;
 	public final static int INTEGER_DIVISION_EQ = 52;
+	public final static int AS = 53;
+	public final static int NON_NULL_ASSERTION = 54;
 
 	public final static int getOperator(String operator, int version) {
 		if(operator.equals("[")) return CROCHET;
 		if(operator.equals("(")) return PARENTHESIS;
 		if(operator.equals("++")) return INCREMENT;
 		if(operator.equals("--")) return DECREMENT;
-		if(operator.equals("!")) return NOT;
+		if(operator.equals("!")) return NON_NULL_ASSERTION;
 		if(operator.equals("*")) return MULTIPLIE;
 		if(operator.equals("/")) return DIVIDE;
 		if(operator.equals("%")) return MODULUS;
@@ -111,6 +113,7 @@ public class Operators {
 		if(operator.equals("instanceof")) return INSTANCEOF;
 		if(operator.equals("\\")) return INTEGER_DIVISION;
 		if(operator.equals("\\=")) return INTEGER_DIVISION_EQ;
+		if(operator.equals("as")) return AS;
 		return -1;
 	}
 
@@ -121,12 +124,14 @@ public class Operators {
 			return 17;
 		case DOT:
 			return 16;
+		case AS:
 		case INCREMENT:
 		case DECREMENT:
 		case REFERENCE:
 		case UNARY_MINUS:
 			return 15;
 		case NOT:
+		case NON_NULL_ASSERTION:
 		case BITNOT:
 			return 14;
 		case NEW:
@@ -211,6 +216,7 @@ public class Operators {
 		switch(operator) {
 		case INCREMENT:
 		case DECREMENT:
+		case NON_NULL_ASSERTION:
 			return true;
 		}
 		return false;
@@ -264,6 +270,7 @@ public class Operators {
 		case NOT_EQUALS_EQUALS:
 			return "!==";
 		case NOT:
+		case NON_NULL_ASSERTION:
 			return "!";
 		case BITAND:
 			return "&";
@@ -307,6 +314,8 @@ public class Operators {
 			return "@";
 		case INSTANCEOF:
 			return "instanceof";
+		case AS:
+			return "as";
 		}
 		return "null";
 	}

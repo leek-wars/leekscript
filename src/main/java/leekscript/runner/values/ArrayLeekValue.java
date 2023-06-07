@@ -154,7 +154,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return size();
 	}
 
-	public Object put(AI ai, Object keyValue, Object value) throws LeekRunException {
+	public Object putv4(Object keyValue, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = ai.integer(keyValue);
 		if (i < 0) i += size();
@@ -164,6 +164,21 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		} catch (IndexOutOfBoundsException e) {
 			wrongIndexError(ai, i);
 			return null;
+		}
+	}
+
+	public Object put(Object keyValue, Object value) throws LeekRunException {
+		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
+		int i = ai.integer(keyValue);
+		if (i < 0) i += size();
+		try {
+			set(i, value);
+			return value;
+		} catch (IndexOutOfBoundsException e) {
+			throw new LeekRunException(Error.ARRAY_OUT_OF_BOUND, new String[] {
+				String.valueOf(i),
+				String.valueOf(size())
+			});
 		}
 	}
 
@@ -495,6 +510,29 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 			String.valueOf(i),
 			String.valueOf(size())
 		});
+	}
+
+	public Object get(Object key) throws LeekRunException {
+		ai.opsNoCheck(ArrayLeekValue.READ_OPERATIONS);
+		int i = (int) ai.integer(key);
+		if (i < 0) i += size();
+		try {
+			return get(i);
+		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
+			return null;
+		}
+	}
+
+	public Object get(long index) throws LeekRunException {
+		ai.opsNoCheck(ArrayLeekValue.READ_OPERATIONS);
+		if (index < 0) index += size();
+		try {
+			return get((int) index);
+		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, (int) index);
+			return null;
+		}
 	}
 
 	public Object get(AI ai, int index) throws LeekRunException {
@@ -972,6 +1010,10 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 			set.add(value);
 		}
 		return new ArrayLeekValue(ai, set.toArray());
+	}
+
+	public ArrayLeekValue arrayRandom(AI ai) throws LeekRunException {
+		return arrayRandom(ai, 1);
 	}
 
 	public ArrayLeekValue arrayRandom(AI ai, long count) throws LeekRunException {

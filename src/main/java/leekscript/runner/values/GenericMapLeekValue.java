@@ -9,5 +9,5 @@ public interface GenericMapLeekValue {
 
 	public int size();
 
-	public Object get(AI ai, Object key) throws LeekRunException;
+	public Object get(Object key) throws LeekRunException;
 }

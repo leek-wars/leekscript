@@ -4,12 +4,14 @@ import java.util.ArrayList;
 
 import leekscript.common.Type;
 import leekscript.common.Error;
+import leekscript.common.FunctionType;
 import leekscript.compiler.Token;
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -24,6 +26,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	private int mId = 0;
 	private final Token token;
 	private Token endToken;
+	private FunctionType type = new FunctionType(Type.ANY);
 
 	public AnonymousFunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -56,7 +59,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void addParameter(WordCompiler compiler, Token token, boolean is_reference, Type type) {
+	public void addParameter(WordCompiler compiler, Token token, boolean is_reference, Type type) throws LeekCompilerException {
 
 		for (var parameter : mParameters) {
 			if (parameter.equals(token.getWord())) {
@@ -67,9 +70,14 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		mParameters.add(token.getWord());
 		mReferences.add(is_reference);
 		mTypes.add(type);
-		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this);
+		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this, type);
 		mParameterDeclarations.add(declaration);
-		addVariable(new LeekVariable(token, VariableType.ARGUMENT, declaration));
+		addVariable(new LeekVariable(token, VariableType.ARGUMENT, type, declaration));
+		this.type.add_argument(type, false);
+	}
+
+	public void setReturnType(Type type) {
+		this.type.setReturnType(type);
 	}
 
 	public boolean hasParameter(String name) {
@@ -91,7 +99,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		var initialFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(this);
 		super.preAnalyze(compiler);
@@ -99,7 +107,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		var initialFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(this);
 		super.analyze(compiler);
@@ -111,8 +119,9 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 
 	}
 
-	public String getArgument(int i) {
-		return "(values.length > " + i + " ? values[" + i + "] : null)";
+	public String getArgument(int i, JavaWriter writer, MainLeekBlock mainblock) {
+		var type = mParameterDeclarations.get(i).getType();
+		return "(values.length > " + i + " ? " + (type != Type.ANY ? "(" + type.getJavaName(mainblock.getVersion()) + ")" : "") + " values[" + i + "] : " + this.type.getArgument(i).getDefaultValue(writer, mainblock.getVersion()) + ")";
 	}
 
 	@Override
@@ -126,23 +135,23 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 			var parameter = mParameters.get(i);
 			var declaration = mParameterDeclarations.get(i);
 			if (declaration.isCaptured()) {
-				sb.append("final var u_").append(parameter).append(" = new Wrapper(");
+				sb.append("final var u_").append(parameter).append(" = new Wrapper<" + declaration.getType().getJavaName(mainblock.getVersion()) + ">(");
 				if (mReferences.get(i)) {
-					sb.append("(" + getArgument(i) + " instanceof Box) ? (Box) " + getArgument(i) + " : ");
+					sb.append("(" + getArgument(i, writer, mainblock) + " instanceof Box) ? (Box) " + getArgument(i, writer, mainblock) + " : ");
 				}
 				sb.append("new Box(" + writer.getAIThis() + ", ");
-				sb.append(getArgument(i) + "));");
+				sb.append(getArgument(i, writer, mainblock) + "));");
 			} else {
 				sb.append("var u_").append(parameter).append(" = ");
 
 				if (mainblock.getWordCompiler().getVersion() >= 2) {
-					sb.append(getArgument(i) + ";");
+					sb.append(getArgument(i, writer, mainblock) + ";");
 				} else {
 					// In LeekScript 1, load the value or reference
 					if (mReferences.get(i)) {
-						sb.append(getArgument(i) + " instanceof Box ? (Box) " + getArgument(i) + " : new Box(" + writer.getAIThis() + ", load(" + getArgument(i) + "));");
+						sb.append(getArgument(i, writer, mainblock) + " instanceof Box ? (Box) " + getArgument(i, writer, mainblock) + " : new Box(" + writer.getAIThis() + ", load(" + getArgument(i, writer, mainblock) + "));");
 					} else {
-						sb.append("new Box(" + writer.getAIThis() + ", " + getArgument(i) + ");");
+						sb.append("new Box(" + writer.getAIThis() + ", " + getArgument(i, writer, mainblock) + ");");
 					}
 				}
 			}
@@ -151,7 +160,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0) {
-			writer.addLine("return null;");
+			writer.addLine("return " + type.returnType().getDefaultValue(writer, mainblock.getVersion()) + ";");
 		}
 		writer.addCode("}");
 		mainblock.getWordCompiler().setCurrentFunction(previousFunction);
@@ -182,8 +191,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 
 	@Override
 	public Type getType() {
-		// TODO Auto-generated method stub
-		return null;
+		return type;
 	}
 
 	@Override

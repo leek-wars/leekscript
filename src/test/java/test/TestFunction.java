@@ -143,15 +143,16 @@ public class TestFunction extends TestCommon {
 		code("function te(a){ return function(){ return a**2; }; } return te(2)();").equals("4");
 		code("function te(a){ return function(b){ return function(c){return a*b*c;}; }; } return te(2)(1)(2);").equals("4");
 		code("var tab = [2, 3, 4, 5, 6]; var r = []; for (var i : var j in tab) { r[i] = function() { return j; }; } return 4;").equals("4");
+		code_strict_v4_("var tab = [2, 3, 4, 5, 6]; var r = []; for (var i : var j in tab) { r[i] = function() { return j; }; } return 4;").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
 		code_v1("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return retour").equals("[2, 1, 2, 1, 2]");
 		code_v2_("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return retour").equals("[2.0, 1, 2.0, 1, 2.0]");
 		code_v1("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3]");
 		code_v2_("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3, 12]");
 		code("function f() { return [1, 2, 3] } var x = f();").equals("null");
 		code("var x = arrayMap([1, 2, 3], function(x) { return x });").equals("null");
-		code("var x = arrayMap([1, 2, 3], function(x) { return x }); debug(x);").equals("null");
-		code("var toto = 12; var f = function() { toto = 'salut'; }; [true, 12, f][2](); return toto").equals("\"salut\"");
-		code("var toto = 12; var f = function() { toto = 'salut'; }; var g = function() { return f; }; g()() return toto").equals("\"salut\"");
+		code("any x = arrayMap([1, 2, 3], function(x) { return x }); debug(x);").equals("null");
+		code("any toto = 12; var f = function() { toto = 'salut'; }; [true, 12, f][2](); return toto").equals("\"salut\"");
+		code("any toto = 12; var f = function() { toto = 'salut'; }; var g = function() { return f; }; g()() return toto").equals("\"salut\"");
 		code_v1("function Coordonate(@par_x, @par_y) { var x = par_x; var y = par_y; var getX = function(){ return x; }; var getY = function(){ return y; };return @(function(@method) { if(method === 'getX'){ return getX; } if(method === 'getY'){ return getY;	} }); } var c = Coordonate(5, 12) return [c('getX')(), c('getY')()]").equals("[5, 12]");
 		code_v2_("function Coordonate(par_x, par_y) { var x = par_x; var y = par_y; var getX = function(){ return x; }; var getY = function(){ return y; };return (function(method) { if(method === 'getX'){ return getX; } if(method === 'getY'){ return getY;	} }); } var c = Coordonate(5, 12) return [c('getX')(), c('getY')()]").equals("[5, 12]");
 		code("function test() { var r = [1, 2, 3] return (r); } return test()").equals("[1, 2, 3]");
@@ -245,7 +246,6 @@ public class TestFunction extends TestCommon {
 		section("System function typing");
 		code_v1_3("count('hello')").equals("null");
 		code_v4_("count('hello')").warning(Error.WRONG_ARGUMENT_TYPE);
-		// code_v4_("count('hello')").error(Error.WRONG_ARGUMENT_TYPE);
 		code("return abs(12) < 50").equals("true");
 		code("return round(abs(cos(2)) + 5)").equals("5");
 		code("var a = cos return round(acos(a(2)))").equals("2");
@@ -272,11 +272,32 @@ public class TestFunction extends TestCommon {
 		code("return string(count)").equals("\"#Function count\"");
 
 		section("Wrong number of arguments");
-		code("return (x => x)()").equals("null");
-		code("var f = (x) => x return f()").equals("null");
+		code("return (x => x)()").warning(Error.INVALID_PARAMETER_COUNT);
+		code("var f = (x) => x return f()").warning(Error.INVALID_PARAMETER_COUNT);
 		code("function f(x) { return x } return [f][0]()").equals("null");
 		code_v1_2("cos()").equals("null");
 		code_v3_("cos()").error(Error.INVALID_PARAMETER_COUNT);
 		code_v1("return [cos][0]()").equals("null");
+
+		section("Types");
+		code_v1("function f(integer | real x) { return sqrt(x) } return f(12)").equals("3,464");
+		code_v2_("function f(integer | real x) { return sqrt(x) } return f(12)").equals("3.4641016151377544");
+		code("function b() => string? { return null } var a = b()! return a").error(Error.IMPOSSIBLE_CAST);
+		code("function doNothingWithInt(Function<integer => any> f) {} function doNothing() {} function doNothingInt(integer a) {} function doNothingWith(Function< => any> f) {}doNothingWith(doNothing); doNothingWithInt(doNothingInt);").equals("null");
+		code("function doNothingWithInt(Function<integer => integer> f) { f(2) } function doNothing() {} function doNothingInt(integer a) {} doNothingWithInt(doNothingInt);").equals("null");
+		code("function f() => integer { return 3; } integer i = f(); integer j = 0; j += f() as integer; j += f()").equals("null");
+		code("function f(real r) => real { return r } return f(12)").equals("12.0");
+		code("function f(real r) => integer { return r } return f(12)").equals("12");
+		code_v1("function f(real r) { return r } return f(12)").equals("12");
+		code_v2_("function f(real r) { return r } return f(12)").equals("12.0");
+		code_v1("function generator() => Function< =>real> { return function() => real { return 12.5 }} var level1 = generator(); var level2 = level1(); return level2").equals("12,5");
+		code_v2_("function generator() => Function< =>real> { return function() => real { return 12.5 }} var level1 = generator(); var level2 = level1(); return level2").equals("12.5");
+		code("function generator(Function a) { return function () {	a(); } } generator(function () {});").equals("null");
+		code("function f() => void { return; }").equals("null");
+		code_strict("function f() => void { return null; }").error(Error.INCOMPATIBLE_TYPE);
+		code("function f() => null { return null }").equals("null");
+		code_strict("function f() => null { return; }").error(Error.INCOMPATIBLE_TYPE);
+		code_v2_("function Functor() => Function < => string> { return function() => string { return 'yea' } } class Temp { Function < => Function> functor; Function result;constructor() { this.functor = Functor; this.result = this.functor(); } } var t = new Temp() return t.result()").equals("\"yea\"");
+		code("Function< => integer> f function test(Function< => any> _) {} test(f)").equals("null");
 	}
 }

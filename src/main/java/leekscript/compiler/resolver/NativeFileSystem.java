@@ -67,7 +67,7 @@ public class NativeFileSystem extends FileSystem {
 
 			long timestamp = resolvedPath.toFile().lastModified();
 
-			return new AIFile(name, code, timestamp, LeekScript.LATEST_VERSION, folder, folder.getOwner(), resolvedPath.toString().hashCode() & 0xfffffff);
+			return new AIFile(name, code, timestamp, LeekScript.LATEST_VERSION, folder, folder.getOwner(), resolvedPath.toString().hashCode() & 0xfffffff, false);
 
 		} catch (Exception e) {
 			throw new FileNotFoundException();

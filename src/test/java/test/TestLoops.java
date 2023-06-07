@@ -60,7 +60,7 @@ public class TestLoops extends TestCommon {
 		// TODO catch error
 		// code("var t = 0; do { t++; return t;} while (t < 5); return 2;").equals("1");
 
-		// header("For loops");
+		section("For loops");
 		// code("for var i = 0; ; i++ {}").ops_limit(1000).exception(ls::vm::Exception::OPERATION_LIMIT_EXCEEDED);
 		code("for (var i = 0; false; i++) {}").equals("null");
 		code("for (var i = 0; i < 10; i++) {}").equals("null");
@@ -81,6 +81,7 @@ public class TestLoops extends TestCommon {
 		// code("for var i = 0m; i < 10m; i++ {}").equals("(void)");
 		// code("var s = 0m for var i = 0m; i < 10m; i++ { s += i } s").equals("45");
 		// code("var s = 0m for var i = 0m; i < 10m; i += 2m { s += i } s").equals("20");
+		code("function f() => Function< => void> { var a = 0; var b = 10; return function() => void { for (var range = a; range <= b; range += 1) {} } }").equals("null");
 
 		section("For variable defined before the loop");
 		// DISABLED_code("var i = 0 for (; i < 10; i++) { } return i;").equals("10");
@@ -89,6 +90,7 @@ public class TestLoops extends TestCommon {
 		code_v1("var i var c = 0 for (i = 0; i < 20; i += 0.573) { c++ } return i;").equals("20,055");
 		code_v2_("var i var c = 0 for (i = 0; i < 20; i += 0.573) { c++ } return i;").equals("20.05500000000001");
 		code("var i = 's' var c = 0 for (i = []; count(i) < 8; push(i, 1)) { c++ } return i;").equals("[1, 1, 1, 1, 1, 1, 1, 1]");
+		code_strict("any i = 's' var c = 0 for (i = []; count(i) < 8; push(i, 1)) { c++ } return i;").equals("[1, 1, 1, 1, 1, 1, 1, 1]");
 		// DISABLED_code("var i = 0 for (; i < 10; i += 0.5) { } return i;").equals("10");
 		// code("var i = 0 for (i = 2l; i < 10; i += 0.5) { } return i;").equals("10");
 
@@ -110,21 +112,29 @@ public class TestLoops extends TestCommon {
 		// file("test/code/loops/lot_of_fors_array.leek").equals("15015");
 		code_v1_3("var tabmulti=[]; for (var i = 0; i < 8; ++i) tabmulti[i]=1; return tabmulti").equals("[1, 1, 1, 1, 1, 1, 1, 1]");
 		code_v4_("var tabmulti=[]; for (var i = 0; i < 8; ++i) tabmulti[i]=1; return tabmulti").equals("[]");
+		code_strict_v4_("any tabmulti=[]; for (var i = 0; i < 8; ++i) tabmulti[i]=1; return tabmulti").error(Error.ARRAY_OUT_OF_BOUND);
 		code_v1_3("var tabmulti=[]; for (var i = 0; i < 9; ++i) tabmulti[i]=1; return tabmulti").equals("[1, 1, 1, 1, 1, 1, 1, 1, 1]");
 		code_v4_("var tabmulti=[]; for (var i = 0; i < 9; ++i) tabmulti[i]=1; return tabmulti").equals("[]");
+		code_strict_v4_("any tabmulti=[]; for (var i = 0; i < 9; ++i) tabmulti[i]=1; return tabmulti").error(Error.ARRAY_OUT_OF_BOUND);
 		code_v1_3("var tabmulti=[]; for (var i = 0; i < 50; ++i) tabmulti[i]=1; return tabmulti").equals("[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]");
 		code_v4_("var tabmulti=[]; for (var i = 0; i < 50; ++i) tabmulti[i]=1; return tabmulti").equals("[]");
+		code_strict_v4_("any tabmulti=[]; for (var i = 0; i < 50; ++i) tabmulti[i]=1; return tabmulti").error(Error.ARRAY_OUT_OF_BOUND);
 		code_v1_3("var tabmulti=[[],[],[],[],[]]; var i = 3, j = -2 tabmulti[i][j]=i*j; return tabmulti").equals("[[], [], [], [-2 : -6], []]");
 		code_v4_("var tabmulti=[[],[],[],[],[]]; var i = 3, j = -2 tabmulti[i][j]=i*j; return tabmulti").equals("[[], [], [], [], []]");
+		code_strict_v4_("any tabmulti=[[],[],[],[],[]]; var i = 3, j = -2 tabmulti[i][j]=i*j; return tabmulti").error(Error.ARRAY_OUT_OF_BOUND);
 		code("var tabmulti=[[],[],[],[],[]]; var vPM=4; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ }} return tabmulti").equals("[[], [], [], [], []]");
 		code_v1_3("var tabmulti=[[],[],[],[],[]]; var vPM=1; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-1 : 0, 0 : 0, 1 : 0], [-1 : -1, 0 : 0, 1 : 1], [], [], []]");
 		code_v4_("var tabmulti=[[:],[:],[:],[:],[:]]; var vPM=1; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-1 : 0, 0 : 0, 1 : 0], [-1 : -1, 0 : 0, 1 : 1], [:], <...>, <...>]");
+		code_strict_v4_("any tabmulti=[[:],[:],[:],[:],[:]]; var vPM=1; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-1 : 0, 0 : 0, 1 : 0], [-1 : -1, 0 : 0, 1 : 1], [:], <...>, <...>]");
 		code_v1_3("var tabmulti=[[],[],[],[],[]]; var vPM=2; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-2 : 0, -1 : 0, 0 : 0, 1 : 0, 2 : 0], [-2 : -2, -1 : -1, 0 : 0, 1 : 1, 2 : 2], [-2 : -4, -1 : -2, 0 : 0, 1 : 2, 2 : 4], [], []]");
 		code_v4_("var tabmulti=[[:],[:],[:],[:],[:]]; var vPM=2; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-1 : 0, 0 : 0, -2 : 0, 1 : 0, 2 : 0], [-1 : -1, 0 : 0, -2 : -2, 1 : 1, 2 : 2], [-1 : -2, 0 : 0, -2 : -4, 1 : 2, 2 : 4], [:], <...>]");
+		code_strict_v4_("any tabmulti=[[:],[:],[:],[:],[:]]; var vPM=2; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-1 : 0, 0 : 0, -2 : 0, 1 : 0, 2 : 0], [-1 : -1, 0 : 0, -2 : -2, 1 : 1, 2 : 2], [-1 : -2, 0 : 0, -2 : -4, 1 : 2, 2 : 4], [:], <...>]");
 		code_v1_3("var tabmulti=[[],[],[],[],[]]; var vPM=3; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-3 : 0, -2 : 0, -1 : 0, 0 : 0, 1 : 0, 2 : 0, 3 : 0], [-3 : -3, -2 : -2, -1 : -1, 0 : 0, 1 : 1, 2 : 2, 3 : 3], [-3 : -6, -2 : -4, -1 : -2, 0 : 0, 1 : 2, 2 : 4, 3 : 6], [-3 : -9, -2 : -6, -1 : -3, 0 : 0, 1 : 3, 2 : 6, 3 : 9], []]");
 		code_v4_("var tabmulti=[[:],[:],[:],[:],[:]]; var vPM=3; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-1 : 0, 0 : 0, -2 : 0, 1 : 0, -3 : 0, 2 : 0, 3 : 0], [-1 : -1, 0 : 0, -2 : -2, 1 : 1, -3 : -3, 2 : 2, 3 : 3], [-1 : -2, 0 : 0, -2 : -4, 1 : 2, -3 : -6, 2 : 4, 3 : 6], [-1 : -3, 0 : 0, -2 : -6, 1 : 3, -3 : -9, 2 : 6, 3 : 9], [:]]");
+		code_strict_v4_("any tabmulti=[[:],[:],[:],[:],[:]]; var vPM=3; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-1 : 0, 0 : 0, -2 : 0, 1 : 0, -3 : 0, 2 : 0, 3 : 0], [-1 : -1, 0 : 0, -2 : -2, 1 : 1, -3 : -3, 2 : 2, 3 : 3], [-1 : -2, 0 : 0, -2 : -4, 1 : 2, -3 : -6, 2 : 4, 3 : 6], [-1 : -3, 0 : 0, -2 : -6, 1 : 3, -3 : -9, 2 : 6, 3 : 9], [:]]");
 		code_v1_3("var tabmulti=[[],[],[],[],[]]; var vPM=4; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-4 : 0, -3 : 0, -2 : 0, -1 : 0, 0 : 0, 1 : 0, 2 : 0, 3 : 0, 4 : 0], [-4 : -4, -3 : -3, -2 : -2, -1 : -1, 0 : 0, 1 : 1, 2 : 2, 3 : 3, 4 : 4], [-4 : -8, -3 : -6, -2 : -4, -1 : -2, 0 : 0, 1 : 2, 2 : 4, 3 : 6, 4 : 8], [-4 : -12, -3 : -9, -2 : -6, -1 : -3, 0 : 0, 1 : 3, 2 : 6, 3 : 9, 4 : 12], [-4 : -16, -3 : -12, -2 : -8, -1 : -4, 0 : 0, 1 : 4, 2 : 8, 3 : 12, 4 : 16]]");
 		code_v4_("var tabmulti=[[:],[:],[:],[:],[:]]; var vPM=4; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-1 : 0, 0 : 0, -2 : 0, 1 : 0, -3 : 0, 2 : 0, -4 : 0, 3 : 0, 4 : 0], [-1 : -1, 0 : 0, -2 : -2, 1 : 1, -3 : -3, 2 : 2, -4 : -4, 3 : 3, 4 : 4], [-1 : -2, 0 : 0, -2 : -4, 1 : 2, -3 : -6, 2 : 4, -4 : -8, 3 : 6, 4 : 8], [-1 : -3, 0 : 0, -2 : -6, 1 : 3, -3 : -9, 2 : 6, -4 : -12, 3 : 9, 4 : 12], [-1 : -4, 0 : 0, -2 : -8, 1 : 4, -3 : -12, 2 : 8, -4 : -16, 3 : 12, 4 : 16]]");
+		code_strict_v4_("any tabmulti=[[:],[:],[:],[:],[:]]; var vPM=4; for(var i=0;i<=vPM;i++){ for(var j=-vPM;j<=vPM;j++){ tabmulti[i][j]=i*j;}} return tabmulti").equals("[[-1 : 0, 0 : 0, -2 : 0, 1 : 0, -3 : 0, 2 : 0, -4 : 0, 3 : 0, 4 : 0], [-1 : -1, 0 : 0, -2 : -2, 1 : 1, -3 : -3, 2 : 2, -4 : -4, 3 : 3, 4 : 4], [-1 : -2, 0 : 0, -2 : -4, 1 : 2, -3 : -6, 2 : 4, -4 : -8, 3 : 6, 4 : 8], [-1 : -3, 0 : 0, -2 : -6, 1 : 3, -3 : -9, 2 : 6, -4 : -12, 3 : 9, 4 : 12], [-1 : -4, 0 : 0, -2 : -8, 1 : 4, -3 : -12, 2 : 8, -4 : -16, 3 : 12, 4 : 16]]");
 
 		section("Mix for and while loops");
 		code("var s = 0 for (var i = 0; i < 10; i += 1) { var j = 10 while (j--) { s++ }} return s;").equals("100");
@@ -198,7 +208,6 @@ public class TestLoops extends TestCommon {
 		code("var a = [1, 2, 3] for (var i : var v in a) { (function() { i += 1 })() } return a;").equals("[1, 2, 3]");
 		code("var x for (x in [1, 2]) { return arrayMap([3, 4], function(y) { return x }) }").equals("[1, 1]");
 		code("var x var y for (x : y in [1, 2]) { return arrayMap([3, 4], function(z) { return x + y }) }").equals("[1, 1]");
-
 
 		section("Foreach - return");
 		code("for (var x in [1]) { return 12 }").equals("12");

@@ -11,6 +11,6 @@ public interface GenericArrayLeekValue {
 
 	public int size();
 
-	public Object get(AI ai, int i) throws LeekRunException;
+	public Object get(int i) throws LeekRunException;
 
 }
