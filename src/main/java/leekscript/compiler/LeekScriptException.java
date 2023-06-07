@@ -8,6 +8,7 @@ public class LeekScriptException extends Exception {
 
 	private final Error mType;
 	private String mMessage = null;
+	private String mLocation = null;
 
 	public LeekScriptException(Error type) {
 		mType = type;
@@ -18,6 +19,12 @@ public class LeekScriptException extends Exception {
 		mMessage = message;
 	}
 
+	public LeekScriptException(Error type, String message, String location) {
+		mType = type;
+		mMessage = message;
+		mLocation = location;
+	}
+
 	public Error getType() {
 		return mType;
 	}
@@ -25,5 +32,9 @@ public class LeekScriptException extends Exception {
 	@Override
 	public String getMessage() {
 		return mType.name() + " : " + mMessage;
+	}
+
+	public String getLocation() {
+		return mLocation;
 	}
 }

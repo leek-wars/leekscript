@@ -11,7 +11,7 @@ import leekscript.common.Error;
 public class WordParser {
 
 	public static final String[] reservedWords = new String[] {
-		"abstract", "arguments", "await", "break", "byte", "case", "catch",
+		"abstract", "arguments", "as", "await", "break", "byte", "case", "catch",
 		"char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval",
 		"export", "extends", "false", "final", "finally", "float", "for", "function", "global",
 		"goto", "if", "implements", "import", "in", "instanceof", "int", "interface",
@@ -194,7 +194,7 @@ public class WordParser {
 						word += c;
 					}
 				} else if (version >= 2) {
-					if (type == T_STRING) {
+					if (type != T_NOTHING) {
 						newWord(word, type, -1);
 					}
 					newWord(".", T_DOT);
@@ -248,7 +248,7 @@ public class WordParser {
 							word = "" + c;
 						}
 					} else if (word.equals(">")) {
-						if (c == '=' || c == '>')
+						if (c == '=')
 							word += c;
 						else {
 							newWord(word, type, -1);
@@ -404,6 +404,9 @@ public class WordParser {
 			} else if (wordEquals(word, "instanceof")) {
 				type = T_OPERATOR;
 				word = "instanceof";
+			} else if (wordEquals(word, "as")) {
+				type = T_OPERATOR;
+				word = "as";
 			}
 			/*
 			 * else if(word.equalsIgnoreCase("not")){
@@ -429,13 +432,9 @@ public class WordParser {
 		return mAI.getTokenAt(cursor + offset);
 	}
 
-	public Token endToken() {
-		return mAI.getTokens().isEmpty() ? null : mAI.getTokens().get(mAI.getTokens().size() - 1);
-	}
-
 	public Token eatToken() {
 		cursor++;
-		return mAI.getTokens().get(cursor - 1);
+		return mAI.getTokenAt(cursor - 1);
 	}
 
 	public void skipToken() {

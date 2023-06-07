@@ -33,12 +33,14 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final HashMap<String, FunctionBlock> mFunctions = new HashMap<>();
 	private final ArrayList<AnonymousFunctionBlock> mAnonymousFunctions = new ArrayList<AnonymousFunctionBlock>();
 	private final Map<String, Integer> mUserFunctions = new TreeMap<String, Integer>();
+	private final Map<String, ClassDeclarationInstruction> mDefinedClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final Map<String, ClassDeclarationInstruction> mUserClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final List<ClassDeclarationInstruction> mUserClassesList = new ArrayList<>();
 	private int mMinLevel = 1;
 	private int mAnonymousId = 1;
 	private int mFunctionId = 1;
 	private final Set<AIFile> mIncluded = new HashSet<AIFile>();
+	private final Set<AIFile> mIncludedFirstPass = new HashSet<AIFile>();
 	private int mCounter = 0;
 	private int mCountInstruction = 0;
 	private final IACompiler mCompiler;
@@ -48,50 +50,54 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public MainLeekBlock(IACompiler compiler, WordCompiler wordCompiler, AIFile ai) throws LeekCompilerException {
 		super(null, null);
+
 		// On ajoute l'IA pour pas pouvoir l'include
 		mIncluded.add(ai);
+		mIncludedFirstPass.add(ai);
 		mAIName = ai.getPath();
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
 
 		if (ai.getVersion() >= 2) {
 			var classClass = new ClassDeclarationInstruction(new Token("Class"), 0, ai, true, this);
-			classClass.addStaticField(wordCompiler, new Token("name"), Type.STRING, null, AccessLevel.PUBLIC, true);
-			classClass.addStaticField(wordCompiler, new Token("super"), Type.CLASS, null, AccessLevel.PUBLIC, true);
-			classClass.addStaticField(wordCompiler, new Token("fields"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
-			classClass.addStaticField(wordCompiler, new Token("staticFields"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
-			classClass.addStaticField(wordCompiler, new Token("methods"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
-			classClass.addStaticField(wordCompiler, new Token("staticMethods"), Type.ARRAY, null, AccessLevel.PUBLIC, true);
+			classClass.addField(wordCompiler, new Token("name"), Type.STRING, null, AccessLevel.PUBLIC, true);
+			classClass.addField(wordCompiler, new Token("super"), Type.CLASS, null, AccessLevel.PUBLIC, true);
+			classClass.addField(wordCompiler, new Token("fields"), Type.ARRAY_STRING, null, AccessLevel.PUBLIC, true);
+			classClass.addField(wordCompiler, new Token("staticFields"), Type.ARRAY_STRING, null, AccessLevel.PUBLIC, true);
+			classClass.addField(wordCompiler, new Token("methods"), Type.ARRAY_STRING, null, AccessLevel.PUBLIC, true);
+			classClass.addField(wordCompiler, new Token("staticMethods"), Type.ARRAY_STRING, null, AccessLevel.PUBLIC, true);
 			addClass(classClass);
 		}
 
 		if (ai.getVersion() >= 3) {
 
-			var valueClass = new ClassDeclarationInstruction(new Token("Value"), 0, ai, true, this);
+			var valueClass = new ClassDeclarationInstruction(new Token("Value"), 0, ai, true, this, Type.ANY);
 			valueClass.addField(wordCompiler, new Token("class"), Type.CLASS, null, AccessLevel.PUBLIC, true);
 			addClass(valueClass);
 
-			addClass(new ClassDeclarationInstruction(new Token("Null"), 0, ai, true, this));
-			addClass(new ClassDeclarationInstruction(new Token("Boolean"), 0, ai, true, this));
+			addClass(new ClassDeclarationInstruction(new Token("Null"), 0, ai, true, this, Type.NULL));
+			addClass(new ClassDeclarationInstruction(new Token("Boolean"), 0, ai, true, this, Type.BOOL));
 
-			var integerClass = new ClassDeclarationInstruction(new Token("Integer"), 0, ai, true, this);
+			var integerClass = new ClassDeclarationInstruction(new Token("Integer"), 0, ai, true, this, Type.INT);
 			integerClass.addStaticField(wordCompiler, new Token("MIN_VALUE"), Type.INT, new LeekNumber(new Token(""), 0, Long.MIN_VALUE, Type.INT), AccessLevel.PUBLIC, true);
 			integerClass.addStaticField(wordCompiler, new Token("MAX_VALUE"), Type.INT, new LeekNumber(new Token(""), 0, Long.MAX_VALUE, Type.INT), AccessLevel.PUBLIC, true);
 			addClass(integerClass);
 
-			var realClass = new ClassDeclarationInstruction(new Token("Real"), 0, ai, true, this);
+			var realClass = new ClassDeclarationInstruction(new Token("Real"), 0, ai, true, this, Type.REAL);
 			realClass.addStaticField(wordCompiler, new Token("MIN_VALUE"), Type.REAL, new LeekNumber(new Token(""), Double.MIN_VALUE, 0, Type.REAL), AccessLevel.PUBLIC, true);
 			realClass.addStaticField(wordCompiler, new Token("MAX_VALUE"), Type.REAL, new LeekNumber(new Token(""), Double.MAX_VALUE, 0, Type.REAL), AccessLevel.PUBLIC, true);
 			addClass(realClass);
 
-			addClass(new ClassDeclarationInstruction(new Token("Number"), 0, ai, true, this));
-			addClass(new ClassDeclarationInstruction(new Token("Array"), 0, ai, true, this));
+			addClass(new ClassDeclarationInstruction(new Token("Number"), 0, ai, true, this, Type.INT_OR_REAL));
+			addClass(new ClassDeclarationInstruction(new Token("Array"), 0, ai, true, this, Type.ARRAY));
 			if (ai.getVersion() >= 4) {
-				addClass(new ClassDeclarationInstruction(new Token("Map"), 0, ai, true, this));
+				addClass(new ClassDeclarationInstruction(new Token("Map"), 0, ai, true, this, Type.MAP));
 			}
-			addClass(new ClassDeclarationInstruction(new Token("String"), 0, ai, true, this));
-			addClass(new ClassDeclarationInstruction(new Token("Object"), 0, ai, true, this));
-			addClass(new ClassDeclarationInstruction(new Token("Function"), 0, ai, true, this));
+			addClass(new ClassDeclarationInstruction(new Token("String"), 0, ai, true, this, Type.STRING));
+			var objectClass = new ClassDeclarationInstruction(new Token("Object"), 0, ai, true, this, Type.OBJECT);
+			objectClass.addMethod(wordCompiler, new Token("keys"), new ClassMethodBlock(objectClass, false, false, wordCompiler.getCurrentBlock(), this, new Token("keys"), Type.ARRAY), AccessLevel.PUBLIC);
+			addClass(objectClass);
+			addClass(new ClassDeclarationInstruction(new Token("Function"), 0, ai, true, this, Type.FUNCTION));
 			addClass(new ClassDeclarationInstruction(new Token("JSON"), 0, ai, true, this));
 			addClass(new ClassDeclarationInstruction(new Token("System"), 0, ai, true, this));
 		}
@@ -126,20 +132,42 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMinLevel = min_level;
 	}
 
+	public boolean includeAIFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {
+		try {
+			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
+			if (mIncludedFirstPass.contains(ai)) {
+				return true;
+			}
+			ai.clearErrors();
+			mIncludedFirstPass.add(ai);
+			var previousAI = mCompiler.getCurrentAI();
+			mCompiler.setCurrentAI(ai);
+			WordParser words = new WordParser(ai, compiler.getVersion());
+			WordCompiler newCompiler = new WordCompiler(words, ai, compiler.getVersion());
+			newCompiler.setMainBlock(this);
+			newCompiler.firstPass();
+			compiler.getAI().getErrors().addAll(ai.getErrors());
+			mCompiler.setCurrentAI(previousAI);
+			return true;
+		} catch (FileNotFoundException e) {
+			return false;
+		}
+	}
+
 	public boolean includeAI(WordCompiler compiler, String path) throws LeekCompilerException {
 		try {
 			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
 			if (mIncluded.contains(ai)) {
 				return true;
 			}
-			ai.clearErrors();
+			// ai.clearErrors();
 			mIncluded.add(ai);
 			var previousAI = mCompiler.getCurrentAI();
 			mCompiler.setCurrentAI(ai);
 			WordParser words = new WordParser(ai, compiler.getVersion());
 			WordCompiler newCompiler = new WordCompiler(words, ai, compiler.getVersion());
 			newCompiler.setMainBlock(this);
-			newCompiler.readCode();
+			newCompiler.secondPass();
 			compiler.getAI().getErrors().addAll(ai.getErrors());
 			mCompiler.setCurrentAI(previousAI);
 			return true;
@@ -264,13 +292,14 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("}"); // Fin staticInit
 
 		// Variables globales
-		for (String global : mGlobales) {
+		for (var global : mGlobalesDeclarations) {
+			// System.out.println("declare global " + global.getName() + " type " + global.getType());
 			if (getWordCompiler().getVersion() >= 2) {
-				writer.addLine("private Object g_" + global + " = null;");
+				writer.addLine("private " + global.getType().getJavaPrimitiveName(getVersion()) + " g_" + global.getName() + " = " + global.getType().getDefaultValue(writer, getVersion()) + ";");
 			} else {
-				writer.addLine("private Box g_" + global + " = new Box(" + writer.getAIThis() + ");");
+				writer.addLine("private Box g_" + global.getName() + " = new Box(" + writer.getAIThis() + ");");
 			}
-			writer.addLine("private boolean g_init_" + global + " = false;");
+			writer.addLine("private boolean g_init_" + global.getName() + " = false;");
 		}
 		// Fonctions redéfinies
 		for (String redefined : mRedefinedFunctions) {
@@ -336,20 +365,34 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return mCompiler;
 	}
 
-	public boolean hasUserClass(String name) {
-		return mUserClasses.containsKey(name);
+	public void defineClass(ClassDeclarationInstruction classDeclaration) {
+		mUserClasses.put(classDeclaration.getName(), classDeclaration);
+		mDefinedClasses.put(classDeclaration.getName(), classDeclaration);
+	}
+
+	public void addClassList(ClassDeclarationInstruction classDeclaration) {
+		mUserClassesList.add(classDeclaration);
 	}
 
 	public void addClass(ClassDeclarationInstruction classDeclaration) {
 		mUserClasses.put(classDeclaration.getName(), classDeclaration);
 		mUserClassesList.add(classDeclaration);
+		mDefinedClasses.put(classDeclaration.getName(), classDeclaration);
 	}
 
 	public ClassDeclarationInstruction getUserClass(String name) {
 		return mUserClasses.get(name);
 	}
 
-	public void preAnalyze(WordCompiler compiler) {
+	public ClassDeclarationInstruction getDefinedClass(String name) {
+		return mDefinedClasses.get(name);
+	}
+
+	public Map<String, ClassDeclarationInstruction> getDefinedClasses() {
+		return mDefinedClasses;
+	}
+
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		for (var clazz : mUserClassesList) {
 			clazz.declare(compiler);
 		}
@@ -368,7 +411,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		super.preAnalyze(compiler);
 	}
 
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
+		// for (var global : mGlobalesDeclarations) {
+		// 	global.analyze(compiler);
+		// }
 		for (var clazz : mUserClassesList) {
 			clazz.analyze(compiler);
 		}
@@ -423,5 +469,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	public boolean isStrict() {
+		return mCompiler.getCurrentAI().isStrict();
 	}
 }

@@ -5,6 +5,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekExpressionException;
@@ -37,7 +38,10 @@ public class DoWhileBlock extends AbstractLeekBlock {
 		writer.addLine("do {");
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer);
-		writer.addCode("} while (ops(");
+		writer.addCode("} while (");
+		if (writer.isOperationsEnabled()) {
+			writer.addCode("ops(");
+		}
 		// Prevent unreachable code error
 		if (mCondition instanceof LeekBoolean) {
 			writer.addCode("bool(");
@@ -46,7 +50,9 @@ public class DoWhileBlock extends AbstractLeekBlock {
 		} else {
 			writer.getBoolean(mainblock, mCondition);
 		}
-		writer.addCode(", " + mCondition.getOperations() + ")");
+		if (writer.isOperationsEnabled()) {
+			writer.addCode(", " + mCondition.getOperations() + ")");
+		}
 		writer.addLine(");", getLocation());
 	}
 
@@ -55,14 +61,14 @@ public class DoWhileBlock extends AbstractLeekBlock {
 		return true;
 	}
 
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		if (mCondition != null) {
 			mCondition.preAnalyze(compiler);
 		}
 		super.preAnalyze(compiler);
 	}
 
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		if (mCondition != null) {
 			mCondition.analyze(compiler);
 		}

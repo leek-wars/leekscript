@@ -12,6 +12,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.exceptions.LeekCompilerException;
 
 public class LeekArray extends Expression {
 
@@ -35,7 +36,7 @@ public class LeekArray extends Expression {
 		openingBracket.setExpression(this);
 	}
 
-	public void addValue(WordCompiler compiler, Expression key, Token keyToken, Expression value) {
+	public void addValue(WordCompiler compiler, Expression key, Token keyToken, Expression value) throws LeekCompilerException {
 
 		// Clés dupliquée ?
 		for (int i = 0; i < mValues.size(); i += 2) {
@@ -88,18 +89,44 @@ public class LeekArray extends Expression {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		for (var value : mValues) {
 			value.preAnalyze(compiler);
 		}
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		operations = 0;
-		for (var value : mValues) {
-			value.analyze(compiler);
-			operations += 2 + value.getOperations();
+		if (mIsKeyVal) {
+			Type keyType = Type.VOID;
+			Type elementType = Type.VOID;
+			for (int v = 0; v < mValues.size(); v += 2) {
+				var value = mValues.get(v + 1);
+				var key = mValues.get(v);
+				key.analyze(compiler);
+				value.analyze(compiler);
+				operations += 2 + key.getOperations() + value.getOperations();
+				keyType = Type.compound(keyType, key.getType());
+				elementType = Type.compound(elementType, value.getType());
+			}			if (compiler.getVersion() >= 4) {
+
+				this.type = Type.map(keyType, elementType);
+			} else {
+				this.type = Type.LEGACY_ARRAY;
+			}
+		} else {
+			Type elementType = Type.VOID;
+			for (var value : mValues) {
+				value.analyze(compiler);
+				operations += 2 + value.getOperations();
+				elementType = Type.compound(elementType, value.getType());
+			}
+			if (compiler.getVersion() >= 4) {
+				this.type = Type.array(elementType);
+			} else {
+				this.type = Type.LEGACY_ARRAY;
+			}
 		}
 	}
 
@@ -128,7 +155,7 @@ public class LeekArray extends Expression {
 				}
 			}
 		} else {
-			if (mValues.size() == 0) writer.addCode("new LegacyArrayLeekValue()");
+			if (mValues.size() == 0) writer.addCode("new LegacyArrayLeekValue(" + writer.getAIThis() + ")");
 			else {
 				writer.addCode("new LegacyArrayLeekValue(" + writer.getAIThis() + ", new Object[] { ");
 				for (int i = 0; i < mValues.size(); i++) {

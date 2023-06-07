@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.Folder;
+import leekscript.compiler.LeekScript;
 
 public class ResourceFileSystem extends FileSystem {
 
@@ -58,7 +59,7 @@ public class ResourceFileSystem extends FileSystem {
 
 			long timestamp = resolvedPath.toFile().lastModified();
 
-			return new AIFile(name, code, timestamp, 2, resolvedPath.toString().hashCode() & 0xfffffff);
+			return new AIFile(name, code, timestamp, LeekScript.LATEST_VERSION, resolvedPath.toString().hashCode() & 0xfffffff, false);
 
 		} catch (Exception e) {
 			return null;

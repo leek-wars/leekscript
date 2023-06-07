@@ -10,6 +10,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
@@ -17,6 +18,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.common.Error;
+import leekscript.common.FunctionType;
 
 public class ClassMethodBlock extends AbstractLeekBlock {
 
@@ -30,13 +32,15 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	private final boolean isConstructor;
 	private int minParameters = 0;
 	private int maxParameters = 0;
+	private final FunctionType type;
 
-	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isConstructor, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, Token token) {
+	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isConstructor, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, Token token, Type returnType) {
 		super(parent, main);
 		this.clazz = clazz;
 		this.isConstructor = isConstructor;
 		this.isStatic = isStatic;
 		this.token = token;
+		this.type = new FunctionType(returnType);
 	}
 
 	public void setId(int id) {
@@ -60,7 +64,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void addParameter(WordCompiler compiler, Token token, Token equal, Expression defaultValue) {
+	public void addParameter(WordCompiler compiler, Token token, Token equal, Type type, Expression defaultValue) throws LeekCompilerException {
 
 		// Existe déjà ?
 		for (var param : mParameters) {
@@ -71,13 +75,15 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 
 		mParameters.add(token);
 		defaultValues.add(defaultValue);
-		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this);
+		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this, type);
 		mParameterDeclarations.add(declaration);
-		addVariable(new LeekVariable(token, VariableType.ARGUMENT, declaration));
+		addVariable(new LeekVariable(token, VariableType.ARGUMENT, type, declaration));
 		maxParameters++;
 		if (defaultValue == null) {
 			minParameters++;
 		}
+		this.type.add_argument(type, defaultValue != null);
+		// System.out.println("Method " + this.token.getWord() + " type = " + this.type);
 	}
 
 	@Override
@@ -113,6 +119,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		String str = "(";
 		for (int i = 0; i < mParameters.size(); i++) {
 			if (i != 0) str += ", ";
+			str += this.type.getArgument(i).getCode() + " ";
 			str += mParameters.get(i);
 			if (defaultValues.get(i) != null) {
 				str += " = " + defaultValues.get(i).toString();
@@ -122,7 +129,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialFunction = compiler.getCurrentFunction();
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentFunction(this);
@@ -140,7 +147,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialFunction = compiler.getCurrentFunction();
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentFunction(this);
@@ -169,7 +176,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 
 		super.writeJavaCode(mainblock, writer);
 		if (mEndInstruction == 0) {
-			writer.addLine("return null;");
+			writer.addLine("return " + type.returnType().getDefaultValue(writer, mainblock.getVersion()) + ";");
 		}
 	}
 
@@ -201,7 +208,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 
 	@Override
 	public Type getType() {
-		return null;
+		return type;
 	}
 
 	@Override

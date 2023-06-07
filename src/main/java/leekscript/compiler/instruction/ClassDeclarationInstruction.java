@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -16,25 +17,37 @@ import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
+import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.AccessLevel;
+import leekscript.common.ClassType;
+import leekscript.common.ClassValueType;
 import leekscript.common.Error;
 import leekscript.common.Type;
+import leekscript.common.Type.CastType;
 
 public class ClassDeclarationInstruction extends LeekInstruction {
 
-	public static class ClassDeclarationField {
+	public static class ClassDeclarationField extends LeekExpression {
 
+		String name;
 		Expression expression;
 		public AccessLevel level;
 		boolean isFinal;
 
-		public ClassDeclarationField(Expression expr, AccessLevel level, boolean isFinal) {
+		public ClassDeclarationField(String name, Expression expr, AccessLevel level, boolean isFinal, Type type) {
+			this.name = name;
 			this.expression = expr;
 			this.level = level;
 			this.isFinal = isFinal;
+			this.type = type;
+		}
+
+		@Override
+		public Hover hover(Token token) {
+			return new Hover(type, token.getLocation(), token.getWord());
 		}
 	}
 
@@ -42,6 +55,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 		public ClassMethodBlock block;
 		public AccessLevel level;
+		public ClassMethodBlock ppp;
 
 		public ClassDeclarationMethod(ClassMethodBlock block, AccessLevel level) {
 			this.block = block;
@@ -60,16 +74,25 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	private HashMap<String, LeekVariable> staticFieldVariables = new HashMap<>();
 	private HashMap<String, LeekVariable> methodVariables = new HashMap<>();
 	private HashMap<String, LeekVariable> staticMethodVariables = new HashMap<>();
+	private ArrayList<ClassDeclarationMethod> constructorsList = new ArrayList<>();
 	private HashMap<Integer, ClassDeclarationMethod> constructors = new HashMap<>();
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> methods = new HashMap<>();
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> staticMethods = new HashMap<>();
 	private ClassMethodBlock staticInitBlock;
+	public Type classType;
+	public Type classValueType;
 
 	public ClassDeclarationInstruction(Token token, int line, AIFile ai, boolean internal, MainLeekBlock block) {
+		this(token, line, ai, internal, block, null);
+		this.classType = new ClassType(this);
+	}
+
+	public ClassDeclarationInstruction(Token token, int line, AIFile ai, boolean internal, MainLeekBlock block, Type type) {
 		this.token = token;
 		this.internal = internal;
 		this.mainBlock = block;
-		this.staticInitBlock = new ClassMethodBlock(this, false, true, block, block, null);
+		this.staticInitBlock = new ClassMethodBlock(this, false, true, block, block, null, Type.ANY);
+		this.classType = type;
 	}
 
 	public HashMap<String, ClassDeclarationField> getFields() {
@@ -78,7 +101,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	public HashMap<String, ClassDeclarationField> getStaticFields() {
 		return staticFields;
 	}
-
+	public HashMap<String, HashMap<Integer, ClassDeclarationMethod>> getMethods() {
+		return methods;
+	}
 	public HashMap<String, LeekVariable> getFieldVariables() {
 		return fieldVariables;
 	}
@@ -105,7 +130,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		r += " {\n";
 
 		for (Entry<String, ClassDeclarationField> field : staticFields.entrySet()) {
-			r += "\t" + field.getValue().level.toString().toLowerCase() + " static " + field.getKey();
+			r += "\t" + field.getValue().level.toString().toLowerCase() + " static " + field.getValue().getType() + " " + field.getKey();
 			if (field.getValue().expression != null) {
 				r += " = " + field.getValue().expression.toString();
 			}
@@ -116,7 +141,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		for (var method : staticMethods.entrySet()) {
 			for (var version : method.getValue().entrySet()) {
 				if (version.getKey() == version.getValue().block.getMaxParameters()) {
-					r += "\t" + version.getValue().level.toString().toLowerCase() + " static " + method.getKey() + version.getValue().block.getCode();
+					r += "\t" + version.getValue().level.toString().toLowerCase() + " static " + version.getValue().block.getType().returnType() + " " + method.getKey() + version.getValue().block.getCode();
 				}
 			}
 			r += "\n";
@@ -124,7 +149,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		r += "\n";
 
 		for (Entry<String, ClassDeclarationField> field : fields.entrySet()) {
-			r += "\t" + field.getValue().level.toString().toLowerCase() + " " + field.getKey();
+			r += "\t" + field.getValue().level.toString().toLowerCase() + " " + field.getValue().getType() + " " + field.getKey();
 			if (field.getValue().expression != null) {
 				r += " = " + field.getValue().expression.toString();
 			}
@@ -132,15 +157,15 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 		r += "\n";
 
-		for (var constructor : constructors.entrySet()) {
-			r += "\t" + constructor.getValue().level.toString().toLowerCase() + " constructor" + constructor.getValue().block.getCode();
+		for (var constructor : constructorsList) {
+			r += "\t" + constructor.level.toString().toLowerCase() + " constructor" + constructor.block.getCode();
 		}
 		r += "\n";
 
 		for (var method : methods.entrySet()) {
 			for (var version : method.getValue().entrySet()) {
 				if (version.getKey() == version.getValue().block.getMaxParameters()) {
-					r += "\t" + version.getValue().level.toString().toLowerCase() + " " + method.getKey() + version.getValue().block.getCode();
+					r += "\t" + version.getValue().level.toString().toLowerCase() + " " + version.getValue().block.getType().returnType() + " " + method.getKey() + version.getValue().block.getCode();
 				}
 			}
 			r += "\n";
@@ -162,6 +187,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 	public void setParent(Token userClass) {
 		this.parentToken = userClass;
+		userClass.setExpression(this);
 	}
 
 	public boolean hasConstructor(int param_count) {
@@ -180,7 +206,11 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		return null;
 	}
 
-	public void addConstructor(WordCompiler compiler, ClassMethodBlock constructor, AccessLevel level) {
+	public HashMap<Integer, ClassDeclarationMethod> getConstructors() {
+		return constructors;
+	}
+
+	public void addConstructor(WordCompiler compiler, ClassMethodBlock constructor, AccessLevel level) throws LeekCompilerException {
 		// System.out.println("add constructor " + constructor.getMinParameters() + " " + constructor.getMaxParameters());
 		// On regarde si il n'y a pas déjà un constructeur de même arité
 		for (int p = constructor.getMinParameters(); p <= constructor.getMaxParameters(); ++p) {
@@ -192,9 +222,11 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		for (int p = constructor.getMinParameters(); p <= constructor.getMaxParameters(); ++p) {
 			constructors.put(p, new ClassDeclarationMethod(constructor, level));
 		}
+
+		constructorsList.add(constructors.get(constructor.getMaxParameters()));
 	}
 
-	public void addMethod(WordCompiler compiler, Token token, ClassMethodBlock method, AccessLevel level) {
+	public void addMethod(WordCompiler compiler, Token token, ClassMethodBlock method, AccessLevel level) throws LeekCompilerException {
 		// On regarde si il n'y a pas déjà une méthode statique du même nom
 		if (staticMethods.containsKey(token.getWord())) {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.DUPLICATED_METHOD));
@@ -212,7 +244,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 		if (!methods.containsKey(token.getWord())) {
 			methods.put(token.getWord(), new HashMap<>());
-			methodVariables.put(token.getWord(), new LeekVariable(token, VariableType.METHOD, Type.FUNCTION, true));
+			methodVariables.put(token.getWord(), new LeekVariable(token, VariableType.METHOD, method.getType(), true));
+		} else {
+			methodVariables.get(token.getWord()).setType(Type.versions(methodVariables.get(token.getWord()).getType(), method.getType()));
 		}
 		for (int p = method.getMinParameters(); p <= method.getMaxParameters(); ++p) {
 			methods.get(token.getWord()).put(p, new ClassDeclarationMethod(method, level));
@@ -230,7 +264,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		return methods.containsKey(name);
 	}
 
-	public void addStaticMethod(WordCompiler compiler, Token token, ClassMethodBlock method, AccessLevel level) {
+	public void addStaticMethod(WordCompiler compiler, Token token, ClassMethodBlock method, AccessLevel level) throws LeekCompilerException {
 		// On regarde si il n'y a pas déjà une méthode du même nom
 		if (methods.containsKey(token.getWord())) {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.DUPLICATED_METHOD));
@@ -248,7 +282,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 		if (!staticMethods.containsKey(token.getWord())) {
 			staticMethods.put(token.getWord(), new HashMap<>());
-			staticMethodVariables.put(token.getWord(), new LeekVariable(token, VariableType.STATIC_METHOD, Type.FUNCTION, true));
+			staticMethodVariables.put(token.getWord(), new LeekVariable(token, VariableType.STATIC_METHOD, method.getType(), true));
+		} else {
+			staticMethodVariables.get(token.getWord()).setType(Type.versions(staticMethodVariables.get(token.getWord()).getType(), method.getType()));
 		}
 		for (int p = method.getMinParameters(); p <= method.getMaxParameters(); ++p) {
 			staticMethods.get(token.getWord()).put(p, new ClassDeclarationMethod(method, level));
@@ -265,46 +301,51 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		return false;
 	}
 
-	public void addField(WordCompiler compiler, Token word, Expression expr, AccessLevel level, boolean isFinal) throws LeekCompilerException {
-		addField(compiler, word, Type.ANY, expr, level, isFinal);
+	public void addField(WordCompiler compiler, Token word, Expression expr, AccessLevel level, boolean isFinal, Type type) throws LeekCompilerException {
+		addField(compiler, word, type, expr, level, isFinal);
 	}
 
 	public void addField(WordCompiler compiler, Token word, Type type, Expression expr, AccessLevel level, boolean isFinal) throws LeekCompilerException {
 		if (hasMember(word.getWord())) {
-			compiler.addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.FIELD_ALREADY_EXISTS));
+			compiler.addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.FIELD_ALREADY_EXISTS, new String[] { word.getWord() }));
 			return;
 		}
-		fields.put(word.getWord(), new ClassDeclarationField(expr, level, isFinal));
+		fields.put(word.getWord(), new ClassDeclarationField(word.getWord(), expr, level, isFinal, type));
 		fieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.FIELD, type, isFinal));
 	}
 
-	public void addStaticField(WordCompiler compiler, Token word, Expression expr, AccessLevel level, boolean isFinal) throws LeekCompilerException {
-		addStaticField(compiler, word, Type.ANY, expr, level, isFinal);
+	public void addStaticField(WordCompiler compiler, Token word, Expression expr, AccessLevel level, boolean isFinal, Type type) throws LeekCompilerException {
+		addStaticField(compiler, word, type, expr, level, isFinal);
 	}
 
 	public void addStaticField(WordCompiler compiler, Token word, Type type, Expression expr, AccessLevel level, boolean isFinal) throws LeekCompilerException {
 		if (hasStaticMember(word.getWord())) {
-			compiler.addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.FIELD_ALREADY_EXISTS));
+			compiler.addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.FIELD_ALREADY_EXISTS, new String[] { word.getWord() }));
 			return;
 		}
-		staticFields.put(word.getWord(), new ClassDeclarationField(expr, level, isFinal));
+		staticFields.put(word.getWord(), new ClassDeclarationField(word.getWord(), expr, level, isFinal, type));
 		staticFieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.STATIC_FIELD, type, isFinal));
 	}
 
 	public void declare(WordCompiler compiler) {
 		// On ajoute la classe
-		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.CLASS, Type.CLASS, this));
+		this.classValueType = new ClassValueType(this);
+		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.CLASS, this.classValueType, this));
 	}
 
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		compiler.setCurrentClass(this);
 		// Parent
 		if (parentToken != null) {
 			var parentVar = compiler.getCurrentBlock().getVariable(this.parentToken.getWord(), true);
 			if (parentVar == null) {
-				compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
+				compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
+					parentToken.getWord()
+				}));
 			} else if (parentVar.getVariableType() != VariableType.CLASS) {
-				compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION));
+				compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
+					parentToken.getWord()
+				}));
 			} else {
 				var current = parentVar.getClassDeclaration();
 				boolean ok = true;
@@ -359,18 +400,49 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		compiler.setCurrentClass(null);
 	}
 
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		compiler.setCurrentClass(this);
+
 		// Fields
 		for (var field : fields.entrySet()) {
 			if (field.getValue().expression != null) {
 				field.getValue().expression.analyze(compiler);
+
+				// Vérification du type de l'expression
+				var cast = field.getValue().getType().accepts(field.getValue().expression.getType());
+				if (cast.ordinal() > CastType.UPCAST.ordinal()) {
+
+					var level = compiler.getMainBlock().isStrict() && cast == CastType.INCOMPATIBLE ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+					var error = cast == CastType.INCOMPATIBLE ? Error.ASSIGNMENT_INCOMPATIBLE_TYPE : Error.DANGEROUS_CONVERSION_VARIABLE;
+
+					compiler.addError(new AnalyzeError(field.getValue().expression.getLocation(), level, error, new String[] {
+						field.getValue().expression.toString(),
+						field.getValue().expression.getType().toString(),
+						field.getValue().name,
+						field.getValue().getType().toString(),
+					}));
+				}
 			}
 		}
+
 		// Static fields
 		for (var field : staticFields.entrySet()) {
 			if (field.getValue().expression != null) {
 				field.getValue().expression.analyze(compiler);
+
+				var cast = field.getValue().getType().accepts(field.getValue().expression.getType());
+				if (cast.ordinal() > CastType.UPCAST.ordinal()) {
+
+					var level = compiler.getMainBlock().isStrict() && cast == CastType.INCOMPATIBLE ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+					var error = cast == CastType.INCOMPATIBLE ? Error.ASSIGNMENT_INCOMPATIBLE_TYPE : Error.DANGEROUS_CONVERSION_VARIABLE;
+
+					compiler.addError(new AnalyzeError(field.getValue().expression.getLocation(), level, error, new String[] {
+						field.getValue().expression.toString(),
+						field.getValue().expression.getType().toString(),
+						field.getValue().name,
+						field.getValue().getType().toString(),
+					}));
+				}
 			}
 		}
 
@@ -382,9 +454,26 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			constructors.put(0, new ClassDeclarationMethod(null, AccessLevel.PUBLIC));
 		}
 
-		for (var method : methods.values()) {
-			for (var version : method.values()) {
-				version.block.analyze(compiler);
+		for (var method : methods.entrySet()) {
+			for (var version : method.getValue().entrySet()) {
+				version.getValue().block.analyze(compiler);
+
+				// Méthode surchargée ?
+				var current = parent;
+				while (current != null) {
+					var parentMethod = current.methods.get(method.getKey());
+					if (parentMethod != null) {
+						var parentVersion = parentMethod.get(version.getKey());
+						if (parentVersion != null && !version.getValue().block.getType().equals(parentVersion.block.getType())) {
+							compiler.addError(new AnalyzeError(version.getValue().block.getLocation(), AnalyzeErrorLevel.ERROR, Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE, new String[] {
+								version.getValue().block.getType().toString(),
+								parentVersion.block.getType().toString()
+							}));
+							break;
+						}
+					}
+					current = current.parent;
+				}
 			}
 		}
 		for (var method : staticMethods.values()) {
@@ -413,7 +502,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			} else if (field.getValue().level == AccessLevel.PRIVATE) {
 				writer.addCode("@Private ");
 			}
-			writer.addCode("public Object " + field.getKey());
+			writer.addCode("public " + field.getValue().getType().getJavaPrimitiveName(mainblock.getVersion()) + " " + field.getKey());
 			// if (field.getValue().expression != null) {
 			// 	writer.addCode(" = ");
 			// 	field.getValue().expression.writeJavaCode(mainblock, writer);
@@ -424,7 +513,17 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 
 		// Constructeur par défaut
-		writer.addLine("public " + className + "() {}");
+		writer.addLine("public " + className + "() throws LeekRunException {");
+		writer.addLine("increaseRAM(" + (2 * fieldVariables.size()) + ");");
+		for (var field : fields.entrySet()) {
+			if (field.getValue().expression != null) {
+				writer.addCode(field.getKey());
+				writer.addCode(" = ");
+				field.getValue().expression.writeJavaCode(mainblock, writer);
+				writer.addLine(";");
+			}
+		}
+		writer.addLine("}");
 
 		// Constructeur par copie
 		writer.addLine("public " + className + "(" + className + " o, int level) throws LeekRunException {");
@@ -432,12 +531,12 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			writer.addLine("super(o, level);");
 		}
 		for (var field : fields.entrySet()) {
-			writer.addLine("this." + field.getKey() + " = level == 1 ? o." + field.getKey() + " : copy(o." + field.getKey() + ", level - 1);");
+			writer.addLine("this." + field.getKey() + " = level == 1 ? o." + field.getKey() + " : (" + field.getValue().getType().getJavaPrimitiveName(mainblock.getVersion()) + ") copy(o." + field.getKey() + ", level - 1);");
 		}
 		writer.addLine("}");
 
 		// Vrais constructeurs
-		for (Entry<Integer, ClassDeclarationMethod> construct : constructors.entrySet()) {
+		for (var construct : constructors.entrySet()) {
 
 			final var block = construct.getValue().block;
 
@@ -450,7 +549,8 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					var arg = block.getParametersDeclarations().get(a);
 					var letter = arg.isCaptured() ? "p" : "u";
 					if (a > 0) writer.addCode(", ");
-					writer.addCode("Object " + letter + "_" + arg.getToken());
+					writer.addCode(arg.getType().getJavaPrimitiveName(mainblock.getVersion()));
+					writer.addCode(" " + letter + "_" + arg.getToken());
 				}
 			}
 			writer.addLine(") throws LeekRunException {");
@@ -468,14 +568,14 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			// }
 			// for (int i = classes.size() - 1; i >= 0; --i) {
 			// 	var clazz = classes.get(i);
-				for (var field : fields.entrySet()) {
-					if (field.getValue().expression != null) {
-						writer.addCode(field.getKey());
-						writer.addCode(" = ");
-						field.getValue().expression.writeJavaCode(mainblock, writer);
-						writer.addLine(";");
-					}
-				}
+				// for (var field : fields.entrySet()) {
+				// 	if (field.getValue().expression != null) {
+				// 		writer.addCode(field.getKey());
+				// 		writer.addCode(" = ");
+				// 		field.getValue().expression.writeJavaCode(mainblock, writer);
+				// 		writer.addLine(";");
+				// 	}
+				// }
 			// }
 
 			// Captures
@@ -483,7 +583,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
 					var arg = block.getParametersDeclarations().get(a);
 					if (arg.isCaptured()) {
-						writer.addCode("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", ");
+						writer.addCode("final var u_" + arg.getToken() + " = new Box<" + arg.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
 						if (a < construct.getKey()) {
 							writer.addCode("p_" + arg.getToken());
 						} else {
@@ -494,7 +594,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						// Valeur par défaut
 						if (a >= construct.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
-							writer.addCode("final Object u_" + arg.getName() + " = ");
+							writer.addCode("final " + arg.getType().getJavaName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
 							defaultValue.writeJavaCode(mainblock, writer);
 							writer.addLine(";");
 						}
@@ -545,12 +645,13 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				} else if (version.getValue().level == AccessLevel.PRIVATE) {
 					writer.addCode("@Private ");
 				}
-				writer.addCode("public Object u_" + methodName + "(");
+				writer.addCode("public " + block.getType().returnType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + methodName + "(");
 				for (int a = 0; a < version.getKey(); ++a) {
 					var arg = block.getParametersDeclarations().get(a);
 					var letter = arg.isCaptured() ? "p" : "u";
 					if (a > 0) writer.addCode(", ");
-					writer.addCode("Object " + letter + "_" + arg.getToken());
+					writer.addCode(arg.getType().getJavaPrimitiveName(mainblock.getVersion()));
+					writer.addCode(" " + letter + "_" + arg.getToken());
 				}
 				writer.addLine(") throws LeekRunException {");
 				if (parent != null) {
@@ -561,7 +662,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
 					var arg = block.getParametersDeclarations().get(a);
 					if (arg.isCaptured()) {
-						writer.addCode("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", ");
+						writer.addCode("final var u_" + arg.getToken() + " = new Box<" + arg.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
 						if (a < version.getKey()) {
 							writer.addCode("p_" + arg.getToken());
 						} else {
@@ -572,7 +673,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						// Valeur par défaut
 						if (a >= version.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
-							writer.addCode("final Object u_" + arg.getName() + " = ");
+							writer.addCode("final " + arg.getType().getJavaName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
 							defaultValue.writeJavaCode(mainblock, writer);
 							writer.addLine(";");
 						}
@@ -608,6 +709,11 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		// Declare the class as a field of the AI
 		writer.addLine("public ClassLeekValue " + className + " = new ClassLeekValue(this, \"" + token.getWord() + "\", null, " + className + ".class);");
 
+		// Constructeur
+		writer.addLine("public " + className + " new_" + className + "(Object... args) throws LeekRunException {");
+		writer.addLine("return (" + className + ") execute(" + className + ", args);");
+		writer.addLine("}");
+
 		// Static methods
 		for (Entry<String, HashMap<Integer, ClassDeclarationMethod>> method : staticMethods.entrySet()) {
 			for (Entry<Integer, ClassDeclarationMethod> version : method.getValue().entrySet()) {
@@ -615,13 +721,14 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				mainblock.getWordCompiler().setCurrentBlock(block);
 				writer.currentBlock = block;
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
-				writer.addCode("private final Object " + methodName + "(");
+				writer.addCode("private final " + block.getType().returnType().getJavaPrimitiveName(mainblock.getVersion()) + " " + methodName + "(");
 				int i = 0;
 				for (int a = 0; a < version.getKey(); ++a) {
 					var arg = block.getParametersDeclarations().get(a);
 					if (i++ > 0) writer.addCode(", ");
 					var letter = arg.isCaptured() ? "p" : "u";
-					writer.addCode("Object " + letter + "_" + arg.getToken());
+					writer.addCode(arg.getType().getJavaPrimitiveName(mainblock.getVersion()));
+					writer.addCode(" " + letter + "_" + arg.getToken());
 				}
 				writer.addLine(") throws LeekRunException {");
 				if (parent != null) {
@@ -632,7 +739,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
 					var arg = block.getParametersDeclarations().get(a);
 					if (arg.isCaptured()) {
-						writer.addCode("final var u_" + arg.getToken() + " = new Box(" + writer.getAIThis() + ", ");
+						writer.addCode("final var u_" + arg.getToken() + " = new Box<" + arg.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
 						if (a < version.getKey()) {
 							writer.addCode("p_" + arg.getToken());
 						} else {
@@ -643,7 +750,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						// Valeur par défaut
 						if (a >= version.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
-							writer.addCode("final Object u_" + arg.getName() + " = ");
+							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
 							defaultValue.writeJavaCode(mainblock, writer);
 							writer.addLine(";");
 						}
@@ -656,6 +763,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
 						var arg = block.getParametersDeclarations().get(a);
 						if (a > 0) writer.addCode(", ");
+
 						if (arg.isCaptured()) {
 							writer.addCode("u_" + arg.getName() + ".get()");
 						} else {
@@ -721,6 +829,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				int i = 0;
 				for (var a = 0; a < version.getKey(); ++a) {
 					if (i > 0) writer.addCode(", ");
+					writer.addCode("(" + version.getValue().block.getParametersDeclarations().get(a).getType().getJavaName(mainblock.getVersion()) + ") ");
 					writer.addCode("args[" + i + "]");
 					i++;
 				}
@@ -730,13 +839,16 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			writer.addLine(".addGenericStaticMethod(\"" + method.getKey() + "\");");
 		}
 
+		// Méthodes
 		for (var method : methods.entrySet()) {
 			for (var version : method.getValue().entrySet()) {
 				writer.addCode(className);
-				writer.addCode(".addMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(0) { public Object run(AI ai, Object thiz, Object... args) throws LeekRunException { return ((" + className + ") thiz).u_" + method.getKey() + "(");
+				writer.addLine(".addMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(0) { public Object run(AI ai, Object thiz, Object... args) throws LeekRunException {");
+				writer.addCode("return ((" + className + ") thiz).u_" + method.getKey() + "(");
 				int i = 0;
 				for (var a = 0; a < version.getKey(); ++a) {
 					if (a > 0) writer.addCode(", ");
+					writer.addCode("(" + version.getValue().block.getParametersDeclarations().get(a).getType().getJavaName(mainblock.getVersion()) + ") ");
 					writer.addCode("args[" + i++ + "]");
 				}
 				writer.addLine("); }}, AccessLevel." + version.getValue().level.name() + ");");
@@ -861,9 +973,6 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 		if (parent != null) {
 			return parent.getStaticMember(token);
-		}
-		if (!this.token.getWord().equals("Class")) {
-			return mainBlock.getUserClass("Class").getStaticMember(token);
 		}
 		return null;
 	}
@@ -990,7 +1099,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 	@Override
 	public Type getType() {
-		return null;
+		return this.classType;
 	}
 
 	@Override
@@ -1003,4 +1112,15 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		return false;
 	}
 
+	@Override
+	public Hover hover(Token token) {
+		if (token == parentToken) {
+			return new Hover(parent.getType(), token.getLocation(), parent.getLocation());
+		}
+		return super.hover(token);
+	}
+
+	public Type getClassValueType() {
+		return classValueType;
+	}
 }

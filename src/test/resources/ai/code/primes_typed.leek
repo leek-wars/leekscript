@@ -1,0 +1,17 @@
+function f(integer n) {
+	for (integer k = 1; 36 * k * k - 12 * k < n; k = k + 1) {
+		if ((n % (6 * k + 1) == 0) or (n % (6 * k - 1) == 0)) {
+			return false
+		}
+	}
+	return true
+}
+
+var c = 2
+
+for (integer i = 5; i < 1000000; i = i + 6) {
+	if (f(i)) ++c
+	if (f(i + 2)) ++c
+}
+
+return c

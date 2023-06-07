@@ -5,6 +5,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 
@@ -47,7 +48,7 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void preAnalyze(WordCompiler compiler) {
+	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		if (mCondition != null) {
 			mCondition.preAnalyze(compiler);
 		}
@@ -55,7 +56,7 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void analyze(WordCompiler compiler) {
+	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		if (mCondition != null) {
 			mCondition.analyze(compiler);
 			mCondition.operations++; // On rajoute une opé pour le if sur la condition
@@ -67,21 +68,23 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		if (mParentCondition == null) {
 			writer.addCode("if (");
-			if (mCondition.getOperations() > 0) {
+			if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
+				writer.addCode("(boolean) ");
 				writer.addCode("ops(");
 			}
 			writer.getBoolean(mainblock, mCondition);
-			if (mCondition.getOperations() > 0) {
+			if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
 				writer.addCode(", " + mCondition.getOperations() + ")");
 			}
 			writer.addLine(") {", getLocation());
 		} else if (mCondition != null) {
 			writer.addCode("else if (");
-			if (mCondition.getOperations() > 0) {
+			if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
+				writer.addCode("(boolean) ");
 				writer.addCode("ops(");
 			}
 			writer.getBoolean(mainblock, mCondition);
-			if (mCondition.getOperations() > 0) {
+			if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
 				writer.addCode(", " + mCondition.getOperations() + ")");
 			}
 			writer.addLine(") {", getLocation());
