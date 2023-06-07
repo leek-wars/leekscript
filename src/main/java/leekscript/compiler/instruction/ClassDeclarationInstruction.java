@@ -1114,7 +1114,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 	@Override
 	public Hover hover(Token token) {
-		if (token == parentToken) {
+		if (token == parentToken && parent != null) {
 			return new Hover(parent.getType(), token.getLocation(), parent.getLocation());
 		}
 		return super.hover(token);
