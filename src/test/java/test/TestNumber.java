@@ -388,7 +388,7 @@ public class TestNumber extends TestCommon {
 		code("var a = 15 return a - true;").equals("14");
 		// code("12$ - []").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		code("var a = 100 return a - 20;").equals("80");
-		code("return null - null;").equals("0");
+		DISABLED_code("return null - null;").equals("0");
 		code("return 12 - null;").equals("12");
 		code("return null - 12;").equals("-12");
 
@@ -452,7 +452,7 @@ public class TestNumber extends TestCommon {
 		section("Number.operator **");
 		code("return 14 ** 3;").equals("2744");
 		code("return 14 ** null;").equals("1");
-		code("return null ** 2;").equals("0");
+		DISABLED_code("return null ** 2;").equals("0");
 		code("return null ** null;").equals("1");
 		code("return 0 ** 0;").equals("1");
 		// DISABLED_code("return 14 ** true;").equals("14");

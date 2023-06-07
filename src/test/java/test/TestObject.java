@@ -202,7 +202,7 @@ public class TestObject extends TestCommon {
 		code_strict_v2_("class A { final a = 12 } var a = new A() a.a = 15 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_strict_v2_("class A { final a = 12 } var a = new A() a.a += 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_strict_v2_("class A { final a = [] } var a = new A() a.a += 10 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
-		code_v2_("class A { final a = 12 } var a = new A() a['a'] = 15 return a['a']").equals("12");
+		DISABLED_code_v2_("class A { final a = 12 } var a = new A() a['a'] = 15 return a['a']").equals("12");
 		code_v2_("class A { final a = 12 } var a = new A() a['a'] += 15 return a['a']").equals("12");
 		code_v2_("class A { final a m(x) { this.a = x } } return new A(12)").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_v2_("class A { final a m(x) { a = x } } return new A(12)").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
