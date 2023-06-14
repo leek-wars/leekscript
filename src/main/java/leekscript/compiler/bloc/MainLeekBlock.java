@@ -24,6 +24,7 @@ import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.runner.LeekFunctions;
+import leekscript.common.Error;
 
 public class MainLeekBlock extends AbstractLeekBlock {
 
@@ -138,6 +139,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			if (mIncludedFirstPass.contains(ai)) {
 				return true;
 			}
+			// Hack dégueu à retirer, crash du daemon dans un cas précis d'include infini
+			if (mIncludedFirstPass.size() > 500) {
+				throw new LeekCompilerException(compiler.getParser().token(), Error.UNKNOWN_ERROR);
+			}
 			ai.clearErrors();
 			mIncludedFirstPass.add(ai);
 			var previousAI = mCompiler.getCurrentAI();
@@ -159,6 +164,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
 			if (mIncluded.contains(ai)) {
 				return true;
+			}
+			// Hack dégueu à retirer, crash du daemon dans un cas précis d'include infini
+			if (mIncluded.size() > 500) {
+				throw new LeekCompilerException(compiler.getParser().token(), Error.UNKNOWN_ERROR);
 			}
 			// ai.clearErrors();
 			mIncluded.add(ai);
