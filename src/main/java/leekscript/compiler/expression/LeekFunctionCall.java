@@ -294,7 +294,7 @@ public class LeekFunctionCall extends Expression {
 					if (system_function != null) {
 						parameter.writeJavaCode(mainblock, writer);
 					} else {
-						writer.compileConvert(mainblock, i, parameter, functionType.getArgument(i));
+						writer.compileConvert(mainblock, i, parameter, functionType.getArgument(mParameters.size(), i));
 					}
 				} else {
 					if (user_function != null) {
@@ -303,7 +303,7 @@ public class LeekFunctionCall extends Expression {
 						if (unsafe) {
 							writer.compileLoad(mainblock, parameter);
 						} else {
-							writer.compileConvert(mainblock, i, parameter, functionType.getArgument(i));
+							writer.compileConvert(mainblock, i, parameter, functionType.getArgument(mParameters.size(), i));
 						}
 					} else {
 						parameter.compileL(mainblock, writer);
@@ -370,6 +370,7 @@ public class LeekFunctionCall extends Expression {
 		}
 
 		this.functionType = mExpression.getType();
+		// System.out.println("[FC] function type = " + functionType + " args = " + functionType.getArguments();
 		this.type = functionType.returnType();
 
 		for (Expression parameter : mParameters) {

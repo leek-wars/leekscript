@@ -184,8 +184,8 @@ public class JavaWriter {
 	}
 
 	public void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type) {
-		// var v_type = value.getType();
-		// System.out.println("convert " + v_type + " to " + type);
+
+		// System.out.println("convert " + value.getType() + " to " + type);
 		if (type == Type.REAL && value.getType().isIntOrReal()) {
 			addCode("(");
 			value.writeJavaCode(mainblock, this);
@@ -198,7 +198,9 @@ public class JavaWriter {
 			addCode(").longValue()");
 			return;
 		}
-		if (type.accepts(value.getType()).ordinal() <= CastType.EQUALS.ordinal()) {
+		var cast = type.accepts(value.getType());
+		// System.out.println("cast = " + cast);
+		if (cast.ordinal() <= CastType.EQUALS.ordinal()) {
 			value.writeJavaCode(mainblock, this);
 			return;
 		}

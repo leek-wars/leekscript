@@ -112,6 +112,11 @@ public class FunctionType extends Type {
 	}
 
 	@Override
+	public Type getArgument(int argumentCount, int a) {
+		return a < arguments.size() ? arguments.get(a) : Type.VOID;
+	}
+
+	@Override
 	public int getMinArguments() {
 		return minArguments;
 	}

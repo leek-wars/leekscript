@@ -108,6 +108,15 @@ public class ClassValueType extends Type {
 		return Type.compound(types);
 	}
 
+	@Override
+	public Type getArgument(int argumentCount, int a) {
+		if (this.clazz == null) return Type.ANY;
+
+		var constructor = this.clazz.getConstructor(argumentCount);
+		if (constructor == null) return Type.ANY;
+
+		return constructor.block.getType().getArgument(a);
+	}
 
 	@Override
 	public String getCode() {

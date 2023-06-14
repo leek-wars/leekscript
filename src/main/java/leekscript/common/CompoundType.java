@@ -50,8 +50,8 @@ public class CompoundType extends Type {
 		for (var t : types) {
 			var r = t.accepts(type);
 			if (r.ordinal() < best.ordinal()) best = r;
-			if (best != CastType.INCOMPATIBLE) ok = true;
-			if (best != CastType.EQUALS) nok = true;
+			if (r != CastType.INCOMPATIBLE) ok = true;
+			if (r != CastType.EQUALS) nok = true;
 		}
 		if (best == CastType.INCOMPATIBLE && ok) return CastType.UNSAFE_DOWNCAST;
 		if (best == CastType.EQUALS && nok) return CastType.UPCAST;
@@ -150,6 +150,11 @@ public class CompoundType extends Type {
 	@Override
 	public Type getArgument(int a) {
 		return Type.compound(this.types.stream().map(t -> t.getArgument(a)).collect(Collectors.toCollection(HashSet::new)));
+	}
+
+	@Override
+	public Type getArgument(int argumentCount, int a) {
+		return Type.compound(this.types.stream().map(t -> t.getArgument(argumentCount, a)).collect(Collectors.toCollection(HashSet::new)));
 	}
 
 	@Override

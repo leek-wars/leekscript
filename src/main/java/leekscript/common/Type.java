@@ -353,6 +353,13 @@ public class Type {
 		return Type.NULL;
 	}
 
+	public Type getArgument(int argumentCount, int a) {
+		if (this == ANY) {
+			return Type.ANY;
+		}
+		return Type.NULL;
+	}
+
 	public Type returnType() {
 		if (this == ANY) {
 			return Type.ANY;
