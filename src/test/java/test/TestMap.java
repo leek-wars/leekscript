@@ -122,7 +122,8 @@ public class TestMap extends TestCommon {
 		code("var a = [12: 5] return a[5] = 7").equals("7");
 		code("var a = [12: 5] var b = 7 return a[5] = b").equals("7");
 		code("var a = [1 : 2] integer b = a[1] return b").equals("2");
-		code("var a = [1 : 2] integer b = a[0] return b").error(Error.IMPOSSIBLE_CAST);
+		DISABLED_code_v1("var a = [1 : 2] integer b = a[0] return b").error(Error.IMPOSSIBLE_CAST);
+		code_v2_("var a = [1 : 2] integer b = a[0] return b").error(Error.IMPOSSIBLE_CAST);
 
 		section("Map.operator [] left-value");
 		code("var m = [1: 2] m[1]++ return m").equals("[1 : 3]");

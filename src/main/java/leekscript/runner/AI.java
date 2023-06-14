@@ -526,7 +526,9 @@ public abstract class AI {
 	private String javaTypeToLS(String type) {
 		switch (type) {
 			case "boolean":
-			case "java.lang.Boolean": return "boolean";
+			case "java.lang.Boolean":
+			case "java.lang.Boolean.booleanValue()":
+				return "boolean";
 			case "long":
 			case "java.lang.Long":
 			case "java.lang.Long.longValue()":

@@ -283,7 +283,7 @@ public class LeekArrayAccess extends Expression {
 	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
 		assert(mLeftValue && !mTabular.nullable());
 
-		if (expr.getType() != Type.ANY) {
+		if (expr.getType() != Type.ANY && mainblock.isStrict()) {
 			if (expr.getType().isPrimitive()) {
 				writer.addCode("(" + expr.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}

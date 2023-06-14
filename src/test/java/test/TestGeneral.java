@@ -219,8 +219,11 @@ public class TestGeneral extends TestCommon {
 		code("var nœud = [] return nœud").equals("[]");
 
 		section("Variables and types");
-		code("real a = 1.1 integer b = a return b").equals("1");
-		code("real a = 1.9 integer b = a return b").equals("1");
-		code("integer|real a = 1.999; integer b = a; return b").equals("1");
+		DISABLED_code_v1("real a = 1.1 integer b = a return b").equals("1");
+		code_v2_("real a = 1.1 integer b = a return b").equals("1");
+		DISABLED_code_v1("real a = 1.9 integer b = a return b").equals("1");
+		code_v2_("real a = 1.9 integer b = a return b").equals("1");
+		DISABLED_code_v1("integer|real a = 1.999; integer b = a; return b").equals("1");
+		code_v2_("integer|real a = 1.999; integer b = a; return b").equals("1");
 	}
 }

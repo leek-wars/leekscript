@@ -477,6 +477,8 @@ public class LeekExpression extends Expression {
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(" - ");
 				mExpression2.writeJavaCode(mainblock, writer);
+			} else if (mExpression1.getType() == Type.NULL && mExpression2.getType() == Type.NULL) {
+				writer.addCode("0l");
 			} else {
 				if (type.isPrimitive()) {
 					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
@@ -548,11 +550,19 @@ public class LeekExpression extends Expression {
 			writer.getInt(mainblock, mExpression2);
 			return;
 		case Operators.POWER: // Puissance
-			writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") pow(");
-			mExpression1.writeJavaCode(mainblock, writer);
-			writer.addCode(", ");
-			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(")");
+			if (mExpression1.getType() == Type.NULL && mExpression2.getType() == Type.NULL) {
+				writer.addCode("1l");
+			} else if (mExpression1.getType() == Type.NULL && mExpression2.getType().isNumber()) {
+				writer.addCode("pow(0l, ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			} else {
+				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") pow(");
+				mExpression1.writeJavaCode(mainblock, writer);
+				writer.addCode(", ");
+				mExpression2.writeJavaCode(mainblock, writer);
+				writer.addCode(")");
+			}
 			return;
 			// Les binaires
 		case Operators.BITAND:
