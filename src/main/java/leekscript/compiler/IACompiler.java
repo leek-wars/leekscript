@@ -46,9 +46,8 @@ public class IACompiler {
 		try {
 			ai.clearErrors();
 			// On lance la compilation du code de l'IA
-			WordParser parser = new WordParser(ai, ai.getVersion());
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
-			WordCompiler compiler = new WordCompiler(parser, ai, ai.getVersion());
+			WordCompiler compiler = new WordCompiler(ai, ai.getVersion());
 			MainLeekBlock main = new MainLeekBlock(this, compiler, ai);
 			main.setWordCompiler(compiler);
 			compiler.readCode();
@@ -85,9 +84,8 @@ public class IACompiler {
 		try {
 			ai.clearErrors();
 			// On lance la compilation du code de l'IA
-			WordParser parser = new WordParser(ai, ai.getVersion());
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
-			WordCompiler compiler = new WordCompiler(parser, ai, ai.getVersion());
+			WordCompiler compiler = new WordCompiler(ai, ai.getVersion());
 			MainLeekBlock main = new MainLeekBlock(this, compiler, ai);
 			main.setWordCompiler(compiler);
 			compiler.readCode();
@@ -113,8 +111,7 @@ public class IACompiler {
 
 	public String merge(AIFile ai) throws LeekCompilerException {
 		// System.out.println("Merge ai " + ai);
-		WordParser parser = new WordParser(ai, ai.getVersion());
-		WordCompiler compiler = new WordCompiler(parser, ai, ai.getVersion());
+		WordCompiler compiler = new WordCompiler(ai, ai.getVersion());
 		MainLeekBlock main = new MainLeekBlock(this, compiler, ai);
 		main.setWordCompiler(compiler);
 		compiler.readCode();

@@ -15,9 +15,9 @@ import leekscript.compiler.AIFile;
 import leekscript.compiler.IACompiler;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.LexicalParser;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
-import leekscript.compiler.WordParser;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekNumber;
@@ -141,14 +141,13 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			}
 			// Hack dégueu à retirer, crash du daemon dans un cas précis d'include infini
 			if (mIncludedFirstPass.size() > 500) {
-				throw new LeekCompilerException(compiler.getParser().token(), Error.UNKNOWN_ERROR);
+				throw new LeekCompilerException(compiler.getTokenStream().get(), Error.UNKNOWN_ERROR);
 			}
 			ai.clearErrors();
 			mIncludedFirstPass.add(ai);
 			var previousAI = mCompiler.getCurrentAI();
 			mCompiler.setCurrentAI(ai);
-			WordParser words = new WordParser(ai, compiler.getVersion());
-			WordCompiler newCompiler = new WordCompiler(words, ai, compiler.getVersion());
+			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion());
 			newCompiler.setMainBlock(this);
 			newCompiler.firstPass();
 			compiler.getAI().getErrors().addAll(ai.getErrors());
@@ -167,14 +166,13 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			}
 			// Hack dégueu à retirer, crash du daemon dans un cas précis d'include infini
 			if (mIncluded.size() > 500) {
-				throw new LeekCompilerException(compiler.getParser().token(), Error.UNKNOWN_ERROR);
+				throw new LeekCompilerException(compiler.getTokenStream().get(), Error.UNKNOWN_ERROR);
 			}
 			// ai.clearErrors();
 			mIncluded.add(ai);
 			var previousAI = mCompiler.getCurrentAI();
 			mCompiler.setCurrentAI(ai);
-			WordParser words = new WordParser(ai, compiler.getVersion());
-			WordCompiler newCompiler = new WordCompiler(words, ai, compiler.getVersion());
+			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion());
 			newCompiler.setMainBlock(this);
 			newCompiler.secondPass();
 			compiler.getAI().getErrors().addAll(ai.getErrors());
@@ -330,8 +328,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 
 		super.writeJavaCode(this, writer);
-		if (mEndInstruction == 0)
-			writer.addLine("return null;");
+		if (mEndInstruction == 0) writer.addLine("return null;");
 		writer.addLine("}");
 
 		writer.writeErrorFunction(mCompiler, mAIName);

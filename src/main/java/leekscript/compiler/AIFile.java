@@ -23,11 +23,10 @@ public class AIFile {
 	private AICode compiledCode;
 	private String clazz;
 	private String rootClazz;
-	private ArrayList<Token> tokens = new ArrayList<Token>();
-	private Token endOfFileToken = new Token(WordParser.T_END_OF_FILE, "", new Location(this));
 	private boolean strict = false;
 	public TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
 	private File filesLines;
+	private LexicalParserTokenStream tokens = null;
 
 	public AIFile(String path, String code, long timestamp, int version, int owner, boolean strict) {
 		this(path, code, timestamp, version, null, owner, path.hashCode() & 0xfffffff, strict);
@@ -134,23 +133,23 @@ public class AIFile {
 		this.errors.clear();
 	}
 
-	public ArrayList<Token> getTokens() {
+	public LexicalParserTokenStream getTokenStream() {
 		return tokens;
 	}
 
-	public Token getTokenAt(int index) {
-		return index < 0 || index < tokens.size() ? tokens.get(index) : endOfFileToken;
+	public void setTokenStream(LexicalParserTokenStream tokens) {
+		this.tokens = tokens;
 	}
 
-	public Token getLastToken() {
-		return tokens.size() > 0 ? tokens.get(tokens.size() - 1) : endOfFileToken;
+	public boolean hasBeenParsed() {
+		return tokens != null;
 	}
 
 	public Hover hover(int line, int column) {
-
-		// Find token
-		var token = findToken(line, column);
-		if (token == null) return null;
+		var token = tokens.atLocation(line, column);
+		if (token == null) {
+			return null;
+		}
 
 		if (token.getExpression() != null) {
 			return token.getExpression().hover(token);
@@ -162,7 +161,7 @@ public class AIFile {
 	public Complete complete(int line, int column) {
 
 		// Find token
-		var token = findToken(line, column);
+		var token = tokens.atLocation(line, column);
 		System.out.println("token = " + token);
 		if (token == null) return null;
 
@@ -171,45 +170,6 @@ public class AIFile {
 		}
 
 		return new Complete(Type.VOID);
-	}
-
-	public Token findToken(int line, int column) {
-		if (tokens.size() == 0) return null;
-		// Find token
-		int start = 0;
-		int end = tokens.size() - 1;
-		while (true) {
-			int p = (end + start) / 2;
-			var token = tokens.get(p);
-			var tLine = token.getLocation().getStartLine();
-			// System.out.println("findToken start=" + start + " end=" + end + " token=" + token + " tline=" + token.getLocation().getStartLine() + " tcol=" + token.getLocation().getStartColumn());
-			if (start >= end) {
-				if (line == tLine) {
-					var startColumn = token.getLocation().getStartColumn();
-					var endColumn = token.getLocation().getEndColumn();
-					if (column >= startColumn && column <= endColumn) {
-						return token;
-					}
-				}
-				return null;
-			}
-			if (line > tLine) {
-				start = p + 1;
-			} else if (line < tLine) {
-				end = p - 1;
-			} else { // Même ligne
-				var startColumn = token.getLocation().getStartColumn();
-				var endColumn = token.getLocation().getEndColumn();
-				if (column >= startColumn && column <= endColumn) {
-					return token;
-				}
-				if (column > endColumn) {
-					start = p + 1;
-				} else {
-					end = p - 1;
-				}
-			}
-		}
 	}
 
 	@Override

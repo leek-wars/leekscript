@@ -2,7 +2,7 @@ package test;
 
 import leekscript.runner.LeekConstants;
 import leekscript.common.Error;
-import leekscript.compiler.WordParser;
+import leekscript.compiler.LexicalParser;
 
 public class TestGeneral extends TestCommon {
 
@@ -74,7 +74,7 @@ public class TestGeneral extends TestCommon {
 		code("return getBlue(" + 0xAD + ")").equals("173");
 
 		section("Variables with keywords");
-		for (var word : WordParser.reservedWords) {
+		for (var word : LexicalParser.reservedWords) {
 			if (word.equals("this")) {
 				code_v1("var " + word + " = 2;").error(Error.NONE);
 				code_v2("var " + word + " = 2;").error(Error.THIS_NOT_ALLOWED_HERE);
@@ -96,7 +96,7 @@ public class TestGeneral extends TestCommon {
 
 		section("Globals with keywords");
 		code_v1_2("global break = 2").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		for (var word : WordParser.reservedWords) {
+		for (var word : LexicalParser.reservedWords) {
 			if (word.equals("this")) {
 				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
 			} else if (word.equals("instanceof") || word.equals("as") || word.equals("void")) {

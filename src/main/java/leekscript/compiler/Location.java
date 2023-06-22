@@ -4,6 +4,12 @@ import com.alibaba.fastjson.JSONArray;
 
 public class Location {
 
+	public enum RelativePosition {
+		BEFORE,
+		INSIDE,
+		AFTER
+	}
+
 	private final AIFile file;
 	private final int startLine;
 	private final int startColumn;
@@ -43,6 +49,16 @@ public class Location {
 		this.startColumn = start.startColumn;
 		this.endLine = end.endLine;
 		this.endColumn = end.endColumn;
+	}
+
+	public RelativePosition compare(int line, int column) {
+		if (line < this.startLine || (line == this.startLine && column < this.startColumn)) {
+			return RelativePosition.BEFORE;
+		} else if (line > this.endLine || (line == this.endLine && column > this.endColumn)) {
+			return RelativePosition.AFTER;
+		} else {
+			return RelativePosition.INSIDE;
+		}
 	}
 
 	public AIFile getFile() {
