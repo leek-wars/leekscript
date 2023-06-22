@@ -1,5 +1,4 @@
 
-
 package test;
 
 import leekscript.common.Error;
@@ -13,5 +12,6 @@ public class TestComments extends TestCommon {
 		code("/* basic; */ return 12;").equals("12");
 		code_v1("/*// basic; */ return 12;").error(Error.OPERATOR_UNEXPECTED);
 		code_v2_("/*// basic; */ return 12;").equals("12");
+		code_v1("/*/ return 1").equals("1");
 	}
 }

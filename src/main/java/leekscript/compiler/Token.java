@@ -5,22 +5,21 @@ import leekscript.compiler.expression.Expression;
 public class Token {
 
 	private final Location location;
-	private final int type;
+	private final TokenType type;
 	private final String word;
 	private Expression expression;
 
 	public Token(String word) {
-		this(0, word, null);
+		this(TokenType.NOTHING, word, null);
 	}
 
-	public Token(int type, String word, AIFile file, int line, int column) {
+	public Token(TokenType type, String word, AIFile file, int line, int column) {
 		this.location = new Location(file, line, column - word.length(), line, column - 1);
-		// System.out.println("Token type=" + type + " word=" + word + " len=" + word.length() + " line=" + line + " column=" + this.location.getStartColumn() + " to=" + this.location.getEndColumn());
 		this.type = type;
 		this.word = word;
 	}
 
-	public Token(int type, String word, Location location) {
+	public Token(TokenType type, String word, Location location) {
 		this.location = location;
 		this.type = type;
 		this.word = word;
@@ -30,7 +29,7 @@ public class Token {
 		return word;
 	}
 
-	public int getType() {
+	public TokenType getType() {
 		return type;
 	}
 
