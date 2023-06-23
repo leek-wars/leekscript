@@ -86,6 +86,10 @@ public class LexicalParser {
 			return true;
 		}
 
+		if (tryParseExact("..", TokenType.DOT_DOT)) {
+			return true;
+		}
+
 		if (version >= 2 && tryParseExact('.', TokenType.DOT)) {
 			return true;
 		}
@@ -167,6 +171,12 @@ public class LexicalParser {
 					error.report(new AnalyzeError(new Token(TokenType.NOTHING, ".", aiFile, stream.getLineCounter(), stream.getCharCounter() + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 					break;
 				}
+
+				// We don't eat the dot if it's not followed by another dot
+				if (stream.peek(1) == '.') {
+					break;
+				}
+
 				continue;
 			}
 
