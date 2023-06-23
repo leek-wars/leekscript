@@ -23,11 +23,13 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekAnonymousFunction;
 import leekscript.compiler.expression.LeekArray;
+import leekscript.compiler.expression.LegacyLeekArray;
 import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekCompoundType;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekFunctionCall;
+import leekscript.compiler.expression.LeekMap;
 import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekObject;
@@ -998,7 +1000,7 @@ public class WordCompiler {
 			classDeclaration.setParent(parent);
 		}
 		if (mTokens.get().getType() != TokenType.ACCOLADE_LEFT) {
- 			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+			hrow new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
 		}
 		mTokens.skip();
 
@@ -1515,41 +1517,7 @@ public class WordCompiler {
 					retour.addExpression(new LeekString(word, word.getWord()));
 
 				} else if (word.getType() == TokenType.BRACKET_LEFT) {
-					// Déclaration d'un tableau
-					var token = mTokens.eat();
-					var array = new LeekArray(token);
-
-					if (mTokens.get().getWord().equals(":")) {
-						// [:] map vide
-						array.mIsKeyVal = true;
-						array.type = Type.MAP;
-						mTokens.skip();
-					} else {
-
-						int type = 0;// 0 => A déterminer, 1 => Simple, 2 => Clé:valeur
-						while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
-							if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
-							var exp = readExpression(true);
-							if (mTokens.get().getWord().equals(":")) {
-								if (type == 0) type = 2;
-								else if (type == 1) throw new LeekCompilerException(mTokens.get(), Error.SIMPLE_ARRAY);
-								var colon = mTokens.get();
-								mTokens.skip();
-								var value = readExpression(true);
-								array.addValue(this, exp, colon, value);
-							} else {
-								if (type == 0) type = 1;
-								else if (type == 2) throw new LeekCompilerException(mTokens.get(), Error.ASSOCIATIVE_ARRAY);
-								array.addValue(exp);
-							}
-							if (mTokens.get().getType() == TokenType.VIRG) mTokens.skip();
-						}
-					}
-					if (mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
-						addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CLOSING_SQUARE_BRACKET_EXPECTED));
-					}
-					array.setClosingBracket(mTokens.get());
-					retour.addExpression(array);
+					retour.addExpression(readArrayOrMap(mTokens.eat()));
 
 				} else if (getVersion() >= 2 && word.getType() == TokenType.ACCOLADE_LEFT) {
 
@@ -1670,6 +1638,166 @@ public class WordCompiler {
 			return word.getWord().equalsIgnoreCase(expected);
 		}
 		return word.getWord().equals(expected);
+	}
+
+	private Expression readArrayOrMap(Token openingBracket) throws LeekCompilerException {
+		if (version < 4) {
+			return readLegacyHybridContainer(openingBracket);
+		}
+
+		// Empty map `[:]`
+		if (mTokens.get().getWord().equals(":")) {
+			mTokens.skip();
+
+			if (mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
+				throw new LeekCompilerException(mTokens.get(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+			}
+
+			var container = new LeekMap(openingBracket);
+			container.setClosingBracket(mTokens.get());
+			return container;
+		}
+
+		// Empty array `[]`
+		if (mTokens.get().getType() == TokenType.BRACKET_RIGHT) {
+			var container = new LeekArray(openingBracket);
+			container.setClosingBracket(mTokens.get());
+			return container;
+		}
+
+		var firstExpression = readExpression(true);
+		boolean isMap = mTokens.get().getWord().equals(":");
+
+		if (isMap) {
+			mTokens.skip();
+			return readMap(openingBracket, firstExpression, mTokens.get());
+		} else {
+			return readArray(openingBracket, firstExpression, mTokens.get());
+		}
+	}
+
+	private Expression readMap(Token openingBracket, Expression firstExpression, Token firstToken) throws LeekCompilerException {
+		var container = new LeekMap(openingBracket);
+
+		var secondExpression = readExpression(true);
+		container.addValue(this, firstExpression, secondExpression);
+
+		if (mTokens.get().getType() == TokenType.VIRG) {
+			mTokens.skip();
+		}
+
+		while (mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+			var key = readExpression(true);
+
+			if (!mTokens.get().getWord().equals(":")) {
+				throw new LeekCompilerException(mTokens.get(), Error.SIMPLE_ARRAY);
+			}
+			mTokens.skip();
+
+			var value = readExpression(true);
+			container.addValue(this, key, value);
+
+			if (mTokens.get().getType() == TokenType.VIRG) {
+				mTokens.skip();
+			}
+		}
+
+		container.setClosingBracket(mTokens.get());
+		return container;
+	}
+
+	private Expression readArray(Token openingBracket, Expression firstExpression, Token firstToken) throws LeekCompilerException {
+		var container = new LeekArray(openingBracket);
+
+		container.addValue(firstExpression);
+
+		if (mTokens.get().getType() == TokenType.VIRG) {
+			mTokens.skip();
+		}
+
+		while (mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+			var value = readExpression(true);
+			container.addValue(value);
+
+			if (mTokens.get().getWord().equals(":")) {
+				throw new LeekCompilerException(mTokens.get(), Error.ASSOCIATIVE_ARRAY);
+			}
+
+			if (mTokens.get().getType() == TokenType.VIRG) {
+				mTokens.skip();
+			}
+		}
+
+		container.setClosingBracket(mTokens.get());
+		return container;
+	}
+
+	private Expression readLegacyHybridContainer(Token openingBracket) throws LeekCompilerException {
+		var container = new LegacyLeekArray(openingBracket);
+
+		// Empty map `[:]`
+		if (mTokens.get().getWord().equals(":")) {
+			container.mIsKeyVal = true;
+			container.type = Type.MAP;
+			mTokens.skip();
+
+			if (mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
+				throw new LeekCompilerException(mTokens.get(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+			}
+			container.setClosingBracket(mTokens.get());
+			return container;
+		}
+
+		// Empty array `[]`
+		if (mTokens.get().getType() == TokenType.BRACKET_RIGHT) {
+			container.setClosingBracket(mTokens.get());
+			return container;
+		}
+
+		var firstExpression = readExpression(true);
+		boolean isKeyVal = mTokens.get().getWord().equals(":");
+
+		if (isKeyVal) {
+			mTokens.skip();
+			var secondExpression = readExpression(true);
+			container.addValue(this, firstExpression, secondExpression);
+		} else {
+			container.addValue(firstExpression);
+		}
+
+		if (mTokens.get().getType() == TokenType.VIRG) {
+			mTokens.skip();
+		}
+
+		while (mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+			if (isKeyVal) {
+				var key = readExpression(true);
+				if (!mTokens.get().getWord().equals(":")) {
+					throw new LeekCompilerException(mTokens.get(), Error.SIMPLE_ARRAY);
+				}
+				mTokens.skip();
+
+				var value = readExpression(true);
+				container.addValue(this, key, value);
+			} else {
+				var value = readExpression(true);
+				container.addValue(value);
+
+				if (mTokens.get().getWord().equals(":")) {
+					throw new LeekCompilerException(mTokens.get(), Error.ASSOCIATIVE_ARRAY);
+				}
+			}
+
+			if (mTokens.get().getType() == TokenType.VIRG) {
+				mTokens.skip();
+			}
+		}
+
+		container.setClosingBracket(mTokens.get());
+		return container;
 	}
 
 	private LeekAnonymousFunction readAnonymousFunction() throws LeekCompilerException {
