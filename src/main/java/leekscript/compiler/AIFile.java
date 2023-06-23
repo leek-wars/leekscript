@@ -162,7 +162,6 @@ public class AIFile {
 
 		// Find token
 		var token = tokens.atLocation(line, column);
-		System.out.println("token = " + token);
 		if (token == null) return null;
 
 		if (token.getExpression() != null) {
