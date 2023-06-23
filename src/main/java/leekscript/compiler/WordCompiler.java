@@ -29,6 +29,7 @@ import leekscript.compiler.expression.LeekCompoundType;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekFunctionCall;
+import leekscript.compiler.expression.LeekInterval;
 import leekscript.compiler.expression.LeekMap;
 import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekNumber;
@@ -1517,7 +1518,7 @@ public class WordCompiler {
 					retour.addExpression(new LeekString(word, word.getWord()));
 
 				} else if (word.getType() == TokenType.BRACKET_LEFT) {
-					retour.addExpression(readArrayOrMap(mTokens.eat()));
+					retour.addExpression(readArrayOrMapOrInterval(mTokens.eat()));
 
 				} else if (getVersion() >= 2 && word.getType() == TokenType.ACCOLADE_LEFT) {
 
@@ -1640,7 +1641,7 @@ public class WordCompiler {
 		return word.getWord().equals(expected);
 	}
 
-	private Expression readArrayOrMap(Token openingBracket) throws LeekCompilerException {
+	private Expression readArrayOrMapOrInterval(Token openingBracket) throws LeekCompilerException {
 		if (version < 4) {
 			return readLegacyArray(openingBracket);
 		}
@@ -1666,17 +1667,18 @@ public class WordCompiler {
 		}
 
 		var firstExpression = readExpression(true);
-		boolean isMap = mTokens.get().getWord().equals(":");
-
-		if (isMap) {
+		if (mTokens.get().getWord().equals(":")) {
 			mTokens.skip();
-			return readMap(openingBracket, firstExpression, mTokens.get());
+			return readMap(openingBracket, firstExpression);
+		} else if (version >= 4 && mTokens.get().getType() == TokenType.DOT_DOT) {
+			mTokens.skip();
+			return readInterval(openingBracket, firstExpression);
 		} else {
-			return readArray(openingBracket, firstExpression, mTokens.get());
+			return readArray(openingBracket, firstExpression);
 		}
 	}
 
-	private Expression readMap(Token openingBracket, Expression firstExpression, Token firstToken) throws LeekCompilerException {
+	private Expression readMap(Token openingBracket, Expression firstExpression) throws LeekCompilerException {
 		var container = new LeekMap(openingBracket);
 
 		var secondExpression = readExpression(true);
@@ -1707,7 +1709,7 @@ public class WordCompiler {
 		return container;
 	}
 
-	private Expression readArray(Token openingBracket, Expression firstExpression, Token firstToken) throws LeekCompilerException {
+	private Expression readArray(Token openingBracket, Expression firstExpression) throws LeekCompilerException {
 		var container = new LeekArray(openingBracket);
 
 		container.addValue(firstExpression);
@@ -1800,6 +1802,24 @@ public class WordCompiler {
 		return container;
 	}
 
+	private Expression readInterval(Token openingBracket, Expression fromExpression) throws LeekCompilerException {
+		// Although an interval is not comma separated, we still parse the second
+		// expression as if we did. This is in order to be more consitent as the first
+		// expression is parsed as if it was comma separated
+		var toExpression = readExpression(true);
+
+		var nextToken = mTokens.get();
+		if (nextToken.getWord().equals(":")) {
+			throw new LeekCompilerException(mTokens.get(), Error.ASSOCIATIVE_ARRAY);
+		} else if (nextToken.getType() == TokenType.VIRG) {
+			throw new LeekCompilerException(mTokens.get(), Error.SIMPLE_ARRAY);
+		} else if (nextToken.getType() != TokenType.BRACKET_RIGHT) {
+			throw new LeekCompilerException(mTokens.get(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+		}
+
+		return new LeekInterval(openingBracket, fromExpression, toExpression, mTokens.eat());
+	}
+	
 	private LeekAnonymousFunction readAnonymousFunction() throws LeekCompilerException {
 		var token = mTokens.eat();
 		if (mTokens.get().getType() != TokenType.PAR_LEFT) {
