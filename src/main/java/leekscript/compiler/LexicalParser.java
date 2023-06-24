@@ -73,7 +73,7 @@ public class LexicalParser {
 			"===", "==", "=",
 			"!=", "!",
 			"<<<=", "<<<", "<<=", "<<", "<=", "<",
-			">>>=", ">>>", ">>=", ">>", ">=", ">",
+			">>>=", /* ">>>", ">>=", ">>", */ ">=", ">",
 			"^=", "^",
 			"~", "@",
 			"?", "\\"
@@ -98,7 +98,7 @@ public class LexicalParser {
 	}
 
 	private boolean tryParseIdentifier() {
-		var startingPoint = stream.getRestorePoint();
+		var startingPoint = stream.index;
 		for (char c = stream.peek(); stream.hasMore(); c = stream.next()) {
 			if (c >= '0' && c <= '9') continue;
 			if (c >= 'A' && c <= 'Z') continue;
@@ -113,7 +113,7 @@ public class LexicalParser {
 			break;
 		}
 
-		if (startingPoint.equals(stream.getRestorePoint())) {
+		if (startingPoint == stream.index) {
 			return false;
 		}
 
@@ -135,11 +135,12 @@ public class LexicalParser {
 	}
 
 	private boolean tryParseNumber(ErrorReporter error) throws LeekCompilerException {
-		var startingPoint = stream.getRestorePoint();
 
 		if (stream.peek() < '0' || stream.peek() > '9') {
 			return false;
 		}
+
+		var startingPoint = stream.index;
 
 		stream.next();
 
@@ -177,12 +178,13 @@ public class LexicalParser {
 	}
 
 	private boolean tryParseString() {
-		var startingPoint = stream.getRestorePoint();
 
 		var openQuote = stream.peek();
 		if (openQuote != '"' && openQuote != '\'') {
 			return false;
 		}
+
+		var startingPoint = stream.index;
 
 		stream.next();
 
@@ -204,7 +206,8 @@ public class LexicalParser {
 	}
 
 	private boolean tryParseWhiteSpaces() {
-		if ("\r\n\t ".contains("" + stream.peek()) || stream.peek() == 160) {
+		var c = stream.peek();
+		if (c == ' ' || c == '\r' || c == '\n' || c == '\t' || c == 160) {
 			stream.next();
 			return true;
 		}
@@ -237,30 +240,32 @@ public class LexicalParser {
 	}
 
 	private boolean tryParseExact(String expected, TokenType type) {
-		var startingPoint = stream.getRestorePoint();
 
-		for (int i = 0; i < expected.length(); i++) stream.next();
-
-		var streamWord = stream.getSubStringSince(startingPoint);
-		if (wordEquals(streamWord, expected)) {
-			addToken(expected, type);
-			return true;
+		if (stream.index + expected.length() <= stream.content.length()) {
+			var streamWord = stream.content.substring(stream.index, stream.index + expected.length());
+			if (wordEquals(streamWord, expected)) {
+				stream.index += expected.length();
+				if (stream.index < stream.content.length()) {
+					stream.c = stream.content.charAt(stream.index);
+				}
+				addToken(expected, type);
+				return true;
+			}
 		}
-
-		stream.restore(startingPoint);
 		return false;
 	}
 
 	private boolean tryParseExact(char expected, TokenType type) {
 		if (stream.peek() == expected) {
-			addToken("" + expected, type);
 			stream.next();
+			addToken("" + expected, type);
 			return true;
 		}
 		return false;
 	}
 
 	private void addToken(String word, TokenType type) {
+		// System.out.println("addToken " + word + " " + type + " " + stream.getLineCounter() + " " + stream.getCharCounter());
 		tokens.add(new Token(type, word, aiFile, stream.getLineCounter(), stream.getCharCounter()));
 	}
 
@@ -271,17 +276,16 @@ public class LexicalParser {
 		return word.equals(expected);
 	}
 
-	private record CharStreamRestorePoint(int index, int lineCounter, int charCounter) {
-	}
-
 	private class CharStream {
 		private int lineCounter = 1;
-		private int charCounter = 1;
+		private int charCounter = 0;
 		private int index = 0;
 		private String content;
+		private char c;
 
 		public CharStream(String content) {
 			this.content = content;
+			this.c = content.charAt(0);
 		}
 
 		public int getLineCounter() {
@@ -299,40 +303,31 @@ public class LexicalParser {
 		public char next() {
 			if (index >= content.length()) return 0;
 
-			if (peek() == '\n') {
+			if (c == '\n') {
 				lineCounter++;
-				charCounter = 1;
+				charCounter = 0;
 			} else {
 				charCounter++;
 			}
 
 			index++;
-
-			return peek();
+			if (index < content.length()) {
+				c = content.charAt(index);
+			}
+			return c;
 		}
 
 		public char peek(int offset) {
-			if (index + offset >= content.length() || index + offset < 0) return 0;
+			if (index + offset >= content.length()) return 0;
 			return content.charAt(index + offset);
 		}
 
 		public char peek() {
-			return peek(0);
+			return c;
 		}
 
-		public CharStreamRestorePoint getRestorePoint() {
-			return new CharStreamRestorePoint(index, lineCounter, charCounter);
-		}
-
-		public void restore(CharStreamRestorePoint restorePoint) {
-			index = restorePoint.index;
-			lineCounter = restorePoint.lineCounter;
-			charCounter = restorePoint.charCounter;
-		}
-
-		public String getSubStringSince(CharStreamRestorePoint restorePoint) {
-			return content.substring(restorePoint.index, index);
+		public String getSubStringSince(int start) {
+			return content.substring(start, index);
 		}
 	}
-
 }

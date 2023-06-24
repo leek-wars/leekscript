@@ -22,8 +22,11 @@ public class IACompiler {
 		public Throwable tooMuchErrors;
 	}
 
+	public static final long TIMEOUT_MS = 30 * 1000; // 30 seconds
+
 	private final JSONArray informations = new JSONArray();
 	private AIFile mCurrentAI;
+	private long analyzeStart;
 
 	public IACompiler() {}
 
@@ -43,6 +46,7 @@ public class IACompiler {
 
 	public AnalyzeResult analyze(AIFile ai) throws LeekCompilerException {
 		AnalyzeResult result = new AnalyzeResult();
+		this.analyzeStart = System.currentTimeMillis(); // For timeout
 		try {
 			ai.clearErrors();
 			// On lance la compilation du code de l'IA
@@ -80,6 +84,7 @@ public class IACompiler {
 	}
 
 	public AICode compile(AIFile ai, String AIClass, boolean enableOperations) throws LeekCompilerException {
+		this.analyzeStart = System.currentTimeMillis(); // For timeout
 		JavaWriter writer = new JavaWriter(true, ai.getJavaClass(), enableOperations);
 		try {
 			ai.clearErrors();
@@ -111,6 +116,7 @@ public class IACompiler {
 
 	public String merge(AIFile ai) throws LeekCompilerException {
 		// System.out.println("Merge ai " + ai);
+		this.analyzeStart = System.currentTimeMillis(); // For timeout
 		WordCompiler compiler = new WordCompiler(ai, ai.getVersion());
 		MainLeekBlock main = new MainLeekBlock(this, compiler, ai);
 		main.setWordCompiler(compiler);
@@ -126,5 +132,9 @@ public class IACompiler {
 
 	public void setCurrentAI(AIFile ai) {
 		mCurrentAI = ai;
+	}
+
+	public long getAnalyzeStart() {
+		return analyzeStart;
 	}
 }

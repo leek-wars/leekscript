@@ -271,7 +271,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileL(MainLeekBlock mainblock, JavaWriter writer) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 		writer.addCode("getBox(");
 		mTabular.writeJavaCode(mainblock, writer);
 		writer.addCode(", ");
@@ -281,7 +281,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		if (expr.getType() != Type.ANY && mainblock.isStrict()) {
 			if (expr.getType().isPrimitive()) {
@@ -324,7 +324,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		if (expr.getType() != Type.ANY) {
 			writer.addCode("(" + expr.getType().getJavaName(mainblock.getVersion()) + ") ");
@@ -366,7 +366,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_inc(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -378,7 +378,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_pre_inc(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -389,7 +389,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_dec(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -400,7 +400,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_pre_dec(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -411,7 +411,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_add_eq(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -424,7 +424,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_sub_eq(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -437,7 +437,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type type) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_mul_eq(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -450,7 +450,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_mod_eq(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -463,7 +463,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_div_eq(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -476,7 +476,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_intdiv_eq(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -489,7 +489,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_pow_eq(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -502,7 +502,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_bor_eq(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -515,7 +515,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_band_eq(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -528,7 +528,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_bxor_eq(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -541,7 +541,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_shl_eq(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -554,7 +554,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_shr_eq(");
 		mTabular.writeJavaCode(mainblock, writer);
@@ -567,7 +567,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		assert(mLeftValue && !mTabular.nullable());
+		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_ushr_eq(");
 		mTabular.writeJavaCode(mainblock, writer);

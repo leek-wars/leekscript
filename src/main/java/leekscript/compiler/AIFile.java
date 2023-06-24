@@ -53,6 +53,7 @@ public class AIFile {
 	}
 	public void setCode(String code) {
 		this.code = code;
+		this.tokens = null;
 	}
 	public Folder getFolder() {
 		return folder;

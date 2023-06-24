@@ -731,5 +731,10 @@ public class TestArray extends TestCommon {
 		code_v4_("var a = [1, 1, 1, 2, 2, 2] return arrayUnique(a)").equals("[1, 2]");
 		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arrayUnique(a)").equals("[1, 2, 3, 4, 5, 6]");
 		code_v4_("var a = [1, 2, 3, 4, 3, 2, 1] return arrayUnique(a)").equals("[1, 2, 3, 4]");
+
+		section("Array types");
+		code_v4_("Array<integer> array = [1, 2, 3] return array").equals("[1, 2, 3]");
+		code_v4_("Array<Array<integer>> array = [[1], [2], [3]] return array").equals("[[1], [2], [3]]");
+		code_v4_("Array<Array<Array<integer>>> array = [[[1]], [[2]], [[3]]] return array").equals("[[[1]], [[2]], [[3]]]");
 	}
 }

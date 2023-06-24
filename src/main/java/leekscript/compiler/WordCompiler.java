@@ -68,8 +68,11 @@ public class WordCompiler {
 			var parser = new LexicalParser(mAI, version);
 			mAI.setTokenStream(parser.parse(error -> addError(error)));
 		}
-
 		mTokens = mAI.getTokenStream();
+	}
+
+	public boolean isInterrupted() {
+		return System.currentTimeMillis() - mMain.getCompiler().getAnalyzeStart() > IACompiler.TIMEOUT_MS;
 	}
 
 	public void readCode() throws LeekCompilerException {
@@ -88,8 +91,11 @@ public class WordCompiler {
 	public void firstPass() throws LeekCompilerException {
 		try {
 			parse();
+			mTokens.reset();
 
 			while (mTokens.hasMoreTokens()) {
+
+				if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 
 				if (mTokens.get().getWord().equals("include")) {
 					var token = mTokens.eat();
@@ -152,6 +158,9 @@ public class WordCompiler {
 					int param_count = 0;
 					var parameters = new HashSet<String>();
 					while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.PAR_RIGHT) {
+
+						if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
 						if (mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("@")) {
 							mTokens.skip();
 						}
@@ -204,10 +213,14 @@ public class WordCompiler {
 	}
 
 	public void secondPass() throws LeekCompilerException {
+		mTokens = this.mAI.getTokenStream();
+		assert mTokens != null : "tokens are null";
 		mTokens.reset();
 		try {
 			// Vraie compilation
 			while (mTokens.hasMoreTokens()) {
+
+				if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 
 				// On vérifie les instructions en cours
 				if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
@@ -222,6 +235,9 @@ public class WordCompiler {
 				compileWord();
 			}
 			while (mCurentBlock.getParent() != null && !mCurentBlock.hasAccolade()) {
+
+				if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
 				if (mCurentBlock instanceof DoWhileBlock) {
 					DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
 					mCurentBlock = mCurentBlock.endInstruction();
@@ -420,6 +436,8 @@ public class WordCompiler {
 		setCurrentFunction(block);
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.PAR_RIGHT) {
 
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
 			var type = eatType(false, false);
 
 			boolean is_reference = false;
@@ -468,7 +486,9 @@ public class WordCompiler {
 		}
 
 		// On regarde s'il y a des accolades
-		if (mTokens.eat().getType() != TokenType.ACCOLADE_LEFT) throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+		if (mTokens.eat().getType() != TokenType.ACCOLADE_LEFT) {
+			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+		}
 		mMain.addFunction(block);
 		setCurrentFunction(previousFunction);
 	}
@@ -479,6 +499,9 @@ public class WordCompiler {
 		if (type == null) return null;
 
 		while (mTokens.get().getWord().equals("|")) {
+
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
 			var pipe = mTokens.eat();
 
 			var type2 = eatOptionalType(false, true);
@@ -573,6 +596,9 @@ public class WordCompiler {
 				if (value != null) function.add_argument(value.getType(), false);
 
 				while (mTokens.get().getWord().equals(",")) {
+
+					if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
 					mTokens.eat().setExpression(functionType);
 
 					var parameter = eatType(false, true);
@@ -711,18 +737,18 @@ public class WordCompiler {
 			// On récupère la valeur de base du compteur
 			var initValue = readExpression();
 			if (mTokens.eat().getType() != TokenType.END_INSTRUCTION) {
-				// errors.add(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.ERROR, Error.END_OF_INSTRUCTION_EXPECTED));
+				// errors.add(new AnalyzeError(mTokens.getWord(), AnalyzeErrorLevel.ERROR, Error.END_OF_INSTRUCTION_EXPECTED));
 				throw new LeekCompilerException(mTokens.get(), Error.END_OF_INSTRUCTION_EXPECTED);
 				// return;
 			}
 			var condition = readExpression();
 			if (mTokens.eat().getType() != TokenType.END_INSTRUCTION) {
-				// errors.add(new AnalyzeError(mCompiler.getWord(), AnalyzeErrorLevel.ERROR, Error.END_OF_INSTRUCTION_EXPECTED));
+				// errors.add(new AnalyzeError(mTokens.getWord(), AnalyzeErrorLevel.ERROR, Error.END_OF_INSTRUCTION_EXPECTED));
 				throw new LeekCompilerException(mTokens.get(), Error.END_OF_INSTRUCTION_EXPECTED);
 				// return;
 			}
-			// if (mCompiler.getWord().getType() == TokenType.END_INSTRUCTION) {
-			// 	mCompiler.skipWord();
+			// if (mTokens.getWord().getType() == TokenType.END_INSTRUCTION) {
+			// 	mTokens.skipWord();
 			// }
 			var incrementation = readExpression();
 
@@ -791,8 +817,8 @@ public class WordCompiler {
 		if (mTokens.eat().getType() != TokenType.PAR_RIGHT) {
 			throw new LeekCompilerException(mTokens.get(), Error.CLOSING_PARENTHESIS_EXPECTED);
 		}
-		// if (mCompiler.getWord().getType() != TokenType.END_INSTRUCTION)
-		// 	throw new LeekCompilerException(mCompiler.lastWord(), Error.END_OF_INSTRUCTION_EXPECTED);
+		// if (mTokens.getWord().getType() != TokenType.END_INSTRUCTION)
+		// 	throw new LeekCompilerException(mTokens.lastWord(), Error.END_OF_INSTRUCTION_EXPECTED);
 	}
 
 	private void elseBlock() throws LeekCompilerException {
@@ -870,6 +896,9 @@ public class WordCompiler {
 		mMain.addGlobalDeclaration(variable);
 		mCurentBlock.addInstruction(this, variable);
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VIRG) {
+
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
 			// On regarde si y'en a d'autres
 			mTokens.skip();// On passe la virgule
 			word = mTokens.eat();
@@ -885,7 +914,7 @@ public class WordCompiler {
 			mMain.addGlobalDeclaration(variable);
 			mCurentBlock.addInstruction(this, variable);
 		}
-		// word = mCompiler.readWord();
+		// word = mTokens.readWord();
 		// if (word.getType() != TokenType.END_INSTRUCTION)
 		// throw new LeekCompilerException(word, Error.END_OF_INSTRUCTION_EXPECTED);
 		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) mTokens.skip();
@@ -917,6 +946,9 @@ public class WordCompiler {
 		mCurentBlock.addInstruction(this, variable);
 
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VIRG) {
+
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
 			// On regarde si y'en a d'autres
 			mTokens.skip();// On passe la virgule
 			word = mTokens.eat();
@@ -948,7 +980,8 @@ public class WordCompiler {
 		if (isKeyword(word)) {
 			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() }));
 		}
-		ClassDeclarationInstruction classDeclaration = mMain.getUserClass(word.getWord());
+		ClassDeclarationInstruction classDeclaration = mMain.getDefinedClass(word.getWord());
+		assert classDeclaration != null : "Class " + word.getWord() + " not declared (" + mMain.getDefinedClasses().size() + " classes)";
 		mMain.addClassList(classDeclaration);
 		mCurrentClass = classDeclaration;
 
@@ -958,11 +991,12 @@ public class WordCompiler {
 			classDeclaration.setParent(parent);
 		}
 		if (mTokens.get().getType() != TokenType.ACCOLADE_LEFT) {
-			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+ 			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
 		}
 		mTokens.skip();
 
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			word = mTokens.get();
 			switch (word.getWord()) {
 				case "public":
@@ -1071,6 +1105,8 @@ public class WordCompiler {
 		}
 
 		if (isStatic) {
+			// System.out.println(classDeclaration);
+			assert classDeclaration != null;
 			classDeclaration.addStaticField(this, name, expr, accessLevel, isFinal, typeExpression != null ? typeExpression.getType() : Type.ANY);
 		} else {
 			classDeclaration.addField(this, name, expr, accessLevel, isFinal, typeExpression != null ? typeExpression.getType() : Type.ANY);
@@ -1094,6 +1130,7 @@ public class WordCompiler {
 		}
 		int param_count = 0;
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.PAR_RIGHT) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			if (mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("@")) {
 				addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.WARNING, Error.REFERENCE_DEPRECATED));
 				mTokens.skip();
@@ -1134,10 +1171,13 @@ public class WordCompiler {
 		mCurentBlock = method;
 
 		// Ouverture des accolades
-		if (mTokens.eat().getType() != TokenType.ACCOLADE_LEFT) throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+		if (mTokens.eat().getType() != TokenType.ACCOLADE_LEFT) {
+			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+		}
 
 		// Lecture du corps de la fonction
 		while (mTokens.hasMoreTokens()) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			// Fermeture des blocs ouverts
 			if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
 				DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
@@ -1199,6 +1239,7 @@ public class WordCompiler {
 
 			boolean first = true;
 			while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.PAR_RIGHT && mTokens.get().getType() != TokenType.ARROW) {
+				if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 
 				if (mTokens.get().getType() != TokenType.STRING) {
 					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.PARAMETER_NAME_EXPECTED));
@@ -1235,7 +1276,7 @@ public class WordCompiler {
 			pos = mTokens.getPosition();
 			var returnType = eatType(false, false);
 			if (returnType != null) {
-				if (mTokens.get().getWord() == ".") {
+				if (mTokens.get().getWord().equals(".")) {
 					mTokens.setPosition(pos); // On prend pas le type si "Type.[...]"
 				} else {
 					block.setReturnType(returnType.getType());
@@ -1249,6 +1290,7 @@ public class WordCompiler {
 
 				// Lecture du corps de la fonction
 				while (mTokens.hasMoreTokens()) {
+					if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 					// Fermeture des blocs ouverts
 					if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
 						DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
@@ -1288,6 +1330,7 @@ public class WordCompiler {
 		}
 
 		while (mTokens.hasMoreTokens()) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			Token word = mTokens.get();
 			if (word.getType() == TokenType.PAR_RIGHT || word.getType() == TokenType.ACCOLADE_RIGHT || word.getType() == TokenType.END_INSTRUCTION) {
 				break;
@@ -1354,6 +1397,7 @@ public class WordCompiler {
 					mTokens.skip(); // On avance le curseur pour être au début de l'expression
 
 					while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.PAR_RIGHT) {
+						if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 						function.addParameter(readExpression(true));
 						if (mTokens.get().getType() == TokenType.VIRG) mTokens.skip();
 					}
@@ -1477,6 +1521,7 @@ public class WordCompiler {
 
 						int type = 0;// 0 => A déterminer, 1 => Simple, 2 => Clé:valeur
 						while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
+							if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 							var exp = readExpression(true);
 							if (mTokens.get().getWord().equals(":")) {
 								if (type == 0) type = 2;
@@ -1506,6 +1551,7 @@ public class WordCompiler {
 					var object = new LeekObject(token);
 
 					while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+						if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 						if (mTokens.get().getType() != TokenType.STRING) {
 							addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS));
 						}
@@ -1639,6 +1685,7 @@ public class WordCompiler {
 
 		// Lecture des paramètres
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.PAR_RIGHT) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			boolean is_reference = false;
 			if (mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("@")) {
 				is_reference = true;
@@ -1686,10 +1733,13 @@ public class WordCompiler {
 		}
 
 		// Ouverture des accolades
-		if (mTokens.eat().getType() != TokenType.ACCOLADE_LEFT) throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+		if (mTokens.eat().getType() != TokenType.ACCOLADE_LEFT) {
+			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+		}
 
 		// Lecture du corp de la fonction
 		while (mTokens.hasMoreTokens()) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 
 			// Fermeture des blocs ouverts
 			if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {

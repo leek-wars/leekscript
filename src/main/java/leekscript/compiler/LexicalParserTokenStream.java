@@ -130,6 +130,5 @@ public class LexicalParserTokenStream {
 		cursor = position.cursor;
 	}
 
-	public record LexicalParserTokenStreamPosition(int cursor) {
-	}
+	public record LexicalParserTokenStreamPosition(int cursor) {}
 }

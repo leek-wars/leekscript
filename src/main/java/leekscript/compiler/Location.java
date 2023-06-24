@@ -86,4 +86,9 @@ public class Location {
 		a.add(this.endColumn);
 		return a;
 	}
+
+	@Override
+	public String toString() {
+		return file + " [" + this.startLine + ", " + this.startColumn + ", " + this.endLine + ", " + this.endColumn + "]";
+	}
 }
