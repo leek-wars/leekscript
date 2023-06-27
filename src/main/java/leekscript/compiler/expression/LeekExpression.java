@@ -894,6 +894,8 @@ public class LeekExpression extends Expression {
 	@Override
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 
+		compiler.checkInterrupted();
+
 		if (mExpression1 != null) mExpression1.preAnalyze(compiler);
 		if (mExpression2 != null) mExpression2.preAnalyze(compiler);
 
@@ -915,6 +917,8 @@ public class LeekExpression extends Expression {
 
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
+
+		compiler.checkInterrupted();
 
 		// Opérateur @ déprécié en LS 2+
 		if (mOperator == Operators.REFERENCE && compiler.getVersion() >= 2) {

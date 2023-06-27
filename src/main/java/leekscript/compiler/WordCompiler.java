@@ -75,6 +75,10 @@ public class WordCompiler {
 		return System.currentTimeMillis() - mMain.getCompiler().getAnalyzeStart() > IACompiler.TIMEOUT_MS;
 	}
 
+	public void checkInterrupted() throws LeekCompilerException {
+		if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+	}
+
 	public void readCode() throws LeekCompilerException {
 
 		firstPass();
@@ -396,6 +400,9 @@ public class WordCompiler {
 	}
 
 	private void includeBlock(Token token) throws LeekCompilerException {
+
+		if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
 		// On vérifie qu'on est dans le bloc principal
 		if (!mCurentBlock.equals(mMain)) throw new LeekCompilerException(mTokens.get(), Error.INCLUDE_ONLY_IN_MAIN_BLOCK);
 		// On récupere l'ia

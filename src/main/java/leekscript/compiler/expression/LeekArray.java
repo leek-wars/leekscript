@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import leekscript.common.Type;
 import leekscript.compiler.AnalyzeError;
@@ -109,8 +110,8 @@ public class LeekArray extends Expression {
 				operations += 2 + key.getOperations() + value.getOperations();
 				keyType = Type.compound(keyType, key.getType());
 				elementType = Type.compound(elementType, value.getType());
-			}			if (compiler.getVersion() >= 4) {
-
+			}
+			if (compiler.getVersion() >= 4) {
 				this.type = Type.map(keyType, elementType);
 			} else {
 				this.type = Type.LEGACY_ARRAY;
