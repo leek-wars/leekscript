@@ -117,12 +117,13 @@ public class LeekArray extends Expression {
 				this.type = Type.LEGACY_ARRAY;
 			}
 		} else {
-			Type elementType = Type.VOID;
+			var types = new HashSet<Type>();
 			for (var value : mValues) {
 				value.analyze(compiler);
 				operations += 2 + value.getOperations();
-				elementType = Type.compound(elementType, value.getType());
+				types.add(value.getType());
 			}
+			var elementType = types.size() == 0 ? Type.VOID : Type.compound(types);
 			if (compiler.getVersion() >= 4) {
 				this.type = Type.array(elementType);
 			} else {

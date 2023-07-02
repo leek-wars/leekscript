@@ -15,11 +15,11 @@ import leekscript.compiler.instruction.ClassDeclarationInstruction;
 
 public class Type {
 
-	public static final Map<HashSet<Type>, Type> compoundTypes = new HashMap<>();
-	public static final Map<Type, Type> arrayTypes = new HashMap<>();
-	public static final Map<Map.Entry<Type, Type>, Type> mapTypes = new HashMap<>();
-	public static final Map<Map.Entry<FunctionType, Type>, FunctionType> addArgumentTypes = new HashMap<>();
-	public static final Map<Map.Entry<Type, Type[]>, Type> functionTypes = new HashMap<>();
+	// public static final Map<HashSet<Type>, Type> compoundTypes = new HashMap<>();
+	// public static final Map<Type, Type> arrayTypes = new HashMap<>();
+	// public static final Map<Map.Entry<Type, Type>, Type> mapTypes = new HashMap<>();
+	// public static final Map<Map.Entry<FunctionType, Type>, FunctionType> addArgumentTypes = new HashMap<>();
+	// public static final Map<Map.Entry<Type, Type[]>, Type> functionTypes = new HashMap<>();
 
 	public static final Type ERROR = new ErrorType();
 	public static final Type WARNING = new WarningType();
@@ -172,6 +172,7 @@ public class Type {
 	}
 
 	public static Type compound(HashSet<Type> types) {
+		if (types.size() == 0) return Type.VOID;
 		var all = new HashSet<Type>();
 		for (var t : types) {
 			if (t instanceof CompoundType) {
@@ -181,10 +182,10 @@ public class Type {
 			}
 		}
 		if (all.size() == 1) return all.iterator().next();
-		var cached = compoundTypes.get(all);
-		if (cached != null) return cached;
+		// var cached = compoundTypes.get(all);
+		// if (cached != null) return cached;
 		var type = new CompoundType(all);
-		compoundTypes.put(all, type);
+		// compoundTypes.put(all, type);
 		return type;
 	}
 
@@ -220,19 +221,19 @@ public class Type {
 	}
 
 	public static Type array(Type type) {
-		var cached = arrayTypes.get(type);
-		if (cached != null) return cached;
+		// var cached = arrayTypes.get(type);
+		// if (cached != null) return cached;
 		var array = new ArrayType(type);
-		arrayTypes.put(type, array);
+		// arrayTypes.put(type, array);
 		return array;
 	}
 
 	public static Type map(Type key, Type value) {
-		var entry = new AbstractMap.SimpleEntry<Type, Type>(key, value);
-		var cached = mapTypes.get(entry);
-		if (cached != null) return cached;
+		// var entry = new AbstractMap.SimpleEntry<Type, Type>(key, value);
+		// var cached = mapTypes.get(entry);
+		// if (cached != null) return cached;
 		var map = new MapType(key, value);
-		mapTypes.put(entry, map);
+		// mapTypes.put(entry, map);
 		return map;
 	}
 
@@ -312,22 +313,22 @@ public class Type {
 	}
 
 	public static FunctionType add_argument(FunctionType current, Type argument) {
-		var entry = new AbstractMap.SimpleEntry<FunctionType, Type>(current, argument);
-		var cached = addArgumentTypes.get(entry);
-		if (cached != null) return cached;
+		// var entry = new AbstractMap.SimpleEntry<FunctionType, Type>(current, argument);
+		// var cached = addArgumentTypes.get(entry);
+		// if (cached != null) return cached;
 		var newArguments = new ArrayList<Type>(current.getArguments());
 		newArguments.add(argument);
 		var type = new FunctionType(current.getReturnType(), newArguments);
-		addArgumentTypes.put(entry, type);
+		// addArgumentTypes.put(entry, type);
 		return type;
 	}
 
 	public static Type function(Type return_type, Type[] arguments) {
-		var entry = new AbstractMap.SimpleEntry<Type, Type[]>(return_type, arguments);
-		var cached = functionTypes.get(entry);
-		if (cached != null) return cached;
+		// var entry = new AbstractMap.SimpleEntry<Type, Type[]>(return_type, arguments);
+		// var cached = functionTypes.get(entry);
+		// if (cached != null) return cached;
 		var type = new FunctionType(return_type, arguments);
-		functionTypes.put(entry, type);
+		// functionTypes.put(entry, type);
 		return type;
 	}
 
@@ -482,10 +483,6 @@ public class Type {
 		while (!a.isAssignableFrom(b))
 			a = a.getSuperclass();
 		return a;
-	}
-
-	public boolean equals(Type type) {
-		return this == type;
 	}
 
 	public Complete complete() {

@@ -147,13 +147,6 @@ public class FunctionType extends Type {
 		this.updateName();
 	}
 
-	public boolean equals(Type type) {
-		if (type instanceof FunctionType ft) {
-			return return_type.equals(ft.return_type) && arguments.equals(ft.arguments);
-		}
-		return false;
-	}
-
 	@Override
 	public String getCode() {
 		String r = "Function<";
