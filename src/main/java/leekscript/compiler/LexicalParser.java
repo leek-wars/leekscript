@@ -245,6 +245,7 @@ public class LexicalParser {
 			var streamWord = stream.content.substring(stream.index, stream.index + expected.length());
 			if (wordEquals(streamWord, expected)) {
 				stream.index += expected.length();
+				stream.charCounter += expected.length();
 				if (stream.index < stream.content.length()) {
 					stream.c = stream.content.charAt(stream.index);
 				}
@@ -285,7 +286,7 @@ public class LexicalParser {
 
 		public CharStream(String content) {
 			this.content = content;
-			this.c = content.charAt(0);
+			this.c = content.length() > 0 ? content.charAt(0) : 0;
 		}
 
 		public int getLineCounter() {
