@@ -464,7 +464,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					var parentMethod = current.methods.get(method.getKey());
 					if (parentMethod != null) {
 						var parentVersion = parentMethod.get(version.getKey());
-						if (parentVersion != null && !version.getValue().block.getType().equals(parentVersion.block.getType())) {
+						if (parentVersion != null && version.getValue().block.getType().accepts(parentVersion.block.getType()) != CastType.EQUALS) {
 							compiler.addError(new AnalyzeError(version.getValue().block.getLocation(), AnalyzeErrorLevel.ERROR, Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE, new String[] {
 								version.getValue().block.getType().toString(),
 								parentVersion.block.getType().toString()
