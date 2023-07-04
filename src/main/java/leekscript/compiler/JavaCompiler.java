@@ -44,7 +44,6 @@ public class JavaCompiler {
 	static {
 		classpath = new File(LeekScript.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getPath();
 		classpath += ":/home/pierre/dev/leek-wars/generator/bin/main";
-		classpath += ":/home/pierre/dev/leek-wars/generator/leek-wars-env/bin/main";
 		arguments.addAll(Arrays.asList("-classpath", classpath, "-nowarn"));
 		try {
 			urlLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, new ClassLoader() {});

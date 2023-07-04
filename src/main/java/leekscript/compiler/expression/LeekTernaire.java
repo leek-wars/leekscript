@@ -272,7 +272,11 @@ public class LeekTernaire extends LeekExpression {
 		}
 
 		if (mExpression1 != null && mExpression2 != null) {
-			type = Type.compound(mExpression1.getType(), mExpression2.getType());
+			var type1 = mExpression1.getType();
+			var type2 = mExpression2.getType();
+			if (type1 == Type.VOID) type1 = Type.NULL;
+			if (type2 == Type.VOID) type2 = Type.NULL;
+			type = Type.compound(type1, type2);
 		}
 	}
 
