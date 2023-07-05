@@ -1594,9 +1594,10 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			var v = add(f.get(object), 1l);
+			var previous = f.get(object);
+			var v = add(previous, 1l);
 			f.set(object, v);
-			return v;
+			return previous;
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -1647,9 +1648,10 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			var v = sub(f.get(object), 1l);
+			var previous = f.get(object);
+			var v = sub(previous, 1l);
 			f.set(object, v);
-			return v;
+			return previous;
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}

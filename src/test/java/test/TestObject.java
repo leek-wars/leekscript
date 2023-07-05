@@ -573,6 +573,46 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { f = 155 m() { return (=> f >>= 2)() } } return new A().m()").equals("38");
 		code_v2_("class A { f = 155 m() { return (=> f >>>= 2)() } } return new A().m()").equals("38");
 
+		section("Types : field operators (field op y)");
+		code_v2_("class A { integer x = 10 m() { return x++ } } return new A().m()").equals("10");
+		code_v2_("class A { integer x = 10 m() { return ++x } } return new A().m()").equals("11");
+		code_v2_("class A { integer x = 10 m() { return x-- } } return new A().m()").equals("10");
+		code_v2_("class A { integer x = 10 m() { return --x } } return new A().m()").equals("9");
+		code_v2_("class A { integer x = 10 m(y) { x = y return this } } return new A().m(50)").equals("A {x: 50}");
+		code_v2_("class A { integer x = 10 m(y) { x += y return this } } return new A().m(50)").equals("A {x: 60}");
+		code_v2_("class A { integer x = 10 m(y) { x -= y return this } } return new A().m(50)").equals("A {x: -40}");
+		code_v2_("class A { integer x = 10 m(y) { x *= y return this } } return new A().m(50)").equals("A {x: 500}");
+		code_v2_("class A { real x = 10 m(y) { x /= y return this } } return new A().m(4)").equals("A {x: 2.5}");
+		code_v2_("class A { integer x = 10 m(y) { x \\= y return this } } return new A().m(3)").equals("A {x: 3}");
+		code_v2_("class A { integer x = 10 m(y) { x %= y return this } } return new A().m(4)").equals("A {x: 2}");
+		code_v2_("class A { integer x = 10 m(y) { x **= y return this } } return new A().m(3)").equals("A {x: 1000}");
+		code_v2_("class A { integer x = 155 m(y) { x &= y return this } } return new A().m(2)").equals("A {x: 2}");
+		code_v2_("class A { integer x = 155 m(y) { x |= y return this } } return new A().m(2)").equals("A {x: 155}");
+		code_v2_("class A { integer x = 155 m(y) { x ^= y return this } } return new A().m(2)").equals("A {x: 153}");
+		code_v2_("class A { integer x = 155 m(y) { x <<= y return this } } return new A().m(2)").equals("A {x: 620}");
+		code_v2_("class A { integer x = 155 m(y) { x >>= y return this } } return new A().m(2)").equals("A {x: 38}");
+		code_v2_("class A { integer x = 155 m(y) { x >>>= y return this } } return new A().m(2)").equals("A {x: 38}");
+
+		section("Types : field operators (this.field op y)");
+		code_v2_("class A { integer x = 10 m() { return this.x++ } } return new A().m()").equals("10");
+		code_v2_("class A { integer x = 10 m() { return ++this.x } } return new A().m()").equals("11");
+		code_v2_("class A { integer x = 10 m() { return this.x-- } } return new A().m()").equals("10");
+		code_v2_("class A { integer x = 10 m() { return --this.x } } return new A().m()").equals("9");
+		code_v2_("class A { integer x = 10 m(y) { this.x = y return this } } return new A().m(50)").equals("A {x: 50}");
+		code_v2_("class A { integer x = 10 m(y) { this.x += y return this } } return new A().m(50)").equals("A {x: 60}");
+		code_v2_("class A { integer x = 10 m(y) { this.x -= y return this } } return new A().m(50)").equals("A {x: -40}");
+		code_v2_("class A { integer x = 10 m(y) { this.x *= y return this } } return new A().m(50)").equals("A {x: 500}");
+		code_v2_("class A { real x = 10 m(y) { this.x /= y return this } } return new A().m(4)").equals("A {x: 2.5}");
+		code_v2_("class A { integer x = 10 m(y) { this.x \\= y return this } } return new A().m(3)").equals("A {x: 3}");
+		code_v2_("class A { integer x = 10 m(y) { this.x %= y return this } } return new A().m(4)").equals("A {x: 2}");
+		code_v2_("class A { integer x = 10 m(y) { this.x **= y return this } } return new A().m(3)").equals("A {x: 1000}");
+		code_v2_("class A { integer x = 155 m(y) { this.x &= y return this } } return new A().m(2)").equals("A {x: 2}");
+		code_v2_("class A { integer x = 155 m(y) { this.x |= y return this } } return new A().m(2)").equals("A {x: 155}");
+		code_v2_("class A { integer x = 155 m(y) { this.x ^= y return this } } return new A().m(2)").equals("A {x: 153}");
+		code_v2_("class A { integer x = 155 m(y) { this.x <<= y return this } } return new A().m(2)").equals("A {x: 620}");
+		code_v2_("class A { integer x = 155 m(y) { this.x >>= y return this } } return new A().m(2)").equals("A {x: 38}");
+		code_v2_("class A { integer x = 155 m(y) { this.x >>>= y return this } } return new A().m(2)").equals("A {x: 38}");
+
 		section("Base classes");
 		code_v3_("return Value").equals("<class Value>");
 		code_v3_("return Null").equals("<class Null>");

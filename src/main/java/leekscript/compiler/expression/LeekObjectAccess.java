@@ -283,6 +283,9 @@ public class LeekObjectAccess extends Expression {
 	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer) {
 		// assert (object.isLeftValue() && !object.nullable());
 
+		if (this.type != Type.ANY) {
+			writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+		}
 		writer.addCode("field_pre_inc(");
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -292,6 +295,9 @@ public class LeekObjectAccess extends Expression {
 	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer) {
 		// assert (object.isLeftValue() && !object.nullable());
 
+		if (this.type != Type.ANY) {
+			writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+		}
 		writer.addCode("field_dec(");
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -301,6 +307,9 @@ public class LeekObjectAccess extends Expression {
 	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer) {
 		// assert (object.isLeftValue() && !object.nullable());
 
+		if (this.type != Type.ANY) {
+			writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+		}
 		writer.addCode("field_pre_dec(");
 		object.writeJavaCode(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
