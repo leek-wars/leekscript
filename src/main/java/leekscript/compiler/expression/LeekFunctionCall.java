@@ -3,7 +3,6 @@ package leekscript.compiler.expression;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import leekscript.compiler.AnalyzeError;
@@ -672,6 +671,7 @@ public class LeekFunctionCall extends Expression {
 				} else if (cast_type != CastType.EQUALS) {
 					version_unsafe = true;
 				}
+				// System.out.println("cast " + f_type + " accepts " + a_type + " = " + cast_type);
 				if (cast_type == CastType.UPCAST) distance += 1;
 				else if (cast_type == CastType.SAFE_DOWNCAST) distance += 100;
 				else if (cast_type == CastType.UNSAFE_DOWNCAST) distance += 1000;

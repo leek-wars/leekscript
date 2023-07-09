@@ -41,8 +41,7 @@ public class BlankInstruction extends LeekInstruction {
 
 	@Override
 	public Type getType() {
-		// TODO Auto-generated method stub
-		return null;
+		return Type.ANY;
 	}
 
 	@Override

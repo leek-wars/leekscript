@@ -71,7 +71,7 @@ public class LeekScript {
 	// }
 
 	public static AI compileSnippet(String snippet, String AIClass, boolean enableOperations) throws LeekScriptException, LeekCompilerException, IOException {
-		return compileSnippet(snippet, AIClass, 2, false, enableOperations, false);
+		return compileSnippet(snippet, AIClass, LeekScript.LATEST_VERSION, false, enableOperations, false);
 	}
 
 	public static AI compileSnippet(String snippet, String AIClass, int version, boolean use_cache, boolean enableOperations, boolean strict) throws LeekScriptException, LeekCompilerException, IOException {

@@ -238,6 +238,29 @@ public class JavaWriter {
 				return;
 			}
 		}
+		// int?, real?
+		if (type instanceof CompoundType ct) {
+			if (ct.getTypes().size() == 2) {
+				if (ct.getTypes().stream().anyMatch(t -> t == Type.NULL)) {
+					for (var t : ct.getTypes()) {
+						if (t != Type.NULL) {
+							if (t == Type.REAL && value.getType() == Type.INT) { // int -> Double
+								addCode("((double) (");
+								value.writeJavaCode(mainblock, this);
+								addCode("))");
+								return;
+							}
+							if (t == Type.INT && value.getType() == Type.REAL) { // double -> Integer
+								addCode("((long) (");
+								value.writeJavaCode(mainblock, this);
+								addCode("))");
+								return;
+							}
+						}
+					}
+				}
+			}
+		}
 		if (type instanceof FunctionType ft1 && value.getType() instanceof FunctionType ft2) {
 			addCode("((" + type.getJavaPrimitiveName(mainblock.getVersion()) + ")");
 			addCode(" (Object) (");

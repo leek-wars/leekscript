@@ -78,21 +78,22 @@ public class Type {
 		if (type instanceof CompoundType) {
 			var best = CastType.INCOMPATIBLE;
 			var worst = CastType.EQUALS;
-			boolean ok = false;
-			boolean nok = false;
+			// boolean ok = false;
+			// boolean nok = false;
 			for (var t : ((CompoundType) type).getTypes()) {
 				var r = this.accepts(t);
 				if (r.ordinal() > worst.ordinal()) worst = r;
 				if (r.ordinal() < best.ordinal()) best = r;
-				if (r != CastType.INCOMPATIBLE) ok = true;
-				if (r != CastType.EQUALS) nok = true;
+				// if (r != CastType.INCOMPATIBLE) ok = true;
+				// if (r != CastType.EQUALS) nok = true;
 			}
-			if (best == CastType.INCOMPATIBLE && ok) return CastType.UNSAFE_DOWNCAST;
-			if (best == CastType.EQUALS && nok) return CastType.UPCAST;
+			// System.out.println("best = " + best + " worst = " + worst);
+			// if (best == CastType.INCOMPATIBLE && ok) return CastType.UNSAFE_DOWNCAST;
+			// if (best == CastType.EQUALS && nok) return CastType.UNSAFE_DOWNCAST;
 			// Si un est compatible, le tout est compatible
-			// if (worst == CastType.INCOMPATIBLE && best != CastType.INCOMPATIBLE) return CastType.UNSAFE_DOWNCAST;
+			if (worst == CastType.INCOMPATIBLE && best != CastType.INCOMPATIBLE) return CastType.UNSAFE_DOWNCAST;
 			// Sinon on prend le pire
-			return best;
+			return worst;
 		}
 
 		if (this == REAL) {

@@ -170,13 +170,13 @@ public class LeekArrayAccess extends Expression {
 			var cast = mTabular.getType().key().accepts(mCase.getType());
 			if (cast == CastType.INCOMPATIBLE) {
 				compiler.addError(new AnalyzeError(mCase.getLocation(), AnalyzeErrorLevel.WARNING, Error.INCOMPATIBLE_TYPE, new String[] {
+					mCase.getType().toString(),
 					mTabular.getType().key().toString(),
-					mCase.getType().toString()
 				}));
 			} else if (compiler.getMainBlock().isStrict() && cast.ordinal() >= CastType.UNSAFE_DOWNCAST.ordinal()) {
 				compiler.addError(new AnalyzeError(mCase.getLocation(), AnalyzeErrorLevel.WARNING, Error.DANGEROUS_CONVERSION, new String[] {
+					mCase.getType().toString(),
 					mTabular.getType().key().toString(),
-					mCase.getType().toString()
 				}));
 			}
 		}
