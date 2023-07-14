@@ -117,10 +117,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 				if (mValue instanceof LeekExpression && ((LeekExpression) mValue).getOperator() == Operators.REFERENCE) {
 					var e = ((LeekExpression) mValue).getExpression2();
 					if (e.isLeftValue()) {
-						// writer.addCode("Box u_" + token.getWord() + " = ");
-						// e.compileL(mainblock, writer);
 						writer.addCode("var u_" + token.getWord() + " = new Box<" + type.getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
-						// e.compileL(mainblock, writer);
 						e.writeJavaCode(mainblock, writer);
 						if (mValue.getOperations() > 0) {
 							writer.addCode(", " + mValue.getOperations());
@@ -143,7 +140,6 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 							writer.compileClone(mainblock, mValue);
 					 	} else {
 							mValue.compileL(mainblock, writer);
-							// mValue.writeJavaCode(mainblock, writer);
 						}
 						if (mValue.getOperations() > 0) {
 							writer.addCode(", " + mValue.getOperations());

@@ -489,7 +489,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		String className = "u_" + token.getWord();
 
 		// Declare the actuel class
-		var parentName = parent == null ? "NativeObjectLeekValue" : "u_" + parent.getName();
+		var parentName = parent == null ? "NativeObjectLeekValue" : parent.getJavaName(mainblock);
 		writer.addLine("public class " + className + " extends " + parentName + " {");
 
 		// Fields
@@ -514,6 +514,11 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 		// Constructeur par défaut
 		writer.addLine("public " + className + "() throws LeekRunException {");
+		if (parent != null && parent.internal) {
+			if (parent.internal) {
+				writer.addLine("super(" + writer.getAIThis() + ");");
+			}
+		}
 		writer.addLine("increaseRAM(" + (2 * fieldVariables.size()) + ");");
 		for (var field : fields.entrySet()) {
 			if (field.getValue().expression != null) {
@@ -528,7 +533,11 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		// Constructeur par copie
 		writer.addLine("public " + className + "(" + className + " o, int level) throws LeekRunException {");
 		if (parent != null) {
-			writer.addLine("super(o, level);");
+			if (parent.internal) {
+				writer.addLine("super(" + writer.getAIThis() + ", o, level);");
+			} else {
+				writer.addLine("super(o, level);");
+			}
 		}
 		for (var field : fields.entrySet()) {
 			writer.addLine("this." + field.getKey() + " = level == 1 ? o." + field.getKey() + " : (" + field.getValue().getType().getJavaPrimitiveName(mainblock.getVersion()) + ") copy(o." + field.getKey() + ", level - 1);");
@@ -555,7 +564,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			}
 			writer.addLine(") throws LeekRunException {");
 
-			if (parent != null) {
+			if (parent != null && !parent.internal) {
 				writer.addLine("super.init();");
 			}
 
@@ -784,6 +793,29 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		mainblock.getWordCompiler().setCurrentClass(null);
 	}
 
+	private String getJavaName(MainLeekBlock block) {
+		if (internal) {
+			if (block.getVersion() <= 3 && token.getWord().equals("Array")) {
+				return "LegacyArrayLeekValue";
+			}
+			switch (token.getWord()) {
+				case "Array": return "ArrayLeekValue";
+				case "Map": return "MapLeekValue";
+			}
+		}
+		return "u_" + token.getWord();
+	}
+
+	private String getClassName(MainLeekBlock block) {
+		if (internal) {
+			if (block.getVersion() <= 3 && token.getWord().equals("Array")) {
+				return "legacyArrayClass";
+			}
+			return token.getWord().toLowerCase() + "Class";
+		}
+		return "u_" + token.getWord();
+	}
+
 	public void createJava(MainLeekBlock mainblock, JavaWriter writer) {
 
 		mainblock.getWordCompiler().setCurrentClass(this);
@@ -792,7 +824,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		String className = "u_" + token.getWord();
 
 		if (parent != null) {
-			writer.addLine(className + ".setParent(u_" + parent.getName() + ");");
+			writer.addLine(className + ".setParent(" + parent.getClassName(mainblock) + ");");
 		}
 
 		writer.addCode(className + ".initFields = new FunctionLeekValue(0) {");
