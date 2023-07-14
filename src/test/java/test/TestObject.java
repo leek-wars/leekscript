@@ -688,11 +688,15 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { } A.methods = 'toto'").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_v3_("return Array.methods").equals("[]");
 		code_v3_("return Integer.methods").equals("[]");
+		code_v2_("class B { a() {} } class A extends B { b() {} } return arraySort(A.methods)").equals("[\"a\", \"b\"]");
+		code_v2_("class B { a() {} } class A extends B { b() {} b(x) {} } return arraySort(A.methods)").equals("[\"a\", \"b\", \"b\"]");
 
 		section("Class.staticMethods");
 		code_v2_("class A { static staticMethods }").error(Error.NONE);
 		code_v2_("class A { a() {} b() {} static c() {} static d() {} } return A.staticMethods").equals("[\"c\", \"d\"]");
 		code_v2_("class A { } A.staticMethods = 'toto'").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v2_("class B { static a() {} } class A extends B { static b() {} } return arraySort(A.staticMethods)").equals("[\"a\", \"b\"]");
+		code_v2_("class B { static a() {} } class A extends B { static b() {} static b(x) {} } return arraySort(A.methods)").equals("[\"a\", \"b\", \"b\"]");
 
 		section("Object.string()");
 		code_v2_("return string({x: 1, y: 2, z: 3})").equals("\"{x: 1, y: 2, z: 3}\"");

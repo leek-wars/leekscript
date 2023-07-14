@@ -2,6 +2,7 @@ package leekscript.runner.values;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -10,6 +11,7 @@ import leekscript.AILog;
 import leekscript.ErrorManager;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
+import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.Type;
@@ -85,10 +87,33 @@ public class ClassLeekValue extends FunctionLeekValue {
 		this.parent = parent;
 		this.type = new Type(name, "c", "ClassLeekValue", "ClassLeekValue", "new ClassLeekValue()");
 		this.clazz = clazz;
+
+		if (ai.getVersion() >= 4) {
+			this.methodsArray = new ArrayLeekValue(ai);
+			this.staticMethodsArray = new ArrayLeekValue(ai);
+		} else {
+			this.methodsArray = new LegacyArrayLeekValue(ai);
+			this.staticMethodsArray = new LegacyArrayLeekValue(ai);
+		}
 	}
 
-	public void setParent(ClassLeekValue parent) {
+	public void setParent(ClassLeekValue parent) throws LeekRunException {
 		this.parent = parent;
+		if (ai.getVersion() >= 4) {
+			for (var method : (ArrayLeekValue) parent.methodsArray) {
+				((ArrayLeekValue) this.methodsArray).add(method);
+			}
+			for (var method : (ArrayLeekValue) parent.staticMethodsArray) {
+				((ArrayLeekValue) this.staticMethodsArray).add(method);
+			}
+		} else {
+			for (var method : (LegacyArrayLeekValue) parent.methodsArray) {
+				((LegacyArrayLeekValue) this.methodsArray).push(ai, method.getValue());
+			}
+			for (var method : (LegacyArrayLeekValue) parent.staticMethodsArray) {
+				((LegacyArrayLeekValue) this.staticMethodsArray).push(ai, method.getValue());
+			}
+		}
 	}
 
 	public void addConstructor(int arg_count, FunctionLeekValue function, AccessLevel level) {
@@ -107,8 +132,13 @@ public class ClassLeekValue extends FunctionLeekValue {
 		staticFields.put(field, new ObjectVariableValue(ai, type, value, level, isFinal));
 	}
 
-	public void addMethod(String method, int argCount, FunctionLeekValue function, AccessLevel level) {
+	public void addMethod(String method, int argCount, FunctionLeekValue function, AccessLevel level) throws LeekRunException {
 		methods.put(method + "_" + argCount, new ClassMethod(function, level));
+		if (ai.getVersion() >= 4) {
+			((ArrayLeekValue) this.methodsArray).add(method);
+		} else {
+			((LegacyArrayLeekValue) this.methodsArray).push(ai, method);
+		}
 	}
 
 	public void addGenericMethod(String method) {
@@ -132,8 +162,13 @@ public class ClassLeekValue extends FunctionLeekValue {
 		});
 	}
 
-	public void addStaticMethod(String method, int argCount, FunctionLeekValue function, AccessLevel level) {
+	public void addStaticMethod(String method, int argCount, FunctionLeekValue function, AccessLevel level) throws LeekRunException {
 		staticMethods.put("u_" + method + "_" + argCount, new ClassStaticMethod(function, level));
+		if (ai.getVersion() >= 4) {
+			((ArrayLeekValue) this.staticMethodsArray).add(method);
+		} else {
+			((LegacyArrayLeekValue) this.staticMethodsArray).push(ai, method);
+		}
 	}
 
 	public void addGenericStaticMethod(String method) {
@@ -490,54 +525,10 @@ public class ClassLeekValue extends FunctionLeekValue {
 	}
 
 	private Object getMethodsArray() throws LeekRunException {
-		if (methodsArray == null) {
-			if (clazz == null) {
-				if (ai.getVersion() >= 4) {
-					methodsArray = new ArrayLeekValue(ai);
-				} else {
-					methodsArray = new LegacyArrayLeekValue(ai);
-				}
-			} else {
-				if (ai.getVersion() >= 4) {
-					var r = new ArrayLeekValue(ai, clazz.getDeclaredMethods().length - 1);
-					for (var m : clazz.getDeclaredMethods()) {
-						if (m.getName().equals("init")) continue;
-						// if (m.getDeclaringClass() != clazz) continue;
-						r.add(m.getName().substring(2));
-					}
-					methodsArray = r;
-				} else {
-					Object[] values = new Object[clazz.getDeclaredMethods().length - 1];
-					int i = 0;
-					for (var m : clazz.getDeclaredMethods()) {
-						if (m.getName().equals("init")) continue;
-						// if (m.getDeclaringClass() != clazz) continue;
-						values[i++] = m.getName().substring(2);
-					}
-					methodsArray = new LegacyArrayLeekValue(ai, values);
-				}
-			}
-		}
 		return methodsArray;
 	}
 
 	private Object getStaticMethodsArray() throws LeekRunException {
-		if (staticMethodsArray == null) {
-			if (ai.getVersion() >= 4) {
-				var r = new ArrayLeekValue(ai, genericStaticMethods.size());
-				for (var f : genericStaticMethods.entrySet()) {
-					r.add(f.getKey());
-				}
-				staticMethodsArray = r;
-			} else {
-				Object[] values = new Object[genericStaticMethods.size()];
-				int i = 0;
-				for (var f : genericStaticMethods.entrySet()) {
-					values[i++] = f.getKey();
-				}
-				staticMethodsArray = new LegacyArrayLeekValue(ai, values);
-			}
-		}
 		return staticMethodsArray;
 	}
 
