@@ -114,7 +114,7 @@ public class LeekArray extends Expression {
 			if (compiler.getVersion() >= 4) {
 				this.type = Type.map(keyType, elementType);
 			} else {
-				this.type = Type.LEGACY_ARRAY;
+				this.type = Type.ARRAY;
 			}
 		} else {
 			var types = new HashSet<Type>();
@@ -127,7 +127,7 @@ public class LeekArray extends Expression {
 			if (compiler.getVersion() >= 4) {
 				this.type = Type.array(elementType);
 			} else {
-				this.type = Type.LEGACY_ARRAY;
+				this.type = Type.ARRAY;
 			}
 		}
 	}

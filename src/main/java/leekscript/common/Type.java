@@ -34,7 +34,7 @@ public class Type {
 	public static final Type MAP = map(Type.ANY, Type.ANY);
 	public static final Type CLASS = new ClassValueType(null);
 	public static final Type VOID = new Type("void", "v", "Object", "Object", "null");
-	public static final Type LEGACY_ARRAY = new LegacyArrayType();
+	// public static final Type LEGACY_ARRAY = new LegacyArrayType();
 	public static final Type ARRAY = array(Type.ANY);
 	public static final Type ARRAY_INT = array(Type.INT);
 	public static final Type ARRAY_STRING = array(Type.STRING);
