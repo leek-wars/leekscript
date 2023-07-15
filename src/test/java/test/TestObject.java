@@ -197,6 +197,10 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static a = -> 12 } return A.a()").equals("12");
 		code_v2_("class A { private static a = -> 12 } return A.a()").error(Error.PRIVATE_STATIC_FIELD);
 		code_v2_("class A { static a = -> 12 } return A.b()").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
+		code_v2_("class A { public static Function< => integer> f = function () => integer { return 1 } } return A.f()").equals("1");
+		code_v2_("class A { public static Function< => integer> f = function () => integer { return 1 } } function g() => integer { return A.f() } return g()").equals("1");
+		code_v3_("class A { public static Function< => Array<integer>> | Function<integer => Array<integer>?> f = function (integer a) => Array<integer> { return new Array() as Array<integer> } } function g() => Array<integer>? { return A.f(1) } return g()").equals("[]");
+		code_v3_("class A { public static Function< => Array<Array<integer | boolean>>> | Function<integer? => Array<Array<integer | boolean>>?> f = function (integer? a) => Array<Array<integer | boolean>>? { return new Array() as Array<Array<integer | boolean>>? } }	function g() => Array<Array<integer|boolean>>? { return A.f(1) } return g()").equals("[]");
 
 		section("Final fields");
 		code_strict_v2_("class A { final a = 12 } var a = new A() a.a = 15 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);

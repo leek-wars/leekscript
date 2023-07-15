@@ -132,6 +132,9 @@ public class LeekFunctionCall extends Expression {
 				} else {
 					// Champ statique
 					// writer.addCode("execute(" + v.getClassDeclaration().getName() + "." + field);
+					if (type != Type.ANY) {
+						writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+					}
 					writer.addCode("u_" + v.getClassDeclaration().getName() + ".callStaticField(\"" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 				}
 			} else if (object instanceof LeekVariable v && v.getVariableType() == VariableType.THIS) {

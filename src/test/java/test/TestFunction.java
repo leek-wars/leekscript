@@ -305,5 +305,6 @@ public class TestFunction extends TestCommon {
 		code_v2_("function Functor() => Function < => string> { return function() => string { return 'yea' } } class Temp { Function < => Function> functor; Function result;constructor() { this.functor = Functor; this.result = this.functor(); } } var t = new Temp() return t.result()").equals("\"yea\"");
 		DISABLED_code_v1("Function< => integer> f function test(Function< => any> _) {} test(f)").equals("null");
 		code_v2_("Function< => integer> f function test(Function< => any> _) {} test(f)").equals("null");
+		code("Function<integer => boolean> t = function(integer b) => boolean { return true }").equals("null");
 	}
 }

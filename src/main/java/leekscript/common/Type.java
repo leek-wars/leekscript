@@ -502,4 +502,9 @@ public class Type {
 	public boolean isPrimitive() {
 		return this == Type.INT || this == Type.BOOL || this == Type.REAL;
 	}
+
+	@Override
+	public int hashCode() {
+		return this.signature.hashCode();
+	}
 }

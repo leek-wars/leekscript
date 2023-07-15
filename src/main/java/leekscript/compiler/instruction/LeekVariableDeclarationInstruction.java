@@ -194,8 +194,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 		// System.out.println("VD preAnalyze " + token.getWord());
 		this.function = compiler.getCurrentFunction();
 		if (mValue != null && mValue.getType() instanceof FunctionType) {
-			var vt = compiler.getMainBlock().isStrict() ? mValue.getType() : Type.ANY;
-			registerVariable(compiler, vt);
+			registerVariable(compiler, this.type);
 			mValue.preAnalyze(compiler);
 		} else {
 			if (mValue != null) mValue.preAnalyze(compiler);

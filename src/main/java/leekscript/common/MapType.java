@@ -71,4 +71,17 @@ public class MapType extends Type {
 	public boolean canBeIndexable() {
 		return true;
 	}
+
+	@Override
+	public int hashCode() {
+		return (this.key.hashCode() * 31 + this.value.hashCode()) * 31 + 2;
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		if (object instanceof MapType mt) {
+			return this.key.equals(mt.key) && this.value.equals(mt.value);
+		}
+		return false;
+	}
 }

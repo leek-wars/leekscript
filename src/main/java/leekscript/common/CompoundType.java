@@ -241,4 +241,22 @@ public class CompoundType extends Type {
 		}
 		return complete;
 	}
+
+
+	@Override
+	public int hashCode() {
+		int hashCode = 7;
+		for (var t : types) {
+			hashCode = hashCode * 31 + t.hashCode();
+		}
+		return hashCode;
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		if (object instanceof CompoundType mt) {
+			return this.types.equals(mt.types);
+		}
+		return false;
+	}
 }

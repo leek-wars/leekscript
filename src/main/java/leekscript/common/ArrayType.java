@@ -90,4 +90,17 @@ public class ArrayType extends Type {
 	public boolean canBeIndexable() {
 		return true;
 	}
+
+	@Override
+	public int hashCode() {
+		return this.type.hashCode() * 31 + 1;
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		if (object instanceof ArrayType at) {
+			return this.type.equals(at.type);
+		}
+		return false;
+	}
 }
