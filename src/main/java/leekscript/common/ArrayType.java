@@ -16,7 +16,9 @@ public class ArrayType extends Type {
 		if (type instanceof ArrayType at) {
 			if (at.type == Type.VOID) return CastType.UPCAST;
 			if (this.type == Type.VOID) return CastType.UPCAST;
-			return this.type.accepts(at.type);
+			var cast = this.type.accepts(at.type);
+			if (cast.ordinal() >= CastType.SAFE_DOWNCAST.ordinal()) return CastType.INCOMPATIBLE;
+			return cast;
 		}
 		return super.accepts(type);
 	}

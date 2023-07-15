@@ -297,6 +297,7 @@ public class TestObject extends TestCommon {
 		section("Methods");
 		code_v2_("class A { a(x) { b(x) } b(x, y) {} }").error(Error.INVALID_PARAMETER_COUNT);
 		code_v2_("class A { a(x) { this.b(x) } b(x, y) {} }").error(Error.INVALID_PARAMETER_COUNT);
+		code_v2_("class Test { public real getReal() {return 1.5;} public void setInteger(integer? a = null){} } Test test = new Test(); test.setInteger(test.getReal())").debug().equals("null");
 
 		section("Duplicated method");
 		code_v2_3("class A { m() {} m() {} }").error(Error.NONE); // OK in LS2-3
@@ -697,7 +698,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { a() {} b() {} static c() {} static d() {} } return A.staticMethods").equals("[\"c\", \"d\"]");
 		code_v2_("class A { } A.staticMethods = 'toto'").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_v2_("class B { static a() {} } class A extends B { static b() {} } return arraySort(A.staticMethods)").equals("[\"a\", \"b\"]");
-		code_v2_("class B { static a() {} } class A extends B { static b() {} static b(x) {} } return arraySort(A.methods)").equals("[\"a\", \"b\", \"b\"]");
+		code_v2_("class B { static a() {} } class A extends B { static b() {} static b(x) {} } return arraySort(A.staticMethods)").equals("[\"a\", \"b\", \"b\"]");
 
 		section("Object.string()");
 		code_v2_("return string({x: 1, y: 2, z: 3})").equals("\"{x: 1, y: 2, z: 3}\"");

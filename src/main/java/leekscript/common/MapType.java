@@ -20,7 +20,9 @@ public class MapType extends Type {
 			var keycast = this.key.accepts(mt.key);
 			var valuecast = this.value.accepts(mt.value);
 			// On retourne le pire cast
-			return CastType.values()[Math.max(keycast.ordinal(), valuecast.ordinal())];
+			var cast = CastType.values()[Math.max(keycast.ordinal(), valuecast.ordinal())];
+			if (cast.ordinal() >= CastType.SAFE_DOWNCAST.ordinal()) return CastType.INCOMPATIBLE;
+			return cast;
 		}
 		return super.accepts(type);
 	}

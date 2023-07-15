@@ -98,7 +98,7 @@ public class Type {
 
 		if (this == REAL) {
 			if (type == INT) {
-				return CastType.UPCAST;
+				return CastType.SAFE_DOWNCAST;
 			}
 		}
 		if (this == INT) {
