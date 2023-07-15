@@ -11,6 +11,7 @@ import leekscript.compiler.expression.LeekAnonymousFunction;
 import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
+import leekscript.compiler.expression.LeekFunctionCall;
 import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekObjectAccess;
@@ -46,7 +47,7 @@ public class LeekExpressionInstruction extends LeekInstruction {
 		}
 
 		// Wrap an expression with a function call to avoid 'error: not a statement' error
-		if (trimmed instanceof LeekTernaire || (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).needsWrapper())) {
+		if (trimmed instanceof LeekTernaire || trimmed instanceof LeekFunctionCall || (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).needsWrapper())) {
 			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode("ops(");
 			else writer.addCode("nothing(");
 			trimmed.writeJavaCode(mainblock, writer);

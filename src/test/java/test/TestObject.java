@@ -263,6 +263,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static f(x) {} static g() { f(1) } }").error(Error.NONE);
 		code_v2_("class A { static f(x) {} static g() { f() } }").error(Error.INVALID_PARAMETER_COUNT);
 		code_v2_("class A { static f(x) {} static g() { class.f() } }").error(Error.INVALID_PARAMETER_COUNT);
+		code_v2_("class test { static boolean f1(Array<any> x) {} static boolean f2(any x) { f1(x) } }").equals("null");
 
 		section("Duplicated static method");
 		code_v2_3("class A { static m() {} static m() {} }").error(Error.NONE); // OK in LS2-3
