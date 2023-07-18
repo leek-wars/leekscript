@@ -131,6 +131,8 @@ public class LexicalParser {
 			addToken("instanceof", TokenType.OPERATOR);
 		} else if (wordEquals(word, "as")) {
 			addToken("as", TokenType.OPERATOR);
+		} else if (wordEquals(word, "in")) {
+			addToken("in", TokenType.OPERATOR);
 		} else {
 			addToken(word, TokenType.STRING);
 		}
