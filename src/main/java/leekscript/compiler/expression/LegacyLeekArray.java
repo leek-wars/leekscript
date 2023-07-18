@@ -104,12 +104,7 @@ public class LegacyLeekArray extends Expression {
 				keyType = Type.compound(keyType, key.getType());
 				elementType = Type.compound(elementType, value.getType());
 			}
-			if (compiler.getVersion() >= 4) {
-
-				this.type = Type.map(keyType, elementType);
-			} else {
-				this.type = Type.LEGACY_ARRAY;
-			}
+			this.type = Type.ARRAY;
 		} else {
 			Type elementType = Type.VOID;
 			for (var value : mValues) {
@@ -117,11 +112,7 @@ public class LegacyLeekArray extends Expression {
 				operations += 2 + value.getOperations();
 				elementType = Type.compound(elementType, value.getType());
 			}
-			if (compiler.getVersion() >= 4) {
-				this.type = Type.array(elementType);
-			} else {
-				this.type = Type.LEGACY_ARRAY;
-			}
+			this.type = Type.ARRAY;
 		}
 	}
 
