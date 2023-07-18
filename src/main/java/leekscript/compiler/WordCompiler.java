@@ -1000,7 +1000,7 @@ public class WordCompiler {
 			classDeclaration.setParent(parent);
 		}
 		if (mTokens.get().getType() != TokenType.ACCOLADE_LEFT) {
-			hrow new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
 		}
 		mTokens.skip();
 
@@ -1642,7 +1642,7 @@ public class WordCompiler {
 
 	private Expression readArrayOrMap(Token openingBracket) throws LeekCompilerException {
 		if (version < 4) {
-			return readLegacyHybridContainer(openingBracket);
+			return readLegacyArray(openingBracket);
 		}
 
 		// Empty map `[:]`
@@ -1734,7 +1734,7 @@ public class WordCompiler {
 		return container;
 	}
 
-	private Expression readLegacyHybridContainer(Token openingBracket) throws LeekCompilerException {
+	private Expression readLegacyArray(Token openingBracket) throws LeekCompilerException {
 		var container = new LegacyLeekArray(openingBracket);
 
 		// Empty map `[:]`
