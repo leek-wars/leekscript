@@ -79,7 +79,7 @@ public class TestGeneral extends TestCommon {
 				code_v1("var " + word + " = 2;").error(Error.NONE);
 				code_v2("var " + word + " = 2;").error(Error.THIS_NOT_ALLOWED_HERE);
 				code_v3_("var " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
-			} else if (word.equals("instanceof") || word.equals("as")) {
+			} else if (word.equals("instanceof") || word.equals("as") || word.equals("in")) {
 				code_v1_2("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
 				code_v3_("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
 			} else if (word.equals("function")) {
@@ -99,7 +99,7 @@ public class TestGeneral extends TestCommon {
 		for (var word : LexicalParser.reservedWords) {
 			if (word.equals("this")) {
 				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
-			} else if (word.equals("instanceof") || word.equals("as") || word.equals("void")) {
+			} else if (word.equals("instanceof") || word.equals("as") || word.equals("void") || word.equals("in")) {
 				code_v3_("global " + word + " = 2;").error(Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
 			} else if (word.equals("function")) {
 				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
