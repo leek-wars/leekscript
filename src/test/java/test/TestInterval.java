@@ -18,5 +18,8 @@ public class TestInterval extends TestCommon {
 		code_v4_("return 1 in [1..1];").equals("true");
 		code_v4_("return 1 in [2..1];").equals("false");
 		code_strict_v4_("boolean x = 1 in [1..1]; return x").equals("true");
+
+		section("Interval typing");
+		code_strict_v4_("Interval i = [0..10]; return i instanceof Interval").equals("true");
 	}
 }

@@ -428,6 +428,10 @@ public class ClassLeekValue extends FunctionLeekValue {
 		if (this == ai.mapClass) {
 			return new MapLeekValue(ai);
 		}
+		if (this == ai.integerClass) {
+			// TODO: construct empty interval
+			return null;
+		}
 		if (this == ai.objectClass) return new ObjectLeekValue(ai, ai.objectClass);
 
 		// Create the actual object
