@@ -88,6 +88,7 @@ public abstract class AI {
 	public final ClassLeekValue arrayClass;
 	public final ClassLeekValue legacyArrayClass;
 	public final ClassLeekValue mapClass;
+	public final ClassLeekValue intervalClass;
 	public final ClassLeekValue stringClass;
 	public final ClassLeekValue objectClass;
 	public final ClassLeekValue functionClass;
@@ -268,6 +269,7 @@ public abstract class AI {
 		arrayClass = new ClassLeekValue(this, "Array", valueClass);
 		legacyArrayClass = new ClassLeekValue(this, "Array", valueClass);
 		mapClass = new ClassLeekValue(this, "Map", valueClass);
+		intervalClass = new ClassLeekValue(this, "Interval", valueClass);
 		stringClass = new ClassLeekValue(this, "String", valueClass);
 		objectClass = new ClassLeekValue(this, "Object", valueClass);
 		functionClass = new ClassLeekValue(this, "Function", valueClass);
@@ -2980,6 +2982,7 @@ public abstract class AI {
 		if (value instanceof LegacyArrayLeekValue) return legacyArrayClass;
 		if (value instanceof ArrayLeekValue) return arrayClass;
 		if (value instanceof MapLeekValue) return mapClass;
+		if (value instanceof IntervalLeekValue) return intervalClass;
 		if (value instanceof String) return stringClass;
 		if (value instanceof ObjectLeekValue) return ((ObjectLeekValue) value).clazz;
 		if (value instanceof NativeObjectLeekValue)
