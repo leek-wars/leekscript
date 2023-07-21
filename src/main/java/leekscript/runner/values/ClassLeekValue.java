@@ -410,7 +410,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 	 */
 	public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
 		// System.out.println("Class " + name + " execute " + Arrays.toString(arguments));
-		if (this == ai.valueClass || this == ai.jsonClass || this == ai.systemClass || this == ai.functionClass || this == ai.classClass) {
+		if (this == ai.valueClass || this == ai.jsonClass || this == ai.systemClass || this == ai.functionClass || this == ai.classClass || this == ai.intervalClass) {
 			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
 			return null;
 		}
@@ -427,10 +427,6 @@ public class ClassLeekValue extends FunctionLeekValue {
 		}
 		if (this == ai.mapClass) {
 			return new MapLeekValue(ai);
-		}
-		if (this == ai.integerClass) {
-			// TODO: construct empty interval
-			return null;
 		}
 		if (this == ai.objectClass) return new ObjectLeekValue(ai, ai.objectClass);
 
