@@ -313,6 +313,10 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return null;
 	}
 
+	public boolean operatorIn(Object value) throws LeekRunException {
+		return mapContainsKey(ai, value);
+	}
+
 	public Object mapRemove(AI ai, Object key) throws LeekRunException {
 		return remove(key);
 	}

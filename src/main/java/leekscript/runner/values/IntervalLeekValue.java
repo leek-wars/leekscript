@@ -63,8 +63,9 @@ public class IntervalLeekValue {
 		return sb.append("]").toString();
 	}
 
-	public boolean contains(Object value) throws LeekRunException {
+	public boolean operatorIn(Object value) throws LeekRunException {
 		ai.ops(1);
-		return ai.lessequals(from, value) && ai.lessequals(value, to);
+		var valueAsReal = ai.real(value);
+		return ai.lessequals(from, valueAsReal) && ai.lessequals(valueAsReal, to);
 	}
 }

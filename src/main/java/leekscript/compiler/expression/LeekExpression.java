@@ -878,9 +878,9 @@ public class LeekExpression extends Expression {
 			mExpression1.writeJavaCode(mainblock, writer);
 			return;
 		case Operators.IN:
-			// In LS, the expression is `expr in interval`, in Java, it's `interval.contains(expr)`
+			writer.addCode("operatorIn(");
 			mExpression2.writeJavaCode(mainblock, writer);
-			writer.addCode(".contains(");
+			writer.addCode(", ");
 			mExpression1.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 			return;

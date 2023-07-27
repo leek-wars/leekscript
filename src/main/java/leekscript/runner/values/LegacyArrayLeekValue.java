@@ -728,6 +728,10 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return null;
 	}
 
+	public boolean operatorIn(Object value) throws LeekRunException {
+		return search(ai, value) != null;
+	}
+
 	public Object removeIndex(AI ai, int index) throws LeekRunException {
 		if (index >= mSize)
 			return null;

@@ -3011,6 +3011,22 @@ public abstract class AI {
 		return false;
 	}
 
+	public boolean operatorIn(Object container, Object value) throws LeekRunException {
+		if (container instanceof IntervalLeekValue) {
+			return ((IntervalLeekValue) container).operatorIn(value);
+		} else if (container instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) container).operatorIn(value);
+		} else if (container instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) container).operatorIn(value);
+		} else if (container instanceof MapLeekValue) {
+			return ((MapLeekValue) container).operatorIn(value);
+		}
+
+		ops(1);
+		addSystemLog(AILog.ERROR, Error.OPERATOR_IN_ON_INVALID_CONTAINER);
+		return false;
+	}
+
 	public long getAnalyzeTime() {
 		return analyzeTime;
 	}
