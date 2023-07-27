@@ -581,6 +581,10 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return -1l;
 	}
 
+	public boolean operatorIn(Object value) throws LeekRunException {
+		return search(ai, value) != -1;
+	}
+
 	/**
 	 * Supprime un objet par sa clé
 	 *

@@ -246,6 +246,16 @@ public class TestArray extends TestCommon {
 		code_v4_("return [1, 2, 3, 4, 5, 6, 7, 8][::]").equals("[1, 2, 3, 4, 5, 6, 7, 8]");
 		code_v4_("return [1, 2, 3, 4, 5, 6, 7, 8][null:null:]").equals("[1, 2, 3, 4, 5, 6, 7, 8]");
 
+		section("Array.in");
+		code_v4_("return 1 in [1, 2];").equals("true");
+		code_v4_("return 1 in [0, 1, 2];").equals("true");
+		code_v4_("return 2 in [1, 2];").equals("true");
+		code_v4_("return 3 in [1, 2];").equals("false");
+		code_v4_("return 0 in [1, 2];").equals("false");
+		code_v4_("return 1 in [1];").equals("true");
+		code_v4_("return 1 in [];").equals("false");
+		code_strict_v4_("boolean x = 1 in [0, 1, 2]; return x").equals("true");
+
 		// section("Push with empty array access");
 		// code("var a = [] a[] = 12 return a").equals("[12]");
 		// code("var a = [1, 2] a[] = 3 return a").equals("[1, 2, 3]");
