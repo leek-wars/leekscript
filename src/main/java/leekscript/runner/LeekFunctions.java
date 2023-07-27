@@ -233,6 +233,14 @@ public class LeekFunctions {
 		method("removeKey", "Map", Type.VOID, new Type[] { Type.ARRAY, Type.ANY }).setMaxVersion(3, "mapRemove");
 
 		/**
+		 * Interval functions
+		 */
+		method("intervalToArray", "Interval", new CallableVersion[] {
+				new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.INTERVAL, Type.REAL }),
+				new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.INTERVAL}),
+		}).setMinVersion(4);
+
+		/**
 		 * JSON functions
 		 */
 		method("jsonEncode", "JSON", true, Type.STRING, new Type[] { Type.ANY });

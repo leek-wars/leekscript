@@ -38,6 +38,7 @@ public class Type {
 	public static final Type ARRAY = array(Type.ANY);
 	public static final Type INTERVAL = new Type("interval", "t", "IntervalLeekValue", "IntervalLeekValue", "new IntervalLeekValue()");
 	public static final Type ARRAY_INT = array(Type.INT);
+	public static final Type ARRAY_REAL = array(Type.REAL);
 	public static final Type ARRAY_STRING = array(Type.STRING);
 	public static final Type INT_OR_NULL = compound(Type.INT, Type.NULL);
 	public static final Type BOOL_OR_NULL = compound(Type.BOOL, Type.NULL);
