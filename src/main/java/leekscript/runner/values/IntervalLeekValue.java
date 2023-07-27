@@ -10,14 +10,14 @@ public class IntervalLeekValue {
 	private final AI ai;
 	public final int id;
 
-	private final Object from;
-	private final Object to;
+	private final double from;
+	private final double to;
 
 	public IntervalLeekValue(AI ai, Object from, Object to) throws LeekRunException {
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		this.from = from;
-		this.to = to;
+		this.from = ai.real(from);
+		this.to = ai.real(to);
 	}
 
 	@Override
@@ -66,5 +66,26 @@ public class IntervalLeekValue {
 	public boolean contains(Object value) throws LeekRunException {
 		ai.ops(1);
 		return ai.lessequals(from, value) && ai.lessequals(value, to);
+	}
+
+	public ArrayLeekValue intervalToArray(AI ai) throws LeekRunException {
+		return intervalToArray(ai, 1);
+	}
+
+	public ArrayLeekValue intervalToArray(AI ai, double step) throws LeekRunException {
+		// Operations are added by the array
+		var array = new ArrayLeekValue(ai);
+
+		if (step >= 0.0) {
+			for (var i = from; ai.lessequals(i, to); i += step) {
+				array.push(ai, i);
+			}
+		} else {
+			for (var i = to; ai.moreequals(i, from); i += step) {
+				array.push(ai, i);
+			}
+		}
+
+		return array;
 	}
 }

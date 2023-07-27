@@ -1817,7 +1817,7 @@ public class WordCompiler {
 			throw new LeekCompilerException(mTokens.get(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
 		}
 
-		return new LeekInterval(openingBracket, fromExpression, toExpression, mTokens.eat());
+		return new LeekInterval(openingBracket, fromExpression, toExpression, mTokens.get());
 	}
 	
 	private LeekAnonymousFunction readAnonymousFunction() throws LeekCompilerException {
