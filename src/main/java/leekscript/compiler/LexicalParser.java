@@ -252,10 +252,15 @@ public class LexicalParser {
 	}
 
 	private boolean tryParseExact(String expected, TokenType type) {
-
 		if (stream.index + expected.length() <= stream.content.length()) {
-			var streamWord = stream.content.substring(stream.index, stream.index + expected.length());
-			if (wordEquals(streamWord, expected)) {
+			boolean allGood = true;
+			for (int i = 0; i < expected.length(); i++) {
+				if (!charEquals(stream.peek(i), expected.charAt(i))) {
+					allGood = false;
+					break;
+				}
+			}
+			if (allGood) {
 				stream.index += expected.length();
 				stream.charCounter += expected.length();
 				if (stream.index < stream.content.length()) {
@@ -269,7 +274,7 @@ public class LexicalParser {
 	}
 
 	private boolean tryParseExact(char expected, TokenType type) {
-		if (stream.peek() == expected) {
+		if (charEquals(stream.peek(), expected)) {
 			stream.next();
 			addToken("" + expected, type);
 			return true;
@@ -289,7 +294,15 @@ public class LexicalParser {
 		return word.equals(expected);
 	}
 
+	private boolean charEquals(char c, char expected) {
+		if (version <= 2) {
+			return Character.toLowerCase(c) == Character.toLowerCase(expected);
+		}
+		return c == expected;
+	}
+
 	private class CharStream {
+
 		private int lineCounter = 1;
 		private int charCounter = 0;
 		private int index = 0;
