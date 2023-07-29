@@ -783,6 +783,8 @@ public abstract class AI {
 			return ((LegacyArrayLeekValue) value).size() != 0;
 		} else if (value instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) value).size() != 0;
+		} else if (value instanceof IntervalLeekValue) {
+			return !((IntervalLeekValue) value).intervalIsEmpty(this);
 		} else if (value instanceof MapLeekValue) {
 			return ((MapLeekValue) value).size() != 0;
 		} else if (value instanceof IntervalLeekValue) {

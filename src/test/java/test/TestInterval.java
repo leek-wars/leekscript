@@ -9,6 +9,32 @@ public class TestInterval extends TestCommon {
 		code_v4_("return [-10..-2];").equals("[-10.0..-2.0]");
 		code_v4_("return [1 * 5 .. 8 + 5];").equals("[5.0..13.0]");
 
+		section("Interval.intervalLowerBound");
+		code_v4_("return intervalLowerBound([1..2]);").equals("1.0");
+		code_v4_("return intervalLowerBound([-10..-2]);").equals("-10.0");
+		code_v4_("return intervalLowerBound([1 * 5 .. 8 + 5]);").equals("5.0");
+		code_v4_("return intervalLowerBound([1..1]);").equals("1.0");
+		code_v4_("return intervalLowerBound([1..0]);").equals("1.0");
+
+		section("Interval.intervalUpperBound");
+		code_v4_("return intervalUpperBound([1..2]);").equals("2.0");
+		code_v4_("return intervalUpperBound([-10..-2]);").equals("-2.0");
+		code_v4_("return intervalUpperBound([1 * 5 .. 8 + 5]);").equals("13.0");
+		code_v4_("return intervalUpperBound([1..1]);").equals("1.0");
+		code_v4_("return intervalUpperBound([1..0]);").equals("0.0");
+
+		section("Interval.intervalIsEmpty");
+		code_v4_("return intervalIsEmpty([1..2]);").equals("false");
+		code_v4_("return intervalIsEmpty([-10..-2]);").equals("false");
+		code_v4_("return intervalIsEmpty([1..1]);").equals("false");
+		code_v4_("return intervalIsEmpty([1..0]);").equals("true");
+
+		section("Interval as boolean");
+		code_v4_("return !![1..2];").equals("true");
+		code_v4_("return !![-10..-2];").equals("true");
+		code_v4_("return !![1..1];").equals("true");
+		code_v4_("return !![1..0];").debug().equals("false");
+
 		section("Interval.in");
 		code_v4_("return 1 in [1..2];").equals("true");
 		code_v4_("return 1 in [0..2];").equals("true");
@@ -24,8 +50,7 @@ public class TestInterval extends TestCommon {
 
 		section("Interval.intervalToArray()");
 		code_v4_("return intervalToArray([1..2]);").equals("[1.0, 2.0]");
-		code_v4_("return intervalToArray([-2..2]);")
-				.equals("[-2.0, -1.0, 0.0, 1.0, 2.0]");
+		code_v4_("return intervalToArray([-2..2]);").equals("[-2.0, -1.0, 0.0, 1.0, 2.0]");
 		code_v4_("return intervalToArray([1..1]);").equals("[1.0]");
 		code_v4_("return intervalToArray([1..0]);").equals("[]");
 
