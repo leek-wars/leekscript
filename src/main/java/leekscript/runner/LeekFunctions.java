@@ -235,6 +235,9 @@ public class LeekFunctions {
 		/**
 		 * Interval functions
 		 */
+		method("intervalLowerBound", "Interval", 1, Type.REAL, new Type[] { Type.INTERVAL }).setMinVersion(4);
+		method("intervalUpperBound", "Interval", 1, Type.REAL, new Type[] { Type.INTERVAL }).setMinVersion(4);
+		method("intervalIsEmpty", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).setMinVersion(4);
 		method("intervalToArray", "Interval", new CallableVersion[] {
 				new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.INTERVAL, Type.REAL }),
 				new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.INTERVAL}),

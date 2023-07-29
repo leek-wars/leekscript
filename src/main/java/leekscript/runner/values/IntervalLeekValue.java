@@ -63,10 +63,22 @@ public class IntervalLeekValue {
 		return sb.append("]").toString();
 	}
 
+	public double intervalLowerBound(AI ai) {
+		return from;
+	}
+
+	public double intervalUpperBound(AI ai) {
+		return to;
+	}
+
+	public boolean intervalIsEmpty(AI ai) {
+		return to < from;
+	}
+
 	public boolean operatorIn(Object value) throws LeekRunException {
 		ai.ops(1);
 		var valueAsReal = ai.real(value);
-		return ai.lessequals(from, valueAsReal) && ai.lessequals(valueAsReal, to);
+		return from <= valueAsReal && valueAsReal <= to;
 	}
 
 	public ArrayLeekValue intervalToArray(AI ai) throws LeekRunException {
@@ -78,11 +90,11 @@ public class IntervalLeekValue {
 		var array = new ArrayLeekValue(ai);
 
 		if (step >= 0.0) {
-			for (var i = from; ai.lessequals(i, to); i += step) {
+			for (var i = from; i <= to; i += step) {
 				array.push(ai, i);
 			}
 		} else {
-			for (var i = to; ai.moreequals(i, from); i += step) {
+			for (var i = to; i >= from; i += step) {
 				array.push(ai, i);
 			}
 		}
