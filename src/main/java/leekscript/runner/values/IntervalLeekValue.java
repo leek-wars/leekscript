@@ -99,6 +99,8 @@ public class IntervalLeekValue {
 			}
 		}
 
+		ai.ops(array.size() * 2);
+
 		return array;
 	}
 }
