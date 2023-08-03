@@ -592,7 +592,7 @@ public class LeekFunctionCall extends Expression {
 
 				compiler.addError(new AnalyzeError(getLocation(), level, error, new String[] {
 					"(" + String.join(", ", types.stream().map(t -> t.toString()).collect(Collectors.toList())) + ")",
-					functionType.toString()
+					"(" + String.join(", ", functionType.getArguments().stream().map(t -> t.toString()).collect(Collectors.toList())) + ")",
 				}));
 			}
 		}

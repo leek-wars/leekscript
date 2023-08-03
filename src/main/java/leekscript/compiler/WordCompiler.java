@@ -376,7 +376,7 @@ public class WordCompiler {
 			} else if (word.getWord().equals("return")) {
 				var token = mTokens.eat();
 				Expression exp = null;
-				if (mTokens.get().getType() != TokenType.END_INSTRUCTION) {
+				if (mTokens.get().getType() != TokenType.END_INSTRUCTION && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
 					exp = readExpression();
 				}
 				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {

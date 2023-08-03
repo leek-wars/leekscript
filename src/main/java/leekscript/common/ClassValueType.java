@@ -1,5 +1,6 @@
 package leekscript.common;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -116,6 +117,35 @@ public class ClassValueType extends Type {
 		if (constructor == null) return Type.ANY;
 
 		return constructor.block.getType().getArgument(a);
+	}
+
+	@Override
+	public List<Type> getArguments() {
+		if (this.clazz == null) return new ArrayList<>();
+		var types = new ArrayList<Type>();
+		for (var construct : this.clazz.getConstructors().entrySet()) {
+			if (construct.getValue().block != null) {
+				for (int a = 0; a < construct.getValue().block.getType().getMaxArguments(); ++a) {
+					if (a < types.size()) {
+						types.set(a, Type.compound(types.get(a), construct.getValue().block.getType().getArgument(a)));
+					} else {
+						types.add(construct.getValue().block.getType().getArgument(a));
+					}
+				}
+			}
+		}
+		return types;
+	}
+
+	@Override
+	public List<Type> getArguments(int argumentCount) {
+
+		if (this.clazz == null) return new ArrayList<>();
+
+		var constructor = this.clazz.getConstructor(argumentCount);
+		if (constructor == null) return new ArrayList<>();
+
+		return constructor.block.getType().getArguments();
 	}
 
 	@Override

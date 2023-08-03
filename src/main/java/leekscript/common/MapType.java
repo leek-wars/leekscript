@@ -21,7 +21,7 @@ public class MapType extends Type {
 			var valuecast = this.value.accepts(mt.value);
 			// On retourne le pire cast
 			var cast = CastType.values()[Math.max(keycast.ordinal(), valuecast.ordinal())];
-			if (cast.ordinal() >= CastType.SAFE_DOWNCAST.ordinal()) return CastType.INCOMPATIBLE;
+			if (cast.ordinal() >= CastType.SAFE_DOWNCAST.ordinal()) return CastType.UNSAFE_DOWNCAST;
 			return cast;
 		}
 		return super.accepts(type);

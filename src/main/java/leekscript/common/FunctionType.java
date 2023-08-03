@@ -53,6 +53,7 @@ public class FunctionType extends Type {
 		this.name += ") => " + return_type;
 	}
 
+	@Override
 	public List<Type> getArguments() {
 		return arguments;
 	}

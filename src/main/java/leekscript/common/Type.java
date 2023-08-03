@@ -2,6 +2,7 @@ package leekscript.common;
 
 import java.util.AbstractMap;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 
 import leekscript.compiler.Complete;
 import leekscript.compiler.JavaWriter;
+import leekscript.compiler.expression.Expression;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 
 public class Type {
@@ -508,5 +510,13 @@ public class Type {
 	@Override
 	public int hashCode() {
 		return this.signature.hashCode();
+	}
+
+	public List<Type> getArguments() {
+		return new ArrayList<>();
+	}
+
+	public List<Type> getArguments(int argumentsCount) {
+		return new ArrayList<>();
 	}
 }
