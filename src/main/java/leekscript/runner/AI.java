@@ -3104,4 +3104,8 @@ public abstract class AI {
 	public ObjectLeekValue new_objectClass() {
 		return new ObjectLeekValue(this, this.objectClass);
 	}
+
+	public boolean xor(boolean x, boolean y) {
+		return (x && !y) || (!x && y);
+	}
 }

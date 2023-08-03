@@ -26,6 +26,7 @@ public class TestMain {
 
 		new TestGeneral().run();
 		new TestNumber().run();
+		new TestBoolean().run();
 		new TestString().run();
 		new TestArray().run();
 		new TestArrayStress().run();

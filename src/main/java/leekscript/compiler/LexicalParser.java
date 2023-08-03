@@ -12,7 +12,7 @@ public class LexicalParser {
 		void report(AnalyzeError error) throws LeekCompilerException;
 	}
 
-	public static final String[] reservedWords = new String[] { "abstract", "arguments", "as", "await", "break", "byte", "case", "catch", "char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval", "export", "extends", "false", "final", "finally", "float", "for", "function", "global", "goto", "if", "implements", "import", "in", "instanceof", "int", "interface", "let", "long", "native", "new", "not", "null", "package", "private", "protected", "public", "return", "short", "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "true", "try", "typeof", "var", "void", "volatile", "while", "with", "yield" };
+	public static final String[] reservedWords = new String[] { "abstract", "arguments", "as", "await", "break", "byte", "case", "catch", "char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval", "export", "extends", "false", "final", "finally", "float", "for", "function", "global", "goto", "if", "implements", "import", "in", "instanceof", "int", "interface", "let", "long", "native", "new", "not", "null", "package", "private", "protected", "public", "return", "short", "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "true", "try", "typeof", "var", "void", "volatile", "while", "with", "xor", "yield" };
 
 	private ArrayList<Token> tokens = new ArrayList<>();
 	private AIFile aiFile;
@@ -127,6 +127,8 @@ public class LexicalParser {
 			addToken("&&", TokenType.OPERATOR);
 		} else if (wordEquals(word, "or")) {
 			addToken("||", TokenType.OPERATOR);
+		} else if (wordEquals(word, "xor")) {
+			addToken("xor", TokenType.OPERATOR);
 		} else if (wordEquals(word, "instanceof")) {
 			addToken("instanceof", TokenType.OPERATOR);
 		} else if (wordEquals(word, "as")) {

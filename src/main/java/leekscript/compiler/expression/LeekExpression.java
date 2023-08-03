@@ -750,6 +750,13 @@ public class LeekExpression extends Expression {
 			}
 			writer.addCode(")");
 			return;
+		case Operators.XOR:
+			writer.addCode("xor(");
+			writer.getBoolean(mainblock, mExpression1);
+			writer.addCode(", ");
+			writer.getBoolean(mainblock, mExpression2);
+			writer.addCode(")");
+			return;
 
 			// Les unaires préfixés (!)
 		case Operators.NOT:
@@ -1088,7 +1095,7 @@ public class LeekExpression extends Expression {
 			type = mExpression1.getType().mul(mExpression2.getType());
 		} else if (mOperator == Operators.POWERASSIGN) {
 			type = mExpression1.getType().pow(mExpression2.getType());
-		} else if (mOperator == Operators.NOT || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.MOREEQUALS || mOperator == Operators.LESSEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.AND || mOperator == Operators.OR || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS || mOperator == Operators.INSTANCEOF || mOperator == Operators.IN) {
+		} else if (mOperator == Operators.NOT || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.MOREEQUALS || mOperator == Operators.LESSEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.AND || mOperator == Operators.OR || mOperator == Operators.XOR || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS || mOperator == Operators.INSTANCEOF || mOperator == Operators.IN) {
 			type = Type.BOOL;
 		}
 		else if (mOperator == Operators.BITAND || mOperator == Operators.BITNOT || mOperator == Operators.BITOR  || mOperator == Operators.BITXOR || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT || mOperator == Operators.INTEGER_DIVISION) {
@@ -1157,7 +1164,7 @@ public class LeekExpression extends Expression {
 	}
 
 	public boolean needsWrapper() {
-		return mOperator == Operators.OR || mOperator == Operators.AND || mOperator == Operators.ADD || mOperator == Operators.MINUS || mOperator == Operators.MULTIPLIE || mOperator == Operators.DIVIDE || mOperator == Operators.MODULUS || mOperator == Operators.POWER || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.LESSEQUALS || mOperator == Operators.MOREEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS;
+		return mOperator == Operators.OR || mOperator == Operators.AND || mOperator == Operators.XOR || mOperator == Operators.ADD || mOperator == Operators.MINUS || mOperator == Operators.MULTIPLIE || mOperator == Operators.DIVIDE || mOperator == Operators.MODULUS || mOperator == Operators.POWER || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.LESSEQUALS || mOperator == Operators.MOREEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS;
 	}
 
 	@Override

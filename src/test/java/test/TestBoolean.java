@@ -34,5 +34,11 @@ public class TestBoolean extends TestCommon {
 		code_v3_("return Not false").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
 		code_v3_("return NOT true").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
 		code_v3_("return NOT false").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+
+		section("Boolean.operator xor");
+		code("return true xor true").debug().equals("false");
+		code("return true xor false").equals("true");
+		code("return false xor true").equals("true");
+		code("return false xor false").equals("false");
 	}
 }
