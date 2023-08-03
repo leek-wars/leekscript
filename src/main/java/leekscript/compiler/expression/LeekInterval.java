@@ -11,6 +11,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 
 public class LeekInterval extends Expression {
 
+	// mFrom and mTo may be null
 	private Expression mFrom;
 	private Expression mTo;
 	private Token openingBracket;
@@ -38,33 +39,51 @@ public class LeekInterval extends Expression {
 
 	@Override
 	public String toString() {
-		return "[" + mFrom + ".." + mTo + "]";
+		return "[" + (mFrom != null ? mFrom.toString() : "") + ".." + (mTo != null ? mTo.toString() : "") + "]";
 	}
 
 	@Override
 	public boolean validExpression(WordCompiler compiler, MainLeekBlock mainBlock) throws LeekExpressionException {
-		return mFrom.validExpression(compiler, mainBlock) && mTo.validExpression(compiler, mainBlock);
+		return (mFrom == null || mFrom.validExpression(compiler, mainBlock)) && (mTo == null || mTo.validExpression(compiler, mainBlock));
 	}
 
 	@Override
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
-		mFrom.preAnalyze(compiler);
-		mTo.preAnalyze(compiler);
+		if (mFrom != null) {
+			mFrom.preAnalyze(compiler);
+		}
+		if (mTo != null) {
+			mTo.preAnalyze(compiler);
+		}
 	}
 
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
-		operations = 2 + mFrom.getOperations() + mTo.getOperations();
-		mFrom.analyze(compiler);
-		mTo.analyze(compiler);
+		operations = 2;
+		if (mFrom != null) {
+			mFrom.analyze(compiler);
+			operations += mFrom.getOperations();
+		}
+		if (mTo != null) {
+			mTo.analyze(compiler);
+			operations += mTo.getOperations();
+		}
 	}
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainBlock, JavaWriter writer) {
 		writer.addCode("new IntervalLeekValue(" + writer.getAIThis() + ", ");
-		mFrom.writeJavaCode(mainBlock, writer);
+		if (mFrom == null) {
+			writer.addCode("Double.NEGATIVE_INFINITY");
+		} else {
+			mFrom.writeJavaCode(mainBlock, writer);
+		}
 		writer.addCode(", ");
-		mTo.writeJavaCode(mainBlock, writer);
+		if (mTo == null) {
+			writer.addCode("Double.POSITIVE_INFINITY");
+		} else {
+			mTo.writeJavaCode(mainBlock, writer);
+		}
 		writer.addCode(")");
 	}
 

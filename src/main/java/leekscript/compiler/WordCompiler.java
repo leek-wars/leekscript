@@ -1666,6 +1666,11 @@ public class WordCompiler {
 			return container;
 		}
 
+		if (mTokens.get().getType() == TokenType.DOT_DOT) {
+			mTokens.skip();
+			return readInterval(openingBracket, null);
+		}
+
 		var firstExpression = readExpression(true);
 		if (mTokens.get().getWord().equals(":")) {
 			mTokens.skip();
@@ -1803,6 +1808,10 @@ public class WordCompiler {
 	}
 
 	private Expression readInterval(Token openingBracket, Expression fromExpression) throws LeekCompilerException {
+		if (mTokens.get().getType() == TokenType.BRACKET_RIGHT) {
+			return new LeekInterval(openingBracket, fromExpression, null, mTokens.get());
+		}
+
 		// Although an interval is not comma separated, we still parse the second
 		// expression as if we did. This is in order to be more consitent as the first
 		// expression is parsed as if it was comma separated
