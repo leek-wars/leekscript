@@ -2,6 +2,8 @@ package leekscript.runner.values;
 
 import java.util.Set;
 
+import leekscript.AILog;
+import leekscript.common.Error;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
@@ -40,23 +42,11 @@ public class IntervalLeekValue {
 
 		StringBuilder sb = new StringBuilder("[");
 
-		if (visited.contains(from)) {
-			sb.append("<...>");
-		} else {
-			if (!ai.isPrimitive(from)) {
-				visited.add(from);
-			}
+		if (isLeftBounded()) {
 			sb.append(ai.export(from, visited));
 		}
-
 		sb.append("..");
-
-		if (visited.contains(to)) {
-			sb.append("<...>");
-		} else {
-			if (!ai.isPrimitive(to)) {
-				visited.add(to);
-			}
+		if (isRightBounded()) {
 			sb.append(ai.export(to, visited));
 		}
 
@@ -75,6 +65,18 @@ public class IntervalLeekValue {
 		return to < from;
 	}
 
+	public boolean intervalIsBounded(AI ai) {
+		return isLeftBounded() && isRightBounded();
+	}
+
+	public boolean isLeftBounded() {
+		return from != Double.NEGATIVE_INFINITY;
+	}
+
+	public boolean isRightBounded() {
+		return to != Double.POSITIVE_INFINITY;
+	}
+
 	public boolean operatorIn(Object value) throws LeekRunException {
 		ai.ops(1);
 		var valueAsReal = ai.real(value);
@@ -86,6 +88,11 @@ public class IntervalLeekValue {
 	}
 
 	public ArrayLeekValue intervalToArray(AI ai, double step) throws LeekRunException {
+		if (!intervalIsBounded(ai)) {
+			ai.addSystemLog(AILog.ERROR, Error.CANNOT_ITERATE_UNBOUNDED_INTERVAL, new Object[] { this });
+			return null;
+		}
+
 		// Operations are added by the array
 		var array = new ArrayLeekValue(ai);
 
