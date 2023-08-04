@@ -33,6 +33,7 @@ public class Type {
 	public static final Type VOID = new Type("void", "v", "Object", "Object", "null");
 	// public static final Type LEGACY_ARRAY = new LegacyArrayType();
 	public static final Type ARRAY = array(Type.ANY);
+	public static final Type SET = set(Type.ANY);
 	public static final Type INTERVAL = new Type("interval", "t", "IntervalLeekValue", "IntervalLeekValue", "new IntervalLeekValue()");
 	public static final Type ARRAY_INT = array(Type.INT);
 	public static final Type ARRAY_REAL = array(Type.REAL);
@@ -235,6 +236,10 @@ public class Type {
 		var map = new MapType(key, value);
 		// mapTypes.put(entry, map);
 		return map;
+	}
+
+	public static Type set(Type type) {
+		return new SetType(type);
 	}
 
 	public Type key() {

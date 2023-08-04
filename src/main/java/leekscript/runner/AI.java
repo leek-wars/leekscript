@@ -13,6 +13,7 @@ import leekscript.runner.values.FunctionLeekValue;
 import leekscript.runner.values.GenericArrayLeekValue;
 import leekscript.runner.values.GenericMapLeekValue;
 import leekscript.runner.values.IntervalLeekValue;
+import leekscript.runner.values.SetLeekValue;
 import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.Box;
@@ -89,6 +90,7 @@ public abstract class AI {
 	public final ClassLeekValue legacyArrayClass;
 	public final ClassLeekValue mapClass;
 	public final ClassLeekValue intervalClass;
+	public final ClassLeekValue setClass;
 	public final ClassLeekValue stringClass;
 	public final ClassLeekValue objectClass;
 	public final ClassLeekValue functionClass;
@@ -270,6 +272,7 @@ public abstract class AI {
 		legacyArrayClass = new ClassLeekValue(this, "Array", valueClass);
 		mapClass = new ClassLeekValue(this, "Map", valueClass);
 		intervalClass = new ClassLeekValue(this, "Interval", valueClass);
+		setClass = new ClassLeekValue(this, "Set", valueClass);
 		stringClass = new ClassLeekValue(this, "String", valueClass);
 		objectClass = new ClassLeekValue(this, "Object", valueClass);
 		functionClass = new ClassLeekValue(this, "Function", valueClass);
@@ -1448,6 +1451,8 @@ public abstract class AI {
 			return ((ArrayLeekValue) value).getString(this, visited);
 		} else if (value instanceof MapLeekValue) {
 			return ((MapLeekValue) value).getString(this, visited);
+		} else if (value instanceof SetLeekValue) {
+			return ((SetLeekValue) value).getString(this, visited);
 		} else if (value instanceof IntervalLeekValue) {
 			return ((IntervalLeekValue) value).getString(this, visited);
 		} else if (value instanceof String) {
@@ -2997,6 +3002,7 @@ public abstract class AI {
 		if (value instanceof ArrayLeekValue) return arrayClass;
 		if (value instanceof MapLeekValue) return mapClass;
 		if (value instanceof IntervalLeekValue) return intervalClass;
+		if (value instanceof SetLeekValue) return setClass;
 		if (value instanceof String) return stringClass;
 		if (value instanceof ObjectLeekValue) return ((ObjectLeekValue) value).clazz;
 		if (value instanceof NativeObjectLeekValue)

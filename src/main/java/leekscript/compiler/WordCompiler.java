@@ -36,6 +36,7 @@ import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekObject;
 import leekscript.compiler.expression.LeekParameterType;
 import leekscript.compiler.expression.LeekParenthesis;
+import leekscript.compiler.expression.LeekSet;
 import leekscript.compiler.expression.LeekString;
 import leekscript.compiler.expression.LeekType;
 import leekscript.compiler.expression.LeekVariable;
@@ -547,11 +548,13 @@ public class WordCompiler {
 		if (word.equals("string")) return new LeekType(mTokens.eat(), Type.STRING);
 		if (word.equals("Class")) return new LeekType(mTokens.eat(), Type.CLASS);
 		if (word.equals("Object")) return new LeekType(mTokens.eat(), Type.OBJECT);
-		if (word.equals("Array")) {
+		if (word.equals("Array") || word.equals("Set")) {
+			boolean isArray = word.equals("Array");
+
 			var array = mTokens.eat();
-			LeekType arrayType;
+			LeekType arrayOrSetType;
 			if (mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("<")) {
-				arrayType = new LeekParameterType(array, mTokens.eat());
+				arrayOrSetType = new LeekParameterType(array, mTokens.eat());
 				var value = eatType(false, true);
 				Type valueType = Type.ANY;
 				if (value != null) valueType = value.getType();
@@ -559,12 +562,12 @@ public class WordCompiler {
 				if (!mTokens.get().getWord().startsWith(">")) {
 					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CLOSING_CHEVRON_EXPECTED));
 				}
-				((LeekParameterType) arrayType).close(mTokens.eat());
-				arrayType.setType(Type.array(valueType));
+				((LeekParameterType) arrayOrSetType).close(mTokens.eat());
+				arrayOrSetType.setType(isArray ? Type.array(valueType) : Type.set(valueType));
 			} else {
-				arrayType = new LeekType(array, Type.ARRAY);
+				arrayOrSetType = new LeekType(array, isArray ? Type.ARRAY : Type.SET);
 			}
-			return arrayType;
+			return arrayOrSetType;
 		}
 		if (word.equals("Map")) {
 			var map = mTokens.eat();
@@ -1211,10 +1214,14 @@ public class WordCompiler {
 	}
 
 	public Expression readExpression() throws LeekCompilerException {
-		return readExpression(false);
+		return readExpression(false, false);
 	}
 
 	public Expression readExpression(boolean inList) throws LeekCompilerException {
+		return readExpression(inList, false);
+	}
+
+	public Expression readExpression(boolean inList, boolean inSet) throws LeekCompilerException {
 
 		var retour = new LeekExpression();
 
@@ -1429,7 +1436,7 @@ public class WordCompiler {
 						mTokens.unskip();
 					}
 
-				} else if (word.getType() == TokenType.OPERATOR) {
+				} else if (word.getType() == TokenType.OPERATOR && (!word.getWord().equals(">") || !inSet)) {
 
 					int operator = Operators.getOperator(word.getWord(), getVersion());
 
@@ -1519,6 +1526,9 @@ public class WordCompiler {
 
 				} else if (word.getType() == TokenType.BRACKET_LEFT) {
 					retour.addExpression(readArrayOrMapOrInterval(mTokens.eat()));
+
+				} else if (getVersion() >= 4 && word.getType() == TokenType.OPERATOR && word.getWord().equals("<")) {
+					retour.addExpression(readSet(mTokens.eat()));
 
 				} else if (getVersion() >= 2 && word.getType() == TokenType.ACCOLADE_LEFT) {
 
@@ -1639,6 +1649,24 @@ public class WordCompiler {
 			return word.getWord().equalsIgnoreCase(expected);
 		}
 		return word.getWord().equals(expected);
+	}
+
+	private Expression readSet(Token openingToken) throws LeekCompilerException {
+		var set = new LeekSet(openingToken);
+
+		while (mTokens.get().getType() != TokenType.OPERATOR || !mTokens.get().getWord().equals(">")) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
+			set.addValue(readExpression(true, true));
+
+			if (mTokens.get().getType() == TokenType.VIRG) {
+				mTokens.skip();
+			}
+		}
+
+		set.setClosingToken(mTokens.get());
+
+		return set;
 	}
 
 	private Expression readArrayOrMapOrInterval(Token openingBracket) throws LeekCompilerException {
