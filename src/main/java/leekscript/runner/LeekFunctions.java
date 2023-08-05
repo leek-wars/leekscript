@@ -239,6 +239,11 @@ public class LeekFunctions {
 		method("intervalUpperBound", "Interval", 1, Type.REAL, new Type[] { Type.INTERVAL }).setMinVersion(4);
 		method("intervalIsEmpty", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).setMinVersion(4);
 		method("intervalIsBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).setMinVersion(4);
+		method("intervalIsRightBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).setMinVersion(4);
+		method("intervalIsLeftBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).setMinVersion(4);
+		method("intervalMidpoint", "Interval", 3, Type.REAL, new Type[] { Type.INTERVAL }).setMinVersion(4);
+		method("intervalIntersection", "Interval", 3, Type.INTERVAL, new Type[] { Type.INTERVAL, Type.INTERVAL }).setMinVersion(4);
+		method("intervalCombine", "Interval", 3, Type.INTERVAL, new Type[] { Type.INTERVAL, Type.INTERVAL }).setMinVersion(4);
 		method("intervalToArray", "Interval", new CallableVersion[] {
 				new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.INTERVAL, Type.REAL }),
 				new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.INTERVAL}),
