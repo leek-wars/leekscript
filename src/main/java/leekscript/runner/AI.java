@@ -2738,6 +2738,9 @@ public abstract class AI {
 			var stride = longint(strideObject);
 			return ((ArrayLeekValue) value).arraySlice(this, start, end, stride);
 		}
+		if (value instanceof IntervalLeekValue) {
+			return ((IntervalLeekValue) value).range(this, start, end, real(strideObject));
+		}
 		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { value });
 		return null;
 	}
@@ -2751,6 +2754,9 @@ public abstract class AI {
 			var array = (ArrayLeekValue) value;
 			var stride = longint(strideObject);
 			return array.arraySlice(this, start, null, stride);
+		}
+		if (value instanceof IntervalLeekValue) {
+			return ((IntervalLeekValue) value).range(this, start, null, real(strideObject));
 		}
 		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { value });
 		return null;
@@ -2766,6 +2772,9 @@ public abstract class AI {
 			var stride = longint(strideObject);
 			return array.arraySlice(this, null, end, stride);
 		}
+		if (value instanceof IntervalLeekValue) {
+			return ((IntervalLeekValue) value).range(this, null, end, real(strideObject));
+		}
 		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { value });
 		return null;
 	}
@@ -2778,6 +2787,9 @@ public abstract class AI {
 		if (value instanceof ArrayLeekValue) {
 			var stride = longint(strideObject);
 			return ((ArrayLeekValue) value).arraySlice(this, null, null, stride);
+		}
+		if (value instanceof IntervalLeekValue) {
+			return ((IntervalLeekValue) value).range(this, null, null, real(strideObject));
 		}
 		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { value });
 		return null;
