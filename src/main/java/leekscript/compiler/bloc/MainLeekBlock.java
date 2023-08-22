@@ -15,7 +15,6 @@ import leekscript.compiler.AIFile;
 import leekscript.compiler.IACompiler;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
-import leekscript.compiler.LexicalParser;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;

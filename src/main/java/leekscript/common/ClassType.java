@@ -1,7 +1,5 @@
 package leekscript.common;
 
-import java.util.HashSet;
-
 import leekscript.compiler.Complete;
 import leekscript.compiler.Complete.CompleteCategory;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;

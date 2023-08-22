@@ -1,18 +1,13 @@
 package leekscript.common;
 
-import java.util.AbstractMap;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import leekscript.compiler.Complete;
 import leekscript.compiler.JavaWriter;
-import leekscript.compiler.expression.Expression;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 
 public class Type {

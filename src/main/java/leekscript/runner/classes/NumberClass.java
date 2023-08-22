@@ -92,6 +92,10 @@ public class NumberClass {
 		return Math.sqrt(x);
 	}
 
+	public static double sqrt(AI ai, Number x) {
+		return Math.sqrt(x.doubleValue());
+	}
+
 	public static double cbrt(AI ai, double x) {
 		return Math.cbrt(x);
 	}

@@ -827,6 +827,8 @@ public class TestNumber extends TestCommon {
 		code_v2_("return max(5.5, [12.8, ''][0]);").equals("12.8");
 		code_v1("var a = 0.8 return max(0, a)").equals("0,8");
 		code_v2_("var a = 0.8 return max(0, a)").equals("0.8");
+		code_v1("real value = 5 value *= max(1, 1.1) return value").equals("5,5");
+		code_v2_("real value = 5 value *= max(1, 1.1) return value").equals("5.5");
 		// code("return 2.max([7.5, ''][0]);").equals("7.5");
 		// code("return [2, ''][0].max([7.5, ''][0]);").equals("7.5");
 		// code("2.max([7.5, ''][1])").exception(ls::vm::Exception::WRONG_ARGUMENT_TYPE);

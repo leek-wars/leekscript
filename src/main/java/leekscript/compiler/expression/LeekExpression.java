@@ -1122,7 +1122,11 @@ public class LeekExpression extends Expression {
 		else if (mOperator == Operators.NEW) {
 			type = mExpression2.getType();
 			if (type instanceof ClassValueType cvt) {
-				type = cvt.getClassDeclaration().getType();
+				if (cvt.getClassDeclaration() != null) {
+					type = cvt.getClassDeclaration().getType();
+				} else {
+					type = Type.ANY;
+				}
 			}
 		}
 		else if (mOperator == Operators.AS) {

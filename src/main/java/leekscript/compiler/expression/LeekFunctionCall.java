@@ -372,8 +372,8 @@ public class LeekFunctionCall extends Expression {
 		}
 
 		this.functionType = mExpression.getType();
-		// System.out.println("[FC] function type = " + functionType + " args = " + functionType.getArguments();
 		this.type = functionType.returnType();
+		// System.out.println("[FC] function type = " + functionType + " args = " + functionType.getArguments() + " return = " + functionType.returnType());
 
 		for (Expression parameter : mParameters) {
 			parameter.analyze(compiler);
@@ -671,7 +671,7 @@ public class LeekFunctionCall extends Expression {
 						f_type.toString()
 					}));
 					version_unsafe = true;
-				} else if (cast_type != CastType.EQUALS) {
+				} else if (cast_type.ordinal() > CastType.SAFE_DOWNCAST.ordinal()) {
 					version_unsafe = true;
 				}
 				// System.out.println("cast " + f_type + " accepts " + a_type + " = " + cast_type);
@@ -703,9 +703,10 @@ public class LeekFunctionCall extends Expression {
 			callable_versions = best_versions;
 			type = Type.VOID;
 			for (var version : callable_versions) {
-				type = type.union(version.return_type);
+				type = Type.compound(type, version.return_type);
 			}
-			// System.out.println("version = " + best_versions.get(0) + " type = " + type);
+			// type = best_versions.get(0).return_type;
+			// System.out.println("[FC] version=" + best_versions.get(0) + " type=" + type + " unsafe=" + unsafe);
 		} else {
 			unsafe = true;
 		}

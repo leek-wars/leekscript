@@ -678,7 +678,7 @@ public class LeekVariable extends Expression {
 				writer.addCode("u_" + token.getWord() + ".mul_eq(");
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
-			} else if (this.variableType.isNumber() && expr.getType().isNumber()) {
+			} else if (this.variableType.isNumber() && expr.getType().isPrimitiveNumber()) {
 				writer.addCode("u_" + token.getWord() + " *= ");
 				expr.writeJavaCode(mainblock, writer);
 			} else {
