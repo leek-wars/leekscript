@@ -756,6 +756,7 @@ public class TestNumber extends TestCommon {
 		code_v1("return abs(null)").equals("0");
 		code_v2_("return abs(null)").equals("0.0");
 		code_strict("return abs(null)").error(Error.WRONG_ARGUMENT_TYPE);
+		code("var ax = randInt(-17, 17) var ay = randInt(-17 + abs(ax), 17 - abs(ax))").debug().equals("null");
 
 		section("Number.exp()");
 		code_v1("return exp(0)").equals("1");

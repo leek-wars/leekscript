@@ -126,16 +126,13 @@ public class NumberClass {
 
 	public static long randInt(AI ai, long a, long b) {
 		if (a > b)
-			return (long) ai.getRandom().getInt((int) a, (int) b - 1);
+			return (long) ai.getRandom().getInt((int) b, (int) a - 1);
 		else
 			return (long) ai.getRandom().getInt((int) a, (int) b - 1);
 	}
 
 	public static double randFloat(AI ai, double a, double b) {
-		if (a > b)
-			return b + ai.getRandom().getDouble() * (a - b);
-		else
-			return a + ai.getRandom().getDouble() * (b - a);
+		return randReal(ai, a, b);
 	}
 
 	public static double randReal(AI ai, double a, double b) {

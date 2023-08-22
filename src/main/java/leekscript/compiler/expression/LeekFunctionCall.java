@@ -292,6 +292,7 @@ public class LeekFunctionCall extends Expression {
 					writer.addCode("new Object[] { null }");
 					continue;
 				}
+				// System.out.println("Argument : " + functionType.getArgument(mParameters.size(), i));
 				if (mainblock.getVersion() >= 2) {
 					if (system_function != null) {
 						parameter.writeJavaCode(mainblock, writer);
@@ -671,7 +672,8 @@ public class LeekFunctionCall extends Expression {
 						f_type.toString()
 					}));
 					version_unsafe = true;
-				} else if (cast_type.ordinal() > CastType.SAFE_DOWNCAST.ordinal()) {
+				// } else if (cast_type.ordinal() > CastType.SAFE_DOWNCAST.ordinal()) {
+				} else if (cast_type != CastType.EQUALS) {
 					version_unsafe = true;
 				}
 				// System.out.println("cast " + f_type + " accepts " + a_type + " = " + cast_type);

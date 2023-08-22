@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeMap;
 import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import com.alibaba.fastjson.JSON;
 
@@ -299,11 +301,12 @@ public class JavaWriter {
 
 		for (var entry : genericFunctions.entrySet()) {
 
+
 			var signature = entry.getKey();
 			var versions = entry.getValue();
 			var first_version = versions.get(0);
 			var function = first_version.function;
-			var return_type = Type.union(versions.stream().map(v -> v.return_type).toList());
+			var return_type = Type.compound(versions.stream().map(v -> v.return_type).collect(Collectors.toCollection(HashSet::new)));
 
 			addCode("private " + return_type.getJavaPrimitiveName(block.getVersion()) + " " + function.getStandardClass() + "_" + signature + "(");
 			for (int a = 0; a < first_version.arguments.length; ++a) {
