@@ -1693,7 +1693,7 @@ public class WordCompiler {
 			mTokens.skip();
 		}
 
-		while (mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
+		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			var key = readExpression(true);
 
@@ -1723,7 +1723,7 @@ public class WordCompiler {
 			mTokens.skip();
 		}
 
-		while (mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
+		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			var value = readExpression(true);
 			container.addValue(value);
@@ -1778,7 +1778,7 @@ public class WordCompiler {
 			mTokens.skip();
 		}
 
-		while (mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
+		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			if (isKeyVal) {
 				var key = readExpression(true);
@@ -1828,7 +1828,7 @@ public class WordCompiler {
 
 		return new LeekInterval(openingBracket, fromExpression, toExpression, mTokens.get());
 	}
-	
+
 	private LeekAnonymousFunction readAnonymousFunction() throws LeekCompilerException {
 		var token = mTokens.eat();
 		if (mTokens.get().getType() != TokenType.PAR_LEFT) {
