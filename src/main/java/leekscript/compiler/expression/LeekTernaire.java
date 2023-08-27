@@ -282,6 +282,12 @@ public class LeekTernaire extends LeekExpression {
 
 	@Override
 	public Location getLocation() {
+		if (mExpression2 == null) {
+			if (mExpression1 == null) {
+				return mCondition.getLocation();
+			}
+			return new Location(mCondition.getLocation(), mExpression1.getLocation());
+		}
 		return new Location(mCondition.getLocation(), mExpression2.getLocation());
 	}
 }
