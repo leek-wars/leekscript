@@ -979,10 +979,20 @@ public class LeekExpression extends Expression {
 					compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_ASSIGN_FINAL_VALUE));
 				}
 			}
-			if (!mExpression2.isLeftValue())
+			if (!mExpression2.isLeftValue()) {
 				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANT_ASSIGN_VALUE));
-			if (mExpression2 instanceof LeekArrayAccess)
+			}
+			if (mExpression2 instanceof LeekArrayAccess) {
 				((LeekArrayAccess) mExpression2).setLeftValue(true);
+			}
+			if (Type.INT_OR_REAL.accepts(mExpression2.getType()) == CastType.INCOMPATIBLE) {
+				var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+				compiler.addError(new AnalyzeError(getLocation(), level, Error.UNARY_OPERATOR_INCOMPATIBLE_TYPE, new String[] {
+					mOperatorToken.getWord(),
+					mExpression2.toString(),
+					mExpression2.getType().toString()
+				}));
+			}
 		}
 
 		if (mOperator == Operators.ASSIGN) {
