@@ -86,7 +86,7 @@ public class Box<T> {
 			mValue = value + 1;
 			return (T) value;
 		}
-		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { mUAI.export(mValue), "++" });
+		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { mUAI.export(mValue) + "++" });
 		return null;
 	}
 
