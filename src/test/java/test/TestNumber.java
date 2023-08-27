@@ -859,6 +859,8 @@ public class TestNumber extends TestCommon {
 		code_v2_("return min([15.7, ''][0], 12.8)").equals("12.8");
 		code_v1("return min(5.5, [12.8, ''][0])").equals("5,5");
 		code_v2_("return min(5.5, [12.8, ''][0])").equals("5.5");
+		code_v1("return -min(15.7, 12)").equals("-12");
+		code_v2_("return -min(15.7, 12)").equals("-12.0");
 		// code("return min(5l, 10.5);").equals("5");
 		// code("return min(5l, 10);").equals("5");
 		// code("return min(true, 10l);").equals("1");

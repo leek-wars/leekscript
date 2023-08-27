@@ -769,7 +769,7 @@ public class LeekExpression extends Expression {
 			writer.addCode(")");
 			return;
 		case Operators.UNARY_MINUS:
-			if (mExpression2.getType().isNumber()) {
+			if (mExpression2.getType().isPrimitiveNumber()) {
 				writer.addCode("-");
 				mExpression2.writeJavaCode(mainblock, writer);
 			} else {
