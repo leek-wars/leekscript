@@ -233,6 +233,13 @@ public class LeekFunctions {
 		method("removeKey", "Map", Type.VOID, new Type[] { Type.ARRAY, Type.ANY }).setMaxVersion(3, "mapRemove");
 
 		/**
+		 * Set functions
+		 */
+		method("setPut", "Set", 3, Type.ANY, new Type[] { Type.SET, Type.ANY }).setMinVersion(4);
+		method("setRemove", "Set", 2, Type.ANY, new Type[] { Type.SET, Type.ANY }).setMinVersion(4);
+		method("setClear", "Set", 1, Type.SET, new Type[] { Type.SET }).setMinVersion(4);
+
+		/**
 		 * Interval functions
 		 */
 		method("intervalLowerBound", "Interval", 1, Type.REAL, new Type[] { Type.INTERVAL }).setMinVersion(4);
