@@ -67,4 +67,19 @@ public class SetLeekValue {
 
 		return sb.append(">").toString();
 	}
+
+	public Object setPut(AI ai, Object value) throws LeekRunException {
+		set.add(value);
+		return value;
+	}
+
+	public Object setRemove(AI ai, Object value) throws LeekRunException {
+		set.remove(value);
+		return value;
+	}
+
+	public SetLeekValue setClear(AI ai) throws LeekRunException {
+		set.clear();
+		return this;
+	}
 }
