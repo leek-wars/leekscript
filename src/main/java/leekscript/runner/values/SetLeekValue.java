@@ -82,4 +82,25 @@ public class SetLeekValue {
 		set.clear();
 		return this;
 	}
+
+	public boolean setContains(AI ai, Object value) throws LeekRunException {
+		return operatorIn(value);
+	}
+
+	public boolean operatorIn(Object value) throws LeekRunException {
+		return set.contains(value);
+	}
+
+	public long setSize(AI ai) throws LeekRunException {
+		return set.size();
+	}
+
+	public boolean setIsEmpty(AI ai) throws LeekRunException {
+		return set.isEmpty();
+	}
+
+	public boolean setIsSubsetOf(AI ai, SetLeekValue set) throws LeekRunException {
+		ai.ops(this.set.size() * 2);
+		return set.set.containsAll(this.set);
+	}
 }

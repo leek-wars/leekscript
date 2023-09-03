@@ -3040,6 +3040,8 @@ public abstract class AI {
 			return ((LegacyArrayLeekValue) container).operatorIn(value);
 		} else if (container instanceof MapLeekValue) {
 			return ((MapLeekValue) container).operatorIn(value);
+		} else if (container instanceof SetLeekValue) {
+			return ((SetLeekValue) container).operatorIn(value);
 		}
 
 		ops(1);
