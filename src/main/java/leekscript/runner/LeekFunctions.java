@@ -238,6 +238,10 @@ public class LeekFunctions {
 		method("setPut", "Set", 3, Type.ANY, new Type[] { Type.SET, Type.ANY }).setMinVersion(4);
 		method("setRemove", "Set", 2, Type.ANY, new Type[] { Type.SET, Type.ANY }).setMinVersion(4);
 		method("setClear", "Set", 1, Type.SET, new Type[] { Type.SET }).setMinVersion(4);
+		method("setContains", "Set", 2, Type.BOOL, new Type[] { Type.SET, Type.ANY }).setMinVersion(4);
+		method("setSize", "Set", 1, Type.INT, new Type[] { Type.SET }).setMinVersion(4);
+		method("setIsEmpty", "Set", 2, Type.BOOL, new Type[] { Type.SET }).setMinVersion(4);
+		method("setIsSubsetOf", "Set", Type.BOOL, new Type[] { Type.SET, Type.SET }).setMinVersion(4);
 
 		/**
 		 * Interval functions
