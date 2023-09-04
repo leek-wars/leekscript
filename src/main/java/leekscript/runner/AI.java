@@ -1339,6 +1339,9 @@ public abstract class AI {
 		} else if (value instanceof IntervalLeekValue) {
 			// TODO
 			return "Interval";
+		} else if (value instanceof SetLeekValue) {
+			// TODO
+			return "Set";
 		} else if (value instanceof String) {
 			return (String) value;
 		} else if (value instanceof ClassLeekValue) {
