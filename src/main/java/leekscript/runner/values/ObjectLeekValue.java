@@ -14,7 +14,7 @@ import leekscript.runner.LeekRunException;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 
-public class ObjectLeekValue {
+public class ObjectLeekValue implements LeekValue {
 
 	public final ClassLeekValue clazz;
 	public final int id;

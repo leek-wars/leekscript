@@ -1,8 +1,12 @@
 package leekscript.runner.values;
 
-import leekscript.runner.AI.NativeObjectLeekValue;
+import java.util.Set;
 
-public class LeekValue {
+import leekscript.runner.AI;
+import leekscript.runner.AI.NativeObjectLeekValue;
+import leekscript.runner.LeekRunException;
+
+public interface LeekValue {
 
 	public final static int NUMBER_V1 = 1;
 	public final static int BOOLEAN_V1 = 2;
@@ -30,6 +34,8 @@ public class LeekValue {
 	public final static int DIV_COST = 5;
 	public final static int MOD_COST = 5;
 	public final static int POW_COST = 40;
+
+	public String string(AI ai, Set<Object> visited) throws LeekRunException;
 
 	public static String getParamString(Object[] parameters) {
 		String ret = "";

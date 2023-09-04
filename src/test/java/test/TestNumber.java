@@ -26,8 +26,12 @@ public class TestNumber extends TestCommon {
 		code_v2_("return 1e+3-2").equals("998.0");
 		code_v1("return 1.5e-3").equals("0,002");
 		code_v2_("return 1.5e-3").equals("0.0015");
-		// TODO special character constant
-		// code("π").almost(3.141592653589793116);
+
+		section("Special characters");
+		code_v1("return π").equals("3,142");
+		code_v2_("return π").almost(3.141592653589793116);
+		code("return ∞").equals("∞");
+		code("return -∞").equals("-∞");
 
 		section("Class");
 		code_v3_("return new Integer").equals("0");
@@ -233,8 +237,7 @@ public class TestNumber extends TestCommon {
 		// code("epsilon").almost(0.000000000000000222);
 		// code("let pi = 3 pi").equals("3");
 		// code("{ let pi = 3 } pi").almost(3.141592653589793116);
-		code_v1("return Infinity").equals("∞");
-		code_v2_("return Infinity").equals("Infinity");
+		code("return Infinity").equals("∞");
 		code("return NaN").equals("NaN");
 		code("return NaN === NaN").equals("false");
 		code("return 0 / 0 === NaN").equals("false");

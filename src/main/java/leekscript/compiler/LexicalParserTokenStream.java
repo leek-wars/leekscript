@@ -122,6 +122,11 @@ public class LexicalParserTokenStream {
 		}
 	}
 
+	@Override
+	public String toString() {
+		return "Tokens current=" + get();
+	}
+
 	public LexicalParserTokenStreamPosition getPosition() {
 		return new LexicalParserTokenStreamPosition(cursor);
 	}

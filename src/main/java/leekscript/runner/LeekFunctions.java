@@ -246,18 +246,41 @@ public class LeekFunctions {
 		/**
 		 * Interval functions
 		 */
-		method("intervalLowerBound", "Interval", 1, Type.REAL, new Type[] { Type.INTERVAL }).setMinVersion(4);
-		method("intervalUpperBound", "Interval", 1, Type.REAL, new Type[] { Type.INTERVAL }).setMinVersion(4);
+		method("intervalMin", "Interval", 1, new CallableVersion[] {
+			new CallableVersion(Type.REAL, new Type[] { Type.REAL_INTERVAL}),
+			new CallableVersion(Type.INT, new Type[] { Type.INTEGER_INTERVAL }),
+		}).setMinVersion(4);
+		method("intervalMax", "Interval", 1, new CallableVersion[] {
+			new CallableVersion(Type.REAL, new Type[] { Type.REAL_INTERVAL}),
+			new CallableVersion(Type.INT, new Type[] { Type.INTEGER_INTERVAL }),
+		}).setMinVersion(4);
+		method("intervalSize", "Interval", 1, new CallableVersion[] {
+			new CallableVersion(Type.REAL, new Type[] { Type.REAL_INTERVAL}),
+			new CallableVersion(Type.INT, new Type[] { Type.INTEGER_INTERVAL }),
+		}).setMinVersion(4);
 		method("intervalIsEmpty", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).setMinVersion(4);
 		method("intervalIsBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).setMinVersion(4);
 		method("intervalIsRightBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).setMinVersion(4);
 		method("intervalIsLeftBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).setMinVersion(4);
-		method("intervalMidpoint", "Interval", 3, Type.REAL, new Type[] { Type.INTERVAL }).setMinVersion(4);
-		method("intervalIntersection", "Interval", 3, Type.INTERVAL, new Type[] { Type.INTERVAL, Type.INTERVAL }).setMinVersion(4);
-		method("intervalCombine", "Interval", 3, Type.INTERVAL, new Type[] { Type.INTERVAL, Type.INTERVAL }).setMinVersion(4);
+		method("intervalAverage", "Interval", 3, Type.REAL, new Type[] { Type.INTERVAL }).setMinVersion(4);
+		method("intervalIntersection", "Interval", 3, new CallableVersion[] {
+			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.REAL_INTERVAL, Type.REAL_INTERVAL }),
+			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.INTEGER_INTERVAL, Type.REAL_INTERVAL }),
+			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.REAL_INTERVAL, Type.INTEGER_INTERVAL }),
+			new CallableVersion(Type.INTEGER_INTERVAL, new Type[] { Type.INTEGER_INTERVAL, Type.INTEGER_INTERVAL }),
+		}).setMinVersion(4);
+		method("intervalCombine", "Interval", 3, new CallableVersion[] {
+			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.REAL_INTERVAL, Type.REAL_INTERVAL }),
+			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.INTEGER_INTERVAL, Type.REAL_INTERVAL }),
+			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.REAL_INTERVAL, Type.INTEGER_INTERVAL }),
+			new CallableVersion(Type.INTEGER_INTERVAL, new Type[] { Type.INTEGER_INTERVAL, Type.INTEGER_INTERVAL }),
+		}).setMinVersion(4);
 		method("intervalToArray", "Interval", new CallableVersion[] {
-				new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.INTERVAL, Type.REAL }),
-				new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.INTERVAL}),
+			new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.REAL_INTERVAL, Type.REAL }),
+			new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.REAL_INTERVAL}),
+			new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.INTEGER_INTERVAL, Type.REAL }),
+			new CallableVersion(Type.ARRAY_INT, new Type[] { Type.INTEGER_INTERVAL, Type.INT }),
+			new CallableVersion(Type.ARRAY_INT, new Type[] { Type.INTEGER_INTERVAL}),
 		}).setMinVersion(4);
 
 		/**

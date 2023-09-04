@@ -16,8 +16,10 @@ public enum TokenType {
 	BRACKET_LEFT,
 	BRACKET_RIGHT,
 	DOUBLE_POINT,
-	DOT,	
+	DOT,
 	DOT_DOT,
 	ARROW,
+	LEMNISCATE,
+	PI,
 	END_OF_FILE,
 }

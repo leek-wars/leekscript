@@ -9,7 +9,7 @@ import java.util.Set;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
-public class SetLeekValue extends HashSet<Object> {
+public class SetLeekValue extends HashSet<Object> implements LeekValue {
 
 	public static class SetIterator implements Iterator<Entry<Object, Object>> {
 
@@ -58,7 +58,7 @@ public class SetLeekValue extends HashSet<Object> {
 		return this.id;
 	}
 
-	public String getString(AI ai2, Set<Object> visited) throws LeekRunException {
+	public String string(AI ai, Set<Object> visited) throws LeekRunException {
 		visited.add(this);
 		return toString(ai, visited);
 	}

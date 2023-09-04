@@ -1,9 +1,11 @@
 package leekscript.runner.values;
 
+import java.util.Set;
+
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
-public abstract class FunctionLeekValue<T> {
+public abstract class FunctionLeekValue<T> implements LeekValue {
 
 	protected int mParametersCount = -1;
 	protected String name;
@@ -31,7 +33,8 @@ public abstract class FunctionLeekValue<T> {
 		return this.name;
 	}
 
-	public String getString(AI ai) {
+	@Override
+	public String string(AI ai, Set<Object> visited) throws LeekRunException {
 		return this.name;
 	}
 }

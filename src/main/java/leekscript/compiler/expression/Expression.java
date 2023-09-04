@@ -187,4 +187,8 @@ public abstract class Expression {
 	public LeekVariable getVariable() {
 		return null;
 	}
+
+	public boolean isInfinity() {
+		return false;
+	}
 }

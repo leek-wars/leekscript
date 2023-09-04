@@ -439,7 +439,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return sb.toString();
 	}
 
-	public String getString(AI ai, Set<Object> visited) throws LeekRunException {
+	public String string(AI ai, Set<Object> visited) throws LeekRunException {
 		visited.add(this);
 		return toString(ai, visited);
 	}

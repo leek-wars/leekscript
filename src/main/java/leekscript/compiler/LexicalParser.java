@@ -31,6 +31,7 @@ public class LexicalParser {
 			if (tryParseString()) continue;
 			if (tryParseComments()) continue;
 			if (tryParseNumber(error)) continue;
+			if (tryParseSpecialIdentifier()) continue;
 			if (tryParseIdentifier()) continue;
 			if (tryParseOperator()) continue;
 			if (tryParseBracketLike()) continue;
@@ -98,6 +99,21 @@ public class LexicalParser {
 			if (tryParseExact(operator, TokenType.OPERATOR)) return true;
 		}
 
+		return false;
+	}
+
+	private boolean tryParseSpecialIdentifier() {
+
+		var c = stream.peek();
+		if (c == '∞') {
+			stream.next();
+			addToken("∞", TokenType.LEMNISCATE);
+			return true;
+		} else if (c == 'π') {
+			stream.next();
+			addToken("π", TokenType.PI);
+			return true;
+		}
 		return false;
 	}
 

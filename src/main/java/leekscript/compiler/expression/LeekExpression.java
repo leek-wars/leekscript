@@ -129,6 +129,10 @@ public class LeekExpression extends Expression {
 		return type;
 	}
 
+	public boolean isInfinity() {
+		return mOperator == Operators.UNARY_MINUS && mExpression2 != null && mExpression2.isInfinity();
+	}
+
 	public boolean complete(int operator) {
 		return complete();
 	}

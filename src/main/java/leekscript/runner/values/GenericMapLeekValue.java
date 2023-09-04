@@ -3,7 +3,7 @@ package leekscript.runner.values;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
-public interface GenericMapLeekValue {
+public interface GenericMapLeekValue extends LeekValue {
 
 	public void set(AI ai, Object key, Object value) throws LeekRunException;
 

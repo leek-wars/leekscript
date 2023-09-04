@@ -1,13 +1,16 @@
 package leekscript.compiler.expression;
 
 import leekscript.common.Type;
+import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.common.Error;
 
 public class LeekInterval extends Expression {
 
@@ -16,10 +19,15 @@ public class LeekInterval extends Expression {
 	private Expression mTo;
 	private Token openingBracket;
 	private Token closingBracket;
+	private Type type;
+	private final boolean minClosed;
+	private final boolean maxClosed;
 
 	public LeekInterval(Token openingBracket, Expression from, Expression to, Token closingBracket) {
 		this.openingBracket = openingBracket;
 		this.closingBracket = closingBracket;
+		this.minClosed = openingBracket.getWord().equals("[");
+		this.maxClosed = closingBracket.getWord().equals("]");
 		this.mFrom = from;
 		this.mTo = to;
 
@@ -34,7 +42,7 @@ public class LeekInterval extends Expression {
 
 	@Override
 	public Type getType() {
-		return Type.INTERVAL;
+		return type;
 	}
 
 	@Override
@@ -68,23 +76,70 @@ public class LeekInterval extends Expression {
 			mTo.analyze(compiler);
 			operations += mTo.getOperations();
 		}
+		var fromInfinity = mFrom == null || mFrom.isInfinity();
+		var toInfinity = mTo == null || mTo.isInfinity();
+		var fromType = fromInfinity ? Type.VOID : mFrom.getType();
+		var toType = toInfinity ? Type.VOID : mTo.getType();
+		if (minClosed && maxClosed && mFrom == null && mTo == null) {
+			type = Type.EMPTY_INTERVAL;
+		} else if (fromType == Type.REAL || toType == Type.REAL || (fromType == Type.VOID && toType == Type.VOID)) {
+			type = Type.REAL_INTERVAL;
+		} else if (fromType == Type.INT || toType == Type.INT) {
+			type = Type.INTEGER_INTERVAL;
+		} else {
+			type = Type.INTERVAL;
+		}
+
+		if (type != Type.EMPTY_INTERVAL) {
+			if (minClosed && fromInfinity) {
+				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.INTERVAL_INFINITE_CLOSED, new String[] {
+					mFrom == null ? "∞" : mFrom.toString()
+				}));
+			}
+			if (maxClosed && toInfinity) {
+				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.INTERVAL_INFINITE_CLOSED, new String[] {
+					mTo == null ? "∞" : mTo.toString()
+				}));
+			}
+		}
 	}
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainBlock, JavaWriter writer) {
-		writer.addCode("new IntervalLeekValue(" + writer.getAIThis() + ", ");
-		if (mFrom == null) {
-			writer.addCode("Double.NEGATIVE_INFINITY");
+		if (type == Type.EMPTY_INTERVAL) {
+			writer.addCode("new RealIntervalLeekValue(" + writer.getAIThis() + ", false, 0.0, false, 0.0)");
 		} else {
-			mFrom.writeJavaCode(mainBlock, writer);
+
+			if (type == Type.INTEGER_INTERVAL) {
+				writer.addCode("new IntegerIntervalLeekValue(" + writer.getAIThis() + ", ");
+			} else if (type == Type.REAL_INTERVAL) {
+				writer.addCode("new RealIntervalLeekValue(" + writer.getAIThis() + ", ");
+			} else {
+				writer.addCode("interval(");
+			}
+			writer.addCode(minClosed + ", ");
+			if (mFrom == null) {
+				if (type == Type.INTEGER_INTERVAL) {
+					writer.addCode("Long.MIN_VALUE");
+				} else {
+					writer.addCode("Double.NEGATIVE_INFINITY");
+				}
+			} else {
+				mFrom.writeJavaCode(mainBlock, writer);
+			}
+			writer.addCode(", ");
+			writer.addCode(maxClosed + ", ");
+			if (mTo == null) {
+				if (type == Type.INTEGER_INTERVAL) {
+					writer.addCode("Long.MAX_VALUE");
+				} else {
+					writer.addCode("Double.POSITIVE_INFINITY");
+				}
+			} else {
+				mTo.writeJavaCode(mainBlock, writer);
+			}
+			writer.addCode(")");
 		}
-		writer.addCode(", ");
-		if (mTo == null) {
-			writer.addCode("Double.POSITIVE_INFINITY");
-		} else {
-			mTo.writeJavaCode(mainBlock, writer);
-		}
-		writer.addCode(")");
 	}
 
 	@Override

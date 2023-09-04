@@ -3,7 +3,7 @@ package leekscript.runner.values;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
-public interface GenericArrayLeekValue {
+public interface GenericArrayLeekValue extends LeekValue {
 
 	public Object push(AI ai, Object value) throws LeekRunException;
 

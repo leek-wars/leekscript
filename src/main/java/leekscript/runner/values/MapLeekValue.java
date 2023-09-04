@@ -437,7 +437,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return remove(key);
 	}
 
-	public String getString(AI ai, Set<Object> visited) throws LeekRunException {
+	public String string(AI ai, Set<Object> visited) throws LeekRunException {
 
 		ai.ops(1 + size() * 2);
 

@@ -6,17 +6,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Set;
 
 import leekscript.AILog;
 import leekscript.ErrorManager;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
-import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
-public class ClassLeekValue extends FunctionLeekValue {
+public class ClassLeekValue extends FunctionLeekValue<Object> {
 
 	public static class ClassField {
 		Object value;
@@ -142,7 +142,7 @@ public class ClassLeekValue extends FunctionLeekValue {
 	}
 
 	public void addGenericMethod(String method) {
-		genericMethods.put(method, new FunctionLeekValue(1) {
+		genericMethods.put(method, new FunctionLeekValue<Object>(1) {
 			public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
 
 				if (arguments.length == 0) {
@@ -602,7 +602,12 @@ public class ClassLeekValue extends FunctionLeekValue {
 		return null;
 	}
 
-	public String getString(AI ai) {
+	public String string(AI ai) throws LeekRunException {
+		return "<class " + name + ">";
+	}
+
+	@Override
+	public String string(AI ai, Set<Object> visited) throws LeekRunException {
 		return "<class " + name + ">";
 	}
 

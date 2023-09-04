@@ -1214,14 +1214,18 @@ public class WordCompiler {
 	}
 
 	public Expression readExpression() throws LeekCompilerException {
-		return readExpression(false, false);
+		return readExpression(false, false, false);
 	}
 
 	public Expression readExpression(boolean inList) throws LeekCompilerException {
-		return readExpression(inList, false);
+		return readExpression(inList, false, false);
 	}
 
 	public Expression readExpression(boolean inList, boolean inSet) throws LeekCompilerException {
+		return readExpression(inList, inSet, false);
+	}
+
+	public Expression readExpression(boolean inList, boolean inSet, boolean inInterval) throws LeekCompilerException {
 
 		var retour = new LeekExpression();
 
@@ -1356,6 +1360,9 @@ public class WordCompiler {
 				// Si on attend un opérateur mais qu'il vient pas
 
 				if (word.getType() == TokenType.BRACKET_LEFT) {
+
+					var save = mTokens.getPosition();
+
 					var bracket = mTokens.eat(); // On avance le curseur pour être au début de l'expression
 					Token colon = null;
 					Token colon2 = null;
@@ -1382,7 +1389,7 @@ public class WordCompiler {
 								}
 							}
 						}
-					} else {
+					} else if (mTokens.hasMoreTokens()) {
 						start = readExpression();
 						if (getVersion() >= 4 && mTokens.get().getWord().equals(":")) {
 							colon = mTokens.eat();
@@ -1404,7 +1411,12 @@ public class WordCompiler {
 					}
 
 					if (mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
-						throw new LeekCompilerException(mTokens.get(), Error.CLOSING_SQUARE_BRACKET_EXPECTED);
+						if (inInterval) {
+							mTokens.setPosition(save);
+							break;
+						} else {
+							throw new LeekCompilerException(mTokens.get(), Error.CLOSING_SQUARE_BRACKET_EXPECTED);
+						}
 					}
 					retour.addBracket(bracket, start, colon, end, colon2, stride, mTokens.get());
 
@@ -1520,12 +1532,38 @@ public class WordCompiler {
 							retour.addExpression(new LeekNumber(word, 0, 0, Type.INT));
 						}
 					}
+
+				} else if (word.getType() == TokenType.LEMNISCATE) {
+
+					retour.addExpression(new LeekNumber(word, Double.POSITIVE_INFINITY, 0, Type.REAL));
+
+				} else if (word.getType() == TokenType.PI) {
+
+					retour.addExpression(new LeekNumber(word, Math.PI, 0, Type.REAL));
+
 				} else if (word.getType() == TokenType.VAR_STRING) {
 
 					retour.addExpression(new LeekString(word, word.getWord()));
 
 				} else if (word.getType() == TokenType.BRACKET_LEFT) {
 					retour.addExpression(readArrayOrMapOrInterval(mTokens.eat()));
+
+				} else if (word.getType() == TokenType.BRACKET_RIGHT) {
+
+					var token = mTokens.eat();
+					if (mTokens.get().getType() == TokenType.DOT_DOT) {
+						// interval `]..`
+						mTokens.skip();
+						retour.addExpression(readInterval(token, null));
+					} else {
+						// interval `]x..`
+						var expression = readExpression(true);
+						var dot_dot = mTokens.eat();
+						if (dot_dot.getType() != TokenType.DOT_DOT) {
+							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.DOT_DOT_EXPECTED));
+						}
+						retour.addExpression(readInterval(token, expression));
+					}
 
 				} else if (getVersion() >= 4 && word.getType() == TokenType.OPERATOR && word.getWord().equals("<")) {
 					retour.addExpression(readSet(mTokens.eat()));
@@ -1836,21 +1874,21 @@ public class WordCompiler {
 	}
 
 	private Expression readInterval(Token openingBracket, Expression fromExpression) throws LeekCompilerException {
-		if (mTokens.get().getType() == TokenType.BRACKET_RIGHT) {
+		if (mTokens.get().getType() == TokenType.BRACKET_RIGHT || mTokens.get().getType() == TokenType.BRACKET_LEFT) {
 			return new LeekInterval(openingBracket, fromExpression, null, mTokens.get());
 		}
 
 		// Although an interval is not comma separated, we still parse the second
 		// expression as if we did. This is in order to be more consitent as the first
 		// expression is parsed as if it was comma separated
-		var toExpression = readExpression(true);
+		var toExpression = readExpression(true, false, true);
 
 		var nextToken = mTokens.get();
 		if (nextToken.getWord().equals(":")) {
 			throw new LeekCompilerException(mTokens.get(), Error.ASSOCIATIVE_ARRAY);
 		} else if (nextToken.getType() == TokenType.VIRG) {
 			throw new LeekCompilerException(mTokens.get(), Error.SIMPLE_ARRAY);
-		} else if (nextToken.getType() != TokenType.BRACKET_RIGHT) {
+		} else if (nextToken.getType() != TokenType.BRACKET_RIGHT && nextToken.getType() != TokenType.BRACKET_LEFT) {
 			throw new LeekCompilerException(mTokens.get(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
 		}
 

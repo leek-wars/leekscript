@@ -37,6 +37,10 @@ public class LeekNumber extends Expression {
 		return type;
 	}
 
+	public boolean isInfinity() {
+		return doubleValue == Double.POSITIVE_INFINITY;
+	}
+
 	@Override
 	public String toString() {
 		if (type == Type.REAL) {
@@ -60,7 +64,11 @@ public class LeekNumber extends Expression {
 		if (type == Type.INT) {
 			writer.addCode(String.valueOf(longValue) + "l");
 		} else {
-			writer.addCode(String.valueOf(doubleValue));
+			if (doubleValue == Double.POSITIVE_INFINITY) {
+				writer.addCode("Double.POSITIVE_INFINITY");
+			} else {
+				writer.addCode(String.valueOf(doubleValue));
+			}
 		}
 	}
 
