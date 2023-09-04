@@ -1,24 +1,46 @@
 package leekscript.runner.values;
 
+import java.util.AbstractMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
-public class SetLeekValue {
+public class SetLeekValue extends HashSet<Object> {
+
+	public static class SetIterator implements Iterator<Entry<Object, Object>> {
+
+		private Iterator<Object> it;
+		private long i = 0;
+
+		public SetIterator(SetLeekValue set) {
+			this.it = set.iterator();
+		}
+
+		@Override
+		public boolean hasNext() {
+			return it.hasNext();
+		}
+
+		@Override
+		public Entry<Object, Object> next() {
+			var e = new AbstractMap.SimpleEntry<Object, Object>(i, it.next());
+			i++;
+			return e;
+		}
+	}
 
 	private final AI ai;
 	public final int id;
 
-	private final HashSet<Object> set;
-
 	public SetLeekValue(AI ai, Object[] values) throws LeekRunException {
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		this.set = new HashSet<Object>();
 		for (Object value : values) {
-			this.set.add(value);
+			this.add(value);
 		}
 	}
 
@@ -48,7 +70,7 @@ public class SetLeekValue {
 
 		boolean first = true;
 
-		for (Object value : set) {
+		for (var value : this) {
 			if (first) {
 				first = false;
 			} else {
@@ -69,17 +91,17 @@ public class SetLeekValue {
 	}
 
 	public Object setPut(AI ai, Object value) throws LeekRunException {
-		set.add(value);
+		add(value);
 		return value;
 	}
 
 	public Object setRemove(AI ai, Object value) throws LeekRunException {
-		set.remove(value);
+		remove(value);
 		return value;
 	}
 
 	public SetLeekValue setClear(AI ai) throws LeekRunException {
-		set.clear();
+		clear();
 		return this;
 	}
 
@@ -88,19 +110,23 @@ public class SetLeekValue {
 	}
 
 	public boolean operatorIn(Object value) throws LeekRunException {
-		return set.contains(value);
+		return contains(value);
 	}
 
 	public long setSize(AI ai) throws LeekRunException {
-		return set.size();
+		return size();
 	}
 
 	public boolean setIsEmpty(AI ai) throws LeekRunException {
-		return set.isEmpty();
+		return isEmpty();
 	}
 
 	public boolean setIsSubsetOf(AI ai, SetLeekValue set) throws LeekRunException {
-		ai.ops(this.set.size() * 2);
-		return set.set.containsAll(this.set);
+		ai.ops(this.size() * 2);
+		return set.containsAll(this);
+	}
+
+	public Iterator<Entry<Object, Object>> genericIterator() {
+		return new SetIterator(this);
 	}
 }

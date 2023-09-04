@@ -75,5 +75,7 @@ public class TestSet extends TestCommon {
 		code_v4_("Set i = <>; Set j = <1, 2>; return setIsSubsetOf(j, i)").equals("false");
 		code_v4_("Set i = <>; Set j = <>; return setIsSubsetOf(i, j)").equals("true");
 
+		section("Set iteration");
+		code_v4_("var s = <1, 2, 3, 4, 5> var x = 0 for (var y in s) x += y return x").equals("15");
 	}
 }

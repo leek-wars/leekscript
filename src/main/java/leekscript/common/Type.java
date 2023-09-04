@@ -34,7 +34,7 @@ public class Type {
 	// public static final Type LEGACY_ARRAY = new LegacyArrayType();
 	public static final Type ARRAY = array(Type.ANY);
 	public static final Type SET = set(Type.ANY);
-	public static final Type INTERVAL = new Type("interval", "t", "IntervalLeekValue", "IntervalLeekValue", "new IntervalLeekValue()");
+	public static final Type INTERVAL = new IntervalType();
 	public static final Type ARRAY_INT = array(Type.INT);
 	public static final Type ARRAY_REAL = array(Type.REAL);
 	public static final Type ARRAY_STRING = array(Type.STRING);

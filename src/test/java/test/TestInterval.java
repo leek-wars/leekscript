@@ -153,5 +153,8 @@ public class TestInterval extends TestCommon {
 		code_v4_("return [1..4][:-1:];").equals("[1.0, 2.0, 3.0]");
 		code_v4_("return [1..4][2::];").equals("[3.0, 4.0]");
 		code_v4_("return [1..4][:2:];").equals("[1.0, 2.0]");
+
+		section("Interval iteration");
+		code_v4_("var i = [0..6] var x = 0 for (var y in i) x += y return x").equals("15");
 	}
 }

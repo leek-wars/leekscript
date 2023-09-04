@@ -1,6 +1,9 @@
 package leekscript.runner.values;
 
+import java.util.AbstractMap;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import leekscript.AILog;
 import leekscript.common.Error;
@@ -8,6 +11,31 @@ import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
 public class IntervalLeekValue {
+
+	public static class IntervalIterator implements Iterator<Entry<Object, Object>> {
+
+		private IntervalLeekValue interval;
+		private long i = 0;
+		private long x;
+
+		public IntervalIterator(IntervalLeekValue interval) {
+			this.interval = interval;
+			this.x = (long) interval.from;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return x < interval.to;
+		}
+
+		@Override
+		public Entry<Object, Object> next() {
+			var e = new AbstractMap.SimpleEntry<Object, Object>(i, x);
+			i++;
+			x++;
+			return e;
+		}
+	}
 
 	private final AI ai;
 	public final int id;
@@ -190,5 +218,9 @@ public class IntervalLeekValue {
 		ai.ops(array.size() * 2);
 
 		return array;
+	}
+
+	public Iterator<Entry<Object, Object>> iterator() {
+		return new IntervalIterator(this);
 	}
 }

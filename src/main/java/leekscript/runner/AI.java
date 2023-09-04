@@ -1500,11 +1500,11 @@ public abstract class AI {
 	}
 
 	public boolean isPrimitive(Object value) {
-		return !(value instanceof ArrayLeekValue || value instanceof MapLeekValue || value instanceof LegacyArrayLeekValue || value instanceof IntervalLeekValue || value instanceof ObjectLeekValue || value instanceof NativeObjectLeekValue);
+		return !(value instanceof ArrayLeekValue || value instanceof MapLeekValue || value instanceof LegacyArrayLeekValue || value instanceof SetLeekValue || value instanceof IntervalLeekValue || value instanceof ObjectLeekValue || value instanceof NativeObjectLeekValue);
 	}
 
 	public boolean isIterable(Object value) throws LeekRunException {
-		boolean ok = value instanceof LegacyArrayLeekValue || value instanceof ArrayLeekValue || value instanceof MapLeekValue || value instanceof IntervalLeekValue;
+		boolean ok = value instanceof LegacyArrayLeekValue || value instanceof ArrayLeekValue || value instanceof MapLeekValue || value instanceof SetLeekValue || value instanceof IntervalLeekValue;
 		if (!ok && version >= 2) {
 			addSystemLog(AILog.ERROR, Error.NOT_ITERABLE, new Object[] { value });
 		}
@@ -1518,9 +1518,10 @@ public abstract class AI {
 			return ((ArrayLeekValue) value).genericIterator();
 		} else if (value instanceof MapLeekValue) {
 			return ((MapLeekValue) value).entrySet().iterator();
-		} else if (value instanceof IntervalLeekValue) {
-			// TODO
-			return null;
+		} else if (value instanceof SetLeekValue set) {
+			return set.genericIterator();
+		} else if (value instanceof IntervalLeekValue interval) {
+			return interval.iterator();
 		}
 		return null;
 	}

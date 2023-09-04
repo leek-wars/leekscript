@@ -26,10 +26,6 @@ public class SetType extends Type {
 		return type;
 	}
 
-	public boolean isSet() {
-		return true;
-	}
-
 	public boolean canBeIterable() {
 		return true;
 	}
