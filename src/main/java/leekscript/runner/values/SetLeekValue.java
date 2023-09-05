@@ -146,4 +146,36 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		r.retainAll(set);
 		return r;
 	}
+
+	public SetLeekValue setDifference(AI ai, SetLeekValue set) throws LeekRunException {
+		ai.ops((this.size() + set.size()) * 2);
+		var r = new SetLeekValue(ai);
+		r.addAll(this);
+		r.removeAll(set);
+		return r;
+	}
+
+	public SetLeekValue setDisjunction(AI ai, SetLeekValue set) throws LeekRunException {
+		ai.ops((this.size() + set.size()) * 4);
+		var r = new SetLeekValue(ai);
+		for (var e : this) {
+			if (!set.contains(e)) r.add(e);
+		}
+		for (var e : set) {
+			if (!this.contains(e)) r.add(e);
+		}
+		return r;
+	}
+
+	public ArrayLeekValue setToArray(AI ai) throws LeekRunException {
+		ai.ops(this.size() * 2);
+		var r = new ArrayLeekValue(ai, this.toArray());
+		return r;
+	}
+
+	public LegacyArrayLeekValue setToArray_v1_3(AI ai) throws LeekRunException {
+		ai.ops(this.size() * 2);
+		var r = new LegacyArrayLeekValue(ai, this.toArray());
+		return r;
+	}
 }

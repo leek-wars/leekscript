@@ -244,6 +244,9 @@ public class LeekFunctions {
 		method("setIsSubsetOf", "Set", Type.BOOL, new Type[] { Type.SET, Type.SET });
 		method("setUnion", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
 		method("setIntersection", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
+		method("setDifference", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
+		method("setDisjunction", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
+		method("setToArray", "Set", Type.ARRAY, new Type[] { Type.SET });
 
 		/**
 		 * Interval functions

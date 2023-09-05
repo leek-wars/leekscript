@@ -81,7 +81,16 @@ public class TestSet extends TestCommon {
 		section("Set.union()");
 		code("var s1 = <1, 2, 3> var s2 = <4, 5, 6> return setUnion(s1, s2)").equals("<1, 2, 3, 4, 5, 6>");
 
-		section("Set.union()");
+		section("Set.intersection()");
 		code("var s1 = <1, 2, 3> var s2 = <2, 3, 4> return setIntersection(s1, s2)").debug().equals("<2, 3>");
+
+		section("Set.difference()");
+		code("var s1 = <1, 2, 3> var s2 = <2, 3, 4> return setDifference(s1, s2)").debug().equals("<1>");
+
+		section("Set.disjunction()");
+		code("var s1 = <1, 2, 3> var s2 = <2, 3, 4> return setDisjunction(s1, s2)").debug().equals("<1, 4>");
+
+		section("Set.toArray()");
+		code("var s = <1, 2, 3> return setToArray(s)").equals("[1, 2, 3]");
 	}
 }
