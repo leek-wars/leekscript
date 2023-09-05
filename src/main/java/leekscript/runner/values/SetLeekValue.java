@@ -36,16 +36,17 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 	private final AI ai;
 	public final int id;
 
+
+	public SetLeekValue(AI ai) throws LeekRunException {
+		this(ai, new Object[0]);
+	}
+
 	public SetLeekValue(AI ai, Object[] values) throws LeekRunException {
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		for (Object value : values) {
 			this.add(value);
 		}
-	}
-
-	public SetLeekValue(AI ai) throws LeekRunException {
-		this(ai, new Object[0]);
 	}
 
 	@Override
@@ -128,5 +129,21 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 
 	public Iterator<Entry<Object, Object>> genericIterator() {
 		return new SetIterator(this);
+	}
+
+	public SetLeekValue setUnion(AI ai, SetLeekValue set) throws LeekRunException {
+		ai.ops((this.size() + set.size()) * 2);
+		var r = new SetLeekValue(ai);
+		r.addAll(this);
+		r.addAll(set);
+		return r;
+	}
+
+	public SetLeekValue setIntersection(AI ai, SetLeekValue set) throws LeekRunException {
+		ai.ops((this.size() + set.size()) * 2);
+		var r = new SetLeekValue(ai);
+		r.addAll(this);
+		r.retainAll(set);
+		return r;
 	}
 }

@@ -137,6 +137,7 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 		return from <= valueAsReal && valueAsReal <= to;
 	}
 
+	@Override
 	public double intervalAverage(AI ai) throws LeekRunException {
 		if (intervalIsEmpty(ai)) {
 			return Double.NaN;
@@ -199,18 +200,18 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 		return new IntegerIntervalLeekValue(ai, unionMinClosed, Math.min(from, interval.from), unionMaxClosed, Math.max(to, interval.to));
 	}
 
-	public IntegerIntervalLeekValue intervalCombine(AI ai, RealIntervalLeekValue interval) throws LeekRunException {
+	public RealIntervalLeekValue intervalCombine(AI ai, RealIntervalLeekValue interval) throws LeekRunException {
 		if (intervalIsEmpty(ai)) {
-			return new IntegerIntervalLeekValue(ai, interval.minClosed, interval.getFrom(), interval.maxClosed, interval.getTo());
+			return new RealIntervalLeekValue(ai, interval.minClosed, interval.getFrom(), interval.maxClosed, interval.getTo());
 		}
 
 		if (interval.intervalIsEmpty(ai)) {
-			return new IntegerIntervalLeekValue(ai, minClosed, from, maxClosed, to);
+			return new RealIntervalLeekValue(ai, minClosed, from, maxClosed, to);
 		}
 
 		var unionMinClosed = from < interval.getFrom() ? minClosed : interval.minClosed;
 		var unionMaxClosed = to < interval.getTo() ? interval.maxClosed : maxClosed;
-		return new IntegerIntervalLeekValue(ai, unionMinClosed, Math.min(from, interval.getFrom()), unionMaxClosed, Math.max(to, interval.getTo()));
+		return new RealIntervalLeekValue(ai, unionMinClosed, Math.min(from, interval.getFrom()), unionMaxClosed, Math.max(to, interval.getTo()));
 	}
 
 	public ArrayLeekValue intervalToArray(AI ai) throws LeekRunException {
@@ -240,6 +241,33 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 		return array;
 	}
 
+	public LegacyArrayLeekValue intervalToArray_v1_3(AI ai) throws LeekRunException {
+		return intervalToArray_v1_3(ai, 1);
+	}
+
+	public LegacyArrayLeekValue intervalToArray_v1_3(AI ai, long step) throws LeekRunException {
+		if (!intervalIsBounded(ai)) {
+			ai.addSystemLog(AILog.ERROR, Error.CANNOT_ITERATE_UNBOUNDED_INTERVAL, new Object[] { this });
+			return null;
+		}
+
+		var array = new LegacyArrayLeekValue(ai);
+
+		if (step >= 0) {
+			for (var i = from; i <= to; i += step) {
+				array.push(ai, i);
+			}
+		} else {
+			for (var i = to; i >= from; i += step) {
+				array.push(ai, i);
+			}
+		}
+
+		ai.ops(array.size() * 2);
+
+		return array;
+	}
+
 	public ArrayLeekValue intervalToArray(AI ai, double step) throws LeekRunException {
 		if (!intervalIsBounded(ai)) {
 			ai.addSystemLog(AILog.ERROR, Error.CANNOT_ITERATE_UNBOUNDED_INTERVAL, new Object[] { this });
@@ -247,6 +275,29 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 		}
 
 		var array = new ArrayLeekValue(ai);
+
+		if (step >= 0) {
+			for (double i = from; i <= to; i += step) {
+				array.push(ai, i);
+			}
+		} else {
+			for (double i = to; i >= from; i += step) {
+				array.push(ai, i);
+			}
+		}
+
+		ai.ops(array.size() * 2);
+
+		return array;
+	}
+
+	public LegacyArrayLeekValue intervalToArray_v1_3(AI ai, double step) throws LeekRunException {
+		if (!intervalIsBounded(ai)) {
+			ai.addSystemLog(AILog.ERROR, Error.CANNOT_ITERATE_UNBOUNDED_INTERVAL, new Object[] { this });
+			return null;
+		}
+
+		var array = new LegacyArrayLeekValue(ai);
 
 		if (step >= 0) {
 			for (double i = from; i <= to; i += step) {

@@ -126,14 +126,14 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 				return -1;
 			else if (type1 > type2)
 				return 1;
-			if (type1 == LeekValue.BOOLEAN_V1) {
+			if (type1 == LeekValueType.BOOLEAN_V1) {
 				if ((Boolean) v1 == (Boolean) v2)
 					return 0;
 				else if ((Boolean) v1)
 					return 1;
 				else
 					return -1;
-			} else if (type1 == LeekValue.NUMBER_V1) {
+			} else if (type1 == LeekValueType.NUMBER_V1) {
 				var d = ((Number) v2).doubleValue();
 				if (((Number) v1).doubleValue() == d)
 					return 0;
@@ -141,9 +141,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 					return -1;
 				else
 					return 1;
-			} else if (type1 == LeekValue.STRING_V1) {
+			} else if (type1 == LeekValueType.STRING_V1) {
 				return ((String) v1).compareTo((String) v2);
-			} else if (type1 == LeekValue.ARRAY_V1) {
+			} else if (type1 == LeekValueType.ARRAY_V1) {
 				var a = (LegacyArrayLeekValue) v2;
 				if (((LegacyArrayLeekValue) v1).size() == a.size())
 					return 0;
@@ -188,14 +188,14 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 				return -1;
 			else if (type1 > type2)
 				return 1;
-			if (type1 == LeekValue.BOOLEAN) {
+			if (type1 == LeekValueType.BOOLEAN) {
 				if ((Boolean) v1 == (Boolean) v2)
 					return 0;
 				else if ((Boolean) v1)
 					return 1;
 				else
 					return -1;
-			} else if (type1 == LeekValue.NUMBER) {
+			} else if (type1 == LeekValueType.NUMBER) {
 				var d = ((Number) v2).doubleValue();
 				if (((Number) v1).doubleValue() == d)
 					return 0;
@@ -203,9 +203,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 					return -1;
 				else
 					return 1;
-			} else if (type1 == LeekValue.STRING) {
+			} else if (type1 == LeekValueType.STRING) {
 				return ((String) v1).compareTo((String) v2);
-			} else if (type1 == LeekValue.ARRAY) {
+			} else if (type1 == LeekValueType.ARRAY) {
 				var a = (LegacyArrayLeekValue) v2;
 				if (((LegacyArrayLeekValue) v1).size() == a.size())
 					return 0;
@@ -918,7 +918,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			reindex(ai);
 	}
 
-	public LegacyArrayLeekValue arraySort(AI ai) throws LeekRunException {
+	public LegacyArrayLeekValue arraySort_v1_3(AI ai) throws LeekRunException {
 		ai.ops(1 + (int) (5 * size() * Math.log(size())));
 
 		var array = (LegacyArrayLeekValue) LeekOperations.clone(ai, this);
@@ -927,7 +927,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return array;
 	}
 
-	public LegacyArrayLeekValue arraySort(AI ai, final FunctionLeekValue function) throws LeekRunException {
+	public LegacyArrayLeekValue arraySort_v1_3(AI ai, final FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + (int) (5 * size() * Math.log(size())));
 		try {
 			int nb = function.getArgumentsCount();
@@ -1191,7 +1191,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return null;
 	}
 
-	public LegacyArrayLeekValue subArray(AI ai, long start, long end) throws LeekRunException {
+	public LegacyArrayLeekValue subArray_v1_3(AI ai, long start, long end) throws LeekRunException {
 		ai.ops(1 + Math.max(0, (int) (end - start)));
 		if (start < 0 || end < start || end >= size())
 			return null;
@@ -1293,11 +1293,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 	}
 
-	public LegacyArrayLeekValue arrayConcat(AI ai, LegacyArrayLeekValue other) throws LeekRunException {
+	public LegacyArrayLeekValue arrayConcat_v1_3(AI ai, LegacyArrayLeekValue other) throws LeekRunException {
 		return (LegacyArrayLeekValue) ai.add(this, other);
 	}
 
-	public LegacyArrayLeekValue arrayPartition(AI ai, FunctionLeekValue function) throws LeekRunException {
+	public LegacyArrayLeekValue arrayPartition_v1_3(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		if (ai.getVersion() >= 2) {
 			var list1 = new LegacyArrayLeekValue(ai);
@@ -1357,7 +1357,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return result;
 	}
 
-	public LegacyArrayLeekValue arrayMap(AI ai, FunctionLeekValue function) throws LeekRunException {
+	public LegacyArrayLeekValue arrayMap_v1_3(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		if (ai.getVersion() >= 2) {
 			var retour = new LegacyArrayLeekValue(ai);
@@ -1389,7 +1389,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 	}
 
-	public LegacyArrayLeekValue arrayFilter(AI ai, FunctionLeekValue function) throws LeekRunException {
+	public LegacyArrayLeekValue arrayFilter_v1_3(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		if (ai.getVersion() >= 2) {
 			var retour = new LegacyArrayLeekValue(ai);
@@ -1435,11 +1435,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 	}
 
-	public LegacyArrayLeekValue arrayFlatten(AI ai) throws LeekRunException {
-		return arrayFlatten(ai, 1);
+	public LegacyArrayLeekValue arrayFlatten_v1_3(AI ai) throws LeekRunException {
+		return arrayFlatten_v1_3(ai, 1);
 	}
 
-	public LegacyArrayLeekValue arrayFlatten(AI ai, long depth) throws LeekRunException {
+	public LegacyArrayLeekValue arrayFlatten_v1_3(AI ai, long depth) throws LeekRunException {
 		var result = new LegacyArrayLeekValue(ai);
 		flatten_rec(ai, this, result, depth);
 		return result;

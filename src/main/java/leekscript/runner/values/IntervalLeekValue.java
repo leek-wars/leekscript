@@ -24,6 +24,14 @@ public abstract class IntervalLeekValue implements LeekValue {
 
 	public abstract boolean intervalIsEmpty(AI ai);
 
+	public abstract double intervalAverage(AI ai) throws LeekRunException;
+
+	public abstract boolean intervalIsBounded(AI ai);
+
+	public abstract boolean intervalIsRightBounded(AI ai);
+
+	public abstract boolean intervalIsLeftBounded(AI ai);
+
 	public abstract ArrayLeekValue range(AI ai, Object start, Object object, Object stride) throws LeekRunException;
 
 }

@@ -92,9 +92,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			addClass(new ClassDeclarationInstruction(new Token("Array"), 0, ai, true, this, Type.ARRAY));
 			if (ai.getVersion() >= 4) {
 				addClass(new ClassDeclarationInstruction(new Token("Map"), 0, ai, true, this, Type.MAP));
-				addClass(new ClassDeclarationInstruction(new Token("Interval"), 0, ai, true, this, Type.INTERVAL));
-				addClass(new ClassDeclarationInstruction(new Token("Set"), 0, ai, true, this, Type.SET));
 			}
+			addClass(new ClassDeclarationInstruction(new Token("Interval"), 0, ai, true, this, Type.INTERVAL));
+			addClass(new ClassDeclarationInstruction(new Token("Set"), 0, ai, true, this, Type.SET));
 			addClass(new ClassDeclarationInstruction(new Token("String"), 0, ai, true, this, Type.STRING));
 			var objectClass = new ClassDeclarationInstruction(new Token("Object"), 0, ai, true, this, Type.OBJECT);
 			objectClass.addMethod(wordCompiler, new Token("keys"), new ClassMethodBlock(objectClass, false, false, wordCompiler.getCurrentBlock(), this, new Token("keys"), Type.ARRAY), AccessLevel.PUBLIC);

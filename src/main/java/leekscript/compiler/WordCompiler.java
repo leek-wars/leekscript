@@ -1546,6 +1546,7 @@ public class WordCompiler {
 					retour.addExpression(new LeekString(word, word.getWord()));
 
 				} else if (word.getType() == TokenType.BRACKET_LEFT) {
+
 					retour.addExpression(readArrayOrMapOrInterval(mTokens.eat()));
 
 				} else if (word.getType() == TokenType.BRACKET_RIGHT) {
@@ -1565,7 +1566,8 @@ public class WordCompiler {
 						retour.addExpression(readInterval(token, expression));
 					}
 
-				} else if (getVersion() >= 4 && word.getType() == TokenType.OPERATOR && word.getWord().equals("<")) {
+				} else if (word.getType() == TokenType.OPERATOR && word.getWord().equals("<")) {
+
 					retour.addExpression(readSet(mTokens.eat()));
 
 				} else if (getVersion() >= 2 && word.getType() == TokenType.ACCOLADE_LEFT) {
@@ -1708,9 +1710,6 @@ public class WordCompiler {
 	}
 
 	private Expression readArrayOrMapOrInterval(Token openingBracket) throws LeekCompilerException {
-		if (version < 4) {
-			return readLegacyArray(openingBracket);
-		}
 
 		// Empty map `[:]`
 		if (mTokens.get().getWord().equals(":")) {
@@ -1720,18 +1719,32 @@ public class WordCompiler {
 				throw new LeekCompilerException(mTokens.get(), Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
 			}
 
-			var container = new LeekMap(openingBracket);
-			container.setClosingBracket(mTokens.get());
-			return container;
+			if (version >= 4) {
+				var container = new LeekMap(openingBracket);
+				container.setClosingBracket(mTokens.get());
+				return container;
+			} else {
+				var container = new LegacyLeekArray(openingBracket);
+				container.mIsKeyVal = true;
+				container.setClosingBracket(mTokens.get());
+				return container;
+			}
 		}
 
 		// Empty array `[]`
 		if (mTokens.get().getType() == TokenType.BRACKET_RIGHT) {
-			var container = new LeekArray(openingBracket);
-			container.setClosingBracket(mTokens.get());
-			return container;
+			if (version >= 4) {
+				var container = new LeekArray(openingBracket);
+				container.setClosingBracket(mTokens.get());
+				return container;
+			} else {
+				var container = new LegacyLeekArray(openingBracket);
+				container.setClosingBracket(mTokens.get());
+				return container;
+			}
 		}
 
+		// Empty interval [..]
 		if (mTokens.get().getType() == TokenType.DOT_DOT) {
 			mTokens.skip();
 			return readInterval(openingBracket, null);
@@ -1740,12 +1753,20 @@ public class WordCompiler {
 		var firstExpression = readExpression(true);
 		if (mTokens.get().getWord().equals(":")) {
 			mTokens.skip();
-			return readMap(openingBracket, firstExpression);
-		} else if (version >= 4 && mTokens.get().getType() == TokenType.DOT_DOT) {
+			if (version >= 4) {
+				return readMap(openingBracket, firstExpression);
+			} else {
+				return readLegacyArray(openingBracket, firstExpression, true);
+			}
+		} else if (mTokens.get().getType() == TokenType.DOT_DOT) {
 			mTokens.skip();
 			return readInterval(openingBracket, firstExpression);
 		} else {
-			return readArray(openingBracket, firstExpression);
+			if (version >= 4) {
+				return readArray(openingBracket, firstExpression);
+			} else {
+				return readLegacyArray(openingBracket, firstExpression, false);
+			}
 		}
 	}
 
@@ -1807,10 +1828,11 @@ public class WordCompiler {
 		return container;
 	}
 
-	private Expression readLegacyArray(Token openingBracket) throws LeekCompilerException {
+	private Expression readLegacyArray(Token openingBracket, Expression firstExpression, boolean isKeyVal) throws LeekCompilerException {
+
 		var container = new LegacyLeekArray(openingBracket);
 
-		// Empty map `[:]`
+		// Empty array `[:]`
 		if (mTokens.get().getWord().equals(":")) {
 			container.mIsKeyVal = true;
 			container.type = Type.MAP;
@@ -1825,15 +1847,12 @@ public class WordCompiler {
 
 		// Empty array `[]`
 		if (mTokens.get().getType() == TokenType.BRACKET_RIGHT) {
+			container.addValue(firstExpression);
 			container.setClosingBracket(mTokens.get());
 			return container;
 		}
 
-		var firstExpression = readExpression(true);
-		boolean isKeyVal = mTokens.get().getWord().equals(":");
-
 		if (isKeyVal) {
-			mTokens.skip();
 			var secondExpression = readExpression(true);
 			container.addValue(this, firstExpression, secondExpression);
 		} else {
@@ -1874,6 +1893,7 @@ public class WordCompiler {
 	}
 
 	private Expression readInterval(Token openingBracket, Expression fromExpression) throws LeekCompilerException {
+
 		if (mTokens.get().getType() == TokenType.BRACKET_RIGHT || mTokens.get().getType() == TokenType.BRACKET_LEFT) {
 			return new LeekInterval(openingBracket, fromExpression, null, mTokens.get());
 		}

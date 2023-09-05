@@ -214,7 +214,7 @@ public class LeekFunctionCall extends Expression {
 			writer.addCode(".execute(");
 			addComma = false;
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SYSTEM_FUNCTION) {
-			if ((unsafe && callable_versions.size() > 1) || mainblock.getVersion() <= 3) {
+			if (unsafe || mainblock.getVersion() <= 3) {
 				if (callable_versions != null) {
 					var key = writer.generateGenericFunction(callable_versions);
 					writer.addCode(system_function.getStandardClass() + "_" + key + "(");
@@ -682,6 +682,7 @@ public class LeekFunctionCall extends Expression {
 				else if (cast_type == CastType.UNSAFE_DOWNCAST) distance += 1000;
 				else if (cast_type == CastType.INCOMPATIBLE) distance += 10000;
 			}
+			if (distance > 1000) distance = 1000;
 			// System.out.println("version = " + version + " distance = " + distance);
 			if (distance == best_distance) {
 				best_versions.add(version);

@@ -10,6 +10,7 @@ import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.runner.values.LeekValue;
+import leekscript.runner.values.LeekValueType;
 import leekscript.common.ArrayType;
 import leekscript.common.ClassValueType;
 import leekscript.common.CompoundType;
@@ -1161,17 +1162,17 @@ public class LeekExpression extends Expression {
 		/////////////
 		operations = (mExpression1 != null ? mExpression1.getOperations() : 0) + (mExpression2 != null ? mExpression2.getOperations() : 0);
 		if (mOperator == Operators.POWER) {
-			operations += LeekValue.POW_COST;
+			operations += LeekValueType.POW_COST;
 		} else if (mOperator == Operators.POWERASSIGN) {
-			operations += LeekValue.POW_COST;
+			operations += LeekValueType.POW_COST;
 		} else if (mOperator == Operators.MULTIPLIE) {
-			operations += LeekValue.MUL_COST;
+			operations += LeekValueType.MUL_COST;
 		} else if (mOperator == Operators.MULTIPLIEASSIGN) {
-			operations += LeekValue.MUL_COST; //+ 1;
+			operations += LeekValueType.MUL_COST; //+ 1;
 		} else if (mOperator == Operators.DIVIDE || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.INTEGER_DIVISION || mOperator == Operators.INTEGER_DIVISION_EQ) {
-			operations += LeekValue.DIV_COST;
+			operations += LeekValueType.DIV_COST;
 		} else if (mOperator == Operators.MODULUS || mOperator == Operators.MODULUSASSIGN) {
-			operations += LeekValue.MOD_COST;
+			operations += LeekValueType.MOD_COST;
 		} else if (mOperator == Operators.REFERENCE || mOperator == Operators.NEW) {
 			// 0
 		} else if (mOperator == Operators.AND || mOperator == Operators.OR) {

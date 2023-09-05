@@ -146,9 +146,9 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 			public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
 
 				if (arguments.length == 0) {
-					ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(arguments), "1+" });
+					ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValueType.getParamString(arguments), "1+" });
 				} else if (arguments[0].getClass() != clazz) {
-					ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValue.getParamString(arguments), "object" });
+					ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValueType.getParamString(arguments), "object" });
 				}
 
 				final var methodCode = method + "_" + (arguments.length - 1);

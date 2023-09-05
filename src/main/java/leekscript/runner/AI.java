@@ -17,6 +17,7 @@ import leekscript.runner.values.IntervalLeekValue;
 import leekscript.runner.values.RealIntervalLeekValue;
 import leekscript.runner.values.SetLeekValue;
 import leekscript.runner.values.LeekValue;
+import leekscript.runner.values.LeekValueType;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.Box;
 import leekscript.common.AccessLevel;
@@ -523,6 +524,7 @@ public abstract class AI {
 			}
 		} else {
 			// Erreur inconnue
+			throwable.printStackTrace(System.out);
 			error.parameters = throwable == null ? null : new Object[] { throwable.toString() };
 		}
 		return error;
@@ -1399,6 +1401,8 @@ public abstract class AI {
 			return ((ArrayLeekValue) value).string(this, new HashSet<Object>());
 		} else if (value instanceof MapLeekValue) {
 			return ((MapLeekValue) value).string(this, new HashSet<Object>());
+		} else if (value instanceof SetLeekValue set) {
+			return set.string(this, new HashSet<Object>());
 		} else if (value instanceof IntervalLeekValue interval) {
 			return interval.string(this, new HashSet<Object>());
 		} else if (value instanceof String) {
@@ -2890,7 +2894,7 @@ public abstract class AI {
 		if (verifyParameters(types, arguments)) {
 			return true;
 		}
-		String ret = LeekValue.getParamString(arguments);
+		String ret = LeekValueType.getParamString(arguments);
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FUNCTION, new String[] { functionName + "(" + ret + ")" });
 		return false;
 	}

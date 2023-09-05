@@ -301,7 +301,6 @@ public class JavaWriter {
 
 		for (var entry : genericFunctions.entrySet()) {
 
-
 			var signature = entry.getKey();
 			var versions = entry.getValue();
 			var first_version = versions.get(0);
@@ -321,7 +320,7 @@ public class JavaWriter {
 				addCode("if (");
 				for (int a = 0; a < other_version.arguments.length; ++a) {
 					if (a > 0) addCode(" && ");
-					addCode("a" + a + " instanceof " + other_version.arguments[a].getJavaName(block.getVersion()));
+					addCode("a" + a + " instanceof " + other_version.arguments[a].getJavaName(block.getVersion()) + " x" + a);
 				}
 				addLine(") {");
 				writeFunctionCall(block, other_version, true);
@@ -342,14 +341,14 @@ public class JavaWriter {
 	}
 
 	private void writeFunctionCall(MainLeekBlock block, CallableVersion version, boolean cast) {
+		var function_name = version.function.getName();
+		if ((version.return_type.isArray() || version.return_type.isArrayOrNull()) && block.getVersion() <= 3) {
+			function_name += "_v1_3";
+		}
 		if (version.function.isStatic()) {
-			var function_name = version.function.getName();
-			if ((version.return_type.isArray() || version.return_type.isArrayOrNull()) && block.getVersion() <= 3) {
-				function_name += "_v1_3";
-			}
 			addCode("return " + version.function.getStandardClass() + "Class." + function_name + "(");
 		} else {
-			addCode("return x0." + version.function.getName() + "(");
+			addCode("return x0." + function_name + "(");
 		}
 		ArrayList<String> args = new ArrayList<>();
 		args.add("this");

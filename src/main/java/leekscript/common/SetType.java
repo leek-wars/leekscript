@@ -1,5 +1,7 @@
 package leekscript.common;
 
+import leekscript.compiler.JavaWriter;
+
 public class SetType extends Type {
 
 	private Type type;
@@ -45,5 +47,10 @@ public class SetType extends Type {
 			return this.type.equals(at.type);
 		}
 		return false;
+	}
+
+	@Override
+	public String getDefaultValue(JavaWriter writer, int version) {
+		return "new SetLeekValue(" + writer.getAIThis() + ")";
 	}
 }

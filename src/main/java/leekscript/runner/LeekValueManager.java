@@ -17,6 +17,7 @@ import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
 import leekscript.runner.values.LeekValue;
+import leekscript.runner.values.LeekValueType;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.Box;
 import leekscript.common.AccessLevel;
@@ -113,28 +114,28 @@ public class LeekValueManager {
 	}
 
 	public static int getType(Object v) {
-		if (v == null) return LeekValue.NULL;
-		if (v instanceof Boolean) return LeekValue.BOOLEAN;
-		if (v instanceof Number) return LeekValue.NUMBER;
-		if (v instanceof String) return LeekValue.STRING;
-		if (v instanceof LegacyArrayLeekValue || v instanceof ArrayLeekValue) return LeekValue.ARRAY;
-		if (v instanceof MapLeekValue) return LeekValue.MAP;
-		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue) return LeekValue.OBJECT;
-		if (v instanceof ClassLeekValue) return LeekValue.CLASS;
-		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION;
+		if (v == null) return LeekValueType.NULL;
+		if (v instanceof Boolean) return LeekValueType.BOOLEAN;
+		if (v instanceof Number) return LeekValueType.NUMBER;
+		if (v instanceof String) return LeekValueType.STRING;
+		if (v instanceof LegacyArrayLeekValue || v instanceof ArrayLeekValue) return LeekValueType.ARRAY;
+		if (v instanceof MapLeekValue) return LeekValueType.MAP;
+		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue) return LeekValueType.OBJECT;
+		if (v instanceof ClassLeekValue) return LeekValueType.CLASS;
+		if (v instanceof FunctionLeekValue) return LeekValueType.FUNCTION;
 		if (v instanceof Box) return getType(((Box) v).get());
 		return 0;
 	}
 
 	public static int getV1Type(Object v) {
-		if (v == null) return LeekValue.NULL_V1;
-		if (v instanceof Boolean) return LeekValue.BOOLEAN_V1;
-		if (v instanceof Number) return LeekValue.NUMBER_V1;
-		if (v instanceof String) return LeekValue.STRING_V1;
-		if (v instanceof LegacyArrayLeekValue) return LeekValue.ARRAY_V1;
-		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue) return LeekValue.OBJECT_V1;
-		if (v instanceof ClassLeekValue) return LeekValue.CLASS_V1;
-		if (v instanceof FunctionLeekValue) return LeekValue.FUNCTION_V1;
+		if (v == null) return LeekValueType.NULL_V1;
+		if (v instanceof Boolean) return LeekValueType.BOOLEAN_V1;
+		if (v instanceof Number) return LeekValueType.NUMBER_V1;
+		if (v instanceof String) return LeekValueType.STRING_V1;
+		if (v instanceof LegacyArrayLeekValue) return LeekValueType.ARRAY_V1;
+		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue) return LeekValueType.OBJECT_V1;
+		if (v instanceof ClassLeekValue) return LeekValueType.CLASS_V1;
+		if (v instanceof FunctionLeekValue) return LeekValueType.FUNCTION_V1;
 		if (v instanceof Box box) return getV1Type(box.get());
 		return 0;
 	}

@@ -214,6 +214,33 @@ public class RealIntervalLeekValue extends IntervalLeekValue {
 		return array;
 	}
 
+	public LegacyArrayLeekValue intervalToArray_v1_3(AI ai) throws LeekRunException {
+		return intervalToArray_v1_3(ai, 1);
+	}
+
+	public LegacyArrayLeekValue intervalToArray_v1_3(AI ai, double step) throws LeekRunException {
+		if (!intervalIsBounded(ai)) {
+			ai.addSystemLog(AILog.ERROR, Error.CANNOT_ITERATE_UNBOUNDED_INTERVAL, new Object[] { this });
+			return null;
+		}
+
+		var array = new LegacyArrayLeekValue(ai);
+
+		if (step >= 0.0) {
+			for (var i = from; i <= to; i += step) {
+				array.push(ai, i);
+			}
+		} else {
+			for (var i = to; i >= from; i += step) {
+				array.push(ai, i);
+			}
+		}
+
+		ai.ops(array.size() * 2);
+
+		return array;
+	}
+
 	public ArrayLeekValue range(AI ai, Object start, Object end, Object strideObject) throws LeekRunException {
 		if (!intervalIsBounded(ai)) {
 			ai.addSystemLog(AILog.ERROR, Error.CANNOT_ITERATE_UNBOUNDED_INTERVAL, new Object[] { this });
