@@ -1389,7 +1389,7 @@ public class WordCompiler {
 								}
 							}
 						}
-					} else if (mTokens.hasMoreTokens()) {
+					} else if (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.PAR_RIGHT && mTokens.get().getType() != TokenType.VIRG) {
 						start = readExpression();
 						if (getVersion() >= 4 && mTokens.get().getWord().equals(":")) {
 							colon = mTokens.eat();
