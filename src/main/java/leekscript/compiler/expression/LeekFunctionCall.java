@@ -38,6 +38,7 @@ public class LeekFunctionCall extends Expression {
 	private LeekFunctions system_function = null;
 	private boolean is_method = false;
 	private boolean is_static_method = false;
+	private ClassDeclarationMethod method;
 	private Type functionType = Type.ANY;
 
 	public LeekFunctionCall(Token openParenthesis) {
@@ -154,8 +155,7 @@ public class LeekFunctionCall extends Expression {
 					writer.addCode("execute(this." + field);
 				}
 			} else if (is_static_method) {
-				object.writeJavaCode(mainblock, writer);
-				writer.addCode("_" + field + "_" + mParameters.size() + "(");
+				writer.addCode("u_" + method.block.getClassDeclaration().getName() + "_" + field + "_" + mParameters.size() + "(");
 				addComma = false;
 			} else if (is_method) {
 				object.writeJavaCode(mainblock, writer);
@@ -427,11 +427,12 @@ public class LeekFunctionCall extends Expression {
 				while (current != null) {
 					var methods = current.getStaticMethod(v.getName());
 					if (methods != null) {
-						for (var count : methods.keySet()) {
-							if (count == mParameters.size()) {
+						for (var entry : methods.entrySet()) {
+							if (entry.getKey() == mParameters.size()) {
 								ok = true;
 								is_static_method = true;
-								functionType = methods.get(count).block.getType();
+								method = entry.getValue();
+								functionType = method.block.getType();
 								break end;
 							}
 						}
@@ -543,6 +544,7 @@ public class LeekFunctionCall extends Expression {
 									compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
 								}
 								is_static_method = true;
+								method = staticMethod;
 								functionType = staticMethod.block.getType();
 								// return; // OK
 								break end;
