@@ -111,11 +111,14 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 	}
 
 	public long intervalSize(AI ai) {
+		if (from == Long.MIN_VALUE || to == Long.MAX_VALUE) {
+			return Long.MAX_VALUE;
+		}
 		return from - to;
 	}
 
 	public boolean intervalIsEmpty(AI ai) {
-		return to < from;
+		return to < from || (from == to && !maxClosed && !maxClosed);
 	}
 
 
@@ -131,10 +134,38 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 		return to != Long.MAX_VALUE;
 	}
 
+	public boolean intervalIsClosed(AI ai) {
+		return maxClosed && minClosed;
+	}
+
+	public boolean intervalIsLeftClosed(AI ai) {
+		return minClosed;
+	}
+
+	public boolean intervalIsRightClosed(AI ai) {
+		return maxClosed;
+	}
+
 	public boolean operatorIn(Object value) throws LeekRunException {
 		ai.ops(1);
-		var valueAsReal = ai.real(value);
-		return from <= valueAsReal && valueAsReal <= to;
+		if (value instanceof Long l) {
+			return intervalContains(ai, l);
+		}
+		return intervalContains(ai, ai.real(value));
+	}
+
+	@Override
+	public boolean intervalContains(AI ai, long x) throws LeekRunException {
+		if (x == Long.MIN_VALUE && from == x) return true;
+		if (x == Long.MAX_VALUE && to == x) return true;
+		return (minClosed ? from <= x : from < x) && (maxClosed ? x <= to : x < to);
+	}
+
+	@Override
+	public boolean intervalContains(AI ai, double x) throws LeekRunException {
+		if (x == Double.NEGATIVE_INFINITY && from == Long.MIN_VALUE) return true;
+		if (x == Double.POSITIVE_INFINITY && to == Long.MAX_VALUE) return true;
+		return (minClosed ? from <= x : from < x) && (maxClosed ? x <= to : x < to);
 	}
 
 	@Override
@@ -144,7 +175,7 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 		}
 		// [a..b]
 		if (intervalIsBounded(ai)) {
-			return (from + to) / 2.0;
+			return ((minClosed ? from : from + 1) + (maxClosed ? to : to - 1)) / 2.0;
 		}
 		// [a..]
 		if (intervalIsLeftBounded(ai)) {
@@ -227,11 +258,15 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 		var array = new ArrayLeekValue(ai);
 
 		if (step >= 0) {
-			for (var i = from; i <= to; i += step) {
+			var start = minClosed ? from : from + 1;
+			var end = maxClosed ? to : to - 1;
+			for (var i = start; i <= end; i += step) {
 				array.push(ai, i);
 			}
 		} else {
-			for (var i = to; i >= from; i += step) {
+			var start = maxClosed ? to : to - 1;
+			var end = minClosed ? from : from + 1;
+			for (var i = start; i >= end; i += step) {
 				array.push(ai, i);
 			}
 		}
@@ -254,11 +289,15 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 		var array = new LegacyArrayLeekValue(ai);
 
 		if (step >= 0) {
-			for (var i = from; i <= to; i += step) {
+			var start = minClosed ? from : from + 1;
+			var end = maxClosed ? to : to - 1;
+			for (var i = start; i <= end; i += step) {
 				array.push(ai, i);
 			}
 		} else {
-			for (var i = to; i >= from; i += step) {
+			var start = maxClosed ? to : to - 1;
+			var end = minClosed ? from : from + 1;
+			for (var i = start; i >= end; i += step) {
 				array.push(ai, i);
 			}
 		}
@@ -277,11 +316,15 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 		var array = new ArrayLeekValue(ai);
 
 		if (step >= 0) {
-			for (double i = from; i <= to; i += step) {
+			var start = minClosed ? from : from + 1;
+			var end = maxClosed ? to : to - 1;
+			for (double i = start; i <= end; i += step) {
 				array.push(ai, i);
 			}
 		} else {
-			for (double i = to; i >= from; i += step) {
+			var start = maxClosed ? to : to - 1;
+			var end = minClosed ? from : from + 1;
+			for (double i = start; i >= end; i += step) {
 				array.push(ai, i);
 			}
 		}

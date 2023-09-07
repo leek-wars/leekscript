@@ -101,6 +101,12 @@ public class TestInterval extends TestCommon {
 		code("return 1 in [2..1]").equals("false");
 		code_strict_v4_("boolean x = 1 in [1..1] return x").equals("true");
 		code("1 in [1..2]").ops(4);
+		code("return 2 in [1..2[").equals("false");
+		code("return 1 in ]1..2[").equals("false");
+		code("return 2.0 in [1.0 ..2.0[").equals("false");
+		code("return 1.0 in ]1.0 ..2.0[").equals("false");
+		code("return Infinity in [0..[").equals("true");
+		code_v3_("return Integer.MAX_VALUE in [0.0 ..[").equals("true");
 
 		section("Interval typing");
 		code_strict_v4_("Interval i = [0..[ return i instanceof Interval").equals("true");
@@ -115,6 +121,7 @@ public class TestInterval extends TestCommon {
 		code("return intervalAverage(]..1]);").equals("-∞");
 		code("return intervalAverage([1..[)").equals("∞");
 		code("return intervalAverage(]..[)").equals("NaN");
+		code("return intervalAverage(]0..5]);").almost(3.0);
 		code("intervalAverage([1..2])").ops(5);
 
 		section("Interval.intervalIntersection");
@@ -156,6 +163,8 @@ public class TestInterval extends TestCommon {
 		code("return intervalToArray([1..1])").equals("[1]");
 		code("return intervalToArray([1..0])").equals("[]");
 		code("return intervalToArray([1..[)").equals("null");
+		code("return intervalToArray([1..5[)").equals("[1, 2, 3, 4]");
+		code("return intervalToArray(]1..5[)").equals("[2, 3, 4]");
 		code_v1_3("intervalToArray([1..2])").ops(12);
 		code_v4_("intervalToArray([1..2])").ops(6);
 
@@ -194,6 +203,9 @@ public class TestInterval extends TestCommon {
 		code("return intervalToArray([-10..10], -5);").equals("[10, 5, 0, -5, -10]");
 		code("return intervalToArray([1..1], -7);").equals("[1]");
 		code("return intervalToArray([1..0], -2);").equals("[]");
+		code("return intervalToArray([0..5], -1);").equals("[5, 4, 3, 2, 1, 0]");
+		code("return intervalToArray([0..5[, -1);").equals("[4, 3, 2, 1, 0]");
+		code("return intervalToArray(]0..5[, -1);").equals("[4, 3, 2, 1]");
 
 		section("Interval.[start:end:step]");
 		code_v4_("return [1..10][2:4:2]").equals("[5.0, 7.0]");

@@ -235,8 +235,8 @@ public class LeekFunctions {
 		/**
 		 * Set functions
 		 */
-		method("setPut", "Set", 3, Type.ANY, new Type[] { Type.SET, Type.ANY });
-		method("setRemove", "Set", 2, Type.ANY, new Type[] { Type.SET, Type.ANY });
+		method("setPut", "Set", 3, Type.BOOL, new Type[] { Type.SET, Type.ANY });
+		method("setRemove", "Set", 2, Type.BOOL, new Type[] { Type.SET, Type.ANY });
 		method("setClear", "Set", 1, Type.SET, new Type[] { Type.SET });
 		method("setContains", "Set", 2, Type.BOOL, new Type[] { Type.SET, Type.ANY });
 		method("setSize", "Set", 1, Type.INT, new Type[] { Type.SET });
@@ -267,6 +267,10 @@ public class LeekFunctions {
 		method("intervalIsBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
 		method("intervalIsRightBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
 		method("intervalIsLeftBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
+		method("intervalIsClosed", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
+		method("intervalIsRightClosed", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
+		method("intervalIsLeftClosed", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
+		method("intervalContains", "Interval", 2, Type.BOOL, new Type[] { Type.INTERVAL, Type.INT_OR_REAL });
 		method("intervalAverage", "Interval", 3, Type.REAL, new Type[] { Type.INTERVAL });
 		method("intervalIntersection", "Interval", 3, new CallableVersion[] {
 			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.REAL_INTERVAL, Type.REAL_INTERVAL }),

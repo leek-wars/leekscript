@@ -118,10 +118,36 @@ public class RealIntervalLeekValue extends IntervalLeekValue {
 		return to != Double.POSITIVE_INFINITY;
 	}
 
+	public boolean intervalIsClosed(AI ai) {
+		return maxClosed && minClosed;
+	}
+
+	public boolean intervalIsLeftClosed(AI ai) {
+		return minClosed;
+	}
+
+	public boolean intervalIsRightClosed(AI ai) {
+		return maxClosed;
+	}
+
 	public boolean operatorIn(Object value) throws LeekRunException {
 		ai.ops(1);
-		var valueAsReal = ai.real(value);
-		return from <= valueAsReal && valueAsReal <= to;
+		if (value instanceof Long l) {
+			return intervalContains(ai, l);
+		}
+		return intervalContains(ai, ai.real(value));
+	}
+
+	@Override
+	public boolean intervalContains(AI ai, long x) throws LeekRunException {
+		return (minClosed ? from <= x : from < x) && (maxClosed ? x <= to : x < to);
+	}
+
+	@Override
+	public boolean intervalContains(AI ai, double x) throws LeekRunException {
+		if (x == Double.NEGATIVE_INFINITY && from == x) return true;
+		if (x == Double.POSITIVE_INFINITY && to == x) return true;
+		return (minClosed ? from <= x : from < x) && (maxClosed ? x <= to : x < to);
 	}
 
 	public double intervalAverage(AI ai) throws LeekRunException {

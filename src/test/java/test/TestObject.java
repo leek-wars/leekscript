@@ -464,6 +464,9 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static a = 7 } class B extends A { } return B['a']").equals("7");
 		code_v2_("class A { static a = 7 } class B extends A { } return B['a']++").equals("7");
 
+		section("Inheritance static method");
+		code_v2_("class A { static m() { return 12 } } class B extends A { static n() { return class.m() } } return B.n()").equals("12");
+
 		section("Constructor as function");
 		code_v2_("class A { x constructor(x) { this.x = x } } var f = A var o = {c: f} return o.c('a')").equals("A {x: \"a\"}");
 		code_v2_("class A { x constructor(x) { this.x = x } } var a = [1, 2, 3, 4] return arrayMap(a, A)").equals("[A {x: 1}, A {x: 2}, A {x: 3}, A {x: 4}]");

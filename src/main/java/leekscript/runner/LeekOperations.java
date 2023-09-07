@@ -8,6 +8,7 @@ import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ObjectLeekValue;
+import leekscript.runner.values.SetLeekValue;
 
 public class LeekOperations {
 
@@ -35,6 +36,10 @@ public class LeekOperations {
 			if (level == 0) return value;
 			ai.ops(1);
 			return new ObjectLeekValue(ai, (ObjectLeekValue) value, level);
+		} else if (value instanceof SetLeekValue set) {
+			if (level == 0) return value;
+			ai.ops(1);
+			return new SetLeekValue(ai, set, level);
 		} else if (value instanceof NativeObjectLeekValue o) {
 			if (level == 0) return value;
 

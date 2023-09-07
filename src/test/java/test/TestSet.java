@@ -24,6 +24,8 @@ public class TestSet extends TestCommon {
 		code("var i = <> setPut(i, 1) return i").equals("<1>");
 		code("var i = <> setPut(i, 'okay') setPut(i, 'okay') return i").equals("<\"okay\">");
 		code("var i = <> setPut(i, 'okay') setPut(i, 1) return i").equals("<\"okay\", 1>");
+		code("var i = <1, 2> return setPut(i, 3)").equals("true");
+		code("var i = <1, 2> return setPut(i, 2)").equals("false");
 
 		section("Set.setRemove()");
 		code("var i = <1, 2> setRemove(i, 1) return i").equals("<2>");
@@ -92,5 +94,9 @@ public class TestSet extends TestCommon {
 
 		section("Set.toArray()");
 		code("var s = <1, 2, 3> return setToArray(s)").equals("[1, 2, 3]");
+
+		section("Set clone");
+		code("var s = <1, 2, 3> var s2 = clone(s) setClear(s) return s2").equals("<1, 2, 3>");
+		code("var s = <1, 2, 3> var s2 = clone(s) setPut(s, 4) return s2").equals("<1, 2, 3>");
 	}
 }

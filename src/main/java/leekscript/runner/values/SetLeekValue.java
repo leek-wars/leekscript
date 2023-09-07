@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import leekscript.runner.AI;
+import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 
 public class SetLeekValue extends HashSet<Object> implements LeekValue {
@@ -47,6 +48,27 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		for (Object value : values) {
 			this.add(value);
 		}
+		ai.increaseRAM(values.length);
+	}
+
+	public SetLeekValue(AI ai, SetLeekValue set, int level) throws LeekRunException {
+		this.ai = ai;
+		this.id = ai.getNextObjectID();
+		ai.increaseRAM(set.size());
+		for (var value : set) {
+			if (level == 1) {
+				this.add(value);
+			} else {
+				this.add(LeekOperations.clone(ai, value, level - 1));
+			}
+		}
+	}
+
+	@Override
+	@SuppressWarnings("deprecated")
+	protected void finalize() throws Throwable {
+		super.finalize();
+		ai.decreaseRAM(size());
 	}
 
 	@Override
@@ -91,17 +113,20 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		return sb.append(">").toString();
 	}
 
-	public Object setPut(AI ai, Object value) throws LeekRunException {
-		add(value);
-		return value;
+	public boolean setPut(AI ai, Object value) throws LeekRunException {
+		boolean added = add(value);
+		if (added) ai.increaseRAM(1);
+		return added;
 	}
 
-	public Object setRemove(AI ai, Object value) throws LeekRunException {
-		remove(value);
-		return value;
+	public boolean setRemove(AI ai, Object value) throws LeekRunException {
+		boolean removed = remove(value);
+		if (removed) ai.decreaseRAM(1);
+		return removed;
 	}
 
 	public SetLeekValue setClear(AI ai) throws LeekRunException {
+		ai.decreaseRAM(size());
 		clear();
 		return this;
 	}
@@ -136,6 +161,7 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		var r = new SetLeekValue(ai);
 		r.addAll(this);
 		r.addAll(set);
+		ai.increaseRAM(r.size());
 		return r;
 	}
 
@@ -144,6 +170,7 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		var r = new SetLeekValue(ai);
 		r.addAll(this);
 		r.retainAll(set);
+		ai.increaseRAM(r.size());
 		return r;
 	}
 
@@ -152,6 +179,7 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		var r = new SetLeekValue(ai);
 		r.addAll(this);
 		r.removeAll(set);
+		ai.increaseRAM(r.size());
 		return r;
 	}
 
@@ -164,6 +192,7 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		for (var e : set) {
 			if (!this.contains(e)) r.add(e);
 		}
+		ai.increaseRAM(r.size());
 		return r;
 	}
 
