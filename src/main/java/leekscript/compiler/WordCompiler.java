@@ -1694,7 +1694,7 @@ public class WordCompiler {
 	private Expression readSet(Token openingToken) throws LeekCompilerException {
 		var set = new LeekSet(openingToken);
 
-		while (mTokens.get().getType() != TokenType.OPERATOR || !mTokens.get().getWord().equals(">")) {
+		while (mTokens.hasMoreTokens() && (mTokens.get().getType() != TokenType.OPERATOR || !mTokens.get().getWord().equals(">"))) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 
 			set.addValue(readExpression(true, true));
@@ -1702,6 +1702,10 @@ public class WordCompiler {
 			if (mTokens.get().getType() == TokenType.VIRG) {
 				mTokens.skip();
 			}
+		}
+
+		if (!mTokens.get().getWord().equals(">")) {
+			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CLOSING_CHEVRON_EXPECTED));
 		}
 
 		set.setClosingToken(mTokens.get());
