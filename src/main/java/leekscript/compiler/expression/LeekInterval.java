@@ -19,7 +19,7 @@ public class LeekInterval extends Expression {
 	private Expression mTo;
 	private Token openingBracket;
 	private Token closingBracket;
-	private Type type;
+	private Type type = Type.INTERVAL;
 	private final boolean minClosed;
 	private final boolean maxClosed;
 

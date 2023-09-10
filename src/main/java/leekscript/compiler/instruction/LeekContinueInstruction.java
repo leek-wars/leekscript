@@ -60,8 +60,7 @@ public class LeekContinueInstruction extends LeekInstruction {
 
 	@Override
 	public Type getType() {
-		// TODO Auto-generated method stub
-		return null;
+		return Type.VOID;
 	}
 
 	@Override
