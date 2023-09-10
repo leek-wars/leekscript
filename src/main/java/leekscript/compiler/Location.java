@@ -16,14 +16,6 @@ public class Location {
 	private final int endLine;
 	private final int endColumn;
 
-	public Location(AIFile file) {
-		this.file = file;
-		this.startLine = 0;
-		this.startColumn = 0;
-		this.endLine = 0;
-		this.endColumn = 0;
-	}
-
 	public Location(AIFile file, int startLine, int startColumn, int endLine, int endColumn) {
 		this.file = file;
 		this.startLine = startLine;
