@@ -75,13 +75,21 @@ public class ClassType extends Type {
 	public Complete complete() {
 		// System.out.println("ClassType " + clazz.getName() + " complete");
 		var complete = new Complete(this);
-		for (var field : this.clazz.getFields().entrySet()) {
-			complete.add(CompleteCategory.FIELD, field.getKey(), field.getValue().getType());
-		}
-		for (var method : this.clazz.getMethods().entrySet()) {
-			for (var version : method.getValue().entrySet()) {
-				complete.add(CompleteCategory.METHOD, method.getKey(), version.getValue().block.getType());
+		var current = this.clazz;
+		while (current != null) {
+			for (var field : current.getFields().entrySet()) {
+				complete.add(CompleteCategory.FIELD, field.getKey(), field.getValue().getType());
 			}
+			current = current.getParent();
+		}
+		current = this.clazz;
+		while (current != null) {
+			for (var method : current.getMethods().entrySet()) {
+				for (var version : method.getValue().entrySet()) {
+					complete.add(CompleteCategory.METHOD, method.getKey(), version.getValue().block.getType());
+				}
+			}
+			current = current.getParent();
 		}
 		// System.out.println("complete = " + complete);
 		return complete;
