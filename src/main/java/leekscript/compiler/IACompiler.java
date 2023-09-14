@@ -3,6 +3,7 @@ package leekscript.compiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.Util;
 import leekscript.common.Error;
 
 import java.util.HashSet;
@@ -54,10 +55,18 @@ public class IACompiler {
 			WordCompiler compiler = new WordCompiler(ai, ai.getVersion());
 			MainLeekBlock main = new MainLeekBlock(this, compiler, ai);
 			main.setWordCompiler(compiler);
+
+			long parseTime = System.nanoTime();
 			compiler.readCode();
+			parseTime = System.nanoTime() - parseTime;
+
+			long analyzeTime = System.nanoTime();
 			compiler.analyze();
+			analyzeTime = System.nanoTime() - analyzeTime;
 
 			result.includedAIs = main.getIncludedAIs();
+
+			System.out.println("Parse time = " + Util.formatDurationNanos(parseTime) + ", analyzeTime = " + Util.formatDurationNanos(analyzeTime));
 
 			// System.out.println("errors " + ai.getPath() + " " + ai.getErrors().size());
 			if (ai.getErrors().size() > 0) {

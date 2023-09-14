@@ -22,6 +22,7 @@ public class LeekObject extends Expression {
 	}
 
 	public void addEntry(String key, Expression value) {
+		assert value != null;
 		mValues.put(key, value);
 	}
 

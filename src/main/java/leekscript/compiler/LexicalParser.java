@@ -12,7 +12,7 @@ public class LexicalParser {
 		void report(AnalyzeError error) throws LeekCompilerException;
 	}
 
-	public static final String[] reservedWords = new String[] { "abstract", "arguments", "as", "await", "break", "byte", "case", "catch", "char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval", "export", "extends", "false", "final", "finally", "float", "for", "function", "global", "goto", "if", "implements", "import", "in", "instanceof", "int", "interface", "let", "long", "native", "new", "not", "null", "package", "private", "protected", "public", "return", "short", "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "true", "try", "typeof", "var", "void", "volatile", "while", "with", "xor", "yield" };
+	public static final String[] reservedWords = new String[] { "abstract", "and", "as", "await", "break", "byte", "case", "catch", "char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval", "export", "extends", "false", "final", "finally", "float", "for", "function", "global", "goto", "if", "implements", "import", "in", "instanceof", "int", "interface", "let", "long", "native", "new", "not", "null", "or", "package", "private", "protected", "public", "return", "short", "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "true", "try", "typeof", "var", "void", "volatile", "while", "with", "xor", "yield" };
 
 	private ArrayList<Token> tokens = new ArrayList<>();
 	private AIFile aiFile;
@@ -144,13 +144,137 @@ public class LexicalParser {
 		} else if (wordEquals(word, "or")) {
 			addToken("||", TokenType.OPERATOR);
 		} else if (wordEquals(word, "xor")) {
-			addToken("xor", TokenType.OPERATOR);
-		} else if (wordEquals(word, "instanceof")) {
-			addToken("instanceof", TokenType.OPERATOR);
+			addToken(word, TokenType.OPERATOR);
+		} else if (version >= 2 && wordEquals(word, "instanceof")) {
+			addToken(word, TokenType.OPERATOR);
 		} else if (wordEquals(word, "as")) {
-			addToken("as", TokenType.OPERATOR);
+			addToken(word, TokenType.AS);
+		} else if (wordEquals(word, "var")) {
+			addToken(word, TokenType.VAR);
+		} else if (wordEquals(word, "global")) {
+			addToken(word, TokenType.GLOBAL);
+		} else if (wordEquals(word, "return")) {
+			addToken(word, TokenType.RETURN);
+		} else if (version >= 2 && wordEquals(word, "constructor")) {
+			addToken(word, TokenType.CONSTRUCTOR);
+		} else if (version >= 3 && wordEquals(word, "final")) {
+			addToken(word, TokenType.FINAL);
+		} else if (wordEquals(word, "for")) {
+			addToken(word, TokenType.FOR);
+		} else if (wordEquals(word, "if")) {
+			addToken(word, TokenType.IF);
+		} else if (wordEquals(word, "while")) {
+			addToken(word, TokenType.WHILE);
+		} else if (version >= 2 && wordEquals(word, "static")) {
+			addToken(word, TokenType.STATIC);
 		} else if (wordEquals(word, "in")) {
-			addToken("in", TokenType.OPERATOR);
+			addToken(word, TokenType.IN);
+		} else if (version >= 3 && wordEquals(word, "abstract")) {
+			addToken(word, TokenType.ABSTRACT);
+		} else if (version >= 3 && wordEquals(word, "await")) {
+			addToken(word, TokenType.AWAIT);
+		} else if (wordEquals(word, "break")) {
+			addToken(word, TokenType.BREAK);
+		} else if (wordEquals(word, "continue")) {
+			addToken(word, TokenType.CONTINUE);
+		} else if (version >= 3 && wordEquals(word, "import")) {
+			addToken(word, TokenType.IMPORT);
+		} else if (version >= 3 && wordEquals(word, "export")) {
+			addToken(word, TokenType.EXPORT);
+		} else if (version >= 3 && wordEquals(word, "goto")) {
+			addToken(word, TokenType.GOTO);
+		} else if (version >= 3 && wordEquals(word, "switch")) {
+			addToken(word, TokenType.GOTO);
+		} else if (version >= 2 && wordEquals(word, "super")) {
+			addToken(word, TokenType.SUPER);
+		} else if (version >= 2 && word.equals("class")) {
+			addToken(word, TokenType.CLASS);
+		} else if (version >= 3 && wordEquals(word, "catch")) {
+			addToken(word, TokenType.CATCH);
+		} else if (version >= 2 && wordEquals(word, "extends")) {
+			addToken(word, TokenType.EXTENDS);
+		} else if (wordEquals(word, "true")) {
+			addToken(word, TokenType.TRUE);
+		} else if (wordEquals(word, "false")) {
+			addToken(word, TokenType.FALSE);
+		} else if (version >= 3 && wordEquals(word, "const")) {
+			addToken(word, TokenType.CONST);
+		} else if (version >= 3 && wordEquals(word, "char")) {
+			addToken(word, TokenType.CHAR);
+		} else if (version >= 3 && wordEquals(word, "enum")) {
+			addToken(word, TokenType.ENUM);
+		} else if (version >= 3 && wordEquals(word, "eval")) {
+			addToken(word, TokenType.EVAL);
+		} else if (version >= 3 && wordEquals(word, "case")) {
+			addToken(word, TokenType.CASE);
+		} else if (version >= 3 && wordEquals(word, "float")) {
+			addToken(word, TokenType.FLOAT);
+		} else if (version >= 3 && wordEquals(word, "double")) {
+			addToken(word, TokenType.DOUBLE);
+		} else if (version >= 3 && wordEquals(word, "byte")) {
+			addToken(word, TokenType.BYTE);
+		} else if (wordEquals(word, "do")) {
+			addToken(word, TokenType.DO);
+		} else if (version >= 3 && wordEquals(word, "try")) {
+			addToken(word, TokenType.TRY);
+		} else if (version >= 3 && wordEquals(word, "void")) {
+			addToken(word, TokenType.VOID);
+		} else if (version >= 3 && wordEquals(word, "with")) {
+			addToken(word, TokenType.WITH);
+		} else if (version >= 3 && wordEquals(word, "yield")) {
+			addToken(word, TokenType.YIELD);
+		} else if (version >= 3 && wordEquals(word, "finally")) {
+			addToken(word, TokenType.FINALLY);
+		} else if (version >= 3 && wordEquals(word, "interface")) {
+			addToken(word, TokenType.INTERFACE);
+		} else if (version >= 3 && wordEquals(word, "long")) {
+			addToken(word, TokenType.LONG);
+		} else if (version >= 3 && wordEquals(word, "let")) {
+			addToken(word, TokenType.LET);
+		} else if (version >= 3 && wordEquals(word, "native")) {
+			addToken(word, TokenType.NATIVE);
+		} else if (version >= 2 && wordEquals(word, "new")) {
+			addToken(word, TokenType.NEW);
+		} else if (version >= 3 && wordEquals(word, "package")) {
+			addToken(word, TokenType.PACKAGE);
+		} else if (version >= 2 && wordEquals(word, "this")) {
+			addToken(word, TokenType.THIS);
+		} else if (wordEquals(word, "function")) {
+			addToken(word, TokenType.FUNCTION);
+		} else if (version >= 3 && wordEquals(word, "implements")) {
+			addToken(word, TokenType.IMPLEMENTS);
+		} else if (version >= 3 && wordEquals(word, "int")) {
+			addToken(word, TokenType.INT);
+		} else if (wordEquals(word, "not")) {
+			addToken(word, TokenType.NOT);
+		} else if (wordEquals(word, "null")) {
+			addToken(word, TokenType.NULL);
+		} else if (version >= 2 && wordEquals(word, "private")) {
+			addToken(word, TokenType.PRIVATE);
+		} else if (version >= 2 && wordEquals(word, "protected")) {
+			addToken(word, TokenType.PROTECTED);
+		} else if (version >= 2 && wordEquals(word, "public")) {
+			addToken(word, TokenType.PUBLIC);
+		} else if (version >= 3 && wordEquals(word, "short")) {
+			addToken(word, TokenType.SHORT);
+		} else if (wordEquals(word, "else")) {
+			addToken(word, TokenType.ELSE);
+		} else if (wordEquals(word, "include")) {
+			addToken(word, TokenType.INCLUDE);
+		} else if (version >= 3 && wordEquals(word, "throws")) {
+			addToken(word, TokenType.THROWS);
+		} else if (version >= 3 && wordEquals(word, "throw")) {
+			addToken(word, TokenType.THROW);
+		} else if (version >= 3 && wordEquals(word, "transient")) {
+			addToken(word, TokenType.THROWS);
+		} else if (version >= 3 && wordEquals(word, "volatile")) {
+			addToken(word, TokenType.VOLATILE);
+		} else if (version >= 3 && wordEquals(word, "default")) {
+			addToken(word, TokenType.DEFAULT);
+		} else if (version >= 3 && wordEquals(word, "synchronized")) {
+			addToken(word, TokenType.SYNCHRONIZED);
+		} else if (version >= 3 && wordEquals(word, "typeof")) {
+			addToken(word, TokenType.TYPEOF);
 		} else {
 			addToken(word, TokenType.STRING);
 		}

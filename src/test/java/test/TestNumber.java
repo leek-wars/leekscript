@@ -52,8 +52,8 @@ public class TestNumber extends TestCommon {
 		code("0x+").error(Error.INVALID_NUMBER);
 		code("0x;").error(Error.INVALID_NUMBER);
 		code("0b#").error(Error.INVALID_CHAR);
-		code("0b'").error(Error.INVALID_NUMBER);
-		code("0b\"").error(Error.INVALID_NUMBER);
+		code("0b'").error(Error.STRING_NOT_CLOSED);
+		code("0b\"").error(Error.STRING_NOT_CLOSED);
 		code("0xeazblqzd").error(Error.INVALID_NUMBER);
 		code("0xPMQBTRAZ").error(Error.INVALID_NUMBER);
 		code("0xffxff").error(Error.INVALID_NUMBER);

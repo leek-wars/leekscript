@@ -74,38 +74,25 @@ public class TestGeneral extends TestCommon {
 		code("return getBlue(" + 0xAD + ")").equals("173");
 
 		section("Variables with keywords");
-		for (var word : LexicalParser.reservedWords) {
-			if (word.equals("this")) {
-				code_v1("var " + word + " = 2;").error(Error.NONE);
-				code_v2("var " + word + " = 2;").error(Error.THIS_NOT_ALLOWED_HERE);
-				code_v3_("var " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
-			} else if (word.equals("instanceof") || word.equals("as") || word.equals("in") || word.equals("xor")) {
-				code_v1_2("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
-				code_v3_("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
-			} else if (word.equals("function")) {
-				code_v1_2("var " + word + " = 2;").error(Error.OPENING_PARENTHESIS_EXPECTED);
-				code_v3_("var " + word + " = 2;").error(Error.OPENING_PARENTHESIS_EXPECTED);
-			} else if (word.equals("global")) {
-				// code_v1_2("var " + word + " = 2;").error(Error.NONE); // Compilation error
-				code_v3_("var " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
-			} else {
-				code_v1_2("var " + word + " = 2;").error(Error.NONE);
-				code_v3_("var " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
-			}
+		String[] reservedWordsV1 = new String[] { "as", "continue", "break", "do", "else", "false", "for", "function", "global", "if", "in", "not", "null", "return", "true", "var", "while", "and", "or", "xor" };
+		String[] reservedWordsV2 = new String[] { "class", "constructor", "extends", "instanceof", "new", "private", "protected", "public", "static", "super", "this" };
+		String[] reservedWordsV3 = new String[] { "abstract", "await", "byte", "case", "catch", "char", "const", "default", "double", "enum", "eval", "export", "final", "finally", "float", "goto", "implements", "import", "int", "interface", "let", "long", "native", "package", "short", "switch", "synchronized", "throw", "throws", "transient", "try", "typeof", "void", "volatile", "with", "yield" };
+		for (var word : reservedWordsV1) {
+			code("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
+		}
+		for (var word : reservedWordsV2) {
+			code_v1("var " + word + " = 2;").error(Error.NONE);
+			code_v2_("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
+		}
+		for (var word : reservedWordsV3) {
+			code_v1_2("var " + word + " = 2;").error(Error.NONE);
+			code_v3_("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
 		}
 
 		section("Globals with keywords");
-		code_v1_2("global break = 2").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v1_2("global break = 2").error(Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
 		for (var word : LexicalParser.reservedWords) {
-			if (word.equals("this")) {
-				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
-			} else if (word.equals("instanceof") || word.equals("as") || word.equals("void") || word.equals("in") || word.equals("xor")) {
-				code_v3_("global " + word + " = 2;").error(Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
-			} else if (word.equals("function")) {
-				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
-			} else {
-				code_v3_("global " + word + " = 2;").error(Error.VARIABLE_NAME_UNAVAILABLE);
-			}
+			code_v3_("global " + word + " = 2;").error(Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
 		}
 
 		code_v1("var new = 12 var b = @new return b").equals("12");

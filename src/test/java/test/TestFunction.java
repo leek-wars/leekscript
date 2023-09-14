@@ -62,6 +62,8 @@ public class TestFunction extends TestCommon {
 		// code("var f = x, y -> { x += '+' y += '.' } var a = 'A', b = 'B' f(a, b) return [a, b]").equals("['A+', 'B.']");
 		// code("var f = -> 12m f()").equals("12");
 		// code("var f = x => x f(12m)").equals("12");
+		code("return [x -> x]").equals("[#Anonymous Function]");
+		code("return (x) -> x").equals("#Anonymous Function");
 
 		section("Recursive");
 		code("var fact = function(x) { if (x == 1) { return 1 } else { return fact(x - 1) * x } } return fact(8);").equals("40320");

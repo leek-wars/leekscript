@@ -124,7 +124,7 @@ public class WordCompiler {
 
 					if (mTokens.eat().getType() != TokenType.PAR_RIGHT) throw new LeekCompilerException(mTokens.get(), Error.CLOSING_PARENTHESIS_EXPECTED);
 
-				} else if (mTokens.get().getType() == TokenType.STRING && mTokens.get().getWord().equals("global")) {
+				} else if (mTokens.get().getType() == TokenType.GLOBAL) {
 					mTokens.skip();
 					eatType(true, false);
 					var global = mTokens.eat();
@@ -151,17 +151,23 @@ public class WordCompiler {
 							readExpression(true);
 						}
 					}
-				} else if (mTokens.get().getWord().equals("function")) {
-					mTokens.skip();
+				} else if (mTokens.get().getType() == TokenType.FUNCTION) {
+					var functionToken = mTokens.eat();
 					var funcName = mTokens.eat();
-					if (funcName.getWord().equals("(")) {
+					if (funcName.getWord().equals("(") || funcName.getWord().equals("<")) {
 						continue;
 					}
 					if (!isAvailable(funcName, false)) {
 						throw new LeekCompilerException(mTokens.get(), Error.FUNCTION_NAME_UNAVAILABLE);
 					}
 					if (mTokens.eat().getType() != TokenType.PAR_LEFT) {
-						addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.OPENING_PARENTHESIS_EXPECTED));
+						if (functionToken.getWord().equals("Function")) {
+							// Déclaration de type
+							mTokens.unskip();
+							continue;
+						} else {
+							addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.OPENING_PARENTHESIS_EXPECTED));
+						}
 					}
 					int param_count = 0;
 					var parameters = new HashSet<String>();
@@ -302,101 +308,132 @@ public class WordCompiler {
 			}
 			mTokens.skip();
 			return;
-		} else if (word.getType() == TokenType.STRING) {
-			var type = eatType(true, false);
-			if (type != null) {
-				// Déclaration de variable ou expression ?
-				if (mTokens.get().getType() == TokenType.STRING) {
-					// Déclaration de variable Class a = ...
-					variableDeclaration(type);
-				} else {
-					// Class.toto, on revient d'un token et on parse une expression
-					mTokens.unskip();
-					var exp = readExpression();
-					if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
-						mTokens.skip();
-					}
-					mCurentBlock.addInstruction(this, new LeekExpressionInstruction(exp));
-				}
-				return;
-			}
-			if (word.getWord().equals("var")) {
-				// Déclaration de variable
-				mTokens.skip();
-				variableDeclaration(null);
-				return;
-			} else if (word.getWord().equals("global")) {
-				// Déclaration de variable
-				globalDeclaration();
-				return;
-			} else if (version >= 2 && getCurrentBlock() instanceof MainLeekBlock && word.getWord().equals("class")) {
-				// Déclaration de classe
-				mTokens.skip();
-				classDeclaration();
-				return;
-			} else if (word.getWord().equals("if")) {
-				ifBlock();
-				return;
-			} else if (word.getWord().equals("else")) {
-				elseBlock();
-				return;
-			} else if (word.getWord().equals("while")) {
-				whileBlock();
-				return;
-			} else if (word.getWord().equals("do")) {
-				doWhileBlock();
-				return;
-			} else if (word.getWord().equals("include")) {
-				var token = mTokens.eat(); // include
-				includeBlock(token);
-				return;
-			} else if (word.getWord().equals("for")) {
-				forBlock();
-				return;
-			} else if (word.getWord().equals("break")) {
-				if (!mCurentBlock.isBreakable()) {
-					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.BREAK_OUT_OF_LOOP));
-				}
-				mTokens.skip();
-				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
-					mTokens.skip();
-				}
-				mCurentBlock.addInstruction(this, new LeekBreakInstruction(word));
 
-				return;
-			} else if (word.getWord().equals("continue")) {
-				if (!mCurentBlock.isBreakable()) {
-					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CONTINUE_OUT_OF_LOOP));
-				}
-				var token = mTokens.eat();
-				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
-					mTokens.skip();
-				}
-				mCurentBlock.addInstruction(this, new LeekContinueInstruction(token));
-				return;
-			} else if (word.getWord().equals("return")) {
-				var token = mTokens.eat();
-				Expression exp = null;
-				if (mTokens.get().getType() != TokenType.END_INSTRUCTION && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
-					exp = readExpression();
-				}
-				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
-					mTokens.skip();
-				}
-				mCurentBlock.addInstruction(this, new LeekReturnInstruction(token, exp));
-				return;
-			} else if (word.getWord().equals("function")) {
-				mTokens.skip();
-				functionBlock();
-				return;
-			}
+		} else if (word.getType() == TokenType.VAR) {
 
-		}
-		var exp = readExpression();
-		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
+			// Déclaration de variable
 			mTokens.skip();
+			variableDeclaration(null);
+			return;
+
+		} else if (word.getType() == TokenType.GLOBAL) {
+
+			// Déclaration de variable
+			globalDeclaration();
+			return;
+
+		} else if (word.getType() == TokenType.RETURN) {
+
+			var token = mTokens.eat();
+			Expression exp = null;
+			if (mTokens.get().getType() != TokenType.END_INSTRUCTION && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+				exp = readExpression();
+			}
+			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
+				mTokens.skip();
+			}
+			mCurentBlock.addInstruction(this, new LeekReturnInstruction(token, exp));
+			return;
+
+		} else if (word.getType() == TokenType.FOR) {
+
+			forBlock();
+			return;
+
+		} else if (word.getType() == TokenType.WHILE) {
+
+			whileBlock();
+			return;
+
+		} else if (word.getType() == TokenType.IF) {
+
+			ifBlock();
+			return;
+
+		} else if (version >= 2 && getCurrentBlock() instanceof MainLeekBlock && word.getType() == TokenType.CLASS) {
+
+			// Déclaration de classe
+			mTokens.skip();
+			classDeclaration();
+			return;
+
+		} else if (word.getType() == TokenType.BREAK) {
+
+			if (!mCurentBlock.isBreakable()) {
+				addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.BREAK_OUT_OF_LOOP));
+			}
+			mTokens.skip();
+			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
+				mTokens.skip();
+			}
+			mCurentBlock.addInstruction(this, new LeekBreakInstruction(word));
+
+			return;
+
+		} else if (word.getType() == TokenType.CONTINUE) {
+
+			if (!mCurentBlock.isBreakable()) {
+				addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CONTINUE_OUT_OF_LOOP));
+			}
+			var token = mTokens.eat();
+			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
+				mTokens.skip();
+			}
+			mCurentBlock.addInstruction(this, new LeekContinueInstruction(token));
+			return;
+
+ 		} else if (word.getType() == TokenType.FUNCTION) {
+
+			var functionToken = mTokens.eat();
+			if (mTokens.get().getWord().equals("<")) { // Début d'un type
+				mTokens.unskip();
+			} else { // Vraie fonction
+				functionBlock(functionToken);
+				return;
+			}
+
+		} else if (word.getType() == TokenType.ELSE) {
+
+			elseBlock();
+			return;
+
+		} else if (word.getType() == TokenType.DO) {
+
+			doWhileBlock();
+			return;
+
+		} else if (word.getType() == TokenType.INCLUDE) {
+
+			var token = mTokens.eat(); // include
+			includeBlock(token);
+			return;
+
 		}
-		mCurentBlock.addInstruction(this, new LeekExpressionInstruction(exp));
+
+		var save = mTokens.getPosition();
+		var type = eatType(true, false);
+		if (type != null) {
+			// Déclaration de variable ou expression ?
+			if (mTokens.get().getType() == TokenType.STRING) {
+				// Déclaration de variable Class a = ...
+				variableDeclaration(type);
+			} else {
+				// Class.toto, on revient d'un token et on parse une expression
+				mTokens.setPosition(save);
+				var exp = readExpression();
+				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
+					mTokens.skip();
+				}
+				mCurentBlock.addInstruction(this, new LeekExpressionInstruction(exp));
+			}
+			return;
+		} else {
+			var exp = readExpression();
+			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
+				mTokens.skip();
+			}
+			mCurentBlock.addInstruction(this, new LeekExpressionInstruction(exp));
+		}
 	}
 
 	public void writeJava(String className, JavaWriter writer, String AIClass) {
@@ -424,7 +461,7 @@ public class WordCompiler {
 		if (mTokens.eat().getType() != TokenType.PAR_RIGHT) throw new LeekCompilerException(mTokens.get(), Error.CLOSING_PARENTHESIS_EXPECTED);
 	}
 
-	private void functionBlock() throws LeekCompilerException {
+	private void functionBlock(Token functionToken) throws LeekCompilerException {
 		// Déclaration de fonction utilisateur
 		if (!mCurentBlock.equals(mMain)) {
 			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.FUNCTION_ONLY_IN_MAIN_BLOCK));
@@ -438,7 +475,13 @@ public class WordCompiler {
 			throw new LeekCompilerException(mTokens.get(), Error.FUNCTION_NAME_UNAVAILABLE);
 		}
 		if (mTokens.eat().getType() != TokenType.PAR_LEFT) {
-			throw new LeekCompilerException(mTokens.get(), Error.OPENING_PARENTHESIS_EXPECTED);
+			if (functionToken.getWord().equals("Function")) {
+				// Déclaration de type
+				mTokens.unskip();
+				return;
+			} else {
+				throw new LeekCompilerException(mTokens.get(), Error.OPENING_PARENTHESIS_EXPECTED);
+			}
 		}
 
 		var previousFunction = mCurrentFunction;
@@ -998,7 +1041,7 @@ public class WordCompiler {
 		mMain.addClassList(classDeclaration);
 		mCurrentClass = classDeclaration;
 
-		if (mTokens.get().getWord().equals("extends")) {
+		if (mTokens.get().getType() == TokenType.EXTENDS) {
 			mTokens.skip();
 			Token parent = mTokens.eat();
 			classDeclaration.setParent(parent);
@@ -1439,7 +1482,7 @@ public class WordCompiler {
 				} else if (word.getType() == TokenType.DOT) {
 					// Object access
 					var dot = mTokens.eat();
-					if (mTokens.get().getType() == TokenType.STRING) {
+					if (mTokens.get().getType() == TokenType.STRING || mTokens.get().getType() == TokenType.CLASS || mTokens.get().getType() == TokenType.SUPER) {
 						var name = mTokens.get();
 						retour.addObjectAccess(dot, name);
 					} else {
@@ -1447,6 +1490,21 @@ public class WordCompiler {
 						retour.addObjectAccess(dot, null);
 						mTokens.unskip();
 					}
+				} else if (word.getType() == TokenType.IN) {
+
+					mTokens.skip();
+					retour.addOperator(Operators.IN, word);
+					continue;
+
+				} else if (word.getType() == TokenType.AS) {
+
+					mTokens.skip();
+					var type = eatType(false, true);
+					if (type != null) {
+						retour.addOperator(Operators.AS, word);
+						retour.addExpression(type);
+					}
+					continue;
 
 				} else if (word.getType() == TokenType.OPERATOR && (!word.getWord().equals(">") || !inSet)) {
 
@@ -1470,14 +1528,7 @@ public class WordCompiler {
 							mTokens.skip();
 						}
 						retour.addOperator(operator, word);
-					} else if (word.getWord().equals("as")) {
-						mTokens.skip();
-						var type = eatType(false, true);
-						if (type != null) {
-							retour.addOperator(operator, word);
-							retour.addExpression(type);
-						}
-						continue;
+
 					} else {
 						if (operator == Operators.SHIFT_RIGHT) {
 							var nextToken = mTokens.get(1);
@@ -1602,32 +1653,39 @@ public class WordCompiler {
 					object.setClosingBrace(mTokens.get());
 					retour.addExpression(object);
 
+				} else if (word.getType() == TokenType.CLASS) {
+					retour.addExpression(new LeekVariable(this, word, VariableType.LOCAL));
+				} else if (word.getType() == TokenType.THIS) {
+					retour.addExpression(new LeekVariable(this, word, VariableType.LOCAL));
+				} else if (word.getType() == TokenType.TRUE) {
+					retour.addExpression(new LeekBoolean(word, true));
+				} else if (word.getType() == TokenType.FALSE) {
+					retour.addExpression(new LeekBoolean(word, false));
+				} else if (word.getType() == TokenType.FUNCTION) {
+					retour.addExpression(readAnonymousFunction());
+				} else if (word.getType() == TokenType.NULL) {
+					retour.addExpression(new LeekNull(word));
+				} else if (getVersion() >= 2 && word.getType() == TokenType.NEW) {
+					retour.addUnaryPrefix(Operators.NEW, word);
+				} else if (word.getType() == TokenType.NOT) {
+					retour.addUnaryPrefix(Operators.NOT, word);
+				} else if (word.getType() == TokenType.SUPER) {
+					// super doit être dans une méthode
+					if (mCurrentClass == null) {
+						addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.KEYWORD_MUST_BE_IN_CLASS));
+						retour.addExpression(new LeekVariable(this, word, VariableType.LOCAL));
+					} else {
+						if (mCurrentClass.getParentToken() == null) {
+							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.SUPER_NOT_AVAILABLE_PARENT));
+						}
+						retour.addExpression(new LeekVariable(word, VariableType.SUPER, Type.CLASS, mCurrentClass));
+					}
 				} else if (word.getType() == TokenType.STRING) {
 
 					if (mMain.hasGlobal(word.getWord())) {
 						retour.addExpression(new LeekVariable(this, word, VariableType.GLOBAL));
-					} else if (wordEquals(word, "function")) {
-						retour.addExpression(readAnonymousFunction());
-					} else if (wordEquals(word, "true")) retour.addExpression(new LeekBoolean(word, true));
-					else if (wordEquals(word, "false")) retour.addExpression(new LeekBoolean(word, false));
-					else if (wordEquals(word, "null")) retour.addExpression(new LeekNull(word));
-					else if (wordEquals(word, "not")) retour.addUnaryPrefix(Operators.NOT, word);
-					else if (getVersion() >= 2 && word.getWord().equals("new")) {
-						retour.addUnaryPrefix(Operators.NEW, word);
-					} else if (getVersion() >= 2 && word.getWord().equals("super")) {
-						// super doit être dans une méthode
-						if (mCurrentClass == null) {
-							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.KEYWORD_MUST_BE_IN_CLASS));
-							retour.addExpression(new LeekVariable(this, word, VariableType.LOCAL));
-						} else {
-							if (mCurrentClass.getParentToken() == null) {
-								addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.SUPER_NOT_AVAILABLE_PARENT));
-							}
-							retour.addExpression(new LeekVariable(word, VariableType.SUPER, Type.CLASS, mCurrentClass));
-						}
 					} else {
 						retour.addExpression(new LeekVariable(this, word, VariableType.LOCAL));
-						// throw new LeekCompilerException(word, Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 					}
 				} else if (word.getType() == TokenType.PAR_LEFT) {
 					var leftParenthesis = mTokens.eat(); // On avance le curseur pour bien être au début de l'expression

@@ -48,12 +48,12 @@ public class TestObject extends TestCommon {
 		code_v2_("class AI { m() { return 'ok' } } return new AI().m()").equals("\"ok\"");
 
 		section("Reserved fields");
-		code_v2("class A { for while if var this }").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		code_v2_("class A { for }").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		code_v2_("class A { if }").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		code_v2_("class A { while }").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		code_v2_("class A { var }").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		code_v2_("class A { this }").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v2("class A { for while if var this }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { for }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { if }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { while }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { var }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { this }").error(Error.VARIABLE_NAME_EXPECTED);
 
 		section("Constructors");
 		code_v2_("class A {} var a = new A() return a").equals("A {}");
@@ -90,12 +90,12 @@ public class TestObject extends TestCommon {
 		code_v2_("class titi { static real reel	} titi.reel = 10 return titi.reel.class").equals("<class Real>");
 
 		section("Reserved static fields");
-		code_v2("class A { static for static while static if static var static this }").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		code_v2_("class A { static for }").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		code_v2_("class A { static if }").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		code_v2_("class A { static while }").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		code_v2_("class A { static var }").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		code_v2_("class A { static this }").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v2("class A { static for static while static if static var static this }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { static for }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { static if }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { static while }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { static var }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { static this }").error(Error.VARIABLE_NAME_EXPECTED);
 
 		section("Static field dependencies on other static fields");
 		code_v2_("class A { private static x = 1 static y = A.x } return A.y").equals("1");
@@ -653,14 +653,14 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { m() { return this.class.name } } return new A().m()").equals("\"A\"");
 
 		section("Class.class");
-		code_v2_("class A { class }").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		code_v2_("class A { class() {} }").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v2_("class A { class }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { class() {} }").error(Error.VARIABLE_NAME_EXPECTED);
 		code_v2_("class A { } return new A().class").equals("<class A>");
 		code_v2_("class A { } return A.class").equals("<class Class>");
 
 		section("Class.super");
-		code_v2_("class A { super }").error(Error.VARIABLE_NAME_UNAVAILABLE);
-		code_v2_("class A { super() {} }").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v2_("class A { super }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { super() {} }").error(Error.VARIABLE_NAME_EXPECTED);
 		code_v2_("class A { } class B extends A {} return B.super").equals("<class A>");
 		code_v2_("class A { } class B extends A {} return B.super.name").equals("\"A\"");
 		code_v2_("class A { } class B extends A {} return new B().class.super.name").equals("\"A\"");

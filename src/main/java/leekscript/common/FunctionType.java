@@ -36,6 +36,7 @@ public class FunctionType extends Type {
 	}
 
 	public void add_argument(Type argument, boolean optional) {
+		assert argument != null;
 		arguments.add(argument);
 		if (!optional) this.minArguments++;
 		this.maxArguments++;
