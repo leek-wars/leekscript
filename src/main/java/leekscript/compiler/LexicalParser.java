@@ -28,7 +28,7 @@ public class LexicalParser {
 		for (stream = new CharStream(aiFile.getCode()); stream.hasMore();) {
 
 			if (tryParseWhiteSpaces()) continue;
-			if (tryParseString()) continue;
+			if (tryParseString(error)) continue;
 			if (tryParseComments()) continue;
 			if (tryParseNumber(error)) continue;
 			if (tryParseSpecialIdentifier()) continue;
@@ -207,7 +207,7 @@ public class LexicalParser {
 		return true;
 	}
 
-	private boolean tryParseString() {
+	private boolean tryParseString(ErrorReporter error) throws LeekCompilerException {
 
 		var openQuote = stream.peek();
 		if (openQuote != '"' && openQuote != '\'') {
@@ -219,20 +219,27 @@ public class LexicalParser {
 		stream.next();
 
 		var escaped = false;
+		var closed = false;
 		for (char c = stream.peek(); stream.hasMore(); c = stream.next()) {
 			if (c == '\\') {
 				escaped = !escaped;
 				continue;
 			}
 			if (c == openQuote && !escaped) {
+				closed = true;
 				stream.next();
 				break;
 			}
 			escaped = false;
 		}
 
-		addToken(stream.getSubStringSince(startingPoint), TokenType.VAR_STRING);
-		return true;
+		if (closed) {
+			addToken(stream.getSubStringSince(startingPoint), TokenType.VAR_STRING);
+			return true;
+		} else {
+			error.report(new AnalyzeError(new Location(aiFile, stream.getLineCounter(), stream.getCharCounter()), AnalyzeErrorLevel.ERROR, Error.STRING_NOT_CLOSED));
+			return false;
+		}
 	}
 
 	private boolean tryParseWhiteSpaces() {

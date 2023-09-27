@@ -224,46 +224,46 @@ public class WordCompiler {
 		mTokens = this.mAI.getTokenStream();
 		assert mTokens != null : "tokens are null";
 		mTokens.reset();
-		try {
-			// Vraie compilation
-			while (mTokens.hasMoreTokens()) {
 
-				if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+		// Vraie compilation
+		while (mTokens.hasMoreTokens()) {
 
-				// On vérifie les instructions en cours
-				if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
-					DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
-					mCurentBlock = mCurentBlock.endInstruction();
-					dowhileendBlock(do_block);
-					mTokens.skip();
-				} else mCurentBlock = mCurentBlock.endInstruction();
-				if (!mTokens.hasMoreTokens()) break;
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 
-				// Puis on lit l'instruction
-				compileWord();
-			}
-			while (mCurentBlock.getParent() != null && !mCurentBlock.hasAccolade()) {
+			// On vérifie les instructions en cours
+			if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
+				DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
+				mCurentBlock = mCurentBlock.endInstruction();
+				dowhileendBlock(do_block);
+				mTokens.skip();
+			} else mCurentBlock = mCurentBlock.endInstruction();
+			if (!mTokens.hasMoreTokens()) break;
 
-				if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
-
-				if (mCurentBlock instanceof DoWhileBlock) {
-					DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
-					mCurentBlock = mCurentBlock.endInstruction();
-					dowhileendBlock(do_block);
-					mTokens.skip();
-				} else {
-					if (mCurentBlock.endInstruction() == mCurentBlock) {
-						throw new LeekCompilerException(mTokens.get(), Error.NO_BLOC_TO_CLOSE);
-					}
-					mCurentBlock = mCurentBlock.endInstruction();
-				}
-			}
-			if (!mMain.equals(mCurentBlock)) throw new LeekCompilerException(mTokens.get(), Error.OPEN_BLOC_REMAINING);
-
-		} catch (IndexOutOfBoundsException e) {
-			e.printStackTrace(System.out);
-			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.END_OF_SCRIPT_UNEXPECTED));
+			// Puis on lit l'instruction
+			compileWord();
 		}
+		while (mCurentBlock.getParent() != null && !mCurentBlock.hasAccolade()) {
+
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
+			if (mCurentBlock instanceof DoWhileBlock) {
+				DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
+				mCurentBlock = mCurentBlock.endInstruction();
+				dowhileendBlock(do_block);
+				mTokens.skip();
+			} else {
+				if (mCurentBlock.endInstruction() == mCurentBlock) {
+					throw new LeekCompilerException(mTokens.get(), Error.NO_BLOC_TO_CLOSE);
+				}
+				mCurentBlock = mCurentBlock.endInstruction();
+			}
+		}
+		if (!mMain.equals(mCurentBlock)) throw new LeekCompilerException(mTokens.get(), Error.OPEN_BLOC_REMAINING);
+
+		// } catch (IndexOutOfBoundsException e) {
+		// 	e.printStackTrace(System.out);
+		// 	addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.END_OF_SCRIPT_UNEXPECTED));
+		// }
 	}
 
 	public void analyze() throws LeekCompilerException {
