@@ -479,6 +479,8 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".increment()");
+			} else if (this.variableType.isPrimitiveNumber()) {
+				writer.addCode("g_" + token.getWord() + "++");
 			} else {
 				writer.addCode("sub(g_" + token.getWord() + " = add(g_" + token.getWord() + ", 1l), 1l)");
 			}
@@ -502,6 +504,8 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".decrement()");
+			} else if (this.variableType.isPrimitiveNumber()) {
+				writer.addCode("g_" + token.getWord() + "--");
 			} else {
 				writer.addCode("add(g_" + token.getWord() + " = sub(g_" + token.getWord() + ", 1l), 1l)");
 			}
@@ -525,6 +529,8 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".pre_increment()");
+			} else if (this.variableType.isPrimitiveNumber()) {
+				writer.addCode("++g_" + token.getWord());
 			} else {
 				writer.addCode("g_" + token.getWord() + " = add(g_" + token.getWord() + ", 1l)");
 			}
@@ -548,6 +554,8 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".pre_decrement()");
+			} else if (this.variableType.isPrimitiveNumber()) {
+				writer.addCode("--g_" + token.getWord());
 			} else {
 				writer.addCode("g_" + token.getWord() + " = sub(g_" + token.getWord() + ", 1l)");
 			}
@@ -628,6 +636,9 @@ public class LeekVariable extends Expression {
 				writer.addCode("g_" + token.getWord() + ".sub_eq(");
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
+			} else if (this.variableType.isNumber() && expr.getType().isPrimitiveNumber()) {
+				writer.addCode("g_" + token.getWord() + " -= ");
+				expr.writeJavaCode(mainblock, writer);
 			} else {
 				writer.addCode("g_" + token.getWord() + " = sub(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer);
@@ -668,6 +679,9 @@ public class LeekVariable extends Expression {
 				writer.addCode("g_" + token.getWord() + ".mul_eq(");
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
+			} else if (this.variableType.isNumber() && expr.getType().isPrimitiveNumber()) {
+				writer.addCode("g_" + token.getWord() + " *= ");
+				expr.writeJavaCode(mainblock, writer);
 			} else {
 				writer.addCode("g_" + token.getWord() + " = mul(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer);
@@ -834,6 +848,9 @@ public class LeekVariable extends Expression {
 				writer.addCode("g_" + token.getWord() + ".mod_eq(");
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
+			} else if (this.variableType.isPrimitiveNumber()) {
+				writer.addCode("g_" + token.getWord() + " %= ");
+				expr.writeJavaCode(mainblock, writer);
 			} else {
 				writer.addCode("g_" + token.getWord() + " = mod(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer);
@@ -874,6 +891,9 @@ public class LeekVariable extends Expression {
 				writer.addCode("g_" + token.getWord() + ".bor_eq(");
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
+			} else if (this.variableType.isPrimitiveNumber()) {
+				writer.addCode("g_" + token.getWord() + " |= ");
+				expr.writeJavaCode(mainblock, writer);
 			} else {
 				writer.addCode("g_" + token.getWord() + " = bor(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer);
@@ -911,6 +931,9 @@ public class LeekVariable extends Expression {
 				writer.addCode("g_" + token.getWord() + ".band_eq(");
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
+			} else if (this.variableType.isPrimitiveNumber()) {
+				writer.addCode("g_" + token.getWord() + " &= ");
+				expr.writeJavaCode(mainblock, writer);
 			} else {
 				writer.addCode("g_" + token.getWord() + " = band(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer);
@@ -947,6 +970,9 @@ public class LeekVariable extends Expression {
 				writer.addCode("g_" + token.getWord() + ".bxor_eq(");
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
+			} else if (this.variableType.isPrimitiveNumber()) {
+				writer.addCode("g_" + token.getWord() + " ^= ");
+				expr.writeJavaCode(mainblock, writer);
 			} else {
 				writer.addCode("g_" + token.getWord() + " = bxor(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer);
@@ -983,6 +1009,9 @@ public class LeekVariable extends Expression {
 				writer.addCode("g_" + token.getWord() + ".shl_eq(");
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
+			} else if (this.variableType.isPrimitiveNumber()) {
+				writer.addCode("g_" + token.getWord() + " <<= ");
+				expr.writeJavaCode(mainblock, writer);
 			} else {
 				writer.addCode("g_" + token.getWord() + " = shl(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer);
@@ -1019,6 +1048,9 @@ public class LeekVariable extends Expression {
 				writer.addCode("g_" + token.getWord() + ".shr_eq(");
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
+			} else if (this.variableType.isPrimitiveNumber()) {
+				writer.addCode("g_" + token.getWord() + " >>= ");
+				expr.writeJavaCode(mainblock, writer);
 			} else {
 				writer.addCode("g_" + token.getWord() + " = shr(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer);
@@ -1055,6 +1087,9 @@ public class LeekVariable extends Expression {
 				writer.addCode("g_" + token.getWord() + ".ushr_eq(");
 				expr.writeJavaCode(mainblock, writer);
 				writer.addCode(")");
+			} else if (this.variableType.isPrimitiveNumber()) {
+				writer.addCode("g_" + token.getWord() + " >>>= ");
+				expr.writeJavaCode(mainblock, writer);
 			} else {
 				writer.addCode("g_" + token.getWord() + " = ushr(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer);
