@@ -11,6 +11,7 @@ public class TestSet extends TestCommon {
 		code("return <>").equals("<>");
 		DISABLED_code("return <<>>").equals("<<>>");
 		code("<1, 2, 3, 4>").ops(8);
+		code_v3_("Set<integer> a = new Set() return a").equals("<>");
 
 		section("Set typing");
 		code_strict_v4_("Set i = <1, 2>; return i instanceof Set").equals("true");

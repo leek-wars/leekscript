@@ -29,6 +29,7 @@ public class TestInterval extends TestCommon {
 		code_v1("return [1.0 ..[").equals("[1..∞[");
 		code_v2_("return [1.0 ..[").equals("[1.0..∞[");
 		code("[1..2]").ops(2);
+		code_v3_("Interval a = new Interval() return a").equals("[..]");
 
 		section("Interval.intervalMin");
 		code("return intervalMin([1..2])").equals("1");

@@ -3123,6 +3123,14 @@ public abstract class AI {
 		return new MapLeekValue(this);
 	}
 
+	public SetLeekValue new_setClass() throws LeekRunException {
+		return new SetLeekValue(this);
+	}
+
+	public IntervalLeekValue new_intervalClass() throws LeekRunException {
+		return new RealIntervalLeekValue(this);
+	}
+
 	public ObjectLeekValue new_objectClass() {
 		return new ObjectLeekValue(this, this.objectClass);
 	}
