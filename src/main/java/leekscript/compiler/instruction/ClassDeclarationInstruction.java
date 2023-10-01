@@ -80,19 +80,26 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	private HashMap<String, HashMap<Integer, ClassDeclarationMethod>> staticMethods = new HashMap<>();
 	private ClassMethodBlock staticInitBlock;
 	public Type classType;
+	public Type emptyType;
 	public Type classValueType;
 
 	public ClassDeclarationInstruction(Token token, int line, AIFile ai, boolean internal, MainLeekBlock block) {
-		this(token, line, ai, internal, block, null);
+		this(token, line, ai, internal, block, null, null);
 		this.classType = new ClassType(this);
+		this.emptyType = this.classType;
 	}
 
 	public ClassDeclarationInstruction(Token token, int line, AIFile ai, boolean internal, MainLeekBlock block, Type type) {
+		this(token, line, ai, internal, block, type, type);
+	}
+
+	public ClassDeclarationInstruction(Token token, int line, AIFile ai, boolean internal, MainLeekBlock block, Type type, Type emptyType) {
 		this.token = token;
 		this.internal = internal;
 		this.mainBlock = block;
 		this.staticInitBlock = new ClassMethodBlock(this, false, true, block, block, null, Type.ANY);
 		this.classType = type;
+		this.emptyType = emptyType;
 	}
 
 	public HashMap<String, ClassDeclarationField> getFields() {
@@ -1132,6 +1139,10 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	@Override
 	public Type getType() {
 		return this.classType;
+	}
+
+	public Type getEmptyType() {
+		return this.emptyType;
 	}
 
 	@Override

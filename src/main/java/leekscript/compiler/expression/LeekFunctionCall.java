@@ -484,7 +484,7 @@ public class LeekFunctionCall extends Expression {
 				} else if (constructor.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_CONSTRUCTOR, new String[] { clazz.getName() }));
 				}
-				this.type = clazz.getType();
+				this.type = clazz.getEmptyType();
 
 			} else if (v.getVariableType() == VariableType.SUPER) {
 

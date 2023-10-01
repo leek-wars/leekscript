@@ -29,11 +29,14 @@ public class Type {
 	public static final Type OBJECT = new ObjectType();
 	public static final FunctionType FUNCTION = new FunctionType(Type.ANY);
 	public static final Type MAP = map(Type.ANY, Type.ANY);
+	public static final Type EMPTY_MAP = map(Type.VOID, Type.VOID);
 	public static final Type CLASS = new ClassValueType(null);
 	public static final Type VOID = new Type("void", "v", "Object", "Object", "null");
 	// public static final Type LEGACY_ARRAY = new LegacyArrayType();
 	public static final Type ARRAY = array(Type.ANY);
+	public static final Type EMPTY_ARRAY = array(Type.VOID);
 	public static final Type SET = set(Type.ANY);
+	public static final Type EMPTY_SET = set(Type.VOID);
 	public static final Type INTERVAL = new IntervalType(Type.ANY);
 	public static final Type EMPTY_INTERVAL = new IntervalType(Type.VOID);
 	public static final Type REAL_INTERVAL = new IntervalType(Type.REAL);
