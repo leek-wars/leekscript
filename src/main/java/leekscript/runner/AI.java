@@ -1001,6 +1001,11 @@ public abstract class AI {
 		return -longint(value);
 	}
 
+	public Number minus(Number value) throws LeekRunException {
+		if (value instanceof Double) return -((Double) value);
+		return -longint(value);
+	}
+
 	public long bnot(Object value) throws LeekRunException {
 		return LeekValueManager.bnot(this, value);
 	}

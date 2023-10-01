@@ -40,6 +40,7 @@ public class TestInterval extends TestCommon {
 		code("return intervalMin([1..0])").equals("1");
 		code("return intervalMin(]..[)").equals("-∞");
 		code("intervalMin([1..2])").ops(3);
+		code_v3_("Interval inter = [1..10] integer min = -intervalMin(inter) return min").equals("-1");
 
 		section("Interval.intervalMax");
 		code("return intervalMax([1..2])").equals("2");
