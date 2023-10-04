@@ -73,6 +73,13 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 			}
 		}
 
+		// Paramètre par défaut pas à la fin
+		if (mParameters.size() > 0 && defaultValue == null && defaultValues.get(defaultValues.size() - 1) != null) {
+			compiler.addError(new AnalyzeError(mParameters.get(mParameters.size() - 1), AnalyzeErrorLevel.ERROR, Error.DEFAULT_ARGUMENT_NOT_END, new String[] {
+
+			}));
+		}
+
 		mParameters.add(token);
 		defaultValues.add(defaultValue);
 		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this, type);
