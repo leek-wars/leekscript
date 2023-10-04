@@ -65,7 +65,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 				writer.addCode(this.variable.getType().getDefaultValue(writer, mainblock.getVersion()));
 			}
 		} else {
-			writer.addCode("g_" + variableToken.getWord() + " = new Box(" + writer.getAIThis() + ", ");
+			writer.addCode("g_" + variableToken.getWord() + " = new Box<" + variable.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
 			if (mValue != null) mValue.compileL(mainblock, writer);
 			else writer.addCode("null");
 			writer.addCode(", " + (mValue != null ? mValue.getOperations() : 0) + ")");

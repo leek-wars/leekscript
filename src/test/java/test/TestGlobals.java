@@ -72,5 +72,6 @@ public class TestGlobals extends TestCommon {
 		code("global boolean? x = null; x = 1 == 2; return x").equals("false");
 		code("global Array<string> w = split('hello', ''); return w").equals("[\"h\", \"e\", \"l\", \"l\", \"o\"]");
 		code_v4_("function f() { return [:] } global Map c = f(); return c").equals("[:]");
+		code_strict("global a = [0] a[0] = 12 return a").equals("[12]");
 	}
 }

@@ -305,7 +305,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			if (getWordCompiler().getVersion() >= 2) {
 				writer.addLine("private " + global.getType().getJavaPrimitiveName(getVersion()) + " g_" + global.getName() + " = " + global.getType().getDefaultValue(writer, getVersion()) + ";");
 			} else {
-				writer.addLine("private Box g_" + global.getName() + " = new Box(" + writer.getAIThis() + ");");
+				writer.addLine("private Box<" + global.getType().getJavaName(getVersion()) + "> g_" + global.getName() + " = new Box<" + global.getType().getJavaName(getVersion()) + ">(" + writer.getAIThis() + ");");
 			}
 			writer.addLine("private boolean g_init_" + global.getName() + " = false;");
 		}
