@@ -4,8 +4,8 @@ import leekscript.compiler.JavaWriter;
 
 public class MapType extends Type {
 
-	private Type key;
-	private Type value;
+	private final Type key;
+	private final Type value;
 
 	public MapType(Type key, Type value) {
 		super(key == Type.VOID && value == Type.VOID ? "Map<empty>" : key == Type.ANY && value == Type.ANY ? "Map" : "Map<" + key.toString() + ", " + value.toString() + ">", "m", "MapLeekValue", "MapLeekValue", "new MapLeekValue()");

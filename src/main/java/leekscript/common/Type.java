@@ -20,6 +20,7 @@ public class Type {
 
 	public static final Type ERROR = new ErrorType();
 	public static final Type WARNING = new WarningType();
+	public static final Type VOID = new Type("void", "v", "Object", "Object", "null");
 	public static final Type ANY = new Type("any", "x", "Object", "Object", "null");
 	public static final Type NULL = new Type("null", "u", "Object", "Object", "null");
 	public static final Type BOOL = new Type("boolean", "b", "boolean", "Boolean", "false");
@@ -31,7 +32,6 @@ public class Type {
 	public static final Type MAP = map(Type.ANY, Type.ANY);
 	public static final Type EMPTY_MAP = map(Type.VOID, Type.VOID);
 	public static final Type CLASS = new ClassValueType(null);
-	public static final Type VOID = new Type("void", "v", "Object", "Object", "null");
 	// public static final Type LEGACY_ARRAY = new LegacyArrayType();
 	public static final Type ARRAY = array(Type.ANY);
 	public static final Type EMPTY_ARRAY = array(Type.VOID);
