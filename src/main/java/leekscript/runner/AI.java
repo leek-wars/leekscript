@@ -2028,7 +2028,7 @@ public abstract class AI {
 	}
 	public Object putv4(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put(this, key, value);
+			return ((LegacyArrayLeekValue) array).put(key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).putv4(key, value);
@@ -2060,7 +2060,7 @@ public abstract class AI {
 
 	public Object put(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) array).put(this, key, value);
+			return ((LegacyArrayLeekValue) array).put(key, value);
 		}
 		if (array instanceof ArrayLeekValue) {
 			return ((ArrayLeekValue) array).put(key, value);

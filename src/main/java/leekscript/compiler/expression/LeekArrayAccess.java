@@ -358,10 +358,10 @@ public class LeekArrayAccess extends Expression {
 			mCase.writeJavaCode(mainblock, writer);
 			writer.addCode(", ");
 			expr.writeJavaCode(mainblock, writer);
+			writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 		}
 
 		// writer.compileClone(mainblock, expr);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override

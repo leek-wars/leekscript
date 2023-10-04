@@ -223,7 +223,7 @@ public class Box<T> {
 
 	public Object put(AI ai, Object key, Object value) throws LeekRunException {
 		if (mValue instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) mValue).put(ai, key, value);
+			return ((LegacyArrayLeekValue) mValue).put(key, value);
 		}
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}

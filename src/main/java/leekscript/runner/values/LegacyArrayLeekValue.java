@@ -371,7 +371,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 	}
 
-	public Object put(AI ai, Object keyValue, Object value) throws LeekRunException {
+	public Object put(Object keyValue, Object value) throws LeekRunException {
 		// ai.ops(1);
 		var key = transformKey(ai, keyValue);
 		if (ai.getVersion() == 1) {
@@ -1217,7 +1217,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public Object fill(AI ai, Object value, long size) throws LeekRunException {
 		for (long i = 0; i < size; i++) {
-			put(ai, i, value);
+			put(i, value);
 			ai.ops(3);
 		}
 		return null;
