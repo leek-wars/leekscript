@@ -17,6 +17,10 @@ public class TestSet extends TestCommon {
 		code_strict_v4_("Set i = <1, 2>; return i instanceof Set").equals("true");
 		code_strict_v4_("Set<integer> i = <1, 2>; return i instanceof Set").equals("true");
 
+		section("Set operator !");
+		code("var i = <> return !i").equals("true");
+		code("var i = <1> return !i").equals("false");
+
 		section("Set.setPut()");
 		code("var i = <1, 2> setPut(i, 3) return i").debug().equals("<1, 2, 3>");
 		code("var i = <1, 2> setPut(i, 3) setPut(i, 4) return i").equals("<1, 2, 3, 4>");

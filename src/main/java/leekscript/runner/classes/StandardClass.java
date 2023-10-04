@@ -6,9 +6,11 @@ import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
+import leekscript.runner.values.IntervalLeekValue;
 import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ObjectLeekValue;
+import leekscript.runner.values.SetLeekValue;
 import leekscript.common.Type;
 
 public class StandardClass {
@@ -21,6 +23,8 @@ public class StandardClass {
 		if (value instanceof LegacyArrayLeekValue || value instanceof ArrayLeekValue) return Type.ARRAY;
 		if (value instanceof MapLeekValue) return Type.MAP;
 		if (value instanceof String) return Type.STRING;
+		if (value instanceof SetLeekValue) return Type.SET;
+		if (value instanceof IntervalLeekValue) return Type.INTERVAL;
 		if (value instanceof ObjectLeekValue o) return o.clazz.getType();
 		if (value instanceof NativeObjectLeekValue o) return ai.classOf(o).getType();
 		if (value instanceof ClassLeekValue) return Type.CLASS;
