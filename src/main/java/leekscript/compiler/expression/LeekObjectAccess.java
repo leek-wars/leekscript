@@ -183,7 +183,7 @@ public class LeekObjectAccess extends Expression {
 	}
 
 	public String getField() {
-		return field.getWord();
+		return field == null ? "" : field.getWord();
 	}
 
 	public Token getFieldToken() {
@@ -492,7 +492,7 @@ public class LeekObjectAccess extends Expression {
 			}
 		}
 		var clazz = object.getType().getClassDeclaration();
-		if (clazz != null) {
+		if (clazz != null && field != null) {
 			var member = clazz.getMember(field.getWord());
 			if (member != null) {
 				return new Hover(member.getType(), getLocation(), member.getLocation());
@@ -514,5 +514,16 @@ public class LeekObjectAccess extends Expression {
 
 	public LeekVariable getVariable() {
 		return this.variable;
+	}
+
+	public Token getDot() {
+		return this.dot;
+	}
+
+	public Token getLastToken() {
+		if (this.field != null) {
+			return this.field;
+		}
+		return this.dot;
 	}
 }

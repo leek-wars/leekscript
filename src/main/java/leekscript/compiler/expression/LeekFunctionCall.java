@@ -539,9 +539,9 @@ public class LeekFunctionCall extends Expression {
 							if (count == mParameters.size()) {
 								var staticMethod = methods.get(count);
 								if (staticMethod.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != clazz) {
-									compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
+									compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
 								} else if (staticMethod.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
-									compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
+									compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_METHOD, new String[] { clazz.getName(), oa.getField() }));
 								}
 								is_static_method = true;
 								method = staticMethod;
@@ -562,13 +562,13 @@ public class LeekFunctionCall extends Expression {
 					var field = clazz.getStaticField(oa.getField());
 					if (field != null) {
 						if (field.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != clazz) {
-							compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_FIELD, new String[] { clazz.getName(), oa.getField() }));
+							compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_FIELD, new String[] { clazz.getName(), oa.getField() }));
 						} else if (field.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
-							compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_FIELD, new String[] { clazz.getName(), oa.getField() }));
+							compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_FIELD, new String[] { clazz.getName(), oa.getField() }));
 						}
 						is_static_method = true;
 					} else {
-						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), oa.getField() }));
+						compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] { clazz.getName(), oa.getField() }));
 					}
 				}
 			}
