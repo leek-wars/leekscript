@@ -104,6 +104,17 @@ public abstract class AI {
 
 	public class NativeObjectLeekValue implements LeekValue {
 
+		private int id;
+
+		public NativeObjectLeekValue() {
+			this.id = AI.this.getNextObjectID();
+		}
+
+		@Override
+		public int hashCode() {
+			return this.id;
+		}
+
 		public Object u_keys() throws LeekRunException {
 			var result = new ArrayLeekValue(AI.this);
 			for (var field : this.getClass().getFields()) {
@@ -142,7 +153,7 @@ public abstract class AI {
 
 			var classes = new ArrayList<Class<?>>();
 			Class<?> current = getClass();
-			while (current != null) {
+			while (current != null && current != NativeObjectLeekValue.class) {
 				classes.add(0, current);
 				current = current.getSuperclass();
 			}
