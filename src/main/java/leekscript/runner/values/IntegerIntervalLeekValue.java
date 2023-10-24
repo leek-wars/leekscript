@@ -134,14 +134,17 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 		return to != Long.MAX_VALUE;
 	}
 
+	@Override
 	public boolean intervalIsClosed(AI ai) {
 		return maxClosed && minClosed;
 	}
 
+	@Override
 	public boolean intervalIsLeftClosed(AI ai) {
 		return minClosed;
 	}
 
+	@Override
 	public boolean intervalIsRightClosed(AI ai) {
 		return maxClosed;
 	}

@@ -118,14 +118,17 @@ public class RealIntervalLeekValue extends IntervalLeekValue {
 		return to != Double.POSITIVE_INFINITY;
 	}
 
+	@Override
 	public boolean intervalIsClosed(AI ai) {
 		return maxClosed && minClosed;
 	}
 
+	@Override
 	public boolean intervalIsLeftClosed(AI ai) {
 		return minClosed;
 	}
 
+	@Override
 	public boolean intervalIsRightClosed(AI ai) {
 		return maxClosed;
 	}
