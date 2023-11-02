@@ -693,10 +693,14 @@ public abstract class AI {
 			}
 			return ((LegacyArrayLeekValue) x).equals(this, y);
 		}
-		if (x instanceof ArrayLeekValue) {
-			if (y instanceof ArrayLeekValue) {
-				return ((ArrayLeekValue) x).eq(this, (ArrayLeekValue) y);
-			}
+		if (x instanceof ArrayLeekValue ax && y instanceof ArrayLeekValue ay) {
+			return ax.eq(ay);
+		}
+		if (x instanceof MapLeekValue mx && y instanceof MapLeekValue my) {
+			return mx.eq(my);
+		}
+		if (x instanceof SetLeekValue sx && y instanceof SetLeekValue sy) {
+			return sx.eq(sy);
 		}
 		if (x instanceof FunctionLeekValue) {
 			return ((FunctionLeekValue) x).equals(y);

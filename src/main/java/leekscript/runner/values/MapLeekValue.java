@@ -20,18 +20,22 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	private static final int READ_OPERATIONS = 2;
 	private static final int WRITE_OPERATIONS = 3;
 	private final AI ai;
+	public final int id;
 
 	public MapLeekValue(AI ai) {
 		this.ai = ai;
+		this.id = ai.getNextObjectID();
 	}
 
 	public MapLeekValue(AI ai, int capacity) {
 		super(capacity);
 		this.ai = ai;
+		this.id = ai.getNextObjectID();
 	}
 
 	public MapLeekValue(AI ai, Object values[]) throws LeekRunException {
 		this.ai = ai;
+		this.id = ai.getNextObjectID();
 		for (int i = 0; i < values.length; i += 2) {
 			put(values[i], values[i + 1]);
 		}
@@ -44,6 +48,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 
 	public MapLeekValue(AI ai, MapLeekValue map, int level) throws LeekRunException {
 		this.ai = ai;
+		this.id = ai.getNextObjectID();
 		for (var entry : map) {
 			if (level == 1) {
 				put(entry.getKey(), entry.getValue());
@@ -485,11 +490,41 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return entrySet().iterator();
 	}
 
+	public boolean eq(MapLeekValue map) throws LeekRunException {
+
+		ai.ops(1);
+
+		// On commence par vérifier la taille
+		if (size() != map.size())
+			return false;
+		if (size() == 0)
+			return true;
+
+		ai.ops(2 * size());
+
+		// On va comparer chaque élément 1 à 1
+		for (var entry : entrySet()) {
+			if (!map.containsKey(entry.getKey())) return false;
+			if (!ai.eq(entry.getValue(), map.get(entry.getKey()))) return false;
+		}
+		return true;
+	}
+
 	@Override
 	@SuppressWarnings("deprecated")
 	protected void finalize() throws Throwable {
 		super.finalize();
 		ai.decreaseRAM(2 * size());
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		return object == this;
+	}
+
+	@Override
+	public int hashCode() {
+		return this.id;
 	}
 
 	public JSONObject toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
@@ -506,42 +541,5 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 			}
 		}
 		return o;
-	}
-
-	public int hashCode() {
-		int hashCode = 1;
-		hashCode = 31 * hashCode + size();
-		for (var entry : this) {
-			var k = entry.getKey();
-			var kh = 0;
-			if (k instanceof ArrayLeekValue) {
-				kh = ((ArrayLeekValue) k).size();
-			} else if (k instanceof MapLeekValue) {
-				kh = ((MapLeekValue) k).size();
-			} else if (k instanceof ObjectLeekValue) {
-				kh = ((ObjectLeekValue) k).size();
-			} else if (k instanceof NativeObjectLeekValue o) {
-				kh = o.size();
-			} else {
-				kh = k == null ? 0 : k.hashCode();
-			}
-			hashCode = 31 * hashCode + kh;
-
-			var eh = 0;
-			var e = entry.getValue();
-			if (e instanceof ArrayLeekValue) {
-				eh = ((ArrayLeekValue) e).size();
-			} else if (e instanceof MapLeekValue) {
-				eh = ((MapLeekValue) e).size();
-			} else if (e instanceof ObjectLeekValue) {
-				eh = ((ObjectLeekValue) e).size();
-			} else if (e instanceof NativeObjectLeekValue o) {
-				eh = o.size();
-			} else {
-				eh = e == null ? 0 : e.hashCode();
-			}
-			hashCode = 31 * hashCode + eh;
-		}
-		return hashCode;
 	}
 }

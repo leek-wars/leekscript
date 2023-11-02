@@ -64,6 +64,25 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		}
 	}
 
+	public boolean eq(SetLeekValue set) throws LeekRunException {
+
+		ai.ops(1);
+
+		// On commence par vérifier la taille
+		if (size() != set.size())
+			return false;
+		if (size() == 0)
+			return true;
+
+		ai.ops(2 * size());
+
+		// On va comparer chaque élément 1 à 1
+		for (var value : this) {
+			if (!set.contains(value)) return false;
+		}
+		return true;
+	}
+
 	@Override
 	@SuppressWarnings("deprecated")
 	protected void finalize() throws Throwable {

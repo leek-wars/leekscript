@@ -1098,7 +1098,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return sb.toString();
 	}
 
-	public boolean eq(AI ai, ArrayLeekValue array) throws LeekRunException {
+	public boolean eq(ArrayLeekValue array) throws LeekRunException {
 
 		ai.ops(1);
 

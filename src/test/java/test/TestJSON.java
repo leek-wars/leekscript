@@ -38,9 +38,9 @@ public class TestJSON extends TestCommon {
 		// code("return jsonEncode(x -> x)").equals("''");
 		// code("return jsonEncode([1, x -> x, 3])").equals("'[1, 3]'");
 		code_v4_("var m = ['20000': {L:5}, '10000': {L:5}, '50000': {L:5}] return m").equals("[\"50000\" : {L: 5}, \"20000\" : {L: 5}, \"10000\" : {L: 5}]");
-		DISABLED_code_v4_("var m = ['20000':['L':5], '10000':['L':5], '50000':['L':5]] return m").equals("[\"50000\" : [\"L\" : 5], \"20000\" : <...>, \"10000\" : <...>]");
-		DISABLED_code_v4_("var m = ['20000':['L':5], '10000':['L':5], '50000':['L':5]] return jsonEncode(m)").equals("{\"50000\":{\"L\":5}}");
-		DISABLED_code_v4_("var m = ['20000':['L':5], '10000':['L':5], '50000':['L':5]] var o = {m: m} return jsonEncode(o)").equals("{\"m\":{\"50000\":{\"L\":5}}}");
+		code_v4_("var m = ['20000':['L':5], '10000':['L':5], '50000':['L':5]] return m").equals("[\"50000\" : [\"L\" : 5], \"20000\" : [\"L\" : 5], \"10000\" : [\"L\" : 5]]");
+		code_v4_("var m = ['20000':['L':5], '10000':['L':5], '50000':['L':5]] return jsonEncode(m)").equals("\"{\"10000\":{\"L\":5},\"20000\":{\"L\":5},\"50000\":{\"L\":5}}\"");
+		code_v4_("var m = ['20000':['L':5], '10000':['L':5], '50000':['L':5]] var o = {m: m} return jsonEncode(o)").equals("\"{\"m\":{\"10000\":{\"L\":5},\"20000\":{\"L\":5},\"50000\":{\"L\":5}}}\"");
 
 		// section("Value.json()");
 		// // null

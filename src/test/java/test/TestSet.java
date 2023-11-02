@@ -17,6 +17,16 @@ public class TestSet extends TestCommon {
 		code_strict_v4_("Set i = <1, 2>; return i instanceof Set").equals("true");
 		code_strict_v4_("Set<integer> i = <1, 2>; return i instanceof Set").equals("true");
 
+		section("Set.operator ==");
+		code("return <> == <>").equals("true");
+		code("return <1> == <1>").equals("true");
+		code("return <'a', 'b'> == <1, 2>").equals("false");
+		code("return <'a', 'b'> == <'a', 'b'>").equals("true");
+		// == not deep on sets
+		DISABLED_code("return <'a', <1, 2>> == <'a', <1, 2>>").equals("true");
+		DISABLED_code("return <[1], [2 : 3]> == <[1], [2 : 3]>").equals("true");
+		code("return <'a', 'b'> == <'a', 'b', 'c', 'd'>").equals("false");
+
 		section("Set operator !");
 		code("var i = <> return !i").equals("true");
 		code("var i = <1> return !i").equals("false");
