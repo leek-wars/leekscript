@@ -1624,7 +1624,7 @@ public abstract class AI {
 				f.set(object, value);
 				return value;
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-				addSystemLog(AILog.ERROR, e);
+				// addSystemLog(AILog.ERROR, e);
 			}
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
