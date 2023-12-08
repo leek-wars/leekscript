@@ -70,6 +70,7 @@ public class JavaCompiler {
 				var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
 				ai.setId(file.getId());
 				ai.setLinesFile(lines);
+				ai.increaseRAMDirect((int) (java.length() * 10));
 				return ai;
 			} catch (Exception e) {
 				throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
@@ -92,6 +93,7 @@ public class JavaCompiler {
 				ai.setId(file.getId());
 				ai.setFile(file);
 				ai.setLinesFile(lines);
+				ai.increaseRAMDirect((int) (java.length() * 10));
 				return ai;
 			} catch (Exception e) {
 				throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
@@ -204,6 +206,7 @@ public class JavaCompiler {
 			ai.setCompileTime(compile_time);
 			ai.setLoadTime(load_time);
 			ai.setLinesFile(lines);
+			ai.increaseRAMDirect((int) (java.length() * 10));
 
 			if (useClassCache) {
 				aiCache.put(file.getJavaClass(), new AIClassEntry(clazz, file.getTimestamp()));

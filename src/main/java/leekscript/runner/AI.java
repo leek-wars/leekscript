@@ -349,6 +349,14 @@ public abstract class AI {
 		return maxRAM;
 	}
 
+	public void setMaxRAM(int maxRAM) {
+		this.maxRAM = maxRAM;
+	}
+
+	public void setMaxOperations(int maxOperations) {
+		this.maxOperations = maxOperations;
+	}
+
 	public AILog getLogs() {
 		return logs;
 	}
@@ -388,6 +396,11 @@ public abstract class AI {
 
 	public void resetCounter() {
 		mOperations = 0;
+	}
+
+
+	public void increaseRAMDirect(int ram) {
+		mRAM += ram;
 	}
 
 	public void increaseRAM(int ram) throws LeekRunException {
