@@ -543,7 +543,14 @@ public abstract class AI {
 				if (m2.find()) {
 					error.parameters = new Object[] { "null", javaTypeToLS(m2.group(1)) };
 				} else {
-					error.parameters = new Object[] { "null", "?" };
+					Pattern r3 = Pattern.compile("Cannot read field \"(.*)\" because \".*\" is null");
+					Matcher m3 = r3.matcher(throwable.getMessage() != null ? throwable.getMessage() : "");
+					if (m3.find()) {
+						error.type = Error.UNKNOWN_FIELD;
+						error.parameters = new Object[] { "null", javaTypeToLS(m3.group(1)) };
+					} else {
+						error.parameters = new Object[] { "null", "?" };
+					}
 				}
 			}
 		} else {
