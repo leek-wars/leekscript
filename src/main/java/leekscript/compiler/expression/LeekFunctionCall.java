@@ -204,7 +204,7 @@ public class LeekFunctionCall extends Expression {
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.STATIC_METHOD) {
 			// Méthode statique connue
 			if (this.type != Type.ANY && this.type != Type.VOID) {
-				writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+				writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getStaticMethodName(((LeekVariable) mExpression).getName(), mParameters.size());
 			writer.addCode(methodName + "(");
