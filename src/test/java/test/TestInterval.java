@@ -222,6 +222,13 @@ public class TestInterval extends TestCommon {
 		code_v4_("return [1..4][:2:]").equals("[1.0, 2.0]");
 
 		section("Interval iteration");
-		code("var i = [0..5] var x = 0 for (var y in i) x += y return x").equals("15");
+		code("var i = [1..5] var x = 0 for (var y in i) x += y return x").equals("15");
+		code("var i = [1..5[ var x = 0 for (var y in i) x += y return x").equals("10");
+		code("var i = ]1..5] var x = 0 for (var y in i) x += y return x").equals("14");
+		code("var i = ]1..5[ var x = 0 for (var y in i) x += y return x").equals("9");
+		code("var i = [1.0..5.0] var x = 0.0 for (var y in i) x += y return x").equals("15.0");
+		code("var i = [1.0..5.0[ var x = 0.0 for (var y in i) x += y return x").equals("10.0");
+		code("var i = ]1.0..5.0] var x = 0.0 for (var y in i) x += y return x").equals("14.0");
+		code("var i = ]1.0..5.0[ var x = 0.0 for (var y in i) x += y return x").equals("9.0");
 	}
 }

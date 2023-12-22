@@ -20,12 +20,12 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 
 		public IntervalIterator(IntegerIntervalLeekValue interval) {
 			this.interval = interval;
-			this.x = interval.from;
+			this.x = interval.minClosed ? interval.from : interval.from + 1;
 		}
 
 		@Override
 		public boolean hasNext() {
-			return x <= interval.to;
+			return interval.maxClosed ? x <= interval.to : x < interval.to;
 		}
 
 		@Override
