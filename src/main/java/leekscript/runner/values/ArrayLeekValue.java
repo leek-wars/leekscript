@@ -482,7 +482,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	 */
 	public Object get(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.READ_OPERATIONS);
-		int i = (int) ai.integer(key);
+		var i = ai.longint(key);
 		if (i < 0) i += size();
 		try {
 			return get(i);
@@ -505,7 +505,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
-	private void wrongIndexError(AI ai, int i) throws LeekRunException {
+	private void wrongIndexError(AI ai, long i) throws LeekRunException {
 		ai.addSystemLog(AILog.ERROR, Error.ARRAY_OUT_OF_BOUND, new String[] {
 			String.valueOf(i),
 			String.valueOf(size())
@@ -514,10 +514,10 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 
 	public Object get(Object key) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.READ_OPERATIONS);
-		int i = (int) ai.integer(key);
+		var i = ai.longint(key);
 		if (i < 0) i += size();
 		try {
-			return get(i);
+			return super.get((int) i);
 		} catch (IndexOutOfBoundsException e) {
 			wrongIndexError(ai, i);
 			return null;
@@ -528,20 +528,9 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		ai.opsNoCheck(ArrayLeekValue.READ_OPERATIONS);
 		if (index < 0) index += size();
 		try {
-			return get((int) index);
+			return super.get((int) index);
 		} catch (IndexOutOfBoundsException e) {
 			wrongIndexError(ai, (int) index);
-			return null;
-		}
-	}
-
-	public Object get(AI ai, int index) throws LeekRunException {
-		ai.opsNoCheck(ArrayLeekValue.READ_OPERATIONS);
-		if (index < 0) index += size();
-		try {
-			return get(index);
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, index);
 			return null;
 		}
 	}
