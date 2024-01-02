@@ -4,7 +4,10 @@ import java.util.Scanner;
 import java.io.File;
 
 import leekscript.compiler.LeekScript;
+import leekscript.compiler.Options;
 import leekscript.runner.AI;
+import leekscript.runner.LeekRunException;
+import leekscript.runner.Session;
 
 public class TopLevel {
 
@@ -13,8 +16,9 @@ public class TopLevel {
 			Scanner input = new Scanner(System.in);
 			System.out.print(">>> ");
 			String code;
+			var session = new Session();
 			while ((code = input.nextLine()) != null) {
-				executeSnippet(code);
+				executeSnippet(code, session);
 				System.out.print(">>> ");
 			}
 			input.close();
@@ -30,15 +34,21 @@ public class TopLevel {
 	}
 
 	private static void executeSnippet(String code) {
+		executeSnippet(code, null);
+	}
+
+	private static void executeSnippet(String code, Session session) {
 		try {
+			var options = new Options(session);
+
 			long ct = System.currentTimeMillis();
-			AI ai = LeekScript.compileSnippet(code, "AI", false);
+			AI ai = LeekScript.compileSnippet(code, "AI", options);
 			long compileTime = System.currentTimeMillis() - ct;
 
 			long et = System.currentTimeMillis();
 			ai.init();
 			ai.staticInit();
-			var v = ai.runIA();
+			var v = ai.runIA(session);
 			long executionTime = System.currentTimeMillis() - et;
 
 			var result = ai.string(v);
@@ -55,8 +65,10 @@ public class TopLevel {
 	private static void executeFile(File file) {
 		LeekScript.setFileSystem(LeekScript.getNativeFileSystem());
 		try {
+			var options = new Options();
+
 			long ct = System.currentTimeMillis();
-			AI ai = LeekScript.compileFile(file.getPath(), "AI", false, false);
+			AI ai = LeekScript.compileFile(file.getPath(), "AI", options);
 			long compileTime = System.currentTimeMillis() - ct;
 
 			long et = System.currentTimeMillis();

@@ -16,10 +16,13 @@ import leekscript.compiler.IACompiler;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.Options;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekNumber;
+import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.runner.LeekFunctions;
@@ -246,7 +249,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return str + super.getCode();
 	}
 
-	public void writeJavaCode(JavaWriter writer, String className, String AIClass) {
+	public void writeJavaCode(JavaWriter writer, String className, String AIClass, Options options) {
 		this.className = className;
 
 		writer.addLine("import leekscript.runner.*;");
@@ -320,7 +323,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			instruction.writeJavaCode(this, writer);
 		}
 
-		writer.addLine("public Object runIA() throws LeekRunException {");
+		writer.addLine("public Object runIA(Session session) throws LeekRunException {");
 		writer.addLine("resetCounter();");
 
 		for (var clazz : mUserClassesList) {
@@ -328,8 +331,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			clazz.writeJavaCode(this, writer);
 		}
 
+		// Import des variables de la session
+		if (options.session() != null) {
+			for (var variable : options.session().getVariables().keySet()) {
+				writer.addLine("var u_" + variable + " = session.getVariable(\"" + variable + "\");");
+			}
+		}
+
 		super.writeJavaCode(this, writer);
-		if (mEndInstruction == 0) writer.addLine("return null;");
+
 		writer.addLine("}");
 
 		writer.writeErrorFunction(mCompiler, mAIName);
@@ -358,6 +368,17 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.writeAnonymousSystemFunctions(this);
 
 		writer.addLine("}");
+	}
+
+	public void writeBeforeReturn(JavaWriter writer) {
+		// Export des variables de la session
+		if (writer.options.session() != null) {
+			for (var variable : mVariables.entrySet()) {
+				if (!writer.options.session().getVariables().containsKey(variable.getKey()) && variable.getValue().getVariableType() == VariableType.LOCAL) {
+					writer.addLine("session.setVariable(" + writer.getAIThis() + ", \"" + variable.getKey() + "\", u_" + variable.getKey() + ");");
+				}
+			}
+		}
 	}
 
 	public void printFunctionInformations(JavaWriter writer) {

@@ -52,7 +52,7 @@ public class JavaCompiler {
 		}
 	}
 
-	public static AI compile(AIFile file, boolean useClassCache, boolean enableOperations) throws LeekScriptException, LeekCompilerException {
+	public static AI compile(AIFile file, Options options) throws LeekScriptException, LeekCompilerException {
 
 		var root = new File(IA_PATH);
 		if (!root.exists()) root.mkdir();
@@ -78,7 +78,7 @@ public class JavaCompiler {
 		}
 
 		// Utilisation du cache de class dans le file system
-		if (useClassCache && compiled.exists() && compiled.length() != 0 && compiled.lastModified() >= file.getTimestamp()) {
+		if (options.useCache() && compiled.exists() && compiled.length() != 0 && compiled.lastModified() >= file.getTimestamp()) {
 			// System.out.println("Load AI " + file.getPath() + " from disk");
 			try {
 				try {
@@ -104,7 +104,7 @@ public class JavaCompiler {
 		// System.out.println("Re-compile AI " + file.getPath());
 		long t = System.nanoTime();
 		var lsCompiler = new IACompiler();
-		file.setCompiledCode(lsCompiler.compile(file, file.getJavaClass(), enableOperations));
+		file.setCompiledCode(lsCompiler.compile(file, file.getJavaClass(), options));
 		long analyze_time = System.nanoTime() - t;
 
 		if (file.getCompiledCode().getJavaCode().isEmpty()) { // Rien ne compile, pas normal
@@ -113,7 +113,7 @@ public class JavaCompiler {
 
 		// System.out.println(compiledJava);
 
-		if (useClassCache) {
+		if (options.useCache()) {
 			// Sauvegarde du code java
 			try {
 				FileOutputStream javaOutput = new FileOutputStream(java);
@@ -176,7 +176,7 @@ public class JavaCompiler {
 		// Load inner classes before
 		for (var compiledClass : fileManager.getCompiled().values()) {
 
-			if (useClassCache) { // Save bytecode
+			if (options.useCache()) { // Save bytecode
 				try {
 					var classFile = new FileOutputStream(Paths.get(IA_PATH, compiledClass.getName() + ".class").toFile());
 					classFile.write(compiledClass.getCompiledBinaries());
@@ -208,7 +208,7 @@ public class JavaCompiler {
 			ai.setLinesFile(lines);
 			ai.increaseRAMDirect((int) (java.length() * 10));
 
-			if (useClassCache) {
+			if (options.useCache()) {
 				aiCache.put(file.getJavaClass(), new AIClassEntry(clazz, file.getTimestamp()));
 			}
 			return ai;

@@ -2,6 +2,7 @@ package test;
 
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
+import leekscript.runner.Session;
 
 public class TestAI extends AI {
 
@@ -16,6 +17,12 @@ public class TestAI extends AI {
 
 	@Override
 	public Object runIA() throws LeekRunException {
+		return null;
+	}
+
+
+	@Override
+	public Object runIA(Session session) throws LeekRunException {
 		return null;
 	}
 

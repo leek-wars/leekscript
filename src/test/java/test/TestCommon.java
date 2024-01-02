@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Locale;
 
 import leekscript.compiler.LeekScript;
+import leekscript.compiler.Options;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.runner.AI;
@@ -192,11 +193,12 @@ public class TestCommon {
 			long compile_time = 0;
 			long ops = 0;
 			AI ai = null;
+			var options = new Options(version, strict, this.debug, true, null);
 			long t = System.nanoTime();
 			try {
 				boolean is_file = code.contains(".leek");
 
-				ai = is_file ? LeekScript.compileFile(code, "AI", version, true) : LeekScript.compileSnippet(code, "AI", version, this.debug, true, strict);
+				ai = is_file ? LeekScript.compileFile(code, "AI", options) : LeekScript.compileSnippet(code, "AI", options);
 				ai.init();
 				ai.staticInit();
 				aiID = ai.getId();

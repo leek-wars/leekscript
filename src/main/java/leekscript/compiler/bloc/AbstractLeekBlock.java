@@ -11,6 +11,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.instruction.LeekExpressionInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.common.Error;
 
@@ -151,8 +152,25 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+		int i = 0;
 		for (LeekInstruction instruction : mInstructions) {
-			instruction.writeJavaCode(mainblock, writer);
+			i++;
+			writer.lastInstruction = i == mInstructions.size();
+			if (writer.lastInstruction && this instanceof MainLeekBlock) {
+				if (instruction instanceof LeekExpressionInstruction) {
+					mainblock.writeBeforeReturn(writer);
+					writer.addCode("return ");
+					instruction.writeJavaCode(mainblock, writer);
+				} else {
+					instruction.writeJavaCode(mainblock, writer);
+					if (mEndInstruction == 0) {
+						mainblock.writeBeforeReturn(writer);
+						writer.addLine("return null;");
+					}
+				}
+			} else {
+				instruction.writeJavaCode(mainblock, writer);
+			}
 		}
 	}
 

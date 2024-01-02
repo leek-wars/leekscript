@@ -34,6 +34,8 @@ public class JavaWriter {
 	public HashMap<String, ArrayList<CallableVersion>> genericFunctions = new HashMap<>();
 	public HashSet<LeekFunctions> anonymousSystemFunctions = new HashSet<>();
 	private boolean operationsEnabled = true;
+	public boolean lastInstruction = false;
+	public Options options;
 
 	public JavaWriter(boolean debug, String className, boolean enableOperations) {
 		mCode = new StringBuilder();

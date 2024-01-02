@@ -436,8 +436,8 @@ public class WordCompiler {
 		}
 	}
 
-	public void writeJava(String className, JavaWriter writer, String AIClass) {
-		mMain.writeJavaCode(writer, className, AIClass);
+	public void writeJava(String className, JavaWriter writer, String AIClass, Options options) {
+		mMain.writeJavaCode(writer, className, AIClass, options);
 	}
 
 	private void includeBlock(Token token) throws LeekCompilerException {

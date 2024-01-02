@@ -119,13 +119,13 @@ public class AIFile {
 		return json.toString();
 	}
 
-	public AI compile(boolean use_cache, boolean enableOperations) throws LeekScriptException, LeekCompilerException {
+	public AI compile(Options options) throws LeekScriptException, LeekCompilerException {
 
 		// System.out.println("LeekScript compile AI " + this.getPath() + " timestamp : " + this.getTimestamp());
 
 		LeekScript.getFileSystem().loadDependencies(this);
 
-		AI ai = JavaCompiler.compile(this, use_cache, enableOperations);
+		AI ai = JavaCompiler.compile(this, options);
 
 		return ai;
 	}

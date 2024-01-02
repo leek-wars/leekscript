@@ -70,6 +70,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+		mainblock.writeBeforeReturn(writer);
 		if (expression == null) {
 			writer.addPosition(token);
 			writer.addCode("return null;");

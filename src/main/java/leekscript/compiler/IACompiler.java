@@ -3,10 +3,12 @@ package leekscript.compiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.Util;
 import leekscript.common.Error;
+import leekscript.common.Type;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import com.alibaba.fastjson.JSONArray;
@@ -92,16 +94,27 @@ public class IACompiler {
 		return result;
 	}
 
-	public AICode compile(AIFile ai, String AIClass, boolean enableOperations) throws LeekCompilerException {
+	public AICode compile(AIFile ai, String AIClass, Options options) throws LeekCompilerException {
 		this.analyzeStart = System.currentTimeMillis(); // For timeout
-		JavaWriter writer = new JavaWriter(true, ai.getJavaClass(), enableOperations);
+		JavaWriter writer = new JavaWriter(true, ai.getJavaClass(), options.enableOperations());
+		writer.options = options;
 		try {
 			ai.clearErrors();
+
 			// On lance la compilation du code de l'IA
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
 			WordCompiler compiler = new WordCompiler(ai, ai.getVersion());
 			MainLeekBlock main = new MainLeekBlock(this, compiler, ai);
 			main.setWordCompiler(compiler);
+
+			// Ajout des variables de la session
+			if (options.session() != null) {
+				for (var name : options.session().getVariables().keySet()) {
+					var variable = new LeekVariable(new Token(name), VariableType.LOCAL, true);
+					main.addVariable(variable);
+				}
+			}
+
 			compiler.readCode();
 			compiler.analyze();
 			// System.out.println("errors " + compiler.getErrors().size());
@@ -113,7 +126,7 @@ public class IACompiler {
 					}
 				}
 			}
-			compiler.writeJava(ai.getJavaClass(), writer, ai.getRootClass());
+			compiler.writeJava(ai.getJavaClass(), writer, ai.getRootClass(), options);
 
 		} catch (LeekCompilerException e) {
 			ai.getErrors().add(new AnalyzeError(e.getLocation(), AnalyzeErrorLevel.ERROR, e.getError()));

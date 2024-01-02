@@ -37,22 +37,24 @@ public class LeekExpressionInstruction extends LeekInstruction {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 
-		// Simple values are not compiled
+		// Simple values are not compiled if not last instruction
 		var trimmed = mExpression.trim();
 		if (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).getOperator() == Operators.REFERENCE) {
 			trimmed = ((LeekExpression) trimmed).getExpression2().trim();
 		}
-		if (trimmed instanceof LeekNull || trimmed instanceof LeekBoolean || trimmed instanceof LeekNumber || trimmed instanceof LeekString || trimmed instanceof LeekVariable || trimmed instanceof LeekObjectAccess || trimmed instanceof LeekArrayAccess || trimmed instanceof LeekAnonymousFunction) {
-			return;
+		if (!writer.lastInstruction) {
+			if (trimmed instanceof LeekNull || trimmed instanceof LeekBoolean || trimmed instanceof LeekNumber || trimmed instanceof LeekString || trimmed instanceof LeekVariable || trimmed instanceof LeekObjectAccess || trimmed instanceof LeekArrayAccess || trimmed instanceof LeekAnonymousFunction) {
+				return;
+			}
 		}
 
 		// Wrap an expression with a function call to avoid 'error: not a statement' error
 		if (trimmed instanceof LeekTernaire || trimmed instanceof LeekFunctionCall || (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).needsWrapper())) {
 			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode("ops(");
-			else writer.addCode("nothing(");
+			else if (!writer.lastInstruction) writer.addCode("nothing(");
 			trimmed.writeJavaCode(mainblock, writer);
 			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode(", " + trimmed.getOperations() + ")");
-			else writer.addCode(")");
+			else if (!writer.lastInstruction) writer.addCode(")");
 		} else {
 			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode("ops(");
 			trimmed.writeJavaCode(mainblock, writer);

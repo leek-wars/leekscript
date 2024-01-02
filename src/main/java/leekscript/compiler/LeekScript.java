@@ -48,51 +48,29 @@ public class LeekScript {
 		}
 	};
 
-	public static AI compileFile(String filepath, String AIClass, boolean useClassCache, boolean enableOperations) throws LeekScriptException, LeekCompilerException, IOException {
+	public static AI compileFile(String filepath, String AIClass, Options options) throws LeekScriptException, LeekCompilerException, IOException {
 		var file = getFileSystem().getRoot().resolve(filepath);
+		file.setVersion(options.version());
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass(AIClass);
-		return file.compile(useClassCache, enableOperations);
+		return file.compile(options);
 	}
 
-	public static AI compileFile(String filepath, String AIClass, int version, boolean enableOperations) throws LeekScriptException, LeekCompilerException, IOException {
-		var file = getFileSystem().getRoot().resolve(filepath);
-		file.setVersion(version);
-		file.setJavaClass("AI_" + file.getId());
-		file.setRootClass(AIClass);
-		return file.compile(false, enableOperations);
-	}
-
-	// public static AI compileFileContext(String filepath, String AIClass, ResolverContext context, boolean useClassCache) throws LeekScriptException, LeekCompilerException, IOException {
-	// 	var file = getRoot().resolve(filepath, context);
-	// 	file.setJavaClass("AI_" + file.getId());
-	// 	file.setRootClass(AIClass);
-	// 	return file.compile(useClassCache);
-	// }
-
-	public static AI compileSnippet(String snippet, String AIClass, boolean enableOperations) throws LeekScriptException, LeekCompilerException, IOException {
-		return compileSnippet(snippet, AIClass, LeekScript.LATEST_VERSION, false, enableOperations, false);
-	}
-
-	public static AI compileSnippet(String snippet, String AIClass, int version, boolean use_cache, boolean enableOperations, boolean strict) throws LeekScriptException, LeekCompilerException, IOException {
+	public static AI compileSnippet(String snippet, String AIClass, Options options) throws LeekScriptException, LeekCompilerException, IOException {
 		long ai_id = id++;
-		var file = new AIFile("<snippet " + ai_id + ">", snippet, System.currentTimeMillis(), version, (int) ai_id, strict);
+		var file = new AIFile("<snippet " + ai_id + ">", snippet, System.currentTimeMillis(), options.version(), (int) ai_id, options.strict());
 		file.setJavaClass("AI_" + ai_id);
 		file.setRootClass(AIClass);
 		file.setId((int) ai_id);
-		return file.compile(use_cache, enableOperations);
+		return file.compile(options);
 	}
 
 	public static String mergeFile(AIFile ai) throws LeekScriptException, LeekCompilerException, IOException {
 		return new IACompiler().merge(ai);
 	}
 
-	public static Object runScript(String script, boolean nocache, boolean enableOperations) throws Exception {
-		return LeekScript.compileSnippet(script, "AI", enableOperations).runIA();
-	}
-
-	public static String runFile(String filename, boolean enableOperations) throws Exception {
-		AI ai = LeekScript.compileFile(filename, "AI", true, enableOperations);
+	public static String runFile(String filename, Options options) throws Exception {
+		AI ai = LeekScript.compileFile(filename, "AI", options);
 		var v = ai.runIA();
 		System.out.println(ai.string(v));
 		return ai.string(v);

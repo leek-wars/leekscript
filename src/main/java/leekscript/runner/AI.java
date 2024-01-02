@@ -640,7 +640,11 @@ public abstract class AI {
 
 	protected String getAIString() { return ""; }
 
-	public abstract Object runIA() throws LeekRunException;
+	public Object runIA() throws LeekRunException {
+		return runIA(null);
+	}
+
+	public abstract Object runIA(Session session) throws LeekRunException;
 
 	public RandomGenerator getRandom() {
 		return randomGenerator;
