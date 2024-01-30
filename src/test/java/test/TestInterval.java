@@ -9,9 +9,8 @@ public class TestInterval extends TestCommon {
 		section("Interval.constructor()");
 		code("return [..]").equals("[..]");
 		code("return [1..2]").equals("[1..2]");
-		DISABLED_code("return [1.0..2.0]").equals("[1.0..2.0]");
-		code_v1("return [1.0 .. 2.0]").equals("[1..2]");
-		code_v2_("return [1.0 .. 2.0]").equals("[1.0..2.0]");
+		code_v1("return [1.0..2.0]").equals("[1..2]");
+		code_v2_("return [1.0..2.0]").equals("[1.0..2.0]");
 		code("return [-10..-2]").equals("[-10..-2]");
 		code("return [1 * 5 .. 8 + 5]").equals("[5..13]");
 		code("return ]-∞..5]").equals("]-∞..5]");
