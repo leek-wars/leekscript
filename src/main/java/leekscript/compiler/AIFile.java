@@ -121,7 +121,7 @@ public class AIFile {
 
 	public AI compile(Options options) throws LeekScriptException, LeekCompilerException {
 
-		// System.out.println("LeekScript compile AI " + this.getPath() + " timestamp : " + this.getTimestamp());
+		// System.out.println("LeekScript compile AI " + this.getPath() + " timestamp : " + this.getTimestamp() + " options " + options);
 
 		LeekScript.getFileSystem().loadDependencies(this);
 
@@ -179,5 +179,9 @@ public class AIFile {
 
 	public boolean isStrict() {
 		return strict;
+	}
+
+	public Options getOptions() {
+		return new Options(version, strict, true, true, null, true);
 	}
 }

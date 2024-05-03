@@ -153,13 +153,15 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		int i = 0;
+		writer.lastInstruction = false;
 		for (LeekInstruction instruction : mInstructions) {
 			i++;
-			writer.lastInstruction = i == mInstructions.size();
-			if (writer.lastInstruction && this instanceof MainLeekBlock) {
+			var last = i == mInstructions.size();
+			if (last && this instanceof MainLeekBlock) {
 				if (instruction instanceof LeekExpressionInstruction) {
 					mainblock.writeBeforeReturn(writer);
 					writer.addCode("return ");
+					writer.lastInstruction = true;
 					instruction.writeJavaCode(mainblock, writer);
 				} else {
 					instruction.writeJavaCode(mainblock, writer);
@@ -171,6 +173,9 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 			} else {
 				instruction.writeJavaCode(mainblock, writer);
 			}
+		}
+		if (this instanceof MainLeekBlock && mInstructions.size() == 0) {
+			writer.addLine("return null;");
 		}
 	}
 

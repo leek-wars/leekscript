@@ -193,7 +193,7 @@ public class TestCommon {
 			long compile_time = 0;
 			long ops = 0;
 			AI ai = null;
-			var options = new Options(version, strict, this.debug, true, null);
+			var options = new Options(version, strict, this.debug, true, null, true);
 			long t = System.nanoTime();
 			try {
 				boolean is_file = code.contains(".leek");

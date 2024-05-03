@@ -1,9 +1,15 @@
 package leekscript;
 
+import com.alibaba.fastjson.JSONArray;
+
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
 public abstract class AILog {
+
+	public interface Stream {
+		public void write(JSONArray a);
+	}
 
 	public final static int STANDARD = 1;
 	public final static int WARNING = 2;
@@ -35,4 +41,6 @@ public abstract class AILog {
 	public boolean isFull() {
 		return mSize >= MAX_LENGTH;
 	}
+
+	public abstract void setStream(Stream stream);
 }

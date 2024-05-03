@@ -151,7 +151,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			mIncludedFirstPass.add(ai);
 			var previousAI = mCompiler.getCurrentAI();
 			mCompiler.setCurrentAI(ai);
-			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion());
+			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion(), compiler.getOptions());
 			newCompiler.setMainBlock(this);
 			newCompiler.firstPass();
 			compiler.getAI().getErrors().addAll(ai.getErrors());
@@ -176,7 +176,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			mIncluded.add(ai);
 			var previousAI = mCompiler.getCurrentAI();
 			mCompiler.setCurrentAI(ai);
-			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion());
+			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion(), compiler.getOptions());
 			newCompiler.setMainBlock(this);
 			newCompiler.secondPass();
 			compiler.getAI().getErrors().addAll(ai.getErrors());
@@ -355,7 +355,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				if (user_function != null) {
 					user_function.compileAnonymousFunction(this, writer);
 				} else {
-					var system_function = LeekFunctions.getValue(redefined);
+					var system_function = LeekFunctions.getValue(redefined, writer.getOptions().useExtra());
 					writer.generateAnonymousSystemFunction(system_function);
 					writer.addCode(system_function.getStandardClass() + "_" + redefined);
 				}

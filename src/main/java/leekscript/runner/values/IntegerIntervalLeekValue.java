@@ -360,6 +360,68 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 		return array;
 	}
 
+	public SetLeekValue intervalToSet(AI ai) throws LeekRunException {
+		return intervalToSet(ai, 1);
+	}
+
+	public SetLeekValue intervalToSet(AI ai, long step) throws LeekRunException {
+		if (!intervalIsBounded(ai)) {
+			ai.addSystemLog(AILog.ERROR, Error.CANNOT_ITERATE_UNBOUNDED_INTERVAL, new Object[] { this });
+			return null;
+		}
+
+		var set = new SetLeekValue(ai);
+
+		if (step >= 0) {
+			var start = minClosed ? from : from + 1;
+			var end = maxClosed ? to : to - 1;
+			for (var i = start; i <= end; i += step) {
+				set.add(i);
+				ai.increaseRAM(1);
+			}
+		} else {
+			var start = maxClosed ? to : to - 1;
+			var end = minClosed ? from : from + 1;
+			for (var i = start; i >= end; i += step) {
+				set.add(i);
+				ai.increaseRAM(1);
+			}
+		}
+
+		ai.ops(set.size() * 2);
+
+		return set;
+	}
+
+	public SetLeekValue intervalToSet(AI ai, double step) throws LeekRunException {
+		if (!intervalIsBounded(ai)) {
+			ai.addSystemLog(AILog.ERROR, Error.CANNOT_ITERATE_UNBOUNDED_INTERVAL, new Object[] { this });
+			return null;
+		}
+
+		var set = new SetLeekValue(ai);
+
+		if (step >= 0) {
+			var start = minClosed ? from : from + 1;
+			var end = maxClosed ? to : to - 1;
+			for (double i = start; i <= end; i += step) {
+				set.add(i);
+				ai.increaseRAM(1);
+			}
+		} else {
+			var start = maxClosed ? to : to - 1;
+			var end = minClosed ? from : from + 1;
+			for (double i = start; i >= end; i += step) {
+				set.add(i);
+				ai.increaseRAM(1);
+			}
+		}
+
+		ai.ops(set.size() * 2);
+
+		return set;
+	}
+
 	public ArrayLeekValue range(AI ai, Object start, Object end, Object strideObject) throws LeekRunException {
 
 		if (intervalIsEmpty(ai)) {

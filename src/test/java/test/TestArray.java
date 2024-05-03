@@ -754,5 +754,9 @@ public class TestArray extends TestCommon {
 		code_v3_("class A extends Array {} return new A()").equals("[]");
 		code_v3_("class A extends Array {} var a = new A() push(a, 12) return a").equals("[12]");
 
+		section("Array.arrayToSet()");
+		code_v4_("arrayToSet([])").equals("<>");
+		code_v4_("arrayToSet([1, 2, 3, 4])").equals("<1, 2, 3, 4>");
+		code_v4_("arrayToSet(['a', 'b', 'c'])").equals("<\"a\", \"b\", \"c\">");
 	}
 }

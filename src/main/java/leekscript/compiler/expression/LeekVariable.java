@@ -176,7 +176,7 @@ public class LeekVariable extends Expression {
 			return;
 		}
 		// LS functions
-		var lf = LeekFunctions.getValue(token.getWord());
+		var lf = LeekFunctions.getValue(token.getWord(), compiler.getOptions().useExtra());
 		if (lf != null) {
 			this.type = VariableType.SYSTEM_FUNCTION;
 			this.variableType = lf.getVersions()[0].getType();
@@ -279,7 +279,7 @@ public class LeekVariable extends Expression {
 			if (user_function != null) {
 				user_function.compileAnonymousFunction(mainblock, writer);
 			} else {
-				var system_function = LeekFunctions.getValue(token.getWord());
+				var system_function = LeekFunctions.getValue(token.getWord(), writer.getOptions().useExtra());
 				writer.generateAnonymousSystemFunction(system_function);
 				// String namespace = LeekFunctions.getNamespace(token.getWord());
 				writer.addCode(system_function.getStandardClass() + "_" + token.getWord());
@@ -334,7 +334,7 @@ public class LeekVariable extends Expression {
 			if (user_function != null) {
 				user_function.compileAnonymousFunction(mainblock, writer);
 			} else {
-				var system_function = LeekFunctions.getValue(token.getWord());
+				var system_function = LeekFunctions.getValue(token.getWord(), writer.getOptions().useExtra());
 				writer.generateAnonymousSystemFunction(system_function);
 				// String namespace = LeekFunctions.getNamespace(token.getWord());
 				writer.addCode(system_function.getStandardClass() + "_" + token.getWord());

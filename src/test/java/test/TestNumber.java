@@ -525,9 +525,12 @@ public class TestNumber extends TestCommon {
 		// DISABLED_code("var a = -721$ a %%= 57$").equals("20");
 
 		section("Number.operator /");
-		code("8 / 0").equals("null");
-		code("8 / null").equals("null");
-		code("null / 5").equals("null");
+		code_v1("8 / 0").equals("null");
+		code_v2_("8 / 0").equals("∞");
+		code_v1("8 / null").equals("null");
+		code_v2_("8 / null").equals("∞");
+		code_v1("null / 5").equals("0");
+		code_v2_("null / 5").equals("0.0");
 		// code("12$ / false").exception(ls::vm::Exception::DIVISION_BY_ZERO);
 		// code("let a = 13$; a / false").exception(ls::vm::Exception::DIVISION_BY_ZERO);
 		code_v1("return 13 / true;").equals("13");

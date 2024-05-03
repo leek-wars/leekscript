@@ -141,7 +141,7 @@ public class TestFunction extends TestCommon {
 		code_v2_("var x = [] var f = function() { return x } var a = f() push(a, 5) return x").equals("[5]");
 
 		section("Misc");
-		code("function f(x) { var s = 0 s |= 12 return s } f(12);").equals("null");
+		code("function f(x) { var s = 0 s |= 12 return s } f(12);").equals("12");
 		code("function te(a){ return function(){ return a**2; }; } return te(2)();").equals("4");
 		code("function te(a){ return function(b){ return function(c){return a*b*c;}; }; } return te(2)(1)(2);").equals("4");
 		code("var tab = [2, 3, 4, 5, 6]; var r = []; for (var i : var j in tab) { r[i] = function() { return j; }; } return 4;").equals("4");
@@ -168,7 +168,7 @@ public class TestFunction extends TestCommon {
 		code_v1("function LamaSwag() {} @LamaSwag();").equals("null");
 		code_v1_3("function f() { distance = 12 } function distance() { return 'salut' } return distance()").equals("\"salut\"");
 		code_v4_("function f() { distance = 12 } function distance() { return 'salut' } return distance()").error(Error.CANNOT_REDEFINE_FUNCTION);
-		code("getOperations()").equals("null");
+		code("getOperations()").equals("0");
 		code("var a = [function() { return 12 }] return a[0]()").equals("12");
 		code_v1("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[]");
 		code_v2_("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[0, 1, 2, 3, 4]");
@@ -308,5 +308,13 @@ public class TestFunction extends TestCommon {
 		DISABLED_code_v1("Function< => integer> f function test(Function< => any> _) {} test(f)").equals("null");
 		code_v2_("Function< => integer> f function test(Function< => any> _) {} test(f)").equals("null");
 		code("Function<integer => boolean> t = function(integer b) => boolean { return true }").equals("null");
+
+		section("Conditional return");
+		code("function f(x) { return? x return 12 } f(5)").equals("5");
+		code("function f(x) { return? x return 12 } f(0)").equals("12");
+		code("return? 5").equals("5");
+		code("return? 'test'").equals("\"test\"");
+		code("return? null 5").equals("5");
+		code("return? null return? null 5").equals("5");
 	}
 }

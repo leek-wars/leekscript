@@ -405,7 +405,7 @@ public class LeekFunctionCall extends Expression {
 				}
 				if (!ok) {
 					// Est-ce que c'est une fonction système ?
-					system_function = LeekFunctions.getValue(v.getName());
+					system_function = LeekFunctions.getValue(v.getName(), compiler.getOptions().useExtra());
 					if (system_function != null) {
 						verifySystemFunction(compiler, v, system_function);
 
@@ -441,7 +441,7 @@ public class LeekFunctionCall extends Expression {
 				}
 				if (!ok) {
 					// Est-ce que c'est une fonction système ?
-					system_function = LeekFunctions.getValue(v.getName());
+					system_function = LeekFunctions.getValue(v.getName(), compiler.getOptions().useExtra());
 					if (system_function != null) {
 						verifySystemFunction(compiler, v, system_function);
 						if (mParameters.size() >= system_function.getArgumentsMin() && mParameters.size() <= system_function.getArguments()) {
@@ -469,7 +469,7 @@ public class LeekFunctionCall extends Expression {
 				if (compiler.getMainBlock().isRedefinedFunction(v.getName())) {
 					// Nothing
 				} else {
-					system_function = LeekFunctions.getValue(v.getName());
+					system_function = LeekFunctions.getValue(v.getName(), compiler.getOptions().useExtra());
 					verifySystemFunction(compiler, v, system_function);
 				}
 

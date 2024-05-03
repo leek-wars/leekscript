@@ -52,9 +52,11 @@ public class LeekExpressionInstruction extends LeekInstruction {
 		if (trimmed instanceof LeekTernaire || trimmed instanceof LeekFunctionCall || (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).needsWrapper())) {
 			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode("ops(");
 			else if (!writer.lastInstruction) writer.addCode("nothing(");
+			var last = writer.lastInstruction;
+			writer.lastInstruction = false;
 			trimmed.writeJavaCode(mainblock, writer);
 			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode(", " + trimmed.getOperations() + ")");
-			else if (!writer.lastInstruction) writer.addCode(")");
+			else if (!last) writer.addCode(")");
 		} else {
 			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode("ops(");
 			trimmed.writeJavaCode(mainblock, writer);

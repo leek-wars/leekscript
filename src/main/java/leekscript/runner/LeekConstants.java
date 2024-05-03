@@ -33,7 +33,9 @@ public enum LeekConstants implements ILeekConstant {
 	TYPE_FUNCTION(5, Type.INT),
 	TYPE_CLASS(6, Type.INT),
 	TYPE_OBJECT(7, Type.INT),
-	TYPE_MAP(8, Type.INT);
+	TYPE_MAP(8, Type.INT),
+	TYPE_SET(9, Type.INT),
+	TYPE_INTERVAL(10, Type.INT);
 
 	private static HashMap<String, ILeekConstant> extraConstants = new HashMap<String, ILeekConstant>();
 

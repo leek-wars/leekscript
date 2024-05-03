@@ -32,6 +32,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
@@ -3088,7 +3089,7 @@ public abstract class AI {
 		}
 
 		ops(1);
-		addSystemLog(AILog.ERROR, Error.OPERATOR_IN_ON_INVALID_CONTAINER);
+		addSystemLog(AILog.ERROR, Error.OPERATOR_IN_ON_INVALID_CONTAINER, new Object[] { value });
 		return false;
 	}
 
@@ -3178,5 +3179,9 @@ public abstract class AI {
 
 	public boolean xor(boolean x, boolean y) {
 		return (x && !y) || (!x && y);
+	}
+
+	public Date getDate() {
+		return new Date();
 	}
 }

@@ -6,10 +6,6 @@ import leekscript.AILog;
 
 public class BasicAILog extends AILog {
 
-	public interface Stream {
-		public void write(JSONArray a);
-	}
-
 	protected Stream stream;
 
 	public BasicAILog() {
@@ -101,5 +97,11 @@ public class BasicAILog extends AILog {
 			obj.add(parameters);
 
 		stream.write(obj);
+	}
+
+
+	@Override
+	public void setStream(Stream stream) {
+		this.stream = stream;
 	}
 }

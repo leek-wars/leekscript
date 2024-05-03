@@ -188,6 +188,7 @@ public class LeekFunctions {
 		method("arrayChunk", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.INT }).setMinVersion(4);
 		method("arrayUnique", "Array", Type.ARRAY, new Type[] { Type.ARRAY }).setMinVersion(4);
 		method("arrayClear", "Array", 1, Type.ARRAY, new Type[] { Type.ARRAY }).setMinVersion(4);
+		method("arrayToSet", "Array", Type.SET, new Type[] { Type.ARRAY });
 
 		/**
 		 * Map functions
@@ -291,6 +292,13 @@ public class LeekFunctions {
 			new CallableVersion(Type.ARRAY_INT, new Type[] { Type.INTEGER_INTERVAL, Type.INT }),
 			new CallableVersion(Type.ARRAY_INT, new Type[] { Type.INTEGER_INTERVAL}),
 		});
+		method("intervalToSet", "Interval", new CallableVersion[] {
+			new CallableVersion(Type.SET_REAL, new Type[] { Type.REAL_INTERVAL, Type.REAL }),
+			new CallableVersion(Type.SET_REAL, new Type[] { Type.REAL_INTERVAL}),
+			new CallableVersion(Type.SET_REAL, new Type[] { Type.INTEGER_INTERVAL, Type.REAL }),
+			new CallableVersion(Type.SET_INT, new Type[] { Type.INTEGER_INTERVAL, Type.INT }),
+			new CallableVersion(Type.SET_INT, new Type[] { Type.INTEGER_INTERVAL}),
+		});
 
 		/**
 		 * JSON functions
@@ -319,6 +327,9 @@ public class LeekFunctions {
 		method("debugC", "System", 100, true, Type.VOID, new Type[] { Type.ANY, Type.INT });
 		method("getUsedRAM", "System", 1, true, Type.INT, new Type[0]);
 		method("getMaxRAM", "System", 1, true, Type.INT, new Type[0]);
+		method("getDate", "System", 50, true, Type.STRING, new Type[0]);
+		method("getTime", "System", 50, true, Type.STRING, new Type[0]);
+		method("getTimestamp", "System", 5, true, Type.INT, new Type[0]);
 	}
 
 	private static LeekFunctions method(String name, String clazz, Type return_type, Type[] arguments) {
@@ -401,7 +412,7 @@ public class LeekFunctions {
 	}
 
 	public static boolean isExtraFunction(String name) {
-		var f = getValue(name);
+		var f = getValue(name, true);
 		return f != null && f.isExtra();
 	}
 
@@ -433,10 +444,10 @@ public class LeekFunctions {
 		return standardClass;
 	}
 
-	public static LeekFunctions getValue(String name) {
+	public static LeekFunctions getValue(String name, boolean useExtra) {
 		var f = functions.get(name);
 		if (f != null) return f;
-		if (extraFunctions != null) {
+		if (useExtra && extraFunctions != null) {
 			return extraFunctions.get(name);
 		}
 		return null;

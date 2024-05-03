@@ -36,6 +36,8 @@ public class Type {
 	public static final Type ARRAY = array(Type.ANY);
 	public static final Type EMPTY_ARRAY = array(Type.VOID);
 	public static final Type SET = set(Type.ANY);
+	public static final Type SET_REAL = set(Type.REAL);
+	public static final Type SET_INT = set(Type.INT);
 	public static final Type EMPTY_SET = set(Type.VOID);
 	public static final Type INTERVAL = new IntervalType(Type.ANY);
 	public static final Type EMPTY_INTERVAL = new IntervalType(Type.VOID);

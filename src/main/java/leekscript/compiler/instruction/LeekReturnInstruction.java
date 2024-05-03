@@ -18,11 +18,13 @@ public class LeekReturnInstruction extends LeekInstruction {
 
 	private final Token token;
 	private final Expression expression;
+	private final boolean optional;
 	private Type returnType;
 
-	public LeekReturnInstruction(Token token, Expression exp) {
+	public LeekReturnInstruction(Token token, Expression exp, boolean optional) {
 		this.token = token;
 		this.expression = exp;
+		this.optional = optional;
 	}
 
 	@Override
@@ -70,7 +72,9 @@ public class LeekReturnInstruction extends LeekInstruction {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
-		mainblock.writeBeforeReturn(writer);
+		if (writer.currentBlock == mainblock) {
+			mainblock.writeBeforeReturn(writer);
+		}
 		if (expression == null) {
 			writer.addPosition(token);
 			writer.addCode("return null;");
@@ -79,19 +83,26 @@ public class LeekReturnInstruction extends LeekInstruction {
 			if (finalExpression.getOperations() > 0) {
 				writer.addCode("ops(" + finalExpression.getOperations() + "); ");
 			}
-			writer.addCode("return ");
-			if (mainblock.getWordCompiler().getVersion() == 1) {
-				finalExpression.compileL(mainblock, writer);
-			} else {
+			if (optional) {
+				String r = "r" + mainblock.getCount();
+				writer.addCode(returnType.getJavaName(mainblock.getVersion()) + " " + r + " = ");
 				writer.compileConvert(mainblock, 0, finalExpression, returnType);
+				writer.addLine("; if (bool(" + r + ")) return " + r + ";", getLocation());
+			} else {
+				writer.addCode("return ");
+				if (mainblock.getWordCompiler().getVersion() == 1) {
+					finalExpression.compileL(mainblock, writer);
+				} else {
+					writer.compileConvert(mainblock, 0, finalExpression, returnType);
+				}
+				writer.addLine(";", getLocation());
 			}
-			writer.addLine(";", getLocation());
 		}
 	}
 
 	@Override
 	public int getEndBlock() {
-		return 1;
+		return optional ? 0 : 1;
 	}
 
 	@Override

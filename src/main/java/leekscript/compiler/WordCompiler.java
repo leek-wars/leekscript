@@ -61,10 +61,12 @@ public class WordCompiler {
 	private int mLine;
 	private AIFile mAI = null;
 	private final int version;
+	private final Options options;
 
-	public WordCompiler(AIFile ai, int version) {
+	public WordCompiler(AIFile ai, int version, Options options) {
 		mAI = ai;
 		this.version = version;
+		this.options = options;
 	}
 
 	private void parse() throws LeekCompilerException {
@@ -325,6 +327,11 @@ public class WordCompiler {
 		} else if (word.getType() == TokenType.RETURN) {
 
 			var token = mTokens.eat();
+			var optional = false;
+			if (mTokens.get().getWord().equals("?")) {
+				optional = true;
+				mTokens.eat();
+			}
 			Expression exp = null;
 			if (mTokens.get().getType() != TokenType.END_INSTRUCTION && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
 				exp = readExpression();
@@ -332,7 +339,7 @@ public class WordCompiler {
 			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
 				mTokens.skip();
 			}
-			mCurentBlock.addInstruction(this, new LeekReturnInstruction(token, exp));
+			mCurentBlock.addInstruction(this, new LeekReturnInstruction(token, exp, optional));
 			return;
 
 		} else if (word.getType() == TokenType.FOR) {
@@ -1374,7 +1381,7 @@ public class WordCompiler {
 
 				// Expression seule
 				var body = readExpression();
-				block.addInstruction(this, new LeekReturnInstruction(lambdaToken, body));
+				block.addInstruction(this, new LeekReturnInstruction(lambdaToken, body, false));
 			}
 
 			if (surroudingParenthesis) {
@@ -2180,5 +2187,9 @@ public class WordCompiler {
 			return "u_" + mCurrentClass.getName();
 		}
 		return null;
+	}
+
+	public Options getOptions() {
+		return options;
 	}
 }

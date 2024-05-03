@@ -463,4 +463,8 @@ public class JavaWriter {
 	public boolean isOperationsEnabled() {
 		return operationsEnabled;
 	}
+
+	public Options getOptions() {
+		return options;
+	}
 }

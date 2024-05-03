@@ -6,7 +6,6 @@ import java.io.File;
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.Options;
 import leekscript.runner.AI;
-import leekscript.runner.LeekRunException;
 import leekscript.runner.Session;
 
 public class TopLevel {

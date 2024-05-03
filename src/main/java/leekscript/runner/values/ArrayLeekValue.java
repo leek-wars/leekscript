@@ -1063,6 +1063,11 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return this;
 	}
 
+	public SetLeekValue arrayToSet(AI ai) throws LeekRunException {
+		ai.ops(1 + 2 * this.size());
+		return new SetLeekValue(ai, this.toArray());
+	}
+
 	public String toString(AI ai, Set<Object> visited) throws LeekRunException {
 
 		ai.ops(1 + size() * 2);
