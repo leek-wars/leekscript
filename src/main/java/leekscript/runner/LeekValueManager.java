@@ -16,9 +16,11 @@ import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
+import leekscript.runner.values.IntervalLeekValue;
 import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.LeekValueType;
 import leekscript.runner.values.ObjectLeekValue;
+import leekscript.runner.values.SetLeekValue;
 import leekscript.runner.values.Box;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
@@ -123,6 +125,8 @@ public class LeekValueManager {
 		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue) return LeekValueType.OBJECT;
 		if (v instanceof ClassLeekValue) return LeekValueType.CLASS;
 		if (v instanceof FunctionLeekValue) return LeekValueType.FUNCTION;
+		if (v instanceof SetLeekValue) return LeekValueType.SET;
+		if (v instanceof IntervalLeekValue) return LeekValueType.INTERVAL;
 		if (v instanceof Box) return getType(((Box) v).get());
 		return 0;
 	}
@@ -136,6 +140,8 @@ public class LeekValueManager {
 		if (v instanceof ObjectLeekValue || v instanceof NativeObjectLeekValue) return LeekValueType.OBJECT_V1;
 		if (v instanceof ClassLeekValue) return LeekValueType.CLASS_V1;
 		if (v instanceof FunctionLeekValue) return LeekValueType.FUNCTION_V1;
+		if (v instanceof SetLeekValue) return LeekValueType.SET_V1;
+		if (v instanceof IntervalLeekValue) return LeekValueType.INTERVAL_V1;
 		if (v instanceof Box box) return getV1Type(box.get());
 		return 0;
 	}

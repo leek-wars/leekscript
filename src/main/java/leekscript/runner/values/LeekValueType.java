@@ -12,6 +12,8 @@ public class LeekValueType {
 	public final static int FUNCTION_V1 = 6;
 	public final static int CLASS_V1 = 7;
 	public final static int OBJECT_V1 = 8;
+	public final static int SET_V1 = 9;
+	public final static int INTERVAL_V1 = 10;
 
 	public final static int NULL = 0;
 	public final static int NUMBER = 1;

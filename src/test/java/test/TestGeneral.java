@@ -54,6 +54,8 @@ public class TestGeneral extends TestCommon {
 		code("return typeOf(null)").equals(String.valueOf(LeekConstants.TYPE_NULL.getIntValue()));
 		// Test piège
 		code("return typeOf(function(){ return 4; }())").equals(String.valueOf(LeekConstants.TYPE_NUMBER.getIntValue()));
+		code_v4_("return typeOf(<1, 2, 3>)").equals(String.valueOf(LeekConstants.TYPE_SET.getIntValue()));
+		code_v4_("return typeOf([1..10])").equals(String.valueOf(LeekConstants.TYPE_INTERVAL.getIntValue()));
 
 		section("color()");
 		code_v4_("color(0, 0, 0)").error(Error.REMOVED_FUNCTION_REPLACEMENT);
