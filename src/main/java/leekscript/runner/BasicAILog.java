@@ -52,10 +52,14 @@ public class BasicAILog extends AILog {
 
 	public void addLog(int type, String message) {
 		message = message.replaceAll("\t", "    ");
-		addLog(type, message, 0);
+		addLog(type, message, 0, 0, 0);
 	}
 
 	public void addLog(int type, String message, int color) {
+		addLog(type, message, color, 0, 0);
+	}
+
+	public void addLog(int type, String message, int color, int ai, int line) {
 
 		if (message == null || !addSize(20 + message.length())) {
 			return;

@@ -108,6 +108,13 @@ public class JavaWriter {
 			mCode.append(", ");
 		}
 		mCode.append("};}\n\n");
+
+		mCode.append("protected int[] getErrorFilesID() { return new int[] {");
+		for (var f : mFilesList) {
+			mCode.append(f.getId());
+			mCode.append(", ");
+		}
+		mCode.append("};}\n\n");
 	}
 
 	public void addCounter(int count) {

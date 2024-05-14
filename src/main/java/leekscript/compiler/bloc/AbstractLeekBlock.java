@@ -5,7 +5,6 @@ import java.util.HashMap;
 
 import leekscript.compiler.Token;
 import leekscript.compiler.AnalyzeError;
-import leekscript.compiler.IACompiler;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;

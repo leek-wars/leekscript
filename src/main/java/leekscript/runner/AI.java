@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -476,11 +477,28 @@ public abstract class AI {
 		return sb.toString();
 	}
 
+	public record LeekScriptPosition(int file, int line) {}
+
+	public LeekScriptPosition getCurrentLeekScriptPosition() {
+		for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+			if (element.getClassName().startsWith("AI_")) {
+				var mapping = getLineMapping(element.getLineNumber());
+				if (mapping != null) {
+					var files = getErrorFilesID();
+					var f = mapping.getAI();
+					int file = f < files.length ? files[f] : 0;
+					return new LeekScriptPosition(file, mapping.getLeekScriptLine());
+				}
+			}
+		}
+		return null;
+	}
+
 	public String getErrorMessage(Throwable e) {
 		return getErrorMessage(e.getStackTrace());
 	}
 
-	protected String getErrorLocalisation(int javaLine) {
+	protected LineMapping getLineMapping(int javaLine) {
 		if (mLinesMapping.isEmpty() && this.filesLines != null && this.filesLines.exists()) {
 			try (Stream<String> stream = Files.lines(this.filesLines.toPath())) {
 				stream.forEach(l -> {
@@ -490,7 +508,11 @@ public abstract class AI {
 			} catch (IOException e) {}
 			thisObject = getAIString();
 		}
-		var lineMapping = mLinesMapping.get(javaLine);
+		return mLinesMapping.get(javaLine);
+	}
+
+	protected String getErrorLocalisation(int javaLine) {
+		var lineMapping = getLineMapping(javaLine);
 		if (lineMapping != null) {
 			var files = getErrorFiles();
 			var f = lineMapping.getAI();
@@ -638,6 +660,8 @@ public abstract class AI {
 	}
 
 	protected String[] getErrorFiles() { return null; }
+
+	protected int[] getErrorFilesID() { return null; }
 
 	protected String getAIString() { return ""; }
 
