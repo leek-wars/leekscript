@@ -604,6 +604,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 							writer.addCode("p_" + arg.getToken());
 						} else {
 							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
+							writer.addCode(", " + block.getDefaultValues().get(a).operations);
 						}
 						writer.addLine(");");
 					} else {
@@ -613,6 +614,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 							writer.addCode("final " + arg.getType().getJavaName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
 							defaultValue.writeJavaCode(mainblock, writer);
 							writer.addLine(";");
+							writer.addCounter(defaultValue.operations);
 						}
 					}
 				}
@@ -683,6 +685,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 							writer.addCode("p_" + arg.getToken());
 						} else {
 							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
+							writer.addCode(", " + block.getDefaultValues().get(a).operations);
 						}
 						writer.addLine(");");
 					} else {
@@ -692,6 +695,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 							writer.addCode("final " + arg.getType().getJavaName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
 							defaultValue.writeJavaCode(mainblock, writer);
 							writer.addLine(";");
+							writer.addCounter(defaultValue.operations);
 						}
 					}
 				}
@@ -760,6 +764,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 							writer.addCode("p_" + arg.getToken());
 						} else {
 							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
+							writer.addCode(", " + block.getDefaultValues().get(a).operations);
 						}
 						writer.addLine(");");
 					} else {
@@ -769,6 +774,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
 							defaultValue.writeJavaCode(mainblock, writer);
 							writer.addLine(";");
+							writer.addCounter(defaultValue.operations);
 						}
 					}
 				}
