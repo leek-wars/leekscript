@@ -311,13 +311,13 @@ public class LexicalParser {
 			}
 
 			if (c == '.') {
-				if (stream.getSubStringSince(startingPoint).contains(".")) {
-					error.report(new AnalyzeError(new Token(TokenType.NOTHING, ".", aiFile, stream.getLineCounter(), stream.getCharCounter() + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
+				// We don't eat the dot if it's followed by another dot
+				if (stream.peek(1) == '.') {
 					break;
 				}
 
-				// We don't eat the dot if it's not followed by another dot
-				if (stream.peek(1) == '.') {
+				if (stream.getSubStringSince(startingPoint).contains(".")) {
+					error.report(new AnalyzeError(new Token(TokenType.NOTHING, ".", aiFile, stream.getLineCounter(), stream.getCharCounter() + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 					break;
 				}
 
