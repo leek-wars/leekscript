@@ -219,7 +219,7 @@ public class LeekFunctions {
 		method("mapEvery", "Map", Type.BOOL, new Type[] { Type.MAP, new FunctionType(Type.ANY, 1, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
 		method("mapSome", "Map", Type.BOOL, new Type[] { Type.MAP, new FunctionType(Type.ANY, 1, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
 		method("mapFold", "Map", Type.ANY, new Type[] { Type.MAP, new FunctionType(Type.ANY, 2, Type.ANY, Type.ANY, Type.ANY, Type.MAP), Type.ANY }).setMinVersion(4);
-		method("mapFilter", "Map", Type.ANY,  new Type[] { Type.MAP, new FunctionType(Type.BOOL, 0, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
+		method("mapFilter", "Map", Type.MAP, new Type[] { Type.MAP, new FunctionType(Type.BOOL, 0, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
 		method("mapMerge", "Map", Type.ANY, new Type[] { Type.MAP, Type.MAP }).setMinVersion(4);
 		method("mapPut", "Map", 3, Type.ANY, new Type[] { Type.MAP, Type.ANY, Type.ANY }).setMinVersion(4);
 		method("mapPutAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.MAP }).setMinVersion(4);
