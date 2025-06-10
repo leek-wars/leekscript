@@ -10,22 +10,24 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import leekscript.common.AccessLevel;
+import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.IACompiler;
-import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Options;
+import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.expression.LeekBigInteger;
 import leekscript.compiler.expression.LeekExpressionException;
-import leekscript.compiler.expression.LeekNumber;
+import leekscript.compiler.expression.LeekInteger;
+import leekscript.compiler.expression.LeekReal;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.runner.LeekFunctions;
-import leekscript.common.Error;
 
 public class MainLeekBlock extends AbstractLeekBlock {
 
@@ -81,15 +83,19 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			addClass(new ClassDeclarationInstruction(new Token("Boolean"), 0, ai, true, this, Type.BOOL));
 
 			var integerClass = new ClassDeclarationInstruction(new Token("Integer"), 0, ai, true, this, Type.INT);
-			integerClass.addStaticField(wordCompiler, new Token("MIN_VALUE"), Type.INT, new LeekNumber(new Token(""), 0, Long.MIN_VALUE, Type.INT), AccessLevel.PUBLIC, true);
-			integerClass.addStaticField(wordCompiler, new Token("MAX_VALUE"), Type.INT, new LeekNumber(new Token(""), 0, Long.MAX_VALUE, Type.INT), AccessLevel.PUBLIC, true);
+			integerClass.addStaticField(wordCompiler, new Token("MIN_VALUE"), Type.INT, new LeekInteger(new Token(""), Long.MIN_VALUE), AccessLevel.PUBLIC, true);
+			integerClass.addStaticField(wordCompiler, new Token("MAX_VALUE"), Type.INT, new LeekInteger(new Token(""), Long.MAX_VALUE), AccessLevel.PUBLIC, true);
 			addClass(integerClass);
 
 			var realClass = new ClassDeclarationInstruction(new Token("Real"), 0, ai, true, this, Type.REAL);
-			realClass.addStaticField(wordCompiler, new Token("MIN_VALUE"), Type.REAL, new LeekNumber(new Token(""), Double.MIN_VALUE, 0, Type.REAL), AccessLevel.PUBLIC, true);
-			realClass.addStaticField(wordCompiler, new Token("MAX_VALUE"), Type.REAL, new LeekNumber(new Token(""), Double.MAX_VALUE, 0, Type.REAL), AccessLevel.PUBLIC, true);
+			realClass.addStaticField(wordCompiler, new Token("MIN_VALUE"), Type.REAL, new LeekReal(new Token(""), Double.MIN_VALUE), AccessLevel.PUBLIC, true);
+			realClass.addStaticField(wordCompiler, new Token("MAX_VALUE"), Type.REAL, new LeekReal(new Token(""), Double.MAX_VALUE), AccessLevel.PUBLIC, true);
 			addClass(realClass);
-
+			
+			if (ai.getVersion() >= 4) {
+				addClass(new ClassDeclarationInstruction(new Token("BigInteger"), 0, ai, true, this, Type.BIG_INT));
+			}
+			
 			addClass(new ClassDeclarationInstruction(new Token("Number"), 0, ai, true, this, Type.INT_OR_REAL));
 			addClass(new ClassDeclarationInstruction(new Token("Array"), 0, ai, true, this, Type.ARRAY, Type.EMPTY_ARRAY));
 			if (ai.getVersion() >= 4) {

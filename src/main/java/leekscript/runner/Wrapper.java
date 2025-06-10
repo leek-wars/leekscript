@@ -69,19 +69,19 @@ public class Wrapper<T> {
 	}
 
 	public Object sub_eq(Object x) throws LeekRunException {
-		return variable.add_eq(x);
+		return variable.sub_eq(x);
 	}
 
 	public Object mul_eq(Object x) throws LeekRunException {
 		return variable.mul_eq(x);
 	}
 
-	public double div_eq(Object x) throws LeekRunException {
+	public Number div_eq(Object x) throws LeekRunException {
 		return variable.div_eq(x);
 	}
 
-	public Object div_eq_v1(Object x) throws LeekRunException {
-		return variable.div_eq_v1(x);
+	public Object div_v1_eq(Object x) throws LeekRunException {
+		return variable.div_v1_eq(x);
 	}
 
 	public Object mod_eq(Object x) throws LeekRunException {
@@ -92,27 +92,27 @@ public class Wrapper<T> {
 		return variable.pow_eq(x);
 	}
 
-	public long band_eq(Object x) throws LeekRunException {
+	public Number band_eq(Object x) throws LeekRunException {
 		return variable.band_eq(x);
 	}
 
-	public long bor_eq(Object x) throws LeekRunException {
+	public Number bor_eq(Object x) throws LeekRunException {
 		return variable.bor_eq(x);
 	}
 
-	public long bxor_eq(Object x) throws LeekRunException {
+	public Number bxor_eq(Object x) throws LeekRunException {
 		return variable.bxor_eq(x);
 	}
 
-	public long shl_eq(Object x) throws LeekRunException {
+	public Number shl_eq(Object x) throws LeekRunException {
 		return variable.shl_eq(x);
 	}
 
-	public long shr_eq(Object x) throws LeekRunException {
+	public Number shr_eq(Object x) throws LeekRunException {
 		return variable.shr_eq(x);
 	}
 
-	public long ushr_eq(Object x) throws LeekRunException {
+	public Number ushr_eq(Object x) throws LeekRunException {
 		return variable.ushr_eq(x);
 	}
 

@@ -2,7 +2,7 @@ package leekscript.runner;
 
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
+import leekscript.runner.values.BigIntegerValue;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -43,7 +43,7 @@ public class LeekValueManager {
 		if (o instanceof Long) {
 			return o;
 		}
-		if (o instanceof BigInteger) {
+		if (o instanceof BigIntegerValue) {
 			ai.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "jsonDecode(" + ai.export(o) + ")" });
 			return null;
 		}

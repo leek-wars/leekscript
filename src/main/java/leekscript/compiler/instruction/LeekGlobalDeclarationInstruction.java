@@ -53,13 +53,14 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		writer.addCode("if (!g_init_" + variableToken.getWord() + ") { ");
 		if (mainblock.getWordCompiler().getVersion() >= 2) {
+		if (mValue != null && mValue.getOperations() > 0) writer.addCode("ops(");
 			writer.addCode("g_" + variableToken.getWord() + " = ");
 			if (mValue != null) {
 				if (variable.getType() != Type.ANY) {
-					writer.addCode("(" + variable.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+					writer.compileConvert(mainblock, 0, mValue, variable.getType());
+				} else {
+					mValue.writeJavaCode(mainblock, writer);
 				}
-				if (mValue.getOperations() > 0) writer.addCode("ops(");
-				mValue.writeJavaCode(mainblock, writer);
 				if (mValue.getOperations() > 0) writer.addCode(", " + mValue.getOperations() + ")");
 			} else {
 				writer.addCode(this.variable.getType().getDefaultValue(writer, mainblock.getVersion()));

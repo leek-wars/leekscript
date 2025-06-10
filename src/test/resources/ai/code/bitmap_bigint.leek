@@ -1,0 +1,14 @@
+big_integer arr = 111111L;
+big_integer walkable = 123456L;
+
+for (var i in [0..18]) {
+    arr |= arr << 64;
+    walkable |= walkable << 64;
+}
+big_integer acc = arr;
+
+for (var k in [0..10000]) {
+    acc |= walkable & (arr << 64 | arr >> 64 | arr >> 1 | arr << 1);
+}
+
+return acc as integer;

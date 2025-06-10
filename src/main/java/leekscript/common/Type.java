@@ -3,6 +3,7 @@ package leekscript.common;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import leekscript.runner.values.BigIntegerValue;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
@@ -27,6 +28,7 @@ public class Type {
 	public static final Type INT = new Type("integer", "i", "long", "Long", "0l");
 	public static final Type REAL = new Type("real", "r", "double", "Double", "0.0");
 	public static final Type STRING = new Type("string", "s", "String", "String", "\"\"");
+	public static final Type BIG_INT = new BigIntegerType();
 	public static final Type OBJECT = new ObjectType();
 	public static final FunctionType FUNCTION = new FunctionType(Type.ANY);
 	public static final Type MAP = map(Type.ANY, Type.ANY);
@@ -105,12 +107,17 @@ public class Type {
 		}
 
 		if (this == REAL) {
-			if (type == INT) {
+			if (type == INT || type == BIG_INT) {
 				return CastType.SAFE_DOWNCAST;
 			}
 		}
 		if (this == INT) {
-			if (type == REAL) {
+			if (type == REAL || type == BIG_INT) {
+				return CastType.SAFE_DOWNCAST;
+			}
+		}
+		if (this == BIG_INT) {
+			if (type == REAL || type == INT) {
 				return CastType.SAFE_DOWNCAST;
 			}
 		}
@@ -127,7 +134,7 @@ public class Type {
 	}
 
 	public boolean isNumber() {
-		return this == INT || this == REAL;
+		return this == INT || this == REAL || this == BIG_INT;
 	}
 
 	public String toString() {
@@ -394,6 +401,8 @@ public class Type {
 			return Type.compound(ct.getTypes().stream().map(t -> this.add(t)).collect(Collectors.toCollection(HashSet::new)));
 		}
 
+		if (this == Type.BIG_INT && (type.isNumber() || type == Type.BOOL || type == Type.NULL)
+				|| (this.isNumber() || this == Type.BOOL || this == Type.NULL) && type == Type.BIG_INT) return Type.BIG_INT;
 		if ((this == Type.INT || this == Type.BOOL || this == Type.NULL) && (type == Type.INT || type == Type.BOOL || type == Type.NULL)) return Type.INT;
 		if ((this.isNumber() || this == Type.BOOL || this == Type.NULL) && (type.isNumber() || type == Type.BOOL || type == Type.NULL)) return Type.REAL;
 
@@ -422,6 +431,8 @@ public class Type {
 			return Type.compound(ct.getTypes().stream().map(t -> this.sub(t)).collect(Collectors.toCollection(HashSet::new)));
 		}
 
+		if (this == Type.BIG_INT && (type.isNumber() || type == Type.BOOL || type == Type.NULL)
+				|| (this.isNumber() || this == Type.BOOL || this == Type.NULL) && type == Type.BIG_INT) return Type.BIG_INT;
 		if ((this == Type.INT || this == Type.BOOL || this == Type.NULL) && (type == Type.INT || type == Type.BOOL || type == Type.NULL)) return Type.INT;
 		if ((this.isNumber() || this == Type.BOOL || this == Type.NULL) && (type.isNumber() || type == Type.BOOL || type == Type.NULL)) return Type.REAL;
 
@@ -437,6 +448,8 @@ public class Type {
 			return Type.compound(ct.getTypes().stream().map(t -> this.mul(t)).collect(Collectors.toCollection(HashSet::new)));
 		}
 
+		if (this == Type.BIG_INT && (type.isNumber() || type == Type.BOOL || type == Type.NULL)
+				|| (this.isNumber() || this == Type.BOOL || this == Type.NULL) && type == Type.BIG_INT) return Type.BIG_INT;
 		if ((this == Type.INT || this == Type.BOOL || this == Type.NULL) && (type == Type.INT || type == Type.BOOL || type == Type.NULL)) return Type.INT;
 		if ((this.isNumber() || this == Type.BOOL || this == Type.NULL) && (type.isNumber() || type == Type.BOOL || type == Type.NULL)) return Type.REAL;
 
@@ -451,8 +464,42 @@ public class Type {
 		if (type instanceof CompoundType ct) {
 			return Type.compound(ct.getTypes().stream().map(t -> this.div(t)).collect(Collectors.toCollection(HashSet::new)));
 		}
-
+		if (this == Type.BIG_INT && type == Type.NULL) return Type.REAL;
+		if (this == Type.BIG_INT && (type.isNumber() || type == Type.BOOL) 
+				|| type == Type.BIG_INT && (this.isNumber() || this == Type.BOOL)) return Type.ANY;
 		if ((this.isNumber() || this == Type.BOOL) && (type.isNumber() || type == Type.BOOL)) return Type.REAL;
+
+		return Type.ANY;
+	}
+	
+	public Type mod(Type type) {
+
+		if (this instanceof CompoundType ct) {
+			return Type.compound(ct.getTypes().stream().map(t -> t.mod(type)).collect(Collectors.toCollection(HashSet::new)));
+		}
+		if (type instanceof CompoundType ct) {
+			return Type.compound(ct.getTypes().stream().map(t -> this.mod(t)).collect(Collectors.toCollection(HashSet::new)));
+		}
+		if (this == Type.BIG_INT && type == Type.NULL) return Type.REAL;
+		if (this == Type.BIG_INT && (type.isNumber() || type == Type.BOOL) 
+				|| type == Type.BIG_INT && (this.isNumber() || this == Type.BOOL)) return Type.ANY;
+		if ((this.isNumber() || this == Type.BOOL) && (type.isNumber() || type == Type.BOOL)) return Type.INT;
+
+		return Type.ANY;
+	}
+	
+	public Type intdiv(Type type) {
+
+		if (this instanceof CompoundType ct) {
+			return Type.compound(ct.getTypes().stream().map(t -> t.intdiv(type)).collect(Collectors.toCollection(HashSet::new)));
+		}
+		if (type instanceof CompoundType ct) {
+			return Type.compound(ct.getTypes().stream().map(t -> this.intdiv(t)).collect(Collectors.toCollection(HashSet::new)));
+		}
+		if (this == Type.BIG_INT && type == Type.NULL) return Type.REAL;
+		if (this == Type.BIG_INT && (type.isNumber() || type == Type.BOOL) 
+				|| type == Type.BIG_INT && (this.isNumber() || this == Type.BOOL)) return Type.ANY;
+		if ((this.isNumber() || this == Type.BOOL) && (type.isNumber() || type == Type.BOOL)) return Type.INT;
 
 		return Type.ANY;
 	}
@@ -466,9 +513,43 @@ public class Type {
 			return Type.compound(ct.getTypes().stream().map(t -> this.pow(t)).collect(Collectors.toCollection(HashSet::new)));
 		}
 
+		if (this == Type.BIG_INT && (type.isNumber() || type == Type.BOOL || type == Type.NULL)
+				|| (this.isNumber() || this == Type.BOOL || this == Type.NULL) && type == Type.BIG_INT) return Type.ANY;
 		if ((this == Type.INT || this == Type.BOOL || this == Type.NULL) && (type == Type.INT || type == Type.BOOL || type == Type.NULL)) return Type.INT;
 		if ((this.isNumber() || this == Type.BOOL || this == Type.NULL) && (type.isNumber() || type == Type.BOOL || type == Type.NULL)) return Type.REAL;
 
+		return Type.ANY;
+	}
+	
+	public Type shift(Type type) {
+		if (this instanceof CompoundType ct) {
+			return Type.compound(ct.getTypes().stream().map(t -> t.shift(type)).collect(Collectors.toCollection(HashSet::new)));
+		}
+		if (type instanceof CompoundType ct) {
+			return Type.compound(ct.getTypes().stream().map(t -> this.shift(t)).collect(Collectors.toCollection(HashSet::new)));
+		}
+		
+		if (this == Type.BIG_INT) {
+			return Type.BIG_INT;
+		}else if (this == Type.INT) {
+			return Type.INT;
+		}
+		return Type.ANY;
+	}
+	
+	public Type binop(Type type) {
+		if (this instanceof CompoundType ct) {
+			return Type.compound(ct.getTypes().stream().map(t -> t.binop(type)).collect(Collectors.toCollection(HashSet::new)));
+		}
+		if (type instanceof CompoundType ct) {
+			return Type.compound(ct.getTypes().stream().map(t -> this.binop(t)).collect(Collectors.toCollection(HashSet::new)));
+		}
+		
+		if (this == Type.BIG_INT || type == Type.BIG_INT) {
+			return Type.BIG_INT;
+		} else if (this == Type.INT && type == Type.INT) {
+			return Type.INT;
+		}
 		return Type.ANY;
 	}
 
@@ -507,7 +588,7 @@ public class Type {
 		return name;
 	}
 
-	public boolean isIntOrReal() {
+	public boolean isCompoundNumber() {
 		return false;
 	}
 

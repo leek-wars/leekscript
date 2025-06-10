@@ -26,15 +26,19 @@ import leekscript.common.Type;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import leekscript.runner.values.BigIntegerValue;
 import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -60,6 +64,7 @@ public abstract class AI {
 	public static final int MAP = 10;
 	public static final int INTERVAL = 11;
 	public static final int SET = 12;
+	public static final int BIG_INT = 13;
 
 	public static final int ERROR_LOG_COST = 10000;
 
@@ -67,9 +72,13 @@ public abstract class AI {
 	public final static int MAX_OPERATIONS = 20_000_000;
 	public long maxOperations = MAX_OPERATIONS;
 
-	protected long mRAM = 0;
+	protected volatile long mRAM = 0;
 	public final static int MAX_RAM = 12_500_000; // in 64 bits "quads" = 100 Mo
 	public long maxRAM = MAX_RAM;
+
+	// references to objects in memory
+	private ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
+	private List<LeekReference> references = new ArrayList<>();
 
 	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
 	protected String thisObject = null;
@@ -90,6 +99,7 @@ public abstract class AI {
 	public final ClassLeekValue nullClass;
 	public final ClassLeekValue booleanClass;
 	public final ClassLeekValue integerClass;
+	public final ClassLeekValue bigIntegerClass;
 	public final ClassLeekValue realClass;
 	public final ClassLeekValue numberClass;
 	public final ClassLeekValue arrayClass;
@@ -108,8 +118,9 @@ public abstract class AI {
 
 		private int id;
 
-		public NativeObjectLeekValue() {
+		public NativeObjectLeekValue() throws LeekRunException {
 			this.id = AI.this.getNextObjectID();
+			AI.this.allocateRAM(this, size() * 2);
 		}
 
 		@Override
@@ -232,13 +243,6 @@ public abstract class AI {
 			}
 			return o;
 		}
-
-		@Override
-		@SuppressWarnings("deprecated")
-		protected void finalize() throws Throwable {
-			super.finalize();
-			decreaseRAM(2 * size());
-		}
 	}
 
 	public AI(int instructions, int version) {
@@ -285,6 +289,7 @@ public abstract class AI {
 		numberClass = new ClassLeekValue(this, "Number", valueClass);
 		realClass = new ClassLeekValue(this, "Real", numberClass);
 		integerClass = new ClassLeekValue(this, "Integer", realClass);
+		bigIntegerClass = new ClassLeekValue(this, "BigInteger", numberClass);
 		arrayClass = new ClassLeekValue(this, "Array", valueClass);
 		legacyArrayClass = new ClassLeekValue(this, "Array", valueClass);
 		mapClass = new ClassLeekValue(this, "Map", valueClass);
@@ -338,12 +343,11 @@ public abstract class AI {
 	}
 
 	public long getUsedRAM() {
-		// System.gc();
-		// try {
-		// 	Thread.sleep(0, 1);
-		// } catch (InterruptedException e) {
-		// 	e.printStackTrace();
-		// }
+		Reference<?> referenceFromQueue;
+		while ((referenceFromQueue = referenceQueue.poll()) != null) {
+		    ((LeekReference)referenceFromQueue).finalizeResources(this);
+		    referenceFromQueue.clear();
+		}
 		return mRAM;
 	}
 
@@ -404,29 +408,71 @@ public abstract class AI {
 	public void increaseRAMDirect(int ram) {
 		mRAM += ram;
 	}
+	
+	public RamUsage allocateRAM(Object obj, int ram) throws LeekRunException {
+		return allocateRAM(obj, ram, true);
+	}
+	
+	public RamUsage allocateRAM(Object obj, int ram, boolean checkOverflow) throws LeekRunException {
+		RamUsage ramRef = new RamUsage(ram);
+		// subscribe object to the referenceQueue
+		references.add(new LeekReference(ramRef, obj, referenceQueue));
 
-	public void increaseRAM(int ram) throws LeekRunException {
 		mRAM += ram;
+		if (checkOverflow) checkRamOverflow();
+		
+	    return ramRef;
+	}
+	
+	public void increaseRAM(RamUsage ramRef, int value) throws LeekRunException {
+		mRAM += value;
+		ramRef.add(value);
+		checkRamOverflow();
+	}
+	
+	private void checkRamOverflow() throws LeekRunException {
 		if (mRAM > maxRAM) {
-			// System.out.println("RAM before = " + mRAM);
 			long ramBefore = mRAM;
-			System.gc();
-			try {
-				Thread.sleep(0, 1);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+			
+			// update memory usage if garbage collector has already passed (call to gc is very expensive)
+			Reference<?> referenceFromQueue;
+			while ((referenceFromQueue = referenceQueue.poll()) != null) {
+			    ((LeekReference)referenceFromQueue).finalizeResources(this);
+			    referenceFromQueue.clear();
 			}
-			Runtime.getRuntime().runFinalization();
-			// System.out.println("RAM after  = " + mRAM);
+			
 			if (mRAM > maxRAM) {
-				getLogs().addLog(AILog.WARNING, "[RAM error] RAM before: " + ramBefore + " RAM after: " + mRAM);
-				throw new LeekRunException(Error.OUT_OF_MEMORY);
+				System.gc();
+				
+				for (int i = 100; i > 0 && mRAM > maxRAM; i--) {
+					try {
+						// wait a bit to let garbage collector run
+						Thread.sleep(0, 10);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					while ((referenceFromQueue = referenceQueue.poll()) != null) {
+					    ((LeekReference)referenceFromQueue).finalizeResources(this);
+					    referenceFromQueue.clear();
+					}
+				}
+
+				if (mRAM > maxRAM) {
+					getLogs().addLog(AILog.WARNING, "[RAM error] RAM before: " + ramBefore + " RAM after: " + mRAM);
+					throw new LeekRunException(Error.OUT_OF_MEMORY);
+				}
 			}
 		}
 	}
 
-	public void decreaseRAM(int ram) {
-		mRAM -= ram;
+	public void decreaseRAM(RamUsage ramRef, int value) {
+		mRAM -= value;
+		ramRef.remove(value);
+	}
+	
+	public void freeRAM(LeekReference ref, int value) {
+		mRAM -= value;
+		references.remove(ref);
 	}
 
 	protected void nothing(Object obj) {
@@ -601,6 +647,9 @@ public abstract class AI {
 			case "java.lang.Long":
 			case "java.lang.Long.longValue()":
 				return "integer";
+			case "big_integer":
+			case "leekscript.runner.values.BigIntegerValue": 
+				return "big_integer";
 			case "double":
 			case "java.lang.Double":
 			case "java.lang.Double.doubleValue()":
@@ -688,6 +737,16 @@ public abstract class AI {
 		// ops(1);
 		if (x == null) return y == null;
 		if (x instanceof Number) {
+			if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+				if (x instanceof Double && (((Double) x).isNaN() || ((Double) x).isInfinite())
+					|| y instanceof Double && (((Double) y).isNaN() || ((Double) y).isInfinite())) {
+					return false;
+				}
+				if (x instanceof Double || y instanceof Double) {
+					return real(x) == real(y);
+				}
+				return bigint(x).equals(bigint(y));
+			}
 			var n = ((Number) x).doubleValue();
 			if (y instanceof Number) {
 				return n == ((Number) y).doubleValue();
@@ -705,6 +764,13 @@ public abstract class AI {
 					try {
 						ops(((String) y).length());
 						return n == Double.parseDouble((String) y);
+					} catch (Exception e) {
+						return false;
+					}
+				} else if (x instanceof BigIntegerValue) {
+					try {
+						ops(((String) y).length());
+						return x.equals(BigIntegerValue.valueOf(this, (String) y));
 					} catch (Exception e) {
 						return false;
 					}
@@ -765,11 +831,20 @@ public abstract class AI {
 				if (s.equals("true")) return n != 0;
 				if (s.equals("false") || s.equals("0") || s.length() == 0) return n == 0;
 				if (s.equals("1") && n == 1) return true;
-				try {
-					ops(s.length());
-					return n == Double.parseDouble(s);
-				} catch (Exception e) {
-					return false;
+				
+				ops(s.length());
+				if (y instanceof BigIntegerValue) {
+					try {
+						return y.equals(BigIntegerValue.valueOf(this, s));
+					} catch (Exception e) {
+						return false;
+					}
+				} else {
+					try {
+						return n == Double.parseDouble(s);
+					} catch (Exception e) {
+						return false;
+					}
 				}
 			}
 			if (y instanceof Boolean) {
@@ -808,6 +883,18 @@ public abstract class AI {
 			if (x instanceof Long && y instanceof Long) {
 				return (Long) x < (Long) y;
 			}
+			if (x instanceof BigIntegerValue) {
+				if (y instanceof BigIntegerValue) {
+					return ((BigIntegerValue) x).compareTo((BigIntegerValue) y) < 0;
+				}
+				if (y instanceof Long) {
+					return ((BigIntegerValue) x).compareTo(BigIntegerValue.valueOf(this, (Long) y)) < 0;
+				}
+			} else if (y instanceof BigIntegerValue) {
+				if (x instanceof Long) {
+					return BigIntegerValue.valueOf(this, (Long) x).compareTo((BigIntegerValue) y) < 0;
+				}
+			}
 			return ((Number) x).doubleValue() < ((Number) y).doubleValue();
 		}
 		return longint(x) < longint(y);
@@ -817,6 +904,18 @@ public abstract class AI {
 		if (x instanceof Number && y instanceof Number) {
 			if (x instanceof Long && y instanceof Long) {
 				return (Long) x > (Long) y;
+			}
+			if (x instanceof BigIntegerValue) {
+				if (y instanceof BigIntegerValue) {
+					return ((BigIntegerValue) x).compareTo((BigIntegerValue) y) > 0;
+				}
+				if (y instanceof Long) {
+					return ((BigIntegerValue) x).compareTo(BigIntegerValue.valueOf(this, (Long) y)) > 0;
+				}
+			} else if (y instanceof BigIntegerValue) {
+				if (x instanceof Long) {
+					return BigIntegerValue.valueOf(this, (Long) x).compareTo((BigIntegerValue) y) > 0;
+				}
 			}
 			return ((Number) x).doubleValue() > ((Number) y).doubleValue();
 		}
@@ -828,6 +927,18 @@ public abstract class AI {
 			if (x instanceof Long && y instanceof Long) {
 				return (Long) x <= (Long) y;
 			}
+			if (x instanceof BigIntegerValue) {
+				if (y instanceof BigIntegerValue) {
+					return ((BigIntegerValue) x).compareTo((BigIntegerValue) y) <= 0;
+				}
+				if (y instanceof Long) {
+					return ((BigIntegerValue) x).compareTo(BigIntegerValue.valueOf(this, (Long) y)) <= 0;
+				}
+			} else if (y instanceof BigIntegerValue) {
+				if (x instanceof Long) {
+					return BigIntegerValue.valueOf(this, (Long) x).compareTo((BigIntegerValue) y) <= 0;
+				}
+			}
 			return ((Number) x).doubleValue() <= ((Number) y).doubleValue();
 		}
 		return longint(x) <= longint(y);
@@ -837,6 +948,18 @@ public abstract class AI {
 		if (x instanceof Number && y instanceof Number) {
 			if (x instanceof Long && y instanceof Long) {
 				return (Long) x >= (Long) y;
+			}
+			if (x instanceof BigIntegerValue) {
+				if (y instanceof BigIntegerValue) {
+					return ((BigIntegerValue) x).compareTo((BigIntegerValue) y) >= 0;
+				}
+				if (y instanceof Long) {
+					return ((BigIntegerValue) x).compareTo(BigIntegerValue.valueOf(this, (Long) y)) >= 0;
+				}
+			} else if (y instanceof BigIntegerValue) {
+				if (x instanceof Long) {
+					return BigIntegerValue.valueOf(this, (Long) x).compareTo((BigIntegerValue) y) >= 0;
+				}
 			}
 			return ((Number) x).doubleValue() >= ((Number) y).doubleValue();
 		}
@@ -848,6 +971,8 @@ public abstract class AI {
 			return (Double) value != 0;
 		} else if (value instanceof Long) {
 			return (Long) value != 0;
+		} else if (value instanceof BigIntegerValue) {
+			return !((BigIntegerValue) value).isZero();
 		} else if (value instanceof Boolean) {
 			return (Boolean) value;
 		} else if (value instanceof ObjectLeekValue) {
@@ -888,6 +1013,8 @@ public abstract class AI {
 			return (int) (double) value;
 		} else if (value instanceof Long) {
 			return (int) (long) value;
+		} else if (value instanceof BigIntegerValue) {
+			return ((BigIntegerValue) value).intValue();	
 		} else if (value instanceof Boolean) {
 			return ((Boolean) value) ? 1 : 0;
 		} else if (value instanceof ObjectLeekValue) {
@@ -971,6 +1098,8 @@ public abstract class AI {
 			return (long) (double) value;
 		} else if (value instanceof Long) {
 			return (Long) value;
+		} else if (value instanceof BigIntegerValue) {
+			return ((BigIntegerValue) value).longValue();
 		} else if (value instanceof Boolean) {
 			return ((Boolean) value) ? 1 : 0;
 		} else if (value instanceof ObjectLeekValue) {
@@ -1007,12 +1136,58 @@ public abstract class AI {
 		}
 		throw new RuntimeException("Valeur invalide : " + value);
 	}
+	
+	public BigIntegerValue bigint(Object value) throws LeekRunException {
+		if (value instanceof Double) {
+			return BigIntegerValue.valueOf(this, (long) (double) value);
+		} else if (value instanceof Long) {
+			return BigIntegerValue.valueOf(this, (Long) value);
+		} else if (value instanceof BigIntegerValue) {
+			return (BigIntegerValue) value;
+		} else if (value instanceof Boolean) {
+			return ((Boolean) value) ? BigIntegerValue.valueOf(this, 1) : BigIntegerValue.valueOf(this, 0);
+		} else if (value instanceof ObjectLeekValue) {
+			return BigIntegerValue.valueOf(this, ((ObjectLeekValue) value).size());
+		} else if (value instanceof NativeObjectLeekValue o) {
+			return BigIntegerValue.valueOf(this, o.size());
+		} else if (value instanceof LegacyArrayLeekValue) {
+			return BigIntegerValue.valueOf(this, ((LegacyArrayLeekValue) value).size());
+		} else if (value instanceof ArrayLeekValue) {
+			return BigIntegerValue.valueOf(this, ((ArrayLeekValue) value).size());
+		} else if (value instanceof MapLeekValue) {
+			return BigIntegerValue.valueOf(this, ((MapLeekValue) value).size());
+		} else if (value instanceof IntegerIntervalLeekValue interval) {
+			return BigIntegerValue.valueOf(this, interval.intervalSize(this));
+		} else if (value instanceof RealIntervalLeekValue interval) {
+			return BigIntegerValue.valueOf(this, (long) interval.intervalSize(this));
+		} else if (value instanceof String) {
+			var s = (String) value;
+			if (s.equals("true")) return BigIntegerValue.valueOf(this, 1);
+			if (s.equals("false")) return BigIntegerValue.valueOf(this, 0);
+			if (s.isEmpty()) return BigIntegerValue.valueOf(this, 0);
+			ops(s.length());
+			try {
+				return BigIntegerValue.valueOf(this, s);
+			} catch (Exception e) {
+				return BigIntegerValue.valueOf(this, s.length());
+			}
+		} else if (value instanceof FunctionLeekValue) {
+			return BigIntegerValue.valueOf(this, 0);
+		} else if (value instanceof Box box) {
+			return bigint(box.get());
+		} else if (value == null) {
+			return BigIntegerValue.valueOf(this, 0);
+		}
+		throw new RuntimeException("Valeur invalide : " + value);
+	}
 
 	public double real(Object value) throws LeekRunException {
 		if (value instanceof Double) {
 			return (Double) value;
 		} else if (value instanceof Long) {
 			return (Long) value;
+		} else if (value instanceof BigIntegerValue) {
+			return ((BigIntegerValue) value).doubleValue();
 		} else if (value instanceof Boolean) {
 			return ((Boolean) value) ? 1 : 0;
 		} else if (value instanceof ObjectLeekValue) {
@@ -1055,6 +1230,9 @@ public abstract class AI {
 		if (value instanceof Double) {
 			return (int) Math.signum((Double) value);
 		}
+		if (value instanceof BigIntegerValue) {
+			return ((BigIntegerValue) value).signum();
+		}
 		return integer(value);
 	}
 
@@ -1064,39 +1242,56 @@ public abstract class AI {
 
 	public Object minus(Object value) throws LeekRunException {
 		if (value instanceof Double) return -((Double) value);
+		if (value instanceof BigIntegerValue) return ((BigIntegerValue) value).negate();
 		return -longint(value);
 	}
 
 	public Number minus(Number value) throws LeekRunException {
 		if (value instanceof Double) return -((Double) value);
+		if (value instanceof BigIntegerValue) return ((BigIntegerValue) value).negate();
 		return -longint(value);
 	}
-
-	public long bnot(Object value) throws LeekRunException {
+	
+	public BigIntegerValue bnot(BigIntegerValue value) throws LeekRunException {
+		return ((BigIntegerValue) value).not();
+	}
+	
+	public Number bnot(Object value) throws LeekRunException {
+		if (value instanceof BigIntegerValue) return ((BigIntegerValue) value).not();
 		return LeekValueManager.bnot(this, value);
 	}
 
-	public long bor(Object x, Object y) throws LeekRunException {
+	public long bnot(long value) throws LeekRunException {
+		return LeekValueManager.bnot(this, value);
+	}
+
+	public Number bor(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) return bigint(x).or(bigint(y));
 		return longint(x) | longint(y);
 	}
 
-	public long band(Object x, Object y) throws LeekRunException {
+	public Number band(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) return bigint(x).and(bigint(y));
 		return longint(x) & longint(y);
 	}
 
-	public long bxor(Object x, Object y) throws LeekRunException {
+	public Number bxor(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) return bigint(x).xor(bigint(y));
 		return longint(x) ^ longint(y);
 	}
 
-	public long shl(Object x, Object y) throws LeekRunException {
+	public Number shl(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue) return bigint(x).shiftLeft((int) longint(y));
 		return longint(x) << longint(y);
 	}
 
-	public long shr(Object x, Object y) throws LeekRunException {
+	public Number shr(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue) return bigint(x).shiftRight((int) longint(y)); // same as >>> due to implementation
 		return longint(x) >> longint(y);
 	}
 
-	public long ushr(Object x, Object y) throws LeekRunException {
+	public Number ushr(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue) return bigint(x).shiftRight((int) longint(y));
 		return longint(x) >>> longint(y);
 	}
 
@@ -1217,7 +1412,10 @@ public abstract class AI {
 			}
 			return retour;
 		}
-
+		
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			return bigint(x).add(bigint(y));
+		}
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) + real(y);
 		}
@@ -1233,6 +1431,9 @@ public abstract class AI {
 	}
 
 	public Object sub(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			return bigint(x).subtract(bigint(y));
+		}
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) - real(y);
 		}
@@ -1240,6 +1441,9 @@ public abstract class AI {
 	}
 
 	public Object mul(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			return bigint(x).multiply(bigint(y));
+		}
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) * real(y);
 		}
@@ -1252,18 +1456,38 @@ public abstract class AI {
 			addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
 			return null;
 		}
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			BigIntegerValue d = bigint(y);
+			if (d.isZero()) return Double.NaN;
+			return bigint(x).divide(d);
+		}
 		return real(x) / real_y;
 	}
 
-	public double div(Object x, Object y) throws LeekRunException {
+	public Number div(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			BigIntegerValue d = bigint(y);
+			if (d.isZero()) return Double.NaN;
+			return bigint(x).divide(d);
+		}
 		return real(x) / real(y);
 	}
 
-	public long intdiv(Object x, Object y) throws LeekRunException {
+	public Number intdiv(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			BigIntegerValue d = bigint(y);
+			if (d.isZero()) return Double.NaN;
+			return bigint(x).divide(d);
+		}
 		return longint(x) / longint(y);
 	}
 
 	public Object mod(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			BigIntegerValue d = bigint(y);
+			if (d.isZero()) return Double.NaN;
+			return bigint(x).mod(d);
+		}
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) % real(y);
 		}
@@ -1292,6 +1516,11 @@ public abstract class AI {
 	}
 
 	public Number pow(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue) {
+			int e = integer(y);
+			if (e < 0) return (Double) Math.pow(real(x), real(y));
+			return bigint(x).pow(e);
+		}
 		if (x instanceof Double || y instanceof Double) {
 			return Math.pow(real(x), real(y));
 		}
@@ -1325,16 +1554,16 @@ public abstract class AI {
 		return null;
 	}
 
-	public double div_eq(Object x, Object y) throws LeekRunException {
+	public Number div_eq(Object x, Object y) throws LeekRunException {
 		if (x instanceof Box) {
 			return ((Box) x).div_eq(y);
 		}
 		return 0.0;
 	}
 
-	public Object div_eq_v1(Object x, Object y) throws LeekRunException {
+	public Object div_v1_eq(Object x, Object y) throws LeekRunException {
 		if (x instanceof Box) {
-			return ((Box) x).div_eq_v1(y);
+			return ((Box) x).div_v1_eq(y);
 		}
 		return null;
 	}
@@ -1353,21 +1582,21 @@ public abstract class AI {
 		return null;
 	}
 
-	public long bor_eq(Object x, Object y) throws LeekRunException {
+	public Number bor_eq(Object x, Object y) throws LeekRunException {
 		if (x instanceof Box) {
 			return ((Box) x).bor_eq(y);
 		}
 		return 0;
 	}
 
-	public long band_eq(Object x, Object y) throws LeekRunException {
+	public Number band_eq(Object x, Object y) throws LeekRunException {
 		if (x instanceof Box) {
 			return ((Box) x).band_eq(y);
 		}
 		return 0;
 	}
 
-	public long bxor_eq(Object x, Object y) throws LeekRunException {
+	public Number bxor_eq(Object x, Object y) throws LeekRunException {
 		if (x instanceof Box) {
 			return ((Box) x).bxor_eq(y);
 		}
@@ -1407,6 +1636,8 @@ public abstract class AI {
 		} else if (value instanceof Long) {
 			this.ops(3);
 			return String.valueOf((Long) value);
+		} else if (value instanceof BigIntegerValue) {
+			return ((BigIntegerValue) value).toString();
 		} else if (value instanceof Boolean) {
 			return String.valueOf((Boolean) value);
 		} else if (value instanceof String) {
@@ -1427,6 +1658,8 @@ public abstract class AI {
 		} else if (value instanceof Long) {
 			this.ops(3);
 			return String.valueOf((Long) value);
+		} else if (value instanceof BigIntegerValue) {
+			return ((BigIntegerValue) value).toString();
 		} else if (value instanceof Boolean) {
 			return String.valueOf((Boolean) value);
 		} else if (value instanceof String) {
@@ -1460,6 +1693,8 @@ public abstract class AI {
 		} else if (value instanceof Long) {
 			this.opsNoCheck(3);
 			return String.valueOf((Long) value);
+		} else if (value instanceof BigIntegerValue) {
+			return ((BigIntegerValue) value).toString();
 		} else if (value instanceof Boolean) {
 			return String.valueOf((Boolean) value);
 		} else if (value instanceof ObjectLeekValue) {
@@ -1496,6 +1731,8 @@ public abstract class AI {
 		} else if (value instanceof Long) {
 			this.ops(3);
 			return String.valueOf((Long) value);
+		} else if (value instanceof BigIntegerValue) {
+			return ((BigIntegerValue) value).toString();
 		} else if (value instanceof Boolean) {
 			return String.valueOf((Boolean) value);
 		} else if (value instanceof ObjectLeekValue) {
@@ -2496,7 +2733,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public long put_intdiv_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Number put_intdiv_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_intdiv_eq(this, key, value);
 		}
@@ -2971,8 +3208,8 @@ public abstract class AI {
 	}
 
 	public IntervalLeekValue interval(boolean minClosed, Object min, boolean maxClosed, Object max) throws LeekRunException {
-		if (min instanceof Long && max instanceof Long) {
-			return new IntegerIntervalLeekValue(this, minClosed, min, maxClosed, max);
+		if ((min instanceof Long || min instanceof BigIntegerValue) && (max instanceof Long || max instanceof BigIntegerValue)) {
+			return new IntegerIntervalLeekValue(this, minClosed, longint(min), maxClosed, longint(max));
 		}
 		return new RealIntervalLeekValue(this, minClosed, min, maxClosed, max);
 	}
@@ -3045,6 +3282,7 @@ public abstract class AI {
 		switch (type) {
 			case BOOLEAN: return value instanceof Boolean;
 			case INT: return value instanceof Long;
+			case BIG_INT: return value instanceof BigIntegerValue;
 			case DOUBLE: return value instanceof Double;
 			case STRING: return value instanceof String;
 			case NULL: return value == null;
@@ -3062,6 +3300,7 @@ public abstract class AI {
 	public ClassLeekValue classOf(Object value) {
 		if (value == null) return nullClass;
 		if (value instanceof Long) return integerClass;
+		if (value instanceof BigIntegerValue) return bigIntegerClass;
 		if (value instanceof Double) return realClass;
 		if (value instanceof Boolean) return booleanClass;
 		if (value instanceof LegacyArrayLeekValue) return legacyArrayClass;
@@ -3168,6 +3407,10 @@ public abstract class AI {
 	public long new_integerClass() {
 		return 0l;
 	}
+	
+	public BigIntegerValue new_bigIntegerClass() throws LeekRunException {
+		return new BigIntegerValue(this, 0);
+	}
 
 	public double new_realClass() {
 		return 0;
@@ -3197,7 +3440,7 @@ public abstract class AI {
 		return new RealIntervalLeekValue(this);
 	}
 
-	public ObjectLeekValue new_objectClass() {
+	public ObjectLeekValue new_objectClass() throws LeekRunException {
 		return new ObjectLeekValue(this, this.objectClass);
 	}
 

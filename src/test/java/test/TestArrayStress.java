@@ -7,7 +7,7 @@ public class TestArrayStress extends TestCommon {
 	public void run() throws Exception {
 
 		long fight_max_ops = 14l * 64l * 20000000l;
-		System.out.println("Fight max ops = " + fight_max_ops);
+//		System.out.println("Fight max ops = " + fight_max_ops);
 
 		/**
 		 * Stress test
