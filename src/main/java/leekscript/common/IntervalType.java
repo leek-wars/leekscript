@@ -10,6 +10,7 @@ public class IntervalType extends Type {
 		this(type, false);
 	}
 
+	// TODO add BIG_INT
 	public IntervalType(Type type, boolean infinite) {
 		super(infinite ? "Interval<infinite>" : type == Type.VOID ? "Interval<empty>" : type == Type.ANY ? "Interval" : "Interval<" + type.toString() + ">", "t", "IntervalLeekValue", "IntervalLeekValue", type == Type.INT ? "new IntegerIntervalLeekValue()" : "new RealIntervalLeekValue()");
 		this.type = type;

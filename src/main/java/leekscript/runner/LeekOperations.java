@@ -44,7 +44,8 @@ public class LeekOperations {
 			if (level == 0) return value;
 
 			ai.ops(1 + o.size());
-			ai.increaseRAM(2 * o.size());
+			// used ram already in constructor
+			
 			// Call copy constructor
 			Object object = null;
 			try {

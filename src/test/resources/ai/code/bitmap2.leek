@@ -1,0 +1,33 @@
+
+var acc = [];
+var arr = [];
+var walkable = [];
+fill(acc, 111111, 19);
+fill(arr, 111111, 19);
+fill(walkable, 123456, 19);
+
+for (var k in [0..10000]) {
+    
+    var g0 = acc[0], g1 = acc[17], g2 = acc[1], g3 = acc[2], g4 = acc[3], g5 = acc[4], g6 = acc[5], g7 = acc[6], g8 = acc[7], g9 = acc[8], g10 = acc[9], g11 = acc[10], g12 = acc[11], g13 = acc[12], g14 = acc[13], g15 = acc[14], g16 = acc[15], g17 = acc[16];
+	acc[0] |= walkable[0] & ((g0 << 1) | (g0 >>> 1) | (g1 << 31) | g2);
+	acc[1] |= walkable[1] & ((g2 << 1) | (g2 >>> 1) | g0 | g3);
+	acc[2] |= walkable[2] & ((g3 << 1) | (g3 >>> 1) | g2 | g4);
+	acc[3] |= walkable[3] & ((g4 << 1) | (g4 >>> 1) | g3 | g5);
+	acc[4] |= walkable[4] & ((g5 << 1) | (g5 >>> 1) | g4 | g6);
+	acc[5] |= walkable[5] & ((g6 << 1) | (g6 >>> 1) | g5 | g7);
+	acc[6] |= walkable[6] & ((g7 << 1) | (g7 >>> 1) | g6 | g8);
+	acc[7] |= walkable[7] & ((g8 << 1) | (g8 >>> 1) | g7 | g9);
+	acc[8] |= walkable[8] & ((g9 << 1) | (g9 >>> 1) | g8 | g10);
+	acc[9] |= walkable[9] & ((g10 << 1) | (g10 >>> 1) | g11 | g9);
+	acc[10] |= walkable[10] & ((g11 << 1) | (g11 >>> 1) | g12 | g10);
+	acc[11] |= walkable[11] & ((g12 << 1) | (g12 >>> 1) | g11 | g13);
+	acc[12] |= walkable[12] & ((g13 << 1) | (g13 >>> 1) | g12 | g14);
+	acc[13] |= walkable[13] & ((g14 << 1) | (g14 >>> 1) | g13 | g15);
+	acc[14] |= walkable[14] & ((g15 << 1) | (g15 >>> 1) | g14 | g16);
+	acc[15] |= walkable[15] & ((g16 << 1) | (g16 >>> 1) | g15 | g17);
+	acc[16] |= walkable[16] & ((g17 << 1) | (g17 >>> 1) | g16 | g1);
+	acc[17] |= walkable[17] & ((g0 >>> 31) | (g1 << 1) | (g1 >>> 1) | g17 | acc[18]);
+	acc[18] |= walkable[18] & (g1);
+}
+
+return acc[18];

@@ -1,11 +1,14 @@
 package leekscript.runner.values;
 
+import java.math.BigInteger;
+
 import leekscript.AILog;
+import leekscript.common.Error;
+import leekscript.common.Type;
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
-import leekscript.common.Error;
 
 public class Box<T> {
 
@@ -81,6 +84,11 @@ public class Box<T> {
 			mValue = value + 1;
 			return (T) value;
 		}
+		if (mValue instanceof BigIntegerValue) {
+			var value = (BigIntegerValue) mValue;
+			mValue = value.add(new BigIntegerValue(mUAI, BigInteger.ONE));
+			return (T) value;
+		}
 		if (mValue instanceof Double) {
 			var value = (Double) mValue;
 			mValue = value + 1;
@@ -96,6 +104,11 @@ public class Box<T> {
 			mValue = value - 1;
 			return (T) value;
 		}
+		if (mValue instanceof BigIntegerValue) {
+			var value = (BigIntegerValue) mValue;
+			mValue = value.subtract(new BigIntegerValue(mUAI, BigInteger.ONE));
+			return (T) value;
+		}
 		if (mValue instanceof Double) {
 			var value = (Double) mValue;
 			mValue = value - 1;
@@ -109,6 +122,9 @@ public class Box<T> {
 		if (mValue instanceof Long) {
 			return (T) (mValue = (Long) mValue + 1);
 		}
+		if (mValue instanceof BigIntegerValue) {
+			return (T) (mValue = ((BigIntegerValue) mValue).add(new BigIntegerValue(mUAI, BigInteger.ONE)));
+		}
 		if (mValue instanceof Double) {
 			return (T) (mValue = (Double) mValue + 1);
 		}
@@ -119,6 +135,9 @@ public class Box<T> {
 	public T pre_decrement() throws LeekRunException {
 		if (mValue instanceof Long) {
 			return (T) (mValue = (Long) mValue - 1);
+		}
+		if (mValue instanceof BigIntegerValue) {
+			return (T) (mValue = ((BigIntegerValue) mValue).subtract(new BigIntegerValue(mUAI, BigInteger.ONE)));
 		}
 		if (mValue instanceof Double) {
 			return (T) (mValue = (Double) mValue - 1);
@@ -137,6 +156,9 @@ public class Box<T> {
 		if (mValue instanceof Double) {
 			return -(Double) mValue;
 		}
+		if (mValue instanceof BigIntegerValue) {
+			return ((BigIntegerValue) mValue).negate();
+		}
 		return -mUAI.longint(mValue);
 	}
 
@@ -144,59 +166,84 @@ public class Box<T> {
 		if (mValue instanceof LegacyArrayLeekValue && !(val instanceof String)) {
 			return mValue = mUAI.add_eq(mValue, val);
 		}
-		return mValue = mUAI.add(mValue, val);
+		Object ret = mUAI.add(mValue, val);
+		return apply_eq(ret);
 	}
 
 	public Object sub_eq(Object val) throws LeekRunException {
-		return mValue = mUAI.sub(mValue, val);
+		Object ret = mUAI.sub(mValue, val);
+		return apply_eq(ret);
 	}
 
 	public Object mul_eq(Object val) throws LeekRunException {
-		return mValue = mUAI.mul(mValue, val);
+		Object ret = mUAI.mul(mValue, val);
+		return apply_eq(ret);
 	}
 
 	public Object pow_eq(Object val) throws LeekRunException {
-		return mValue = mUAI.pow(mValue, val);
+		Object ret = mUAI.pow(mValue, val);
+		if (mUAI.getVersion() < 4) return mValue = ret;
+		return apply_eq(ret);
 	}
 
-	public long band_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.band(mValue, val));
+	public Number band_eq(Object val) throws LeekRunException {
+		Number ret = mUAI.band(mValue, val);
+		return (Number) apply_eq(ret);
 	}
 
-	public long bor_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.bor(mValue, val));
+	public Number bor_eq(Object val) throws LeekRunException {
+		Number ret = mUAI.bor(mValue, val);
+		return (Number) apply_eq(ret);
 	}
 
-	public long bxor_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.bxor(mValue, val));
+	public Number bxor_eq(Object val) throws LeekRunException {
+		Number ret = mUAI.bxor(mValue, val);
+		return (Number) apply_eq(ret);
 	}
 
-	public long shl_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.shl(mValue, val));
+	public Number shl_eq(Object val) throws LeekRunException {
+		Number ret = mUAI.shl(mValue, val);
+		return (Number) apply_eq(ret);
 	}
 
-	public long shr_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.shr(mValue, val));
+	public Number shr_eq(Object val) throws LeekRunException {
+		Number ret = mUAI.shr(mValue, val);
+		return (Number) apply_eq(ret);
 	}
 
-	public long ushr_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.ushr(mValue, val));
+	public Number ushr_eq(Object val) throws LeekRunException {
+		Number ret = mUAI.ushr(mValue, val);
+		return (Number) apply_eq(ret);
 	}
 
-	public double div_eq(Object val) throws LeekRunException {
-		return (double) (mValue = mUAI.div(mValue, val));
+	public Number div_eq(Object val) throws LeekRunException {
+		Number ret = mUAI.div(mValue, val);
+		return (Number) apply_eq(ret);
 	}
 
-	public Object div_eq_v1(Object val) throws LeekRunException {
+	public Object div_v1_eq(Object val) throws LeekRunException {
 		return mValue = mUAI.div_v1(mValue, val);
 	}
 
-	public long intdiv_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.intdiv(mValue, val));
+	public Number intdiv_eq(Object val) throws LeekRunException {
+		Number ret = mUAI.intdiv(mValue, val);
+		return (Number) apply_eq(ret);
 	}
 
 	public Object mod_eq(Object val) throws LeekRunException {
-		return mValue = mUAI.mod(mValue, val);
+		Object ret = mUAI.mod(mValue, val);
+		return apply_eq(ret);
+	}
+	
+	private Object apply_eq(Object ret) {
+		if (mUAI.getVersion() >= 4 && mValue != null && mValue.getClass() != ret.getClass() && ret instanceof BigIntegerValue) {
+			if (mValue instanceof Long) {
+				return mValue = ((BigIntegerValue) ret).longValue();
+			} else if (mValue instanceof Double) {
+				return mValue = ((BigIntegerValue) ret).doubleValue();
+			}
+		}
+		return mValue = ret;
 	}
 
 	public Object get(Object index, ClassLeekValue fromClass) throws LeekRunException {

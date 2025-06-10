@@ -1,8 +1,8 @@
 package leekscript.compiler;
 
+import java.math.BigInteger;
 import java.util.HashSet;
 
-import leekscript.ErrorManager;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
@@ -23,25 +23,27 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekAnonymousFunction;
 import leekscript.compiler.expression.LeekArray;
-import leekscript.compiler.expression.LegacyLeekArray;
+import leekscript.compiler.expression.LeekBigInteger;
 import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekCompoundType;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekFunctionCall;
+import leekscript.compiler.expression.LeekInteger;
 import leekscript.compiler.expression.LeekInterval;
 import leekscript.compiler.expression.LeekMap;
 import leekscript.compiler.expression.LeekNull;
-import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekObject;
 import leekscript.compiler.expression.LeekParameterType;
 import leekscript.compiler.expression.LeekParenthesis;
+import leekscript.compiler.expression.LeekReal;
 import leekscript.compiler.expression.LeekSet;
 import leekscript.compiler.expression.LeekString;
 import leekscript.compiler.expression.LeekType;
 import leekscript.compiler.expression.LeekVariable;
-import leekscript.compiler.expression.Operators;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.compiler.expression.LegacyLeekArray;
+import leekscript.compiler.expression.Operators;
 import leekscript.compiler.instruction.BlankInstruction;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekBreakInstruction;
@@ -594,6 +596,7 @@ public class WordCompiler {
 		if (word.equals("boolean")) return new LeekType(mTokens.eat(), Type.BOOL);
 		if (word.equals("any")) return new LeekType(mTokens.eat(), Type.ANY);
 		if (word.equals("integer")) return new LeekType(mTokens.eat(), Type.INT);
+		if (word.equals("big_integer")) return new LeekType(mTokens.eat(), Type.BIG_INT);
 		if (word.equals("real")) return new LeekType(mTokens.eat(), Type.REAL);
 		if (word.equals("string")) return new LeekType(mTokens.eat(), Type.STRING);
 		if (word.equals("Class")) return new LeekType(mTokens.eat(), Type.CLASS);
@@ -1576,28 +1579,43 @@ public class WordCompiler {
 					if (s.contains("__")) {
 						addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.MULTIPLE_NUMERIC_SEPARATORS));
 					}
-					try {
-						var radix = s.startsWith("0x") ? 16 : s.startsWith("0b") ? 2 : 10;
-						s = word.getWord().replace("_", "");
-						if (radix != 10) s = s.substring(2);
-						retour.addExpression(new LeekNumber(word, 0, Long.parseLong(s, radix), Type.INT));
-					} catch (NumberFormatException e) {
-						s = word.getWord().replace("_", "");
+					s = word.getWord().replace("_", "");
+					var radix = s.startsWith("0x") ? 16 : s.startsWith("0b") ? 2 : 10;
+					if (radix != 10) s = s.substring(2);
+					if (s.endsWith("L")) {
 						try {
-							retour.addExpression(new LeekNumber(word, Double.parseDouble(s), 0, Type.REAL));
-						} catch (NumberFormatException e2) {
+							s = s.substring(0, s.length() - 1);
+							retour.addExpression(new LeekBigInteger(word, new BigInteger(s, radix)));
+						} catch (NumberFormatException e) {
 							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
-							retour.addExpression(new LeekNumber(word, 0, 0, Type.INT));
+							retour.addExpression(new LeekBigInteger(word, BigInteger.ZERO));
+						}
+					} else {
+						try {
+							try {
+								retour.addExpression(new LeekInteger(word, Long.parseLong(s, radix)));
+							} catch (NumberFormatException e2) {
+								if (s.contains(".")) throw e2;
+								// if number is too big, try to parse it as a BigInteger
+								else retour.addExpression(new LeekBigInteger(word, new BigInteger(s, radix)));
+							}
+						} catch (NumberFormatException e) {
+							s = word.getWord().replace("_", "");
+							try {
+								retour.addExpression(new LeekReal(word, Double.parseDouble(s)));
+							} catch (NumberFormatException e2) {
+								addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
+								retour.addExpression(new LeekInteger(word, 0));
+							}
 						}
 					}
-
 				} else if (word.getType() == TokenType.LEMNISCATE) {
 
-					retour.addExpression(new LeekNumber(word, Double.POSITIVE_INFINITY, 0, Type.REAL));
+					retour.addExpression(new LeekReal(word, Double.POSITIVE_INFINITY));
 
 				} else if (word.getType() == TokenType.PI) {
 
-					retour.addExpression(new LeekNumber(word, Math.PI, 0, Type.REAL));
+					retour.addExpression(new LeekReal(word, Math.PI));
 
 				} else if (word.getType() == TokenType.VAR_STRING) {
 
