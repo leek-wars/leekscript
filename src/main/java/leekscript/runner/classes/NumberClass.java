@@ -163,6 +163,10 @@ public class NumberClass {
 		return Math.pow(x, y);
 	}
 
+	public static double pow(AI ai, long x, long y) {
+		return Math.pow(x, y);
+	}
+
 	public static Number pow(AI ai, BigIntegerValue x, BigIntegerValue y) throws LeekRunException {
 		return ai.pow(x, y);
 	}

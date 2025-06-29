@@ -198,15 +198,15 @@ public class JavaWriter {
 
 //		 System.out.println("convert " + value.getType().getJavaName(4) + " to " + type.getJavaName(4));
 		if (type == Type.REAL && value.getType().isCompoundNumber()) {
-			addCode("((Number) (");
+			addCode("(");
 			value.writeJavaCode(mainblock, this);
-			addCode(")).doubleValue()");
+			addCode(").doubleValue()");
 			return;
 		}
 		if (type == Type.INT && value.getType().isCompoundNumber()) {
-			addCode("((Number) (");
+			addCode("(");
 			value.writeJavaCode(mainblock, this);
-			addCode(")).longValue()");
+			addCode(").longValue()");
 			return;
 		}
 		if (type == Type.BIG_INT && value.getType().isNumber()) {
@@ -367,7 +367,7 @@ public class JavaWriter {
 						addCode("a" + a + " instanceof " + other_version.arguments[a].getJavaName(block.getVersion()) + " x" + a);
 					}
 					addLine(") {");
-					writeFunctionCall(block, other_version, true);
+					writeFunctionCall(block, other_version, false);
 					addLine("}");
 				}
 			}

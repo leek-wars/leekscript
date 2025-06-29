@@ -222,15 +222,15 @@ public class TestFunction extends TestCommon {
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) {} return abs(100 * (count / tests) - 52) < 12;").equals("false");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) {} } return abs(100 * (count / tests) - 52) < 12;").equals("false");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) {} var c = contains(adn, 'GAGA'); if (c) count++ } return abs(100 * (count / tests) - 52) < 12;").equals("false");
-		DISABLED_code("var m = ['A', 'T', 'C', 'G'] var adn = '' adn += m[randInt(0, 4)];").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var adn = '' adn += m[randInt(0, 4)] null").equals("null");
 		code("var m = ['A', 'T', 'C', 'G'] var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] }").equals("null");
-		DISABLED_code("var adn = 'testtest' contains(adn, 'GAGA');").equals("null");
-		DISABLED_code("var m = ['A', 'T', 'C', 'G'] var adn = 'testtest' adn += m[randInt(0, 4)]").equals("null");
-		DISABLED_code("var m = ['A', 'T', 'C', 'G'] var adn = 'testtest' adn += m[randInt(0, 4)] contains(adn, 'GAGA');").equals("null");
-		DISABLED_code("var adn = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' var c = contains(adn, 'GAGA');").equals("false");
-		DISABLED_code("var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA');").equals("false");
+		code("var adn = 'testtest' contains(adn, 'GAGA');").equals("false");
+		code("var m = ['A', 'T', 'C', 'G'] var adn = 'testtest' adn += m[randInt(0, 4)] null").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var adn = 'testtest' adn += m[randInt(0, 4)] contains(adn, 'GAGA') null").equals("null");
+		code("var adn = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' var c = contains(adn, 'GAGA') c").equals("false");
+		code("var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA') c").equals("false");
 		code("var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
-		DISABLED_code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA');").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA');").equals("null");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] }").equals("null");
 		code("var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
 		code("var count = 0 var m = ['A', 'T', 'C', 'G'] var adn = '' for (var j = 0; j < 200; j++) { adn += m[0] } var c = false if (c) count++").equals("null");
@@ -246,7 +246,7 @@ public class TestFunction extends TestCommon {
 		code_v1("var items = [[37, 3], [47, 10], [28, 5]] var all = []; var aux; aux = function(@current, i, tp, added, last) { if (count(current[1])) push(all, current);	var item_count = count(items); for (var j = i; j < item_count; ++j) { var item = @items[j];	var item_id = item[0]; var cost = item[1]; if (cost > tp) continue;var new_added = added; new_added[item_id] = true; var copy = current; push(copy[1], @[item, cost, 1]); copy[0] += cost; aux(copy, j, tp - cost, new_added, item_id); } }; aux([0, []], 0, 25, [], -1); return count(all);").equals("44");
 
 		section("System function typing");
-//		DISABLED_code_v1_3("count('hello')").equals("null");
+		code_v1_3("count('hello')").equals("0");
 		code_v4_("count('hello')").warning(Error.WRONG_ARGUMENT_TYPE);
 		code("return abs(12) < 50").equals("true");
 		code("return round(abs(cos(2)) + 5)").equals("5");
@@ -278,7 +278,8 @@ public class TestFunction extends TestCommon {
 		code_strict("var f = (x) => x return f()").error(Error.INVALID_PARAMETER_COUNT);
 		code("function f(x) { return x } return f()").error(Error.INVALID_PARAMETER_COUNT);
 		code("function f(x) { return x } return [f][0]()").equals("null");
-//		DISABLED_code_v1_2("cos()").equals("null");
+		code_v1("cos()").equals("1");
+		code_v2("cos()").equals("1.0");
 		code_v3_("cos()").error(Error.INVALID_PARAMETER_COUNT);
 		code_v1("return [cos][0]()").equals("null");
 

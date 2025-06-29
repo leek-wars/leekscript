@@ -31,7 +31,7 @@ public class TestReference extends TestCommon {
 		code("var a = 12; var b = @a; a++; return [a, b]").equals("[13, 12]");
 		code("var a = 12; var b = @a; var c = @b; a++; return [a, b, c]").equals("[13, 12, 12]");
 		code("var a = [12]; var b = @a[0]; a[0]++; return [a, b]").equals("[[13], 12]");
-		DISABLED_code("var a = @[1, 2, 3]; var b = @a; (@(b));").equals("null");
+		code("var a = @[1, 2, 3]; var b = @a; (@(b));").equals("[1, 2, 3]");
 		code("var a = @[1, 2, 3]; var b = @a; return (@(b));").equals("[1, 2, 3]");
 		code("var x = 7 var y = @x var f = function() { y = x } f() return y").equals("7");
 		code("global x = 7 var y = @x var f = function() { y = x } f() return y").equals("7");

@@ -118,9 +118,8 @@ public abstract class AI {
 
 		private int id;
 
-		public NativeObjectLeekValue() throws LeekRunException {
+		public NativeObjectLeekValue() {
 			this.id = AI.this.getNextObjectID();
-			AI.this.allocateRAM(this, size() * 2);
 		}
 
 		@Override

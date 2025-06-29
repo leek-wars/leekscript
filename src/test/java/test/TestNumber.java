@@ -126,7 +126,7 @@ public class TestNumber extends TestCommon {
 		code("return 1_000_123").equals("1000123");
 		code("return 1_000__123").error(Error.MULTIPLE_NUMERIC_SEPARATORS);
 		code("return 0x_ff").equals("255");
-		DISABLED_code("return 0_x_ff").error(Error.INVALID_NUMBER);
+		code("return 0_x_ff").error(Error.INVALID_NUMBER);
 		code("return 0xff_ff_ff_ff").equals("4294967295");
 		code("return 0b1001_0101_10").equals("598");
 		code_v1("return 5.001_002_003").equals("5,001");
@@ -1099,8 +1099,10 @@ public class TestNumber extends TestCommon {
 
 		section("Number.pow");
 		// code("2.pow(10)").equals("1024");
-		code("return pow(5, 3)").equals("125");
-		code("return pow(2, 10)").equals("1024");
+		code_v1("return pow(5, 3)").equals("125");
+		code_v2_("return pow(5, 3)").equals("125.0");
+		code_v1("return pow(2, 10)").equals("1 024");
+		code_v2_("return pow(2, 10)").equals("1024.0");
 		// code("pow([10, ''][0], 5)").equals("100000");
 		// code("3000.pow(3)").equals("2147483648");
 		// code("return pow(3000, 3)").equals("2147483648");

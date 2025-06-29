@@ -1412,7 +1412,7 @@ public class WordCompiler {
 			if (retour.needOperator()) {
 				// Si on attend un opérateur mais qu'il vient pas
 
-				if (word.getType() == TokenType.BRACKET_LEFT) {
+				if (word.getType() == TokenType.BRACKET_LEFT && !inInterval) {
 
 					var save = mTokens.getPosition();
 
@@ -1579,8 +1579,8 @@ public class WordCompiler {
 					if (s.contains("__")) {
 						addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.MULTIPLE_NUMERIC_SEPARATORS));
 					}
-					s = word.getWord().replace("_", "");
 					var radix = s.startsWith("0x") ? 16 : s.startsWith("0b") ? 2 : 10;
+					s = word.getWord().replace("_", "");
 					if (radix != 10) s = s.substring(2);
 					if (s.endsWith("L")) {
 						try {

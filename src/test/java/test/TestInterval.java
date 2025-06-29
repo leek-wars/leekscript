@@ -29,6 +29,10 @@ public class TestInterval extends TestCommon {
 		code_v2_("return [1.0 ..[").equals("[1.0..∞[");
 		code("[1..2]").ops(2);
 		code_v3_("Interval a = new Interval() return a").equals("[..]");
+		code("var a = [12] ]0..a[0][").error(Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+		code("var a = [12] ]0..(a[0])[").equals("]0..12[");
+		code("]5..12[ 0").equals("0");
+		code("]5..12[ var x = 2").equals("null");
 
 		section("Interval.intervalMin");
 		code("return intervalMin([1..2])").equals("1");
@@ -210,13 +214,13 @@ public class TestInterval extends TestCommon {
 
 
 		section("Interval.intervalToSet()");
-		code_v4_("return intervalToSet([1.0 ..2.0])").equals("<1.0, 2.0>");
-		code_v4_("return intervalToSet([-2.0 ..2.0])").equals("<-2.0, -1.0, 0.0, 1.0, 2.0>");
-		code_v4_("return intervalToSet([1.0 ..1.0])").equals("<1.0>");
-		code_v4_("return intervalToSet([1.0 ..0.0])").equals("<>");
-		code_v4_("return intervalToSet([1.0 ..[)").equals("null");
+		code_v4_("return intervalToSet([1.0..2.0])").equals("<1.0, 2.0>");
+		code_v4_("return intervalToSet([-2.0..2.0])").equals("<-2.0, -1.0, 0.0, 1.0, 2.0>");
+		code_v4_("return intervalToSet([1.0..1.0])").equals("<1.0>");
+		code_v4_("return intervalToSet([1.0..0.0])").equals("<>");
+		code_v4_("return intervalToSet([1.0..[)").equals("null");
 		code_v4_("return intervalToSet([1..2])").equals("<1, 2>");
-		code_v4_("return intervalToSet([-2..2])").equals("<-2, -1, 0, 1, 2>");
+		code_v4_("return intervalToSet([-2..2])").equals("<-1, 0, -2, 1, 2>");
 		code_v4_("return intervalToSet([1..1])").equals("<1>");
 		code_v4_("return intervalToSet([1..0])").equals("<>");
 		code_v4_("return intervalToSet([1..[)").equals("null");
@@ -225,33 +229,33 @@ public class TestInterval extends TestCommon {
 		code_v4_("intervalToSet([1..2])").ops(6);
 
 		section("Interval.intervalToSet(<step>)");
-		code_v4_("return intervalToSet([1.0 ..2.0], 0.8);").equals("<1.0, 1.8>");
-		code_v4_("return intervalToSet([1.0 ..2.0], 2);").equals("<1.0>");
-		code_v4_("return intervalToSet([-10.0 ..10.0], 5);").equals("<-10.0, -5.0, 0.0, 5.0, 10.0>");
-		code_v4_("return intervalToSet([1.0 ..1.0], 7);").equals("<1.0>");
-		code_v4_("return intervalToSet([1.0 ..0.0], 2);").equals("<>");
-		code_v4_("return intervalToSet([1.0 ..[, 2);").equals("null");
+		code_v4_("return intervalToSet([1.0..2.0], 0.8);").equals("<1.0, 1.8>");
+		code_v4_("return intervalToSet([1.0..2.0], 2);").equals("<1.0>");
+		code_v4_("return intervalToSet([-10.0..10.0], 5);").equals("<0.0, -10.0, -5.0, 5.0, 10.0>");
+		code_v4_("return intervalToSet([1.0..1.0], 7);").equals("<1.0>");
+		code_v4_("return intervalToSet([1.0..0.0], 2);").equals("<>");
+		code_v4_("return intervalToSet([1.0..[, 2);").equals("null");
 		code_v4_("return intervalToSet([1..2], 0.8);").equals("<1.0, 1.8>");
 		code_v4_("return intervalToSet([1..2], 2);").equals("<1>");
-		code_v4_("return intervalToSet([-10..10], 5);").equals("<-10, -5, 0, 5, 10>");
+		code_v4_("return intervalToSet([-10..10], 5);").equals("<0, -5, 5, -10, 10>");
 		code_v4_("return intervalToSet([1..1], 7);").equals("<1>");
 		code_v4_("return intervalToSet([1..0], 2);").equals("<>");
 		code_v4_("return intervalToSet([1..[, 2);").equals("null");
 
 		section("Interval.intervalToSet(<negative step>)");
-		code_v4_("return intervalToSet([1.0 ..2.0], -0.8);").equals("<2.0, 1.2>");
-		code_v4_("return intervalToSet([1.0 ..2.0], -2);").equals("<2.0>");
-		code_v4_("return intervalToSet([-10.0 ..10.0], -5);").equals("<10.0, 5.0, 0.0, -5.0, -10.0>");
-		code_v4_("return intervalToSet([1.0 ..1.0], -7);").equals("<1.0>");
-		code_v4_("return intervalToSet([1.0 ..0.0], -2);").equals("<>");
+		code_v4_("return intervalToSet([1.0..2.0], -0.8);").equals("<2.0, 1.2>");
+		code_v4_("return intervalToSet([1.0..2.0], -2);").equals("<2.0>");
+		code_v4_("return intervalToSet([-10.0..10.0], -5);").equals("<0.0, 10.0, 5.0, -5.0, -10.0>");
+		code_v4_("return intervalToSet([1.0..1.0], -7);").equals("<1.0>");
+		code_v4_("return intervalToSet([1.0..0.0], -2);").equals("<>");
 		code_v4_("return intervalToSet([1..2], -0.8);").equals("<2.0, 1.2>");
 		code_v4_("return intervalToSet([1..2], -2);").equals("<2>");
-		code_v4_("return intervalToSet([-10..10], -5);").equals("<10, 5, 0, -5, -10>");
+		code_v4_("return intervalToSet([-10..10], -5);").equals("<0, -5, 5, -10, 10>");
 		code_v4_("return intervalToSet([1..1], -7);").equals("<1>");
 		code_v4_("return intervalToSet([1..0], -2);").equals("<>");
 		code_v4_("return intervalToSet([0..5], -1);").equals("<0, 1, 2, 3, 4, 5>");
-		code_v4_("return intervalToSet([0..5[, -1);").equals("<4, 3, 2, 1, 0>");
-		code_v4_("return intervalToSet(]0..5[, -1);").equals("<4, 3, 2, 1>");
+		code_v4_("return intervalToSet([0..5[, -1);").equals("<0, 1, 2, 3, 4>");
+		code_v4_("return intervalToSet(]0..5[, -1);").equals("<1, 2, 3, 4>");
 
 		section("Interval.[start:end:step]");
 		code_v4_("return [1..10][2:4:2]").equals("[5.0, 7.0]");
@@ -270,9 +274,9 @@ public class TestInterval extends TestCommon {
 		code("var i = [1..5[ var x = 0 for (var y in i) x += y return x").equals("10");
 		code("var i = ]1..5] var x = 0 for (var y in i) x += y return x").equals("14");
 		code("var i = ]1..5[ var x = 0 for (var y in i) x += y return x").equals("9");
-		code("var i = [1.0..5.0] var x = 0.0 for (var y in i) x += y return x").equals("15.0");
-		code("var i = [1.0..5.0[ var x = 0.0 for (var y in i) x += y return x").equals("10.0");
-		code("var i = ]1.0..5.0] var x = 0.0 for (var y in i) x += y return x").equals("14.0");
-		code("var i = ]1.0..5.0[ var x = 0.0 for (var y in i) x += y return x").equals("9.0");
+		code_v2_("var i = [1.0..5.0] var x = 0.0 for (var y in i) x += y return x").equals("15.0");
+		code_v2_("var i = [1.0..5.0[ var x = 0.0 for (var y in i) x += y return x").equals("10.0");
+		code_v2_("var i = ]1.0..5.0] var x = 0.0 for (var y in i) x += y return x").equals("14.0");
+		code_v2_("var i = ]1.0..5.0[ var x = 0.0 for (var y in i) x += y return x").equals("9.0");
 	}
 }
