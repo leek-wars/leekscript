@@ -42,20 +42,23 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 
 	@Override
 	public String getCode() {
+		String r = "global" + (this.leekType != null ? " " + this.leekType.toString() : "") + " " + variableToken.getWord();
 		if (mValue != null) {
-			return "global " + variableToken.getWord() + " = " + mValue.toString() + ";";
-		} else {
-			return "global " + variableToken.getWord() + ";";
+			r += " = " + mValue.toString();
 		}
+		return r + ";";
 	}
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
 		writer.addCode("if (!g_init_" + variableToken.getWord() + ") { ");
 		if (mainblock.getWordCompiler().getVersion() >= 2) {
-			if (mValue != null && mValue.getOperations() > 0) writer.addCode("ops(");
 			writer.addCode("g_" + variableToken.getWord() + " = ");
 			if (mValue != null) {
+				if (variable.getType() != Type.ANY) {
+					writer.addCode("(" + variable.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
+				if (mValue.getOperations() > 0) writer.addCode("ops(");
 				if (variable.getType() != Type.ANY) {
 					writer.compileConvert(mainblock, 0, mValue, variable.getType());
 				} else {

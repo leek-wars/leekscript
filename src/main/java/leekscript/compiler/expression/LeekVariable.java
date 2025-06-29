@@ -21,8 +21,7 @@ import leekscript.common.Type;
 public class LeekVariable extends Expression {
 
 	public static enum VariableType {
-		LOCAL, GLOBAL, ARGUMENT, FIELD, STATIC_FIELD, THIS, THIS_CLASS, CLASS, SUPER, METHOD, STATIC_METHOD,
-		SYSTEM_CONSTANT, SYSTEM_FUNCTION, FUNCTION, ITERATOR
+		LOCAL, GLOBAL, ARGUMENT, FIELD, STATIC_FIELD, THIS, THIS_CLASS, CLASS, SUPER, METHOD, STATIC_METHOD, SYSTEM_CONSTANT, SYSTEM_FUNCTION, FUNCTION, ITERATOR
 	}
 
 	private final Token token;
@@ -69,16 +68,14 @@ public class LeekVariable extends Expression {
 		this.box = declaration.isCaptured();
 	}
 
-	public LeekVariable(Token token, VariableType variableType, Type type,
-			LeekVariableDeclarationInstruction declaration) {
+	public LeekVariable(Token token, VariableType variableType, Type type, LeekVariableDeclarationInstruction declaration) {
 		this(token, variableType);
 		this.declaration = declaration;
 		this.box = declaration.isCaptured();
 		this.variableType = type;
 	}
 
-	public LeekVariable(Token token, VariableType type, Type variableType,
-			ClassDeclarationInstruction classDeclaration) {
+	public LeekVariable(Token token, VariableType type, Type variableType, ClassDeclarationInstruction classDeclaration) {
 		this(token, type);
 		this.classDeclaration = classDeclaration;
 		this.variableType = variableType;
@@ -111,8 +108,7 @@ public class LeekVariable extends Expression {
 	}
 
 	public boolean isLeftValue() {
-		if (type == VariableType.CLASS || type == VariableType.THIS || type == VariableType.THIS_CLASS
-				|| type == VariableType.SUPER || type == VariableType.SYSTEM_CONSTANT) {
+		if (type == VariableType.CLASS || type == VariableType.THIS || type == VariableType.THIS_CLASS || type == VariableType.SUPER || type == VariableType.SYSTEM_CONSTANT) {
 			return false;
 		}
 		return true;
@@ -120,8 +116,7 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public boolean nullable() {
-		// return type != VariableType.CLASS && type != VariableType.THIS && type !=
-		// VariableType.THIS_CLASS;
+		// return type != VariableType.CLASS && type != VariableType.THIS && type != VariableType.THIS_CLASS;
 		return false;
 	}
 
@@ -190,8 +185,7 @@ public class LeekVariable extends Expression {
 			}
 			return;
 		}
-		compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION,
-				new String[] { token.getWord() }));
+		compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] { token.getWord() }));
 	}
 
 	@Override
@@ -287,8 +281,7 @@ public class LeekVariable extends Expression {
 				writer.generateAnonymousSystemFunction(system_function);
 				// String namespace = LeekFunctions.getNamespace(token.getWord());
 				writer.addCode(system_function.getStandardClass() + "_" + token.getWord());
-				// writer.addCode("LeekValueManager.getFunction(" + namespace + "." +
-				// token.getWord() + ")");
+				// writer.addCode("LeekValueManager.getFunction(" + namespace + "." + token.getWord() + ")");
 			}
 		} else if (type == VariableType.GLOBAL) {
 			if (mainblock.getWordCompiler().getVersion() <= 1) {
@@ -345,8 +338,7 @@ public class LeekVariable extends Expression {
 				writer.generateAnonymousSystemFunction(system_function);
 				// String namespace = LeekFunctions.getNamespace(token.getWord());
 				writer.addCode(system_function.getStandardClass() + "_" + token.getWord());
-				// writer.addCode("LeekValueManager.getFunction(" + namespace + "." +
-				// token.getWord() + ")");
+				// writer.addCode("LeekValueManager.getFunction(" + namespace + "." + token.getWord() + ")");
 			}
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
 			var constant = LeekConstants.get(token.getWord());
@@ -385,8 +377,7 @@ public class LeekVariable extends Expression {
 			writer.addCode(token.getWord() + " = ");
 			writer.compileConvert(mainblock, 0, expr, variableType);
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode(
-					mainblock.getWordCompiler().getCurrentClassVariable() + ".setField(\"" + token.getWord() + "\", ");
+			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".setField(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else if (mainblock.isRedefinedFunction(token.getWord())) {
@@ -574,8 +565,7 @@ public class LeekVariable extends Expression {
 			}
 			writer.addCode("sub(" + token.getWord() + ", 1l)");
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pre_dec(\"" + token.getWord()
-					+ "\")");
+			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pre_dec(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".pre_decrement()");
@@ -610,8 +600,7 @@ public class LeekVariable extends Expression {
 				writer.addCode(")");
 			}
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_add_eq(\""
-					+ token.getWord() + "\", ");
+			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_add_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else {
@@ -632,7 +621,7 @@ public class LeekVariable extends Expression {
 					} else if (this.variableType == Type.REAL) {
 						writer.addCode("real(");
 						expr.writeJavaCode(mainblock, writer);
-						writer.addCode(")");						
+						writer.addCode(")");
 					}
 				}
 			} else {
@@ -718,12 +707,11 @@ public class LeekVariable extends Expression {
 	private void compileEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String function) {
 		compileEq(mainblock, writer, expr, function, null);
 	}
-	
+
 	/**
 	 * Wrapper to write assignment functions of type "a **= b"
 	 * */
-	private void compileEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String function,
-			String primitiveFunction) {
+	private void compileEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String function, String primitiveFunction) {
 		if (type == VariableType.FIELD) {
 			writer.addCode(token.getWord() + " = ");
 			if (this.variable.getType() != Type.ANY) {
@@ -736,7 +724,7 @@ public class LeekVariable extends Expression {
 					writer.addCode("real(");
 					writer.addCode(function + "(" + token.getWord() + ", ");
 					expr.writeJavaCode(mainblock, writer);
-					writer.addCode("))");						
+					writer.addCode("))");
 				}
 				else {
 					writer.addCode("((" + this.variable.getType().getJavaName(mainblock.getVersion()) + ") ");
@@ -750,8 +738,7 @@ public class LeekVariable extends Expression {
 				writer.addCode(")");
 			}
 		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_" + function + "_eq(\""
-					+ token.getWord() + "\", ");
+			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_" + function + "_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer);
 			writer.addCode(")");
 		} else {
@@ -772,12 +759,17 @@ public class LeekVariable extends Expression {
 					} else if (this.variableType == Type.REAL) {
 						writer.addCode("real(");
 						expr.writeJavaCode(mainblock, writer);
-						writer.addCode(")");						
+						writer.addCode(")");
 					}
 				}
 			} else {
 				writer.addCode(prefix + token.getWord() + " = ");
-				if (this.variable.getType() != Type.ANY) {
+				if (this.variable.getType() == Type.BIG_INT && function.equals("div")) {
+					writer.addCode("bigint(");
+					writer.addCode(function + "(" + prefix + token.getWord() + ", ");
+					expr.writeJavaCode(mainblock, writer);
+					writer.addCode("))");
+				} else if (this.variable.getType() != Type.ANY) {
 					writer.addCode("((" + this.variable.getType().getJavaName(mainblock.getVersion()) + ") ");
 					writer.addCode(function + "(" + prefix + token.getWord() + ", ");
 					expr.writeJavaCode(mainblock, writer);

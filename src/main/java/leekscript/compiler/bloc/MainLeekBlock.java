@@ -247,7 +247,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var instruction : mFunctions.values()) {
 			str += instruction.getCode() + "\n";
 		}
-		for (var clazz : mUserClasses.values()) {
+		for (var clazz : mUserClassesList) {
 			if (clazz.internal) continue;
 			str += clazz.getCode() + "\n";
 		}

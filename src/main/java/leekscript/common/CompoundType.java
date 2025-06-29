@@ -207,10 +207,8 @@ public class CompoundType extends Type {
 					}
 				}
 			}
-			if (types.contains(Type.INT) && types.contains(Type.REAL)) {
-				return "Number";
-			}
 		}
+		if (isCompoundNumber()) return "Number";
 		return "Object";
 	}
 
@@ -226,10 +224,8 @@ public class CompoundType extends Type {
 					if (t != Type.NULL)
 						return t.getJavaName(version);
 			}
-			if (types.contains(Type.INT) && types.contains(Type.REAL)) {
-				return "Number";
-			}
 		}
+		if (isCompoundNumber()) return "Number";
 		return "Object";
 	}
 

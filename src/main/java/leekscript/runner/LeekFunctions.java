@@ -78,9 +78,9 @@ public class LeekFunctions {
 		method("log10", "Number", 23, true, Type.REAL, new Type[] { Type.REAL });
 		method("exp", "Number", 40, true, Type.REAL, new Type[] { Type.REAL });
 		method("pow", "Number", 140, true, new CallableVersion[] {
-				new CallableVersion(Type.REAL, new Type[] { Type.REAL, Type.REAL }),
-				new CallableVersion(Type.ANY, new Type[] { Type.BIG_INT, Type.INT }),
 				new CallableVersion(Type.ANY, new Type[] { Type.BIG_INT, Type.BIG_INT }),
+				new CallableVersion(Type.REAL, new Type[] { Type.INT, Type.INT }),
+				new CallableVersion(Type.REAL, new Type[] { Type.REAL, Type.REAL }),
 			});
 		method("rand", "Number", 30, true, Type.REAL, new Type[0]);
 		method("randInt", "Number", 30, true, Type.INT, new Type[] { Type.INT, Type.INT });

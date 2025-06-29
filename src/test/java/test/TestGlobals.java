@@ -73,5 +73,6 @@ public class TestGlobals extends TestCommon {
 		code("global Array<string> w = split('hello', ''); return w").equals("[\"h\", \"e\", \"l\", \"l\", \"o\"]");
 		code_v4_("function f() { return [:] } global Map c = f(); return c").equals("[:]");
 		code_strict("global a = [0] a[0] = 12 return a").equals("[12]");
+		code_v4_("global Array<integer> CELL_X = function() => Array<integer> { return [] }() CELL_X").equals("[]");
 	}
 }

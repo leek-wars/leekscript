@@ -24,6 +24,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	private final ArrayList<LeekVariableDeclarationInstruction> mParameterDeclarations = new ArrayList<>();
 	private final ArrayList<Boolean> mReferences = new ArrayList<Boolean>();
 	private final ArrayList<LeekType> mTypes = new ArrayList<>();
+	private LeekType returnType;
 	private int mId = 0;
 	private final Token token;
 	private Token endToken;
@@ -68,18 +69,19 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 			}
 		}
 
+		var type = leekType == null ? Type.ANY : leekType.getType();
 		mParameters.add(token.getWord());
 		mReferences.add(is_reference);
 		mTypes.add(leekType);
-		var type = leekType == null ? Type.ANY : leekType.getType();
 		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this, type);
 		mParameterDeclarations.add(declaration);
 		addVariable(new LeekVariable(token, VariableType.ARGUMENT, type, declaration));
 		this.type.add_argument(type, false);
 	}
 
-	public void setReturnType(Type type) {
+	public void setReturnType(LeekType type) {
 		this.type.setReturnType(type);
+		this.returnType = type;
 	}
 
 	public boolean hasParameter(String name) {
@@ -97,7 +99,11 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 				str += ", ";
 			str += mParameters.get(i);
 		}
-		return str + ") {\n" + super.getCode() + "}\n";
+		str += ") ";
+		if (this.returnType != null) {
+			str += "=> " + this.returnType.toString();
+		}
+		return str + " {\n" + super.getCode() + "}\n";
 	}
 
 	@Override

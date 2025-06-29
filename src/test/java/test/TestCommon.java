@@ -247,8 +247,7 @@ public class TestCommon {
 				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops, " + ops_per_ms + " ops/ms" + END_COLOR);
 				success++;
 			} else {
-				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
-				"/home/pierre/dev/leek-wars/generator/leekscript/ai/AI_" + aiID + ".java";
+				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + (aiID != 0 ? "\n" + "/home/pierre/dev/leek-wars/generator/leekscript/ai/AI_" + aiID + ".java" : "");
 				System.out.println(err);
 				failedTests.add(err);
 			}

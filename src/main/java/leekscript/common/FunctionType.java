@@ -2,6 +2,9 @@ package leekscript.common;
 
 import java.util.Arrays;
 import java.util.List;
+
+import leekscript.compiler.expression.LeekType;
+
 import java.util.ArrayList;
 
 public class FunctionType extends Type {
@@ -144,8 +147,8 @@ public class FunctionType extends Type {
 		return this.return_type;
 	}
 
-	public void setReturnType(Type type) {
-		this.return_type = type;
+	public void setReturnType(LeekType type) {
+		this.return_type = type.getType();
 		this.updateName();
 	}
 

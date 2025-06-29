@@ -76,7 +76,7 @@ public class Wrapper<T> {
 		return variable.mul_eq(x);
 	}
 
-	public Number div_eq(Object x) throws LeekRunException {
+	public double div_eq(Object x) throws LeekRunException {
 		return variable.div_eq(x);
 	}
 
