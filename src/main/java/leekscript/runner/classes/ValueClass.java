@@ -30,15 +30,15 @@ public class ValueClass {
 			try {
 				if (s.contains(".")) {
 					return Double.parseDouble(s);
+				} else if (s.endsWith("L")) {
+					s = s.substring(0, s.length() - 1);
+					try {
+						return BigIntegerValue.valueOf(ai, s);
+					} catch (Exception e) {}
 				} else {
 					try {
 						return Long.parseLong(s);
-					} catch (Exception e) { 
-						if (s.endsWith("L")) {
-							s = s.substring(0, s.length() - 1);
-						}
-						return BigIntegerValue.valueOf(ai, s);
-					}
+					} catch (Exception e) {}
 				}
 			} catch (Exception e) {}
 		}

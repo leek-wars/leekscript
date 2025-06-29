@@ -12,14 +12,14 @@ import leekscript.runner.LeekRunException;
  * cost. Current implementation is a wrapper on BigInteger. It allows easy swap
  * for other versions. Untested mutable version to be considered (although it does not have built-in processor optimizations) :
  * https://github.com/bwakell/Huldra/blob/master/src/main/java/org/huldra/math/BigInt.java
- * 
+ *
  * @see BigInteger
  */
 public class BigIntegerValue extends Number implements LeekValue {
 
 	private final BigInteger value;
 	private final AI ai;
-	
+
 	private final static int STRING_CROP_LIMIT = 10; // number of digits to keep at the beginning and the end when converting to string
 	private final static BigInteger STRING_CROP_VALUE = BigInteger.TEN.pow(STRING_CROP_LIMIT);
 	private final static double BASE_FACTOR = Math.log10(2); // used to convert from base 2 to 10
@@ -209,6 +209,10 @@ public class BigIntegerValue extends Number implements LeekValue {
 			return new BigIntegerValue(ai, (String) val);
 		ai.getLogs().addLog(AILog.ERROR, "Cannot cast \"" + val.toString() + "\" to BigInteger");
 		return new BigIntegerValue(ai, 0);
+	}
+
+	public BigInteger getValue() {
+		return value;
 	}
 
 	public int signum() {

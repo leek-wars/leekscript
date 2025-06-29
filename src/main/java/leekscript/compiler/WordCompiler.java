@@ -33,6 +33,7 @@ import leekscript.compiler.expression.LeekInteger;
 import leekscript.compiler.expression.LeekInterval;
 import leekscript.compiler.expression.LeekMap;
 import leekscript.compiler.expression.LeekNull;
+import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekObject;
 import leekscript.compiler.expression.LeekParameterType;
 import leekscript.compiler.expression.LeekParenthesis;
@@ -538,7 +539,7 @@ public class WordCompiler {
 			if (returnType == null) {
 				addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
 			} else {
-				block.setReturnType(returnType.getType());
+				block.setReturnType(returnType);
 			}
 		}
 
@@ -676,7 +677,7 @@ public class WordCompiler {
 					if (type == null) {
 						addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
 					} else {
-						function.setReturnType(type.getType());
+						function.setReturnType(type);
 					}
 				}
 
@@ -1358,7 +1359,7 @@ public class WordCompiler {
 				if (mTokens.get().getWord().equals(".")) {
 					mTokens.setPosition(pos); // On prend pas le type si "Type.[...]"
 				} else {
-					block.setReturnType(returnType.getType());
+					block.setReturnType(returnType);
 				}
 			}
 
@@ -1579,35 +1580,23 @@ public class WordCompiler {
 					if (s.contains("__")) {
 						addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.MULTIPLE_NUMERIC_SEPARATORS));
 					}
-					s = word.getWord();
-					var radix = s.startsWith("0x") ? 16 : s.startsWith("0b") ? 2 : 10;
-					if (radix != 10) s = s.substring(2);
-					s = s.replace("_", "");
-					if (s.endsWith("L")) {
-						try {
+					try {
+						var radix = s.startsWith("0x") ? 16 : s.startsWith("0b") ? 2 : 10;
+						s = word.getWord().replace("_", "");
+						if (radix != 10) s = s.substring(2);
+						if (s.endsWith("L")) {
 							s = s.substring(0, s.length() - 1);
 							retour.addExpression(new LeekBigInteger(word, new BigInteger(s, radix)));
-						} catch (NumberFormatException e) {
-							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
-							retour.addExpression(new LeekBigInteger(word, BigInteger.ZERO));
+						} else {
+							retour.addExpression(new LeekInteger(word, Long.parseLong(s, radix)));
 						}
-					} else {
+					} catch (NumberFormatException e) {
+						s = word.getWord().replace("_", "");
 						try {
-							try {
-								retour.addExpression(new LeekInteger(word, Long.parseLong(s, radix)));
-							} catch (NumberFormatException e2) {
-								if (s.contains(".")) throw e2;
-								// if number is too big, try to parse it as a BigInteger
-								else retour.addExpression(new LeekBigInteger(word, new BigInteger(s, radix)));
-							}
-						} catch (NumberFormatException e) {
-							s = word.getWord().replace("_", "");
-							try {
-								retour.addExpression(new LeekReal(word, Double.parseDouble(s)));
-							} catch (NumberFormatException e2) {
-								addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
-								retour.addExpression(new LeekInteger(word, 0));
-							}
+							retour.addExpression(new LeekReal(word, Double.parseDouble(s)));
+						} catch (NumberFormatException e2) {
+							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
+							retour.addExpression(new LeekInteger(word, 0));
 						}
 					}
 				} else if (word.getType() == TokenType.LEMNISCATE) {
@@ -2066,7 +2055,7 @@ public class WordCompiler {
 			if (returnType == null) {
 				addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
 			} else {
-				block.setReturnType(returnType.getType());
+				block.setReturnType(returnType);
 			}
 		}
 

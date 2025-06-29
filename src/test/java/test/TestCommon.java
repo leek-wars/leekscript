@@ -247,8 +247,7 @@ public class TestCommon {
 				success++;
 				// assertTrue(true, "Test");
 			} else {
-				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
-				"/home/pierre/dev/leek-wars/generator/leekscript/ai/AI_" + aiID + ".java";
+				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + (aiID != 0 ? "\n" + "/home/pierre/dev/leek-wars/generator/leekscript/ai/AI_" + aiID + ".java" : "");
 				System.out.println(err);
 				failedTests.add(err);
 				// assertEquals(checker.getExpected(), checker.getResult(result), code);

@@ -3,6 +3,7 @@ package leekscript.runner;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -13,6 +14,7 @@ import tools.jackson.databind.node.ObjectNode;
 import leekscript.AILog;
 import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
+import leekscript.runner.values.BigIntegerValue;
 import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ClassLeekValue;
@@ -39,6 +41,9 @@ public class LeekValueManager {
 			}
 			if (node.isString()) {
 				return node.asString();
+			}
+			if (node.isBigInteger()) {
+				return new BigIntegerValue(ai, node.asBigInteger());
 			}
 			if (node.isInt()) {
 				return (long) node.asInt();
@@ -71,8 +76,7 @@ public class LeekValueManager {
 			return o;
 		}
 		if (o instanceof BigInteger) {
-			ai.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "jsonDecode(" + ai.export(o) + ")" });
-			return null;
+			return new BigIntegerValue(ai, (BigInteger) o);
 		}
 		if (o instanceof BigDecimal) {
 			return ((BigDecimal) o).doubleValue();

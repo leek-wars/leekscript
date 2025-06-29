@@ -587,10 +587,7 @@ public class LeekExpression extends Expression {
 				writer.addCode(" & ");
 				writer.getInt(mainblock, mExpression2);
 			} else {
-				if (type.isPrimitive()) {
-					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
-				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") band(");
+				writer.addCode("band(");
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -603,10 +600,7 @@ public class LeekExpression extends Expression {
 				writer.addCode(" | ");
 				writer.getInt(mainblock, mExpression2);
 			} else {
-				if (type.isPrimitive()) {
-					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
-				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") bor(");
+				writer.addCode("bor(");
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -619,10 +613,7 @@ public class LeekExpression extends Expression {
 				writer.addCode(" ^ ");
 				writer.getInt(mainblock, mExpression2);
 			} else {
-				if (type.isPrimitive()) {
-					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
-				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") bxor(");
+				writer.addCode("bxor(");
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -635,10 +626,7 @@ public class LeekExpression extends Expression {
 				writer.addCode(" << ");
 				writer.getInt(mainblock, mExpression2);
 			} else {
-				if (type.isPrimitive()) {
-					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
-				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") shl(");
+				writer.addCode("shl(");
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -651,10 +639,7 @@ public class LeekExpression extends Expression {
 				writer.addCode(" >> ");
 				writer.getInt(mainblock, mExpression2);
 			} else {
-				if (type.isPrimitive()) {
-					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
-				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") shr(");
+				writer.addCode("shr(");
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -667,10 +652,7 @@ public class LeekExpression extends Expression {
 				writer.addCode(" >>> ");
 				writer.getInt(mainblock, mExpression2);
 			} else {
-				if (type.isPrimitive()) {
-					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
-				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") ushr(");
+				writer.addCode("ushr(");
 				mExpression1.writeJavaCode(mainblock, writer);
 				writer.addCode(", ");
 				mExpression2.writeJavaCode(mainblock, writer);
@@ -962,28 +944,30 @@ public class LeekExpression extends Expression {
 			writer.addCode(")");
 			return;
 		case Operators.AS:
-			if (mExpression2.getType() == Type.BIG_INT) {
-				writer.addCode("BigIntegerValue.valueOf(" + writer.getAIThis() + ", ");
-				mExpression1.writeJavaCode(mainblock, writer);
-				writer.addCode(")");
-			} else if (mExpression2.getType() == Type.INT) {
-					writer.addCode("longint(");
-					mExpression1.writeJavaCode(mainblock, writer);
-					writer.addCode(")");
-			} else if (mExpression2.getType() == Type.REAL) {
-				writer.addCode("real(");
-				mExpression1.writeJavaCode(mainblock, writer);
-				writer.addCode(")");
-			} else {
-				if (mExpression2 instanceof LeekType lt) {
-					if (lt.getType().accepts(mExpression1.getType()) != CastType.EQUALS) {
-						writer.addCode("(");
-						mExpression2.writeJavaCode(mainblock, writer);
+			if (mExpression2 instanceof LeekType lt) {
+				if (lt.getType().accepts(mExpression1.getType()) != CastType.EQUALS) {
+					if (lt.getType() == Type.BIG_INT) {
+						writer.addCode("bigint(");
+						mExpression1.writeJavaCode(mainblock, writer);
 						writer.addCode(") ");
+						return;
 					}
+					if (lt.getType() == Type.INT && mExpression1.getType() == Type.BIG_INT) {
+						mExpression1.writeJavaCode(mainblock, writer);
+						writer.addCode(".longValue()");
+						return;
+					}
+					if (lt.getType() == Type.REAL && mExpression1.getType() == Type.BIG_INT) {
+						mExpression1.writeJavaCode(mainblock, writer);
+						writer.addCode(".doubleValue()");
+						return;
+					}
+					writer.addCode("(");
+					mExpression2.writeJavaCode(mainblock, writer);
+					writer.addCode(") ");
 				}
-				mExpression1.writeJavaCode(mainblock, writer);
 			}
+			mExpression1.writeJavaCode(mainblock, writer);
 			return;
 		case Operators.IN:
 			writer.addCode("operatorIn(");
@@ -1213,10 +1197,7 @@ public class LeekExpression extends Expression {
 		} else if (mOperator == Operators.NOT || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.MOREEQUALS || mOperator == Operators.LESSEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.AND || mOperator == Operators.OR || mOperator == Operators.XOR || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS || mOperator == Operators.INSTANCEOF || mOperator == Operators.IN) {
 			type = Type.BOOL;
 		}
-		else if (mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT) {
-			type = mExpression1.getType().shift(mExpression2.getType());
-		}
-		else if (mOperator == Operators.BITAND || mOperator == Operators.BITOR  || mOperator == Operators.BITXOR) {
+		else if (mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT || mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR) {
 			type = mExpression1.getType().binop(mExpression2.getType());
 		}
 		else if (mOperator == Operators.BITNOT) {

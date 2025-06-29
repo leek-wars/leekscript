@@ -25,7 +25,7 @@ public class TestJSON extends TestCommon {
 		// code("return jsonEncode(1234567890987)").equals("1234567890987");
 		// mpz
 		// code("return jsonEncode(1m)").equals("1");
-		// code("return jsonEncode(123456789098712345678909871234567890987m)").equals("'123456789098712345678909871234567890987'");
+		code("return jsonEncode(123456789098712345678909871234567890987)").equals("\"1.2345678909871235E38\"");
 		// code("return jsonEncode(15m ** 5)").equals("'759375'");
 		// boolean
 		code("return jsonEncode(true)").equals("\"true\"");
@@ -101,6 +101,7 @@ public class TestJSON extends TestCommon {
 		code_v1("return jsonDecode('-65.89')").equals("-65,89");
 		code_v2_("return jsonDecode('-65.89')").equals("-65.89");
 		code("return jsonDecode('1234567890987')").equals("1234567890987");
+		code("return jsonDecode('123456789098712345678909871234567890987')").equals("1234567890...4567890987");
 
 		code("return jsonDecode('\"\"')").equals("\"\"");
 		code("return jsonDecode('\"hello\"')").equals("\"hello\"");

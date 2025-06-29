@@ -44,7 +44,7 @@ public class LeekOperations {
 			if (level == 0) return value;
 
 			ai.ops(1 + o.size());
-			
+
 			// Call copy constructor
 			Object object = null;
 			try {

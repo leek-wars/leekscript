@@ -32,6 +32,8 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigInteger;
+
 import leekscript.runner.values.BigIntegerValue;
 import java.nio.file.Files;
 import java.text.DecimalFormat;
@@ -152,9 +154,8 @@ public abstract class AI {
 
 		private int id;
 
-		public NativeObjectLeekValue() throws LeekRunException {
+		public NativeObjectLeekValue() {
 			this.id = AI.this.getNextObjectID();
-			AI.this.allocateRAM(this, size() * 2);
 		}
 
 		@Override
@@ -682,7 +683,7 @@ public abstract class AI {
 			case "java.lang.Long.longValue()":
 				return "integer";
 			case "big_integer":
-			case "leekscript.runner.values.BigIntegerValue": 
+			case "leekscript.runner.values.BigIntegerValue":
 				return "big_integer";
 			case "double":
 			case "java.lang.Double":
@@ -865,7 +866,7 @@ public abstract class AI {
 				if (s.equals("true")) return n != 0;
 				if (s.equals("false") || s.equals("0") || s.length() == 0) return n == 0;
 				if (s.equals("1") && n == 1) return true;
-				
+
 				ops(s.length());
 				if (y instanceof BigIntegerValue) {
 					try {
@@ -1048,7 +1049,7 @@ public abstract class AI {
 		} else if (value instanceof Long) {
 			return (int) (long) value;
 		} else if (value instanceof BigIntegerValue) {
-			return ((BigIntegerValue) value).intValue();	
+			return ((BigIntegerValue) value).intValue();
 		} else if (value instanceof Boolean) {
 			return ((Boolean) value) ? 1 : 0;
 		} else if (value instanceof ObjectLeekValue) {
@@ -1170,7 +1171,7 @@ public abstract class AI {
 		}
 		throw new RuntimeException("Valeur invalide : " + value);
 	}
-	
+
 	public BigIntegerValue bigint(Object value) throws LeekRunException {
 		if (value instanceof Double) {
 			return BigIntegerValue.valueOf(this, (long) (double) value);
@@ -1285,11 +1286,11 @@ public abstract class AI {
 		if (value instanceof BigIntegerValue) return ((BigIntegerValue) value).negate();
 		return -longint(value);
 	}
-	
+
 	public BigIntegerValue bnot(BigIntegerValue value) throws LeekRunException {
 		return ((BigIntegerValue) value).not();
 	}
-	
+
 	public Number bnot(Object value) throws LeekRunException {
 		if (value instanceof BigIntegerValue) return ((BigIntegerValue) value).not();
 		return LeekValueManager.bnot(this, value);
@@ -1304,9 +1305,17 @@ public abstract class AI {
 		return longint(x) | longint(y);
 	}
 
+	public BigIntegerValue bor(BigIntegerValue x, BigIntegerValue y) throws LeekRunException {
+		return bigint(x).or(bigint(y));
+	}
+
 	public Number band(Object x, Object y) throws LeekRunException {
 		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) return bigint(x).and(bigint(y));
 		return longint(x) & longint(y);
+	}
+	
+	public BigIntegerValue band(BigIntegerValue x, BigIntegerValue y) throws LeekRunException {
+		return bigint(x).and(bigint(y));
 	}
 
 	public Number bxor(Object x, Object y) throws LeekRunException {
@@ -1314,19 +1323,35 @@ public abstract class AI {
 		return longint(x) ^ longint(y);
 	}
 
+	public BigIntegerValue bxor(BigIntegerValue x, BigIntegerValue y) throws LeekRunException {
+		return bigint(x).xor(bigint(y));
+	}
+
 	public Number shl(Object x, Object y) throws LeekRunException {
-		if (x instanceof BigIntegerValue) return bigint(x).shiftLeft((int) longint(y));
+		if (x instanceof BigIntegerValue) return bigint(x).shiftLeft(integer(y));
 		return longint(x) << longint(y);
 	}
 
+	public BigIntegerValue shl(BigIntegerValue x, Object y) throws LeekRunException {
+		return bigint(x).shiftLeft(integer(y));
+	}
+
 	public Number shr(Object x, Object y) throws LeekRunException {
-		if (x instanceof BigIntegerValue) return bigint(x).shiftRight((int) longint(y)); // same as >>> due to implementation
+		if (x instanceof BigIntegerValue) return bigint(x).shiftRight(integer(y)); // same as >>> due to implementation
 		return longint(x) >> longint(y);
 	}
 
+	public BigIntegerValue shr(BigIntegerValue x, Object y) throws LeekRunException {
+		return bigint(x).shiftRight(integer(y));
+	}
+
 	public Number ushr(Object x, Object y) throws LeekRunException {
-		if (x instanceof BigIntegerValue) return bigint(x).shiftRight((int) longint(y));
+		if (x instanceof BigIntegerValue) return bigint(x).shiftRight(integer(y));
 		return longint(x) >>> longint(y);
+	}
+
+	public BigIntegerValue ushr(BigIntegerValue x, Object y) throws LeekRunException {
+		return bigint(x).shiftRight(integer(y));
 	}
 
 	public long add(long x, long y) throws LeekRunException {
@@ -1446,7 +1471,7 @@ public abstract class AI {
 			}
 			return retour;
 		}
-		
+
 		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
 			return bigint(x).add(bigint(y));
 		}
@@ -1484,7 +1509,7 @@ public abstract class AI {
 		return longint(x) * longint(y);
 	}
 
-	public Object div_v1(Object x, Object y) throws LeekRunException {
+	public Number div_v1(Object x, Object y) throws LeekRunException {
 		double real_y = real(y);
 		if (version == 1 && real_y == 0) {
 			addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
@@ -1492,18 +1517,13 @@ public abstract class AI {
 		}
 		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
 			BigIntegerValue d = bigint(y);
-			if (d.isZero()) return Double.NaN;
+			if (d.isZero()) throw new LeekRunException(Error.DIVISION_BY_ZERO);
 			return bigint(x).divide(d);
 		}
 		return real(x) / real_y;
 	}
 
-	public Number div(Object x, Object y) throws LeekRunException {
-		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
-			BigIntegerValue d = bigint(y);
-			if (d.isZero()) return Double.NaN;
-			return bigint(x).divide(d);
-		}
+	public double div(Object x, Object y) throws LeekRunException {
 		return real(x) / real(y);
 	}
 
@@ -1588,9 +1608,9 @@ public abstract class AI {
 		return null;
 	}
 
-	public Number div_eq(Object x, Object y) throws LeekRunException {
-		if (x instanceof Box) {
-			return ((Box) x).div_eq(y);
+	public double div_eq(Object x, Object y) throws LeekRunException {
+		if (x instanceof Box xb) {
+			return xb.div_eq(y);
 		}
 		return 0.0;
 	}
@@ -1820,6 +1840,9 @@ public abstract class AI {
 		}
 		if (v instanceof NativeObjectLeekValue o) {
 			return o.toJSON(this, visited);
+		}
+		if (v instanceof BigIntegerValue bi) {
+			return bi.getValue();
 		}
 		return v;
 	}
@@ -3490,7 +3513,7 @@ public abstract class AI {
 	public long new_integerClass() {
 		return 0l;
 	}
-	
+
 	public BigIntegerValue new_bigIntegerClass() throws LeekRunException {
 		return new BigIntegerValue(this, 0);
 	}

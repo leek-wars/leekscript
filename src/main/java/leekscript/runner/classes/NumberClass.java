@@ -15,6 +15,16 @@ public class NumberClass {
 		return Math.abs(x);
 	}
 	
+	public static Number abs(AI ai, Number x) throws LeekRunException {
+		if (x instanceof BigIntegerValue b) {
+			return b.abs();
+		}
+		if (x instanceof Double d) {
+			return Math.abs(d);
+		}
+		return Math.abs(x.longValue());
+	}
+
 	public static BigIntegerValue abs(AI ai, BigIntegerValue x) throws LeekRunException {
 		return x.abs();
 	}
@@ -160,6 +170,10 @@ public class NumberClass {
 	}
 
 	public static double pow(AI ai, double x, double y) {
+		return Math.pow(x, y);
+	}
+
+	public static double pow(AI ai, long x, long y) {
 		return Math.pow(x, y);
 	}
 

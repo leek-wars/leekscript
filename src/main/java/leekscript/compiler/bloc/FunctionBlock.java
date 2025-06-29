@@ -28,6 +28,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 	private final ArrayList<LeekVariableDeclarationInstruction> mParameterDeclarations = new ArrayList<>();
 	private final ArrayList<Boolean> mReferences = new ArrayList<Boolean>();
 	private final ArrayList<Type> mTypes = new ArrayList<>();
+	private LeekType returnType;
 	private CallableVersion[] versions;
 	private FunctionType type = new FunctionType(Type.ANY);
 
@@ -81,8 +82,9 @@ public class FunctionBlock extends AbstractLeekBlock {
 		this.type.add_argument(type, false);
 	}
 
-	public void setReturnType(Type type) {
+	public void setReturnType(LeekType type) {
 		this.type.setReturnType(type);
+		this.returnType = type;
 	}
 
 	@Override
@@ -101,7 +103,11 @@ public class FunctionBlock extends AbstractLeekBlock {
 			}
 			str += mParameters.get(i);
 		}
-		return str + ") {\n" + super.getCode() + "}\n";
+		str += ")";
+		if (this.returnType != null) {
+			str += "=> " + this.returnType.toString();
+		}
+		return str + " {\n" + super.getCode() + "}\n";
 	}
 
 	@Override

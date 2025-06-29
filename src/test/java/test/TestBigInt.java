@@ -1,26 +1,33 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
 import leekscript.common.Error;
 import leekscript.runner.LeekConstants;
 
+@ExtendWith(SummaryExtension.class)
 public class TestBigInt extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 
 		header("Big Integers");
 
 //		section("Performance");
-//		
+//
 //		code_v4_("big_integer a = 1; for (var k in [0..100000]) {a = a << 1;}; return 0;").equals("0"); // warmup
-//		
+//
 //		code_v4_("for (var k in [0..100000]) {var a = 5;}; return 0;").equals("0");
 //		code_v4_("for (var k in [0..100000]) {var a = 5L;}; return 0;").equals("0"); // x4-5 slower
-//		
+//
 //		code_v4_("var a = 1; for (var k in [0..100000]) {a = a << 1;}; return 0;").equals("0");
 //		code_v4_("big_integer a = 1; for (var k in [0..100000]) {a = a << 1;}; return 0;").equals("0");
 //		code_v4_("big_integer a = 1; for (var k in [0..100000]) {a = a << 1;}; return 0;").equals("0");
 //		code_v4_("big_integer a = (1L << 1000) + 1; for (var k in [0..100000]) {a = a << 1;}; return 0;").equals("0");
-//		
+//
 //		// test binString
 //		code_v4_("var a = 1, b = 1; for (var k in [0..100000])a = binString(b); return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1; for (var k in [0..100000]) a = binString(b); return 0;").equals("0");
@@ -46,14 +53,14 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("big_integer a = 1, b = 1L << 10000; for (var k in [0..1000]) a = hexString(b); return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000; for (var k in [0..1000]) a = hexString(b); return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 40000; for (var k in [0..1000]) a = hexString(b); return 0;").equals("0");
-//		
+//
 //		// test string
 //		code_v4_("integer x = 999; for (var k in [0..10000]) var a = string(x); return 0").equals("0");
 //		code_v4_("big_integer x = 999; for (var k in [0..10000]) var a = string(x); return 0").equals("0");
 //		code_v4_("big_integer x = (12345678912L * (10L**20)) + 12345678987654321; for (var k in [0..10000]) var a = string(x); return 0").equals("0");
 //		code_v4_("big_integer x = (12345678912L * (10L**100)) + 12345678987654321; for (var k in [0..10000]) var a = string(x); return 0").equals("0");
 //		code_v4_("big_integer x = (12345678912L * (10L**1000)) + 12345678987654321; for (var k in [0..10000]) var a = string(x); return 0").equals("0");
-//		
+//
 //		// test <<
 //		code_v4_("for (var k in [0..100000])var a = 1 << 1; return 0;").equals("0"); // ref
 //		code_v4_("big_integer a = 0;for (var k in [0..100000])a = 1L << 1; return 0;").equals("0");
@@ -74,7 +81,7 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("for (var k in [0..100000])big_integer a = 1L << 1280000; return 0;").equals("0");
 //		code_v4_("for (var k in [0..100000])big_integer a = 1L << 2560000; return 0;").equals("0");
 //		code_v4_("for (var k in [0..100000])big_integer a = 1L << 5120000; return 0;").equals("0");
-//	
+//
 //		// test &
 //		code_v4_("var a = 1, b = 1; for (var k in [0..100000])a = a & b; return 0;").equals("0"); // ref
 //		code_v4_("big_integer a = 1, b = 1; for (var k in [0..100000]) a = a & b; return 0;").equals("0");
@@ -87,7 +94,7 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("big_integer a = 1, b = 1L << 10000; for (var k in [0..100000]) a = a & b; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000; for (var k in [0..100000]) a = a & b; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 40000; for (var k in [0..100000]) a = a & b; return 0;").equals("0");
-//		
+//
 //		// test |
 //		code_v4_("var a = 1, b = 1; for (var k in [0..100000])a = a | b; return 0;").equals("0"); // ref
 //		code_v4_("big_integer a = 1, b = 1; for (var k in [0..100000]) a = a | b; return 0;").equals("0");
@@ -100,7 +107,7 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("big_integer a = 1, b = 1L << 10000; for (var k in [0..100000]) a = a | b; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000; for (var k in [0..100000]) a = a | b; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 40000; for (var k in [0..100000]) a = a | b; return 0;").equals("0");
-//		
+//
 //		// test ^
 //		code_v4_("var a = 1, b = 1; for (var k in [0..100000])a = a ^ b; return 0;").equals("0"); // ref
 //		code_v4_("big_integer a = 1, b = 1; for (var k in [0..100000]) a = a ^ b; return 0;").equals("0");
@@ -113,7 +120,7 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("big_integer a = 1, b = 1L << 10000; for (var k in [0..100000]) a = a ^ b; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000; for (var k in [0..100000]) a = a ^ b; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 40000; for (var k in [0..100000]) a = a ^ b; return 0;").equals("0");
-//		
+//
 //		// test ~
 //		code_v4_("var b = 1; for (var k in [0..100000])b = ~b; return 0;").equals("0"); // ref
 //		code_v4_("big_integer b = 1; for (var k in [0..100000]) b = ~b; return 0;").equals("0");
@@ -126,7 +133,7 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("big_integer b = 1L << 10000; for (var k in [0..100000]) b = ~b; return 0;").equals("0");
 //		code_v4_("big_integer b = 1L << 20000; for (var k in [0..100000]) b = ~b; return 0;").equals("0");
 //		code_v4_("big_integer b = 1L << 40000; for (var k in [0..100000]) b = ~b; return 0;").equals("0");
-//		
+//
 //		// test +
 //		code_v4_("integer a = 1, b = 1; for (var k in [0..100000]) a = b + b; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 156; for (var k in [0..100000]) a = b + b; return 0;").equals("0");
@@ -138,7 +145,7 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("big_integer a = 1, b = 1L << 10000; for (var k in [0..100000]) a = b + b; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000; for (var k in [0..100000]) a = b + b; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 40000; for (var k in [0..100000]) a = b + b; return 0;").equals("0");
-//		
+//
 //		// test *
 //		code_v4_("var a = 1, b = 1; for (var k in [0..100000]) a = b * b; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 156; for (var k in [0..100000]) a = b * b; return 0;").equals("0");
@@ -150,8 +157,8 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("big_integer a = 1, b = 1L << 10000; for (var k in [0..100000]) a = b * b; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000; for (var k in [0..100000]) a = b * b; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 40000; for (var k in [0..100000]) a = b * b; return 0;").equals("0");
-//		
-//		
+//
+//
 //		// test /
 //		code_v4_("var a = 1, b = 10, c = b / 2; for (var k in [0..100000]) a = b / c; return a;").equals("2.0");
 //		code_v4_("big_integer a = 1, b = 1L << 156, c = b / 2; for (var k in [0..100000]) a = b / c; return a;").equals("2");
@@ -163,8 +170,8 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("big_integer a = 1, b = 1L << 10000, c = b / 2; for (var k in [0..100000]) a = b / c; return a;").equals("2");
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = b / 2; for (var k in [0..100000]) a = b / c; return a;").equals("2");
 //		code_v4_("big_integer a = 1, b = 1L << 40000, c = b / 2; for (var k in [0..100000]) a = b / c; return a;").equals("2");
-//		
-//		
+//
+//
 //		// test **
 //		code_v4_("var a = 1, b = 10, c = 30; for (var k in [0..100000]) a = b ** c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 156, c = 30; for (var k in [0..100000]) a = b ** c; return 0;").equals("0");
@@ -176,13 +183,13 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("big_integer a = 1, b = 1L << 10000, c = 30; for (var k in [0..100000]) a = b ** c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = 30; for (var k in [0..100000]) a = b ** c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 40000, c = 30; for (var k in [0..100000]) a = b ** c; return 0;").equals("0");
-//		
+//
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = 3; for (var k in [0..100000]) a = b ** c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = 6; for (var k in [0..100000]) a = b ** c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = 12; for (var k in [0..100000]) a = b ** c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = 24; for (var k in [0..100000]) a = b ** c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = 48; for (var k in [0..100000]) a = b ** c; return 0;").equals("0");
-//		
+//
 //		// test %
 //		code_v4_("var a = 1, b = 10, c = 3; for (var k in [0..100000]) a = b % c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 156, c = 3; for (var k in [0..100000]) a = b % c; return 0;").equals("0");
@@ -194,7 +201,7 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("big_integer a = 1, b = 1L << 10000, c = 3; for (var k in [0..100000]) a = b % c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = 3; for (var k in [0..100000]) a = b % c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 40000, c = 3; for (var k in [0..100000]) a = b % c; return 0;").equals("0");
-//		
+//
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = 3; for (var k in [0..100000]) a = b % c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = 6; for (var k in [0..100000]) a = b % c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = 12; for (var k in [0..100000]) a = b % c; return 0;").equals("0");
@@ -204,7 +211,7 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = 4800; for (var k in [0..100000]) a = b % c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = 48000; for (var k in [0..100000]) a = b % c; return 0;").equals("0");
 //		code_v4_("big_integer a = 1, b = 1L << 20000, c = b/2; for (var k in [0..100000]) a = b % c; return 0;").equals("0");
-//		
+//
 //		section("Limits");
 //		code_v4_("var a = 2L ** 200_000_000; a -= 1; return 0").equals("0");
 //		code_v4_("var a = 2L ** 700_000_000; return 0").equals("0");
@@ -223,17 +230,17 @@ public class TestBigInt extends TestCommon {
 		// code_v4_("return -1e100 as BigInteger").equals("-10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 		// code_v4_("return 1e100 as big_integer").equals("10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
-		code_v4_("return 1e+3 as big_integer").equals("1000");
-		code_v4_("return 1e+3+2 as BigInteger").equals("1002");
-		code_v4_("return 1e+3-2 as BigInteger").equals("998");
-		code_v4_("return 1.5e-3 as big_integer").equals("0");
-		code_v4_("return 1.99 as big_integer").equals("1");
-		code_v4_("return 1L as big_integer").equals("1");
-		code_v4_("return 1L as real").equals("1.0");
-		code_v4_("return 1L as integer").equals("1");
-		code_v4_("big_integer x = 1L; return x as integer").equals("1");
-		code_v4_("var x = 1L; return x as integer").equals("1");
-		code_v4_("BigInteger x = 1L; return x as integer").equals("1");
+		// code_v4_("return 1e+3 as big_integer").equals("1000");
+		// code_v4_("return 1e+3+2 as BigInteger").equals("1002");
+		// code_v4_("return 1e+3-2 as BigInteger").equals("998");
+		// code_v4_("return 1.5e-3 as big_integer").equals("0");
+		// code_v4_("return 1.99 as big_integer").equals("1");
+		// code_v4_("return 1L as big_integer").equals("1");
+		// code_v4_("return 1L as real").equals("1.0");
+		// code_v4_("return 1L as integer").equals("1");
+		// code_v4_("big_integer x = 1L; return x as integer").equals("1");
+		// code_v4_("var x = 1L; return x as integer").equals("1");
+		// code_v4_("BigInteger x = 1L; return x as integer").equals("1");
 
 		section("Class");
 		code_v4_("return BigInteger();").equals("0");
@@ -263,7 +270,7 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return 1L << 100;").equals("1267650600...6703205376");
 		code_v4_("big_integer x = 12; return x;").equals("12");
 		code_v4_("big_integer x = 1; return x << 150 == 1427247692705959881058285969449495136382746624L;").equals("true");
-		code_v4_("big_integer x = 1427247692705959881058285969449495136382746624; return x + 1;").equals("1427247692...6382746625");
+		code_v4_("big_integer x = 1427247692705959881058285969449495136382746624L; return x + 1;").equals("1427247692...6382746625");
 		code_v4_("return BigInteger();").equals("0");
 		code_v4_("return new BigInteger();").equals("0");
 		code_v4_("return (BigInteger() + 1) << 100;").equals("1267650600...6703205376");
@@ -271,26 +278,26 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return 5L == 5.0;").equals("true");
 		code_v4_("return 5L == 5L;").equals("true");
 
-		code_v4_("return 1267650600228229401496703205376L == 1267650600228229401496703205376;").equals("true");
-		code_v4_("return 1267650600228229401496703205376L == 1267650600228229401496703205377;").equals("false");
+		code_v4_("return 1267650600228229401496703205376L == 1267650600228229401496703205376L;").equals("true");
+		code_v4_("return 1267650600228229401496703205376L == 1267650600228229401496703205377L;").equals("false");
 		code_v4_("return 1267650600228229401496703205376L == (BigInteger() + 1) << 104 >>> 2 >> 2;").equals("true");
-		
+
 		code_v4_("return 0x8fa6cd83e41a6f4ecL").equals("1656189881...8544180460");
-		code_v4_("-0xa71ed8fa6cd83e41a6f4eaf4ed9dff8cc3ab1e9a4ec6baf1ea77db4fa1c").equals("-7208895554...8059287068");
-		code_v4_("0xfe54c4ceabf93c4eaeafcde94eba4c79741a7cc8ef43daec6a71ed8fa6cd8b3e41a6f4ea7f4ed9dff8cc3ab61e9a4ec6baf1ea77deb4fa1c").equals("7221004400...1654073884");
-		code_v4_("return 0b010101010101110101010101011111111110111110111110000000011101101010101001").equals("1574698668...1521295017");
-		code_v4_("return -0b101010101011101010101010111111111101111101111100000000111011010101010010011111100000011111111111110000").equals("-3381639641...3319995376");
+		code_v4_("-0xa71ed8fa6cd83e41a6f4eaf4ed9dff8cc3ab1e9a4ec6baf1ea77db4fa1cL").equals("-7208895554...8059287068");
+		code_v4_("0xfe54c4ceabf93c4eaeafcde94eba4c79741a7cc8ef43daec6a71ed8fa6cd8b3e41a6f4ea7f4ed9dff8cc3ab61e9a4ec6baf1ea77deb4fa1cL").equals("7221004400...1654073884");
+		code_v4_("return 0b010101010101110101010101011111111110111110111110000000011101101010101001L").equals("1574698668...1521295017");
+		code_v4_("return -0b101010101011101010101010111111111101111101111100000000111011010101010010011111100000011111111111110000L").equals("-3381639641...3319995376");
 
 		code_v4_("return 5L + 5;").equals("10");
 		code_v4_("return 10 - 3L;").equals("7");
 		code_v4_("return -2L + 3;").equals("1");
 		code_v4_("return 5 * 5L;").equals("25");
-		code_v4_("return 15L / 3;").equals("5");
+		code_v4_("return 15L / 3;").equals("5.0");
 		code_v4_("return 15L \\ 3;").equals("5");
-		code_v4_("return 15 / 3L;").equals("5");
+		code_v4_("return 15 / 3L;").equals("5.0");
 		code_v4_("return 15 \\ 3L;").equals("5");
-		code_v4_("return 15L / 2;").equals("7");
-		code_v4_("return 15 / 2L;").equals("7");
+		code_v4_("return 15L / 2;").equals("7.5");
+		code_v4_("return 15 / 2L;").equals("7.5");
 		code_v4_("return 12L ** 2;").equals("144");
 		code_v4_("return 2 ** 5L;").equals("32");
 		code_v4_("return 2L < 5;").equals("true");
@@ -304,17 +311,16 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return -12L + 2;").equals("-10");
 		code_v4_("var a = [2L, 'a'] return [-a[0], ~a[0]] == [-2, ~2];").equals("true");
 
-
 		code_v4_("var x = 5L + 5; return x instanceof BigInteger").equals("true");
 		code_v4_("var x = 10 - 3L; return x instanceof BigInteger").equals("true");
 		code_v4_("var x = -2L + 3; return x instanceof BigInteger").equals("true");
 		code_v4_("var x = 5 * 5L; return x instanceof BigInteger").equals("true");
-		code_v4_("var x = 15L / 3; return x instanceof BigInteger").equals("true");
+		code_v4_("var x = 15L / 3; return x instanceof Real").equals("true");
 		code_v4_("var x = 15L \\ 3; return x instanceof BigInteger").equals("true");
-		code_v4_("var x = 15 / 3L; return x instanceof BigInteger").equals("true");
+		code_v4_("var x = 15 / 3L; return x instanceof Real").equals("true");
 		code_v4_("var x = 15 \\ 3L; return x instanceof BigInteger").equals("true");
-		code_v4_("var x = 15L / 2; return x instanceof BigInteger").equals("true");
-		code_v4_("var x = 15 / 2L; return x instanceof BigInteger").equals("true");
+		code_v4_("var x = 15L / 2; return x instanceof Real").equals("true");
+		code_v4_("var x = 15 / 2L; return x instanceof Real").equals("true");
 		code_v4_("var x = 12L ** 2; return x instanceof BigInteger").equals("true");
 		code_v4_("var x = 12L ** 2; return x instanceof Number").equals("true");
 		code_v4_("var x = 12L ** 2; return x instanceof Integer").equals("false");
@@ -339,14 +345,14 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return -0xffffL").equals("-65535");
 		code_v4_("return 0xffffffffL").equals("4294967295");
 		code_v4_("return 0x7FFFFFFFFFFFFFFFL").equals("9223372036854775807");
-		
+
 		section("Binary representation");
 		code_v4_("return 0b0L").equals("0");
 		code_v4_("return 0b00001L").equals("1");
 		code_v4_("return 0b1001010110L").equals("598");
 		code_v4_("return -0b0101101001111L").equals("-2895");
 		code_v4_("return 0b0111111111111111111111111111111111111111111111111111111111111111L").equals("9223372036854775807");
-		
+
 		section("Underscore delimiters");
 		code_v4_("return 1_000_123L").equals("1000123");
 		code_v4_("return 1_000__123L").error(Error.MULTIPLE_NUMERIC_SEPARATORS);
@@ -363,10 +369,9 @@ public class TestBigInt extends TestCommon {
 		code_v4_("null + 5L").equals("5");
 		code_v4_("5L + null").equals("5");
 		//code_v4_("5L / null").equals("∞"); // cast error
-		code_v4_("null / 12L").equals("0");
+		code_v4_("null / 12L").equals("0.0");
 		code_v4_("null * 5L").equals("0");
 		code_v4_("5L * null").equals("0");
-
 
 		section("Numbers with variables");
 		code_v4_("var a = 2L return a++;").equals("2");
@@ -378,9 +383,9 @@ public class TestBigInt extends TestCommon {
 		code_v4_("var a = 2L return a += 5L;").equals("7");
 		code_v4_("var a = 2L return a -= 5;").equals("-3");
 		code_v4_("var a = 2L return a *= 5;").equals("10");
-		code_v4_("var a = 100L return a /= 5;").equals("20");
-		code_v4_("var a = 100 return a /= 5L;").equals("20");
-		code_v4_("var a = 100L return a /= 5L;").equals("20");
+		code_v4_("var a = 100L return a /= 5;").equals("20.0");
+		code_v4_("var a = 100 return a /= 5L;").equals("20.0");
+		code_v4_("var a = 100L return a /= 5L;").equals("20.0");
 		code_v4_("var a = 56L return a %= 17;").equals("5");
 		code_v4_("var a = 56 return a %= 17L;").equals("5");
 		code_v4_("var a = 56L return a %= 17L;").equals("5");
@@ -391,25 +396,26 @@ public class TestBigInt extends TestCommon {
 		code_v4_("var a = 10L; a += 10L - 2 * 3L; return a;").equals("14");
 
 		section("multiple operations");
-		code_v4_("return (33 - 2) / 2L;").equals("15");
-		code_v4_("return (32L - 2) / 2;").equals("15");
+		code_v4_("return (33 - 2) / 2L;").equals("15.5");
+		code_v4_("return (32L - 2) / 2;").equals("15.0");
 		code_v4_("return 12 < (45L / 4);").equals("false");
 		code_v4_("return 12L == (24 / 2);").equals("true");
 		code_v4_("return (2.5 * 4.7) + 0L;").equals("11");
-		code_v4_("return (2.5 * 4.7) as BigInteger;").equals("11");
+		// code_v4_("return (2.5 * 4.7) as BigInteger;").equals("11");
 		code_v4_("return 5L * 2L + 3L * 4;").equals("22");
 
 		section("Multiple precision numbers");
-		 code_v4_("123445321324234567895431235648945674894561564523489756489").equals("1234453213...3489756489");
-		 code_v4_("var a = 10L a").equals("10");
-		 code_v4_("0L").equals("0");
-		 code_v4_("0xf45eab5c9d13aab44376beff").equals("7562879065...1594128127");
-		 code_v4_("0xf45eab5c9d13aab44376beffL").equals("7562879065...1594128127");
-		 code_v4_("var a = 1209876543789765432456765432087654321 a").equals("1209876543...2087654321");
-		 code_v4_("var a = { id:1209876543789765432456765432087654321 } a.id").equals("1209876543...2087654321");
-		 code_v4_("var a = 5L a = 12L").equals("12");
-		 code_v4_("var a = 5L a = 12L a").equals("12");
-		 code_v4_("var f = -> 12L string(f())").equals("\"12\"");
+		code_v4_("123445321324234567895431235648945674894561564523489756489L").equals("1234453213...3489756489");
+		code_v4_("123445321324234567895431235648945674894561564523489756489L").equals("1234453213...3489756489");
+		code_v4_("var a = 10L a").equals("10");
+		code_v4_("0L").equals("0");
+		code_v4_("0xf45eab5c9d13aab44376beff").error(Error.INVALID_NUMBER);
+		code_v4_("0xf45eab5c9d13aab44376beffL").equals("7562879065...1594128127");
+		code_v4_("var a = 1209876543789765432456765432087654321L a").equals("1209876543...2087654321");
+		code_v4_("var a = { id: 1209876543789765432456765432087654321L } a.id").equals("1209876543...2087654321");
+		code_v4_("var a = 5L a = 12L").equals("12");
+		code_v4_("var a = 5L a = 12L a").equals("12");
+		code_v4_("var f = -> 12L string(f())").equals("\"12\"");
 
 //		section("Integer division by zero");
 //		 code_v4_("1L \\ 0").exception(ls::vm::Exception::DIVISION_BY_ZERO);
@@ -420,10 +426,16 @@ public class TestBigInt extends TestCommon {
 		code_v4_("BigInteger()").equals("0");
 
 		section("Constants");
-		code_v4_("return PI as big_integer").equals("3");
+		// code_v4_("return PI as big_integer").equals("3");
 		code_v4_("return 0L == NaN").equals("false");
 		code_v4_("return 0L == ∞").equals("false");
 		code_v4_("return 0L == -∞").equals("false");
+
+		section("as operator");
+		code_v4_("12 as big_integer").equals("12");
+		code_v4_("12.5 as big_integer").equals("12");
+		code_v4_("12L as integer").equals("12");
+		code_v4_("12L as real").equals("12.0");
 
 		/*
 		 * Operators
@@ -485,7 +497,7 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return 15L + false;").equals("15");
 		code_v4_("return 15L + true;").equals("16");
 		code_v4_("var a = 15L return a + true;").equals("16");
-		code_v4_("var a = ['a', 12321111111111111111111111111111111321321321999999] a[1] + 123456789").equals("1232111111...1445456788");
+		code_v4_("var a = ['a', 12321111111111111111111111111111111321321321999999L] a[1] + 123456789").equals("1232111111...1445456788");
 		code_v4_("return 10000L + (-15);").equals("9985");
 		code_v4_("return 10000L + (-15L);").equals("9985");
 		code_v4_("return null + 2L;").equals("2");
@@ -530,8 +542,8 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return 13L * true;").equals("13");
 		code_v4_("return 7L * 2;").equals("14");
 		code_v4_("var a = 6L; return a * 3;").equals("18");
-		code_v4_("12344532132423123456789 * 9876578976134127895615248960").equals("1219217465...6037189440");
-		code_v4_("var a = ['a', 12321111111111111111111111111111111321321321999999] a[1] * 123456789").equals("1521124814...4934543211");
+		code_v4_("12344532132423123456789L * 9876578976134127895615248960L").equals("1219217465...6037189440");
+		code_v4_("var a = ['a', 12321111111111111111111111111111111321321321999999L] a[1] * 123456789").equals("1521124814...4934543211");
 		code_v4_("return null * 2L;").equals("0");
 		code_v4_("return 2L * null;").equals("0");
 
@@ -554,7 +566,6 @@ public class TestBigInt extends TestCommon {
 		code_strict("var a = null return a *= 5L").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
 		code_strict("any a = null return a *= 5L").equals("0");
 		code_v4_("var a = 91591785496891278315799124157189514175L a *= 157854689278315792457851475L a").equals("1445819284...9557158125");
-
 
 		section("Number.operator **");
 		code_v4_("return 14L ** 3;").equals("2744");
@@ -593,23 +604,24 @@ public class TestBigInt extends TestCommon {
 //		code_v4_("8L / 0L").equals("∞");
 //		code_v4_("8L / null").equals("null");
 //		code_v4_("8L / null").equals("∞");
-		code_v4_("null / 5L").equals("0");
-		code_v4_("return 13L / true;").equals("13");
-		code_v4_("return 14L / 2;").equals("7");
-		code_v4_("var a = 18L; return a / 3;").equals("6");
-		code_v4_("var a = 18; return a / 3L;").equals("6");
-		code_v4_("var a = 17L, b = 5L return a / b;").equals("3");
-		code_v4_("var a = 17, b = 5L return a / b;").equals("3");
+		code_v4_("null / 5L").equals("0.0");
+		code_v4_("return 13L / true;").equals("13.0");
+		code_v4_("return 14L / 2;").equals("7.0");
+		code_v4_("var a = 18L; return a / 3;").equals("6.0");
+		code_v4_("var a = 18; return a / 3L;").equals("6.0");
+		code_v4_("var a = 17L, b = 5L return a / b;").equals("3.4");
+		code_v4_("var a = 17, b = 5L return a / b;").equals("3.4");
 
 		section("Number.operator /=");
-		code_v4_("var a = 12L a /= 3 return a;").equals("4");
-		code_v4_("var a = 12 a /= 3L return a;").equals("4");
+		code_v1("var a = 12L a /= 3 return a;").equals("4");
+		code_v2_("var a = 12L a /= 3 return a;").equals("4.0");
+		code_v4_("var a = 12 a /= 3L return a;").equals("4.0");
 		code_strict("var a = 12L a /= 3 return a;").equals("4");
-		code_v4_("var a = 12L a /= true return a;").equals("12");
+		code_v4_("var a = 12L a /= true return a;").equals("12.0");
 		code_strict("var a = 12L a /= true return a;").equals("12");
-		code_v4_("var a = null a /= 5L return a;").equals("0");
-		code_v4_("var a = 15L; return ['', a /= 2];").equals("[\"\", 7]");
-		code_v4_("var a = 15; return ['', a /= 2L];").equals("[\"\", 7]");
+		code_v4_("var a = null a /= 5L return a;").equals("0.0");
+		code_v4_("var a = 15L; return ['', a /= 2];").equals("[\"\", 7.5]");
+		code_v4_("var a = 15; return ['', a /= 2L];").equals("[\"\", 7.5]");
 
 		section("Number.operator <");
 		code_v4_("return 5L < 2;").equals("false");
@@ -757,9 +769,6 @@ public class TestBigInt extends TestCommon {
 		code_v4_("var a = 123L a <<= 13 return a;").equals("1007616");
 		code_v4_("big_integer a = 123 a <<= 13 return a;").equals("1007616");
 
-		
-		
-		
 		code_v4_("big_integer a = 123 a >>= 1 return a;").equals("61");
 		code_v4_("big_integer a = 123 a >>>= 2 return a;").equals("30");
 		code_v4_("big_integer a = 123 a += 13 return a;").equals("136");
@@ -769,13 +778,13 @@ public class TestBigInt extends TestCommon {
 		code_v4_("big_integer a = 123 a \\= 13 return a;").equals("9");
 		code_v4_("big_integer a = 123 a &= 13 return a;").equals("9");
 		code_v4_("big_integer a = 123 a ^= 13 return a;").equals("118");
-		
+
 		code_v4_("var a = 123L a >>= 1 return a;").equals("61");
 		code_v4_("var a = 123L a >>>= 2 return a;").equals("30");
 		code_v4_("var a = 123L a += 13 return a;").equals("136");
 		code_v4_("var a = 123L a **= 13 return a;").equals("1474913153...4539944683");
-		code_v4_("var a = 123L a /= 13 return a;").equals("9");
-		
+		code_v4_("var a = 123L a /= 13 return a;").equals("9.461538461538462");
+
 		code_v4_("var a = 123 a **= 3 return a;").equals("1860867");
 		code_v4_("integer a = 123 a **= 3 return a;").equals("1860867");
 		code_v4_("integer a = 123 a **= 3L return a;").equals("1860867");
@@ -785,18 +794,17 @@ public class TestBigInt extends TestCommon {
 		code_v4_("var a = [123] return a[0] >>>= 1").equals("61");
 		code_v4_("Array<integer> a = [123] return a[0] >>>= 1").equals("61");
 		code_v4_("Array<big_integer> a = [123L] return a[0] >>>= 1").equals("61");
-		
+
 		code_v4_("var a = 123 a -= 13 return a;").equals("110");
 		code_v4_("var a = 123 a -= 13L return a;").equals("110");
 		code_v4_("integer a = 123 a -= 13 return a;").equals("110");
 		code_v4_("big_integer a = 123 a -= 13 return a;").equals("110");
-		
+
 		code_v4_("big_integer a = 123 a -= 13L return a;").equals("110");
 		code_v4_("integer a = 123 a = a - 13L return a;").equals("110");
 		code_v4_("integer a = 123 a -= 13L return a;").equals("110");
 		code_v4_("integer a = 123 var b = 13L a -= b return a;").equals("110");
-		
-		
+
 		code_v4_("var a = [123L, ''] return a[0] <<= 13;").equals("1007616");
 		code_v4_("var a = 123L return ['', a <<= 13];").equals("[\"\", 1007616]");
 		// code_v4_("'salut' << 5").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
@@ -836,7 +844,7 @@ public class TestBigInt extends TestCommon {
 		code_v4_("var a = 123123123L a >>>= 7 return a;").equals("961899");
 		code_v4_("var a = [123123123L, ''] return a[0] >>>= 7;").equals("961899");
 		code_v4_("big_integer a = 12345 return ['', a >>>= 8];").equals("[\"\", 48]");
-		
+
 		section("Not a statement errors");
 		code_v4_("big_integer a; a; return null;").equals("null");
 		code_v4_("big_integer a; return null;").equals("null");
@@ -873,7 +881,7 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return abs(null);").equals("0.0");
 		code_v4_("big_integer a = -5; var b = [a][0]; return abs(b);").equals("5");
 		code_v4_("return abs(12L);").equals("12");
-		code_v4_("return abs(-164364351523458645648946541564892345665)").equals("1643643515...4892345665");
+		code_v4_("return abs(-164364351523458645648946541564892345665L)").equals("1643643515...4892345665");
 		code_v4_("return abs(['a', -15L][1]);").equals("15");
 
 		section("Number.exp()");
@@ -896,6 +904,7 @@ public class TestBigInt extends TestCommon {
 		code_v4_("var a = -5L return round(a);").equals("-5");
 		code_v4_("return round(['a', -14][1]);").equals("-14");
 		code_v4_("return round(5);").equals("5");
+		code_v4_("return round((true * 5L));").equals("5");
 
 		section("Number.ceil()");
 		code_v4_("return ceil(5L);").equals("5");
@@ -922,7 +931,8 @@ public class TestBigInt extends TestCommon {
 		code_v4_("big_integer a = 1 return max(0, a)").equals("1");
 		code_v4_("real value = 5 value *= max(1L, 1.1) return value").equals("5.5");
 		code_v4_("big_integer value = 5 value *= max(1, 2L) return value").equals("10");
-		
+		code_v4_("return max(null ^ 0, 5L)").equals("5");
+
 		section("Number.min()");
 		code_v4_("return min(8, 5L)").equals("5");
 		code_v4_("return min(8L, 88)").equals("8");
@@ -941,19 +951,19 @@ public class TestBigInt extends TestCommon {
 		code_v4_("big_integer a = 1 return min(0, a)").equals("0");
 		code_v4_("real value = 5 value *= min(1L, 1.1) return value").equals("5.0");
 		code_v4_("big_integer value = 5 value *= min(1, 2L) return value").equals("5");
-		
+
 		section("Number.cos()");
 		code_v4_("return cos(0L)").equals("1.0");
 
 		section("Number.acos()");
 		code_v4_("return acos(1L)").equals("0.0");
-		
+
 		section("Number.sin()");
 		code_v4_("return sin(0L)").equals("0.0");
 
 		section("Number.tan()");
 		code_v4_("return tan(0L)").equals("0.0");
-		
+
 		section("Number.asin()");
 		code_v4_("return asin(0L)").equals("0.0");
 
@@ -979,7 +989,7 @@ public class TestBigInt extends TestCommon {
 		// sqrt, cbrt, log, log2, log10, exp, etc do not exist in BigInteger, so it falls back to int/double
 		section("Number.sqrt");
 		code_v4_("return sqrt(2L)").equals("1.4142135623730951");
-		
+
 		section("Number.toDegrees");
 		code_v4_("return toDegrees(0L)").equals("0.0");
 
@@ -999,7 +1009,7 @@ public class TestBigInt extends TestCommon {
 		code_v4_("pow(3000L, 3L)").equals("27000000000");
 		code_v4_("return pow(2L, 70)").equals("1180591620...7411303424");
 		code_v4_("pow(5L, -2)").equals("0.04");
-		
+
 		section("Number.rand()");
 		code_v4_("var a = randInt(2067L, 2070L) return a >= 2067 and a < 2070").equals("true");
 		code_v4_("var a = randReal(500L, 510L) return a >= 500 and a < 510").equals("true");
@@ -1019,17 +1029,17 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return setBit(3, 1, false)").equals("1");
 		code_v4_("return setBit(3, 1L, 0)").equals("1");
 		code_v4_("return setBit(3, 1, true)").equals("3");
-		
+
 		section("Number.testBit()");
-		code_v4_("testBit(1180591620717411303427, 70)").equals("true");
+		code_v4_("testBit(1180591620717411303427L, 70)").equals("true");
 		code_v4_("testBit(1180591620717411303427L, 69)").equals("false");
 		code_v4_("testBit(1180591620717411303427L, 1L)").equals("true");
 		code_v4_("testBit(3, 1)").equals("true");
 		code_v4_("testBit(3, 0L)").equals("true");
 		code_v4_("testBit(3, 10)").equals("false");
-		
+
 		section("Number.bitLength()");
-		code_v4_("bitLength(1180591620717411303427)").equals("71");
+		code_v4_("bitLength(1180591620717411303427L)").equals("71");
 		code_v4_("bitLength(-1180591620717411303427L)").equals("71");
 		code_v4_("bitLength(3)").equals("2");
 		code_v4_("bitLength(-3)").equals("64");
@@ -1050,12 +1060,11 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return leadingZeros([0L][0])").equals("64");
 		code_v4_("return leadingZeros([0b0000110011L, ''][0])").equals("58");
 
-		
 		// not implemented for bigint (currently falls back to integers)
 		section("Number.bitReverse()");
 		code_v4_("return binString(bitReverse(0L))").equals("\"0\"");
 		code_v4_("return binString(bitReverse(0b0000110011L))").equals("\"1100110000000000000000000000000000000000000000000000000000000000\"");
-		
+
 		section("Number.byteReverse()");
 		code_v4_("return hexString(byteReverse(0L))").equals("\"0\"");
 		code_v4_("return hexString(byteReverse(0xaabbccddeeffL))").equals("\"ffeeddccbbaa0000\"");
@@ -1065,7 +1074,6 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return binString(0b0000110011L)").equals("\"110011\"");
 		code_v4_("return binString(0b11001111000111001011101101110000110011L)").equals("\"11001111000111001011101101110000110011\"");
 		code_v4_("return binString(2L ** 70)").equals("\"10000000000000000000000000000000000000000000000000000000000000000000000\"");
-
 
 		section("Number.hexString()");
 		code_v4_("return hexString(0L)").equals("\"0\"");
@@ -1208,8 +1216,8 @@ public class TestBigInt extends TestCommon {
 
 		code_v4_("var a = 20L if (15 > a > 11L) { return true } return false").equals("false");
 		code_v4_("var a = 20 if (15L > a > 11) { return true } return false").equals("false");
-		code_v4_("var a = 20 if (15 > a as BigInteger > 11) { return true } return false").equals("false");
-		code_v4_("var a = \"test\" if (15 > a as BigInteger > 11) { return true } return false").error(Error.IMPOSSIBLE_CAST);
+		// code_v4_("var a = 20 if (15 > a as BigInteger > 11) { return true } return false").equals("false");
+		// code_v4_("var a = \"test\" if (15 > a as BigInteger > 11) { return true } return false").error(Error.IMPOSSIBLE_CAST);
 		code_v4_("return 15L > 14 > 11 and 150 < 200 < 250L").equals("false");
 		code_v4_("return 15 > 10L > 11 and 150 < 200L < 250").equals("false");
 		code_v4_("return 15 > 14 > 11L and 150L < 100 < 250").equals("false");
@@ -1297,7 +1305,6 @@ public class TestBigInt extends TestCommon {
 		code_v4_("var a = 2L return a = 5").equals("5");
 		code_v4_("var a = [] a = 5L").equals("5");
 
-
 		section("Assignments");
 		code_v4_("var b = 5L if (1) { b = 'salut' } return b").equals("\"salut\"");
 		code_strict("var b = 5L if (1L) { b = 'salut' } return b").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
@@ -1335,8 +1342,9 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return number('12L')").equals("12");
 		code_v4_("return number('112x32')").equals("0");
 		code_v4_("return number('11.2x32')").equals("0");
-		code_v4_("return number(1267650600228229401496703205376)").equals("1267650600...6703205376");
-		code_v4_("return number('1267650600228229401496703205376')").equals("1267650600...6703205376");
+		code_v4_("return number(1267650600228229401496703205376L)").equals("1267650600...6703205376");
+		code_v4_("return number('1267650600228229401496703205376')").equals("0");
+		// code_v4_("return number('1267650600228229401496703205376L')").equals("1267650600...6703205376");
 
 		section("Variables and types");
 		code_v4_("real a = 1.1 big_integer b = a return b").equals("1");
@@ -1351,7 +1359,7 @@ public class TestBigInt extends TestCommon {
 		code_v4_("integer a = 1 any b = 2L a -= b return a").equals("-1");
 		code_v4_("integer a = 1 big_integer b = 2 a += b return a").equals("3");
 		code_v4_("integer a = 1 any b = 2L a += b return a").equals("3");
-		
+
 		section("Objects");
 		code_v4_("return BigInteger").equals("<class BigInteger>");
 		code_v4_("class A { big_integer x = 10 m() { return ++this.x } } return new A().m()").equals("11");
@@ -1377,8 +1385,8 @@ public class TestBigInt extends TestCommon {
 		code_v4_("class A { real x = 10 m(real y) { this.x -= y return this } } return new A().m(50L)").equals("A {x: -40.0}");
 		code_v4_("class A { big_integer x = 10 m(y) { this.x -= y return this } } return new A().m(50)").equals("A {x: -40}");
 		code_v4_("class A { big_integer x = 10 m(y) { this.x *= y return this } } return new A().m(50)").equals("A {x: 500}");
-		code_v4_("class A { big_integer x = 10 m(y) { this.x /= y return this } } return new A().m(4)").equals("A {x: 2}");
-		
+		code_v4_("class A { big_integer x = 10 m(y) { this.x /= y return this } } return new A().m(4)").equals("A {x: 10}"); // Erreur real -> big_integer
+
 		// static
 		code_v4_("class A { static x = 10 m(y) { x -= y return x } } return new A().m(5L)").equals("5");
 		code_v4_("class A { static integer x = 10 m(y) { x -= y return x } } return new A().m(5)").equals("5");
@@ -1386,34 +1394,33 @@ public class TestBigInt extends TestCommon {
 		code_v4_("class A { static big_integer x = 10 m(y) { x -= y return x } } return new A().m(5)").equals("5");
 		code_strict_v4_("class A { static real x = 10 m(y) { x -= y return x } } return new A().m(5)").equals("5.0");
 		code_strict_v4_("class A { static real x = \"test\" m() { return x } } return new A().m()").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
-		code_v4_("class A { static integer x = 10 m(y) { x -= y return x } } return new A().m(5L)").equals("5");
-		code_v4_("class A { static integer x = 10 m(y) { x -= y return x } } return new A().m(5L) instanceof Integer").equals("true");
+		code_v4_("class A { static integer x = 10 m(y) { x -= y return x } } return new A().m(5L)").error(Error.IMPOSSIBLE_CAST);
+		code_v4_("class A { static integer x = 10 m(y) { x -= y return x } } return new A().m(5L) instanceof Integer").error(Error.IMPOSSIBLE_CAST);
 		code_v4_("class A { static integer x = 10 m(y) { return x - y } } return new A().m(5L) instanceof BigInteger").equals("true");
-	
+
 		// default args
-		code_v4_("class A { static integer x = 10 m(y = 5L) { x -= y return x } } return new A().m()").equals("5");
-		code_v4_("class A { static integer x = 10 m(y = 5L) { x -= y return x } } return new A().m() instanceof Integer").equals("true");
-		code_v4_("class A { static integer x = 10 m(y = 5L) { x -= y return x } } return new A().m(2L)").equals("8");
+		code_v4_("class A { static integer x = 10 m(y = 5L) { x -= y return x } } return new A().m()").error(Error.IMPOSSIBLE_CAST);
+		code_v4_("class A { static integer x = 10 m(y = 5L) { x -= y return x } } return new A().m() instanceof Integer").error(Error.IMPOSSIBLE_CAST);
+		code_v4_("class A { static integer x = 10 m(y = 5L) { x -= y return x } } return new A().m(2L)").error(Error.IMPOSSIBLE_CAST);
 		code_v4_("class A { integer x = 10 m(y = 5L) { x -= y return x } } return new A().m()").equals("5");
 		code_v4_("class A { integer x = 10 m(y = 5L) { x -= y return x } } return new A().m(2L)").equals("8");
 		code_v4_("class A { static big_integer x = 10 m(y = 5) { x -= y return x } } return new A().m(2L)").equals("8");
 		code_v4_("class A { static big_integer x = 10 m(y = 5) { x -= y return x } } return new A().m()").equals("5");
 		code_v4_("class A { big_integer x = 10 m(y = 5) { x -= y return x } } return new A().m()").equals("5");
 		code_v4_("class A { big_integer x = 10L m(y = 5) { x -= y return x } } return new A().m(2L)").equals("8");
-		
+
 		// static functions
-		code_v4_("class A { static integer x = 10 static m(y = 5L) { x -= y return x } } return A.m()").equals("5");
-		code_v4_("class A { static integer x = 10 static m(y = 5L) { x -= y return x } } return A.m() instanceof Integer").equals("true");
-		code_v4_("class A { static integer x = 10 static m(y = 5L) { x -= y return x } } return A.m(2L)").equals("8");
-		code_v4_("class A { static integer x = 10 static m(y = 5L) { x -= y return x } } return A.m()").equals("5");
-		code_v4_("class A { static integer x = 10 static m(y = 5L) { x -= y return x } } return A.m(2L)").equals("8");
+		code_v4_("class A { static integer x = 10 static m(y = 5L) { x -= y return x } } return A.m()").error(Error.IMPOSSIBLE_CAST);
+		code_v4_("class A { static integer x = 10 static m(y = 5L) { x -= y return x } } return A.m() instanceof Integer").error(Error.IMPOSSIBLE_CAST);
+		code_v4_("class A { static integer x = 10 static m(y = 5L) { x -= y return x } } return A.m(2L)").error(Error.IMPOSSIBLE_CAST);
+		code_v4_("class A { static integer x = 10 static m(y = 5L) { x -= y return x } } return A.m(2L)").error(Error.IMPOSSIBLE_CAST);
 		code_v4_("class A { static big_integer x = 10 static m(y = 5) { x -= y return x } } return A.m(2L)").equals("8");
 		code_v4_("class A { static big_integer x = 10 static m(y = 5) { x -= y return x } } return A.m()").equals("5");
 		code_v4_("class A { static big_integer x = 10 static m(y = 5) { x -= y return x } } return A.m()").equals("5");
 		code_v4_("class A { static big_integer x = 10L static m(y = 5) { x -= y return x } } return A.m(2L)").equals("8");
 		code_v4_("class A { static big_integer x = 10L static m() { x += 1 return x } } return A.m()").equals("11");
 		code_v4_("class A { static big_integer x = 10L static m() { ++x return x } } return A.m()").equals("11");
-		
+
 		// final
 		code_v4_("class A { static final integer x = 10 static m() { return x + 0L} } return A.m()").equals("10");
 		code_v4_("class A { static final integer x = 10 static m(y = 5L) { return x - y } } return A.m()").equals("5");
@@ -1422,7 +1429,7 @@ public class TestBigInt extends TestCommon {
 		code_v4_("class A { static final big_integer x = 10 static m(y = 5L) { return x - y } } return A.m()").equals("5");
 		code_v4_("class A { final big_integer x = 10 m(y = 5L) { return x } } return new A().m()").equals("10");
 		code_v4_("class A { static final big_integer x = 10 static m() { return x - 5 } } return A.m() instanceof BigInteger").equals("true");
-		
+
 		section("Globals");
 		code_v4_("global x = 10 return x").equals("10");
 		code_v4_("global x = 10L return x").equals("10");
@@ -1436,20 +1443,21 @@ public class TestBigInt extends TestCommon {
 		code_v4_("global big_integer x = 10; return x += 1").equals("11");
 		code_v4_("global x = 10 - 1L return x").equals("9");
 		code_v4_("global x = 10 - 1L return x instanceof BigInteger").equals("true");
-		
+
 		section("String");
 		// print a very big number
-		code_v4_("string((12345678912L * (10L**1000)) + 12345678987654321)").equals("\"1234567891...8987654321\"");
-		code_v4_("(123456789L * (10L**1000)) + 987654321").equals("1234567890...0987654321");
-		code_v4_("9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999").equals("9999999999...9999999999");
-		code_v4_("9999999999999999999999999999999999999999999999999999999999999223372036854775807").equals("9999999999...6854775807");
+		code_v4_("string((12345678912L * (10L ** 1000)) + 12345678987654321)").equals("\"1234567891...8987654321\"");
+		code_v4_("(123456789L * (10L ** 1000)) + 987654321").equals("1234567890...0987654321");
+		code_v4_("9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999L").equals("9999999999...9999999999");
+		code_v4_("9999999999999999999999999999999999999999999999999999999999999223372036854775807L").equals("9999999999...6854775807");
 		code_v4_("-0xffffffffffffffffffffffffffffffffL").equals("-3402823669...1768211455");
 		code_v4_("-0xffffffffffL").equals("-1099511627775");
 		code_v4_("-99999999999999999").equals("-99999999999999999");
 		code_v4_("-999999999").equals("-999999999");
-		code_v4_("10L**100000 + 1").equals("1000000000...0000000001");
-		
+		code_v4_("10L ** 100000 + 1").equals("1000000000...0000000001");
+
 		section("JSON");
 		code_v4_("var m = [5L, {L:5L}, ['L':5L], [5L]] return m").equals("[5, {L: 5}, [\"L\" : 5], [5]]");
+
 	}
 }

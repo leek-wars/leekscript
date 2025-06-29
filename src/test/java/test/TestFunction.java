@@ -233,9 +233,9 @@ public class TestFunction extends TestCommon {
 		code("var m = ['A', 'T', 'C', 'G'] var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] }").equals("null");
 		code("var adn = 'testtest' contains(adn, 'GAGA');").equals("false");
 		code("var m = ['A', 'T', 'C', 'G'] var adn = 'testtest' adn += m[randInt(0, 4)] null").equals("null");
-		code("var m = ['A', 'T', 'C', 'G'] var adn = 'testtest' adn += m[randInt(0, 4)] contains(adn, 'GAGA')").equals("false");
-		code("var adn = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' var c = contains(adn, 'GAGA');").equals("null");
-		code("var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA');").equals("null");
+		code("var m = ['A', 'T', 'C', 'G'] var adn = 'testtest' adn += m[randInt(0, 4)] contains(adn, 'GAGA') null").equals("null");
+		code("var adn = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' var c = contains(adn, 'GAGA') c").equals("false");
+		code("var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA') c").equals("false");
 		code("var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA');").equals("null");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] }").equals("null");
