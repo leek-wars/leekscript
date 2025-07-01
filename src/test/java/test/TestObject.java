@@ -87,7 +87,8 @@ public class TestObject extends TestCommon {
 		code_v2_("class Affiche { static COULEUR = getColor(42, 125, 78) } return Affiche.COULEUR").equals("2784590");
 		code_v2_("class A { static b } A.c").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
 		code_v2_("class A { static b static m() { class.c } }").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
-		code_v2_("class titi { static real reel	} titi.reel = 10 return titi.reel.class").equals("<class Real>");
+		code_v2_("class titi { static real reel } titi.reel = 10 return titi.reel.class").equals("<class Real>");
+		code_v2_("class A { static real? a = 12 } A.a").equals("12.0");
 
 		section("Reserved static fields");
 		code_v2("class A { static for static while static if static var static this }").error(Error.VARIABLE_NAME_EXPECTED);
@@ -201,6 +202,9 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { public static Function< => integer> f = function () => integer { return 1 } } function g() => integer { return A.f() } return g()").equals("1");
 		code_v3_("class A { public static Function< => Array<integer>> | Function<integer => Array<integer>?> f = function (integer a) => Array<integer> { return new Array() as Array<integer> } } function g() => Array<integer>? { return A.f(1) } return g()").equals("[]");
 		code_v3_("class A { public static Function< => Array<Array<integer | boolean>>> | Function<integer? => Array<Array<integer | boolean>>?> f = function (integer? a) => Array<Array<integer | boolean>>? { return new Array() as Array<Array<integer | boolean>>? } }	function g() => Array<Array<integer|boolean>>? { return A.f(1) } return g()").equals("[]");
+
+		section("Fields");
+		code_v2_("class A { real? a = 12 } new A().a").equals("12.0");
 
 		section("Final fields");
 		code_strict_v2_("class A { final a = 12 } var a = new A() a.a = 15 return a.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);

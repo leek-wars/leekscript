@@ -235,6 +235,11 @@ public class JavaWriter {
 				value.writeJavaCode(mainblock, this);
 				addCode(")");
 				return;
+			} else {
+				addCode("longint(");
+				value.writeJavaCode(mainblock, this);
+				addCode(")");
+				return;
 			}
 		} else if (type == Type.REAL) {
 			if (value.getType() == Type.INT) {

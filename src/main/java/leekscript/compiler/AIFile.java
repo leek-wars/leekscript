@@ -73,8 +73,9 @@ public class AIFile {
 	public int getVersion() {
 		return this.version;
 	}
-	public void setVersion(int version) {
+	public void setVersion(int version, boolean strict) {
 		this.version = version;
+		this.strict = strict;
 	}
 
 	public ArrayList<AnalyzeError> getErrors() {
@@ -115,6 +116,7 @@ public class AIFile {
 		json.put("path", path);
 		json.put("timestamp", timestamp);
 		json.put("version", version);
+		json.put("strict", strict);
 		// context.toJson(json);
 		return json.toString();
 	}
