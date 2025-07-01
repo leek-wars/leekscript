@@ -29,7 +29,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 
 	@Override
 	public String getCode() {
-		return "return" + (expression == null ? "" : " " + expression.toString()) + ";";
+		return "return" + (optional ? " ?" : "") + (expression == null ? "" : " " + expression.toString()) + ";";
 	}
 
 

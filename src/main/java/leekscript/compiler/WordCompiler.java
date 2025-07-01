@@ -1323,7 +1323,7 @@ public class WordCompiler {
 				if (mTokens.get().getType() == TokenType.VIRG) {
 					mTokens.skip();
 				}
-				block.addParameter(this, parameter, false, type == null ? Type.ANY : type.getType());
+				block.addParameter(this, parameter, false, type);
 				first = false;
 			}
 
@@ -2033,7 +2033,7 @@ public class WordCompiler {
 			// 	}
 			// }
 
-			block.addParameter(this, parameter, is_reference, type == null ? Type.ANY : type.getType());
+			block.addParameter(this, parameter, is_reference, type);
 		}
 		if (mTokens.eat().getType() != TokenType.PAR_RIGHT) {
 			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS));

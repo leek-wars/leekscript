@@ -14,7 +14,7 @@ import leekscript.compiler.bloc.MainLeekBlock;
 
 public class LeekNumber extends Expression {
 
-	private final Token token;
+	protected final Token token;
 	private final double doubleValue;
 	private final long longValue;
 	private Type type;

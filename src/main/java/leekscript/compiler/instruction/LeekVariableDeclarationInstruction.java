@@ -70,8 +70,11 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 
 	@Override
 	public String getCode() {
-		if (mValue == null) return "var " + token.getWord();
-		return "var " + token.getWord() + " = " + mValue.toString() + ";";
+		String r = (this.leekType != null ? this.leekType.toString() : "var") + " " + token.getWord();
+		if (mValue != null) {
+			r += " = " + mValue.toString();
+		}
+		return r + ";";
 	}
 
 	@Override
