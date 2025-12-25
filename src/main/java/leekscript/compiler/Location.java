@@ -1,6 +1,7 @@
 package leekscript.compiler;
 
-import com.alibaba.fastjson.JSONArray;
+import tools.jackson.databind.node.ArrayNode;
+import leekscript.util.Json;
 
 public class Location {
 
@@ -70,7 +71,7 @@ public class Location {
 	}
 
 	public Object toJSON() {
-		JSONArray a = new JSONArray();
+		ArrayNode a = Json.createArray();
 		a.add(this.file.getId());
 		a.add(this.startLine);
 		a.add(this.startColumn);

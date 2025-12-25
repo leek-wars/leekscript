@@ -11,7 +11,8 @@ import leekscript.common.Type;
 
 import java.util.Set;
 
-import com.alibaba.fastjson.JSONArray;
+import tools.jackson.databind.node.ArrayNode;
+import leekscript.util.Json;
 
 /**
  * Classe permettant de compiler une IA
@@ -19,7 +20,7 @@ import com.alibaba.fastjson.JSONArray;
 public class IACompiler {
 
 	public static class AnalyzeResult {
-		public JSONArray informations;
+		public ArrayNode informations;
 		public Set<AIFile> includedAIs;
 		public boolean success;
 		public Throwable tooMuchErrors;
@@ -27,23 +28,23 @@ public class IACompiler {
 
 	public static final long TIMEOUT_MS = 30 * 1000; // 30 seconds
 
-	private final JSONArray informations = new JSONArray();
+	private final ArrayNode informations = Json.createArray();
 	private AIFile mCurrentAI;
 	private long analyzeStart;
 
 	public IACompiler() {}
 
 	public void addError(Location location, Error errorType, String[] parameters) {
-		JSONArray error = new JSONArray();
+		ArrayNode error = Json.createArray();
 		error.add(0); // level
 		error.add(location.getFile().getId());
-		error.add(location.getStartLine());
-		error.add(location.getStartColumn());
-		error.add(location.getEndLine());
-		error.add(location.getEndColumn());
-		error.add(errorType.ordinal());
+		error.addPOJO(location.getStartLine());
+		error.addPOJO(location.getStartColumn());
+		error.addPOJO(location.getEndLine());
+		error.addPOJO(location.getEndColumn());
+		error.addPOJO(errorType.ordinal());
 		if (parameters != null)
-			error.add(parameters);
+			error.addPOJO(parameters);
 		informations.add(error);
 	}
 
@@ -73,7 +74,7 @@ public class IACompiler {
 			// System.out.println("errors " + ai.getPath() + " " + ai.getErrors().size());
 			if (ai.getErrors().size() > 0) {
 				for (var error : ai.getErrors()) {
-					informations.add(error.toJSON());
+					informations.addPOJO(error.toJSON());
 				}
 				result.success = false;
 			} else {
@@ -84,7 +85,7 @@ public class IACompiler {
 				result.tooMuchErrors = e;
 			}
 			for (var error : ai.getErrors()) {
-				informations.add(error.toJSON());
+				informations.addPOJO(error.toJSON());
 			}
 			ai.getErrors().add(new AnalyzeError(e.getLocation(), AnalyzeErrorLevel.ERROR, e.getError()));
 			addError(e.getLocation(), e.getError(), e.getParameters());

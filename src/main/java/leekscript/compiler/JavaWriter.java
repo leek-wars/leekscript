@@ -8,7 +8,7 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import com.alibaba.fastjson.JSON;
+import leekscript.util.Json;
 
 import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.common.CompoundType;
@@ -92,7 +92,7 @@ public class JavaWriter {
 	}
 
 	public void writeErrorFunction(IACompiler comp, String ai) {
-		String aiJson = JSON.toJSONString(ai);
+		String aiJson = Json.toJson(ai);
 		for (var e : mLines.entrySet()) {
 			var line = e.getValue();
 			mLinesFile.append(e.getKey() + " " + line.getAI() + " " + line.getLeekScriptLine() + "\n");

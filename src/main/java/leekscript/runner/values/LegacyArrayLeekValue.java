@@ -17,9 +17,9 @@ import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
 import leekscript.runner.AI.NativeObjectLeekValue;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import leekscript.util.Json;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, GenericArrayLeekValue, GenericMapLeekValue {
 
@@ -551,15 +551,15 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return reversedIterator();
 	}
 
-	public JSON toJSON(AI ai) throws LeekRunException {
+	public Object toJSON(AI ai) throws LeekRunException {
 		return toJSON(ai, new HashSet<>());
 	}
 
-	public JSON toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
+	public Object toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
 		visited.add(this);
 
 		if (isAssociative()) {
-			JSONObject o = new JSONObject();
+			ObjectNode o = Json.createObject();
 			var i = iterator();
 			while (i.hasNext()) {
 				var v = i.getValue(ai);
@@ -567,20 +567,20 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 					if (!ai.isPrimitive(v)) {
 						visited.add(v);
 					}
-					o.put(i.key().toString(), ai.toJSON(v, visited));
+					o.putPOJO(i.key().toString(), ai.toJSON(v, visited));
 				}
 				i.next();
 			}
 			return o;
 		} else {
-			var a = new JSONArray();
+			var a = Json.createArray();
 			for (var entry : this) {
 				var v = entry.getValue();
 				if (!visited.contains(v)) {
 					if (!ai.isPrimitive(v)) {
 						visited.add(v);
 					}
-					a.add(ai.toJSON(v, visited));
+					a.addPOJO(ai.toJSON(v, visited));
 				}
 			}
 			return a;

@@ -5,7 +5,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import com.alibaba.fastjson.JSONObject;
+import tools.jackson.databind.node.ObjectNode;
+import leekscript.util.Json;
 
 import java.util.Set;
 
@@ -527,17 +528,23 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return this.id;
 	}
 
-	public JSONObject toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
+	public ObjectNode toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
 		visited.add(this);
 
-		var o = new JSONObject();
+		var o = Json.createObject();
+		// Sort keys alphabetically for consistent JSON output
+		var sortedKeys = new java.util.TreeMap<String, Object>();
 		for (var entry : entrySet()) {
-			var v = entry.getValue();
+			sortedKeys.put(ai.string(entry.getKey()), entry.getKey());
+		}
+		for (var stringKey : sortedKeys.keySet()) {
+			var key = sortedKeys.get(stringKey);
+			var v = get(key);
 			if (!visited.contains(v)) {
 				if (!ai.isPrimitive(v)) {
 					visited.add(v);
 				}
-				o.put(ai.string(entry.getKey()), ai.toJSON(v, visited));
+				o.putPOJO(stringKey, ai.toJSON(v, visited));
 			}
 		}
 		return o;

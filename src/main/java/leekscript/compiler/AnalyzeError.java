@@ -1,6 +1,7 @@
 package leekscript.compiler;
 
-import com.alibaba.fastjson.JSONArray;
+import tools.jackson.databind.node.ArrayNode;
+import leekscript.util.Json;
 import leekscript.common.Error;
 
 public class AnalyzeError implements Comparable<AnalyzeError> {
@@ -40,18 +41,18 @@ public class AnalyzeError implements Comparable<AnalyzeError> {
 	}
 
 
-	public JSONArray toJSON() {
-		JSONArray array = new JSONArray();
-		array.add(level.ordinal());
+	public ArrayNode toJSON() {
+		ArrayNode array = Json.createArray();
+		array.addPOJO(level.ordinal());
 		array.add(location.getFile().getId());
-		array.add(location.getStartLine());
-		array.add(location.getStartColumn());
-		array.add(location.getEndLine());
-		array.add(location.getEndColumn());
-		// array.add(token.getWord());
+		array.addPOJO(location.getStartLine());
+		array.addPOJO(location.getStartColumn());
+		array.addPOJO(location.getEndLine());
+		array.addPOJO(location.getEndColumn());
+		// array.addPOJO(token.getWord());
 		array.add(this.error.ordinal());
 		if (parameters != null) {
-			array.add(parameters);
+			array.addPOJO(parameters);
 		}
 		return array;
 	}

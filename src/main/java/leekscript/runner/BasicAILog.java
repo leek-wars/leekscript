@@ -1,8 +1,9 @@
 package leekscript.runner;
 
-import com.alibaba.fastjson.JSONArray;
+import tools.jackson.databind.node.ArrayNode;
 
 import leekscript.AILog;
+import leekscript.util.Json;
 
 public class BasicAILog extends AILog {
 
@@ -11,7 +12,7 @@ public class BasicAILog extends AILog {
 	public BasicAILog() {
 		this.stream = new Stream() {
 			@Override
-			public void write(JSONArray a) {
+			public void write(ArrayNode a) {
 				System.out.println(a.toString());
 			}
 		};
@@ -39,13 +40,13 @@ public class BasicAILog extends AILog {
 			}
 		}
 
-		JSONArray obj = new JSONArray();
+		ArrayNode obj = Json.createArray();
 		obj.add(0);
 		obj.add(type);
 		obj.add(trace);
 		obj.add(key);
 		if (parametersString != null)
-			obj.add(parametersString);
+			obj.addPOJO(parametersString);
 
 		stream.write(obj);
 	}
@@ -64,7 +65,7 @@ public class BasicAILog extends AILog {
 		if (message == null || !addSize(20 + message.length())) {
 			return;
 		}
-		JSONArray obj = new JSONArray();
+		ArrayNode obj = Json.createArray();
 		obj.add(0);
 		obj.add(type);
 		obj.add(message);
@@ -92,13 +93,13 @@ public class BasicAILog extends AILog {
 			return;
 		}
 
-		JSONArray obj = new JSONArray();
+		ArrayNode obj = Json.createArray();
 		obj.add(0);
 		obj.add(type);
 		obj.add(trace);
 		obj.add(key);
 		if (parameters != null)
-			obj.add(parameters);
+			obj.addPOJO(parameters);
 
 		stream.write(obj);
 	}

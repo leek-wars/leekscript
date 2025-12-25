@@ -4,7 +4,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.TreeMap;
 
-import com.alibaba.fastjson.JSONObject;
+import tools.jackson.databind.node.ObjectNode;
+import leekscript.util.Json;
 
 import leekscript.common.Type;
 import leekscript.compiler.exceptions.LeekCompilerException;
@@ -112,11 +113,11 @@ public class AIFile {
 	}
 
 	public String toJson() {
-		JSONObject json = new JSONObject();
-		json.put("path", path);
-		json.put("timestamp", timestamp);
-		json.put("version", version);
-		json.put("strict", strict);
+		ObjectNode json = Json.createObject();
+		json.putPOJO("path", path);
+		json.putPOJO("timestamp", timestamp);
+		json.putPOJO("version", version);
+		json.putPOJO("strict", strict);
 		// context.toJson(json);
 		return json.toString();
 	}

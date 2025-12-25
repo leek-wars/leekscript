@@ -1,6 +1,6 @@
 package leekscript;
 
-import com.alibaba.fastjson.JSONArray;
+import tools.jackson.databind.node.ArrayNode;
 
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
@@ -8,7 +8,7 @@ import leekscript.runner.LeekRunException;
 public abstract class AILog {
 
 	public interface Stream {
-		public void write(JSONArray a);
+		public void write(ArrayNode a);
 	}
 
 	public final static int STANDARD = 1;

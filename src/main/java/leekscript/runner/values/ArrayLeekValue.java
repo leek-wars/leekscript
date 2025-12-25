@@ -11,7 +11,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Map.Entry;
 
-import com.alibaba.fastjson.JSONArray;
+import tools.jackson.databind.node.ArrayNode;
 
 import leekscript.AILog;
 import leekscript.runner.AI;
@@ -19,6 +19,7 @@ import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
+import leekscript.util.Json;
 import leekscript.common.Error;
 
 public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLeekValue {
@@ -453,20 +454,20 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return this;
 	}
 
-	public JSONArray toJSON(AI ai) throws LeekRunException {
+	public ArrayNode toJSON(AI ai) throws LeekRunException {
 		return toJSON(ai, new HashSet<>());
 	}
 
-	public JSONArray toJSON(AI ai, Set<Object> visited) throws LeekRunException {
+	public ArrayNode toJSON(AI ai, Set<Object> visited) throws LeekRunException {
 		visited.add(this);
 
-		JSONArray a = new JSONArray();
+		ArrayNode a = Json.createArray();
 		for (var v : this) {
 			if (!visited.contains(v)) {
 				if (!ai.isPrimitive(v)) {
 					visited.add(v);
 				}
-				a.add(ai.toJSON(v));
+				a.addPOJO(ai.toJSON(v));
 			}
 		}
 		return a;

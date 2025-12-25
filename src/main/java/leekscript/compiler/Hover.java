@@ -1,7 +1,7 @@
 package leekscript.compiler;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import leekscript.util.Json;
+import tools.jackson.databind.node.ObjectNode;
 
 import leekscript.common.Type;
 
@@ -36,18 +36,18 @@ public class Hover {
 		this.defined = defined;
 	}
 
-	public JSON toJSON() {
-		JSONObject o = new JSONObject();
+	public Object toJSON() {
+		ObjectNode o = Json.createObject();
 		if (type != null) {
-			o.put("type", type.toJSON());
+			o.putPOJO("type", type.toJSON());
 		}
-		o.put("location", location.toJSON());
-		o.put("alias", alias);
+		o.putPOJO("location", location.toJSON());
+		o.putPOJO("alias", alias);
 		if (defined != null) {
-			o.put("defined", defined.toJSON());
+			o.putPOJO("defined", defined.toJSON());
 		}
 		if (size != -1) {
-			o.put("size", size);
+			o.putPOJO("size", size);
 		}
 		return o;
 	}

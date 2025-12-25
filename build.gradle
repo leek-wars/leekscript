@@ -1,44 +1,50 @@
 apply plugin: 'java'
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_25
-    targetCompatibility = JavaVersion.VERSION_25
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 sourceSets {
-    test {
-        java {
-            srcDirs = ['src/test/java']
-        }
-        resources {
-            srcDirs = ['src/test/resources']
-        }
-    }
+	test {
+		java {
+			srcDirs = ['src/test/java']
+		}
+		resources {
+			srcDirs = ['src/test/resources']
+		}
+	}
 }
 
 jar {
-    archiveBaseName = "leekscript"
+	archiveBaseName = "leekscript"
 	destinationDirectory = layout.buildDirectory.dir("..")
 	manifest {
-        attributes "Main-Class": "leekscript.TopLevel"
-    }
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
+		attributes "Main-Class": "leekscript.TopLevel"
+	}
+	from {
+		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+	}
 }
 
 repositories {
-    mavenCentral()
+	mavenCentral()
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.12'
-    implementation group: 'com.alibaba', name: 'fastjson', version: '1.1.25'
+	testImplementation 'junit:junit:4.12'
+	implementation platform('tools.jackson:jackson-bom:3.0.3')
+	implementation 'tools.jackson.core:jackson-databind'
+	implementation 'tools.jackson.core:jackson-core'
+	implementation 'com.fasterxml.jackson.core:jackson-annotations'
 }
 
 task tests(type: Exec) {
-    group = "Execution"
-    description = "Run the main class with ExecTask"
-    commandLine "java", "-classpath", sourceSets.test.runtimeClasspath.getAsPath(), "test.TestMain"
+	group = "Execution"
+	description = "Run the main class with ExecTask"
+	commandLine "java", "-classpath", sourceSets.test.runtimeClasspath.getAsPath(), "test.TestMain"
 }
-test.dependsOn(tests)
+test {
+	dependsOn(tests)
+	exclude '**/*'
+}

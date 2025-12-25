@@ -6,8 +6,10 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+import leekscript.util.Json;
 
 import leekscript.AILog;
 import leekscript.runner.AI.NativeObjectLeekValue;
@@ -28,6 +30,33 @@ import leekscript.common.Error;
 public class LeekValueManager {
 
 	public static Object parseJSON(Object o, AI ai) throws LeekRunException {
+		// Handle Jackson JsonNode types first
+		if (o instanceof JsonNode) {
+			JsonNode node = (JsonNode) o;
+			if (node.isNull() || node.isMissingNode()) {
+				return null;
+			}
+			if (node.isBoolean()) {
+				return node.asBoolean();
+			}
+			if (node.isTextual()) {
+				return node.asText();
+			}
+			if (node.isInt()) {
+				return (long) node.asInt();
+			}
+			if (node.isLong()) {
+				return node.asLong();
+			}
+			if (node.isDouble() || node.isFloat()) {
+				return node.asDouble();
+			}
+			if (node.isNumber()) {
+				return node.asDouble();
+			}
+			// ArrayNode and ObjectNode will be handled below
+		}
+
 		if (o instanceof Boolean) {
 			return o;
 		}
@@ -50,18 +79,19 @@ public class LeekValueManager {
 		if (o instanceof BigDecimal) {
 			return ((BigDecimal) o).doubleValue();
 		}
-		if (o instanceof JSONArray) {
-			JSONArray a = (JSONArray) o;
+		if (o instanceof ArrayNode) {
+			ArrayNode a = (ArrayNode) o;
 			var array = ai.newArray();
 			for (var oo : a) {
 				array.pushNoClone(ai, parseJSON(oo, ai));
 			}
 			return array;
 		}
-		if (o instanceof JSONObject) {
-			JSONObject a = (JSONObject) o;
+		if (o instanceof ObjectNode) {
+			ObjectNode a = (ObjectNode) o;
 
-			var keys = new ArrayList<String>(a.keySet());
+			var keys = new ArrayList<String>();
+			a.properties().forEach(entry -> keys.add(entry.getKey()));
 			Collections.sort(keys);
 
 			if (ai.getVersion() <= 3) {

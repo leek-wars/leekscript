@@ -1,6 +1,6 @@
 package leekscript.runner.classes;
 
-import com.alibaba.fastjson.JSON;
+import leekscript.util.Json;
 
 import leekscript.AILog;
 import leekscript.runner.AI;
@@ -12,7 +12,7 @@ public class JSONClass {
 
 		try {
 
-			String json = JSON.toJSONString(ai.toJSON(value));
+			String json = Json.toJson(ai.toJSON(value));
 			ai.ops(json.length() * 10);
 			return json;
 
@@ -30,7 +30,7 @@ public class JSONClass {
 
 		try {
 
-			var obj = LeekValueManager.parseJSON(JSON.parse(json), ai);
+			var obj = LeekValueManager.parseJSON(Json.parse(json), ai);
 			ai.ops(json.length() * 10);
 			return obj;
 

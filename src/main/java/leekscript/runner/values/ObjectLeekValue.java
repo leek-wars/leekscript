@@ -5,7 +5,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Set;
 
-import com.alibaba.fastjson.JSONObject;
+import tools.jackson.databind.node.ObjectNode;
+import leekscript.util.Json;
 
 import leekscript.AILog;
 import leekscript.runner.AI;
@@ -530,14 +531,17 @@ public class ObjectLeekValue implements LeekValue {
 	public Object toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
 		visited.add(this);
 
-		var o = new JSONObject();
-		for (var entry : fields.entrySet()) {
-			var v = entry.getValue().get();
+		var o = Json.createObject();
+		// Sort keys alphabetically for consistent JSON output
+		var keys = new java.util.ArrayList<>(fields.keySet());
+		java.util.Collections.sort(keys);
+		for (var key : keys) {
+			var v = fields.get(key).get();
 			if (!visited.contains(v)) {
 				if (!ai.isPrimitive(v)) {
 					visited.add(v);
 				}
-				o.put(ai.string(entry.getKey()), ai.toJSON(v, visited));
+				o.putPOJO(ai.string(key), ai.toJSON(v, visited));
 			}
 		}
 		return o;

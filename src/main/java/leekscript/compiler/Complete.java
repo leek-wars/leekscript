@@ -2,9 +2,9 @@ package leekscript.compiler;
 
 import java.util.ArrayList;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import leekscript.util.Json;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import leekscript.common.Type;
 
@@ -29,11 +29,11 @@ public class Complete {
 			this.type = type;
 		}
 
-		public JSONObject toJSON() {
-			var o = new JSONObject();
-			o.put("category", category.ordinal());
-			o.put("name", name);
-			o.put("type", type.toJSON());
+		public ObjectNode toJSON() {
+			var o = Json.createObject();
+			o.putPOJO("category", category.ordinal());
+			o.putPOJO("name", name);
+			o.putPOJO("type", type.toJSON());
 			return o;
 		}
 	}
@@ -50,14 +50,14 @@ public class Complete {
 		completions.addAll(complete.completions);
 	}
 
-	public JSON toJSON() {
-		JSONObject o = new JSONObject();
-		o.put("type", type.toJSON());
-		var array = new JSONArray();
+	public Object toJSON() {
+		ObjectNode o = Json.createObject();
+		o.putPOJO("type", type.toJSON());
+		var array = Json.createArray();
 		for (var completion : completions) {
-			array.add(completion.toJSON());
+			array.addPOJO(completion.toJSON());
 		}
-		o.put("items", array);
+		o.putPOJO("items", array);
 		return o;
 	}
 

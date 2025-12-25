@@ -44,7 +44,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import com.alibaba.fastjson.JSONObject;
+import tools.jackson.databind.node.ObjectNode;
+import leekscript.util.Json;
 
 public abstract class AI {
 
@@ -215,7 +216,7 @@ public abstract class AI {
 				current = current.getSuperclass();
 			}
 
-			var o = new JSONObject();
+			var o = Json.createObject();
 			for (var field : fields) {
 				Object v;
 				try {
@@ -227,7 +228,7 @@ public abstract class AI {
 					if (!ai.isPrimitive(v)) {
 						visited.add(v);
 					}
-					o.put(ai.string(field.getName()), ai.toJSON(v, visited));
+					o.putPOJO(ai.string(field.getName()), ai.toJSON(v, visited));
 				}
 			}
 			return o;
@@ -1539,7 +1540,7 @@ public abstract class AI {
 		}
 		if (v instanceof RealIntervalLeekValue) {
 			// TODO
-			return new JSONObject();
+			return Json.createObject();
 		}
 		if (v instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) v).toJSON(this, visited);

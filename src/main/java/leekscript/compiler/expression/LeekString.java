@@ -1,6 +1,6 @@
 package leekscript.compiler.expression;
 
-import com.alibaba.fastjson.JSON;
+import leekscript.util.Json;
 
 import leekscript.common.Type;
 import leekscript.compiler.Hover;
@@ -33,7 +33,7 @@ public class LeekString extends Expression {
 
 	@Override
 	public String toString() {
-		return JSON.toJSONString(mString);
+		return Json.toJson(mString);
 	}
 
 	@Override
