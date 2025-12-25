@@ -1,7 +1,9 @@
 apply plugin: 'java'
 
-sourceCompatibility = JavaVersion.VERSION_24
-targetCompatibility = JavaVersion.VERSION_24
+java {
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
 
 sourceSets {
     test {
@@ -14,10 +16,9 @@ sourceSets {
     }
 }
 
-libsDirName = '..'
-
 jar {
     archiveBaseName = "leekscript"
+	destinationDirectory = layout.buildDirectory.dir("..")
 	manifest {
         attributes "Main-Class": "leekscript.TopLevel"
     }
