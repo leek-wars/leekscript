@@ -1409,7 +1409,7 @@ public class WordCompiler {
 			if (retour.needOperator()) {
 				// Si on attend un opérateur mais qu'il vient pas
 
-				if (word.getType() == TokenType.BRACKET_LEFT) {
+				if (word.getType() == TokenType.BRACKET_LEFT && !inInterval) {
 
 					var save = mTokens.getPosition();
 
