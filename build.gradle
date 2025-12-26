@@ -33,7 +33,7 @@ repositories {
 }
 
 dependencies {
-	testImplementation 'junit:junit:4.12'
+	testImplementation 'junit:junit:4.13.2'
 	implementation platform('tools.jackson:jackson-bom:3.0.3')
 	implementation 'tools.jackson.core:jackson-databind'
 	implementation 'tools.jackson.core:jackson-core'
