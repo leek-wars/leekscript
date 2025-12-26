@@ -19,6 +19,7 @@ sourceSets {
 jar {
 	archiveBaseName = "leekscript"
 	destinationDirectory = layout.buildDirectory.dir("..")
+	duplicatesStrategy = DuplicatesStrategy.INCLUDE
 	manifest {
 		attributes "Main-Class": "leekscript.TopLevel"
 	}
