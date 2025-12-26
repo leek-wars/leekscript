@@ -219,7 +219,7 @@ public class TestCommon {
 				ops = ai.operations();
 
 				var vs = ai.export(v, new HashSet<>());
-				result = new Result(vs, ai, Error.NONE, new String[0], ai.getOperations(), exec_time);
+				result = new Result(vs, ai, Error.NONE, new String[0], ops, exec_time);
 
 			} catch (LeekCompilerException e) {
 				// e.printStackTrace();
