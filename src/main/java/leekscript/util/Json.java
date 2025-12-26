@@ -1,6 +1,7 @@
 package leekscript.util;
 
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
@@ -15,6 +16,8 @@ public class Json {
 
     private static final ObjectMapper mapper = JsonMapper.builder()
         .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+        .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
+        .enable(JsonReadFeature.ALLOW_UNQUOTED_PROPERTY_NAMES)
         .build();
 
     /**
