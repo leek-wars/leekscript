@@ -69,7 +69,7 @@ public class IACompiler {
 
 			result.includedAIs = main.getIncludedAIs();
 
-			System.out.println("Parse time = " + Util.formatDurationNanos(parseTime) + ", analyzeTime = " + Util.formatDurationNanos(analyzeTime));
+			// System.out.println("Parse time = " + Util.formatDurationNanos(parseTime) + ", analyzeTime = " + Util.formatDurationNanos(analyzeTime));
 
 			// System.out.println("errors " + ai.getPath() + " " + ai.getErrors().size());
 			if (ai.getErrors().size() > 0) {
