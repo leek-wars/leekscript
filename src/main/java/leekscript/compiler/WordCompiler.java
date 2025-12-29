@@ -2,7 +2,6 @@ package leekscript.compiler;
 
 import java.util.HashSet;
 
-import leekscript.ErrorManager;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
@@ -239,12 +238,7 @@ public class WordCompiler {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 
 			// On vérifie les instructions en cours
-			if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
-				DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
-				mCurentBlock = mCurentBlock.endInstruction();
-				dowhileendBlock(do_block);
-				mTokens.skip();
-			} else mCurentBlock = mCurentBlock.endInstruction();
+			endCurrentInstruction();
 			if (!mTokens.hasMoreTokens()) break;
 
 			// Puis on lit l'instruction
@@ -258,7 +252,6 @@ public class WordCompiler {
 				DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
 				mCurentBlock = mCurentBlock.endInstruction();
 				dowhileendBlock(do_block);
-				mTokens.skip();
 			} else {
 				if (mCurentBlock.endInstruction() == mCurentBlock) {
 					throw new LeekCompilerException(mTokens.get(), Error.NO_BLOC_TO_CLOSE);
@@ -294,8 +287,8 @@ public class WordCompiler {
 		} else if (word.getType() == TokenType.ACCOLADE_RIGHT) {
 			// Fermeture de bloc
 			if (!mCurentBlock.hasAccolade() || mCurentBlock.getParent() == null) {
-				// throw new LeekCompilerException(word, Error.NO_BLOC_TO_CLOSE);
 				addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.NO_BLOC_TO_CLOSE));
+				mTokens.skip();
 			} else {
 				if (mCurentBlock instanceof DoWhileBlock) {
 					DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
@@ -306,9 +299,9 @@ public class WordCompiler {
 				} else {
 					mCurentBlock.checkEndBlock();
 					mCurentBlock = mCurentBlock.getParent();
+					mTokens.skip();
 				}
 			}
-			mTokens.skip();
 			return;
 
 		} else if (word.getType() == TokenType.VAR) {
@@ -880,8 +873,24 @@ public class WordCompiler {
 		if (mTokens.eat().getType() != TokenType.PAR_RIGHT) {
 			throw new LeekCompilerException(mTokens.get(), Error.CLOSING_PARENTHESIS_EXPECTED);
 		}
-		// if (mTokens.getWord().getType() != TokenType.END_INSTRUCTION)
-		// 	throw new LeekCompilerException(mTokens.lastWord(), Error.END_OF_INSTRUCTION_EXPECTED);
+		// Point-virgule optionnel après while()
+		if (mTokens.get().getType() == TokenType.END_INSTRUCTION) {
+			mTokens.skip();
+		}
+	}
+
+	/**
+	 * Termine l'instruction courante. Si le bloc courant est un DoWhileBlock
+	 * sans accolades et plein, parse également la condition while.
+	 */
+	private void endCurrentInstruction() throws LeekCompilerException {
+		if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
+			DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
+			mCurentBlock = mCurentBlock.endInstruction();
+			dowhileendBlock(do_block);
+		} else {
+			mCurentBlock = mCurentBlock.endInstruction();
+		}
 	}
 
 	private void elseBlock() throws LeekCompilerException {
@@ -1242,12 +1251,7 @@ public class WordCompiler {
 		while (mTokens.hasMoreTokens()) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			// Fermeture des blocs ouverts
-			if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
-				DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
-				mCurentBlock = mCurentBlock.endInstruction();
-				dowhileendBlock(do_block);
-				mTokens.skip();
-			} else mCurentBlock = mCurentBlock.endInstruction();
+			endCurrentInstruction();
 			if (!mTokens.hasMoreTokens()) break;
 
 			// On regarde si on veut fermer la fonction anonyme
@@ -1363,12 +1367,7 @@ public class WordCompiler {
 				while (mTokens.hasMoreTokens()) {
 					if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 					// Fermeture des blocs ouverts
-					if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
-						DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
-						mCurentBlock = mCurentBlock.endInstruction();
-						dowhileendBlock(do_block);
-						mTokens.skip();
-					} else mCurentBlock = mCurentBlock.endInstruction();
+					endCurrentInstruction();
 					if (!mTokens.hasMoreTokens()) break;
 
 					// On regarde si on veut fermer la fonction anonyme
@@ -2061,12 +2060,7 @@ public class WordCompiler {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 
 			// Fermeture des blocs ouverts
-			if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
-				DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
-				mCurentBlock = mCurentBlock.endInstruction();
-				dowhileendBlock(do_block);
-				mTokens.skip();
-			} else mCurentBlock = mCurentBlock.endInstruction();
+			endCurrentInstruction();
 			if (!mTokens.hasMoreTokens()) break;
 
 			// On regarde si on veut fermer la fonction anonyme

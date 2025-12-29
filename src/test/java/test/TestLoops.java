@@ -60,6 +60,16 @@ public class TestLoops extends TestCommon {
 		// TODO catch error
 		// code("var t = 0; do { t++; return t;} while (t < 5); return 2;").equals("1");
 
+		section("Do while without semicolon");
+		code("var i = 0 do { i++ } while (i < 10) return i;").equals("10");
+		code("var i = 0 var s = 0 do { s += i i++ } while (i < 10) return s;").equals("45");
+		code("var i = 0 do { i++ if (i == 50) break } while (i < 100) return i;").equals("50");
+		code("function f(A) { var i = 0 do { i++ } while (i < A) return i } return f(10);").equals("10");
+		code("var i = 0 var a = 0 do { i++ if (i < 8) continue a++ } while (i < 10) return a;").equals("3");
+		code("do { break } while (true) return 1;").equals("1");
+		code("do { if (true) return 12 } while (true) return 1;").equals("12");
+		code("var t = 0 do { t++ return t } while (t < 5)").equals("1");
+
 		section("For loops");
 		// code("for var i = 0; ; i++ {}").ops_limit(1000).exception(ls::vm::Exception::OPERATION_LIMIT_EXCEEDED);
 		code("for (var i = 0; false; i++) {}").equals("null");
