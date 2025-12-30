@@ -528,6 +528,9 @@ public abstract class AI {
 		if (throwable instanceof InvocationTargetException) {
 			return throwableToError(throwable.getCause());
 		}
+		if (throwable instanceof RuntimeException && throwable.getCause() != null) {
+			return throwableToError(throwable.getCause());
+		}
 
 		LeekError error = new LeekError();
 

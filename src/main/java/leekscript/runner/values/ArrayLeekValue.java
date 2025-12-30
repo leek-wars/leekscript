@@ -641,7 +641,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return result;
 	}
 
-	public ArrayLeekValue arraySort(AI ai, FunctionLeekValue function) throws LeekRunException {
+	public ArrayLeekValue arraySort(AI ai, FunctionLeekValue<?> function) throws LeekRunException {
 		ai.ops(1 + (int) (5 * size() * Math.log(size())));
 		var result = new ArrayLeekValue(ai, this, 1);
 		Collections.sort(result, new Comparator<Object>() {
