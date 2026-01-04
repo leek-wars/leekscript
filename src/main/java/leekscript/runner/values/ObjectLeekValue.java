@@ -9,9 +9,9 @@ import leekscript.AILog;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.runner.AI;
+import leekscript.runner.AI.RamUsage;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
-import leekscript.runner.RamUsage;
 import leekscript.util.Json;
 
 public class ObjectLeekValue implements LeekValue {
@@ -21,10 +21,10 @@ public class ObjectLeekValue implements LeekValue {
 	public final LinkedHashMap<String, ObjectVariableValue> fields = new LinkedHashMap<>();
 	private final RamUsage ram;
 
-	public ObjectLeekValue(AI ai, ClassLeekValue clazz) throws LeekRunException {
+	public ObjectLeekValue(AI ai, ClassLeekValue clazz) {
 		this.clazz = clazz;
 		this.id = ai.getNextObjectID();
-		this.ram = ai.allocateRAM(this, 0, false);
+		this.ram = ai.allocateRAM(this);
 	}
 
 	public ObjectLeekValue(AI ai, String[] keys, Object[] values) throws LeekRunException {

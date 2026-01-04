@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -38,7 +39,6 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -47,7 +47,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import tools.jackson.databind.node.ObjectNode;
 import leekscript.util.Json;
 
 public abstract class AI {
@@ -72,12 +71,12 @@ public abstract class AI {
 	public long maxOperations = MAX_OPERATIONS;
 
 	protected volatile long mRAM = 0;
+
 	public final static int MAX_RAM = 12_500_000; // in 64 bits "quads" = 100 Mo
 	public long maxRAM = MAX_RAM;
 
-	// references to objects in memory
-	private ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
-	private List<LeekReference> references = new ArrayList<>();
+	private ReferenceQueue<Object> ramQueue = new ReferenceQueue<>();
+	private List<RamUsage> ramUsages = new ArrayList<>();
 
 	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
 	protected String thisObject = null;
@@ -112,13 +111,38 @@ public abstract class AI {
 	public final ClassLeekValue jsonClass;
 	public final ClassLeekValue systemClass;
 
+	public static class RamUsage extends WeakReference<Object> {
+		private int value;
+
+		public RamUsage(int value, Object referent, ReferenceQueue<Object> ramQueue) {
+			super(referent, ramQueue);
+			this.value = value;
+		}
+
+		public void add(int ram) {
+			value += ram;
+		}
+
+		public void remove(int ram) {
+			value -= ram;
+		}
+
+		public int getValue() {
+			return value;
+		}
+
+		public void free(AI ai) {
+			ai.mRAM -= value;
+			ai.ramUsages.remove(this);
+		}
+	}
+
 	public class NativeObjectLeekValue implements LeekValue {
 
 		private int id;
 
 		public NativeObjectLeekValue() throws LeekRunException {
 			this.id = AI.this.getNextObjectID();
-			AI.this.allocateRAM(this, size() * 2);
 		}
 
 		@Override
@@ -298,6 +322,7 @@ public abstract class AI {
 		classClass = new ClassLeekValue(this, "Class", valueClass);
 		jsonClass = new ClassLeekValue(this, "JSON");
 		systemClass = new ClassLeekValue(this, "System");
+		
 		try {
 			integerClass.addStaticField(this, "MIN_VALUE", Type.INT, Long.MIN_VALUE, AccessLevel.PUBLIC, true);
 			integerClass.addStaticField(this, "MAX_VALUE", Type.INT, Long.MAX_VALUE, AccessLevel.PUBLIC, true);
@@ -340,11 +365,13 @@ public abstract class AI {
 	}
 
 	public long getUsedRAM() {
-		Reference<?> referenceFromQueue;
-		while ((referenceFromQueue = referenceQueue.poll()) != null) {
-			((LeekReference)referenceFromQueue).finalizeResources(this);
-			referenceFromQueue.clear();
+
+		Reference<?> ref;
+		while ((ref = ramQueue.poll()) != null) {
+			((RamUsage) ref).free(this);
+			ref.clear();
 		}
+
 		return mRAM;
 	}
 
@@ -393,7 +420,6 @@ public abstract class AI {
 	}
 
 	public void opsNoCheck(int nb) {
-		// System.out.println("ops " + nb);
 		mOperations += nb;
 	}
 
@@ -401,41 +427,45 @@ public abstract class AI {
 		mOperations = 0;
 	}
 
-
 	public void increaseRAMDirect(int ram) {
 		mRAM += ram;
 	}
 
+	public RamUsage allocateRAM(Object obj) {
+		var usage = new RamUsage(0, obj, ramQueue);
+		ramUsages.add(usage);
+		return usage;
+	}
+
 	public RamUsage allocateRAM(Object obj, int ram) throws LeekRunException {
-		return allocateRAM(obj, ram, true);
-	}
-
-	public RamUsage allocateRAM(Object obj, int ram, boolean checkOverflow) throws LeekRunException {
-		RamUsage ramRef = new RamUsage(ram);
-		// subscribe object to the referenceQueue
-		references.add(new LeekReference(ramRef, obj, referenceQueue));
-
+		var usage = new RamUsage(ram, obj, ramQueue);
+		ramUsages.add(usage);
 		mRAM += ram;
-		if (checkOverflow) checkRamOverflow();
-
-		return ramRef;
+		checkRamOverflow();
+		return usage;
 	}
 
-	public void increaseRAM(RamUsage ramRef, int value) throws LeekRunException {
+	public void increaseRAM(RamUsage ram, int value) throws LeekRunException {
+		ram.add(value);
 		mRAM += value;
-		ramRef.add(value);
 		checkRamOverflow();
+	}
+
+	public void decreaseRAM(RamUsage tracker, int value) {
+		tracker.remove(value);
+		mRAM -= value;
 	}
 
 	private void checkRamOverflow() throws LeekRunException {
 		if (mRAM > maxRAM) {
+
 			long ramBefore = mRAM;
 
 			// update memory usage if garbage collector has already passed (call to gc is very expensive)
-			Reference<?> referenceFromQueue;
-			while ((referenceFromQueue = referenceQueue.poll()) != null) {
-				((LeekReference)referenceFromQueue).finalizeResources(this);
-				referenceFromQueue.clear();
+			Reference<?> ref;
+			while ((ref = ramQueue.poll()) != null) {
+				((RamUsage) ref).free(this);
+				ref.clear();
 			}
 
 			if (mRAM > maxRAM) {
@@ -448,9 +478,9 @@ public abstract class AI {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					while ((referenceFromQueue = referenceQueue.poll()) != null) {
-						((LeekReference)referenceFromQueue).finalizeResources(this);
-						referenceFromQueue.clear();
+					while ((ref = ramQueue.poll()) != null) {
+						((RamUsage) ref).free(this);
+						ref.clear();
 					}
 				}
 
@@ -460,16 +490,6 @@ public abstract class AI {
 				}
 			}
 		}
-	}
-
-	public void decreaseRAM(RamUsage ramRef, int value) {
-		mRAM -= value;
-		ramRef.remove(value);
-	}
-
-	public void freeRAM(LeekReference ref, int value) {
-		mRAM -= value;
-		references.remove(ref);
 	}
 
 	protected void nothing(Object obj) {

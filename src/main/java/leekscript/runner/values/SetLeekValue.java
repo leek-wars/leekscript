@@ -7,9 +7,9 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import leekscript.runner.AI;
+import leekscript.runner.AI.RamUsage;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
-import leekscript.runner.RamUsage;
 
 public class SetLeekValue extends HashSet<Object> implements LeekValue {
 

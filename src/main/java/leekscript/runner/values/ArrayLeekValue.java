@@ -15,11 +15,11 @@ import tools.jackson.databind.node.ArrayNode;
 
 import leekscript.AILog;
 import leekscript.runner.AI;
+import leekscript.runner.AI.RamUsage;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
-import leekscript.runner.RamUsage;
 import leekscript.util.Json;
 import leekscript.common.Error;
 
@@ -107,23 +107,19 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 
 	private final AI ai;
 	public final int id;
-	private RamUsage ram;
+	private final RamUsage ram;
 
 	public ArrayLeekValue(AI ai) {
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		try {
-			this.ram = ai.allocateRAM(this, 0, false);
-		} catch (LeekRunException e) {}
+		this.ram = ai.allocateRAM(this);
 	}
 
 	public ArrayLeekValue(AI ai, int capacity) {
 		super(Math.min(MAX_SIZE, capacity));
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		try {
-			this.ram = ai.allocateRAM(this, 0, false);
-		} catch (LeekRunException e) {}
+		this.ram = ai.allocateRAM(this);
 	}
 
 	public ArrayLeekValue(AI ai, Object values[]) throws LeekRunException {

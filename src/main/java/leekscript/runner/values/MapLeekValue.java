@@ -7,10 +7,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import leekscript.runner.AI;
+import leekscript.runner.AI.RamUsage;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
-import leekscript.runner.RamUsage;
 import leekscript.util.Json;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -25,18 +25,14 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	public MapLeekValue(AI ai) {
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		try {
-			this.ram = ai.allocateRAM(this, 0, false);
-		} catch (LeekRunException e) {}
+		this.ram = ai.allocateRAM(this);
 	}
 
 	public MapLeekValue(AI ai, int capacity) {
 		super(capacity);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		try {
-			this.ram = ai.allocateRAM(this, 0, false);
-		} catch (LeekRunException e) {}
+		this.ram = ai.allocateRAM(this);
 	}
 
 	public MapLeekValue(AI ai, Object values[]) throws LeekRunException {
