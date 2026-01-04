@@ -9,6 +9,7 @@ import java.util.Set;
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
+import leekscript.runner.RamUsage;
 
 public class SetLeekValue extends HashSet<Object> implements LeekValue {
 
@@ -36,7 +37,7 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 
 	private final AI ai;
 	public final int id;
-
+	private RamUsage ram;
 
 	public SetLeekValue(AI ai) throws LeekRunException {
 		this(ai, new Object[0]);
@@ -48,13 +49,13 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		for (Object value : values) {
 			this.add(value);
 		}
-		ai.increaseRAM(values.length);
+		this.ram = ai.allocateRAM(this, values.length);
 	}
 
 	public SetLeekValue(AI ai, SetLeekValue set, int level) throws LeekRunException {
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		ai.increaseRAM(set.size());
+		this.ram = ai.allocateRAM(this, set.size());
 		for (var value : set) {
 			if (level == 1) {
 				this.add(value);
@@ -81,13 +82,6 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 			if (!set.contains(value)) return false;
 		}
 		return true;
-	}
-
-	@Override
-	@SuppressWarnings("deprecated")
-	protected void finalize() throws Throwable {
-		super.finalize();
-		ai.decreaseRAM(size());
 	}
 
 	@Override
@@ -134,18 +128,18 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 
 	public boolean setPut(AI ai, Object value) throws LeekRunException {
 		boolean added = add(value);
-		if (added) ai.increaseRAM(1);
+		if (added) ai.increaseRAM(ram, 1);
 		return added;
 	}
 
 	public boolean setRemove(AI ai, Object value) throws LeekRunException {
 		boolean removed = remove(value);
-		if (removed) ai.decreaseRAM(1);
+		if (removed) ai.decreaseRAM(ram, 1);
 		return removed;
 	}
 
 	public SetLeekValue setClear(AI ai) throws LeekRunException {
-		ai.decreaseRAM(size());
+		ai.decreaseRAM(ram, size());
 		clear();
 		return this;
 	}
@@ -180,7 +174,7 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		var r = new SetLeekValue(ai);
 		r.addAll(this);
 		r.addAll(set);
-		ai.increaseRAM(r.size());
+		ai.increaseRAM(ram, r.size());
 		return r;
 	}
 
@@ -189,7 +183,7 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		var r = new SetLeekValue(ai);
 		r.addAll(this);
 		r.retainAll(set);
-		ai.increaseRAM(r.size());
+		ai.increaseRAM(ram, r.size());
 		return r;
 	}
 
@@ -198,7 +192,7 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		var r = new SetLeekValue(ai);
 		r.addAll(this);
 		r.removeAll(set);
-		ai.increaseRAM(r.size());
+		ai.increaseRAM(ram, r.size());
 		return r;
 	}
 
@@ -211,7 +205,7 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		for (var e : set) {
 			if (!this.contains(e)) r.add(e);
 		}
-		ai.increaseRAM(r.size());
+		ai.increaseRAM(ram, r.size());
 		return r;
 	}
 

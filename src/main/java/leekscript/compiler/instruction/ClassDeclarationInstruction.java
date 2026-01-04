@@ -526,7 +526,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				writer.addLine("super(" + writer.getAIThis() + ");");
 			}
 		}
-		writer.addLine("increaseRAM(" + (2 * fieldVariables.size()) + ");");
+		writer.addLine("allocateRAM(this, " + (2 * fieldVariables.size()) + ");");
 		for (var field : fields.entrySet()) {
 			Expression expr = field.getValue().expression;
 			if (expr != null) {
