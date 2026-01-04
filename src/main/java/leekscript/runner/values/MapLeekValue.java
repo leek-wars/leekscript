@@ -4,17 +4,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
-
-import tools.jackson.databind.node.ObjectNode;
-import leekscript.util.Json;
-
 import java.util.Set;
 
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
-import leekscript.runner.AI.NativeObjectLeekValue;
+import leekscript.runner.RamUsage;
+import leekscript.util.Json;
+import tools.jackson.databind.node.ObjectNode;
 
 public class MapLeekValue extends HashMap<Object, Object> implements Iterable<Entry<Object, Object>>, GenericMapLeekValue {
 
@@ -22,16 +20,23 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	private static final int WRITE_OPERATIONS = 3;
 	private final AI ai;
 	public final int id;
+	private RamUsage ram;
 
 	public MapLeekValue(AI ai) {
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
+		try {
+			this.ram = ai.allocateRAM(this, 0, false);
+		} catch (LeekRunException e) {}
 	}
 
 	public MapLeekValue(AI ai, int capacity) {
 		super(capacity);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
+		try {
+			this.ram = ai.allocateRAM(this, 0, false);
+		} catch (LeekRunException e) {}
 	}
 
 	public MapLeekValue(AI ai, Object values[]) throws LeekRunException {
@@ -40,7 +45,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		for (int i = 0; i < values.length; i += 2) {
 			put(values[i], values[i + 1]);
 		}
-		ai.increaseRAM(2 * values.length);
+		this.ram = ai.allocateRAM(this, 2 * values.length);
 	}
 
 	public MapLeekValue(AI ai, MapLeekValue map) throws LeekRunException {
@@ -57,7 +62,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 				put(entry.getKey(), LeekOperations.clone(ai, entry.getValue(), level - 1));
 			}
 		}
-		ai.increaseRAM(2 * size());
+		this.ram = ai.allocateRAM(this, 2 * size());
 	}
 
 	@Override
@@ -68,7 +73,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	public Object set(Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		if (!containsKey(key)) {
-			ai.increaseRAM(2);
+			ai.increaseRAM(ram, 2);
 		}
 		put(key, value);
 		return value;
@@ -82,7 +87,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		ai.ops(1 + 3 * map.size());
 		var sizeBefore = size();
 		putAll(map);
-		ai.increaseRAM(2 * (size() - sizeBefore));
+		ai.increaseRAM(ram, 2 * (size() - sizeBefore));
 		return null;
 	}
 
@@ -247,7 +252,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		for (var entry : this.entrySet()) {
 			result.set(entry.getKey(), function.run(ai, null, entry.getValue(), entry.getKey(), this));
 		}
-		ai.increaseRAM(2 * size());
+		ai.increaseRAM(ram, 2 * size());
 		return result;
 	}
 
@@ -341,7 +346,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		ai.ops(1 + 2 * size());
 		var sizeBefore = size();
 		entrySet().removeIf(entry -> (entry.getValue() == null && value == null) || entry.getValue().equals(value));
-		ai.decreaseRAM(2 * (sizeBefore - size()));
+		ai.decreaseRAM(ram, 2 * (sizeBefore - size()));
 		return null;
 	}
 
@@ -410,7 +415,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 				result.set(entry.getKey(), entry.getValue());
 			}
 		}
-		ai.increaseRAM(2 * result.size());
+		ai.increaseRAM(ram, 2 * result.size());
 		return result;
 	}
 
@@ -420,12 +425,12 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		for (var entry : map.entrySet()) {
 			result.putIfAbsent(entry.getKey(), entry.getValue());
 		}
-		ai.increaseRAM(2 * (result.size() - size()));
+		ai.increaseRAM(ram, 2 * (result.size() - size()));
 		return result;
 	}
 
 	public MapLeekValue mapClear(AI ai) {
-		ai.decreaseRAM(2 * size());
+		ai.decreaseRAM(ram, 2 * size());
 		clear();
 		return this;
 	}
@@ -509,13 +514,6 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 			if (!ai.eq(entry.getValue(), map.get(entry.getKey()))) return false;
 		}
 		return true;
-	}
-
-	@Override
-	@SuppressWarnings("deprecated")
-	protected void finalize() throws Throwable {
-		super.finalize();
-		ai.decreaseRAM(2 * size());
 	}
 
 	@Override

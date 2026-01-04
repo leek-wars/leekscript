@@ -284,13 +284,11 @@ public class RealIntervalLeekValue extends IntervalLeekValue {
 
 		if (step >= 0.0) {
 			for (var i = from; i <= to; i += step) {
-				set.add(i);
-				ai.increaseRAM(1);
+				set.setPut(ai, i);
 			}
 		} else {
 			for (var i = to; i >= from; i += step) {
-				set.add(i);
-				ai.increaseRAM(1);
+				set.setPut(ai, i);
 			}
 		}
 
