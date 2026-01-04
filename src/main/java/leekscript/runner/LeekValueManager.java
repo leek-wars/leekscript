@@ -9,7 +9,6 @@ import java.util.Collections;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
-import leekscript.util.Json;
 
 import leekscript.AILog;
 import leekscript.runner.AI.NativeObjectLeekValue;
@@ -19,7 +18,6 @@ import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ClassLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
 import leekscript.runner.values.IntervalLeekValue;
-import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.LeekValueType;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.SetLeekValue;
@@ -39,8 +37,8 @@ public class LeekValueManager {
 			if (node.isBoolean()) {
 				return node.asBoolean();
 			}
-			if (node.isTextual()) {
-				return node.asText();
+			if (node.isString()) {
+				return node.asString();
 			}
 			if (node.isInt()) {
 				return (long) node.asInt();
