@@ -78,7 +78,8 @@ public abstract class AI {
 	public long maxRAM = MAX_RAM;
 
 	private ReferenceQueue<Object> ramQueue = new ReferenceQueue<>();
-	private List<RamUsage> ramUsages = new ArrayList<>();
+	private Set<RamUsage> ramUsages = new HashSet<>(); // Set est plus efficace quand la limite de RAM est souvent atteinte (List est plus efficace quand la limite n'est pas atteinte souvent)
+	// private List<RamUsage> ramUsages = new ArrayList<>();
 
 	private static final Map<Class<?>, Map<String, List<Method>>> methodCache = new HashMap<>();
 	private static final Map<Class<?>, java.lang.reflect.Field[]> fieldCache = new HashMap<>();
@@ -373,11 +374,11 @@ public abstract class AI {
 	public long getUsedRAM() {
 
 		// Too expensive
-		// Reference<?> ref;
-		// while ((ref = ramQueue.poll()) != null) {
-		// 	((RamUsage) ref).free(this);
-		// 	ref.clear();
-		// }
+		Reference<?> ref;
+		while ((ref = ramQueue.poll()) != null) {
+			((RamUsage) ref).free(this);
+			ref.clear();
+		}
 
 		return mRAM;
 	}
