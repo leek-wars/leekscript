@@ -439,6 +439,10 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		try {
 			object = this.clazz.getConstructor(ai.getClass()).newInstance(ai);
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e1) {
+			if (e1.getCause() instanceof LeekRunException) {
+				// Erreur normale (trop d'opés ou RAM)
+				throw (LeekRunException) e1.getCause();
+			}
 			ErrorManager.exception(e1);
 		}
 
@@ -458,7 +462,9 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 					return object;
 				}
 			} catch (IllegalAccessException | IllegalArgumentException | SecurityException | InvocationTargetException e) {
-				if (e instanceof IllegalArgumentException || e instanceof NoSuchMethodException) {
+				if (e.getCause() instanceof LeekRunException lre) {
+					throw lre;
+				} else if (e instanceof IllegalArgumentException || e instanceof NoSuchMethodException) {
 					ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
 				} else {
 					ai.addSystemLog(AILog.ERROR, e);

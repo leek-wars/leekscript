@@ -193,7 +193,9 @@ public class LeekValueManager {
 				m.setAccessible(true);
 				return m.invoke(array, arguments);
 			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-				e.printStackTrace(System.out);
+				if (e.getCause() instanceof LeekRunException lre) {
+					throw lre;
+				}
 			}
 			return null;
 		} else if (array instanceof ClassLeekValue) {

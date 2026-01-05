@@ -492,7 +492,7 @@ public abstract class AI {
 				}
 
 				if (mRAM > maxRAM) {
-					getLogs().addLog(AILog.WARNING, "[RAM error] RAM before: " + ramBefore + " RAM after: " + mRAM);
+					getLogs().addLog(AILog.WARNING, "[RAM error] RAM used: " + mRAM);
 					throw new LeekRunException(Error.OUT_OF_MEMORY);
 				}
 			}
@@ -650,6 +650,7 @@ public abstract class AI {
 			}
 		} else {
 			// Erreur inconnue
+			System.out.println("[AI] Unknown error");
 			throwable.printStackTrace(System.out);
 			error.parameters = throwable == null ? null : new Object[] { throwable.toString() };
 		}
@@ -2985,7 +2986,9 @@ public abstract class AI {
 			}
 			return m.invoke(value, args);
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
-			// Nothing to do
+			if (e.getCause() instanceof LeekRunException lre) {
+				throw lre;
+			}
 		}
 		return null;
 	}
@@ -3025,7 +3028,9 @@ public abstract class AI {
 					return m.invoke(value, args);
 				}
 			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
-				if (e instanceof InvocationTargetException) {
+				if (e.getCause() instanceof LeekRunException lre) {
+					throw lre;
+				} else if (e instanceof InvocationTargetException) {
 					addSystemLog(AILog.ERROR, e);
 				} else {
 					try {
