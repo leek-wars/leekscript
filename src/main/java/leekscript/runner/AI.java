@@ -36,9 +36,11 @@ import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -77,6 +79,10 @@ public abstract class AI {
 
 	private ReferenceQueue<Object> ramQueue = new ReferenceQueue<>();
 	private List<RamUsage> ramUsages = new ArrayList<>();
+
+	private static final Map<Class<?>, Map<String, List<Method>>> methodCache = new HashMap<>();
+	private static final Map<Class<?>, java.lang.reflect.Field[]> fieldCache = new HashMap<>();
+	private static final Map<String, java.lang.reflect.Field> singleFieldCache = new HashMap<>();
 
 	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
 	protected String thisObject = null;
@@ -152,14 +158,14 @@ public abstract class AI {
 
 		public Object u_keys() throws LeekRunException {
 			var result = new ArrayLeekValue(AI.this);
-			for (var field : this.getClass().getFields()) {
+			for (var field : getFieldsCached(this.getClass())) {
 				result.push(AI.this, field.getName());
 			}
 			return result;
 		}
 
 		public int size() {
-			return this.getClass().getFields().length;
+			return getFieldsCached(this.getClass()).length;
 		}
 
 		public String string(AI ai, Set<Object> visited) throws LeekRunException {
@@ -322,7 +328,7 @@ public abstract class AI {
 		classClass = new ClassLeekValue(this, "Class", valueClass);
 		jsonClass = new ClassLeekValue(this, "JSON");
 		systemClass = new ClassLeekValue(this, "System");
-		
+
 		try {
 			integerClass.addStaticField(this, "MIN_VALUE", Type.INT, Long.MIN_VALUE, AccessLevel.PUBLIC, true);
 			integerClass.addStaticField(this, "MAX_VALUE", Type.INT, Long.MAX_VALUE, AccessLevel.PUBLIC, true);
@@ -366,11 +372,12 @@ public abstract class AI {
 
 	public long getUsedRAM() {
 
-		Reference<?> ref;
-		while ((ref = ramQueue.poll()) != null) {
-			((RamUsage) ref).free(this);
-			ref.clear();
-		}
+		// Too expensive
+		// Reference<?> ref;
+		// while ((ref = ramQueue.poll()) != null) {
+		// 	((RamUsage) ref).free(this);
+		// 	ref.clear();
+		// }
 
 		return mRAM;
 	}
@@ -607,7 +614,6 @@ public abstract class AI {
 				error.parameters = new Object[] { "?", "?" };
 			}
 		} else if (throwable instanceof IllegalArgumentException) {
-			throwable.printStackTrace(System.out);
 			error.type = Error.IMPOSSIBLE_CAST;
 
 			Pattern r = Pattern.compile("Can not set (.*) field .* to (.*)");
@@ -1658,7 +1664,7 @@ public abstract class AI {
 		}
 		if (value instanceof NativeObjectLeekValue object) {
 			try {
-				var f = value.getClass().getField(field);
+				var f = getFieldCached(value.getClass(), field);
 				if (!checkFieldAccessLevel(f, value, fromClass)) {
 					return null;
 				}
@@ -1666,7 +1672,7 @@ public abstract class AI {
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				// Method ?
 				try {
-					var clazz = (ClassLeekValue) this.getClass().getField(value.getClass().getSimpleName()).get(this);
+					var clazz = (ClassLeekValue) getFieldCached(this.getClass(), value.getClass().getSimpleName()).get(this);
 					var method = clazz.genericMethods.get(field);
 					if (method != null) return method;
 				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
@@ -1679,7 +1685,7 @@ public abstract class AI {
 	}
 
 	private Field getWriteableField(Object object, String field, ClassLeekValue fromClass) throws LeekRunException, NoSuchFieldException, SecurityException {
-		var f = object.getClass().getField(field);
+		var f = getFieldCached(object.getClass(), field);
 		if (!checkFieldAccessLevel(f, object, fromClass)) {
 			return null;
 		}
@@ -1710,7 +1716,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).initField(field, value);
 		}
 		try {
-			object.getClass().getField(field).set(object, value);
+			getFieldCached(object.getClass(), field).set(object, value);
 			return value;
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
@@ -1728,7 +1734,7 @@ public abstract class AI {
 		}
 		if (object instanceof NativeObjectLeekValue) {
 			try {
-				var f = object.getClass().getField(field);
+				var f = getFieldCached(object.getClass(), field);
 				if (!checkFieldAccessLevel(f, object, fromClass)) {
 					return null;
 				}
@@ -1754,7 +1760,7 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).increment();
 		}
 		try {
-			var f = object.getClass().getField(field);
+			var f = getFieldCached(object.getClass(), field);
 			if (!checkFieldAccessLevel(f, object, fromClass)) {
 				return null;
 			}
@@ -1782,7 +1788,7 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).pre_increment();
 		}
 		try {
-			var f = object.getClass().getField(field);
+			var f = getFieldCached(object.getClass(), field);
 			if (!checkFieldAccessLevel(f, object, fromClass)) {
 				return null;
 			}
@@ -1808,7 +1814,7 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).decrement();
 		}
 		try {
-			var f = object.getClass().getField(field);
+			var f = getFieldCached(object.getClass(), field);
 			if (!checkFieldAccessLevel(f, object, fromClass)) {
 				return null;
 			}
@@ -1835,7 +1841,7 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).pre_decrement();
 		}
 		try {
-			var f = object.getClass().getField(field);
+			var f = getFieldCached(object.getClass(), field);
 			if (!checkFieldAccessLevel(f, object, fromClass)) {
 				return null;
 			}
@@ -1861,7 +1867,7 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).add_eq(value);
 		}
 		try {
-			var f = object.getClass().getField(field);
+			var f = getFieldCached(object.getClass(), field);
 			if (!checkFieldAccessLevel(f, object, fromClass)) {
 				return null;
 			}
@@ -1887,7 +1893,7 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).sub_eq(value);
 		}
 		try {
-			var f = object.getClass().getField(field);
+			var f = getFieldCached(object.getClass(), field);
 			if (!checkFieldAccessLevel(f, object, fromClass)) {
 				return null;
 			}
@@ -1913,7 +1919,7 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).mul_eq(value);
 		}
 		try {
-			var f = object.getClass().getField(field);
+			var f = getFieldCached(object.getClass(), field);
 			if (!checkFieldAccessLevel(f, object, fromClass)) {
 				return null;
 			}
@@ -1939,7 +1945,7 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).pow_eq(value);
 		}
 		try {
-			var f = object.getClass().getField(field);
+			var f = getFieldCached(object.getClass(), field);
 			if (!checkFieldAccessLevel(f, object, fromClass)) {
 				return null;
 			}
@@ -1965,7 +1971,7 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).div_eq(value);
 		}
 		try {
-			var f = object.getClass().getField(field);
+			var f = getFieldCached(object.getClass(), field);
 			if (!checkFieldAccessLevel(f, object, fromClass)) {
 				return null;
 			}
@@ -1991,7 +1997,7 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).intdiv_eq(value);
 		}
 		try {
-			var f = object.getClass().getField(field);
+			var f = getFieldCached(object.getClass(), field);
 			if (!checkFieldAccessLevel(f, object, fromClass)) {
 				return null;
 			}
@@ -2017,7 +2023,7 @@ public abstract class AI {
 			return ((ClassLeekValue) object).getFieldL(field).mod_eq(value);
 		}
 		try {
-			var f = object.getClass().getField(field);
+			var f = getFieldCached(object.getClass(), field);
 			if (!checkFieldAccessLevel(f, object, fromClass)) {
 				return null;
 			}
@@ -2828,7 +2834,7 @@ public abstract class AI {
 		if (value instanceof NativeObjectLeekValue) {
 			ops(1);
 			try {
-				var f = value.getClass().getField(string(index));
+				var f = getFieldCached(value.getClass(), string(index));
 				if (!checkFieldAccessLevel(f, value, fromClass)) {
 					return null;
 				}
@@ -2836,7 +2842,7 @@ public abstract class AI {
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				// Method ?
 				try {
-					var clazz = (ClassLeekValue) this.getClass().getField(value.getClass().getSimpleName()).get(this);
+					var clazz = (ClassLeekValue) getFieldCached(this.getClass(), value.getClass().getSimpleName()).get(this);
 					var method = clazz.genericMethods.get(string(index));
 					if (method != null) return method;
 				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
@@ -2924,23 +2930,48 @@ public abstract class AI {
 		return null;
 	}
 
+	public static Method findMethod(Class<?> clazz, String methodName, int argsLength) {
+		var classMethods = methodCache.computeIfAbsent(clazz, c -> {
+			var cache = new HashMap<String, List<Method>>();
+			for (var m : c.getMethods()) {
+				cache.computeIfAbsent(m.getName(), k -> new ArrayList<>()).add(m);
+			}
+			return cache;
+		});
+
+		var candidates = classMethods.get(methodName);
+		if (candidates != null) {
+			for (var m : candidates) {
+				if (m.getParameterTypes().length == argsLength) {
+					return m;
+				}
+			}
+		}
+		return null;
+	}
+
+	public static java.lang.reflect.Field[] getFieldsCached(Class<?> clazz) {
+		return fieldCache.computeIfAbsent(clazz, Class::getFields);
+	}
+
+	public static java.lang.reflect.Field getFieldCached(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+		String cacheKey = clazz.getName() + "#" + fieldName;
+		return singleFieldCache.computeIfAbsent(cacheKey, k -> {
+			try {
+				return clazz.getField(fieldName);
+			} catch (NoSuchFieldException e) {
+				throw new RuntimeException(e);
+			}
+		});
+	}
+
 	public Object callMethod(Object value, String method, ClassLeekValue fromClass, Object... args) throws LeekRunException {
 		if (value instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) value).callMethod(method, fromClass, args);
 		}
-		// if (value instanceof ClassLeekValue) {
-		// 	return ((ClassLeekValue) value).callMethod(method, args);
-		// }
 		try {
-			// var m = value.getClass().getMethod("u_" + method);
-			Method m = null;
-			for (var mm : value.getClass().getMethods()) {
-				if (mm.getName().equals("u_" + method) && mm.getParameterTypes().length == args.length) {
-					m = mm;
-					break;
-				}
-			}
-			if (m == null) throw new NoSuchMethodException(method);
+			Method m = findMethod(value.getClass(), "u_" + method, args.length);
+			if (m == null) return null;
 			if (m.isAnnotationPresent(Private.class)) {
 				if (fromClass == null || value.getClass() != fromClass.clazz) {
 					addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), method });
@@ -2953,8 +2984,8 @@ public abstract class AI {
 				}
 			}
 			return m.invoke(value, args);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-			e.printStackTrace(System.out);
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
+			// Nothing to do
 		}
 		return null;
 	}
@@ -2968,37 +2999,37 @@ public abstract class AI {
 		}
 		if (value instanceof NativeObjectLeekValue) {
 			try {
-				// var types = new Class<?>[args.length];
-				// for (int i = 0; i < args.length; ++i) {
-				// 	types[i] = args[i] == null ? Object.class : args[i].getClass();
-				// }
-				// var m = value.getClass().getMethod(method, types);
-				Method m = null;
-				for (var mm : value.getClass().getMethods()) {
-					if (mm.getName().equals(method) && mm.getParameterTypes().length == args.length) {
-						m = mm;
-						break;
+				Method m = findMethod(value.getClass(), method, args.length);
+				if (m == null) {
+					try {
+						var f = getFieldCached(value.getClass(), field);
+						if (!checkFieldAccessLevel(f, value, fromClass)) {
+							return null;
+						}
+						return execute(f.get(value), args);
+					} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
+						addSystemLog(AILog.ERROR, e1);
 					}
+				} else {
+					if (m.isAnnotationPresent(Private.class)) {
+						if (fromClass == null || value.getClass() != fromClass.clazz) {
+							addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), field });
+							return null;
+						}
+					} else if (m.isAnnotationPresent(Protected.class)) {
+						if (fromClass == null || !value.getClass().isAssignableFrom(fromClass.clazz)) {
+							addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), field });
+							return null;
+						}
+					}
+					return m.invoke(value, args);
 				}
-				if (m == null) throw new NoSuchMethodException(method);
-				if (m.isAnnotationPresent(Private.class)) {
-					if (fromClass == null || value.getClass() != fromClass.clazz) {
-						addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), field });
-						return null;
-					}
-				} else if (m.isAnnotationPresent(Protected.class)) {
-					if (fromClass == null || !value.getClass().isAssignableFrom(fromClass.clazz)) {
-						addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), field });
-						return null;
-					}
-				}
-				return m.invoke(value, args);
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
 				if (e instanceof InvocationTargetException) {
 					addSystemLog(AILog.ERROR, e);
 				} else {
 					try {
-						var f = value.getClass().getField(field);
+						var f = getFieldCached(value.getClass(), field);
 						if (!checkFieldAccessLevel(f, value, fromClass)) {
 							return null;
 						}
@@ -3140,7 +3171,7 @@ public abstract class AI {
 		if (value instanceof NativeObjectLeekValue)
 			try {
 				// System.out.println("get class " + ((NativeObjectLeekValue) value).getClass().getSimpleName());
-				return (ClassLeekValue) this.getClass().getField(((NativeObjectLeekValue) value).getClass().getSimpleName()).get(this);
+				return (ClassLeekValue) getFieldCached(this.getClass(), ((NativeObjectLeekValue) value).getClass().getSimpleName()).get(this);
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				return valueClass;
 			}

@@ -452,17 +452,7 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 				// 	types[i] = Object.class;
 					args[i] = arguments[i];
 				}
-				// var m = this.clazz.getMethod("init", types)
-				Method m = null;
-				for (var mm : this.clazz.getMethods()) {
-					if (mm.getName().equals("init")) {
-						// System.out.println(m);
-						if (mm.getParameterTypes().length == args.length) {
-							m = mm;
-							break;
-						}
-					}
-				}
+				Method m = AI.findMethod(this.clazz, "init", args.length);
 				if (m != null) {
 					m.invoke(object, args);
 					return object;
@@ -488,16 +478,17 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 					fieldsArray = new LegacyArrayLeekValue(ai);
 				}
 			} else {
+				var fields = AI.getFieldsCached(clazz);
 				if (ai.getVersion() >= 4) {
-					var r = new ArrayLeekValue(ai, clazz.getFields().length);
-					for (var f : clazz.getFields()) {
+					var r = new ArrayLeekValue(ai, fields.length);
+					for (var f : fields) {
 						r.add(f.getName());
 					}
 					fieldsArray = r;
 				} else {
-					Object[] values = new Object[clazz.getFields().length];
+					Object[] values = new Object[fields.length];
 					int i = 0;
-					for (var f : clazz.getFields()) {
+					for (var f : fields) {
 						values[i++] = f.getName();
 					}
 					fieldsArray = new LegacyArrayLeekValue(ai, values);
