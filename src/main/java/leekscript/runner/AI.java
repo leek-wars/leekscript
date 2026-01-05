@@ -83,7 +83,8 @@ public abstract class AI {
 
 	private static final Map<Class<?>, Map<String, List<Method>>> methodCache = new HashMap<>();
 	private static final Map<Class<?>, java.lang.reflect.Field[]> fieldCache = new HashMap<>();
-	private static final Map<String, java.lang.reflect.Field> singleFieldCache = new HashMap<>();
+	private static final Map<Class<?>, Map<String, Object>> singleFieldCache = new HashMap<>();
+	private static final Object FIELD_NOT_FOUND = new Object();
 
 	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
 	protected String thisObject = null;
@@ -2957,14 +2958,34 @@ public abstract class AI {
 	}
 
 	public static java.lang.reflect.Field getFieldCached(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-		String cacheKey = clazz.getName() + "#" + fieldName;
-		return singleFieldCache.computeIfAbsent(cacheKey, k -> {
+		Map<String, Object> classCache = singleFieldCache.get(clazz);
+
+		if (classCache == null) {
+			// No cache for this class yet, create it
+			classCache = new HashMap<>();
+			singleFieldCache.put(clazz, classCache);
+		}
+
+		Object cached = classCache.get(fieldName);
+
+		if (cached == null) {
+			// Not in cache, try to get it
 			try {
-				return clazz.getField(fieldName);
+				java.lang.reflect.Field field = clazz.getField(fieldName);
+				classCache.put(fieldName, field);
+				return field;
 			} catch (NoSuchFieldException e) {
-				throw new RuntimeException(e);
+				// Cache the fact that this field doesn't exist
+				classCache.put(fieldName, FIELD_NOT_FOUND);
+				throw e;
 			}
-		});
+		} else if (cached == FIELD_NOT_FOUND) {
+			// We've already tried and failed to find this field
+			throw new NoSuchFieldException(fieldName);
+		} else {
+			// Found in cache
+			return (java.lang.reflect.Field) cached;
+		}
 	}
 
 	public Object callMethod(Object value, String method, ClassLeekValue fromClass, Object... args) throws LeekRunException {
