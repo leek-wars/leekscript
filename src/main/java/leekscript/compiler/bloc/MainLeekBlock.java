@@ -323,7 +323,6 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 
 		writer.addLine("public Object runIA(Session session) throws LeekRunException {");
-		writer.addLine("resetCounter();");
 
 		for (var clazz : mUserClassesList) {
 			if (clazz.internal) continue;
