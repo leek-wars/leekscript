@@ -4,6 +4,7 @@ import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
+import leekscript.runner.values.BigIntegerValue;
 
 public class ValueClass {
 
@@ -30,7 +31,14 @@ public class ValueClass {
 				if (s.contains(".")) {
 					return Double.parseDouble(s);
 				} else {
-					return Long.parseLong(s);
+					try {
+						return Long.parseLong(s);
+					} catch (Exception e) { 
+						if (s.endsWith("L")) {
+							s = s.substring(0, s.length() - 1);
+						}
+						return BigIntegerValue.valueOf(ai, s);
+					}
 				}
 			} catch (Exception e) {}
 		}

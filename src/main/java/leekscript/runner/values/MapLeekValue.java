@@ -163,7 +163,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return v;
 	}
 
-	public long put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.intdiv(get(key), value);
 		put(key, v);

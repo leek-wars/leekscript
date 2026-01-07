@@ -20,7 +20,6 @@ import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
-import leekscript.util.Json;
 import leekscript.common.Error;
 
 public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLeekValue {
@@ -313,7 +312,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
-	public long put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = (int) ai.integer(key);
 		if (i < 0) i += size();
@@ -341,7 +340,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
-	public long put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = (int) ai.integer(key);
 		if (i < 0) i += size();
@@ -355,7 +354,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
-	public long put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = (int) ai.integer(key);
 		if (i < 0) i += size();
@@ -369,7 +368,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
-	public long put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = (int) ai.integer(key);
 		if (i < 0) i += size();
@@ -383,7 +382,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
-	public long put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = (int) ai.integer(key);
 		if (i < 0) i += size();
@@ -397,7 +396,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
-	public long put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = (int) ai.integer(key);
 		if (i < 0) i += size();
@@ -411,7 +410,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
-	public long put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = (int) ai.integer(key);
 		if (i < 0) i += size();

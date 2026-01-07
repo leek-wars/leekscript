@@ -3,10 +3,13 @@ package test;
 public class TestFiles extends TestCommon {
 
 	public void run() {
-
+		
 		/** Complex codes */
 		header("Files");
 		section("General");
+		file_v4_("ai/code/bitmap.leek").equals("127495");
+		file_v4_("ai/code/bitmap2.leek").equals("127495");
+		file_v4_("ai/code/bitmap_bigint.leek").equals("127495");
 		file_v2_("ai/code/primes.leek").equals("78498");
 		file_v2_("ai/code/primes_typed.leek").equals("78498");
 		// DISABLED_file("test/code/primes_gmp.leek").equals("9591");

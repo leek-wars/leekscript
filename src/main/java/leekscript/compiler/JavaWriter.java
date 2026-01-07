@@ -196,17 +196,23 @@ public class JavaWriter {
 
 	public void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type) {
 
-		// System.out.println("convert " + value.getType() + " to " + type);
-		if (type == Type.REAL && value.getType().isIntOrReal()) {
-			addCode("(");
+//		 System.out.println("convert " + value.getType().getJavaName(4) + " to " + type.getJavaName(4));
+		if (type == Type.REAL && value.getType().isCompoundNumber()) {
+			addCode("((Number) (");
 			value.writeJavaCode(mainblock, this);
-			addCode(").doubleValue()");
+			addCode(")).doubleValue()");
 			return;
 		}
-		if (type == Type.INT && value.getType().isIntOrReal()) {
-			addCode("(");
+		if (type == Type.INT && value.getType().isCompoundNumber()) {
+			addCode("((Number) (");
 			value.writeJavaCode(mainblock, this);
-			addCode(").longValue()");
+			addCode(")).longValue()");
+			return;
+		}
+		if (type == Type.BIG_INT && value.getType().isNumber()) {
+			addCode("BigIntegerValue.valueOf(" + getAIThis() + ", ");
+			value.writeJavaCode(mainblock, this);
+			addCode(")");
 			return;
 		}
 		var cast = type.accepts(value.getType());
@@ -253,8 +259,13 @@ public class JavaWriter {
 				addCode(")");
 				return;
 			}
+		} else if (type == Type.BIG_INT) {
+			addCode("bigint(");
+			value.writeJavaCode(mainblock, this);
+			addCode(")");
+			return;
 		}
-		// int?, real?
+		// int?, real?, big_integer?
 		if (type instanceof CompoundType ct) {
 			if (ct.getTypes().size() == 2) {
 				if (ct.getTypes().stream().anyMatch(t -> t == Type.NULL)) {
@@ -268,6 +279,24 @@ public class JavaWriter {
 							}
 							if (t == Type.INT && value.getType() == Type.REAL) { // double -> Integer
 								addCode("((long) (");
+								value.writeJavaCode(mainblock, this);
+								addCode("))");
+								return;
+							}
+							if (t == Type.INT && value.getType() == Type.BIG_INT) { // bigint -> Integer
+								addCode("((");
+								value.writeJavaCode(mainblock, this);
+								addCode(").longValue())");
+								return;
+							}
+							if (t == Type.REAL && value.getType() == Type.BIG_INT) { // bigint -> double
+								addCode("((");
+								value.writeJavaCode(mainblock, this);
+								addCode(").doubleValue())");
+								return;
+							}
+							if (t == Type.BIG_INT && value.getType().isNumber()) { // int/double -> bigint
+								addCode("(BigIntegerValue.valueOf(" + getAIThis() + ", ");
 								value.writeJavaCode(mainblock, this);
 								addCode("))");
 								return;
@@ -327,18 +356,20 @@ public class JavaWriter {
 				addCode("Object a" + a);
 			}
 			addLine(") throws LeekRunException {");
-
+			
 			// Conflicting versions ?
 			if (versions.size() > 1) {
-				var other_version = versions.get(1);
-				addCode("if (");
-				for (int a = 0; a < other_version.arguments.length; ++a) {
-					if (a > 0) addCode(" && ");
-					addCode("a" + a + " instanceof " + other_version.arguments[a].getJavaName(block.getVersion()) + " x" + a);
+				for (int i = 1; i < versions.size(); ++i) {
+					var other_version = versions.get(i);
+					addCode("if (");
+					for (int a = 0; a < other_version.arguments.length; ++a) {
+						if (a > 0) addCode(" && ");
+						addCode("a" + a + " instanceof " + other_version.arguments[a].getJavaName(block.getVersion()) + " x" + a);
+					}
+					addLine(") {");
+					writeFunctionCall(block, other_version, true);
+					addLine("}");
 				}
-				addLine(") {");
-				writeFunctionCall(block, other_version, true);
-				addLine("}");
 			}
 
 			int a = 0;
@@ -436,6 +467,9 @@ public class JavaWriter {
 		if (type == Type.INT) {
 			return "longint(" + v + ")";
 		}
+		if (type == Type.BIG_INT) {
+			return "bigint(" + v + ")";
+		}
 		if (type == Type.REAL) {
 			return "real(" + v + ")";
 		}
@@ -446,6 +480,7 @@ public class JavaWriter {
 			if (ct.getTypes().size() == 2 && ct.getTypes().stream().anyMatch(t -> t == Type.NULL)) {
 				for (var t : ct.getTypes()) {
 					if (t != Type.NULL) {
+						if (t == Type.BIG_INT) return "BigIntegerValue.valueOf(" + getAIThis() + ", " + v + ")";
 						if (t == Type.INT) return "(Long) " + v;
 						if (t == Type.REAL) return "(Double) " + v;
 						if (t == Type.BOOL) return "(Boolean) " + v;
