@@ -244,7 +244,7 @@ public class ObjectLeekValue implements LeekValue {
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_intdiv_eq(String field, Object value) throws LeekRunException {
+	public Number field_intdiv_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
@@ -268,7 +268,7 @@ public class ObjectLeekValue implements LeekValue {
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_bor_eq(String field, Object value) throws LeekRunException {
+	public Number field_bor_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
@@ -280,7 +280,7 @@ public class ObjectLeekValue implements LeekValue {
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_bxor_eq(String field, Object value) throws LeekRunException {
+	public Number field_bxor_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
@@ -292,7 +292,7 @@ public class ObjectLeekValue implements LeekValue {
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_band_eq(String field, Object value) throws LeekRunException {
+	public Number field_band_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
@@ -304,7 +304,7 @@ public class ObjectLeekValue implements LeekValue {
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_shl_eq(String field, Object value) throws LeekRunException {
+	public Number field_shl_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
@@ -316,7 +316,7 @@ public class ObjectLeekValue implements LeekValue {
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_shr_eq(String field, Object value) throws LeekRunException {
+	public Number field_shr_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
@@ -328,7 +328,7 @@ public class ObjectLeekValue implements LeekValue {
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_ushr_eq(String field, Object value) throws LeekRunException {
+	public Number field_ushr_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {

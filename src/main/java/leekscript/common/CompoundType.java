@@ -185,8 +185,8 @@ public class CompoundType extends Type {
 	}
 
 
-	public boolean isIntOrReal() {
-		return types.size() == 2 && types.contains(Type.INT) && types.contains(Type.REAL);
+	public boolean isCompoundNumber() {
+		return types.size() >= 2 && types.stream().allMatch(t -> t.isNumber());
 	}
 
 	public String getJavaPrimitiveName(int version) {

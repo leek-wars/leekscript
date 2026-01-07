@@ -819,6 +819,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			switch (token.getWord()) {
 				case "Array": return "ArrayLeekValue";
 				case "Map": return "MapLeekValue";
+				case "BigInteger": return "BigIntegerValue";
 			}
 		}
 		return "u_" + token.getWord();

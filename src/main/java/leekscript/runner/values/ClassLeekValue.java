@@ -2,6 +2,8 @@ package leekscript.runner.values;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigInteger;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -14,6 +16,7 @@ import leekscript.runner.LeekRunException;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.Type;
+import leekscript.runner.values.BigIntegerValue;
 
 public class ClassLeekValue extends FunctionLeekValue<Object> {
 
@@ -322,7 +325,7 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		return result.div_eq(value);
 	}
 
-	public long field_intdiv_eq(String field, Object value) throws LeekRunException {
+	public Number field_intdiv_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.intdiv_eq(value);
 	}
@@ -332,32 +335,32 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		return result.mod_eq(value);
 	}
 
-	public long field_bor_eq(String field, Object value) throws LeekRunException {
+	public Number field_bor_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.bor_eq(value);
 	}
 
-	public long field_bxor_eq(String field, Object value) throws LeekRunException {
+	public Number field_bxor_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.bxor_eq(value);
 	}
 
-	public long field_band_eq(String field, Object value) throws LeekRunException {
+	public Number field_band_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.band_eq(value);
 	}
 
-	public long field_shl_eq(String field, Object value) throws LeekRunException {
+	public Number field_shl_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.shl_eq(value);
 	}
 
-	public long field_shr_eq(String field, Object value) throws LeekRunException {
+	public Number field_shr_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.shr_eq(value);
 	}
 
-	public long field_ushr_eq(String field, Object value) throws LeekRunException {
+	public Number field_ushr_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.ushr_eq(value);
 	}
@@ -416,6 +419,7 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		if (this == ai.nullClass) return null;
 		if (this == ai.booleanClass) return false;
 		if (this == ai.integerClass) return 0l;
+		if (this == ai.bigIntegerClass) return new BigIntegerValue(ai, BigInteger.ZERO);
 		if (this == ai.realClass || this == ai.numberClass) return 0.0;
 		if (this == ai.stringClass) return "";
 		if (this == ai.legacyArrayClass) {
