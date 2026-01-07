@@ -1,0 +1,15 @@
+
+var acc = [];
+var arr = [];
+var walkable = [];
+fill(acc, 111111, 20);
+fill(arr, 111111, 20);
+fill(walkable, 123456, 20);
+
+for (var k in [0..10000]) {
+    for (var i in [0..18]) {
+        acc[i] |= walkable[i] & (arr[i] | arr[i+1] | (arr[i] >> 1) | (arr[i+1] >> 1));
+    }
+}
+
+return acc[18];

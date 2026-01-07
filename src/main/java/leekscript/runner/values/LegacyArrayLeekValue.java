@@ -417,7 +417,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return getOrCreate(ai, key).div_eq(value);
 	}
 
-	public long put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
 		return getOrCreate(ai, key).intdiv_eq(value);
 	}
 
@@ -425,27 +425,27 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return getOrCreate(ai, key).mod_eq(value);
 	}
 
-	public long put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		return getOrCreate(ai, key).bor_eq(value);
 	}
 
-	public long put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
 		return getOrCreate(ai, key).band_eq(value);
 	}
 
-	public long put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		return getOrCreate(ai, key).bxor_eq(value);
 	}
 
-	public long put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
 		return getOrCreate(ai, key).shl_eq(value);
 	}
 
-	public long put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		return getOrCreate(ai, key).shr_eq(value);
 	}
 
-	public long put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Number put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		return getOrCreate(ai, key).ushr_eq(value);
 	}
 
