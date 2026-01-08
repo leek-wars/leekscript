@@ -20,6 +20,7 @@ import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
+import leekscript.util.Json;
 import leekscript.common.Error;
 
 public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLeekValue {

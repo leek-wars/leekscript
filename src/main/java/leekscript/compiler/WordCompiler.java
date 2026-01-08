@@ -1579,9 +1579,10 @@ public class WordCompiler {
 					if (s.contains("__")) {
 						addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.MULTIPLE_NUMERIC_SEPARATORS));
 					}
-					s = word.getWord().replace("_", "");
+					s = word.getWord();
 					var radix = s.startsWith("0x") ? 16 : s.startsWith("0b") ? 2 : 10;
 					if (radix != 10) s = s.substring(2);
+					s = s.replace("_", "");
 					if (s.endsWith("L")) {
 						try {
 							s = s.substring(0, s.length() - 1);
