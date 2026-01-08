@@ -201,6 +201,7 @@ public class TestCommon {
 				ai = is_file ? LeekScript.compileFile(code, "AI", options) : LeekScript.compileSnippet(code, "AI", options);
 				ai.init();
 				ai.staticInit();
+				ai.resetCounter();
 				aiID = ai.getId();
 
 				compile_time = ai.getCompileTime() / 1000000;
