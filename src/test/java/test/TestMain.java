@@ -20,7 +20,7 @@ public class TestMain {
 
         System.out.println("Start tests...");
 
-		// TestCommon.loadReferenceOperations();
+		TestCommon.loadReferenceOperations();
 
 		// new TestCommon().code_v4("var a = [1, 2, 3] return count(a)").equals("3");
 
@@ -50,7 +50,7 @@ public class TestMain {
 		new TestFiles().run();
 		new TestEuler().run();
 
-		// TestCommon.ouputOperationsFile();
+		TestCommon.ouputOperationsFile();
 		Assert.assertTrue(TestCommon.summary());
 
     }

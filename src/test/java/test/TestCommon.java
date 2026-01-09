@@ -37,7 +37,7 @@ public class TestCommon {
 	// private static long load_time = 0;
 	private static long execution_time = 0;
 	private static ArrayList<Long> operationsReference = new ArrayList<>();
-	// private static int operationsReferenceIndex = 0;
+	private static int operationsReferenceIndex = 0;
 	private static ArrayList<Long> operations = new ArrayList<>();
 
 	private static List<String> failedTests = new ArrayList<String>();
@@ -239,9 +239,6 @@ public class TestCommon {
 				}
 			}
 
-			operations.add(ops);
-			// long referenceOperations = operationsReference.get(operationsReferenceIndex++);
-
 			if (checker.check(result)) {
 				int ops_per_ms = (int) Math.round(1000 * (double) result.operations / result.exec_time);
 				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops, " + ops_per_ms + " ops/ms" + END_COLOR);
@@ -252,6 +249,20 @@ public class TestCommon {
 				System.out.println(err);
 				failedTests.add(err);
 			}
+
+			operations.add(ops);
+			if (operationsReference.size() > 0) {
+				long referenceOperations = operationsReference.get(operationsReferenceIndex);
+				if (ops != referenceOperations) {
+					var err = C_RED + "[OPS] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " Wrong operations: " + ops + ", expected " + referenceOperations;
+					System.out.println(err);
+					failedTests.add(err);
+				} else {
+					System.out.println(GREEN_BOLD + "[OPS]" + END_COLOR + " Good operations: " + ops);
+				}
+			}
+			operationsReferenceIndex++;
+
 			return result.result;
 		}
 
@@ -424,6 +435,7 @@ public class TestCommon {
 				myWriter.write(String.valueOf(ops) + "\n");
 			}
 			myWriter.close();
+			System.out.println("opérations.txt written");
 		} catch (IOException e) {
 			System.out.println("An error occurred.");
 			e.printStackTrace();
