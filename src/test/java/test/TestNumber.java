@@ -1,9 +1,16 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestNumber extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 
 		header("Numbers");
@@ -1258,5 +1265,6 @@ public class TestNumber extends TestCommon {
 		code_v4_("return isPermutation(12345678, 51762384)").equals("true");
 		code_v4_("return isPermutation(11112222, 22221111)").equals("true");
 		code_v4_("return isPermutation(123456, 12345678)").equals("false");
+
 	}
 }

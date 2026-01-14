@@ -1,9 +1,16 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestGlobals extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 
 		section("Globals");
@@ -82,5 +89,8 @@ public class TestGlobals extends TestCommon {
 		code_v4_("global x global y = [1:2] x = (y[1] = [:])").equals("[:]");
 		code_v4_("var z = 2 global x global y = [1:2] x = (y[z] = [:])").equals("[:]");
 		code_v4_("var e = 2 var f = 4 global x global y = [1:2] x = (y[e | f << 2] = [:])").equals("[:]");
+		code_v4_("global Array<integer> CELL_X = function() => Array<integer> { return [] }() CELL_X").equals("[]");
+		code_v4_("global Map<integer, Map<integer, boolean>> x x = (x[1] = [:]) x").equals("[:]");
+		code_v4_("global Map<integer, Map<integer, Map<integer, boolean>>> y = [:] global Map<integer, Map<integer, boolean>> x x = (y[5] = [:]) x").debug().equals("[:]");
 	}
 }

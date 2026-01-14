@@ -1,10 +1,17 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestFunction extends TestCommon {
 
-	public void run() {
+
+	@Test
+	public void run() throws Exception {
 
 		section("Function");
 		code_v1_2("return function() {}").equals("#Anonymous Function");
@@ -317,5 +324,6 @@ public class TestFunction extends TestCommon {
 		code("return? 'test'").equals("\"test\"");
 		code("return? null 5").equals("5");
 		code("return? null return? null 5").equals("5");
+
 	}
 }

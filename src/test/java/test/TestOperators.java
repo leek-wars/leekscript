@@ -2,10 +2,18 @@ package test;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestOperators extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 
 		section("Operator ==");
@@ -279,5 +287,6 @@ public class TestOperators extends TestCommon {
 			}
 		}
 		System.out.println(results);
+
 	}
 }

@@ -2,8 +2,6 @@ package test;
 
 import java.util.Locale;
 
-import org.junit.Assert;
-
 public class TestMain {
 
 	public static void main(String[] args) throws Exception {
@@ -51,7 +49,7 @@ public class TestMain {
 		new TestEuler().run();
 
 		TestCommon.ouputOperationsFile();
-		Assert.assertTrue(TestCommon.summary());
 
-    }
+		TestCommon.summary();
+	}
 }

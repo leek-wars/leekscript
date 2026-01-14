@@ -1,7 +1,14 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+@ExtendWith(SummaryExtension.class)
 public class TestIf extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 		/*
 		* Conditions
@@ -91,5 +98,6 @@ public class TestIf extends TestCommon {
 		code("return true ? true ? false ? 5 : 12 : 7 : 8;").equals("12");
 		code("return true ? false ? false ? 5 : 12 : 7 : 8;").equals("7");
 		code("return (5 > 10) ? 'a' : (4 == 2 ** 2) ? 'yes' : 'no';").equals("\"yes\"");
+
 	}
 }

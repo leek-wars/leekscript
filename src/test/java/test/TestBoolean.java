@@ -1,10 +1,17 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestBoolean extends TestCommon {
 
-	public void run() {
+
+	@Test
+	public void run() throws Exception {
 
 		section("Boolean");
 		code_v1_2("return true").equals("true");
@@ -40,5 +47,6 @@ public class TestBoolean extends TestCommon {
 		code("return true xor false").equals("true");
 		code("return false xor true").equals("true");
 		code("return false xor false").equals("false");
+
 	}
 }

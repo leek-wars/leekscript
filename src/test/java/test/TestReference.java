@@ -1,9 +1,16 @@
 
-
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+
+@ExtendWith(SummaryExtension.class)
 public class TestReference extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 
 		section("Références");
@@ -36,5 +43,6 @@ public class TestReference extends TestCommon {
 		code("var a = @[1, 2, 3]; var b = @a; return (@(b));").equals("[1, 2, 3]");
 		code("var x = 7 var y = @x var f = function() { y = x } f() return y").equals("7");
 		code("global x = 7 var y = @x var f = function() { y = x } f() return y").equals("7");
+
 	}
 }

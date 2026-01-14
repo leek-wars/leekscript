@@ -33,7 +33,9 @@ repositories {
 }
 
 dependencies {
-	testImplementation 'junit:junit:4.13.2'
+	testImplementation platform('org.junit:junit-bom:5.11.4')
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation platform('tools.jackson:jackson-bom:3.0.3')
 	implementation 'tools.jackson.core:jackson-databind'
 	implementation 'tools.jackson.core:jackson-core'
@@ -42,10 +44,17 @@ dependencies {
 
 task tests(type: Exec) {
 	group = "Execution"
-	description = "Run the main class with ExecTask"
+	description = "Run all tests via TestMain"
 	commandLine "java", "-classpath", sourceSets.test.runtimeClasspath.getAsPath(), "test.TestMain"
 }
+
 test {
-	dependsOn(tests)
-	exclude '**/*'
+	useJUnitPlatform()
+	filter {
+		includeTestsMatching "test.Test*"
+	}
+	testLogging {
+		showStandardStreams = true
+		events "passed", "skipped", "failed"
+	}
 }

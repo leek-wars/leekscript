@@ -1,12 +1,20 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+
 import leekscript.runner.LeekConstants;
 import leekscript.common.Error;
 import leekscript.compiler.LexicalParser;
 
+@ExtendWith(SummaryExtension.class)
 public class TestGeneral extends TestCommon {
 
-	public void run() {
+
+	@Test
+	public void run() throws Exception {
 
 		section("null");
 		code_v1_2("return null").equals("null");
@@ -214,5 +222,6 @@ public class TestGeneral extends TestCommon {
 		code_v2_("real a = 1.9 integer b = a return b").equals("1");
 		DISABLED_code_v1("integer|real a = 1.999; integer b = a; return b").equals("1");
 		code_v2_("integer|real a = 1.999; integer b = a; return b").equals("1");
+
 	}
 }

@@ -1,8 +1,15 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+@ExtendWith(SummaryExtension.class)
 public class TestOperations extends TestCommon {
 
-	public void run() {
+
+	@Test
+	public void run() throws Exception {
 		header("Operations");
 
 		section("Operators");
@@ -24,5 +31,6 @@ public class TestOperations extends TestCommon {
 		code("(1 + 1) and (2 + 2)").ops(3);
 		code("(1 + 1) or (2 + 2) or (3 + 3)").ops(2);
 		code("(1 + 1) and (2 + 2) and (3 + 3)").ops(5);
+
 	}
 }

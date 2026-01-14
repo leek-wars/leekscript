@@ -1,5 +1,8 @@
 package test;
 
+import org.junit.jupiter.api.extension.ExtendWith;
+
+@ExtendWith(SummaryExtension.class)
 public class TestFiles extends TestCommon {
 
 	public void run() {
@@ -57,5 +60,6 @@ public class TestFiles extends TestCommon {
 		// file("ai/code/pow5.leek").equals("6938893903907228377647697925567626953125");
 		file("ai/code/tarai.leek").equals("16");
 		file("ai/code/return_in_function.leek").equals("2");
+
 	}
 }

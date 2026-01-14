@@ -1,7 +1,14 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+@ExtendWith(SummaryExtension.class)
 public class TestInterval extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 
 		section("Interval.constructor()");
@@ -206,7 +213,6 @@ public class TestInterval extends TestCommon {
 		code("return intervalToArray([0..5[, -1);").equals("[4, 3, 2, 1, 0]");
 		code("return intervalToArray(]0..5[, -1);").equals("[4, 3, 2, 1]");
 
-
 		section("Interval.intervalToSet()");
 		code_v4_("return intervalToSet([1.0 ..2.0])").equals("<1.0, 2.0>");
 		code_v4_("return intervalToSet([-2.0 ..2.0])").equals("<-2.0, -1.0, 0.0, 1.0, 2.0>");
@@ -272,5 +278,6 @@ public class TestInterval extends TestCommon {
 		code_v2_("var i = [1.0..5.0[ var x = 0.0 for (var y in i) x += y return x").equals("10.0");
 		code_v2_("var i = ]1.0..5.0] var x = 0.0 for (var y in i) x += y return x").equals("14.0");
 		code_v2_("var i = ]1.0..5.0[ var x = 0.0 for (var y in i) x += y return x").equals("9.0");
+
 	}
 }

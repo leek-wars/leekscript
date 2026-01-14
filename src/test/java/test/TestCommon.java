@@ -21,6 +21,8 @@ import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.common.Error;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class TestCommon {
 
 	private static String GREEN_BOLD = "\033[1;32m";
@@ -243,11 +245,13 @@ public class TestCommon {
 				int ops_per_ms = (int) Math.round(1000 * (double) result.operations / result.exec_time);
 				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops, " + ops_per_ms + " ops/ms" + END_COLOR);
 				success++;
+				// assertTrue(true, "Test");
 			} else {
 				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
 				"/home/pierre/dev/leek-wars/generator/leekscript/ai/AI_" + aiID + ".java";
 				System.out.println(err);
 				failedTests.add(err);
+				// assertEquals(checker.getExpected(), checker.getResult(result), code);
 			}
 
 			operations.add(ops);
@@ -402,7 +406,7 @@ public class TestCommon {
 		System.out.println("================================================");
 	}
 
-	public static boolean summary() {
+	public static void summary() {
 		System.out.println("================================================");
 		System.out.println(success + " / " + tests + " tests passed, " + (tests - success) + " errors, " + disabled + " disabled");
 		System.out.println("Total time: " + fn(analyze_time + compile_time + execution_time) + " ms"
@@ -417,7 +421,7 @@ public class TestCommon {
 		for (String test : failedTests) {
 			System.out.println(test);
 		}
-		return success == tests;
+		assertEquals(tests, success, "Some tests failed");
 	}
 
 	public static String fn(long n) {

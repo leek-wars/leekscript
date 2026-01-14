@@ -1,10 +1,18 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestObject extends TestCommon {
 
-	public void run() {
+
+	@Test
+	public void run() throws Exception {
 
 		section("Objects");
 		code_v3_("return Object()").equals("{}");
@@ -75,7 +83,6 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { f constructor(x, y = x, z = y) { f = x * y * z } } return A(9).f").equals("729");
 		code_v2_("class A { f constructor(x = 12) { f = arrayMap([1, 1, 1], (_) => x) } } return new A().f").equals("[12, 12, 12]");
 		code_v2_("class A { f constructor(x = 12, y = x) { f = arrayMap([1, 1, 1], (_) => x + y) } } return new A().f").equals("[24, 24, 24]");
-
 
 		section("Static fields");
 		code_v2_("class A { static x }").equals("null");
@@ -835,5 +842,6 @@ public class TestObject extends TestCommon {
 
 		section("string() method");
 		code_v2_("class A { string() { return 'test' } } return new A()").equals("test");
+
 	}
 }
