@@ -1,10 +1,12 @@
 package test;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(SummaryExtension.class)
 public class TestFiles extends TestCommon {
 
+	@Test
 	public void run() {
 
 		/** Complex codes */

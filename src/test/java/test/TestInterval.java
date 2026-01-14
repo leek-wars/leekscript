@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 @ExtendWith(SummaryExtension.class)
 public class TestInterval extends TestCommon {
 
-
 	@Test
 	public void run() throws Exception {
 
