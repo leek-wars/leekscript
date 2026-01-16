@@ -91,6 +91,6 @@ public class TestGlobals extends TestCommon {
 		code_v4_("var e = 2 var f = 4 global x global y = [1:2] x = (y[e | f << 2] = [:])").equals("[:]");
 		code_v4_("global Array<integer> CELL_X = function() => Array<integer> { return [] }() CELL_X").equals("[]");
 		code_v4_("global Map<integer, Map<integer, boolean>> x x = (x[1] = [:]) x").equals("[:]");
-		code_v4_("global Map<integer, Map<integer, Map<integer, boolean>>> y = [:] global Map<integer, Map<integer, boolean>> x x = (y[5] = [:]) x").debug().equals("[:]");
+		code_v4_("global Map<integer, Map<integer, Map<integer, boolean>>> y = [:] global Map<integer, Map<integer, boolean>> x x = (y[5] = [:]) x").equals("[:]");
 	}
 }
