@@ -3115,8 +3115,8 @@ public abstract class AI {
 	}
 
 	public MapLeekValue toMap(int index, Object value) throws LeekRunException {
-		if (value instanceof MapLeekValue) {
-			return (MapLeekValue) value;
+		if (value instanceof MapLeekValue map) {
+			return map;
 		}
 		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new Object[] {
 			String.valueOf(index),

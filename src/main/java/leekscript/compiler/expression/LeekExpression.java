@@ -1099,6 +1099,10 @@ public class LeekExpression extends Expression {
 			if (type instanceof CompoundType ct && ct.getTypes().stream().anyMatch(t -> t == Type.NULL) && !mExpression2.getType().canBeNull()) {
 				type = ct.assertNotNull();
 			}
+			// En non strict, a[1] = 12 marche et renvoie null, donc le type de l'opération est integer | null
+			if (mExpression1 instanceof LeekArrayAccess && !compiler.getMainBlock().isStrict()) {
+				type = Type.compound(type, Type.NULL);
+			}
 		} else if (mOperator == Operators.ADDASSIGN) {
 			type = mExpression1.getType().add(mExpression2.getType());
 		} else if (mOperator == Operators.MINUSASSIGN) {
