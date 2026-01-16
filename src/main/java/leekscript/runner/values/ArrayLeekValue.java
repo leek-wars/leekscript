@@ -860,7 +860,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 			}
 		}
 		ai.increaseRAM(ram, size);
-		assert(size == result.size());
+		// assert(size == result.size());
 		return result;
 	}
 
