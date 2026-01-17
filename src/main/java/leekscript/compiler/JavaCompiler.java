@@ -4,7 +4,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.net.MalformedURLException;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
@@ -34,22 +35,43 @@ public class JavaCompiler {
 		}
 	}
 
+	// SoftReference avec nom de classe pour le logging
+	private static class AIClassSoftReference extends SoftReference<AIClassEntry> {
+		final String className;
+		public AIClassSoftReference(String className, AIClassEntry entry, ReferenceQueue<AIClassEntry> queue) {
+			super(entry, queue);
+			this.className = className;
+		}
+	}
+
 	private static javax.tools.JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 	public final static String IA_PATH = "ai";
 	private static String classpath;
 	private static List<String> arguments = new ArrayList<>();
-	private static URLClassLoader urlLoader;
-	private static HashMap<String, AIClassEntry> aiCache = new HashMap<>();
+	private static HashMap<String, AIClassSoftReference> aiCache = new HashMap<>();
+	private static ReferenceQueue<AIClassEntry> refQueue = new ReferenceQueue<>();
 
 	static {
 		classpath = new File(LeekScript.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getPath();
 		classpath += ":/home/pierre/dev/leek-wars/generator/bin/main";
 		arguments.addAll(Arrays.asList("-classpath", classpath, "-nowarn"));
-		try {
-			urlLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, new ClassLoader() {});
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
+
+		// Thread de monitoring des classes libérées par le GC
+		Thread monitor = new Thread(() -> {
+			while (true) {
+				try {
+					// Bloque jusqu'à ce qu'une référence soit collectée
+					var ref = (AIClassSoftReference) refQueue.remove();
+					System.out.println("[SoftRef GC] Class " + ref.className + " was garbage collected");
+					// Nettoie l'entrée orpheline du cache
+					aiCache.remove(ref.className);
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+		}, "AICache-GC-Monitor");
+		monitor.setDaemon(true);
+		monitor.start();
 	}
 
 	public static AI compile(AIFile file, Options options) throws LeekScriptException, LeekCompilerException {
@@ -63,7 +85,11 @@ public class JavaCompiler {
 		File lines = Paths.get(IA_PATH, file.getJavaClass() + ".lines").toFile();
 
 		// Cache des classes en RAM d'abord
-		var entry = aiCache.get(file.getJavaClass());
+		var ref = aiCache.get(file.getJavaClass());
+		var entry = ref != null ? ref.get() : null;
+		if (ref != null && entry == null) {
+			System.out.println("[SoftRef] Class " + file.getJavaClass() + " was garbage collected, reloading");
+		}
 		if (entry != null && entry.timestamp >= file.getTimestamp()) {
 			// System.out.println("Load AI " + file.getPath() + " from RAM");
 			try {
@@ -81,14 +107,13 @@ public class JavaCompiler {
 		if (options.useCache() && compiled.exists() && compiled.length() != 0 && compiled.lastModified() >= file.getTimestamp()) {
 			// System.out.println("Load AI " + file.getPath() + " from disk");
 			try {
-				try {
-					urlLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, new ClassLoader() {});
-				} catch (MalformedURLException e) {
-					e.printStackTrace();
-				}
-				var clazz = urlLoader.loadClass(file.getJavaClass());
+				// Chaque AI a son propre ClassLoader éphémère pour permettre le GC des classes
+				// Le ClassLoader ne doit pas être fermé car il invaliderait la classe chargée
+				@SuppressWarnings("resource")
+				var classLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, JavaCompiler.class.getClassLoader());
+				var clazz = classLoader.loadClass(file.getJavaClass());
 				entry = new AIClassEntry(clazz, file.getTimestamp());
-				aiCache.put(file.getJavaClass(), entry);
+				aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), entry, refQueue));
 				var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
 				ai.setId(file.getId());
 				ai.setFile(file);
@@ -209,7 +234,7 @@ public class JavaCompiler {
 			ai.increaseRAMDirect((int) (java.length() * 10));
 
 			if (options.useCache()) {
-				aiCache.put(file.getJavaClass(), new AIClassEntry(clazz, file.getTimestamp()));
+				aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), new AIClassEntry(clazz, file.getTimestamp()), refQueue));
 			}
 			return ai;
 		} catch (Exception e) {
