@@ -39,113 +39,79 @@ public abstract class Expression {
 	}
 
 	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" = ");
-		writer.compileConvert(mainblock, 0, expr, this.getType());
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" = ");
-		writer.compileClone(mainblock, expr);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode("++");
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode("--");
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("++");
-		writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("--");
-		writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" += ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" -= ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type type) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" *= ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" /= ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" /= ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" **= ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" %= ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" |= ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" &= ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" ^= ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" <<= ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" >>= ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		writeJavaCode(mainblock, writer);
-		writer.addCode(" >>>= ");
-		expr.writeJavaCode(mainblock, writer);
+		throw new RuntimeException("Abstract method");
 	}
 
 	public abstract boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException;

@@ -478,12 +478,8 @@ public class TestNumber extends TestCommon {
 		code("var a = 10 a += 5 return a;").equals("15");
 		code("var a = 10 a += 78 return a;").equals("88");
 		code("var a = 10 a += (-6) return a;").equals("4");
-		// DISABLED_code("var a = 10m return a += 4m;").equals("14");
-		// DISABLED_code("var a = 10m a += 4m return a;").equals("14");
-		// DISABLED_code("var a = 15 return ['', a += 7];").equals("['', 22]");
-		// DISABLED_code("var a = 10m a += 5 return a;").equals("15");
-		// DISABLED_code("var a = 10m a += 78m return a;").equals("88");
-		// DISABLED_code("var a = 10m a += (-6) return a;").equals("4");
+		code_v1("integer|real x = 0 x += 0.3 x").equals("0,3");
+		code_v2_("integer|real x = 0 x += 0.3 x").equals("0.3");
 	}
 
 	@Test
@@ -522,6 +518,8 @@ public class TestNumber extends TestCommon {
 		// code("var a = 15$ a -= []").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		// code("var a = 15$ a -= [] a").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		code("var a = 15 return ['', a -= 6];").equals("[\"\", 9]");
+		code_v1("integer|real x = 10 x -= 0.3 x").equals("9,7");
+		code_v2_("integer|real x = 10 x -= 0.3 x").equals("9.7");
 	}
 
 	@Test
@@ -571,6 +569,8 @@ public class TestNumber extends TestCommon {
 		// DISABLED_code("var a = 5m a *= 5m a").equals("25");
 		// DISABLED_code("var a = 91591785496891278315799124157189514175m a *= 157854689278315792457851475m a").equals("14458192840057923568549758280294876918394393505787702519557158125");
 		// DISABLED_code("var a = 78m a *= true a").equals("78");
+		code_v1("integer|real x = 10 x *= 0.5 x").equals("5");
+		code_v2_("integer|real x = 10 x *= 0.5 x").equals("5.0");
 	}
 
 	@Test
