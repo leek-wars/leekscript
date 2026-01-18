@@ -387,13 +387,7 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.GLOBAL) {
 			if (mainblock.getWordCompiler().getVersion() >= 2) {
 				writer.addCode("g_" + token.getWord() + " = ");
-				if (this.variable.getType() != Type.ANY && this.variable.getType() != expr.getType()) {
-					writer.addCode("(" + this.variable.getType().getJavaName(mainblock.getVersion()) + ") (");
-				}
-				expr.writeJavaCode(mainblock, writer);
-				if (this.variable.getType() != Type.ANY && this.variable.getType() != expr.getType()) {
-					writer.addCode(")");
-				}
+				writer.compileConvert(mainblock, 0, expr, this.variable.getType());
 			} else {
 				writer.addCode("g_" + token.getWord() + ".set(");
 				expr.writeJavaCode(mainblock, writer);

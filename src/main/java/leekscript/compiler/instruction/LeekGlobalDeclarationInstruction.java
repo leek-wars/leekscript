@@ -59,7 +59,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 					writer.addCode("(" + variable.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 				}
 				if (mValue.getOperations() > 0) writer.addCode("ops(");
-				mValue.writeJavaCode(mainblock, writer);
+				writer.compileConvert(mainblock, 0, mValue, variable.getType());
 				if (mValue.getOperations() > 0) writer.addCode(", " + mValue.getOperations() + ")");
 			} else {
 				writer.addCode(this.variable.getType().getDefaultValue(writer, mainblock.getVersion()));

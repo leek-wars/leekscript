@@ -880,14 +880,11 @@ public class LeekExpression extends Expression {
 			writer.addCode(")");
 			return;
 		case Operators.AS:
-			if (mExpression2 instanceof LeekType lt) {
-				if (lt.getType().accepts(mExpression1.getType()) != CastType.EQUALS) {
-					writer.addCode("(");
-					mExpression2.writeJavaCode(mainblock, writer);
-					writer.addCode(") ");
-				}
+			if (mExpression2 instanceof LeekType lt && lt.getType().accepts(mExpression1.getType()) != CastType.EQUALS) {
+				writer.compileConvert(mainblock, 0, mExpression1, lt.getType());
+			} else {
+				mExpression1.writeJavaCode(mainblock, writer);
 			}
-			mExpression1.writeJavaCode(mainblock, writer);
 			return;
 		case Operators.IN:
 			writer.addCode("operatorIn(");
