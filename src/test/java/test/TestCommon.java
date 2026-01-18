@@ -231,7 +231,7 @@ public class TestCommon {
 			} catch (LeekRunException e) {
 				long exec_time = (System.nanoTime() - t) / 1000;
 				result = new Result(e.getError().toString(), ai, e.getError(), new String[0], ai.getOperations(), exec_time);
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				if (ai != null) {
 					var error = ai.throwableToError(e);
 					result = new Result(error.type.toString(), ai, error.type, error.parameters, 0, 0);
