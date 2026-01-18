@@ -885,7 +885,7 @@ public abstract class AI {
 			}
 			return ((Number) x).doubleValue() < ((Number) y).doubleValue();
 		}
-		return longint(x) < longint(y);
+		return real(x) < real(y);
 	}
 
 	public boolean more(Object x, Object y) throws LeekRunException {
@@ -895,7 +895,7 @@ public abstract class AI {
 			}
 			return ((Number) x).doubleValue() > ((Number) y).doubleValue();
 		}
-		return longint(x) > longint(y);
+		return real(x) > real(y);
 	}
 
 	public boolean lessequals(Object x, Object y) throws LeekRunException {
@@ -905,7 +905,7 @@ public abstract class AI {
 			}
 			return ((Number) x).doubleValue() <= ((Number) y).doubleValue();
 		}
-		return longint(x) <= longint(y);
+		return real(x) <= real(y);
 	}
 
 	public boolean moreequals(Object x, Object y) throws LeekRunException {
@@ -915,7 +915,7 @@ public abstract class AI {
 			}
 			return ((Number) x).doubleValue() >= ((Number) y).doubleValue();
 		}
-		return longint(x) >= longint(y);
+		return real(x) >= real(y);
 	}
 
 	public boolean bool(Object value) {
