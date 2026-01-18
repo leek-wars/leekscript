@@ -66,7 +66,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		set(key, value);
 	}
 
-	public Object set(Object key, Object value) throws LeekRunException {
+	public <V> V set(Object key, V value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		if (!containsKey(key)) {
 			ai.increaseRAM(ram, 2);
