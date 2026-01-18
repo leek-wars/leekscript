@@ -5,6 +5,10 @@ java {
 	targetCompatibility = JavaVersion.VERSION_25
 }
 
+compileJava {
+	options.compilerArgs << '-Xlint:unchecked'
+}
+
 sourceSets {
 	test {
 		java {
