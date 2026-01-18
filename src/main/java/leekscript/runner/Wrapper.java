@@ -7,21 +7,21 @@ public class Wrapper<T> {
 
 	private Box<T> variable;
 
-	public Wrapper(Box variable) {
+	public Wrapper(Box<T> variable) {
 		this.variable = variable;
 	}
 
-	public Wrapper(Box variable, int ops) throws LeekRunException {
+	public Wrapper(Box<T> variable, int ops) throws LeekRunException {
 		this.variable = variable;
 		this.variable.getAI().ops(ops);
 	}
 
-	public Wrapper(Wrapper wrapper, int ops) throws LeekRunException {
+	public Wrapper(Wrapper<T> wrapper, int ops) throws LeekRunException {
 		this.variable = wrapper.variable;
 		this.variable.getAI().ops(ops);
 	}
 
-	public Object setBox(Box variable) {
+	public Object setBox(Box<T> variable) {
 		this.variable = variable;
 		return this.variable.get();
 	}
@@ -31,9 +31,10 @@ public class Wrapper<T> {
 		return value;
 	}
 
+	@SuppressWarnings("unchecked")
 	public Object setBoxOrValue(Object value) throws LeekRunException {
-		if (value instanceof Box box) {
-			this.variable = box;
+		if (value instanceof Box<?> box) {
+			this.variable = (Box<T>) box;
 			return this.variable.get();
 		} else {
 			return this.variable.set(value);
