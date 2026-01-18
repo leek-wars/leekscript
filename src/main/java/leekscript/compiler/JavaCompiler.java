@@ -51,6 +51,10 @@ public class JavaCompiler {
 	private static HashMap<String, AIClassSoftReference> aiCache = new HashMap<>();
 	private static ReferenceQueue<AIClassEntry> refQueue = new ReferenceQueue<>();
 
+	public static int getCacheSize() {
+		return aiCache.size();
+	}
+
 	static {
 		classpath = new File(LeekScript.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getPath();
 		classpath += ":/home/pierre/dev/leek-wars/generator/bin/main";
