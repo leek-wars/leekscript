@@ -270,8 +270,9 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 		mainblock.getWordCompiler().setCurrentBlock(initialBlock);
 
-		writer.addLine(sb.toString(), getLocation());
 		writer.addCounter(1);
+		writer.addLine(sb.toString(), getLocation());
+		
 		// Instructions
 		super.writeJavaCode(mainblock, writer);
 

@@ -145,49 +145,50 @@ public class ForeachBlock extends AbstractLeekBlock {
 		}
 		writer.addCode(", " + mArray.getOperations() + ");");
 
-		writer.addLine("if (isIterable(" + ar + ")) {", mIterator.getLocation());
+		writer.addCode("if (isIterable(" + ar + ")) { ");
 		if (mIsDeclaration) {
 			if (declaration.isCaptured()) {
 				writer.addCode("final Wrapper<" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + "> " + iterator_name + " = new Wrapper<" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ">(new Box(" + writer.getAIThis() + ", null));");
 			} else if (mainblock.getVersion() >= 2) {
-				writer.addLine(declaration.getVariable().getType().getJavaName(mainblock.getVersion()) + " " + iterator_name + " = null;");
+				writer.addCode(declaration.getVariable().getType().getJavaName(mainblock.getVersion()) + " " + iterator_name + " = null;");
 				writer.addCounter(1);
 			} else {
-				writer.addLine("var " + iterator_name + " = new Box(" + writer.getAIThis() + ", null);");
+				writer.addCode("var " + iterator_name + " = new Box(" + writer.getAIThis() + ", null);");
 			}
 		} else {
 			writer.addCounter(1);
 		}
 
 		// On fait le parcours
-		writer.addLine("var " + it + " = iterator(" + ar + "); while (" + it + ".hasNext()) { var " + var + " = " + it + ".next(); ");
+		writer.addCode("var " + it + " = iterator(" + ar + "); while (" + it + ".hasNext()) { var " + var + " = " + it + ".next(); ");
 
 		if (mainblock.getVersion() >= 4) {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
-				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
+				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
 			} else if (mIsDeclaration) {
-				writer.addLine(iterator_name + " = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
+				writer.addCode(iterator_name + " = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
 			} else {
-				writer.addLine(iterator_name + " = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
+				writer.addCode(iterator_name + " = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
 			}
 		} else if (mainblock.getVersion() >= 2) {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
-				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
+				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
 			} else {
-				writer.addLine(iterator_name + " = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
+				writer.addCode(iterator_name + " = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
 			}
 		} else {
 			if (mReference) {
 				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
 			} else if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
-				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
+				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
 				writer.addCounter(1);
 			} else {
-				writer.addLine(iterator_name + ".set(" + var + ".getValue());");
+				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
 				writer.addCounter(1);
 			}
 		}
 		writer.addCounter(1);
+		writer.addLine("", mIterator.getLocation());
 
 		mainblock.getWordCompiler().setCurrentBlock(initialBlock);
 
