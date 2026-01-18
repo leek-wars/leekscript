@@ -845,7 +845,8 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 				end = Math.max(-1, end);
 			}
 		}
-		int size = (int) Math.abs(end - start) / (int) Math.abs(stride);
+		int step = (int) Math.abs(stride);
+		int size = Math.max(0, stride > 0 ? (end - start + step - 1) / step : (start - end + step - 1) / step);
 		ai.ops(1 + size);
 		var result = new ArrayLeekValue(ai, size);
 		// System.out.println("slice start=" + start + " end=" + end + " stride=" + stride + " size=" + size);
