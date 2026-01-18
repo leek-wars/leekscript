@@ -246,12 +246,12 @@ public class LeekVariable extends Expression {
 			writer.addCode(token.getWord());
 		} else if (type == VariableType.STATIC_FIELD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {
 			if (variableType != Type.ANY) {
-				writer.addCode("((" + variableType.getJavaName(mainblock.getVersion()) + ") ");
+				if (variableType.isPrimitive()) {
+					writer.addCode("(" + variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("(" + variableType.getJavaName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + token.getWord() + "\")");
-			if (variableType != Type.ANY) {
-				writer.addCode(")");
-			}
 		} else if (type == VariableType.METHOD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.STATIC_METHOD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {

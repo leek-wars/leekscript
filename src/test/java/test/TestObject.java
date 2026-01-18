@@ -96,6 +96,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static b static m() { class.c } }").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
 		code_v2_("class titi { static real reel } titi.reel = 10 return titi.reel.class").equals("<class Real>");
 		code_v2_("class A { static real? a = 12 } A.a").equals("12.0");
+		code_v2_("class A { static integer x = 12 m() { integer i = x return i } } new A().m()").equals("12");
 
 		section("Reserved static fields");
 		code_v2("class A { static for static while static if static var static this }").error(Error.VARIABLE_NAME_EXPECTED);

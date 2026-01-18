@@ -254,7 +254,7 @@ public class LeekArrayAccess extends Expression {
 			}
 		} else {
 			if (this.type != Type.ANY) {
-				writer.addCode("((" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+				writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode("get(");
 			mTabular.writeJavaCode(mainblock, writer);
@@ -263,9 +263,6 @@ public class LeekArrayAccess extends Expression {
 			writer.addCode(", ");
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable());
 			writer.addCode(")");
-			if (this.type != Type.ANY) {
-				writer.addCode(")");
-			}
 		}
 	}
 
