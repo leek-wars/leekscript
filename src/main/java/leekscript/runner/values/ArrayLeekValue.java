@@ -1128,18 +1128,6 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return this.id;
 	}
 
-	public int hashCodeRec(ArrayLeekValue array) {
-		int hashCode = 1;
-		for (var e : this) {
-			var eh = 0;
-			if (e != this && e instanceof ArrayLeekValue) {
-
-			}
-			hashCode = 31 * hashCode + eh;
-		}
-		return hashCode;
-	}
-
 	public Iterator<Entry<Object, Object>> genericIterator() {
 		return new ArrayIterator(this);
 	}
