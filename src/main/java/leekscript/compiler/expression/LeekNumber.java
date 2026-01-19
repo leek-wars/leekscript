@@ -60,7 +60,7 @@ public class LeekNumber extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == Type.INT) {
 			writer.addCode(String.valueOf(longValue) + "l");
 		} else {

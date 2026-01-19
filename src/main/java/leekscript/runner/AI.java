@@ -408,7 +408,7 @@ public abstract class AI {
 		}
 	}
 
-	public Object ops(Object x, int nb) throws LeekRunException {
+	public <T> T ops(T x, int nb) throws LeekRunException {
 		ops(nb);
 		return x;
 	}

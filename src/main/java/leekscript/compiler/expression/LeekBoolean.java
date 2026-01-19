@@ -35,7 +35,7 @@ public class LeekBoolean extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		writer.addCode(mValue ? "true" : "false");
 	}
 

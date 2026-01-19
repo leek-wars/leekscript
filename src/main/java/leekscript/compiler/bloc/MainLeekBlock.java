@@ -319,14 +319,14 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 		// Fonctions
 		for (var instruction : mFunctions.values()) {
-			instruction.writeJavaCode(this, writer);
+			instruction.writeJavaCode(this, writer, false);
 		}
 
 		writer.addLine("public Object runIA(Session session) throws LeekRunException {");
 
 		for (var clazz : mUserClassesList) {
 			if (clazz.internal) continue;
-			clazz.writeJavaCode(this, writer);
+			clazz.writeJavaCode(this, writer, false);
 		}
 
 		// Import des variables de la session
@@ -336,7 +336,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			}
 		}
 
-		super.writeJavaCode(this, writer);
+		super.writeJavaCode(this, writer, false);
 
 		writer.addLine("}");
 

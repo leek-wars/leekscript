@@ -35,7 +35,7 @@ public class LeekExpressionInstruction extends LeekInstruction {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 
 		// Simple values are not compiled if not last instruction
 		var trimmed = mExpression.trim();
@@ -54,12 +54,12 @@ public class LeekExpressionInstruction extends LeekInstruction {
 			else if (!writer.lastInstruction) writer.addCode("nothing(");
 			var last = writer.lastInstruction;
 			writer.lastInstruction = false;
-			trimmed.writeJavaCode(mainblock, writer);
+			trimmed.writeJavaCode(mainblock, writer, false);
 			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode(", " + trimmed.getOperations() + ")");
 			else if (!last) writer.addCode(")");
 		} else {
 			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode("ops(");
-			trimmed.writeJavaCode(mainblock, writer);
+			trimmed.writeJavaCode(mainblock, writer, false);
 			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode(", " + trimmed.getOperations() + ")");
 		}
 		// if (trimmed.getOperations() > 0) {

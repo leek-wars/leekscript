@@ -78,27 +78,27 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (this.captured) {
 			if (mValue != null && mValue.trim() instanceof LeekAnonymousFunction) {
 				writer.addCode("final var u_" + token.getWord() + " = new Wrapper<" + type.getJavaName(mainblock.getVersion()) + ">(new Box(" + writer.getAIThis() + ", null)); u_" + token.getWord() + ".set(");
-				mValue.writeJavaCode(mainblock, writer);
+				mValue.writeJavaCode(mainblock, writer, false);
 				writer.addLine(");", getLocation());
 			} else if (mValue instanceof LeekExpression && ((LeekExpression) mValue).getOperator() == Operators.REFERENCE) {
 				var e = ((LeekExpression) mValue).getExpression2();
 				if (e.isLeftValue() && !(e instanceof LeekVariable v && v.getVariableType() == VariableType.GLOBAL)) {
 					writer.addCode("final var u_" + token.getWord() + " = new Wrapper<" + type.getJavaName(mainblock.getVersion()) + ">(");
-					e.compileL(mainblock, writer);
+					e.compileL(mainblock, writer, false);
 					writer.addCode(", " + e.getOperations() + ")");
 				} else {
 					writer.addCode("final var u_" + token.getWord() + " = new Wrapper<" + type.getJavaName(mainblock.getVersion()) + ">(new Box(" + writer.getAIThis() + ", ");
-					e.writeJavaCode(mainblock, writer);
+					e.writeJavaCode(mainblock, writer, false);
 					writer.addCode("), " + e.getOperations() + ")");
 				}
 				writer.addLine(";", getLocation());
 			} else if (mainblock.getWordCompiler().getVersion() <= 1) {
 				writer.addCode("final var u_" + token.getWord() + " = new Wrapper<" + type.getJavaName(mainblock.getVersion()) + ">(new Box(" + writer.getAIThis() + ", ");
-				if (mValue != null) mValue.compileL(mainblock, writer);
+				if (mValue != null) mValue.compileL(mainblock, writer, false);
 				else writer.addCode("null");
 				writer.addCode(")");
 				if (mValue != null && mValue.getOperations() > 0) {
@@ -107,7 +107,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 				writer.addLine(");", getLocation());
 			} else {
 				writer.addCode("final var u_" + token.getWord() + " = new Wrapper<" + type.getJavaName(mainblock.getVersion()) + ">(new Box(" + writer.getAIThis() + ", ");
-				if (mValue != null) mValue.writeJavaCode(mainblock, writer);
+				if (mValue != null) mValue.writeJavaCode(mainblock, writer, false);
 				else writer.addCode("null");
 				writer.addCode(")");
 				if (mValue != null && mValue.getOperations() > 0) {
@@ -121,7 +121,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 					var e = ((LeekExpression) mValue).getExpression2();
 					if (e.isLeftValue()) {
 						writer.addCode("var u_" + token.getWord() + " = new Box<" + type.getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
-						e.writeJavaCode(mainblock, writer);
+						e.writeJavaCode(mainblock, writer, false);
 						if (mValue.getOperations() > 0) {
 							writer.addCode(", " + mValue.getOperations());
 						}
@@ -129,7 +129,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 					} else {
 						writer.addCode("var u_" + token.getWord() + " = new Box<" + type.getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
 						// e.writeJavaCode(mainblock, writer);
-						mValue.compileL(mainblock, writer);
+						mValue.compileL(mainblock, writer, false);
 						if (mValue.getOperations() > 0) {
 							writer.addCode(", " + mValue.getOperations());
 						}
@@ -140,9 +140,9 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 					writer.addCode("var u_" + token.getWord() + " = new Box<" + type.getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
 					if (mValue != null) {
 						if (mValue.isLeftValue()) {
-							writer.compileClone(mainblock, mValue);
+							writer.compileClone(mainblock, mValue, false);
 					 	} else {
-							mValue.compileL(mainblock, writer);
+							mValue.compileL(mainblock, writer, false);
 						}
 						if (mValue.getOperations() > 0) {
 							writer.addCode(", " + mValue.getOperations());
@@ -162,7 +162,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 					writer.addCode("ops(");
 				}
 				if (mValue != null) {
-					writer.compileConvert(mainblock, 0, mValue, this.type);
+					writer.compileConvert(mainblock, 0, mValue, this.type, false);
 				} else {
 					writer.addCode(this.type.getDefaultValue(writer, mainblock.getVersion()));
 				}

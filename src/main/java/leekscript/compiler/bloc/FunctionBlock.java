@@ -131,7 +131,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("private " + this.type.returnType().getJavaPrimitiveName(mainblock.getVersion()) + " f_").append(token.getWord()).append("(");
 		for (int i = 0; i < mParameters.size(); i++) {
@@ -175,7 +175,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 		}
 		writer.addLine(sb.toString(), getLocation());
 		writer.addCounter(1);
-		super.writeJavaCode(mainblock, writer);
+		super.writeJavaCode(mainblock, writer, false);
 		if (mEndInstruction == 0) {
 			writer.addLine("return " + type.returnType().getDefaultValue(writer, mainblock.getVersion()) + ";");
 		}

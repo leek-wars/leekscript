@@ -124,7 +124,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 
 		AbstractLeekBlock initialBlock = mainblock.getWordCompiler().getCurrentBlock();
 		mainblock.getWordCompiler().setCurrentBlock(this);
@@ -139,9 +139,9 @@ public class ForeachBlock extends AbstractLeekBlock {
 		// Container
 		writer.addCode("final var " + ar + " = ops(");
 		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
-			mArray.writeJavaCode(mainblock, writer);
+			mArray.writeJavaCode(mainblock, writer, false);
 		} else {
-			writer.compileLoad(mainblock, mArray);
+			writer.compileLoad(mainblock, mArray, false);
 		}
 		writer.addCode(", " + mArray.getOperations() + ");");
 
@@ -192,7 +192,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 
 		mainblock.getWordCompiler().setCurrentBlock(initialBlock);
 
-		super.writeJavaCode(mainblock, writer);
+		super.writeJavaCode(mainblock, writer, false);
 
 		writer.addLine("}}");
 	}

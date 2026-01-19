@@ -50,7 +50,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		writer.addCode("if (!g_init_" + variableToken.getWord() + ") { ");
 		if (mainblock.getWordCompiler().getVersion() >= 2) {
 			writer.addCode("g_" + variableToken.getWord() + " = ");
@@ -59,14 +59,14 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 					writer.addCode("(" + variable.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 				}
 				if (mValue.getOperations() > 0) writer.addCode("ops(");
-				writer.compileConvert(mainblock, 0, mValue, variable.getType());
+				writer.compileConvert(mainblock, 0, mValue, variable.getType(), false);
 				if (mValue.getOperations() > 0) writer.addCode(", " + mValue.getOperations() + ")");
 			} else {
 				writer.addCode(this.variable.getType().getDefaultValue(writer, mainblock.getVersion()));
 			}
 		} else {
 			writer.addCode("g_" + variableToken.getWord() + " = new Box<" + variable.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
-			if (mValue != null) mValue.compileL(mainblock, writer);
+			if (mValue != null) mValue.compileL(mainblock, writer, false);
 			else writer.addCode("null");
 			writer.addCode(", " + (mValue != null ? mValue.getOperations() : 0) + ")");
 		}

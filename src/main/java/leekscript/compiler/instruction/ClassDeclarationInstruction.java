@@ -533,9 +533,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				writer.addCode(field.getKey());
 				writer.addCode(" = ");
 				if (field.getValue().getType() != Type.ANY) {
-					writer.compileConvert(mainblock, 0, expr, field.getValue().getType());
+					writer.compileConvert(mainblock, 0, expr, field.getValue().getType(), false);
 				} else {
-					expr.writeJavaCode(mainblock, writer);
+					expr.writeJavaCode(mainblock, writer, false);
 				}
 				writer.addLine(";");
 			}
@@ -608,7 +608,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a < construct.getKey()) {
 							writer.addCode("p_" + arg.getToken());
 						} else {
-							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
+							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer, false);
 							writer.addCode(", " + block.getDefaultValues().get(a).operations);
 						}
 						writer.addLine(");");
@@ -617,7 +617,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a >= construct.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
 							writer.addCode("final " + arg.getType().getJavaName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
-							defaultValue.writeJavaCode(mainblock, writer);
+							defaultValue.writeJavaCode(mainblock, writer, false);
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
 						}
@@ -643,7 +643,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				} else {
 
 					// Version normale
-					block.writeJavaCode(mainblock, writer);
+					block.writeJavaCode(mainblock, writer, false);
 				}
 			} else {
 				writer.addLine("return null;");
@@ -689,7 +689,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a < version.getKey()) {
 							writer.addCode("p_" + arg.getToken());
 						} else {
-							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
+							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer, false);
 							writer.addCode(", " + block.getDefaultValues().get(a).operations);
 						}
 						writer.addLine(");");
@@ -698,7 +698,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a >= version.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
 							writer.addCode("final " + arg.getType().getJavaName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
-							defaultValue.writeJavaCode(mainblock, writer);
+							defaultValue.writeJavaCode(mainblock, writer, false);
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
 						}
@@ -720,7 +720,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					}
 					writer.addLine(");");
 				} else {
-					version.getValue().block.writeJavaCode(mainblock, writer);
+					version.getValue().block.writeJavaCode(mainblock, writer, false);
 				}
 				writer.addLine("}");
 				writer.currentBlock = null;
@@ -768,7 +768,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a < version.getKey()) {
 							writer.addCode("p_" + arg.getToken());
 						} else {
-							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer);
+							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer, false);
 							writer.addCode(", " + block.getDefaultValues().get(a).operations);
 						}
 						writer.addLine(");");
@@ -777,7 +777,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a >= version.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
 							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
-							defaultValue.writeJavaCode(mainblock, writer);
+							defaultValue.writeJavaCode(mainblock, writer, false);
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
 						}
@@ -800,7 +800,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					writer.addLine(");");
 				} else {
 					// Version complète
-					version.getValue().block.writeJavaCode(mainblock, writer);
+					version.getValue().block.writeJavaCode(mainblock, writer, false);
 				}
 				writer.addLine("}");
 				writer.currentBlock = null;
@@ -956,7 +956,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			if (field.getValue().expression != null) {
 				writer.addCode(className);
 				writer.addCode(".initField(\"" + field.getKey() + "\", ");
-				writer.compileConvert(mainblock, 0, field.getValue().expression, field.getValue().getType());
+				writer.compileConvert(mainblock, 0, field.getValue().expression, field.getValue().getType(), false);
 				writer.addLine(");");
 			}
 		}
@@ -967,7 +967,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 
 	}
 

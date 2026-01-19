@@ -127,7 +127,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		var previousFunction = mainblock.getWordCompiler().getCurrentFunction();
 		mainblock.getWordCompiler().setCurrentFunction(this);
 		StringBuilder sb = new StringBuilder();
@@ -160,7 +160,7 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 		}
 		writer.addLine(sb.toString(), getLocation());
 		writer.addCounter(1);
-		super.writeJavaCode(mainblock, writer);
+		super.writeJavaCode(mainblock, writer, false);
 		if (mEndInstruction == 0) {
 			writer.addLine("return " + type.returnType().getDefaultValue(writer, mainblock.getVersion()) + ";");
 		}

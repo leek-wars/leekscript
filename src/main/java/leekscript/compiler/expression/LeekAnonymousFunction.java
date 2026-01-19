@@ -40,9 +40,9 @@ public class LeekAnonymousFunction extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		writer.addCode("new FunctionLeekValue(" + mBlock.countParameters() + ") {");
-		mBlock.writeJavaCode(mainblock, writer);
+		mBlock.writeJavaCode(mainblock, writer, false);
 		writer.addCode("}");
 	}
 

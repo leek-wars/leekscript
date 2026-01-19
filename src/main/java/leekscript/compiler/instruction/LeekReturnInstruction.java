@@ -71,7 +71,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (writer.currentBlock == mainblock) {
 			mainblock.writeBeforeReturn(writer);
 		}
@@ -86,14 +86,14 @@ public class LeekReturnInstruction extends LeekInstruction {
 			if (optional) {
 				String r = "r" + mainblock.getCount();
 				writer.addCode(returnType.getJavaName(mainblock.getVersion()) + " " + r + " = ");
-				writer.compileConvert(mainblock, 0, finalExpression, returnType);
+				writer.compileConvert(mainblock, 0, finalExpression, returnType, false);
 				writer.addLine("; if (bool(" + r + ")) return " + r + ";", getLocation());
 			} else {
 				writer.addCode("return ");
 				if (mainblock.getWordCompiler().getVersion() == 1) {
-					finalExpression.compileL(mainblock, writer);
+					finalExpression.compileL(mainblock, writer, false);
 				} else {
-					writer.compileConvert(mainblock, 0, finalExpression, returnType);
+					writer.compileConvert(mainblock, 0, finalExpression, returnType, false);
 				}
 				writer.addLine(";", getLocation());
 			}

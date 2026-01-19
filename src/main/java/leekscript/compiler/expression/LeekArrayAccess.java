@@ -190,7 +190,7 @@ public class LeekArrayAccess extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (colon != null) {
 			if (mCase != null && endIndex != null) {
 				writer.addCode("range(");
@@ -201,108 +201,113 @@ public class LeekArrayAccess extends Expression {
 			} else {
 				writer.addCode("range_all(");
 			}
-			mTabular.writeJavaCode(mainblock, writer);
+			mTabular.writeJavaCode(mainblock, writer, false);
 			if (mCase != null) {
 				writer.addCode(", ");
-				mCase.writeJavaCode(mainblock, writer);
+				mCase.writeJavaCode(mainblock, writer, false);
 			}
 			if (endIndex != null) {
 				writer.addCode(", ");
-				endIndex.writeJavaCode(mainblock, writer);
+				endIndex.writeJavaCode(mainblock, writer, false);
 			}
 			if (stride != null) {
 				writer.addCode(", ");
-				stride.writeJavaCode(mainblock, writer);
+				stride.writeJavaCode(mainblock, writer, false);
 			}
 			writer.addCode(")");
 		} else if (mTabular instanceof LeekVariable v && v.getVariableType() == VariableType.THIS && mCase instanceof LeekString) {
 			writer.addCode(((LeekString) mCase).getText());
 		} else if (mTabular.getType() instanceof LegacyArrayType) {
-			mTabular.writeJavaCode(mainblock, writer);
+			mTabular.writeJavaCode(mainblock, writer, true);
 			writer.addCode(".get(");
-			mCase.writeJavaCode(mainblock, writer);
+			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (mTabular.getType() instanceof ArrayType) {
 			if (type != Type.ANY) {
-				writer.addCode("(");
+				if (parenthesis) writer.addCode("(");
 				if (type.isPrimitive()) {
 					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 				}
 				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") ");
 			}
-			mTabular.writeJavaCode(mainblock, writer);
+			mTabular.writeJavaCode(mainblock, writer, true);
 			writer.addCode(".get(");
-			mCase.writeJavaCode(mainblock, writer);
+			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
-			if (this.type != Type.ANY) {
-				writer.addCode(")");
+			if (type != Type.ANY) {
+				if (parenthesis) writer.addCode(")");
 			}
 		} else if (mTabular.getType() instanceof MapType) {
 			if (type != Type.ANY) {
-				writer.addCode("(");
+				if (parenthesis) writer.addCode("(");
 				if (type.isPrimitive()) {
 					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 				}
 				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") ");
 			}
-			mTabular.writeJavaCode(mainblock, writer);
+			mTabular.writeJavaCode(mainblock, writer, true);
 			writer.addCode(".get(");
-			mCase.writeJavaCode(mainblock, writer);
+			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
-			if (this.type != Type.ANY) {
-				writer.addCode(")");
+			if (type != Type.ANY) {
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (this.type != Type.ANY) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode("get(");
-			mTabular.writeJavaCode(mainblock, writer);
+			mTabular.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			mCase.writeJavaCode(mainblock, writer);
+			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable());
 			writer.addCode(")");
+			if (this.type != Type.ANY) {
+				if (parenthesis) writer.addCode(")");
+			}
 		}
 	}
 
 	@Override
-	public void compileL(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compileL(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 		writer.addCode("getBox(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(")");
 	}
 
 	@Override
-	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		if (expr.getType() != Type.ANY && mainblock.isStrict()) {
+			if (parenthesis) writer.addCode("(");
 			if (expr.getType().isPrimitive()) {
 				writer.addCode("(" + expr.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode("(" + expr.getType().getJavaName(mainblock.getVersion()) + ") ");
 		}
 		if (mTabular.getType() instanceof ArrayType) {
-			mTabular.writeJavaCode(mainblock, writer);
+			mTabular.writeJavaCode(mainblock, writer, true);
 			if (mainblock.isStrict()) {
 				writer.addCode(".put(");
 			} else {
 				writer.addCode(".putv4(");
 			}
-			mCase.writeJavaCode(mainblock, writer);
+			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (mTabular.getType() instanceof MapType) {
-			mTabular.writeJavaCode(mainblock, writer);
+			mTabular.writeJavaCode(mainblock, writer, true);
 			writer.addCode(".set(");
-			mCase.writeJavaCode(mainblock, writer);
+			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else {
 			if (mainblock.isStrict()) {
@@ -310,268 +315,274 @@ public class LeekArrayAccess extends Expression {
 			} else {
 				writer.addCode("putv4(");
 			}
-			mTabular.writeJavaCode(mainblock, writer);
+			mTabular.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			mCase.writeJavaCode(mainblock, writer);
+			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		}
+		if (expr.getType() != Type.ANY && mainblock.isStrict()) {
+			if (parenthesis) writer.addCode(")");
 		}
 	}
 
 	@Override
-	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		if (expr.getType() != Type.ANY) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode("(" + expr.getType().getJavaName(mainblock.getVersion()) + ") ");
 		}
 		if (mTabular.getType() instanceof ArrayType) {
-			mTabular.writeJavaCode(mainblock, writer);
+			mTabular.writeJavaCode(mainblock, writer, true);
 			if (mainblock.isStrict()) {
 				writer.addCode(".put(");
 			} else {
 				writer.addCode(".putv4(");
 			}
-			mCase.writeJavaCode(mainblock, writer);
+			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (mTabular.getType() instanceof MapType) {
-			mTabular.writeJavaCode(mainblock, writer);
+			mTabular.writeJavaCode(mainblock, writer, true);
 			if (mainblock.isStrict()) {
 				writer.addCode(".set(");
 			} else {
 				writer.addCode(".setv4(");
 			}
-			mCase.writeJavaCode(mainblock, writer);
+			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else {
 			writer.addCode("put(");
-			mTabular.writeJavaCode(mainblock, writer);
+			mTabular.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			mCase.writeJavaCode(mainblock, writer);
+			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 		}
-
+		if (expr.getType() != Type.ANY) {
+			if (parenthesis) writer.addCode(")");
+		}
 		// writer.compileClone(mainblock, expr);
 	}
 
 	@Override
-	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_inc(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 
 	@Override
-	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_pre_inc(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_dec(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_pre_dec(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
+	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_add_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_sub_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type type) {
+	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type type, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_mul_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_mod_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_div_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_intdiv_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_pow_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_bor_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_band_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_bxor_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_shl_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_shr_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override
-	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
 		writer.addCode("put_ushr_eq(");
-		mTabular.writeJavaCode(mainblock, writer);
+		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer);
+		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer);
+		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 

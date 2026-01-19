@@ -32,85 +32,85 @@ public abstract class Expression {
 
 	public abstract Type getType();
 
-	public abstract void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer);
+	public abstract void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis);
 
-	public void compileL(MainLeekBlock mainblock, JavaWriter writer) {
-		writeJavaCode(mainblock, writer);
+	public void compileL(MainLeekBlock mainblock, JavaWriter writer,  boolean parenthesis) {
+		writeJavaCode(mainblock, writer, parenthesis);
 	}
 
-	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
+	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type type) {
+	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type type, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 
-	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		throw new RuntimeException("Abstract method");
 	}
 

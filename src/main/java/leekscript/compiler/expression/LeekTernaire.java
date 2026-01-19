@@ -72,28 +72,28 @@ public class LeekTernaire extends LeekExpression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// if(mCondition instanceof LeekExpression) mCondition = ((LeekExpression) mCondition).getAbstractExpression();
 		// if(mExpression1 instanceof LeekExpression) mExpression1 = ((LeekExpression) mExpression1).getAbstractExpression();
 		// if(mExpression2 instanceof LeekExpression) mExpression2 = ((LeekExpression) mExpression2).getAbstractExpression();
+		if (parenthesis) {
+			writer.addCode("(");
+		}
 		if (!complete()) writer.addCode("/* " + toString() + " */");
 		else {
 			var branch_ops = mExpression1.operations != mExpression2.operations;
-			writer.getBoolean(mainblock, mCondition);
+			writer.getBoolean(mainblock, mCondition, true);
 			writer.addCode(" ? ");
 			if (this.type != Type.ANY && !this.type.isPrimitive()) {
 				writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
 			}
 			if (mExpression1.getOperations() > 0 && branch_ops) {
 				writer.addCode("ops(");
-			} else {
-				writer.addCode("(");
 			}
-			writer.compileConvert(mainblock, ARRAY, mExpression1, type);
+			writer.compileConvert(mainblock, ARRAY, mExpression1, type, true);
 			if (mExpression1.getOperations() > 0 && branch_ops) {
 				writer.addCode(", " + mExpression1.getOperations() + ")");
 			}
-			else writer.addCode(")");
 			writer.addCode(" : ");
 			if (this.type != Type.ANY && !this.type.isPrimitive()) {
 				writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
@@ -101,10 +101,11 @@ public class LeekTernaire extends LeekExpression {
 			if (mExpression2.getOperations() > 0 && branch_ops) {
 				writer.addCode("ops(");
 			}
-			else writer.addCode("(");
-			writer.compileConvert(mainblock, ARRAY, mExpression2, type);
+			writer.compileConvert(mainblock, ARRAY, mExpression2, type, true);
 			if (mExpression2.getOperations() > 0 && branch_ops) writer.addCode(", " + mExpression2.getOperations() + ")");
-			else writer.addCode(")");
+		}
+		if (parenthesis) {
+			writer.addCode(")");
 		}
 	}
 

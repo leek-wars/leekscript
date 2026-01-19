@@ -105,7 +105,7 @@ public class LeekInterval extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainBlock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainBlock, JavaWriter writer, boolean parenthesis) {
 		if (type == Type.EMPTY_INTERVAL) {
 			writer.addCode("new RealIntervalLeekValue(" + writer.getAIThis() + ", false, 0.0, false, 0.0)");
 		} else {
@@ -125,7 +125,7 @@ public class LeekInterval extends Expression {
 					writer.addCode("Double.NEGATIVE_INFINITY");
 				}
 			} else {
-				mFrom.writeJavaCode(mainBlock, writer);
+				mFrom.writeJavaCode(mainBlock, writer, false);
 			}
 			writer.addCode(", ");
 			writer.addCode(maxClosed + ", ");
@@ -136,7 +136,7 @@ public class LeekInterval extends Expression {
 					writer.addCode("Double.POSITIVE_INFINITY");
 				}
 			} else {
-				mTo.writeJavaCode(mainBlock, writer);
+				mTo.writeJavaCode(mainBlock, writer, false);
 			}
 			writer.addCode(")");
 		}

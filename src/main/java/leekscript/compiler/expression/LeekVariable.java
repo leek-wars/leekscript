@@ -235,7 +235,7 @@ public class LeekVariable extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.THIS) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".this");
 		} else if (type == VariableType.THIS_CLASS) {
@@ -246,12 +246,16 @@ public class LeekVariable extends Expression {
 			writer.addCode(token.getWord());
 		} else if (type == VariableType.STATIC_FIELD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {
 			if (variableType != Type.ANY) {
+				if (parenthesis) writer.addCode("(");
 				if (variableType.isPrimitive()) {
 					writer.addCode("(" + variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 				}
 				writer.addCode("(" + variableType.getJavaName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + token.getWord() + "\")");
+			if (variableType != Type.ANY) {
+				if (parenthesis) writer.addCode(")");
+			}
 		} else if (type == VariableType.METHOD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.STATIC_METHOD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {
@@ -303,9 +307,6 @@ public class LeekVariable extends Expression {
 			}
 		} else {
 			if (isWrapper() || isBox()) {
-				if (this.variable.getType().isPrimitive()) {
-					writer.addCode("(" + this.variable.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
 				writer.addCode("u_" + token.getWord() + ".get()");
 			} else {
 				writer.addCode("u_" + token.getWord());
@@ -314,7 +315,7 @@ public class LeekVariable extends Expression {
 	}
 
 	@Override
-	public void compileL(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compileL(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.THIS) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".this");
 		} else if (type == VariableType.THIS_CLASS) {
@@ -372,25 +373,29 @@ public class LeekVariable extends Expression {
 	}
 
 	@Override
-	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			writer.compileConvert(mainblock, 0, expr, variableType);
+			writer.compileConvert(mainblock, 0, expr, variableType, false);
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".setField(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (mainblock.isRedefinedFunction(token.getWord())) {
 			writer.addCode("rfunction_" + token.getWord() + ".set(");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (mainblock.getWordCompiler().getVersion() >= 2) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				writer.compileConvert(mainblock, 0, expr, this.variable.getType());
+				writer.compileConvert(mainblock, 0, expr, this.variable.getType(), false);
+			if (parenthesis) writer.addCode(")");
 			} else {
 				writer.addCode("g_" + token.getWord() + ".set(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			}
 		} else {
@@ -401,71 +406,68 @@ public class LeekVariable extends Expression {
 					} else {
 						writer.addCode("u_" + token.getWord() + ".set(");
 					}
-					expr.compileL(mainblock, writer);
+					expr.compileL(mainblock, writer, false);
 					writer.addCode(")");
 				} else {
 					writer.addCode("u_" + token.getWord() + ".setBoxOrValue(");
-					expr.compileL(mainblock, writer);
+					expr.compileL(mainblock, writer, false);
 					writer.addCode(")");
 				}
 			} else if (isBox()) {
-				// if (expr.isLeftValue()) {
-				// 	writer.addCode("u_" + token.getWord() + " = ");
-				// 	expr.compileL(mainblock, writer);
-				// } else {
-					writer.addCode("u_" + token.getWord() + ".set(");
-					writer.compileConvert(mainblock, 0, expr, this.variableType);
-					writer.addCode(")");
-				// }
+				writer.addCode("u_" + token.getWord() + ".set(");
+				writer.compileConvert(mainblock, 0, expr, this.variableType, false);
+				writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				writer.compileConvert(mainblock, 0, expr, this.variableType);
+				writer.compileConvert(mainblock, 0, expr, this.variableType, false);
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".setField(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (mainblock.isRedefinedFunction(token.getWord())) {
 			writer.addCode("rfunction_" + token.getWord() + ".set(");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (mainblock.getWordCompiler().getVersion() >= 2) {
+			if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				// writer.compileClone(mainblock, expr);
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+			if (parenthesis) writer.addCode(")");
 			} else {
 				writer.addCode("g_" + token.getWord() + ".set(");
-				// writer.compileClone(mainblock, expr);
-				expr.compileL(mainblock, writer);
+				expr.compileL(mainblock, writer, false);
 				writer.addCode(")");
 			}
 		} else {
 			if (isWrapper() || isBox()) {
 				writer.addCode("u_" + token.getWord() + ".set(");
-				// writer.compileClone(mainblock, expr);
-				// expr.writeJavaCode(mainblock, writer);
-				// expr.compileL(mainblock, writer);
-				writer.compileConvert(mainblock, 0, expr, this.variableType);
+				writer.compileConvert(mainblock, 0, expr, this.variableType, false);
 				writer.addCode(")");
 			} else {
+			if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				// writer.compileClone(mainblock, expr);
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+			if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("sub(" + token.getWord() + " = add(" + token.getWord() + ", 1l), 1l)");
 		} else if (type == VariableType.STATIC_FIELD) {
@@ -490,7 +492,7 @@ public class LeekVariable extends Expression {
 	}
 
 	@Override
-	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
 			writer.addCode("add(" + token.getWord() + " = sub(" + token.getWord() + ", 1l), 1l)");
 		} else if (type == VariableType.STATIC_FIELD) {
@@ -515,9 +517,11 @@ public class LeekVariable extends Expression {
 	}
 
 	@Override
-	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = add(" + token.getWord() + ", 1l)");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pre_inc(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.GLOBAL) {
@@ -526,7 +530,9 @@ public class LeekVariable extends Expression {
 			} else if (this.variableType.isPrimitiveNumber()) {
 				writer.addCode("++g_" + token.getWord());
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = add(g_" + token.getWord() + ", 1l)");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
@@ -534,15 +540,19 @@ public class LeekVariable extends Expression {
 			} else if (this.variableType.isPrimitiveNumber()) {
 				writer.addCode("++u_" + token.getWord());
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = add(u_" + token.getWord() + ", 1l)");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer) {
+	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = sub(" + token.getWord() + ", 1l)");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pre_dec(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.GLOBAL) {
@@ -551,7 +561,9 @@ public class LeekVariable extends Expression {
 			} else if (this.variableType.isPrimitiveNumber()) {
 				writer.addCode("--g_" + token.getWord());
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = sub(g_" + token.getWord() + ", 1l)");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
@@ -559,195 +571,235 @@ public class LeekVariable extends Expression {
 			} else if (this.variableType.isPrimitiveNumber()) {
 				writer.addCode("--u_" + token.getWord());
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = sub(u_" + token.getWord() + ", 1l)");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t) {
+	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
 			if (variableType != Type.ANY) {
 				writer.addCode("(" + variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode("add(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_add_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".add_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " += ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = add(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".add_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " += ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
 				if (this.variableType != Type.ANY) {
 					writer.addCode("(" + this.variableType.getJavaName(mainblock.getVersion()) + ") ");
 				}
 				writer.addCode("add_eq(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
 			if (variableType != Type.ANY) {
 				writer.addCode("(" + variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode("sub(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_sub_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".sub_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " -= ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = sub(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".sub_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " -= ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = (" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") sub(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type resultType) {
+	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type resultType, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
 			if (variableType != Type.ANY) {
 				writer.addCode("(" + variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode("mul(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_mul_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".mul_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " *= ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = mul(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".mul_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber()) {
+			if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " *= ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+			if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = (" + resultType.getJavaName(mainblock.getVersion()) + ") mul(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 
 	@Override
-	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type resultType) {
+	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type resultType, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
 			if (variableType != Type.ANY) {
 				writer.addCode("(" + variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode("pow(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pow_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".pow_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else {
+			if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = pow(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".pow_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = (" + resultType.getJavaName(mainblock.getVersion()) + ") pow(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
 			if (variableType != Type.ANY) {
 				writer.addCode("(" + variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode("div(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_div_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
@@ -756,16 +808,18 @@ public class LeekVariable extends Expression {
 				} else {
 					writer.addCode("g_" + token.getWord() + ".div_eq(");
 				}
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				if (mainblock.getVersion() == 1) {
 					writer.addCode("g_" + token.getWord() + " = div_v1(g_" + token.getWord() + ", ");
 				} else {
 					writer.addCode("g_" + token.getWord() + " = div(g_" + token.getWord() + ", ");
 				}
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
@@ -774,333 +828,411 @@ public class LeekVariable extends Expression {
 				} else {
 					writer.addCode("u_" + token.getWord() + ".div_eq(");
 				}
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				if (mainblock.getVersion() == 1) {
 					writer.addCode("u_" + token.getWord() + " = div_v1(u_" + token.getWord() + ", ");
 				} else {
 					writer.addCode("u_" + token.getWord() + " = (" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") div(u_" + token.getWord() + ", ");
 				}
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
 			writer.addCode("intdiv(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_intdiv_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".intdiv_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = intdiv(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".intdiv_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = intdiv(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
 			if (variableType != Type.ANY) {
 				writer.addCode("(" + variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode("mod(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_mod_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".mod_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " %= ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = mod(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".mod_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " %= ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = mod(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
 			if (variableType != Type.ANY) {
 				writer.addCode("(" + variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode("bor(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_bor_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".bor_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " |= ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = bor(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".bor_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
  				writer.addCode("u_" + token.getWord() + " |= ");
-				writer.getInt(mainblock, expr);
+				writer.getInt(mainblock, expr, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = bor(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 
 	@Override
-	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = band(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_band_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".band_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " &= ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = band(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".band_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " &= ");
-				writer.getInt(mainblock, expr);
+				writer.getInt(mainblock, expr, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = band(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = bxor(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_bxor_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".bxor_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " ^= ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = bxor(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".bxor_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " ^= ");
-				writer.getInt(mainblock, expr);
+				writer.getInt(mainblock, expr, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = bxor(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = shl(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_shl_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".shl_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " <<= ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = shl(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".shl_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " <<= ");
-				writer.getInt(mainblock, expr);
+				writer.getInt(mainblock, expr, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = shl(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = shr(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_shr_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".shr_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " >>= ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = shr(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".shr_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " >>= ");
-				writer.getInt(mainblock, expr);
+				writer.getInt(mainblock, expr, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = shr(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}
 
 	@Override
-	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
+			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ushr(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
+			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_ushr_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer);
+			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".ushr_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " >>>= ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ushr(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".ushr_eq(");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " >>>= ");
-				writer.getInt(mainblock, expr);
+				writer.getInt(mainblock, expr, false);
+				if (parenthesis) writer.addCode(")");
 			} else {
+				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ushr(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer);
+				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		}
 	}

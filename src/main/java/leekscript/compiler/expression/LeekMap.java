@@ -109,7 +109,7 @@ public class LeekMap extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (mEntries.isEmpty()) {
 			writer.addCode("new MapLeekValue(" + writer.getAIThis() + ")");
 			return;
@@ -119,9 +119,9 @@ public class LeekMap extends Expression {
 		for (int i = 0; i < mEntries.size(); i++) {
 			if (i > 0) writer.addCode(", ");
 
-			mEntries.get(i).key.writeJavaCode(mainblock, writer);
+			mEntries.get(i).key.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			mEntries.get(i).value.writeJavaCode(mainblock, writer);
+			mEntries.get(i).value.writeJavaCode(mainblock, writer, false);
 		}
 		writer.addCode(" })");
 	}

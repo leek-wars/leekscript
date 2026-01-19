@@ -843,6 +843,12 @@ public class TestObject extends TestCommon {
 
 		section("string() method");
 		code_v2_("class A { string() { return 'test' } } return new A()").equals("test");
+	}
 
+	@Test
+	public void testFieldConversion() {
+
+		code_v2_("class A { real? x = null m() { this.x = 5 } } var a = new A() a.m() a.x").debug().equals("5.0");
+		code_v2_("class A { integer? x = null m() { x = 5.5 } } var a = new A() a.m() a.x").debug().equals("5");
 	}
 }

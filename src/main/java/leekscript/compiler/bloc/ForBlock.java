@@ -79,10 +79,10 @@ public class ForBlock extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 
 		writer.addCode("for (");
-		mInitialisation.writeJavaCode(mainblock, writer);
+		mInitialisation.writeJavaCode(mainblock, writer, false);
 
 		if (writer.isOperationsEnabled()) {
 			writer.addCode("ops(");
@@ -90,10 +90,10 @@ public class ForBlock extends AbstractLeekBlock {
 		// Prevent unreachable code error
 		if (mCondition instanceof LeekBoolean) {
 			writer.addCode("bool(");
-			writer.getBoolean(mainblock, mCondition);
+			writer.getBoolean(mainblock, mCondition, false);
 			writer.addCode(")");
 		} else {
-			writer.getBoolean(mainblock, mCondition);
+			writer.getBoolean(mainblock, mCondition, false);
 		}
 		if (writer.isOperationsEnabled()) {
 			writer.addCode(", " + mCondition.getOperations() + ")");
@@ -102,13 +102,13 @@ public class ForBlock extends AbstractLeekBlock {
 		if (writer.isOperationsEnabled()) {
 			writer.addCode("ops(");
 		}
-		mIncrementation.writeJavaCode(mainblock, writer);
+		mIncrementation.writeJavaCode(mainblock, writer, false);
 		if (writer.isOperationsEnabled()) {
 			writer.addCode(", " + mIncrementation.getOperations() + ")");
 		}
 		writer.addLine(") {", getLocation());
 		writer.addCounter(1);
-		super.writeJavaCode(mainblock, writer);
+		super.writeJavaCode(mainblock, writer, false);
 		writer.addLine("}");
 	}
 

@@ -140,116 +140,129 @@ public class JavaWriter {
 		return className;
 	}
 
-	public void getBoolean(MainLeekBlock mainblock, Expression expression) {
+	public void getBoolean(MainLeekBlock mainblock, Expression expression, boolean parenthesis) {
 		if (expression.getType() == Type.BOOL) {
-			expression.writeJavaCode(mainblock, this);
+			expression.writeJavaCode(mainblock, this, parenthesis);
 		} else if (expression.getType() == Type.INT) {
-			addCode("((");
-			expression.writeJavaCode(mainblock, this);
-			addCode(") != 0l)");
+			if (parenthesis) {
+				addCode("(");
+			}
+			expression.writeJavaCode(mainblock, this, true);
+			addCode(" != 0l");
+			if (parenthesis) {
+				addCode(")");
+			}
 		} else {
 			addCode("bool(");
-			expression.writeJavaCode(mainblock, this);
+			expression.writeJavaCode(mainblock, this, false);
 			addCode(")");
 		}
 	}
 
-	public void getString(MainLeekBlock mainblock, Expression expression) {
+	public void getString(MainLeekBlock mainblock, Expression expression, boolean parenthesis) {
 		if (expression.getType() == Type.STRING) {
-			expression.writeJavaCode(mainblock, this);
+			expression.writeJavaCode(mainblock, this, parenthesis);
 		} else {
 			addCode("string(");
-			expression.writeJavaCode(mainblock, this);
+			expression.writeJavaCode(mainblock, this, false);
 			addCode(")");
 		}
 	}
 
-	public void getInt(MainLeekBlock mainblock, Expression expression) {
+	public void getInt(MainLeekBlock mainblock, Expression expression, boolean parenthesis) {
 		if (expression.getType() == Type.INT) {
-			expression.writeJavaCode(mainblock, this);
+			expression.writeJavaCode(mainblock, this, parenthesis);
 		} else {
 			addCode("longint(");
-			expression.writeJavaCode(mainblock, this);
+			expression.writeJavaCode(mainblock, this, false);
 			addCode(")");
 		}
 	}
 
-	public void compileLoad(MainLeekBlock mainblock, Expression expr) {
+	public void compileLoad(MainLeekBlock mainblock, Expression expr, boolean parenthesis) {
 		if (expr.getType() == Type.NULL || expr.getType() == Type.BOOL || expr.getType().isNumber() || expr.getType() == Type.STRING || expr.getType().isArray()) {
-			expr.writeJavaCode(mainblock, this);
+			expr.writeJavaCode(mainblock, this, parenthesis);
 		} else {
 			addCode("load(");
-			expr.writeJavaCode(mainblock, this);
+			expr.writeJavaCode(mainblock, this, false);
 			addCode(")");
 		}
 	}
 
-	public void compileClone(MainLeekBlock mainblock, Expression expr) {
+	public void compileClone(MainLeekBlock mainblock, Expression expr, boolean parenthesis) {
 		if (expr.getType() == Type.NULL || expr.getType() == Type.BOOL || expr.getType().isNumber() || expr.getType() == Type.STRING) {
-			expr.writeJavaCode(mainblock, this);
+			expr.writeJavaCode(mainblock, this, parenthesis);
 		} else {
 			addCode("copy(");
-			expr.writeJavaCode(mainblock, this);
+			expr.writeJavaCode(mainblock, this, false);
 			addCode(")");
 		}
 	}
 
-	public void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type) {
+	public void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type, boolean parenthesis) {
 
 		// System.out.println("convert " + value.getType() + " to " + type);
 		if (type == Type.REAL && value.getType().isIntOrReal()) {
-			addCode("(");
-			value.writeJavaCode(mainblock, this);
-			addCode(").doubleValue()");
+			value.writeJavaCode(mainblock, this, true);
+			addCode(".doubleValue()");
 			return;
 		}
 		if (type == Type.INT && value.getType().isIntOrReal()) {
-			addCode("(");
-			value.writeJavaCode(mainblock, this);
-			addCode(").longValue()");
+			value.writeJavaCode(mainblock, this, true);
+			addCode(".longValue()");
 			return;
 		}
 		var cast = type.accepts(value.getType());
 		// System.out.println("cast = " + cast);
 		if (cast.ordinal() <= CastType.EQUALS.ordinal()) {
-			value.writeJavaCode(mainblock, this);
+			value.writeJavaCode(mainblock, this, parenthesis);
 			return;
 		}
 		if (type.isArray()) {
 			addCode(mainblock.getVersion() >= 4 ? "toArray(" : "toLegacyArray(");
 			addCode(index + ", ");
-			value.writeJavaCode(mainblock, this);
+			value.writeJavaCode(mainblock, this, false);
 			addCode(")");
 			return;
 		}
 		else if (type.isMap()) {
 			addCode("toMap(");
 			addCode(index + ", ");
-			value.writeJavaCode(mainblock, this);
+			value.writeJavaCode(mainblock, this, false);
 			addCode(")");
 			return;
 		}
 		else if (type == Type.INT) {
 			if (value.getType() == Type.REAL) {
-				addCode("(long) (");
-				value.writeJavaCode(mainblock, this);
-				addCode(")");
+				if (parenthesis) {
+					addCode("(");
+				}
+				addCode("(long) ");
+				value.writeJavaCode(mainblock, this, true);
+				if (parenthesis) {
+					addCode(")");
+				}
 				return;
 			} else {
 				addCode("longint(");
-				value.writeJavaCode(mainblock, this);
+				value.writeJavaCode(mainblock, this, false);
 				addCode(")");
 				return;
 			}
 		} else if (type == Type.REAL) {
 			if (value.getType() == Type.INT) {
-				addCode("(double) (");
-				value.writeJavaCode(mainblock, this);
-				addCode(")");
+				if (parenthesis) {
+					addCode("(");
+				}
+				addCode("(double) ");
+				value.writeJavaCode(mainblock, this, true);
+				if (parenthesis) {
+					addCode(")");
+				}
 				return;
 			} else {
 				addCode("real(");
-				value.writeJavaCode(mainblock, this);
+				value.writeJavaCode(mainblock, this, false);
 				addCode(")");
 				return;
 			}
@@ -261,15 +274,25 @@ public class JavaWriter {
 					for (var t : ct.getTypes()) {
 						if (t != Type.NULL) {
 							if (t == Type.REAL && value.getType() == Type.INT) { // int -> Double
-								addCode("((double) (");
-								value.writeJavaCode(mainblock, this);
-								addCode("))");
+								if (parenthesis) {
+									addCode("(");
+								}
+								addCode("(double) ");
+								value.writeJavaCode(mainblock, this, true);
+								if (parenthesis) {
+									addCode(")");
+								}
 								return;
 							}
 							if (t == Type.INT && value.getType() == Type.REAL) { // double -> Integer
-								addCode("((long) (");
-								value.writeJavaCode(mainblock, this);
-								addCode("))");
+								if (parenthesis) {
+									addCode("(");
+								}
+								addCode("(long) ");
+								value.writeJavaCode(mainblock, this, true);
+								if (parenthesis) {
+									addCode(")");
+								}
 								return;
 							}
 						}
@@ -278,15 +301,26 @@ public class JavaWriter {
 			}
 		}
 		if (type instanceof FunctionType ft1 && value.getType() instanceof FunctionType ft2) {
-			addCode("((" + type.getJavaPrimitiveName(mainblock.getVersion()) + ")");
-			addCode(" (Object) (");
-			value.writeJavaCode(mainblock, this);
-			addCode("))");
+			if (parenthesis) {
+				addCode("(");
+			}
+			addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ")");
+			addCode(" (Object) ");
+			value.writeJavaCode(mainblock, this, true);
+			if (parenthesis) {
+				addCode(")");
+			}
 			return;
 		}
-		addCode("((" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") (");
-		value.writeJavaCode(mainblock, this);
-		addCode("))");
+		
+		if (type != Type.ANY) {
+			if (parenthesis) addCode("(");
+			addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+		}
+		value.writeJavaCode(mainblock, this, type != Type.ANY || parenthesis);
+		if (type != Type.ANY && parenthesis) {
+			addCode(")");
+		}
 	}
 
 	public String generateGenericFunction(ArrayList<CallableVersion> versions) {
@@ -455,17 +489,6 @@ public class JavaWriter {
 			}
 		}
 		return "(" + type.getJavaName(version) + ") " + v;
-	}
-
-	public void cast(MainLeekBlock mainblock, Expression expr, Type type) {
-		var castType = type.accepts(expr.getType());
-		if (castType.ordinal() > CastType.EQUALS.ordinal()) {
-			addCode("((" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") (");
-		}
-		expr.writeJavaCode(mainblock, this);
-		if (castType.ordinal() > CastType.EQUALS.ordinal()) {
-			addCode("))");
-		}
 	}
 
 	public boolean isInConstructor() {

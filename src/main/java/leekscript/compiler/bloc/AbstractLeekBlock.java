@@ -150,7 +150,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		int i = 0;
 		writer.lastInstruction = false;
 		for (LeekInstruction instruction : mInstructions) {
@@ -161,16 +161,16 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 					mainblock.writeBeforeReturn(writer);
 					writer.addCode("return ");
 					writer.lastInstruction = true;
-					instruction.writeJavaCode(mainblock, writer);
+					instruction.writeJavaCode(mainblock, writer, false);
 				} else {
-					instruction.writeJavaCode(mainblock, writer);
+					instruction.writeJavaCode(mainblock, writer, false);
 					if (mEndInstruction == 0) {
 						mainblock.writeBeforeReturn(writer);
 						writer.addLine("return null;");
 					}
 				}
 			} else {
-				instruction.writeJavaCode(mainblock, writer);
+				instruction.writeJavaCode(mainblock, writer, false);
 			}
 		}
 		if (this instanceof MainLeekBlock && mInstructions.size() == 0) {
