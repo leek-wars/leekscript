@@ -448,7 +448,9 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { m() { return 10 } } var a = new A() return a.m()").equals("10");
 		code_v2_("class A { public m() { return 10 } } var a = new A() return a.m()").equals("10");
 		code_v2_("class A { protected m() { return 10 } } var a = new A() return a.m()").equals("null");
+		code_v2_("class A { protected m() { return 10 } } A a = new A() return a.m()").error(Error.PROTECTED_METHOD);
 		code_v2_("class A { private m() { return 10 } } var a = new A() return a.m()").equals("null");
+		code_v2_("class A { private m() { return 10 } } A a = new A() return a.m()").error(Error.PRIVATE_METHOD);
 		code_v2_("class A { public m() { return 10 } } class B extends A {} var a = new B() return a.m()").equals("10");
 		code_v2_("class A { protected m() { return 10 } } class B extends A {} var a = new B() return a.m()").equals("null");
 		code_v2_("class A { private m() { return 10 } } class B extends A {} var a = new B() return a.m()").equals("null");

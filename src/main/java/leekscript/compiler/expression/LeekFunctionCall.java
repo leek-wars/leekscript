@@ -517,6 +517,13 @@ public class LeekFunctionCall extends Expression {
 						is_method = true;
 						for (var entry : methods.entrySet()) {
 							if (entry.getKey() == mParameters.size()) {
+								// Check method access level
+								var method = entry.getValue();
+								if (method.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != current) {
+									compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_METHOD, new String[] { current.getName(), oa.getField() }));
+								} else if (method.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(current))) {
+									compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_METHOD, new String[] { current.getName(), oa.getField() }));
+								}
 								break end;
 							}
 						}
