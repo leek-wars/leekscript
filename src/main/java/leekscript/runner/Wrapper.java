@@ -70,7 +70,7 @@ public class Wrapper<T> {
 	}
 
 	public Object sub_eq(Object x) throws LeekRunException {
-		return variable.add_eq(x);
+		return variable.sub_eq(x);
 	}
 
 	public Object mul_eq(Object x) throws LeekRunException {
