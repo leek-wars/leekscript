@@ -274,6 +274,7 @@ public class LeekFunctions {
 		method("intervalContains", "Interval", 2, new CallableVersion[] {
 			new CallableVersion(Type.BOOL, new Type[] { Type.INTERVAL, Type.INT }),
 			new CallableVersion(Type.BOOL, new Type[] { Type.INTERVAL, Type.REAL }),
+			new CallableVersion(Type.BOOL, new Type[] { Type.INTERVAL, Type.INT_OR_REAL }),
 		});
 		method("intervalAverage", "Interval", 3, Type.REAL, new Type[] { Type.INTERVAL });
 		method("intervalIntersection", "Interval", 3, new CallableVersion[] {
