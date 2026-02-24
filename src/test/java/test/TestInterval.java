@@ -113,6 +113,20 @@ public class TestInterval extends TestCommon {
 		code("return Infinity in [0..[").equals("true");
 		code_v3_("return Integer.MAX_VALUE in [0.0 ..[").equals("true");
 
+		section("Interval.intervalContains");
+		code("return intervalContains([1..2], 1)").equals("true");
+		code("return intervalContains([1..2], 2)").equals("true");
+		code("return intervalContains([1..2], 3)").equals("false");
+		code("return intervalContains([1..2], 0)").equals("false");
+		code("return intervalContains([1..2], 1.5)").equals("true");
+		code("return intervalContains([1..1], 1)").equals("true");
+		code("return intervalContains([2..1], 1)").equals("false");
+		code("return intervalContains([1..2[, 2)").equals("false");
+		code("return intervalContains(]1..2[, 1)").equals("false");
+		code("return intervalContains([1.0..2.0], 1.5)").equals("true");
+		code("return intervalContains([1.0..2.0[, 2.0)").equals("false");
+		code("var x = 2 return intervalContains([1..3], x)").equals("true");
+
 		section("Interval typing");
 		code_strict_v4_("Interval i = [0..[ return i instanceof Interval").equals("true");
 		code_v2_("return [0..1].class").equals("<class Interval>");
