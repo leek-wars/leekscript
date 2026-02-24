@@ -126,6 +126,9 @@ public class TestInterval extends TestCommon {
 		code("return intervalContains([1.0..2.0], 1.5)").equals("true");
 		code("return intervalContains([1.0..2.0[, 2.0)").equals("false");
 		code("var x = 2 return intervalContains([1..3], x)").equals("true");
+		code("function f(x) { return intervalContains([1..3], x) } return f(2)").equals("true");
+		code("function f(x) { return intervalContains([1..3], x) } return f(1.5)").equals("true");
+		code("function f(x) { return intervalContains([1..3], x) } return f(5)").equals("false");
 
 		section("Interval typing");
 		code_strict_v4_("Interval i = [0..[ return i instanceof Interval").equals("true");
