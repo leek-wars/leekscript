@@ -100,7 +100,7 @@ public class TestIf extends TestCommon {
 		code("return (5 > 10) ? 'a' : (4 == 2 ** 2) ? 'yes' : 'no';").equals("\"yes\"");
 
 		section("Invalid ternary syntax");
-		code("debug(true ? 'a' : 'b' : 'c');").error(leekscript.common.Error.UNCOMPLETE_EXPRESSION);
-		code("return true ? 'a' : 'b' : 'c';").error(leekscript.common.Error.UNCOMPLETE_EXPRESSION);
+		code("debug(true ? 'a' : 'b' : 'c');").error(leekscript.common.Error.OPERATOR_UNEXPECTED);
+		code("return true ? 'a' : 'b' : 'c';").error(leekscript.common.Error.OPERATOR_UNEXPECTED);
 	}
 }
