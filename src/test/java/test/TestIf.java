@@ -99,11 +99,8 @@ public class TestIf extends TestCommon {
 		code("return true ? false ? false ? 5 : 12 : 7 : 8;").equals("7");
 		code("return (5 > 10) ? 'a' : (4 == 2 ** 2) ? 'yes' : 'no';").equals("\"yes\"");
 
-<<<<<<< claude/fix-ternary-validation-DrRyh
 		section("Invalid ternary syntax");
 		code("debug(true ? 'a' : 'b' : 'c');").error(leekscript.common.Error.UNCOMPLETE_EXPRESSION);
 		code("return true ? 'a' : 'b' : 'c';").error(leekscript.common.Error.UNCOMPLETE_EXPRESSION);
-=======
->>>>>>> master
 	}
 }
