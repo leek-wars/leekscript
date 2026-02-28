@@ -127,6 +127,8 @@ public class TestOperators extends TestCommon {
 		code("return function() {} == function() {}").equals("false");
 		code("return endsWith == function() {}").equals("false");
 		code("return endsWith == endsWith").equals("true");
+		code("function test() {} return test == test").equals("true");
+		code("function a() {} function b() {} return a == b").equals("false");
 
 		String[] values1 = new String[] { "false", "true", "0", "1", "12", "''", "'0'", "'1'", "'12'", "'lama'", "'true'", "'false'",
 			"[]", "[0]", "[1]", "[12]", "[1,2,3]", "null" };

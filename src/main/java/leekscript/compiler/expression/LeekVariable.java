@@ -264,7 +264,8 @@ public class LeekVariable extends Expression {
 			writer.addCode("rfunction_" + token.getWord() + ".get()");
 		} else if (type == VariableType.FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
-			user_function.compileAnonymousFunction(mainblock, writer);
+			writer.generateAnonymousUserFunction(user_function);
+			writer.addCode("ufunction_" + token.getWord());
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
 			var constant = LeekConstants.get(token.getWord());
 			if (constant.getType() == Type.INT) writer.addCode(String.valueOf(constant.getIntValue()) + "l");
@@ -281,7 +282,8 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.SYSTEM_FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
 			if (user_function != null) {
-				user_function.compileAnonymousFunction(mainblock, writer);
+				writer.generateAnonymousUserFunction(user_function);
+				writer.addCode("ufunction_" + token.getWord());
 			} else {
 				var system_function = LeekFunctions.getValue(token.getWord(), writer.getOptions().useExtra());
 				writer.generateAnonymousSystemFunction(system_function);
@@ -333,7 +335,8 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.SYSTEM_FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
 			if (user_function != null) {
-				user_function.compileAnonymousFunction(mainblock, writer);
+				writer.generateAnonymousUserFunction(user_function);
+				writer.addCode("ufunction_" + token.getWord());
 			} else {
 				var system_function = LeekFunctions.getValue(token.getWord(), writer.getOptions().useExtra());
 				writer.generateAnonymousSystemFunction(system_function);
@@ -356,7 +359,8 @@ public class LeekVariable extends Expression {
 			else writer.addCode("null");
 		} else if (type == VariableType.FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
-			user_function.compileAnonymousFunction(mainblock, writer);
+			writer.generateAnonymousUserFunction(user_function);
+			writer.addCode("ufunction_" + token.getWord());
 		} else if (type == VariableType.CLASS) {
 			if (classDeclaration.internal) {
 				writer.addCode(token.getWord().toLowerCase() + "Class");

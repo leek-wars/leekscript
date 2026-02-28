@@ -4,13 +4,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeMap;
-import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import leekscript.util.Json;
 
 import leekscript.compiler.bloc.AbstractLeekBlock;
+import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.common.CompoundType;
 import leekscript.common.FunctionType;
 import leekscript.common.Type;
@@ -33,6 +32,7 @@ public class JavaWriter {
 	public AbstractLeekBlock currentBlock = null;
 	public HashMap<String, ArrayList<CallableVersion>> genericFunctions = new HashMap<>();
 	public HashSet<LeekFunctions> anonymousSystemFunctions = new HashSet<>();
+	public HashSet<FunctionBlock> anonymousUserFunctions = new HashSet<>();
 	private boolean operationsEnabled = true;
 	public boolean lastInstruction = false;
 	public Options options;
@@ -330,6 +330,10 @@ public class JavaWriter {
 		return key;
 	}
 
+	public void generateAnonymousUserFunction(FunctionBlock function) {
+		anonymousUserFunctions.add(function);
+	}
+
 	public void generateAnonymousSystemFunction(LeekFunctions system_function) {
 		anonymousSystemFunctions.add(system_function);
 		for (var version : system_function.getVersions()) {
@@ -452,6 +456,15 @@ public class JavaWriter {
 			}
 			addLine(");");
 			addLine("}};");
+			addLine();
+		}
+	}
+
+	public void writeAnonymousUserFunctions(MainLeekBlock block) {
+		for (var function : anonymousUserFunctions) {
+			addCode("private FunctionLeekValue ufunction_" + function.getName() + " = ");
+			function.compileAnonymousFunction(block, this);
+			addLine(";");
 			addLine();
 		}
 	}
