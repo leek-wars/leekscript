@@ -48,7 +48,16 @@ public class LeekTernaire extends LeekExpression {
 
 	@Override
 	public boolean hasTernaire() {
-		return true;
+		// Si ce ternaire n'est pas complet, retourner true
+		if (mOp != 2) return true;
+		// Si complet, vérifier récursivement dans les sous-expressions
+		if (mCondition != null && mCondition.getNature() == EXPRESSION && ((LeekExpression) mCondition).hasTernaire())
+			return true;
+		if (mExpression1 != null && mExpression1.getNature() == EXPRESSION && ((LeekExpression) mExpression1).hasTernaire())
+			return true;
+		if (mExpression2 != null && mExpression2.getNature() == EXPRESSION && ((LeekExpression) mExpression2).hasTernaire())
+			return true;
+		return false;
 	}
 
 	@Override
@@ -185,6 +194,11 @@ public class LeekTernaire extends LeekExpression {
 		if(!super.complete()) return false;
 		if(mCondition == null) return false;
 		if(mCondition.getNature() == EXPRESSION && !((LeekExpression) mCondition).complete()) return false;
+		if(mOp != 2) return false; // Both ? and : must be present
+		if(mExpression1 == null) return false;
+		if(mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete()) return false;
+		if(mExpression2 == null) return false;
+		if(mExpression2.getNature() == EXPRESSION && !((LeekExpression) mExpression2).complete()) return false;
 		return true;
 	}
 
