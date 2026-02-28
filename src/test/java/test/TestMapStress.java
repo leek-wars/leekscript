@@ -1,9 +1,16 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestMapStress extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 
 		long fight_max_ops = 14l * 64l * 20000000l;
@@ -35,5 +42,6 @@ public class TestMapStress extends TestCommon {
 		code_v4_("any a = [:] for (var i = 0; i < 8000; ++i) a[i] = 1 mapFilter(a, function(x) { return x % 2 })").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("any a = [:] for (var i = 0; i < 8000; ++i) a[i] = 1 mapMerge(a, a)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("any a = [:] for (var i = 0; i < 8000; ++i) a[i] = 1 var b = clone(a)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
+
 	}
 }

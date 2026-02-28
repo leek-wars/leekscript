@@ -1,8 +1,15 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+@ExtendWith(SummaryExtension.class)
 public class TestEuler extends TestCommon {
 
-	public void run() {
+
+	@Test
+	public void run() throws Exception {
 
 		section("Project Euler");
 		file("ai/euler/pe001.leek").equals("233168");
@@ -38,5 +45,6 @@ public class TestEuler extends TestCommon {
 		// file("ai/euler/pe064.leek").equals("1322");
 		// file_v4_("ai/euler/pe066.leek").equals("1322");
 		// DISABLED_file("ai/euler/pe206.leek").equals("1389019170");
+
 	}
 }

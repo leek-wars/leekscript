@@ -34,21 +34,21 @@ public class WhileBlock extends AbstractLeekBlock {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// writer.addCounter(1);
 		writer.addCode("while (ops(");
 		// Prevent unreachable code error
 		if (mCondition instanceof LeekBoolean) {
 			writer.addCode("bool(");
-			writer.getBoolean(mainblock, mCondition);
+			writer.getBoolean(mainblock, mCondition, false);
 			writer.addCode(")");
 		} else {
-			writer.getBoolean(mainblock, mCondition);
+			writer.getBoolean(mainblock, mCondition, false);
 		}
 		writer.addCode(", " + (mCondition.getOperations()) + ")");
 		writer.addLine(") {", getLocation());
 		writer.addCounter(1);
-		super.writeJavaCode(mainblock, writer);
+		super.writeJavaCode(mainblock, writer, false);
 		writer.addLine("}");
 	}
 

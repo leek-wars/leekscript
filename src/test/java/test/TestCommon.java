@@ -21,6 +21,8 @@ import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.common.Error;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class TestCommon {
 
 	private static String GREEN_BOLD = "\033[1;32m";
@@ -37,7 +39,7 @@ public class TestCommon {
 	// private static long load_time = 0;
 	private static long execution_time = 0;
 	private static ArrayList<Long> operationsReference = new ArrayList<>();
-	// private static int operationsReferenceIndex = 0;
+	private static int operationsReferenceIndex = 0;
 	private static ArrayList<Long> operations = new ArrayList<>();
 
 	private static List<String> failedTests = new ArrayList<String>();
@@ -201,6 +203,7 @@ public class TestCommon {
 				ai = is_file ? LeekScript.compileFile(code, "AI", options) : LeekScript.compileSnippet(code, "AI", options);
 				ai.init();
 				ai.staticInit();
+				ai.resetCounter();
 				aiID = ai.getId();
 
 				compile_time = ai.getCompileTime() / 1000000;
@@ -228,7 +231,7 @@ public class TestCommon {
 			} catch (LeekRunException e) {
 				long exec_time = (System.nanoTime() - t) / 1000;
 				result = new Result(e.getError().toString(), ai, e.getError(), new String[0], ai.getOperations(), exec_time);
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				if (ai != null) {
 					var error = ai.throwableToError(e);
 					result = new Result(error.type.toString(), ai, error.type, error.parameters, 0, 0);
@@ -238,19 +241,32 @@ public class TestCommon {
 				}
 			}
 
-			operations.add(ops);
-			// long referenceOperations = operationsReference.get(operationsReferenceIndex++);
-
 			if (checker.check(result)) {
 				int ops_per_ms = (int) Math.round(1000 * (double) result.operations / result.exec_time);
 				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops, " + ops_per_ms + " ops/ms" + END_COLOR);
 				success++;
+				// assertTrue(true, "Test");
 			} else {
 				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
 				"/home/pierre/dev/leek-wars/generator/leekscript/ai/AI_" + aiID + ".java";
 				System.out.println(err);
 				failedTests.add(err);
+				// assertEquals(checker.getExpected(), checker.getResult(result), code);
 			}
+
+			operations.add(ops);
+			if (operationsReference.size() > 0) {
+				long referenceOperations = operationsReference.get(operationsReferenceIndex);
+				if (ops != referenceOperations) {
+					var err = C_RED + "[OPS] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " Wrong operations: " + ops + ", expected " + referenceOperations;
+					System.out.println(err);
+					failedTests.add(err);
+				} else {
+					System.out.println(GREEN_BOLD + "[OPS]" + END_COLOR + " Good operations: " + ops);
+				}
+			}
+			operationsReferenceIndex++;
+
 			return result.result;
 		}
 
@@ -390,7 +406,7 @@ public class TestCommon {
 		System.out.println("================================================");
 	}
 
-	public static boolean summary() {
+	public static void summary() {
 		System.out.println("================================================");
 		System.out.println(success + " / " + tests + " tests passed, " + (tests - success) + " errors, " + disabled + " disabled");
 		System.out.println("Total time: " + fn(analyze_time + compile_time + execution_time) + " ms"
@@ -405,7 +421,7 @@ public class TestCommon {
 		for (String test : failedTests) {
 			System.out.println(test);
 		}
-		return success == tests;
+		assertEquals(tests, success, "Some tests failed");
 	}
 
 	public static String fn(long n) {
@@ -423,6 +439,7 @@ public class TestCommon {
 				myWriter.write(String.valueOf(ops) + "\n");
 			}
 			myWriter.close();
+			System.out.println("opérations.txt written");
 		} catch (IOException e) {
 			System.out.println("An error occurred.");
 			e.printStackTrace();

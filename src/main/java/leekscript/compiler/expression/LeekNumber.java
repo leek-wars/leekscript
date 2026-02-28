@@ -60,12 +60,18 @@ public class LeekNumber extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == Type.INT) {
-			writer.addCode(String.valueOf(longValue) + "l");
+			if (parenthesis && longValue < 0) {
+				writer.addCode("(" + longValue + "l)");
+			} else {
+				writer.addCode(longValue + "l");
+			}
 		} else {
 			if (doubleValue == Double.POSITIVE_INFINITY) {
 				writer.addCode("Double.POSITIVE_INFINITY");
+			} else if (parenthesis && doubleValue < 0) {
+				writer.addCode("(" + doubleValue + ")");
 			} else {
 				writer.addCode(String.valueOf(doubleValue));
 			}

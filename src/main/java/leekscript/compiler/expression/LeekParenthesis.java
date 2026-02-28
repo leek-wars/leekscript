@@ -47,9 +47,9 @@ public class LeekParenthesis extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		writer.addCode("(");
-		mExpression.writeJavaCode(mainblock, writer);
+		mExpression.writeJavaCode(mainblock, writer, false);
 		writer.addCode(")");
 	}
 

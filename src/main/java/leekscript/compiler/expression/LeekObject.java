@@ -63,7 +63,7 @@ public class LeekObject extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		writer.addPosition(openingBrace);
 		writer.addCode("new ObjectLeekValue(" + writer.getAIThis() + ", new String[] { ");
 		int i = 0;
@@ -75,7 +75,7 @@ public class LeekObject extends Expression {
 		i = 0;
 		for (var entry : mValues.entrySet()) {
 			if (i++ != 0) writer.addCode(", ");
-			entry.getValue().writeJavaCode(mainblock, writer);
+			entry.getValue().writeJavaCode(mainblock, writer, false);
 		}
 		writer.addCode(" })");
 	}

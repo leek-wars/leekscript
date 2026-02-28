@@ -1,7 +1,15 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+
+@ExtendWith(SummaryExtension.class)
 public class TestSet extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 
 		section("Set.constructor()");
@@ -113,5 +121,6 @@ public class TestSet extends TestCommon {
 		section("Set clone");
 		code("var s = <1, 2, 3> var s2 = clone(s) setClear(s) return s2").equals("<1, 2, 3>");
 		code("var s = <1, 2, 3> var s2 = clone(s) setPut(s, 4) return s2").equals("<1, 2, 3>");
+
 	}
 }

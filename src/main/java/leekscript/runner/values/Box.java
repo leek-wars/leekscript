@@ -34,6 +34,7 @@ public class Box<T> {
 		ai.ops(ops);
 	}
 
+	@SuppressWarnings("unchecked")
 	public T get() {
 		return (T) mValue;
 	}
@@ -75,6 +76,7 @@ public class Box<T> {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public T increment() throws LeekRunException {
 		if (mValue instanceof Long) {
 			var value = (Long) mValue;
@@ -90,6 +92,7 @@ public class Box<T> {
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	public T decrement() throws LeekRunException {
 		if (mValue instanceof Long) {
 			var value = (Long) mValue;
@@ -105,6 +108,7 @@ public class Box<T> {
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	public T pre_increment() throws LeekRunException {
 		if (mValue instanceof Long) {
 			return (T) (mValue = (Long) mValue + 1);
@@ -116,6 +120,7 @@ public class Box<T> {
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	public T pre_decrement() throws LeekRunException {
 		if (mValue instanceof Long) {
 			return (T) (mValue = (Long) mValue - 1);
@@ -203,7 +208,7 @@ public class Box<T> {
 		return mUAI.get(mValue, index, fromClass);
 	}
 
-	public Box getOrCreate(Object index) throws LeekRunException {
+	public Box<?> getOrCreate(Object index) throws LeekRunException {
 		return LeekValueManager.getOrCreate(mUAI, mValue, index);
 	}
 
@@ -214,7 +219,7 @@ public class Box<T> {
 		return null;
 	}
 
-	public Box getFieldL(String field) throws LeekRunException {
+	public Box<?> getFieldL(String field) throws LeekRunException {
 		if (mValue instanceof ObjectLeekValue object) {
 			return object.getFieldL(field);
 		}

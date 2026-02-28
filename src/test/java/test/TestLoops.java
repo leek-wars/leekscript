@@ -1,10 +1,17 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestLoops extends TestCommon {
 
-	public void run() {
+
+	@Test
+	public void run() throws Exception {
 
 		/*
 		* While loops
@@ -277,5 +284,6 @@ public class TestLoops extends TestCommon {
 		// code("while (true) { continue 0 }").error(ls::Error::Type::CONTINUE_LEVEL_ZERO, {});
 		code("arrayMap([1, 2, 3], function(arr) { if (1) continue })").error(Error.CONTINUE_OUT_OF_LOOP);
 		code("for (var i in [1, 2, 3]) { arrayMap([1, 2, 3], function(arr) { if (1) continue }) }").error(Error.CONTINUE_OUT_OF_LOOP);
+
 	}
 }

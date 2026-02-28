@@ -1,10 +1,17 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestClass extends TestCommon {
 
-	public void run() {
+
+	@Test
+	public void run() throws Exception {
 
 		section("Class toBoolean");
 		code_v2_("class A {} return !!A").equals("true");
@@ -22,5 +29,6 @@ public class TestClass extends TestCommon {
 		code_v2_("class A { public m() { return class.name }} return new A().m()").equals("\"A\"");
 		code_v2_("class A { public static m() { return name }} return A.m()").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 		code_v2_("class A { public static m() { return class.name }} return A.m()").equals("\"A\"");
+
 	}
 }

@@ -1,9 +1,16 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestArrayStress extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 
 		long fight_max_ops = 14l * 64l * 20000000l;
@@ -45,5 +52,6 @@ public class TestArrayStress extends TestCommon {
 		code_v4_("var a = [] for (var i = 0; i < 8000; ++i) push(a, i) return arraySlice(a, 1000, 7000)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("var a = [] for (var i = 0; i < 8000; ++i) push(a, i) return arrayConcat(a, a)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("var a = [] for (var i = 0; i < 8000; ++i) push(a, i) return clone(a)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
+
 	}
 }

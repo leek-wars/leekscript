@@ -117,7 +117,7 @@ public class LegacyLeekArray extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (mValues.isEmpty()) {
 			writer.addCode("new LegacyArrayLeekValue(" + writer.getAIThis() + ")");
 			return;
@@ -126,7 +126,7 @@ public class LegacyLeekArray extends Expression {
 		writer.addCode("new LegacyArrayLeekValue(" + writer.getAIThis() + ", new Object[] { ");
 		for (int i = 0; i < mValues.size(); i++) {
 			if (i != 0) writer.addCode(", ");
-			mValues.get(i).writeJavaCode(mainblock, writer);
+			mValues.get(i).writeJavaCode(mainblock, writer, false);
 		}
 		writer.addCode(" }, " + (mIsKeyVal ? "true" : "false") + ")");
 	}

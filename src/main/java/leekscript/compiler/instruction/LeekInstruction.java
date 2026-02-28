@@ -11,7 +11,7 @@ public abstract class LeekInstruction extends Expression {
 
 	public abstract String getCode();
 
-	public abstract void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer);
+	public abstract void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis);
 
 	public abstract int getEndBlock();
 

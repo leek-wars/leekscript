@@ -106,7 +106,7 @@ public class WordCompiler {
 
 				if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 
-				if (mTokens.get().getWord().equals("include")) {
+				if (mTokens.get().getType() == TokenType.INCLUDE) {
 					var token = mTokens.eat();
 					// On vérifie qu'on est dans le bloc principal
 					if (!mCurentBlock.equals(mMain)) throw new LeekCompilerException(mTokens.get(), Error.INCLUDE_ONLY_IN_MAIN_BLOCK);
@@ -199,7 +199,7 @@ public class WordCompiler {
 
 					mMain.addFunctionDeclaration(funcName.getWord(), param_count);
 
-				} else if (mTokens.get().getWord().equals("class")) {
+				} else if (mTokens.get().getType() == TokenType.CLASS) {
 
 					mTokens.skip();
 					if (mTokens.hasMoreTokens()) {

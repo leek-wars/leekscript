@@ -271,7 +271,11 @@ public class LeekFunctions {
 		method("intervalIsClosed", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
 		method("intervalIsRightClosed", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
 		method("intervalIsLeftClosed", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
-		method("intervalContains", "Interval", 2, Type.BOOL, new Type[] { Type.INTERVAL, Type.INT_OR_REAL });
+		method("intervalContains", "Interval", 2, new CallableVersion[] {
+			new CallableVersion(Type.BOOL, new Type[] { Type.INTERVAL, Type.INT }),
+			new CallableVersion(Type.BOOL, new Type[] { Type.INTERVAL, Type.REAL }),
+			new CallableVersion(Type.BOOL, new Type[] { Type.INTERVAL, Type.INT_OR_REAL }),
+		});
 		method("intervalAverage", "Interval", 3, Type.REAL, new Type[] { Type.INTERVAL });
 		method("intervalIntersection", "Interval", 3, new CallableVersion[] {
 			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.REAL_INTERVAL, Type.REAL_INTERVAL }),

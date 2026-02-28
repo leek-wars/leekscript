@@ -21,13 +21,6 @@ public class Json {
         .build();
 
     /**
-     * Get the singleton ObjectMapper instance
-     */
-    public static ObjectMapper getMapper() {
-        return mapper;
-    }
-
-    /**
      * Create a new empty JSON object
      */
     public static ObjectNode createObject() {

@@ -1,10 +1,17 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestMap extends TestCommon {
 
-	public void run() {
+
+	@Test
+	public void run() throws Exception {
 		header("Map");
 
 		section("Constructor");
@@ -420,5 +427,6 @@ public class TestMap extends TestCommon {
 		code_v4_("return mapMerge(['a' : 2], ['a' : 4])").equals("[\"a\" : 2]");
 		code_v4_("return mapMerge([:], [1 : 2, 3 : 4])").equals("[1 : 2, 3 : 4]");
 		code_v4_("return mapMerge([1 : 2, 3 : 4], [:])").equals("[1 : 2, 3 : 4]");
+
 	}
 }

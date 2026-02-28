@@ -1,8 +1,15 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+@ExtendWith(SummaryExtension.class)
 public class TestString extends TestCommon {
 
-	public void run() {
+
+	@Test
+	public void run() throws Exception {
 
 		section("Operator +");
 		code("return 1+','+2").equals("\"1,2\"");
@@ -70,5 +77,6 @@ public class TestString extends TestCommon {
 		code("return codePointAt('é', 0)").equals("233");
 		code("return codePointAt('♫', 0)").equals("9835");
 		code("return codePointAt('🐨🐨', 2)").equals("128040");
+
 	}
 }

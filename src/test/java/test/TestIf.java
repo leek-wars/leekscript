@@ -1,7 +1,14 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+@ExtendWith(SummaryExtension.class)
 public class TestIf extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 		/*
 		* Conditions
@@ -92,8 +99,11 @@ public class TestIf extends TestCommon {
 		code("return true ? false ? false ? 5 : 12 : 7 : 8;").equals("7");
 		code("return (5 > 10) ? 'a' : (4 == 2 ** 2) ? 'yes' : 'no';").equals("\"yes\"");
 
+<<<<<<< claude/fix-ternary-validation-DrRyh
 		section("Invalid ternary syntax");
 		code("debug(true ? 'a' : 'b' : 'c');").error(leekscript.common.Error.UNCOMPLETE_EXPRESSION);
 		code("return true ? 'a' : 'b' : 'c';").error(leekscript.common.Error.UNCOMPLETE_EXPRESSION);
+=======
+>>>>>>> master
 	}
 }

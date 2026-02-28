@@ -1,9 +1,16 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestGlobals extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 
 		section("Globals");
@@ -73,5 +80,17 @@ public class TestGlobals extends TestCommon {
 		code("global Array<string> w = split('hello', ''); return w").equals("[\"h\", \"e\", \"l\", \"l\", \"o\"]");
 		code_v4_("function f() { return [:] } global Map c = f(); return c").equals("[:]");
 		code_strict("global a = [0] a[0] = 12 return a").equals("[12]");
+		code_v1("global real x = 56 return x").equals("56");
+		code_v2_("global real x = 56 return x").equals("56.0");
+		code_v1("global real x x = 56 return x").equals("56");
+		code_v2_("global real x x = 56 return x").equals("56.0");
+		code_v4_("global Map x x = [:]").equals("[:]");
+		code_v4_("global x global y x = (y = [:])").equals("[:]");
+		code_v4_("global x global y = [1:2] x = (y[1] = [:])").equals("[:]");
+		code_v4_("var z = 2 global x global y = [1:2] x = (y[z] = [:])").equals("[:]");
+		code_v4_("var e = 2 var f = 4 global x global y = [1:2] x = (y[e | f << 2] = [:])").equals("[:]");
+		code_v4_("global Array<integer> CELL_X = function() => Array<integer> { return [] }() CELL_X").equals("[]");
+		code_v4_("global Map<integer, Map<integer, boolean>> x x = (x[1] = [:]) x").equals("[:]");
+		code_v4_("global Map<integer, Map<integer, Map<integer, boolean>>> y = [:] global Map<integer, Map<integer, boolean>> x x = (y[5] = [:]) x").equals("[:]");
 	}
 }

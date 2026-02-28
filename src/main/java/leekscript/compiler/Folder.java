@@ -1,6 +1,7 @@
 package leekscript.compiler;
 
 import java.io.FileNotFoundException;
+import java.lang.ref.SoftReference;
 import java.util.HashMap;
 
 import leekscript.compiler.resolver.FileSystem;
@@ -13,7 +14,7 @@ public class Folder {
 	private String name;
 	private Folder parent = null;
 	private Folder root = null;
-	private HashMap<String, AIFile> files = new HashMap<>();
+	private HashMap<String, SoftReference<AIFile>> files = new HashMap<>();
 	protected HashMap<String, Folder> folders = new HashMap<>();
 	private long timestamp;
 
@@ -81,7 +82,8 @@ public class Folder {
 		String name = path.replaceAll("\\\\/", "/"); // On convertit les \/ en / à nouveau
 
 		// Recherche dans le cache
-		var ai = files.get(name);
+		var ref = files.get(name);
+		var ai = ref != null ? ref.get() : null;
 		if (ai != null) {
 			// Fichier pas modifié ?
 			if (fs.getAITimestamp(ai) <= ai.getTimestamp()) {
@@ -94,7 +96,7 @@ public class Folder {
 		// Recherche d'un nouveau fichier
 		ai = fs.findFile(name, this); // Throw si pas trouvé
 
-		this.files.put(name, ai);
+		this.files.put(name, new SoftReference<>(ai));
 		return ai;
 	}
 
@@ -135,7 +137,7 @@ public class Folder {
 	}
 
 	public void addFile(AIFile file) {
-		files.put(file.getName(), file);
+		files.put(file.getName(), new SoftReference<>(file));
 	}
 
 	public int getId() {
@@ -146,8 +148,8 @@ public class Folder {
 		return owner;
 	}
 
-	public void removeFile(AIFile ai) {
-		files.remove(ai.getName());
+	public void removeFile(String name) {
+		files.remove(name);
 	}
 
 	public void removeFolder(Folder folder) {

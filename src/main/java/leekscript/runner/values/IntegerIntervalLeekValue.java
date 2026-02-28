@@ -376,15 +376,13 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			var start = minClosed ? from : from + 1;
 			var end = maxClosed ? to : to - 1;
 			for (var i = start; i <= end; i += step) {
-				set.add(i);
-				ai.increaseRAM(1);
+				set.setPut(ai, i);
 			}
 		} else {
 			var start = maxClosed ? to : to - 1;
 			var end = minClosed ? from : from + 1;
 			for (var i = start; i >= end; i += step) {
-				set.add(i);
-				ai.increaseRAM(1);
+				set.setPut(ai, i);
 			}
 		}
 
@@ -405,15 +403,13 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			var start = minClosed ? from : from + 1;
 			var end = maxClosed ? to : to - 1;
 			for (double i = start; i <= end; i += step) {
-				set.add(i);
-				ai.increaseRAM(1);
+				set.setPut(ai, i);
 			}
 		} else {
 			var start = maxClosed ? to : to - 1;
 			var end = minClosed ? from : from + 1;
 			for (double i = start; i >= end; i += step) {
-				set.add(i);
-				ai.increaseRAM(1);
+				set.setPut(ai, i);
 			}
 		}
 

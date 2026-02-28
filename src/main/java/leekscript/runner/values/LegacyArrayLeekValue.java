@@ -18,7 +18,6 @@ import leekscript.runner.LeekValueManager;
 import leekscript.runner.AI.NativeObjectLeekValue;
 
 import leekscript.util.Json;
-import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, GenericArrayLeekValue, GenericMapLeekValue {

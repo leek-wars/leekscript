@@ -1,9 +1,16 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
 import leekscript.common.Error;
 
+@ExtendWith(SummaryExtension.class)
 public class TestArray extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 
 		section("Array.constructor()");
@@ -758,5 +765,6 @@ public class TestArray extends TestCommon {
 		code_v4_("arrayToSet([])").equals("<>");
 		code_v4_("arrayToSet([1, 2, 3, 4])").equals("<1, 2, 3, 4>");
 		code_v4_("arrayToSet(['a', 'b', 'c'])").equals("<\"a\", \"b\", \"c\">");
+
 	}
 }

@@ -43,7 +43,7 @@ public class LeekString extends Expression {
 	}
 
 	@Override
-	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer) {
+	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		String str = "";
 		int len = mString.length() - 1;
 		for (int i = 0; i < mString.length(); i++) {

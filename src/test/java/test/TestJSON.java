@@ -1,7 +1,14 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+@ExtendWith(SummaryExtension.class)
 public class TestJSON extends TestCommon {
 
+
+	@Test
 	public void run() throws Exception {
 
 		section("jsonEncode()");
@@ -120,5 +127,6 @@ public class TestJSON extends TestCommon {
 		code_v3("var v = {b: {d: 12}, cc: [[], 4], h: []} return string(jsonDecode(jsonEncode(v))) == string(v)").equals("false");
 		code_v4_("var v = {b: {d: 12}, cc: [[], 4], h: []} return string(jsonDecode(jsonEncode(v))) == string(v)").equals("true");
 		code("var v = 'salut' return jsonEncode(jsonEncode(v))").equals("\"\"\\\"salut\\\"\"\"");
+
 	}
 }

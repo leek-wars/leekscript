@@ -20,7 +20,6 @@ public class TestAI extends AI {
 		return null;
 	}
 
-
 	@Override
 	public Object runIA(Session session) throws LeekRunException {
 		return null;

@@ -1,7 +1,13 @@
 package test;
 
+
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
+
+@ExtendWith(SummaryExtension.class)
 public class TestInterval extends TestCommon {
 
+	@Test
 	public void run() throws Exception {
 
 		section("Interval.constructor()");
@@ -107,6 +113,23 @@ public class TestInterval extends TestCommon {
 		code("return Infinity in [0..[").equals("true");
 		code_v3_("return Integer.MAX_VALUE in [0.0 ..[").equals("true");
 
+		section("Interval.intervalContains");
+		code("return intervalContains([1..2], 1)").equals("true");
+		code("return intervalContains([1..2], 2)").equals("true");
+		code("return intervalContains([1..2], 3)").equals("false");
+		code("return intervalContains([1..2], 0)").equals("false");
+		code("return intervalContains([1..2], 1.5)").equals("true");
+		code("return intervalContains([1..1], 1)").equals("true");
+		code("return intervalContains([2..1], 1)").equals("false");
+		code("return intervalContains([1..2[, 2)").equals("false");
+		code("return intervalContains(]1..2[, 1)").equals("false");
+		code("return intervalContains([1.0..2.0], 1.5)").equals("true");
+		code("return intervalContains([1.0..2.0[, 2.0)").equals("false");
+		code("var x = 2 return intervalContains([1..3], x)").equals("true");
+		code("function f(x) { return intervalContains([1..3], x) } return f(2)").equals("true");
+		code("function f(x) { return intervalContains([1..3], x) } return f(1.5)").equals("true");
+		code("function f(x) { return intervalContains([1..3], x) } return f(5)").equals("false");
+
 		section("Interval typing");
 		code_strict_v4_("Interval i = [0..[ return i instanceof Interval").equals("true");
 		code_v2_("return [0..1].class").equals("<class Interval>");
@@ -206,7 +229,6 @@ public class TestInterval extends TestCommon {
 		code("return intervalToArray([0..5[, -1);").equals("[4, 3, 2, 1, 0]");
 		code("return intervalToArray(]0..5[, -1);").equals("[4, 3, 2, 1]");
 
-
 		section("Interval.intervalToSet()");
 		code_v4_("return intervalToSet([1.0 ..2.0])").equals("<1.0, 2.0>");
 		code_v4_("return intervalToSet([-2.0 ..2.0])").equals("<-2.0, -1.0, 0.0, 1.0, 2.0>");
@@ -272,5 +294,6 @@ public class TestInterval extends TestCommon {
 		code_v2_("var i = [1.0..5.0[ var x = 0.0 for (var y in i) x += y return x").equals("10.0");
 		code_v2_("var i = ]1.0..5.0] var x = 0.0 for (var y in i) x += y return x").equals("14.0");
 		code_v2_("var i = ]1.0..5.0[ var x = 0.0 for (var y in i) x += y return x").equals("9.0");
+
 	}
 }

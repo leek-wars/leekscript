@@ -28,6 +28,13 @@ public abstract class IntervalLeekValue implements LeekValue {
 
 	public abstract boolean intervalContains(AI ai, double x) throws LeekRunException;
 
+	public boolean intervalContains(AI ai, Number value) throws LeekRunException {
+		if (value instanceof Long l) {
+			return intervalContains(ai, (long) l);
+		}
+		return intervalContains(ai, value.doubleValue());
+	}
+
 	public abstract double intervalAverage(AI ai) throws LeekRunException;
 
 	public abstract boolean intervalIsBounded(AI ai);
