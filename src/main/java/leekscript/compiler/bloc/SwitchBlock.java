@@ -103,6 +103,7 @@ public class SwitchBlock extends AbstractLeekBlock {
 		writer.addLine("int " + siVar + " = -1;");
 
 		// Generate if/else if chain to compute the switch index
+		// Each comparison costs 1 op + the case value expression ops (like if/else if)
 		boolean first = true;
 		int index = 0;
 		for (var c : mCases) {
@@ -113,6 +114,14 @@ public class SwitchBlock extends AbstractLeekBlock {
 				} else {
 					writer.addCode("else if (");
 				}
+				// Compute operation cost: 1 per eq() + value expression ops
+				int ops = 0;
+				for (var v : c.values) {
+					ops += 1 + v.getOperations();
+				}
+				if (writer.isOperationsEnabled() && ops > 0) {
+					writer.addCode("ops(");
+				}
 				boolean firstValue = true;
 				for (var v : c.values) {
 					if (!firstValue) {
@@ -122,6 +131,9 @@ public class SwitchBlock extends AbstractLeekBlock {
 					v.writeJavaCode(mainblock, writer, false);
 					writer.addCode(")");
 					firstValue = false;
+				}
+				if (writer.isOperationsEnabled() && ops > 0) {
+					writer.addCode(", " + ops + ")");
 				}
 				writer.addLine(") " + siVar + " = " + index + ";");
 			}
