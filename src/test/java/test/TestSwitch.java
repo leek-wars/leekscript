@@ -69,6 +69,10 @@ public class TestSwitch extends TestCommon {
 		section("Switch with while inside case");
 		code_v3_("var x = 1 var s = 0 switch (x) { case 1: var i = 0 while (i < 3) { s += i i++ } break } return s").equals("3");
 
+		section("Switch case with if and no break (fall-through)");
+		code_v3_("var a = 0 var x = 1 switch (x) { case 1: a = 4 if (2 == 2) { return 99 } case 2: a = 12 case 3: a = 15 } return a").equals("99");
+		code_v3_("var a = 0 var x = 1 switch (x) { case 1: a = 4 if (2 == 3) { return 99 } case 2: a = 12 case 3: a = 15 } return a").equals("15");
+
 		section("Empty switch");
 		code_v3_("var x = 1 switch (x) {} return 'ok'").equals("\"ok\"");
 	}
