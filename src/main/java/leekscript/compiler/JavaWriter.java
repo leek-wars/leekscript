@@ -315,11 +315,12 @@ public class JavaWriter {
 		
 		if (type != Type.ANY) {
 			if (parenthesis) addCode("(");
-			addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-		}
-		value.writeJavaCode(mainblock, this, type != Type.ANY || parenthesis);
-		if (type != Type.ANY && parenthesis) {
+			addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") (");
+			value.writeJavaCode(mainblock, this, false);
 			addCode(")");
+			if (parenthesis) addCode(")");
+		} else {
+			value.writeJavaCode(mainblock, this, parenthesis);
 		}
 	}
 
