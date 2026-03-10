@@ -1,5 +1,6 @@
 package leekscript.compiler;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 
 import leekscript.common.AccessLevel;
@@ -17,6 +18,7 @@ import leekscript.compiler.bloc.ForeachBlock;
 import leekscript.compiler.bloc.ForeachKeyBlock;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.bloc.SwitchBlock;
 import leekscript.compiler.bloc.WhileBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
@@ -400,6 +402,11 @@ public class WordCompiler {
 		} else if (word.getType() == TokenType.DO) {
 
 			doWhileBlock();
+			return;
+
+		} else if (word.getType() == TokenType.SWITCH) {
+
+			switchBlock();
 			return;
 
 		} else if (word.getType() == TokenType.INCLUDE) {
@@ -852,6 +859,92 @@ public class WordCompiler {
 		}
 		mCurentBlock.addInstruction(this, bloc);
 		mCurentBlock = bloc;
+	}
+
+	private void switchBlock() throws LeekCompilerException {
+		var token = mTokens.eat(); // switch
+		if (mTokens.eat().getType() != TokenType.PAR_LEFT) {
+			throw new LeekCompilerException(mTokens.get(), Error.OPENING_PARENTHESIS_EXPECTED);
+		}
+		var exp = readExpression();
+		if (mTokens.eat().getType() != TokenType.PAR_RIGHT) {
+			throw new LeekCompilerException(mTokens.get(), Error.CLOSING_PARENTHESIS_EXPECTED);
+		}
+		if (mTokens.eat().getType() != TokenType.ACCOLADE_LEFT) {
+			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+		}
+
+		var switchBlock = new SwitchBlock(mCurentBlock, mMain, token);
+		switchBlock.setExpression(exp);
+
+		// Parse cases
+		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
+			// Collect case values (multiple case labels can share a body)
+			var values = new ArrayList<Expression>();
+			boolean isDefault = false;
+
+			while (mTokens.hasMoreTokens()) {
+				if (mTokens.get().getType() == TokenType.CASE) {
+					mTokens.skip(); // case
+					values.add(readExpression());
+					if (!mTokens.get().getWord().equals(":")) {
+						throw new LeekCompilerException(mTokens.get(), Error.COLON_EXPECTED_AFTER_CASE);
+					}
+					mTokens.skip(); // :
+				} else if (mTokens.get().getType() == TokenType.DEFAULT) {
+					mTokens.skip(); // default
+					if (!mTokens.get().getWord().equals(":")) {
+						throw new LeekCompilerException(mTokens.get(), Error.COLON_EXPECTED_AFTER_CASE);
+					}
+					mTokens.skip(); // :
+					isDefault = true;
+				} else {
+					break;
+				}
+			}
+
+			if (values.isEmpty() && !isDefault) {
+				throw new LeekCompilerException(mTokens.get(), Error.CASE_OR_DEFAULT_EXPECTED);
+			}
+
+			// Parse the case body
+			var caseBody = new AbstractLeekBlock(mCurentBlock, mMain) {
+				@Override public Location getLocation() { return token.getLocation(); }
+				@Override public int getNature() { return 0; }
+				@Override public Type getType() { return Type.VOID; }
+				@Override public String toString() { return null; }
+				@Override public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) { return false; }
+				@Override public boolean isBreakable() { return true; }
+			};
+
+			var savedBlock = mCurentBlock;
+			mCurentBlock = caseBody;
+
+			while (mTokens.hasMoreTokens()
+				&& mTokens.get().getType() != TokenType.CASE
+				&& mTokens.get().getType() != TokenType.DEFAULT
+				&& mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+				if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+				compileWord();
+				// Close inner blocks
+				while (mCurentBlock != caseBody && mCurentBlock.isFull() && !mCurentBlock.hasAccolade()) {
+					mCurentBlock.checkEndBlock();
+					mCurentBlock = mCurentBlock.getParent();
+				}
+			}
+
+			mCurentBlock = savedBlock;
+			switchBlock.addCase(new SwitchBlock.SwitchCase(values, caseBody, isDefault));
+		}
+
+		// Eat closing }
+		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.ACCOLADE_RIGHT) {
+			mTokens.skip();
+		}
+
+		mCurentBlock.addInstruction(this, switchBlock);
 	}
 
 	private void doWhileBlock() throws LeekCompilerException {

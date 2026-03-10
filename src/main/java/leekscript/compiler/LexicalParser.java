@@ -184,7 +184,7 @@ public class LexicalParser {
 		} else if (version >= 3 && wordEquals(word, "goto")) {
 			addToken(word, TokenType.GOTO);
 		} else if (version >= 3 && wordEquals(word, "switch")) {
-			addToken(word, TokenType.GOTO);
+			addToken(word, TokenType.SWITCH);
 		} else if (version >= 2 && wordEquals(word, "super")) {
 			addToken(word, TokenType.SUPER);
 		} else if (version >= 2 && word.equals("class")) {
