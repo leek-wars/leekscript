@@ -1593,6 +1593,13 @@ public class WordCompiler {
 						retour.addObjectAccess(dot, null);
 						mTokens.unskip();
 					}
+				} else if (word.getType() == TokenType.NOT && mTokens.get(1).getType() == TokenType.IN) {
+
+					mTokens.skip(); // skip 'not'
+					mTokens.skip(); // skip 'in'
+					retour.addOperator(Operators.NOT_IN, word);
+					continue;
+
 				} else if (word.getType() == TokenType.IN) {
 
 					mTokens.skip();

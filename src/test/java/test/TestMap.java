@@ -357,6 +357,10 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return 'cle3' in a").equals("true");
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return '454' in a").equals("false");
 
+		section("Map.not_in");
+		code_v4_("var a = ['cle1':'a','cle2':'b']; return 'cle3' not in a").equals("true");
+		code_v4_("var a = ['cle1':'a','cle2':'b']; return 'cle1' not in a").equals("false");
+
 		section("mapMin()");
 		code_v1_3("return arrayMin([0 : 7, 8 : 9, 'a' : 2])").equals("2");
 		code_v4_("return mapMin([0 : 7, 8 : 9, 'a' : 2])").equals("2");

@@ -57,6 +57,7 @@ public class Operators {
 	public final static int NON_NULL_ASSERTION = 54;
 	public final static int XOR = 55;
 	public final static int IN = 56;
+	public final static int NOT_IN = 57;
 
 	public final static int getOperator(String operator, int version) {
 		if(operator.equals("[")) return CROCHET;
@@ -118,6 +119,7 @@ public class Operators {
 		if(operator.equals("\\=")) return INTEGER_DIVISION_EQ;
 		if(operator.equals("as")) return AS;
 		if(operator.equals("in")) return IN;
+		if(operator.equals("not in")) return NOT_IN;
 
 		return -1;
 	}
@@ -161,6 +163,7 @@ public class Operators {
 		case MOREEQUALS:
 		case INSTANCEOF:
 		case IN:
+		case NOT_IN:
 			return 8;
 		case EQUALS:
 		case NOTEQUALS:
@@ -324,6 +327,8 @@ public class Operators {
 			return "as";
 		case IN:
 			return "in";
+		case NOT_IN:
+			return "not in";
 		case XOR:
 			return "xor";
 		}

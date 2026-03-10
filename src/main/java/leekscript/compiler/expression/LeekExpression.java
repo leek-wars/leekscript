@@ -942,6 +942,13 @@ public class LeekExpression extends Expression {
 			mExpression1.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 			return;
+		case Operators.NOT_IN:
+			writer.addCode("!operatorIn(");
+			mExpression2.writeJavaCode(mainblock, writer, false);
+			writer.addCode(", ");
+			mExpression1.writeJavaCode(mainblock, writer, false);
+			writer.addCode(")");
+			return;
 		case Operators.NON_NULL_ASSERTION:
 			writer.compileConvert(mainblock, 0, mExpression2, type, parenthesis);
 			return;
@@ -1160,7 +1167,7 @@ public class LeekExpression extends Expression {
 			type = mExpression1.getType().mul(mExpression2.getType());
 		} else if (mOperator == Operators.POWERASSIGN) {
 			type = mExpression1.getType().pow(mExpression2.getType());
-		} else if (mOperator == Operators.NOT || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.MOREEQUALS || mOperator == Operators.LESSEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.AND || mOperator == Operators.OR || mOperator == Operators.XOR || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS || mOperator == Operators.INSTANCEOF || mOperator == Operators.IN) {
+		} else if (mOperator == Operators.NOT || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.MOREEQUALS || mOperator == Operators.LESSEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.AND || mOperator == Operators.OR || mOperator == Operators.XOR || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS || mOperator == Operators.INSTANCEOF || mOperator == Operators.IN || mOperator == Operators.NOT_IN) {
 			type = Type.BOOL;
 		}
 		else if (mOperator == Operators.BITAND || mOperator == Operators.BITNOT || mOperator == Operators.BITOR  || mOperator == Operators.BITXOR || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT || mOperator == Operators.INTEGER_DIVISION) {

@@ -78,6 +78,10 @@ public class TestSet extends TestCommon {
 		code("var i = <'okay', 1>; return 'okay' in i").equals("true");
 		code("var i = <'okay', 1>; return 'other' in i").equals("false");
 
+		section("Set.not_in");
+		code("var i = <1, 2>; return 3 not in i").equals("true");
+		code("var i = <1, 2>; return 1 not in i").equals("false");
+
 		section("Set.setSize()");
 		code("var i = <1, 2>; return setSize(i)").equals("2");
 		code("var i = <1, 2>; setRemove(i, 1); return setSize(i)").equals("1");

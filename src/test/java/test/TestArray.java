@@ -263,6 +263,13 @@ public class TestArray extends TestCommon {
 		code_v4_("return 1 in [];").equals("false");
 		code_strict_v4_("boolean x = 1 in [0, 1, 2]; return x").equals("true");
 
+		section("Array.not_in");
+		code_v4_("return 3 not in [1, 2];").equals("true");
+		code_v4_("return 1 not in [1, 2];").equals("false");
+		code_v4_("return 1 not in [];").equals("true");
+		code_v4_("return 0 not in [0, 1, 2];").equals("false");
+		code_strict_v4_("boolean x = 3 not in [0, 1, 2]; return x").equals("true");
+
 		// section("Push with empty array access");
 		// code("var a = [] a[] = 12 return a").equals("[12]");
 		// code("var a = [1, 2] a[] = 3 return a").equals("[1, 2, 3]");
@@ -565,6 +572,17 @@ public class TestArray extends TestCommon {
 		section("Array.sort()");
 		code("var t = [0, 1, 2]; return arraySort(t,function(e, f){return (e>f)?(-1):(e<f)?1:0;})").equals("[2, 1, 0]");
 		code_v1_3("var t = ['test', 't']; return arraySort(t,function(k1, v1, k2, v2){return (k1>k2)?(-1):(k1<k2)?1:0;})").equals("[\"t\", \"test\"]");
+		code_v1_3("var t = [0, 1, 2]; t = arraySort(t, function(e, f){return (e>f)?(-1):(e<f)?1:0;}); return t;").equals("[2, 1, 0]");
+		// #2694 : captured parameter + arraySort assignment
+		code_v2_3("function f(t) { var g = function() { return t; }; t = arraySort(t, function(c1, c2) { return c1 - c2; }); return t; } return f([3, 1, 2]);").equals("[1, 2, 3]");
+		code_v2_3("function f(t) { t = arraySort(t, function(c1, c2) { return c1 - c2; }); var g = function() { return t; }; return t; } return f([3, 1, 2]);").equals("[1, 2, 3]");
+		code_v2_3("function f(t) { t = arraySort(t, function(c1, c2) { var x = t; return c1 - c2; }); return t; } return f([3, 1, 2]);").equals("[1, 2, 3]");
+		// #2694: explicitly typed Array parameter
+		code_v3("function f(Array t) { t = arraySort(t, function(c1, c2) { var x = t; return c1 - c2; }); return t; } return f([3, 1, 2]);").debug().equals("[1, 2, 3]");
+		// #2694: class static method with captured Array parameter + arraySort
+		code_v3("class C { public static Array execute(Array t) { var f = function() { return t; }; t = arraySort(t, function(a, b) { return a - b; }); return t; } } return C.execute([3, 1, 2]);").debug().equals("[1, 2, 3]");
+		// #2694: class static method: local array captured, then reassigned with arraySort
+		code_v3("class C { public static Array execute(Array items, integer factor) { var arr = items; var f = function() { return factor; }; arr = arraySort(arr, function(a, b) { return (a - b) * factor; }); return arr; } } return C.execute([3, 1, 2], 1);").debug().equals("[1, 2, 3]");
 
 		section("Array.remove()");
 		code("var r = ['a','b','c','d','e']; return remove(r, 1);").equals("\"b\"");
