@@ -922,11 +922,15 @@ public class WordCompiler {
 			var savedBlock = mCurentBlock;
 			mCurentBlock = caseBody;
 
-			while (mTokens.hasMoreTokens()
-				&& mTokens.get().getType() != TokenType.CASE
-				&& mTokens.get().getType() != TokenType.DEFAULT
-				&& mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+			while (mTokens.hasMoreTokens()) {
 				if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+				var t = mTokens.get().getType();
+				// Only stop on case/default/} when we're at the case body level
+				if (mCurentBlock == caseBody) {
+					if (t == TokenType.CASE || t == TokenType.DEFAULT || t == TokenType.ACCOLADE_RIGHT) {
+						break;
+					}
+				}
 				compileWord();
 				// Close inner blocks
 				while (mCurentBlock != caseBody && mCurentBlock.isFull() && !mCurentBlock.hasAccolade()) {

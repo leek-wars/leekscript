@@ -58,6 +58,17 @@ public class TestSwitch extends TestCommon {
 		section("Switch in loop");
 		code_v3_("var s = 0 for (var i = 0; i < 5; i++) { switch (i) { case 0: case 1: s += 10 break default: s += 1 break } } return s").equals("23");
 
+		section("Switch with if inside case");
+		code_v3_("var x = 1 var r = 'no' switch (x) { case 1: if (true) { r = 'yes' } break case 2: r = 'two' break } return r").equals("\"yes\"");
+		code_v3_("var x = 1 var r = 'no' switch (x) { case 1: r = 'a' if (x == 1) { r = 'b' } r = r + 'c' break case 2: r = 'two' break } return r").equals("\"bc\"");
+		code_v3_("var x = 2 var r = 'no' switch (x) { case 1: if (true) { r = 'one' } break case 2: if (true) { r = 'two' } break } return r").equals("\"two\"");
+
+		section("Switch with for inside case");
+		code_v3_("var x = 1 var s = 0 switch (x) { case 1: for (var i = 0; i < 3; i++) { s += i } break } return s").equals("3");
+
+		section("Switch with while inside case");
+		code_v3_("var x = 1 var s = 0 switch (x) { case 1: var i = 0 while (i < 3) { s += i i++ } break } return s").equals("3");
+
 		section("Empty switch");
 		code_v3_("var x = 1 switch (x) {} return 'ok'").equals("\"ok\"");
 	}
