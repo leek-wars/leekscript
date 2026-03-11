@@ -340,6 +340,18 @@ public class ObjectLeekValue implements LeekValue {
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
+	public Object field_coalesce_eq(String field, Object value) throws LeekRunException {
+		var result = fields.get(field);
+		if (result != null) {
+			if (result.isFinal) {
+				clazz.ai.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { clazz.name, field });
+				return null;
+			}
+			return result.coalesce_eq(value);
+		}
+		throw new LeekRunException(Error.UNKNOWN_FIELD);
+	}
+
 	public Box getOrCreate(AI ai, Object value) throws LeekRunException {
 		return getFieldL(ai.string(value));
 	}

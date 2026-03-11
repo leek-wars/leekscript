@@ -1888,6 +1888,33 @@ public abstract class AI {
 		return null;
 	}
 
+	public Object field_coalesce_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+		if (object instanceof ObjectLeekValue) {
+			return ((ObjectLeekValue) object).field_coalesce_eq(field, value);
+		}
+		if (object instanceof ClassLeekValue) {
+			return ((ClassLeekValue) object).field_coalesce_eq(field, value);
+		}
+		try {
+			var f = getFieldCached(object.getClass(), field);
+			if (!checkFieldAccessLevel(f, object, fromClass)) {
+				return null;
+			}
+			if (f.isAnnotationPresent(Final.class)) {
+				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
+				return null;
+			}
+			var current = f.get(object);
+			var v = current != null ? current : value;
+			f.set(object, v);
+			return v;
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			addSystemLog(AILog.ERROR, e);
+		}
+		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
+		return null;
+	}
+
 	public Object field_sub_eq(Object object, String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (object instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) object).field_sub_eq(field, value);
@@ -2798,6 +2825,41 @@ public abstract class AI {
 				var f = getWriteableField(array, string(key), fromClass);
 				if (f == null) return null;
 				var v = bxor(f.get(array), value);
+				f.set(array, v);
+				return v;
+			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+				addSystemLog(AILog.ERROR, e);
+			}
+		}
+		if (version >= 3)
+			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
+		return null;
+	}
+
+	public Object put_coalesce_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
+		if (array instanceof LegacyArrayLeekValue) {
+			return ((LegacyArrayLeekValue) array).put_coalesce_eq(this, key, value);
+		}
+		if (array instanceof ArrayLeekValue) {
+			return ((ArrayLeekValue) array).put_coalesce_eq(this, key, value);
+		}
+		if (array instanceof MapLeekValue) {
+			return ((MapLeekValue) array).put_coalesce_eq(this, key, value);
+		}
+		if (array instanceof ObjectLeekValue) {
+			var field = string(key);
+			return ((ObjectLeekValue) array).field_coalesce_eq(field, value);
+		}
+		if (array instanceof ClassLeekValue) {
+			var field = string(key);
+			return ((ClassLeekValue) array).field_coalesce_eq(field, value);
+		}
+		if (array instanceof NativeObjectLeekValue) {
+			try {
+				var f = getWriteableField(array, string(key), fromClass);
+				if (f == null) return null;
+				var current = f.get(array);
+				var v = current != null ? current : value;
 				f.set(array, v);
 				return v;
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {

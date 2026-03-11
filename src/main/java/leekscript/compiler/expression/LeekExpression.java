@@ -797,6 +797,23 @@ public class LeekExpression extends Expression {
 			}
 			if (parenthesis) writer.addCode(")");
 			return;
+		case Operators.COALESCE:
+			// a ?? b  ==  (a != null) ? a : b
+			if (!mExpression1.getType().canBeNull()) {
+				// a can never be null, so just return a
+				if (parenthesis) writer.addCode("(");
+				mExpression1.writeJavaCode(mainblock, writer, !(mExpression1 instanceof LeekExpression));
+				if (parenthesis) writer.addCode(")");
+				return;
+			}
+			if (parenthesis) writer.addCode("(");
+			writer.compileLoad(mainblock, mExpression1, true);
+			writer.addCode(" != null ? ");
+			mExpression1.writeJavaCode(mainblock, writer, true);
+			writer.addCode(" : ");
+			mExpression2.writeJavaCode(mainblock, writer, true);
+			if (parenthesis) writer.addCode(")");
+			return;
 		case Operators.XOR:
 			writer.addCode("xor(");
 			writer.getBoolean(mainblock, mExpression1, false);
@@ -871,6 +888,9 @@ public class LeekExpression extends Expression {
 			} else {
 				mExpression1.compileSetCopy(mainblock, writer, mExpression2, parenthesis);
 			}
+			return;
+		case Operators.COALESCE_ASSIGN:
+			mExpression1.compileCoalesceEq(mainblock, writer, mExpression2, parenthesis);
 			return;
 		case Operators.ADDASSIGN:
 			mExpression1.compileAddEq(mainblock, writer, mExpression2, type, parenthesis);
@@ -1006,7 +1026,7 @@ public class LeekExpression extends Expression {
 
 		// Si on a affaire à une assignation, incrémentation ou autre du genre
 		// on doit vérifier qu'on a bien une variable (l-value)
-		if (mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.ASSIGN || mOperator == Operators.MODULUSASSIGN || mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.POWERASSIGN || mOperator == Operators.BITOR_ASSIGN || mOperator == Operators.BITAND_ASSIGN || mOperator == Operators.BITXOR_ASSIGN || mOperator == Operators.SHIFT_LEFT_ASSIGN || mOperator == Operators.SHIFT_RIGHT_ASSIGN || mOperator == Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN) {
+		if (mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.ASSIGN || mOperator == Operators.MODULUSASSIGN || mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.POWERASSIGN || mOperator == Operators.BITOR_ASSIGN || mOperator == Operators.BITAND_ASSIGN || mOperator == Operators.BITXOR_ASSIGN || mOperator == Operators.SHIFT_LEFT_ASSIGN || mOperator == Operators.SHIFT_RIGHT_ASSIGN || mOperator == Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN || mOperator == Operators.COALESCE_ASSIGN) {
 			if (mExpression1.isFinal()) {
 				if (mExpression1 instanceof LeekObjectAccess) {
 					if (!compiler.isInConstructor()) {
@@ -1065,7 +1085,7 @@ public class LeekExpression extends Expression {
 		}
 
 		// Type compatible ?
-		if (mOperator == Operators.ASSIGN || mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.POWERASSIGN) {
+		if (mOperator == Operators.ASSIGN || mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.POWERASSIGN || mOperator == Operators.COALESCE_ASSIGN) {
 
 			var expressionType = mExpression2.getType();
 			if (mOperator == Operators.ADDASSIGN) expressionType = mExpression1.getType().add(mExpression2.getType());
@@ -1073,6 +1093,7 @@ public class LeekExpression extends Expression {
 			if (mOperator == Operators.MULTIPLIEASSIGN) expressionType = mExpression1.getType().mul(mExpression2.getType());
 			if (mOperator == Operators.DIVIDEASSIGN) expressionType = mExpression1.getType().div(mExpression2.getType());
 			if (mOperator == Operators.POWERASSIGN) expressionType = mExpression1.getType().pow(mExpression2.getType());
+			if (mOperator == Operators.COALESCE_ASSIGN) expressionType = Type.compound(mExpression1.getType(), mExpression2.getType());
 
 			var cast = mExpression1.getType().accepts(expressionType);
 			if (cast == CastType.INCOMPATIBLE) {
@@ -1172,6 +1193,11 @@ public class LeekExpression extends Expression {
 		}
 		else if (mOperator == Operators.BITAND || mOperator == Operators.BITNOT || mOperator == Operators.BITOR  || mOperator == Operators.BITXOR || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT || mOperator == Operators.INTEGER_DIVISION) {
 			type = Type.INT;
+		}
+		else if (mOperator == Operators.COALESCE) {
+			type = Type.compound(mExpression1.getType(), mExpression2.getType());
+		} else if (mOperator == Operators.COALESCE_ASSIGN) {
+			type = mExpression1.getType();
 		}
 		else if (mOperator == Operators.ADD) {
 			type = mExpression1.getType().add(mExpression2.getType());

@@ -491,6 +491,16 @@ public class LeekObjectAccess extends Expression {
 	}
 
 	@Override
+	public void compileCoalesceEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
+		// object.field ??= value
+		writer.addCode("field_coalesce_eq(");
+		object.writeJavaCode(mainblock, writer, false);
+		writer.addCode(", \"" + field.getWord() + "\", ");
+		expr.writeJavaCode(mainblock, writer, false);
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+	}
+
+	@Override
 	public Location getLocation() {
 		if (field == null) {
 			return new Location(object.getLocation(), dot.getLocation());

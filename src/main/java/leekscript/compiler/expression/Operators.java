@@ -58,6 +58,8 @@ public class Operators {
 	public final static int XOR = 55;
 	public final static int IN = 56;
 	public final static int NOT_IN = 57;
+	public final static int COALESCE = 58;
+	public final static int COALESCE_ASSIGN = 59;
 
 	public final static int getOperator(String operator, int version) {
 		if(operator.equals("[")) return CROCHET;
@@ -120,6 +122,8 @@ public class Operators {
 		if(operator.equals("as")) return AS;
 		if(operator.equals("in")) return IN;
 		if(operator.equals("not in")) return NOT_IN;
+		if(operator.equals("??")) return COALESCE;
+		if(operator.equals("??=")) return COALESCE_ASSIGN;
 
 		return -1;
 	}
@@ -180,6 +184,8 @@ public class Operators {
 			return 3;
 		case OR:
 			return 2;
+		case COALESCE:
+			return 2;
 		case TERNAIRE:
 		case DOUBLE_POINT:
 			return 1;
@@ -197,6 +203,7 @@ public class Operators {
 		case BITAND_ASSIGN:
 		case BITOR_ASSIGN:
 		case BITXOR_ASSIGN:
+		case COALESCE_ASSIGN:
 			return 0;
 		default:
 			return -1;
@@ -331,6 +338,10 @@ public class Operators {
 			return "not in";
 		case XOR:
 			return "xor";
+		case COALESCE:
+			return "??";
+		case COALESCE_ASSIGN:
+			return "??=";
 		}
 		return "null";
 	}

@@ -362,6 +362,11 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		return result.ushr_eq(value);
 	}
 
+	public Object field_coalesce_eq(String field, Object value) throws LeekRunException {
+		var result = getFieldL(field);
+		return result.coalesce_eq(value);
+	}
+
 	public Object callMethod(String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
 		ai.ops(1);
 		var result = getStaticMethod(ai, method, fromClass);

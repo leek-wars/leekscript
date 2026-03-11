@@ -1242,6 +1242,49 @@ public class LeekVariable extends Expression {
 	}
 
 	@Override
+	public void compileCoalesceEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
+		// a ??= b  =>  a = (a != null) ? a : b
+		if (type == VariableType.GLOBAL || type == VariableType.LOCAL) {
+			if (isBox()) {
+				// Box-based variable: use Box.coalesce_eq
+				if (type == VariableType.GLOBAL) {
+					writer.addCode("g_" + token.getWord() + ".coalesce_eq(");
+					expr.writeJavaCode(mainblock, writer, false);
+					writer.addCode(")");
+				} else {
+					writer.addCode("u_" + token.getWord() + ".coalesce_eq(");
+					expr.writeJavaCode(mainblock, writer, false);
+					writer.addCode(")");
+				}
+				return;
+			}
+		}
+
+		// Fallback: explicit ternary assignment on the underlying storage
+		String varName;
+		if (type == VariableType.FIELD) {
+			varName = token.getWord();
+		} else if (type == VariableType.STATIC_FIELD) {
+			varName = mainblock.getWordCompiler().getCurrentClassVariable() + "." + token.getWord();
+		} else if (type == VariableType.GLOBAL) {
+			varName = "g_" + token.getWord();
+		} else {
+			// LOCAL or others
+			varName = "u_" + token.getWord();
+		}
+
+		if (parenthesis) writer.addCode("(");
+		writer.addCode(varName + " = ");
+		if (this.variableType != Type.ANY) {
+			writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+		}
+		writer.addCode("(" + varName + " != null ? " + varName + " : ");
+		expr.writeJavaCode(mainblock, writer, false);
+		writer.addCode(")");
+		if (parenthesis) writer.addCode(")");
+	}
+
+	@Override
 	public Location getLocation() {
 		return token.getLocation();
 	}

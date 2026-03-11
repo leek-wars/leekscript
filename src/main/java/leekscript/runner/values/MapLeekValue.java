@@ -205,6 +205,14 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		return v;
 	}
 
+	public Object put_coalesce_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var current = get(key);
+		var v = current != null ? current : value;
+		put(key, v);
+		return v;
+	}
+
 	public Object put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.shr(get(key), value);

@@ -114,6 +114,10 @@ public abstract class Expression {
 		throw new RuntimeException("Abstract method");
 	}
 
+	public void compileCoalesceEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
+		throw new RuntimeException("Abstract method");
+	}
+
 	public abstract boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) throws LeekExpressionException;
 
 	public Expression trim() {
