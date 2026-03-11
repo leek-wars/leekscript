@@ -204,6 +204,14 @@ public class Box<T> {
 		return mValue = mUAI.mod(mValue, val);
 	}
 
+	public Object coalesce_eq(Object val) throws LeekRunException {
+		// a ??= b  =>  a = (a != null) ? a : b
+		if (mValue != null) {
+			return mValue;
+		}
+		return mValue = val;
+	}
+
 	public Object get(Object index, ClassLeekValue fromClass) throws LeekRunException {
 		return mUAI.get(mValue, index, fromClass);
 	}

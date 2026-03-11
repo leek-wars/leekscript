@@ -448,6 +448,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return getOrCreate(ai, key).ushr_eq(value);
 	}
 
+	public Object put_coalesce_eq(AI ai, Object key, Object value) throws LeekRunException {
+		var box = getOrCreate(ai, key);
+		return box.coalesce_eq(value);
+	}
+
 	private Object transformKey(AI ai, Object key) throws LeekRunException {
 		if (key instanceof String || key instanceof ObjectLeekValue || key instanceof NativeObjectLeekValue) {
 			return key;

@@ -87,10 +87,26 @@ public class TestEdgeCases extends TestCommon {
 		code_v4_("var x = null return x ? 'true' : 'false'").equals("\"false\"");
 		code_v4_("var x = null return !x").equals("true");
 
-		// Null coalescing patterns (manual implementation since ?? doesn't exist)
+		// Null coalescing patterns and ?? operator
 		code_v4_("var x = null var y = x == null ? 42 : x return y").equals("42");
 		code_v4_("var x = 0 var y = x == null ? 42 : x return y").equals("0");
 		code_v4_("function maybeNull(b) { if (b) return 'value' return null } var r = maybeNull(false) return r == null ? 'default' : r").equals("\"default\"");
+
+		// ?? operator: a ?? b is equivalent to (a != null) ? a : b
+		code_v4_("var x = null return x ?? 42").equals("42");
+		code_v4_("var x = 0 return x ?? 42").equals("0"); // 0 is not null, so keeps 0
+		code_v4_("var x = 1 return x ?? 42").equals("1");
+		code_v4_("var x = 'hello' return x ?? 'world'").equals("\"hello\"");
+		code_v4_("var a = null var b = 10 var c = 20 return (a ?? b) + c").equals("30");
+		code_v4_("var a = 0 var b = 10 var c = 20 return a ?? b + c").equals("0"); // parsed as a ?? (b + c)
+
+		// ??= operator: a ??= b is equivalent to a = (a != null) ? a : b
+		code_v4_("var x = null x ??= 42 return x").equals("42");
+		code_v4_("var x = 0 x ??= 42 return x").equals("0");
+		code_v4_("var x = null return (x ??= 42)").equals("42");
+		code_v4_("var a = [null] a[0] ??= 5 return a[0]").equals("5");
+		code_v4_("var a = [1] a[0] ??= 5 return a[0]").equals("1");
+		code_v4_("class C { any v; } var c = new C() c.v ??= 7 return c.v").equals("7");
 
 		/**
 		 * Operations limit edge cases

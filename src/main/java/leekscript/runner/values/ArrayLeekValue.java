@@ -257,6 +257,21 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
+	public Object put_coalesce_eq(AI ai, Object key, Object value) throws LeekRunException {
+		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
+		int i = (int) ai.integer(key);
+		if (i < 0) i += size();
+		try {
+			var current = get(i);
+			var new_value = current != null ? current : value;
+			set(i, new_value);
+			return new_value;
+		} catch (IndexOutOfBoundsException e) {
+			wrongIndexError(ai, i);
+			return null;
+		}
+	}
+
 	public Object put_sub_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = (int) ai.integer(key);

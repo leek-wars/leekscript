@@ -59,7 +59,7 @@ public class LexicalParser {
 		return false;
 	}
 
-	private boolean tryParseOperator() {
+		private boolean tryParseOperator() {
 		// Order is important, the first operator found is returned
 		// So operators starting with the same characters must be ordered by length
 		var operators = new String[] {
@@ -77,7 +77,8 @@ public class LexicalParser {
 			">>>=", /* ">>>", ">>=", ">>", */ ">=", ">",
 			"^=", "^",
 			"~", "@",
-			"?", "\\"
+			"??=", "??", "?",
+			"\\"
 		};
 
 		if (tryParseExact("=>", TokenType.ARROW)) {

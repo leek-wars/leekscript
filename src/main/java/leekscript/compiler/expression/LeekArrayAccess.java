@@ -586,6 +586,18 @@ public class LeekArrayAccess extends Expression {
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
+	@Override
+	public void compileCoalesceEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
+		// a[index] ??= b
+		writer.addCode("put_coalesce_eq(");
+		mTabular.writeJavaCode(mainblock, writer, false);
+		writer.addCode(", ");
+		mCase.writeJavaCode(mainblock, writer, false);
+		writer.addCode(", ");
+		expr.writeJavaCode(mainblock, writer, false);
+		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+	}
+
 	public void setLeftValue(boolean b) {
 		mLeftValue = b;
 	}
