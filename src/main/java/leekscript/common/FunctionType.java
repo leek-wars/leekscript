@@ -1,8 +1,10 @@
 package leekscript.common;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class FunctionType extends Type {
 
@@ -170,5 +172,71 @@ public class FunctionType extends Type {
 	@Override
 	public String getJavaName(int version) {
 		return "FunctionLeekValue<" + return_type.getJavaName(version) + ">";
+	}
+
+	@Override
+	public Type substitute(Map<String, Type> substitution) {
+		var newArgs = new ArrayList<Type>();
+		for (var arg : arguments) {
+			newArgs.add(arg.substitute(substitution));
+		}
+		return Type.function(return_type.substitute(substitution), newArgs.toArray(new Type[0]));
+	}
+
+	/**
+	 * Infer a substitution map for TemplateType parameters based on actual argument types.
+	 * This enables simple generic function behavior like (T) => T or (T, U) => T | U.
+	 */
+	public Map<String, Type> inferSubstitution(List<Type> actualArguments) {
+		var substitution = new HashMap<String, Type>();
+		int n = Math.min(arguments.size(), actualArguments.size());
+		for (int i = 0; i < n; i++) {
+			unify(arguments.get(i), actualArguments.get(i), substitution);
+		}
+		return substitution;
+	}
+
+	public Type inferReturnType(List<Type> actualArguments) {
+		return return_type.substitute(inferSubstitution(actualArguments));
+	}
+
+	private static void unify(Type formal, Type actual, Map<String, Type> substitution) {
+		if (formal instanceof TemplateType tt) {
+			var existing = substitution.get(tt.name);
+			if (existing == null) substitution.put(tt.name, actual);
+			else substitution.put(tt.name, Type.compound(existing, actual));
+			return;
+		}
+		if (formal instanceof ArrayType fa && actual instanceof ArrayType aa) {
+			unify(fa.element(), aa.element(), substitution);
+			return;
+		}
+		if (formal instanceof SetType fs && actual instanceof SetType as) {
+			unify(fs.element(), as.element(), substitution);
+			return;
+		}
+		if (formal instanceof IntervalType fi && actual instanceof IntervalType ai) {
+			unify(fi.element(), ai.element(), substitution);
+			return;
+		}
+		if (formal instanceof MapType fm && actual instanceof MapType am) {
+			unify(fm.key(), am.key(), substitution);
+			unify(fm.element(), am.element(), substitution);
+			return;
+		}
+		if (formal instanceof CompoundType fc) {
+			// Best-effort: attempt to unify each branch with the actual type.
+			for (var t : fc.getTypes()) unify(t, actual, substitution);
+			return;
+		}
+		if (formal instanceof FunctionType ff && actual instanceof FunctionType af) {
+			int nArgs = Math.min(ff.getArguments().size(), af.getArguments().size());
+			for (int i = 0; i < nArgs; i++) {
+				unify(ff.getArgument(i), af.getArgument(i), substitution);
+			}
+			unify(ff.getReturnType(), af.getReturnType(), substitution);
+			return;
+		}
+		// GenericClassType inference is intentionally not implemented yet.
 	}
 }

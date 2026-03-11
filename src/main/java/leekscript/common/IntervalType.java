@@ -1,5 +1,7 @@
 package leekscript.common;
 
+import java.util.Map;
+
 import leekscript.compiler.JavaWriter;
 
 public class IntervalType extends Type {
@@ -56,5 +58,10 @@ public class IntervalType extends Type {
 	@Override
 	public String getDefaultValue(JavaWriter writer, int version) {
 		return type == Type.INT ? "new IntegerIntervalLeekValue(" + writer.getAIThis() + ")" : "new RealIntervalLeekValue(" + writer.getAIThis() + ")";
+	}
+
+	@Override
+	public Type substitute(Map<String, Type> substitution) {
+		return Type.interval(type.substitute(substitution));
 	}
 }

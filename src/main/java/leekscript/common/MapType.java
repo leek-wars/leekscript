@@ -1,5 +1,7 @@
 package leekscript.common;
 
+import java.util.Map;
+
 import leekscript.compiler.JavaWriter;
 
 public class MapType extends Type {
@@ -83,5 +85,10 @@ public class MapType extends Type {
 			return this.key.equals(mt.key) && this.value.equals(mt.value);
 		}
 		return false;
+	}
+
+	@Override
+	public Type substitute(Map<String, Type> substitution) {
+		return Type.map(key.substitute(substitution), value.substitute(substitution));
 	}
 }

@@ -6,6 +6,8 @@ import java.util.HashSet;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
+import leekscript.common.GenericClassType;
+import leekscript.common.TemplateType;
 import leekscript.common.Type;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.AbstractLeekBlock;
@@ -63,6 +65,9 @@ public class WordCompiler {
 	private AIFile mAI = null;
 	private final int version;
 	private final Options options;
+
+	// Temporary storage while parsing a generic function signature; also used for TemplateType resolution.
+	private ArrayList<String> mCurrentFunctionTypeParameters = new ArrayList<>();
 
 	public WordCompiler(AIFile ai, int version, Options options) {
 		mAI = ai;
@@ -156,10 +161,23 @@ public class WordCompiler {
 					}
 				} else if (mTokens.get().getType() == TokenType.FUNCTION) {
 					var functionToken = mTokens.eat();
+
 					var funcName = mTokens.eat();
-					if (funcName.getWord().equals("(") || funcName.getWord().equals("<")) {
+					if (funcName.getWord().equals("(")) {
 						continue;
 					}
+
+					// Optional generic type parameters: function name<T, U>(...)
+					if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("<")) {
+						mTokens.eat(); // <
+						while (mTokens.hasMoreTokens() && !(mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals(">"))) {
+							mTokens.eat();
+						}
+						if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals(">")) {
+							mTokens.eat(); // >
+						}
+					}
+
 					if (!isAvailable(funcName, false)) {
 						throw new LeekCompilerException(mTokens.get(), Error.FUNCTION_NAME_UNAVAILABLE);
 					}
@@ -387,12 +405,9 @@ public class WordCompiler {
  		} else if (word.getType() == TokenType.FUNCTION) {
 
 			var functionToken = mTokens.eat();
-			if (mTokens.get().getWord().equals("<")) { // Début d'un type
-				mTokens.unskip();
-			} else { // Vraie fonction
-				functionBlock(functionToken);
-				return;
-			}
+			// `function` is always a function declaration at statement level (types use `Function<...>`).
+			functionBlock(functionToken);
+			return;
 
 		} else if (word.getType() == TokenType.ELSE) {
 
@@ -481,6 +496,29 @@ public class WordCompiler {
 		if (!isAvailable(funcName, false)) {
 			throw new LeekCompilerException(mTokens.get(), Error.FUNCTION_NAME_UNAVAILABLE);
 		}
+
+		// Optional generic type parameters: function id<T, U>(...)
+		var typeParams = new ArrayList<String>();
+		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("<")) {
+			mTokens.eat(); // <
+			do {
+				if (mTokens.get().getType() != TokenType.STRING) {
+					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+					break;
+				}
+				typeParams.add(mTokens.eat().getWord());
+				if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals(",")) {
+					mTokens.eat();
+				} else {
+					break;
+				}
+			} while (mTokens.hasMoreTokens());
+			if (!mTokens.get().getWord().startsWith(">")) {
+				addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CLOSING_CHEVRON_EXPECTED));
+			}
+			mTokens.eat(); // >
+		}
+
 		if (mTokens.eat().getType() != TokenType.PAR_LEFT) {
 			if (functionToken.getWord().equals("Function")) {
 				// Déclaration de type
@@ -493,6 +531,8 @@ public class WordCompiler {
 
 		var previousFunction = mCurrentFunction;
 		FunctionBlock block = new FunctionBlock(mCurentBlock, mMain, funcName);
+		block.setTypeParameters(typeParams);
+		mCurrentFunctionTypeParameters = typeParams;
 		mCurentBlock = block;
 		setCurrentFunction(block);
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.PAR_RIGHT) {
@@ -551,6 +591,7 @@ public class WordCompiler {
 			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
 		}
 		mMain.addFunction(block);
+		mCurrentFunctionTypeParameters = new ArrayList<>();
 		setCurrentFunction(previousFunction);
 	}
 
@@ -648,6 +689,25 @@ public class WordCompiler {
 			}
 			return mapType;
 		}
+		if (word.equals("Interval")) {
+			var interval = mTokens.eat();
+			LeekType intervalType;
+			if (mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("<")) {
+				intervalType = new LeekParameterType(interval, mTokens.eat());
+				var value = eatType(false, true);
+				Type valueType = Type.ANY;
+				if (value != null) valueType = value.getType();
+
+				if (!mTokens.get().getWord().startsWith(">")) {
+					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CLOSING_CHEVRON_EXPECTED));
+				}
+				((LeekParameterType) intervalType).close(mTokens.eat());
+				intervalType.setType(Type.interval(valueType));
+			} else {
+				intervalType = new LeekType(interval, Type.INTERVAL);
+			}
+			return intervalType;
+		}
 		if (word.equals("Function")) {
 			var token = mTokens.eat();
 			LeekType functionType;
@@ -696,7 +756,43 @@ public class WordCompiler {
 
 		var clazz = mMain.getDefinedClass(word);
 		if (clazz != null) {
-			return new LeekType(mTokens.eat(), clazz.getType());
+			var classToken = mTokens.eat();
+			// Generic class with type arguments: Box<integer, string>
+			if (clazz.isGeneric() && mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("<")) {
+				var genericType = new LeekParameterType(classToken, mTokens.eat());
+				var typeArgs = new ArrayList<Type>();
+				do {
+					var arg = eatType(false, true);
+					if (arg != null) typeArgs.add(arg.getType());
+					else addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+					if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals(",")) {
+						mTokens.eat();
+					} else {
+						break;
+					}
+				} while (mTokens.hasMoreTokens());
+				if (!mTokens.get().getWord().startsWith(">")) {
+					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CLOSING_CHEVRON_EXPECTED));
+				}
+				var closeToken = mTokens.eat();
+				((LeekParameterType) genericType).close(closeToken);
+				if (typeArgs.size() != clazz.getTypeParameters().size()) {
+					addError(new AnalyzeError(classToken, AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+				}
+				genericType.setType(new GenericClassType(clazz, typeArgs));
+				return genericType;
+			}
+			return new LeekType(classToken, clazz.getType());
+		}
+
+		// Type parameter of current generic class (e.g. T inside class Box<T>)
+		if (mCurrentClass != null && mCurrentClass.isGeneric() && mCurrentClass.getTypeParameters().contains(word)) {
+			return new LeekType(mTokens.eat(), new TemplateType(word));
+		}
+
+		// Type parameter of current generic function (e.g. T inside function<T>(T x) => T)
+		if (mCurrentFunctionTypeParameters != null && mCurrentFunctionTypeParameters.contains(word)) {
+			return new LeekType(mTokens.eat(), new TemplateType(word));
 		}
 
 		if (mandatory) {
@@ -1153,6 +1249,29 @@ public class WordCompiler {
 		assert classDeclaration != null : "Class " + word.getWord() + " not declared (" + mMain.getDefinedClasses().size() + " classes)";
 		mMain.addClassList(classDeclaration);
 		mCurrentClass = classDeclaration;
+
+		// Optional generic type parameters: class Box<T, U>
+		if (mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("<")) {
+			mTokens.eat();
+			var typeParams = new ArrayList<String>();
+			do {
+				if (mTokens.get().getType() != TokenType.STRING) {
+					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+				} else {
+					typeParams.add(mTokens.eat().getWord());
+				}
+				if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals(",")) {
+					mTokens.eat();
+				} else {
+					break;
+				}
+			} while (mTokens.hasMoreTokens());
+			if (!mTokens.get().getWord().startsWith(">")) {
+				addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CLOSING_CHEVRON_EXPECTED));
+			}
+			mTokens.eat();
+			classDeclaration.setTypeParameters(typeParams);
+		}
 
 		if (mTokens.get().getType() == TokenType.EXTENDS) {
 			mTokens.skip();

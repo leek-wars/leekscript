@@ -374,6 +374,11 @@ public class LeekFunctionCall extends Expression {
 
 		this.functionType = mExpression.getType();
 		this.type = functionType.returnType();
+		// Generic function support: if the signature uses TemplateType, infer return type from actual args.
+		if (this.functionType instanceof FunctionType ft) {
+			var actualTypes = mParameters.stream().map(p -> p.getType()).collect(Collectors.toList());
+			this.type = ft.inferReturnType(actualTypes);
+		}
 		// System.out.println("[FC] function type = " + functionType + " args = " + functionType.getArguments() + " return = " + functionType.returnType());
 
 		for (Expression parameter : mParameters) {

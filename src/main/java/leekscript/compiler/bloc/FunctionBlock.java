@@ -23,6 +23,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 
 	private Token token;
 	private int mId;
+	private final ArrayList<String> typeParameters = new ArrayList<>();
 	private final ArrayList<String> mParameters = new ArrayList<String>();
 	private final ArrayList<LeekType> mParametersTypes = new ArrayList<LeekType>();
 	private final ArrayList<LeekVariableDeclarationInstruction> mParameterDeclarations = new ArrayList<>();
@@ -46,6 +47,19 @@ public class FunctionBlock extends AbstractLeekBlock {
 
 	public String getName() {
 		return token.getWord();
+	}
+
+	public void setTypeParameters(ArrayList<String> parameters) {
+		this.typeParameters.clear();
+		if (parameters != null) this.typeParameters.addAll(parameters);
+	}
+
+	public boolean isGeneric() {
+		return !typeParameters.isEmpty();
+	}
+
+	public ArrayList<String> getTypeParameters() {
+		return typeParameters;
 	}
 
 	public int countParameters() {

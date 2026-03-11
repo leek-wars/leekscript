@@ -1,5 +1,7 @@
 package leekscript.common;
 
+import java.util.Map;
+
 import leekscript.compiler.JavaWriter;
 
 public class ArrayType extends Type {
@@ -102,5 +104,10 @@ public class ArrayType extends Type {
 			return this.type.equals(at.type);
 		}
 		return false;
+	}
+
+	@Override
+	public Type substitute(Map<String, Type> substitution) {
+		return Type.array(type.substitute(substitution));
 	}
 }

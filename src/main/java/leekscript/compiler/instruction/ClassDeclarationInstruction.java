@@ -3,6 +3,7 @@ package leekscript.compiler.instruction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
 import leekscript.compiler.AIFile;
@@ -68,6 +69,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	private ClassDeclarationInstruction parent;
 	private MainLeekBlock mainBlock;
 	public boolean internal;
+	private ArrayList<String> typeParameters = new ArrayList<>();
 	private LinkedHashMap<String, ClassDeclarationField> fields = new LinkedHashMap<>();
 	private LinkedHashMap<String, ClassDeclarationField> staticFields = new LinkedHashMap<>();
 	private HashMap<String, LeekVariable> fieldVariables = new HashMap<>();
@@ -100,6 +102,18 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		this.staticInitBlock = new ClassMethodBlock(this, false, true, block, block, null, Type.ANY);
 		this.classType = type;
 		this.emptyType = emptyType;
+	}
+
+	public List<String> getTypeParameters() {
+		return typeParameters;
+	}
+
+	public void setTypeParameters(List<String> params) {
+		this.typeParameters = params != null ? new ArrayList<>(params) : new ArrayList<>();
+	}
+
+	public boolean isGeneric() {
+		return !typeParameters.isEmpty();
 	}
 
 	public HashMap<String, ClassDeclarationField> getFields() {
