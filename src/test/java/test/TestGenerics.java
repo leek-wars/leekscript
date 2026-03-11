@@ -34,5 +34,6 @@ public class TestGenerics extends TestCommon {
 		code_v4_("function id<T>(T x) => T { return x } return id(12)").equals("12");
 		code_v4_("function id<T>(T x) => T { return x } return id(\"hello\")").equals("\"hello\"");
 		code_v4_("function pickSecond<T, U>(T a, U b) => U { return b } return pickSecond(1, \"a\")").equals("\"a\"");
+		code_v4_("function map<T, U>(Array<T> a, Function<T => U> f) => Array<U> { var result = [] for (var i = 0; i < count(a); ++i) push(result, f(a[i])) return result } Array<integer> input = [1, 2, 3] Array<real> output = map(input, function(integer x) => real { return x * 1.5 }) return output").equals("[1.5, 3.0, 4.5]");
 	}
 }
