@@ -11,6 +11,7 @@ import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
+import leekscript.compiler.instruction.EnumDeclarationInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.LeekConstants;
 import leekscript.runner.LeekFunctions;
@@ -21,7 +22,7 @@ import leekscript.common.Type;
 public class LeekVariable extends Expression {
 
 	public static enum VariableType {
-		LOCAL, GLOBAL, ARGUMENT, FIELD, STATIC_FIELD, THIS, THIS_CLASS, CLASS, SUPER, METHOD, STATIC_METHOD, SYSTEM_CONSTANT, SYSTEM_FUNCTION, FUNCTION, ITERATOR
+		LOCAL, GLOBAL, ARGUMENT, FIELD, STATIC_FIELD, THIS, THIS_CLASS, CLASS, ENUM, SUPER, METHOD, STATIC_METHOD, SYSTEM_CONSTANT, SYSTEM_FUNCTION, FUNCTION, ITERATOR
 	}
 
 	private final Token token;
@@ -29,6 +30,7 @@ public class LeekVariable extends Expression {
 	private Type variableType = Type.ANY;
 	private LeekVariableDeclarationInstruction declaration = null;
 	private ClassDeclarationInstruction classDeclaration = null;
+	private EnumDeclarationInstruction enumDeclaration = null;
 	private FunctionBlock functionDeclaration = null;
 	private boolean box = false;
 	private boolean isFinal = false;
@@ -81,6 +83,12 @@ public class LeekVariable extends Expression {
 		this.variableType = variableType;
 	}
 
+	public LeekVariable(Token token, VariableType type, Type variableType, EnumDeclarationInstruction enumDeclaration) {
+		this(token, type);
+		this.enumDeclaration = enumDeclaration;
+		this.variableType = variableType;
+	}
+
 	public LeekVariable(Token token, VariableType type, Type variableType, FunctionBlock functionDeclaration) {
 		this(token, type);
 		this.functionDeclaration = functionDeclaration;
@@ -108,7 +116,7 @@ public class LeekVariable extends Expression {
 	}
 
 	public boolean isLeftValue() {
-		if (type == VariableType.CLASS || type == VariableType.THIS || type == VariableType.THIS_CLASS || type == VariableType.SUPER || type == VariableType.SYSTEM_CONSTANT) {
+		if (type == VariableType.CLASS || type == VariableType.ENUM || type == VariableType.THIS || type == VariableType.THIS_CLASS || type == VariableType.SUPER || type == VariableType.SYSTEM_CONSTANT) {
 			return false;
 		}
 		return true;
@@ -144,6 +152,7 @@ public class LeekVariable extends Expression {
 			this.variableType = v.getType();
 			this.declaration = v.getDeclaration();
 			this.classDeclaration = v.getClassDeclaration();
+			this.enumDeclaration = v.getEnumDeclaration();
 			this.functionDeclaration = v.getFunctionDeclaration();
 			this.isFinal = v.isFinal();
 			this.box = v.box;
@@ -212,6 +221,10 @@ public class LeekVariable extends Expression {
 
 	public ClassDeclarationInstruction getClassDeclaration() {
 		return classDeclaration;
+	}
+
+	public EnumDeclarationInstruction getEnumDeclaration() {
+		return enumDeclaration;
 	}
 
 	public LeekVariableDeclarationInstruction getDeclaration() {
@@ -307,6 +320,8 @@ public class LeekVariable extends Expression {
 			} else {
 				writer.addCode("u_" + token.getWord());
 			}
+		} else if (type == VariableType.ENUM) {
+			writer.addCode("u_" + token.getWord());
 		} else {
 			if (isWrapper() || isBox()) {
 				writer.addCode("u_" + token.getWord() + ".get()");
@@ -367,6 +382,8 @@ public class LeekVariable extends Expression {
 			} else {
 				writer.addCode("u_" + token.getWord());
 			}
+		} else if (type == VariableType.ENUM) {
+			writer.addCode("u_" + token.getWord());
 		} else {
 			if (isWrapper()) {
 				writer.addCode("u_" + token.getWord() + ".getVariable()");

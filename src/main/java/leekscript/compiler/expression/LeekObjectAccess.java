@@ -13,6 +13,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.ClassType;
 import leekscript.common.ClassValueType;
+import leekscript.common.EnumValueType;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
 import leekscript.common.Type;
@@ -104,7 +105,7 @@ public class LeekObjectAccess extends Expression {
 		}
 		if (object instanceof LeekVariable) {
 			var v = (LeekVariable) object;
-			if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS) {
+			if (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.ENUM || v.getVariableType() == VariableType.THIS_CLASS) {
 				operations -= 1;
 			}
 		}
@@ -131,6 +132,20 @@ public class LeekObjectAccess extends Expression {
 					this.isLeftValue = this.variable.isLeftValue();
 					this.type = this.variable.getType();
 				}
+			}
+		} else if (object.getType() instanceof EnumValueType evt) {
+
+			var enumDecl = evt.getEnumDeclaration();
+			this.variable = enumDecl != null ? enumDecl.getConstant(field.getWord()) : null;
+			if (this.variable != null) {
+				this.type = this.variable.getType();
+				this.isFinal = this.variable.isFinal();
+				this.isLeftValue = false;
+			} else {
+				compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] {
+					enumDecl == null ? "?" : enumDecl.getName(),
+					field.getWord()
+				}));
 			}
 		} else if (object.getType() instanceof ClassValueType cvt) {
 
@@ -201,6 +216,9 @@ public class LeekObjectAccess extends Expression {
 				writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + field.getWord() + "\")");
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS) {
 				writer.addCode(field.getWord());
+			} else if (object.getType() instanceof EnumValueType) {
+				object.writeJavaCode(mainblock, writer, false);
+				writer.addCode(".getField(\"" + field.getWord() + "\")");
 			} else if (object.getType() instanceof ClassType && !(type instanceof FunctionType)) { // TODO : mieux détecter les méthodes
 				object.writeJavaCode(mainblock, writer, true);
 				writer.addCode(".");

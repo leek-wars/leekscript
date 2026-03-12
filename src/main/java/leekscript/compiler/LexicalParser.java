@@ -201,7 +201,7 @@ public class LexicalParser {
 			addToken(word, TokenType.CONST);
 		} else if (version >= 3 && wordEquals(word, "char")) {
 			addToken(word, TokenType.CHAR);
-		} else if (version >= 3 && wordEquals(word, "enum")) {
+		} else if (version >= 4 && wordEquals(word, "enum")) {
 			addToken(word, TokenType.ENUM);
 		} else if (version >= 3 && wordEquals(word, "eval")) {
 			addToken(word, TokenType.EVAL);
