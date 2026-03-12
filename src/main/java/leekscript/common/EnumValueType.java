@@ -34,8 +34,20 @@ public class EnumValueType extends Type {
 	@Override
 	public CastType accepts(Type type) {
 		if (type instanceof EnumValueType et) {
-			if (this.enumDeclaration == et.enumDeclaration) return CastType.EQUALS;
-			return CastType.UPCAST;
+			// Same concrete enum declaration -> exactly equal
+			if (this.enumDeclaration == et.enumDeclaration) {
+				return CastType.EQUALS;
+			}
+			// Generic Enum (null declaration) can accept any specific enum as an upcast
+			if (this.enumDeclaration == null && et.enumDeclaration != null) {
+				return CastType.UPCAST;
+			}
+			// Casting from a generic Enum to a specific enum is a downcast
+			if (this.enumDeclaration != null && et.enumDeclaration == null) {
+				return CastType.SAFE_DOWNCAST;
+			}
+			// Two different concrete enums are incompatible
+			return CastType.INCOMPATIBLE;
 		}
 		return super.accepts(type);
 	}

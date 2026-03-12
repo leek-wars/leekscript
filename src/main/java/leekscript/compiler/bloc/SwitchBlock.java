@@ -127,10 +127,18 @@ public class SwitchBlock extends AbstractLeekBlock {
 		}
 
 		if (!hasDefault && covered.size() < enumDecl.getConstantOrder().size()) {
+			// Collect missing constants to improve diagnostics
+			var missing = new java.util.ArrayList<String>();
+			for (var name : enumDecl.getConstantOrder()) {
+				if (!covered.contains(name)) {
+					missing.add(name);
+				}
+			}
 			compiler.addError(new leekscript.compiler.AnalyzeError(
 				getLocation(),
 				leekscript.compiler.AnalyzeError.AnalyzeErrorLevel.WARNING,
-				leekscript.common.Error.INCOMPLETE_ENUM_SWITCH
+				leekscript.common.Error.INCOMPLETE_ENUM_SWITCH,
+				new String[] { enumDecl.getName(), String.join(", ", missing) }
 			));
 		}
 	}

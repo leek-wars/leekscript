@@ -44,9 +44,8 @@ public class EnumDeclarationInstruction extends LeekInstruction {
 
 	public void addConstant(Token nameToken, Expression value) {
 		String name = nameToken.getWord();
-		if (constants.containsKey(name)) {
-			return; // duplicate, will be reported by parser if desired
-		}
+		// Duplicate constants are reported at parse time in WordCompiler.enumDeclaration
+		if (constants.containsKey(name)) return;
 		constantOrder.add(name);
 		constants.put(name, new LeekVariable(nameToken, VariableType.STATIC_FIELD, enumType, true));
 		values.put(name, value);
@@ -134,7 +133,7 @@ public class EnumDeclarationInstruction extends LeekInstruction {
 
 	@Override
 	public String toString() {
-		return null;
+		return getCode();
 	}
 
 	@Override

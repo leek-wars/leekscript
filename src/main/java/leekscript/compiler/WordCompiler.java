@@ -1260,13 +1260,22 @@ public class WordCompiler {
 			word = mTokens.get();
 			if (word.getType() == TokenType.STRING) {
 				Token nameToken = mTokens.eat();
-				Expression value = null;
-				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("=")) {
-					mTokens.skip(); // skip '='
-					var expr = readExpression();
-					value = expr;
+
+				// Duplicate constant name inside the same enum
+				if (enumDeclaration.getConstant(nameToken.getWord()) != null) {
+					addError(new AnalyzeError(nameToken, AnalyzeErrorLevel.ERROR, Error.DUPLICATED_ENUM_CONSTANT, new String[] {
+						enumDeclaration.getName(),
+						nameToken.getWord()
+					}));
+				} else {
+					Expression value = null;
+					if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("=")) {
+						mTokens.skip(); // skip '='
+						var expr = readExpression();
+						value = expr;
+					}
+					enumDeclaration.addConstant(nameToken, value);
 				}
-				enumDeclaration.addConstant(nameToken, value);
 			}
 			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VIRG) {
 				mTokens.skip();

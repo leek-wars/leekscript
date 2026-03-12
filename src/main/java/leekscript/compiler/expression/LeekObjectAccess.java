@@ -142,7 +142,7 @@ public class LeekObjectAccess extends Expression {
 				this.isFinal = this.variable.isFinal();
 				this.isLeftValue = false;
 			} else {
-				compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST, new String[] {
+				compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.ENUM_MEMBER_DOES_NOT_EXIST, new String[] {
 					enumDecl == null ? "?" : enumDecl.getName(),
 					field.getWord()
 				}));

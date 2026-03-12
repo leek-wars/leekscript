@@ -79,6 +79,12 @@ public class TestEnum extends TestCommon {
 		code_v4_("enum Color { RED = 1, GREEN = 2 } return string(Color.GREEN)").equals("\"GREEN\"");
 
 		section("Enum invalid member access");
-		code_v4_("enum Color { RED, GREEN } return Color.BLUE").error(Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
+		code_v4_("enum Color { RED, GREEN } return Color.BLUE").error(Error.ENUM_MEMBER_DOES_NOT_EXIST);
+
+		section("Enum duplicated constants");
+		code_v4_("enum Color { RED, RED } return 0").error(Error.DUPLICATED_ENUM_CONSTANT);
+
+		section("Enum incompatible assignment between different enums");
+		code_v4_("enum A { X } enum B { Y } A a = B.Y return 0").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
 	}
 }
