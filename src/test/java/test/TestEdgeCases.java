@@ -108,6 +108,12 @@ public class TestEdgeCases extends TestCommon {
 		code_v4_("var a = [1] a[0] ??= 5 return a[0]").equals("1");
 		code_v4_("class C { any v; } var c = new C() c.v ??= 7 return c.v").equals("7");
 
+		// ?? operator type: null ?? a should have type A, not A?
+		code_strict_v4_("integer a = 5; integer b = null ?? a; return b").equals("5");
+		code_strict_v4_("integer? a = null; integer b = a ?? 5; return b").equals("5");
+		code_strict_v4_("integer? a = null; integer b = a ?? 10; return b").equals("10");
+		code_strict_v4_("integer? a = 3; integer b = a ?? 10; return b").equals("3");
+
 		/**
 		 * Operations limit edge cases
 		 */

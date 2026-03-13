@@ -1195,7 +1195,16 @@ public class LeekExpression extends Expression {
 			type = Type.INT;
 		}
 		else if (mOperator == Operators.COALESCE) {
-			type = Type.compound(mExpression1.getType(), mExpression2.getType());
+			var leftType = mExpression1.getType();
+			if (!leftType.canBeNull()) {
+				type = leftType;
+			} else if (leftType == Type.NULL) {
+				type = mExpression2.getType();
+			} else if (leftType instanceof CompoundType ct) {
+				type = Type.compound(ct.assertNotNull(), mExpression2.getType());
+			} else {
+				type = Type.compound(leftType, mExpression2.getType());
+			}
 		} else if (mOperator == Operators.COALESCE_ASSIGN) {
 			type = mExpression1.getType();
 		}
