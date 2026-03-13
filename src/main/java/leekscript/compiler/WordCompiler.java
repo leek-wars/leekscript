@@ -25,6 +25,7 @@ import leekscript.compiler.bloc.ForeachBlock;
 import leekscript.compiler.bloc.ForeachKeyBlock;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.bloc.ScopeBlock;
 import leekscript.compiler.bloc.SwitchBlock;
 import leekscript.compiler.bloc.WhileBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
@@ -619,6 +620,15 @@ public class WordCompiler {
 					}
 				}
 				return;
+			case ACCOLADE_LEFT:
+				if (version >= 4) {
+					var token = mTokens.eat();
+					var bloc = new ScopeBlock(mCurentBlock, mMain, token);
+					mCurentBlock.addInstruction(this, bloc);
+					mCurentBlock = bloc;
+					return;
+				}
+				break;
 			case VAR:
 				mTokens.skip();
 				variableDeclaration(null, NO_ANNOTATIONS);
