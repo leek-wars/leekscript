@@ -978,9 +978,25 @@ public class LeekExpression extends Expression {
 
 	@Override
 	public boolean isLeftValue() {
-		// return mOperator == Operators.DOT;
-		// return false;
-		return mOperator == Operators.NON_NULL_ASSERTION;
+		return mOperator == Operators.NON_NULL_ASSERTION && mExpression2.isLeftValue();
+	}
+
+	@Override
+	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
+		if (mOperator == Operators.NON_NULL_ASSERTION) {
+			mExpression2.compileSet(mainblock, writer, expr, parenthesis);
+		} else {
+			super.compileSet(mainblock, writer, expr, parenthesis);
+		}
+	}
+
+	@Override
+	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
+		if (mOperator == Operators.NON_NULL_ASSERTION) {
+			mExpression2.compileSetCopy(mainblock, writer, expr, parenthesis);
+		} else {
+			super.compileSetCopy(mainblock, writer, expr, parenthesis);
+		}
 	}
 
 	@Override
