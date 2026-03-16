@@ -166,10 +166,16 @@ public class TestGeneral extends TestCommon {
 		// code("(x -> x).copy()").equals("<function>");
 		// code("Number.copy()").equals("<class Number>");
 
+		section("Scope blocks");
+		code_v4_("var b = 0 { b = 12 } return b").equals("12");
+		code_v4_("var i = 12 { i = 'salut' } return i").equals("\"salut\"");
+		code_v4_("var i = 12 {{{ i = 'salut' }}} return i").equals("\"salut\"");
+		code_v4_("{ var a = 1 } { var a = 2 } return 0").equals("0");
+		code_v4_("{ integer i = 1 } { integer i = 2 } return 0").equals("0");
+		code_v4_("var r = 0 { var a = 5 r = a } { var a = 10 r += a } return r").equals("15");
+		code_v4_("{ } return 1").equals("1");
+
 		section("Assignments");
-		// code("var b = 0 { b = 12 } return b").equals("12");
-		// code("var i = 12 { i = 'salut' } return i").equals("salut");
-		// code("var i = 12 {{{ i = 'salut' }}} return i").equals("salut");
 		code("var b = 5 if (1) { b = 'salut' } return b").equals("\"salut\"");
 		code_strict("var b = 5 if (1) { b = 'salut' } return b").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
 		code_strict("any b = 5 if (1) { b = 'salut' } return b").equals("\"salut\"");

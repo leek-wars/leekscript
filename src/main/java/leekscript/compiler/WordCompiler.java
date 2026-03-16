@@ -18,6 +18,7 @@ import leekscript.compiler.bloc.ForeachBlock;
 import leekscript.compiler.bloc.ForeachKeyBlock;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.bloc.ScopeBlock;
 import leekscript.compiler.bloc.SwitchBlock;
 import leekscript.compiler.bloc.WhileBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
@@ -45,6 +46,7 @@ import leekscript.compiler.expression.Operators;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.BlankInstruction;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
+import leekscript.compiler.instruction.EnumDeclarationInstruction;
 import leekscript.compiler.instruction.LeekBreakInstruction;
 import leekscript.compiler.instruction.LeekContinueInstruction;
 import leekscript.compiler.instruction.LeekExpressionInstruction;
@@ -218,6 +220,22 @@ public class WordCompiler {
 							// System.out.println("Define class " + clazz.getName());
 						}
 					}
+				} else if (getVersion() >= 4 && mTokens.get().getType() == TokenType.ENUM) {
+
+					mTokens.skip();
+					if (mTokens.hasMoreTokens()) {
+						var enumName = mTokens.eat();
+
+						if (enumName.getType() == TokenType.STRING) {
+
+							if (mMain.getDefinedClass(enumName.getWord()) != null || mMain.getDefinedEnum(enumName.getWord()) != null) {
+								throw new LeekCompilerException(enumName, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { enumName.getWord() });
+							}
+
+							var enumDecl = new EnumDeclarationInstruction(enumName, mLine, mAI, getMainBlock());
+							mMain.defineEnum(enumDecl);
+						}
+					}
 				} else {
 					mTokens.skip();
 				}
@@ -306,6 +324,14 @@ public class WordCompiler {
 			}
 			return;
 
+		} else if (version >= 4 && word.getType() == TokenType.ACCOLADE_LEFT) {
+
+			var token = mTokens.eat();
+			var bloc = new ScopeBlock(mCurentBlock, mMain, token);
+			mCurentBlock.addInstruction(this, bloc);
+			mCurentBlock = bloc;
+			return;
+
 		} else if (word.getType() == TokenType.VAR) {
 
 			// Déclaration de variable
@@ -357,6 +383,12 @@ public class WordCompiler {
 			// Déclaration de classe
 			mTokens.skip();
 			classDeclaration();
+			return;
+
+		} else if (version >= 4 && getCurrentBlock() instanceof MainLeekBlock && word.getType() == TokenType.ENUM) {
+
+			mTokens.skip();
+			enumDeclaration();
 			return;
 
 		} else if (word.getType() == TokenType.BREAK) {
@@ -697,6 +729,11 @@ public class WordCompiler {
 		var clazz = mMain.getDefinedClass(word);
 		if (clazz != null) {
 			return new LeekType(mTokens.eat(), clazz.getType());
+		}
+
+		var enumDecl = mMain.getDefinedEnum(word);
+		if (enumDecl != null) {
+			return new LeekType(mTokens.eat(), enumDecl.getType());
 		}
 
 		if (mandatory) {
@@ -1208,6 +1245,59 @@ public class WordCompiler {
 		mCurrentClass = null;
 	}
 
+	public void enumDeclaration() throws LeekCompilerException {
+		Token word = mTokens.eat();
+		if (word.getType() != TokenType.STRING) {
+			throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED);
+		}
+		if (isKeyword(word)) {
+			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() }));
+		}
+		EnumDeclarationInstruction enumDeclaration = mMain.getDefinedEnum(word.getWord());
+		if (enumDeclaration == null) {
+			throw new LeekCompilerException(word, Error.UNKNOWN_ERROR);
+		}
+		mMain.addEnumList(enumDeclaration);
+
+		if (mTokens.get().getType() != TokenType.ACCOLADE_LEFT) {
+			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+		}
+		mTokens.skip();
+
+		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+			word = mTokens.get();
+			if (word.getType() == TokenType.STRING) {
+				Token nameToken = mTokens.eat();
+
+				// Duplicate constant name inside the same enum
+				if (enumDeclaration.getConstant(nameToken.getWord()) != null) {
+					addError(new AnalyzeError(nameToken, AnalyzeErrorLevel.ERROR, Error.DUPLICATED_ENUM_CONSTANT, new String[] {
+						enumDeclaration.getName(),
+						nameToken.getWord()
+					}));
+				} else {
+					Expression value = null;
+					if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("=")) {
+						mTokens.skip(); // skip '='
+						var expr = readExpression();
+						value = expr;
+					}
+					enumDeclaration.addConstant(nameToken, value);
+				}
+			}
+			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VIRG) {
+				mTokens.skip();
+			}
+		}
+		if (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+			throw new LeekCompilerException(mTokens.get(), Error.END_OF_CLASS_EXPECTED);
+		}
+		if (mTokens.hasMoreTokens()) {
+			mTokens.skip(); // accolade right
+		}
+	}
+
 	public void classStaticMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel) throws LeekCompilerException {
 		Token token = mTokens.get();
 		switch (token.getWord()) {
@@ -1585,7 +1675,7 @@ public class WordCompiler {
 				} else if (word.getType() == TokenType.DOT) {
 					// Object access
 					var dot = mTokens.eat();
-					if (mTokens.get().getType() == TokenType.STRING || mTokens.get().getType() == TokenType.CLASS || mTokens.get().getType() == TokenType.SUPER) {
+					if (mTokens.get().getType() == TokenType.STRING || mTokens.get().getType() == TokenType.CLASS || mTokens.get().getType() == TokenType.ENUM || mTokens.get().getType() == TokenType.SUPER) {
 						var name = mTokens.get();
 						retour.addObjectAccess(dot, name);
 					} else {
@@ -1764,6 +1854,8 @@ public class WordCompiler {
 					retour.addExpression(object);
 
 				} else if (word.getType() == TokenType.CLASS) {
+					retour.addExpression(new LeekVariable(this, word, VariableType.LOCAL));
+				} else if (word.getType() == TokenType.ENUM) {
 					retour.addExpression(new LeekVariable(this, word, VariableType.LOCAL));
 				} else if (word.getType() == TokenType.THIS) {
 					retour.addExpression(new LeekVariable(this, word, VariableType.LOCAL));

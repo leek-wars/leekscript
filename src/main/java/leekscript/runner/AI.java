@@ -9,6 +9,7 @@ import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.classes.StandardClass;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.ClassLeekValue;
+import leekscript.runner.values.EnumLeekValue;
 import leekscript.runner.values.FunctionLeekValue;
 import leekscript.runner.values.GenericArrayLeekValue;
 import leekscript.runner.values.GenericMapLeekValue;
@@ -1046,6 +1047,8 @@ public abstract class AI {
 			return (long) (double) value;
 		} else if (value instanceof Long) {
 			return (Long) value;
+		} else if (value instanceof EnumLeekValue.EnumConstant c) {
+			return c.value;
 		} else if (value instanceof Boolean) {
 			return ((Boolean) value) ? 1 : 0;
 		} else if (value instanceof ObjectLeekValue) {
@@ -1088,6 +1091,8 @@ public abstract class AI {
 			return (Double) value;
 		} else if (value instanceof Long) {
 			return (Long) value;
+		} else if (value instanceof EnumLeekValue.EnumConstant c) {
+			return (double) c.value;
 		} else if (value instanceof Boolean) {
 			return ((Boolean) value) ? 1 : 0;
 		} else if (value instanceof ObjectLeekValue) {
@@ -1551,6 +1556,8 @@ public abstract class AI {
 			return set.string(this, new HashSet<Object>());
 		} else if (value instanceof IntervalLeekValue interval) {
 			return interval.string(this, new HashSet<Object>());
+		} else if (value instanceof EnumLeekValue.EnumConstant c) {
+			return "\"" + c.name + "\"";
 		} else if (value instanceof String) {
 			return "\"" + value + "\"";
 		} else if (value instanceof ClassLeekValue) {
@@ -1587,6 +1594,8 @@ public abstract class AI {
 			return ((SetLeekValue) value).string(this, visited);
 		} else if (value instanceof IntervalLeekValue) {
 			return ((IntervalLeekValue) value).string(this, visited);
+		} else if (value instanceof EnumLeekValue.EnumConstant c) {
+			return "\"" + c.name + "\"";
 		} else if (value instanceof String) {
 			return "\"" + value + "\"";
 		} else if (value instanceof ClassLeekValue) {
@@ -1664,6 +1673,9 @@ public abstract class AI {
 		}
 		if (value instanceof ClassLeekValue) {
 			return ((ClassLeekValue) value).getField(field, fromClass);
+		}
+		if (value instanceof EnumLeekValue) {
+			return ((EnumLeekValue) value).getField(field);
 		}
 		if (value instanceof NativeObjectLeekValue object) {
 			try {
@@ -3271,6 +3283,13 @@ public abstract class AI {
 
 	public boolean instanceOf(Object value, Object clazz) throws LeekRunException {
 		ops(2);
+		if (clazz instanceof EnumLeekValue enumType) {
+			var v = load(value);
+			if (v instanceof EnumLeekValue.EnumConstant c) {
+				return c.enumType == enumType;
+			}
+			return false;
+		}
 		if (!(clazz instanceof ClassLeekValue)) {
 			addSystemLog(AILog.ERROR, Error.INSTANCEOF_MUST_BE_CLASS);
 			return false;

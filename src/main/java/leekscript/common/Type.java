@@ -325,6 +325,10 @@ public class Type {
 		return null;
 	}
 
+	public leekscript.compiler.instruction.EnumDeclarationInstruction getEnumDeclaration() {
+		return null;
+	}
+
 	public static FunctionType add_argument(FunctionType current, Type argument) {
 		// var entry = new AbstractMap.SimpleEntry<FunctionType, Type>(current, argument);
 		// var cached = addArgumentTypes.get(entry);

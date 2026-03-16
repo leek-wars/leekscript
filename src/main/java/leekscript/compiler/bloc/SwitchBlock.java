@@ -2,6 +2,7 @@ package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
 
+import leekscript.common.EnumValueType;
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -9,6 +10,8 @@ import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
+import leekscript.compiler.expression.LeekObjectAccess;
+import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekExpressionException;
 
 public class SwitchBlock extends AbstractLeekBlock {
@@ -81,6 +84,62 @@ public class SwitchBlock extends AbstractLeekBlock {
 				v.analyze(compiler);
 			}
 			c.body.analyze(compiler);
+		}
+
+		// Enum switch exhaustiveness check (no default)
+		if (compiler.getVersion() < 4) {
+			return;
+		}
+
+		// Detect if this is a switch over an enum by inspecting case values
+		leekscript.compiler.instruction.EnumDeclarationInstruction enumDecl = null;
+		boolean hasDefault = false;
+		var covered = new java.util.HashSet<String>();
+
+		for (var c : mCases) {
+			if (c.isDefault) {
+				hasDefault = true;
+				continue;
+			}
+			for (var v : c.values) {
+				if (v instanceof LeekObjectAccess oa && oa.getObject() instanceof LeekVariable var) {
+					var objectType = var.getType();
+					if (objectType instanceof EnumValueType evt) {
+						var currentEnum = evt.getEnumDeclaration();
+						if (currentEnum == null) continue;
+						if (enumDecl == null) {
+							enumDecl = currentEnum;
+						} else if (enumDecl != currentEnum) {
+							// Mixed enums, abort enum-specific checks
+							return;
+						}
+						if (enumDecl == currentEnum) {
+							covered.add(oa.getField());
+						}
+					}
+				}
+			}
+		}
+
+		if (enumDecl == null) {
+			// Not an enum-based switch
+			return;
+		}
+
+		if (!hasDefault && covered.size() < enumDecl.getConstantOrder().size()) {
+			// Collect missing constants to improve diagnostics
+			var missing = new java.util.ArrayList<String>();
+			for (var name : enumDecl.getConstantOrder()) {
+				if (!covered.contains(name)) {
+					missing.add(name);
+				}
+			}
+			compiler.addError(new leekscript.compiler.AnalyzeError(
+				getLocation(),
+				leekscript.compiler.AnalyzeError.AnalyzeErrorLevel.WARNING,
+				leekscript.common.Error.INCOMPLETE_ENUM_SWITCH,
+				new String[] { enumDecl.getName(), String.join(", ", missing) }
+			));
 		}
 	}
 
