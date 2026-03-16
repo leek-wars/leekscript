@@ -17,7 +17,7 @@ public class LeekFunctions {
 		 */
 		method("string", "Value", 8, true, Type.STRING, new Type[] { Type.ANY });
 		method("number", "Value", 10, true, Type.INT_OR_REAL, new Type[] { Type.ANY });
-		method("typeOf", "Value", 8, true, Type.INT, new Type[] { Type.ANY });
+		method("typeOf", "Value", 8, true, Type.ANY, new Type[] { Type.ANY });
 		method("clone", "Value", true, new CallableVersion[] {
 			new CallableVersion(Type.ANY, new Type[] { Type.ANY, Type.INT }),
 			new CallableVersion(Type.ANY, new Type[] { Type.ANY }),

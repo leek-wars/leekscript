@@ -944,15 +944,28 @@ public class LeekExpression extends Expression {
 			writer.addCode(")");
 			return;
 		case Operators.AS:
-			if (mExpression2 instanceof LeekType lt && lt.getType().accepts(mExpression1.getType()) != CastType.EQUALS) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("(");
-				mExpression2.writeJavaCode(mainblock, writer, false);
-				writer.addCode(") ");
-			}
-			mExpression1.writeJavaCode(mainblock, writer, true);
-			if (mExpression2 instanceof LeekType lt && lt.getType().accepts(mExpression1.getType()) != CastType.EQUALS) {
-				if (parenthesis) writer.addCode(")");
+			if (mExpression2 instanceof LeekType lt) {
+				var targetType = lt.getType();
+				var sourceType = mExpression1.getType();
+
+				// Special-case enum -> integer/real: use runtime conversion instead of Java cast
+				if (sourceType instanceof leekscript.common.EnumType && (targetType == Type.INT || targetType == Type.REAL)) {
+					writer.compileConvert(mainblock, 0, mExpression1, targetType, parenthesis);
+					return;
+				}
+
+				if (targetType.accepts(sourceType) != CastType.EQUALS) {
+					if (parenthesis) writer.addCode("(");
+					writer.addCode("(");
+					mExpression2.writeJavaCode(mainblock, writer, false);
+					writer.addCode(") ");
+				}
+				mExpression1.writeJavaCode(mainblock, writer, true);
+				if (targetType.accepts(sourceType) != CastType.EQUALS) {
+					if (parenthesis) writer.addCode(")");
+				}
+			} else {
+				mExpression1.writeJavaCode(mainblock, writer, parenthesis);
 			}
 			return;
 		case Operators.IN:
@@ -1143,7 +1156,13 @@ public class LeekExpression extends Expression {
 
 				// Type totalement compatible
 				var cast = lt.getType().accepts(mExpression1.getType());
-				if (cast == CastType.INCOMPATIBLE) {
+				// Allow explicit casts between enums and integers/reals even if the
+				// underlying types are different at runtime.
+				if (cast == CastType.INCOMPATIBLE
+						&& !(lt.getType() == Type.INT && mExpression1.getType() instanceof leekscript.common.EnumType)
+						&& !(lt.getType() == Type.REAL && mExpression1.getType() instanceof leekscript.common.EnumType)
+						&& !(lt.getType() instanceof leekscript.common.EnumType && mExpression1.getType() == Type.INT)
+						&& !(lt.getType() instanceof leekscript.common.EnumType && mExpression1.getType() == Type.REAL)) {
 					compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.IMPOSSIBLE_CAST_VALUES, new String[] {
 						mExpression1.toString(),
 						mExpression1.getType().toString(),
@@ -1155,13 +1174,20 @@ public class LeekExpression extends Expression {
 
 		// x == y : toujours faux si types incompatibles
 		if ((compiler.getVersion() >= 4 && mOperator == Operators.EQUALS) || mOperator == Operators.EQUALS_EQUALS) {
-			if (mExpression1.getType().accepts(mExpression2.getType()) == CastType.INCOMPATIBLE) {
+			// Special-case enum vs integer/real comparisons
+			if ((mExpression1.getType() instanceof leekscript.common.EnumType && (mExpression2.getType() == Type.INT || mExpression2.getType() == Type.REAL))
+					|| (mExpression2.getType() instanceof leekscript.common.EnumType && (mExpression1.getType() == Type.INT || mExpression1.getType() == Type.REAL))) {
+				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.COMPARISON_ALWAYS_FALSE, new String[] { mExpression1.getType().toString(), mExpression2.getType().toString() }));
+			} else if (mExpression1.getType().accepts(mExpression2.getType()) == CastType.INCOMPATIBLE) {
 				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.COMPARISON_ALWAYS_FALSE, new String[] { mExpression1.getType().toString(), mExpression2.getType().toString() }));
 			}
 		}
 		// x != y : toujours vrai si types incompatibles
 		if ((compiler.getVersion() >= 4 && mOperator == Operators.NOTEQUALS) || mOperator == Operators.NOT_EQUALS_EQUALS) {
-			if (mExpression1.getType().accepts(mExpression2.getType()) == CastType.INCOMPATIBLE) {
+			if ((mExpression1.getType() instanceof leekscript.common.EnumType && (mExpression2.getType() == Type.INT || mExpression2.getType() == Type.REAL))
+					|| (mExpression2.getType() instanceof leekscript.common.EnumType && (mExpression1.getType() == Type.INT || mExpression1.getType() == Type.REAL))) {
+				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.COMPARISON_ALWAYS_TRUE, new String[] { mExpression1.getType().toString(), mExpression2.getType().toString() }));
+			} else if (mExpression1.getType().accepts(mExpression2.getType()) == CastType.INCOMPATIBLE) {
 				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.COMPARISON_ALWAYS_TRUE, new String[] { mExpression1.getType().toString(), mExpression2.getType().toString() }));
 			}
 		}

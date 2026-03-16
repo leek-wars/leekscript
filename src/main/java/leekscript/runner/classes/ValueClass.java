@@ -4,6 +4,7 @@ import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
+import leekscript.runner.values.EnumLeekValue;
 
 public class ValueClass {
 
@@ -12,6 +13,10 @@ public class ValueClass {
 	}
 
 	public static String string(AI ai, Object value) throws LeekRunException {
+		if (value instanceof EnumLeekValue.EnumConstant c) {
+			// Enum constants stringify to their name (without quotes)
+			return c.name;
+		}
 		if (value instanceof String) {
 			return (String) value;
 		}
@@ -22,6 +27,9 @@ public class ValueClass {
 	}
 
 	public static Number number(AI ai, Object value) {
+		if (value instanceof EnumLeekValue.EnumConstant c) {
+			return c.value;
+		}
 		if (value instanceof Number)
 			return (Number) value;
 		if (value instanceof String) {
@@ -37,7 +45,10 @@ public class ValueClass {
 		return 0l;
 	}
 
-	public static long typeOf(AI ai, Object value) throws LeekRunException {
+	public static Object typeOf(AI ai, Object value) throws LeekRunException {
+		if (value instanceof EnumLeekValue.EnumConstant c) {
+			return c.enumType.name;
+		}
 		return (long) LeekValueManager.getType(value);
 	}
 

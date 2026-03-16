@@ -23,6 +23,7 @@ import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
+import leekscript.compiler.instruction.EnumDeclarationInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.runner.LeekFunctions;
 import leekscript.common.Error;
@@ -38,6 +39,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final Map<String, ClassDeclarationInstruction> mDefinedClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final Map<String, ClassDeclarationInstruction> mUserClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final List<ClassDeclarationInstruction> mUserClassesList = new ArrayList<>();
+	private final Map<String, EnumDeclarationInstruction> mDefinedEnums = new TreeMap<String, EnumDeclarationInstruction>();
+	private final List<EnumDeclarationInstruction> mUserEnumsList = new ArrayList<>();
 	private int mMinLevel = 1;
 	private int mAnonymousId = 1;
 	private int mFunctionId = 1;
@@ -245,6 +248,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			if (clazz.internal) continue;
 			str += clazz.getCode() + "\n";
 		}
+		for (var enumDecl : mUserEnumsList) {
+			str += enumDecl.getCode() + "\n";
+		}
 		return str + super.getCode();
 	}
 
@@ -267,6 +273,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			clazz.declareJava(this, writer);
 		}
 
+		// Enums
+		for (var enumDecl : mUserEnumsList) {
+			enumDecl.declareJava(this, writer);
+		}
+
 		// Constructor
 		writer.addLine("public " + className + "() throws LeekRunException {");
 		writer.addLine("super(" + mInstructions.size() + ", " + mCompiler.getCurrentAI().getVersion() + ");");
@@ -274,6 +285,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var clazz : mUserClassesList) {
 			if (clazz.internal) continue;
 			clazz.createJava(this, writer);
+		}
+		for (var enumDecl : mUserEnumsList) {
+			enumDecl.createJava(this, writer);
 		}
 		writer.addLine("}");
 
@@ -419,9 +433,24 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return mDefinedClasses;
 	}
 
+	public void defineEnum(EnumDeclarationInstruction enumDeclaration) {
+		mDefinedEnums.put(enumDeclaration.getName(), enumDeclaration);
+	}
+
+	public void addEnumList(EnumDeclarationInstruction enumDeclaration) {
+		mUserEnumsList.add(enumDeclaration);
+	}
+
+	public EnumDeclarationInstruction getDefinedEnum(String name) {
+		return mDefinedEnums.get(name);
+	}
+
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		for (var clazz : mUserClassesList) {
 			clazz.declare(compiler);
+		}
+		for (var enumDecl : mUserEnumsList) {
+			enumDecl.declare(compiler);
 		}
 		for (var function : mFunctions.values()) {
 			function.declare(compiler);
@@ -431,6 +460,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 		for (var clazz : mUserClassesList) {
 			clazz.preAnalyze(compiler);
+		}
+		for (var enumDecl : mUserEnumsList) {
+			enumDecl.preAnalyze(compiler);
 		}
 		for (var function : mFunctions.values()) {
 			function.preAnalyze(compiler);
@@ -444,6 +476,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		// }
 		for (var clazz : mUserClassesList) {
 			clazz.analyze(compiler);
+		}
+		for (var enumDecl : mUserEnumsList) {
+			enumDecl.analyze(compiler);
 		}
 		for (var function : mFunctions.values()) {
 			function.analyze(compiler);
