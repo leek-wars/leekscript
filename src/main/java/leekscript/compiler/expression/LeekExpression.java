@@ -1,6 +1,7 @@
 package leekscript.compiler.expression;
 
 import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -944,14 +945,16 @@ public class LeekExpression extends Expression {
 			writer.addCode(")");
 			return;
 		case Operators.AS:
-			if (mExpression2 instanceof LeekType lt && lt.getType().accepts(mExpression1.getType()) != CastType.EQUALS) {
+			// Always emit the cast in Java — narrowing may have made types match
+			// during analysis, but the generated Java code still needs the cast
+			if (mExpression2 instanceof LeekType) {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("(");
 				mExpression2.writeJavaCode(mainblock, writer, false);
 				writer.addCode(") ");
 			}
 			mExpression1.writeJavaCode(mainblock, writer, true);
-			if (mExpression2 instanceof LeekType lt && lt.getType().accepts(mExpression1.getType()) != CastType.EQUALS) {
+			if (mExpression2 instanceof LeekType) {
 				if (parenthesis) writer.addCode(")");
 			}
 			return;
@@ -1038,7 +1041,24 @@ public class LeekExpression extends Expression {
 		}
 
 		if (mExpression1 != null) mExpression1.analyze(compiler);
-		if (mExpression2 != null) mExpression2.analyze(compiler);
+
+		// Short-circuit narrowing: for &&, apply true narrowings from e1 when analyzing e2
+		// e.g., x != null && x.toto() → x is non-null when evaluating x.toto()
+		if (mExpression2 != null) {
+			if (mOperator == Operators.AND && mExpression1 != null) {
+				var narrowing = NarrowingInfo.extract(mExpression1);
+				var saved = narrowing.applyTrue();
+				mExpression2.analyze(compiler);
+				NarrowingInfo.restore(saved);
+			} else if (mOperator == Operators.OR && mExpression1 != null) {
+				var narrowing = NarrowingInfo.extract(mExpression1);
+				var saved = narrowing.applyFalse();
+				mExpression2.analyze(compiler);
+				NarrowingInfo.restore(saved);
+			} else {
+				mExpression2.analyze(compiler);
+			}
+		}
 
 		// Si on a affaire à une assignation, incrémentation ou autre du genre
 		// on doit vérifier qu'on a bien une variable (l-value)
@@ -1098,34 +1118,57 @@ public class LeekExpression extends Expression {
 			// if (variable1 != null && variable1 == variable2 && mExpression1 instanceof LeekVariable) {
 			// 	compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.ASSIGN_SAME_VARIABLE, new String[] { variable1.getName() } ));
 			// }
+
+			// After assignment, reset narrowed variable to its declared type
+			// so subsequent code doesn't use stale narrowing (e.g., w = null inside while (w != null))
+			if (variable1 != null && mExpression1 instanceof LeekVariable lv2) {
+				variable1.setType(variable1.getDeclaredType());
+			}
 		}
 
 		// Type compatible ?
 		if (mOperator == Operators.ASSIGN || mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.POWERASSIGN || mOperator == Operators.COALESCE_ASSIGN) {
 
+			// Use declared type for assignment checks (not narrowed type)
+			var targetType = mExpression1.getType();
+			if (mExpression1 instanceof LeekVariable lv) {
+				var declVar = lv.getVariable();
+				if (declVar != null) {
+					targetType = declVar.getDeclaredType();
+				} else if (lv.getDeclaration() != null) {
+					targetType = lv.getDeclaration().getType();
+				}
+			} else if (mExpression1 instanceof LeekObjectAccess oa) {
+				// For property access (this.x, class.x), use declared type of the field
+				var fieldVar = oa.getVariable();
+				if (fieldVar != null) {
+					targetType = fieldVar.getDeclaredType();
+				}
+			}
+
 			var expressionType = mExpression2.getType();
-			if (mOperator == Operators.ADDASSIGN) expressionType = mExpression1.getType().add(mExpression2.getType());
-			if (mOperator == Operators.MINUSASSIGN) expressionType = mExpression1.getType().sub(mExpression2.getType());
-			if (mOperator == Operators.MULTIPLIEASSIGN) expressionType = mExpression1.getType().mul(mExpression2.getType());
-			if (mOperator == Operators.DIVIDEASSIGN) expressionType = mExpression1.getType().div(mExpression2.getType());
-			if (mOperator == Operators.POWERASSIGN) expressionType = mExpression1.getType().pow(mExpression2.getType());
+			if (mOperator == Operators.ADDASSIGN) expressionType = targetType.add(mExpression2.getType());
+			if (mOperator == Operators.MINUSASSIGN) expressionType = targetType.sub(mExpression2.getType());
+			if (mOperator == Operators.MULTIPLIEASSIGN) expressionType = targetType.mul(mExpression2.getType());
+			if (mOperator == Operators.DIVIDEASSIGN) expressionType = targetType.div(mExpression2.getType());
+			if (mOperator == Operators.POWERASSIGN) expressionType = targetType.pow(mExpression2.getType());
 			if (mOperator == Operators.COALESCE_ASSIGN) expressionType = Type.compound(mExpression1.getType(), mExpression2.getType());
 
-			var cast = mExpression1.getType().accepts(expressionType);
+			var cast = targetType.accepts(expressionType);
 			if (cast == CastType.INCOMPATIBLE) {
 				var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 				compiler.addError(new AnalyzeError(getLocation(), level, Error.ASSIGNMENT_INCOMPATIBLE_TYPE, new String[] {
 					mExpression2.toString(),
 					expressionType.toString(),
 					mExpression1.toString(),
-					mExpression1.getType().toString(),
+					targetType.toString(),
 				}));
 			} else if (compiler.getMainBlock().isStrict() && cast.ordinal() >= CastType.SAFE_DOWNCAST.ordinal()) {
 				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.DANGEROUS_CONVERSION_VARIABLE, new String[] {
 					mExpression2.toString(),
 					expressionType.toString(),
 					mExpression1.toString(),
-					mExpression1.getType().toString(),
+					targetType.toString(),
 				}));
 			}
 		}

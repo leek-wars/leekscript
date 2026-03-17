@@ -162,6 +162,13 @@ public class CompoundType extends Type {
 		return Type.compound(this.types.stream().map(t -> t.returnType()).collect(Collectors.toCollection(HashSet::new)));
 	}
 
+	public Type removeType(Type target) {
+		var remaining = this.types.stream().filter(t -> t != target).collect(Collectors.toCollection(HashSet::new));
+		if (remaining.isEmpty()) return this;
+		if (remaining.size() == 1) return remaining.iterator().next();
+		return Type.compound(remaining);
+	}
+
 	public Type assertNotNull() {
 		var remaining = this.types.stream().filter(t -> t != Type.NULL).collect(Collectors.toCollection(HashSet::new));
 		if (remaining.size() > 1) {

@@ -1,13 +1,18 @@
 package leekscript.compiler.bloc;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
+import leekscript.compiler.expression.LeekVariable;
 
 public class ConditionalBloc extends AbstractLeekBlock {
 
@@ -15,6 +20,7 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	private Expression mCondition = null;
 	private final Token token;
 	private boolean mPutCounterBefore = false;
+	private NarrowingInfo narrowingInfo = null;
 
 	public ConditionalBloc(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -37,6 +43,10 @@ public class ConditionalBloc extends AbstractLeekBlock {
 		return mCondition;
 	}
 
+	public NarrowingInfo getNarrowingInfo() {
+		return narrowingInfo;
+	}
+
 	@Override
 	public String getCode() {
 		String str = "";
@@ -57,11 +67,84 @@ public class ConditionalBloc extends AbstractLeekBlock {
 
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
+
+		// Step 1: Apply false narrowings from parent conditions (for else-if and else blocks)
+		var parentSaved = applyParentFalseNarrowings();
+
 		if (mCondition != null) {
+			// Analyze the condition (benefits from parent false narrowings if else-if)
 			mCondition.analyze(compiler);
 			mCondition.operations++; // On rajoute une opé pour le if sur la condition
+
+			// Step 2: Extract narrowing info from this condition
+			narrowingInfo = NarrowingInfo.extract(mCondition);
+
+			// Step 3: Apply true narrowings for the body
+			var saved = narrowingInfo.applyTrue();
+
+			// Step 4: Apply property narrowings to the block
+			applyPropertyNarrowings(narrowingInfo.getTruePropertyNarrowings());
+
+			super.analyze(compiler);
+
+			// Step 5: Restore narrowings
+			clearPropertyNarrowings();
+			NarrowingInfo.restore(saved);
+		} else {
+			// This is an 'else' block - parent false narrowings are already applied
+			// Also apply property narrowings from parent false branch
+			if (mParentCondition != null && mParentCondition.narrowingInfo != null) {
+				applyPropertyNarrowings(mParentCondition.narrowingInfo.getFalsePropertyNarrowings());
+			}
+
+			super.analyze(compiler);
+
+			clearPropertyNarrowings();
 		}
-		super.analyze(compiler);
+
+		// Step 6: Restore parent false narrowings
+		NarrowingInfo.restore(parentSaved);
+	}
+
+	/**
+	 * Apply false narrowings from the parent condition chain (for else-if / else blocks).
+	 * Returns saved original types for later restore.
+	 */
+	private Map<LeekVariable, Type> applyParentFalseNarrowings() {
+		var saved = new HashMap<LeekVariable, Type>();
+		if (mParentCondition != null) {
+			collectParentFalseNarrowings(mParentCondition, saved);
+		}
+		return saved;
+	}
+
+	private void collectParentFalseNarrowings(ConditionalBloc parent, Map<LeekVariable, Type> saved) {
+		// Recurse to get earlier conditions first
+		if (parent.mParentCondition != null) {
+			collectParentFalseNarrowings(parent.mParentCondition, saved);
+		}
+		// Apply this parent's false narrowings
+		if (parent.narrowingInfo != null) {
+			for (var entry : parent.narrowingInfo.getFalseNarrowings().entrySet()) {
+				if (!saved.containsKey(entry.getKey())) {
+					saved.put(entry.getKey(), entry.getKey().getType());
+				}
+				entry.getKey().setType(entry.getValue());
+			}
+		}
+	}
+
+	/**
+	 * Store property narrowings on the block for LeekObjectAccess to consult.
+	 */
+	private void applyPropertyNarrowings(Map<String, Type> propertyNarrowings) {
+		if (propertyNarrowings != null && !propertyNarrowings.isEmpty()) {
+			mNarrowedPropertyTypes = new HashMap<>(propertyNarrowings);
+		}
+	}
+
+	private void clearPropertyNarrowings() {
+		mNarrowedPropertyTypes = null;
 	}
 
 	@Override

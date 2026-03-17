@@ -135,6 +135,29 @@ public class TestCommon {
 			});
 		}
 
+		public String noWarning() {
+			return run(new Checker() {
+				public boolean check(Result result) {
+					if (result.ai != null) {
+						var errors = result.ai.getFile().getErrors();
+						return errors.isEmpty();
+					}
+					return result.error == Error.NONE;
+				}
+				public String getExpected() { return "no warning"; }
+				public String getResult(Result result) {
+					if (result.ai != null) {
+						var errors = result.ai.getFile().getErrors();
+						if (errors.size() > 0) return errors.get(0).level + " " + errors.get(0).error.name();
+					}
+					if (result.error != Error.NONE) {
+						return result.error.name();
+					}
+					return "no warning";
+				}
+			});
+		}
+
 		public String any_error() {
 			return run(new Checker() {
 				public boolean check(Result result) {

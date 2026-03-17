@@ -33,6 +33,7 @@ public class LeekVariable extends Expression {
 	private boolean box = false;
 	private boolean isFinal = false;
 	private LeekVariable variable;
+	private Type declaredType = null;
 
 	public LeekVariable(Token token, VariableType type) {
 		this.token = token;
@@ -43,6 +44,7 @@ public class LeekVariable extends Expression {
 	public LeekVariable(Token token, VariableType variableType, Type type, boolean isFinal) {
 		this(token, variableType);
 		this.variableType = type;
+		this.declaredType = type;
 		this.isFinal = isFinal;
 	}
 
@@ -218,6 +220,16 @@ public class LeekVariable extends Expression {
 		return declaration;
 	}
 
+	/**
+	 * Returns the original declared type, unaffected by narrowing.
+	 * For local/argument variables: uses declaration.getType().
+	 * For field/static field variables: uses the stored declaredType.
+	 */
+	public Type getDeclaredType() {
+		if (declaration != null) return declaration.getType();
+		return declaredType != null ? declaredType : variableType;
+	}
+
 	public FunctionBlock getFunctionDeclaration() {
 		return functionDeclaration;
 	}
@@ -381,7 +393,8 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			writer.compileConvert(mainblock, 0, expr, variableType, false);
+			var fieldType = (variable != null) ? variable.getDeclaredType() : variableType;
+			writer.compileConvert(mainblock, 0, expr, fieldType, false);
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".setField(\"" + token.getWord() + "\", ");
@@ -403,6 +416,8 @@ public class LeekVariable extends Expression {
 				writer.addCode(")");
 			}
 		} else {
+			// Use declared type for assignments (not narrowed type)
+			var assignType = (this.declaration != null) ? this.declaration.getType() : this.variableType;
 			if (isWrapper()) {
 				if (expr.isLeftValue()) {
 					if (mainblock.getWordCompiler().getVersion() <= 1) {
@@ -419,12 +434,12 @@ public class LeekVariable extends Expression {
 				}
 			} else if (isBox()) {
 				writer.addCode("u_" + token.getWord() + ".set(");
-				writer.compileConvert(mainblock, 0, expr, this.variableType, false);
+				writer.compileConvert(mainblock, 0, expr, assignType, false);
 				writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				writer.compileConvert(mainblock, 0, expr, this.variableType, false);
+				writer.compileConvert(mainblock, 0, expr, assignType, false);
 				if (parenthesis) writer.addCode(")");
 			}
 		}

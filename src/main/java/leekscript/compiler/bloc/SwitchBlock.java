@@ -10,6 +10,8 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
+import leekscript.compiler.expression.LeekNull;
+import leekscript.compiler.expression.LeekVariable;
 
 public class SwitchBlock extends AbstractLeekBlock {
 
@@ -76,11 +78,63 @@ public class SwitchBlock extends AbstractLeekBlock {
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		mExpression.analyze(compiler);
-		for (var c : mCases) {
-			for (var v : c.values) {
-				v.analyze(compiler);
+
+		// Check if switch expression is a nullable variable for narrowing
+		LeekVariable switchVar = null;
+		boolean hasNullCase = false;
+
+		var v = mExpression.getVariable();
+		if (v != null && v.getType().canBeNull()) {
+			switchVar = v;
+			// Check if there's a case null anywhere
+			for (var c : mCases) {
+				for (var val : c.values) {
+					if (val instanceof LeekNull) {
+						hasNullCase = true;
+						break;
+					}
+				}
+				if (hasNullCase) break;
 			}
-			c.body.analyze(compiler);
+		}
+
+		for (var c : mCases) {
+			for (var val : c.values) {
+				val.analyze(compiler);
+			}
+
+			if (switchVar != null) {
+				// Determine narrowed type for this case
+				boolean caseHasNull = false;
+				boolean caseHasNonNull = false;
+				for (var val : c.values) {
+					if (val instanceof LeekNull) caseHasNull = true;
+					else caseHasNonNull = true;
+				}
+
+				Type narrowedType = null;
+				if (caseHasNull && !caseHasNonNull) {
+					// Pure null case: narrow to null
+					narrowedType = Type.NULL;
+				} else if (!caseHasNull && !c.isDefault) {
+					// Non-null case values: narrow to non-null
+					narrowedType = switchVar.getType().assertNotNull();
+				} else if (c.isDefault && hasNullCase) {
+					// Default with explicit null case elsewhere: narrow to non-null
+					narrowedType = switchVar.getType().assertNotNull();
+				}
+
+				if (narrowedType != null) {
+					var savedType = switchVar.getType();
+					switchVar.setType(narrowedType);
+					c.body.analyze(compiler);
+					switchVar.setType(savedType);
+				} else {
+					c.body.analyze(compiler);
+				}
+			} else {
+				c.body.analyze(compiler);
+			}
 		}
 	}
 

@@ -26,6 +26,7 @@ public class LeekObjectAccess extends Expression {
 	private boolean isFinal = false;
 	private boolean isLeftValue = true;
 	private LeekVariable variable;
+	private ClassType resolvedOnClassType; // ClassType used for field resolution during analysis
 
 	public LeekObjectAccess(Expression object, Token dot, Token field) {
 		this.object = object;
@@ -113,6 +114,9 @@ public class LeekObjectAccess extends Expression {
 		if (object.getType() instanceof ClassType || isSuper) {
 			// this, check field exists in class
 			var clazz = object.getType() instanceof ClassType ct ? ct.getClassDeclaration() : compiler.getCurrentClass().getParent();
+			if (object.getType() instanceof ClassType ct2) {
+				this.resolvedOnClassType = ct2;
+			}
 			if (clazz != null) {
 				this.variable = clazz.getMember(field.getWord());
 				if (this.variable == null) {
@@ -180,6 +184,18 @@ public class LeekObjectAccess extends Expression {
 			memberType = Type.replaceErrors(memberType);
 		}
 		this.type = memberType;
+
+		// Case 6: Check for property narrowing from enclosing conditional block
+		if (object instanceof LeekVariable lv) {
+			var declVar = lv.getVariable();
+			if (declVar != null && field != null) {
+				String key = declVar.getName() + "." + field.getWord();
+				var narrowedType = compiler.getCurrentBlock().getNarrowedPropertyType(key);
+				if (narrowedType != null) {
+					this.type = narrowedType;
+				}
+			}
+		}
 	}
 
 	public String getField() {
@@ -202,7 +218,7 @@ public class LeekObjectAccess extends Expression {
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS && this.variable != null) {
 				writer.addCode(field.getWord());
 			} else if (object.getType() instanceof ClassType && !(type instanceof FunctionType) && this.variable != null) { // TODO : mieux détecter les méthodes
-				object.writeJavaCode(mainblock, writer, true);
+				writeObjectWithNarrowingCast(mainblock, writer);
 				writer.addCode(".");
 				writer.addCode(field.getWord());
 			} else {
@@ -235,7 +251,7 @@ public class LeekObjectAccess extends Expression {
 			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS && this.variable != null) {
 				writer.addCode(field.getWord());
 			} else if (object.getType() instanceof ClassType && this.variable != null) {
-				object.writeJavaCode(mainblock, writer, true);
+				writeObjectWithNarrowingCast(mainblock, writer);
 				writer.addCode(".");
 				writer.addCode(field.getWord());
 			} else {
@@ -257,7 +273,7 @@ public class LeekObjectAccess extends Expression {
 			if (parenthesis) writer.addCode(")");
 		} else if (object.getType() instanceof ClassType && this.variable != null) {
 			if (parenthesis) writer.addCode("(");
-			object.writeJavaCode(mainblock, writer, true);
+			writeObjectWithNarrowingCast(mainblock, writer);
 			writer.addCode("." + field.getWord() + " = ");
 			writer.compileConvert(mainblock, 0, expr, type, false);
 			if (parenthesis) writer.addCode(")");
@@ -548,6 +564,47 @@ public class LeekObjectAccess extends Expression {
 
 	public Token getDot() {
 		return this.dot;
+	}
+
+	/**
+	 * Write Java code for the object expression, adding a cast if the object's
+	 * type was narrowed during analysis (e.g., from instanceof) but the Java
+	 * code still produces the original (non-narrowed) type.
+	 */
+	private void writeObjectWithNarrowingCast(MainLeekBlock mainblock, JavaWriter writer) {
+		if (object.getType() instanceof ClassType ct) {
+			ClassType castTarget = null;
+
+			// Case 1: object is a LeekObjectAccess whose type was narrowed (persisted on AST node)
+			if (object instanceof LeekObjectAccess oa) {
+				var fieldVar = oa.getVariable();
+				if (fieldVar != null && fieldVar.getType() != ct) {
+					castTarget = ct;
+				}
+			}
+			// Case 2: object is a LeekVariable whose AST type is stale from narrowing
+			// (the declaration variable's type was restored but the AST node's copy wasn't)
+			if (castTarget == null && object instanceof LeekVariable lv) {
+				var declVar = lv.getVariable();
+				if (declVar != null && declVar.getType() != ct) {
+					castTarget = ct;
+				}
+			}
+			// Case 3: field was resolved on a different ClassType during analysis
+			if (castTarget == null && resolvedOnClassType != null && resolvedOnClassType != ct) {
+				castTarget = resolvedOnClassType;
+			}
+
+			if (castTarget != null) {
+				writer.addCode("((");
+				writer.addCode(castTarget.getJavaName(mainblock.getVersion()));
+				writer.addCode(") ");
+				object.writeJavaCode(mainblock, writer, false);
+				writer.addCode(")");
+				return;
+			}
+		}
+		object.writeJavaCode(mainblock, writer, true);
 	}
 
 	public Token getLastToken() {

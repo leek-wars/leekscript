@@ -142,7 +142,11 @@ java -jar leekscript.jar fichier.leek
 
 ### Lancer les tests
 ```bash
+# IMPORTANT : toujours depuis le dossier leekscript, pas le dossier generator parent
+cd /home/pierre/dev/leek-wars/generator/leekscript
 gradle test
+# Un seul test :
+gradle test --tests "test.TestClass"
 ```
 
 ### Tests existants

@@ -3,6 +3,7 @@ package leekscript.compiler.bloc;
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
@@ -72,8 +73,15 @@ public class WhileBlock extends AbstractLeekBlock {
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		if (mCondition != null) {
 			mCondition.analyze(compiler);
+
+			// Apply narrowing from while condition to the loop body
+			var narrowingInfo = NarrowingInfo.extract(mCondition);
+			var saved = narrowingInfo.applyTrue();
+			super.analyze(compiler);
+			NarrowingInfo.restore(saved);
+		} else {
+			super.analyze(compiler);
 		}
-		super.analyze(compiler);
 	}
 
 	@Override

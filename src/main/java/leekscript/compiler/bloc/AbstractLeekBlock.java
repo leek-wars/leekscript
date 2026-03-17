@@ -2,6 +2,7 @@ package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import leekscript.compiler.Token;
 import leekscript.compiler.AnalyzeError;
@@ -13,6 +14,8 @@ import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.instruction.LeekExpressionInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.common.Error;
+import leekscript.common.Type;
+import leekscript.compiler.NarrowingInfo;
 
 public abstract class AbstractLeekBlock extends LeekInstruction {
 
@@ -26,6 +29,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	protected MainLeekBlock mMain = null;
 	protected int mEndInstruction = 0;
 	protected boolean full = false;
+	protected Map<String, Type> mNarrowedPropertyTypes = null;
 
 	public AbstractLeekBlock(AbstractLeekBlock parent, MainLeekBlock main) {
 		mParent = parent;
@@ -110,6 +114,19 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 
 	public void addVariable(LeekVariable variable) {
 		mVariables.put(variable.getName(), variable);
+	}
+
+	/**
+	 * Look up a narrowed property type (e.g. "x.field") in this block or parent blocks.
+	 * Used by LeekObjectAccess during type narrowing.
+	 */
+	public Type getNarrowedPropertyType(String key) {
+		if (mNarrowedPropertyTypes != null) {
+			var type = mNarrowedPropertyTypes.get(key);
+			if (type != null) return type;
+		}
+		if (mParent != null) return mParent.getNarrowedPropertyType(key);
+		return null;
 	}
 
 	public LeekInstruction lastInstruction() {
@@ -218,12 +235,30 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
+
+		// Track narrowings to restore at end of block (from early returns)
+		var pendingRestores = new ArrayList<Map<LeekVariable, Type>>();
+
 		for (var instruction : mInstructions) {
-			// if (instruction instanceof LeekGlobalDeclarationInstruction) {
-			// 	continue; // Analysé avant
-			// }
 			instruction.analyze(compiler);
+
+			// Case 2: Early return narrowing
+			// If a conditional block (if without else, or if where body exits)
+			// exits via return/break/continue, apply inverse narrowings for subsequent code
+			if (instruction instanceof ConditionalBloc cb
+				&& cb.getParentCondition() == null  // First 'if' in chain (not else-if)
+				&& cb.mEndInstruction != 0           // Body exits (return/break/continue)
+				&& cb.getNarrowingInfo() != null
+				&& cb.getNarrowingInfo().hasFalse()) {
+				pendingRestores.add(cb.getNarrowingInfo().applyFalse());
+			}
 		}
+
+		// Restore all narrowings applied during this block
+		for (var saved : pendingRestores) {
+			NarrowingInfo.restore(saved);
+		}
+
 		compiler.setCurrentBlock(initialBlock);
 	}
 
