@@ -30,5 +30,17 @@ public class TestClass extends TestCommon {
 		code_v2_("class A { public static m() { return name }} return A.m()").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 		code_v2_("class A { public static m() { return class.name }} return A.m()").equals("\"A\"");
 
+		section("Non-existent field access");
+		// this.field where field doesn't exist: error in strict, warning in non-strict
+		code_strict_v2_("class A { public m() { return this.x } } return new A().m()").error(Error.CLASS_MEMBER_DOES_NOT_EXIST);
+		code_v2_("class A { public m() { return this.x } } return new A().m()").warning(Error.CLASS_MEMBER_DOES_NOT_EXIST);
+		// Existing field should still work
+		code_v2_("class A { public integer x = 42 public m() { return this.x } } return new A().m()").equals("42");
+		// Implicit this field access to non-existent field
+		code_strict_v2_("class A { public m() { return x } } return new A().m()").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		// Non-existent field on typed variable
+		code_strict_v2_("class Foo { } Foo f = new Foo() return f.x").error(Error.CLASS_MEMBER_DOES_NOT_EXIST);
+		code_v2_("class Foo { } Foo f = new Foo() return f.x").warning(Error.CLASS_MEMBER_DOES_NOT_EXIST);
+
 	}
 }
