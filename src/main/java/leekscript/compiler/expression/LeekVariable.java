@@ -99,6 +99,18 @@ public class LeekVariable extends Expression {
 		return variableType;
 	}
 
+	/**
+	 * Returns the Java declaration type: the type used for the Java variable declaration.
+	 * For narrowed variables, this may differ from getType() (which returns the narrowed type).
+	 * This is needed during code generation to avoid calling methods that don't exist on Object.
+	 */
+	public Type getJavaDeclarationType() {
+		if (this.variable != null) {
+			return this.variable.getDeclaredType();
+		}
+		return variableType;
+	}
+
 	@Override
 	public String toString() {
 		return token.getWord();
@@ -323,9 +335,33 @@ public class LeekVariable extends Expression {
 			if (isWrapper() || isBox()) {
 				writer.addCode("u_" + token.getWord() + ".get()");
 			} else {
-				writer.addCode("u_" + token.getWord());
+				// Check if the variable was narrowed during analysis: if the expression's type
+				// differs from the declaration variable's Java type, emit a cast so that
+				// methods like .get(), .doubleValue() work on the narrowed type.
+				if (this.variable != null && needsNarrowingCast(mainblock.getVersion())) {
+					writer.addCode("((" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") u_" + token.getWord() + ")");
+				} else {
+					writer.addCode("u_" + token.getWord());
+				}
 			}
 		}
+	}
+
+	/**
+	 * Check if this variable reference needs a narrowing cast in Java code.
+	 * This happens when the variable's type was narrowed during analysis (e.g.,
+	 * inside an instanceof check), producing a more specific type than the Java
+	 * variable declaration. Without a cast, calls like .get() or .doubleValue()
+	 * would fail on the Object-typed Java variable.
+	 */
+	private boolean needsNarrowingCast(int version) {
+		if (this.variable == null || this.variableType == null) return false;
+		Type declType = this.variable.getType();
+		if (declType == this.variableType) return false;
+		// Only cast when Java types actually differ and narrowed type is not primitive
+		String javaType = this.variableType.getJavaPrimitiveName(version);
+		String javaDeclType = declType.getJavaPrimitiveName(version);
+		return !javaType.equals(javaDeclType) && !this.variableType.isPrimitive();
 	}
 
 	@Override
