@@ -107,6 +107,19 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("class A { static integer | null x = null; m() { if (class.x == null) { class.x = 12 } } } var a = new A(); a.m(); return A.x").noWarning();
 		code_v4_("class A { static integer | null x = null; m() { if (class.x == null) { class.x = 12 } } } var a = new A(); a.m(); return A.x").equals("12");
 
+		// Class-typed field: assignment inside narrowed block
+		code_v4_("class B { integer x = 0 } class A { B | null config = null; m() { if (config == null) { config = new B() } } } var a = new A(); a.m(); return a.config").noWarning();
+		// Class-typed field: assignment to class-typed field with narrowing
+		code_v4_("class Cell { integer v = 42 } class A { Cell | null c = null; m() { if (c == null) { c = new Cell() } } } var a = new A(); a.m(); return a.c.v").equals("42");
+		// Class-typed local variable assigned from narrowed variable
+		code_v4_("class Cell { integer v = 0 } Cell | null x = new Cell(); if (x != null) { var y = x; y = new Cell(); return y.v } return -1").equals("0");
+
+		// Class-typed nullable field: assignment inside null-check block
+		code_v4_("class B { integer x = 0 } class A { B? config = null; m() { if (config == null) { config = new B() } } } var a = new A(); a.m(); return a.config.x").equals("0");
+		code_v4_("class B { integer x = 0 } class A { B? config = null; m() { if (config == null) { config = new B() } } } var a = new A(); a.m(); return a.config.x").noWarning();
+		// Non-null branch: assignment to nullable class field
+		code_v4_("class B { integer x = 0 } class A { B? c = new B(); m() { if (c != null) { c = new B() } } } var a = new A(); a.m(); return a.c.x").equals("0");
+
 		section("Instanceof narrowing with compound types (Java cast)");
 		// Map | integer narrowed to Map → .get() needs a cast in Java
 		code_v4_("Map | integer x = [1 : 'a', 2 : 'b']; if (x instanceof Map) { return x[1] } return 0").noWarning();

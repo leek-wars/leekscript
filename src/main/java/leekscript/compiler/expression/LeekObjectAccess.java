@@ -266,16 +266,21 @@ public class LeekObjectAccess extends Expression {
 	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
+		// Use the declared type of the field for conversion, not the narrowed type
+		// (e.g., inside `if (this.config == null)`, this.type is narrowed to null/Object
+		// but the Java field is declared with the original type)
+		var fieldType = (this.variable != null) ? this.variable.getDeclaredType() : this.type;
+
 		if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS && this.variable != null) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(field.getWord() + " = ");
-			writer.compileConvert(mainblock, 0, expr, type, false);
+			writer.compileConvert(mainblock, 0, expr, fieldType, false);
 			if (parenthesis) writer.addCode(")");
 		} else if (object.getType() instanceof ClassType && this.variable != null) {
 			if (parenthesis) writer.addCode("(");
 			writeObjectWithNarrowingCast(mainblock, writer);
 			writer.addCode("." + field.getWord() + " = ");
-			writer.compileConvert(mainblock, 0, expr, type, false);
+			writer.compileConvert(mainblock, 0, expr, fieldType, false);
 			if (parenthesis) writer.addCode(")");
 		} else {
 			writer.addCode("setField(");
