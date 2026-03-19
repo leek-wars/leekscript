@@ -414,6 +414,9 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { m() { return 'parent' } t() { return m() } } class B extends A { m() { return 'enfant' } } return new B().t()").equals("\"enfant\"");
 		code_v2_("class A {	public id; } class W extends A {} class H extends W { constructor(id){ this.id=id } }").equals("null");
 		code_v2_("class A { public x(a) { return a } } class B extends A { public x(a, b) { return x(a + b) } } return new B().x(5, 7)").equals("12");
+		code_v2_("class A { m(null|Array<integer> x) { return x } } class B extends A { m(null|Array<integer> x) { return super.m(x) } } return new B().m(null)").equals("null");
+		code_v2_("class A { m(null|Array<integer> x) { return x } } class B extends A { m(null|Array<integer> x) { return super.m(x) } } return new B().m([1, 2])").equals("[1, 2]");
+		code_v2_("class A { m(null|Array<integer> x) { return x == null ? 'none' : count(x) } } class B extends A { m(null|Array<integer> x) { return super.m(null) } } return new B().m([1])").equals("\"none\"");
 
 		section("Access levels: fields");
 		code_v2_("class A { x = 10 } var a = new A() return a.x").equals("10");
