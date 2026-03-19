@@ -107,6 +107,28 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("class A { static integer | null x = null; m() { if (class.x == null) { class.x = 12 } } } var a = new A(); a.m(); return A.x").noWarning();
 		code_v4_("class A { static integer | null x = null; m() { if (class.x == null) { class.x = 12 } } } var a = new A(); a.m(); return A.x").equals("12");
 
+		section("Instanceof narrowing with compound types (Java cast)");
+		// Map | integer narrowed to Map → .get() needs a cast in Java
+		code_v4_("Map | integer x = [1 : 'a', 2 : 'b']; if (x instanceof Map) { return x[1] } return 0").noWarning();
+		code_v4_("Map | integer x = [1 : 'a', 2 : 'b']; if (x instanceof Map) { return x[1] } return 0").equals("\"a\"");
+		// Array | string narrowed to Array → count() and subscript work
+		code_v4_("Array | string x = [1, 2, 3]; if (x instanceof Array) { return count(x) } return 0").noWarning();
+		code_v4_("Array | string x = [1, 2, 3]; if (x instanceof Array) { return count(x) } return 0").equals("3");
+		code_v4_("Array | string x = [10, 20, 30]; if (x instanceof Array) { return x[1] } return 0").noWarning();
+		code_v4_("Array | string x = [10, 20, 30]; if (x instanceof Array) { return x[1] } return 0").equals("20");
+		// Map access after instanceof inside && short-circuit
+		code_v4_("Map | integer x = [1 : 'a']; if (x instanceof Map && x[1] == 'a') { return 1 } return 0").noWarning();
+		code_v4_("Map | integer x = [1 : 'a']; if (x instanceof Map && x[1] == 'a') { return 1 } return 0").equals("1");
+		// Multiple map accesses after instanceof
+		code_v4_("Map | integer x = [1 : 10, 2 : 20]; if (x instanceof Map) { return x[1] + x[2] } return 0").noWarning();
+		code_v4_("Map | integer x = [1 : 10, 2 : 20]; if (x instanceof Map) { return x[1] + x[2] } return 0").equals("30");
+		// real | null | integer narrowed to real → doubleValue() needs a cast
+		code_v4_("real | null | integer x = 3.14; real y = 0; if (x != null) { y = x } return y").noWarning();
+		code_v4_("real | null | integer x = 3.14; real y = 0; if (x != null) { y = x } return y").equals("3.14");
+		// Narrowing with assignment after instanceof (reset then re-narrow)
+		code_v4_("Map | integer x = [1 : 'a']; if (x instanceof Map) { var v = x[1]; x = [2 : 'b']; return v } return 0").noWarning();
+		code_v4_("Map | integer x = [1 : 'a']; if (x instanceof Map) { var v = x[1]; x = [2 : 'b']; return v } return 0").equals("\"a\"");
+
 		section("Instanceof narrowing with property access");
 		// instanceof + && should narrow property type and generate correct Java cast
 		code_v4_("class Item {} class Chip extends Item { boolean flag = true } class Holder { Item item = new Chip() } var h = new Holder(); if (h.item instanceof Chip && h.item.flag) { return 1 } return 0").equals("1");
