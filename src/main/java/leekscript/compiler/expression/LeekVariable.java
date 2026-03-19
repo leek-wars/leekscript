@@ -56,6 +56,7 @@ public class LeekVariable extends Expression {
 	public LeekVariable(WordCompiler compiler, Token token, VariableType variableType, Type type) {
 		this(token, variableType);
 		this.variableType = type;
+		this.declaredType = type;
 		this.box = compiler.getVersion() <= 1;
 	}
 

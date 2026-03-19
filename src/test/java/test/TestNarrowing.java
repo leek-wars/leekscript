@@ -163,5 +163,12 @@ public class TestNarrowing extends TestCommon {
 		// instanceof on a static field (class.field)
 		code_v4_("class Item {} class Chip extends Item { boolean flag = true } class Holder { static Item item = new Chip(); test() { if (class.item instanceof Chip && class.item.flag) { return 1 } return 0 } } return new Holder().test()").equals("1");
 		code_v4_("class Item {} class Chip extends Item { boolean flag = true } class Holder { static Item item = new Chip(); test() { if (class.item instanceof Chip && class.item.flag) { return 1 } return 0 } } return new Holder().test()").noWarning();
+
+		section("Global variable assignment inside null check");
+		// global var assigned inside if (x == null) block
+		code_v4_("class A { integer x = 42 } global obj = null; if (obj == null) { obj = new A() } return obj.x").equals("42");
+		code_v4_("class A { integer x = 42 } global obj = null; if (obj == null) { obj = new A() } return obj.x").noWarning();
+		// Multiple assignments in if/else-if chain
+		code_v4_("class A { integer x = 1 } class B extends A { } global obj = null; if (obj == null) { obj = new A() } return obj.x").equals("1");
 	}
 }
