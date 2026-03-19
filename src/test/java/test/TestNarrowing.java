@@ -128,6 +128,11 @@ public class TestNarrowing extends TestCommon {
 		// Narrowing with assignment after instanceof (reset then re-narrow)
 		code_v4_("Map | integer x = [1 : 'a']; if (x instanceof Map) { var v = x[1]; x = [2 : 'b']; return v } return 0").noWarning();
 		code_v4_("Map | integer x = [1 : 'a']; if (x instanceof Map) { var v = x[1]; x = [2 : 'b']; return v } return 0").equals("\"a\"");
+		// Compound assignment with narrowed primitive in else branch (mpLeft -= cellArray)
+		code_v4_("Map | integer x = 5; integer y = 10; if (x instanceof Map) { return 0 } else { y -= x; return y }").noWarning();
+		code_v4_("Map | integer x = 5; integer y = 10; if (x instanceof Map) { return 0 } else { y -= x; return y }").equals("5");
+		code_v4_("Map | integer x = 3; integer y = 10; if (x instanceof Map) { return 0 } else { y += x; return y }").equals("13");
+		code_v4_("Map | integer x = 2; integer y = 10; if (x instanceof Map) { return 0 } else { y *= x; return y }").equals("20");
 
 		section("Instanceof narrowing with property access");
 		// instanceof + && should narrow property type and generate correct Java cast
