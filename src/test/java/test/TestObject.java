@@ -801,6 +801,11 @@ public class TestObject extends TestCommon {
 		code_v3_("return Number instanceof Class").equals("true");
 		code_v3_("return function() {} instanceof Function").equals("true");
 
+		// instanceof Class with narrowing (accessing .name after check)
+		code_v3_("class A {} var x = A if (x instanceof Class) { return x.name } return ''").equals("\"A\"");
+		code_v3_("var x = Number if (x instanceof Class) { return x.name } return ''").equals("\"Number\"");
+		code_v3_("function getName(any location) { if (location instanceof Class) { return location.name } return '' } return getName(Number)").equals("\"Number\"");
+
 		section("Operator + with an object");
 		code_v2_("class A {} var x x += new A() return x").equals("0");
 

@@ -61,7 +61,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mCompiler.setCurrentAI(ai);
 
 		if (ai.getVersion() >= 2) {
-			var classClass = new ClassDeclarationInstruction(new Token("Class"), 0, ai, true, this);
+			var classClass = new ClassDeclarationInstruction(new Token("Class"), 0, ai, true, this, Type.CLASS);
 			classClass.addField(wordCompiler, new Token("name"), Type.STRING, null, AccessLevel.PUBLIC, true);
 			classClass.addField(wordCompiler, new Token("super"), Type.CLASS, null, AccessLevel.PUBLIC, true);
 			classClass.addField(wordCompiler, new Token("fields"), Type.ARRAY_STRING, null, AccessLevel.PUBLIC, true);
