@@ -506,10 +506,10 @@ public class LeekFunctionCall extends Expression {
 			var oa = (LeekObjectAccess) mExpression;
 			var o = oa.getObject();
 
-			if (o.getType() instanceof ClassType ct) {
+			if (o.getType() instanceof ClassType ct || (o instanceof LeekVariable lv && lv.getVariableType() == VariableType.SUPER)) {
 
 				// on regarde si le nombre d'arguments est correct
-				var current = ct.getClassDeclaration();
+				var current = o.getType() instanceof ClassType ct2 ? ct2.getClassDeclaration() : ((LeekVariable) o).getClassDeclaration().getParent();
 				end:
 				while (current != null) {
 					var methods = current.getMethod(oa.getField());
