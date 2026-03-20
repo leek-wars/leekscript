@@ -13,9 +13,8 @@ import leekscript.common.Error;
 public class TestOperators extends TestCommon {
 
 
-	@Test
-	public void run() throws Exception {
-
+		@Test
+	public void testOperator_EqualsEquals() throws Exception {
 		section("Operator ==");
 		code("return null == null").equals("true");
 
@@ -159,7 +158,10 @@ public class TestOperators extends TestCommon {
 				code_v4_("return " + values1[i] + " == " + values1[j]).equals(String.valueOf(i == j));
 			}
 		}
+	}
 
+	@Test
+	public void testOther_operators() throws Exception {
 		section("Other operators");
 		code("var sum = 1, ops = 10 return sum < ops * 0.95 || sum > ops").equals("true");
 		code("var sum = 9.8, ops = 10 return sum < ops * 0.95 || sum > ops").equals("false");
@@ -169,7 +171,10 @@ public class TestOperators extends TestCommon {
 		code("var a = [] if (a != []) {}").equals("null");
 		code_v1_3("return !null == 50").equals("true");
 		code_v4_("return !null == 50").equals("false");
+	}
 
+	@Test
+	public void testOperator_EqualsEqualsEquals() throws Exception {
 		section("Operator ===");
 		Object[] values = new Object[] { "0", "1",
 			"12", "13", "false",
@@ -211,7 +216,10 @@ public class TestOperators extends TestCommon {
 		code("return 15 > 10 > 11 and 150 < 200 < 250").equals("false");
 		code("return 15 > 14 > 11 and 150 < 100 < 250").equals("false");
 		code("return 15 > 10 > 11 and 150 < 100 < 250").equals("false");
+	}
 
+	@Test
+	public void testOperator_Plus() throws Exception {
 		section("Operator +");
 		code("return false + 1").equals("1");
 		code("return 1 + false").equals("1");
@@ -221,7 +229,10 @@ public class TestOperators extends TestCommon {
 		code("return null + true").equals("1");
 		code("return false + null").equals("0");
 		code("return null + false").equals("0");
+	}
 
+	@Test
+	public void testAssignment_to_itself() throws Exception {
 		section("Assignment to itself");
 		// TODO
 		// code("var x = 2 x = x").warning(Error.ASSIGN_SAME_VARIABLE);
@@ -233,28 +244,39 @@ public class TestOperators extends TestCommon {
 		// code_v2_("class A { static x constructor(z) { class.x = x } }").warning(Error.ASSIGN_SAME_VARIABLE);
 		// code_v2_("class A { static x constructor(z) { class.x = class.x } }").warning(Error.ASSIGN_SAME_VARIABLE);
 		// code_v2_("class A { static x constructor(z) { x = class.x } }").warning(Error.ASSIGN_SAME_VARIABLE);
+	}
 
+	@Test
+	public void testComparison_always_false() throws Exception {
 		section("Comparison always false");
 		code_v4_("5.5 == true").warning(Error.COMPARISON_ALWAYS_FALSE);
 		code_v4_("count([]) == 'hello'").warning(Error.COMPARISON_ALWAYS_FALSE);
 		code_v4_("[:] == {}").warning(Error.COMPARISON_ALWAYS_FALSE);
 		code_v4_("(function() {}) == null").warning(Error.COMPARISON_ALWAYS_FALSE);
 		code_v4_("Array == 12").warning(Error.COMPARISON_ALWAYS_FALSE);
+	}
 
+	@Test
+	public void testComparison_always_true() throws Exception {
 		section("Comparison always true");
 		code_v4_("5.5 != true").warning(Error.COMPARISON_ALWAYS_TRUE);
 		code_v4_("count([]) != 'hello'").warning(Error.COMPARISON_ALWAYS_TRUE);
 		code_v4_("[:] != {}").warning(Error.COMPARISON_ALWAYS_TRUE);
 		code_v4_("(function() {}) != null").warning(Error.COMPARISON_ALWAYS_TRUE);
 		code_v4_("Array != 12").warning(Error.COMPARISON_ALWAYS_TRUE);
+	}
 
+	@Test
+	public void testUnknown_operator() throws Exception {
 		section("Unknown operator");
 		code("'salut' - 2").warning(Error.UNKNOWN_OPERATOR);
 		code("2 / [1, 2, 3]").warning(Error.UNKNOWN_OPERATOR);
 		code_v3_("{} % 5").warning(Error.UNKNOWN_OPERATOR);
+	}
 
+	@Test
+	public void testAssignment_operators() throws Exception {
 		section("Assignment operators");
-
 		Object[] values2 = new Object[] {
 			"null", "true", "false", "12", "5.678", "false", "true", "'lama'", "[1, 2, 3, 4, 5]"
 		};
@@ -289,6 +311,6 @@ public class TestOperators extends TestCommon {
 			}
 		}
 		System.out.println(results);
-
 	}
+
 }

@@ -8,9 +8,8 @@ import org.junit.jupiter.api.Test;
 public class TestJSON extends TestCommon {
 
 
-	@Test
-	public void run() throws Exception {
-
+		@Test
+	public void testJsonEncode() throws Exception {
 		section("jsonEncode()");
 		// code("jsonEncode()").error(ls::Error::Type::WRONG_ARGUMENT_COUNT, {"jsonEncode", "1", "0"});
 		// integer
@@ -87,7 +86,10 @@ public class TestJSON extends TestCommon {
 		// code("{hello: [], b: {d: 12}, ccccc: [1, 2, [], 4]}.json()").equals("'{\"b\":{\"d\":12},\"ccccc\":[1, 2, [], 4],\"hello\":[]}'");
 		// // class
 		// code("Number.json()").equals("'\"<class Number>\"'");
+	}
 
+	@Test
+	public void testJsonDecode() throws Exception {
 		section("jsonDecode()");
 		code("return jsonDecode('')").equals("null");
 		code("return jsonDecode('null')").equals("null");
@@ -121,12 +123,15 @@ public class TestJSON extends TestCommon {
 		code_v4_("return jsonDecode('{}')").equals("{}");
 		code_v4_("return jsonDecode('{\"a\":1,\"b\":2,\"c\":3}')").equals("{a: 1, b: 2, c: 3}");
 		code_v4_("return jsonDecode('{\"b\":{\"d\":12},\"ccccc\":[1,2,[],4],\"hello\":[]}')").equals("{b: {d: 12}, ccccc: [1, 2, [], 4], hello: []}");
+	}
 
+	@Test
+	public void testCombinations() throws Exception {
 		section("Combinations");
 		code("var v = 'salut' return jsonDecode(jsonEncode(v)) == v").equals("true");
 		code_v3("var v = {b: {d: 12}, cc: [[], 4], h: []} return string(jsonDecode(jsonEncode(v))) == string(v)").equals("false");
 		code_v4_("var v = {b: {d: 12}, cc: [[], 4], h: []} return string(jsonDecode(jsonEncode(v))) == string(v)").equals("true");
 		code("var v = 'salut' return jsonEncode(jsonEncode(v))").equals("\"\"\\\"salut\\\"\"\"");
-
 	}
+
 }

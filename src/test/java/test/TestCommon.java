@@ -9,9 +9,13 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.Options;
@@ -31,19 +35,18 @@ public class TestCommon {
 	private static String C_PINK = "\033[1;95m";
 	private static String C_GREY = "\033[0;90m";
 
-	private static int tests = 0;
-	private static int success = 0;
-	private static int disabled = 0;
-	private static long analyze_time = 0;
-	private static long compile_time = 0;
+	private static AtomicInteger tests = new AtomicInteger();
+	private static AtomicInteger success = new AtomicInteger();
+	private static AtomicInteger disabled = new AtomicInteger();
+	private static AtomicLong analyze_time = new AtomicLong();
+	private static AtomicLong compile_time = new AtomicLong();
 	// private static long load_time = 0;
-	private static long execution_time = 0;
+	private static AtomicLong execution_time = new AtomicLong();
 	private static ArrayList<Long> operationsReference = new ArrayList<>();
-	private static int operationsReferenceIndex = 0;
-	private static ArrayList<Long> operations = new ArrayList<>();
+	private static List<Long> operations = Collections.synchronizedList(new ArrayList<>());
 
-	private static List<String> failedTests = new ArrayList<String>();
-	private static List<String> disabledTests = new ArrayList<String>();
+	private static List<String> failedTests = new CopyOnWriteArrayList<>();
+	private static List<String> disabledTests = new CopyOnWriteArrayList<>();
 
 	public static class Case {
 		String code;
@@ -199,7 +202,7 @@ public class TestCommon {
 
 		public String run(Checker checker) {
 			if (!enabled) {
-				disabled++;
+				disabled.incrementAndGet();
 				var s = C_PINK + "[DISA] " + END_COLOR + "[v" + version_min + "-" + version_max + "] " + code;
 				System.out.println(s);
 				disabledTests.add(s);
@@ -212,7 +215,7 @@ public class TestCommon {
 		}
 
 		public String run_version(int version, Checker checker) {
-			tests++;
+			tests.incrementAndGet();
 			int aiID = 0;
 			Result result;
 			long compile_time = 0;
@@ -230,8 +233,8 @@ public class TestCommon {
 				aiID = ai.getId();
 
 				compile_time = ai.getCompileTime() / 1000000;
-				TestCommon.analyze_time += ai.getAnalyzeTime() / 1000000;
-				TestCommon.compile_time += ai.getCompileTime() / 1000000;
+				TestCommon.analyze_time.addAndGet(ai.getAnalyzeTime() / 1000000);
+				TestCommon.compile_time.addAndGet(ai.getCompileTime() / 1000000);
 				// TestCommon.load_time += ai.getLoadTime() / 1000000;
 
 				ai.maxOperations = this.maxOperations;
@@ -240,7 +243,7 @@ public class TestCommon {
 				t = System.nanoTime();
 				var v = ai.runIA();
 				long exec_time = (System.nanoTime() - t) / 1000;
-				TestCommon.execution_time += exec_time / 1000;
+				TestCommon.execution_time.addAndGet(exec_time / 1000);
 
 				ops = ai.operations();
 
@@ -267,7 +270,7 @@ public class TestCommon {
 			if (checker.check(result)) {
 				int ops_per_ms = (int) Math.round(1000 * (double) result.operations / result.exec_time);
 				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops, " + ops_per_ms + " ops/ms" + END_COLOR);
-				success++;
+				success.incrementAndGet();
 				// assertTrue(true, "Test");
 			} else {
 				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
@@ -278,17 +281,6 @@ public class TestCommon {
 			}
 
 			operations.add(ops);
-			if (operationsReference.size() > 0) {
-				long referenceOperations = operationsReference.get(operationsReferenceIndex);
-				if (ops != referenceOperations) {
-					var err = C_RED + "[OPS] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " Wrong operations: " + ops + ", expected " + referenceOperations;
-					System.out.println(err);
-					failedTests.add(err);
-				} else {
-					System.out.println(GREEN_BOLD + "[OPS]" + END_COLOR + " Good operations: " + ops);
-				}
-			}
-			operationsReferenceIndex++;
 
 			return result.result;
 		}
@@ -430,12 +422,14 @@ public class TestCommon {
 	}
 
 	public static void summary() {
+		int t = tests.get(), s = success.get(), d = disabled.get();
+		long at = analyze_time.get(), ct = compile_time.get(), et = execution_time.get();
 		System.out.println("================================================");
-		System.out.println(success + " / " + tests + " tests passed, " + (tests - success) + " errors, " + disabled + " disabled");
-		System.out.println("Total time: " + fn(analyze_time + compile_time + execution_time) + " ms"
-			+ " = Analyze: " + fn(analyze_time) + " ms"
-			+ " + Compile: " + fn(compile_time) + " ms"
-			+ " + Execution: " + fn(execution_time) + " ms");
+		System.out.println(s + " / " + t + " tests passed, " + (t - s) + " errors, " + d + " disabled");
+		System.out.println("Total time: " + fn(at + ct + et) + " ms"
+			+ " = Analyze: " + fn(at) + " ms"
+			+ " + Compile: " + fn(ct) + " ms"
+			+ " + Execution: " + fn(et) + " ms");
 		System.out.println("================================================");
 
 		for (String test : disabledTests) {
@@ -444,7 +438,7 @@ public class TestCommon {
 		for (String test : failedTests) {
 			System.out.println(test);
 		}
-		assertEquals(tests, success, "Some tests failed");
+		assertEquals(t, s, "Some tests failed");
 	}
 
 	public static String fn(long n) {

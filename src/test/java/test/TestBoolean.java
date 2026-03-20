@@ -10,9 +10,8 @@ import leekscript.common.Error;
 public class TestBoolean extends TestCommon {
 
 
-	@Test
-	public void run() throws Exception {
-
+		@Test
+	public void testBoolean() throws Exception {
 		section("Boolean");
 		code_v1_2("return true").equals("true");
 		code_v1_2("return True").equals("true");
@@ -27,7 +26,10 @@ public class TestBoolean extends TestCommon {
 		code_v3_("return false").equals("false");
 		code_v3_("return False").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 		code_v3_("return FALSE").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+	}
 
+	@Test
+	public void testBoolean_operator_Not() throws Exception {
 		section("Boolean.operator !");
 		code_v1_2("return not true").equals("false");
 		code_v1_2("return not false").equals("true");
@@ -41,12 +43,15 @@ public class TestBoolean extends TestCommon {
 		code_v3_("return Not false").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
 		code_v3_("return NOT true").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
 		code_v3_("return NOT false").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+	}
 
+	@Test
+	public void testBoolean_operator_xor() throws Exception {
 		section("Boolean.operator xor");
 		code("return true xor true").debug().equals("false");
 		code("return true xor false").equals("true");
 		code("return false xor true").equals("true");
 		code("return false xor false").equals("false");
-
 	}
+
 }

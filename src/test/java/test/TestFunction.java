@@ -10,9 +10,8 @@ import leekscript.common.Error;
 public class TestFunction extends TestCommon {
 
 
-	@Test
-	public void run() throws Exception {
-
+		@Test
+	public void testFunction() throws Exception {
 		section("Function");
 		code_v1_2("return function() {}").equals("#Anonymous Function");
 		code_v1_2("return Function() {}").equals("#Anonymous Function");
@@ -20,11 +19,17 @@ public class TestFunction extends TestCommon {
 		code_v3_("return function() {}").equals("#Anonymous Function");
 		code_v3_("return Function() {}").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
 		code_v3_("return FUNCTION() {}").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+	}
 
+	@Test
+	public void testFunction_toBoolean() throws Exception {
 		section("Function toBoolean");
 		code("var a = function() {} return !!a").equals("true");
 		code("var a = function() {} if (a) { return 12 } return null").equals("12");
+	}
 
+	@Test
+	public void testFunctions_Divide_Lambdas() throws Exception {
 		section("Functions / Lambdas");
 		code("var f = x -> x return f(12)").equals("12");
 		code("var f = x => x return f(12)").equals("12");
@@ -71,7 +76,10 @@ public class TestFunction extends TestCommon {
 		// code("var f = x => x f(12m)").equals("12");
 		code("return [x -> x]").equals("[#Anonymous Function]");
 		code("return (x) -> x").equals("#Anonymous Function");
+	}
 
+	@Test
+	public void testRecursive() throws Exception {
 		section("Recursive");
 		code("var fact = function(x) { if (x == 1) { return 1 } else { return fact(x - 1) * x } } return fact(8);").equals("40320");
 		// code("var fact = function(x) { if (x == 1) { return 1m } else { return fact(x - 1) * x } } return fact(30m);").equals("265252859812191058636308480000000");
@@ -86,7 +94,10 @@ public class TestFunction extends TestCommon {
 		file_v1("ai/code/knapsack.leek").equals("761");
 		file_v2_("ai/code/knapsack_2.leek").equals("761");
 		code("function cellsInRange(i) { var areaInRange = []; if (i == 0) { return cellsInRange(10); } else { return areaInRange; } } var myRange = cellsInRange(0); return myRange").equals("[]");
+	}
 
+	@Test
+	public void testRedefinition() throws Exception {
 		section("Redefinition");
 		code("var count = count([1, 2, 3]) return count;").equals("3");
 		code("var d = debug d('salut')").equals("null");
@@ -111,24 +122,39 @@ public class TestFunction extends TestCommon {
 		code("function isEmpty(x) { return 12 } return !isEmpty(1) && !isEmpty(2)").equals("false");
 		code("var max = 0 return max < 12").equals("true");
 		code("var max = 0 if (max < 12) { max = 5 } return max").equals("5");
+	}
 
+	@Test
+	public void testSystem_function_as_argument() throws Exception {
 		section("System function as argument");
 		code_v1("function t(@f) { return function(@a) { return arrayMap(a, f); } } return t(sqrt)([1, 4, 9, 16, 25]);").equals("[1, 2, 3, 4, 5]");
 		code_v2_("function t(f) { return function(a) { return arrayMap(a, f); } } return t(sqrt)([1, 4, 9, 16, 25]);").equals("[1.0, 2.0, 3.0, 4.0, 5.0]");
+	}
 
+	@Test
+	public void testSingle_null_argument() throws Exception {
 		section("Single null argument");
 		code("function f(a) { return 12; } return f(null);").equals("12");
 		code("var fa = [function(a) { return 12; }] return fa[0](null);").equals("12");
+	}
 
+	@Test
+	public void testCapture_argument() throws Exception {
 		section("Capture argument");
 		code_v1("function f(@a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("12");
 		code_v2_("function f(a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("10");
 		code_v1("var f = function(@a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("12");
 		code_v2_("var f = function(a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("10");
+	}
 
+	@Test
+	public void testCapture_loop_variable() throws Exception {
 		section("Capture loop variable");
 		code("var sum = 0 for (var i = 0; i < 10; ++i) { sum += (function() { return i })() } return sum").equals("45");
+	}
 
+	@Test
+	public void testFunction_with_references() throws Exception {
 		section("Function with references");
 		code_v1("function f(@x) { push(x, 12) } var a = [] f(a) return a").equals("[12]");
 		code_v1("function f(x) { push(x, 12) } var a = [] f(a) return a").equals("[]");
@@ -137,7 +163,10 @@ public class TestFunction extends TestCommon {
 		code_v1("var a = [1, 2, 3] arrayMap(a, function(@x) { x += 1 }) return a").equals("[2, 3, 4]");
 		code_v1("var f = function(@x) { x += 1 } var a = [1, 2, 3] arrayMap(a, f) return a").equals("[2, 3, 4]");
 		code_v1("function f(@x) { x += 1 } var a = [1, 2, 3] arrayMap(a, f) return a").equals("[2, 3, 4]");
+	}
 
+	@Test
+	public void testReturn_reference() throws Exception {
 		section("Return reference");
 		code_v1("global x = 10 function f() { return @x } var a = f() a += 5 return x").equals("10");
 		code("global x = 10 function f() { return x } var a = f() a += 5 return x").equals("10");
@@ -146,7 +175,10 @@ public class TestFunction extends TestCommon {
 		code_v1("var x = [] var f = function() { return @x } var a = f() push(a, 5) return x").equals("[5]");
 		code_v1("var x = [] var f = function() { return x } var a = f() push(a, 5) return x").equals("[]");
 		code_v2_("var x = [] var f = function() { return x } var a = f() push(a, 5) return x").equals("[5]");
+	}
 
+	@Test
+	public void testMisc() throws Exception {
 		section("Misc");
 		code("function f(x) { var s = 0 s |= 12 return s } f(12);").equals("12");
 		code("function te(a){ return function(){ return a**2; }; } return te(2)();").equals("4");
@@ -179,12 +211,19 @@ public class TestFunction extends TestCommon {
 		code("var a = [function() { return 12 }] return a[0]()").equals("12");
 		code_v1("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[]");
 		code_v2_("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[0, 1, 2, 3, 4]");
+	}
 
+	@Test
+	public void testModify_argument() throws Exception {
 		section("Modify argument");
 		code("function test(x) { x += 10 return x } return test(5)").equals("15");
 		code("var a = [1, 2, 3] function test(x) { push(x, 10) return x } return [a, test([])]").equals("[[1, 2, 3], [10]]");
 
 		code("function f(arg, arg) { return arg } return f(1, 2)").error(Error.PARAMETER_NAME_UNAVAILABLE);
+	}
+
+	@Test
+	public void testKnapsack_variants() throws Exception {
 		section("Knapsack variants");
 		code("var items = [[37, 3], [47, 10], [28, 5]] var all = []; return count(all);").equals("0");
 		code_v1("var aux; aux = function() {}; aux();").equals("null");
@@ -223,7 +262,10 @@ public class TestFunction extends TestCommon {
 		code_v1("var items = [[37, 3], [47, 10], [28, 5]] var all = []; var aux; aux = function(@current, i, tp, added, last) { if (count(current[1])) push(all, current);	var item_count = count(items); for (var j = i; j < item_count; ++j) { var item = @items[j];	var item_id = item[0]; var cost = item[1]; if (cost > tp) continue;var new_added = added; new_added[item_id] = true; var copy = current; aux(copy, j, tp - cost, new_added, item_id); } }; aux([0, []], 0, 25, [], -1); return count(all);").equals("0");
 		code_v1("var items = [[37, 3], [47, 10], [28, 5]] var all = []; var aux; aux = function(@current, i, tp, added, last) { if (count(current[1])) push(all, current);	var item_count = count(items); for (var j = i; j < item_count; ++j) { var item = @items[j];	var item_id = item[0]; var cost = item[1]; if (cost > tp) continue;var new_added = added; new_added[item_id] = true; var copy = current; push(copy[1], @[item, cost, 1]); aux(copy, j, tp - cost, new_added, item_id); } }; aux([0, []], 0, 25, [], -1); return count(all);").equals("44");
 		code_v1("var items = [[37, 3], [47, 10], [28, 5]] var all = []; var aux; aux = function(@current, i, tp, added, last) { if (count(current[1])) push(all, current);	var item_count = count(items); for (var j = i; j < item_count; ++j) { var item = @items[j];	var item_id = item[0]; var cost = item[1]; if (cost > tp) continue;var new_added = added; new_added[item_id] = true; var copy = current; push(copy[1], @[item, cost, 1]); copy[0] += cost; aux(copy, j, tp - cost, new_added, item_id); } }; aux([0, []], 0, 25, [], -1); return count(all);").equals("44");
+	}
 
+	@Test
+	public void testStrings_leek_variations() throws Exception {
 		section("strings.leek variations");
 		code("var m = ['A', 'T', 'C', 'G'];").equals("null");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) {} return abs(100 * (count / tests) - 52) < 12;").equals("false");
@@ -251,7 +293,10 @@ public class TestFunction extends TestCommon {
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++ }").equals("null");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++ } return abs(100 * (count / tests) - 52) < 12;").equals("true");
 		code_v1("var items = [[37, 3], [47, 10], [28, 5]] var all = []; var aux; aux = function(@current, i, tp, added, last) { if (count(current[1])) push(all, current);	var item_count = count(items); for (var j = i; j < item_count; ++j) { var item = @items[j];	var item_id = item[0]; var cost = item[1]; if (cost > tp) continue;var new_added = added; new_added[item_id] = true; var copy = current; push(copy[1], @[item, cost, 1]); copy[0] += cost; aux(copy, j, tp - cost, new_added, item_id); } }; aux([0, []], 0, 25, [], -1); return count(all);").equals("44");
+	}
 
+	@Test
+	public void testSystem_function_typing() throws Exception {
 		section("System function typing");
 		code_v1_3("count('hello')").equals("0");
 		code_v4_("count('hello')").warning(Error.WRONG_ARGUMENT_TYPE);
@@ -279,7 +324,10 @@ public class TestFunction extends TestCommon {
 		code("return count(unknown([1, 2, 3, 4, 5]))").equals("5");
 		code("return count(unknown(12))").equals("0");
 		code("return string(count)").equals("\"#Function count\"");
+	}
 
+	@Test
+	public void testWrong_number_of_arguments() throws Exception {
 		section("Wrong number of arguments");
 		code("return (x => x)()").warning(Error.INVALID_PARAMETER_COUNT);
 		code_strict("var f = (x) => x return f()").error(Error.INVALID_PARAMETER_COUNT);
@@ -289,7 +337,10 @@ public class TestFunction extends TestCommon {
 		code_v2("cos()").equals("1.0");
 		code_v3_("cos()").error(Error.INVALID_PARAMETER_COUNT);
 		code_v1("return [cos][0]()").equals("null");
+	}
 
+	@Test
+	public void testTypes() throws Exception {
 		section("Types");
 		code_v1("function f(integer | real x) { return sqrt(x) } return f(12)").equals("3,464");
 		code_v2_("function f(integer | real x) { return sqrt(x) } return f(12)").equals("3.4641016151377544");
@@ -316,7 +367,10 @@ public class TestFunction extends TestCommon {
 		DISABLED_code_v1("Function< => integer> f function test(Function< => any> _) {} test(f)").equals("null");
 		code_v2_("Function< => integer> f function test(Function< => any> _) {} test(f)").equals("null");
 		code("Function<integer => boolean> t = function(integer b) => boolean { return true }").equals("null");
+	}
 
+	@Test
+	public void testConditional_return() throws Exception {
 		section("Conditional return");
 		code("function f(x) { return? x return 12 } f(5)").equals("5");
 		code("function f(x) { return? x return 12 } f(0)").equals("12");
@@ -324,6 +378,6 @@ public class TestFunction extends TestCommon {
 		code("return? 'test'").equals("\"test\"");
 		code("return? null 5").equals("5");
 		code("return? null return? null 5").equals("5");
-
 	}
+
 }

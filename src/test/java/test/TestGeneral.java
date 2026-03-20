@@ -13,9 +13,8 @@ import leekscript.compiler.LexicalParser;
 public class TestGeneral extends TestCommon {
 
 
-	@Test
-	public void run() throws Exception {
-
+		@Test
+	public void testNull() throws Exception {
 		section("null");
 		code_v1_2("return null").equals("null");
 		code_v1_2("return Null").equals("null");
@@ -45,7 +44,10 @@ public class TestGeneral extends TestCommon {
 		// code("var ♫☯🐖👽 = 5 var 🐨 = 2 return ♫☯🐖👽 ** 🐨").equals("25");
 		code("var a = 2 return [a = 10]").equals("[10]");
 		code("var a = 2 return ['a', a = 10]").equals("[\"a\", 10]");
+	}
 
+	@Test
+	public void testTypeOf() throws Exception {
 		section("typeOf()");
 		// Test nombre
 		code("return typeOf(255)").equals(String.valueOf(LeekConstants.TYPE_NUMBER.getIntValue()));
@@ -64,13 +66,19 @@ public class TestGeneral extends TestCommon {
 		code("return typeOf(function(){ return 4; }())").equals(String.valueOf(LeekConstants.TYPE_NUMBER.getIntValue()));
 		code_v4_("return typeOf(<1, 2, 3>)").equals(String.valueOf(LeekConstants.TYPE_SET.getIntValue()));
 		code_v4_("return typeOf([1..10])").equals(String.valueOf(LeekConstants.TYPE_INTERVAL.getIntValue()));
+	}
 
+	@Test
+	public void testColor() throws Exception {
 		section("color()");
 		code_v4_("color(0, 0, 0)").error(Error.REMOVED_FUNCTION_REPLACEMENT);
 		code_v1_3("return color(255,0,255)").equals(String.valueOf(0xFF00FF));
 		code_v1_3("return color(255,255,0)").equals(String.valueOf(0xFFFF00));
 		code_v1_3("return color(0,255,255)").equals(String.valueOf(0x00FFFF));
+	}
 
+	@Test
+	public void testGetColor() throws Exception {
 		section("getColor()");
 		code("return getColor(255,0,255)").equals(String.valueOf(0xFF00FF));
 		code("return getColor(255,255,0)").equals(String.valueOf(0xFFFF00));
@@ -82,7 +90,10 @@ public class TestGeneral extends TestCommon {
 		code("return getGreen(" + 0xAF00 + ")").equals("175");
 		// Blue
 		code("return getBlue(" + 0xAD + ")").equals("173");
+	}
 
+	@Test
+	public void testVariables_with_keywords() throws Exception {
 		section("Variables with keywords");
 		String[] reservedWordsV1 = new String[] { "as", "continue", "break", "do", "else", "false", "for", "function", "global", "if", "in", "not", "null", "return", "true", "var", "while", "and", "or", "xor" };
 		String[] reservedWordsV2 = new String[] { "class", "constructor", "extends", "instanceof", "new", "private", "protected", "public", "static", "super", "this" };
@@ -98,7 +109,10 @@ public class TestGeneral extends TestCommon {
 			code_v1_2("var " + word + " = 2;").error(Error.NONE);
 			code_v3_("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
 		}
+	}
 
+	@Test
+	public void testGlobals_with_keywords() throws Exception {
 		section("Globals with keywords");
 		code_v1_2("global break = 2").error(Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
 		for (var word : LexicalParser.reservedWords) {
@@ -107,7 +121,10 @@ public class TestGeneral extends TestCommon {
 
 		code_v1("var new = 12 var b = @new return b").equals("12");
 		code_v1("global final = 2").error(Error.NONE);
+	}
 
+	@Test
+	public void testType_changes() throws Exception {
 		section("Type changes");
 		code("var a return a = 12").equals("12");
 		code("var a a = 12 return a").equals("12");
@@ -165,7 +182,10 @@ public class TestGeneral extends TestCommon {
 		// code("{}.copy()").equals("{}");
 		// code("(x -> x).copy()").equals("<function>");
 		// code("Number.copy()").equals("<class Number>");
+	}
 
+	@Test
+	public void testAssignments() throws Exception {
 		section("Assignments");
 		// code("var b = 0 { b = 12 } return b").equals("12");
 		// code("var i = 12 { i = 'salut' } return i").equals("salut");
@@ -195,26 +215,41 @@ public class TestGeneral extends TestCommon {
 		code_v1("var grow = []; var n = []; grow = @n; return grow").equals("[]");
 		code("var PI = 3 return PI").equals("3");
 		code("var a = 2 var b = 5 var c = 7; a = b = c return [a, b, c]").equals("[7, 7, 7]");
+	}
 
+	@Test
+	public void testAssignments_with_PlusEquals() throws Exception {
 		section("Assignments with +=");
 		code_v1("var a = 10 a += 0.5 return a").equals("10,5");
 		code_v2_("var a = 10 a += 0.5 return a").equals("10.5");
 		code_strict_v2_("var a = 10 a += 0.5 return a").equals("10");
 		code_strict_v2_("var a = 10 a += 4.5 return a").equals("14");
+	}
 
+	@Test
+	public void testFile() throws Exception {
 		section("File");
 		file("ai/code/trivial.leek").equals("2");
+	}
 
+	@Test
+	public void testNumber() throws Exception {
 		section("number()");
 		code("return number('12')").equals("12");
 		code_v1("return number('12.55')").equals("12,55");
 		code_v2_("return number('12.55')").equals("12.55");
+	}
 
+	@Test
+	public void testVariables_with_accents() throws Exception {
 		section("Variables with accents");
 		code("var état = 12 return état").equals("12");
 		code("var ÀÖØÝàöøýÿ = 'yo' return ÀÖØÝàöøýÿ").equals("\"yo\"");
 		code("var nœud = [] return nœud").equals("[]");
+	}
 
+	@Test
+	public void testVariables_and_types() throws Exception {
 		section("Variables and types");
 		DISABLED_code_v1("real a = 1.1 integer b = a return b").equals("1");
 		code_v2_("real a = 1.1 integer b = a return b").equals("1");
@@ -222,6 +257,6 @@ public class TestGeneral extends TestCommon {
 		code_v2_("real a = 1.9 integer b = a return b").equals("1");
 		DISABLED_code_v1("integer|real a = 1.999; integer b = a; return b").equals("1");
 		code_v2_("integer|real a = 1.999; integer b = a; return b").equals("1");
-
 	}
+
 }

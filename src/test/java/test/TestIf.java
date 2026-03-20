@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 public class TestIf extends TestCommon {
 
 
-	@Test
-	public void run() throws Exception {
+		@Test
+	public void testInit() throws Exception {
 		/*
 		* Conditions
 		*/
@@ -66,18 +66,27 @@ public class TestIf extends TestCommon {
 		code_v1("function t(@c) { var cell = c if (cell!=null ) 1; } for (var i = 0; i < 10; ++i) return t(i);").equals("null");
 		code_v1("function t(@c) { var cell = c cell != null } for (var i = 0; i < 10; ++i) return t(i);").equals("null");
 		code_v1("function t(@c) { var cell = c return cell != null } for (var i = 0; i < 10; ++i) return t(i);").equals("true");
+	}
 
+	@Test
+	public void testConditions_with_other_types() throws Exception {
 		section("Conditions with other types");
 		code("if (1212) { return 'ok' } else { return 5 }").equals("\"ok\"");
 		code("if (['str', true][0]) { return 12 } else { return 5 }").equals("12");
 		code("if (null) { return 12 } else { return 5 }").equals("5");
+	}
 
+	@Test
+	public void testDifferent_branch_types() throws Exception {
 		section("Different branch types");
 		code("if (1) return ['a'] else if (0) return [2] else return [5.5];").equals("[\"a\"]");
 		code("if (0) return ['a'] else if (1) return [2] else return [5.5];").equals("[2]");
 		code_v1("if (0) return ['a'] else if (0) return [2] else return [5.5];").equals("[5,5]");
 		code_v2_("if (0) return ['a'] else if (0) return [2] else return [5.5];").equals("[5.5]");
+	}
 
+	@Test
+	public void testTernary_conditions() throws Exception {
 		section("Ternary conditions");
 		code("return true ? 5 : 12;").equals("5");
 		code("return false ? 5 : 12;").equals("12");
@@ -98,9 +107,13 @@ public class TestIf extends TestCommon {
 		code("return true ? true ? false ? 5 : 12 : 7 : 8;").equals("12");
 		code("return true ? false ? false ? 5 : 12 : 7 : 8;").equals("7");
 		code("return (5 > 10) ? 'a' : (4 == 2 ** 2) ? 'yes' : 'no';").equals("\"yes\"");
+	}
 
+	@Test
+	public void testInvalid_ternary_syntax() throws Exception {
 		section("Invalid ternary syntax");
 		code("debug(true ? 'a' : 'b' : 'c');").error(leekscript.common.Error.OPERATOR_UNEXPECTED);
 		code("return true ? 'a' : 'b' : 'c';").error(leekscript.common.Error.OPERATOR_UNEXPECTED);
 	}
+
 }

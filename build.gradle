@@ -61,4 +61,5 @@ test {
 		showStandardStreams = true
 		events "passed", "skipped", "failed"
 	}
+	maxHeapSize = '4g'
 }

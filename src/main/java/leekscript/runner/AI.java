@@ -81,9 +81,9 @@ public abstract class AI {
 	private Set<RamUsage> ramUsages = new HashSet<>(); // Set est plus efficace quand la limite de RAM est souvent atteinte (List est plus efficace quand la limite n'est pas atteinte souvent)
 	// private List<RamUsage> ramUsages = new ArrayList<>();
 
-	private static final Map<Class<?>, Map<String, List<Method>>> methodCache = new HashMap<>();
-	private static final Map<Class<?>, java.lang.reflect.Field[]> fieldCache = new HashMap<>();
-	private static final Map<Class<?>, Map<String, Object>> singleFieldCache = new HashMap<>();
+	private static final Map<Class<?>, Map<String, List<Method>>> methodCache = new java.util.concurrent.ConcurrentHashMap<>();
+	private static final Map<Class<?>, java.lang.reflect.Field[]> fieldCache = new java.util.concurrent.ConcurrentHashMap<>();
+	private static final Map<Class<?>, Map<String, Object>> singleFieldCache = new java.util.concurrent.ConcurrentHashMap<>();
 	private static final Object FIELD_NOT_FOUND = new Object();
 
 	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
@@ -3020,13 +3020,7 @@ public abstract class AI {
 	}
 
 	public static java.lang.reflect.Field getFieldCached(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-		Map<String, Object> classCache = singleFieldCache.get(clazz);
-
-		if (classCache == null) {
-			// No cache for this class yet, create it
-			classCache = new HashMap<>();
-			singleFieldCache.put(clazz, classCache);
-		}
+		Map<String, Object> classCache = singleFieldCache.computeIfAbsent(clazz, k -> new java.util.concurrent.ConcurrentHashMap<>());
 
 		Object cached = classCache.get(fieldName);
 

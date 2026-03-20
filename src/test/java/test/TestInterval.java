@@ -7,9 +7,8 @@ import org.junit.jupiter.api.Test;
 @ExtendWith(SummaryExtension.class)
 public class TestInterval extends TestCommon {
 
-	@Test
-	public void run() throws Exception {
-
+		@Test
+	public void testInterval_constructor() throws Exception {
 		section("Interval.constructor()");
 		code("return [..]").equals("[..]");
 		code("return [1..2]").equals("[1..2]");
@@ -33,7 +32,10 @@ public class TestInterval extends TestCommon {
 		code_v2_("return [1.0 ..[").equals("[1.0..∞[");
 		code("[1..2]").ops(2);
 		code_v3_("Interval a = new Interval() return a").equals("[..]");
+	}
 
+	@Test
+	public void testInterval_intervalMin() throws Exception {
 		section("Interval.intervalMin");
 		code("return intervalMin([1..2])").equals("1");
 		code("return intervalMin([1.0 .. 2.0])").almost(1.0);
@@ -45,7 +47,10 @@ public class TestInterval extends TestCommon {
 		code("return intervalMin(]..[)").equals("-∞");
 		code("intervalMin([1..2])").ops(3);
 		code_v3_("Interval inter = [1..10] integer min = -intervalMin(inter) return min").equals("-1");
+	}
 
+	@Test
+	public void testInterval_intervalMax() throws Exception {
 		section("Interval.intervalMax");
 		code("return intervalMax([1..2])").equals("2");
 		code("return intervalMax([1.0 .. 2.0])").almost(2.0);
@@ -56,7 +61,10 @@ public class TestInterval extends TestCommon {
 		code("return intervalMax([1..0])").equals("0");
 		code("return intervalMax(]..[)").equals("∞");
 		code("intervalMax([1..2])").ops(3);
+	}
 
+	@Test
+	public void testInterval_intervalIsEmpty() throws Exception {
 		section("Interval.intervalIsEmpty");
 		code("return intervalIsEmpty([..])").equals("true");
 		code("return intervalIsEmpty([1..2])").equals("false");
@@ -66,31 +74,46 @@ public class TestInterval extends TestCommon {
 		code("return intervalIsEmpty([1..[)").equals("false");
 		code("return intervalIsEmpty(]..[)").equals("false");
 		code("intervalIsEmpty([1..2])").ops(3);
+	}
 
+	@Test
+	public void testInterval_as_boolean() throws Exception {
 		section("Interval as boolean");
 		code("return !![1..2]").equals("true");
 		code("return !![-10..-2]").equals("true");
 		code("return !![1..1]").equals("true");
 		code("return !![1..0]").equals("false");
 		code("return !![1..[").equals("true");
+	}
 
+	@Test
+	public void testInterval_intervalIsBounded() throws Exception {
 		section("Interval.intervalIsBounded");
 		code("return intervalIsBounded([1..2])").equals("true");
 		code("return intervalIsBounded(]..-2])").equals("false");
 		code("return intervalIsBounded([1..[)").equals("false");
 		code("return intervalIsBounded(]..[)").equals("false");
 		code("intervalIsBounded([1..2])").ops(3);
+	}
 
+	@Test
+	public void testInterval_intervalIsLeftBounded() throws Exception {
 		section("Interval.intervalIsLeftBounded");
 		code("return intervalIsLeftBounded([1..[)").equals("true");
 		code("return intervalIsLeftBounded(]..2])").equals("false");
 		code("intervalIsLeftBounded([1..2])").ops(3);
+	}
 
+	@Test
+	public void testInterval_intervalIsRightBounded() throws Exception {
 		section("Interval.intervalIsRightBounded");
 		code("return intervalIsRightBounded([1..[)").equals("false");
 		code("return intervalIsRightBounded(]..2])").equals("true");
 		code("intervalIsRightBounded([1..2])").ops(3);
+	}
 
+	@Test
+	public void testInterval_in() throws Exception {
 		section("Interval.in");
 		code("return 1 in [1..2]").equals("true");
 		code("return 1 in [-1..[").equals("true");
@@ -112,7 +135,10 @@ public class TestInterval extends TestCommon {
 		code("return 1.0 in ]1.0 ..2.0[").equals("false");
 		code("return Infinity in [0..[").equals("true");
 		code_v3_("return Integer.MAX_VALUE in [0.0 ..[").equals("true");
+	}
 
+	@Test
+	public void testInterval_intervalContains() throws Exception {
 		section("Interval.intervalContains");
 		code("return intervalContains([1..2], 1)").equals("true");
 		code("return intervalContains([1..2], 2)").equals("true");
@@ -129,11 +155,17 @@ public class TestInterval extends TestCommon {
 		code("function f(x) { return intervalContains([1..3], x) } return f(2)").equals("true");
 		code("function f(x) { return intervalContains([1..3], x) } return f(1.5)").equals("true");
 		code("function f(x) { return intervalContains([1..3], x) } return f(5)").equals("false");
+	}
 
+	@Test
+	public void testInterval_typing() throws Exception {
 		section("Interval typing");
 		code_strict_v4_("Interval i = [0..[ return i instanceof Interval").equals("true");
 		code_v2_("return [0..1].class").equals("<class Interval>");
+	}
 
+	@Test
+	public void testInterval_intervalAverage() throws Exception {
 		section("Interval.intervalAverage");
 		code_v1("return intervalAverage([1..2]);").equals("1,5");
 		code_v2_("return intervalAverage([1..2]);").almost(1.5);
@@ -145,7 +177,10 @@ public class TestInterval extends TestCommon {
 		code("return intervalAverage(]..[)").equals("NaN");
 		code("return intervalAverage(]0..5]);").almost(3.0);
 		code("intervalAverage([1..2])").ops(5);
+	}
 
+	@Test
+	public void testInterval_intervalIntersection() throws Exception {
 		section("Interval.intervalIntersection");
 		code("return intervalIntersection([1..2], [1..2])").equals("[1..2]");
 		code("return intervalIntersection([1..2], [1..3])").equals("[1..2]");
@@ -157,7 +192,10 @@ public class TestInterval extends TestCommon {
 		code_v2_("return intervalIntersection([1..2], ]..[)").equals("[1.0..2.0]");
 		code("return intervalIntersection(]..2], [1..[)").equals("[1..2]");
 		code("intervalIntersection([1..2], [1..2])").ops(7);
+	}
 
+	@Test
+	public void testInterval_intervalCombine() throws Exception {
 		section("Interval.intervalCombine");
 		code("return intervalCombine([1..2], [1..2])").equals("[1..2]");
 		code_v1("return intervalCombine([1.0 .. 2.0], [1.0 .. 2.0])").equals("[1..2]");
@@ -170,7 +208,10 @@ public class TestInterval extends TestCommon {
 		code("return intervalCombine([1..2], ]..[)").equals("]-∞..∞[");
 		code("return intervalCombine(]..2], [1..[)").equals("]-∞..∞[");
 		code("intervalCombine([1..2], [1..2])").ops(7);
+	}
 
+	@Test
+	public void testInterval_intervalToArray() throws Exception {
 		section("Interval.intervalToArray()");
 		code_v1("return intervalToArray([1.0 ..2.0])").equals("[1, 2]");
 		code_v2_("return intervalToArray([1.0 ..2.0])").equals("[1.0, 2.0]");
@@ -189,7 +230,10 @@ public class TestInterval extends TestCommon {
 		code("return intervalToArray(]1..5[)").equals("[2, 3, 4]");
 		code_v1_3("intervalToArray([1..2])").ops(12);
 		code_v4_("intervalToArray([1..2])").ops(6);
+	}
 
+	@Test
+	public void testInterval_intervalToArray_2() throws Exception {
 		section("Interval.intervalToArray(<step>)");
 		code_v1("return intervalToArray([1.0 ..2.0], 0.8);").equals("[1, 1,8]");
 		code_v2_("return intervalToArray([1.0 ..2.0], 0.8);").equals("[1.0, 1.8]");
@@ -208,7 +252,10 @@ public class TestInterval extends TestCommon {
 		code("return intervalToArray([1..1], 7);").equals("[1]");
 		code("return intervalToArray([1..0], 2);").equals("[]");
 		code("return intervalToArray([1..[, 2);").equals("null");
+	}
 
+	@Test
+	public void testInterval_intervalToArray_3() throws Exception {
 		section("Interval.intervalToArray(<negative step>)");
 		code_v1("return intervalToArray([1.0 ..2.0], -0.8);").equals("[2, 1,2]");
 		code_v2_("return intervalToArray([1.0 ..2.0], -0.8);").equals("[2.0, 1.2]");
@@ -228,7 +275,10 @@ public class TestInterval extends TestCommon {
 		code("return intervalToArray([0..5], -1);").equals("[5, 4, 3, 2, 1, 0]");
 		code("return intervalToArray([0..5[, -1);").equals("[4, 3, 2, 1, 0]");
 		code("return intervalToArray(]0..5[, -1);").equals("[4, 3, 2, 1]");
+	}
 
+	@Test
+	public void testInterval_intervalToSet() throws Exception {
 		section("Interval.intervalToSet()");
 		code_v4_("return intervalToSet([1.0 ..2.0])").equals("<1.0, 2.0>");
 		code_v4_("return intervalToSet([-2.0 ..2.0])").equals("<-2.0, -1.0, 0.0, 1.0, 2.0>");
@@ -243,7 +293,10 @@ public class TestInterval extends TestCommon {
 		code_v4_("return intervalToSet([1..5[)").equals("<1, 2, 3, 4>");
 		code_v4_("return intervalToSet(]1..5[)").equals("<2, 3, 4>");
 		code_v4_("intervalToSet([1..2])").ops(6);
+	}
 
+	@Test
+	public void testInterval_intervalToSet_2() throws Exception {
 		section("Interval.intervalToSet(<step>)");
 		code_v4_("return intervalToSet([1.0 ..2.0], 0.8);").equals("<1.0, 1.8>");
 		code_v4_("return intervalToSet([1.0 ..2.0], 2);").equals("<1.0>");
@@ -257,7 +310,10 @@ public class TestInterval extends TestCommon {
 		code_v4_("return intervalToSet([1..1], 7);").equals("<1>");
 		code_v4_("return intervalToSet([1..0], 2);").equals("<>");
 		code_v4_("return intervalToSet([1..[, 2);").equals("null");
+	}
 
+	@Test
+	public void testInterval_intervalToSet_3() throws Exception {
 		section("Interval.intervalToSet(<negative step>)");
 		code_v4_("return intervalToSet([1.0 ..2.0], -0.8);").equals("<2.0, 1.2>");
 		code_v4_("return intervalToSet([1.0 ..2.0], -2);").equals("<2.0>");
@@ -272,7 +328,10 @@ public class TestInterval extends TestCommon {
 		code_v4_("return intervalToSet([0..5], -1);").equals("<0, 1, 2, 3, 4, 5>");
 		code_v4_("return intervalToSet([0..5[, -1);").equals("<0, 1, 2, 3, 4>");
 		code_v4_("return intervalToSet(]0..5[, -1);").equals("<1, 2, 3, 4>");
+	}
 
+	@Test
+	public void testInterval_startendstep() throws Exception {
 		section("Interval.[start:end:step]");
 		code_v4_("return [1..10][2:4:2]").equals("[5.0, 7.0]");
 		code_v4_("return [1..3][2:4:2]").equals("[]");
@@ -284,7 +343,10 @@ public class TestInterval extends TestCommon {
 		code_v4_("return [1..4][:-1:]").equals("[1.0, 2.0, 3.0]");
 		code_v4_("return [1..4][2::]").equals("[3.0, 4.0]");
 		code_v4_("return [1..4][:2:]").equals("[1.0, 2.0]");
+	}
 
+	@Test
+	public void testInterval_iteration() throws Exception {
 		section("Interval iteration");
 		code("var i = [1..5] var x = 0 for (var y in i) x += y return x").equals("15");
 		code("var i = [1..5[ var x = 0 for (var y in i) x += y return x").equals("10");
@@ -294,6 +356,6 @@ public class TestInterval extends TestCommon {
 		code_v2_("var i = [1.0..5.0[ var x = 0.0 for (var y in i) x += y return x").equals("10.0");
 		code_v2_("var i = ]1.0..5.0] var x = 0.0 for (var y in i) x += y return x").equals("14.0");
 		code_v2_("var i = ]1.0..5.0[ var x = 0.0 for (var y in i) x += y return x").equals("9.0");
-
 	}
+
 }

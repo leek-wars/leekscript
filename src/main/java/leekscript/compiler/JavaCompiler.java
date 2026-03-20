@@ -13,8 +13,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,11 +45,12 @@ public class JavaCompiler {
 		}
 	}
 
-	private static javax.tools.JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 	public final static String IA_PATH = "ai";
+	private static javax.tools.JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+	private static final Semaphore compileSemaphore = new Semaphore(4);
 	private static String classpath;
 	private static List<String> arguments = new ArrayList<>();
-	private static HashMap<String, AIClassSoftReference> aiCache = new HashMap<>();
+	private static ConcurrentHashMap<String, AIClassSoftReference> aiCache = new ConcurrentHashMap<>();
 	private static ReferenceQueue<AIClassEntry> refQueue = new ReferenceQueue<>();
 
 	public static int getCacheSize() {
@@ -163,12 +165,23 @@ public class JavaCompiler {
 		}
 
 		t = System.nanoTime();
-		var fileManager = new SimpleFileManager(compiler.getStandardFileManager(null, null, null));
+		SimpleFileManager fileManager;
 		var output = new StringWriter();
-		var compilationUnits = Collections.singletonList(new SimpleSourceFile(fileName, file.getCompiledCode().getJavaCode()));
-		var task = compiler.getTask(output, fileManager, null, arguments, null, compilationUnits);
-
-		boolean result = task.call();
+		boolean result;
+		try {
+			compileSemaphore.acquire();
+			try {
+				fileManager = new SimpleFileManager(compiler.getStandardFileManager(null, null, null));
+				var compilationUnits = Collections.singletonList(new SimpleSourceFile(fileName, file.getCompiledCode().getJavaCode()));
+				var task = compiler.getTask(output, fileManager, null, arguments, null, compilationUnits);
+				result = task.call();
+			} finally {
+				compileSemaphore.release();
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new LeekScriptException(Error.COMPILE_JAVA, "Compilation interrupted");
+		}
 		long compile_time = System.nanoTime() - t;
 
 		if (!result) { // Java compilation failed

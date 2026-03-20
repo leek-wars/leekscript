@@ -10,27 +10,39 @@ import leekscript.common.Error;
 public class TestMap extends TestCommon {
 
 
-	@Test
-	public void run() throws Exception {
+		@Test
+	public void testInit() throws Exception {
 		header("Map");
+	}
 
+	@Test
+	public void testConstructor() throws Exception {
 		section("Constructor");
 		code_v4_("return [:]").equals("[:]");
 		code("return [1: 1, 2: 2]").equals("[1 : 1, 2 : 2]");
 		code("return [1: 1, 2: 'a']").equals("[1 : 1, 2 : \"a\"]");
 		code_v4_("var m = new Map() m[1] = 2 return m").equals("[1 : 2]");
+	}
 
+	@Test
+	public void testMapto_bool() throws Exception {
 		section("Map::to_bool()");
 		// code("![:]").equals("true");
 		code("return ![]").equals("true");
 		code("return ![2: 2]").equals("false");
 		code("if ([2: 2]) { return 12 } else { return 5 }").equals("12");
+	}
 
+	@Test
+	public void testArray_of_maps() throws Exception {
 		section("Array of maps");
 		code("return [[], [1: 1], [1: 2]]").equals("[[], [1 : 1], [1 : 2]]");
 		// code("return [[:], [1: 1], [1: 2]]").equals("[[:], [1: 1], [1: 2]]");
 		code("var m = ['a': 'b'] return [m]").equals("[[\"a\" : \"b\"]]");
+	}
 
+	@Test
+	public void testInfinite_maps() throws Exception {
 		section("Infinite maps");
 		code_v1("var a = [:] a[0] = a return a").equals("[[]]");
 		code_v2_3("var a = [:] a[0] = a return a").equals("[<...>]");
@@ -47,7 +59,10 @@ public class TestMap extends TestCommon {
 		code_v2_3("var a = [:] a[0] = [a] return a").equals("[[<...>]]");
 		code_v4_("var a = [:] a[0] = [a] return a").equals("[0 : [[0 : <...>]]]");
 		code_strict_v4_("any a = [:] a[0] = [a] return a").equals("[0 : [[0 : <...>]]]");
+	}
 
+	@Test
+	public void testMap_duplicated_key() throws Exception {
 		section("Map duplicated key");
 		code_v1_3("return [1 : 2, 1 : 3]").warning(Error.MAP_DUPLICATED_KEY);
 		code_v4_("return [1 : 2, 1 : 3]").error(Error.MAP_DUPLICATED_KEY);
@@ -56,12 +71,12 @@ public class TestMap extends TestCommon {
 		code_v1_3("return [true : 2, true : 3]").warning(Error.MAP_DUPLICATED_KEY);
 		code_v4_("return [true : 2, true : 3]").error(Error.MAP_DUPLICATED_KEY);
 
-		/*
-		* Operators
-		*/
-		var maps = new String[] {"[5: 5]", "[5: 9.99]", "[5: 'abc']", "[9.99: 5]", "[9.99: 9.99]", "[9.99: 'abc']", "['abc': 5]", "['abc': 9.99]", "['abc': 'abc']"};
+	}
 
+	@Test
+	public void testMap_operator_EqualsEquals() throws Exception {
 		section("Map.operator ==");
+		var maps = new String[] {"[5: 5]", "[5: 9.99]", "[5: 'abc']", "[9.99: 5]", "[9.99: 9.99]", "[9.99: 'abc']", "['abc': 5]", "['abc': 9.99]", "['abc': 'abc']"};
 		code("return ['a': 'b'] == [1: 1]").equals("false");
 		code("return ['a': 'b'] == ['a': 'b']").equals("true");
 		code("return [1: ['a': 'b']] == [1: ['a': 'b']]").equals("true");
@@ -85,7 +100,10 @@ public class TestMap extends TestCommon {
 		// code("var m = ['salut': 12] return 'salut' in m").equals("true");
 		// code("var m = ['salut': 12] return 'salum' in m").equals("false");
 		// code("var m = ['salut': 12] return 12 in m.values()").equals("true");
+	}
 
+	@Test
+	public void testMap_operator() throws Exception {
 		section("Map.operator []");
 		code("var m = [1: 1] return m[1]").equals("1");
 		code("var m = ['a': 'b'] return m['a']").equals("\"b\"");
@@ -132,12 +150,18 @@ public class TestMap extends TestCommon {
 		DISABLED_code_v1("var a = [1 : 2] integer b = a[0] return b").error(Error.IMPOSSIBLE_CAST);
 		code_v2_("var a = [1 : 2] integer b = a[0] return b").equals("0");
 		code_strict_v1("var a = [] a[12] = 5 return a").equals("[12 : 5]");
+	}
 
+	@Test
+	public void testMap_operator_leftMinusvalue() throws Exception {
 		section("Map.operator [] left-value");
 		code("var m = [1: 2] m[1]++ return m").equals("[1 : 3]");
 		code("var m = ['a': 2] m['a']++ return m").equals("[\"a\" : 3]");
 		code("var k = ['a', 12][0] var m = ['a': 2] m[k]++ return m").equals("[\"a\" : 3]");
+	}
 
+	@Test
+	public void testOperators_on_map_element() throws Exception {
 		section("Operators on map element");
 		code_v2_("var m = [1: 10] return --m[1]").equals("9");
 		code_v2_("var m = [1: 10] m[1]-- return m[1]").equals("9");
@@ -156,7 +180,10 @@ public class TestMap extends TestCommon {
 		code_v2_("var m = [1: 10] return m[1] <<= 5").equals("320");
 		code_v2_("var m = [1: 10] return m[1] >>= 5").equals("0");
 		code_v2_("var m = [1: 10] return m[1] >>>= 5").equals("0");
+	}
 
+	@Test
+	public void testMap_operator_Plus() throws Exception {
 		section("Map.operator +");
 		code_v4_("return [:] + [:]").equals("[:]");
 		code_v4_("return [1 : 2] + [3 : 4]").equals("[1 : 2, 3 : 4]");
@@ -164,7 +191,10 @@ public class TestMap extends TestCommon {
 		code_v4_("return ['a' : 2] + ['a' : 4]").equals("[\"a\" : 2]");
 		code_v4_("return [:] + [1 : 2, 3 : 4]").equals("[1 : 2, 3 : 4]");
 		code_v4_("return [1 : 2, 3 : 4] + [:]").equals("[1 : 2, 3 : 4]");
+	}
 
+	@Test
+	public void testMap_operator_PlusEquals() throws Exception {
 		section("Map.operator +=");
 		code_v4_("var a = [:] a += [:] return a").equals("[:]");
 		code_v4_("var a = [1 : 2] a += [3 : 4] return a").equals("[1 : 2, 3 : 4]");
@@ -186,19 +216,30 @@ public class TestMap extends TestCommon {
 		// code("var m = ptr([2: 2.8]) m[3] = 6 m").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		// code("var m = ptr([2: 'a']) m['toto'] = 'b' m").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
 		// code("var m = ptr([2.5: 'a']) m['toto'] = 'b' m").exception(ls::vm::Exception::NO_SUCH_OPERATOR);
+	}
 
+	@Test
+	public void testMap_instanceof() throws Exception {
 		section("Map.instanceof");
 		code_v4_("return [:] instanceof Map").equals("true");
 
 		/**
 		 * Clone
 		 */
+	}
+
+	@Test
+	public void testMap_clone() throws Exception {
 		section("Map clone()");
 		code("var a = [1 : 'a', 2 : 'b', 3 : 'c'] var b = clone(a) b[4] = 'd' return [a, b]").equals("[[1 : \"a\", 2 : \"b\", 3 : \"c\"], [1 : \"a\", 2 : \"b\", 3 : \"c\", 4 : \"d\"]]");
 
 		/**
 		 * JSON
 		 */
+	}
+
+	@Test
+	public void testMap_JSON() throws Exception {
 		section("Map JSON");
 		code_v4_("return jsonEncode([:])").equals("\"{}\"");
 		code_v4_("return jsonEncode([1 : 2])").equals("\"{\"1\":2}\"");
@@ -212,6 +253,10 @@ public class TestMap extends TestCommon {
 		/*
 		* Iteration
 		*/
+	}
+
+	@Test
+	public void testMap_iteration() throws Exception {
 		section("Map iteration");
 		code("var s = '' for (var v in [:]) { s += v } return s").equals("\"\"");
 		code("var s = '' for (var v in [1:2]) { s += v } return s").equals("\"2\"");
@@ -231,18 +276,28 @@ public class TestMap extends TestCommon {
 		/**
 		 * Méthodes
 		 */
+	}
+
+	@Test
+	public void testMap_isEmpty() throws Exception {
 		section("Map.isEmpty");
 		code_v1_3("return isEmpty([2 : 8])").equals("false");
 		code_v1_3("return mapIsEmpty([2 : 8])").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("return mapIsEmpty([2 : 8])").equals("false");
 		code_v4_("return mapIsEmpty([:])").equals("true");
+	}
 
+	@Test
+	public void testMap_clear() throws Exception {
 		section("Map.clear");
 		code_v1_3("var m = [:] mapClear(m) return m").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("var m = [:] mapClear(m) return m").equals("[:]");
 		code_v4_("var m = [1 : 2, 3 : 4] mapClear(m) return m").equals("[:]");
 		code_v4_("var m = ['a' : 'b', 'c' : 'd'] mapClear(m) return m").equals("[:]");
+	}
 
+	@Test
+	public void testMap_get() throws Exception {
 		section("Map.get");
 		code_v1_3("var m = [:] return mapGet(m, 2)").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("var m = [:] return mapGet(m, 2)").equals("null");
@@ -252,21 +307,33 @@ public class TestMap extends TestCommon {
 		code_v4_("var m = ['a' : 'b', 'c' : 'd'] return mapGet(m, 'c')").equals("\"d\"");
 		code_v4_("var m = ['a' : 'b', 'c' : 'd'] return mapGet(m, 'c', 'default')").equals("\"d\"");
 		code_v4_("var m = ['a' : 'b', 'c' : 'd'] return mapGet(m, 'b', 'default')").equals("\"default\"");
+	}
 
+	@Test
+	public void testMap_put() throws Exception {
 		section("Map.put");
 		code_v1_3("var m = [:] mapPut(m, 2, 3) return m").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("var m = [:] mapPut(m, 2, 3) return m").equals("[2 : 3]");
 		code_v4_("var m = [1 : 2, 3 : 4] mapPut(m, 5, 6) return m").equals("[1 : 2, 3 : 4, 5 : 6]");
 		code_v4_("var m = [1 : 2, 3 : 4] mapPut(m, 3, 6) return m").equals("[1 : 2, 3 : 6]");
 		code_v4_("var m = ['a' : 'b', 'c' : 'd'] mapPut(m, 'e', 'f') return m").equals("[\"a\" : \"b\", \"c\" : \"d\", \"e\" : \"f\"]");
+	}
 
+	@Test
+	public void testMap_keys() throws Exception {
 		section("Map.keys");
 		code_v4_("return mapKeys([1: 2, 3: 4, 5: 6])").equals("[1, 3, 5]");
 		code_v4_("return mapKeys(['1': 2, '3': 4, '5': 6])").equals("[\"1\", \"3\", \"5\"]");
+	}
 
+	@Test
+	public void testMap_values() throws Exception {
 		section("Map.values");
 		code_v4_("return mapValues([1: 2, 3: 4, 5: 6])").equals("[2, 4, 6]");
+	}
 
+	@Test
+	public void testMapMap() throws Exception {
 		section("mapMap");
 		code_v2_3("return arrayMap(['a': 1, 'b': 2], function(k, v) { return k + v })").equals("[\"a\" : \"a1\", \"b\" : \"b2\"]");
 		code_v4_("return mapMap(['a': 1, 'b': 2], function(v) { return v * 10 })").equals("[\"a\" : 10, \"b\" : 20]");
@@ -275,13 +342,19 @@ public class TestMap extends TestCommon {
 		code_v4_("return function() { var t = ['a': 1, 'b': 2]; mapMap(t, function(v, k) { v = 'tomate'; k = 'ctus'; return 3; }); return t; }();").equals("[\"a\" : 1, \"b\" : 2]");
 		code_v4_("return mapMap(['a': 1, 'b': 2], function(v, k, a, b) { return v * 10 })").equals("[\"a\" : 10, \"b\" : 20]");
 		code_v4_("return mapMap(['a': 1, 'b': 2], function() { return 10 })").equals("[\"a\" : 10, \"b\" : 10]");
+	}
 
+	@Test
+	public void testMapRemove() throws Exception {
 		section("mapRemove()");
 		code_v1_3("var a = ['a':'va','b':'vb','c':'vc','d':'vd']; removeKey(a,'a'); return a").equals("[\"b\" : \"vb\", \"c\" : \"vc\", \"d\" : \"vd\"]");
 		code_v1_3("var a = [12 : 'a', 15: 'b'] removeKey(a, 12.12) return a").equals("[15 : \"b\"]");
 		code_v4_("removeKey([1, 2, 3])").error(Error.REMOVED_FUNCTION_REPLACEMENT);
 		code_v4_("var a = ['a':'va','b':'vb','c':'vc','d':'vd']; mapRemove(a,'a'); return a").equals("[\"b\" : \"vb\", \"c\" : \"vc\", \"d\" : \"vd\"]");
+	}
 
+	@Test
+	public void testMap_removeAll() throws Exception {
 		section("Map.removeAll()");
 		code_v1_3("return mapRemoveAll([2 : 8], 8)").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("var a = [:] mapRemoveAll(a, 2) return a").equals("[:]");
@@ -289,13 +362,19 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = [1 : 2, 2 : 2, 3 : 10] mapRemoveAll(a, 55) return a").equals("[1 : 2, 2 : 2, 3 : 10]");
 		code_v4_("var a = [1 : 2, 2 : 2, 3 : 10, 4 : 2] mapRemoveAll(a, 2) return a").equals("[3 : 10]");
 		code_v4_("var a = [1 : null, 2 : 2, 3 : null] mapRemoveAll(a, null) return a").equals("[2 : 2]");
+	}
 
+	@Test
+	public void testMap_replace() throws Exception {
 		section("Map.replace()");
 		code_v1_3("return mapReplace([2 : 8], 2, 10)").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("var a = [:] mapReplace(a, 2, 10) return a").equals("[:]");
 		code_v4_("var a = [2 : 8] mapReplace(a, 2, 10) return a").equals("[2 : 10]");
 		code_v4_("var a = [2 : 8] var b = [2 : 10] mapReplace(a, 5, 10) return a").equals("[2 : 8]");
+	}
 
+	@Test
+	public void testMap_replaceAll() throws Exception {
 		section("Map.replaceAll()");
 		code_v1_3("return mapReplaceAll([2 : 8], [:])").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("var a = [2 : 8] var b = [2 : 10] mapReplaceAll(a, b) return a").equals("[2 : 10]");
@@ -303,13 +382,19 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = [:] var b = [5 : 10] mapReplaceAll(a, b) return a").equals("[:]");
 		code_v4_("var a = ['a' : 'b'] var b = [:] mapReplaceAll(a, b) return a").equals("[\"a\" : \"b\"]");
 		code_v4_("var a = ['a' : 'b', 'c' : 'd'] var b = ['a' : 10, 'c' : 20] mapReplaceAll(a, b) return a").equals("[\"a\" : 10, \"c\" : 20]");
+	}
 
+	@Test
+	public void testMap_fill() throws Exception {
 		section("Map.fill()");
 		code_v1_3("return mapFill([2 : 8], 5)").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("var a = [:] mapFill(a, 5) return a").equals("[:]");
 		code_v4_("var a = [2 : 8] mapFill(a, 5) return a").equals("[2 : 5]");
 		code_v4_("var a = [2 : 8, 4 : 5, 3: 1] mapFill(a, 'a') return a").equals("[2 : \"a\", 3 : \"a\", 4 : \"a\"]");
+	}
 
+	@Test
+	public void testAssocSort_legacy() throws Exception {
 		section("assocSort() legacy");
 		code_v1_3("var t = [2:0,1:1,0:2]; return arraySort(t,function(k1, v1, k2, v2){return (k1>k2)?(-1):(k1<k2)?1:0;})").equals("[2 : 0, 1 : 1, 0 : 2]");
 		code_v1_3("var a = ['b':'vb','c':'vc','a':'va','d':'vd']; assocSort(a); return a").equals("[\"a\" : \"va\", \"b\" : \"vb\", \"c\" : \"vc\", \"d\" : \"vd\"]");
@@ -324,13 +409,19 @@ public class TestMap extends TestCommon {
 		code_v4_("assocSort([1 : 2])").error(Error.REMOVED_FUNCTION);
 		code_v1("var a = [306 : 1610.592, 323 : 1207.944, 324 : 2013.24, 341 : 1525.741] assocSort(a, SORT_DESC) return a").equals("[324 : 2 013,24, 306 : 1 610,592, 341 : 1 525,741, 323 : 1 207,944]");
 		code_v2_3("var a = [306 : 1610.592, 323 : 1207.944, 324 : 2013.24, 341 : 1525.741] assocSort(a, SORT_DESC) return a").equals("[324 : 2013.24, 306 : 1610.592, 341 : 1525.741, 323 : 1207.944]");
+	}
 
+	@Test
+	public void testKeySort_legacy() throws Exception {
 		section("keySort legacy");
 		code_v1_3("var a = ['b':'vb','c':'vc','a':'va','d':'vd']; keySort(a); return a").equals("[\"a\" : \"va\", \"b\" : \"vb\", \"c\" : \"vc\", \"d\" : \"vd\"]");
 		code_v1_3("var a = ['b':'vb','c':'vc','a':'va','d':'vd']; keySort(a, SORT_DESC); return a").equals("[\"d\" : \"vd\", \"c\" : \"vc\", \"b\" : \"vb\", \"a\" : \"va\"]");
 		code_v1_3("var a = [6 : 0, 5 : 1, 2 : 2, 3 : 3, 1 : 6, 4 : 7, 0 : 8]; keySort(a); return a").equals("[8, 6, 2, 3, 7, 1, 0]");
 		code_v4_("keySort([1 : 2])").error(Error.REMOVED_FUNCTION);
+	}
 
+	@Test
+	public void testMapSearch() throws Exception {
 		section("mapSearch");
 		code_v1_3("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return search(a,'c')").equals("\"cle3\"");
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return mapSearch(a,'c')").equals("\"cle3\"");
@@ -338,7 +429,10 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return mapSearch(a,'454')").equals("null");
 		code_v4_("var a = [1: null, 2: 5, 3: 12] return mapSearch(a, 12)").equals("3");
 		code_v4_("var a = [1: [1], 2: [2], 3: [3]] return mapSearch(a, [2])").equals("2");
+	}
 
+	@Test
+	public void testMapContains() throws Exception {
 		section("mapContains");
 		code_v1_3("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return inArray(a, 'c')").equals("true");
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return mapContains(a, 'c')").equals("true");
@@ -346,47 +440,74 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return mapContains(a, 'cle3')").equals("false");
 		code_v1_3("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return inArray(a, '454')").equals("false");
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return mapContains(a, '454')").equals("false");
+	}
 
+	@Test
+	public void testMapContainsKey() throws Exception {
 		section("mapContainsKey");
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return mapContainsKey(a, 'c')").equals("false");
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return mapContainsKey(a, 'cle3')").equals("true");
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return mapContainsKey(a, '454')").equals("false");
+	}
 
+	@Test
+	public void testMap_in() throws Exception {
 		section("Map.in");
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return 'c' in a").equals("false");
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return 'cle3' in a").equals("true");
 		code_v4_("var a = ['cle1':'a','cle2':'b','cle3':'c','cle4':'d']; return '454' in a").equals("false");
+	}
 
+	@Test
+	public void testMap_not_in() throws Exception {
 		section("Map.not_in");
 		code_v4_("var a = ['cle1':'a','cle2':'b']; return 'cle3' not in a").equals("true");
 		code_v4_("var a = ['cle1':'a','cle2':'b']; return 'cle1' not in a").equals("false");
+	}
 
+	@Test
+	public void testMapMin() throws Exception {
 		section("mapMin()");
 		code_v1_3("return arrayMin([0 : 7, 8 : 9, 'a' : 2])").equals("2");
 		code_v4_("return mapMin([0 : 7, 8 : 9, 'a' : 2])").equals("2");
 		code_v1_3("var a = [560 : null, 595 : null, 601 : 15, 566 : 13, 531 : 13] return arrayMin(a)").equals("null");
 		code_v4_("var a = [560 : null, 595 : null, 601 : 15, 566 : 13, 531 : 13] return mapMin(a)").equals("null");
+	}
 
+	@Test
+	public void testMapMax() throws Exception {
 		section("mapMax()");
 		code_v1_3("return arrayMax([0 : 7, 8 : 9, 'a' : 2])").equals("9");
 		code_v4_("return mapMax([0 : 7, 8 : 9, 'a' : 2])").equals("9");
 		code_v1_3("var a = [560 : null, 595 : null, 601 : 15, 566 : 13, 531 : 13] return arrayMax(a)").equals("15");
 		code_v4_("var a = [560 : null, 595 : null, 601 : 15, 566 : 13, 531 : 13] return mapMax(a)").equals("15");
+	}
 
+	@Test
+	public void testMapSum() throws Exception {
 		section("mapSum()");
 		code_v1("return sum([0:1,'a':5,'test':7])").equals("13");
 		code_v2_3("return sum([0:1,'a':5,'test':7])").equals("13.0");
 		code_v4_("return mapSum([0 : 1, 'a' : 5, 'test' : 7])").equals("13.0");
+	}
 
+	@Test
+	public void testMapAverage() throws Exception {
 		section("mapAverage()");
 		code_v1("return average([0: 2, 'a': 4, 'test': 6])").equals("4");
 		code_v2_3("return average([0: 2, 'a': 4, 'test': 6])").equals("4.0");
 		code_v4_("return mapAverage([0: 2, 'a': 4, 'test': 6])").equals("4.0");
+	}
 
+	@Test
+	public void testAssocReverse() throws Exception {
 		section("assocReverse");
 		code_v1_3("var a = [1 : 2, 3 : 4, 5 : 6] assocReverse(a) return a").equals("[5 : 6, 3 : 4, 1 : 2]");
 		code_v4_("assocReverse([1 : 2])").error(Error.REMOVED_FUNCTION);
+	}
 
+	@Test
+	public void testMap_some() throws Exception {
 		section("Map.some");
 		code_v1_3("var a = [1 : 2, 3 : 4, 5 : 6] return mapSome(a, function(v, k) { return v == 6 })").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("var a = [1 : 2, 3 : 4, 5 : 6] return mapSome(a, function(v, k) { return v == 6 })").equals("true");
@@ -395,7 +516,10 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = [1 : 2, 3 : 4, 5 : 6] return mapSome(a, function(v, k) { return k == 10 })").equals("false");
 		code_v4_("var a = [1 : 2, 3 : 4, 5 : 6] return mapSome(a, function(v, k) { return v * k == 30 })").equals("true");
 		code_v4_("var a = [1 : 2, 3 : 4, 5 : 6] return mapSome(a, function(v, k) { return v * k == 77 })").equals("false");
+	}
 
+	@Test
+	public void testMap_every() throws Exception {
 		section("Map.every");
 		code_v1_3("var a = [1 : 2, 3 : 4, 5 : 6] return mapEvery(a, function(v, k) { return v == 6 })").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("var a = [1 : 2, 3 : 4, 5 : 6] return mapEvery(a, function(v, k) { return v > 1 })").equals("true");
@@ -404,7 +528,10 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = [1 : 2, 3 : 4, 5 : 6] return mapEvery(a, function(v, k) { return k > 2 })").equals("false");
 		code_v4_("var a = [1 : 2, 3 : 4, 5 : 6] return mapEvery(a, function(v, k) { return v * k == 30 })").equals("false");
 		code_v4_("var a = [2 : 24, 4 : 12, 12 : 4] return mapEvery(a, function(v, k) { return v * k == 48 })").equals("true");
+	}
 
+	@Test
+	public void testMap_fold() throws Exception {
 		section("Map.fold");
 		code_v1_3("var a = [1 : 2, 3 : 4, 5 : 6] return mapFold(a, function(v, k) {}, 10)").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("var a = [:] return mapFold(a, function(r, v, k) { return r + v * k }, 10)").equals("10");
@@ -413,7 +540,10 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = [1 : 'a', 3 : 'b', 5 : 'c'] return mapFold(a, function(r, v) { return r + ' ' + v }, 'r:')").equals("\"r: a b c\"");
 		code_v4_("var a = [1 : 'a', 3 : 'b', 5 : 'c'] return mapFold(a, function(r, v, a, b) { return r + ' ' + v }, 'r:')").equals("\"r: a b c\"");
 		code_v4_("var a = [1 : 'a', 3 : 'b', 5 : 'c'] return mapFold(a, function(r, v, k) { return r + ' ' + k }, 'r:')").equals("\"r: 1 3 5\"");
+	}
 
+	@Test
+	public void testMap_filter() throws Exception {
 		section("Map.filter");
 		code_v1_3("var a = [1 : 2, 3 : 4, 5 : 6] return mapFilter(a, function(v, k) {})").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("var a = [:] return mapFilter(a, function() { return true })").equals("[:]");
@@ -422,7 +552,10 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = [1 : 'a', 3 : 'b', 5 : 'c'] return mapFilter(a, function(v, k) { return k >= 3 })").equals("[3 : \"b\", 5 : \"c\"]");
 		code_v4_("var a = [1 : 'a', 3 : 'b', 5 : 'c'] return mapFilter(a, function(v) { return v === 'a' })").equals("[1 : \"a\"]");
 		code_v4_("var a = [1 : 'a', 3 : 'b', 5 : 'c'] return mapFilter(a, function(v, k, a, b) { return k >= 3 })").equals("[3 : \"b\", 5 : \"c\"]");
+	}
 
+	@Test
+	public void testMap_merge() throws Exception {
 		section("Map.merge");
 		code_v1_3("return mapMerge([1 : 2], [3 : 4])").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("return mapMerge([:], [:])").equals("[:]");
@@ -431,6 +564,6 @@ public class TestMap extends TestCommon {
 		code_v4_("return mapMerge(['a' : 2], ['a' : 4])").equals("[\"a\" : 2]");
 		code_v4_("return mapMerge([:], [1 : 2, 3 : 4])").equals("[1 : 2, 3 : 4]");
 		code_v4_("return mapMerge([1 : 2, 3 : 4], [:])").equals("[1 : 2, 3 : 4]");
-
 	}
+
 }

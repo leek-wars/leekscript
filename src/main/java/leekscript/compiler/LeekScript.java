@@ -2,6 +2,7 @@ package leekscript.compiler;
 
 import java.io.IOException;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.resolver.FileSystem;
@@ -13,7 +14,7 @@ import leekscript.common.Error;
 public class LeekScript {
 
 	public final static int LATEST_VERSION = 4;
-	private static long id = 1;
+	private static AtomicLong id = new AtomicLong(1);
 
 	private static ResourceFileSystem defaultFileSystem = new ResourceFileSystem();
 	private static NativeFileSystem nativeFileSystem = new NativeFileSystem();
@@ -57,7 +58,7 @@ public class LeekScript {
 	}
 
 	public static AI compileSnippet(String snippet, String AIClass, Options options) throws LeekScriptException, LeekCompilerException, IOException {
-		long ai_id = id++;
+		long ai_id = id.getAndIncrement();
 		var file = new AIFile("<snippet " + ai_id + ">", snippet, System.currentTimeMillis(), options.version(), (int) ai_id, options.strict());
 		file.setJavaClass("AI_" + ai_id);
 		file.setRootClass(AIClass);

@@ -8,11 +8,13 @@ import leekscript.common.Error;
 @ExtendWith(SummaryExtension.class)
 public class TestNarrowing extends TestCommon {
 
-	@Test
-	public void run() throws Exception {
-
+		@Test
+	public void testInit() throws Exception {
 		header("Type Narrowing");
+	}
 
+	@Test
+	public void testBasic_null_check_if() throws Exception {
 		section("Basic null check: if (x != null)");
 		// With narrowing: abs(x) should not warn inside if (x != null)
 		code_v4_("integer | null x = 5; if (x != null) { return abs(x) } return 0").noWarning();
@@ -20,18 +22,27 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("integer | null x = 5; if (x != null) { return abs(x) } return 0").equals("5");
 		code_v4_("integer | null x = -3; if (x != null) { return abs(x) } return 0").equals("3");
 		code_v4_("integer | null x = null; if (x != null) { return abs(x) } return 0").equals("0");
+	}
 
+	@Test
+	public void testEquality_null_check_if() throws Exception {
 		section("Equality null check: if (x == null)");
 		// x == null: in else branch, x is non-null
 		code_v4_("integer | null x = 5; if (x == null) { return 0 } else { return abs(x) }").noWarning();
 		code_v4_("integer | null x = 5; if (x == null) { return 0 } else { return abs(x) }").equals("5");
+	}
 
+	@Test
+	public void testTruthy_check_if() throws Exception {
 		section("Truthy check: if (x)");
 		// Truthy check narrows nullable to non-null in true branch
 		code_v4_("integer | null x = 5; if (x) { return abs(x) } return 0").noWarning();
 		code_v4_("integer | null x = 5; if (x) { return abs(x) } return 0").equals("5");
 		code_v4_("integer | null x = null; if (x) { return abs(x) } return 0").equals("0");
+	}
 
+	@Test
+	public void testCase_1_AndAnd_Divide_OrOr_operators() throws Exception {
 		section("Case 1: && / || operators");
 		// && combines narrowings
 		code_v4_("integer | null x = 5; integer | null y = 3; if (x != null && y != null) { return abs(x) + abs(y) } return 0").noWarning();
@@ -41,7 +52,10 @@ public class TestNarrowing extends TestCommon {
 		// Short-circuit: x != null && abs(x) → x is narrowed in the right operand
 		code_v4_("integer | null x = 5; if (x != null && abs(x) > 0) { return 1 } return 0").noWarning();
 		code_v4_("integer | null x = 5; if (x != null && abs(x) > 0) { return 1 } return 0").equals("1");
+	}
 
+	@Test
+	public void testCase_2_Early_return_narrowing() throws Exception {
 		section("Case 2: Early return narrowing");
 		// if (x == null) return → x is non-null after
 		code_v4_("integer | null x = 5; if (x == null) return 0; return abs(x)").noWarning();
@@ -49,28 +63,43 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("integer | null x = null; if (x == null) return 0; return abs(x)").equals("0");
 		// if (x != null) { ... } with no else doesn't narrow after
 		// (only early return narrows)
+	}
 
+	@Test
+	public void testCase_3_While_loop_narrowing() throws Exception {
 		section("Case 3: While loop narrowing");
 		// while (x != null) → x is non-null inside loop
 		code_v4_("integer | null x = 5; var r = 0; while (x != null) { r = abs(x); x = null } return r").max_ops(1000).noWarning();
 		code_v4_("integer | null x = 5; var r = 0; while (x != null) { r = abs(x); x = null } return r").max_ops(1000).equals("5");
 		// After reassignment (w = null), narrowing is reset → abs(w) should warn in strict mode
 		code_strict_v4_("integer | null w = 5; var r = 0; while (w != null) { r = abs(w); w = null; abs(w) } return r").max_ops(1000).warning(Error.DANGEROUS_CONVERSION);
+	}
 
+	@Test
+	public void testCase_4_instanceof_narrowing() throws Exception {
 		section("Case 4: instanceof narrowing");
 		// instanceof narrows the type (class types like Array)
 		code_v4_("Array | string x = [1, 2]; if (x instanceof Array) { return count(x) } return 0").noWarning();
 		code_v4_("Array | string x = [1, 2]; if (x instanceof Array) { return count(x) } return 0").equals("2");
+	}
 
+	@Test
+	public void testCase_5_Assignment_in_condition() throws Exception {
 		section("Case 5: Assignment in condition");
 		// (x = getValue()) != null → x is narrowed in the if body
 		code_v4_("function f() => integer | null { return 5 } integer | null x = null; if ((x = f()) != null) { return abs(x) } return 0").noWarning();
 		code_v4_("function f() => integer | null { return 5 } integer | null x = null; if ((x = f()) != null) { return abs(x) } return 0").equals("5");
+	}
 
+	@Test
+	public void testNegation_Not() throws Exception {
 		section("Negation: !(x == null)");
 		code_v4_("integer | null x = 5; if (!(x == null)) { return abs(x) } return 0").noWarning();
 		code_v4_("integer | null x = 5; if (!(x == null)) { return abs(x) } return 0").equals("5");
+	}
 
+	@Test
+	public void testEarly_return_in_function_with_parameter() throws Exception {
 		section("Early return in function with parameter");
 		// Early return narrowing should work with function parameters too
 		code_v4_("function process(integer | null val) { if (val == null) return null; return abs(val) } return process(5)").noWarning();
@@ -81,11 +110,17 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("function process(integer | null val) { if (val == null) { return } debug(abs(val)) } process(5)").noWarning();
 		// Function not called - should still narrow correctly
 		code_v4_("function process(integer | null val) { if (val == null) { return } debug(abs(val)) }").noWarning();
+	}
 
+	@Test
+	public void testElseMinusif_chains() throws Exception {
 		section("Else-if chains");
 		code_v4_("integer | null x = 5; integer | null y = 3; if (x == null) { return 0 } else if (y == null) { return abs(x) } else { return abs(x) + abs(y) }").noWarning();
 		code_v4_("integer | null x = 5; integer | null y = 3; if (x == null) { return 0 } else if (y == null) { return abs(x) } else { return abs(x) + abs(y) }").equals("8");
+	}
 
+	@Test
+	public void testSwitch_narrowing() throws Exception {
 		section("Switch narrowing");
 		// case null → variable is null, other cases → variable is non-null
 		code_v4_("integer | null x = 5; switch (x) { case null: return 0; default: return abs(x) }").noWarning();
@@ -96,7 +131,10 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("integer | null x = 5; switch (x) { case null: return 0; case 5: return abs(x); default: return abs(x) }").equals("5");
 		// Without case null, default can't be narrowed
 		code_v4_("integer | null x = 5; switch (x) { case 5: return abs(x); default: return 0 }").noWarning();
+	}
 
+	@Test
+	public void testClass_field_narrowing() throws Exception {
 		section("Class field narrowing");
 		// Assignment inside narrowed branch should use declared type, not narrowed type
 		code_v4_("class A { integer | null x = null; m() { if (x == null) { x = 12 } } } var a = new A(); a.m(); return a.x").noWarning();
@@ -119,7 +157,10 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("class B { integer x = 0 } class A { B? config = null; m() { if (config == null) { config = new B() } } } var a = new A(); a.m(); return a.config.x").noWarning();
 		// Non-null branch: assignment to nullable class field
 		code_v4_("class B { integer x = 0 } class A { B? c = new B(); m() { if (c != null) { c = new B() } } } var a = new A(); a.m(); return a.c.x").equals("0");
+	}
 
+	@Test
+	public void testInstanceof_narrowing_with_compound_types() throws Exception {
 		section("Instanceof narrowing with compound types (Java cast)");
 		// Map | integer narrowed to Map → .get() needs a cast in Java
 		code_v4_("Map | integer x = [1 : 'a', 2 : 'b']; if (x instanceof Map) { return x[1] } return 0").noWarning();
@@ -146,7 +187,10 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("Map | integer x = 5; integer y = 10; if (x instanceof Map) { return 0 } else { y -= x; return y }").equals("5");
 		code_v4_("Map | integer x = 3; integer y = 10; if (x instanceof Map) { return 0 } else { y += x; return y }").equals("13");
 		code_v4_("Map | integer x = 2; integer y = 10; if (x instanceof Map) { return 0 } else { y *= x; return y }").equals("20");
+	}
 
+	@Test
+	public void testInstanceof_narrowing_with_property_access() throws Exception {
 		section("Instanceof narrowing with property access");
 		// instanceof + && should narrow property type and generate correct Java cast
 		code_v4_("class Item {} class Chip extends Item { boolean flag = true } class Holder { Item item = new Chip() } var h = new Holder(); if (h.item instanceof Chip && h.item.flag) { return 1 } return 0").equals("1");
@@ -163,7 +207,10 @@ public class TestNarrowing extends TestCommon {
 		// instanceof on a static field (class.field)
 		code_v4_("class Item {} class Chip extends Item { boolean flag = true } class Holder { static Item item = new Chip(); test() { if (class.item instanceof Chip && class.item.flag) { return 1 } return 0 } } return new Holder().test()").equals("1");
 		code_v4_("class Item {} class Chip extends Item { boolean flag = true } class Holder { static Item item = new Chip(); test() { if (class.item instanceof Chip && class.item.flag) { return 1 } return 0 } } return new Holder().test()").noWarning();
+	}
 
+	@Test
+	public void testGlobal_variable_assignment_inside_null_check() throws Exception {
 		section("Global variable assignment inside null check");
 		// global var assigned inside if (x == null) block
 		code_v4_("class A { integer x = 42 } global obj = null; if (obj == null) { obj = new A() } return obj.x").equals("42");
@@ -171,4 +218,5 @@ public class TestNarrowing extends TestCommon {
 		// Multiple assignments in if/else-if chain
 		code_v4_("class A { integer x = 1 } class B extends A { } global obj = null; if (obj == null) { obj = new A() } return obj.x").equals("1");
 	}
+
 }

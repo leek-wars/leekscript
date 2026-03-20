@@ -10,9 +10,8 @@ import leekscript.common.Error;
 public class TestGlobals extends TestCommon {
 
 
-	@Test
-	public void run() throws Exception {
-
+		@Test
+	public void testGlobals() throws Exception {
 		section("Globals");
 		code("global x; return x;").equals("null");
 		code("global x = null; return x;").equals("null");
@@ -40,7 +39,10 @@ public class TestGlobals extends TestCommon {
 		code("global m = [] return m = m").equals("[]");
 		code_v2_("global m = {} return m = m").equals("{}");
 		code_v2_("global m = {a: 12} return m = m").equals("{a: 12}");
+	}
 
+	@Test
+	public void testGlobals_operators() throws Exception {
 		section("Globals operators");
 		code("global x = 12; x++; return x;").equals("13");
 		code("global integer x = 12; x++; return x;").equals("13");
@@ -72,7 +74,10 @@ public class TestGlobals extends TestCommon {
 		code_v2_("global x = 12; x ^= 5; return x;").equals("9");
 		code("global x = 12; return x == 5;").equals("false");
 		code("global x = 12; return x === 5;").equals("false");
+	}
 
+	@Test
+	public void testTypes() throws Exception {
 		section("Types");
 		code("global boolean? x = null; return x").equals("null");
 		code("global boolean x; x = count([]) == 0; return x").equals("true");
@@ -93,4 +98,5 @@ public class TestGlobals extends TestCommon {
 		code_v4_("global Map<integer, Map<integer, boolean>> x x = (x[1] = [:]) x").equals("[:]");
 		code_v4_("global Map<integer, Map<integer, Map<integer, boolean>>> y = [:] global Map<integer, Map<integer, boolean>> x x = (y[5] = [:]) x").equals("[:]");
 	}
+
 }
