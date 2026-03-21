@@ -210,6 +210,49 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	@Test
+	public void testInstanceof_primitive_narrowing_in_else_branch() throws Exception {
+		section("Instanceof narrowing to primitive type in else branch");
+		// Union type narrowed to integer in else branch (the instanceof-excluded type)
+		// The Java variable is Object but needs to be passed as long
+		code_v4_("class Cell { integer id = 5 } Cell | integer x = 3; if (x instanceof Cell) { return x.id } else { return abs(x) }").equals("3");
+		code_v4_("class Cell { integer id = 5 } Cell | integer x = 3; if (x instanceof Cell) { return x.id } else { return abs(x) }").noWarning();
+		code_v4_("class Cell { integer id = 5 } Cell | integer x = new Cell(); if (x instanceof Cell) { return x.id } else { return abs(x) }").equals("5");
+		// Narrowed to integer and used in arithmetic
+		code_v4_("Array | integer x = 7; if (x instanceof Array) { return count(x) } else { return x + 1 }").equals("8");
+		code_v4_("Array | integer x = [1, 2]; if (x instanceof Array) { return count(x) } else { return x + 1 }").equals("2");
+		// Narrowed to integer and passed to a function expecting integer
+		code_v4_("Map | integer x = 42; if (x instanceof Map) { return 0 } else { return abs(x) }").equals("42");
+		code_v4_("Map | integer x = 42; if (x instanceof Map) { return 0 } else { return abs(x) }").noWarning();
+		// Narrowed to real in else branch
+		code_v4_("Array | real x = 3.14; if (x instanceof Array) { return 0 } else { return floor(x) }").equals("3");
+		code_v4_("Array | real x = 3.14; if (x instanceof Array) { return 0 } else { return floor(x) }").noWarning();
+		// Variable used as function argument in else branch
+		code_v4_("class A { integer v = 0 } A | integer x = 10; function add(integer a, integer b) { return a + b } if (x instanceof A) { return x.v } else { return add(x, 5) }").equals("15");
+		code_v4_("class A { integer v = 0 } A | integer x = 10; function add(integer a, integer b) { return a + b } if (x instanceof A) { return x.v } else { return add(x, 5) }").noWarning();
+	}
+
+	@Test
+	public void testInstanceof_narrowing_wrapper_box_variable() throws Exception {
+		section("Instanceof narrowing on wrapper/box variables (closures)");
+		// Variable captured in closure becomes a wrapper (box). After instanceof
+		// narrowing, .get() returns Object and needs a cast to the narrowed type.
+		// Class method call on narrowed wrapper
+		code_v4_("class A { integer val = 42; getVal() { return val } } var x = new A(); var f = function() { x = new A() }; if (x instanceof A) { return x.getVal() } return 0").equals("42");
+		code_v4_("class A { integer val = 42; getVal() { return val } } var x = new A(); var f = function() { x = new A() }; if (x instanceof A) { return x.getVal() } return 0").noWarning();
+		// Field access on narrowed wrapper
+		code_v4_("class B { integer v = 10 } var x = new B(); var f = function() { x = new B() }; if (x instanceof B) { return x.v } return 0").equals("10");
+		code_v4_("class B { integer v = 10 } var x = new B(); var f = function() { x = new B() }; if (x instanceof B) { return x.v } return 0").noWarning();
+		// Narrowing to primitive on wrapper variable (instanceof else branch)
+		code_v4_("class C { integer id = 1 } C | integer x = 5; var f = function() { x = 10 }; if (x instanceof C) { return x.id } else { return x + 1 }").equals("6");
+		code_v4_("class C { integer id = 1 } C | integer x = 5; var f = function() { x = 10 }; if (x instanceof C) { return x.id } else { return x + 1 }").noWarning();
+		// Null check narrowing on wrapper variable
+		code_v4_("class D { integer v = 7 } D | null x = new D(); var f = function() { x = null }; if (x != null) { return x.v } return 0").equals("7");
+		code_v4_("class D { integer v = 7 } D | null x = new D(); var f = function() { x = null }; if (x != null) { return x.v } return 0").noWarning();
+		// Multiple uses of narrowed wrapper in same branch
+		code_v4_("class E { integer a = 3; integer b = 4 } var x = new E(); var f = function() { x = new E() }; if (x instanceof E) { return x.a + x.b } return 0").equals("7");
+	}
+
+	@Test
 	public void testGlobal_variable_assignment_inside_null_check() throws Exception {
 		section("Global variable assignment inside null check");
 		// global var assigned inside if (x == null) block
