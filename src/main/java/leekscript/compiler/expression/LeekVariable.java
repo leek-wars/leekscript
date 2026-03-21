@@ -334,7 +334,19 @@ public class LeekVariable extends Expression {
 			}
 		} else {
 			if (isWrapper() || isBox()) {
-				writer.addCode("u_" + token.getWord() + ".get()");
+				if (this.variable != null && needsNarrowingCast(mainblock.getVersion())) {
+					writer.addCode("((" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") u_" + token.getWord() + ".get())");
+				} else if (this.variable != null && needsPrimitiveNarrowingConversion(mainblock.getVersion())) {
+					if (this.variableType == Type.INT) {
+						writer.addCode("longint(u_" + token.getWord() + ".get())");
+					} else if (this.variableType == Type.REAL) {
+						writer.addCode("real(u_" + token.getWord() + ".get())");
+					} else {
+						writer.addCode("u_" + token.getWord() + ".get()");
+					}
+				} else {
+					writer.addCode("u_" + token.getWord() + ".get()");
+				}
 			} else {
 				// Check if the variable was narrowed during analysis: if the expression's type
 				// differs from the declaration variable's Java type, emit a cast so that
