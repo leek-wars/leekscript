@@ -341,6 +341,16 @@ public class LeekVariable extends Expression {
 				// methods like .get(), .doubleValue() work on the narrowed type.
 				if (this.variable != null && needsNarrowingCast(mainblock.getVersion())) {
 					writer.addCode("((" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") u_" + token.getWord() + ")");
+				} else if (this.variable != null && needsPrimitiveNarrowingConversion(mainblock.getVersion())) {
+					// Variable narrowed to a primitive type (e.g., Cell|integer → integer),
+					// but declared as Object in Java. Use safe conversion helpers.
+					if (this.variableType == Type.INT) {
+						writer.addCode("longint(u_" + token.getWord() + ")");
+					} else if (this.variableType == Type.REAL) {
+						writer.addCode("real(u_" + token.getWord() + ")");
+					} else {
+						writer.addCode("u_" + token.getWord());
+					}
 				} else {
 					writer.addCode("u_" + token.getWord());
 				}
@@ -372,6 +382,16 @@ public class LeekVariable extends Expression {
 	 */
 	private boolean needsNarrowingCast(int version) {
 		return hasNarrowingMismatch(version) && !this.variableType.isPrimitive();
+	}
+
+	/**
+	 * Check if this variable reference needs a primitive narrowing conversion.
+	 * For primitive narrowed types (e.g., Cell|integer narrowed to integer),
+	 * a Java cast is not valid (can't cast Object to long), so we need
+	 * safe conversion helpers like longint() or real().
+	 */
+	private boolean needsPrimitiveNarrowingConversion(int version) {
+		return hasNarrowingMismatch(version) && this.variableType.isPrimitive();
 	}
 
 	@Override
