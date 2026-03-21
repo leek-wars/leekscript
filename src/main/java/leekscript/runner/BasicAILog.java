@@ -53,7 +53,7 @@ public class BasicAILog extends AILog {
 
 	public void addLog(int type, String message) {
 		message = message.replaceAll("\t", "    ");
-		addLog(type, message, 0, 0, 0);
+		addLog(type, message, -1, 0, 0);
 	}
 
 	public void addLog(int type, String message, int color) {
@@ -69,7 +69,7 @@ public class BasicAILog extends AILog {
 		obj.add(0);
 		obj.add(type);
 		obj.add(message);
-		if (color != 0) {
+		if (color >= 0) {
 			obj.add(color);
 		}
 		stream.write(obj);
