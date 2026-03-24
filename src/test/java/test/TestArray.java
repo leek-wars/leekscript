@@ -1033,4 +1033,21 @@ public class TestArray extends TestCommon {
 		code_v4_("arrayToSet(['a', 'b', 'c'])").equals("<\"a\", \"b\", \"c\">");
 	}
 
+	@Test
+	public void testArray_access_real_to_integer_cast() throws Exception {
+		section("Array access real to integer cast");
+		// Direct real array access assigned to integer variable
+		code_v4_("Array<real> a = [1.0, 2.0, 3.0] integer b = a[1] return b").equals("2");
+		code_v4_("Array<real> a = [5.9, 3.1] integer b = a[0] return b").equals("5");
+		// Nested array access: Array<Array<real>>[i][j] to integer (the original bug)
+		code_v4_("Array<Array<real>> a = [[1.0, 42.0], [3.0, 4.0]] integer b = a[0][1] return b").equals("42");
+		code_v4_("Array<Array<real>> a = [[10.0, 20.0]] integer b = a[0][0] + a[0][1] return b").equals("30");
+		// With 'as integer' explicit cast
+		code_v4_("Array<Array<real>> a = [[1.0, 7.0]] integer b = a[0][1] as integer return b").equals("7");
+		// Integer array access assigned to real variable
+		code_v4_("Array<integer> a = [10, 20, 30] real b = a[1] return b").equals("20.0");
+		// Nested integer array to real
+		code_v4_("Array<Array<integer>> a = [[5, 15]] real b = a[0][1] return b").equals("15.0");
+	}
+
 }

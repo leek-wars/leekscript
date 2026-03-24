@@ -948,14 +948,7 @@ public class LeekExpression extends Expression {
 			// Always emit the cast in Java — narrowing may have made types match
 			// during analysis, but the generated Java code still needs the cast
 			if (mExpression2 instanceof LeekType) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("(");
-				mExpression2.writeJavaCode(mainblock, writer, false);
-				writer.addCode(") ");
-			}
-			mExpression1.writeJavaCode(mainblock, writer, true);
-			if (mExpression2 instanceof LeekType) {
-				if (parenthesis) writer.addCode(")");
+				writer.compileConvert(mainblock, 0, mExpression1, type, parenthesis);
 			}
 			return;
 		case Operators.IN:

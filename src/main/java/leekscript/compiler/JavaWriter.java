@@ -237,7 +237,7 @@ public class JavaWriter {
 				if (parenthesis) {
 					addCode("(");
 				}
-				addCode("(long) ");
+				addCode("(long)(double) ");
 				value.writeJavaCode(mainblock, this, true);
 				if (parenthesis) {
 					addCode(")");
@@ -254,7 +254,7 @@ public class JavaWriter {
 				if (parenthesis) {
 					addCode("(");
 				}
-				addCode("(double) ");
+				addCode("(double)(long) ");
 				value.writeJavaCode(mainblock, this, true);
 				if (parenthesis) {
 					addCode(")");
@@ -277,7 +277,7 @@ public class JavaWriter {
 								if (parenthesis) {
 									addCode("(");
 								}
-								addCode("(double) ");
+								addCode("(double)(long) ");
 								value.writeJavaCode(mainblock, this, true);
 								if (parenthesis) {
 									addCode(")");
@@ -288,7 +288,7 @@ public class JavaWriter {
 								if (parenthesis) {
 									addCode("(");
 								}
-								addCode("(long) ");
+								addCode("(long)(double) ");
 								value.writeJavaCode(mainblock, this, true);
 								if (parenthesis) {
 									addCode(")");
