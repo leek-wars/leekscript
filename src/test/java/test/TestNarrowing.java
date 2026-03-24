@@ -253,6 +253,19 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	@Test
+	public void testAs_cast_with_instanceof_narrowing_in_and() throws Exception {
+		section("'as' cast must emit Java cast even when narrowing makes types match");
+		// Bug: inside && after instanceof, the narrowing changes the analysis type,
+		// making compileConvert think the 'as' cast is unnecessary. But the Java
+		// code still needs the cast because the runtime type is the parent class.
+		code_v4_("class Item { } class Chip extends Item { boolean ready = true } class Action { Item item } var a = new Action(); a.item = new Chip(); if (a.item instanceof Chip && (a.item as Chip).ready) { return 1 } return 0").equals("1");
+		// Same with field access on the casted object
+		code_v4_("class Base { } class Sub extends Base { integer val = 42 } class Container { Base obj } var c = new Container(); c.obj = new Sub(); if (c.obj instanceof Sub && (c.obj as Sub).val == 42) { return 1 } return 0").equals("1");
+		// 'as' cast without && narrowing (should also work)
+		code_v4_("class Base { } class Sub extends Base { integer val = 7 } Base b = new Sub(); return (b as Sub).val").equals("7");
+	}
+
+	@Test
 	public void testGlobal_variable_assignment_inside_null_check() throws Exception {
 		section("Global variable assignment inside null check");
 		// global var assigned inside if (x == null) block

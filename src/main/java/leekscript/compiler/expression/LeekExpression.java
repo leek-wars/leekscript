@@ -13,6 +13,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.LeekValueType;
 import leekscript.common.ArrayType;
+import leekscript.common.ClassType;
 import leekscript.common.ClassValueType;
 import leekscript.common.CompoundType;
 import leekscript.common.Error;
@@ -947,8 +948,21 @@ public class LeekExpression extends Expression {
 		case Operators.AS:
 			// Always emit the cast in Java — narrowing may have made types match
 			// during analysis, but the generated Java code still needs the cast
-			if (mExpression2 instanceof LeekType) {
-				writer.compileConvert(mainblock, 0, mExpression1, type, parenthesis);
+			if (mExpression2 instanceof LeekType lt) {
+				if (lt.type instanceof ClassType) {
+					// For class types, always emit explicit cast — narrowing can make
+					// compileConvert think the cast is unnecessary when it's not
+					if (parenthesis) writer.addCode("(");
+					writer.addCode("(");
+					mExpression2.writeJavaCode(mainblock, writer, false);
+					writer.addCode(") ");
+					mExpression1.writeJavaCode(mainblock, writer, true);
+					if (parenthesis) writer.addCode(")");
+				} else {
+					// For primitive types, use compileConvert which handles
+					// boxed-to-primitive conversions (e.g., Double → long)
+					writer.compileConvert(mainblock, 0, mExpression1, type, parenthesis);
+				}
 			}
 			return;
 		case Operators.IN:
