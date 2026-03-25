@@ -703,7 +703,11 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = add(g_" + token.getWord() + ", ");
+				writer.addCode("g_" + token.getWord() + " = ");
+				if (this.variableType != Type.ANY) {
+					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("add(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -760,7 +764,11 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = sub(g_" + token.getWord() + ", ");
+				writer.addCode("g_" + token.getWord() + " = ");
+				if (this.variableType != Type.ANY) {
+					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("sub(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -813,7 +821,11 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = mul(g_" + token.getWord() + ", ");
+				writer.addCode("g_" + token.getWord() + " = ");
+				if (this.variableType != Type.ANY) {
+					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("mul(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -861,11 +873,15 @@ public class LeekVariable extends Expression {
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else {
-			if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = pow(g_" + token.getWord() + ", ");
+				if (parenthesis) writer.addCode("(");
+				writer.addCode("g_" + token.getWord() + " = ");
+				if (this.variableType != Type.ANY) {
+					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("pow(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
-			if (parenthesis) writer.addCode(")");
+				if (parenthesis) writer.addCode(")");
 			}
 		} else {
 			if (isBox()) {
@@ -909,10 +925,14 @@ public class LeekVariable extends Expression {
 				writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
+				writer.addCode("g_" + token.getWord() + " = ");
+				if (this.variableType != Type.ANY) {
+					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
 				if (mainblock.getVersion() == 1) {
-					writer.addCode("g_" + token.getWord() + " = div_v1(g_" + token.getWord() + ", ");
+					writer.addCode("div_v1(g_" + token.getWord() + ", ");
 				} else {
-					writer.addCode("g_" + token.getWord() + " = div(g_" + token.getWord() + ", ");
+					writer.addCode("div(g_" + token.getWord() + ", ");
 				}
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
@@ -1003,14 +1023,18 @@ public class LeekVariable extends Expression {
 				writer.addCode("g_" + token.getWord() + ".mod_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
+			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber()) {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " %= ");
 				expr.writeJavaCode(mainblock, writer, false);
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = mod(g_" + token.getWord() + ", ");
+				writer.addCode("g_" + token.getWord() + " = ");
+				if (this.variableType != Type.ANY) {
+					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("mod(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -1020,14 +1044,18 @@ public class LeekVariable extends Expression {
 				writer.addCode("u_" + token.getWord() + ".mod_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
+			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber()) {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " %= ");
 				expr.writeJavaCode(mainblock, writer, false);
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = mod(u_" + token.getWord() + ", ");
+				writer.addCode("u_" + token.getWord() + " = ");
+				if (this.variableType != Type.ANY) {
+					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("mod(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");

@@ -72,6 +72,16 @@ public class TestGlobals extends TestCommon {
 		code_v1("global x = 12; x ^= 5; return x;").equals("248832");
 		code_v1("global integer x = 12; x ^= 5; return x;").equals("248832");
 		code_v2_("global x = 12; x ^= 5; return x;").equals("9");
+		// Compound operators with non-primitive RHS (any type from function return)
+		section("Globals compound operators with any-typed RHS");
+		code_v2_("function f() { return 5; } global integer x = 10; x += f(); return x;").equals("15");
+		code_v2_("function f() { return 5; } global integer x = 10; x -= f(); return x;").equals("5");
+		code_v2_("function f() { return 5; } global integer x = 10; x *= f(); return x;").equals("50");
+		code_v2_("function f() { return 5; } global real x = 10; x /= f(); return x;").equals("2.0");
+		code_v2_("function f() { return 5; } global integer x = 10; x %= f(); return x;").equals("0");
+		code_v2_("function f() { return 5; } global integer x = 2; x **= f(); return x;").equals("32");
+		// Compound operators with any-typed variable on both sides
+		code_v2_("function f() { return 3; } global integer x = 0; x += f(); x += f(); return x;").equals("6");
 		code("global x = 12; return x == 5;").equals("false");
 		code("global x = 12; return x === 5;").equals("false");
 	}
