@@ -439,6 +439,17 @@ public class TestEdgeCases extends TestCommon {
 	}
 
 	@Test
+	public void testMap_array_access_type_mismatch() throws Exception {
+		section("Map array access type mismatch");
+		// Bug: typed Map + function with -> Array<integer>? return type
+		// cache[key] returns Array<integer>|null, cache[key][idx] returns integer|null
+		// Returning integer|null from a function declared -> Array<integer>? should produce a warning
+		code_v4_("global Map<string, Array<integer>> cache = [:] function findBest() -> Array<integer> { return [1, 2, 3] } function getFromCache(string key, integer idx) -> Array<integer>? { if (key == '') return null cache[key] = findBest() return cache[key][idx] } return getFromCache('k', 0)").warning(Error.DANGEROUS_CONVERSION);
+		// In strict mode, MAY_NOT_BE_INDEXABLE is reported first (accessing possibly-null cache[key])
+		code_strict_v4_("global Map<string, Array<integer>> cache = [:] function findBest() -> Array<integer> { return [1, 2, 3] } function getFromCache(string key, integer idx) -> Array<integer>? { if (key == '') return null cache[key] = findBest() return cache[key][idx] } return getFromCache('k', 0)").warning(Error.MAY_NOT_BE_INDEXABLE);
+	}
+
+	@Test
 	public void testReference_vs_copy_semantics() throws Exception {
 		section("Reference vs copy semantics");
 		// Array reference behavior

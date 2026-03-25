@@ -180,6 +180,10 @@ public class Type {
 		return false;
 	}
 
+	public boolean isMapOrNull() {
+		return false;
+	}
+
 	public static Type compound(HashSet<Type> types) {
 		if (types.size() == 0) return Type.VOID;
 		var all = new HashSet<Type>();

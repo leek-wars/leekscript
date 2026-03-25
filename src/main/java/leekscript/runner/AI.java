@@ -3170,6 +3170,11 @@ public abstract class AI {
 		throw new ClassCastException();
 	}
 
+	public ArrayLeekValue toArrayOrNull(int index, Object value) throws LeekRunException {
+		if (value == null) return null;
+		return toArray(index, value);
+	}
+
 	public MapLeekValue toMap(int index, Object value) throws LeekRunException {
 		if (value instanceof MapLeekValue map) {
 			return map;
@@ -3181,6 +3186,11 @@ public abstract class AI {
 			Type.MAP.toString()
 		});
 		throw new ClassCastException();
+	}
+
+	public MapLeekValue toMapOrNull(int index, Object value) throws LeekRunException {
+		if (value == null) return null;
+		return toMap(index, value);
 	}
 
 	public FunctionLeekValue toFunction(int index, Object value) throws LeekRunException {
@@ -3207,6 +3217,11 @@ public abstract class AI {
 			Type.ARRAY.toString() + " (V1-3)"
 		});
 		return new LegacyArrayLeekValue(this);
+	}
+
+	public LegacyArrayLeekValue toLegacyArrayOrNull(int index, Object value) throws LeekRunException {
+		if (value == null) return null;
+		return toLegacyArray(index, value);
 	}
 
 	public static boolean verifyParameters(int[] types, Object... parameters) {
