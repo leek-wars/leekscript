@@ -68,6 +68,7 @@ public class IACompiler {
 			analyzeTime = System.nanoTime() - analyzeTime;
 
 			result.includedAIs = main.getIncludedAIs();
+			ai.setIncludedAIs(result.includedAIs);
 
 			// System.out.println("Parse time = " + Util.formatDurationNanos(parseTime) + ", analyzeTime = " + Util.formatDurationNanos(analyzeTime));
 

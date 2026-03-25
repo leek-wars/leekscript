@@ -1,6 +1,8 @@
 package leekscript.compiler;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class LexicalParserTokenStream {
 	private ArrayList<Token> tokens;
@@ -51,6 +53,10 @@ public class LexicalParserTokenStream {
 
 	public boolean hasMoreTokens() {
 		return cursor < tokens.size();
+	}
+
+	public List<Token> getTokens() {
+		return Collections.unmodifiableList(tokens);
 	}
 
 	public Token atLocation(int line, int column) {

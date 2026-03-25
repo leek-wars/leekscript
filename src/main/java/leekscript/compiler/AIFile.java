@@ -2,6 +2,8 @@ package leekscript.compiler;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.TreeMap;
 
 import tools.jackson.databind.node.ObjectNode;
@@ -28,6 +30,7 @@ public class AIFile {
 	public TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
 	private File filesLines;
 	private LexicalParserTokenStream tokens = null;
+	private Set<AIFile> includedAIs = null;
 
 	public AIFile(String path, String code, long timestamp, int version, int owner, boolean strict) {
 		this(path, code, timestamp, version, null, owner, path.hashCode() & 0xfffffff, strict);
@@ -182,6 +185,42 @@ public class AIFile {
 
 	public boolean isStrict() {
 		return strict;
+	}
+
+	public void setIncludedAIs(Set<AIFile> includedAIs) {
+		this.includedAIs = includedAIs;
+	}
+
+	public Set<AIFile> getIncludedAIs() {
+		return includedAIs;
+	}
+
+	public List<Location> references(int line, int column, Set<AIFile> filesToSearch) {
+		var token = tokens.atLocation(line, column);
+		if (token == null || token.getExpression() == null) {
+			return List.of();
+		}
+
+		var hover = token.getExpression().hover(token);
+		Location definedLocation = hover.defined != null ? hover.defined : token.getLocation();
+
+		String word = token.getWord();
+		List<Location> results = new ArrayList<>();
+
+		for (AIFile file : filesToSearch) {
+			if (file.tokens == null) continue;
+			for (Token t : file.tokens.getTokens()) {
+				if (!t.getWord().equals(word)) continue;
+				if (t.getExpression() == null) continue;
+				var h = t.getExpression().hover(t);
+				Location target = h.defined != null ? h.defined : t.getLocation();
+				if (target.sameStart(definedLocation)) {
+					results.add(t.getLocation());
+				}
+			}
+		}
+
+		return results;
 	}
 
 	public Options getOptions() {

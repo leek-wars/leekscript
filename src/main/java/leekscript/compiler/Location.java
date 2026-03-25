@@ -70,6 +70,12 @@ public class Location {
 		return this.endColumn;
 	}
 
+	public boolean sameStart(Location other) {
+		return this.file.getId() == other.file.getId()
+			&& this.startLine == other.startLine
+			&& this.startColumn == other.startColumn;
+	}
+
 	public Object toJSON() {
 		ArrayNode a = Json.createArray();
 		a.add(this.file.getId());
