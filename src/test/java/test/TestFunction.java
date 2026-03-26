@@ -380,4 +380,29 @@ public class TestFunction extends TestCommon {
 		code("return? null return? null 5").equals("5");
 	}
 
+	@Test
+	public void testReturn_type_warnings() throws Exception {
+		section("Return type warnings");
+
+		// UNSAFE_DOWNCAST: returning any from typed function — no warning in non-strict
+		code_v4_("function f() -> integer { any x = 5 return x } return f()").noWarning();
+
+		// UNSAFE_DOWNCAST: returning integer|null from integer — no warning in non-strict
+		code_v4_("function f(integer x) -> integer { var m = [1: 'a'] return m[x] } return f(1)").noWarning();
+
+		// UNSAFE_DOWNCAST in strict mode — should produce warning
+		code_strict_v4_("function f() -> integer { any x = 5 return x } return f()").warning(Error.DANGEROUS_CONVERSION);
+
+		// INCOMPATIBLE: returning string from integer function — always warning
+		code_v4_("function f() -> integer { return 'hello' } return f()").warning(Error.INCOMPATIBLE_TYPE);
+		code_strict_v4_("function f() -> integer { return 'hello' } return f()").error(Error.INCOMPATIBLE_TYPE);
+
+		// Correct return type — no warning
+		code_v4_("function f() -> integer { return 42 } return f()").noWarning();
+		code_strict_v4_("function f() -> integer { return 42 } return f()").noWarning();
+
+		// UPCAST: returning integer from any function — no warning
+		code_v4_("function f() { return 42 } return f()").noWarning();
+	}
+
 }

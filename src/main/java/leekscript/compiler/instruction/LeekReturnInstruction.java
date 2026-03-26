@@ -58,7 +58,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 		var cast = returnType.accepts(actualType);
 		if (cast.ordinal() > CastType.UPCAST.ordinal()) {
 
-			if (cast == CastType.INCOMPATIBLE || cast == CastType.UNSAFE_DOWNCAST || compiler.getMainBlock().isStrict()) {
+			if (cast == CastType.INCOMPATIBLE || compiler.getMainBlock().isStrict()) {
 				var level = compiler.getMainBlock().isStrict() && cast == CastType.INCOMPATIBLE ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 				var error = cast == CastType.INCOMPATIBLE ? Error.INCOMPATIBLE_TYPE : Error.DANGEROUS_CONVERSION;
 

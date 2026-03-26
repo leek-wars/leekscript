@@ -443,9 +443,9 @@ public class TestEdgeCases extends TestCommon {
 		section("Map array access type mismatch");
 		// Bug: typed Map + function with -> Array<integer>? return type
 		// cache[key] returns Array<integer>|null, cache[key][idx] returns integer|null
-		// Returning integer|null from a function declared -> Array<integer>? should produce a warning
-		code_v4_("global Map<string, Array<integer>> cache = [:] function findBest() -> Array<integer> { return [1, 2, 3] } function getFromCache(string key, integer idx) -> Array<integer>? { if (key == '') return null cache[key] = findBest() return cache[key][idx] } return getFromCache('k', 0)").warning(Error.DANGEROUS_CONVERSION);
-		// In strict mode, MAY_NOT_BE_INDEXABLE is reported first (accessing possibly-null cache[key])
+		// In non-strict mode, UNSAFE_DOWNCAST in return should NOT produce a warning
+		code_v4_("global Map<string, Array<integer>> cache = [:] function findBest() -> Array<integer> { return [1, 2, 3] } function getFromCache(string key, integer idx) -> Array<integer>? { if (key == '') return null cache[key] = findBest() return cache[key][idx] } return getFromCache('k', 0)").noWarning();
+		// In strict mode, DANGEROUS_CONVERSION warning is expected
 		code_strict_v4_("global Map<string, Array<integer>> cache = [:] function findBest() -> Array<integer> { return [1, 2, 3] } function getFromCache(string key, integer idx) -> Array<integer>? { if (key == '') return null cache[key] = findBest() return cache[key][idx] } return getFromCache('k', 0)").warning(Error.MAY_NOT_BE_INDEXABLE);
 	}
 
