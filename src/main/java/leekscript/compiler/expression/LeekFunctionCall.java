@@ -6,11 +6,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
@@ -39,6 +41,7 @@ public class LeekFunctionCall extends Expression {
 	private boolean is_method = false;
 	private boolean is_static_method = false;
 	private ClassDeclarationMethod method;
+	private ClassMethodBlock constructorBlock = null;
 	private Type functionType = Type.ANY;
 
 	public LeekFunctionCall(Token openParenthesis) {
@@ -67,6 +70,26 @@ public class LeekFunctionCall extends Expression {
 	@Override
 	public Type getType() {
 		return type;
+	}
+
+	@Override
+	public Hover hover(Token token) {
+		if (constructorBlock != null) {
+			return new Hover(type, token.getLocation(), constructorBlock.getLocation());
+		}
+		return super.hover(token);
+	}
+
+	public boolean isConstructorCall() {
+		return constructorBlock != null;
+	}
+
+	public int getParameterCount() {
+		return mParameters.size();
+	}
+
+	public Expression getCallExpression() {
+		return mExpression;
 	}
 
 	@Override
@@ -484,6 +507,10 @@ public class LeekFunctionCall extends Expression {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_CONSTRUCTOR, new String[] { clazz.getName() }));
 				} else if (constructor.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_CONSTRUCTOR, new String[] { clazz.getName() }));
+				}
+				if (constructor != null && constructor.block != null) {
+					this.constructorBlock = constructor.block;
+					v.getToken().setExpression(this);
 				}
 				this.type = clazz.getEmptyType();
 

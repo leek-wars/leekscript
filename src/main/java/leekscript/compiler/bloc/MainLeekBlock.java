@@ -388,6 +388,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return mIncluded;
 	}
 
+	public List<ClassDeclarationInstruction> getUserClasses() {
+		return mUserClassesList;
+	}
+
 	public IACompiler getCompiler() {
 		return mCompiler;
 	}
