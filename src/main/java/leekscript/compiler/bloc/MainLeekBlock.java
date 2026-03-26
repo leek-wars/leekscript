@@ -52,6 +52,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public MainLeekBlock(IACompiler compiler, WordCompiler wordCompiler, AIFile ai) throws LeekCompilerException {
 		super(null, null);
+		this.mMain = this;
 
 		// On ajoute l'IA pour pas pouvoir l'include
 		mIncluded.add(ai);

@@ -34,6 +34,7 @@ public class LeekVariable extends Expression {
 	private boolean isFinal = false;
 	private LeekVariable variable;
 	private Type declaredType = null;
+	private int usageCount = 0;
 
 	public LeekVariable(Token token, VariableType type) {
 		this.token = token;
@@ -147,6 +148,14 @@ public class LeekVariable extends Expression {
 		return token.getWord();
 	}
 
+	public void addUsage() {
+		usageCount++;
+	}
+
+	public int getUsageCount() {
+		return usageCount;
+	}
+
 	@Override
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		if (this.type == VariableType.SUPER) {
@@ -163,6 +172,7 @@ public class LeekVariable extends Expression {
 			this.isFinal = v.isFinal();
 			this.box = v.box;
 			this.variable = v;
+			v.addUsage();
 			if (v.getDeclaration() != null && v.getDeclaration().getFunction() != compiler.getCurrentFunction()) {
 				v.getDeclaration().setCaptured();
 			}

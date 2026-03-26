@@ -259,4 +259,21 @@ public class TestGeneral extends TestCommon {
 		code_v2_("integer|real a = 1.999; integer b = a; return b").equals("1");
 	}
 
+	@Test
+	public void testUnusedVariable() throws Exception {
+		section("Unused variables (strict mode only)");
+		// Unused variable in strict mode => warning
+		code_strict_v4_("var x = 5; return 0").warning(Error.UNUSED_VARIABLE);
+		// Used variable in strict mode => no warning
+		code_strict_v4_("var x = 5; return x").noWarning();
+		// Unused variable in non-strict mode => no warning
+		code_v4_("var x = 5; return 0").noWarning();
+		// Underscore prefix suppresses warning
+		code_strict_v4_("var _x = 5; return 0").noWarning();
+		// Unused function parameter in strict mode
+		code_strict_v4_("function f(a) { return 0 } return f(1)").warning(Error.UNUSED_VARIABLE);
+		// Used function parameter
+		code_strict_v4_("function f(a) { return a } return f(1)").noWarning();
+	}
+
 }
