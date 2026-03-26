@@ -93,11 +93,11 @@ public class CompoundType extends Type {
 	}
 
 	public boolean isArrayOrNull() {
-		return types.stream().anyMatch(t -> t.isArray()) && types.stream().anyMatch(t -> t == Type.NULL);
+		return types.size() == 2 && types.stream().anyMatch(t -> t.isArray()) && types.stream().anyMatch(t -> t == Type.NULL);
 	}
 
 	public boolean isMapOrNull() {
-		return types.stream().anyMatch(t -> t.isMap()) && types.stream().anyMatch(t -> t == Type.NULL);
+		return types.size() == 2 && types.stream().anyMatch(t -> t.isMap()) && types.stream().anyMatch(t -> t == Type.NULL);
 	}
 
 	public boolean canBeIterable() {

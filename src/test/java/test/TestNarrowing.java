@@ -266,6 +266,17 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	@Test
+	public void testCompound_type_with_map_and_integer_instanceof() throws Exception {
+		section("Compound type integer|Map? with instanceof Map narrowing");
+		// Bug: isMapOrNull() returned true for integer|Map? causing toMapOrNull()
+		// to be generated for assignments, which fails when value is an integer.
+		code_v4_("integer|Map? x = [1: 2]; if (x instanceof Map) { x = x[1] } return x").equals("2");
+		code_v4_("integer|Map? x = 5; if (x instanceof Map) { x = x[1] } return x").equals("5");
+		code_v4_("Map<integer, integer|Map> m = [0: 3, 1: [2: 10]]; integer|Map? v = m[1]; if (v instanceof Map) { v = v[2] } return v").equals("10");
+		code_v4_("Map<integer, integer|Map> m = [0: 3, 1: [2: 10]]; integer|Map? v = m[0]; if (v instanceof Map) { v = v[2] } return v").equals("3");
+	}
+
+	@Test
 	public void testGlobal_variable_assignment_inside_null_check() throws Exception {
 		section("Global variable assignment inside null check");
 		// global var assigned inside if (x == null) block
