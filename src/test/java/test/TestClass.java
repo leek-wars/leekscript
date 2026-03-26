@@ -37,6 +37,20 @@ public class TestClass extends TestCommon {
 	}
 
 	@Test
+	public void testMethod_call_with_nullable_argument() throws Exception {
+		section("Method call with nullable argument");
+		// Calling a method without this. prefix with a nullable parameter
+		code_v2_("class A { private Array<integer> list = [] private add(integer | null v) { if (v != null) { push(list, v) } } public run() { add(null) add(3) return list } } return new A().run()").equals("[3]");
+		// Same with this. prefix
+		code_v2_("class A { private Array<integer> list = [] private add(integer | null v) { if (v != null) { push(list, v) } } public run() { this.add(null) this.add(3) return list } } return new A().run()").equals("[3]");
+		// Nullable field passed to method without this.
+		code_v2_("class A { private integer? val = null private get(integer? v) { return v } public run() { return get(val) } } return new A().run()").equals("null");
+		code_v2_("class A { private integer? val = null private get(integer? v) { return v } public run() { val = 42 return get(val) } } return new A().run()").equals("42");
+		// Class type nullable parameter
+		code_v2_("class B { public integer x = 0 } class A { private check(B | null b) { return b != null ? b.x : -1 } public run() { return check(null) + ',' + check(new B()) } } return new A().run()").equals("\"-1,0\"");
+	}
+
+	@Test
 	public void testNonMinusexistent_field_access() throws Exception {
 		section("Non-existent field access");
 		// this.field where field doesn't exist: error in strict, warning in non-strict
