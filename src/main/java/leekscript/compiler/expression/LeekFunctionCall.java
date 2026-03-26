@@ -314,7 +314,7 @@ public class LeekFunctionCall extends Expression {
 				}
 			} else {
 				// Java doesn't like a single null for Object... argument
-				if (argCount == 1 && system_function == null && !unsafe) {
+				if (argCount == 1 && system_function == null && !unsafe && !is_method && !is_static_method) {
 					writer.addCode("new Object[] { null }");
 				} else {
 					writer.addCode("null");
@@ -396,6 +396,7 @@ public class LeekFunctionCall extends Expression {
 						for (var count : methods.keySet()) {
 							if (count == mParameters.size()) {
 								ok = true;
+								is_method = true;
 								functionType = methods.get(count).block.getType();
 								break end;
 							}
