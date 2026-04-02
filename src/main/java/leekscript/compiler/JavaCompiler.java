@@ -58,8 +58,7 @@ public class JavaCompiler {
 	}
 
 	static {
-		classpath = new File(LeekScript.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getPath();
-		classpath += ":/home/pierre/dev/leek-wars/generator/bin/main";
+		classpath = System.getProperty("java.class.path");
 		arguments.addAll(Arrays.asList("-classpath", classpath, "-nowarn"));
 
 		// Thread de monitoring des classes libérées par le GC
