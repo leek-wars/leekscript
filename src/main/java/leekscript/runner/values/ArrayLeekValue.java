@@ -960,6 +960,19 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return result;
 	}
 
+	public Object arrayFind(AI ai, FunctionLeekValue function) throws LeekRunException {
+		ai.opsNoCheck(1);
+		for (int i = 0; i < size(); ++i) {
+			var v = get(i);
+			if (ai.bool(function.run(ai, null, v, (long) i, this))) {
+				ai.ops(i);
+				return v;
+			}
+		}
+		ai.ops(size());
+		return null;
+	}
+
 	public boolean arraySome(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.opsNoCheck(1);
 		for (int i = 0; i < size(); ++i) {

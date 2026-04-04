@@ -960,6 +960,17 @@ public class TestArray extends TestCommon {
 	}
 
 	@Test
+	public void testArray_find() throws Exception {
+		section("Array.find");
+		code_v4_("return arrayFind([1, 2, 3, 4, 5], function(v) { return v > 3 })").equals("4");
+		code_v4_("return arrayFind([1, 2, 3, 4, 5], function(v) { return v > 10 })").equals("null");
+		code_v4_("return arrayFind(['a', 'b', 'c'], function(v, k) { return k == 2 })").equals("\"c\"");
+		code_v4_("return arrayFind([10, 20, 30], function(v) { return v == 20 })").equals("20");
+		code_v4_("return arrayFind([], function(v) { return v == 1 })").equals("null");
+		code_v4_("return arrayFind([1, 2, 3, 4, 5], x -> x % 2 == 0)").equals("2");
+	}
+
+	@Test
 	public void testArray_every() throws Exception {
 		section("Array.every");
 		code_v4_("var a = [1, 2, 3, 4, 5, 6] return arrayEvery(a, function(v, k) { return v >= 1 })").equals("true");

@@ -161,6 +161,7 @@ public class LeekFunctions {
 		method("assocReverse", "Array", Type.VOID, new Type[] { Type.ARRAY }).setMaxVersion(3);
 		method("arrayMap", "Array", Type.ARRAY, new Type[] { Type.ARRAY, new FunctionType(Type.ANY, 0, Type.ANY, Type.INT, Type.ARRAY) });
 		method("arrayFilter", "Array", Type.ARRAY, new Type[] { Type.ARRAY, new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY ) });
+		method("arrayFind", "Array", Type.ANY, new Type[] { Type.ARRAY, new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY) }).setMinVersion(4);
 		method("arrayFlatten", "Array", new CallableVersion[] {
 			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, Type.INT }),
 			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY }),
