@@ -12,6 +12,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekType;
 import leekscript.compiler.expression.LeekVariable;
@@ -27,9 +28,12 @@ public class FunctionBlock extends AbstractLeekBlock {
 	private final ArrayList<LeekType> mParametersTypes = new ArrayList<LeekType>();
 	private final ArrayList<LeekVariableDeclarationInstruction> mParameterDeclarations = new ArrayList<>();
 	private final ArrayList<Boolean> mReferences = new ArrayList<Boolean>();
+	private final ArrayList<Expression> defaultValues = new ArrayList<>();
 	private final ArrayList<Type> mTypes = new ArrayList<>();
 	private CallableVersion[] versions;
 	private FunctionType type = new FunctionType(Type.ANY);
+	private int minParameters = 0;
+	private int maxParameters = 0;
 
 	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -52,6 +56,22 @@ public class FunctionBlock extends AbstractLeekBlock {
 		return mParameters.size();
 	}
 
+	public int getMinParameters() {
+		return minParameters;
+	}
+
+	public int getMaxParameters() {
+		return maxParameters;
+	}
+
+	public ArrayList<LeekVariableDeclarationInstruction> getParametersDeclarations() {
+		return mParameterDeclarations;
+	}
+
+	public ArrayList<Expression> getDefaultValues() {
+		return defaultValues;
+	}
+
 	public String referenceArray() {
 		String str = "{";
 		for (int i = 0; i < mParameters.size(); i++) {
@@ -62,7 +82,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 		return str + "}";
 	}
 
-	public void addParameter(WordCompiler compiler, Token token, boolean is_reference, LeekType leekType) throws LeekCompilerException {
+	public void addParameter(WordCompiler compiler, Token token, boolean is_reference, LeekType leekType, Expression defaultValue) throws LeekCompilerException {
 
 		for (var parameter : mParameters) {
 			if (parameter.equals(token.getWord())) {
@@ -70,15 +90,25 @@ public class FunctionBlock extends AbstractLeekBlock {
 			}
 		}
 
+		// Paramètre par défaut pas à la fin
+		if (mParameters.size() > 0 && defaultValue == null && defaultValues.get(defaultValues.size() - 1) != null) {
+			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.DEFAULT_ARGUMENT_NOT_END));
+		}
+
 		var type = leekType != null ? leekType.getType() : Type.ANY;
 		mParameters.add(token.getWord());
 		mParametersTypes.add(leekType);
 		mReferences.add(is_reference);
 		mTypes.add(type);
+		defaultValues.add(defaultValue);
 		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this, type);
 		mParameterDeclarations.add(declaration);
 		addVariable(new LeekVariable(token, VariableType.ARGUMENT, type, declaration));
-		this.type.add_argument(type, false);
+		maxParameters++;
+		if (defaultValue == null) {
+			minParameters++;
+		}
+		this.type.add_argument(type, defaultValue != null);
 	}
 
 	public void setReturnType(Type type) {
@@ -100,6 +130,9 @@ public class FunctionBlock extends AbstractLeekBlock {
 				str += mParametersTypes.get(i).getType().getCode() + " ";
 			}
 			str += mParameters.get(i);
+			if (defaultValues.get(i) != null) {
+				str += " = " + defaultValues.get(i).toString();
+			}
 		}
 		return str + ") {\n" + super.getCode() + "}\n";
 	}
@@ -109,10 +142,22 @@ public class FunctionBlock extends AbstractLeekBlock {
 
 		var types = new Type[mTypes.size()];
 		for (int t = 0; t < types.length; ++t) types[t] = mTypes.get(t);
-		this.versions = new CallableVersion[] { new CallableVersion(this.type.getReturnType(), types) };
+		// Créer une version pour chaque arité possible
+		var versionsList = new ArrayList<CallableVersion>();
+		for (int p = minParameters; p <= maxParameters; ++p) {
+			var versionTypes = new Type[p];
+			for (int t = 0; t < p; ++t) versionTypes[t] = mTypes.get(t);
+			versionsList.add(new CallableVersion(this.type.getReturnType(), versionTypes));
+		}
+		this.versions = versionsList.toArray(new CallableVersion[0]);
 
 		var initialFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(this);
+		for (var value : defaultValues) {
+			if (value != null) {
+				value.preAnalyze(compiler);
+			}
+		}
 		super.preAnalyze(compiler);
 		compiler.setCurrentFunction(initialFunction);
 	}
@@ -121,6 +166,11 @@ public class FunctionBlock extends AbstractLeekBlock {
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		var initialFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(this);
+		for (var value : defaultValues) {
+			if (value != null) {
+				value.analyze(compiler);
+			}
+		}
 		super.analyze(compiler);
 		compiler.setCurrentFunction(initialFunction);
 	}
@@ -132,16 +182,24 @@ public class FunctionBlock extends AbstractLeekBlock {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
+		for (int paramCount = minParameters; paramCount <= maxParameters; paramCount++) {
+			writeJavaCodeForArity(mainblock, writer, paramCount);
+		}
+	}
+
+	private void writeJavaCodeForArity(MainLeekBlock mainblock, JavaWriter writer, int paramCount) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("private " + this.type.returnType().getJavaPrimitiveName(mainblock.getVersion()) + " f_").append(token.getWord()).append("(");
-		for (int i = 0; i < mParameters.size(); i++) {
+		for (int i = 0; i < paramCount; i++) {
 			if (i != 0)
 				sb.append(", ");
 			sb.append(mParameterDeclarations.get(i).getType().getJavaPrimitiveName(mainblock.getVersion()));
 			sb.append(" p_").append(mParameters.get(i));
 		}
 		sb.append(") throws LeekRunException {");
-		for (int i = 0; i < mParameters.size(); i++) {
+
+		// Paramètres passés en argument
+		for (int i = 0; i < paramCount; i++) {
 			var parameter = mParameters.get(i);
 			var declaration = mParameterDeclarations.get(i);
 			if (declaration.isCaptured()) {
@@ -174,6 +232,30 @@ public class FunctionBlock extends AbstractLeekBlock {
 			}
 		}
 		writer.addLine(sb.toString(), getLocation());
+
+		// Paramètres avec valeur par défaut (non passés en argument)
+		for (int i = paramCount; i < maxParameters; i++) {
+			var declaration = mParameterDeclarations.get(i);
+			var defaultValue = defaultValues.get(i);
+			if (declaration.isCaptured()) {
+				writer.addCode("final var u_" + mParameters.get(i) + " = new Box<" + declaration.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
+				defaultValue.writeJavaCode(mainblock, writer, false);
+				writer.addLine(");");
+				writer.addCounter(defaultValue.operations);
+			} else {
+				writer.addCode("var u_" + mParameters.get(i) + " = ");
+				if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
+					writer.addCode("new Box(" + writer.getAIThis() + ", ");
+					defaultValue.writeJavaCode(mainblock, writer, false);
+					writer.addLine(");");
+				} else {
+					defaultValue.writeJavaCode(mainblock, writer, false);
+					writer.addLine(";");
+				}
+				writer.addCounter(defaultValue.operations);
+			}
+		}
+
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer, false);
 		if (mEndInstruction == 0) {
@@ -187,7 +269,12 @@ public class FunctionBlock extends AbstractLeekBlock {
 		writer.addCode("return f_" + this + "(");
 		for (int a = 0; a < this.countParameters(); ++a) {
 			if (a > 0) writer.addCode(", ");
-			writer.addCode("values.length > " + a + " ? " + (type != Type.ANY ? "(" + type.getArgument(a).getJavaName(mainblock.getVersion()) + ")" : "") + " values[" + a + "] : " + this.type.getArgument(a).getDefaultValue(writer, mainblock.getVersion()));
+			writer.addCode("values.length > " + a + " ? " + (type != Type.ANY ? "(" + type.getArgument(a).getJavaName(mainblock.getVersion()) + ")" : "") + " values[" + a + "] : ");
+			if (defaultValues.get(a) != null) {
+				defaultValues.get(a).writeJavaCode(mainblock, writer, false);
+			} else {
+				writer.addCode(this.type.getArgument(a).getDefaultValue(writer, mainblock.getVersion()));
+			}
 		}
 		writer.addLine(");");
 		writer.addLine("}}");

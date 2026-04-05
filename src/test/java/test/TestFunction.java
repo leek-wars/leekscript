@@ -405,4 +405,34 @@ public class TestFunction extends TestCommon {
 		code_v4_("function f() { return 42 } return f()").noWarning();
 	}
 
+	@Test
+	public void testDefault_parameters() throws Exception {
+		section("Default parameters");
+		// Basic default parameter
+		code("function f(x = 5) { return x } return f()").equals("5");
+		code("function f(x = 5) { return x } return f(12)").equals("12");
+		// Multiple parameters with some defaults
+		code("function f(a, b = 10) { return a + b } return f(3)").equals("13");
+		code("function f(a, b = 10) { return a + b } return f(3, 7)").equals("10");
+		// Multiple default parameters
+		code("function f(a = 1, b = 2, c = 3) { return a + b + c } return f()").equals("6");
+		code("function f(a = 1, b = 2, c = 3) { return a + b + c } return f(10)").equals("15");
+		code("function f(a = 1, b = 2, c = 3) { return a + b + c } return f(10, 20)").equals("33");
+		code("function f(a = 1, b = 2, c = 3) { return a + b + c } return f(10, 20, 30)").equals("60");
+		// Default with expression
+		code("function f(a = 3 + 4) { return a } return f()").equals("7");
+		// Default parameter with string
+		code("function f(s = 'hello') { return s } return f()").equals("\"hello\"");
+		// Default parameter with array
+		code("function f(a = [1, 2, 3]) { return a } return f()").equals("[1, 2, 3]");
+		// Default array parameter followed by another parameter
+		code("function f(a = [1, 2], b = 10) { return count(a) + b } return f()").equals("12");
+		// Error: default parameter not at end
+		code("function f(a = 5, b) { return a + b } return f(1, 2)").error(Error.DEFAULT_ARGUMENT_NOT_END);
+		// Too many arguments
+		code("function f(a, b = 10) { return a + b } return f(1, 2, 3)").error(Error.INVALID_PARAMETER_COUNT);
+		// Too few arguments
+		code("function f(a, b = 10) { return a + b } return f()").error(Error.INVALID_PARAMETER_COUNT);
+	}
+
 }

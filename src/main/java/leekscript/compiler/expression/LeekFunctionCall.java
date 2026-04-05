@@ -481,8 +481,7 @@ public class LeekFunctionCall extends Expression {
 
 				var f = compiler.getMainBlock().getUserFunction(v.getName());
 				if (f != null) {
-					int nb_params = f.countParameters();
-					if (mParameters.size() != nb_params) {
+					if (mParameters.size() < f.getMinParameters() || mParameters.size() > f.getMaxParameters()) {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
 					}
 					verifyVersions(compiler, f.getVersions());

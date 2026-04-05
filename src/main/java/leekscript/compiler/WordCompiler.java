@@ -181,15 +181,24 @@ public class WordCompiler {
 						if (mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("@")) {
 							mTokens.skip();
 						}
-						// if (mTokens.get().getType() != TokenType.STRING) {
-						// addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.PARAMETER_NAME_EXPECTED));
-						// }
 						var parameter = mTokens.eat();
-						// if (parameters.contains(parameter.getWord())) {
-						// 	throw new LeekCompilerException(parameter, Error.PARAMETER_NAME_UNAVAILABLE);
-						// }
 						parameters.add(parameter.getWord());
 						param_count++;
+
+						// Skip default value expression (= expr)
+						if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals("=")) {
+							mTokens.skip(); // skip =
+							int depth = 0;
+							while (mTokens.hasMoreTokens()) {
+								var type = mTokens.get().getType();
+								if (type == TokenType.PAR_LEFT || type == TokenType.BRACKET_LEFT || type == TokenType.ACCOLADE_LEFT) depth++;
+								else if (type == TokenType.PAR_RIGHT || type == TokenType.BRACKET_RIGHT || type == TokenType.ACCOLADE_RIGHT) {
+									if (depth == 0) break;
+									depth--;
+								} else if (type == TokenType.VIRG && depth == 0) break;
+								mTokens.skip();
+							}
+						}
 
 						if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VIRG) {
 							mTokens.skip();
@@ -524,11 +533,18 @@ public class WordCompiler {
 				mTokens.skip();
 			}
 
+			// Valeur par défaut
+			Expression defaultValue = null;
+			if (mTokens.get().getWord().equals("=")) {
+				mTokens.eat();
+				defaultValue = readExpression(true);
+			}
+
 			if (mTokens.get().getType() == TokenType.VIRG) {
 				mTokens.skip();
 			}
 			if (parameter != null) {
-				block.addParameter(this, parameter, is_reference, type);
+				block.addParameter(this, parameter, is_reference, type, defaultValue);
 			}
 		}
 		if (mTokens.eat().getType() != TokenType.PAR_RIGHT) {
