@@ -176,28 +176,34 @@ public class NarrowingInfo {
 	}
 
 	/**
+	 * Extract the target type from the right-hand side of an instanceof expression.
+	 */
+	private static Type extractInstanceofTargetType(Expression e2) {
+		if (e2 instanceof LeekType lt) {
+			return lt.type;
+		} else if (e2 instanceof LeekVariable lv && lv.getVariableType() == LeekVariable.VariableType.CLASS) {
+			var classDecl = lv.getClassDeclaration();
+			if (classDecl != null) {
+				return classDecl.classType;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Extract narrowing from an instanceof check (x instanceof Type).
+	 * Supports both direct variables and property accesses (obj.field instanceof Type).
 	 */
 	private static void extractInstanceof(Expression e1, Expression e2, NarrowingInfo info) {
 		if (e1 == null) return;
+
+		Type targetType = extractInstanceofTargetType(e2);
+		if (targetType == null) return;
+
+		// Try direct variable narrowing first (handles simple vars, this.field, class.field)
 		var declVar = extractVariable(e1);
-		if (declVar == null) return;
-
-		// Get the target type from the right-hand side
-		Type targetType = null;
-		if (e2 instanceof LeekType lt) {
-			targetType = lt.type;
-		} else if (e2 instanceof LeekVariable lv && lv.getVariableType() == LeekVariable.VariableType.CLASS) {
-			// instanceof with a class variable (e.g., Array, Integer)
-			var classDecl = lv.getClassDeclaration();
-			if (classDecl != null) {
-				targetType = classDecl.classType;
-			}
-		}
-
-		if (targetType != null) {
+		if (declVar != null) {
 			info.trueNarrowings.put(declVar, targetType);
-			// False branch: remove target type from union if compound
 			Type currentType = declVar.getType();
 			if (currentType instanceof CompoundType ct) {
 				Type remaining = ct.removeType(targetType);
@@ -205,25 +211,31 @@ public class NarrowingInfo {
 					info.falseNarrowings.put(declVar, remaining);
 				}
 			}
+			return;
+		}
+
+		// Fallback: property access narrowing (obj.field instanceof Type)
+		String key = extractPropertyKey(e1);
+		if (key == null) return;
+		var oa = (LeekObjectAccess) unwrap(e1);
+		info.truePropertyNarrowings.put(key, targetType);
+		var fieldType = oa.getType();
+		if (fieldType instanceof CompoundType ct) {
+			Type remaining = ct.removeType(targetType);
+			if (remaining != fieldType) {
+				info.falsePropertyNarrowings.put(key, remaining);
+			}
 		}
 	}
 
 	/**
 	 * Extract narrowing for property access (obj.field != null).
-	 * Key is "variableName.fieldName".
 	 */
 	private static void extractPropertyNullCheck(LeekObjectAccess oa, NarrowingInfo info, boolean isEquals) {
-		var obj = oa.getObject();
-		if (!(obj instanceof LeekVariable lv)) return;
-		var declVar = lv.getVariable();
-		if (declVar == null) return;
+		String key = extractPropertyKey(oa);
+		if (key == null) return;
 
-		String fieldName = oa.getField();
-		if (fieldName == null || fieldName.isEmpty()) return;
-
-		String key = declVar.getName() + "." + fieldName;
 		var fieldType = oa.getType();
-
 		if (fieldType.canBeNull()) {
 			var nonNullType = fieldType.assertNotNull();
 			if (isEquals) {
@@ -234,6 +246,22 @@ public class NarrowingInfo {
 				info.falsePropertyNarrowings.put(key, Type.NULL);
 			}
 		}
+	}
+
+	/**
+	 * Extract a property narrowing key ("varName.fieldName") from a property access expression.
+	 * Returns null if the expression is not a valid property access for narrowing.
+	 */
+	private static String extractPropertyKey(Expression expr) {
+		expr = unwrap(expr);
+		if (!(expr instanceof LeekObjectAccess oa)) return null;
+		var obj = oa.getObject();
+		if (!(obj instanceof LeekVariable lv)) return null;
+		var declVar = lv.getVariable();
+		if (declVar == null) return null;
+		String fieldName = oa.getField();
+		if (fieldName == null || fieldName.isEmpty()) return null;
+		return declVar.getName() + "." + fieldName;
 	}
 
 	/**

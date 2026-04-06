@@ -286,4 +286,16 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("class A { integer x = 1 } class B extends A { } global obj = null; if (obj == null) { obj = new A() } return obj.x").equals("1");
 	}
 
+	@Test
+	public void testInstanceof_narrowing_nullable_property_access() throws Exception {
+		section("Instanceof narrowing on nullable property access (obj.field instanceof Subclass)");
+		// Nullable field (Item?) with instanceof subclass check (Weapon)
+		// The field should be narrowed to the subclass type in the true branch
+		code_v4_("class Item { integer id } class Weapon extends Item { integer cost = 5 } class Move { Item? item = null } var m = new Move(); m.item = new Weapon(); if (m.item instanceof Weapon) { return m.item.cost } return 0").equals("5");
+		code_v4_("class Item { integer id } class Weapon extends Item { integer cost = 5 } class Move { Item? item = null } var m = new Move(); m.item = new Weapon(); if (m.item instanceof Weapon) { return m.item.cost } return 0").noWarning();
+		// Passing narrowed property to a function expecting the subclass type
+		code_v4_("class Item { integer id } class Weapon extends Item { integer dmg = 10 } class Move { Item? item = null } function useWeapon(Weapon w) { return w.dmg } var m = new Move(); m.item = new Weapon(); if (m.item instanceof Weapon) { return useWeapon(m.item) } return 0").equals("10");
+		code_v4_("class Item { integer id } class Weapon extends Item { integer dmg = 10 } class Move { Item? item = null } function useWeapon(Weapon w) { return w.dmg } var m = new Move(); m.item = new Weapon(); if (m.item instanceof Weapon) { return useWeapon(m.item) } return 0").noWarning();
+	}
+
 }
