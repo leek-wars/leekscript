@@ -73,7 +73,7 @@ public class WordCompiler {
 	private void parse() throws LeekCompilerException {
 		if (!mAI.hasBeenParsed()) {
 			var parser = new LexicalParser(mAI, version);
-			mAI.setTokenStream(parser.parse(error -> addError(error)));
+			mAI.setTokenStream(parser.parse(error -> mAI.getErrors().add(error)));
 		}
 		mTokens = mAI.getTokenStream();
 	}

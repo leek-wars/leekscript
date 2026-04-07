@@ -4,12 +4,11 @@ import java.util.ArrayList;
 import leekscript.common.Error;
 
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
-import leekscript.compiler.exceptions.LeekCompilerException;
 
 public class LexicalParser {
 
 	public interface ErrorReporter {
-		void report(AnalyzeError error) throws LeekCompilerException;
+		void report(AnalyzeError error);
 	}
 
 	public static final String[] reservedWords = new String[] { "abstract", "and", "as", "await", "break", "byte", "case", "catch", "char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval", "export", "extends", "false", "final", "finally", "float", "for", "function", "global", "goto", "if", "implements", "import", "in", "instanceof", "int", "interface", "let", "long", "native", "new", "not", "null", "or", "package", "private", "protected", "public", "return", "short", "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "true", "try", "typeof", "var", "void", "volatile", "while", "with", "xor", "yield" };
@@ -24,7 +23,7 @@ public class LexicalParser {
 		this.version = version;
 	}
 
-	public LexicalParserTokenStream parse(ErrorReporter error) throws LeekCompilerException {
+	public LexicalParserTokenStream parse(ErrorReporter error) {
 		for (stream = new CharStream(aiFile.getCode()); stream.hasMore();) {
 
 			if (tryParseWhiteSpaces()) continue;
@@ -283,7 +282,7 @@ public class LexicalParser {
 		return true;
 	}
 
-	private boolean tryParseNumber(ErrorReporter error) throws LeekCompilerException {
+	private boolean tryParseNumber(ErrorReporter error) {
 
 		if (stream.peek() < '0' || stream.peek() > '9') {
 			return false;
@@ -332,7 +331,7 @@ public class LexicalParser {
 		return true;
 	}
 
-	private boolean tryParseString(ErrorReporter error) throws LeekCompilerException {
+	private boolean tryParseString(ErrorReporter error) {
 
 		var openQuote = stream.peek();
 		if (openQuote != '"' && openQuote != '\'') {
