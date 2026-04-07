@@ -298,4 +298,17 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("class Item { integer id } class Weapon extends Item { integer dmg = 10 } class Move { Item? item = null } function useWeapon(Weapon w) { return w.dmg } var m = new Move(); m.item = new Weapon(); if (m.item instanceof Weapon) { return useWeapon(m.item) } return 0").noWarning();
 	}
 
+	@Test
+	public void testNarrowing_function_argument_after_null_check_strict() throws Exception {
+		section("Narrowing: function argument after null check (strict mode)");
+		// Non-strict
+		code_v4_("function f(integer x) { return x * 2 } integer | null id = 5; if (id == null) return 0; return f(id)").noWarning();
+		// Strict mode
+		code_strict_v4_("function f(integer x) { return x * 2 } integer | null id = 5; if (id == null) return 0; return f(id)").noWarning();
+		// Strict: static method in class (FIELD_MAY_NOT_EXIST on .id is expected since fromXY returns Cell?)
+		code_strict_v4_("class Cell { integer id; static Cell get(integer i) { var c = new Cell(); c.id = i; return c } static Cell? fromXY(integer x, integer y) { integer? id = x > 0 ? x + y : null; if (id == null) return null; return Cell.get(id) } } return Cell.fromXY(1, 2)!.id").noWarning();
+		// Strict: var inference from nullable function
+		code_strict_v4_("function getCellFromXY(integer x, integer y) => integer? { return x + y } class Cell { integer id; static Cell get(integer i) { var c = new Cell(); c.id = i; return c } static Cell? fromXY(integer x, integer y) { var id = getCellFromXY(x, y); if (id == null) return null; return Cell.get(id) } } return Cell.fromXY(1, 2)!.id").noWarning();
+	}
+
 }
