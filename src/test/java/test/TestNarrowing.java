@@ -324,6 +324,13 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	@Test
+	public void testNarrowing_instanceof_property_as_function_argument() throws Exception {
+		section("Narrowing: instanceof on property passed as function argument");
+		// Property narrowed via instanceof should be castable when passed as argument
+		code_v4_("class A {} class B extends A { integer v = 42 } class C { A? item } function f(B b) { return b.v } var c = new C(); c.item = new B(); if (c.item instanceof B) { return f(c.item) } return 0").equals("42");
+	}
+
+	@Test
 	public void testNarrowing_function_argument_after_null_check_strict() throws Exception {
 		section("Narrowing: function argument after null check (strict mode)");
 		// Non-strict

@@ -218,9 +218,19 @@ public class LeekObjectAccess extends Expression {
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS && this.variable != null) {
 				writer.addCode(field.getWord());
 			} else if (object.getType() instanceof ClassType && !(type instanceof FunctionType) && this.variable != null) { // TODO : mieux détecter les méthodes
+				// Cast the entire field access if the type was narrowed (e.g., instanceof)
+				boolean needResultCast = type instanceof ClassType ct2 && variable.getType() != type && !(variable.getType() instanceof ClassType vct && vct == ct2);
+				if (needResultCast) {
+					writer.addCode("((");
+					writer.addCode(type.getJavaName(mainblock.getVersion()));
+					writer.addCode(") ");
+				}
 				writeObjectWithNarrowingCast(mainblock, writer);
 				writer.addCode(".");
 				writer.addCode(field.getWord());
+				if (needResultCast) {
+					writer.addCode(")");
+				}
 			} else {
 				if (type != Type.ANY) {
 					if (parenthesis) writer.addCode("(");
