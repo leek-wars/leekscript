@@ -242,15 +242,23 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		for (var instruction : mInstructions) {
 			instruction.analyze(compiler);
 
-			// Case 2: Early return narrowing
-			// If a conditional block (if without else, or if where body exits)
-			// exits via return/break/continue, apply inverse narrowings for subsequent code
+			// Apply false narrowings after a conditional block (if without else):
+			// Case 2: body exits (return/break/continue) → inverse narrowings for subsequent code
+			// Case 7: body assigns non-null to null-checked variables → both branches guarantee non-null
 			if (instruction instanceof ConditionalBloc cb
 				&& cb.getParentCondition() == null  // First 'if' in chain (not else-if)
-				&& cb.mEndInstruction != 0           // Body exits (return/break/continue)
 				&& cb.getNarrowingInfo() != null
-				&& cb.getNarrowingInfo().hasFalse()) {
+				&& cb.getNarrowingInfo().hasFalse()
+				&& (cb.mEndInstruction != 0 || cb.isAssignmentSatisfiesFalse())) {
 				pendingRestores.add(cb.getNarrowingInfo().applyFalse());
+				// Case 7: also apply property narrowings for subsequent code
+				if (cb.mEndInstruction == 0) {
+					var falsePropertyNarrowings = cb.getNarrowingInfo().getFalsePropertyNarrowings();
+					if (!falsePropertyNarrowings.isEmpty()) {
+						if (mNarrowedPropertyTypes == null) mNarrowedPropertyTypes = new HashMap<>();
+						mNarrowedPropertyTypes.putAll(falsePropertyNarrowings);
+					}
+				}
 			}
 		}
 

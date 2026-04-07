@@ -34,6 +34,7 @@ public class LeekVariable extends Expression {
 	private boolean isFinal = false;
 	private LeekVariable variable;
 	private Type declaredType = null;
+	private Type lastAssignedType = null;
 	private int usageCount = 0;
 
 	public LeekVariable(Token token, VariableType type) {
@@ -252,6 +253,10 @@ public class LeekVariable extends Expression {
 		if (declaration != null) return declaration.getType();
 		return declaredType != null ? declaredType : variableType;
 	}
+
+	public Type getLastAssignedType() { return lastAssignedType; }
+	public void setLastAssignedType(Type type) { this.lastAssignedType = type; }
+	public void clearLastAssignedType() { this.lastAssignedType = null; }
 
 	public FunctionBlock getFunctionDeclaration() {
 		return functionDeclaration;

@@ -21,6 +21,7 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	private final Token token;
 	private boolean mPutCounterBefore = false;
 	private NarrowingInfo narrowingInfo = null;
+	private boolean assignmentSatisfiesFalse = false;
 
 	public ConditionalBloc(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -45,6 +46,10 @@ public class ConditionalBloc extends AbstractLeekBlock {
 
 	public NarrowingInfo getNarrowingInfo() {
 		return narrowingInfo;
+	}
+
+	public boolean isAssignmentSatisfiesFalse() {
+		return assignmentSatisfiesFalse;
 	}
 
 	@Override
@@ -82,10 +87,24 @@ public class ConditionalBloc extends AbstractLeekBlock {
 			// Step 3: Apply true narrowings for the body
 			var saved = narrowingInfo.applyTrue();
 
+			// Step 3b: Clear lastAssignedType on narrowed variables to avoid stale data
+			// from assignments before the if block
+			for (var v : narrowingInfo.getFalseNarrowings().keySet()) v.clearLastAssignedType();
+			for (var key : narrowingInfo.getFalsePropertyNarrowings().keySet()) {
+				var v = narrowingInfo.getPropertyVariables().get(key);
+				if (v != null) v.clearLastAssignedType();
+			}
+
 			// Step 4: Apply property narrowings to the block
 			applyPropertyNarrowings(narrowingInfo.getTruePropertyNarrowings());
 
 			super.analyze(compiler);
+
+			// Step 4b: Check assignment narrowing pattern (if body doesn't exit)
+			// Pattern: if (x == null) { x = nonNull } → x is non-null after the if
+			if (mEndInstruction == 0 && narrowingInfo.hasFalse()) {
+				assignmentSatisfiesFalse = checkAssignmentSatisfiesFalse();
+			}
 
 			// Step 5: Restore narrowings
 			clearPropertyNarrowings();
@@ -141,6 +160,32 @@ public class ConditionalBloc extends AbstractLeekBlock {
 		if (propertyNarrowings != null && !propertyNarrowings.isEmpty()) {
 			mNarrowedPropertyTypes = new HashMap<>(propertyNarrowings);
 		}
+	}
+
+	/**
+	 * Check if the body assigned non-null values to all variables that the condition
+	 * null-checked. This detects the pattern: if (x == null) { x = nonNull }
+	 * For field variables (property narrowings), the body must have a single
+	 * instruction to avoid side effects from subsequent method calls.
+	 */
+	private boolean checkAssignmentSatisfiesFalse() {
+		// Check variable narrowings (local variables — safe from side effects)
+		for (var entry : narrowingInfo.getFalseNarrowings().entrySet()) {
+			var variable = entry.getKey();
+			var assignedType = variable.getLastAssignedType();
+			if (assignedType == null || assignedType.canBeNull()) return false;
+		}
+		// Check property narrowings (field variables — single instruction only)
+		if (!narrowingInfo.getFalsePropertyNarrowings().isEmpty()) {
+			if (mInstructions.size() != 1) return false;
+			for (var entry : narrowingInfo.getFalsePropertyNarrowings().entrySet()) {
+				var fieldVar = narrowingInfo.getPropertyVariables().get(entry.getKey());
+				if (fieldVar == null) return false;
+				var assignedType = fieldVar.getLastAssignedType();
+				if (assignedType == null || assignedType.canBeNull()) return false;
+			}
+		}
+		return true;
 	}
 
 	private void clearPropertyNarrowings() {

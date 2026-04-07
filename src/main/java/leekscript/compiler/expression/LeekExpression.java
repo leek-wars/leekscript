@@ -1131,6 +1131,11 @@ public class LeekExpression extends Expression {
 			if (variable1 != null && mExpression1 instanceof LeekVariable lv2) {
 				variable1.setType(variable1.getDeclaredType());
 			}
+			// Track assigned expression type for assignment narrowing detection
+			// (used by ConditionalBloc to detect patterns like: if (x == null) { x = nonNull })
+			if (variable1 != null) {
+				variable1.setLastAssignedType(mExpression2.getType());
+			}
 		}
 
 		// Type compatible ?

@@ -71,8 +71,8 @@ public class TestNarrowing extends TestCommon {
 		// while (x != null) → x is non-null inside loop
 		code_v4_("integer | null x = 5; var r = 0; while (x != null) { r = abs(x); x = null } return r").max_ops(1000).noWarning();
 		code_v4_("integer | null x = 5; var r = 0; while (x != null) { r = abs(x); x = null } return r").max_ops(1000).equals("5");
-		// After reassignment (w = null), narrowing is reset → abs(w) should warn in strict mode
-		code_strict_v4_("integer | null w = 5; var r = 0; while (w != null) { r = abs(w); w = null; abs(w) } return r").max_ops(1000).warning(Error.DANGEROUS_CONVERSION);
+		// After reassignment (w = null), w is narrowed to null type (assignment narrowing)
+		code_v4_("integer | null w = 5; var r = 0; while (w != null) { r = abs(w); w = null } return r").max_ops(1000).noWarning();
 	}
 
 	@Test
@@ -296,6 +296,31 @@ public class TestNarrowing extends TestCommon {
 		// Passing narrowed property to a function expecting the subclass type
 		code_v4_("class Item { integer id } class Weapon extends Item { integer dmg = 10 } class Move { Item? item = null } function useWeapon(Weapon w) { return w.dmg } var m = new Move(); m.item = new Weapon(); if (m.item instanceof Weapon) { return useWeapon(m.item) } return 0").equals("10");
 		code_v4_("class Item { integer id } class Weapon extends Item { integer dmg = 10 } class Move { Item? item = null } function useWeapon(Weapon w) { return w.dmg } var m = new Move(); m.item = new Weapon(); if (m.item instanceof Weapon) { return useWeapon(m.item) } return 0").noWarning();
+	}
+
+	@Test
+	public void testAssignment_narrowing() throws Exception {
+		section("Assignment narrowing: variable narrowed to assigned expression type");
+		// After if (x == null) { x = nonNull }, x is non-null
+		// Simple local variable
+		code_v4_("integer | null x = null; if (x == null) { x = 5 } return abs(x)").noWarning();
+		code_v4_("integer | null x = null; if (x == null) { x = 5 } return abs(x)").equals("5");
+		// Class field with this.field syntax (user-reported pattern)
+		code_v4_("class T { T? a = null; T a_() { if (this.a == null) { this.a = new T() } return this.a } } return new T().a_()").noWarning();
+		// Class field without this prefix
+		code_v4_("class T { T? a = null; T a_() { if (a == null) { a = new T() } return a } } return new T().a_()").noWarning();
+		// Assignment narrows type: after x = nonNull, x is non-null
+		code_v4_("integer | null x = null; x = 42; return abs(x)").noWarning();
+		code_v4_("integer | null x = null; x = 42; return abs(x)").equals("42");
+		// Assignment to null narrows type to null (stale narrowing reset)
+		code_strict_v4_("integer | null w = 5; var r = 0; while (w != null) { r = abs(w); w = null } return r").max_ops(1000).noWarning();
+		// Stale lastAssignedType must not cause false positive:
+		// x = 42 before the if must not make if (x == null) { debug() } narrow x
+		code_strict_v4_("function f(integer | null x) { x = 42; x = null; if (x == null) { debug(0) } return abs(x) }").warning(Error.DANGEROUS_CONVERSION);
+		// Field with method call after assignment: must NOT narrow (side effects could nullify)
+		code_strict_v4_("class T { T? a = null; reset() { a = null } T? a_() { if (a == null) { a = new T(); reset() } return a } }").noWarning();
+		// Field with single instruction: must narrow
+		code_v4_("class T { T? a = null; T a_() { if (a == null) { a = new T() } return a } } return new T().a_()").noWarning();
 	}
 
 	@Test

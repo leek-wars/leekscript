@@ -22,11 +22,14 @@ public class NarrowingInfo {
 	// Property access narrowings (case 6): key = "varName.fieldName"
 	private final Map<String, Type> truePropertyNarrowings = new HashMap<>();
 	private final Map<String, Type> falsePropertyNarrowings = new HashMap<>();
+	// Maps property keys to their field variables (for assignment narrowing detection)
+	private final Map<String, LeekVariable> propertyVariables = new HashMap<>();
 
 	public Map<LeekVariable, Type> getTrueNarrowings() { return trueNarrowings; }
 	public Map<LeekVariable, Type> getFalseNarrowings() { return falseNarrowings; }
 	public Map<String, Type> getTruePropertyNarrowings() { return truePropertyNarrowings; }
 	public Map<String, Type> getFalsePropertyNarrowings() { return falsePropertyNarrowings; }
+	public Map<String, LeekVariable> getPropertyVariables() { return propertyVariables; }
 
 	public boolean hasTrue() { return !trueNarrowings.isEmpty() || !truePropertyNarrowings.isEmpty(); }
 	public boolean hasFalse() { return !falseNarrowings.isEmpty() || !falsePropertyNarrowings.isEmpty(); }
@@ -234,6 +237,7 @@ public class NarrowingInfo {
 	private static void extractPropertyNullCheck(LeekObjectAccess oa, NarrowingInfo info, boolean isEquals) {
 		String key = extractPropertyKey(oa);
 		if (key == null) return;
+		if (oa.getVariable() != null) info.propertyVariables.put(key, oa.getVariable());
 
 		var fieldType = oa.getType();
 		if (fieldType.canBeNull()) {
