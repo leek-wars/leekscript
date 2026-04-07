@@ -172,6 +172,12 @@ public class ConditionalBloc extends AbstractLeekBlock {
 		// Check variable narrowings (local variables — safe from side effects)
 		for (var entry : narrowingInfo.getFalseNarrowings().entrySet()) {
 			var variable = entry.getKey();
+			// Skip if the false narrowing itself is null — applying it would
+			// narrow the variable to null after the if, which is never useful.
+			// This happens for `if (x != null) { x = nonNull }` where the
+			// false branch means x was null. The assignment narrowing pattern
+			// only makes sense for `if (x == null) { x = nonNull }`.
+			if (entry.getValue().canBeNull()) return false;
 			var assignedType = variable.getLastAssignedType();
 			if (assignedType == null || assignedType.canBeNull()) return false;
 		}

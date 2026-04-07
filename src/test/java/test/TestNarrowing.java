@@ -321,6 +321,12 @@ public class TestNarrowing extends TestCommon {
 		code_strict_v4_("class T { T? a = null; reset() { a = null } T? a_() { if (a == null) { a = new T(); reset() } return a } }").noWarning();
 		// Field with single instruction: must narrow
 		code_v4_("class T { T? a = null; T a_() { if (a == null) { a = new T() } return a } } return new T().a_()").noWarning();
+		// if (x != null) { x = nonNull } must NOT apply false narrowing (x → null)
+		// This pattern differs from if (x == null) { x = nonNull } — here the false
+		// branch means x was null, so applying it would incorrectly narrow x to null.
+		code_v4_("integer | null x = null; if (x != null) { x = 42 } if (x == null) { x = 0 } return abs(x)").noWarning();
+		code_v4_("integer | null x = null; if (x != null) { x = 42 } if (x == null) { x = 0 } return abs(x)").equals("0");
+		code_v4_("integer | null x = 5; if (x != null) { x = 42 } if (x == null) { x = 0 } return abs(x)").equals("42");
 	}
 
 	@Test
