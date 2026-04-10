@@ -781,13 +781,16 @@ public class WordCompiler {
 
 			if (!mTokens.eat().getWord().equals("in")) throw new LeekCompilerException(mTokens.get(), Error.KEYWORD_IN_EXPECTED);
 
+			// On lit d'abord le array (ou liste de valeurs) dans le scope parent,
+			// avant d'attacher le bloc, pour éviter de laisser un bloc orphelin
+			// si la lecture échoue.
+			var array = readExpression();
+
 			// On déclare notre bloc foreach et on entre dedans
 			ForeachKeyBlock block = new ForeachKeyBlock(mCurentBlock, mMain, isDeclaration, isValueDeclaration, token, reference1, reference2);
 			mCurentBlock.addInstruction(this, block);
 			mCurentBlock = block;
 
-			// On lit le array (ou liste de valeurs)
-			var array = readExpression();
 			block.setArray(array);
 			block.setKeyIterator(this, varName, isDeclaration, type);
 			block.setValueIterator(this, valueVarName, isValueDeclaration, valueType);
@@ -796,12 +799,15 @@ public class WordCompiler {
 		} else if (mTokens.get().getWord().equals("in")) { // C'est un for (i in array)
 			mTokens.skip();
 
+			// On lit d'abord le array (ou liste de valeurs) dans le scope parent,
+			// avant d'attacher le bloc, pour éviter de laisser un bloc orphelin
+			// si la lecture échoue.
+			var array = readExpression();
+
 			ForeachBlock block = new ForeachBlock(mCurentBlock, mMain, isDeclaration, token, reference1);
 			mCurentBlock.addInstruction(this, block);
 			mCurentBlock = block;
 
-			// On lit le array (ou liste de valeurs)
-			var array = readExpression();
 			block.setArray(array);
 			block.setIterator(this, varName, type == null ? Type.ANY : type.getType());
 
