@@ -542,10 +542,17 @@ public abstract class AI {
 				}
 			}
 		}
-		// Java stacktrace
-		// for (StackTraceElement element : elements) {
-		// 	sb.append("\t▶ " + element.getClassName() + "." + element.getMethodName() + ", line " + element.getLineNumber()).append("\n");
-		// }
+		// Fallback: aucun frame LeekScript trouvé, inclure la stacktrace Java brute
+		if (sb.length() == 0) {
+			int javaCount = 0;
+			for (StackTraceElement element : elements) {
+				sb.append("\t▶ ").append(element.getClassName()).append(".").append(element.getMethodName()).append(", line ").append(element.getLineNumber()).append("\n");
+				if (javaCount++ > 10) {
+					sb.append("\t[...]\n");
+					break;
+				}
+			}
+		}
 		return sb.toString();
 	}
 
@@ -646,7 +653,7 @@ public abstract class AI {
 						error.type = Error.UNKNOWN_FIELD;
 						error.parameters = new Object[] { "null", javaTypeToLS(m3.group(1)) };
 					} else {
-						error.parameters = new Object[] { "null", "?" };
+						error.parameters = new Object[] { "null", throwable.toString() };
 					}
 				}
 			}
