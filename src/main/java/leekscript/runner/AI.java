@@ -535,7 +535,12 @@ public abstract class AI {
 		for (StackTraceElement element : elements) {
 			// System.out.println(element.getClassName() + " " + element.getMethodName() + " " + element.getLineNumber());
 			if (element.getClassName().startsWith("AI_")) {
-				sb.append(getErrorLocalisation(element.getLineNumber()));
+				var loc = getErrorLocalisation(element.getLineNumber());
+				if (!loc.isEmpty()) {
+					sb.append(loc);
+				} else {
+					sb.append("\t▶ ").append(element.getMethodName()).append(", java line ").append(element.getLineNumber()).append("\n");
+				}
 				if (count++ > 50) {
 					sb.append("[...]");
 					break;
@@ -655,11 +660,22 @@ public abstract class AI {
 		return error;
 	}
 
+	public Throwable unwrapThrowable(Throwable throwable) {
+		if (throwable instanceof InvocationTargetException) {
+			return unwrapThrowable(throwable.getCause());
+		}
+		if (throwable instanceof RuntimeException && throwable.getCause() != null) {
+			return unwrapThrowable(throwable.getCause());
+		}
+		return throwable;
+	}
+
 	public void addSystemLog(int type, Throwable throwable) throws LeekRunException {
 
-		var error = throwableToError(throwable);
+		var unwrapped = unwrapThrowable(throwable);
+		var error = throwableToError(unwrapped);
 
-		addSystemLog(type, error.type.ordinal(), error.parameters, throwable);
+		addSystemLog(type, error.type.ordinal(), error.parameters, unwrapped);
 	}
 
 	private String javaTypeToLS(String type) {
