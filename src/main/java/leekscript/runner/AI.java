@@ -597,12 +597,7 @@ public abstract class AI {
 
 	public LeekError throwableToError(Throwable throwable) {
 
-		if (throwable instanceof InvocationTargetException) {
-			return throwableToError(throwable.getCause());
-		}
-		if (throwable instanceof RuntimeException && throwable.getCause() != null) {
-			return throwableToError(throwable.getCause());
-		}
+		throwable = unwrapThrowable(throwable);
 
 		LeekError error = new LeekError();
 
@@ -660,12 +655,14 @@ public abstract class AI {
 		return error;
 	}
 
-	public Throwable unwrapThrowable(Throwable throwable) {
-		if (throwable instanceof InvocationTargetException) {
-			return unwrapThrowable(throwable.getCause());
-		}
-		if (throwable instanceof RuntimeException && throwable.getCause() != null) {
-			return unwrapThrowable(throwable.getCause());
+	private Throwable unwrapThrowable(Throwable throwable) {
+		int depth = 0;
+		while (depth++ < 20) {
+			if (throwable instanceof InvocationTargetException || (throwable instanceof RuntimeException && throwable.getCause() != null)) {
+				throwable = throwable.getCause();
+			} else {
+				break;
+			}
 		}
 		return throwable;
 	}
@@ -735,13 +732,9 @@ public abstract class AI {
 
 		String stacktrace;
 		if (cause == null) {
-			 stacktrace = getErrorMessage(Thread.currentThread().getStackTrace());
+			stacktrace = getErrorMessage(Thread.currentThread().getStackTrace());
 		} else {
-			if (cause.getCause() != null) {
-				stacktrace = getErrorMessage(cause.getCause().getStackTrace());
-			} else {
-				stacktrace = getErrorMessage(cause.getStackTrace());
-			}
+			stacktrace = getErrorMessage(cause.getStackTrace());
 		}
 		logs.addSystemLog(this, type, stacktrace, error, parameters);
 	}
