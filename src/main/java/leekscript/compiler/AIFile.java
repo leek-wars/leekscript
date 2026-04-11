@@ -171,7 +171,6 @@ public class AIFile {
 	}
 
 	public Complete complete(int line, int column) {
-
 		// Find token
 		var token = tokens.atLocation(line, column);
 		if (token == null) return null;
@@ -225,6 +224,7 @@ public class AIFile {
 		List<Location> results = new ArrayList<>();
 
 		for (AIFile file : filesToSearch) {
+			if (file.tokens == null) continue;
 			for (Token t : file.tokens.getTokens()) {
 				if (!t.getWord().equals(word)) continue;
 				if (t.getExpression() == null) continue;
@@ -312,6 +312,7 @@ public class AIFile {
 		List<Location> results = new ArrayList<>();
 		var seen = new HashSet<LeekFunctionCall>();
 		for (AIFile file : filesToSearch) {
+			if (file.tokens == null) continue;
 			for (Token t : file.tokens.getTokens()) {
 				if (!(t.getExpression() instanceof LeekFunctionCall call)) continue;
 				if (!call.isConstructorCall()) continue;
