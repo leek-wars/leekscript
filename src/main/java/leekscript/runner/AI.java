@@ -542,17 +542,6 @@ public abstract class AI {
 				}
 			}
 		}
-		// Fallback: aucun frame LeekScript trouvé, inclure la stacktrace Java brute
-		if (sb.length() == 0) {
-			int javaCount = 0;
-			for (StackTraceElement element : elements) {
-				sb.append("\t▶ ").append(element.getClassName()).append(".").append(element.getMethodName()).append(", line ").append(element.getLineNumber()).append("\n");
-				if (javaCount++ > 10) {
-					sb.append("\t[...]\n");
-					break;
-				}
-			}
-		}
 		return sb.toString();
 	}
 
