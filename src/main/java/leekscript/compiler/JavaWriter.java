@@ -246,6 +246,20 @@ public class JavaWriter {
 			addCode(")");
 			return;
 		}
+		else if (type.isSet()) {
+			addCode("toSet(");
+			addCode(index + ", ");
+			value.writeJavaCode(mainblock, this, false);
+			addCode(")");
+			return;
+		}
+		else if (type.isSetOrNull()) {
+			addCode("toSetOrNull(");
+			addCode(index + ", ");
+			value.writeJavaCode(mainblock, this, false);
+			addCode(")");
+			return;
+		}
 		else if (type == Type.INT) {
 			if (value.getType() == Type.REAL) {
 				if (parenthesis) {

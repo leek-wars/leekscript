@@ -37,6 +37,11 @@ public class SetType extends Type {
 	}
 
 	@Override
+	public boolean isSet() {
+		return true;
+	}
+
+	@Override
 	public int hashCode() {
 		return this.type.hashCode() * 31 + 1;
 	}

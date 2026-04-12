@@ -184,6 +184,14 @@ public class Type {
 		return false;
 	}
 
+	public boolean isSet() {
+		return false;
+	}
+
+	public boolean isSetOrNull() {
+		return false;
+	}
+
 	public static Type compound(HashSet<Type> types) {
 		if (types.size() == 0) return Type.VOID;
 		var all = new HashSet<Type>();

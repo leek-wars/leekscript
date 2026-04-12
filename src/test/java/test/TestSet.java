@@ -26,6 +26,8 @@ public class TestSet extends TestCommon {
 		section("Set typing");
 		code_strict_v4_("Set i = <1, 2>; return i instanceof Set").equals("true");
 		code_strict_v4_("Set<integer> i = <1, 2>; return i instanceof Set").equals("true");
+		// Passing Array? to Set? parameter (was generating incompatible cast)
+		code_strict_v4_("function f1(Array? arr) { return f2(arr) } function f2(Set? s) { return s == null } return f1(null)").equals("true");
 	}
 
 	@Test

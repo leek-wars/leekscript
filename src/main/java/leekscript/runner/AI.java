@@ -3198,6 +3198,24 @@ public abstract class AI {
 		return toMap(index, value);
 	}
 
+	public SetLeekValue toSet(int index, Object value) throws LeekRunException {
+		if (value instanceof SetLeekValue) {
+			return (SetLeekValue) value;
+		}
+		addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new Object[] {
+			String.valueOf(index),
+			value,
+			StandardClass.getType(this, value).toString(),
+			Type.SET.toString()
+		});
+		throw new ClassCastException();
+	}
+
+	public SetLeekValue toSetOrNull(int index, Object value) throws LeekRunException {
+		if (value == null) return null;
+		return toSet(index, value);
+	}
+
 	public FunctionLeekValue toFunction(int index, Object value) throws LeekRunException {
 		if (value instanceof FunctionLeekValue) {
 			return (FunctionLeekValue) value;

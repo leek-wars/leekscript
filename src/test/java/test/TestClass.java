@@ -51,6 +51,17 @@ public class TestClass extends TestCommon {
 	}
 
 	@Test
+	public void testMethod_default_parameter_with_typed_class() throws Exception {
+		section("Method default parameter with typed class");
+		// Untyped field as default value for typed parameter (was crashing with incompatible types)
+		code_v2_("class A { public truc public void f(A arg = truc) { debug(arg) } } new A().f()").equals("null");
+		// Typed field as default value for same typed parameter
+		code_v2_("class A { public A other public void f(A arg = other) { debug(arg) } } new A().f()").equals("null");
+		// Typed field with value as default
+		code_v2_("class B { public integer x = 42 } class A { public B b = new B() public integer f(B arg = b) { return arg.x } } return new A().f()").equals("42");
+	}
+
+	@Test
 	public void testNonMinusexistent_field_access() throws Exception {
 		section("Non-existent field access");
 		// this.field where field doesn't exist: error in strict, warning in non-strict

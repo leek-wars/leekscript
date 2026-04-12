@@ -100,6 +100,10 @@ public class CompoundType extends Type {
 		return types.size() == 2 && types.stream().anyMatch(t -> t.isMap()) && types.stream().anyMatch(t -> t == Type.NULL);
 	}
 
+	public boolean isSetOrNull() {
+		return types.size() == 2 && types.stream().anyMatch(t -> t.isSet()) && types.stream().anyMatch(t -> t == Type.NULL);
+	}
+
 	public boolean canBeIterable() {
 		return this.types.stream().anyMatch(t -> t.canBeIterable());
 	}

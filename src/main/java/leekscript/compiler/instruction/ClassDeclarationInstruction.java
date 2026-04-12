@@ -617,6 +617,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a >= construct.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
 							writer.addCode("final " + arg.getType().getJavaName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
+							if (arg.getType() != Type.ANY && !arg.getType().isPrimitive()) {
+								writer.addCode("(" + arg.getType().getJavaName(mainblock.getVersion()) + ") ");
+							}
 							defaultValue.writeJavaCode(mainblock, writer, false);
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
@@ -698,6 +701,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a >= version.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
 							writer.addCode("final " + arg.getType().getJavaName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
+							if (arg.getType() != Type.ANY && !arg.getType().isPrimitive()) {
+								writer.addCode("(" + arg.getType().getJavaName(mainblock.getVersion()) + ") ");
+							}
 							defaultValue.writeJavaCode(mainblock, writer, false);
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
@@ -777,6 +783,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a >= version.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
 							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
+							if (arg.getType() != Type.ANY && !arg.getType().isPrimitive()) {
+								writer.addCode("(" + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+							}
 							defaultValue.writeJavaCode(mainblock, writer, false);
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
