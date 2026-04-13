@@ -239,8 +239,8 @@ public class WordCompiler {
 	}
 
 	public void secondPass() throws LeekCompilerException {
-		mTokens = this.mAI.getTokenStream();
-		assert mTokens != null : "tokens are null";
+		parse();
+		if (mTokens == null) return;
 		mTokens.reset();
 
 		// Vraie compilation
