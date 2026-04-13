@@ -174,51 +174,71 @@ public class LeekExpression extends Expression {
 		addExpression(exp);
 	}
 
+	private boolean isTerminalOperator(int operator) {
+		return operator == Operators.NON_NULL_ASSERTION || operator == Operators.AS;
+	}
+
+	private LeekExpression cloneAsSubExpression() {
+		LeekExpression copy = new LeekExpression();
+		copy.setExpression1(mExpression1);
+		copy.setOperator(mOperator, mOperatorToken);
+		copy.setExpression2(mExpression2);
+		copy.setParent(this);
+		return copy;
+	}
+
+	private void wrapAndReset(Expression wrapped) {
+		mExpression1 = wrapped;
+		mOperator = -1;
+		mOperatorToken = null;
+		mExpression2 = null;
+	}
+
+	private static LeekArrayAccess createArrayAccess(Token bracket, Expression tabular, Expression casevalue, Token colon, Expression endIndex, Token colon2, Expression stride, Token closingBracket) {
+		var exp = new LeekArrayAccess(bracket);
+		exp.setTabular(tabular);
+		exp.setCase(casevalue);
+		exp.setColon(colon);
+		exp.setEndIndex(endIndex);
+		exp.setColon2(colon2);
+		exp.setStride(stride);
+		exp.setClosingBracket(closingBracket);
+		return exp;
+	}
+
 	public void addBracket(Token bracket, Expression casevalue, Token colon, Expression endIndex, Token colon2, Expression stride, Token closingBracket) {
 		// On doit ajouter ce crochet au dernier élément ajouté
 		if (mExpression1 != null && mExpression2 == null) {
-			if (mExpression1.getNature() == EXPRESSION && ((LeekExpression) mExpression1).getOperator() != Operators.NON_NULL_ASSERTION)
+			if (mExpression1.getNature() == EXPRESSION && !isTerminalOperator(((LeekExpression) mExpression1).getOperator()))
 				((LeekExpression) mExpression1).addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket);
 			else {
-				// On doit ajouter à l'élément mExpression1
-				var exp = new LeekArrayAccess(bracket);
-				exp.setTabular(mExpression1);
-				exp.setCase(casevalue);
-				exp.setColon(colon);
-				exp.setEndIndex(endIndex);
-				exp.setColon2(colon2);
-				exp.setStride(stride);
-				exp.setClosingBracket(closingBracket);
-				mExpression1 = exp;
+				mExpression1 = createArrayAccess(bracket, mExpression1, casevalue, colon, endIndex, colon2, stride, closingBracket);
 			}
 		}
 		else if (mExpression2 != null) {
-			if (mExpression2.getNature() == EXPRESSION && ((LeekExpression) mExpression2).getOperator() != Operators.NON_NULL_ASSERTION)
+			if (mOperator == Operators.AS) {
+				wrapAndReset(createArrayAccess(bracket, cloneAsSubExpression(), casevalue, colon, endIndex, colon2, stride, closingBracket));
+			} else if (mExpression2.getNature() == EXPRESSION && !isTerminalOperator(((LeekExpression) mExpression2).getOperator()))
 				((LeekExpression) mExpression2).addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket);
 			else {
-				// On doit ajouter à l'élément mExpression2
-				var exp = new LeekArrayAccess(bracket);
-				exp.setTabular(mExpression2);
-				exp.setCase(casevalue);
-				exp.setColon(colon);
-				exp.setEndIndex(endIndex);
-				exp.setColon2(colon2);
-				exp.setStride(stride);
-				exp.setClosingBracket(closingBracket);
-				mExpression2 = exp;
+				mExpression2 = createArrayAccess(bracket, mExpression2, casevalue, colon, endIndex, colon2, stride, closingBracket);
 			}
 		}
 	}
 
 	public void addObjectAccess(Token dot, Token name) {
 		if (mExpression1 != null && mExpression2 == null) {
-			if (mExpression1.getNature() == EXPRESSION && ((LeekExpression) mExpression1).getOperator() != Operators.NON_NULL_ASSERTION) {
+			if (mExpression1.getNature() == EXPRESSION && !isTerminalOperator(((LeekExpression) mExpression1).getOperator())) {
 				((LeekExpression) mExpression1).addObjectAccess(dot, name);
 			} else {
 				mExpression1 = new LeekObjectAccess(mExpression1, dot, name);
 			}
 		} else if (mExpression2 != null) {
-			if (mExpression2.getNature() == EXPRESSION && ((LeekExpression) mExpression2).getOperator() != Operators.NON_NULL_ASSERTION)
+			if (mOperator == Operators.AS) {
+				// For AS, mExpression2 is the target type, not an operand.
+				// Wrap the entire AS expression and reset this node.
+				wrapAndReset(new LeekObjectAccess(cloneAsSubExpression(), dot, name));
+			} else if (mExpression2.getNature() == EXPRESSION && !isTerminalOperator(((LeekExpression) mExpression2).getOperator()))
 				((LeekExpression) mExpression2).addObjectAccess(dot, name);
 			else {
 				mExpression2 = new LeekObjectAccess(mExpression2, dot, name);
@@ -229,7 +249,7 @@ public class LeekExpression extends Expression {
 	public void addFunction(LeekFunctionCall function) {
 		// On doit ajouter ce crochet au dernier élément ajouté
 		if (mExpression1 != null && mExpression2 == null) {
-			if (mExpression1.getNature() == EXPRESSION)
+			if (mExpression1.getNature() == EXPRESSION && !isTerminalOperator(((LeekExpression) mExpression1).getOperator()))
 				((LeekExpression) mExpression1).addFunction(function);
 			else {
 				// On doit ajouter à l'élément mExpression1
@@ -238,7 +258,10 @@ public class LeekExpression extends Expression {
 			}
 		}
 		else if (mExpression2 != null) {
-			if (mExpression2.getNature() == EXPRESSION)
+			if (mOperator == Operators.AS) {
+				function.setExpression(cloneAsSubExpression());
+				wrapAndReset(function);
+			} else if (mExpression2.getNature() == EXPRESSION && !isTerminalOperator(((LeekExpression) mExpression2).getOperator()))
 				((LeekExpression) mExpression2).addFunction(function);
 			else {
 				// On doit ajouter à l'élément mExpression2
@@ -351,6 +374,22 @@ public class LeekExpression extends Expression {
 				else {
 					trn.setParent(this);
 					mExpression1 = trn;
+				}
+			} else if (mExpression1 != null && mExpression1.getNature() == EXPRESSION
+					&& operator == Operators.AS) {
+				// Special case: `as` (priority 15) binds tighter than `!` and `~` (priority 14).
+				// So `!expr as Type` must be parsed as `!(expr as Type)`, not `(!expr) as Type`.
+				var expr = (LeekExpression) mExpression1;
+				int expr_op = expr.getOperator();
+				if (expr_op == Operators.NOT || expr_op == Operators.BITNOT) {
+					// Steal the right operand from the prefix expression
+					LeekExpression new_e = new LeekExpression();
+					new_e.setParent(expr);
+					new_e.setExpression1(expr.getExpression2());
+					new_e.setOperator(operator, token);
+					expr.setExpression2(new_e);
+				} else {
+					setOperator(operator, token);
 				}
 			} else {
 				setOperator(operator, token);

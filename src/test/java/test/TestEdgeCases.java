@@ -305,6 +305,19 @@ public class TestEdgeCases extends TestCommon {
 		code_v4_("integer x = 42.9 return x").equals("42");
 		code_v4_("function f(integer i) { return i } return f(42.9)").equals("42");
 
+		// Non-null assertion
+		code_v4_("function f() => integer? { return 5 } integer x = f()! return x").equals("5");
+		code_v4_("function f() => integer? { return 5 } if (f()!) { return 1 } return 0").equals("1");
+		code_v4_("class A { integer? v constructor(integer? v) { this.v = v } } var a = new A(3) if (a.v!) { return 1 } return 0").equals("1");
+
+		// as Type.method() - the dot/call must apply to the cast result, not the type
+		code_v4_("class G { boolean check() { return true } } var m = ['a': new G()] if (!mapGet(m, 'a', new G()) as G.check()) { return 0 } return 1").equals("1");
+		code_v4_("class G { boolean check() { return true } } var m = ['a': new G()] var g = mapGet(m, 'a', new G()) as G if (g.check()) { return 1 } return 0").equals("1");
+
+		// Prefix operators with as - precedence regression tests
+		code_v4_("var count = 0 if (++count == 1) { return count } return -1").equals("1");
+		code_v4_("function f(x) { return x } var i = 3 return f(i += 2)").equals("5");
+
 		// Boolean conversions
 		code_v4_("return !!1").equals("true");
 		code_v4_("return !!0").equals("false");
