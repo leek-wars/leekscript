@@ -257,12 +257,12 @@ public class AIFile {
 		ClassDeclarationInstruction defClass = null;
 		for (var cls : allClasses) {
 			var mv = cls.getMethodVariables().get(methodName);
-			if (mv != null && mv.getLocation().sameStart(definedLocation)) {
+			if (mv != null && mv.getLocation() != null && mv.getLocation().sameStart(definedLocation)) {
 				defClass = cls;
 				break;
 			}
 			var smv = cls.getStaticMethodVariables().get(methodName);
-			if (smv != null && smv.getLocation().sameStart(definedLocation)) {
+			if (smv != null && smv.getLocation() != null && smv.getLocation().sameStart(definedLocation)) {
 				defClass = cls;
 				break;
 			}
@@ -320,7 +320,7 @@ public class AIFile {
 				if (seen.contains(call)) continue;
 				var calledExpr = call.getCallExpression();
 				if (calledExpr instanceof LeekVariable v && v.getClassDeclaration() != null) {
-					if (v.getClassDeclaration().getLocation().sameStart(classLocation)) {
+					if (v.getClassDeclaration().getLocation() != null && v.getClassDeclaration().getLocation().sameStart(classLocation)) {
 						seen.add(call);
 						results.add(v.getLocation());
 					}
