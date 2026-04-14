@@ -386,7 +386,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		compiler.setCurrentBlock(previousBlock);
 
 		for (var entry : constructors.entrySet()) {
-			if (entry.getKey() == entry.getValue().block.getMaxParameters()) {
+			if (entry.getValue().block != null && entry.getKey() == entry.getValue().block.getMaxParameters()) {
 				entry.getValue().block.preAnalyze(compiler);
 			}
 		}
@@ -454,7 +454,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 
 		for (var constructor : constructors.values()) {
-			constructor.block.analyze(compiler);
+			if (constructor.block != null) {
+				constructor.block.analyze(compiler);
+			}
 		}
 		// Ajout du constructeur à 0 argument par défaut en public
 		if (!constructors.containsKey(0)) {
