@@ -24,7 +24,7 @@ public class AIFile {
 	private Folder folder;
 	private int owner;
 	private int id;
-	private long timestamp;
+	private volatile long timestamp;
 	private int version;
 	private ArrayList<AnalyzeError> errors = new ArrayList<>();
 	private AICode compiledCode;

@@ -95,7 +95,7 @@ public class JavaCompiler {
 		if (ref != null && entry == null) {
 			System.out.println("[SoftRef] Class " + file.getJavaClass() + " was garbage collected, reloading");
 		}
-		if (entry != null && entry.timestamp >= file.getTimestamp()) {
+		if (entry != null && file.getTimestamp() > 0 && entry.timestamp >= file.getTimestamp()) {
 			// System.out.println("Load AI " + file.getPath() + " from RAM");
 			try {
 				var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
@@ -109,7 +109,7 @@ public class JavaCompiler {
 		}
 
 		// Utilisation du cache de class dans le file system
-		if (options.useCache() && compiled.exists() && compiled.length() != 0 && compiled.lastModified() >= file.getTimestamp()) {
+		if (options.useCache() && file.getTimestamp() > 0 && compiled.exists() && compiled.length() != 0 && compiled.lastModified() >= file.getTimestamp()) {
 			// System.out.println("Load AI " + file.getPath() + " from disk");
 			try {
 				// Chaque AI a son propre ClassLoader éphémère pour permettre le GC des classes

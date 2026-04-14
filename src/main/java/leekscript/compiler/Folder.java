@@ -2,7 +2,7 @@ package leekscript.compiler;
 
 import java.io.FileNotFoundException;
 import java.lang.ref.SoftReference;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import leekscript.compiler.resolver.FileSystem;
 
@@ -14,8 +14,8 @@ public class Folder {
 	private String name;
 	private Folder parent = null;
 	private Folder root = null;
-	private HashMap<String, SoftReference<AIFile>> files = new HashMap<>();
-	protected HashMap<String, Folder> folders = new HashMap<>();
+	private ConcurrentHashMap<String, SoftReference<AIFile>> files = new ConcurrentHashMap<>();
+	protected ConcurrentHashMap<String, Folder> folders = new ConcurrentHashMap<>();
 	private long timestamp;
 
 	public Folder(int owner, FileSystem fs) {
@@ -86,7 +86,8 @@ public class Folder {
 		var ai = ref != null ? ref.get() : null;
 		if (ai != null) {
 			// Fichier pas modifié ?
-			if (fs.getAITimestamp(ai) <= ai.getTimestamp()) {
+			long currentTimestamp = fs.getAITimestamp(ai);
+			if (currentTimestamp > 0 && currentTimestamp <= ai.getTimestamp()) {
 				// System.out.println("AI " + ai.getName() + " en cache " + ai.getTimestamp());
 				return ai;
 			}
