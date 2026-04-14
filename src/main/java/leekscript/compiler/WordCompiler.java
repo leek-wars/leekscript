@@ -1172,7 +1172,10 @@ public class WordCompiler {
 			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() }));
 		}
 		ClassDeclarationInstruction classDeclaration = mMain.getDefinedClass(word.getWord());
-		assert classDeclaration != null : "Class " + word.getWord() + " not declared (" + mMain.getDefinedClasses().size() + " classes)";
+		if (classDeclaration == null) {
+			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] { word.getWord() }));
+			return;
+		}
 		mMain.addClassList(classDeclaration);
 		mCurrentClass = classDeclaration;
 
