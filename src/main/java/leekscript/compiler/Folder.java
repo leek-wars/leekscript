@@ -114,7 +114,8 @@ public class Folder {
 		}
 
 		// Recherche du dossier
-		folder = fs.findFolder(name, this); // Throw si pas trouvé
+		folder = fs.findFolder(name, this);
+		if (folder == null) return null;
 
 		this.folders.put(name, folder);
 		return folder;
