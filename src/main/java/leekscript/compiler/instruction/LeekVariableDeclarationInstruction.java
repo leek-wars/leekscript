@@ -259,6 +259,10 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 		this.captured = true;
 	}
 
+	public void setBox() {
+		this.box = true;
+	}
+
 	public void setFunction(AbstractLeekBlock function) {
 		this.function = function;
 	}

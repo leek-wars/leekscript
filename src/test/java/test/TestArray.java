@@ -733,6 +733,8 @@ public class TestArray extends TestCommon {
 		code_v1_3("var t = [0, 1, 2]; t = arraySort(t, function(e, f){return (e>f)?(-1):(e<f)?1:0;}); return t;").equals("[2, 1, 0]");
 		// #2694 : captured parameter + arraySort assignment
 		code_v2_3("function f(t) { var g = function() { return t; }; t = arraySort(t, function(c1, c2) { return c1 - c2; }); return t; } return f([3, 1, 2]);").equals("[1, 2, 3]");
+		// V2+ reference parameter + arraySort (reference param is Box in Java)
+		code_v2("function f(@t, toCell) { t =@ arraySort(t, @function(@c1, @c2) { return c1 - c2; }); return t; } return f([3, 1, 2], 0);").equals("[1, 2, 3]");
 		code_v2_3("function f(t) { t = arraySort(t, function(c1, c2) { return c1 - c2; }); var g = function() { return t; }; return t; } return f([3, 1, 2]);").equals("[1, 2, 3]");
 		code_v2_3("function f(t) { t = arraySort(t, function(c1, c2) { var x = t; return c1 - c2; }); return t; } return f([3, 1, 2]);").equals("[1, 2, 3]");
 		// #2694: explicitly typed Array parameter

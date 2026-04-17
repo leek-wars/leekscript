@@ -102,6 +102,9 @@ public class FunctionBlock extends AbstractLeekBlock {
 		mTypes.add(type);
 		defaultValues.add(defaultValue);
 		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this, type);
+		if (is_reference) {
+			declaration.setBox();
+		}
 		mParameterDeclarations.add(declaration);
 		addVariable(new LeekVariable(token, VariableType.ARGUMENT, type, declaration));
 		maxParameters++;
