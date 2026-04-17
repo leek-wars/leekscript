@@ -174,8 +174,12 @@ public class LeekFunctionCall extends Expression {
 					writer.addCode(writer.getAIThis());
 					writer.addCode(", null");
 					convertPrimitive = true;
-				} else {
+				} else if (((LeekObjectAccess) mExpression).getVariable() != null) {
+					// Declared class field: exists as a real Java field on the inner class
 					writer.addCode("execute(this." + field);
+				} else {
+					// Dynamic field: look it up on the ObjectLeekValue backing map
+					writer.addCode("callObjectAccess(u_this, \"" + field + "\", \"u_" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 				}
 			} else if (is_static_method) {
 				writer.addCode("u_" + method.block.getClassDeclaration().getName() + "_" + field + "_" + mParameters.size() + "(");
