@@ -53,6 +53,7 @@ public class IACompiler {
 		this.analyzeStart = System.currentTimeMillis(); // For timeout
 		try {
 			ai.clearErrors();
+			PragmaParser.apply(ai);
 			// On lance la compilation du code de l'IA
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
 			WordCompiler compiler = new WordCompiler(ai, ai.getVersion(), ai.getOptions());
@@ -103,6 +104,7 @@ public class IACompiler {
 		writer.options = options;
 		try {
 			ai.clearErrors();
+			PragmaParser.apply(ai);
 
 			// On lance la compilation du code de l'IA
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
