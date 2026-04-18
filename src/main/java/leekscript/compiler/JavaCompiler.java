@@ -52,6 +52,10 @@ public class JavaCompiler {
 	private static List<String> arguments = new ArrayList<>();
 	private static ConcurrentHashMap<String, AIClassSoftReference> aiCache = new ConcurrentHashMap<>();
 	private static ReferenceQueue<AIClassEntry> refQueue = new ReferenceQueue<>();
+	// AIFile contient des champs mutables (errors, tokens, compiledCode) partagés via le cache global
+	// DbFileSystem ; sans lock, deux threads compilant le même AI en parallèle racent dessus.
+	// Borné par le nombre d'AIs uniques jamais compilés (cleanup non-trivial sans ref counting).
+	private static final ConcurrentHashMap<String, Object> compilationLocks = new ConcurrentHashMap<>();
 
 	public static int getCacheSize() {
 		return aiCache.size();
@@ -79,6 +83,26 @@ public class JavaCompiler {
 		monitor.start();
 	}
 
+	private static AI loadFromRamCache(AIFile file, File java, File lines) throws LeekScriptException {
+		var ref = aiCache.get(file.getJavaClass());
+		var entry = ref != null ? ref.get() : null;
+		if (ref != null && entry == null) {
+			System.out.println("[SoftRef] Class " + file.getJavaClass() + " was garbage collected, reloading");
+		}
+		if (entry == null || file.getTimestamp() <= 0 || entry.timestamp < file.getTimestamp()) {
+			return null;
+		}
+		try {
+			var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
+			ai.setId(file.getId());
+			ai.setLinesFile(lines);
+			ai.increaseRAMDirect((int) (java.length() * 10));
+			return ai;
+		} catch (Exception e) {
+			throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
+		}
+	}
+
 	public static AI compile(AIFile file, Options options) throws LeekScriptException, LeekCompilerException {
 
 		var root = new File(IA_PATH);
@@ -89,172 +113,151 @@ public class JavaCompiler {
 		File java = Paths.get(IA_PATH, file.getJavaClass() + ".java").toFile();
 		File lines = Paths.get(IA_PATH, file.getJavaClass() + ".lines").toFile();
 
-		// Cache des classes en RAM d'abord
-		var ref = aiCache.get(file.getJavaClass());
-		var entry = ref != null ? ref.get() : null;
-		if (ref != null && entry == null) {
-			System.out.println("[SoftRef] Class " + file.getJavaClass() + " was garbage collected, reloading");
-		}
-		if (entry != null && file.getTimestamp() > 0 && entry.timestamp >= file.getTimestamp()) {
-			// System.out.println("Load AI " + file.getPath() + " from RAM");
-			try {
-				var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
-				ai.setId(file.getId());
-				ai.setLinesFile(lines);
-				ai.increaseRAMDirect((int) (java.length() * 10));
-				return ai;
-			} catch (Exception e) {
-				throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
-			}
-		}
+		AI cached = loadFromRamCache(file, java, lines);
+		if (cached != null) return cached;
 
-		// Utilisation du cache de class dans le file system
-		if (options.useCache() && file.getTimestamp() > 0 && compiled.exists() && compiled.length() != 0 && compiled.lastModified() >= file.getTimestamp()) {
-			// System.out.println("Load AI " + file.getPath() + " from disk");
-			try {
-				// Chaque AI a son propre ClassLoader éphémère pour permettre le GC des classes
-				// Le ClassLoader ne doit pas être fermé car il invaliderait la classe chargée
-				@SuppressWarnings("resource")
-				var classLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, JavaCompiler.class.getClassLoader());
-				var clazz = classLoader.loadClass(file.getJavaClass());
-				entry = new AIClassEntry(clazz, file.getTimestamp());
-				aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), entry, refQueue));
-				var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
-				ai.setId(file.getId());
-				ai.setFile(file);
-				ai.setLinesFile(lines);
-				ai.increaseRAMDirect((int) (java.length() * 10));
-				return ai;
-			} catch (Exception e) {
-				throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
-			}
-		}
+		Object lock = compilationLocks.computeIfAbsent(file.getJavaClass(), k -> new Object());
+		synchronized (lock) {
 
-		// On commence par la conversion LS -> Java
-		// System.out.println("Re-compile AI " + file.getPath());
-		long t = System.nanoTime();
-		var lsCompiler = new IACompiler();
-		file.setCompiledCode(lsCompiler.compile(file, file.getJavaClass(), options));
-		long analyze_time = System.nanoTime() - t;
+			cached = loadFromRamCache(file, java, lines);
+			if (cached != null) return cached;
 
-		if (file.getCompiledCode().getJavaCode().isEmpty()) { // Rien ne compile, pas normal
-			throw new LeekScriptException(Error.TRANSPILE_TO_JAVA, "No java generated!");
-		}
-
-		// System.out.println(compiledJava);
-
-		if (options.useCache()) {
-			// Sauvegarde du code java
-			try {
-				FileOutputStream javaOutput = new FileOutputStream(java);
-				javaOutput.write(file.getCompiledCode().getJavaCode().getBytes(StandardCharsets.UTF_8));
-				javaOutput.close();
-			} catch (IOException e) {
-				throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
-			}
-
-			// Sauvegarde du fichier de lignes
-			try {
-				FileOutputStream javaOutput = new FileOutputStream(lines);
-				javaOutput.write(file.getCompiledCode().getLines().getBytes(StandardCharsets.UTF_8));
-				javaOutput.close();
-			} catch (IOException e) {
-				throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
-			}
-		}
-
-		t = System.nanoTime();
-		SimpleFileManager fileManager;
-		var output = new StringWriter();
-		boolean result;
-		try {
-			compileSemaphore.acquire();
-			try {
-				fileManager = new SimpleFileManager(compiler.getStandardFileManager(null, null, null));
-				var compilationUnits = Collections.singletonList(new SimpleSourceFile(fileName, file.getCompiledCode().getJavaCode()));
-				var task = compiler.getTask(output, fileManager, null, arguments, null, compilationUnits);
-				result = task.call();
-			} finally {
-				compileSemaphore.release();
-			}
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new LeekScriptException(Error.COMPILE_JAVA, "Compilation interrupted");
-		}
-		long compile_time = System.nanoTime() - t;
-
-		if (!result) { // Java compilation failed
-
-			// On récupère la ligne
-			int javaLine = -1;
-			Pattern r = Pattern.compile("AI_" + file.getId() + ".java:(.*?):");
-			Matcher m = r.matcher(output.toString());
-			if (m.find()) {
-				javaLine = Integer.parseInt(m.group(1));
-			}
-			var mapping = file.getCompiledCode().getLinesMap().get(javaLine);
-			String location = null;
-			if (mapping != null) {
-				location = file.getCompiledCode().getFiles().get(mapping.getAI()) + ":" + mapping.getLeekScriptLine();
-			}
-
-			if (output.toString().contains("code too large")) {
-				throw new LeekScriptException(Error.CODE_TOO_LARGE, output.toString(), location);
-			} else {
-				throw new LeekScriptException(Error.COMPILE_JAVA, output.toString(), location);
-			}
-		}
-
-		t = System.nanoTime();
-		ClassLoader classLoader = new ClassLoader() {
-			@Override
-			protected Class<?> findClass(String name) throws ClassNotFoundException {
-				var bytes = fileManager.get(name).getCompiledBinaries();
-				return defineClass(name, bytes, 0, bytes.length);
-			}
-		};
-
-		// Load inner classes before
-		for (var compiledClass : fileManager.getCompiled().values()) {
-
-			if (options.useCache()) { // Save bytecode
+			if (options.useCache() && file.getTimestamp() > 0 && compiled.exists() && compiled.length() != 0 && compiled.lastModified() >= file.getTimestamp()) {
 				try {
-					var classFile = new FileOutputStream(Paths.get(IA_PATH, compiledClass.getName() + ".class").toFile());
-					classFile.write(compiledClass.getCompiledBinaries());
-					classFile.close();
+					// ClassLoader éphémère par AI pour permettre le GC des classes ;
+					// ne pas le close, ça invaliderait la classe chargée.
+					@SuppressWarnings("resource")
+					var classLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, JavaCompiler.class.getClassLoader());
+					var clazz = classLoader.loadClass(file.getJavaClass());
+					var entry = new AIClassEntry(clazz, file.getTimestamp());
+					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), entry, refQueue));
+					var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
+					ai.setId(file.getId());
+					ai.setFile(file);
+					ai.setLinesFile(lines);
+					ai.increaseRAMDirect((int) (java.length() * 10));
+					return ai;
+				} catch (Exception e) {
+					throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
+				}
+			}
+
+			long t = System.nanoTime();
+			var lsCompiler = new IACompiler();
+			file.setCompiledCode(lsCompiler.compile(file, file.getJavaClass(), options));
+			long analyze_time = System.nanoTime() - t;
+
+			if (file.getCompiledCode().getJavaCode().isEmpty()) {
+				throw new LeekScriptException(Error.TRANSPILE_TO_JAVA, "No java generated!");
+			}
+
+			if (options.useCache()) {
+				try {
+					FileOutputStream javaOutput = new FileOutputStream(java);
+					javaOutput.write(file.getCompiledCode().getJavaCode().getBytes(StandardCharsets.UTF_8));
+					javaOutput.close();
+				} catch (IOException e) {
+					throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
+				}
+
+				try {
+					FileOutputStream javaOutput = new FileOutputStream(lines);
+					javaOutput.write(file.getCompiledCode().getLines().getBytes(StandardCharsets.UTF_8));
+					javaOutput.close();
 				} catch (IOException e) {
 					throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
 				}
 			}
 
-			if (compiledClass.getName().equals(file.getJavaClass())) continue;
+			t = System.nanoTime();
+			SimpleFileManager fileManager;
+			var output = new StringWriter();
+			boolean result;
 			try {
-				classLoader.loadClass(compiledClass.getName());
+				compileSemaphore.acquire();
+				try {
+					fileManager = new SimpleFileManager(compiler.getStandardFileManager(null, null, null));
+					var compilationUnits = Collections.singletonList(new SimpleSourceFile(fileName, file.getCompiledCode().getJavaCode()));
+					var task = compiler.getTask(output, fileManager, null, arguments, null, compilationUnits);
+					result = task.call();
+				} finally {
+					compileSemaphore.release();
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new LeekScriptException(Error.COMPILE_JAVA, "Compilation interrupted");
+			}
+			long compile_time = System.nanoTime() - t;
+
+			if (!result) {
+				int javaLine = -1;
+				Pattern r = Pattern.compile("AI_" + file.getId() + ".java:(.*?):");
+				Matcher m = r.matcher(output.toString());
+				if (m.find()) {
+					javaLine = Integer.parseInt(m.group(1));
+				}
+				var mapping = file.getCompiledCode().getLinesMap().get(javaLine);
+				String location = null;
+				if (mapping != null) {
+					location = file.getCompiledCode().getFiles().get(mapping.getAI()) + ":" + mapping.getLeekScriptLine();
+				}
+
+				if (output.toString().contains("code too large")) {
+					throw new LeekScriptException(Error.CODE_TOO_LARGE, output.toString(), location);
+				} else {
+					throw new LeekScriptException(Error.COMPILE_JAVA, output.toString(), location);
+				}
+			}
+
+			t = System.nanoTime();
+			ClassLoader classLoader = new ClassLoader() {
+				@Override
+				protected Class<?> findClass(String name) throws ClassNotFoundException {
+					var bytes = fileManager.get(name).getCompiledBinaries();
+					return defineClass(name, bytes, 0, bytes.length);
+				}
+			};
+
+			for (var compiledClass : fileManager.getCompiled().values()) {
+
+				if (options.useCache()) {
+					try {
+						var classFile = new FileOutputStream(Paths.get(IA_PATH, compiledClass.getName() + ".class").toFile());
+						classFile.write(compiledClass.getCompiledBinaries());
+						classFile.close();
+					} catch (IOException e) {
+						throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
+					}
+				}
+
+				if (compiledClass.getName().equals(file.getJavaClass())) continue;
+				try {
+					classLoader.loadClass(compiledClass.getName());
+				} catch (Exception e) {
+					throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
+				}
+			}
+
+			try {
+				var clazz = classLoader.loadClass(file.getJavaClass());
+				var ai = (AI) clazz.getDeclaredConstructor().newInstance();
+				long load_time = System.nanoTime() - t;
+
+				ai.setFile(file);
+				ai.setId(file.getId());
+				ai.setAnalyzeTime(analyze_time);
+				ai.setCompileTime(compile_time);
+				ai.setLoadTime(load_time);
+				ai.setLinesFile(lines);
+				ai.increaseRAMDirect((int) (java.length() * 10));
+
+				if (options.useCache()) {
+					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), new AIClassEntry(clazz, file.getTimestamp()), refQueue));
+				}
+				return ai;
 			} catch (Exception e) {
 				throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
 			}
-		}
-
-		// Load the main class
-		try {
-			var clazz = classLoader.loadClass(file.getJavaClass());
-			var ai = (AI) clazz.getDeclaredConstructor().newInstance();
-			long load_time = System.nanoTime() - t;
-
-			ai.setFile(file);
-			ai.setId(file.getId());
-			ai.setAnalyzeTime(analyze_time);
-			ai.setCompileTime(compile_time);
-			ai.setLoadTime(load_time);
-			ai.setLinesFile(lines);
-			ai.increaseRAMDirect((int) (java.length() * 10));
-
-			if (options.useCache()) {
-				aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), new AIClassEntry(clazz, file.getTimestamp()), refQueue));
-			}
-			return ai;
-		} catch (Exception e) {
-			throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
 		}
 	}
 }
