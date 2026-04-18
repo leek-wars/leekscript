@@ -210,6 +210,39 @@ public class Operators {
 		}
 	}
 
+	public static boolean isAssign(int operator) {
+		switch (operator) {
+		case ASSIGN:
+		case ADDASSIGN:
+		case MINUSASSIGN:
+		case MULTIPLIEASSIGN:
+		case DIVIDEASSIGN:
+		case INTEGER_DIVISION_EQ:
+		case MODULUSASSIGN:
+		case POWERASSIGN:
+		case SHIFT_LEFT_ASSIGN:
+		case SHIFT_RIGHT_ASSIGN:
+		case SHIFT_UNSIGNED_RIGHT_ASSIGN:
+		case BITAND_ASSIGN:
+		case BITOR_ASSIGN:
+		case BITXOR_ASSIGN:
+		case COALESCE_ASSIGN:
+			return true;
+		}
+		return false;
+	}
+
+	public static boolean isIncrement(int operator) {
+		switch (operator) {
+		case INCREMENT:
+		case DECREMENT:
+		case PRE_INCREMENT:
+		case PRE_DECREMENT:
+			return true;
+		}
+		return false;
+	}
+
 	public static boolean isUnaryPrefix(int operator) {
 		switch(operator) {
 		case NOT:

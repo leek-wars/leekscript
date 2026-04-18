@@ -1056,31 +1056,18 @@ public class LeekExpression extends Expression {
 		if (mExpression1 != null) mExpression1.preAnalyze(compiler);
 		if (mExpression2 != null) mExpression2.preAnalyze(compiler);
 
-		Expression assignTarget = null;
-		if (mOperator == Operators.ASSIGN
-			|| mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN
-			|| mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.DIVIDEASSIGN
-			|| mOperator == Operators.MODULUSASSIGN || mOperator == Operators.POWERASSIGN
-			|| mOperator == Operators.BITOR_ASSIGN || mOperator == Operators.BITAND_ASSIGN
-			|| mOperator == Operators.BITXOR_ASSIGN || mOperator == Operators.SHIFT_LEFT_ASSIGN
-			|| mOperator == Operators.SHIFT_RIGHT_ASSIGN || mOperator == Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN
-			|| mOperator == Operators.COALESCE_ASSIGN) {
-			assignTarget = mExpression1;
-		} else if (mOperator == Operators.INCREMENT || mOperator == Operators.DECREMENT
-			|| mOperator == Operators.PRE_INCREMENT || mOperator == Operators.PRE_DECREMENT) {
-			assignTarget = mExpression2;
-		}
+		Expression assignTarget = Operators.isAssign(mOperator) ? mExpression1
+			: Operators.isIncrement(mOperator) ? mExpression2
+			: null;
 
-		if (assignTarget instanceof LeekVariable) {
-			var v = (LeekVariable) assignTarget;
-
-			if (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION) {
-
-				if (compiler.getVersion() <= 3 && mOperator == Operators.ASSIGN) {
-					compiler.getMainBlock().addRedefinedFunction(v.getName());
-				} else {
-					compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_REDEFINE_FUNCTION));
-				}
+		if (assignTarget instanceof LeekVariable v
+			&& (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION)) {
+			// V<=3 allows redefining a function via plain `=` (legacy). Every other form
+			// (compound assign, ++, --) is undefined — reject in all versions.
+			if (mOperator == Operators.ASSIGN && compiler.getVersion() <= 3) {
+				compiler.getMainBlock().addRedefinedFunction(v.getName());
+			} else {
+				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_REDEFINE_FUNCTION));
 			}
 		}
 	}
@@ -1121,7 +1108,7 @@ public class LeekExpression extends Expression {
 
 		// Si on a affaire à une assignation, incrémentation ou autre du genre
 		// on doit vérifier qu'on a bien une variable (l-value)
-		if (mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN || mOperator == Operators.DIVIDEASSIGN || mOperator == Operators.ASSIGN || mOperator == Operators.MODULUSASSIGN || mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.POWERASSIGN || mOperator == Operators.BITOR_ASSIGN || mOperator == Operators.BITAND_ASSIGN || mOperator == Operators.BITXOR_ASSIGN || mOperator == Operators.SHIFT_LEFT_ASSIGN || mOperator == Operators.SHIFT_RIGHT_ASSIGN || mOperator == Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN || mOperator == Operators.COALESCE_ASSIGN) {
+		if (Operators.isAssign(mOperator)) {
 			if (mExpression1.isFinal()) {
 				if (mExpression1 instanceof LeekObjectAccess) {
 					if (!compiler.isInConstructor()) {
@@ -1144,7 +1131,7 @@ public class LeekExpression extends Expression {
 				((LeekArrayAccess) mExpression1).setLeftValue(true);
 		}
 
-		if (mOperator == Operators.INCREMENT || mOperator == Operators.DECREMENT || mOperator == Operators.PRE_INCREMENT || mOperator == Operators.PRE_DECREMENT) {
+		if (Operators.isIncrement(mOperator)) {
 			if (mExpression2.isFinal()) {
 				if (mExpression2 instanceof LeekObjectAccess) {
 					compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD));
