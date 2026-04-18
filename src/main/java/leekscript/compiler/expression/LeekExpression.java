@@ -1056,17 +1056,30 @@ public class LeekExpression extends Expression {
 		if (mExpression1 != null) mExpression1.preAnalyze(compiler);
 		if (mExpression2 != null) mExpression2.preAnalyze(compiler);
 
-		if (mOperator == Operators.ASSIGN) {
-			if (mExpression1 instanceof LeekVariable) {
-				var v = (LeekVariable) mExpression1;
+		Expression assignTarget = null;
+		if (mOperator == Operators.ASSIGN
+			|| mOperator == Operators.ADDASSIGN || mOperator == Operators.MINUSASSIGN
+			|| mOperator == Operators.MULTIPLIEASSIGN || mOperator == Operators.DIVIDEASSIGN
+			|| mOperator == Operators.MODULUSASSIGN || mOperator == Operators.POWERASSIGN
+			|| mOperator == Operators.BITOR_ASSIGN || mOperator == Operators.BITAND_ASSIGN
+			|| mOperator == Operators.BITXOR_ASSIGN || mOperator == Operators.SHIFT_LEFT_ASSIGN
+			|| mOperator == Operators.SHIFT_RIGHT_ASSIGN || mOperator == Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN
+			|| mOperator == Operators.COALESCE_ASSIGN) {
+			assignTarget = mExpression1;
+		} else if (mOperator == Operators.INCREMENT || mOperator == Operators.DECREMENT
+			|| mOperator == Operators.PRE_INCREMENT || mOperator == Operators.PRE_DECREMENT) {
+			assignTarget = mExpression2;
+		}
 
-				if (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION) {
+		if (assignTarget instanceof LeekVariable) {
+			var v = (LeekVariable) assignTarget;
 
-					if (compiler.getVersion() <= 3) {
-						compiler.getMainBlock().addRedefinedFunction(((LeekVariable) mExpression1).getName());
-					} else {
-						compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_REDEFINE_FUNCTION));
-					}
+			if (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION) {
+
+				if (compiler.getVersion() <= 3 && mOperator == Operators.ASSIGN) {
+					compiler.getMainBlock().addRedefinedFunction(v.getName());
+				} else {
+					compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_REDEFINE_FUNCTION));
 				}
 			}
 		}

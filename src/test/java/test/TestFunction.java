@@ -122,6 +122,14 @@ public class TestFunction extends TestCommon {
 		code("function isEmpty(x) { return 12 } return !isEmpty(1) && !isEmpty(2)").equals("false");
 		code("var max = 0 return max < 12").equals("true");
 		code("var max = 0 if (max < 12) { max = 5 } return max").equals("5");
+		// Increment / decrement / compound assign on a function name: redefinition is
+		// undefined, so reject it in every version (previously compiled to invalid Java).
+		code("abs++; return 0").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code("abs--; return 0").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code("++abs; return 0").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code("abs += 1; return 0").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code("function f() { return 1 } f++; return 0").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code("function f() { return 1 } f += 1; return 0").error(Error.CANNOT_REDEFINE_FUNCTION);
 	}
 
 	@Test
