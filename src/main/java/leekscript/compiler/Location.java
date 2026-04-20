@@ -78,7 +78,7 @@ public class Location {
 
 	public Object toJSON() {
 		ArrayNode a = Json.createArray();
-		a.add(this.file.getId());
+		a.add(this.file.getPath());
 		a.add(this.startLine);
 		a.add(this.startColumn);
 		a.add(this.endLine);
