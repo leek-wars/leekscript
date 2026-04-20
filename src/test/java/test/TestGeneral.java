@@ -212,6 +212,8 @@ public class TestGeneral extends TestCommon {
 		// code("var x = 2 var y = { if (x == 0) { return 'error' } 7 * x } return y").equals("14");
 		code("var y if (false) { if (true) {;} else { y = 2 } } else { y = 5 } return y").equals("5");
 		code("PI = PI + 12; return PI").error(Error.CANT_ASSIGN_VALUE);
+		code("var a = 10 a % 3 \\= 0; return a").error(Error.CANT_ASSIGN_VALUE);
+		code("var a = 10 a % 3 += 1; return a").error(Error.CANT_ASSIGN_VALUE);
 		code_v1("var grow = []; var n = []; grow = @n; return grow").equals("[]");
 		code("var PI = 3 return PI").equals("3");
 		code("var a = 2 var b = 5 var c = 7; a = b = c return [a, b, c]").equals("[7, 7, 7]");
