@@ -37,7 +37,7 @@ public class IACompiler {
 	public void addError(Location location, Error errorType, String[] parameters) {
 		ArrayNode error = Json.createArray();
 		error.add(0); // level
-		error.add(location.getFile().getId());
+		error.add(location.getFile().getPath());
 		error.addPOJO(location.getStartLine());
 		error.addPOJO(location.getStartColumn());
 		error.addPOJO(location.getEndLine());

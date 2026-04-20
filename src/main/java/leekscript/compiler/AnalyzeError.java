@@ -44,7 +44,7 @@ public class AnalyzeError implements Comparable<AnalyzeError> {
 	public ArrayNode toJSON() {
 		ArrayNode array = Json.createArray();
 		array.addPOJO(level.ordinal());
-		array.add(location.getFile().getId());
+		array.add(location.getFile().getPath());
 		array.addPOJO(location.getStartLine());
 		array.addPOJO(location.getStartColumn());
 		array.addPOJO(location.getEndLine());
