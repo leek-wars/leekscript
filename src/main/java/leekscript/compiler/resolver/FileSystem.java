@@ -1,6 +1,7 @@
 package leekscript.compiler.resolver;
 
 import java.io.FileNotFoundException;
+import java.util.Set;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.Folder;
@@ -26,4 +27,15 @@ public abstract class FileSystem {
 	public abstract void loadDependencies(AIFile ai);
 
 	public abstract long getFolderTimestamp(Folder folder);
+
+	/**
+	 * Charge la liste des includes d'un AIFile depuis une source persistante (typiquement la DB).
+	 * Permet à JavaCompiler.effectiveTimestamp de reconstruire file.includedAIs après un restart
+	 * du process (sinon null tant qu'aucun analyze n'a tourné).
+	 *
+	 * Retourne null si pas de source persistante (mode embedded / tests).
+	 */
+	public Set<AIFile> loadIncludedAIs(AIFile file) {
+		return null;
+	}
 }

@@ -87,15 +87,21 @@ public class JavaCompiler {
 	 * Timestamp effectif = max(timestamp du fichier, mtime disque de chaque include).
 	 * Permet d'invalider le cache si un include a changé même quand le fichier principal n'a pas bougé
 	 * (ex: switch de branche git qui ne modifie qu'un fichier inclus).
+	 *
+	 * Sur un AIFile fraîchement chargé (ex: premier compile post-restart), getIncludedAIs() est null
+	 * tant qu'aucun analyze n'a tourné dans ce process. On demande alors au FileSystem de charger la
+	 * liste depuis sa source persistante (côté worker : table ai_include_path). Une fois mémoïsé sur
+	 * le AIFile, les appels suivants évitent la requête.
 	 */
 	private static long effectiveTimestamp(AIFile file) {
-		long max = file.getTimestamp();
-		var includes = file.getIncludedAIs();
-		if (includes == null) return max;
 		var fs = LeekScript.getFileSystem();
-		if (fs == null) return max;
-		// Un include manquant renvoie Long.MAX_VALUE depuis getAITimestamp, ce qui invalide le cache
-		// et force la recompilation (qui révélera l'erreur ou succédera si l'include a été retiré du code).
+		var includes = file.getIncludedAIs();
+		if (includes == null && fs != null) {
+			includes = fs.loadIncludedAIs(file);
+			if (includes != null) file.setIncludedAIs(includes);
+		}
+		long max = file.getTimestamp();
+		if (includes == null || fs == null) return max;
 		for (var inc : includes) {
 			long t = fs.getAITimestamp(inc);
 			if (t > max) max = t;
@@ -273,8 +279,8 @@ public class JavaCompiler {
 				ai.increaseRAMDirect((int) (java.length() * 10));
 
 				if (options.useCache()) {
-					// Après compile : includedAIs vient d'être rempli par IACompiler, le timestamp effectif
-					// reflète donc bien l'état réel du fichier + de ses dépendances.
+					// Après compile : includedAIs vient d'être rempli par IACompiler, donc effectiveTimestamp
+					// reflète bien l'état réel du fichier + de ses dépendances.
 					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), new AIClassEntry(clazz, effectiveTimestamp(file)), refQueue));
 				}
 				return ai;
