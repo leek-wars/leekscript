@@ -83,13 +83,33 @@ public class JavaCompiler {
 		monitor.start();
 	}
 
+	/**
+	 * Timestamp effectif = max(timestamp du fichier, mtime disque de chaque include).
+	 * Permet d'invalider le cache si un include a changé même quand le fichier principal n'a pas bougé
+	 * (ex: switch de branche git qui ne modifie qu'un fichier inclus).
+	 */
+	private static long effectiveTimestamp(AIFile file) {
+		long max = file.getTimestamp();
+		var includes = file.getIncludedAIs();
+		if (includes == null) return max;
+		var fs = LeekScript.getFileSystem();
+		if (fs == null) return max;
+		// Un include manquant renvoie Long.MAX_VALUE depuis getAITimestamp, ce qui invalide le cache
+		// et force la recompilation (qui révélera l'erreur ou succédera si l'include a été retiré du code).
+		for (var inc : includes) {
+			long t = fs.getAITimestamp(inc);
+			if (t > max) max = t;
+		}
+		return max;
+	}
+
 	private static AI loadFromRamCache(AIFile file, File java, File lines) throws LeekScriptException {
 		var ref = aiCache.get(file.getJavaClass());
 		var entry = ref != null ? ref.get() : null;
 		if (ref != null && entry == null) {
 			System.out.println("[SoftRef] Class " + file.getJavaClass() + " was garbage collected, reloading");
 		}
-		if (entry == null || file.getTimestamp() <= 0 || entry.timestamp < file.getTimestamp()) {
+		if (entry == null || file.getTimestamp() <= 0 || entry.timestamp < effectiveTimestamp(file)) {
 			return null;
 		}
 		try {
@@ -122,14 +142,15 @@ public class JavaCompiler {
 			cached = loadFromRamCache(file, java, lines);
 			if (cached != null) return cached;
 
-			if (options.useCache() && file.getTimestamp() > 0 && compiled.exists() && compiled.length() != 0 && compiled.lastModified() >= file.getTimestamp()) {
+			long effectiveTs = effectiveTimestamp(file);
+			if (options.useCache() && file.getTimestamp() > 0 && compiled.exists() && compiled.length() != 0 && compiled.lastModified() >= effectiveTs) {
 				try {
 					// ClassLoader éphémère par AI pour permettre le GC des classes ;
 					// ne pas le close, ça invaliderait la classe chargée.
 					@SuppressWarnings("resource")
 					var classLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, JavaCompiler.class.getClassLoader());
 					var clazz = classLoader.loadClass(file.getJavaClass());
-					var entry = new AIClassEntry(clazz, file.getTimestamp());
+					var entry = new AIClassEntry(clazz, effectiveTs);
 					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), entry, refQueue));
 					var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
 					ai.setId(file.getId());
@@ -252,7 +273,9 @@ public class JavaCompiler {
 				ai.increaseRAMDirect((int) (java.length() * 10));
 
 				if (options.useCache()) {
-					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), new AIClassEntry(clazz, file.getTimestamp()), refQueue));
+					// Après compile : includedAIs vient d'être rempli par IACompiler, le timestamp effectif
+					// reflète donc bien l'état réel du fichier + de ses dépendances.
+					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), new AIClassEntry(clazz, effectiveTimestamp(file)), refQueue));
 				}
 				return ai;
 			} catch (Exception e) {
