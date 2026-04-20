@@ -161,6 +161,17 @@ public class TestMap extends TestCommon {
 	}
 
 	@Test
+	public void testTyped_map_numeric_coercion() throws Exception {
+		section("Typed map numeric coercion");
+		// issue #2872: storing an int into a Map<_, real> must coerce to real
+		code_v4_("Map<integer, real> m = new Map() m[1] = round(1.5) return m[1]").equals("2.0");
+		code_v4_("Map<integer, real> m = new Map() m[1] = 5 return m[1]").equals("5.0");
+		code_v4_("Map<integer, real> m = new Map() m[1] = round(1.5) m[2] = round(2.5) return arraySort(mapKeys(m), (a, b) -> m[b] - m[a])").equals("[2, 1]");
+		// reverse direction: real into Map<_, integer>
+		code_v4_("Map<integer, integer> m = new Map() m[1] = 5.7 return m[1]").equals("5");
+	}
+
+	@Test
 	public void testOperators_on_map_element() throws Exception {
 		section("Operators on map element");
 		code_v2_("var m = [1: 10] return --m[1]").equals("9");

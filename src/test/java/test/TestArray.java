@@ -165,6 +165,17 @@ public class TestArray extends TestCommon {
 	}
 
 	@Test
+	public void testTyped_array_numeric_coercion() throws Exception {
+		section("Typed array numeric coercion");
+		// issue #2872: storing an int into Array<real> must coerce to real
+		code_v4_("Array<real> a = [0.0] a[0] = round(1.5) return a[0]").equals("2.0");
+		code_v4_("Array<real> a = [0.0] a[0] = 5 return a[0]").equals("5.0");
+		code_v4_("Array<real> a = [0.0, 0.0] a[0] = round(1.5) a[1] = round(2.5) return a").equals("[2.0, 3.0]");
+		// reverse direction: real into Array<integer>
+		code_v4_("Array<integer> a = [0] a[0] = 5.7 return a[0]").equals("5");
+	}
+
+	@Test
 	public void testOperator_on_unknown_arrays() throws Exception {
 		section("[] operator on unknown arrays");
 		code("var v = [['a', 'b'], 12] return v[0][0]").equals("\"a\"");

@@ -291,7 +291,7 @@ public class LeekArrayAccess extends Expression {
 			}
 			writer.addCode("(" + expr.getType().getJavaName(mainblock.getVersion()) + ") ");
 		}
-		if (mTabular.getType() instanceof ArrayType) {
+		if (mTabular.getType() instanceof ArrayType at) {
 			mTabular.writeJavaCode(mainblock, writer, true);
 			if (mainblock.isStrict()) {
 				writer.addCode(".put(");
@@ -300,14 +300,14 @@ public class LeekArrayAccess extends Expression {
 			}
 			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			expr.writeJavaCode(mainblock, writer, false);
+			writeValueWithElementCoercion(mainblock, writer, expr, at.element());
 			writer.addCode(")");
-		} else if (mTabular.getType() instanceof MapType) {
+		} else if (mTabular.getType() instanceof MapType mt) {
 			mTabular.writeJavaCode(mainblock, writer, true);
 			writer.addCode(".set(");
 			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			expr.writeJavaCode(mainblock, writer, false);
+			writeValueWithElementCoercion(mainblock, writer, expr, mt.element());
 			writer.addCode(")");
 		} else {
 			if (mainblock.isStrict()) {
@@ -335,7 +335,7 @@ public class LeekArrayAccess extends Expression {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode("(" + expr.getType().getJavaName(mainblock.getVersion()) + ") ");
 		}
-		if (mTabular.getType() instanceof ArrayType) {
+		if (mTabular.getType() instanceof ArrayType at) {
 			mTabular.writeJavaCode(mainblock, writer, true);
 			if (mainblock.isStrict()) {
 				writer.addCode(".put(");
@@ -344,9 +344,9 @@ public class LeekArrayAccess extends Expression {
 			}
 			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			expr.writeJavaCode(mainblock, writer, false);
+			writeValueWithElementCoercion(mainblock, writer, expr, at.element());
 			writer.addCode(")");
-		} else if (mTabular.getType() instanceof MapType) {
+		} else if (mTabular.getType() instanceof MapType mt) {
 			mTabular.writeJavaCode(mainblock, writer, true);
 			if (mainblock.isStrict()) {
 				writer.addCode(".set(");
@@ -355,7 +355,7 @@ public class LeekArrayAccess extends Expression {
 			}
 			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
-			expr.writeJavaCode(mainblock, writer, false);
+			writeValueWithElementCoercion(mainblock, writer, expr, mt.element());
 			writer.addCode(")");
 		} else {
 			writer.addCode("put(");
@@ -370,6 +370,14 @@ public class LeekArrayAccess extends Expression {
 			if (parenthesis) writer.addCode(")");
 		}
 		// writer.compileClone(mainblock, expr);
+	}
+
+	private void writeValueWithElementCoercion(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type elementType) {
+		if (elementType.isPrimitiveNumber()) {
+			writer.compileConvert(mainblock, 0, expr, elementType, false);
+		} else {
+			expr.writeJavaCode(mainblock, writer, false);
+		}
 	}
 
 	@Override
