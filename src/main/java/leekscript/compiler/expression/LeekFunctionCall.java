@@ -179,7 +179,7 @@ public class LeekFunctionCall extends Expression {
 					writer.addCode("execute(this." + field);
 				} else {
 					// Dynamic field: look it up on the ObjectLeekValue backing map
-					writer.addCode("callObjectAccess(u_this, \"" + field + "\", \"u_" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
+					writer.addCode("callObjectAccess(" + mainblock.getWordCompiler().getCurrentClassVariable() + ".this, \"" + field + "\", \"u_" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 				}
 			} else if (is_static_method) {
 				writer.addCode("u_" + method.block.getClassDeclaration().getName() + "_" + field + "_" + mParameters.size() + "(");

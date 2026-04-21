@@ -74,6 +74,8 @@ public class TestClass extends TestCommon {
 		// Non-existent field on typed variable
 		code_strict_v2_("class Foo { } Foo f = new Foo() return f.x").error(Error.CLASS_MEMBER_DOES_NOT_EXIST);
 		code_v2_("class Foo { } Foo f = new Foo() return f.x").warning(Error.CLASS_MEMBER_DOES_NOT_EXIST);
+		// Dynamic this.method() (non-statically-known) must compile (regression: u_this not in scope)
+		code_v2_("class A { public m() { return this.unknownMethod() } } return new A().m()").equals("null");
 	}
 
 }
