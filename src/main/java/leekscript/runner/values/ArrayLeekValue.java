@@ -105,7 +105,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
-	private final AI ai;
+	private AI ai;
 	public final int id;
 	private final RamUsage ram;
 
@@ -113,6 +113,14 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		this.ram = ai.allocateRAM(this);
+	}
+
+	public void rebind(AI ai, Set<Object> visited) {
+		if (!visited.add(this)) return;
+		this.ai = ai;
+		for (var value : this) {
+			LeekOperations.rebind(ai, value, visited);
+		}
 	}
 
 	public ArrayLeekValue(AI ai, int capacity) {
@@ -505,7 +513,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		var i = ai.longint(key);
 		if (i < 0) i += size();
 		try {
-			return get(i);
+			return super.get((int) i);
 		} catch (IndexOutOfBoundsException e) {
 			wrongIndexError(ai, i);
 			return null;

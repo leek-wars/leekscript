@@ -1,16 +1,45 @@
 package leekscript.runner;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.IdentityHashMap;
+import java.util.Set;
 
 import leekscript.ErrorManager;
 import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
+import leekscript.runner.values.Box;
 import leekscript.runner.values.LegacyArrayLeekValue;
 import leekscript.runner.values.MapLeekValue;
 import leekscript.runner.values.ObjectLeekValue;
 import leekscript.runner.values.SetLeekValue;
 
 public class LeekOperations {
+
+	/**
+	 * Rebinds a value graph to a new AI so that subsequent ops() calls from
+	 * methods on MapLeekValue/ArrayLeekValue/Box/... are accounted on `ai`,
+	 * not on the (possibly dead) AI that originally created the value.
+	 * Used by the REPL/Session so that ops reported per snippet match the
+	 * cost of operations performed in that snippet.
+	 */
+	public static void rebind(AI ai, Object value, Set<Object> visited) {
+		if (value == null) return;
+		if (value instanceof Box<?> b) b.rebind(ai, visited);
+		else if (value instanceof MapLeekValue m) m.rebind(ai, visited);
+		else if (value instanceof ArrayLeekValue a) a.rebind(ai, visited);
+		else if (value instanceof SetLeekValue s) s.rebind(ai, visited);
+		else if (value instanceof LegacyArrayLeekValue l) l.rebind(ai, visited);
+		else if (value instanceof ObjectLeekValue o) o.rebind(ai, visited);
+	}
+
+	/**
+	 * Identity semantics: deux collections structurellement égales
+	 * (ex. [1,2,3] et un autre [1,2,3]) doivent être rebind séparément,
+	 * et on ne veut pas déclencher leurs `.equals()` qui peuvent être coûteux.
+	 */
+	public static Set<Object> newVisitedSet() {
+		return java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+	}
 
 	public static Object clone(AI ai, Object value) throws LeekRunException {
 		return clone(ai, value, 1);

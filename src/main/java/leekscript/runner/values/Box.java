@@ -1,5 +1,7 @@
 package leekscript.runner.values;
 
+import java.util.Set;
+
 import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
@@ -11,6 +13,12 @@ public class Box<T> {
 
 	protected Object mValue;
 	protected AI mUAI = null;
+
+	public void rebind(AI ai, Set<Object> visited) {
+		if (!visited.add(this)) return;
+		this.mUAI = ai;
+		LeekOperations.rebind(ai, mValue, visited);
+	}
 
 	public Box(AI ai) {
 		mUAI = ai;

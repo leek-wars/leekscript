@@ -35,7 +35,7 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		}
 	}
 
-	private final AI ai;
+	private AI ai;
 	public final int id;
 	private RamUsage ram;
 
@@ -50,6 +50,14 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 			this.add(value);
 		}
 		this.ram = ai.allocateRAM(this, values.length);
+	}
+
+	public void rebind(AI ai, Set<Object> visited) {
+		if (!visited.add(this)) return;
+		this.ai = ai;
+		for (var value : this) {
+			LeekOperations.rebind(ai, value, visited);
+		}
 	}
 
 	public SetLeekValue(AI ai, SetLeekValue set, int level) throws LeekRunException {

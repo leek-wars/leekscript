@@ -18,7 +18,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 
 	private static final int READ_OPERATIONS = 2;
 	private static final int WRITE_OPERATIONS = 3;
-	private final AI ai;
+	private AI ai;
 	public final int id;
 	private RamUsage ram;
 
@@ -26,6 +26,15 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		this.ram = ai.allocateRAM(this);
+	}
+
+	public void rebind(AI ai, Set<Object> visited) {
+		if (!visited.add(this)) return;
+		this.ai = ai;
+		for (var entry : entrySet()) {
+			LeekOperations.rebind(ai, entry.getKey(), visited);
+			LeekOperations.rebind(ai, entry.getValue(), visited);
+		}
 	}
 
 	public MapLeekValue(AI ai, int capacity) {

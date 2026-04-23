@@ -27,6 +27,13 @@ public class ObjectLeekValue implements LeekValue {
 		this.ram = ai.allocateRAM(this);
 	}
 
+	public void rebind(AI ai, Set<Object> visited) {
+		if (!visited.add(this)) return;
+		for (var field : fields.values()) {
+			field.rebind(ai, visited);
+		}
+	}
+
 	public ObjectLeekValue(AI ai, String[] keys, Object[] values) throws LeekRunException {
 		this(ai, ai.objectClass);
 		for (int i = 0; i < keys.length; ++i) {

@@ -328,6 +328,15 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		this.ai = ai;
 	}
 
+	public void rebind(AI ai, Set<Object> visited) {
+		if (!visited.add(this)) return;
+		this.ai = ai;
+		for (var entry : this) {
+			LeekOperations.rebind(ai, entry.getKey(), visited);
+			LeekOperations.rebind(ai, entry.getValue(), visited);
+		}
+	}
+
 	public LegacyArrayLeekValue(AI ai, Object values[]) throws LeekRunException {
 		this(ai, values, false);
 	}

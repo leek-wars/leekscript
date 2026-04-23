@@ -340,6 +340,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 		// Import des variables de la session
 		if (options.session() != null) {
+			// Reparente les valeurs de la session à l'AI courant pour que les ops
+			// consommées par les accès aux collections (Map/Array/...) soient
+			// comptabilisées sur cette exécution, pas sur l'AI qui les a créées.
+			writer.addLine("session.rebindAll(this);");
 			for (var variable : options.session().getVariables().keySet()) {
 				writer.addLine("var u_" + variable + " = session.getVariable(\"" + variable + "\");");
 			}
