@@ -328,7 +328,7 @@ public class JavaWriter {
 				}
 			}
 		}
-		if (type instanceof FunctionType ft1 && value.getType() instanceof FunctionType ft2) {
+		if (type instanceof FunctionType) {
 			if (parenthesis) {
 				addCode("(");
 			}
