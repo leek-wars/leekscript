@@ -44,6 +44,17 @@ public class TestString extends TestCommon {
 	}
 
 	@Test
+	public void testString_replaceAmplificationIsBilled() throws Exception {
+		// Memory amplification protection: replace(string, "", longRepl) inserts
+		// longRepl between each char, so output = string.length() * longRepl.length().
+		// The ops cost must reflect that upper bound, otherwise a hostile AI could
+		// OOM the worker faster than its ops budget can stop it.
+		section("String.replace() amplification billing");
+		// 50 chars * 50 chars = 2500 ops billed; expansion produces 50 * 51 = 2550 chars.
+		code("var big = '' var rep = '' for (var i = 0; i < 50; i++) { big = big + 'X' rep = rep + 'Y' } return length(replace(big, '', rep)) >= 2500").equals("true");
+	}
+
+	@Test
 	public void testString_indexOf() throws Exception {
 		section("String.indexOf()");
 		code("return indexOf('bonjour','o')").equals("1");

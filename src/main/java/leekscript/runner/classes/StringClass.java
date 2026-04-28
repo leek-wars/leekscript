@@ -50,7 +50,11 @@ public class StringClass {
 	}
 
 	public static String replace(AI ai, String string, String search, String replace) throws LeekRunException {
-		ai.ops(Math.max(1, string.length() * 2));
+		// Worst case for output size: every char in `string` is replaced by `replace`
+		// (when search="" this is exactly what happens). Bill the upper bound of
+		// output length so a hostile AI can't OOM the worker by amplifying memory
+		// faster than its ops budget.
+		ai.ops(Math.max(1, string.length() * Math.max(1, replace.length())));
 		return string.replaceAll(Pattern.quote(search), Matcher.quoteReplacement(replace));
 	}
 
