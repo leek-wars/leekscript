@@ -278,4 +278,32 @@ public class TestGeneral extends TestCommon {
 		code_strict_v4_("function f(a) { return a } return f(1)").noWarning();
 	}
 
+	@Test
+	public void testUnusedFunction() throws Exception {
+		section("Unused functions (strict mode only)");
+		// Unused function in strict mode => warning
+		code_strict_v4_("function f() { return 0 } return 0").warning(Error.UNUSED_FUNCTION);
+		// Used function in strict mode => no warning
+		code_strict_v4_("function f() { return 0 } return f()").noWarning();
+		// Unused function in non-strict mode => no warning
+		code_v4_("function f() { return 0 } return 0").noWarning();
+		// Underscore prefix suppresses warning
+		code_strict_v4_("function _f() { return 0 } return 0").noWarning();
+		// Function passed as a callback counts as used
+		code_strict_v4_("function f(x) { return x } return arrayMap([1, 2], f)").noWarning();
+	}
+
+	@Test
+	public void testUnusedGlobal() throws Exception {
+		section("Unused globals (strict mode only)");
+		// Unused global in strict mode => warning
+		code_strict_v4_("global g = 5; return 0").warning(Error.UNUSED_VARIABLE);
+		// Used global in strict mode => no warning
+		code_strict_v4_("global g = 5; return g").noWarning();
+		// Unused global in non-strict mode => no warning
+		code_v4_("global g = 5; return 0").noWarning();
+		// Underscore prefix suppresses warning
+		code_strict_v4_("global _g = 5; return 0").noWarning();
+	}
+
 }

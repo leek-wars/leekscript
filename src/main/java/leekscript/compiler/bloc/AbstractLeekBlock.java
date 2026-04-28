@@ -267,15 +267,18 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 			NarrowingInfo.restore(saved);
 		}
 
-		// Check for unused variables (strict mode only)
+		// Check for unused variables and functions (strict mode only)
 		if (mMain != null && mMain.isStrict()) {
 			for (var entry : mVariables.entrySet()) {
 				var v = entry.getValue();
 				if (v.getUsageCount() > 0) continue;
 				if (v.getName().startsWith("_")) continue;
 				var vt = v.getVariableType();
-				if (vt != LeekVariable.VariableType.LOCAL && vt != LeekVariable.VariableType.ARGUMENT) continue;
-				compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.UNUSED_VARIABLE, new String[] { v.getName() }));
+				if (vt == LeekVariable.VariableType.LOCAL || vt == LeekVariable.VariableType.ARGUMENT || vt == LeekVariable.VariableType.GLOBAL) {
+					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.UNUSED_VARIABLE, new String[] { v.getName() }));
+				} else if (vt == LeekVariable.VariableType.FUNCTION) {
+					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.UNUSED_FUNCTION, new String[] { v.getName() }));
+				}
 			}
 		}
 
