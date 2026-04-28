@@ -36,15 +36,26 @@ public class NativeFileSystem extends FileSystem {
 		return root;
 	}
 
+	/**
+	 * Resolve `name` under `folderRoot` and reject any path that escapes the
+	 * root (e.g. `name = "../../etc/passwd"`). Used in CLI dev mode; production
+	 * uses a DB-backed FileSystem so this never runs in a worker.
+	 */
+	private static Path resolveSafe(Path folderRoot, String name) {
+		Path absoluteRoot = folderRoot.toAbsolutePath().normalize();
+		Path resolved = absoluteRoot.resolve(name).normalize();
+		if (!resolved.startsWith(absoluteRoot)) {
+			return null;
+		}
+		return resolved;
+	}
+
 	@Override
 	public Folder findFolder(String name, Folder folder) {
-		// System.out.println("NativeFileSystem.findFolder() " + name + " " + folder);
 		try {
-			var root = Paths.get(folder.getName()).toFile();
-			Path resolvedPath = root.toPath().resolve(name).normalize();
-
-			Path parent = resolvedPath.getParent();
-			if (parent == null) parent = Paths.get(".");
+			Path folderRoot = Paths.get(folder.getName());
+			Path resolvedPath = resolveSafe(folderRoot, name);
+			if (resolvedPath == null) return null;
 
 			return new Folder(0, 0, resolvedPath.toString(), folder, this.root, this, System.currentTimeMillis());
 
@@ -55,20 +66,19 @@ public class NativeFileSystem extends FileSystem {
 
 	@Override
 	public AIFile findFile(String name, Folder folder) throws FileNotFoundException {
-		// System.out.println("NativeFileSystem.findFile() " + name + " " + folder);
 		try {
-			var root = Paths.get(folder.getName()).toFile();
-			Path resolvedPath = root.toPath().resolve(name).normalize();
+			Path folderRoot = Paths.get(folder.getName());
+			Path resolvedPath = resolveSafe(folderRoot, name);
+			if (resolvedPath == null) throw new FileNotFoundException();
 
 			String code = Files.readString(resolvedPath, StandardCharsets.UTF_8);
-
-			Path parent = resolvedPath.getParent();
-			if (parent == null) parent = Paths.get(".");
 
 			long timestamp = resolvedPath.toFile().lastModified();
 
 			return new AIFile(name, code, timestamp, LeekScript.LATEST_VERSION, folder, folder.getOwner(), resolvedPath.toString().hashCode() & 0xfffffff, false);
 
+		} catch (FileNotFoundException e) {
+			throw e;
 		} catch (Exception e) {
 			throw new FileNotFoundException();
 		}
