@@ -2,12 +2,18 @@ package leekscript.runner.classes;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.TimeZone;
 
 import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
 public class SystemClass {
+
+	// Leek Wars game time is canonically Europe/Paris. Pinning the TZ here
+	// ensures getDate/getTime return identical strings regardless of the
+	// worker's host TZ, so replays don't diverge cross-machine.
+	private static final TimeZone GAME_TZ = TimeZone.getTimeZone("Europe/Paris");
 
 	public static long getOperations(AI ai) {
 		return (long) ai.getOperations();
@@ -59,11 +65,13 @@ public class SystemClass {
 
 	public static String getDate(AI ai) {
 		DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+		df.setTimeZone(GAME_TZ);
 		return df.format(ai.getDate()).toString();
 	}
 
 	public static String getTime(AI ai) {
 		DateFormat df = new SimpleDateFormat("HH:mm:ss");
+		df.setTimeZone(GAME_TZ);
 		return df.format(ai.getDate()).toString();
 	}
 
