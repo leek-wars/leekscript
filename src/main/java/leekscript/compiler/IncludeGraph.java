@@ -28,6 +28,10 @@ public class IncludeGraph {
 	private final Map<String, Set<String>> reverse = new HashMap<>();
 	// path -> last seen mtime (used to detect adds/removes/modifies)
 	private final Map<String, Long> seenMtimes = new HashMap<>();
+	// includer paths whose last scan failed to resolve at least one include name.
+	// When a new file appears, only these need to be rescanned — their unresolved
+	// names might now resolve to the new file.
+	private final Set<String> pathsWithUnresolved = new HashSet<>();
 
 	public IncludeGraph(FileSystem fs, int owner) {
 		this.fs = fs;
@@ -86,6 +90,13 @@ public class IncludeGraph {
 		removed.removeAll(current.keySet());
 		for (var path : removed) dropFile(path);
 
+		// New files since last scan: rescan only files that had unresolved includes,
+		// since their unresolved names might now resolve to a newly-added file. Drop
+		// their seenMtimes so the loop below picks them up regardless of mtime.
+		if (current.size() > seenMtimes.size() && !pathsWithUnresolved.isEmpty()) {
+			pathsWithUnresolved.forEach(seenMtimes::remove);
+		}
+
 		// Files new or whose mtime changed
 		for (var entry : current.entrySet()) {
 			var path = entry.getKey();
@@ -110,23 +121,26 @@ public class IncludeGraph {
 			}
 		}
 		seenMtimes.remove(path);
+		pathsWithUnresolved.remove(path);
 	}
 
 	private void rescanFile(AIFile file) {
 		dropFile(file.getPath());
 		var includeSet = new HashSet<String>();
+		boolean hasUnresolved = false;
 		for (var name : extractIncludes(file)) {
 			try {
 				var resolved = file.getFolder().resolve(name);
 				includeSet.add(resolved.getPath());
 			} catch (Exception e) {
-				// unresolved include — skip (may be a typo, temporary, etc.)
+				hasUnresolved = true;
 			}
 		}
 		forward.put(file.getPath(), includeSet);
 		for (var inc : includeSet) {
 			reverse.computeIfAbsent(inc, k -> new HashSet<>()).add(file.getPath());
 		}
+		if (hasUnresolved) pathsWithUnresolved.add(file.getPath());
 	}
 
 	/**

@@ -88,18 +88,15 @@ public class JavaCompiler {
 	 * Permet d'invalider le cache si un include a changé même quand le fichier principal n'a pas bougé
 	 * (ex: switch de branche git qui ne modifie qu'un fichier inclus).
 	 *
-	 * Sur un AIFile fraîchement chargé (ex: premier compile post-restart), getIncludedAIs() est null
-	 * tant qu'aucun analyze n'a tourné dans ce process. On demande alors au FileSystem de charger la
-	 * liste depuis sa source persistante (côté worker : table ai_include_path). Une fois mémoïsé sur
-	 * le AIFile, les appels suivants évitent la requête.
+	 * Always asks the FileSystem for the include set rather than reusing
+	 * AIFile.includedAIs : that field can be stale (set to {} when an include was
+	 * unresolvable, then never refreshed) which silently wedges cache invalidation.
+	 * The FileSystem implementation (IncludeGraph) already has its own incremental
+	 * cache, so the cost of re-querying here is one mtime walk plus a hashmap lookup.
 	 */
 	private static long effectiveTimestamp(AIFile file) {
 		var fs = LeekScript.getFileSystem();
-		var includes = file.getIncludedAIs();
-		if (includes == null && fs != null) {
-			includes = fs.loadIncludedAIs(file);
-			if (includes != null) file.setIncludedAIs(includes);
-		}
+		var includes = fs != null ? fs.loadIncludedAIs(file) : null;
 		long max = file.getTimestamp();
 		if (includes == null || fs == null) return max;
 		for (var inc : includes) {
