@@ -35,9 +35,11 @@ public class JSONClass {
 			return obj;
 
 		} catch (Throwable e) {
-			// Catch Throwable (not just Exception) so a hostile JSON triggering
-			// StackOverflowError or similar Error doesn't kill the worker thread.
-			ai.getLogs().addLog(AILog.ERROR, "Cannot parse json \"" + json + "\"");
+			// Catch Throwable (not just Exception) so StackOverflowError or OOM from a
+			// hostile payload doesn't kill the worker thread. Truncate the echoed json
+			// to avoid re-allocating multi-MB strings when recovering from OOM.
+			String preview = json.length() > 200 ? json.substring(0, 200) + "…" : json;
+			ai.getLogs().addLog(AILog.ERROR, "Cannot parse json \"" + preview + "\"");
 			try {
 				ai.ops(100);
 			} catch (Exception e1) {}
