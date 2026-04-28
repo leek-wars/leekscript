@@ -138,7 +138,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 
 		// Container
 		writer.addCode("final var " + ar + " = ops(");
-		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
+		if (mainblock.getVersion() >= 2) {
 			mArray.writeJavaCode(mainblock, writer, false);
 		} else {
 			writer.compileLoad(mainblock, mArray, false);

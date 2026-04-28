@@ -180,7 +180,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 		// Container
 		writer.addCode("final var " + ar + " = ops(");
-		if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
+		if (mainblock.getVersion() >= 2) {
 			mArray.writeJavaCode(mainblock, writer, false);
 		} else {
 			writer.compileLoad(mainblock, mArray, false);
@@ -193,7 +193,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		if (mIsKeyDeclaration) {
 			if (iteratorKeyVariable != null && iteratorKeyVariable.getDeclaration() != null && iteratorKeyVariable.getDeclaration().isCaptured()) {
 				sb.append("final Wrapper<" + iteratorKeyDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + "> " + key_iterator + " = new Wrapper<" + iteratorKeyDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + ">(new Box(" + writer.getAIThis() + ", null));");
-			} else if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
+			} else if (mainblock.getVersion() <= 1) {
 				sb.append("var " + key_iterator + " = new Box(" + writer.getAIThis() + ", null);");
 			} else {
 				sb.append(iteratorKeyDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + " ").append(key_iterator).append(" = null; ops(1); ");
@@ -203,12 +203,10 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		if (mIsDeclaration) {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
 				sb.append("final Wrapper<" + iteratorDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + "> " + val_iterator + " = new Wrapper<" + iteratorDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + ">(new Box(" + writer.getAIThis() + ", null));");
-			} else if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
+			} else if (mainblock.getVersion() >= 2) {
 				sb.append(iteratorDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + " " + val_iterator + " = null; ops(1);");
-			} else if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1 || (iteratorVariable != null && iteratorVariable.getDeclaration().isCaptured())) {
-				sb.append("var " + val_iterator + " = new Box(" + writer.getAIThis() + ", null);");
 			} else {
-				sb.append("Object ").append(val_iterator).append(" = null; ops(1);");
+				sb.append("var " + val_iterator + " = new Box(" + writer.getAIThis() + ", null);");
 			}
 		}
 

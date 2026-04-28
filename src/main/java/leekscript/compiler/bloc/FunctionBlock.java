@@ -191,6 +191,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 	}
 
 	private void writeJavaCodeForArity(MainLeekBlock mainblock, JavaWriter writer, int paramCount) {
+		final boolean v1 = mainblock.getVersion() <= 1;
 		StringBuilder sb = new StringBuilder();
 		sb.append("private " + this.type.returnType().getJavaPrimitiveName(mainblock.getVersion()) + " f_").append(token.getWord()).append("(");
 		for (int i = 0; i < paramCount; i++) {
@@ -206,7 +207,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 			var parameter = mParameters.get(i);
 			var declaration = mParameterDeclarations.get(i);
 			if (declaration.isCaptured()) {
-				if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
+				if (v1) {
 					sb.append("final var u_").append(parameter).append(" = new Wrapper<" + declaration.getType().getJavaName(mainblock.getVersion()) + ">(");
 					if (mReferences.get(i)) {
 						sb.append("(p_").append(parameter).append(" instanceof Box) ? (Box) p_").append(parameter).append(" : new Box(" + writer.getAIThis() + ", ").append("p_").append(parameter).append("));");
@@ -220,13 +221,13 @@ public class FunctionBlock extends AbstractLeekBlock {
 				sb.append("var u_").append(parameter).append(" = ");
 				if (mReferences.get(i)) {
 					sb.append("(p_").append(parameter).append(" instanceof Box) ? (Box) p_").append(parameter).append(" : new Box(" + writer.getAIThis());
-					if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
+					if (v1) {
 						sb.append(", p_").append(parameter).append(");");
 					} else {
 						sb.append(", copy(p_").append(parameter).append("));");
 					}
 				} else {
-					if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
+					if (v1) {
 						sb.append("new Box(" + writer.getAIThis() + ", copy(p_").append(parameter).append("));");
 					} else {
 						sb.append("p_").append(parameter).append(";");
@@ -247,7 +248,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 				writer.addCounter(defaultValue.operations);
 			} else {
 				writer.addCode("var u_" + mParameters.get(i) + " = ");
-				if (mainblock.getCompiler().getCurrentAI().getVersion() <= 1) {
+				if (v1) {
 					writer.addCode("new Box(" + writer.getAIThis() + ", ");
 					defaultValue.writeJavaCode(mainblock, writer, false);
 					writer.addLine(");");
