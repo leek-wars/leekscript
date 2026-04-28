@@ -173,6 +173,15 @@ public class TestSet extends TestCommon {
 	}
 
 	@Test
+	public void testSet_filter() throws Exception {
+		section("Set.filter()");
+		code("var s = <1, 2, 3, 4, 5> return setFilter(s, x -> x > 2)").equals("<3, 4, 5>");
+		code("var s = <1, 2, 3> return setFilter(s, x -> false)").equals("<>");
+		code("var s = <1, 2, 3> return setFilter(s, x -> true)").equals("<1, 2, 3>");
+		code("var s = <> return setFilter(s, x -> true)").equals("<>");
+	}
+
+	@Test
 	public void testSet_toArray() throws Exception {
 		section("Set.toArray()");
 		code("var s = <1, 2, 3> return setToArray(s)").equals("[1, 2, 3]");

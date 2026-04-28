@@ -217,6 +217,18 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 		return r;
 	}
 
+	public SetLeekValue setFilter(AI ai, FunctionLeekValue function) throws LeekRunException {
+		ai.ops(1 + 3 * size());
+		var r = new SetLeekValue(ai);
+		for (var v : this) {
+			if (ai.bool(function.run(ai, null, v, this))) {
+				r.add(v);
+			}
+		}
+		ai.increaseRAM(ram, r.size());
+		return r;
+	}
+
 	public ArrayLeekValue setToArray(AI ai) throws LeekRunException {
 		ai.ops(this.size() * 2);
 		var r = new ArrayLeekValue(ai, this.toArray());

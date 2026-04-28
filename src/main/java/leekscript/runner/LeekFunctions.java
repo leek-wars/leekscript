@@ -248,6 +248,7 @@ public class LeekFunctions {
 		method("setIntersection", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
 		method("setDifference", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
 		method("setDisjunction", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
+		method("setFilter", "Set", Type.SET, new Type[] { Type.SET, new FunctionType(Type.BOOL, 0, Type.ANY, Type.SET) });
 		method("setToArray", "Set", Type.ARRAY, new Type[] { Type.SET });
 
 		/**
