@@ -68,6 +68,21 @@ public abstract class AI {
 
 	public static final int ERROR_LOG_COST = 10000;
 
+	// Shared StackWalker — getInstance() lookup is non-trivial per call.
+	private static final StackWalker STACK_WALKER = StackWalker.getInstance();
+
+	/**
+	 * Stack frames of compiled user code (class names starting with "AI_"), up to 51
+	 * — matches the truncation in {@link #getErrorMessage(StackTraceElement[])}.
+	 */
+	protected static StackTraceElement[] captureAITrace() {
+		return STACK_WALKER.walk(s -> s
+			.filter(f -> f.getClassName().startsWith("AI_"))
+			.limit(51)
+			.map(StackWalker.StackFrame::toStackTraceElement)
+			.toArray(StackTraceElement[]::new));
+	}
+
 	protected long mOperations = 0;
 	public final static int MAX_OPERATIONS = 20_000_000;
 	public long maxOperations = MAX_OPERATIONS;
@@ -553,18 +568,21 @@ public abstract class AI {
 	public record LeekScriptPosition(int file, int line) {}
 
 	public LeekScriptPosition getCurrentLeekScriptPosition() {
-		for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-			if (element.getClassName().startsWith("AI_")) {
-				var mapping = getLineMapping(element.getLineNumber());
-				if (mapping != null) {
-					var files = getErrorFilesID();
-					var f = mapping.getAI();
-					int file = f < files.length ? files[f] : 0;
-					return new LeekScriptPosition(file, mapping.getLeekScriptLine());
-				}
-			}
-		}
-		return null;
+		// findFirst on StackWalker avoids materializing a StackTraceElement[] for
+		// frames we'll never consume.
+		return STACK_WALKER.walk(s -> s
+			.filter(f -> f.getClassName().startsWith("AI_"))
+			.map(f -> {
+				var mapping = getLineMapping(f.getLineNumber());
+				if (mapping == null) return null;
+				var files = getErrorFilesID();
+				var fIdx = mapping.getAI();
+				int file = fIdx < files.length ? files[fIdx] : 0;
+				return new LeekScriptPosition(file, mapping.getLeekScriptLine());
+			})
+			.filter(p -> p != null)
+			.findFirst()
+			.orElse(null));
 	}
 
 	public String getErrorMessage(Throwable e) {
@@ -732,7 +750,7 @@ public abstract class AI {
 
 		String stacktrace;
 		if (cause == null) {
-			stacktrace = getErrorMessage(Thread.currentThread().getStackTrace());
+			stacktrace = getErrorMessage(captureAITrace());
 		} else {
 			stacktrace = getErrorMessage(cause.getStackTrace());
 		}
