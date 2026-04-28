@@ -15,8 +15,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import leekscript.compiler.AIFile;
 import leekscript.compiler.Folder;
@@ -31,11 +30,12 @@ import leekscript.runner.AI;
  * include("Class/sousfichier"). Quand on modifie sousfichier sans toucher Main,
  * l'exécution de Main doit refléter le nouveau code.
  *
- * SAME_THREAD : LeekScript.setFileSystem est un singleton statique partagé,
- * deux tests de cette classe ne peuvent pas coexister en parallèle sans
- * s'écraser mutuellement.
+ * @Isolated : LeekScript.setFileSystem est un singleton statique partagé. Si
+ * d'autres classes de tests s'exécutent en parallèle pendant qu'un test ici
+ * tient le TmpFileSystem, leurs LeekScript.compileFile("ai/code/...") résolvent
+ * via notre TmpFileSystem (qui ne connaît pas leurs ressources) et échouent.
  */
-@Execution(ExecutionMode.SAME_THREAD)
+@Isolated
 public class TestIncludeCache {
 
 	@TempDir Path tmpRoot;
