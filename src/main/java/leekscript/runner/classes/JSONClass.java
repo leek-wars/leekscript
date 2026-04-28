@@ -34,8 +34,9 @@ public class JSONClass {
 			ai.ops(json.length() * 10);
 			return obj;
 
-		} catch (Exception e) {
-
+		} catch (Throwable e) {
+			// Catch Throwable (not just Exception) so a hostile JSON triggering
+			// StackOverflowError or similar Error doesn't kill the worker thread.
 			ai.getLogs().addLog(AILog.ERROR, "Cannot parse json \"" + json + "\"");
 			try {
 				ai.ops(100);

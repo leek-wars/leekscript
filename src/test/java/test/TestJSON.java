@@ -134,4 +134,13 @@ public class TestJSON extends TestCommon {
 		code("var v = 'salut' return jsonEncode(jsonEncode(v))").equals("\"\"\\\"salut\\\"\"\"");
 	}
 
+	@Test
+	public void testDeepNestingReturnsNull() throws Exception {
+		// Deeply-nested JSON used to throw StackOverflowError, killing the worker
+		// thread. The mapper now caps nesting at 64 and jsonDecode catches Throwable,
+		// so a hostile payload returns null instead of crashing.
+		section("jsonDecode() depth limit");
+		code("var s = '' for (var i = 0; i < 5000; i++) s = '[' + s + ']' return jsonDecode(s)").equals("null");
+	}
+
 }
