@@ -323,6 +323,18 @@ public class JavaWriter {
 								}
 								return;
 							}
+							if (t == Type.INT) { // any -> Long?
+								addCode("longintOrNull(");
+								value.writeJavaCode(mainblock, this, false);
+								addCode(")");
+								return;
+							}
+							if (t == Type.REAL) { // any -> Double?
+								addCode("realOrNull(");
+								value.writeJavaCode(mainblock, this, false);
+								addCode(")");
+								return;
+							}
 						}
 					}
 				}

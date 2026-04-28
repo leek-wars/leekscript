@@ -1473,6 +1473,18 @@ public abstract class AI {
 		return longint(value);
 	}
 
+	public Long longintOrNull(Object value) throws LeekRunException {
+		if (value == null)
+			return null;
+		return longint(value);
+	}
+
+	public Double realOrNull(Object value) throws LeekRunException {
+		if (value == null)
+			return null;
+		return real(value);
+	}
+
 	public Object copy(Object value) throws LeekRunException {
 		return LeekOperations.clone(this, value);
 	}
