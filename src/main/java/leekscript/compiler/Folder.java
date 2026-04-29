@@ -85,13 +85,13 @@ public class Folder {
 		var ref = files.get(name);
 		var ai = ref != null ? ref.get() : null;
 		if (ai != null) {
-			// Fichier pas modifié ?
+			// Cache valide ssi mtime exact match. Un `<=` laisserait passer un git
+			// checkout vers une ancienne révision (mtime recule), retournant un
+			// AIFile dont .code reflète l'ancien contenu.
 			long currentTimestamp = fs.getAITimestamp(ai);
-			if (currentTimestamp > 0 && currentTimestamp <= ai.getTimestamp()) {
-				// System.out.println("AI " + ai.getName() + " en cache " + ai.getTimestamp());
+			if (currentTimestamp > 0 && currentTimestamp == ai.getTimestamp()) {
 				return ai;
 			}
-			// System.out.println("AI " + ai.getName() + " expiré");
 		}
 
 		// Recherche d'un nouveau fichier

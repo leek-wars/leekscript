@@ -216,6 +216,21 @@ public class TestIncludeCache {
 	}
 
 	@Test
+	public void gitPullMtimeBackwards() throws Exception {
+		write("sub.leek", "function f() { return 1; }");
+		String main = writeMain("include(\"sub\");\nreturn f();");
+		assertEquals("1", run(main));
+
+		// Simule git checkout d'une ancienne révision : mtime du sub recule. Le
+		// cache du Folder utilisait `<=` ce qui rendait le AIFile cached valide
+		// "tant que le mtime disque ≤ celui qu'on a chargé", masquant le rollback.
+		write("sub.leek", "function f() { return 2; }");
+		setMtime("sub.leek", System.currentTimeMillis() - 86_400_000L); // 24h en arrière
+
+		assertEquals("2", run(main), "git checkout vers ancien (mtime backwards) non détecté");
+	}
+
+	@Test
 	public void gitPullChainModified() throws Exception {
 		write("B.leek", "function g() { return 1; }");
 		write("A.leek", "include(\"B\");\nfunction f() { return g(); }");
@@ -532,7 +547,7 @@ public class TestIncludeCache {
 		synchronized AIFile getFileByPath(String filePath, int owner) {
 			var key = owner + ":" + filePath;
 			var cached = filesByPath.get(key);
-			if (cached != null && getAITimestamp(cached) <= cached.getTimestamp()) return cached;
+			if (cached != null && getAITimestamp(cached) == cached.getTimestamp()) return cached;
 			var fsPath = root.resolve(filePath + ".leek");
 			try {
 				var code = Files.readString(fsPath);
@@ -588,7 +603,7 @@ public class TestIncludeCache {
 			var filePath = buildChild(folder, name);
 			var key = folder.getOwner() + ":" + filePath;
 			var cached = filesByPath.get(key);
-			if (cached != null && getAITimestamp(cached) <= cached.getTimestamp()) return cached;
+			if (cached != null && getAITimestamp(cached) == cached.getTimestamp()) return cached;
 			var fsPath = root.resolve(filePath + ".leek");
 			try {
 				var code = Files.readString(fsPath);
