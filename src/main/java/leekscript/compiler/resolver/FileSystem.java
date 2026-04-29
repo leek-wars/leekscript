@@ -55,7 +55,10 @@ public abstract class FileSystem {
 	 */
 	public Set<AIFile> loadIncludedAIs(AIFile file) {
 		var graph = graphs.computeIfAbsent(file.getOwner(), o -> new IncludeGraph(this, o));
-		var paths = graph.getIncluded(file.getPath());
+		// Transitive : include chain Main → A → B → C must all contribute their mtime
+		// to effectiveTimestamp(Main), otherwise modifying C alone never invalidates
+		// Main's compiled cache.
+		var paths = graph.getTransitivelyIncluded(file.getPath());
 		var root = getRoot(file.getOwner());
 		if (root == null) return Collections.emptySet();
 		var result = new HashSet<AIFile>();

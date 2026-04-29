@@ -3,6 +3,7 @@ package test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,34 +28,31 @@ import leekscript.compiler.resolver.FileSystem;
 import leekscript.runner.AI;
 
 /**
- * Reproduit le scénario décrit dans l'issue #3597 : Main contient
- * include("Class/sousfichier"). Quand on modifie sousfichier sans toucher Main,
- * l'exécution de Main doit refléter le nouveau code.
+ * Couverture exhaustive du cache d'inclusions LeekScript et de son invalidation.
  *
- * @Isolated : LeekScript.setFileSystem est un singleton statique partagé. Si
- * d'autres classes de tests s'exécutent en parallèle pendant qu'un test ici
- * tient le TmpFileSystem, leurs LeekScript.compileFile("ai/code/...") résolvent
- * via notre TmpFileSystem (qui ne connaît pas leurs ressources) et échouent.
+ * Issue #3597 : modifier un fichier inclus sans toucher l'entrypoint doit faire
+ * recompiler l'entrypoint au prochain run. Cas courants à couvrir : éditeur web
+ * (mtime poussé par le daemon), git pull (mtimes simultanés ou non-monotones),
+ * includes transitifs, structures en diamant, etc.
+ *
+ * @Isolated : LeekScript.setFileSystem est un singleton statique. Sans isolation
+ * vis-à-vis des autres classes de tests, leur LeekScript.compileFile() résolvent
+ * via notre TmpFileSystem et échouent en cascade.
  */
 @Isolated
 public class TestIncludeCache {
 
 	@TempDir Path tmpRoot;
-	private Path mainPath;
-	private Path subPath;
-	// Nom unique : aiCache RAM et le .class disque sont keyés par
-	// Objects.hash(owner, path) — partagés entre tests JUnit malgré tmpRoots
-	// distincts. Sans nom unique, le test N réutilise la classe compilée par
-	// le test N-1 et masque le comportement réel du cache.
-	private String mainName;
 	private TmpFileSystem fs;
+	// Nom d'entrypoint unique par test : aiCache RAM et le .class disque sont
+	// keyés par Objects.hash(owner, path), partagés entre tests JUnit malgré
+	// tmpRoots distincts.
+	private static final AtomicLong UNIQUE = new AtomicLong();
+	private String uniqueId;
 
 	@BeforeEach
-	void setUp() throws Exception {
-		Files.createDirectories(tmpRoot.resolve("Class"));
-		mainName = "Main_" + Long.toHexString(System.nanoTime());
-		mainPath = tmpRoot.resolve(mainName + ".leek");
-		subPath = tmpRoot.resolve("Class/sousfichier.leek");
+	void setUp() {
+		uniqueId = Long.toHexString(System.nanoTime()) + "_" + UNIQUE.incrementAndGet();
 		fs = new TmpFileSystem(tmpRoot);
 		LeekScript.setFileSystem(fs);
 	}
@@ -63,85 +62,248 @@ public class TestIncludeCache {
 		LeekScript.resetFileSystem();
 	}
 
+	// =========================================================================
+	// Cas direct : Main → sub
+	// =========================================================================
+
 	@Test
-	public void includeChangeIsPickedUpWithoutMainEdit() throws Exception {
-		Files.writeString(subPath, "function f() { return 1; }");
-		Files.writeString(mainPath, "include(\"Class/sousfichier\");\nreturn f();");
-		assertEquals("1", compileAndRun(mainName));
+	public void directIncludeModified() throws Exception {
+		write("sub.leek", "function f() { return 1; }");
+		String main = writeMain("include(\"sub\");\nreturn f();");
 
-		Files.writeString(subPath, "function f() { return 2; }");
-		// Bump explicite : la résolution sub-seconde du FS peut faire que le mtime
-		// ne change pas dans la même seconde.
-		bump(subPath, 1000);
+		assertEquals("1", run(main));
 
-		assertEquals("2", compileAndRun(mainName), "Main n'a pas vu la nouvelle version de sousfichier");
-	}
+		write("sub.leek", "function f() { return 2; }");
+		bumpMtime("sub.leek", 1000);
 
-	/**
-	 * Scénario de l'issue #3597 : sousfichier n'existe pas au moment du premier
-	 * scan de Main par l'IncludeGraph → forward[Main] reste {} (include
-	 * non-résolu). Quand sousfichier apparaît, le graphe doit re-scanner Main pour
-	 * matérialiser l'edge — sinon effectiveTimestamp(Main) ignore à jamais le
-	 * mtime de sousfichier et le cache compilé reste figé.
-	 */
-	@Test
-	public void subFileCreatedAfterMainScan() throws Exception {
-		Files.writeString(mainPath, "include(\"Class/sousfichier\");\nreturn f();");
-		try {
-			compileAndRun(mainName);
-		} catch (Throwable expected) {
-			// Compile attendu en échec : sousfichier introuvable. Peuple quand même
-			// l'IncludeGraph avec un include non-résolu sur Main.
-		}
-
-		Files.writeString(subPath, "function f() { return 42; }");
-		assertEquals("42", compileAndRun(mainName), "Main n'a pas vu sousfichier nouvellement créé");
-
-		Files.writeString(subPath, "function f() { return 100; }");
-		bump(subPath, 2000);
-		assertEquals("100", compileAndRun(mainName),
-				"Main n'a pas vu la modif de sousfichier (cache figé sur include non-résolu)");
-	}
-
-	/** Best-effort GC hint : si la SoftRef du aiCache RAM survit, on teste
-	 *  juste le path standard. */
-	@Test
-	public void includeChangeAfterGcHint() throws Exception {
-		Files.writeString(subPath, "function f() { return 1; }");
-		Files.writeString(mainPath, "include(\"Class/sousfichier\");\nreturn f();");
-		assertEquals("1", compileAndRun(mainName));
-
-		Files.writeString(subPath, "function f() { return 2; }");
-		bump(subPath, 1000);
-
-		System.gc();
-		Thread.sleep(100);
-		System.gc();
-
-		assertEquals("2", compileAndRun(mainName), "Post-GC, Main n'a pas vu la nouvelle version");
+		assertEquals("2", run(main), "modif d'un include direct doit invalider le cache de Main");
 	}
 
 	@Test
-	public void includeChangeIsPickedUpWithMainBump() throws Exception {
-		Files.writeString(subPath, "function f() { return 1; }");
-		Files.writeString(mainPath, "include(\"Class/sousfichier\");\nreturn f();");
-		assertEquals("1", compileAndRun(mainName));
+	public void directIncludeModifiedWithEntrypointTouched() throws Exception {
+		write("sub.leek", "function f() { return 1; }");
+		String main = writeMain("include(\"sub\");\nreturn f();");
+		assertEquals("1", run(main));
 
-		// Modif + bump aussi Main (simule le daemon qui propage via
-		// invalidateFile(entrypoint, sousfichier.timestamp), commit f0902cb2).
-		Files.writeString(subPath, "function f() { return 2; }");
+		// Comportement du daemon prod après commit f0902cb2 : invalidateFile bump
+		// la mtime de l'entrypoint en plus de celle de l'include.
 		long ts = System.currentTimeMillis() + 1000;
-		Files.setLastModifiedTime(subPath, FileTime.fromMillis(ts));
-		Files.setLastModifiedTime(mainPath, FileTime.fromMillis(ts));
+		write("sub.leek", "function f() { return 2; }");
+		setMtime("sub.leek", ts);
+		setMtime(mainName(main), ts);
 
-		assertEquals("2", compileAndRun(mainName), "Main n'a pas vu la nouvelle version même avec bump");
+		assertEquals("2", run(main));
 	}
 
-	private static void bump(Path p, long offsetMs) throws Exception {
-		Files.setLastModifiedTime(p, FileTime.fromMillis(System.currentTimeMillis() + offsetMs));
+	/** Issue #3597 : sub n'existe pas au moment du premier scan, créé après. */
+	@Test
+	public void includeCreatedAfterFirstScanThenModified() throws Exception {
+		String main = writeMain("include(\"sub\");\nreturn f();");
+		try {
+			run(main); // throw : sub introuvable
+		} catch (Throwable expected) {}
+
+		write("sub.leek", "function f() { return 42; }");
+		assertEquals("42", run(main), "include nouvellement créé non détecté");
+
+		write("sub.leek", "function f() { return 100; }");
+		bumpMtime("sub.leek", 2000);
+		assertEquals("100", run(main), "modif après création non détectée (cache figé sur include non-résolu)");
 	}
 
-	private String compileAndRun(String name) throws Exception {
+	// =========================================================================
+	// Includes transitifs : Main → A → B
+	// =========================================================================
+
+	@Test
+	public void transitiveIncludeModified() throws Exception {
+		write("B.leek", "function g() { return 7; }");
+		write("A.leek", "include(\"B\");\nfunction f() { return g(); }");
+		String main = writeMain("include(\"A\");\nreturn f();");
+		assertEquals("7", run(main));
+
+		write("B.leek", "function g() { return 9; }");
+		bumpMtime("B.leek", 1000);
+
+		assertEquals("9", run(main), "modif d'un include transitif (B inclus par A inclus par Main) non propagée");
+	}
+
+	@Test
+	public void intermediateIncludeModified() throws Exception {
+		write("B.leek", "function g() { return 7; }");
+		write("A.leek", "include(\"B\");\nfunction f() { return g() + 1; }");
+		String main = writeMain("include(\"A\");\nreturn f();");
+		assertEquals("8", run(main));
+
+		write("A.leek", "include(\"B\");\nfunction f() { return g() + 2; }");
+		bumpMtime("A.leek", 1000);
+
+		assertEquals("9", run(main), "modif de l'intermédiaire A non propagée à Main");
+	}
+
+	// =========================================================================
+	// Diamant : Main → A et Main → B, A et B → C
+	// =========================================================================
+
+	@Test
+	public void diamondCommonIncludeModified() throws Exception {
+		write("C.leek", "function k() { return 3; }");
+		write("A.leek", "include(\"C\");\nfunction a() { return k(); }");
+		write("B.leek", "include(\"C\");\nfunction b() { return k() * 2; }");
+		String main = writeMain("include(\"A\");\ninclude(\"B\");\nreturn a() + b();");
+		assertEquals("9", run(main));
+
+		write("C.leek", "function k() { return 5; }");
+		bumpMtime("C.leek", 1000);
+
+		assertEquals("15", run(main), "modif d'un include partagé en diamant non propagée");
+	}
+
+	// =========================================================================
+	// Multi-includes : Main → A, B, C, modifier C
+	// =========================================================================
+
+	@Test
+	public void oneOfManyIncludesModified() throws Exception {
+		write("A.leek", "function a() { return 1; }");
+		write("B.leek", "function b() { return 2; }");
+		write("C.leek", "function c() { return 3; }");
+		String main = writeMain("include(\"A\");\ninclude(\"B\");\ninclude(\"C\");\nreturn a() + b() + c();");
+		assertEquals("6", run(main));
+
+		write("C.leek", "function c() { return 30; }");
+		bumpMtime("C.leek", 1000);
+
+		assertEquals("33", run(main), "modif d'un include parmi plusieurs non détectée");
+	}
+
+	// =========================================================================
+	// Chaîne profonde : Main → A → B → C → D
+	// =========================================================================
+
+	@Test
+	public void deepChainLeafModified() throws Exception {
+		write("D.leek", "function d() { return 1; }");
+		write("C.leek", "include(\"D\");\nfunction c() { return d(); }");
+		write("B.leek", "include(\"C\");\nfunction b() { return c(); }");
+		write("A.leek", "include(\"B\");\nfunction a() { return b(); }");
+		String main = writeMain("include(\"A\");\nreturn a();");
+		assertEquals("1", run(main));
+
+		write("D.leek", "function d() { return 100; }");
+		bumpMtime("D.leek", 1000);
+
+		assertEquals("100", run(main), "modif de la feuille D (4 niveaux de profondeur) non propagée");
+	}
+
+	// =========================================================================
+	// Git pull : mtimes simultanées, non-monotones
+	// =========================================================================
+
+	@Test
+	public void gitPullSimultaneousMtimes() throws Exception {
+		write("sub.leek", "function f() { return 1; }");
+		String main = writeMain("include(\"sub\");\nreturn f();");
+		assertEquals("1", run(main));
+
+		// Simule git pull : tous les fichiers modifiés ont la même mtime exacte.
+		long ts = System.currentTimeMillis() + 1000;
+		write("sub.leek", "function f() { return 2; }");
+		setMtime("sub.leek", ts);
+		setMtime(mainName(main), ts);
+
+		assertEquals("2", run(main), "git pull avec mtimes simultanées : modif non détectée");
+	}
+
+	@Test
+	public void gitPullChainModified() throws Exception {
+		write("B.leek", "function g() { return 1; }");
+		write("A.leek", "include(\"B\");\nfunction f() { return g(); }");
+		String main = writeMain("include(\"A\");\nreturn f();");
+		assertEquals("1", run(main));
+
+		// Simule git pull qui modifie A et B en même temps avec la même mtime.
+		long ts = System.currentTimeMillis() + 1000;
+		write("B.leek", "function g() { return 5; }");
+		write("A.leek", "include(\"B\");\nfunction f() { return g() * 2; }");
+		setMtime("A.leek", ts);
+		setMtime("B.leek", ts);
+
+		assertEquals("10", run(main), "git pull modifiant A + B simultanément non détecté");
+	}
+
+	// =========================================================================
+	// Ajout d'une directive include à un Main existant
+	// =========================================================================
+
+	@Test
+	public void includeDirectiveAddedToExistingMain() throws Exception {
+		String main = writeMain("return 1;");
+		assertEquals("1", run(main));
+
+		// L'utilisateur ajoute un include à Main et crée le sub.
+		write("sub.leek", "function f() { return 42; }");
+		long ts = System.currentTimeMillis() + 1000;
+		write(mainName(main), "include(\"sub\");\nreturn f();");
+		setMtime(mainName(main), ts);
+
+		assertEquals("42", run(main), "ajout d'une directive include non détecté");
+
+		// Maintenant on modifie juste le sub : le mtime de Main n'a pas bougé,
+		// mais le cache doit être invalidé via la chaîne d'includes.
+		write("sub.leek", "function f() { return 100; }");
+		bumpMtime("sub.leek", 2000);
+
+		assertEquals("100", run(main), "modif du sub après ajout de directive include non détectée");
+	}
+
+	// =========================================================================
+	// Sous-fichiers
+	// =========================================================================
+
+	@Test
+	public void subInSubFolderModified() throws Exception {
+		Files.createDirectories(tmpRoot.resolve("Class"));
+		write("Class/util.leek", "function u() { return 1; }");
+		String main = writeMain("include(\"Class/util\");\nreturn u();");
+		assertEquals("1", run(main));
+
+		write("Class/util.leek", "function u() { return 2; }");
+		bumpMtime("Class/util.leek", 1000);
+
+		assertEquals("2", run(main), "include via sous-dossier non détecté");
+	}
+
+	// =========================================================================
+	// Helpers
+	// =========================================================================
+
+	private Path write(String relative, String content) throws IOException {
+		var p = tmpRoot.resolve(relative);
+		Files.createDirectories(p.getParent());
+		Files.writeString(p, content);
+		return p;
+	}
+
+	private String writeMain(String content) throws IOException {
+		String name = "Main_" + uniqueId;
+		write(name + ".leek", content);
+		return name;
+	}
+
+	private String mainName(String main) {
+		return main + ".leek";
+	}
+
+	private void setMtime(String relative, long millis) throws IOException {
+		Files.setLastModifiedTime(tmpRoot.resolve(relative), FileTime.fromMillis(millis));
+	}
+
+	private void bumpMtime(String relative, long offsetMs) throws IOException {
+		setMtime(relative, System.currentTimeMillis() + offsetMs);
+	}
+
+	private String run(String name) throws Exception {
 		var file = fs.getRoot(0).resolve(name);
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass("AI");
@@ -153,10 +315,11 @@ public class TestIncludeCache {
 		return ai.string(ai.runIA());
 	}
 
-	/**
-	 * Mimique le DbFileSystem worker (filesystem-backed, per-owner cache,
-	 * listAllFiles via Files.walk) sans dépendance sur le serveur.
-	 */
+	// =========================================================================
+	// FileSystem mimant le worker DbFileSystem (filesystem-backed, per-owner
+	// cache, listAllFiles via Files.walk) sans dépendance sur le serveur.
+	// =========================================================================
+
 	static class TmpFileSystem extends FileSystem {
 		private final Path root;
 		private final Map<Integer, Folder> rootFolders = new HashMap<>();
@@ -251,7 +414,7 @@ public class TestIncludeCache {
 						Objects.hash(folder.getOwner(), filePath) & 0xfffffff, false);
 				filesByPath.put(key, file);
 				return file;
-			} catch (java.io.IOException e) {
+			} catch (IOException e) {
 				throw new FileNotFoundException(filePath);
 			}
 		}

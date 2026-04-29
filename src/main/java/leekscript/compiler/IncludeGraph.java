@@ -79,6 +79,29 @@ public class IncludeGraph {
 		return s != null ? Collections.unmodifiableSet(s) : Set.of();
 	}
 
+	/**
+	 * Returns all paths transitively included from {@code path} (excluding {@code path}
+	 * itself). Used by JavaCompiler.effectiveTimestamp to invalidate the compiled cache
+	 * when ANY file in the include chain changes — including grand-children and beyond.
+	 *
+	 * Without transitivity, modifying a leaf in Main → A → B → C only bumps C's mtime;
+	 * Main's effectiveTimestamp only walks {A} and misses C entirely.
+	 */
+	public synchronized Set<String> getTransitivelyIncluded(String path) {
+		refresh();
+		var result = new HashSet<String>();
+		var queue = new java.util.ArrayDeque<String>();
+		queue.add(path);
+		while (!queue.isEmpty()) {
+			var direct = forward.get(queue.poll());
+			if (direct == null) continue;
+			for (var inc : direct) {
+				if (result.add(inc)) queue.add(inc);
+			}
+		}
+		return result;
+	}
+
 	private void refresh() {
 		var current = new HashMap<String, AIFile>();
 		for (var file : fs.listAllFiles(owner)) {

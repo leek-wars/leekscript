@@ -84,15 +84,16 @@ public class JavaCompiler {
 	}
 
 	/**
-	 * Timestamp effectif = max(timestamp du fichier, mtime disque de chaque include).
-	 * Permet d'invalider le cache si un include a changé même quand le fichier principal n'a pas bougé
-	 * (ex: switch de branche git qui ne modifie qu'un fichier inclus).
+	 * Timestamp effectif = max(timestamp du fichier, mtime disque de chaque include
+	 * transitif). Permet d'invalider le cache si une dépendance a changé même quand
+	 * le fichier principal n'a pas bougé (ex: switch de branche git qui ne modifie
+	 * qu'un fichier inclus).
 	 *
 	 * Always asks the FileSystem for the include set rather than reusing
 	 * AIFile.includedAIs : that field can be stale (set to {} when an include was
 	 * unresolvable, then never refreshed) which silently wedges cache invalidation.
-	 * The FileSystem implementation (IncludeGraph) already has its own incremental
-	 * cache, so the cost of re-querying here is one mtime walk plus a hashmap lookup.
+	 * The FileSystem (IncludeGraph) has its own incremental cache, so the cost is one
+	 * mtime walk plus a hashmap lookup.
 	 */
 	private static long effectiveTimestamp(AIFile file) {
 		var fs = LeekScript.getFileSystem();
