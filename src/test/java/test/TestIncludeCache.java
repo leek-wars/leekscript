@@ -275,6 +275,189 @@ public class TestIncludeCache {
 	}
 
 	// =========================================================================
+	// Multi-entrypoints partageant un include
+	// =========================================================================
+
+	@Test
+	public void multipleEntrypointsShareIncludeAllInvalidated() throws Exception {
+		write("shared.leek", "function s() { return 1; }");
+		String main1Name = "Main1_" + uniqueId;
+		String main2Name = "Main2_" + uniqueId;
+		write(main1Name + ".leek", "include(\"shared\");\nreturn s();");
+		write(main2Name + ".leek", "include(\"shared\");\nreturn s() + 10;");
+
+		assertEquals("1", run(main1Name));
+		assertEquals("11", run(main2Name));
+
+		write("shared.leek", "function s() { return 5; }");
+		bumpMtime("shared.leek", 1000);
+
+		assertEquals("5", run(main1Name), "Main1 doit voir la nouvelle version de shared");
+		assertEquals("15", run(main2Name), "Main2 doit voir la nouvelle version de shared");
+	}
+
+	// =========================================================================
+	// Cas pathologiques : cycles d'include
+	// =========================================================================
+
+	/**
+	 * Inclusion circulaire A → B → A. Le compilateur LeekScript a un guard
+	 * (mIncluded.contains check) qui évite la récursion infinie. On vérifie que
+	 * IncludeGraph.getTransitivelyIncluded ne tourne pas en boucle non plus.
+	 */
+	@Test
+	public void circularIncludeDoesNotHang() throws Exception {
+		write("A.leek", "include(\"B\");\nfunction a() { return 1; }");
+		write("B.leek", "include(\"A\");\nfunction b() { return 2; }");
+		String main = writeMain("include(\"A\");\nreturn a();");
+
+		// Doit compiler sans hang ni StackOverflow.
+		try {
+			run(main);
+		} catch (Throwable t) {
+			// Rejet du compiler acceptable, on vérifie juste l'absence de hang.
+		}
+
+		// Modifier B doit invalider le cache de Main via la chaîne A → B sans
+		// hanger sur le cycle B → A.
+		write("B.leek", "include(\"A\");\nfunction b() { return 99; }");
+		bumpMtime("B.leek", 1000);
+
+		try {
+			run(main);
+		} catch (Throwable t) {
+			// idem
+		}
+	}
+
+	// =========================================================================
+	// Suppression et recréation d'un include
+	// =========================================================================
+
+	@Test
+	public void includeDeletedThenRecreated() throws Exception {
+		write("sub.leek", "function f() { return 1; }");
+		String main = writeMain("include(\"sub\");\nreturn f();");
+		assertEquals("1", run(main));
+
+		// Supprimer le sub : le prochain compile doit échouer (include introuvable).
+		Files.delete(tmpRoot.resolve("sub.leek"));
+		try {
+			run(main);
+			throw new AssertionError("compile devrait échouer après suppression du sub");
+		} catch (AssertionError e) {
+			throw e;
+		} catch (Throwable expected) {
+			// attendu
+		}
+
+		// Recréer le sub avec un nouveau contenu.
+		write("sub.leek", "function f() { return 99; }");
+		assertEquals("99", run(main), "recréation du sub après suppression non détectée");
+	}
+
+	// =========================================================================
+	// Renommage d'un sous-fichier
+	// =========================================================================
+
+	@Test
+	public void includeRenamed() throws Exception {
+		write("sub.leek", "function f() { return 1; }");
+		String main = writeMain("include(\"sub\");\nreturn f();");
+		assertEquals("1", run(main));
+
+		// L'utilisateur renomme sub → sub2 et adapte Main.
+		Files.move(tmpRoot.resolve("sub.leek"), tmpRoot.resolve("sub2.leek"));
+		long ts = System.currentTimeMillis() + 1000;
+		write(mainName(main), "include(\"sub2\");\nreturn f();");
+		setMtime(mainName(main), ts);
+
+		assertEquals("1", run(main), "renommage de sub en sub2 + adaptation de Main non détectés");
+
+		// Modifier sub2 doit invalider Main.
+		write("sub2.leek", "function f() { return 7; }");
+		bumpMtime("sub2.leek", 2000);
+
+		assertEquals("7", run(main), "modif de sub2 après renommage non propagée");
+	}
+
+	// =========================================================================
+	// Restart simulé : aiCache vidé entre runs (SoftRef GC), .class disque
+	// présent, AIFile re-construit
+	// =========================================================================
+
+	@Test
+	public void simulatedWorkerRestartReusesDiskCacheCorrectly() throws Exception {
+		write("sub.leek", "function f() { return 1; }");
+		String main = writeMain("include(\"sub\");\nreturn f();");
+		assertEquals("1", run(main));
+
+		// Best-effort : forcer GC pour évincer la SoftRef du aiCache RAM. Au prochain
+		// compile, le worker doit charger depuis le .class disque, pas re-compiler.
+		// On modifie sub avant le GC pour bien tester l'invalidation post-restart.
+		write("sub.leek", "function f() { return 2; }");
+		bumpMtime("sub.leek", 1000);
+
+		System.gc();
+		Thread.sleep(100);
+		System.gc();
+
+		assertEquals("2", run(main), "post-restart simulé, modif du sub non détectée");
+	}
+
+	// =========================================================================
+	// Modification du contenu sans changement structurel : valide-t-on que les
+	// tokens ré-extraits donnent le bon graph ?
+	// =========================================================================
+
+	/**
+	 * L'IncludeGraph cache le tokenStream sur l'AIFile via setTokenStream. Si le
+	 * fichier change (mtime updated) mais que l'AIFile sous-jacent est réutilisé
+	 * sans être rechargé, le tokenStream cached pourrait fournir l'ancien set
+	 * d'includes. On vérifie que l'ajout d'une directive include (= changement
+	 * d'une directive include, mais elle apparaît) est bien pris en compte.
+	 */
+	@Test
+	public void includeDirectiveChangedInExistingFile() throws Exception {
+		write("subA.leek", "function fa() { return 1; }");
+		write("subB.leek", "function fb() { return 99; }");
+		String main = writeMain("include(\"subA\");\nreturn fa();");
+		assertEquals("1", run(main));
+
+		// L'utilisateur change subA pour subB dans Main.
+		long ts = System.currentTimeMillis() + 1000;
+		write(mainName(main), "include(\"subB\");\nreturn fb();");
+		setMtime(mainName(main), ts);
+
+		assertEquals("99", run(main), "changement de cible d'include non détecté");
+
+		// Modifier subB doit invalider Main, modifier subA ne doit PLUS l'invalider.
+		write("subB.leek", "function fb() { return 7; }");
+		bumpMtime("subB.leek", 2000);
+		assertEquals("7", run(main), "modif de subB (nouvel include) non propagée");
+
+		write("subA.leek", "function fa() { return 99999; }");
+		bumpMtime("subA.leek", 3000);
+		assertEquals("7", run(main), "modif de subA (ancien include) ne devrait PAS invalider");
+	}
+
+	// =========================================================================
+	// Multi-include du même fichier (idempotence)
+	// =========================================================================
+
+	@Test
+	public void sameIncludeListedTwice() throws Exception {
+		write("sub.leek", "function f() { return 3; }");
+		String main = writeMain("include(\"sub\");\ninclude(\"sub\");\nreturn f();");
+		assertEquals("3", run(main));
+
+		write("sub.leek", "function f() { return 5; }");
+		bumpMtime("sub.leek", 1000);
+
+		assertEquals("5", run(main), "double include du même fichier : modif non détectée");
+	}
+
+	// =========================================================================
 	// Helpers
 	// =========================================================================
 

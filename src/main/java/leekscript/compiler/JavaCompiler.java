@@ -29,10 +29,10 @@ public class JavaCompiler {
 
 	private static class AIClassEntry {
 		Class<?> clazz;
-		long timestamp;
-		public AIClassEntry(Class<?> clazz, long timestamp) {
+		long signature;
+		public AIClassEntry(Class<?> clazz, long signature) {
 			this.clazz = clazz;
-			this.timestamp = timestamp;
+			this.signature = signature;
 		}
 	}
 
@@ -84,27 +84,48 @@ public class JavaCompiler {
 	}
 
 	/**
-	 * Timestamp effectif = max(timestamp du fichier, mtime disque de chaque include
-	 * transitif). Permet d'invalider le cache si une dépendance a changé même quand
-	 * le fichier principal n'a pas bougé (ex: switch de branche git qui ne modifie
-	 * qu'un fichier inclus).
+	 * Hash stable de (entrypoint mtime, transitively-included [path, mtime]). Toute
+	 * modification — mtime forward, mtime backward, fichier ajouté, fichier supprimé,
+	 * include renommé — produit une valeur différente, donc le cache se valide par
+	 * égalité plutôt que par max-comparaison. Un max() perd l'info quand un include
+	 * disparaît ou recule en mtime alors que l'entrypoint domine déjà le max.
 	 *
 	 * Always asks the FileSystem for the include set rather than reusing
 	 * AIFile.includedAIs : that field can be stale (set to {} when an include was
 	 * unresolvable, then never refreshed) which silently wedges cache invalidation.
-	 * The FileSystem (IncludeGraph) has its own incremental cache, so the cost is one
-	 * mtime walk plus a hashmap lookup.
 	 */
-	private static long effectiveTimestamp(AIFile file) {
-		var fs = LeekScript.getFileSystem();
-		var includes = fs != null ? fs.loadIncludedAIs(file) : null;
-		long max = file.getTimestamp();
-		if (includes == null || fs == null) return max;
-		for (var inc : includes) {
-			long t = fs.getAITimestamp(inc);
-			if (t > max) max = t;
+	private static long readSignatureFile(File f) {
+		if (!f.exists()) return 0;
+		try {
+			return Long.parseLong(java.nio.file.Files.readString(f.toPath()).trim());
+		} catch (Exception e) {
+			return 0;
 		}
-		return max;
+	}
+
+	private static void writeSignatureFile(File f, long sig) {
+		try {
+			java.nio.file.Files.writeString(f.toPath(), Long.toString(sig));
+		} catch (Exception e) {
+			// best effort : disk cache won't validate next run, but RAM cache still works
+		}
+	}
+
+	private static long signature(AIFile file) {
+		var fs = LeekScript.getFileSystem();
+		long sig = file.getTimestamp();
+		var includes = fs != null ? fs.loadIncludedAIs(file) : null;
+		if (includes == null || fs == null) return sig;
+		// Polynomial hash, position-dependent : un git pull qui pousse main.mtime ==
+		// include.mtime ne se cancel pas (XOR le ferait). Sort des includes par path
+		// car l'itération d'un Set n'est pas déterministe.
+		var sorted = new ArrayList<>(includes);
+		sorted.sort(java.util.Comparator.comparing(AIFile::getPath));
+		for (var inc : sorted) {
+			sig = sig * 31 + inc.getPath().hashCode();
+			sig = sig * 31 + fs.getAITimestamp(inc);
+		}
+		return sig;
 	}
 
 	private static AI loadFromRamCache(AIFile file, File java, File lines) throws LeekScriptException {
@@ -113,7 +134,7 @@ public class JavaCompiler {
 		if (ref != null && entry == null) {
 			System.out.println("[SoftRef] Class " + file.getJavaClass() + " was garbage collected, reloading");
 		}
-		if (entry == null || file.getTimestamp() <= 0 || entry.timestamp < effectiveTimestamp(file)) {
+		if (entry == null || file.getTimestamp() <= 0 || entry.signature != signature(file)) {
 			return null;
 		}
 		try {
@@ -136,6 +157,10 @@ public class JavaCompiler {
 		File compiled = Paths.get(IA_PATH, file.getJavaClass() + ".class").toFile();
 		File java = Paths.get(IA_PATH, file.getJavaClass() + ".java").toFile();
 		File lines = Paths.get(IA_PATH, file.getJavaClass() + ".lines").toFile();
+		// Sidecar storing the signature of the source set captured at compile time.
+		// Disk cache validity = byte-equal sig file (signature is a non-monotonic
+		// hash, can't be compared via lastModified).
+		File sigFile = Paths.get(IA_PATH, file.getJavaClass() + ".sig").toFile();
 
 		AI cached = loadFromRamCache(file, java, lines);
 		if (cached != null) return cached;
@@ -146,15 +171,15 @@ public class JavaCompiler {
 			cached = loadFromRamCache(file, java, lines);
 			if (cached != null) return cached;
 
-			long effectiveTs = effectiveTimestamp(file);
-			if (options.useCache() && file.getTimestamp() > 0 && compiled.exists() && compiled.length() != 0 && compiled.lastModified() >= effectiveTs) {
+			long sig = signature(file);
+			if (options.useCache() && file.getTimestamp() > 0 && compiled.exists() && compiled.length() != 0 && readSignatureFile(sigFile) == sig) {
 				try {
 					// ClassLoader éphémère par AI pour permettre le GC des classes ;
 					// ne pas le close, ça invaliderait la classe chargée.
 					@SuppressWarnings("resource")
 					var classLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, JavaCompiler.class.getClassLoader());
 					var clazz = classLoader.loadClass(file.getJavaClass());
-					var entry = new AIClassEntry(clazz, effectiveTs);
+					var entry = new AIClassEntry(clazz, sig);
 					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), entry, refQueue));
 					var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
 					ai.setId(file.getId());
@@ -277,9 +302,9 @@ public class JavaCompiler {
 				ai.increaseRAMDirect((int) (java.length() * 10));
 
 				if (options.useCache()) {
-					// Après compile : includedAIs vient d'être rempli par IACompiler, donc effectiveTimestamp
-					// reflète bien l'état réel du fichier + de ses dépendances.
-					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), new AIClassEntry(clazz, effectiveTimestamp(file)), refQueue));
+					long currentSig = signature(file);
+					writeSignatureFile(sigFile, currentSig);
+					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), new AIClassEntry(clazz, currentSig), refQueue));
 				}
 				return ai;
 			} catch (Exception e) {
