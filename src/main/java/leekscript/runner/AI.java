@@ -96,9 +96,31 @@ public abstract class AI {
 	private Set<RamUsage> ramUsages = new HashSet<>(); // Set est plus efficace quand la limite de RAM est souvent atteinte (List est plus efficace quand la limite n'est pas atteinte souvent)
 	// private List<RamUsage> ramUsages = new ArrayList<>();
 
-	private static final Map<Class<?>, Map<String, List<Method>>> methodCache = new java.util.concurrent.ConcurrentHashMap<>();
-	private static final Map<Class<?>, java.lang.reflect.Field[]> fieldCache = new java.util.concurrent.ConcurrentHashMap<>();
-	private static final Map<Class<?>, Map<String, Object>> singleFieldCache = new java.util.concurrent.ConcurrentHashMap<>();
+	// ClassValue ties cached metadata to the Class lifetime so a recompiled AI's
+	// orphan Class can be GC'd. A plain Map<Class<?>, ...> would leak via the
+	// strong refs from cached Method/Field back to their declaring Class.
+	private static final ClassValue<Map<String, List<Method>>> methodCache = new ClassValue<>() {
+		@Override
+		protected Map<String, List<Method>> computeValue(Class<?> clazz) {
+			var cache = new HashMap<String, List<Method>>();
+			for (var m : clazz.getMethods()) {
+				cache.computeIfAbsent(m.getName(), k -> new ArrayList<>()).add(m);
+			}
+			return cache;
+		}
+	};
+	private static final ClassValue<java.lang.reflect.Field[]> fieldCache = new ClassValue<>() {
+		@Override
+		protected java.lang.reflect.Field[] computeValue(Class<?> clazz) {
+			return clazz.getFields();
+		}
+	};
+	private static final ClassValue<Map<String, Object>> singleFieldCache = new ClassValue<>() {
+		@Override
+		protected Map<String, Object> computeValue(Class<?> clazz) {
+			return new java.util.concurrent.ConcurrentHashMap<>();
+		}
+	};
 	private static final Object FIELD_NOT_FOUND = new Object();
 
 	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
@@ -3031,13 +3053,7 @@ public abstract class AI {
 	}
 
 	public static Method findMethod(Class<?> clazz, String methodName, int argsLength) {
-		var classMethods = methodCache.computeIfAbsent(clazz, c -> {
-			var cache = new HashMap<String, List<Method>>();
-			for (var m : c.getMethods()) {
-				cache.computeIfAbsent(m.getName(), k -> new ArrayList<>()).add(m);
-			}
-			return cache;
-		});
+		var classMethods = methodCache.get(clazz);
 
 		var candidates = classMethods.get(methodName);
 		if (candidates != null) {
@@ -3051,11 +3067,11 @@ public abstract class AI {
 	}
 
 	public static java.lang.reflect.Field[] getFieldsCached(Class<?> clazz) {
-		return fieldCache.computeIfAbsent(clazz, Class::getFields);
+		return fieldCache.get(clazz);
 	}
 
 	public static java.lang.reflect.Field getFieldCached(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-		Map<String, Object> classCache = singleFieldCache.computeIfAbsent(clazz, k -> new java.util.concurrent.ConcurrentHashMap<>());
+		Map<String, Object> classCache = singleFieldCache.get(clazz);
 
 		Object cached = classCache.get(fieldName);
 
