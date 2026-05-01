@@ -13,7 +13,7 @@ public class JSONClass {
 		try {
 
 			String json = Json.toJson(ai.toJSON(value));
-			ai.ops(json.length() * 10);
+			ai.ops((long) json.length() * 10);
 			return json;
 
 		} catch (Exception e) {
@@ -31,7 +31,7 @@ public class JSONClass {
 		try {
 
 			var obj = LeekValueManager.parseJSON(Json.parse(json), ai);
-			ai.ops(json.length() * 10);
+			ai.ops((long) json.length() * 10);
 			return obj;
 
 		} catch (Throwable e) {

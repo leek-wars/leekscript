@@ -53,8 +53,7 @@ public class StringClass {
 		// Worst case for output size: every char in `string` is replaced by `replace`
 		// (when search="" this is exactly what happens). Bill the upper bound so a
 		// hostile AI can't amplify memory faster than its ops budget.
-		long cost = Math.max(1L, (long) string.length() * Math.max(1, replace.length()));
-		ai.ops((int) Math.min(cost, Integer.MAX_VALUE));
+		ai.ops(Math.max(1L, (long) string.length() * Math.max(1, replace.length())));
 		return string.replaceAll(Pattern.quote(search), Matcher.quoteReplacement(replace));
 	}
 

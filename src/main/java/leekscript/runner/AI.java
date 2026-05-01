@@ -445,6 +445,16 @@ public abstract class AI {
 		}
 	}
 
+	/**
+	 * Long overload to safely bill cost computed from products of two user-controlled
+	 * sizes (e.g. {@code (long) string.length() * replace.length()}). Saturates to
+	 * Integer.MAX_VALUE — any cost beyond exhausts the entire budget regardless.
+	 * Always prefer this over a raw int multiplication that could overflow silently.
+	 */
+	public void ops(long nb) throws LeekRunException {
+		ops((int) Math.min(nb, Integer.MAX_VALUE));
+	}
+
 	public <T> T ops(T x, int nb) throws LeekRunException {
 		ops(nb);
 		return x;
