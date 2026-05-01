@@ -36,6 +36,7 @@ public class AIFile {
 	private LexicalParserTokenStream tokens = null;
 	private Set<AIFile> includedAIs = null;
 	private List<ClassDeclarationInstruction> userClasses = null;
+	private int lineCount = -1;
 
 	public AIFile(String path, String code, long timestamp, int version, int owner, boolean strict) {
 		this(path, code, timestamp, version, null, owner, path.hashCode() & 0xfffffff, strict);
@@ -63,6 +64,24 @@ public class AIFile {
 	public void setCode(String code) {
 		this.code = code;
 		this.tokens = null;
+		this.lineCount = -1;
+	}
+	public int getLineCount() {
+		if (lineCount < 0) {
+			if (code == null || code.isEmpty()) {
+				lineCount = 0;
+			} else {
+				int count = 1;
+				for (int i = 0; i < code.length(); i++) {
+					if (code.charAt(i) == '\n') count++;
+				}
+				lineCount = count;
+			}
+		}
+		return lineCount;
+	}
+	public int getCharCount() {
+		return code != null ? code.length() : 0;
 	}
 	public Folder getFolder() {
 		return folder;
