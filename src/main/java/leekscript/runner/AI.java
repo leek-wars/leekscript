@@ -99,28 +99,20 @@ public abstract class AI {
 	// ClassValue ties cached metadata to the Class lifetime so a recompiled AI's
 	// orphan Class can be GC'd. A plain Map<Class<?>, ...> would leak via the
 	// strong refs from cached Method/Field back to their declaring Class.
-	private static final ClassValue<Map<String, List<Method>>> methodCache = new ClassValue<>() {
-		@Override
-		protected Map<String, List<Method>> computeValue(Class<?> clazz) {
-			var cache = new HashMap<String, List<Method>>();
-			for (var m : clazz.getMethods()) {
-				cache.computeIfAbsent(m.getName(), k -> new ArrayList<>()).add(m);
-			}
-			return cache;
+	private static <T> ClassValue<T> classValue(java.util.function.Function<Class<?>, T> fn) {
+		return new ClassValue<>() {
+			@Override protected T computeValue(Class<?> clazz) { return fn.apply(clazz); }
+		};
+	}
+	private static final ClassValue<Map<String, List<Method>>> methodCache = classValue(clazz -> {
+		var cache = new HashMap<String, List<Method>>();
+		for (var m : clazz.getMethods()) {
+			cache.computeIfAbsent(m.getName(), k -> new ArrayList<>()).add(m);
 		}
-	};
-	private static final ClassValue<java.lang.reflect.Field[]> fieldCache = new ClassValue<>() {
-		@Override
-		protected java.lang.reflect.Field[] computeValue(Class<?> clazz) {
-			return clazz.getFields();
-		}
-	};
-	private static final ClassValue<Map<String, Object>> singleFieldCache = new ClassValue<>() {
-		@Override
-		protected Map<String, Object> computeValue(Class<?> clazz) {
-			return new java.util.concurrent.ConcurrentHashMap<>();
-		}
-	};
+		return cache;
+	});
+	private static final ClassValue<java.lang.reflect.Field[]> fieldCache = classValue(Class::getFields);
+	private static final ClassValue<Map<String, Object>> singleFieldCache = classValue(clazz -> new java.util.concurrent.ConcurrentHashMap<>());
 	private static final Object FIELD_NOT_FOUND = new Object();
 
 	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
@@ -446,10 +438,11 @@ public abstract class AI {
 	}
 
 	/**
-	 * Long overload to safely bill cost computed from products of two user-controlled
-	 * sizes (e.g. {@code (long) string.length() * replace.length()}). Saturates to
+	 * Long overload for cost computed from products of two user-controlled sizes
+	 * (e.g. {@code (long) string.length() * replace.length()}). Saturates to
 	 * Integer.MAX_VALUE — any cost beyond exhausts the entire budget regardless.
-	 * Always prefer this over a raw int multiplication that could overflow silently.
+	 * Prefer this whenever an operand size is user-controlled to avoid silent int
+	 * overflow.
 	 */
 	public void ops(long nb) throws LeekRunException {
 		ops((int) Math.min(nb, Integer.MAX_VALUE));
