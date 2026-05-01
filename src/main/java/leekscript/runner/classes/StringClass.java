@@ -51,12 +51,10 @@ public class StringClass {
 
 	public static String replace(AI ai, String string, String search, String replace) throws LeekRunException {
 		// Worst case for output size: every char in `string` is replaced by `replace`
-		// (when search="" this is exactly what happens). Bill the upper bound of
-		// output length so a hostile AI can't OOM the worker by amplifying memory
-		// faster than its ops budget. Use long to avoid int overflow that would let
-		// a 50k * 50k payload bill only 1 op and OOM the worker.
+		// (when search="" this is exactly what happens). Bill the upper bound so a
+		// hostile AI can't amplify memory faster than its ops budget.
 		long cost = Math.max(1L, (long) string.length() * Math.max(1, replace.length()));
-		ai.ops(cost > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) cost);
+		ai.ops((int) Math.min(cost, Integer.MAX_VALUE));
 		return string.replaceAll(Pattern.quote(search), Matcher.quoteReplacement(replace));
 	}
 
