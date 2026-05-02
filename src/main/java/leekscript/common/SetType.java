@@ -1,5 +1,7 @@
 package leekscript.common;
 
+import java.util.Map;
+
 import leekscript.compiler.JavaWriter;
 
 public class SetType extends Type {
@@ -57,5 +59,10 @@ public class SetType extends Type {
 	@Override
 	public String getDefaultValue(JavaWriter writer, int version) {
 		return "new SetLeekValue(" + writer.getAIThis() + ")";
+	}
+
+	@Override
+	public Type substitute(Map<String, Type> substitution) {
+		return Type.set(type.substitute(substitution));
 	}
 }

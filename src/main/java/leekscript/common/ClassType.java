@@ -63,6 +63,11 @@ public class ClassType extends Type {
 			// Incompatible
 			return CastType.INCOMPATIBLE;
 		}
+		if (type instanceof GenericClassType gct) {
+			if (this.clazz == gct.getClassDeclaration()) return CastType.UPCAST;
+			if (gct.getClassDeclaration().descendsFrom(this.clazz)) return CastType.UPCAST;
+			return CastType.INCOMPATIBLE;
+		}
 		return super.accepts(type);
 	}
 

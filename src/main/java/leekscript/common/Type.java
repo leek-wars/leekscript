@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import leekscript.compiler.Complete;
@@ -260,6 +261,10 @@ public class Type {
 
 	public static Type set(Type type) {
 		return new SetType(type);
+	}
+
+	public static Type interval(Type type) {
+		return new IntervalType(type);
 	}
 
 	public Type key() {
@@ -538,5 +543,13 @@ public class Type {
 
 	public List<Type> getArguments(int argumentsCount) {
 		return new ArrayList<>();
+	}
+
+	/**
+	 * Substitute type parameters (e.g. T, U) with concrete types in generic context.
+	 * Used when resolving member types of GenericClassType.
+	 */
+	public Type substitute(Map<String, Type> substitution) {
+		return this;
 	}
 }

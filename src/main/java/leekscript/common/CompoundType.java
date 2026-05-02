@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import leekscript.compiler.Complete;
@@ -273,5 +274,14 @@ public class CompoundType extends Type {
 			return this.types.equals(mt.types);
 		}
 		return false;
+	}
+
+	@Override
+	public Type substitute(Map<String, Type> substitution) {
+		var substituted = new HashSet<Type>();
+		for (var t : types) {
+			substituted.add(t.substitute(substitution));
+		}
+		return Type.compound(substituted);
 	}
 }
