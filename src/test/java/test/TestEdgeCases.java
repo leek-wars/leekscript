@@ -24,6 +24,16 @@ public class TestEdgeCases extends TestCommon {
 	}
 
 	@Test
+	public void testCoalesce_real_with_int_default() throws Exception {
+		section("Coalesce on real-typed value with int 0 fallback");
+		// Production error #11225528: ternary mixing Double and 0l unboxes to primitive double, breaking .doubleValue().
+		code_strict_v4_("Map<integer, real> coefs = [:]; real v = coefs[1] ?? 0; return v").equals("0.0");
+		code_strict_v4_("Map<integer, Map<integer, real>> coefs = [:]; real v = (coefs[1] ?? [:])[2] ?? 0; return v").equals("0.0");
+		code_strict_v4_("Map<integer, real> coefs = [1: 4.5]; real v = coefs[1] ?? 0; return v").equals("4.5");
+		code_strict_v4_("Map<integer, Map<integer, real>> coefs = [1: [2: 7.25]]; real v = (coefs[1] ?? [:])[2] ?? 0; return v").equals("7.25");
+	}
+
+	@Test
 	public void testDeep_recursion_with_temporary_arrays() throws Exception {
 		section("Deep recursion with temporary arrays");
 		// Simple recursion creating arrays at each level

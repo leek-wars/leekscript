@@ -203,13 +203,17 @@ public class JavaWriter {
 
 		// System.out.println("convert " + value.getType() + " to " + type);
 		if (type == Type.REAL && value.getType().isIntOrReal()) {
+			// Cast via (Number) to keep this safe when value emits a primitive
+			// (e.g. a `?? 0` ternary that unboxes Double + long to primitive double)
+			addCode("((Number) ");
 			value.writeJavaCode(mainblock, this, true);
-			addCode(".doubleValue()");
+			addCode(").doubleValue()");
 			return;
 		}
 		if (type == Type.INT && value.getType().isIntOrReal()) {
+			addCode("((Number) ");
 			value.writeJavaCode(mainblock, this, true);
-			addCode(".longValue()");
+			addCode(").longValue()");
 			return;
 		}
 		var cast = type.accepts(value.getType());
