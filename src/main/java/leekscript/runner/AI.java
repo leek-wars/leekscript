@@ -590,7 +590,7 @@ public abstract class AI {
 		return sb.toString();
 	}
 
-	public record LeekScriptPosition(int file, int line) {}
+	public record LeekScriptPosition(String file, int line) {}
 
 	public LeekScriptPosition getCurrentLeekScriptPosition() {
 		// findFirst on StackWalker avoids materializing a StackTraceElement[] for
@@ -600,9 +600,11 @@ public abstract class AI {
 			.map(f -> {
 				var mapping = getLineMapping(f.getLineNumber());
 				if (mapping == null) return null;
-				var files = getErrorFilesID();
+				var files = getErrorFiles();
+				if (files == null) return null;
 				var fIdx = mapping.getAI();
-				int file = fIdx < files.length ? files[fIdx] : 0;
+				String file = fIdx < files.length ? files[fIdx] : null;
+				if (file == null) return null;
 				return new LeekScriptPosition(file, mapping.getLeekScriptLine());
 			})
 			.filter(p -> p != null)
