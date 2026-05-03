@@ -473,6 +473,47 @@ public class TestIncludeCache {
 	}
 
 	// =========================================================================
+	// Pragma version vs token cache : extractIncludes ne doit pas figer les tokens
+	// à une version pré-pragma. Sinon un fichier avec `// @version:2` qui utilise
+	// un keyword version-dependent (ex. AND, case-insensitive en v≤2 uniquement)
+	// plante en CLOSING_PARENTHESIS_EXPECTED parce que les tokens cached en v=4
+	// (file.getVersion() par défaut côté DbFileSystem) traitent AND comme identifier.
+	// =========================================================================
+
+	@Test
+	public void pragmaVersion2KeywordCompiles() throws Exception {
+		// Repro du crash Valoutre : "// @version:2" + AND. Sans la fix, le lexer
+		// d'extractIncludes parse à v=4 (file.getVersion() par défaut), cache les
+		// tokens AND-as-identifier sur l'AIFile, et IACompiler.compile les réutilise
+		// après avoir résolu @version:2 → erreur de parsing au premier AND.
+		String main = writeMain("// @version:2\nvar a = 1; var b = 2; if (a == 1 AND b == 2) { return 1; } else { return 0; }");
+		assertEquals("1", run(main), "@version:2 + AND : tokens stale en v=4 si extractIncludes parse avant PragmaParser");
+	}
+
+	@Test
+	public void pragmaVersion2InIncludeCompiles() throws Exception {
+		// Même bug mais l'AND est dans un include avec son propre @version:2.
+		// extractIncludes scanne TOUS les fichiers du graph (pas que l'entrypoint),
+		// donc l'include se fait également cacher des tokens à la mauvaise version.
+		write("sub.leek", "// @version:2\nfunction f() { var a = 1; var b = 2; if (a == 1 AND b == 2) { return 42; } return 0; }");
+		String main = writeMain("// @version:2\ninclude(\"sub\");\nreturn f();");
+		assertEquals("42", run(main));
+	}
+
+	@Test
+	public void pragmaVersion2WithModification() throws Exception {
+		// Une fois la fix appliquée, les tokens cachés sont à la bonne version.
+		// On vérifie qu'une modification (mtime bumped) recompile bien et que les
+		// nouveaux tokens sont aussi cachés à la bonne version.
+		String main = writeMain("// @version:2\nreturn 1;");
+		assertEquals("1", run(main));
+
+		write(mainName(main), "// @version:2\nvar a = 1; if (a == 1 AND true) { return 7; } return 0;");
+		bumpMtime(mainName(main), 1000);
+		assertEquals("7", run(main));
+	}
+
+	// =========================================================================
 	// Helpers
 	// =========================================================================
 

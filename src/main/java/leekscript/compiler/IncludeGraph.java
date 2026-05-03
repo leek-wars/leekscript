@@ -170,6 +170,11 @@ public class IncludeGraph {
 	 * Returns the raw include names (unresolved paths) found in the file's source.
 	 * Uses the cached token stream when available, otherwise runs the lexer once
 	 * and stores the tokens on the AIFile so a subsequent analyze pass can reuse them.
+	 *
+	 * Applique PragmaParser avant le lex : sinon on parse à file.getVersion() (souvent
+	 * LATEST_VERSION par défaut) et on cache des tokens dont la lex'ication ne
+	 * correspond pas à `// @version:N`. IACompiler.compile réutiliserait ces tokens
+	 * stale et planterait sur les keywords version-dependent (ex. AND en v2).
 	 */
 	private List<String> extractIncludes(AIFile file) {
 		var result = new ArrayList<String>();
@@ -178,6 +183,7 @@ public class IncludeGraph {
 			stream = file.getTokenStream();
 		} else {
 			try {
+				PragmaParser.apply(file);
 				var parser = new LexicalParser(file, file.getVersion());
 				stream = parser.parse(err -> {}); // ignore lex errors here
 				file.setTokenStream(stream);
