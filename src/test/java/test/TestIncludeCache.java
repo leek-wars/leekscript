@@ -1,6 +1,7 @@
 package test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -9,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -19,11 +21,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
 
+import leekscript.common.Error;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.Folder;
 import leekscript.compiler.JavaCompiler;
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.Options;
+import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.resolver.FileSystem;
 import leekscript.runner.AI;
 
@@ -514,6 +518,57 @@ public class TestIncludeCache {
 	}
 
 	// =========================================================================
+	// Reporting d'erreurs à travers la frontière d'include : les LeekCompilerException
+	// levées dans firstPass/secondPass d'un include étaient silencieusement avalées,
+	// l'utilisateur ne voyait qu'un UNKNOWN_VARIABLE_OR_FUNCTION trompeur en aval.
+	// =========================================================================
+
+	@Test
+	public void duplicateFunctionInIncludeReportsErrorFromInclude() throws Exception {
+		write("lib.leek",
+			"function f() { return 1; }\n" +
+			"function dup() { return 2; }\n" +
+			"function dup() { return 3; }\n" +
+			"function g() { return 4; }\n");
+		String main = writeMain("include(\"lib\");\nreturn f() + g();");
+
+		var errors = compileAndCollectErrors(main);
+		assertTrue(errors.contains(Error.FUNCTION_NAME_UNAVAILABLE), "got: " + errors);
+	}
+
+	@Test
+	public void duplicateClassInIncludeReportsErrorFromInclude() throws Exception {
+		write("lib.leek", "class Foo {}\nclass Foo {}\n");
+		String main = writeMain("include(\"lib\");\nreturn 0;");
+
+		var errors = compileAndCollectErrors(main);
+		assertTrue(errors.contains(Error.VARIABLE_NAME_UNAVAILABLE), "got: " + errors);
+	}
+
+	@Test
+	public void errorInDeepIncludeChainStillReported() throws Exception {
+		// Main → A → B : un doublon dans B doit remonter jusqu'à Main.
+		write("B.leek",
+			"function dup() { return 1; }\n" +
+			"function dup() { return 2; }\n");
+		write("A.leek", "include(\"B\");\nfunction h() { return 0; }");
+		String main = writeMain("include(\"A\");\nreturn h();");
+
+		var errors = compileAndCollectErrors(main);
+		assertTrue(errors.contains(Error.FUNCTION_NAME_UNAVAILABLE), "got: " + errors);
+	}
+
+	@Test
+	public void cleanIncludeProducesNoSpuriousErrors() throws Exception {
+		write("lib.leek", "function f() { return 1; }\nfunction g() { return 2; }\n");
+		String main = writeMain("include(\"lib\");\nreturn f() + g();");
+
+		var errors = compileAndCollectErrors(main);
+		assertEquals(0, errors.size(), "got: " + errors);
+		assertEquals("3", run(main));
+	}
+
+	// =========================================================================
 	// Helpers
 	// =========================================================================
 
@@ -552,6 +607,23 @@ public class TestIncludeCache {
 		ai.staticInit();
 		ai.resetCounter();
 		return ai.string(ai.runIA());
+	}
+
+	/** Union des codes d'erreur accumulés sur l'AIFile et de l'éventuelle exception
+	 *  terminale levée par le compile. */
+	private List<Error> compileAndCollectErrors(String name) throws Exception {
+		var file = fs.getRoot(0).resolve(name);
+		file.setJavaClass("AI_" + file.getId());
+		file.setRootClass("AI");
+		var options = new Options(LeekScript.LATEST_VERSION, false, true, true, null, true);
+		var errors = new ArrayList<Error>();
+		try {
+			JavaCompiler.compile(file, options);
+		} catch (LeekCompilerException e) {
+			errors.add(e.getError());
+		}
+		file.getErrors().forEach(e -> errors.add(e.error));
+		return errors;
 	}
 
 	// =========================================================================

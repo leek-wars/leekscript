@@ -12,6 +12,8 @@ import java.util.TreeMap;
 import leekscript.common.AccessLevel;
 import leekscript.common.Type;
 import leekscript.compiler.AIFile;
+import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.IACompiler;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
@@ -156,7 +158,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			try {
 				newCompiler.firstPass();
 			} catch (LeekCompilerException e) {
-				// On continue pour que les autres includes soient parsés
+				recordIncludeError(ai, e);
 			}
 			compiler.getAI().getErrors().addAll(ai.getErrors());
 			mCompiler.setCurrentAI(previousAI);
@@ -164,6 +166,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		} catch (FileNotFoundException e) {
 			return false;
 		}
+	}
+
+	// On absorbe l'exception pour que les autres includes soient parsés, mais on
+	// la matérialise sur l'AIFile : sinon l'erreur est invisible côté utilisateur
+	// (ex: doublon de fonction → on ne voyait que l'UNKNOWN_FUNCTION trompeur en
+	// aval, jamais le FUNCTION_NAME_UNAVAILABLE qui pointe la vraie cause).
+	private static void recordIncludeError(AIFile ai, LeekCompilerException e) {
+		ai.getErrors().add(new AnalyzeError(e.getLocation(), AnalyzeErrorLevel.ERROR,
+				e.getError(), e.getParameters()));
 	}
 
 	public boolean includeAI(WordCompiler compiler, String path) throws LeekCompilerException {
@@ -185,7 +196,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			try {
 				newCompiler.secondPass();
 			} catch (LeekCompilerException e) {
-				// On continue pour que les autres includes soient parsés
+				recordIncludeError(ai, e);
 			}
 			compiler.getAI().getErrors().addAll(ai.getErrors());
 			mCompiler.setCurrentAI(previousAI);
