@@ -591,10 +591,10 @@ public class TestIncludeCache {
 	}
 
 	@Test
-	public void unusedGlobalInIncludeNoWarning() throws Exception {
+	public void unusedGlobalInIncludeGeneratesWarning() throws Exception {
 		write("util.leek", "global EPSILON = 0.000000001;\n");
 		String main = writeMain("// @strict\ninclude(\"util\");\nreturn 0;");
-		assertFalse(compileAndCollectErrors(main).contains(Error.UNUSED_VARIABLE), "unexpected UNUSED_VARIABLE for global from included file");
+		assertTrue(compileAndCollectErrors(main).contains(Error.UNUSED_VARIABLE), "expected UNUSED_VARIABLE for unused global in included file");
 	}
 
 	@Test
@@ -610,10 +610,10 @@ public class TestIncludeCache {
 	}
 
 	@Test
-	public void unusedFunctionInIncludeNoWarning() throws Exception {
+	public void unusedFunctionInIncludeGeneratesWarning() throws Exception {
 		write("util.leek", "function helper() { return 42; }\n");
 		String main = writeMain("// @strict\ninclude(\"util\");\nreturn 0;");
-		assertFalse(compileAndCollectErrors(main).contains(Error.UNUSED_FUNCTION), "unexpected UNUSED_FUNCTION for function from included file");
+		assertTrue(compileAndCollectErrors(main).contains(Error.UNUSED_FUNCTION), "expected UNUSED_FUNCTION for unused function in included file");
 	}
 
 	@Test
