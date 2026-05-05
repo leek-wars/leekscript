@@ -330,6 +330,15 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	@Test
+	public void testNarrowing_truthy_property() throws Exception {
+		section("Narrowing: truthy check on property (if (this.field))");
+		// if (this.field) should narrow this.field from T? to T inside the block
+		code_v4_("class T { integer v = 42 } class C { T? item = null; integer run() { item = new T(); if (this.item) { return this.item.v } return 0 } } return new C().run()").noWarning().equals("42");
+		// with an and condition
+		code_v4_("class T { integer v = 42 } class C { T? item = null; integer run() { item = new T(); if (this.item and 1) { return this.item.v } return 0 } } return new C().run()").noWarning().equals("42");
+	}
+
+	@Test
 	public void testNarrowing_instanceof_property_as_function_argument() throws Exception {
 		section("Narrowing: instanceof on property passed as function argument");
 		// Property narrowed via instanceof should be castable when passed as argument

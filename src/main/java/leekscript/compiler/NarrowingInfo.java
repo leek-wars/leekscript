@@ -96,6 +96,19 @@ public class NarrowingInfo {
 			return;
 		}
 
+		// Case: truthy check on a property (if (this.field) where this.field is nullable)
+		if (condition instanceof LeekObjectAccess oa) {
+			String key = extractPropertyKey(oa);
+			if (key != null) {
+				if (oa.getVariable() != null) info.propertyVariables.put(key, oa.getVariable());
+				var fieldType = oa.getType();
+				if (fieldType.canBeNull()) {
+					info.truePropertyNarrowings.put(key, fieldType.assertNotNull());
+				}
+			}
+			return;
+		}
+
 		if (!(condition instanceof LeekExpression expr)) return;
 
 		int op = expr.getOperator();
