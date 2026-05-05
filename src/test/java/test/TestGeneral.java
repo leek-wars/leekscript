@@ -302,14 +302,12 @@ public class TestGeneral extends TestCommon {
 	@Test
 	public void testUnusedGlobal() throws Exception {
 		section("Unused globals (strict mode only)");
-		// Unused global in strict mode => warning
 		code_strict_v4_("global g = 5; return 0").warning(Error.UNUSED_VARIABLE);
-		// Used global in strict mode => no warning
 		code_strict_v4_("global g = 5; return g").noWarning();
-		// Unused global in non-strict mode => no warning
 		code_v4_("global g = 5; return 0").noWarning();
-		// Underscore prefix suppresses warning
 		code_strict_v4_("global _g = 5; return 0").noWarning();
+		code_strict_v4_("global g = 5; function f() { return g } return f()").noWarning();
+		code_strict_v4_("global g = 5; function f() { return g } return 0").warning(Error.UNUSED_FUNCTION);
 	}
 
 }

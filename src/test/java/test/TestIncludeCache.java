@@ -1,6 +1,7 @@
 package test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.FileNotFoundException;
@@ -566,6 +567,68 @@ public class TestIncludeCache {
 		var errors = compileAndCollectErrors(main);
 		assertEquals(0, errors.size(), "got: " + errors);
 		assertEquals("3", run(main));
+	}
+
+	@Test
+	public void globalInIncludeUsedInMainNoFalseUnusedWarning() throws Exception {
+		write("util.leek", "global EPSILON = 0.000000001;\n");
+		String main = writeMain("// @strict\ninclude(\"util\");\nreturn (0.5 < EPSILON) ? 1 : 0;");
+		assertFalse(compileAndCollectErrors(main).contains(Error.UNUSED_VARIABLE), "false UNUSED_VARIABLE for global used in main");
+	}
+
+	@Test
+	public void globalInIncludeUsedInFunctionNoFalseUnusedWarning() throws Exception {
+		write("util.leek", "global EPSILON = 0.000000001;\n");
+		String main = writeMain("// @strict\ninclude(\"util\");\nfunction isNear(x) { return x < EPSILON; }\nreturn isNear(0.5) ? 1 : 0;");
+		assertFalse(compileAndCollectErrors(main).contains(Error.UNUSED_VARIABLE), "false UNUSED_VARIABLE for global used in function");
+	}
+
+	@Test
+	public void globalInIncludeUsedOnlyInIncludedFileFunction() throws Exception {
+		write("util.leek", "global EPSILON = 0.000000001;\nfunction isNear(x) { return x < EPSILON; }\n");
+		String main = writeMain("// @strict\ninclude(\"util\");\nreturn isNear(0.5) ? 1 : 0;");
+		assertFalse(compileAndCollectErrors(main).contains(Error.UNUSED_VARIABLE), "false UNUSED_VARIABLE for global used in included function");
+	}
+
+	@Test
+	public void unusedGlobalInIncludeNoWarning() throws Exception {
+		write("util.leek", "global EPSILON = 0.000000001;\n");
+		String main = writeMain("// @strict\ninclude(\"util\");\nreturn 0;");
+		assertFalse(compileAndCollectErrors(main).contains(Error.UNUSED_VARIABLE), "unexpected UNUSED_VARIABLE for global from included file");
+	}
+
+	@Test
+	public void unusedGlobalInEntrypointGeneratesWarning() throws Exception {
+		String main = writeMain("// @strict\nglobal EPSILON = 0.000000001;\nreturn 0;");
+		assertTrue(compileAndCollectErrors(main).contains(Error.UNUSED_VARIABLE), "expected UNUSED_VARIABLE for unused global in entrypoint");
+	}
+
+	@Test
+	public void globalInTransitiveIncludeUsedInIntermediateFile() throws Exception {
+		write("util.leek", "global EPSILON = 0.000000001;\n");
+		write("combat.leek", "include(\"util\");\nfunction isNear(x) { return x < EPSILON; }\n");
+		String main = writeMain("// @strict\ninclude(\"combat\");\nreturn isNear(0.5) ? 1 : 0;");
+		assertFalse(compileAndCollectErrors(main).contains(Error.UNUSED_VARIABLE), "false UNUSED_VARIABLE in transitive include");
+	}
+
+	@Test
+	public void globalUsedInClassMethodOfIncludedFile() throws Exception {
+		write("util.leek", "global EPSILON = 0.000000001;\n");
+		write("multi-function.leek",
+			"include(\"util\");\n" +
+			"class MultiFunction {\n" +
+			"  private real val\n" +
+			"  public constructor(real v) { this.val = v }\n" +
+			"  public boolean isNear(real x) { return abs(this.val - x) < EPSILON }\n" +
+			"}\n");
+		String main = writeMain(
+			"// @strict\n" +
+			"include(\"util\");\n" +
+			"include(\"multi-function\");\n" +
+			"var mf = new MultiFunction(1.0)\n" +
+			"return mf.isNear(1.0) ? 1 : 0;");
+		assertFalse(compileAndCollectErrors(main).contains(Error.UNUSED_VARIABLE),
+			"false UNUSED_VARIABLE for global used in class method of included file");
 	}
 
 	// =========================================================================

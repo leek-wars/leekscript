@@ -275,10 +275,15 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 			}
 			if (strict && v.getUsageCount() == 0 && !v.getName().startsWith("_") && !v.hasAnnotation(Annotation.UNUSED)) {
 				var vt = v.getVariableType();
-				if (vt == LeekVariable.VariableType.LOCAL || vt == LeekVariable.VariableType.ARGUMENT || vt == LeekVariable.VariableType.GLOBAL) {
+				if (vt == LeekVariable.VariableType.LOCAL || vt == LeekVariable.VariableType.ARGUMENT) {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.UNUSED_VARIABLE, new String[] { v.getName() }));
-				} else if (vt == LeekVariable.VariableType.FUNCTION) {
-					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.UNUSED_FUNCTION, new String[] { v.getName() }));
+				} else if (vt == LeekVariable.VariableType.GLOBAL || vt == LeekVariable.VariableType.FUNCTION) {
+					// Shared library files may define globals/functions unused in this AI but used in others.
+					var loc = v.getToken().getLocation();
+					if (loc != null && loc.getFile() == compiler.getAI()) {
+						var error = vt == LeekVariable.VariableType.FUNCTION ? Error.UNUSED_FUNCTION : Error.UNUSED_VARIABLE;
+						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, error, new String[] { v.getName() }));
+					}
 				}
 			}
 		}
