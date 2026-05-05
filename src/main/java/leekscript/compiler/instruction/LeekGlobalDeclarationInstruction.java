@@ -15,9 +15,12 @@ import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekType;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.common.Annotation;
 import leekscript.common.Error;
 
-public class LeekGlobalDeclarationInstruction extends LeekInstruction {
+import java.util.EnumSet;
+
+public class LeekGlobalDeclarationInstruction extends LeekInstruction implements leekscript.compiler.Annotatable {
 
 	private final Token token;
 	private final Token variableToken;
@@ -25,11 +28,17 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 	private Type type;
 	private LeekType leekType;
 	private LeekVariable variable;
+	private EnumSet<Annotation> annotations = EnumSet.noneOf(Annotation.class);
 
 	public LeekGlobalDeclarationInstruction(Token token, Token variableToken, LeekType leekType) {
 		this.token = token;
 		this.variableToken = variableToken;
 		this.leekType = leekType;
+	}
+
+	@Override
+	public void addAnnotation(Annotation a) {
+		annotations.add(a);
 	}
 
 	public void setValue(Expression value) {
@@ -89,6 +98,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction {
 		// On ajoute la variable
 		this.variable = new LeekVariable(compiler, variableToken, VariableType.GLOBAL, leekType == null ? Type.ANY : leekType.getType());
 		this.type = this.variable.getType();
+		for (var a : annotations) this.variable.addAnnotation(a);
 		compiler.getCurrentBlock().addVariable(this.variable);
 	}
 

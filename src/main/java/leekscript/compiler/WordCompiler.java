@@ -329,7 +329,7 @@ public class WordCompiler {
 		} else if (word.getType() == TokenType.GLOBAL) {
 
 			// Déclaration de variable
-			globalDeclaration();
+			globalDeclaration(NO_ANNOTATIONS);
 			return;
 
 		} else if (word.getType() == TokenType.RETURN) {
@@ -369,7 +369,7 @@ public class WordCompiler {
 
 			// Déclaration de classe
 			mTokens.skip();
-			classDeclaration();
+			classDeclaration(NO_ANNOTATIONS);
 			return;
 
 		} else if (word.getType() == TokenType.BREAK) {
@@ -412,6 +412,13 @@ public class WordCompiler {
 					return;
 				}
 				mTokens.unskip(); // type Function<...>, on continue
+			} else if (word.getType() == TokenType.GLOBAL) {
+				globalDeclaration(annotations);
+				return;
+			} else if (version >= 2 && getCurrentBlock() instanceof MainLeekBlock && word.getType() == TokenType.CLASS) {
+				mTokens.skip();
+				classDeclaration(annotations);
+				return;
 			} else {
 				for (var ann : annotations) {
 					addError(new AnalyzeError(ann, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_INVALID_CONTEXT, new String[] { ann.getWord() }));
@@ -1090,7 +1097,7 @@ public class WordCompiler {
 		mCurentBlock = bloc;
 	}
 
-	private void globalDeclaration() throws LeekCompilerException {
+	private void globalDeclaration(List<Token> annotations) throws LeekCompilerException {
 		// Il y a au moins une premiere variable
 		Token token = mTokens.eat();
 
@@ -1104,6 +1111,7 @@ public class WordCompiler {
 			throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
 		}
 		var variable = new LeekGlobalDeclarationInstruction(token, word, type);
+		applyAnnotations(variable, annotations);
 		// On regarde si une valeur est assignée
 		if (mTokens.get().getWord().equals("=")) {
 			mTokens.skip();
@@ -1122,6 +1130,7 @@ public class WordCompiler {
 			word = mTokens.eat();
 			if (word.getType() != TokenType.STRING) throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED);
 			variable = new LeekGlobalDeclarationInstruction(token, word, type);
+			applyAnnotations(variable, annotations);
 			// On regarde si une valeur est assignée
 			if (mTokens.get().getWord().equals("=")) {
 				mTokens.skip();
@@ -1142,11 +1151,13 @@ public class WordCompiler {
 		if (version < 4) return false;
 		if (mTokens.get().getType() != TokenType.OPERATOR || !mTokens.get().getWord().equals("@")) return false;
 		if (mTokens.get(1).getType() != TokenType.STRING) return false;
-		// Lookahead: verify the token after the annotation name is var, function, or another @ to
-		// distinguish annotation syntax from @variable reference expressions
+		// Lookahead: verify the token after the annotation name is a declaration keyword or another @
+		// to distinguish annotation syntax from @variable reference expressions
 		var after = mTokens.get(2);
 		return after.getType() == TokenType.VAR
 			|| after.getType() == TokenType.FUNCTION
+			|| after.getType() == TokenType.GLOBAL
+			|| after.getType() == TokenType.CLASS
 			|| (after.getType() == TokenType.OPERATOR && after.getWord().equals("@"));
 	}
 
@@ -1223,7 +1234,7 @@ public class WordCompiler {
 		}
 	}
 
-	public void classDeclaration() throws LeekCompilerException {
+	public void classDeclaration(List<Token> annotations) throws LeekCompilerException {
 		// Read class name
 		Token word = mTokens.eat();
 		if (word.getType() != TokenType.STRING) {
