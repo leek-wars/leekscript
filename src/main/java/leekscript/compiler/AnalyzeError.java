@@ -43,13 +43,12 @@ public class AnalyzeError implements Comparable<AnalyzeError> {
 
 	public ArrayNode toJSON() {
 		ArrayNode array = Json.createArray();
-		array.addPOJO(level.ordinal());
+		array.add(level.ordinal());
 		array.add(location.getFile().getPath());
-		array.addPOJO(location.getStartLine());
-		array.addPOJO(location.getStartColumn());
-		array.addPOJO(location.getEndLine());
-		array.addPOJO(location.getEndColumn());
-		// array.addPOJO(token.getWord());
+		array.add(location.getStartLine());
+		array.add(location.getStartColumn());
+		array.add(location.getEndLine());
+		array.add(location.getEndColumn());
 		array.add(this.error.ordinal());
 		if (parameters != null) {
 			array.addPOJO(parameters);

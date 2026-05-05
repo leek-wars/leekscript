@@ -25,6 +25,7 @@ import org.junit.jupiter.api.parallel.Isolated;
 import leekscript.common.Error;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.Folder;
+import leekscript.compiler.IACompiler;
 import leekscript.compiler.JavaCompiler;
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.Options;
@@ -642,6 +643,80 @@ public class TestIncludeCache {
 			"return mf.isNear(1.0) ? 1 : 0;");
 		assertFalse(compileAndCollectErrors(main).contains(Error.UNUSED_VARIABLE),
 			"false UNUSED_VARIABLE for global used in class method of included file");
+	}
+
+	// =========================================================================
+	// Déduplication multi-entrypoints : analyzeWithIncludes
+	// =========================================================================
+
+	@Test
+	public void unusedFunctionInSharedInclude_usedInOneEntrypoint_noWarning() throws Exception {
+		// shared.leek définit helper(). main1 l'utilise, main2 non.
+		// → pas de UNUSED_FUNCTION car utilisé dans au moins un entrypoint.
+		write("shared.leek", "function helper() { return 42; }\n");
+		write("Main1_" + uniqueId + ".leek", "// @strict\ninclude(\"shared\");\nreturn helper();");
+		write("Main2_" + uniqueId + ".leek", "// @strict\ninclude(\"shared\");\nreturn 0;");
+
+		var shared = fs.getRoot(0).resolve("shared");
+		var result = IACompiler.analyzeWithIncludes(shared);
+
+		assertFalse(collectErrors(result.merged).contains(Error.UNUSED_FUNCTION),
+			"helper() utilisé dans Main1 → pas de UNUSED_FUNCTION");
+	}
+
+	@Test
+	public void unusedFunctionInSharedInclude_unusedInAllEntrypoints_warning() throws Exception {
+		// shared.leek définit helper(). Ni main1 ni main2 ne l'utilisent.
+		// → UNUSED_FUNCTION doit apparaître (intersection = présent dans tous).
+		write("shared.leek", "function helper() { return 42; }\n");
+		write("Main1_" + uniqueId + ".leek", "// @strict\ninclude(\"shared\");\nreturn 0;");
+		write("Main2_" + uniqueId + ".leek", "// @strict\ninclude(\"shared\");\nreturn 0;");
+
+		var shared = fs.getRoot(0).resolve("shared");
+		var result = IACompiler.analyzeWithIncludes(shared);
+
+		assertTrue(collectErrors(result.merged).contains(Error.UNUSED_FUNCTION),
+			"helper() inutilisé dans tous les entrypoints → UNUSED_FUNCTION attendu");
+	}
+
+	@Test
+	public void syntaxErrorInSharedInclude_deduplicatedAcrossEntrypoints() throws Exception {
+		// shared.leek a une vraie erreur de syntaxe (variable inconnue).
+		// Deux entrypoints l'incluent → l'erreur doit apparaître UNE seule fois.
+		write("shared.leek", "function bad() { return unknown_var; }\n");
+		write("Main1_" + uniqueId + ".leek", "include(\"shared\");\nreturn bad();");
+		write("Main2_" + uniqueId + ".leek", "include(\"shared\");\nreturn bad();");
+
+		var shared = fs.getRoot(0).resolve("shared");
+		var result = IACompiler.analyzeWithIncludes(shared);
+
+		var errors = collectErrors(result.merged);
+		long count = errors.stream().filter(e -> e == Error.UNKNOWN_VARIABLE_OR_FUNCTION).count();
+		assertEquals(1, count, "l'erreur dans shared.leek doit apparaître une seule fois après déduplication");
+	}
+
+	@Test
+	public void selfEntrypoint_analyzeWithIncludes_sameAsDirectAnalyze() throws Exception {
+		// Fichier sans includer : analyzeWithIncludes doit se comporter
+		// comme une analyse directe et retourner l'erreur normalement.
+		String main = writeMain("// @strict\nfunction unused() { return 1; }\nreturn 0;");
+		var file = fs.getRoot(0).resolve(main);
+		var result = IACompiler.analyzeWithIncludes(file);
+
+		assertTrue(collectErrors(result.merged).contains(Error.UNUSED_FUNCTION),
+			"entrypoint seul : UNUSED_FUNCTION attendu");
+		assertEquals(1, result.perEntrypoint.size(), "un seul entrypoint");
+		assertTrue(result.perEntrypoint.containsKey(file), "l'entrypoint doit être le fichier lui-même");
+	}
+
+	private List<Error> collectErrors(IACompiler.AnalyzeResult result) {
+		var errors = new ArrayList<Error>();
+		if (result == null || result.informations == null) return errors;
+		for (var node : result.informations) {
+			int ordinal = node.get(6).intValue();
+			try { errors.add(Error.values()[ordinal]); } catch (ArrayIndexOutOfBoundsException ignored) {}
+		}
+		return errors;
 	}
 
 	// =========================================================================
