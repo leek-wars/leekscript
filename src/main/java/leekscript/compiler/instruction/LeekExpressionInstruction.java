@@ -20,6 +20,10 @@ import leekscript.compiler.expression.LeekArrayAccess;
 import leekscript.compiler.expression.LeekTernaire;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
+import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.common.Annotation;
+import leekscript.common.Error;
 
 public class LeekExpressionInstruction extends LeekInstruction {
 
@@ -86,6 +90,14 @@ public class LeekExpressionInstruction extends LeekInstruction {
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		mExpression.analyze(compiler);
+		// @nodiscard / @pure : warn when the return value of an annotated function is discarded
+		var expr = mExpression.trim();
+		if (expr instanceof LeekFunctionCall fc && fc.getResolvedFunction() != null) {
+			var func = fc.getResolvedFunction();
+			if (func.hasAnnotation(Annotation.NODISCARD) || func.hasAnnotation(Annotation.PURE)) {
+				compiler.addError(new AnalyzeError(fc.getLocation(), AnalyzeErrorLevel.WARNING, Error.ANNOTATION_NODISCARD, new String[] { func.getName() }));
+			}
+		}
 	}
 
 	@Override

@@ -2,7 +2,9 @@ package leekscript.compiler;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
+import leekscript.common.Annotation;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
@@ -53,6 +55,8 @@ import leekscript.compiler.instruction.LeekReturnInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 
 public class WordCompiler {
+
+	private static final List<Token> NO_ANNOTATIONS = List.of();
 
 	private MainLeekBlock mMain;
 	private AbstractLeekBlock mCurentBlock;
@@ -319,7 +323,7 @@ public class WordCompiler {
 
 			// Déclaration de variable
 			mTokens.skip();
-			variableDeclaration(null);
+			variableDeclaration(null, NO_ANNOTATIONS);
 			return;
 
 		} else if (word.getType() == TokenType.GLOBAL) {
@@ -393,13 +397,35 @@ public class WordCompiler {
 			mCurentBlock.addInstruction(this, new LeekContinueInstruction(token));
 			return;
 
- 		} else if (word.getType() == TokenType.FUNCTION) {
+ 		} else if (isAnnotationStart()) {
+
+			var annotations = collectAnnotations();
+			word = mTokens.get();
+			if (word.getType() == TokenType.VAR) {
+				mTokens.skip();
+				variableDeclaration(null, annotations);
+				return;
+			} else if (word.getType() == TokenType.FUNCTION) {
+				var functionToken = mTokens.eat();
+				if (!mTokens.get().getWord().equals("<")) {
+					functionBlock(functionToken, annotations);
+					return;
+				}
+				mTokens.unskip(); // type Function<...>, on continue
+			} else {
+				for (var ann : annotations) {
+					addError(new AnalyzeError(ann, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_INVALID_CONTEXT, new String[] { ann.getWord() }));
+				}
+				return;
+			}
+
+		} else if (word.getType() == TokenType.FUNCTION) {
 
 			var functionToken = mTokens.eat();
 			if (mTokens.get().getWord().equals("<")) { // Début d'un type
 				mTokens.unskip();
 			} else { // Vraie fonction
-				functionBlock(functionToken);
+				functionBlock(functionToken, NO_ANNOTATIONS);
 				return;
 			}
 
@@ -432,7 +458,7 @@ public class WordCompiler {
 			// Déclaration de variable ou expression ?
 			if (mTokens.get().getType() == TokenType.STRING) {
 				// Déclaration de variable Class a = ...
-				variableDeclaration(type);
+				variableDeclaration(type, new ArrayList<>());
 			} else {
 				// Class.toto, on revient d'un token et on parse une expression
 				mTokens.setPosition(save);
@@ -477,7 +503,7 @@ public class WordCompiler {
 		if (mTokens.eat().getType() != TokenType.PAR_RIGHT) throw new LeekCompilerException(mTokens.get(), Error.CLOSING_PARENTHESIS_EXPECTED);
 	}
 
-	private void functionBlock(Token functionToken) throws LeekCompilerException {
+	private void functionBlock(Token functionToken, List<Token> annotations) throws LeekCompilerException {
 		// Déclaration de fonction utilisateur
 		if (!mCurentBlock.equals(mMain)) {
 			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.FUNCTION_ONLY_IN_MAIN_BLOCK));
@@ -502,6 +528,7 @@ public class WordCompiler {
 
 		var previousFunction = mCurrentFunction;
 		FunctionBlock block = new FunctionBlock(mCurentBlock, mMain, funcName);
+		applyAnnotations(block, annotations);
 		mCurentBlock = block;
 		setCurrentFunction(block);
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.PAR_RIGHT) {
@@ -511,6 +538,7 @@ public class WordCompiler {
 			var type = eatType(false, false);
 
 			boolean is_reference = false;
+			Token parameter = null;
 			if (mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("@")) {
 				is_reference = true;
 				if (getVersion() >= 2) {
@@ -519,7 +547,6 @@ public class WordCompiler {
 				mTokens.skip();
 			}
 
-			Token parameter = null;
 			if (mTokens.get().getType() != TokenType.STRING) {
 				if (type != null && type.getClass() == LeekType.class) {
 					parameter = type.token;
@@ -1111,7 +1138,39 @@ public class WordCompiler {
 		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) mTokens.skip();
 	}
 
-	private void variableDeclaration(LeekType type) throws LeekCompilerException {
+	private boolean isAnnotationStart() {
+		if (version < 4) return false;
+		if (mTokens.get().getType() != TokenType.OPERATOR || !mTokens.get().getWord().equals("@")) return false;
+		if (mTokens.get(1).getType() != TokenType.STRING) return false;
+		// Lookahead: verify the token after the annotation name is var, function, or another @ to
+		// distinguish annotation syntax from @variable reference expressions
+		var after = mTokens.get(2);
+		return after.getType() == TokenType.VAR
+			|| after.getType() == TokenType.FUNCTION
+			|| (after.getType() == TokenType.OPERATOR && after.getWord().equals("@"));
+	}
+
+	private ArrayList<Token> collectAnnotations() {
+		var list = new ArrayList<Token>();
+		while (isAnnotationStart()) {
+			mTokens.skip(); // consume '@'
+			list.add(mTokens.eat()); // consume the annotation name
+		}
+		return list;
+	}
+
+	private void applyAnnotations(Annotatable target, List<Token> annotations) throws LeekCompilerException {
+		for (var ann : annotations) {
+			var a = Annotation.fromString(ann.getWord());
+			if (a != null) {
+				target.addAnnotation(a);
+			} else {
+				addError(new AnalyzeError(ann, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_UNKNOWN, new String[] { ann.getWord() }));
+			}
+		}
+	}
+
+	private void variableDeclaration(LeekType type, List<Token> annotations) throws LeekCompilerException {
 		// Il y a au moins une premiere variable
 		Token word = mTokens.eat();
 		if (word.getType() != TokenType.STRING) {
@@ -1122,6 +1181,7 @@ public class WordCompiler {
 			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 		}
 		LeekVariableDeclarationInstruction variable = new LeekVariableDeclarationInstruction(this, word, getCurrentFunction(), type);
+		applyAnnotations(variable, annotations);
 		// On regarde si une valeur est assignée
 		if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals("=")) {
 			mTokens.skip();
@@ -1148,6 +1208,7 @@ public class WordCompiler {
 				addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
 			}
 			variable = new LeekVariableDeclarationInstruction(this, word, getCurrentFunction(), type);
+			applyAnnotations(variable, annotations);
 			// On regarde si une valeur est assignée
 			if (mTokens.get().getWord().equals("=")) {
 				mTokens.skip();
@@ -1192,6 +1253,15 @@ public class WordCompiler {
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			word = mTokens.get();
+			var classAnnotations = new ArrayList<Token>();
+			// In class body, any @identifier is an annotation (@ references not valid here)
+			while (version >= 4
+					&& mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("@")
+					&& mTokens.get(1).getType() == TokenType.STRING) {
+				mTokens.skip(); // consume '@'
+				classAnnotations.add(mTokens.eat()); // consume annotation name
+				word = mTokens.get();
+			}
 			switch (word.getWord()) {
 				case "public":
 				case "private":
@@ -1199,30 +1269,30 @@ public class WordCompiler {
 				{
 					AccessLevel level = AccessLevel.fromString(word.getWord());
 					mTokens.skip();
-					classAccessLevelMember(classDeclaration, level);
+					classAccessLevelMember(classDeclaration, level, classAnnotations);
 					break;
 				}
 				case "static":
 				{
 					mTokens.skip();
-					classStaticMember(classDeclaration, AccessLevel.PUBLIC);
+					classStaticMember(classDeclaration, AccessLevel.PUBLIC, classAnnotations);
 					break;
 				}
 				case "final":
 				{
 					mTokens.skip();
-					endClassMember(classDeclaration, AccessLevel.PUBLIC, false, true);
+					endClassMember(classDeclaration, AccessLevel.PUBLIC, false, true, classAnnotations);
 					break;
 				}
 				case "constructor":
 				{
 					mTokens.skip();
-					classConstructor(classDeclaration, AccessLevel.PUBLIC, word);
+					classConstructor(classDeclaration, AccessLevel.PUBLIC, word, classAnnotations);
 					break;
 				}
 				default:
 				{
-					endClassMember(classDeclaration, AccessLevel.PUBLIC, false, false);
+					endClassMember(classDeclaration, AccessLevel.PUBLIC, false, false, classAnnotations);
 				}
 			}
 		}
@@ -1233,37 +1303,37 @@ public class WordCompiler {
 		mCurrentClass = null;
 	}
 
-	public void classStaticMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel) throws LeekCompilerException {
+	public void classStaticMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, List<Token> annotations) throws LeekCompilerException {
 		Token token = mTokens.get();
 		switch (token.getWord()) {
 			case "final":
 				mTokens.skip();
-				endClassMember(classDeclaration, accessLevel, true, true);
+				endClassMember(classDeclaration, accessLevel, true, true, annotations);
 				return;
 		}
-		endClassMember(classDeclaration, accessLevel, true, false);
+		endClassMember(classDeclaration, accessLevel, true, false, annotations);
 	}
 
-	public void classAccessLevelMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel) throws LeekCompilerException {
+	public void classAccessLevelMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, List<Token> annotations) throws LeekCompilerException {
 		Token token = mTokens.get();
 		switch (token.getWord()) {
 			case "constructor":
 				mTokens.skip();
-				classConstructor(classDeclaration, accessLevel, token);
+				classConstructor(classDeclaration, accessLevel, token, annotations);
 				return;
 			case "static":
 				mTokens.skip();
-				classStaticMember(classDeclaration, accessLevel);
+				classStaticMember(classDeclaration, accessLevel, annotations);
 				return;
 			case "final":
 				mTokens.skip();
-				endClassMember(classDeclaration, accessLevel, false, true);
+				endClassMember(classDeclaration, accessLevel, false, true, annotations);
 				return;
 		}
-		endClassMember(classDeclaration, accessLevel, false, false);
+		endClassMember(classDeclaration, accessLevel, false, false, annotations);
 	}
 
-	public void endClassMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, boolean isStatic, boolean isFinal) throws LeekCompilerException {
+	public void endClassMember(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, boolean isStatic, boolean isFinal, List<Token> annotations) throws LeekCompilerException {
 
 		var isStringMethod = mTokens.get().getWord().equals("string") && mTokens.get(1).getType() == TokenType.PAR_LEFT;
 
@@ -1289,6 +1359,7 @@ public class WordCompiler {
 		} else if (mTokens.get().getType() == TokenType.PAR_LEFT) {
 			// Méthode
 			ClassMethodBlock method = classMethod(classDeclaration, name, false, isStatic, typeExpression == null ? Type.ANY : typeExpression.getType());
+			applyAnnotations(method, annotations);
 			if (isStatic) {
 				classDeclaration.addStaticMethod(this, name, method, accessLevel);
 			} else {
@@ -1299,7 +1370,6 @@ public class WordCompiler {
 		}
 
 		if (isStatic) {
-			// System.out.println(classDeclaration);
 			assert classDeclaration != null;
 			classDeclaration.addStaticField(this, name, expr, accessLevel, isFinal, typeExpression != null ? typeExpression.getType() : Type.ANY);
 		} else {
@@ -1309,8 +1379,9 @@ public class WordCompiler {
 		if (mTokens.get().getType() == TokenType.END_INSTRUCTION) mTokens.skip();
 	}
 
-	public void classConstructor(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, Token token) throws LeekCompilerException {
+	public void classConstructor(ClassDeclarationInstruction classDeclaration, AccessLevel accessLevel, Token token, List<Token> annotations) throws LeekCompilerException {
 		ClassMethodBlock constructor = classMethod(classDeclaration, token, true, false, Type.VOID);
+		applyAnnotations(constructor, annotations);
 		classDeclaration.addConstructor(this, constructor, accessLevel);
 	}
 

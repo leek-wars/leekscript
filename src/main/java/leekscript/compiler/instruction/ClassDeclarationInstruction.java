@@ -21,6 +21,7 @@ import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.common.Annotation;
 import leekscript.common.AccessLevel;
 import leekscript.common.ClassType;
 import leekscript.common.ClassValueType;
@@ -465,32 +466,49 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 		for (var method : methods.entrySet()) {
 			for (var version : method.getValue().entrySet()) {
-				version.getValue().block.analyze(compiler);
+				var block = version.getValue().block;
+				emitMethodAnnotationWarnings(block, method.getKey(), compiler);
+				block.analyze(compiler);
 
 				// Méthode surchargée ?
 				var current = parent;
+				boolean foundInParent = false;
 				while (current != null) {
 					var parentMethod = current.methods.get(method.getKey());
 					if (parentMethod != null) {
 						var parentVersion = parentMethod.get(version.getKey());
-						if (parentVersion != null && version.getValue().block.getType().accepts(parentVersion.block.getType()) != CastType.EQUALS) {
-							compiler.addError(new AnalyzeError(version.getValue().block.getLocation(), AnalyzeErrorLevel.ERROR, Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE, new String[] {
-								version.getValue().block.getType().toString(),
-								parentVersion.block.getType().toString()
-							}));
+						if (parentVersion != null) {
+							foundInParent = true;
+							if (block.getType().accepts(parentVersion.block.getType()) != CastType.EQUALS) {
+								compiler.addError(new AnalyzeError(block.getLocation(), AnalyzeErrorLevel.ERROR, Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE, new String[] {
+									block.getType().toString(),
+									parentVersion.block.getType().toString()
+								}));
+							}
 							break;
 						}
 					}
 					current = current.parent;
 				}
+				// @override : error if no parent method found
+				if (!foundInParent && block.hasAnnotation(Annotation.OVERRIDE)) {
+					compiler.addError(new AnalyzeError(block.getLocation(), AnalyzeErrorLevel.ERROR, Error.ANNOTATION_OVERRIDE_NO_PARENT, new String[] { method.getKey() }));
+				}
 			}
 		}
-		for (var method : staticMethods.values()) {
-			for (var version : method.values()) {
+		for (var staticMethod : staticMethods.entrySet()) {
+			for (var version : staticMethod.getValue().values()) {
+				emitMethodAnnotationWarnings(version.block, staticMethod.getKey(), compiler);
 				version.block.analyze(compiler);
 			}
 		}
 		compiler.setCurrentClass(null);
+	}
+
+	private void emitMethodAnnotationWarnings(ClassMethodBlock block, String name, WordCompiler compiler) throws LeekCompilerException {
+		if (block.hasAnnotation(Annotation.TODO)) {
+			compiler.addError(new AnalyzeError(block.getLocation(), AnalyzeErrorLevel.WARNING, Error.ANNOTATION_TODO, new String[] { name }));
+		}
 	}
 
 	public void declareJava(MainLeekBlock mainblock, JavaWriter writer) {

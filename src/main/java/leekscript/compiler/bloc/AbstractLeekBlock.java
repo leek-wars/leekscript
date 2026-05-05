@@ -13,6 +13,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.instruction.LeekExpressionInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
+import leekscript.common.Annotation;
 import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.compiler.NarrowingInfo;
@@ -267,12 +268,12 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 			NarrowingInfo.restore(saved);
 		}
 
-		// Check for unused variables and functions (strict mode only)
-		if (mMain != null && mMain.isStrict()) {
-			for (var entry : mVariables.entrySet()) {
-				var v = entry.getValue();
-				if (v.getUsageCount() > 0) continue;
-				if (v.getName().startsWith("_")) continue;
+		var strict = mMain != null && mMain.isStrict();
+		for (var v : mVariables.values()) {
+			if (v.hasAnnotation(Annotation.TODO)) {
+				compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.ANNOTATION_TODO, new String[] { v.getName() }));
+			}
+			if (strict && v.getUsageCount() == 0 && !v.getName().startsWith("_") && !v.hasAnnotation(Annotation.UNUSED)) {
 				var vt = v.getVariableType();
 				if (vt == LeekVariable.VariableType.LOCAL || vt == LeekVariable.VariableType.ARGUMENT || vt == LeekVariable.VariableType.GLOBAL) {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.UNUSED_VARIABLE, new String[] { v.getName() }));

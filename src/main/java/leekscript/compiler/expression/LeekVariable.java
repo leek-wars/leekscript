@@ -15,8 +15,11 @@ import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.LeekConstants;
 import leekscript.runner.LeekFunctions;
 
+import leekscript.common.Annotation;
 import leekscript.common.Error;
 import leekscript.common.Type;
+
+import java.util.EnumSet;
 
 public class LeekVariable extends Expression {
 
@@ -36,6 +39,7 @@ public class LeekVariable extends Expression {
 	private Type declaredType = null;
 	private Type lastAssignedType = null;
 	private int usageCount = 0;
+	private EnumSet<Annotation> annotations = EnumSet.noneOf(Annotation.class);
 
 	public LeekVariable(Token token, VariableType type) {
 		this.token = token;
@@ -157,6 +161,14 @@ public class LeekVariable extends Expression {
 		return usageCount;
 	}
 
+	public void addAnnotation(Annotation a) {
+		annotations.add(a);
+	}
+
+	public boolean hasAnnotation(Annotation a) {
+		return annotations.contains(a);
+	}
+
 	@Override
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		if (this.type == VariableType.SUPER) {
@@ -174,6 +186,9 @@ public class LeekVariable extends Expression {
 			this.box = v.box;
 			this.variable = v;
 			v.addUsage();
+			if (v.hasAnnotation(Annotation.DEPRECATED)) {
+				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_DEPRECATED_CALL, new String[] { v.getName() }));
+			}
 			if (v.getDeclaration() != null && v.getDeclaration().getFunction() != compiler.getCurrentFunction()) {
 				v.getDeclaration().setCaptured();
 			}
@@ -188,6 +203,9 @@ public class LeekVariable extends Expression {
 			this.type = VariableType.FUNCTION;
 			this.variableType = f.getType();
 			f.getVariable().addUsage();
+			if (f.hasAnnotation(Annotation.DEPRECATED)) {
+				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_DEPRECATED_CALL, new String[] { f.getName() }));
+			}
 			return;
 		}
 		// LS constants

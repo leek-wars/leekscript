@@ -1,9 +1,12 @@
 package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
+import leekscript.common.Annotation;
 import leekscript.common.Type;
+import leekscript.compiler.Annotatable;
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -20,7 +23,7 @@ import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
 
-public class ClassMethodBlock extends AbstractLeekBlock {
+public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 
 	private final ClassDeclarationInstruction clazz;
 	private final boolean isStatic;
@@ -33,6 +36,7 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 	private int minParameters = 0;
 	private int maxParameters = 0;
 	private final FunctionType type;
+	private EnumSet<Annotation> annotations = EnumSet.noneOf(Annotation.class);
 
 	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isConstructor, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, Token token, Type returnType) {
 		super(parent, main);
@@ -41,6 +45,14 @@ public class ClassMethodBlock extends AbstractLeekBlock {
 		this.isStatic = isStatic;
 		this.token = token;
 		this.type = new FunctionType(returnType);
+	}
+
+	public void addAnnotation(Annotation a) {
+		annotations.add(a);
+	}
+
+	public boolean hasAnnotation(Annotation a) {
+		return annotations.contains(a);
 	}
 
 	public void setId(int id) {

@@ -17,12 +17,16 @@ import leekscript.compiler.expression.LeekType;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.common.Annotation;
+import leekscript.compiler.Annotatable;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
 import leekscript.common.Type;
+
+import java.util.EnumSet;
 import leekscript.common.Type.CastType;
 
-public class LeekVariableDeclarationInstruction extends LeekInstruction {
+public class LeekVariableDeclarationInstruction extends LeekInstruction implements Annotatable {
 
 	private final Token token;
 	private Expression mValue = null;
@@ -32,6 +36,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 	private LeekVariable variable;
 	private Type type;
 	private LeekType leekType;
+	private EnumSet<Annotation> annotations = EnumSet.noneOf(Annotation.class);
 
 	public LeekVariableDeclarationInstruction(WordCompiler compiler, Token token, AbstractLeekBlock function, Type type) {
 		this.token = token;
@@ -46,6 +51,10 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 		this.box = compiler.getVersion() == 1;
 		this.type = leekType == null ? Type.ANY : leekType.getType();
 		this.leekType = leekType;
+	}
+
+	public void addAnnotation(Annotation a) {
+		annotations.add(a);
 	}
 
 	public void setValue(Expression value) {
@@ -250,6 +259,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction {
 			} else {
 				// On ajoute la variable
 				this.variable = new LeekVariable(token, VariableType.LOCAL, type, this);
+				for (var a : annotations) this.variable.addAnnotation(a);
 				compiler.getCurrentBlock().addVariable(this.variable);
 			}
 		}

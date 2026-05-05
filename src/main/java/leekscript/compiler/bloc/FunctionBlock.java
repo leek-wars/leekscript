@@ -1,8 +1,11 @@
 package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 
+import leekscript.common.Annotation;
 import leekscript.common.Type;
+import leekscript.compiler.Annotatable;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
 import leekscript.compiler.AnalyzeError;
@@ -20,7 +23,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.CallableVersion;
 
-public class FunctionBlock extends AbstractLeekBlock {
+public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 
 	private Token token;
 	private int mId;
@@ -35,6 +38,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 	private int minParameters = 0;
 	private int maxParameters = 0;
 	private LeekVariable variable;
+	private EnumSet<Annotation> annotations = EnumSet.noneOf(Annotation.class);
 
 	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -289,8 +293,17 @@ public class FunctionBlock extends AbstractLeekBlock {
 		return mReferences.get(i);
 	}
 
+	public void addAnnotation(Annotation a) {
+		annotations.add(a);
+	}
+
+	public boolean hasAnnotation(Annotation a) {
+		return annotations.contains(a);
+	}
+
 	public void declare(WordCompiler compiler) {
 		variable = new LeekVariable(token, VariableType.FUNCTION, type, this);
+		for (var a : annotations) variable.addAnnotation(a);
 		compiler.getCurrentBlock().addVariable(variable);
 	}
 
