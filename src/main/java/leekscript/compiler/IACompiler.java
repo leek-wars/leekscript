@@ -9,9 +9,9 @@ import leekscript.Util;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -72,33 +72,70 @@ public class IACompiler {
 	public static MultiAnalyzeResult analyzeWithIncludes(AIFile ai) {
 		var fs = LeekScript.getFileSystem();
 		var includers = fs.getIncluders(ai);
+		var perEntrypoint = new LinkedHashMap<AIFile, AnalyzeResult>();
 		if (includers.isEmpty()) {
+			// ai est un entrypoint racine : compiler aussi les entrypoints frères qui
+			// partagent les mêmes includes, pour que la déduplication cross-entrypoints
+			// s'applique aux avertissements sur les fichiers inclus.
 			fs.loadDependencies(ai);
 			var result = new IACompiler().analyze(ai);
-			return new MultiAnalyzeResult(result, Map.of(ai, result));
+			perEntrypoint.put(ai, result);
+			if (result.includedAIs != null) {
+				var siblings = new LinkedHashSet<AIFile>();
+				for (var included : result.includedAIs) {
+					for (var sibling : fs.getIncluders(included)) {
+						if (sibling != ai) siblings.add(sibling);
+					}
+				}
+				for (var sibling : siblings) {
+					fs.loadDependencies(sibling);
+					perEntrypoint.put(sibling, new IACompiler().analyze(sibling));
+				}
+			}
+		} else {
+			for (var ep : includers) {
+				fs.loadDependencies(ep);
+				perEntrypoint.put(ep, new IACompiler().analyze(ep));
+			}
 		}
-		var perEntrypoint = new LinkedHashMap<AIFile, AnalyzeResult>();
-		for (var ep : includers) {
-			fs.loadDependencies(ep);
-			perEntrypoint.put(ep, new IACompiler().analyze(ep));
-		}
-		return new MultiAnalyzeResult(mergeResults(perEntrypoint.values()), perEntrypoint);
+		var merged = perEntrypoint.size() == 1
+				? perEntrypoint.values().iterator().next()
+				: mergeResults(perEntrypoint);
+		return new MultiAnalyzeResult(merged, perEntrypoint);
 	}
 
 	/**
 	 * Fusionne les résultats de plusieurs compilations d'entrypoints.
-	 * UNUSED_VARIABLE / UNUSED_FUNCTION : intersection (seulement si inutilisé dans TOUS).
+	 * UNUSED_VARIABLE / UNUSED_FUNCTION : intersection par fichier — un avertissement
+	 * n'est émis que si le symbole est inutilisé dans TOUTES les compilations qui
+	 * incluent ce fichier. Les avertissements sur le code propre d'un entrypoint
+	 * (présent dans une seule compilation) restent toujours visibles.
 	 * Autres erreurs : union dédupliquée par (fichier, ligne, colonne, code).
 	 */
-	public static AnalyzeResult mergeResults(Collection<AnalyzeResult> results) {
+	public static AnalyzeResult mergeResults(Map<AIFile, AnalyzeResult> results) {
 		int unusedVariableOrdinal = Error.UNUSED_VARIABLE.ordinal();
 		int unusedFunctionOrdinal = Error.UNUSED_FUNCTION.ordinal();
-		int count = 0;
-		for (var r : results) if (r != null && r.informations != null) count++;
+
+		// Dénominateur pour l'intersection UNUSED_* : uniquement les compilations @strict,
+		// car les compilations non-strict ne génèrent jamais de warnings UNUSED.
+		// Compter toutes les compilations (strict ou non) fausserait le seuil d'intersection
+		// et supprimerait des vrais warnings dans les AIs @strict.
+		var fileRelevance = new HashMap<String, Integer>();
+		for (var entry : results.entrySet()) {
+			if (!entry.getKey().isStrict()) continue;
+			fileRelevance.merge(entry.getKey().getPath(), 1, Integer::sum);
+			var result = entry.getValue();
+			if (result != null && result.includedAIs != null) {
+				for (var inc : result.includedAIs) {
+					fileRelevance.merge(inc.getPath(), 1, Integer::sum);
+				}
+			}
+		}
+
 		var unusedFirst = new LinkedHashMap<String, JsonNode>();
 		var unusedCounts = new HashMap<String, int[]>();
 		var otherProblems = new LinkedHashMap<String, JsonNode>();
-		for (var result : results) {
+		for (var result : results.values()) {
 			if (result == null || result.informations == null) continue;
 			for (JsonNode problem : result.informations) {
 				int ordinal = problem.get(6).intValue();
@@ -116,7 +153,9 @@ public class IACompiler {
 		}
 		var informations = Json.createArray();
 		for (var e : unusedFirst.entrySet()) {
-			if (unusedCounts.get(e.getKey())[0] == count) informations.add(e.getValue());
+			String filePath = e.getValue().get(1).stringValue();
+			int relevant = fileRelevance.getOrDefault(filePath, 0);
+			if (relevant > 0 && unusedCounts.get(e.getKey())[0] == relevant) informations.add(e.getValue());
 		}
 		for (var problem : otherProblems.values()) informations.add(problem);
 		var merged = new AnalyzeResult();
