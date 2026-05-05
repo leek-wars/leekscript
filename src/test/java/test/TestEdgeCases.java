@@ -323,6 +323,9 @@ public class TestEdgeCases extends TestCommon {
 		// as Type.method() - the dot/call must apply to the cast result, not the type
 		code_v4_("class G { boolean check() { return true } } var m = ['a': new G()] if (!mapGet(m, 'a', new G()) as G.check()) { return 0 } return 1").equals("1");
 		code_v4_("class G { boolean check() { return true } } var m = ['a': new G()] var g = mapGet(m, 'a', new G()) as G if (g.check()) { return 1 } return 0").equals("1");
+		// issue #2874: `test as Test.no()` should behave like `(test as Test).no()`
+		code_v4_("class Test { public boolean no(){ return false } } var test = new Test() if (test as Test.no()) { return 1 } return 0").equals("0");
+		code_v4_("class Test { public boolean no(){ return false } } var test = new Test() return '' + (test as Test.no()) + ',' + ((test as Test).no())").equals("\"false,false\"");
 
 		// Prefix operators with as - precedence regression tests
 		code_v4_("var count = 0 if (++count == 1) { return count } return -1").equals("1");
