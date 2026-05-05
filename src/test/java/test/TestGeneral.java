@@ -291,6 +291,12 @@ public class TestGeneral extends TestCommon {
 		code_strict_v4_("function _f() { return 0 } return 0").noWarning();
 		// Function passed as a callback counts as used
 		code_strict_v4_("function f(x) { return x } return arrayMap([1, 2], f)").noWarning();
+		// Function called only from another function (not from main code)
+		code_strict_v4_("function helper() { return 1 } function main_fn() { return helper() } return main_fn()").noWarning();
+		// Mutual recursion: both functions count as used
+		code_strict_v4_("function even(n) { if (n == 0) return true return odd(n - 1) } function odd(n) { if (n == 0) return false return even(n - 1) } return even(4)").noWarning();
+		// Function called from a nested block inside another function
+		code_strict_v4_("function helper() -> integer { return 1 } function f() -> integer { integer r = 0 for (var i = 0; i < 3; i++) { r += helper() } return r } return f()").noWarning();
 	}
 
 	@Test

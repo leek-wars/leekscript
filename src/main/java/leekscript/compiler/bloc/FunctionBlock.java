@@ -34,6 +34,7 @@ public class FunctionBlock extends AbstractLeekBlock {
 	private FunctionType type = new FunctionType(Type.ANY);
 	private int minParameters = 0;
 	private int maxParameters = 0;
+	private LeekVariable variable;
 
 	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -289,8 +290,12 @@ public class FunctionBlock extends AbstractLeekBlock {
 	}
 
 	public void declare(WordCompiler compiler) {
-		// On ajoute la fonction
-		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.FUNCTION, type, this));
+		variable = new LeekVariable(token, VariableType.FUNCTION, type, this);
+		compiler.getCurrentBlock().addVariable(variable);
+	}
+
+	public LeekVariable getVariable() {
+		return variable;
 	}
 
 	public String toString() {

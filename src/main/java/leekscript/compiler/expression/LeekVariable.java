@@ -187,6 +187,7 @@ public class LeekVariable extends Expression {
 		if (f != null) {
 			this.type = VariableType.FUNCTION;
 			this.variableType = f.getType();
+			f.getVariable().addUsage();
 			return;
 		}
 		// LS constants
