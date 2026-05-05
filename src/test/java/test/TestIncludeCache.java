@@ -604,6 +604,19 @@ public class TestIncludeCache {
 	}
 
 	@Test
+	public void unusedFunctionInEntrypointGeneratesWarning() throws Exception {
+		String main = writeMain("// @strict\nfunction helper() { return 42; }\nreturn 0;");
+		assertTrue(compileAndCollectErrors(main).contains(Error.UNUSED_FUNCTION), "expected UNUSED_FUNCTION for unused function in entrypoint");
+	}
+
+	@Test
+	public void unusedFunctionInIncludeNoWarning() throws Exception {
+		write("util.leek", "function helper() { return 42; }\n");
+		String main = writeMain("// @strict\ninclude(\"util\");\nreturn 0;");
+		assertFalse(compileAndCollectErrors(main).contains(Error.UNUSED_FUNCTION), "unexpected UNUSED_FUNCTION for function from included file");
+	}
+
+	@Test
 	public void globalInTransitiveIncludeUsedInIntermediateFile() throws Exception {
 		write("util.leek", "global EPSILON = 0.000000001;\n");
 		write("combat.leek", "include(\"util\");\nfunction isNear(x) { return x < EPSILON; }\n");
