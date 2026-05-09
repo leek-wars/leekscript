@@ -1,6 +1,5 @@
 package leekscript.runner.values;
 
-import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map.Entry;
@@ -13,10 +12,12 @@ import leekscript.runner.LeekRunException;
 
 public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 
-	public static class SetIterator implements Iterator<Entry<Object, Object>> {
+	public static class SetIterator implements Iterator<Entry<Object, Object>>, Entry<Object, Object> {
 
 		private Iterator<Object> it;
 		private long i = 0;
+		private long currentKey;
+		private Object currentValue;
 
 		public SetIterator(SetLeekValue set) {
 			this.it = set.iterator();
@@ -27,11 +28,25 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 			return it.hasNext();
 		}
 
+		// L'iterator se sert lui-même d'Entry pour éviter d'allouer un
+		// SimpleEntry par itération.
 		@Override
 		public Entry<Object, Object> next() {
-			var e = new AbstractMap.SimpleEntry<Object, Object>(i, it.next());
+			currentKey = i;
+			currentValue = it.next();
 			i++;
-			return e;
+			return this;
+		}
+
+		@Override
+		public Object getKey() { return currentKey; }
+
+		@Override
+		public Object getValue() { return currentValue; }
+
+		@Override
+		public Object setValue(Object value) {
+			throw new UnsupportedOperationException();
 		}
 	}
 

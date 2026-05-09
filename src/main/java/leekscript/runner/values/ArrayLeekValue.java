@@ -1,6 +1,5 @@
 package leekscript.runner.values;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -79,10 +78,12 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
-	public static class ArrayIterator implements Iterator<Entry<Object, Object>> {
+	public static class ArrayIterator implements Iterator<Entry<Object, Object>>, Entry<Object, Object> {
 
 		private ArrayLeekValue array;
 		private int i = 0;
+		private long currentKey;
+		private Object currentValue;
 
 		public ArrayIterator(ArrayLeekValue array) {
 			this.array = array;
@@ -93,11 +94,25 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 			return i < array.size();
 		}
 
+		// L'iterator se sert lui-même d'Entry pour éviter d'allouer un
+		// SimpleEntry par itération (chaud : foreach sur array).
 		@Override
 		public Entry<Object, Object> next() {
-			var e = new AbstractMap.SimpleEntry<Object, Object>((long) i, array.get(i));
+			currentKey = i;
+			currentValue = array.get(i);
 			i++;
-			return e;
+			return this;
+		}
+
+		@Override
+		public Object getKey() { return currentKey; }
+
+		@Override
+		public Object getValue() { return currentValue; }
+
+		@Override
+		public Object setValue(Object value) {
+			throw new UnsupportedOperationException();
 		}
 	}
 
@@ -507,12 +522,11 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		ai.opsNoCheck(ArrayLeekValue.READ_OPERATIONS);
 		var i = ai.longint(key);
 		if (i < 0) i += size();
-		try {
-			return super.get((int) i);
-		} catch (IndexOutOfBoundsException e) {
+		if (i < 0 || i >= size()) {
 			wrongIndexError(ai, i);
 			return null;
 		}
+		return super.get((int) i);
 	}
 
 	public Object arrayGet(AI ai, long index) throws LeekRunException {
@@ -521,11 +535,8 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 
 	public Object arrayGet(AI ai, long index, Object defaultValue) throws LeekRunException {
 		if (index < 0) index += size();
-		try {
-			return get((int) index);
-		} catch (IndexOutOfBoundsException e) {
-			return defaultValue;
-		}
+		if (index < 0 || index >= size()) return defaultValue;
+		return get((int) index);
 	}
 
 	private void wrongIndexError(AI ai, long i) throws LeekRunException {
@@ -539,23 +550,21 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		ai.opsNoCheck(ArrayLeekValue.READ_OPERATIONS);
 		var i = ai.longint(key);
 		if (i < 0) i += size();
-		try {
-			return super.get((int) i);
-		} catch (IndexOutOfBoundsException e) {
+		if (i < 0 || i >= size()) {
 			wrongIndexError(ai, i);
 			return null;
 		}
+		return super.get((int) i);
 	}
 
 	public Object get(long index) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.READ_OPERATIONS);
 		if (index < 0) index += size();
-		try {
-			return super.get((int) index);
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, (int) index);
+		if (index < 0 || index >= size()) {
+			wrongIndexError(ai, index);
 			return null;
 		}
+		return super.get((int) index);
 	}
 
 	public long search(AI ai, Object value) throws LeekRunException {
