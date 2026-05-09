@@ -962,12 +962,14 @@ public abstract class AI {
 	}
 
 	public boolean bool(Object value) {
-		if (value instanceof Double) {
-			return (Double) value != 0;
+		// Ordre : Boolean d'abord (cas le plus fréquent : if (cond), if (x > y), …),
+		// puis Long (compteurs / valeurs numériques), puis Double, puis containers.
+		if (value instanceof Boolean) {
+			return (Boolean) value;
 		} else if (value instanceof Long) {
 			return (Long) value != 0;
-		} else if (value instanceof Boolean) {
-			return (Boolean) value;
+		} else if (value instanceof Double) {
+			return (Double) value != 0;
 		} else if (value instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) value).size() != 0;
 		} else if (value instanceof NativeObjectLeekValue o) {
