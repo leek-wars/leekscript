@@ -448,12 +448,14 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 		int minIdx = Math.max(0, startAsInteger < 0 ? maxSize + startAsInteger : startAsInteger);
 		int maxIdx = Math.min(maxSize, endAsInteger < 0 ? maxSize + endAsInteger : endAsInteger);
 
-		var array = new ArrayLeekValue(ai);
+		var array = new ArrayLeekValue(ai, Math.max(0, maxIdx - minIdx));
 
-		for (var i = minIdx; i < maxIdx; ++i) {
-			if (step >= 0) {
+		if (step >= 0) {
+			for (var i = minIdx; i < maxIdx; ++i) {
 				array.push(ai, from + i * step);
-			} else {
+			}
+		} else {
+			for (var i = minIdx; i < maxIdx; ++i) {
 				array.push(ai, to + i * step);
 			}
 		}
