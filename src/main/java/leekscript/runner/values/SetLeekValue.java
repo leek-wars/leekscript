@@ -10,6 +10,12 @@ import leekscript.runner.AI.RamUsage;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 
+/**
+ * Implémentation du type Set de LeekScript.
+ *
+ * Étend LinkedHashSet (et non HashSet) pour garantir un ordre d'itération
+ * déterministe = ordre d'insertion (cohérent avec MapLeekValue).
+ */
 public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 
 	public static class SetIterator implements Iterator<Entry<Object, Object>>, Entry<Object, Object> {
@@ -28,8 +34,12 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 			return it.hasNext();
 		}
 
-		// L'iterator se sert lui-même d'Entry pour éviter d'allouer un
-		// SimpleEntry par itération.
+		/**
+		 * L'iterator se sert lui-même d'Entry pour éviter d'allouer un
+		 * SimpleEntry par itération. L'Entry retournée est invalidée par
+		 * le prochain appel à {@code next()} ; copier via
+		 * {@code Map.entry(e.getKey(), e.getValue())} si besoin de la conserver.
+		 */
 		@Override
 		public Entry<Object, Object> next() {
 			currentKey = i;
@@ -59,7 +69,8 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 	}
 
 	public SetLeekValue(AI ai, Object[] values) throws LeekRunException {
-		super(values.length);
+		// Capacity = N / loadFactor (+1) pour éviter le resize quand on ajoute N entrées.
+		super((int) (values.length / 0.75f) + 1);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		for (Object value : values) {
@@ -77,7 +88,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 	}
 
 	public SetLeekValue(AI ai, SetLeekValue set, int level) throws LeekRunException {
-		super(set.size());
+		super((int) (set.size() / 0.75f) + 1);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		this.ram = ai.allocateRAM(this, set.size());

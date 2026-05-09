@@ -29,6 +29,11 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			return interval.maxClosed ? x <= interval.to : x < interval.to;
 		}
 
+		/**
+		 * L'iterator se sert lui-même d'Entry pour éviter d'allouer un
+		 * SimpleEntry par itération. L'Entry retournée est invalidée par
+		 * le prochain appel à {@code next()}.
+		 */
 		@Override
 		public Entry<Object, Object> next() {
 			currentKey = i;

@@ -87,8 +87,8 @@ LeekScript est **complètement sandboxé** par la JVM :
 
 ### Structures de données
 - `Array<T>` - Tableaux dynamiques
-- `Map<K, V>` - Dictionnaires
-- `Set<T>` - Ensembles
+- `Map<K, V>` - Dictionnaires (ordre d'itération = ordre d'insertion, déterministe)
+- `Set<T>` - Ensembles (ordre d'itération = ordre d'insertion, déterministe)
 - `Interval` - Intervalles (`1..10`, `1.5..10.5`)
 
 ### POO

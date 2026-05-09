@@ -94,8 +94,13 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 			return i < array.size();
 		}
 
-		// L'iterator se sert lui-même d'Entry pour éviter d'allouer un
-		// SimpleEntry par itération (chaud : foreach sur array).
+		/**
+		 * L'iterator se sert lui-même d'Entry pour éviter d'allouer un
+		 * SimpleEntry par itération (chaud : foreach sur array). L'Entry
+		 * retournée est invalidée par le prochain appel à {@code next()} ;
+		 * copier via {@code Map.entry(e.getKey(), e.getValue())} si besoin
+		 * de la conserver.
+		 */
 		@Override
 		public Entry<Object, Object> next() {
 			currentKey = i;
@@ -181,283 +186,187 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 
 	public Object putv4(Object keyValue, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = ai.integer(keyValue);
-		if (i < 0) i += size();
-		try {
-			set(i, value);
-			return value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return null;
-		}
+		int i = boundedIndex(ai, keyValue);
+		if (i < 0) return null;
+		set(i, value);
+		return value;
 	}
 
 	public Object put(Object keyValue, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = ai.integer(keyValue);
 		if (i < 0) i += size();
-		try {
-			set(i, value);
-			return value;
-		} catch (IndexOutOfBoundsException e) {
+		if (i < 0 || i >= size()) {
 			throw new LeekRunException(Error.ARRAY_OUT_OF_BOUND, new String[] {
 				String.valueOf(i),
 				String.valueOf(size())
 			});
 		}
+		set(i, value);
+		return value;
 	}
 
 	public Object put_inc(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var previous_value = get(i);
-			set(i, ai.add(previous_value, 1l));
-			return previous_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return null;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return null;
+		var previous_value = get(i);
+		set(i, ai.add(previous_value, 1l));
+		return previous_value;
 	}
 
 	public Object put_pre_inc(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.add(get(i), 1l);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return null;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return null;
+		var new_value = ai.add(get(i), 1l);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public Object put_dec(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var previous_value = get(i);
-			set(i, ai.sub(previous_value, 1l));
-			return previous_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return null;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return null;
+		var previous_value = get(i);
+		set(i, ai.sub(previous_value, 1l));
+		return previous_value;
 	}
 
 	public Object put_pre_dec(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.sub(get(i), 1l);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return null;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return null;
+		var new_value = ai.sub(get(i), 1l);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public Object put_add_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.add(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return null;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return null;
+		var new_value = ai.add(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public Object put_coalesce_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var current = get(i);
-			var new_value = current != null ? current : value;
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return null;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return null;
+		var current = get(i);
+		var new_value = current != null ? current : value;
+		set(i, new_value);
+		return new_value;
 	}
 
 	public Object put_sub_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.sub(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return null;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return null;
+		var new_value = ai.sub(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public Object put_mul_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.mul(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return null;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return null;
+		var new_value = ai.mul(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public Object put_pow_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.pow(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return null;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return null;
+		var new_value = ai.pow(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public Object put_div_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.div(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return null;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return null;
+		var new_value = ai.div(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public long put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.intdiv(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return 0;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return 0;
+		var new_value = ai.intdiv(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public Object put_mod_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.mod(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return null;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return null;
+		var new_value = ai.mod(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public long put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.bor(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return 0;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return 0;
+		var new_value = ai.bor(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public long put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.band(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return 0;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return 0;
+		var new_value = ai.band(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public long put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.bxor(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return 0;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return 0;
+		var new_value = ai.bxor(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public long put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.shl(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return 0;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return 0;
+		var new_value = ai.shl(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public long put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.shr(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return 0;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return 0;
+		var new_value = ai.shr(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public long put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
-		int i = (int) ai.integer(key);
-		if (i < 0) i += size();
-		try {
-			var new_value = ai.ushr(get(i), value);
-			set(i, new_value);
-			return new_value;
-		} catch (IndexOutOfBoundsException e) {
-			wrongIndexError(ai, i);
-			return 0;
-		}
+		int i = boundedIndex(ai, key);
+		if (i < 0) return 0;
+		var new_value = ai.ushr(get(i), value);
+		set(i, new_value);
+		return new_value;
 	}
 
 	public Object shuffle(AI ai) throws LeekRunException {
@@ -536,7 +445,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	public Object arrayGet(AI ai, long index, Object defaultValue) throws LeekRunException {
 		if (index < 0) index += size();
 		if (index < 0 || index >= size()) return defaultValue;
-		return get((int) index);
+		return super.get((int) index);
 	}
 
 	private void wrongIndexError(AI ai, long i) throws LeekRunException {
@@ -544,6 +453,20 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 			String.valueOf(i),
 			String.valueOf(size())
 		});
+	}
+
+	/**
+	 * Normalise (négatif → +size) et vérifie les bornes. Retourne -1 et logge
+	 * une erreur si l'index est hors-bornes ; sinon retourne l'index valide.
+	 */
+	private int boundedIndex(AI ai, Object key) throws LeekRunException {
+		int i = (int) ai.integer(key);
+		if (i < 0) i += size();
+		if (i < 0 || i >= size()) {
+			wrongIndexError(ai, i);
+			return -1;
+		}
+		return i;
 	}
 
 	public Object get(Object key) throws LeekRunException {

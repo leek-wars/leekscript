@@ -14,6 +14,15 @@ import leekscript.runner.LeekValueComparator;
 import leekscript.util.Json;
 import tools.jackson.databind.node.ObjectNode;
 
+/**
+ * Implémentation du type Map de LeekScript.
+ *
+ * Étend LinkedHashMap (et non HashMap) pour garantir un ordre d'itération
+ * déterministe = ordre d'insertion. C'est le contrat user-facing du type
+ * Map en LeekScript (cohérent avec JS Map / Python dict / Java
+ * LinkedHashMap), permettant aussi de pré-dimensionner les constructeurs
+ * sans casser de tests dépendant de l'ordre de buckets HashMap.
+ */
 public class MapLeekValue extends LinkedHashMap<Object, Object> implements Iterable<Entry<Object, Object>>, GenericMapLeekValue {
 
 	private static final int READ_OPERATIONS = 2;
@@ -45,7 +54,8 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	}
 
 	public MapLeekValue(AI ai, Object values[]) throws LeekRunException {
-		super(values.length);
+		// values contient des paires clé/valeur, donc N entries = values.length/2.
+		super((int) ((values.length / 2) / 0.75f) + 1);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		for (int i = 0; i < values.length; i += 2) {
@@ -59,7 +69,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	}
 
 	public MapLeekValue(AI ai, MapLeekValue map, int level) throws LeekRunException {
-		super(map.size() * 2);
+		super((int) (map.size() / 0.75f) + 1);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		for (var entry : map) {

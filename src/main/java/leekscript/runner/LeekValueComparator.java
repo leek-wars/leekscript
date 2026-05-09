@@ -52,17 +52,7 @@ public class LeekValueComparator {
 
 		private final int mOrder;
 
-		public final static int SORT_ASC = LeekValueComparator.SORT_ASC;
-		public final static int SORT_DESC = LeekValueComparator.SORT_DESC;
-
-		// Constructeur AI-aware conservé pour compat (ai inutilisé, voir
-		// historique : retiré sans suppression du paramètre pour ne pas
-		// casser les call sites externes)
-		public SortComparator(AI ai, int order) {
-			this(order);
-		}
-
-		public SortComparator(int order) {
+		private SortComparator(int order) {
 			mOrder = order;
 		}
 
