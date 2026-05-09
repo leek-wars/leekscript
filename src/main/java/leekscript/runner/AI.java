@@ -3073,17 +3073,18 @@ public abstract class AI {
 		if (value instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) value).callMethod(method, fromClass, args);
 		}
+		Class<?> valueClass = value.getClass();
 		try {
-			Method m = findMethod(value.getClass(), "u_" + method, args.length);
+			Method m = findMethod(valueClass, "u_" + method, args.length);
 			if (m == null) return null;
 			if (m.isAnnotationPresent(Private.class)) {
-				if (fromClass == null || value.getClass() != fromClass.clazz) {
-					addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), method });
+				if (fromClass == null || valueClass != fromClass.clazz) {
+					addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { valueClass.getSimpleName().substring(2), method });
 					return null;
 				}
 			} else if (m.isAnnotationPresent(Protected.class)) {
-				if (fromClass == null || !value.getClass().isAssignableFrom(fromClass.clazz)) {
-					addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), method });
+				if (fromClass == null || !valueClass.isAssignableFrom(fromClass.clazz)) {
+					addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { valueClass.getSimpleName().substring(2), method });
 					return null;
 				}
 			}
@@ -3104,11 +3105,12 @@ public abstract class AI {
 			return ((ObjectLeekValue) value).callAccess(field, method, fromClass, args);
 		}
 		if (value instanceof NativeObjectLeekValue) {
+			Class<?> valueClass = value.getClass();
 			try {
-				Method m = findMethod(value.getClass(), method, args.length);
+				Method m = findMethod(valueClass, method, args.length);
 				if (m == null) {
 					try {
-						var f = getFieldCached(value.getClass(), field);
+						var f = getFieldCached(valueClass, field);
 						if (!checkFieldAccessLevel(f, value, fromClass)) {
 							return null;
 						}
@@ -3118,13 +3120,13 @@ public abstract class AI {
 					}
 				} else {
 					if (m.isAnnotationPresent(Private.class)) {
-						if (fromClass == null || value.getClass() != fromClass.clazz) {
-							addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), field });
+						if (fromClass == null || valueClass != fromClass.clazz) {
+							addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { valueClass.getSimpleName().substring(2), field });
 							return null;
 						}
 					} else if (m.isAnnotationPresent(Protected.class)) {
-						if (fromClass == null || !value.getClass().isAssignableFrom(fromClass.clazz)) {
-							addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { value.getClass().getSimpleName().substring(2), field });
+						if (fromClass == null || !valueClass.isAssignableFrom(fromClass.clazz)) {
+							addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { valueClass.getSimpleName().substring(2), field });
 							return null;
 						}
 					}
@@ -3137,7 +3139,7 @@ public abstract class AI {
 					addSystemLog(AILog.ERROR, e);
 				} else {
 					try {
-						var f = getFieldCached(value.getClass(), field);
+						var f = getFieldCached(valueClass, field);
 						if (!checkFieldAccessLevel(f, value, fromClass)) {
 							return null;
 						}
