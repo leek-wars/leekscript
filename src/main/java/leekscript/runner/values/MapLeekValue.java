@@ -46,8 +46,9 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		}
 	}
 
-	public MapLeekValue(AI ai, int capacity) {
-		super(capacity);
+	public MapLeekValue(AI ai, int expectedSize) {
+		// Capacity = N / loadFactor (+1) pour éviter le resize quand on ajoute N entrées.
+		super((int) (expectedSize / 0.75f) + 1);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		this.ram = ai.allocateRAM(this);
