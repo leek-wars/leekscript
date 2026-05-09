@@ -1467,10 +1467,10 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 				var new_key = new_index;
 				// Changement de clé
 				if (!e.key.equals(new_key)) {
-					// On regarde si le hashCode change
-					if (new_key.hashCode() != e.hash) {
+					int newHash = new_key.hashCode();
+					if (newHash != e.hash) {
 						removeFromHashmap(ai, e);
-						e.hash = new_key.hashCode();
+						e.hash = newHash;
 						addToHashMap(ai, e);
 					}
 					e.key = new_key;
