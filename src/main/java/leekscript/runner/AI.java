@@ -273,8 +273,7 @@ public abstract class AI {
 		}
 
 		public Object toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
-			if (visited.contains(this)) return null;
-			visited.add(this);
+			if (!visited.add(this)) return null;
 			try {
 				var fields = new ArrayList<Field>();
 				Class<?> current = getClass();
@@ -923,6 +922,11 @@ public abstract class AI {
 	public boolean equals_equals(Object x, Object y) throws LeekRunException {
 		if (x == null) return y == null;
 		if (y == null) return x == null;
+		// Fast paths : mêmes types primitifs (cas largement majoritaire en v4)
+		if (x instanceof Long lx && y instanceof Long ly) return (long) lx == (long) ly;
+		if (x instanceof String sx && y instanceof String sy) return sx.equals(sy);
+		if (x instanceof Boolean bx && y instanceof Boolean by) return (boolean) bx == (boolean) by;
+		if (x instanceof Double dx && y instanceof Double dy) return (double) dx == (double) dy;
 		if (x instanceof ObjectLeekValue && y instanceof ObjectLeekValue) {
 			return x.equals(y);
 		}

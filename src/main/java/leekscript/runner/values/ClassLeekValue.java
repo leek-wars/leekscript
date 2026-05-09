@@ -389,11 +389,12 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 	}
 
 	public Object callConstructor(ObjectLeekValue thiz, Object... arguments) throws LeekRunException {
-		if (!constructors.containsKey(arguments.length)) {
+		var ctor = constructors.get(arguments.length);
+		if (ctor == null) {
 			ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { name, String.valueOf(arguments.length) });
 			return thiz;
 		}
-		constructors.get(arguments.length).value.run(ai, thiz, arguments);
+		ctor.value.run(ai, thiz, arguments);
 		return thiz;
 	}
 

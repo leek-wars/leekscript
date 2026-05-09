@@ -569,8 +569,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	}
 
 	public Object toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
-		if (visited.contains(this)) return null;
-		visited.add(this);
+		if (!visited.add(this)) return null;
 		try {
 			if (isAssociative()) {
 				ObjectNode o = Json.createObject();
@@ -723,10 +722,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	 * @throws LeekRunException
 	 */
 	public Object search(AI ai, Object value, long pos) throws LeekRunException {
+		int valueType = LeekValueManager.getType(value);
 		Element e = mHead;
 		int p = 0;
 		while (e != null) {
-			if (p >= pos && LeekValueManager.getType(e.value) == LeekValueManager.getType(value) && ai.eq(e.value.get(), value)) {
+			if (p >= pos && LeekValueManager.getType(e.value) == valueType && ai.eq(e.value.get(), value)) {
 				return e.key;
 			}
 			e = e.next;
@@ -803,18 +803,17 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public Object arrayMax(AI ai) throws LeekRunException {
 		ai.ops(1 + 2 * size());
-		Object min_c = null;
+		if (size() == 0) return null;
+		var iterator = iterator();
+		Object max_c = iterator.next().getValue();
 		var mincomp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
-		for (var val : this) {
-			if (min_c == null)
-				min_c = val.getValue();
-			else if (mincomp.compare(val.getValue(), min_c) == 1)
-				min_c = val.getValue();
+		while (iterator.hasNext()) {
+			var value = iterator.next().getValue();
+			if (mincomp.compare(value, max_c) == 1) {
+				max_c = value;
+			}
 		}
-		if (min_c == null)
-			return null;
-		else
-			return LeekOperations.clone(ai, min_c);
+		return LeekOperations.clone(ai, max_c);
 	}
 
 	/**
@@ -839,7 +838,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 		// System.out.println("sort " + comparator);
 		// création de la liste
-		List<Element> liste = new ArrayList<Element>();
+		List<Element> liste = new ArrayList<Element>(mSize);
 		Element elem = mHead;
 		while (elem != null) {
 			liste.add(elem);
@@ -899,7 +898,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		}
 
 		// création de la liste
-		List<Element> liste = new ArrayList<Element>();
+		List<Element> liste = new ArrayList<Element>(mSize);
 		Element elem = mHead;
 		while (elem != null) {
 			liste.add(elem);
@@ -1031,9 +1030,10 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public Object removeElement(AI ai, Object value) throws LeekRunException {
 		ai.ops(1 + size());
+		int valueType = LeekValueManager.getType(value);
 		Element e = mHead;
 		while (e != null) {
-			if (LeekValueManager.getType(e.value) == LeekValueManager.getType(value) && ai.eq(e.value.get(), value)) {
+			if (LeekValueManager.getType(e.value) == valueType && ai.eq(e.value.get(), value)) {
 				// On a notre élément à supprimer
 				// On l'enleve de la HashMap
 				removeFromHashmap(ai, e);
@@ -1316,11 +1316,12 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			boolean b;
 			while (iterator.hasNext()) {
 				var value = iterator.getValue();
+				var key = iterator.getKey(ai);
 				if (nb == 1)
 					b = ai.bool(function.run(ai, null, value));
 				else
-					b = ai.bool(function.run(ai, null, iterator.getKey(ai), value));
-				(b ? list1 : list2).getOrCreate(ai, iterator.getKey(ai)).set(iterator.getValue(ai));
+					b = ai.bool(function.run(ai, null, key, value));
+				(b ? list1 : list2).getOrCreate(ai, key).set(iterator.getValue(ai));
 				iterator.next();
 			}
 			return new LegacyArrayLeekValue(ai, new Object[] { list1, list2 }, false);
@@ -1334,11 +1335,12 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			boolean b;
 			while (iterator.hasNext()) {
 				var value = iterator.getValueBox();
+				var key = iterator.getKey(ai);
 				if (nb == 1)
 					b = ai.bool(function.run(ai, null, value));
 				else
-					b = ai.bool(function.run(ai, null, iterator.getKey(ai), value));
-				(b ? list1 : list2).getOrCreate(ai, iterator.getKey(ai)).set(iterator.getValue(ai));
+					b = ai.bool(function.run(ai, null, key, value));
+				(b ? list1 : list2).getOrCreate(ai, key).set(iterator.getValue(ai));
 				iterator.next();
 			}
 			return new LegacyArrayLeekValue(ai, new Object[] { list1, list2 }, false);
@@ -1372,10 +1374,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			int nb = function.getArgumentsCount();
 			while (iterator.hasNext()) {
 				var value = iterator.getValue();
+				var key = iterator.getKey(ai);
 				if (nb >= 2) {
-					retour.getOrCreate(ai, iterator.getKey(ai)).set(function.run(ai, null, iterator.getKey(ai), value));
+					retour.getOrCreate(ai, key).set(function.run(ai, null, key, value));
 				} else {
-					retour.getOrCreate(ai, iterator.getKey(ai)).set(function.run(ai, null, value));
+					retour.getOrCreate(ai, key).set(function.run(ai, null, value));
 				}
 				iterator.next();
 			}
@@ -1386,10 +1389,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			int nb = function.getArgumentsCount();
 			while (iterator.hasNext()) {
 				var value = iterator.getValueBox();
+				var key = iterator.getKey(ai);
 				if (nb >= 2)
-					retour.getOrCreate(ai, iterator.getKey(ai)).setRef(function.run(ai, null, iterator.getKey(ai), value));
+					retour.getOrCreate(ai, key).setRef(function.run(ai, null, key, value));
 				else
-					retour.getOrCreate(ai, iterator.getKey(ai)).setRef(function.run(ai, null, value));
+					retour.getOrCreate(ai, key).setRef(function.run(ai, null, value));
 				iterator.next();
 			}
 			return retour;
@@ -1682,16 +1686,17 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 				}
 				sb.append(" : ");
 			}
-			if (visited.contains(e.value.get())) {
+			var v = e.value.get();
+			if (visited.contains(v)) {
 				sb.append("<...>");
 			} else {
-				if (!ai.isPrimitive(e.value.get())) {
-					visited.add(e.value.get());
+				if (!ai.isPrimitive(v)) {
+					visited.add(v);
 				}
 				if (export) {
-					sb.append(ai.export(e.value.get(), visited));
+					sb.append(ai.export(v, visited));
 				} else {
-					sb.append(ai.string(e.value.get(), visited));
+					sb.append(ai.string(v, visited));
 				}
 			}
 			e = e.next;

@@ -78,9 +78,6 @@ public enum LeekConstants implements ILeekConstant {
 			if (constant.name().equals(name))
 				return constant;
 		}
-		if (extraConstants.containsKey(name)) {
-			return extraConstants.get(name);
-		}
-		return null;
+		return extraConstants.get(name);
 	}
 }

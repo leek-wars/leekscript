@@ -89,6 +89,11 @@ public class LeekOperations {
 
 	public static boolean equals_equals(AI ai, Object v1, Object v2) throws LeekRunException {
 		ai.ops(1);
+		// Fast paths : types primitifs identiques
+		if (v1 instanceof Long l1 && v2 instanceof Long l2) return (long) l1 == (long) l2;
+		if (v1 instanceof String s1 && v2 instanceof String s2) return s1.equals(s2);
+		if (v1 instanceof Boolean b1 && v2 instanceof Boolean b2) return (boolean) b1 == (boolean) b2;
+		if (v1 instanceof Double d1 && v2 instanceof Double d2) return (double) d1 == (double) d2;
 		if (v1 instanceof ObjectLeekValue && v2 instanceof ObjectLeekValue) {
 			return v1 == v2;
 		}

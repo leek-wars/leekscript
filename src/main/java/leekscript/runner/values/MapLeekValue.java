@@ -77,10 +77,11 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 
 	public <V> V set(Object key, V value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		if (!containsKey(key)) {
+		int sizeBefore = size();
+		put(key, value);
+		if (size() > sizeBefore) {
 			ai.increaseRAM(ram, 2);
 		}
-		put(key, value);
 		return value;
 	}
 
@@ -523,8 +524,12 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 
 		// On va comparer chaque élément 1 à 1
 		for (var entry : entrySet()) {
-			if (!map.containsKey(entry.getKey())) return false;
-			if (!ai.eq(entry.getValue(), map.get(entry.getKey()))) return false;
+			var key = entry.getKey();
+			var otherValue = map.get(key);
+			if (otherValue == null) {
+				// Soit clé absente, soit valeur null : on doit distinguer
+				if (entry.getValue() != null || !map.containsKey(key)) return false;
+			} else if (!ai.eq(entry.getValue(), otherValue)) return false;
 		}
 		return true;
 	}
@@ -540,19 +545,16 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public ObjectNode toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
-		if (visited.contains(this)) return null;
-		visited.add(this);
+		if (!visited.add(this)) return null;
 		try {
 			var o = Json.createObject();
 			// Sort keys alphabetically for consistent JSON output
-			var sortedKeys = new java.util.TreeMap<String, Object>();
+			var sortedEntries = new java.util.TreeMap<String, Object>();
 			for (var entry : entrySet()) {
-				sortedKeys.put(ai.string(entry.getKey()), entry.getKey());
+				sortedEntries.put(ai.string(entry.getKey()), entry.getValue());
 			}
-			for (var stringKey : sortedKeys.keySet()) {
-				var key = sortedKeys.get(stringKey);
-				var v = get(key);
-				o.putPOJO(stringKey, ai.toJSON(v, visited));
+			for (var entry : sortedEntries.entrySet()) {
+				o.putPOJO(entry.getKey(), ai.toJSON(entry.getValue(), visited));
 			}
 			return o;
 		} finally {

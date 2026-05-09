@@ -486,8 +486,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public ArrayNode toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
-		if (visited.contains(this)) return null;
-		visited.add(this);
+		if (!visited.add(this)) return null;
 		try {
 			ArrayNode a = Json.createArray();
 			for (var v : this) {
@@ -1027,8 +1026,8 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	public ArrayLeekValue arrayChunk(AI ai, long size) throws LeekRunException {
 		ai.ops(size() * 3);
 		int isize = (int) Math.max(1, Math.min(size(), size));
-		var chunks = new ArrayLeekValue(ai);
 		int n = (int) Math.ceil((float) size() / isize);
+		var chunks = new ArrayLeekValue(ai, n);
 		for (var c = 0; c < n; ++c) {
 			int to = Math.min(size(), (c + 1) * isize);
 			var chunk = new ArrayLeekValue(ai, subList(c * isize, to));
@@ -1039,7 +1038,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 
 	public ArrayLeekValue arrayUnique(AI ai) throws LeekRunException {
 		ai.ops(size() * 3);
-		var set = new HashSet<Object>();
+		var set = new java.util.LinkedHashSet<Object>(size());
 		for (var value : this) {
 			set.add(value);
 		}

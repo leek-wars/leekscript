@@ -510,16 +510,17 @@ public class ObjectLeekValue implements LeekValue {
 			else sb.append(", ");
 			sb.append(field.getKey());
 			sb.append(": ");
-			if (visited.contains(field.getValue().get())) {
+			var v = field.getValue().get();
+			if (visited.contains(v)) {
 				sb.append("<...>");
 			} else {
-				if (!ai.isPrimitive(field.getValue().get())) {
-					visited.add(field.getValue().get());
+				if (!ai.isPrimitive(v)) {
+					visited.add(v);
 				}
 				if (export) {
-					sb.append(ai.export(field.getValue().get(), visited));
+					sb.append(ai.export(v, visited));
 				} else {
-					sb.append(ai.string(field.getValue().get(), visited));
+					sb.append(ai.string(v, visited));
 				}
 			}
 		}
@@ -552,8 +553,7 @@ public class ObjectLeekValue implements LeekValue {
 		// `visited` suit la chaîne d'ancêtres du DFS, pas l'ensemble des nœuds vus :
 		// les références partagées entre branches parallèles doivent se ré-encoder,
 		// seul un cycle réel doit être tronqué.
-		if (visited.contains(this)) return null;
-		visited.add(this);
+		if (!visited.add(this)) return null;
 		try {
 			var o = Json.createObject();
 			// Sort keys alphabetically for consistent JSON output
