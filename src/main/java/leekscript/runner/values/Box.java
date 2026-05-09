@@ -96,6 +96,13 @@ public class Box<T> {
 			mValue = value + 1;
 			return (T) value;
 		}
+		// Cohérent avec ai.add(null, 1) = 1 et MapLeekValue.put_inc :
+		// null en contexte numérique vaut 0. Évite un INVALID_OPERATOR + log
+		// chaud (5000 fois pour `m[k]++` sur clé absente, 58× plus lent).
+		if (mValue == null) {
+			mValue = 1l;
+			return (T) (Long) 0l;
+		}
 		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { mUAI.export(mValue) + "++" });
 		return null;
 	}
@@ -112,6 +119,10 @@ public class Box<T> {
 			mValue = value - 1;
 			return (T) value;
 		}
+		if (mValue == null) {
+			mValue = -1l;
+			return (T) (Long) 0l;
+		}
 		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { mUAI.export(mValue) + "--" });
 		return null;
 	}
@@ -124,6 +135,9 @@ public class Box<T> {
 		if (mValue instanceof Double) {
 			return (T) (mValue = (Double) mValue + 1);
 		}
+		if (mValue == null) {
+			return (T) (mValue = (Long) 1l);
+		}
 		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "++" + mUAI.export(mValue) });
 		return null;
 	}
@@ -135,6 +149,9 @@ public class Box<T> {
 		}
 		if (mValue instanceof Double) {
 			return (T) (mValue = (Double) mValue - 1);
+		}
+		if (mValue == null) {
+			return (T) (mValue = (Long) (-1l));
 		}
 		mUAI.addSystemLog(AILog.ERROR, Error.INVALID_OPERATOR, new String[] { "--" + mUAI.export(mValue) });
 		return null;
