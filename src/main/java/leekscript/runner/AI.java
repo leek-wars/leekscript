@@ -1184,12 +1184,14 @@ public abstract class AI {
 	}
 
 	public Object minus(Object value) throws LeekRunException {
-		if (value instanceof Double) return -((Double) value);
+		if (value instanceof Long l) return -(long) l;
+		if (value instanceof Double d) return -(double) d;
 		return -longint(value);
 	}
 
 	public Number minus(Number value) throws LeekRunException {
-		if (value instanceof Double) return -((Double) value);
+		if (value instanceof Long l) return -(long) l;
+		if (value instanceof Double d) return -(double) d;
 		return -longint(value);
 	}
 
