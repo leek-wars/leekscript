@@ -184,15 +184,19 @@ public class LeekValueManager {
 			return ((ObjectLeekValue) array).callMethod(ai.string(key) + "_" + arguments.length, fromClass, arguments);
 		} else if (array instanceof AI.NativeObjectLeekValue) {
 			ai.ops(1);
+			// Lookup by name + arity (not by exact parameter types), so methods
+			// declared with typed parameters like `u_test_fct(long)` are found
+			// when invoked via array-access syntax `obj["name"](args)`.
+			var methodName = ai.string(key);
+			var m = AI.findMethod(array.getClass(), "u_" + methodName, arguments.length);
+			if (m == null) {
+				ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { array.getClass().getSimpleName().substring(2), ClassLeekValue.createMethodError(methodName + "_" + arguments.length) });
+				return null;
+			}
 			try {
-				var types = new Class<?>[arguments.length];
-				for (int i = 0; i < arguments.length; ++i) {
-					types[i] = Object.class;
-				}
-				var m = array.getClass().getMethod("u_" + ai.string(key), types);
 				m.setAccessible(true);
 				return m.invoke(array, arguments);
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
 				if (e.getCause() instanceof LeekRunException lre) {
 					throw lre;
 				}

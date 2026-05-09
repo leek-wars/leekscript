@@ -51,6 +51,19 @@ public class TestClass extends TestCommon {
 	}
 
 	@Test
+	public void testMethod_call_via_array_access_typed_param() throws Exception {
+		section("Issue #3719 - Array-access method call with typed parameter");
+		// Untyped parameter — works
+		code_v2_("class Test { private integer test_fct(a) { return 5 + a } } Test t = new Test(); return t['test_fct'](15)").equals("20");
+		// Typed parameter — should also work
+		code_v2_("class Test { private integer test_fct(integer a) { return 5 + a } } Test t = new Test(); return t['test_fct'](15)").equals("20");
+		// Multiple typed parameters
+		code_v2_("class Test { public real f(integer a, real b) { return a + b } } return new Test()['f'](2, 3.5)").equals("5.5");
+		// Typed string parameter
+		code_v2_("class Test { public string f(string s) { return s + '!' } } return new Test()['f']('hi')").equals("\"hi!\"");
+	}
+
+	@Test
 	public void testMethod_default_parameter_with_typed_class() throws Exception {
 		section("Method default parameter with typed class");
 		// Untyped field as default value for typed parameter (was crashing with incompatible types)
