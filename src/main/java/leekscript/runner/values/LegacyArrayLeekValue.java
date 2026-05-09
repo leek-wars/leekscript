@@ -1062,8 +1062,15 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public Object pushAll(AI ai, LegacyArrayLeekValue other) throws LeekRunException {
 		ai.ops(1 + other.size());
-		for (var value : other) {
-			push(ai, value.getValue());
+		// Hoist le clone v1 hors de la boucle (push() le faisait par iter)
+		if (ai.getVersion() == 1) {
+			for (var value : other) {
+				pushNoClone(ai, LeekOperations.clone(ai, value.getValue()));
+			}
+		} else {
+			for (var value : other) {
+				pushNoClone(ai, value.getValue());
+			}
 		}
 		return null;
 	}
