@@ -121,7 +121,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	public Object put_inc(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = get(key);
-		put(key, ai.add(get(key), 1l));
+		put(key, ai.add(v, 1l));
 		return v;
 	}
 

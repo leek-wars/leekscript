@@ -813,12 +813,12 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 
 	public Object arrayMax(AI ai) throws LeekRunException {
 		ai.ops(1 + 2 * size());
-		Object max_value = null;
+		if (size() == 0) return null;
+		Object max_value = get(0);
 		var mincomp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
-		for (var val : this) {
-			if (max_value == null)
-				max_value = val;
-			else if (mincomp.compare(val, max_value) == 1)
+		for (int i = 1; i < size(); ++i) {
+			var val = get(i);
+			if (mincomp.compare(val, max_value) == 1)
 				max_value = val;
 		}
 		return max_value;
