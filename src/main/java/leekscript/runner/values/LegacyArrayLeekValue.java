@@ -722,7 +722,14 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		int p = 0;
 		while (e != null) {
 			if (p == index) {
-				remove(ai, e.key);
+				// Suppression inline : on a déjà l'Element, pas besoin de
+				// re-walker via getElement(ai, e.key) comme remove(ai, key) le ferait.
+				destroyElement(e);
+				removeFromHashmap(ai, e);
+				if (e.prev == null) mHead = e.next;
+				else e.prev.next = e.next;
+				if (e.next == null) mEnd = e.prev;
+				else e.next.prev = e.prev;
 				reindex(ai);
 				return e.value.get();
 			}
