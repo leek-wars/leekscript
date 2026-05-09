@@ -45,10 +45,11 @@ public class ObjectLeekValue implements LeekValue {
 		this(ai, value.clazz);
 		ai.ops(value.fields.size());
 		for (var field : value.fields.entrySet()) {
+			var v = field.getValue();
 			if (level == 1) {
-				fields.put(field.getKey(), new ObjectVariableValue(ai, field.getValue().get(), field.getValue().level, field.getValue().isFinal));
+				fields.put(field.getKey(), new ObjectVariableValue(ai, v.get(), v.level, v.isFinal));
 			} else {
-				fields.put(field.getKey(), new ObjectVariableValue(ai, LeekOperations.clone(ai, field.getValue().get(), level - 1), field.getValue().level, field.getValue().isFinal));
+				fields.put(field.getKey(), new ObjectVariableValue(ai, LeekOperations.clone(ai, v.get(), level - 1), v.level, v.isFinal));
 			}
 		}
 		ai.increaseRAM(ram, 2 * value.fields.size());
