@@ -1,8 +1,8 @@
 package leekscript.runner.values;
 
 import java.util.AbstractMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -11,7 +11,7 @@ import leekscript.runner.AI.RamUsage;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 
-public class SetLeekValue extends HashSet<Object> implements LeekValue {
+public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 
 	public static class SetIterator implements Iterator<Entry<Object, Object>> {
 
@@ -44,6 +44,7 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 	}
 
 	public SetLeekValue(AI ai, Object[] values) throws LeekRunException {
+		super(values.length);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		for (Object value : values) {
@@ -61,6 +62,7 @@ public class SetLeekValue extends HashSet<Object> implements LeekValue {
 	}
 
 	public SetLeekValue(AI ai, SetLeekValue set, int level) throws LeekRunException {
+		super(set.size());
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		this.ram = ai.allocateRAM(this, set.size());

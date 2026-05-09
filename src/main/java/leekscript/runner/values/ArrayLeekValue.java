@@ -131,6 +131,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public ArrayLeekValue(AI ai, Object values[]) throws LeekRunException {
+		super(values.length);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		for (var value : values) {

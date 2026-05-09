@@ -137,7 +137,7 @@ public class TestMap extends TestCommon {
 		code_v4_("var m = [1.5: 2, 3.5: 4] m[3.5] = 6 return m").equals("[1.5 : 2, 3.5 : 6]");
 		code_v4_("var m = [1.5: 2.5, 3.5: 4.5] m[3.5] = 6.5 return m").equals("[1.5 : 2.5, 3.5 : 6.5]");
 		code("var m = ['1': 2, '3': 4] m['3'] = 6 return m").equals("[\"1\" : 2, \"3\" : 6]");
-		code_v4_("var m = [1.5: 'a', 2.5: 'b'] m[2.5] = 'c' return m").equals("[2.5 : \"c\", 1.5 : \"a\"]");
+		code_v4_("var m = [1.5: 'a', 2.5: 'b'] m[2.5] = 'c' return m").equals("[1.5 : \"a\", 2.5 : \"c\"]");
 		code("return ['', [1: 2][1]]").equals("[\"\", 2]");
 		code_v1("return ['', [1: 2.5][1]]").equals("[\"\", 2,5]");
 		code_v2_("return ['', [1: 2.5][1]]").equals("[\"\", 2.5]");
@@ -401,7 +401,7 @@ public class TestMap extends TestCommon {
 		code_v1_3("return mapFill([2 : 8], 5)").error(Error.FUNCTION_NOT_AVAILABLE);
 		code_v4_("var a = [:] mapFill(a, 5) return a").equals("[:]");
 		code_v4_("var a = [2 : 8] mapFill(a, 5) return a").equals("[2 : 5]");
-		code_v4_("var a = [2 : 8, 4 : 5, 3: 1] mapFill(a, 'a') return a").equals("[2 : \"a\", 3 : \"a\", 4 : \"a\"]");
+		code_v4_("var a = [2 : 8, 4 : 5, 3: 1] mapFill(a, 'a') return a").equals("[2 : \"a\", 4 : \"a\", 3 : \"a\"]");
 	}
 
 	@Test

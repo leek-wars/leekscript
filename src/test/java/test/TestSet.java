@@ -14,7 +14,7 @@ public class TestSet extends TestCommon {
 		section("Set.constructor()");
 		code("return <1, 2>").debug().equals("<1, 2>");
 		code("return <(1 > 2), (1 < 2)>").equals("<false, true>");
-		code("return <\"abc\", 1>").equals("<1, \"abc\">");
+		code("return <\"abc\", 1>").equals("<\"abc\", 1>");
 		code("return <>").equals("<>");
 		DISABLED_code("return <<>>").equals("<<>>");
 		code("<1, 2, 3, 4>").ops(8);

@@ -1,7 +1,7 @@
 package leekscript.runner.values;
 
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -14,7 +14,7 @@ import leekscript.runner.LeekValueComparator;
 import leekscript.util.Json;
 import tools.jackson.databind.node.ObjectNode;
 
-public class MapLeekValue extends HashMap<Object, Object> implements Iterable<Entry<Object, Object>>, GenericMapLeekValue {
+public class MapLeekValue extends LinkedHashMap<Object, Object> implements Iterable<Entry<Object, Object>>, GenericMapLeekValue {
 
 	private static final int READ_OPERATIONS = 2;
 	private static final int WRITE_OPERATIONS = 3;
@@ -45,6 +45,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public MapLeekValue(AI ai, Object values[]) throws LeekRunException {
+		super(values.length);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		for (int i = 0; i < values.length; i += 2) {
@@ -58,6 +59,7 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public MapLeekValue(AI ai, MapLeekValue map, int level) throws LeekRunException {
+		super(map.size() * 2);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
 		for (var entry : map) {
