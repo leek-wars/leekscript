@@ -39,6 +39,11 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		public final static int SORT_ASC = 0;
 		public final static int SORT_DESC = 1;
 
+		// Stateless apart from mOrder → singletons pour éviter l'alloc
+		// par appel à sort/arraySort (cas commun : ASC).
+		public static final ElementComparator ASC_COMPARATOR = new ElementComparator(SORT_ASC);
+		public static final ElementComparator DESC_COMPARATOR = new ElementComparator(SORT_DESC);
+
 		public ElementComparator(int order) {
 			mOrder = order;
 		}
@@ -557,7 +562,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	 */
 	public Object sort(AI ai) throws LeekRunException {
 		ai.ops(1 + (int) (5 * size() * Math.log(size())));
-		Collections.sort(this, new ElementComparator(ASC));
+		Collections.sort(this, ElementComparator.ASC_COMPARATOR);
 		return null;
 	}
 
@@ -572,7 +577,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		if (comparator == RANDOM) {
 			Collections.shuffle(this, new Random(ai.getRandom().getInt(0, Integer.MAX_VALUE - 1)));
 		} else {
-			Collections.sort(this, new ElementComparator((int) comparator));
+			Collections.sort(this, comparator == ElementComparator.SORT_DESC ? ElementComparator.DESC_COMPARATOR : ElementComparator.ASC_COMPARATOR);
 		}
 		return null;
 	}
@@ -591,7 +596,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	public ArrayLeekValue arraySort(AI ai) throws LeekRunException {
 		ai.ops(1 + (int) (5 * size() * Math.log(size())));
 		var result = new ArrayLeekValue(ai, this, 1);
-		Collections.sort(result, new ElementComparator(ASC));
+		Collections.sort(result, ElementComparator.ASC_COMPARATOR);
 		return result;
 	}
 
