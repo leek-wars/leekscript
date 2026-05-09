@@ -589,15 +589,15 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 		if (capacity == MAX_CAPACITY) return;
 
-		// Copy in a new array
+		// On garde les Elements et leurs Boxes existants, on rebuild
+		// uniquement la hash table — la chaîne mHead/mEnd reste valide.
+		// Avant : set() recréait Element + Box par entrée (2 allocs × N).
 		this.capacity = Math.min(Math.max(START_CAPACITY, capacity * 2), MAX_CAPACITY);
 		mTable = new Element[this.capacity];
 		Element e = mHead;
-		mHead = null;
-		mEnd = null;
-		mSize = 0;
 		while (e != null) {
-			set(ai, e.key, e.value.get());
+			e.hashNext = null;
+			addToHashMap(ai, e);
 			e = e.next;
 		}
 	}
