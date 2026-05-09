@@ -858,6 +858,9 @@ public abstract class AI {
 			if (y instanceof Number) {
 				return (Boolean) x == (((Number) y).doubleValue() != 0);
 			}
+			if (y instanceof FunctionLeekValue) {
+				return (Boolean) x;
+			}
 		}
 		if (x instanceof LegacyArrayLeekValue) {
 			var array = (LegacyArrayLeekValue) x;
@@ -876,6 +879,9 @@ public abstract class AI {
 			return sx.eq(sy);
 		}
 		if (x instanceof FunctionLeekValue) {
+			if (y instanceof Boolean) {
+				return (Boolean) y;
+			}
 			return ((FunctionLeekValue) x).equals(y);
 		}
 		if (x instanceof String) {
