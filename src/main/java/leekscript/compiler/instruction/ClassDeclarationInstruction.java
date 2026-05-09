@@ -207,6 +207,13 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		var constructor = constructors.get(param_count);
 		if (constructor != null) return constructor;
 
+		// Constructeurs hérités : la résolution runtime via findMethod descend la hiérarchie Java,
+		// donc accepter cet arity au compile-time suffit (pas besoin d'émettre un init(n) sur la sous-classe).
+		if (parent != null) {
+			var inherited = parent.getConstructor(param_count);
+			if (inherited != null) return inherited;
+		}
+
 		// If constructor has 0 parameters, return the default implicit one
 		if (param_count == 0) {
 			return new ClassDeclarationMethod(null, AccessLevel.PUBLIC);
@@ -483,6 +490,14 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 								compiler.addError(new AnalyzeError(block.getLocation(), AnalyzeErrorLevel.ERROR, Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE, new String[] {
 									block.getType().toString(),
 									parentVersion.block.getType().toString()
+								}));
+							}
+							// Une override ne peut pas réduire la visibilité (LSP : ce qui est public dans le parent doit le rester).
+							if (version.getValue().level.ordinal() > parentVersion.level.ordinal()) {
+								compiler.addError(new AnalyzeError(block.getLocation(), AnalyzeErrorLevel.ERROR, Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY, new String[] {
+									method.getKey(),
+									version.getValue().level.toString(),
+									parentVersion.level.toString()
 								}));
 							}
 							break;

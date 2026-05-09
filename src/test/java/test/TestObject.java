@@ -459,6 +459,21 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { private m() { return 10 } } class B extends A {} var a = new B() return a.m()").equals("null");
 		code_v2_("class A { protected m() { return 10 } } class B extends A { m() { return super.m() } } var a = new B() return a.m()").equals("10");
 		code_v2_("class A { private m() { return 5 } public n() { var x = this return x.m() } } return new A().n()").equals("5");
+		// Issue #2709: typed instance call without `new`
+		code_v2_("class A { protected m() { return 10 } } A a = A() return a.m()").error(Error.PROTECTED_METHOD);
+		code_v2_("class A { private m() { return 10 } } A a = A() return a.m()").error(Error.PRIVATE_METHOD);
+		// Implicit method call inside a subclass: private from parent must be rejected, protected must be allowed
+		code_v2_("class A { protected m() { return 10 } } class B extends A { public r() { return m() } } return new B().r()").equals("10");
+		code_v2_("class A { private m() { return 10 } } class B extends A { public r() { return m() } } return new B().r()").error(Error.PRIVATE_METHOD);
+		code_v2_("class A { private m() { return 10 } public r() { return m() } } return new A().r()").equals("10");
+		// Issue #2709: une override ne peut pas réduire la visibilité
+		code_v2_("class A { public m() { return 1 } } class B extends A { private m() { return 2 } } return 0").error(Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY);
+		code_v2_("class A { public m() { return 1 } } class B extends A { protected m() { return 2 } } return 0").error(Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY);
+		code_v2_("class A { protected m() { return 1 } } class B extends A { private m() { return 2 } } return 0").error(Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY);
+		code_v2_("class A { protected m() { return 1 } } class B extends A { public m() { return 2 } } return new B().m()").equals("2");
+		// Issue #2709: méthode héritée accédant à un champ protected du parent
+		code_v2_("class A { protected value = 0 public increment() { this.value += 1 return this.value } } class B extends A {} return B().increment()").equals("1");
+		code_v2_("class A { protected value = 0 public increment() { this.value += 1 return this.value } } class B extends A {} return new B().increment()").equals("1");
 
 		section("Access levels: constructors");
 		code_v2_("class A { constructor() { } } return new A()").equals("A {}");
@@ -468,6 +483,10 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { public constructor() { } } class B extends A {} return new B()").equals("B {}");
 		code_v2_("class A { x protected constructor() { x = 10 } } class B extends A { constructor() { super() } } return new B().x").equals("10");
 		code_v2_("class A { x private constructor() { x = 10 } } class B extends A { constructor() { super() } } return new B().x").error(Error.PRIVATE_CONSTRUCTOR);
+		// Issue #2709: B(args) doit accepter le constructeur hérité de A
+		code_v2_("class A { public x; constructor(integer v) { this.x = v } } class B extends A {} return B(7).x").equals("7");
+		code_v2_("class A { public x; constructor(integer v) { this.x = v } } class B extends A {} return new B(7).x").equals("7");
+		code_v2_("class A { constructor(integer v) {} } class B extends A {} class C extends B {} return new C(7) != null").equals("true");
 		code_v2_("class A { private constructor() { } } class B extends A {} return new B()").equals("B {}");
 		code_v2_("class A { private constructor() {} static getInstance() { return new A() } } return A.getInstance()").equals("A {}");
 
@@ -496,6 +515,10 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { public static m() { return 10 } } class B extends A {} return B.m()").equals("10");
 		code_v2_("class A { protected static m() { return 10 } } class B extends A {} return B.m()").error(Error.PROTECTED_STATIC_METHOD);
 		code_v2_("class A { private static m() { return 10 } } class B extends A {} return B.m()").error(Error.PRIVATE_STATIC_METHOD);
+		// Implicit static call inside a subclass: private from parent must be rejected, protected must be allowed
+		code_v2_("class A { protected static m() { return 10 } } class B extends A { static n() { return m() } } return B.n()").equals("10");
+		code_v2_("class A { private static m() { return 10 } } class B extends A { static n() { return m() } } return B.n()").error(Error.PRIVATE_STATIC_METHOD);
+		code_v2_("class A { private static m() { return 10 } static n() { return m() } } return A.n()").equals("10");
 
 		section("Initialization of fields");
 		code_v2_("class A { x = [1, 2, 3] } var a = new A() return a.x").equals("[1, 2, 3]");

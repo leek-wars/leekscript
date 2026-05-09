@@ -429,7 +429,11 @@ public class LeekFunctionCall extends Expression {
 							if (count == mParameters.size()) {
 								ok = true;
 								is_method = true;
-								functionType = methods.get(count).block.getType();
+								var m = methods.get(count);
+								if (m.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != current) {
+									compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_METHOD, new String[] { current.getName(), v.getName() }));
+								}
+								functionType = m.block.getType();
 								break end;
 							}
 						}
@@ -465,6 +469,9 @@ public class LeekFunctionCall extends Expression {
 								ok = true;
 								is_static_method = true;
 								method = entry.getValue();
+								if (method.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != current) {
+									compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_METHOD, new String[] { current.getName(), v.getName() }));
+								}
 								functionType = method.block.getType();
 								break end;
 							}

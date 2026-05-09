@@ -1761,14 +1761,17 @@ public abstract class AI {
 	}
 
 	private boolean checkFieldAccessLevel(Field field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+		// Classe déclarante (pas value.getClass()) : une méthode héritée définie dans A
+		// doit garder l'accès à ses champs même si l'instance runtime est une sous-classe.
+		var declaring = field.getDeclaringClass();
 		if (field.isAnnotationPresent(Private.class)) {
-			if (fromClass == null || value.getClass() != fromClass.clazz) {
-				addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new Object[] { value.getClass().getSimpleName().substring(2), field.getName() });
+			if (fromClass == null || declaring != fromClass.clazz) {
+				addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new Object[] { declaring.getSimpleName().substring(2), field.getName() });
 				return false;
 			}
 		} else if (field.isAnnotationPresent(Protected.class)) {
-			if (fromClass == null || !value.getClass().isAssignableFrom(fromClass.clazz)) {
-				addSystemLog(AILog.ERROR, Error.PROTECTED_FIELD, new Object[] { value.getClass().getSimpleName().substring(2), field.getName() });
+			if (fromClass == null || !declaring.isAssignableFrom(fromClass.clazz)) {
+				addSystemLog(AILog.ERROR, Error.PROTECTED_FIELD, new Object[] { declaring.getSimpleName().substring(2), field.getName() });
 				return false;
 			}
 		}
