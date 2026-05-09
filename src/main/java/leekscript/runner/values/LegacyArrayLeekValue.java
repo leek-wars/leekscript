@@ -1167,7 +1167,8 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		LegacyArrayLeekValue retour = new LegacyArrayLeekValue(ai);
 		int i = 0;
 		for (var val : this) {
-			if (i >= start && i <= end) {
+			if (i > end) break;
+			if (i >= start) {
 				retour.push(ai, LeekOperations.clone(ai, val.getValue()));
 				ai.ops(1);
 			}
