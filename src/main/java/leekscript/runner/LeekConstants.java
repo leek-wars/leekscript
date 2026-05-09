@@ -38,6 +38,10 @@ public enum LeekConstants implements ILeekConstant {
 	TYPE_INTERVAL(10, Type.INT);
 
 	private static HashMap<String, ILeekConstant> extraConstants = new HashMap<String, ILeekConstant>();
+	private static final HashMap<String, LeekConstants> byName = new HashMap<>();
+	static {
+		for (LeekConstants c : values()) byName.put(c.name(), c);
+	}
 
 	private double value;
 	private Type type;
@@ -74,10 +78,8 @@ public enum LeekConstants implements ILeekConstant {
 	}
 
 	public static ILeekConstant get(String name) {
-		for (LeekConstants constant : LeekConstants.values()) {
-			if (constant.name().equals(name))
-				return constant;
-		}
+		var c = byName.get(name);
+		if (c != null) return c;
 		return extraConstants.get(name);
 	}
 }

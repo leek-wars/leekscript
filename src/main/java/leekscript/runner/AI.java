@@ -938,42 +938,26 @@ public abstract class AI {
 	}
 
 	public boolean less(Object x, Object y) throws LeekRunException {
-		if (x instanceof Number && y instanceof Number) {
-			if (x instanceof Long && y instanceof Long) {
-				return (Long) x < (Long) y;
-			}
-			return ((Number) x).doubleValue() < ((Number) y).doubleValue();
-		}
+		if (x instanceof Long lx && y instanceof Long ly) return lx < ly;
+		if (x instanceof Number nx && y instanceof Number ny) return nx.doubleValue() < ny.doubleValue();
 		return real(x) < real(y);
 	}
 
 	public boolean more(Object x, Object y) throws LeekRunException {
-		if (x instanceof Number && y instanceof Number) {
-			if (x instanceof Long && y instanceof Long) {
-				return (Long) x > (Long) y;
-			}
-			return ((Number) x).doubleValue() > ((Number) y).doubleValue();
-		}
+		if (x instanceof Long lx && y instanceof Long ly) return lx > ly;
+		if (x instanceof Number nx && y instanceof Number ny) return nx.doubleValue() > ny.doubleValue();
 		return real(x) > real(y);
 	}
 
 	public boolean lessequals(Object x, Object y) throws LeekRunException {
-		if (x instanceof Number && y instanceof Number) {
-			if (x instanceof Long && y instanceof Long) {
-				return (Long) x <= (Long) y;
-			}
-			return ((Number) x).doubleValue() <= ((Number) y).doubleValue();
-		}
+		if (x instanceof Long lx && y instanceof Long ly) return lx <= ly;
+		if (x instanceof Number nx && y instanceof Number ny) return nx.doubleValue() <= ny.doubleValue();
 		return real(x) <= real(y);
 	}
 
 	public boolean moreequals(Object x, Object y) throws LeekRunException {
-		if (x instanceof Number && y instanceof Number) {
-			if (x instanceof Long && y instanceof Long) {
-				return (Long) x >= (Long) y;
-			}
-			return ((Number) x).doubleValue() >= ((Number) y).doubleValue();
-		}
+		if (x instanceof Long lx && y instanceof Long ly) return lx >= ly;
+		if (x instanceof Number nx && y instanceof Number ny) return nx.doubleValue() >= ny.doubleValue();
 		return real(x) >= real(y);
 	}
 
@@ -998,9 +982,6 @@ public abstract class AI {
 			return !((IntervalLeekValue) value).intervalIsEmpty(this);
 		} else if (value instanceof MapLeekValue) {
 			return ((MapLeekValue) value).size() != 0;
-		} else if (value instanceof RealIntervalLeekValue) {
-			// TODO
-			return true;
 		} else if (value instanceof String) {
 			var s = (String) value;
 			if (s.equals("false") || s.equals("0")) {
