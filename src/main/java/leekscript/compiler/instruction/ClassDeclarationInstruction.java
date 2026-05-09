@@ -593,6 +593,43 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		writer.addLine("}");
 
 		// Vrais constructeurs
+		// Le corps est extrait dans une méthode privée <className>$body_<maxArity>
+		// pour que la délégation depuis init(args) reste non virtuelle : sinon
+		// le fall-through `init(default)` dispatcherait dynamiquement vers une
+		// override en sous-classe et boucle via super.init() (issue #3159).
+		for (var ctor : constructorsList) {
+			final var bodyBlock = ctor.block;
+
+			mainblock.getWordCompiler().setCurrentBlock(bodyBlock);
+			writer.currentBlock = bodyBlock;
+
+			writer.addCode("private Object " + className + "$body_" + bodyBlock.getMaxParameters() + "(");
+			for (int a = 0; a < bodyBlock.getMaxParameters(); ++a) {
+				var arg = bodyBlock.getParametersDeclarations().get(a);
+				var letter = arg.isCaptured() ? "p" : "u";
+				if (a > 0) writer.addCode(", ");
+				writer.addCode(arg.getType().getJavaPrimitiveName(mainblock.getVersion()));
+				writer.addCode(" " + letter + "_" + arg.getToken());
+			}
+			writer.addLine(") throws LeekRunException {");
+
+			// Captures : box les paramètres capturés
+			for (int a = 0; a < bodyBlock.getParametersDeclarations().size(); ++a) {
+				var arg = bodyBlock.getParametersDeclarations().get(a);
+				if (arg.isCaptured()) {
+					writer.addCode("final var u_" + arg.getToken() + " = new Box<" + arg.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
+					writer.addCode("p_" + arg.getToken());
+					writer.addLine(");");
+				}
+			}
+
+			bodyBlock.writeJavaCode(mainblock, writer, false);
+			writer.addLine("}");
+
+			writer.currentBlock = null;
+			mainblock.getWordCompiler().setCurrentBlock(null);
+		}
+
 		for (var construct : constructors.entrySet()) {
 
 			final var block = construct.getValue().block;
@@ -616,26 +653,8 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				writer.addLine("super.init();");
 			}
 
-			// Init fields
-			// ClassDeclarationInstruction current = this;
-			// ArrayList<ClassDeclarationInstruction> classes = new ArrayList<>();
-			// while (current != null) {
-			// 	classes.add(current);
-			// 	current = current.parent;
-			// }
-			// for (int i = classes.size() - 1; i >= 0; --i) {
-			// 	var clazz = classes.get(i);
-				// for (var field : fields.entrySet()) {
-				// 	if (field.getValue().expression != null) {
-				// 		writer.addCode(field.getKey());
-				// 		writer.addCode(" = ");
-				// 		field.getValue().expression.writeJavaCode(mainblock, writer);
-				// 		writer.addLine(";");
-				// 	}
-				// }
-			// }
-
-			// Captures
+			// Émis dans l'ordre pour qu'une valeur par défaut puisse référencer
+			// les paramètres précédents (ex: constructor(x = 1, y = x)).
 			if (block != null) {
 				for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
 					var arg = block.getParametersDeclarations().get(a);
@@ -649,7 +668,6 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						}
 						writer.addLine(");");
 					} else {
-						// Valeur par défaut
 						if (a >= construct.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
 							writer.addCode("final " + arg.getType().getJavaName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
@@ -665,25 +683,17 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			}
 
 			if (block != null) {
-
-				// Sous-version
-				if (construct.getKey() < block.getMaxParameters()) {
-					writer.addCode("return init(");
-					for (int a = 0; a < block.getParametersDeclarations().size(); ++a) {
-						var arg = block.getParametersDeclarations().get(a);
-						if (a > 0) writer.addCode(", ");
-						if (arg.isCaptured()) {
-							writer.addCode("u_" + arg.getName() + ".get()");
-						} else {
-							writer.addCode("u_" + arg.getName());
-						}
+				writer.addCode("return " + className + "$body_" + block.getMaxParameters() + "(");
+				for (int a = 0; a < block.getMaxParameters(); ++a) {
+					var arg = block.getParametersDeclarations().get(a);
+					if (a > 0) writer.addCode(", ");
+					if (arg.isCaptured()) {
+						writer.addCode("u_" + arg.getName() + ".get()");
+					} else {
+						writer.addCode("u_" + arg.getName());
 					}
-					writer.addLine(");");
-				} else {
-
-					// Version normale
-					block.writeJavaCode(mainblock, writer, false);
 				}
+				writer.addLine(");");
 			} else {
 				writer.addLine("return null;");
 			}

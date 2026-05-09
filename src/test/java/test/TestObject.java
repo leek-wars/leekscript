@@ -418,6 +418,13 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { m(null|Array<integer> x) { return x } } class B extends A { m(null|Array<integer> x) { return super.m(x) } } return new B().m([1, 2])").equals("[1, 2]");
 		code_v2_("class A { m(null|Array<integer> x) { return x == null ? 'none' : count(x) } } class B extends A { m(null|Array<integer> x) { return super.m(null) } } return new B().m([1])").equals("\"none\"");
 
+		// Issue #3159: StackOverflowError quand parent et fille ont une valeur
+		// par défaut sur leur constructeur. Le `return init(...)` du fall-through
+		// dispatchait virtuellement vers la sous-classe, créant une boucle via
+		// le super.init() auto-injecté.
+		code_v2_("class A { public id; constructor(integer i = 5) { this.id = i } } class B extends A { constructor(integer i = 7) { super(i) } } return new B().id").equals("7");
+		code_v2_("class A { public id; constructor(integer i = 5) { this.id = i } } class B extends A { constructor(integer i = 7) { super(i) } } return new B(42).id").equals("42");
+
 		section("Access levels: fields");
 		code_v2_("class A { x = 10 } var a = new A() return a.x").equals("10");
 		code_v2_("class A { public x = 10 } var a = new A() return a.x").equals("10");
