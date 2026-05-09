@@ -2953,8 +2953,9 @@ public abstract class AI {
 		}
 		if (value instanceof NativeObjectLeekValue) {
 			ops(1);
+			var fieldName = string(index);
 			try {
-				var f = getFieldCached(value.getClass(), string(index));
+				var f = getFieldCached(value.getClass(), fieldName);
 				if (!checkFieldAccessLevel(f, value, fromClass)) {
 					return null;
 				}
@@ -2963,7 +2964,7 @@ public abstract class AI {
 				// Method ?
 				try {
 					var clazz = (ClassLeekValue) getFieldCached(this.getClass(), value.getClass().getSimpleName()).get(this);
-					var method = clazz.genericMethods.get(string(index));
+					var method = clazz.genericMethods.get(fieldName);
 					if (method != null) return method;
 				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
 					addSystemLog(AILog.ERROR, e1);

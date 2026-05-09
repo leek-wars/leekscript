@@ -429,11 +429,12 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	}
 
 	private Object transformKey(AI ai, Object key) throws LeekRunException {
+		// Long est le cas largement majoritaire (index numérique) ; check en premier
+		if (key instanceof Long) return key;
 		if (key instanceof String || key instanceof ObjectLeekValue || key instanceof NativeObjectLeekValue) {
 			return key;
-		} else {
-			return ai.longint(key);
 		}
+		return ai.longint(key);
 	}
 
 	public Object get(int value) throws LeekRunException {
