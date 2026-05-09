@@ -1650,7 +1650,13 @@ public abstract class AI {
 	}
 
 	public boolean isPrimitive(Object value) {
-		return !(value instanceof ArrayLeekValue || value instanceof MapLeekValue || value instanceof LegacyArrayLeekValue || value instanceof SetLeekValue || value instanceof RealIntervalLeekValue || value instanceof ObjectLeekValue || value instanceof NativeObjectLeekValue);
+		// Fast path : Long/Double/Boolean/String/null/FunctionLeekValue/ClassLeekValue
+		// sont tous primitifs et largement majoritaires en sérialisation.
+		if (value == null) return true;
+		if (value instanceof Number || value instanceof Boolean || value instanceof String) return true;
+		// Les containers mutables (qui peuvent former des cycles).
+		// IntegerInterval/RealInterval sont immuables donc primitifs.
+		return !(value instanceof ArrayLeekValue || value instanceof MapLeekValue || value instanceof LegacyArrayLeekValue || value instanceof SetLeekValue || value instanceof ObjectLeekValue || value instanceof NativeObjectLeekValue);
 	}
 
 	public boolean isIterable(Object value) throws LeekRunException {
