@@ -101,6 +101,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		public final static int SORT_ASC = 1;
 		public final static int SORT_DESC = 2;
 
+		public static final ElementComparatorV1 ASC_COMPARATOR = new ElementComparatorV1(SORT_ASC);
+		public static final ElementComparatorV1 DESC_COMPARATOR = new ElementComparatorV1(SORT_DESC);
+
 		public ElementComparatorV1(int order) {
 			mOrder = order;
 		}
@@ -146,6 +149,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		public final static int SORT_ASC = 1;
 		public final static int SORT_DESC = 2;
 
+		public static final ElementComparator ASC_COMPARATOR = new ElementComparator(SORT_ASC);
+		public static final ElementComparator DESC_COMPARATOR = new ElementComparator(SORT_DESC);
+
 		public ElementComparator(int order) {
 			mOrder = order;
 		}
@@ -190,6 +196,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 		public final static int SORT_ASC = 1;
 		public final static int SORT_DESC = 2;
+
+		public static final KeyComparator ASC_COMPARATOR = new KeyComparator(SORT_ASC);
+		public static final KeyComparator DESC_COMPARATOR = new KeyComparator(SORT_DESC);
 
 		public KeyComparator(int order) {
 			mOrder = order;
@@ -808,15 +817,16 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			elem = elem.next;
 		}
 		// Trie de la liste
-		if (comparator == RANDOM)
+		if (comparator == RANDOM) {
 			Collections.shuffle(liste, new Random(ai.getRandom().getInt(0, Integer.MAX_VALUE - 1)));
-		else if (comparator == ASC_K || comparator == DESC_K) {
-			Collections.sort(liste, new KeyComparator((comparator == ASC_K) ? ElementComparator.SORT_ASC : ElementComparator.SORT_DESC));
+		} else if (comparator == ASC_K || comparator == DESC_K) {
+			Collections.sort(liste, comparator == ASC_K ? KeyComparator.ASC_COMPARATOR : KeyComparator.DESC_COMPARATOR);
 		} else {
+			boolean asc = comparator == ASC || comparator == ASC_A;
 			if (ai.getVersion() == 1) {
-				Collections.sort(liste, new ElementComparatorV1((comparator == ASC || comparator == ASC_A) ? ElementComparator.SORT_ASC : ElementComparator.SORT_DESC));
+				Collections.sort(liste, asc ? ElementComparatorV1.ASC_COMPARATOR : ElementComparatorV1.DESC_COMPARATOR);
 			} else {
-				Collections.sort(liste, new ElementComparator((comparator == ASC || comparator == ASC_A) ? ElementComparator.SORT_ASC : ElementComparator.SORT_DESC));
+				Collections.sort(liste, asc ? ElementComparator.ASC_COMPARATOR : ElementComparator.DESC_COMPARATOR);
 			}
 		}
 
