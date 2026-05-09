@@ -809,6 +809,10 @@ public abstract class AI {
 
 	public boolean eq(Object x, Object y) throws LeekRunException {
 		// ops(1);
+		// Fast path : Long == Long (cas dominant — comparaisons d'IDs cellules,
+		// life, MP, TP, etc en player AI). Aussi plus précis que doubleValue
+		// pour les longs > 2^53.
+		if (x instanceof Long lx && y instanceof Long ly) return (long) lx == (long) ly;
 		if (x == null) return y == null;
 		if (x instanceof Number) {
 			var n = ((Number) x).doubleValue();
