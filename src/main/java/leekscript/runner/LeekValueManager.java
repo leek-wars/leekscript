@@ -77,18 +77,15 @@ public class LeekValueManager {
 		if (o instanceof BigDecimal) {
 			return ((BigDecimal) o).doubleValue();
 		}
-		if (o instanceof ArrayNode) {
-			ArrayNode a = (ArrayNode) o;
-			var array = ai.newArray();
+		if (o instanceof ArrayNode a) {
+			var array = ai.newArray(a.size());
 			for (var oo : a) {
 				array.pushNoClone(ai, parseJSON(oo, ai));
 			}
 			return array;
 		}
-		if (o instanceof ObjectNode) {
-			ObjectNode a = (ObjectNode) o;
-
-			var keys = new ArrayList<String>();
+		if (o instanceof ObjectNode a) {
+			var keys = new ArrayList<String>(a.size());
 			a.properties().forEach(entry -> keys.add(entry.getKey()));
 			Collections.sort(keys);
 

@@ -798,10 +798,9 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		ai.ops(1 + 2 * size());
 		if (size() == 0) return null;
 		Object min_value = get(0);
-		var mincomp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
 		for (int i = 1; i < size(); ++i) {
 			var val = get(i);
-			if (mincomp.compare(val, min_value) == -1)
+			if (LeekValueComparator.compareAsc(val, min_value) < 0)
 				min_value = val;
 		}
 		return min_value;
@@ -811,10 +810,9 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		ai.ops(1 + 2 * size());
 		if (size() == 0) return null;
 		Object max_value = get(0);
-		var mincomp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
 		for (int i = 1; i < size(); ++i) {
 			var val = get(i);
-			if (mincomp.compare(val, max_value) == 1)
+			if (LeekValueComparator.compareAsc(val, max_value) > 0)
 				max_value = val;
 		}
 		return max_value;

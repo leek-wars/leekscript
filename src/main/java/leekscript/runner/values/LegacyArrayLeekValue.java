@@ -492,15 +492,13 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			return ai.eq(firstValue, comp);
 		} else if (comp instanceof Boolean) {
 			return ai.bool(comp) == ai.bool(this);
-		} else if (comp instanceof String) {
-			if (ai.string(comp).equals("false") && ai.bool(this) == false)
-				return true;
-			else if (ai.string(comp).equals("true") && ai.bool(this) == true)
-				return true;
-			else if (ai.string(comp).isEmpty() && size() == 0)
-				return true;
-		} else if (comp instanceof Number) {
-			if (size() == 0 && ai.integer(comp) == 0)
+		} else if (comp instanceof String s) {
+			boolean thisBool = ai.bool(this);
+			if (s.equals("false") && !thisBool) return true;
+			if (s.equals("true") && thisBool) return true;
+			if (s.isEmpty() && size() == 0) return true;
+		} else if (comp instanceof Number n) {
+			if (size() == 0 && n.intValue() == 0)
 				return true;
 		}
 		return false;
@@ -752,19 +750,16 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public Object arrayMin(AI ai) throws LeekRunException {
 		ai.ops(1 + 2 * size());
-		if (size() > 0) {
-			var comp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
-			var iterator = iterator();
-			Object min_c = iterator.next().getValue();
-			while (iterator.hasNext()) {
-				var value = iterator.next().getValue();
-				if (comp.compare(value, min_c) == -1) {
-					min_c = value;
-				}
+		if (size() == 0) return null;
+		var iterator = iterator();
+		Object min_c = iterator.next().getValue();
+		while (iterator.hasNext()) {
+			var value = iterator.next().getValue();
+			if (LeekValueComparator.compareAsc(value, min_c) < 0) {
+				min_c = value;
 			}
-			return LeekOperations.clone(ai, min_c);
 		}
-		return null;
+		return LeekOperations.clone(ai, min_c);
 	}
 
 
@@ -773,10 +768,9 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		if (size() == 0) return null;
 		var iterator = iterator();
 		Object max_c = iterator.next().getValue();
-		var mincomp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
 		while (iterator.hasNext()) {
 			var value = iterator.next().getValue();
-			if (mincomp.compare(value, max_c) == 1) {
+			if (LeekValueComparator.compareAsc(value, max_c) > 0) {
 				max_c = value;
 			}
 		}

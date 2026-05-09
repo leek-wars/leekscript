@@ -1,6 +1,5 @@
 package leekscript.runner.classes;
 
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import leekscript.runner.AI;
@@ -54,7 +53,7 @@ public class StringClass {
 		// (when search="" this is exactly what happens). Bill the upper bound so a
 		// hostile AI can't amplify memory faster than its ops budget.
 		ai.ops(Math.max(1L, (long) string.length() * Math.max(1, replace.length())));
-		return string.replaceAll(Pattern.quote(search), Matcher.quoteReplacement(replace));
+		return string.replace(search, replace);
 	}
 
 	public static long indexOf(AI ai, String string, String needle) throws LeekRunException {

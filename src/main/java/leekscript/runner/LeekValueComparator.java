@@ -6,17 +6,64 @@ import leekscript.runner.values.LegacyArrayLeekValue;
 
 public class LeekValueComparator {
 
+	public final static int SORT_ASC = 1;
+	public final static int SORT_DESC = 2;
+
+	public static final SortComparator ASC = new SortComparator(SORT_ASC);
+	public static final SortComparator DESC = new SortComparator(SORT_DESC);
+
+	public static int compareAsc(Object v1, Object v2) throws LeekRunException {
+		if (v1 == null) {
+			return v2 == null ? 0 : -1;
+		} else if (v1 instanceof Boolean b1) {
+			if (v2 == null) return 1;
+			if (v2 instanceof Boolean b2) return Boolean.compare(b1, b2);
+			return -1;
+		} else if (v1 instanceof Number n1) {
+			if (v2 instanceof Number n2) {
+				if (v1 instanceof Long l1 && v2 instanceof Long l2) {
+					return Long.compare(l1, l2);
+				}
+				return Double.compare(n1.doubleValue(), n2.doubleValue());
+			} else if (v2 instanceof Boolean || v2 == null)
+				return 1;
+			else
+				return -1;
+		} else if (v1 instanceof String s1) {
+			if (v2 instanceof String s2) {
+				return s1.compareTo(s2);
+			} else if (v2 instanceof Number || v2 instanceof Boolean || v2 == null)
+				return 1;
+			else
+				return -1;
+		} else if (v1 instanceof LegacyArrayLeekValue a1) {
+			if (v2 instanceof LegacyArrayLeekValue a2) {
+				return Integer.compare(a1.size(), a2.size());
+			} else if (v2 == null)
+				return -1;
+			else
+				return 1;
+		} else {
+			return -1;
+		}
+	}
+
 	public static class SortComparator implements Comparator<Object> {
 
 		private final int mOrder;
-		// private final AI ai;
 
-		public final static int SORT_ASC = 1;
-		public final static int SORT_DESC = 2;
+		public final static int SORT_ASC = LeekValueComparator.SORT_ASC;
+		public final static int SORT_DESC = LeekValueComparator.SORT_DESC;
 
+		// Constructeur AI-aware conservé pour compat (ai inutilisé, voir
+		// historique : retiré sans suppression du paramètre pour ne pas
+		// casser les call sites externes)
 		public SortComparator(AI ai, int order) {
+			this(order);
+		}
+
+		public SortComparator(int order) {
 			mOrder = order;
-			// this.ai = ai;
 		}
 
 		@Override
@@ -30,42 +77,6 @@ public class LeekValueComparator {
 				// The operation limit may be exceeded here, but it's not too long
 			}
 			return 0;
-		}
-
-		public int compareAsc(Object v1, Object v2) throws LeekRunException {
-			if (v1 == null) {
-				return v2 == null ? 0 : -1;
-			} else if (v1 instanceof Boolean b1) {
-				if (v2 == null) return 1;
-				if (v2 instanceof Boolean b2) return Boolean.compare(b1, b2);
-				return -1;
-			} else if (v1 instanceof Number n1) {
-				if (v2 instanceof Number n2) {
-					if (v1 instanceof Long l1 && v2 instanceof Long l2) {
-						return Long.compare(l1, l2);
-					}
-					return Double.compare(n1.doubleValue(), n2.doubleValue());
-				} else if (v2 instanceof Boolean || v2 == null)
-					return 1;
-				else
-					return -1;
-			} else if (v1 instanceof String s1) {
-				if (v2 instanceof String s2) {
-					return s1.compareTo(s2);
-				} else if (v2 instanceof Number || v2 instanceof Boolean || v2 == null)
-					return 1;
-				else
-					return -1;
-			} else if (v1 instanceof LegacyArrayLeekValue a1) {
-				if (v2 instanceof LegacyArrayLeekValue a2) {
-					return Integer.compare(a1.size(), a2.size());
-				} else if (v2 == null)
-					return -1;
-				else
-					return 1;
-			} else {
-				return -1;
-			}
 		}
 	}
 }
