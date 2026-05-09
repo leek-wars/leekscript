@@ -1695,8 +1695,9 @@ public abstract class AI {
 			return ((ClassLeekValue) value).getField(field, fromClass);
 		}
 		if (value instanceof NativeObjectLeekValue object) {
+			Class<?> valueClass = value.getClass();
 			try {
-				var f = getFieldCached(value.getClass(), field);
+				var f = getFieldCached(valueClass, field);
 				if (!checkFieldAccessLevel(f, value, fromClass)) {
 					return null;
 				}
@@ -1704,7 +1705,7 @@ public abstract class AI {
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				// Method ?
 				try {
-					var clazz = (ClassLeekValue) getFieldCached(this.getClass(), value.getClass().getSimpleName()).get(this);
+					var clazz = (ClassLeekValue) getFieldCached(this.getClass(), valueClass.getSimpleName()).get(this);
 					var method = clazz.genericMethods.get(field);
 					if (method != null) return method;
 				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
@@ -2931,8 +2932,9 @@ public abstract class AI {
 		if (value instanceof NativeObjectLeekValue) {
 			ops(1);
 			var fieldName = string(index);
+			Class<?> valueClass = value.getClass();
 			try {
-				var f = getFieldCached(value.getClass(), fieldName);
+				var f = getFieldCached(valueClass, fieldName);
 				if (!checkFieldAccessLevel(f, value, fromClass)) {
 					return null;
 				}
@@ -2940,7 +2942,7 @@ public abstract class AI {
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				// Method ?
 				try {
-					var clazz = (ClassLeekValue) getFieldCached(this.getClass(), value.getClass().getSimpleName()).get(this);
+					var clazz = (ClassLeekValue) getFieldCached(this.getClass(), valueClass.getSimpleName()).get(this);
 					var method = clazz.genericMethods.get(fieldName);
 					if (method != null) return method;
 				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
