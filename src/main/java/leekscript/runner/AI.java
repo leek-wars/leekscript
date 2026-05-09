@@ -1263,73 +1263,26 @@ public abstract class AI {
 		}
 
 		// Concatenate arrays
-		if (x instanceof LegacyArrayLeekValue) {
-			if (y instanceof LegacyArrayLeekValue) {
-				var array1 = (LegacyArrayLeekValue) x;
-				var array2 = (LegacyArrayLeekValue) y;
-
+		if (x instanceof LegacyArrayLeekValue array1) {
+			if (y instanceof LegacyArrayLeekValue array2) {
 				ops((array1.size() + array2.size()) * 2);
-
 				var retour = new LegacyArrayLeekValue(this);
-				var iterator = array1.iterator();
-				while (iterator.hasNext()) {
-					if (iterator.key() instanceof String) {
-						retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
-					} else {
-						retour.push(this, iterator.getValue(this));
-					}
-					iterator.next();
-				}
-				iterator = array2.iterator();
-				while (iterator.hasNext()) {
-					if (iterator.key() instanceof String) {
-						retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
-					} else {
-						retour.push(this, iterator.getValue(this));
-					}
-					iterator.next();
-				}
+				copyLegacyEntriesTo(retour, array1);
+				copyLegacyEntriesTo(retour, array2);
 				return retour;
 			}
-
-			var array1 = (LegacyArrayLeekValue) x;
-
 			ops(array1.size() * 2);
-
 			var retour = new LegacyArrayLeekValue(this);
-			var iterator = array1.iterator();
-
-			while (iterator.hasNext()) {
-				if (iterator.key() instanceof String) {
-					retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
-				} else {
-					retour.push(this, iterator.getValue(this));
-				}
-				iterator.next();
-			}
+			copyLegacyEntriesTo(retour, array1);
 			retour.push(this, y);
-
 			return retour;
 		}
 
-		if (y instanceof LegacyArrayLeekValue) {
-			var array2 = (LegacyArrayLeekValue) y;
-
+		if (y instanceof LegacyArrayLeekValue array2) {
 			ops(array2.size() * 2);
-
 			var retour = new LegacyArrayLeekValue(this);
-
 			retour.push(this, x);
-
-			var iterator = array2.iterator();
-			while (iterator.hasNext()) {
-				if (iterator.key() instanceof String) {
-					retour.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
-				} else {
-					retour.push(this, iterator.getValue(this));
-				}
-				iterator.next();
-			}
+			copyLegacyEntriesTo(retour, array2);
 			return retour;
 		}
 
@@ -1337,6 +1290,22 @@ public abstract class AI {
 			return real(x) + real(y);
 		}
 		return longint(x) + longint(y);
+	}
+
+	/**
+	 * Copie les entrées d'un LegacyArray dans un autre, en préservant les clés
+	 * String (associatives) et en re-numérotant les clés numériques (push).
+	 */
+	private void copyLegacyEntriesTo(LegacyArrayLeekValue dest, LegacyArrayLeekValue source) throws LeekRunException {
+		var iterator = source.iterator();
+		while (iterator.hasNext()) {
+			if (iterator.key() instanceof String) {
+				dest.getOrCreate(this, iterator.getKey(this)).set(iterator.getValue(this));
+			} else {
+				dest.push(this, iterator.getValue(this));
+			}
+			iterator.next();
+		}
 	}
 
 	public long sub(Long x, Long y) throws LeekRunException {
