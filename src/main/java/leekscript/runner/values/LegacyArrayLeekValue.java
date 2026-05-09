@@ -1421,12 +1421,13 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	}
 
 	private void flatten_rec(AI ai, LegacyArrayLeekValue array, LegacyArrayLeekValue result, long depth) throws LeekRunException {
-		ai.ops(1 + 2 * size());
+		ai.ops(1 + 2 * array.size());
 		for (var value : array) {
-			if (value.getValue() instanceof LegacyArrayLeekValue && depth > 0) {
-				flatten_rec(ai, (LegacyArrayLeekValue) value.getValue(), result, depth - 1);
+			var v = value.getValue();
+			if (v instanceof LegacyArrayLeekValue inner && depth > 0) {
+				flatten_rec(ai, inner, result, depth - 1);
 			} else {
-				result.push(ai, value.getValue());
+				result.push(ai, v);
 			}
 		}
 	}

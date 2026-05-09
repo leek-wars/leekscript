@@ -947,10 +947,10 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public void flatten_rec(AI ai, ArrayLeekValue array, ArrayLeekValue result, long depth) throws LeekRunException {
-		ai.ops(1 + 2 * size());
+		ai.ops(1 + 2 * array.size());
 		for (var value : array) {
-			if (value instanceof ArrayLeekValue && depth > 0) {
-				flatten_rec(ai, (ArrayLeekValue) value, result, depth - 1);
+			if (value instanceof ArrayLeekValue inner && depth > 0) {
+				flatten_rec(ai, inner, result, depth - 1);
 			} else {
 				result.push(ai, value);
 			}
