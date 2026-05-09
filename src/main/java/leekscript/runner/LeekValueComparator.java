@@ -34,46 +34,31 @@ public class LeekValueComparator {
 
 		public int compareAsc(Object v1, Object v2) throws LeekRunException {
 			if (v1 == null) {
-				if (v2 == null) return 0;
-				return -1;
-			} else if (v1 instanceof Boolean) {
+				return v2 == null ? 0 : -1;
+			} else if (v1 instanceof Boolean b1) {
 				if (v2 == null) return 1;
-				if (v2 instanceof Boolean) {
-					if ((Boolean) v1 == (Boolean) v2)
-						return 0;
-					else if ((Boolean) v1)
-						return 1;
-					else
-						return -1;
-				}
+				if (v2 instanceof Boolean b2) return Boolean.compare(b1, b2);
 				return -1;
-			} else if (v1 instanceof Number) {
-				if (v2 instanceof Number) {
-					if (((Number) v1).doubleValue() == ((Number) v2).doubleValue())
-						return 0;
-					else if (((Number) v1).doubleValue() < ((Number) v2).doubleValue())
-						return -1;
-					else
-						return 1;
+			} else if (v1 instanceof Number n1) {
+				if (v2 instanceof Number n2) {
+					if (v1 instanceof Long l1 && v2 instanceof Long l2) {
+						return Long.compare(l1, l2);
+					}
+					return Double.compare(n1.doubleValue(), n2.doubleValue());
 				} else if (v2 instanceof Boolean || v2 == null)
 					return 1;
 				else
 					return -1;
-			} else if (v1 instanceof String) {
-				if (v2 instanceof String) {
-					return ((String) v1).compareTo((String) v2);
+			} else if (v1 instanceof String s1) {
+				if (v2 instanceof String s2) {
+					return s1.compareTo(s2);
 				} else if (v2 instanceof Number || v2 instanceof Boolean || v2 == null)
 					return 1;
 				else
 					return -1;
-			} else if (v1 instanceof LegacyArrayLeekValue) {
-				if (v2 instanceof LegacyArrayLeekValue) {
-					if (((LegacyArrayLeekValue) v1).size() == ((LegacyArrayLeekValue) v2).size())
-						return 0;
-					else if (((LegacyArrayLeekValue) v1).size() < ((LegacyArrayLeekValue) v2).size())
-						return -1;
-					else
-						return 1;
+			} else if (v1 instanceof LegacyArrayLeekValue a1) {
+				if (v2 instanceof LegacyArrayLeekValue a2) {
+					return Integer.compare(a1.size(), a2.size());
 				} else if (v2 == null)
 					return -1;
 				else

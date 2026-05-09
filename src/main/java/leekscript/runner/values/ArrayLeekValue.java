@@ -64,20 +64,16 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 				return type1 - type2;
 
 			if (type1 == LeekValueType.BOOLEAN) {
-				if ((Boolean) v1 == (Boolean) v2)
-					return 0;
-				else if ((Boolean) v1)
-					return 1;
-				else
-					return -1;
+				return Boolean.compare((Boolean) v1, (Boolean) v2);
 			} else if (type1 == LeekValueType.NUMBER) {
-				var d1 = ((Number) v1).doubleValue();
-				var d2 = ((Number) v2).doubleValue();
-				return Double.compare(d1, d2);
+				if (v1 instanceof Long l1 && v2 instanceof Long l2) {
+					return Long.compare(l1, l2);
+				}
+				return Double.compare(((Number) v1).doubleValue(), ((Number) v2).doubleValue());
 			} else if (type1 == LeekValueType.STRING) {
 				return ((String) v1).compareTo((String) v2);
 			} else if (type1 == LeekValueType.ARRAY) {
-				return ((ArrayLeekValue) v1).size() - ((ArrayLeekValue) v2).size();
+				return Integer.compare(((ArrayLeekValue) v1).size(), ((ArrayLeekValue) v2).size());
 			}
 			return 0;
 		}

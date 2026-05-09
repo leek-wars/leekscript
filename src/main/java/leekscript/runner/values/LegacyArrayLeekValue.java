@@ -121,35 +121,18 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		public int compareAsc(Object v1, Object v2) throws LeekRunException {
 			var type1 = LeekValueManager.getV1Type(v1);
 			var type2 = LeekValueManager.getV1Type(v2);
-			if (type1 < type2)
-				return -1;
-			else if (type1 > type2)
-				return 1;
+			if (type1 != type2) return Integer.compare(type1, type2);
 			if (type1 == LeekValueType.BOOLEAN_V1) {
-				if ((Boolean) v1 == (Boolean) v2)
-					return 0;
-				else if ((Boolean) v1)
-					return 1;
-				else
-					return -1;
+				return Boolean.compare((Boolean) v1, (Boolean) v2);
 			} else if (type1 == LeekValueType.NUMBER_V1) {
-				var d = ((Number) v2).doubleValue();
-				if (((Number) v1).doubleValue() == d)
-					return 0;
-				else if (((Number) v1).doubleValue() < d)
-					return -1;
-				else
-					return 1;
+				if (v1 instanceof Long l1 && v2 instanceof Long l2) {
+					return Long.compare(l1, l2);
+				}
+				return Double.compare(((Number) v1).doubleValue(), ((Number) v2).doubleValue());
 			} else if (type1 == LeekValueType.STRING_V1) {
 				return ((String) v1).compareTo((String) v2);
 			} else if (type1 == LeekValueType.ARRAY_V1) {
-				var a = (LegacyArrayLeekValue) v2;
-				if (((LegacyArrayLeekValue) v1).size() == a.size())
-					return 0;
-				else if (((LegacyArrayLeekValue) v1).size() < a.size())
-					return -1;
-				else
-					return 1;
+				return Integer.compare(((LegacyArrayLeekValue) v1).size(), ((LegacyArrayLeekValue) v2).size());
 			} else {
 				return 0;
 			}
@@ -183,35 +166,18 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		public int compareAsc(Object v1, Object v2) throws LeekRunException {
 			var type1 = LeekValueManager.getType(v1);
 			var type2 = LeekValueManager.getType(v2);
-			if (type1 < type2)
-				return -1;
-			else if (type1 > type2)
-				return 1;
+			if (type1 != type2) return Integer.compare(type1, type2);
 			if (type1 == LeekValueType.BOOLEAN) {
-				if ((Boolean) v1 == (Boolean) v2)
-					return 0;
-				else if ((Boolean) v1)
-					return 1;
-				else
-					return -1;
+				return Boolean.compare((Boolean) v1, (Boolean) v2);
 			} else if (type1 == LeekValueType.NUMBER) {
-				var d = ((Number) v2).doubleValue();
-				if (((Number) v1).doubleValue() == d)
-					return 0;
-				else if (((Number) v1).doubleValue() < d)
-					return -1;
-				else
-					return 1;
+				if (v1 instanceof Long l1 && v2 instanceof Long l2) {
+					return Long.compare(l1, l2);
+				}
+				return Double.compare(((Number) v1).doubleValue(), ((Number) v2).doubleValue());
 			} else if (type1 == LeekValueType.STRING) {
 				return ((String) v1).compareTo((String) v2);
 			} else if (type1 == LeekValueType.ARRAY) {
-				var a = (LegacyArrayLeekValue) v2;
-				if (((LegacyArrayLeekValue) v1).size() == a.size())
-					return 0;
-				else if (((LegacyArrayLeekValue) v1).size() < a.size())
-					return -1;
-				else
-					return 1;
+				return Integer.compare(((LegacyArrayLeekValue) v1).size(), ((LegacyArrayLeekValue) v2).size());
 			} else {
 				return 0;
 			}
@@ -544,7 +510,8 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		if (value instanceof LegacyArrayLeekValue) {
 			var iterator = ((LegacyArrayLeekValue) value).iterator();
 			while (iterator.hasNext()) {
-				if (iterator.key() instanceof String || iterator.key() instanceof ObjectLeekValue || iterator.key() instanceof NativeObjectLeekValue)
+				var k = iterator.key();
+				if (k instanceof String || k instanceof ObjectLeekValue || k instanceof NativeObjectLeekValue)
 					getOrCreate(ai, ai.string(iterator.getKey(ai))).set(iterator.getValue(ai));
 				else
 					push(ai, iterator.getValue(ai));
@@ -1430,14 +1397,15 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 				return retour;
 			while (iterator.hasNext()) {
 				var value = iterator.getValueBox();
+				var key = iterator.getKey(ai);
 				if (nb == 1) {
 					if (ai.bool(function.run(ai, null, new Object[] { value }))) {
 						// In LeekScript < 1.0, arrayFilter had a bug, the result array was not reindexed
-						retour.getOrCreate(ai, iterator.getKey(ai)).set(iterator.getValue(ai));
+						retour.getOrCreate(ai, key).set(iterator.getValue(ai));
 					}
 				} else {
-					if (ai.bool(function.run(ai, null, new Object[] { iterator.getKey(ai), value }))) {
-						retour.getOrCreate(ai, iterator.getKey(ai)).set(iterator.getValue(ai));
+					if (ai.bool(function.run(ai, null, new Object[] { key, value }))) {
+						retour.getOrCreate(ai, key).set(iterator.getValue(ai));
 					}
 				}
 				iterator.next();

@@ -3075,7 +3075,7 @@ public abstract class AI {
 		var candidates = classMethods.get(methodName);
 		if (candidates != null) {
 			for (var m : candidates) {
-				if (m.getParameterTypes().length == argsLength) {
+				if (m.getParameterCount() == argsLength) {
 					return m;
 				}
 			}

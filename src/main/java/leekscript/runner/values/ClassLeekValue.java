@@ -189,18 +189,13 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 	}
 
 	public Object getField(String field, ClassLeekValue fromClass) throws LeekRunException {
-		if (field.equals("fields")) {
-			return getFieldsArray();
-		} else if (field.equals("staticFields")) {
-			return getStaticFieldsArray();
-		} else if (field.equals("methods")) {
-			return getMethodsArray();
-		} else if (field.equals("staticMethods")) {
-			return getStaticMethodsArray();
-		} else if (field.equals("name")) {
-			return name;
-		} else if (field.equals("super")) {
-			return parent;
+		switch (field) {
+			case "fields": return getFieldsArray();
+			case "staticFields": return getStaticFieldsArray();
+			case "methods": return getMethodsArray();
+			case "staticMethods": return getStaticMethodsArray();
+			case "name": return name;
+			case "super": return parent;
 		}
 		// Private
 		var result = getStaticField(field, fromClass);

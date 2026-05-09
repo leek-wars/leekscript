@@ -266,7 +266,8 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		ai.ops(1 + 3 * size());
 		var result = new MapLeekValue(ai, size());
 		for (var entry : this.entrySet()) {
-			result.set(entry.getKey(), function.run(ai, null, entry.getValue(), entry.getKey(), this));
+			var key = entry.getKey();
+			result.set(key, function.run(ai, null, entry.getValue(), key, this));
 		}
 		ai.increaseRAM(ram, 2 * size());
 		return result;
@@ -316,13 +317,15 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 
 	public Object mapMax(AI ai) throws LeekRunException {
 		ai.ops(1 + 3 * size());
-		Object max_value = null;
+		if (size() == 0) return null;
+		var it = values().iterator();
+		Object max_value = it.next();
 		var mincomp = new LeekValueComparator.SortComparator(ai, LeekValueComparator.SortComparator.SORT_ASC);
-		for (var val : this.values()) {
-			if (max_value == null)
+		while (it.hasNext()) {
+			var val = it.next();
+			if (mincomp.compare(val, max_value) == 1) {
 				max_value = val;
-			else if (mincomp.compare(val, max_value) == 1)
-				max_value = val;
+			}
 		}
 		return max_value;
 	}
@@ -361,7 +364,10 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	public Object mapRemoveAll(AI ai, Object value) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		var sizeBefore = size();
-		entrySet().removeIf(entry -> (entry.getValue() == null && value == null) || entry.getValue().equals(value));
+		entrySet().removeIf(entry -> {
+			var v = entry.getValue();
+			return v == null ? value == null : v.equals(value);
+		});
 		ai.decreaseRAM(ram, 2 * (sizeBefore - size()));
 		return null;
 	}
@@ -427,8 +433,10 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		ai.ops(1 + 3 * size());
 		var result = new MapLeekValue(ai);
 		for (var entry : entrySet()) {
-			if (ai.bool(function.run(ai, null, entry.getValue(), entry.getKey(), this))) {
-				result.set(entry.getKey(), entry.getValue());
+			var key = entry.getKey();
+			var value = entry.getValue();
+			if (ai.bool(function.run(ai, null, value, key, this))) {
+				result.set(key, value);
 			}
 		}
 		ai.increaseRAM(ram, 2 * result.size());
