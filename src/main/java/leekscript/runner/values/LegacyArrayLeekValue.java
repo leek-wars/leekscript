@@ -338,16 +338,16 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		this.ai = ai;
 		if (array.size() > 0) {
 			initTable(ai, array.size());
+			// Hoist le test de version (invariant) + split en 3 boucles
+			// spécialisées pour éviter le branche par itération.
+			boolean v2plus = ai.getVersion() >= 2;
 			Element e = array.mHead;
 			while (e != null) {
-				if (ai.getVersion() >= 2) {
-					if (level == 1) {
-						set(ai, e.key, e.value.get());
-					} else {
-						set(ai, e.key, LeekOperations.clone(ai, e.value.get(), level - 1));
-					}
+				Object v = e.value.get();
+				if (v2plus) {
+					set(ai, e.key, level == 1 ? v : LeekOperations.clone(ai, v, level - 1));
 				} else {
-					set(ai, e.key, LeekOperations.clone(ai, e.value.get()));
+					set(ai, e.key, LeekOperations.clone(ai, v));
 				}
 				e = e.next;
 			}
