@@ -1,6 +1,5 @@
 package leekscript.runner.values;
 
-import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -12,11 +11,13 @@ import leekscript.runner.LeekRunException;
 
 public class RealIntervalLeekValue extends IntervalLeekValue {
 
-	public static class IntervalIterator implements Iterator<Entry<Object, Object>> {
+	public static class IntervalIterator implements Iterator<Entry<Object, Object>>, Entry<Object, Object> {
 
 		private RealIntervalLeekValue interval;
 		private long i = 0;
 		private double x;
+		private long currentKey;
+		private double currentValue;
 
 		public IntervalIterator(RealIntervalLeekValue interval) {
 			this.interval = interval;
@@ -30,11 +31,21 @@ public class RealIntervalLeekValue extends IntervalLeekValue {
 
 		@Override
 		public Entry<Object, Object> next() {
-			var e = new AbstractMap.SimpleEntry<Object, Object>(i, x);
+			currentKey = i;
+			currentValue = x;
 			i++;
 			x++;
-			return e;
+			return this;
 		}
+
+		@Override
+		public Object getKey() { return currentKey; }
+
+		@Override
+		public Object getValue() { return currentValue; }
+
+		@Override
+		public Object setValue(Object v) { throw new UnsupportedOperationException(); }
 	}
 
 	private final double from;
