@@ -466,10 +466,10 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { protected m() { return 10 } } class B extends A { public r() { return m() } } return new B().r()").equals("10");
 		code_v2_("class A { private m() { return 10 } } class B extends A { public r() { return m() } } return new B().r()").error(Error.PRIVATE_METHOD);
 		code_v2_("class A { private m() { return 10 } public r() { return m() } } return new A().r()").equals("10");
-		// Issue #2709: une override ne peut pas réduire la visibilité
-		code_v2_("class A { public m() { return 1 } } class B extends A { private m() { return 2 } } return 0").error(Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY);
-		code_v2_("class A { public m() { return 1 } } class B extends A { protected m() { return 2 } } return 0").error(Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY);
-		code_v2_("class A { protected m() { return 1 } } class B extends A { private m() { return 2 } } return 0").error(Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY);
+		// Issue #2709: une override ne peut pas réduire la visibilité (warning en LS4, à passer en error en LS5)
+		code_v2_("class A { public m() { return 1 } } class B extends A { private m() { return 2 } } return 0").warning(Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY);
+		code_v2_("class A { public m() { return 1 } } class B extends A { protected m() { return 2 } } return 0").warning(Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY);
+		code_v2_("class A { protected m() { return 1 } } class B extends A { private m() { return 2 } } return 0").warning(Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY);
 		code_v2_("class A { protected m() { return 1 } } class B extends A { public m() { return 2 } } return new B().m()").equals("2");
 		// Issue #2709: méthode héritée accédant à un champ protected du parent
 		code_v2_("class A { protected value = 0 public increment() { this.value += 1 return this.value } } class B extends A {} return B().increment()").equals("1");

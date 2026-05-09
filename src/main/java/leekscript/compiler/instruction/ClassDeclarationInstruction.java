@@ -493,8 +493,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 								}));
 							}
 							// Une override ne peut pas réduire la visibilité (LSP : ce qui est public dans le parent doit le rester).
+							// Warning en LS4 pour ne pas casser les IAs existantes ; à passer en ERROR en LS5.
 							if (version.getValue().level.ordinal() > parentVersion.level.ordinal()) {
-								compiler.addError(new AnalyzeError(block.getLocation(), AnalyzeErrorLevel.ERROR, Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY, new String[] {
+								compiler.addError(new AnalyzeError(block.getLocation(), AnalyzeErrorLevel.WARNING, Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY, new String[] {
 									method.getKey(),
 									version.getValue().level.toString(),
 									parentVersion.level.toString()
