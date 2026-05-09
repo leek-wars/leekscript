@@ -549,22 +549,24 @@ public class ObjectLeekValue implements LeekValue {
 	}
 
 	public Object toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
+		// `visited` suit la chaîne d'ancêtres du DFS, pas l'ensemble des nœuds vus :
+		// les références partagées entre branches parallèles doivent se ré-encoder,
+		// seul un cycle réel doit être tronqué.
+		if (visited.contains(this)) return null;
 		visited.add(this);
-
-		var o = Json.createObject();
-		// Sort keys alphabetically for consistent JSON output
-		var keys = new java.util.ArrayList<>(fields.keySet());
-		java.util.Collections.sort(keys);
-		for (var key : keys) {
-			var v = fields.get(key).get();
-			if (!visited.contains(v)) {
-				if (!ai.isPrimitive(v)) {
-					visited.add(v);
-				}
+		try {
+			var o = Json.createObject();
+			// Sort keys alphabetically for consistent JSON output
+			var keys = new java.util.ArrayList<>(fields.keySet());
+			java.util.Collections.sort(keys);
+			for (var key : keys) {
+				var v = fields.get(key).get();
 				o.putPOJO(ai.string(key), ai.toJSON(v, visited));
 			}
+			return o;
+		} finally {
+			visited.remove(this);
 		}
-		return o;
 	}
 
 	public ClassLeekValue getClazz() {

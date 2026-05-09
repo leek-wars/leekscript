@@ -569,34 +569,28 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	}
 
 	public Object toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
+		if (visited.contains(this)) return null;
 		visited.add(this);
-
-		if (isAssociative()) {
-			ObjectNode o = Json.createObject();
-			var i = iterator();
-			while (i.hasNext()) {
-				var v = i.getValue(ai);
-				if (!visited.contains(v)) {
-					if (!ai.isPrimitive(v)) {
-						visited.add(v);
-					}
+		try {
+			if (isAssociative()) {
+				ObjectNode o = Json.createObject();
+				var i = iterator();
+				while (i.hasNext()) {
+					var v = i.getValue(ai);
 					o.putPOJO(i.key().toString(), ai.toJSON(v, visited));
+					i.next();
 				}
-				i.next();
-			}
-			return o;
-		} else {
-			var a = Json.createArray();
-			for (var entry : this) {
-				var v = entry.getValue();
-				if (!visited.contains(v)) {
-					if (!ai.isPrimitive(v)) {
-						visited.add(v);
-					}
+				return o;
+			} else {
+				var a = Json.createArray();
+				for (var entry : this) {
+					var v = entry.getValue();
 					a.addPOJO(ai.toJSON(v, visited));
 				}
+				return a;
 			}
-			return a;
+		} finally {
+			visited.remove(this);
 		}
 	}
 

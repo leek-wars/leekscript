@@ -485,19 +485,18 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return toJSON(ai, new HashSet<>());
 	}
 
-	public ArrayNode toJSON(AI ai, Set<Object> visited) throws LeekRunException {
+	public ArrayNode toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
+		if (visited.contains(this)) return null;
 		visited.add(this);
-
-		ArrayNode a = Json.createArray();
-		for (var v : this) {
-			if (!visited.contains(v)) {
-				if (!ai.isPrimitive(v)) {
-					visited.add(v);
-				}
-				a.addPOJO(ai.toJSON(v));
+		try {
+			ArrayNode a = Json.createArray();
+			for (var v : this) {
+				a.addPOJO(ai.toJSON(v, visited));
 			}
+			return a;
+		} finally {
+			visited.remove(this);
 		}
-		return a;
 	}
 
 	/**

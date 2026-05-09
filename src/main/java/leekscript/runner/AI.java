@@ -273,34 +273,33 @@ public abstract class AI {
 		}
 
 		public Object toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
+			if (visited.contains(this)) return null;
 			visited.add(this);
-
-			var fields = new ArrayList<Field>();
-			Class<?> current = getClass();
-			while (current != null) {
-				for (var f : current.getDeclaredFields()) {
-					if (f.isSynthetic()) continue;
-					fields.add(f);
+			try {
+				var fields = new ArrayList<Field>();
+				Class<?> current = getClass();
+				while (current != null) {
+					for (var f : current.getDeclaredFields()) {
+						if (f.isSynthetic()) continue;
+						fields.add(f);
+					}
+					current = current.getSuperclass();
 				}
-				current = current.getSuperclass();
-			}
 
-			var o = Json.createObject();
-			for (var field : fields) {
-				Object v;
-				try {
-					v = field.get(this);
-				} catch (IllegalArgumentException | IllegalAccessException e) {
-					v = null;
-				}
-				if (!visited.contains(v)) {
-					if (!ai.isPrimitive(v)) {
-						visited.add(v);
+				var o = Json.createObject();
+				for (var field : fields) {
+					Object v;
+					try {
+						v = field.get(this);
+					} catch (IllegalArgumentException | IllegalAccessException e) {
+						v = null;
 					}
 					o.putPOJO(ai.string(field.getName()), ai.toJSON(v, visited));
 				}
+				return o;
+			} finally {
+				visited.remove(this);
 			}
-			return o;
 		}
 	}
 

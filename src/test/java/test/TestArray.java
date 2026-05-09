@@ -542,9 +542,9 @@ public class TestArray extends TestCommon {
 		code("return jsonEncode([1, 2, 3, 4, 5, 6])").equals("\"[1,2,3,4,5,6]\"");
 		code("return jsonEncode(['a', 'b', 'c', 'd', 'e', 'f'])").equals("\"[\"a\",\"b\",\"c\",\"d\",\"e\",\"f\"]\"");
 		code("var a = [1, 2, 3] return jsonEncode([1, a, 2, 3])").equals("\"[1,[1,2,3],2,3]\"");
-		code("var a = [1] return jsonEncode([1, a, 2, a])").equals("\"[1,[1],2]\"");
+		code("var a = [1] return jsonEncode([1, a, 2, a])").equals("\"[1,[1],2,[1]]\"");
 		code_v1("var a = [] push(a, a) return jsonEncode(a)").equals("\"[[]]\"");
-		code_v2_("var a = [] push(a, a) return jsonEncode(a)").equals("\"[]\"");
+		code_v2_("var a = [] push(a, a) return jsonEncode(a)").equals("\"[null]\"");
 
 		/**
 		 * Méthodes

@@ -48,6 +48,11 @@ public class TestJSON extends TestCommon {
 		code_v4_("var m = ['20000':['L':5], '10000':['L':5], '50000':['L':5]] return jsonEncode(m)").equals("\"{\"10000\":{\"L\":5},\"20000\":{\"L\":5},\"50000\":{\"L\":5}}\"");
 		code_v4_("var m = ['20000':['L':5], '10000':['L':5], '50000':['L':5]] var o = {m: m} return jsonEncode(o)").equals("\"{\"m\":{\"10000\":{\"L\":5},\"20000\":{\"L\":5},\"50000\":{\"L\":5}}}\"");
 
+		// Shared references re-encoded on parallel branches; cycles → null.
+		code_v4_("var a = {test: 'valeur'} var b = {a: a, b: a} return jsonEncode(b)").equals("\"{\"a\":{\"test\":\"valeur\"},\"b\":{\"test\":\"valeur\"}}\"");
+		code_v4_("var d = [1, 2, 3, 4] var e = {a: d, b: d, c: d} return jsonEncode(e)").equals("\"{\"a\":[1,2,3,4],\"b\":[1,2,3,4],\"c\":[1,2,3,4]}\"");
+		code_v3_("var d = [1, 2, 3, 4] var e = ['a': d, 'b': d, 'c': d] return jsonEncode(e)").equals("\"{\"a\":[1,2,3,4],\"b\":[1,2,3,4],\"c\":[1,2,3,4]}\"");
+
 		// section("Value.json()");
 		// // null
 		// code("null.json()").equals("'null'");

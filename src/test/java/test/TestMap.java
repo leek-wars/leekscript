@@ -257,9 +257,9 @@ public class TestMap extends TestCommon {
 		code_v4_("return jsonEncode([1 : 2, 3 : 4, 5 : 6])").equals("\"{\"1\":2,\"3\":4,\"5\":6}\"");
 		code_v4_("return jsonEncode(['a' : 'b', 'c' : 'd', 'e' : 'f'])").equals("\"{\"a\":\"b\",\"c\":\"d\",\"e\":\"f\"}\"");
 		code_v4_("var a = [1, 2, 3] return jsonEncode([1 : a, 2 : 3])").equals("\"{\"1\":[1,2,3],\"2\":3}\"");
-		code_v4_("var a = [1] return jsonEncode([1 : a, 2 : a])").equals("\"{\"1\":[1]}\"");
-		code_v4_("var a = [:] a[a] = a return jsonEncode(a)").equals("\"{}\"");
-		code_strict_v4_("any a = [:] a[a] = a return jsonEncode(a)").equals("\"{}\"");
+		code_v4_("var a = [1] return jsonEncode([1 : a, 2 : a])").equals("\"{\"1\":[1],\"2\":[1]}\"");
+		code_v4_("var a = [:] a[a] = a return jsonEncode(a)").equals("\"{\"[[<...> : <...>] : <...>]\":null}\"");
+		code_strict_v4_("any a = [:] a[a] = a return jsonEncode(a)").equals("\"{\"[[<...> : <...>] : <...>]\":null}\"");
 
 		/*
 		* Iteration

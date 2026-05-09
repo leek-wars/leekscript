@@ -540,24 +540,23 @@ public class MapLeekValue extends HashMap<Object, Object> implements Iterable<En
 	}
 
 	public ObjectNode toJSON(AI ai, HashSet<Object> visited) throws LeekRunException {
+		if (visited.contains(this)) return null;
 		visited.add(this);
-
-		var o = Json.createObject();
-		// Sort keys alphabetically for consistent JSON output
-		var sortedKeys = new java.util.TreeMap<String, Object>();
-		for (var entry : entrySet()) {
-			sortedKeys.put(ai.string(entry.getKey()), entry.getKey());
-		}
-		for (var stringKey : sortedKeys.keySet()) {
-			var key = sortedKeys.get(stringKey);
-			var v = get(key);
-			if (!visited.contains(v)) {
-				if (!ai.isPrimitive(v)) {
-					visited.add(v);
-				}
+		try {
+			var o = Json.createObject();
+			// Sort keys alphabetically for consistent JSON output
+			var sortedKeys = new java.util.TreeMap<String, Object>();
+			for (var entry : entrySet()) {
+				sortedKeys.put(ai.string(entry.getKey()), entry.getKey());
+			}
+			for (var stringKey : sortedKeys.keySet()) {
+				var key = sortedKeys.get(stringKey);
+				var v = get(key);
 				o.putPOJO(stringKey, ai.toJSON(v, visited));
 			}
+			return o;
+		} finally {
+			visited.remove(this);
 		}
-		return o;
 	}
 }
