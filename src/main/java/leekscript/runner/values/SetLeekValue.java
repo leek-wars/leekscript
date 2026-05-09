@@ -68,6 +68,14 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		this(ai, new Object[0]);
 	}
 
+	public SetLeekValue(AI ai, int expectedSize) throws LeekRunException {
+		// Capacity = N / loadFactor (+1) pour éviter le resize quand on ajoute N entrées.
+		super((int) (expectedSize / 0.75f) + 1);
+		this.ai = ai;
+		this.id = ai.getNextObjectID();
+		this.ram = ai.allocateRAM(this);
+	}
+
 	public SetLeekValue(AI ai, Object[] values) throws LeekRunException {
 		// Capacity = N / loadFactor (+1) pour éviter le resize quand on ajoute N entrées.
 		super((int) (values.length / 0.75f) + 1);
@@ -207,7 +215,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 
 	public SetLeekValue setUnion(AI ai, SetLeekValue set) throws LeekRunException {
 		ai.ops((this.size() + set.size()) * 2);
-		var r = new SetLeekValue(ai);
+		var r = new SetLeekValue(ai, this.size() + set.size());
 		r.addAll(this);
 		r.addAll(set);
 		ai.increaseRAM(ram, r.size());
@@ -216,7 +224,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 
 	public SetLeekValue setIntersection(AI ai, SetLeekValue set) throws LeekRunException {
 		ai.ops((this.size() + set.size()) * 2);
-		var r = new SetLeekValue(ai);
+		var r = new SetLeekValue(ai, this.size());
 		r.addAll(this);
 		r.retainAll(set);
 		ai.increaseRAM(ram, r.size());
@@ -225,7 +233,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 
 	public SetLeekValue setDifference(AI ai, SetLeekValue set) throws LeekRunException {
 		ai.ops((this.size() + set.size()) * 2);
-		var r = new SetLeekValue(ai);
+		var r = new SetLeekValue(ai, this.size());
 		r.addAll(this);
 		r.removeAll(set);
 		ai.increaseRAM(ram, r.size());
@@ -234,7 +242,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 
 	public SetLeekValue setDisjunction(AI ai, SetLeekValue set) throws LeekRunException {
 		ai.ops((this.size() + set.size()) * 4);
-		var r = new SetLeekValue(ai);
+		var r = new SetLeekValue(ai, this.size() + set.size());
 		for (var e : this) {
 			if (!set.contains(e)) r.add(e);
 		}
@@ -247,7 +255,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 
 	public SetLeekValue setFilter(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 3 * size());
-		var r = new SetLeekValue(ai);
+		var r = new SetLeekValue(ai, this.size());
 		for (var v : this) {
 			if (ai.bool(function.run(ai, null, v, this))) {
 				r.add(v);
