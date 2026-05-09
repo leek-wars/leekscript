@@ -46,6 +46,11 @@ public class LeekOperations {
 	}
 
 	public static Object clone(AI ai, Object value, int level) throws LeekRunException {
+		// Fast path : types primitifs et immuables (Long/Double/Boolean/String/null).
+		// Représentent la grande majorité des valeurs en v1 où put() clone systématiquement.
+		if (value == null || value instanceof Number || value instanceof Boolean || value instanceof String) {
+			return value;
+		}
 		if (value instanceof LegacyArrayLeekValue) {
 			if (level == 0) return value;
 			var array = (LegacyArrayLeekValue) value;
