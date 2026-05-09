@@ -560,19 +560,20 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	@Override
 	public String toString() {
-		var r = "[";
+		var sb = new StringBuilder("[");
 		boolean first = true;
+		var assoc = isAssociative();
 		var i = iterator();
 		while (i.hasNext()) {
 			if (first) first = false;
-			else r += ", ";
-			if (isAssociative()) {
-				r += i.key().toString() + ": ";
+			else sb.append(", ");
+			if (assoc) {
+				sb.append(i.key()).append(": ");
 			}
-			r += i.getValue();
+			sb.append(i.getValue());
 			i.next();
 		}
-		return r + "]";
+		return sb.append(']').toString();
 	}
 
 	private void initTable(AI ai, int capacity) throws LeekRunException {
