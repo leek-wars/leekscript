@@ -127,13 +127,14 @@ public class ConditionalBloc extends AbstractLeekBlock {
 
 	/**
 	 * Apply false narrowings from the parent condition chain (for else-if / else blocks).
-	 * Returns saved original types for later restore.
+	 * Returns saved original types for later restore (null si aucun parent).
 	 */
 	private Map<LeekVariable, Type> applyParentFalseNarrowings() {
+		// Fast path : la grande majorité des if sont des premiers if (pas else-if/else)
+		// → mParentCondition est null et on n'a rien à appliquer.
+		if (mParentCondition == null) return null;
 		var saved = new HashMap<LeekVariable, Type>();
-		if (mParentCondition != null) {
-			collectParentFalseNarrowings(mParentCondition, saved);
-		}
+		collectParentFalseNarrowings(mParentCondition, saved);
 		return saved;
 	}
 

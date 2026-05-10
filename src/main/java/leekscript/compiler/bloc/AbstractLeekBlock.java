@@ -263,8 +263,9 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 
-		// Track narrowings to restore at end of block (from early returns)
-		var pendingRestores = new ArrayList<Map<LeekVariable, Type>>();
+		// Lazy : la grande majorité des blocs n'ont aucun if avec narrowing → on
+		// évite l'alloc de l'ArrayList pour rien sur chaque block.analyze().
+		ArrayList<Map<LeekVariable, Type>> pendingRestores = null;
 
 		for (var instruction : mInstructions) {
 			instruction.analyze(compiler);
@@ -277,6 +278,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 				&& cb.getNarrowingInfo() != null
 				&& cb.getNarrowingInfo().hasFalse()
 				&& (cb.mEndInstruction != 0 || cb.isAssignmentSatisfiesFalse())) {
+				if (pendingRestores == null) pendingRestores = new ArrayList<>();
 				pendingRestores.add(cb.getNarrowingInfo().applyFalse());
 				// Case 7: also apply property narrowings for subsequent code
 				if (cb.mEndInstruction == 0) {
@@ -290,7 +292,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		}
 
 		// Restore all narrowings applied during this block
-		for (var saved : pendingRestores) {
+		if (pendingRestores != null) for (var saved : pendingRestores) {
 			NarrowingInfo.restore(saved);
 		}
 

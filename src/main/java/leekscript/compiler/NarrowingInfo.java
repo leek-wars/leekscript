@@ -58,6 +58,9 @@ public class NarrowingInfo {
 	}
 
 	public static void restore(Map<LeekVariable, Type> saved) {
+		// null-safe : applyParentFalseNarrowings retourne null quand il n'y a pas
+		// de parent (cas hot : premiers if/while/for).
+		if (saved == null) return;
 		for (var entry : saved.entrySet()) {
 			entry.getKey().setType(entry.getValue());
 		}
