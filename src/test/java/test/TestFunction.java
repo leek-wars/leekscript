@@ -78,6 +78,66 @@ public class TestFunction extends TestCommon {
 		code("return (x) -> x").equals("#Anonymous Function");
 	}
 
+	/**
+	 * Edge cases pour la détection d'arrow function dans une déclaration `var x = ...`.
+	 * Le parser doit décider si l'expression à droite du `=` est une arrow function
+	 * (pour activer le contexte `inList=false` qui permet aux virgules de séparer
+	 * les paramètres) ou une expression normale.
+	 *
+	 * Couvre les 6 cas que peut rencontrer isArrowFunctionAhead :
+	 *   1. arrow inside parens : `(a, b) => a + b`
+	 *   2. arrow sans parens (param unique) : `a => a * 2`
+	 *   3. expression avec parens mais pas d'arrow : `(1 + 2) * 3`
+	 *   4. arrow nested deeper que le premier `)` : `f((y) => y, z)`
+	 *   5. function expression avec `=>` dans le return type : `function() => integer { return 1 }`
+	 *   6. expression sans `(` ni `=>` : `5`
+	 */
+	@Test
+	public void testArrowFunctionDetectionInVarDecl() throws Exception {
+		section("Arrow function detection in var declaration");
+		// 1. arrow inside parens
+		code("var f = (a, b) => a + b return f(3, 4)").equals("7");
+		code("var f = (a) => a * 2 return f(5)").equals("10");
+		// 2. arrow sans parens (param unique sans parens)
+		code("var f = x => x * 3 return f(4)").equals("12");
+		code("var f = -> 42 return f()").equals("42");
+		// 3. parens sans arrow : pas une arrow function
+		code("var x = (1 + 2) * 3 return x").equals("9");
+		code("var x = (5) return x").equals("5");
+		// 4. arrow nested deeper qu'un `)` rencontré avant : passage d'arrow comme
+		//    argument à une fonction. L'arrow apparaît APRÈS le PAR_LEFT du `f(`
+		//    et le scan doit le détecter à travers le `)` du paramètre.
+		code("function callIt(f, v) { return f(v) } var g = callIt(x => x * 7, 6) return g").equals("42");
+		// 5. function expression avec arrow dans return type : pas une "arrow function"
+		//    au sens var-declaration, mais contient `=>`
+		code("var f = function() => integer { return 7 } return f()").equals("7");
+		code_v2_("var f = function(integer x) => integer { return x + 1 } return f(10)").equals("11");
+		// 6. expression simple, no paren no arrow
+		code("var x = 5 return x").equals("5");
+		code("var s = 'hello' return s").equals("\"hello\"");
+		// Combinaisons piégeuses
+		code("var f = (a, b) => (a + b) * 2 return f(1, 2)").equals("6");
+		code("var x = ((1)) return x").equals("1");
+		code("var x = (1) + (2) return x").equals("3");
+	}
+
+	/**
+	 * Cas additionnels de redéfinition de fonctions système (passe 4 : isRedefinedFunction
+	 * fast-path via hasRedefinedFunctions). Les patterns ++/--/+=/-= sont déjà couverts ;
+	 * on ajoute ?? = / ??= (coalesce-assign) qui n'était pas explicite.
+	 */
+	@Test
+	public void testRedefinitionAdditional() throws Exception {
+		section("Redefinition — coalesce-assign and other compound ops");
+		code_v4_("abs ??= 2; return 0").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code_v4_("abs *= 2; return 0").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code_v4_("abs /= 2; return 0").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code_v4_("function f() { return 1 } f ??= function() { return 2 } return 0").error(Error.CANNOT_REDEFINE_FUNCTION);
+		// Sanity : sans redef, le check `hasRedefinedFunctions` fast-path est utilisé
+		// pour TOUTES les variables. Vérifie qu'une IA propre n'émet aucun faux warning.
+		code_v4_("var x = 5 return x + 1").equals("6");
+	}
+
 	@Test
 	public void testRecursive() throws Exception {
 		section("Recursive");
@@ -373,6 +433,51 @@ public class TestFunction extends TestCommon {
 		DISABLED_code_v1("Function< => integer> f function test(Function< => any> _) {} test(f)").equals("null");
 		code_v2_("Function< => integer> f function test(Function< => any> _) {} test(f)").equals("null");
 		code("Function<integer => boolean> t = function(integer b) => boolean { return true }").equals("null");
+	}
+
+	/**
+	 * Edge cases du parser de types Function. Couvre le fast-path de eatPrimaryType
+	 * qui doit accepter TokenType.FUNCTION en plus de STRING : en v1/v2 le lexer est
+	 * case-insensitive, donc `Function` (capital F) est tokenisé comme FUNCTION
+	 * (le keyword) plutôt que STRING.
+	 *
+	 * Si on oublie d'ajouter FUNCTION à l'allowlist, on obtient des erreurs comme
+	 * `OPENING_CURLY_BRACKET_EXPECTED` ou `PARAMETER_NAME_EXPECTED` sur ces tests.
+	 */
+	@Test
+	public void testFunctionTypeEdgeCases() throws Exception {
+		section("Function type edge cases (compound types)");
+		// Function sans paramètre, juste arrow + return type
+		code("function f() => Function< => integer> { return function() => integer { return 7 } } return f()()").equals("7");
+		code_v2_("Function< => integer> f f = function() => integer { return 42 } return f()").equals("42");
+		// Function avec plusieurs paramètres
+		code_v2_("Function<integer, integer => integer> add = function(integer a, integer b) => integer { return a + b } return add(3, 4)").equals("7");
+		// Function imbriqué : Function returning Function
+		code_v2_("Function< => Function< => integer>> make = function() => Function< => integer> { return function() => integer { return 99 } } return make()()").equals("99");
+		// Test en v3+ (case-sensitive : `Function` tokenisé en STRING, pas FUNCTION)
+		code_v3_("function f() => Function< => integer> { return function() => integer { return 7 } } return f()()").equals("7");
+		// Compound avec null
+		code_v2_("Function< => integer> | null g = null return g").equals("null");
+	}
+
+	/**
+	 * Test : un user identifier qui ressemble à un nom de type ou de keyword.
+	 * Le fast-path en v3+ vérifie la première char contre les keyword-starts ; un
+	 * identifiant comme `Helper`, `Killer`, `Manager` (commençant par H/J/K/M/Q/U/Z)
+	 * skip carrément le HashMap.get sur KEYWORDS.
+	 */
+	@Test
+	public void testKeywordFastPathV3() throws Exception {
+		section("Keyword fast-path identifiers (v3+)");
+		code_v3_("var Helper = 1 return Helper").equals("1");
+		code_v3_("var Manager = 'm' return Manager").equals("\"m\"");
+		code_v3_("var Quux = 42 var Zen = 7 return Quux + Zen").equals("49");
+		// User identifier qui commence par un char keyword-start (a..y sauf h/j/k/m/q/u/z)
+		// → passe le bitmap, fallback HashMap lookup, miss → STRING
+		code_v3_("var alpha = 1 var beta = 2 return alpha + beta").equals("3");
+		// Identifiant proche d'un keyword mais avec lettre différente
+		code_v3_("var foreach = 5 return foreach + 1").equals("6");
+		code_v3_("var ifElse = 'x' return ifElse").equals("\"x\"");
 	}
 
 	@Test

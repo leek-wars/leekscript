@@ -128,4 +128,27 @@ public class TestString extends TestCommon {
 		code("return codePointAt('🐨🐨', 2)").equals("128040");
 	}
 
+	/**
+	 * Edge cases du lexer tryParseString — la refonte fait un scan direct sur
+	 * `content` et track manuellement lineCounter pour les newlines internes.
+	 * Si on rate le tracking, les erreurs ultérieures pointent vers la mauvaise ligne.
+	 */
+	@Test
+	public void testString_lexerEdgeCases() throws Exception {
+		section("String lexer edge cases");
+		// Quote simple à l'intérieur de double quotes (pas d'escape nécessaire)
+		code("return \"it's\"").equals("\"it's\"");
+		// String vide — les deux délimiteurs
+		code("return ''").equals("\"\"");
+		code("return \"\"").equals("\"\"");
+		// String non fermée à EOF → error (le lexer doit reporter STRING_NOT_CLOSED)
+		code("return 'unclosed").any_error();
+		code("return \"unclosed").any_error();
+		// String avec backslash escape : le lexer préserve le contenu raw (8 chars
+		// pour `abc\"def` car le backslash est conservé tel quel au niveau lex)
+		code_v2_("return length(\"abc\\\"def\")").equals("8");
+		// String simple — sanity check qu'aucune régression silencieuse n'est introduite
+		code("return length('hello')").equals("5");
+	}
+
 }

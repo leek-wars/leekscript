@@ -358,4 +358,44 @@ public class TestNarrowing extends TestCommon {
 		code_strict_v4_("function getCellFromXY(integer x, integer y) => integer? { return x + y } class Cell { integer id; static Cell get(integer i) { var c = new Cell(); c.id = i; return c } static Cell? fromXY(integer x, integer y) { var id = getCellFromXY(x, y); if (id == null) return null; return Cell.get(id) } } return Cell.fromXY(1, 2)!.id").noWarning();
 	}
 
+	/**
+	 * Edge cases du parcours de NarrowingInfo après la refonte lazy des 5 HashMaps
+	 * internes. Vérifie que les chemins où certaines branches du `merge` ont des
+	 * sources null/vides n'allouent rien et donnent le bon résultat.
+	 */
+	@Test
+	public void testNarrowing_NoOpAndEmptyBranches() throws Exception {
+		section("Narrowing: conditions without narrowing + empty merge branches");
+		// Condition sans aucune narrowing : NarrowingInfo reste tout-null
+		code_v4_("function getFoo() => boolean { return true } if (getFoo()) { return 1 } return 0").noWarning().equals("1");
+		// AND avec une seule branche narrowante : l'autre branche skip dans mergeInto
+		code_v4_("integer | null x = 5; function getFoo() => boolean { return true } if (x != null && getFoo()) { return abs(x) } return 0").noWarning().equals("5");
+		code_v4_("integer | null x = 5; function getFoo() => boolean { return true } if (getFoo() && x != null) { return abs(x) } return 0").noWarning().equals("5");
+		// OR avec une seule branche narrowante : pareil
+		code_v4_("integer | null x = 5; integer | null y = null; if (x == null || y == null) { return 0 } return abs(x) + abs(y)").noWarning().equals("0");
+		// NOT inversion d'une condition sans narrowing
+		code_v4_("function getFoo() => boolean { return true } if (!getFoo()) { return 0 } return 1").noWarning().equals("1");
+		// NOT inversion d'un null check : trueNarrowings ↔ falseNarrowings
+		code_v4_("integer | null x = 5; if (!(x != null)) { return 0 } return abs(x)").noWarning().equals("5");
+		// AND combinant deux null checks sur des variables différentes
+		code_v4_("integer | null x = 5; integer | null y = 3; if (x != null && y != null) { return abs(x) + abs(y) } return 0").noWarning().equals("8");
+		// Imbrication NOT(AND)
+		code_v4_("integer | null x = 5; integer | null y = 3; if (!(x == null && y == null)) { return 1 } return 0").noWarning().equals("1");
+	}
+
+	/**
+	 * Edge case du fast-path `applyParentFalseNarrowings` qui retourne null direct
+	 * quand `mParentCondition` est null (cas hot des premiers if).
+	 */
+	@Test
+	public void testNarrowing_FirstIfNoParentChain() throws Exception {
+		section("Narrowing: first-if without parent chain (fast path)");
+		// Premier if sans else-if : mParentCondition est null, applyParentFalseNarrowings → null
+		code_v4_("integer | null x = 5; if (x != null) { return abs(x) } return 0").noWarning().equals("5");
+		// Premier if isolé, plusieurs séquentiels (chacun avec mParentCondition = null)
+		code_v4_("integer | null x = 5; if (x != null) { x = 10 } integer | null y = 3; if (y != null) { return abs(y) + abs(x!) } return 0").noWarning().equals("13");
+		// if-then-without-else : pas de chain
+		code_v4_("integer | null x = 5; if (x == null) { return 0 } return abs(x)").noWarning().equals("5");
+	}
+
 }

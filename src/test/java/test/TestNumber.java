@@ -75,6 +75,31 @@ public class TestNumber extends TestCommon {
 		code("0b101.010").error(Error.INVALID_NUMBER);
 	}
 
+	/**
+	 * Edge cases du scanner de nombres (tryParseNumber) :
+	 * - plusieurs points décimaux → INVALID_CHAR au second point
+	 * - frontière `1..10` (intervalle) vs `1.0` (décimal)
+	 * - exposant signé `e+`/`e-`/`p+`/`p-`
+	 */
+	@Test
+	public void testNumberDotEdgeCases() throws Exception {
+		section("Number dot edge cases");
+		// Plusieurs points décimaux : `1.2.3` → INVALID_CHAR au 2ème '.'
+		code("return 1.2.3").error(Error.INVALID_CHAR);
+		code_v2_("return 0.1.2").error(Error.INVALID_CHAR);
+		// Frontière intervalle : `[1..3]` doit tokeniser `1` `..` `3` (pas une décimale).
+		// Le syntaxe d'intervalle nécessite les crochets.
+		code_v2_("return [1..3]").equals("[1..3]");
+		code_v1("return [1.0..3.0]").equals("[1..3]");
+		// Décimal suivi de `..` dans un intervalle
+		code_v2_("return [1.5..3.5]").equals("[1.5..3.5]");
+		// Exposant signé valide
+		code_v2_("return 2e+3").equals("2000.0");
+		code_v2_("return 5e-2").equals("0.05");
+		// `e0` minimal
+		code_v2_("return 1e0").equals("1.0");
+	}
+
 	@Test
 	public void testBasicOperations() throws Exception {
 		section("Basic operations");
