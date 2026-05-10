@@ -298,169 +298,148 @@ public class WordCompiler {
 		mLine = mTokens.get().getLocation().getStartLine();
 		mMain.addInstruction();
 		Token word = mTokens.get();
-		if (word.getType() == TokenType.END_INSTRUCTION) {
-			// mCurentBlock.addInstruction(this, new BlankInstruction());
-			mCurentBlock.setFull(true);
-			mTokens.skip();
-			return;
-		} else if (word.getType() == TokenType.ACCOLADE_RIGHT) {
-			// Fermeture de bloc
-			if (!mCurentBlock.hasAccolade() || mCurentBlock.getParent() == null) {
-				addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.NO_BLOC_TO_CLOSE));
+		// switch sur enum : tableswitch JIT-friendly vs ~17 if/else if. Sur Quantum
+		// (~120k tokens compileWord-isé) les `if (word.getType() == ...)` étaient
+		// dans le top des hot lines même si chaque check est trivial.
+		switch (word.getType()) {
+			case END_INSTRUCTION:
+				mCurentBlock.setFull(true);
 				mTokens.skip();
-			} else {
-				if (mCurentBlock instanceof DoWhileBlock) {
-					DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
-					mCurentBlock.checkEndBlock();
-					mCurentBlock = mCurentBlock.getParent();
+				return;
+			case ACCOLADE_RIGHT:
+				if (!mCurentBlock.hasAccolade() || mCurentBlock.getParent() == null) {
+					addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.NO_BLOC_TO_CLOSE));
 					mTokens.skip();
-					dowhileendBlock(do_block);
 				} else {
-					mCurentBlock.checkEndBlock();
-					mCurentBlock = mCurentBlock.getParent();
+					if (mCurentBlock instanceof DoWhileBlock) {
+						DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
+						mCurentBlock.checkEndBlock();
+						mCurentBlock = mCurentBlock.getParent();
+						mTokens.skip();
+						dowhileendBlock(do_block);
+					} else {
+						mCurentBlock.checkEndBlock();
+						mCurentBlock = mCurentBlock.getParent();
+						mTokens.skip();
+					}
+				}
+				return;
+			case VAR:
+				mTokens.skip();
+				variableDeclaration(null, NO_ANNOTATIONS);
+				return;
+			case GLOBAL:
+				globalDeclaration(NO_ANNOTATIONS);
+				return;
+			case RETURN: {
+				var token = mTokens.eat();
+				var optional = false;
+				if (mTokens.get().getWord().equals("?")) {
+					optional = true;
+					mTokens.eat();
+				}
+				Expression exp = null;
+				if (mTokens.get().getType() != TokenType.END_INSTRUCTION && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+					exp = readExpression();
+				}
+				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
 					mTokens.skip();
 				}
-			}
-			return;
-
-		} else if (word.getType() == TokenType.VAR) {
-
-			// Déclaration de variable
-			mTokens.skip();
-			variableDeclaration(null, NO_ANNOTATIONS);
-			return;
-
-		} else if (word.getType() == TokenType.GLOBAL) {
-
-			// Déclaration de variable
-			globalDeclaration(NO_ANNOTATIONS);
-			return;
-
-		} else if (word.getType() == TokenType.RETURN) {
-
-			var token = mTokens.eat();
-			var optional = false;
-			if (mTokens.get().getWord().equals("?")) {
-				optional = true;
-				mTokens.eat();
-			}
-			Expression exp = null;
-			if (mTokens.get().getType() != TokenType.END_INSTRUCTION && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
-				exp = readExpression();
-			}
-			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
-				mTokens.skip();
-			}
-			mCurentBlock.addInstruction(this, new LeekReturnInstruction(token, exp, optional));
-			return;
-
-		} else if (word.getType() == TokenType.FOR) {
-
-			forBlock();
-			return;
-
-		} else if (word.getType() == TokenType.WHILE) {
-
-			whileBlock();
-			return;
-
-		} else if (word.getType() == TokenType.IF) {
-
-			ifBlock();
-			return;
-
-		} else if (version >= 2 && getCurrentBlock() instanceof MainLeekBlock && word.getType() == TokenType.CLASS) {
-
-			// Déclaration de classe
-			mTokens.skip();
-			classDeclaration(NO_ANNOTATIONS);
-			return;
-
-		} else if (word.getType() == TokenType.BREAK) {
-
-			if (!mCurentBlock.isBreakable()) {
-				addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.BREAK_OUT_OF_LOOP));
-			}
-			mTokens.skip();
-			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
-				mTokens.skip();
-			}
-			mCurentBlock.addInstruction(this, new LeekBreakInstruction(word));
-
-			return;
-
-		} else if (word.getType() == TokenType.CONTINUE) {
-
-			if (!mCurentBlock.isBreakable()) {
-				addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CONTINUE_OUT_OF_LOOP));
-			}
-			var token = mTokens.eat();
-			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
-				mTokens.skip();
-			}
-			mCurentBlock.addInstruction(this, new LeekContinueInstruction(token));
-			return;
-
- 		} else if (isAnnotationStart()) {
-
-			var annotations = collectAnnotations();
-			word = mTokens.get();
-			if (word.getType() == TokenType.VAR) {
-				mTokens.skip();
-				variableDeclaration(null, annotations);
+				mCurentBlock.addInstruction(this, new LeekReturnInstruction(token, exp, optional));
 				return;
-			} else if (word.getType() == TokenType.FUNCTION) {
-				var functionToken = mTokens.eat();
-				if (!mTokens.get().getWord().equals("<")) {
-					functionBlock(functionToken, annotations);
+			}
+			case FOR:
+				forBlock();
+				return;
+			case WHILE:
+				whileBlock();
+				return;
+			case IF:
+				ifBlock();
+				return;
+			case CLASS:
+				if (version >= 2 && getCurrentBlock() instanceof MainLeekBlock) {
+					mTokens.skip();
+					classDeclaration(NO_ANNOTATIONS);
 					return;
 				}
-				mTokens.unskip(); // type Function<...>, on continue
-			} else if (word.getType() == TokenType.GLOBAL) {
-				globalDeclaration(annotations);
-				return;
-			} else if (version >= 2 && getCurrentBlock() instanceof MainLeekBlock && word.getType() == TokenType.CLASS) {
-				mTokens.skip();
-				classDeclaration(annotations);
-				return;
-			} else {
-				for (var ann : annotations) {
-					addError(new AnalyzeError(ann, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_INVALID_CONTEXT, new String[] { ann.getWord() }));
+				break;
+			case BREAK:
+				if (!mCurentBlock.isBreakable()) {
+					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.BREAK_OUT_OF_LOOP));
 				}
+				mTokens.skip();
+				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
+					mTokens.skip();
+				}
+				mCurentBlock.addInstruction(this, new LeekBreakInstruction(word));
+				return;
+			case CONTINUE: {
+				if (!mCurentBlock.isBreakable()) {
+					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CONTINUE_OUT_OF_LOOP));
+				}
+				var token = mTokens.eat();
+				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
+					mTokens.skip();
+				}
+				mCurentBlock.addInstruction(this, new LeekContinueInstruction(token));
 				return;
 			}
-
-		} else if (word.getType() == TokenType.FUNCTION) {
-
-			var functionToken = mTokens.eat();
-			if (mTokens.get().getWord().equals("<")) { // Début d'un type
-				mTokens.unskip();
-			} else { // Vraie fonction
+			case FUNCTION: {
+				var functionToken = mTokens.eat();
+				if (mTokens.get().getWord().equals("<")) { // type Function<...> → expression
+					mTokens.unskip();
+					break;
+				}
 				functionBlock(functionToken, NO_ANNOTATIONS);
 				return;
 			}
-
-		} else if (word.getType() == TokenType.ELSE) {
-
-			elseBlock();
-			return;
-
-		} else if (word.getType() == TokenType.DO) {
-
-			doWhileBlock();
-			return;
-
-		} else if (word.getType() == TokenType.SWITCH) {
-
-			switchBlock();
-			return;
-
-		} else if (word.getType() == TokenType.INCLUDE) {
-
-			var token = mTokens.eat(); // include
-			includeBlock(token);
-			return;
-
+			case ELSE:
+				elseBlock();
+				return;
+			case DO:
+				doWhileBlock();
+				return;
+			case SWITCH:
+				switchBlock();
+				return;
+			case INCLUDE: {
+				var token = mTokens.eat();
+				includeBlock(token);
+				return;
+			}
+			default:
+				// Annotations sont préfixées par '@' (TokenType.OPERATOR avec word="@")
+				if (isAnnotationStart()) {
+					var annotations = collectAnnotations();
+					word = mTokens.get();
+					if (word.getType() == TokenType.VAR) {
+						mTokens.skip();
+						variableDeclaration(null, annotations);
+						return;
+					} else if (word.getType() == TokenType.FUNCTION) {
+						var functionToken = mTokens.eat();
+						if (!mTokens.get().getWord().equals("<")) {
+							functionBlock(functionToken, annotations);
+							return;
+						}
+						mTokens.unskip(); // type Function<...>, on continue en expression
+						break;
+					} else if (word.getType() == TokenType.GLOBAL) {
+						globalDeclaration(annotations);
+						return;
+					} else if (version >= 2 && getCurrentBlock() instanceof MainLeekBlock && word.getType() == TokenType.CLASS) {
+						mTokens.skip();
+						classDeclaration(annotations);
+						return;
+					} else {
+						for (var ann : annotations) {
+							addError(new AnalyzeError(ann, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_INVALID_CONTEXT, new String[] { ann.getWord() }));
+						}
+						return;
+					}
+				}
+				break;
 		}
 
 		var save = mTokens.getPosition();
