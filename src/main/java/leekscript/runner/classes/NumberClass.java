@@ -104,8 +104,10 @@ public class NumberClass {
 		return Math.log(x);
 	}
 
+	private static final double LN2 = Math.log(2);
+
 	public static double log2(AI ai, double x) {
-		return Math.log(x) / Math.log(2);
+		return Math.log(x) / LN2;
 	}
 
 	public static double log10(AI ai, double x) {
