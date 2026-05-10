@@ -2294,10 +2294,16 @@ public class WordCompiler {
 	}
 
 	public boolean isKeyword(Token word) {
-		String w = word.getWord();
-		if (getVersion() >= 3) return LexicalParser.reservedWordsSet.contains(w);
+		// En v3+, la lexie est case-sensitive : si le token est de type STRING,
+		// c'est que LexicalParser n'a pas trouvé de match dans KEYWORDS — donc
+		// ce N'EST PAS un keyword. On évite ainsi un Set.contains + hash sur
+		// chaque déclaration de variable / classe / paramètre.
+		if (getVersion() >= 3) {
+			if (word.getType() == TokenType.STRING) return false;
+			return LexicalParser.reservedWordsSet.contains(word.getWord());
+		}
 		// v1-2 : matching insensible à la casse, lowercase puis lookup.
-		return LexicalParser.reservedWordsSet.contains(w.toLowerCase());
+		return LexicalParser.reservedWordsSet.contains(word.getWord().toLowerCase());
 	}
 
 	public boolean isAvailable(Token word, boolean allFunctions) {
