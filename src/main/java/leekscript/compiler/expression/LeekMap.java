@@ -44,10 +44,15 @@ public class LeekMap extends Expression {
 	}
 
 	public void addValue(WordCompiler compiler, Expression key, Expression value) throws LeekCompilerException {
-		if (mEntries.stream().anyMatch(entry -> key.equals(entry.key))) {
-			compiler.addError(new AnalyzeError(key.getLocation(), AnalyzeErrorLevel.ERROR, Error.MAP_DUPLICATED_KEY));
+		// Boucle indexée au lieu de stream + lambda capturant — évite l'allocation
+		// du Stream et de la lambda à chaque ajout (apparaissait dans le top JFR
+		// sur les IAs avec beaucoup de maps littérales).
+		for (var entry : mEntries) {
+			if (key.equals(entry.key)) {
+				compiler.addError(new AnalyzeError(key.getLocation(), AnalyzeErrorLevel.ERROR, Error.MAP_DUPLICATED_KEY));
+				break;
+			}
 		}
-
 		mEntries.add(new Entry(key, value));
 	}
 
