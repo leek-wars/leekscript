@@ -1358,6 +1358,7 @@ public abstract class AI {
 	}
 
 	public long intdiv(Object x, Object y) throws LeekRunException {
+		if (x instanceof Long lx && y instanceof Long ly) return (long) lx / (long) ly;
 		return longint(x) / longint(y);
 	}
 
