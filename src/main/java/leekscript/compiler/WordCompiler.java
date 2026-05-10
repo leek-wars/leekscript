@@ -1208,10 +1208,8 @@ public class WordCompiler {
 		if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals("=")) {
 			mTokens.skip();
 
-			// Arrow function?
-			int p = mTokens.getOffsetToNextClosingParenthesis();
-			int a = mTokens.getOffsetToNextArrow();
-			boolean isArrowFunction = a != -1 && (a < p || p == -1);
+			// Arrow function ?
+			boolean isArrowFunction = mTokens.isArrowFunctionAhead();
 
 			// Si oui on récupère la valeur en question
 			variable.setValue(readExpression(!isArrowFunction));

@@ -86,46 +86,28 @@ public class LexicalParserTokenStream {
 		}
 	}
 
-	public int getOffsetToNextClosingParenthesis() {
-		int offset = 0;
+	/**
+	 * Combine getOffsetToNextArrow + getOffsetToNextClosingParenthesis en un seul
+	 * forward scan : true ssi un ARROW apparaît avant un PAR_RIGHT non balancé
+	 * (en partant à level=1). Sémantique équivalente à
+	 *   a != -1 && (a < p || p == -1)
+	 * mais la nouvelle version termine au premier `)` non matché — l'ancienne
+	 * scannait toujours jusqu'à EOF si ni arrow ni `)` non matché n'existaient,
+	 * ce qui rendait `var x = ...;` au top-level O(taille du fichier) par déclaration.
+	 */
+	public boolean isArrowFunctionAhead() {
 		int level = 1;
-
-		while (level > 0) {
-			var token = get(offset++);
-
-			var tokenType = token.getType();
-			switch (tokenType) {
-				case END_OF_FILE:
-					return -1;
-				case PAR_LEFT:
-					level++;
-					break;
-				case PAR_RIGHT:
-					level--;
-					break;
-				default:
-					break;
+		int n = tokens.size();
+		var ts = tokens;
+		for (int i = cursor; i < n; i++) {
+			TokenType type = ts.get(i).getType();
+			if (type == TokenType.ARROW) return true;
+			if (type == TokenType.PAR_LEFT) level++;
+			else if (type == TokenType.PAR_RIGHT) {
+				if (--level == 0) return false;
 			}
 		}
-		return offset - 1;
-	}
-
-	public int getOffsetToNextArrow() {
-		int offset = 0;
-
-		while (true) {
-			var token = get(offset++);
-			var tokenType = token.getType();
-
-			switch (tokenType) {
-				case END_OF_FILE:
-					return -1;
-				case ARROW:
-					return offset - 1;
-				default:
-					break;
-			}
-		}
+		return false;
 	}
 
 	@Override
