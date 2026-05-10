@@ -91,7 +91,19 @@ public class NativeFileSystem extends FileSystem {
 
 	@Override
 	public long getAITimestamp(AIFile ai) {
-		return 0;
+		// Renvoyer le mtime réel pour que le cache de Folder.resolve fonctionne :
+		// la vérif `currentTimestamp > 0 && currentTimestamp == ai.getTimestamp()`
+		// échoue tant qu'on renvoie 0, et chaque include relance findFile() en créant
+		// un nouvel AIFile — la dédup `mIncluded.contains(ai)` (par référence) casse
+		// alors et chaque classe est parsée une fois par chemin d'include.
+		try {
+			Path folderRoot = Paths.get(ai.getFolder().getName());
+			Path resolved = resolveSafe(folderRoot, ai.getName());
+			if (resolved == null) return 0;
+			return resolved.toFile().lastModified();
+		} catch (Exception e) {
+			return 0;
+		}
 	}
 
 	@Override
