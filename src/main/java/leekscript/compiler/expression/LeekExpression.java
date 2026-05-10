@@ -277,8 +277,8 @@ public class LeekExpression extends Expression {
 	public void addUnarySuffix(int suffix, Token token) {
 		// On doit ajouter ce suffix au dernier élément ajouté
 		if (mExpression1 != null && mExpression2 == null) {
-			if (mExpression1.getNature() == EXPRESSION)
-				((LeekExpression) mExpression1).addUnarySuffix(suffix, token);
+			if (mExpression1 instanceof LeekExpression le1)
+				le1.addUnarySuffix(suffix, token);
 			else {
 				// On doit ajouter à l'élément mExpression1
 				LeekExpression exp = new LeekExpression();
@@ -290,8 +290,8 @@ public class LeekExpression extends Expression {
 			}
 		}
 		else if (mExpression2 != null) {
-			if (mExpression2.getNature() == EXPRESSION)
-				((LeekExpression) mExpression2).addUnarySuffix(suffix, token);
+			if (mExpression2 instanceof LeekExpression le2)
+				le2.addUnarySuffix(suffix, token);
 			else {
 				// On doit ajouter à l'élément mExpression2
 				LeekExpression exp = new LeekExpression();
@@ -349,21 +349,21 @@ public class LeekExpression extends Expression {
 
 	public void replaceExpression(Expression base, Expression replacement) {
 		if (mExpression1 == base) {
-			if (replacement.getNature() == EXPRESSION)
-				((LeekExpression) replacement).setParent(this);
+			if (replacement instanceof LeekExpression le)
+				le.setParent(this);
 			mExpression1 = replacement;
 		}
 		else if (mExpression2 == base) {
-			if (replacement.getNature() == EXPRESSION)
-				((LeekExpression) replacement).setParent(this);
+			if (replacement instanceof LeekExpression le)
+				le.setParent(this);
 			mExpression2 = replacement;
 		}
 	}
 
 	public void addOperator(int operator, Token token) {
 		// On doit trouver à quel endroit de l'arborescence on doit placer l'opérateur
-		if (mExpression1 != null && mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete(operator)) {
-			((LeekExpression) mExpression1).addOperator(operator, token);
+		if (mExpression1 instanceof LeekExpression le1 && !le1.complete(operator)) {
+			le1.addOperator(operator, token);
 		}
 		else if (mOperator == -1) {
 			if (operator == Operators.TERNAIRE) {
