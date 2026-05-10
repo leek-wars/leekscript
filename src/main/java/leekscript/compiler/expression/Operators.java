@@ -1,5 +1,8 @@
 package leekscript.compiler.expression;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class Operators {
 	public final static int CROCHET = 1;
 	public final static int PARENTHESIS = 2;
@@ -61,71 +64,76 @@ public class Operators {
 	public final static int COALESCE = 58;
 	public final static int COALESCE_ASSIGN = 59;
 
-	public final static int getOperator(String operator, int version) {
-		if(operator.equals("[")) return CROCHET;
-		if(operator.equals("(")) return PARENTHESIS;
-		if(operator.equals("++")) return INCREMENT;
-		if(operator.equals("--")) return DECREMENT;
-		if(operator.equals("!")) return NON_NULL_ASSERTION;
-		if(operator.equals("*")) return MULTIPLIE;
-		if(operator.equals("/")) return DIVIDE;
-		if(operator.equals("%")) return MODULUS;
-		if(operator.equals("+")) return ADD;
-		if(operator.equals("-")) return MINUS;
-		if(operator.equals("<")) return LESS;
-		if(operator.equals("<=")) return LESSEQUALS;
-		if(operator.equals(">")) return MORE;
-		if(operator.equals(">=")) return MOREEQUALS;
-		if(operator.equals("==")) return EQUALS;
-		if(operator.equals("!=")) return NOTEQUALS;
-		if(operator.equals("&&")) return AND;
-		if(operator.equals("||")) return OR;
-		if(operator.equals("xor")) return XOR;
-		if(operator.equals("=")) return ASSIGN;
-		if(operator.equals("+=")) return ADDASSIGN;
-		if(operator.equals("-=")) return MINUSASSIGN;
-		if(operator.equals("*=")) return MULTIPLIEASSIGN;
-		if(operator.equals("/=")) return DIVIDEASSIGN;
-		if(operator.equals("%=")) return MODULUSASSIGN;
-		if(operator.equals("?")) return TERNAIRE;
-		if(operator.equals(":")) return DOUBLE_POINT;
-		if(operator.equals("**")) return POWER;
-		if(operator.equals("**=")) return POWERASSIGN;
-		if(operator.equals("===")) return EQUALS_EQUALS;
-		if(operator.equals("!==")) return NOT_EQUALS_EQUALS;
-		if(operator.equals("^")) return BITXOR;
-		if(operator.equals("^=")) {
-			if (version >= 2) {
-				return BITXOR_ASSIGN;
-			} else {
-				// In LeekScript 1.0, ^= was still power assignment
-				return POWERASSIGN;
-			}
-		}
-		if(operator.equals("&")) return BITAND;
-		if(operator.equals("|")) return BITOR;
-		if(operator.equals("~")) return BITNOT;
-		if(operator.equals("<<")) return SHIFT_LEFT;
-		if(operator.equals(">>")) return SHIFT_RIGHT;
-		if(operator.equals(">>>")) return SHIFT_UNSIGNED_RIGHT;
-		if(operator.equals("&=")) return BITAND_ASSIGN;
-		if(operator.equals("|=")) return BITOR_ASSIGN;
-		if(operator.equals("<<=")) return SHIFT_LEFT_ASSIGN;
-		if(operator.equals(">>=")) return SHIFT_RIGHT_ASSIGN;
-		if(operator.equals(">>>=")) return SHIFT_UNSIGNED_RIGHT_ASSIGN;
-		if(operator.equals("@")) return REFERENCE;
-		if(operator.equals("new")) return NEW;
-		if(operator.equals(".")) return DOT;
-		if(operator.equals("instanceof")) return INSTANCEOF;
-		if(operator.equals("\\")) return INTEGER_DIVISION;
-		if(operator.equals("\\=")) return INTEGER_DIVISION_EQ;
-		if(operator.equals("as")) return AS;
-		if(operator.equals("in")) return IN;
-		if(operator.equals("not in")) return NOT_IN;
-		if(operator.equals("??")) return COALESCE;
-		if(operator.equals("??=")) return COALESCE_ASSIGN;
+	// Lookup HashMap pour getOperator au lieu de ~50 String.equals séquentiels.
+	// Cas spécial : "^=" est version-dépendant (BITXOR_ASSIGN en v≥2, POWERASSIGN
+	// en v1) → géré explicitement dans getOperator.
+	private static final Map<String, Integer> OPERATOR_MAP = buildOperatorMap();
+	private static Map<String, Integer> buildOperatorMap() {
+		var m = new HashMap<String, Integer>(96);
+		m.put("[", CROCHET);
+		m.put("(", PARENTHESIS);
+		m.put("++", INCREMENT);
+		m.put("--", DECREMENT);
+		m.put("!", NON_NULL_ASSERTION);
+		m.put("*", MULTIPLIE);
+		m.put("/", DIVIDE);
+		m.put("%", MODULUS);
+		m.put("+", ADD);
+		m.put("-", MINUS);
+		m.put("<", LESS);
+		m.put("<=", LESSEQUALS);
+		m.put(">", MORE);
+		m.put(">=", MOREEQUALS);
+		m.put("==", EQUALS);
+		m.put("!=", NOTEQUALS);
+		m.put("&&", AND);
+		m.put("||", OR);
+		m.put("xor", XOR);
+		m.put("=", ASSIGN);
+		m.put("+=", ADDASSIGN);
+		m.put("-=", MINUSASSIGN);
+		m.put("*=", MULTIPLIEASSIGN);
+		m.put("/=", DIVIDEASSIGN);
+		m.put("%=", MODULUSASSIGN);
+		m.put("?", TERNAIRE);
+		m.put(":", DOUBLE_POINT);
+		m.put("**", POWER);
+		m.put("**=", POWERASSIGN);
+		m.put("===", EQUALS_EQUALS);
+		m.put("!==", NOT_EQUALS_EQUALS);
+		m.put("^", BITXOR);
+		m.put("&", BITAND);
+		m.put("|", BITOR);
+		m.put("~", BITNOT);
+		m.put("<<", SHIFT_LEFT);
+		m.put(">>", SHIFT_RIGHT);
+		m.put(">>>", SHIFT_UNSIGNED_RIGHT);
+		m.put("&=", BITAND_ASSIGN);
+		m.put("|=", BITOR_ASSIGN);
+		m.put("<<=", SHIFT_LEFT_ASSIGN);
+		m.put(">>=", SHIFT_RIGHT_ASSIGN);
+		m.put(">>>=", SHIFT_UNSIGNED_RIGHT_ASSIGN);
+		m.put("@", REFERENCE);
+		m.put("new", NEW);
+		m.put(".", DOT);
+		m.put("instanceof", INSTANCEOF);
+		m.put("\\", INTEGER_DIVISION);
+		m.put("\\=", INTEGER_DIVISION_EQ);
+		m.put("as", AS);
+		m.put("in", IN);
+		m.put("not in", NOT_IN);
+		m.put("??", COALESCE);
+		m.put("??=", COALESCE_ASSIGN);
+		return m;
+	}
 
-		return -1;
+	public final static int getOperator(String operator, int version) {
+		// Cas version-dépendant : "^=" est BITXOR_ASSIGN en v≥2, POWERASSIGN en v1.
+		if (operator.equals("^=")) {
+			return version >= 2 ? BITXOR_ASSIGN : POWERASSIGN;
+		}
+		Integer op = OPERATOR_MAP.get(operator);
+		return op != null ? op : -1;
 	}
 
 	public static int getPriority(int operator) {
