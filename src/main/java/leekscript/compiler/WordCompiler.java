@@ -2296,10 +2296,10 @@ public class WordCompiler {
 	}
 
 	public boolean isKeyword(Token word) {
-		for (var w : LexicalParser.reservedWords) {
-			if (wordEquals(word, w)) return true;
-		}
-		return false;
+		String w = word.getWord();
+		if (getVersion() >= 3) return LexicalParser.reservedWordsSet.contains(w);
+		// v1-2 : matching insensible à la casse, lowercase puis lookup.
+		return LexicalParser.reservedWordsSet.contains(w.toLowerCase());
 	}
 
 	public boolean isAvailable(Token word, boolean allFunctions) {

@@ -1,6 +1,7 @@
 package leekscript.compiler;
 
 import java.util.ArrayList;
+import java.util.Set;
 import leekscript.common.Error;
 
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
@@ -12,6 +13,7 @@ public class LexicalParser {
 	}
 
 	public static final String[] reservedWords = new String[] { "abstract", "and", "as", "await", "break", "byte", "case", "catch", "char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval", "export", "extends", "false", "final", "finally", "float", "for", "function", "global", "goto", "if", "implements", "import", "in", "instanceof", "int", "interface", "let", "long", "native", "new", "not", "null", "or", "package", "private", "protected", "public", "return", "short", "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "true", "try", "typeof", "var", "void", "volatile", "while", "with", "xor", "yield" };
+	public static final Set<String> reservedWordsSet = Set.of(reservedWords);
 
 	private final ArrayList<Token> tokens;
 	private AIFile aiFile;
