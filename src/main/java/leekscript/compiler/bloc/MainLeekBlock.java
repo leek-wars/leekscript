@@ -31,7 +31,11 @@ import leekscript.common.Error;
 
 public class MainLeekBlock extends AbstractLeekBlock {
 
-	private final ArrayList<String> mGlobales = new ArrayList<>();
+	// HashSet pour hasGlobal/hasDeclaredGlobal — sur Quantum (118 globals × 7000 lookups
+	// pendant firstPass) ArrayList.contains était le hotspot #1 du JFR (~18% des
+	// samples). On n'itère jamais mGlobales : seul mGlobalesDeclarations a besoin
+	// d'un ordre stable.
+	private final HashSet<String> mGlobales = new HashSet<>();
 	private final ArrayList<LeekGlobalDeclarationInstruction> mGlobalesDeclarations = new ArrayList<>();
 	private final HashSet<String> mRedefinedFunctions = new HashSet<String>();
 	private final HashMap<String, FunctionBlock> mFunctions = new HashMap<>();
