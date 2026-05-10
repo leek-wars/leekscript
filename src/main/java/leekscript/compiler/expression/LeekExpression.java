@@ -101,15 +101,18 @@ public class LeekExpression extends Expression {
 	}
 
 	public boolean needOperator() {
+		// `expr.getNature() == EXPRESSION` ↔ instanceof LeekExpression (avec
+		// LeekTernaire qui hérite). Le pattern instanceof + binding évite
+		// l'appel virtuel getNature() + le cast manuel.
 		if (mExpression1 != null) {
-			if (mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete())
-				return ((LeekExpression) mExpression1).needOperator();
+			if (mExpression1 instanceof LeekExpression le1 && !le1.complete())
+				return le1.needOperator();
 			if (mOperator == -1)
 				return true;
 		}
 		if (mExpression2 != null) {
-			if (mExpression2.getNature() == EXPRESSION)
-				return ((LeekExpression) mExpression2).needOperator();
+			if (mExpression2 instanceof LeekExpression le2)
+				return le2.needOperator();
 			return true;
 		}
 		return false;
@@ -143,9 +146,9 @@ public class LeekExpression extends Expression {
 	public boolean complete() {
 		if (mExpression1 == null || mExpression2 == null)
 			return false;
-		if (mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete())
+		if (mExpression1 instanceof LeekExpression le1 && !le1.complete())
 			return false;
-		if (mExpression2.getNature() == EXPRESSION && !((LeekExpression) mExpression2).complete())
+		if (mExpression2 instanceof LeekExpression le2 && !le2.complete())
 			return false;
 		return true;
 	}
@@ -153,8 +156,8 @@ public class LeekExpression extends Expression {
 	public void addExpression(Expression expression) {
 		if (mExpression1 == null)
 			mExpression1 = expression;
-		else if (mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete()) {
-			((LeekExpression) mExpression1).addExpression(expression);
+		else if (mExpression1 instanceof LeekExpression le1 && !le1.complete()) {
+			le1.addExpression(expression);
 		}
 		else {
 			if (mExpression2 == null)
