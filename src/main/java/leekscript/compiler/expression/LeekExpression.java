@@ -212,8 +212,8 @@ public class LeekExpression extends Expression {
 	public void addBracket(Token bracket, Expression casevalue, Token colon, Expression endIndex, Token colon2, Expression stride, Token closingBracket) {
 		// On doit ajouter ce crochet au dernier élément ajouté
 		if (mExpression1 != null && mExpression2 == null) {
-			if (mExpression1.getNature() == EXPRESSION && !isTerminalOperator(((LeekExpression) mExpression1).getOperator()))
-				((LeekExpression) mExpression1).addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket);
+			if (mExpression1 instanceof LeekExpression le1 && !isTerminalOperator(le1.getOperator()))
+				le1.addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket);
 			else {
 				mExpression1 = createArrayAccess(bracket, mExpression1, casevalue, colon, endIndex, colon2, stride, closingBracket);
 			}
@@ -221,8 +221,8 @@ public class LeekExpression extends Expression {
 		else if (mExpression2 != null) {
 			if (mOperator == Operators.AS) {
 				wrapAndReset(createArrayAccess(bracket, cloneAsSubExpression(), casevalue, colon, endIndex, colon2, stride, closingBracket));
-			} else if (mExpression2.getNature() == EXPRESSION && !isTerminalOperator(((LeekExpression) mExpression2).getOperator()))
-				((LeekExpression) mExpression2).addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket);
+			} else if (mExpression2 instanceof LeekExpression le2 && !isTerminalOperator(le2.getOperator()))
+				le2.addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket);
 			else {
 				mExpression2 = createArrayAccess(bracket, mExpression2, casevalue, colon, endIndex, colon2, stride, closingBracket);
 			}
@@ -231,8 +231,8 @@ public class LeekExpression extends Expression {
 
 	public void addObjectAccess(Token dot, Token name) {
 		if (mExpression1 != null && mExpression2 == null) {
-			if (mExpression1.getNature() == EXPRESSION && !isTerminalOperator(((LeekExpression) mExpression1).getOperator())) {
-				((LeekExpression) mExpression1).addObjectAccess(dot, name);
+			if (mExpression1 instanceof LeekExpression le1 && !isTerminalOperator(le1.getOperator())) {
+				le1.addObjectAccess(dot, name);
 			} else {
 				mExpression1 = new LeekObjectAccess(mExpression1, dot, name);
 			}
@@ -241,8 +241,8 @@ public class LeekExpression extends Expression {
 				// For AS, mExpression2 is the target type, not an operand.
 				// Wrap the entire AS expression and reset this node.
 				wrapAndReset(new LeekObjectAccess(cloneAsSubExpression(), dot, name));
-			} else if (mExpression2.getNature() == EXPRESSION && !isTerminalOperator(((LeekExpression) mExpression2).getOperator()))
-				((LeekExpression) mExpression2).addObjectAccess(dot, name);
+			} else if (mExpression2 instanceof LeekExpression le2 && !isTerminalOperator(le2.getOperator()))
+				le2.addObjectAccess(dot, name);
 			else {
 				mExpression2 = new LeekObjectAccess(mExpression2, dot, name);
 			}
@@ -252,8 +252,8 @@ public class LeekExpression extends Expression {
 	public void addFunction(LeekFunctionCall function) {
 		// On doit ajouter ce crochet au dernier élément ajouté
 		if (mExpression1 != null && mExpression2 == null) {
-			if (mExpression1.getNature() == EXPRESSION && !isTerminalOperator(((LeekExpression) mExpression1).getOperator()))
-				((LeekExpression) mExpression1).addFunction(function);
+			if (mExpression1 instanceof LeekExpression le1 && !isTerminalOperator(le1.getOperator()))
+				le1.addFunction(function);
 			else {
 				// On doit ajouter à l'élément mExpression1
 				function.setExpression(mExpression1);
@@ -264,8 +264,8 @@ public class LeekExpression extends Expression {
 			if (mOperator == Operators.AS) {
 				function.setExpression(cloneAsSubExpression());
 				wrapAndReset(function);
-			} else if (mExpression2.getNature() == EXPRESSION && !isTerminalOperator(((LeekExpression) mExpression2).getOperator()))
-				((LeekExpression) mExpression2).addFunction(function);
+			} else if (mExpression2 instanceof LeekExpression le2 && !isTerminalOperator(le2.getOperator()))
+				le2.addFunction(function);
 			else {
 				// On doit ajouter à l'élément mExpression2
 				function.setExpression(mExpression2);
