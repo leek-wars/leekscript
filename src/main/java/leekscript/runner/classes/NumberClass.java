@@ -57,11 +57,11 @@ public class NumberClass {
 	}
 
 	public static double toRadians(AI ai, double x) {
-		return x * Math.PI / 180;
+		return Math.toRadians(x);
 	}
 
 	public static double toDegrees(AI ai, double x) {
-		return x * 180 / Math.PI;
+		return Math.toDegrees(x);
 	}
 
 	public static long ceil(AI ai, long x) {
