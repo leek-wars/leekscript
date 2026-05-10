@@ -40,7 +40,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final HashSet<String> mRedefinedFunctions = new HashSet<String>();
 	private final HashMap<String, FunctionBlock> mFunctions = new HashMap<>();
 	private final ArrayList<AnonymousFunctionBlock> mAnonymousFunctions = new ArrayList<AnonymousFunctionBlock>();
-	private final Map<String, Integer> mUserFunctions = new TreeMap<String, Integer>();
+	// HashMap : mUserFunctions n'est jamais itéré, seulement containsKey/put. Pas
+	// besoin de l'ordre TreeMap. Quantum déclare ~100+ fonctions utilisateur.
+	private final Map<String, Integer> mUserFunctions = new HashMap<>();
 	private final Map<String, ClassDeclarationInstruction> mDefinedClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final Map<String, ClassDeclarationInstruction> mUserClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final List<ClassDeclarationInstruction> mUserClassesList = new ArrayList<>();
