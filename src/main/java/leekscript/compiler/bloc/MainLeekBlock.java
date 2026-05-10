@@ -124,7 +124,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public boolean isRedefinedFunction(String function) {
-		return mRedefinedFunctions.contains(function);
+		// isEmpty fast path : pour la plupart des IAs aucune fonction n'est redéfinie
+		// (LeekExpression.preAnalyze.line 1068, uniquement déclenché par
+		// `assign à une SYSTEM_FUNCTION/FUNCTION`). Le contains() était dans le top
+		// 30 du JFR sur Quantum alors que Quantum n'a aucune redef.
+		return !mRedefinedFunctions.isEmpty() && mRedefinedFunctions.contains(function);
 	}
 
 	public void addInstruction() {
