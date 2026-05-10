@@ -319,26 +319,28 @@ public class LexicalParser {
 	}
 
 	private boolean tryParseIdentifier() {
-		var startingPoint = stream.index;
-		for (char c = stream.peek(); stream.hasMore(); c = stream.next()) {
-			if (c >= '0' && c <= '9') continue;
-			if (c >= 'A' && c <= 'Z') continue;
-			if (c >= 'a' && c <= 'z') continue;
-			if (c >= 'À' && c <= 'Ö') continue;
-			if (c >= 'à' && c <= 'ö') continue;
-			if (c >= 'Ø' && c <= 'Ý') continue;
-			if (c >= 'ø' && c <= 'ý') continue;
-			if (c >= 'Œ' && c <= 'œ') continue;
-			if (c == '_' || c == 'ÿ') continue;
-
+		// Scan direct sur content + bump du stream à la fin (un identifiant ne
+		// contient pas de \n donc lineCounter intact). Ancienne version :
+		// stream.next() par char → maj lineCounter/charCounter/c à chaque pas.
+		String content = stream.content;
+		int len = content.length();
+		int start = stream.index;
+		int i = start;
+		while (i < len) {
+			char c = content.charAt(i);
+			if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+				|| (c >= '0' && c <= '9') || c == '_') { i++; continue; }
+			if ((c >= 'À' && c <= 'Ö') || (c >= 'à' && c <= 'ö')
+				|| (c >= 'Ø' && c <= 'Ý') || (c >= 'ø' && c <= 'ý')
+				|| (c >= 'Œ' && c <= 'œ') || c == 'ÿ') { i++; continue; }
 			break;
 		}
+		if (i == start) return false;
+		stream.index = i;
+		stream.charCounter += i - start;
+		if (i < len) stream.c = content.charAt(i);
 
-		if (startingPoint == stream.index) {
-			return false;
-		}
-
-		var word = stream.getSubStringSince(startingPoint);
+		var word = content.substring(start, i);
 
 		// Lookup keyword via HashMap au lieu de ~70 wordEquals séquentiels.
 		// v1-2 sont case-insensitive, v3+ case-sensitive.
