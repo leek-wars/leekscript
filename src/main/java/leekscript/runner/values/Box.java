@@ -164,9 +164,8 @@ public class Box<T> {
 
 	public Object opposite() throws LeekRunException {
 		// mUAI.ops(1);
-		if (mValue instanceof Double) {
-			return -(Double) mValue;
-		}
+		if (mValue instanceof Long l) return -(long) l;
+		if (mValue instanceof Double d) return -(double) d;
 		return -mUAI.longint(mValue);
 	}
 
