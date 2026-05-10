@@ -318,7 +318,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public LegacyArrayLeekValue(AI ai, Object values[], boolean isKeyValue) throws LeekRunException {
 		this.ai = ai;
-		if (capacity > 0) {
+		// 'if (capacity > 0)' était toujours faux (capacity = 0 par défaut) —
+		// le check voulu était la taille des values. Pré-dimensionne la hash
+		// table pour éviter plusieurs growCapacity (O(log N) re-hashings) lors
+		// de la construction depuis un Object[].
+		if (values.length > 0) {
 			initTable(ai, values.length);
 		}
 		if (isKeyValue) {
