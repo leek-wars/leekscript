@@ -52,7 +52,8 @@ public class BasicAILog extends AILog {
 	}
 
 	public void addLog(int type, String message) {
-		message = message.replaceAll("\t", "    ");
+		// Remplacement littéral — replace() est plus rapide que replaceAll() (pas de regex).
+		message = message.replace("\t", "    ");
 		addLog(type, message, -1, 0, 0);
 	}
 

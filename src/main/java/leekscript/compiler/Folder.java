@@ -79,7 +79,7 @@ public class Folder {
 			}
 		}
 
-		String name = path.replaceAll("\\\\/", "/"); // On convertit les \/ en / à nouveau
+		String name = path.replace("\\/", "/"); // On convertit les \/ en / à nouveau
 
 		// Recherche dans le cache
 		var ref = files.get(name);

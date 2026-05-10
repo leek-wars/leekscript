@@ -104,7 +104,8 @@ public class JavaWriter {
 
 		mCode.append("protected String[] getErrorFiles() { return new String[] {");
 		for (var f : mFilesList) {
-			mCode.append("\"" + f.getPath().replaceAll("\\\\/", "/").replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"");
+			// Remplacements littéraux — replace() évite la compilation regex pour chaque chaîne.
+			mCode.append("\"" + f.getPath().replace("\\/", "/").replace("\\", "\\\\").replace("\"", "\\\"") + "\"");
 			mCode.append(", ");
 		}
 		mCode.append("};}\n\n");
