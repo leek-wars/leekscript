@@ -405,7 +405,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public void writeBeforeReturn(JavaWriter writer) {
 		// Export des variables de la session
-		if (writer.options.session() != null) {
+		if (writer.options.session() != null && mVariables != null) {
 			for (var variable : mVariables.entrySet()) {
 				if (!writer.options.session().getVariables().containsKey(variable.getKey()) && variable.getValue().getVariableType() == VariableType.LOCAL) {
 					writer.addLine("session.setVariable(" + writer.getAIThis() + ", \"" + variable.getKey() + "\", u_" + variable.getKey() + ");");

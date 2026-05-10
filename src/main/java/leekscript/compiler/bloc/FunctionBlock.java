@@ -126,7 +126,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 
 	@Override
 	public boolean hasVariable(String variable) {
-		return mVariables.containsKey(variable);
+		return mVariables != null && mVariables.containsKey(variable);
 	}
 
 	@Override

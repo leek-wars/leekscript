@@ -22,7 +22,9 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 
 	protected ArrayList<LeekInstruction> mInstructions = new ArrayList<LeekInstruction>();
 	protected AbstractLeekBlock mParent = null;
-	protected HashMap<String, LeekVariable> mVariables = new HashMap<>();
+	// Lazy : la majorité des blocs (if/while/for sans var decl interne) restent
+	// vides. ~145 HashMap allouées par compile de Quantum dont la plupart inutiles.
+	protected HashMap<String, LeekVariable> mVariables = null;
 
 	protected Token mDeclaringVariable = null;
 	protected boolean mDeclaringVariableUsed = false;
@@ -114,6 +116,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	}
 
 	public void addVariable(LeekVariable variable) {
+		if (mVariables == null) mVariables = new HashMap<>();
 		mVariables.put(variable.getName(), variable);
 	}
 
@@ -145,7 +148,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		// son lookup polymorphe sur la classe ou les arguments).
 		AbstractLeekBlock block = this;
 		while (block != null) {
-			if (!block.mVariables.isEmpty()) {
+			if (block.mVariables != null) {
 				var v = block.mVariables.get(variable);
 				if (v != null) return v;
 			}
@@ -292,7 +295,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		}
 
 		var strict = mMain != null && mMain.isStrict();
-		for (var v : mVariables.values()) {
+		if (mVariables != null) for (var v : mVariables.values()) {
 			if (v.hasAnnotation(Annotation.TODO)) {
 				compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.ANNOTATION_TODO, new String[] { v.getName() }));
 			}
