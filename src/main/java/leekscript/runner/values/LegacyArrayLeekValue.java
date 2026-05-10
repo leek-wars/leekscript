@@ -519,10 +519,14 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			var iterator = ((LegacyArrayLeekValue) value).iterator();
 			while (iterator.hasNext()) {
 				var k = iterator.key();
-				if (k instanceof String || k instanceof ObjectLeekValue || k instanceof NativeObjectLeekValue)
+				if (k instanceof String) {
+					// Pas besoin d'ai.string() — c'est déjà une String.
+					getOrCreate(ai, k).set(iterator.getValue(ai));
+				} else if (k instanceof ObjectLeekValue || k instanceof NativeObjectLeekValue) {
 					getOrCreate(ai, ai.string(iterator.getKey(ai))).set(iterator.getValue(ai));
-				else
+				} else {
 					push(ai, iterator.getValue(ai));
+				}
 				iterator.next();
 			}
 		} else {
