@@ -157,49 +157,111 @@ public class LexicalParser {
 		return false;
 	}
 
-	// Order is important: the first operator found is returned, so operators
-	// sharing a prefix must be ordered by length (longest first).
-	private static final String[] OPERATORS = new String[] {
-		":",
-		"&&", "&=", "&",
-		"||", "|=", "|",
-		"++", "+=", "+",
-		"--", "-=", "-",
-		"**=", "**", "*=", "*",
-		"/=", "/", "\\=", "\\",
-		"%=", "%",
-		"===", "==", "=",
-		"!==", "!=", "!",
-		"<<<=", "<<<", "<<=", "<<", "<=", "<",
-		">>>=", /* ">>>", ">>=", ">>", */ ">=", ">",
-		"^=", "^",
-		"~", "@",
-		"??=", "??", "?",
-		"\\"
-	};
+	// Dispatch sur le premier char + longest-match. Remplace le linear scan sur
+	// le tableau OPERATORS de ~30 entrées (chacune validée par boucle char-par-char) :
+	// l'ancienne version était dans le top 5 du JFR sur la phase lex.
+	private boolean tryParseOperator() {
+		int idx = stream.index;
+		String content = stream.content;
+		int len = content.length();
+		if (idx >= len) return false;
+		char c1 = stream.c;
+		char c2 = idx + 1 < len ? content.charAt(idx + 1) : 0;
+		char c3 = idx + 2 < len ? content.charAt(idx + 2) : 0;
+		char c4 = idx + 3 < len ? content.charAt(idx + 3) : 0;
 
-		private boolean tryParseOperator() {
-
-		if (tryParseExact("=>", TokenType.ARROW)) {
-			return true;
+		switch (c1) {
+			case ':': return emitOp(":", TokenType.OPERATOR, 1);
+			case '~': return emitOp("~", TokenType.OPERATOR, 1);
+			case '@': return emitOp("@", TokenType.OPERATOR, 1);
+			case '&':
+				if (c2 == '&') return emitOp("&&", TokenType.OPERATOR, 2);
+				if (c2 == '=') return emitOp("&=", TokenType.OPERATOR, 2);
+				return emitOp("&", TokenType.OPERATOR, 1);
+			case '|':
+				if (c2 == '|') return emitOp("||", TokenType.OPERATOR, 2);
+				if (c2 == '=') return emitOp("|=", TokenType.OPERATOR, 2);
+				return emitOp("|", TokenType.OPERATOR, 1);
+			case '+':
+				if (c2 == '+') return emitOp("++", TokenType.OPERATOR, 2);
+				if (c2 == '=') return emitOp("+=", TokenType.OPERATOR, 2);
+				return emitOp("+", TokenType.OPERATOR, 1);
+			case '-':
+				if (c2 == '>') return emitOp("->", TokenType.ARROW, 2);
+				if (c2 == '-') return emitOp("--", TokenType.OPERATOR, 2);
+				if (c2 == '=') return emitOp("-=", TokenType.OPERATOR, 2);
+				return emitOp("-", TokenType.OPERATOR, 1);
+			case '*':
+				if (c2 == '*') {
+					if (c3 == '=') return emitOp("**=", TokenType.OPERATOR, 3);
+					return emitOp("**", TokenType.OPERATOR, 2);
+				}
+				if (c2 == '=') return emitOp("*=", TokenType.OPERATOR, 2);
+				return emitOp("*", TokenType.OPERATOR, 1);
+			case '/':
+				if (c2 == '=') return emitOp("/=", TokenType.OPERATOR, 2);
+				return emitOp("/", TokenType.OPERATOR, 1);
+			case '\\':
+				if (c2 == '=') return emitOp("\\=", TokenType.OPERATOR, 2);
+				return emitOp("\\", TokenType.OPERATOR, 1);
+			case '%':
+				if (c2 == '=') return emitOp("%=", TokenType.OPERATOR, 2);
+				return emitOp("%", TokenType.OPERATOR, 1);
+			case '=':
+				if (c2 == '>') return emitOp("=>", TokenType.ARROW, 2);
+				if (c2 == '=') {
+					if (c3 == '=') return emitOp("===", TokenType.OPERATOR, 3);
+					return emitOp("==", TokenType.OPERATOR, 2);
+				}
+				return emitOp("=", TokenType.OPERATOR, 1);
+			case '!':
+				if (c2 == '=') {
+					if (c3 == '=') return emitOp("!==", TokenType.OPERATOR, 3);
+					return emitOp("!=", TokenType.OPERATOR, 2);
+				}
+				return emitOp("!", TokenType.OPERATOR, 1);
+			case '<':
+				if (c2 == '<') {
+					if (c3 == '<') {
+						if (c4 == '=') return emitOp("<<<=", TokenType.OPERATOR, 4);
+						return emitOp("<<<", TokenType.OPERATOR, 3);
+					}
+					if (c3 == '=') return emitOp("<<=", TokenType.OPERATOR, 3);
+					return emitOp("<<", TokenType.OPERATOR, 2);
+				}
+				if (c2 == '=') return emitOp("<=", TokenType.OPERATOR, 2);
+				return emitOp("<", TokenType.OPERATOR, 1);
+			case '>':
+				if (c2 == '>' && c3 == '>' && c4 == '=') return emitOp(">>>=", TokenType.OPERATOR, 4);
+				if (c2 == '=') return emitOp(">=", TokenType.OPERATOR, 2);
+				return emitOp(">", TokenType.OPERATOR, 1);
+			case '^':
+				if (c2 == '=') return emitOp("^=", TokenType.OPERATOR, 2);
+				return emitOp("^", TokenType.OPERATOR, 1);
+			case '?':
+				if (c2 == '?') {
+					if (c3 == '=') return emitOp("??=", TokenType.OPERATOR, 3);
+					return emitOp("??", TokenType.OPERATOR, 2);
+				}
+				return emitOp("?", TokenType.OPERATOR, 1);
+			case '.':
+				if (c2 == '.') return emitOp("..", TokenType.DOT_DOT, 2);
+				if (version >= 2) return emitOp(".", TokenType.DOT, 1);
+				return false;
+			default:
+				return false;
 		}
-		if (tryParseExact("->", TokenType.ARROW)) {
-			return true;
-		}
+	}
 
-		if (tryParseExact("..", TokenType.DOT_DOT)) {
-			return true;
+	// Avance le stream de `len` chars (aucun \n possible dans un opérateur) puis émet.
+	private boolean emitOp(String word, TokenType type, int len) {
+		stream.index += len;
+		stream.charCounter += len;
+		if (stream.index < stream.content.length()) {
+			stream.c = stream.content.charAt(stream.index);
 		}
-
-		if (version >= 2 && tryParseExact('.', TokenType.DOT)) {
-			return true;
-		}
-
-		for (var operator : OPERATORS) {
-			if (tryParseExact(operator, TokenType.OPERATOR)) return true;
-		}
-
-		return false;
+		addToken(word, type);
+		return true;
 	}
 
 	private boolean tryParseSpecialIdentifier() {
@@ -369,28 +431,6 @@ public class LexicalParser {
 			return true;
 		}
 
-		return false;
-	}
-
-	private boolean tryParseExact(String expected, TokenType type) {
-		if (stream.index + expected.length() <= stream.content.length()) {
-			boolean allGood = true;
-			for (int i = 0; i < expected.length(); i++) {
-				if (!charEquals(stream.peek(i), expected.charAt(i))) {
-					allGood = false;
-					break;
-				}
-			}
-			if (allGood) {
-				stream.index += expected.length();
-				stream.charCounter += expected.length();
-				if (stream.index < stream.content.length()) {
-					stream.c = stream.content.charAt(stream.index);
-				}
-				addToken(expected, type);
-				return true;
-			}
-		}
 		return false;
 	}
 
