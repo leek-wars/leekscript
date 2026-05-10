@@ -1200,26 +1200,32 @@ public abstract class AI {
 	}
 
 	public long bor(Object x, Object y) throws LeekRunException {
+		if (x instanceof Long lx && y instanceof Long ly) return (long) lx | (long) ly;
 		return longint(x) | longint(y);
 	}
 
 	public long band(Object x, Object y) throws LeekRunException {
+		if (x instanceof Long lx && y instanceof Long ly) return (long) lx & (long) ly;
 		return longint(x) & longint(y);
 	}
 
 	public long bxor(Object x, Object y) throws LeekRunException {
+		if (x instanceof Long lx && y instanceof Long ly) return (long) lx ^ (long) ly;
 		return longint(x) ^ longint(y);
 	}
 
 	public long shl(Object x, Object y) throws LeekRunException {
+		if (x instanceof Long lx && y instanceof Long ly) return (long) lx << (long) ly;
 		return longint(x) << longint(y);
 	}
 
 	public long shr(Object x, Object y) throws LeekRunException {
+		if (x instanceof Long lx && y instanceof Long ly) return (long) lx >> (long) ly;
 		return longint(x) >> longint(y);
 	}
 
 	public long ushr(Object x, Object y) throws LeekRunException {
+		if (x instanceof Long lx && y instanceof Long ly) return (long) lx >>> (long) ly;
 		return longint(x) >>> longint(y);
 	}
 
