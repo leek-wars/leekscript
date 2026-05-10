@@ -174,8 +174,11 @@ public class LeekVariable extends Expression {
 		if (this.type == VariableType.SUPER) {
 			return; // Déjà OK
 		}
+		// Cache locale du nom : token.getWord() était appelé jusqu'à 5× dans la
+		// cascade de lookups, et getMainBlock() 2×.
+		final String name = token.getWord();
 		// Local variables first
-		var v = compiler.getCurrentBlock().getVariable(token.getWord(), true);
+		var v = compiler.getCurrentBlock().getVariable(name, true);
 		if (v != null) {
 			this.type = v.getVariableType();
 			this.variableType = v.getType();
@@ -197,8 +200,9 @@ public class LeekVariable extends Expression {
 			}
 			return;
 		}
+		final var mainBlock = compiler.getMainBlock();
 		// Global user functions
-		var f = compiler.getMainBlock().getUserFunction(token.getWord());
+		var f = mainBlock.getUserFunction(name);
 		if (f != null) {
 			this.type = VariableType.FUNCTION;
 			this.variableType = f.getType();
@@ -209,19 +213,19 @@ public class LeekVariable extends Expression {
 			return;
 		}
 		// LS constants
-		var constant = LeekConstants.get(token.getWord());
+		var constant = LeekConstants.get(name);
 		if (constant != null) {
 			this.type = VariableType.SYSTEM_CONSTANT;
 			this.variableType = constant.getType();
 			return;
 		}
 		// Redefined function
-		if (compiler.getMainBlock().isRedefinedFunction(token.getWord())) {
+		if (mainBlock.isRedefinedFunction(name)) {
 			this.variableType = Type.ANY;
 			return;
 		}
 		// LS functions
-		var lf = LeekFunctions.getValue(token.getWord(), compiler.getOptions().useExtra());
+		var lf = LeekFunctions.getValue(name, compiler.getOptions().useExtra());
 		if (lf != null) {
 			this.type = VariableType.SYSTEM_FUNCTION;
 			this.variableType = lf.getVersions()[0].getType();
@@ -231,7 +235,7 @@ public class LeekVariable extends Expression {
 			return;
 		}
 		compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
-			token.getWord()
+			name
 		}));
 	}
 
