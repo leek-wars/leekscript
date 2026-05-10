@@ -39,7 +39,10 @@ public class LeekVariable extends Expression {
 	private Type declaredType = null;
 	private Type lastAssignedType = null;
 	private int usageCount = 0;
-	private EnumSet<Annotation> annotations = EnumSet.noneOf(Annotation.class);
+	// Lazy : la grande majorité des LeekVariable n'ont aucune annotation. Une
+	// EnumSet.noneOf alloue un RegularEnumSet pour chaque variable construite,
+	// ce qui se voit dans le profile sur Quantum (~milliers de LeekVariable).
+	private EnumSet<Annotation> annotations = null;
 
 	public LeekVariable(Token token, VariableType type) {
 		this.token = token;
@@ -162,11 +165,12 @@ public class LeekVariable extends Expression {
 	}
 
 	public void addAnnotation(Annotation a) {
+		if (annotations == null) annotations = EnumSet.noneOf(Annotation.class);
 		annotations.add(a);
 	}
 
 	public boolean hasAnnotation(Annotation a) {
-		return annotations.contains(a);
+		return annotations != null && annotations.contains(a);
 	}
 
 	@Override
