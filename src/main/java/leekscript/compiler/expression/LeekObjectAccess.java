@@ -111,11 +111,13 @@ public class LeekObjectAccess extends Expression {
 		}
 
 		boolean isSuper = object instanceof LeekVariable v && v.getVariableType() == VariableType.SUPER;
-		if (object.getType() instanceof ClassType || isSuper) {
+		var objectType = object.getType();
+		ClassType objectClassType = objectType instanceof ClassType ct ? ct : null;
+		if (objectClassType != null || isSuper) {
 			// this, check field exists in class
-			var clazz = object.getType() instanceof ClassType ct ? ct.getClassDeclaration() : compiler.getCurrentClass().getParent();
-			if (object.getType() instanceof ClassType ct2) {
-				this.resolvedOnClassType = ct2;
+			var clazz = objectClassType != null ? objectClassType.getClassDeclaration() : compiler.getCurrentClass().getParent();
+			if (objectClassType != null) {
+				this.resolvedOnClassType = objectClassType;
 			}
 			if (clazz != null) {
 				this.variable = clazz.getMember(field.getWord());
@@ -136,7 +138,7 @@ public class LeekObjectAccess extends Expression {
 					this.type = this.variable.getType();
 				}
 			}
-		} else if (object.getType() instanceof ClassValueType cvt) {
+		} else if (objectType instanceof ClassValueType cvt) {
 
 			var clazz = cvt.getClassDeclaration();
 
@@ -168,7 +170,9 @@ public class LeekObjectAccess extends Expression {
 		}
 
 		// get type of member
-		var memberType = isSuper && object.getType().getClassDeclaration() != null ? object.getType().getClassDeclaration().getType().member(field.getWord()) : object.getType().member(field.getWord());
+		var fieldWord = field.getWord();
+		var superClassDecl = isSuper ? objectType.getClassDeclaration() : null;
+		var memberType = superClassDecl != null ? superClassDecl.getType().member(fieldWord) : objectType.member(fieldWord);
 		if (memberType.isWarning()) {
 
 			if (memberType == Type.ERROR || compiler.getMainBlock().isStrict()) {
@@ -176,9 +180,9 @@ public class LeekObjectAccess extends Expression {
 				var error = memberType == Type.ERROR ? Error.CLASS_MEMBER_DOES_NOT_EXIST : Error.FIELD_MAY_NOT_EXIST;
 
 				compiler.addError(new AnalyzeError(field, level, error, new String[] {
-					field.getWord(),
+					fieldWord,
 					object.toString(),
-					object.getType().toString(),
+					objectType.toString(),
 				}));
 			}
 			memberType = Type.replaceErrors(memberType);
