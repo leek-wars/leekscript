@@ -1964,13 +1964,6 @@ public class WordCompiler {
 		return result;
 	}
 
-	private boolean wordEquals(Token word, String expected) {
-		if (getVersion() <= 2) {
-			return word.getWord().equalsIgnoreCase(expected);
-		}
-		return word.getWord().equals(expected);
-	}
-
 	private Expression readSet(Token openingToken) throws LeekCompilerException {
 		var set = new LeekSet(openingToken);
 
