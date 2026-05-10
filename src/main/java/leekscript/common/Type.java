@@ -408,12 +408,17 @@ public class Type {
 	}
 
 	public Type add(Type type) {
-
+		// Distribution sur les compound types — boucle au lieu de stream+collect
+		// pour éviter Stream/lambda/HashSet sur chaque opération arithmétique.
 		if (this instanceof CompoundType ct) {
-			return Type.compound(ct.getTypes().stream().map(t -> t.add(type)).collect(Collectors.toCollection(HashSet::new)));
+			var result = new HashSet<Type>();
+			for (var t : ct.getTypes()) result.add(t.add(type));
+			return Type.compound(result);
 		}
 		if (type instanceof CompoundType ct) {
-			return Type.compound(ct.getTypes().stream().map(t -> this.add(t)).collect(Collectors.toCollection(HashSet::new)));
+			var result = new HashSet<Type>();
+			for (var t : ct.getTypes()) result.add(this.add(t));
+			return Type.compound(result);
 		}
 
 		if ((this == Type.INT || this == Type.BOOL || this == Type.NULL) && (type == Type.INT || type == Type.BOOL || type == Type.NULL)) return Type.INT;
@@ -436,12 +441,15 @@ public class Type {
 	}
 
 	public Type sub(Type type) {
-
 		if (this instanceof CompoundType ct) {
-			return Type.compound(ct.getTypes().stream().map(t -> t.sub(type)).collect(Collectors.toCollection(HashSet::new)));
+			var result = new HashSet<Type>();
+			for (var t : ct.getTypes()) result.add(t.sub(type));
+			return Type.compound(result);
 		}
 		if (type instanceof CompoundType ct) {
-			return Type.compound(ct.getTypes().stream().map(t -> this.sub(t)).collect(Collectors.toCollection(HashSet::new)));
+			var result = new HashSet<Type>();
+			for (var t : ct.getTypes()) result.add(this.sub(t));
+			return Type.compound(result);
 		}
 
 		if ((this == Type.INT || this == Type.BOOL || this == Type.NULL) && (type == Type.INT || type == Type.BOOL || type == Type.NULL)) return Type.INT;
@@ -451,12 +459,15 @@ public class Type {
 	}
 
 	public Type mul(Type type) {
-
 		if (this instanceof CompoundType ct) {
-			return Type.compound(ct.getTypes().stream().map(t -> t.mul(type)).collect(Collectors.toCollection(HashSet::new)));
+			var result = new HashSet<Type>();
+			for (var t : ct.getTypes()) result.add(t.mul(type));
+			return Type.compound(result);
 		}
 		if (type instanceof CompoundType ct) {
-			return Type.compound(ct.getTypes().stream().map(t -> this.mul(t)).collect(Collectors.toCollection(HashSet::new)));
+			var result = new HashSet<Type>();
+			for (var t : ct.getTypes()) result.add(this.mul(t));
+			return Type.compound(result);
 		}
 
 		if ((this == Type.INT || this == Type.BOOL || this == Type.NULL) && (type == Type.INT || type == Type.BOOL || type == Type.NULL)) return Type.INT;
@@ -466,12 +477,15 @@ public class Type {
 	}
 
 	public Type div(Type type) {
-
 		if (this instanceof CompoundType ct) {
-			return Type.compound(ct.getTypes().stream().map(t -> t.div(type)).collect(Collectors.toCollection(HashSet::new)));
+			var result = new HashSet<Type>();
+			for (var t : ct.getTypes()) result.add(t.div(type));
+			return Type.compound(result);
 		}
 		if (type instanceof CompoundType ct) {
-			return Type.compound(ct.getTypes().stream().map(t -> this.div(t)).collect(Collectors.toCollection(HashSet::new)));
+			var result = new HashSet<Type>();
+			for (var t : ct.getTypes()) result.add(this.div(t));
+			return Type.compound(result);
 		}
 
 		if ((this.isNumber() || this == Type.BOOL) && (type.isNumber() || type == Type.BOOL)) return Type.REAL;
@@ -480,12 +494,15 @@ public class Type {
 	}
 
 	public Type pow(Type type) {
-
 		if (this instanceof CompoundType ct) {
-			return Type.compound(ct.getTypes().stream().map(t -> t.pow(type)).collect(Collectors.toCollection(HashSet::new)));
+			var result = new HashSet<Type>();
+			for (var t : ct.getTypes()) result.add(t.pow(type));
+			return Type.compound(result);
 		}
 		if (type instanceof CompoundType ct) {
-			return Type.compound(ct.getTypes().stream().map(t -> this.pow(t)).collect(Collectors.toCollection(HashSet::new)));
+			var result = new HashSet<Type>();
+			for (var t : ct.getTypes()) result.add(this.pow(t));
+			return Type.compound(result);
 		}
 
 		if ((this == Type.INT || this == Type.BOOL || this == Type.NULL) && (type == Type.INT || type == Type.BOOL || type == Type.NULL)) return Type.INT;
@@ -502,7 +519,9 @@ public class Type {
 		if (type == Type.ERROR) return Type.NULL;
 		if (type == Type.WARNING) return Type.ANY;
 		if (type instanceof CompoundType ct) {
-			return Type.compound(ct.getTypes().stream().map(t -> replaceErrors(t)).collect(Collectors.toCollection(HashSet::new)));
+			var result = new HashSet<Type>();
+			for (var t : ct.getTypes()) result.add(replaceErrors(t));
+			return Type.compound(result);
 		}
 		return type;
 	}
