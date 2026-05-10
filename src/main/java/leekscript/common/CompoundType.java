@@ -171,6 +171,17 @@ public class CompoundType extends Type {
 	}
 
 	public Type removeType(Type target) {
+		// Fast path : 2 éléments, on extrait le non-target sans alloc de HashSet+stream.
+		if (types.size() == 2) {
+			Type kept = null;
+			boolean found = false;
+			for (var t : types) {
+				if (t == target) found = true;
+				else kept = t;
+			}
+			if (!found) return this;
+			return kept != null ? kept : this;
+		}
 		var remaining = this.types.stream().filter(t -> t != target).collect(Collectors.toCollection(HashSet::new));
 		if (remaining.isEmpty()) return this;
 		if (remaining.size() == 1) return remaining.iterator().next();
@@ -178,6 +189,12 @@ public class CompoundType extends Type {
 	}
 
 	public Type assertNotNull() {
+		// Fast path : T | NULL (cas dominant), on retourne T directement.
+		if (types.size() == 2) {
+			for (var t : types) {
+				if (t != Type.NULL) return t;
+			}
+		}
 		var remaining = this.types.stream().filter(t -> t != Type.NULL).collect(Collectors.toCollection(HashSet::new));
 		if (remaining.size() > 1) {
 			return Type.compound(remaining);
