@@ -419,11 +419,15 @@ public class LexicalParser {
 		boolean dotSeen = false;
 		while (i < len) {
 			char c = content.charAt(i);
-			if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-					|| c == '_') { i++; continue; }
-			if ((c >= 'À' && c <= 'Ö') || (c >= 'à' && c <= 'ö')
+			// Fast path ASCII : même lookup que tryParseIdentifier (a-z, A-Z, 0-9, _).
+			if (c < 128) {
+				if (IDENT_CHAR_ASCII[c]) { i++; continue; }
+				// fallthrough to handle '-', '+', '.', etc.
+			} else if ((c >= 'À' && c <= 'Ö') || (c >= 'à' && c <= 'ö')
 					|| (c >= 'Ø' && c <= 'Ý') || (c >= 'ø' && c <= 'ý')
-					|| (c >= 'Œ' && c <= 'œ') || c == 'ÿ') { i++; continue; }
+					|| (c >= 'Œ' && c <= 'œ') || c == 'ÿ') {
+				i++; continue;
+			}
 			if (c == '-' || c == '+') {
 				char prev = i > 0 ? content.charAt(i - 1) : 0;
 				if (prev == 'e' || prev == 'p') { i++; continue; }
