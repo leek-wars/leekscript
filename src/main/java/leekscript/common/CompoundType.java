@@ -104,46 +104,85 @@ public class CompoundType extends Type {
 	}
 
 	public boolean isArrayOrNull() {
-		return types.size() == 2 && types.stream().anyMatch(t -> t.isArray()) && types.stream().anyMatch(t -> t == Type.NULL);
+		if (types.size() != 2) return false;
+		boolean hasArray = false, hasNull = false;
+		for (var t : types) {
+			if (t.isArray()) hasArray = true;
+			if (t == Type.NULL) hasNull = true;
+		}
+		return hasArray && hasNull;
 	}
 
 	public boolean isMapOrNull() {
-		return types.size() == 2 && types.stream().anyMatch(t -> t.isMap()) && types.stream().anyMatch(t -> t == Type.NULL);
+		if (types.size() != 2) return false;
+		boolean hasMap = false, hasNull = false;
+		for (var t : types) {
+			if (t.isMap()) hasMap = true;
+			if (t == Type.NULL) hasNull = true;
+		}
+		return hasMap && hasNull;
 	}
 
 	public boolean isSetOrNull() {
-		return types.size() == 2 && types.stream().anyMatch(t -> t.isSet()) && types.stream().anyMatch(t -> t == Type.NULL);
+		if (types.size() != 2) return false;
+		boolean hasSet = false, hasNull = false;
+		for (var t : types) {
+			if (t.isSet()) hasSet = true;
+			if (t == Type.NULL) hasNull = true;
+		}
+		return hasSet && hasNull;
 	}
 
 	public boolean canBeIterable() {
-		return this.types.stream().anyMatch(t -> t.canBeIterable());
+		for (var t : this.types) if (t.canBeIterable()) return true;
+		return false;
 	}
 
 	public boolean isIterable() {
-		return this.types.stream().allMatch(t -> t.isIterable());
+		for (var t : this.types) if (!t.isIterable()) return false;
+		return true;
 	}
 
 	@Override
 	public boolean isIndexable() {
-		return this.types.stream().allMatch(t -> t.isIndexable());
+		for (var t : this.types) if (!t.isIndexable()) return false;
+		return true;
 	}
 
 	@Override
 	public boolean canBeIndexable() {
-		return this.types.stream().anyMatch(t -> t.canBeIndexable());
+		for (var t : this.types) if (t.canBeIndexable()) return true;
+		return false;
 	}
 
 	public boolean canBeCallable() {
-		return this.types.stream().anyMatch(t -> t.canBeCallable());
+		for (var t : this.types) if (t.canBeCallable()) return true;
+		return false;
 	}
 
 	public boolean isCallable() {
-		return this.types.stream().allMatch(t -> t.isCallable());
+		for (var t : this.types) if (!t.isCallable()) return false;
+		return true;
+	}
+
+	/**
+	 * True ssi Type.NULL est explicitement dans le compound. Différent de
+	 * canBeNull() qui retourne true pour ANY ou tout type avec canBeNull=true.
+	 * Évite l'allocation stream pour le check de nullabilité explicite.
+	 */
+	public boolean containsNull() {
+		for (var t : this.types) if (t == Type.NULL) return true;
+		return false;
 	}
 
 	@Override
 	public boolean canBeNull() {
-		return this.types.stream().anyMatch(t -> t.canBeNull());
+		// Boucle indexée au lieu de stream + lambda — appelé fréquemment pendant
+		// analyze() pour les checks de nullabilité (assignations, narrowings, etc.).
+		for (var t : this.types) {
+			if (t.canBeNull()) return true;
+		}
+		return false;
 	}
 
 	@Override

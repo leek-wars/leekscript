@@ -1286,7 +1286,7 @@ public class LeekExpression extends Expression {
 		if (mOperator == Operators.ASSIGN) {
 			// type = mExpression2.getType();
 			type = mExpression1.getType();
-			if (type instanceof CompoundType ct && ct.getTypes().stream().anyMatch(t -> t == Type.NULL) && !mExpression2.getType().canBeNull()) {
+			if (type instanceof CompoundType ct && ct.containsNull() && !mExpression2.getType().canBeNull()) {
 				type = ct.assertNotNull();
 			}
 			// En non strict, a[1] = 12 marche et renvoie null, donc le type de l'opération est integer | null

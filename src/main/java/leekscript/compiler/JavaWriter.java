@@ -303,7 +303,7 @@ public class JavaWriter {
 		// int?, real?
 		if (type instanceof CompoundType ct) {
 			if (ct.getTypes().size() == 2) {
-				if (ct.getTypes().stream().anyMatch(t -> t == Type.NULL)) {
+				if (ct.containsNull()) {
 					for (var t : ct.getTypes()) {
 						if (t != Type.NULL) {
 							if (t == Type.REAL && value.getType() == Type.INT) { // int -> Double
@@ -536,7 +536,7 @@ public class JavaWriter {
 			return "string(" + v + ")";
 		}
 		if (type instanceof CompoundType ct) {
-			if (ct.getTypes().size() == 2 && ct.getTypes().stream().anyMatch(t -> t == Type.NULL)) {
+			if (ct.getTypes().size() == 2 && ct.containsNull()) {
 				for (var t : ct.getTypes()) {
 					if (t != Type.NULL) {
 						if (t == Type.INT) return "(Long) (" + v + ")";
