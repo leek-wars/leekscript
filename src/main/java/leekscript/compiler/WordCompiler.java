@@ -118,7 +118,10 @@ public class WordCompiler {
 
 				if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 
-				if (mTokens.get().getType() == TokenType.INCLUDE) {
+				// Cache du token courant : getType() était appelé 4× par itération.
+				TokenType tt = mTokens.get().getType();
+
+				if (tt == TokenType.INCLUDE) {
 					var token = mTokens.eat();
 					// On vérifie qu'on est dans le bloc principal
 					if (!mCurentBlock.equals(mMain)) throw new LeekCompilerException(mTokens.get(), Error.INCLUDE_ONLY_IN_MAIN_BLOCK);
@@ -137,7 +140,7 @@ public class WordCompiler {
 
 					if (mTokens.eat().getType() != TokenType.PAR_RIGHT) throw new LeekCompilerException(mTokens.get(), Error.CLOSING_PARENTHESIS_EXPECTED);
 
-				} else if (mTokens.get().getType() == TokenType.GLOBAL) {
+				} else if (tt == TokenType.GLOBAL) {
 					mTokens.skip();
 					eatType(true, false);
 					var global = mTokens.eat();
@@ -164,7 +167,7 @@ public class WordCompiler {
 							readExpression(true);
 						}
 					}
-				} else if (mTokens.get().getType() == TokenType.FUNCTION) {
+				} else if (tt == TokenType.FUNCTION) {
 					var functionToken = mTokens.eat();
 					var funcName = mTokens.eat();
 					if (funcName.getWord().equals("(") || funcName.getWord().equals("<")) {
@@ -218,7 +221,7 @@ public class WordCompiler {
 
 					mMain.addFunctionDeclaration(funcName.getWord(), param_count);
 
-				} else if (mTokens.get().getType() == TokenType.CLASS) {
+				} else if (tt == TokenType.CLASS) {
 
 					mTokens.skip();
 					if (mTokens.hasMoreTokens()) {
