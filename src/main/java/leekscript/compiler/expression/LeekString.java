@@ -46,14 +46,23 @@ public class LeekString extends Expression {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		String str = "";
 		int len = mString.length() - 1;
+		boolean v2plus = mainblock.getCompiler().getCurrentAI().getVersion() >= 2;
 		for (int i = 0; i < mString.length(); i++) {
 			if (mString.charAt(i) == '\n') str += "\\n";
 			else if (mString.charAt(i) == '"') str += "\\\"";
 			else if (mString.charAt(i) == '\\') {
 				if (len > i && mString.charAt(i + 1) == 'n') str += "\\";
 				else if (len > i && mString.charAt(i + 1) == 't') str += "\\";
+				// v2+ : `\"` est une vraie séquence d'échappement — on émet juste `"`.
+				// (Le lexer skipe déjà le `\"` sans fermer la chaîne ; sans ce cas le
+				// runtime gardait le backslash littéralement, donnant `length("a\"b") == 4`
+				// au lieu de 3.) Comportement v1 préservé.
+				else if (v2plus && len > i && mString.charAt(i + 1) == '"') {
+					str += "\\\"";
+					i++;
+				}
 				else {
-					if (mainblock.getCompiler().getCurrentAI().getVersion() >= 2) {
+					if (v2plus) {
 						if (len > i && mString.charAt(i + 1) == '\\') {
 							str += "\\\\";
 							i++;

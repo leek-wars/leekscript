@@ -144,9 +144,11 @@ public class TestString extends TestCommon {
 		// String non fermée à EOF → error (le lexer doit reporter STRING_NOT_CLOSED)
 		code("return 'unclosed").any_error();
 		code("return \"unclosed").any_error();
-		// String avec backslash escape : le lexer préserve le contenu raw (8 chars
-		// pour `abc\"def` car le backslash est conservé tel quel au niveau lex)
-		code_v2_("return length(\"abc\\\"def\")").equals("8");
+		// `\"` est traité comme séquence d'échappement → 7 chars `abc"def` en v2+
+		code_v2_("return length(\"abc\\\"def\")").equals("7");
+		code_v2_("return \"a\\\"b\" == 'a\"b'").equals("true");
+		// v1 (legacy) : `\"` n'était pas une vraie séquence d'échappement, le `\` était préservé
+		code_v1("return length(\"abc\\\"def\")").equals("8");
 		// String simple — sanity check qu'aucune régression silencieuse n'est introduite
 		code("return length('hello')").equals("5");
 	}
