@@ -38,7 +38,8 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 	private int minParameters = 0;
 	private int maxParameters = 0;
 	private LeekVariable variable;
-	private EnumSet<Annotation> annotations = EnumSet.noneOf(Annotation.class);
+	// Lazy : la grande majorité des fonctions n'ont aucune annotation.
+	private EnumSet<Annotation> annotations = null;
 
 	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -294,16 +295,19 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 	}
 
 	public void addAnnotation(Annotation a) {
+		if (annotations == null) annotations = EnumSet.noneOf(Annotation.class);
 		annotations.add(a);
 	}
 
 	public boolean hasAnnotation(Annotation a) {
-		return annotations.contains(a);
+		return annotations != null && annotations.contains(a);
 	}
 
 	public void declare(WordCompiler compiler) {
 		variable = new LeekVariable(token, VariableType.FUNCTION, type, this);
-		for (var a : annotations) variable.addAnnotation(a);
+		if (annotations != null) {
+			for (var a : annotations) variable.addAnnotation(a);
+		}
 		compiler.getCurrentBlock().addVariable(variable);
 	}
 

@@ -28,7 +28,8 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 	private Type type;
 	private LeekType leekType;
 	private LeekVariable variable;
-	private EnumSet<Annotation> annotations = EnumSet.noneOf(Annotation.class);
+	// Lazy : la grande majorité des globals n'ont aucune annotation.
+	private EnumSet<Annotation> annotations = null;
 
 	public LeekGlobalDeclarationInstruction(Token token, Token variableToken, LeekType leekType) {
 		this.token = token;
@@ -38,6 +39,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 
 	@Override
 	public void addAnnotation(Annotation a) {
+		if (annotations == null) annotations = EnumSet.noneOf(Annotation.class);
 		annotations.add(a);
 	}
 
@@ -98,7 +100,9 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 		// On ajoute la variable
 		this.variable = new LeekVariable(compiler, variableToken, VariableType.GLOBAL, leekType == null ? Type.ANY : leekType.getType());
 		this.type = this.variable.getType();
-		for (var a : annotations) this.variable.addAnnotation(a);
+		if (annotations != null) {
+			for (var a : annotations) this.variable.addAnnotation(a);
+		}
 		compiler.getCurrentBlock().addVariable(this.variable);
 	}
 

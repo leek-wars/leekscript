@@ -36,7 +36,8 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 	private LeekVariable variable;
 	private Type type;
 	private LeekType leekType;
-	private EnumSet<Annotation> annotations = EnumSet.noneOf(Annotation.class);
+	// Lazy : la grande majorité des déclarations n'ont aucune annotation.
+	private EnumSet<Annotation> annotations = null;
 
 	public LeekVariableDeclarationInstruction(WordCompiler compiler, Token token, AbstractLeekBlock function, Type type) {
 		this.token = token;
@@ -54,6 +55,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 	}
 
 	public void addAnnotation(Annotation a) {
+		if (annotations == null) annotations = EnumSet.noneOf(Annotation.class);
 		annotations.add(a);
 	}
 
@@ -259,7 +261,9 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 			} else {
 				// On ajoute la variable
 				this.variable = new LeekVariable(token, VariableType.LOCAL, type, this);
-				for (var a : annotations) this.variable.addAnnotation(a);
+				if (annotations != null) {
+					for (var a : annotations) this.variable.addAnnotation(a);
+				}
 				compiler.getCurrentBlock().addVariable(this.variable);
 			}
 		}
