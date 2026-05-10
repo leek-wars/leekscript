@@ -250,12 +250,17 @@ public class LeekVariable extends Expression {
 		}
 		// Court-circuit pour les variables THIS/THIS_CLASS/SUPER : check par type
 		// avant d'appeler getCurrentClass() qui n'a de sens que pour ces variantes.
+		// Pour SUPER, on cache getCurrentClass() pour éviter 3 appels.
 		if (this.type == VariableType.THIS) {
 			this.variableType = compiler.getCurrentClass().getType();
 		} else if (this.type == VariableType.THIS_CLASS) {
 			this.variableType = compiler.getCurrentClass().classValueType;
-		} else if (this.type == VariableType.SUPER && compiler.getCurrentClass().getParent() != null) {
-			this.variableType = compiler.getCurrentClass().getParent().getClassValueType();
+		} else if (this.type == VariableType.SUPER) {
+			var currentClass = compiler.getCurrentClass();
+			var parent = currentClass != null ? currentClass.getParent() : null;
+			if (parent != null) {
+				this.variableType = parent.getClassValueType();
+			}
 		}
 		// Redefined function — skip carrément si aucune redef dans tout le programme
 		// (cas majoritaire). Le précédent isEmpty fast-path est dans le call ; ici
