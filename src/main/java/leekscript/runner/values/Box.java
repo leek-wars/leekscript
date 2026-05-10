@@ -49,19 +49,13 @@ public class Box<T> {
 
 	public Object set(Object value) throws LeekRunException {
 		// mUAI.ops(1);
-		if (mUAI.getVersion() >= 2) {
-			if (value instanceof Box) {
-				return mValue = ((Box) value).get();
-			} else {
-				return mValue = value;
-			}
-		} else {
-			if (value instanceof Box) {
-				return mValue = LeekOperations.clone(mUAI, ((Box) value).get());
-			} else {
-				return mValue = value;
-			}
+		// Cas commun (v2+, valeur non-Box) : assignation directe.
+		// Le check de version ne se fait que si la valeur est une Box (rare).
+		if (value instanceof Box<?> box) {
+			Object inner = box.get();
+			return mValue = (mUAI.getVersion() >= 2) ? inner : LeekOperations.clone(mUAI, inner);
 		}
+		return mValue = value;
 	}
 
 	public Object setRef(Object value) throws LeekRunException {
