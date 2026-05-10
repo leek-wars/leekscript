@@ -13,7 +13,7 @@ public class LexicalParser {
 
 	public static final String[] reservedWords = new String[] { "abstract", "and", "as", "await", "break", "byte", "case", "catch", "char", "class", "const", "constructor", "continue", "default", "do", "double", "else", "enum", "eval", "export", "extends", "false", "final", "finally", "float", "for", "function", "global", "goto", "if", "implements", "import", "in", "instanceof", "int", "interface", "let", "long", "native", "new", "not", "null", "or", "package", "private", "protected", "public", "return", "short", "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "true", "try", "typeof", "var", "void", "volatile", "while", "with", "xor", "yield" };
 
-	private ArrayList<Token> tokens = new ArrayList<>();
+	private final ArrayList<Token> tokens;
 	private AIFile aiFile;
 	private int version;
 	private CharStream stream = null;
@@ -21,6 +21,10 @@ public class LexicalParser {
 	public LexicalParser(AIFile aiFile, int version) {
 		this.aiFile = aiFile;
 		this.version = version;
+		// Pré-dimensionner ~ 1 token / 5 chars (heuristique : noms d'identifiants
+		// ~5 chars, opérateurs/whitespace plus courts). Évite plusieurs resizes
+		// d'ArrayList sur les gros fichiers.
+		this.tokens = new ArrayList<>(Math.max(16, aiFile.getCode().length() / 5));
 	}
 
 	public LexicalParserTokenStream parse(ErrorReporter error) {
@@ -58,27 +62,28 @@ public class LexicalParser {
 		return false;
 	}
 
+	// Order is important: the first operator found is returned, so operators
+	// sharing a prefix must be ordered by length (longest first).
+	private static final String[] OPERATORS = new String[] {
+		":",
+		"&&", "&=", "&",
+		"||", "|=", "|",
+		"++", "+=", "+",
+		"--", "-=", "-",
+		"**=", "**", "*=", "*",
+		"/=", "/", "\\=", "\\",
+		"%=", "%",
+		"===", "==", "=",
+		"!==", "!=", "!",
+		"<<<=", "<<<", "<<=", "<<", "<=", "<",
+		">>>=", /* ">>>", ">>=", ">>", */ ">=", ">",
+		"^=", "^",
+		"~", "@",
+		"??=", "??", "?",
+		"\\"
+	};
+
 		private boolean tryParseOperator() {
-		// Order is important, the first operator found is returned
-		// So operators starting with the same characters must be ordered by length
-		var operators = new String[] {
-			":",
-			"&&", "&=", "&",
-			"||", "|=", "|",
-			"++", "+=", "+",
-			"--", "-=", "-",
-			"**=", "**", "*=", "*",
-			"/=", "/", "\\=", "\\",
-			"%=", "%",
-			"===", "==", "=",
-			"!==", "!=", "!",
-			"<<<=", "<<<", "<<=", "<<", "<=", "<",
-			">>>=", /* ">>>", ">>=", ">>", */ ">=", ">",
-			"^=", "^",
-			"~", "@",
-			"??=", "??", "?",
-			"\\"
-		};
 
 		if (tryParseExact("=>", TokenType.ARROW)) {
 			return true;
@@ -95,7 +100,7 @@ public class LexicalParser {
 			return true;
 		}
 
-		for (var operator : operators) {
+		for (var operator : OPERATORS) {
 			if (tryParseExact(operator, TokenType.OPERATOR)) return true;
 		}
 
