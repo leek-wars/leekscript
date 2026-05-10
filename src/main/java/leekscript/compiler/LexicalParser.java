@@ -23,6 +23,15 @@ public class LexicalParser {
 	// entrées donc le coût est négligeable.
 	private static final Map<String, KeywordInfo> KEYWORDS = buildKeywords();
 
+	// Words à 1 char interned : on évite l'alloc "" + c via String.valueOf à chaque
+	// bracket/parens/comma/semicolon dans le main loop.
+	private static final String[] SINGLE_CHAR_WORDS = buildSingleCharWords();
+	private static String[] buildSingleCharWords() {
+		var arr = new String[128];
+		for (int i = 0; i < 128; i++) arr[i] = String.valueOf((char) i);
+		return arr;
+	}
+
 	// Bitmap des premiers chars possibles d'un keyword (v3+ case-sensitive).
 	// Permet de fast-path les identifiants user qui ne peuvent pas être keywords.
 	// Calculé à partir de KEYWORDS pour rester synchronisé automatiquement.
@@ -164,12 +173,25 @@ public class LexicalParser {
 			if (isOperatorStart(c)) {
 				if (tryParseOperator()) continue;
 			}
-			// Brackets / accolades / parenthèses
-			if (c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}') {
-				if (tryParseBracketLike()) continue;
+			// Brackets / accolades / parenthèses : dispatch direct par char.
+			// Évite les ~6 tryParseExact séquentiels de tryParseBracketLike, chacun
+			// avec un charEquals + une string "" + char allocation.
+			TokenType bracketType = null;
+			switch (c) {
+				case '(': bracketType = TokenType.PAR_LEFT; break;
+				case ')': bracketType = TokenType.PAR_RIGHT; break;
+				case '[': bracketType = TokenType.BRACKET_LEFT; break;
+				case ']': bracketType = TokenType.BRACKET_RIGHT; break;
+				case '{': bracketType = TokenType.ACCOLADE_LEFT; break;
+				case '}': bracketType = TokenType.ACCOLADE_RIGHT; break;
+				case ',': bracketType = TokenType.VIRG; break;
+				case ';': bracketType = TokenType.END_INSTRUCTION; break;
+				default: break;
 			}
-			if (c == ',' || c == ';') {
-				if (tryParseCommaLike()) continue;
+			if (bracketType != null) {
+				stream.next();
+				addToken(SINGLE_CHAR_WORDS[c], bracketType);
+				continue;
 			}
 			// Identifiants étendus (lettres accentuées) + lemniscate / pi
 			if (tryParseSpecialIdentifier()) continue;
@@ -191,22 +213,6 @@ public class LexicalParser {
 				|| c == '+' || c == '-' || c == '*' || c == '\\' || c == '%'
 				|| c == '=' || c == '!' || c == '<' || c == '>' || c == '^'
 				|| c == '?' || c == '.';
-	}
-
-	private boolean tryParseBracketLike() {
-		if (tryParseExact('[', TokenType.BRACKET_LEFT)) return true;
-		if (tryParseExact(']', TokenType.BRACKET_RIGHT)) return true;
-		if (tryParseExact('(', TokenType.PAR_LEFT)) return true;
-		if (tryParseExact(')', TokenType.PAR_RIGHT)) return true;
-		if (tryParseExact('{', TokenType.ACCOLADE_LEFT)) return true;
-		if (tryParseExact('}', TokenType.ACCOLADE_RIGHT)) return true;
-		return false;
-	}
-
-	private boolean tryParseCommaLike() {
-		if (tryParseExact(',', TokenType.VIRG)) return true;
-		if (tryParseExact(';', TokenType.END_INSTRUCTION)) return true;
-		return false;
 	}
 
 	// Dispatch sur le premier char + longest-match. Remplace le linear scan sur
@@ -503,25 +509,8 @@ public class LexicalParser {
 		return false;
 	}
 
-	private boolean tryParseExact(char expected, TokenType type) {
-		if (charEquals(stream.peek(), expected)) {
-			stream.next();
-			addToken("" + expected, type);
-			return true;
-		}
-		return false;
-	}
-
 	private void addToken(String word, TokenType type) {
-		// System.out.println("addToken " + word + " " + type + " " + stream.getLineCounter() + " " + stream.getCharCounter());
 		tokens.add(new Token(type, word, aiFile, stream.getLineCounter(), stream.getCharCounter()));
-	}
-
-	private boolean charEquals(char c, char expected) {
-		if (version <= 2) {
-			return Character.toLowerCase(c) == Character.toLowerCase(expected);
-		}
-		return c == expected;
 	}
 
 	private class CharStream {
