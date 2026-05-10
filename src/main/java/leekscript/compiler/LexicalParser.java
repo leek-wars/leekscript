@@ -119,17 +119,48 @@ public class LexicalParser {
 
 	public LexicalParserTokenStream parse(ErrorReporter error) {
 		long t0 = IACompiler.PHASE_TIMINGS_ENABLED ? System.nanoTime() : 0L;
-		for (stream = new CharStream(aiFile.getCode()); stream.hasMore();) {
+		stream = new CharStream(aiFile.getCode());
+		while (stream.index < stream.content.length()) {
+			char c = stream.c;
 
-			if (tryParseWhiteSpaces()) continue;
-			if (tryParseString(error)) continue;
-			if (tryParseComments()) continue;
-			if (tryParseNumber(error)) continue;
+			// Fast paths sur les chars dominants (whitespace + lettres ascii). Le
+			// dispatch séquentiel d'avant essayait chaque tryParseXxx en série :
+			// 9 méthodes par token au pire, alors qu'une seule peut réussir.
+			if (c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == 160) {
+				stream.next();
+				continue;
+			}
+			if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
+				if (tryParseIdentifier()) continue;
+			}
+			if (c >= '0' && c <= '9') {
+				if (tryParseNumber(error)) continue;
+			}
+			if (c == '"' || c == '\'') {
+				if (tryParseString(error)) continue;
+			}
+			if (c == '/') {
+				// peek(1) pour distinguer commentaire de division
+				char c2 = stream.index + 1 < stream.content.length() ? stream.content.charAt(stream.index + 1) : 0;
+				if (c2 == '/' || c2 == '*') {
+					if (tryParseComments()) continue;
+				}
+				if (tryParseOperator()) continue;
+			}
+			// Opérateurs (premiers chars)
+			if (isOperatorStart(c)) {
+				if (tryParseOperator()) continue;
+			}
+			// Brackets / accolades / parenthèses
+			if (c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}') {
+				if (tryParseBracketLike()) continue;
+			}
+			if (c == ',' || c == ';') {
+				if (tryParseCommaLike()) continue;
+			}
+			// Identifiants étendus (lettres accentuées) + lemniscate / pi
 			if (tryParseSpecialIdentifier()) continue;
 			if (tryParseIdentifier()) continue;
-			if (tryParseOperator()) continue;
-			if (tryParseBracketLike()) continue;
-			if (tryParseCommaLike()) continue;
 
 			error.report(new AnalyzeError(new Location(aiFile, stream.getLineCounter(), stream.getCharCounter()), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 			stream.next();
@@ -139,6 +170,14 @@ public class LexicalParser {
 			IACompiler.LEX_NANOS.addAndGet(System.nanoTime() - t0);
 		}
 		return result;
+	}
+
+	private static boolean isOperatorStart(char c) {
+		// Premiers chars possibles d'un opérateur (cf tryParseOperator switch).
+		return c == ':' || c == '~' || c == '@' || c == '&' || c == '|'
+				|| c == '+' || c == '-' || c == '*' || c == '\\' || c == '%'
+				|| c == '=' || c == '!' || c == '<' || c == '>' || c == '^'
+				|| c == '?' || c == '.';
 	}
 
 	private boolean tryParseBracketLike() {
@@ -398,15 +437,6 @@ public class LexicalParser {
 			error.report(new AnalyzeError(new Location(aiFile, stream.getLineCounter(), stream.getCharCounter()), AnalyzeErrorLevel.ERROR, Error.STRING_NOT_CLOSED));
 			return false;
 		}
-	}
-
-	private boolean tryParseWhiteSpaces() {
-		var c = stream.peek();
-		if (c == ' ' || c == '\r' || c == '\n' || c == '\t' || c == 160) {
-			stream.next();
-			return true;
-		}
-		return false;
 	}
 
 	private boolean tryParseComments() {
