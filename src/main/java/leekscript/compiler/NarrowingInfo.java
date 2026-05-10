@@ -16,39 +16,90 @@ import leekscript.compiler.expression.Operators;
 
 public class NarrowingInfo {
 
-	private final Map<LeekVariable, Type> trueNarrowings = new HashMap<>();
-	private final Map<LeekVariable, Type> falseNarrowings = new HashMap<>();
+	// 5 HashMaps lazy : la grande majorité des conditions n'ont aucune narrowing
+	// (juste un boolean simple comme `getFoo()`). On évite ainsi ~5 allocs par
+	// condition analysée.
+	private static final Map<LeekVariable, Type> EMPTY_VARS = Map.of();
+	private static final Map<String, Type> EMPTY_PROPS = Map.of();
+	private static final Map<String, LeekVariable> EMPTY_PROP_VARS = Map.of();
 
-	// Property access narrowings (case 6): key = "varName.fieldName"
-	private final Map<String, Type> truePropertyNarrowings = new HashMap<>();
-	private final Map<String, Type> falsePropertyNarrowings = new HashMap<>();
-	// Maps property keys to their field variables (for assignment narrowing detection)
-	private final Map<String, LeekVariable> propertyVariables = new HashMap<>();
+	private Map<LeekVariable, Type> trueNarrowings = null;
+	private Map<LeekVariable, Type> falseNarrowings = null;
+	private Map<String, Type> truePropertyNarrowings = null;
+	private Map<String, Type> falsePropertyNarrowings = null;
+	private Map<String, LeekVariable> propertyVariables = null;
 
-	public Map<LeekVariable, Type> getTrueNarrowings() { return trueNarrowings; }
-	public Map<LeekVariable, Type> getFalseNarrowings() { return falseNarrowings; }
-	public Map<String, Type> getTruePropertyNarrowings() { return truePropertyNarrowings; }
-	public Map<String, Type> getFalsePropertyNarrowings() { return falsePropertyNarrowings; }
-	public Map<String, LeekVariable> getPropertyVariables() { return propertyVariables; }
+	public Map<LeekVariable, Type> getTrueNarrowings() { return trueNarrowings != null ? trueNarrowings : EMPTY_VARS; }
+	public Map<LeekVariable, Type> getFalseNarrowings() { return falseNarrowings != null ? falseNarrowings : EMPTY_VARS; }
+	public Map<String, Type> getTruePropertyNarrowings() { return truePropertyNarrowings != null ? truePropertyNarrowings : EMPTY_PROPS; }
+	public Map<String, Type> getFalsePropertyNarrowings() { return falsePropertyNarrowings != null ? falsePropertyNarrowings : EMPTY_PROPS; }
+	public Map<String, LeekVariable> getPropertyVariables() { return propertyVariables != null ? propertyVariables : EMPTY_PROP_VARS; }
 
-	public boolean hasTrue() { return !trueNarrowings.isEmpty() || !truePropertyNarrowings.isEmpty(); }
-	public boolean hasFalse() { return !falseNarrowings.isEmpty() || !falsePropertyNarrowings.isEmpty(); }
+	public boolean hasTrue() {
+		return (trueNarrowings != null && !trueNarrowings.isEmpty())
+			|| (truePropertyNarrowings != null && !truePropertyNarrowings.isEmpty());
+	}
+	public boolean hasFalse() {
+		return (falseNarrowings != null && !falseNarrowings.isEmpty())
+			|| (falsePropertyNarrowings != null && !falsePropertyNarrowings.isEmpty());
+	}
+
+	private Map<LeekVariable, Type> trueOrAlloc() {
+		if (trueNarrowings == null) trueNarrowings = new HashMap<>();
+		return trueNarrowings;
+	}
+	private Map<LeekVariable, Type> falseOrAlloc() {
+		if (falseNarrowings == null) falseNarrowings = new HashMap<>();
+		return falseNarrowings;
+	}
+	private Map<String, Type> truePropOrAlloc() {
+		if (truePropertyNarrowings == null) truePropertyNarrowings = new HashMap<>();
+		return truePropertyNarrowings;
+	}
+	private Map<String, Type> falsePropOrAlloc() {
+		if (falsePropertyNarrowings == null) falsePropertyNarrowings = new HashMap<>();
+		return falsePropertyNarrowings;
+	}
+	private Map<String, LeekVariable> propVarsOrAlloc() {
+		if (propertyVariables == null) propertyVariables = new HashMap<>();
+		return propertyVariables;
+	}
 
 	/**
-	 * Apply true narrowings and return saved original types for later restore.
+	 * Merge `source` dans info.trueNarrowings (si toTrue=true) ou info.falseNarrowings
+	 * (sinon). Skip si source est null/vide pour éviter d'allouer la map de destination
+	 * pour rien — cas hot quand la grande majorité des sub-narrowings sont vides.
+	 */
+	private static void mergeInto(NarrowingInfo info, Map<LeekVariable, Type> source, boolean toTrue) {
+		if (source == null || source.isEmpty()) return;
+		if (toTrue) info.trueOrAlloc().putAll(source);
+		else info.falseOrAlloc().putAll(source);
+	}
+
+	private static void mergePropsInto(NarrowingInfo info, Map<String, Type> source, boolean toTrue) {
+		if (source == null || source.isEmpty()) return;
+		if (toTrue) info.truePropOrAlloc().putAll(source);
+		else info.falsePropOrAlloc().putAll(source);
+	}
+
+	/**
+	 * Apply true narrowings and return saved original types for later restore
+	 * (null si aucun narrowing à appliquer — restore null-safe).
 	 */
 	public Map<LeekVariable, Type> applyTrue() {
 		return apply(trueNarrowings);
 	}
 
 	/**
-	 * Apply false narrowings and return saved original types for later restore.
+	 * Apply false narrowings and return saved original types for later restore
+	 * (null si aucun narrowing à appliquer — restore null-safe).
 	 */
 	public Map<LeekVariable, Type> applyFalse() {
 		return apply(falseNarrowings);
 	}
 
 	private static Map<LeekVariable, Type> apply(Map<LeekVariable, Type> narrowings) {
+		if (narrowings == null || narrowings.isEmpty()) return null;
 		var saved = new HashMap<LeekVariable, Type>();
 		for (var entry : narrowings.entrySet()) {
 			saved.put(entry.getKey(), entry.getKey().getType());
@@ -93,7 +144,7 @@ public class NarrowingInfo {
 		if (condition instanceof LeekVariable lv) {
 			var declVar = lv.getVariable();
 			if (declVar != null && declVar.getType().canBeNull()) {
-				info.trueNarrowings.put(declVar, declVar.getType().assertNotNull());
+				info.trueOrAlloc().put(declVar, declVar.getType().assertNotNull());
 				// False branch: can't narrow (x could be null, 0, false, "")
 			}
 			return;
@@ -103,10 +154,10 @@ public class NarrowingInfo {
 		if (condition instanceof LeekObjectAccess oa) {
 			String key = extractPropertyKey(oa);
 			if (key != null) {
-				if (oa.getVariable() != null) info.propertyVariables.put(key, oa.getVariable());
+				if (oa.getVariable() != null) info.propVarsOrAlloc().put(key, oa.getVariable());
 				var fieldType = oa.getType();
 				if (fieldType.canBeNull()) {
-					info.truePropertyNarrowings.put(key, fieldType.assertNotNull());
+					info.truePropOrAlloc().put(key, fieldType.assertNotNull());
 				}
 			}
 			return;
@@ -129,29 +180,29 @@ public class NarrowingInfo {
 		// Case: !expr → invert narrowings
 		else if (op == Operators.NOT) {
 			var inner = extract(e2);
-			info.trueNarrowings.putAll(inner.falseNarrowings);
-			info.falseNarrowings.putAll(inner.trueNarrowings);
-			info.truePropertyNarrowings.putAll(inner.falsePropertyNarrowings);
-			info.falsePropertyNarrowings.putAll(inner.truePropertyNarrowings);
+			mergeInto(info, inner.falseNarrowings, true);
+			mergeInto(info, inner.trueNarrowings, false);
+			mergePropsInto(info, inner.falsePropertyNarrowings, true);
+			mergePropsInto(info, inner.truePropertyNarrowings, false);
 		}
 		// Case: a && b → true narrowings combine (both must be true)
 		else if (op == Operators.AND) {
 			var left = extract(e1);
 			var right = extract(e2);
-			info.trueNarrowings.putAll(left.trueNarrowings);
-			info.trueNarrowings.putAll(right.trueNarrowings);
-			info.truePropertyNarrowings.putAll(left.truePropertyNarrowings);
-			info.truePropertyNarrowings.putAll(right.truePropertyNarrowings);
+			mergeInto(info, left.trueNarrowings, true);
+			mergeInto(info, right.trueNarrowings, true);
+			mergePropsInto(info, left.truePropertyNarrowings, true);
+			mergePropsInto(info, right.truePropertyNarrowings, true);
 			// False: can't narrow (at least one is false, don't know which)
 		}
 		// Case: a || b → false narrowings combine (both must be false)
 		else if (op == Operators.OR) {
 			var left = extract(e1);
 			var right = extract(e2);
-			info.falseNarrowings.putAll(left.falseNarrowings);
-			info.falseNarrowings.putAll(right.falseNarrowings);
-			info.falsePropertyNarrowings.putAll(left.falsePropertyNarrowings);
-			info.falsePropertyNarrowings.putAll(right.falsePropertyNarrowings);
+			mergeInto(info, left.falseNarrowings, false);
+			mergeInto(info, right.falseNarrowings, false);
+			mergePropsInto(info, left.falsePropertyNarrowings, false);
+			mergePropsInto(info, right.falsePropertyNarrowings, false);
 			// True: can't narrow (at least one is true, don't know which)
 		}
 		// Case: x instanceof Type
@@ -184,12 +235,12 @@ public class NarrowingInfo {
 			var nonNullType = declVar.getType().assertNotNull();
 			if (isEquals) {
 				// x == null: true → null, false → non-null
-				info.trueNarrowings.put(declVar, Type.NULL);
-				info.falseNarrowings.put(declVar, nonNullType);
+				info.trueOrAlloc().put(declVar, Type.NULL);
+				info.falseOrAlloc().put(declVar, nonNullType);
 			} else {
 				// x != null: true → non-null, false → null
-				info.trueNarrowings.put(declVar, nonNullType);
-				info.falseNarrowings.put(declVar, Type.NULL);
+				info.trueOrAlloc().put(declVar, nonNullType);
+				info.falseOrAlloc().put(declVar, Type.NULL);
 			}
 		}
 	}
@@ -222,12 +273,12 @@ public class NarrowingInfo {
 		// Try direct variable narrowing first (handles simple vars, this.field, class.field)
 		var declVar = extractVariable(e1);
 		if (declVar != null) {
-			info.trueNarrowings.put(declVar, targetType);
+			info.trueOrAlloc().put(declVar, targetType);
 			Type currentType = declVar.getType();
 			if (currentType instanceof CompoundType ct) {
 				Type remaining = ct.removeType(targetType);
 				if (remaining != currentType) {
-					info.falseNarrowings.put(declVar, remaining);
+					info.falseOrAlloc().put(declVar, remaining);
 				}
 			}
 			return;
@@ -237,12 +288,12 @@ public class NarrowingInfo {
 		String key = extractPropertyKey(e1);
 		if (key == null) return;
 		var oa = (LeekObjectAccess) unwrap(e1);
-		info.truePropertyNarrowings.put(key, targetType);
+		info.truePropOrAlloc().put(key, targetType);
 		var fieldType = oa.getType();
 		if (fieldType instanceof CompoundType ct) {
 			Type remaining = ct.removeType(targetType);
 			if (remaining != fieldType) {
-				info.falsePropertyNarrowings.put(key, remaining);
+				info.falsePropOrAlloc().put(key, remaining);
 			}
 		}
 	}
@@ -253,17 +304,17 @@ public class NarrowingInfo {
 	private static void extractPropertyNullCheck(LeekObjectAccess oa, NarrowingInfo info, boolean isEquals) {
 		String key = extractPropertyKey(oa);
 		if (key == null) return;
-		if (oa.getVariable() != null) info.propertyVariables.put(key, oa.getVariable());
+		if (oa.getVariable() != null) info.propVarsOrAlloc().put(key, oa.getVariable());
 
 		var fieldType = oa.getType();
 		if (fieldType.canBeNull()) {
 			var nonNullType = fieldType.assertNotNull();
 			if (isEquals) {
-				info.truePropertyNarrowings.put(key, Type.NULL);
-				info.falsePropertyNarrowings.put(key, nonNullType);
+				info.truePropOrAlloc().put(key, Type.NULL);
+				info.falsePropOrAlloc().put(key, nonNullType);
 			} else {
-				info.truePropertyNarrowings.put(key, nonNullType);
-				info.falsePropertyNarrowings.put(key, Type.NULL);
+				info.truePropOrAlloc().put(key, nonNullType);
+				info.falsePropOrAlloc().put(key, Type.NULL);
 			}
 		}
 	}
