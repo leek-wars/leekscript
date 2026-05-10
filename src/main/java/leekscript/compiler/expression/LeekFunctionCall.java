@@ -389,18 +389,21 @@ public class LeekFunctionCall extends Expression {
 		mExpression.analyze(compiler);
 		operations += mExpression.getOperations();
 
-		// L'expression est appelable ?
-		if (compiler.getMainBlock().isStrict() && !mExpression.getType().isCallable()) {
+		// L'expression est appelable ? Cache isStrict + getType — chacun était
+		// appelé 2× dans le chemin (et appel de fonction = hot path).
+		var exprType = mExpression.getType();
+		boolean strict = compiler.getMainBlock().isStrict();
+		if (strict && !exprType.isCallable()) {
 			compiler.addError(new AnalyzeError(mExpression.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAY_NOT_BE_CALLABLE, new String[] {
 				mExpression.toString(),
-				mExpression.getType().toString()
+				exprType.toString()
 			} ));
 		}
-		else if (!mExpression.getType().canBeCallable()) {
-			var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+		else if (!exprType.canBeCallable()) {
+			var level = strict ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 			compiler.addError(new AnalyzeError(mExpression.getLocation(), level, Error.NOT_CALLABLE, new String[] {
 				mExpression.toString(),
-				mExpression.getType().toString()
+				exprType.toString()
 			} ));
 		}
 
