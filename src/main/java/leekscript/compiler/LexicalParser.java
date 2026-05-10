@@ -358,82 +358,94 @@ public class LexicalParser {
 	}
 
 	private boolean tryParseNumber(ErrorReporter error) {
-
-		if (stream.peek() < '0' || stream.peek() > '9') {
-			return false;
-		}
-
-		var startingPoint = stream.index;
-
-		stream.next();
-
-		for (char c = stream.peek(); stream.hasMore(); c = stream.next()) {
-			if (c >= '0' && c <= '9') continue;
-			if (c >= 'A' && c <= 'Z') continue;
-			if (c >= 'a' && c <= 'z') continue;
-			if (c >= 'À' && c <= 'Ö') continue;
-			if (c >= 'à' && c <= 'ö') continue;
-			if (c >= 'Ø' && c <= 'Ý') continue;
-			if (c >= 'ø' && c <= 'ý') continue;
-			if (c >= 'Œ' && c <= 'œ') continue;
-			if (c == '_' || c == 'ÿ') continue;
+		// Scan direct sur content + bump du stream à la fin (un nombre ne contient
+		// pas de \n donc lineCounter intact). Ancienne version : stream.next() par
+		// char → maj lineCounter/charCounter/c à chaque pas.
+		String content = stream.content;
+		int len = content.length();
+		int start = stream.index;
+		if (start >= len) return false;
+		char first = content.charAt(start);
+		if (first < '0' || first > '9') return false;
+		int i = start + 1;
+		boolean dotSeen = false;
+		while (i < len) {
+			char c = content.charAt(i);
+			if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+					|| c == '_') { i++; continue; }
+			if ((c >= 'À' && c <= 'Ö') || (c >= 'à' && c <= 'ö')
+					|| (c >= 'Ø' && c <= 'Ý') || (c >= 'ø' && c <= 'ý')
+					|| (c >= 'Œ' && c <= 'œ') || c == 'ÿ') { i++; continue; }
 			if (c == '-' || c == '+') {
-				if (stream.peek(-1) == 'e' || stream.peek(-1) == 'p') {
-					continue;
-				} else {
-					break;
-				}
+				char prev = i > 0 ? content.charAt(i - 1) : 0;
+				if (prev == 'e' || prev == 'p') { i++; continue; }
+				break;
 			}
-
 			if (c == '.') {
-				// We don't eat the dot if it's followed by another dot
-				if (stream.peek(1) == '.') {
+				// Pas d'eat si suivi d'un autre point (intervalle 1..10)
+				if (i + 1 < len && content.charAt(i + 1) == '.') break;
+				if (dotSeen) {
+					// Compute char counter at the second dot for error location.
+					int charAtDot = stream.charCounter + (i - start) + 1;
+					error.report(new AnalyzeError(new Token(TokenType.NOTHING, ".", aiFile, stream.getLineCounter(), charAtDot), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 					break;
 				}
-
-				if (stream.getSubStringSince(startingPoint).contains(".")) {
-					error.report(new AnalyzeError(new Token(TokenType.NOTHING, ".", aiFile, stream.getLineCounter(), stream.getCharCounter() + 1), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
-					break;
-				}
-
+				dotSeen = true;
+				i++;
 				continue;
 			}
-
 			break;
 		}
-
-		addToken(stream.getSubStringSince(startingPoint), TokenType.NUMBER);
+		// Bump du stream
+		stream.index = i;
+		stream.charCounter += i - start;
+		if (i < len) stream.c = content.charAt(i);
+		addToken(content.substring(start, i), TokenType.NUMBER);
 		return true;
 	}
 
 	private boolean tryParseString(ErrorReporter error) {
-
-		var openQuote = stream.peek();
-		if (openQuote != '"' && openQuote != '\'') {
-			return false;
-		}
-
-		var startingPoint = stream.index;
-
-		stream.next();
-
-		var escaped = false;
-		var closed = false;
-		for (char c = stream.peek(); stream.hasMore(); c = stream.next()) {
+		String content = stream.content;
+		int len = content.length();
+		int start = stream.index;
+		if (start >= len) return false;
+		char openQuote = content.charAt(start);
+		if (openQuote != '"' && openQuote != '\'') return false;
+		// Scan direct ; chaque \n rencontré incrémente lineCounter (les strings
+		// peuvent contenir des newlines). À la fin : bump charCounter selon la
+		// distance depuis le dernier \n.
+		int i = start + 1;
+		int lineInc = 0;
+		int lastNewlineAt = -1;
+		boolean escaped = false;
+		boolean closed = false;
+		while (i < len) {
+			char c = content.charAt(i);
 			if (c == '\\') {
 				escaped = !escaped;
+				i++;
 				continue;
 			}
 			if (c == openQuote && !escaped) {
 				closed = true;
-				stream.next();
+				i++;
 				break;
 			}
+			if (c == '\n') { lineInc++; lastNewlineAt = i; }
 			escaped = false;
+			i++;
 		}
-
+		// Bump du stream
+		stream.index = i;
+		if (lineInc > 0) {
+			stream.lineCounter += lineInc;
+			stream.charCounter = i - lastNewlineAt - 1;
+		} else {
+			stream.charCounter += i - start;
+		}
+		if (i < len) stream.c = content.charAt(i);
 		if (closed) {
-			addToken(stream.getSubStringSince(startingPoint), TokenType.VAR_STRING);
+			addToken(content.substring(start, i), TokenType.VAR_STRING);
 			return true;
 		} else {
 			error.report(new AnalyzeError(new Location(aiFile, stream.getLineCounter(), stream.getCharCounter()), AnalyzeErrorLevel.ERROR, Error.STRING_NOT_CLOSED));
@@ -536,10 +548,6 @@ public class LexicalParser {
 
 		public char peek() {
 			return c;
-		}
-
-		public String getSubStringSince(int start) {
-			return content.substring(start, index);
 		}
 	}
 }
