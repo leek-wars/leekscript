@@ -32,6 +32,19 @@ public class LexicalParser {
 		return arr;
 	}
 
+	// Lookup ASCII pour les chars valides dans un identifiant : a-z, A-Z, 0-9, _.
+	// Remplace ~4 range checks dans la boucle de tryParseIdentifier par un array
+	// lookup (les chars > 127 retombent sur le slow path Latin-1).
+	private static final boolean[] IDENT_CHAR_ASCII = buildIdentCharAscii();
+	private static boolean[] buildIdentCharAscii() {
+		var arr = new boolean[128];
+		for (char c = 'a'; c <= 'z'; c++) arr[c] = true;
+		for (char c = 'A'; c <= 'Z'; c++) arr[c] = true;
+		for (char c = '0'; c <= '9'; c++) arr[c] = true;
+		arr['_'] = true;
+		return arr;
+	}
+
 	// Bitmap des premiers chars possibles d'un keyword (v3+ case-sensitive).
 	// Permet de fast-path les identifiants user qui ne peuvent pas être keywords.
 	// Calculé à partir de KEYWORDS pour rester synchronisé automatiquement.
@@ -347,8 +360,12 @@ public class LexicalParser {
 		int i = start;
 		while (i < len) {
 			char c = content.charAt(i);
-			if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-				|| (c >= '0' && c <= '9') || c == '_') { i++; continue; }
+			// Fast path ASCII : un seul lookup au lieu de 4 range checks.
+			if (c < 128) {
+				if (IDENT_CHAR_ASCII[c]) { i++; continue; }
+				break;
+			}
+			// Slow path Latin-1+ : lettres accentuées et Œ/œ/ÿ.
 			if ((c >= 'À' && c <= 'Ö') || (c >= 'à' && c <= 'ö')
 				|| (c >= 'Ø' && c <= 'Ý') || (c >= 'ø' && c <= 'ý')
 				|| (c >= 'Œ' && c <= 'œ') || c == 'ÿ') { i++; continue; }
