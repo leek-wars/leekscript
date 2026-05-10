@@ -23,6 +23,19 @@ public class LexicalParser {
 	// entrées donc le coût est négligeable.
 	private static final Map<String, KeywordInfo> KEYWORDS = buildKeywords();
 
+	// Bitmap des premiers chars possibles d'un keyword (v3+ case-sensitive).
+	// Permet de fast-path les identifiants user qui ne peuvent pas être keywords.
+	// Calculé à partir de KEYWORDS pour rester synchronisé automatiquement.
+	private static final boolean[] KEYWORD_FIRST_CHAR = buildKeywordFirstCharSet();
+	private static boolean[] buildKeywordFirstCharSet() {
+		var bs = new boolean[128];
+		for (var k : KEYWORDS.keySet()) {
+			char c = k.charAt(0);
+			if (c < 128) bs[c] = true;
+		}
+		return bs;
+	}
+
 	private static Map<String, KeywordInfo> buildKeywords() {
 		var m = new HashMap<String, KeywordInfo>(128);
 		m.put("and",         new KeywordInfo(1, "&&", TokenType.OPERATOR));
@@ -342,11 +355,23 @@ public class LexicalParser {
 
 		var word = content.substring(start, i);
 
-		// Lookup keyword via HashMap au lieu de ~70 wordEquals séquentiels.
-		// v1-2 sont case-insensitive, v3+ case-sensitive.
+		// Fast path v3+ : si le premier char n'est pas un premier char de keyword,
+		// inutile de faire le HashMap.get. La majorité des identifiants user
+		// (CamelCase, ou commençant par h/j/k/m/q/u/z) sont exclus tout de suite.
+		KeywordInfo info;
+		if (version >= 3) {
+			char fc = word.charAt(0);
+			if (fc >= 128 || !KEYWORD_FIRST_CHAR[fc]) {
+				addToken(word, TokenType.STRING);
+				return true;
+			}
+			info = KEYWORDS.get(word);
+		} else {
+			// v1-2 sont case-insensitive : lookup sur le mot lowercased.
+			info = KEYWORDS.get(word.toLowerCase());
+		}
 		// Exception: 'class' reste case-sensitive même en v1/v2 — un identifiant
 		// 'Class' est valide en v2 (cf. test `class A {} Class clazz = A`).
-		var info = KEYWORDS.get(version <= 2 ? word.toLowerCase() : word);
 		if (info != null && version >= info.minVersion
 			&& !(info.type == TokenType.CLASS && version <= 2 && !word.equals("class"))) {
 			addToken(info.emit != null ? info.emit : word, info.type);
