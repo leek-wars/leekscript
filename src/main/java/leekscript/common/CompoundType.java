@@ -13,13 +13,24 @@ public class CompoundType extends Type {
 	protected HashSet<Type> types;
 
 	public CompoundType(HashSet<Type> types) {
-		super(String.join(" | ", types.stream().map(t -> t.toString()).collect(Collectors.toList())), "x", "Object", "Object", "null");
+		super(buildName(types), "x", "Object", "Object", "null");
 		this.types = types;
 	}
 
 	public CompoundType(Type... types) {
-		super(String.join(" | ", Arrays.asList(types).stream().map(t -> t.toString()).collect(Collectors.toList())), "x", "Object", "Object", "null");
+		super(buildName(Arrays.asList(types)), "x", "Object", "Object", "null");
 		this.types = new HashSet<Type>(Arrays.asList(types));
+	}
+
+	private static String buildName(Iterable<Type> types) {
+		var sb = new StringBuilder();
+		boolean first = true;
+		for (var t : types) {
+			if (!first) sb.append(" | ");
+			sb.append(t.toString());
+			first = false;
+		}
+		return sb.toString();
 	}
 
 	@Override
