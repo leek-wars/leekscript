@@ -82,7 +82,13 @@ public class WordCompiler {
 		mTokens = mAI.getTokenStream();
 	}
 
+	// Compteur incrémenté à chaque check. On ne consulte l'horloge que tous les 1024
+	// appels — la précision du timeout passe de ~1ms à ~quelques ms (négligeable
+	// pour un timeout de plusieurs secondes), mais on économise ~30k currentTimeMillis()
+	// par compile de Quantum.
+	private int interruptCounter = 0;
 	public boolean isInterrupted() {
+		if ((++interruptCounter & 0x3ff) != 0) return false;
 		return System.currentTimeMillis() - mMain.getCompiler().getAnalyzeStart() > IACompiler.TIMEOUT_MS;
 	}
 
