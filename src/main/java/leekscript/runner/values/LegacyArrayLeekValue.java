@@ -706,8 +706,12 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		Element e = mHead;
 		int p = 0;
 		while (e != null) {
-			if (p >= pos && LeekValueManager.getType(e.value) == valueType && ai.eq(e.value.get(), value)) {
-				return e.key;
+			if (p >= pos) {
+				// Cache e.value.get() — utilisé pour le type check ET pour eq.
+				Object v = e.value.get();
+				if (LeekValueManager.getType(v) == valueType && ai.eq(v, value)) {
+					return e.key;
+				}
 			}
 			e = e.next;
 			p++;
@@ -1017,7 +1021,8 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		int valueType = LeekValueManager.getType(value);
 		Element e = mHead;
 		while (e != null) {
-			if (LeekValueManager.getType(e.value) == valueType && ai.eq(e.value.get(), value)) {
+			Object v = e.value.get();
+			if (LeekValueManager.getType(v) == valueType && ai.eq(v, value)) {
 				// On a notre élément à supprimer
 				// On l'enleve de la HashMap
 				removeFromHashmap(ai, e);
