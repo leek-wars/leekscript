@@ -1,8 +1,8 @@
 package leekscript.compiler;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import leekscript.common.Annotation;
 import leekscript.common.AccessLevel;
@@ -177,7 +177,6 @@ public class WordCompiler {
 						}
 					}
 					int param_count = 0;
-					var parameters = new HashSet<String>();
 					while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.PAR_RIGHT) {
 
 						if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
@@ -185,8 +184,7 @@ public class WordCompiler {
 						if (mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("@")) {
 							mTokens.skip();
 						}
-						var parameter = mTokens.eat();
-						parameters.add(parameter.getWord());
+						mTokens.skip();
 						param_count++;
 
 						// Skip default value expression (= expr)
@@ -637,17 +635,24 @@ public class WordCompiler {
 		return type;
 	}
 
+	// Lookup table pour les types simples : évite ~9 string equals par appel.
+	// Mapping word → Type pour les types primitifs sans paramètres.
+	private static final Map<String, Type> SIMPLE_TYPES = Map.of(
+		"void", Type.VOID,
+		"boolean", Type.BOOL,
+		"any", Type.ANY,
+		"integer", Type.INT,
+		"real", Type.REAL,
+		"string", Type.STRING,
+		"Class", Type.CLASS,
+		"Object", Type.OBJECT
+	);
+
 	private LeekType eatPrimaryType(boolean first, boolean mandatory) throws LeekCompilerException {
 		var word = mTokens.get().getWord();
-		if (word.equals("void")) return new LeekType(mTokens.eat(), Type.VOID);
+		var simple = SIMPLE_TYPES.get(word);
+		if (simple != null) return new LeekType(mTokens.eat(), simple);
 		if (!first && word.equals("null")) return new LeekType(mTokens.eat(), Type.NULL);
-		if (word.equals("boolean")) return new LeekType(mTokens.eat(), Type.BOOL);
-		if (word.equals("any")) return new LeekType(mTokens.eat(), Type.ANY);
-		if (word.equals("integer")) return new LeekType(mTokens.eat(), Type.INT);
-		if (word.equals("real")) return new LeekType(mTokens.eat(), Type.REAL);
-		if (word.equals("string")) return new LeekType(mTokens.eat(), Type.STRING);
-		if (word.equals("Class")) return new LeekType(mTokens.eat(), Type.CLASS);
-		if (word.equals("Object")) return new LeekType(mTokens.eat(), Type.OBJECT);
 		if (word.equals("Array") || word.equals("Set")) {
 			boolean isArray = word.equals("Array");
 
