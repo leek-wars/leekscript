@@ -118,6 +118,7 @@ public class LexicalParser {
 	}
 
 	public LexicalParserTokenStream parse(ErrorReporter error) {
+		long t0 = IACompiler.PHASE_TIMINGS_ENABLED ? System.nanoTime() : 0L;
 		for (stream = new CharStream(aiFile.getCode()); stream.hasMore();) {
 
 			if (tryParseWhiteSpaces()) continue;
@@ -133,7 +134,11 @@ public class LexicalParser {
 			error.report(new AnalyzeError(new Location(aiFile, stream.getLineCounter(), stream.getCharCounter()), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 			stream.next();
 		}
-		return new LexicalParserTokenStream(tokens, new Token(TokenType.END_OF_FILE, "", new Location(aiFile, stream.getLineCounter(), stream.getCharCounter())));
+		var result = new LexicalParserTokenStream(tokens, new Token(TokenType.END_OF_FILE, "", new Location(aiFile, stream.getLineCounter(), stream.getCharCounter())));
+		if (IACompiler.PHASE_TIMINGS_ENABLED) {
+			IACompiler.LEX_NANOS.addAndGet(System.nanoTime() - t0);
+		}
+		return result;
 	}
 
 	private boolean tryParseBracketLike() {

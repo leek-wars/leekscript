@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
@@ -41,6 +42,17 @@ public class IACompiler {
 	}
 
 	public static final long TIMEOUT_MS = 30 * 1000; // 30 seconds
+
+	// Accumulateurs nanos par phase, pour benchmarks. Activés ssi PHASE_TIMINGS_ENABLED.
+	public static volatile boolean PHASE_TIMINGS_ENABLED = false;
+	public static final AtomicLong LEX_NANOS = new AtomicLong();
+	public static final AtomicLong PARSE_NANOS = new AtomicLong();   // = lex + syntax
+	public static final AtomicLong ANALYZE_NANOS = new AtomicLong();
+	public static void resetPhaseTimings() {
+		LEX_NANOS.set(0);
+		PARSE_NANOS.set(0);
+		ANALYZE_NANOS.set(0);
+	}
 
 	private final ArrayNode informations = Json.createArray();
 	private AIFile mCurrentAI;
@@ -194,6 +206,11 @@ public class IACompiler {
 			long analyzeTime = System.nanoTime();
 			compiler.analyze();
 			analyzeTime = System.nanoTime() - analyzeTime;
+
+			if (PHASE_TIMINGS_ENABLED) {
+				PARSE_NANOS.addAndGet(parseTime);
+				ANALYZE_NANOS.addAndGet(analyzeTime);
+			}
 
 			result.includedAIs = main.getIncludedAIs();
 			ai.setIncludedAIs(result.includedAIs);
