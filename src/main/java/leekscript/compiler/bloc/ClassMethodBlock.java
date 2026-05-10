@@ -46,6 +46,7 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 		this.isStatic = isStatic;
 		this.token = token;
 		this.type = new FunctionType(returnType);
+		this.overridesGetVariable = true;  // override polymorphique (cf. AbstractLeekBlock.getVariable)
 	}
 
 	public void addAnnotation(Annotation a) {
@@ -105,11 +106,6 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 		}
 		this.type.add_argument(type, defaultValue != null);
 		// System.out.println("Method " + this.token.getWord() + " type = " + this.type);
-	}
-
-	@Override
-	protected boolean overridesGetVariable() {
-		return true;
 	}
 
 	@Override

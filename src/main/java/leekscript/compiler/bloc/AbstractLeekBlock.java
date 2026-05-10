@@ -33,6 +33,10 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	protected int mEndInstruction = 0;
 	protected boolean full = false;
 	protected Map<String, Type> mNarrowedPropertyTypes = null;
+	// Mis à true dans le constructeur des sous-classes qui override getVariable
+	// (ClassMethodBlock). Plus rapide qu'un appel virtuel à overridesGetVariable()
+	// dans la boucle de getVariable.
+	protected boolean overridesGetVariable = false;
 
 	public AbstractLeekBlock(AbstractLeekBlock parent, MainLeekBlock main) {
 		mParent = parent;
@@ -155,21 +159,13 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 			AbstractLeekBlock parent = block.mParent;
 			// Si le parent override getVariable (ClassMethodBlock...), on ne peut
 			// pas continuer la boucle : il faut dispatcher polymorphement.
-			if (parent != null && parent.overridesGetVariable()) {
+			// Field read au lieu d'appel virtuel — appelé par chaque block walk.
+			if (parent != null && parent.overridesGetVariable) {
 				return parent.getVariable(variable, includeClassMembers);
 			}
 			block = parent;
 		}
 		return null;
-	}
-
-	/**
-	 * Override-flag pour permettre le déroulement de la chaîne dans getVariable.
-	 * Surchargé par ClassMethodBlock qui ajoute sa propre logique (this/super,
-	 * fields de classe...).
-	 */
-	protected boolean overridesGetVariable() {
-		return false;
 	}
 
 	public boolean hasGlobal(String globale) {
