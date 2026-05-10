@@ -634,7 +634,21 @@ public class WordCompiler {
 	);
 
 	private LeekType eatPrimaryType(boolean first, boolean mandatory) throws LeekCompilerException {
-		var word = mTokens.get().getWord();
+		// Fast path : seuls STRING (identifiants), VOID, NULL (pour `T | null`) et
+		// FUNCTION (en v1/v2 case-insensitive, `Function` est tokenisé en
+		// TokenType.FUNCTION) peuvent être un type primaire. eatType est appelé
+		// spéculativement pour chaque déclaration/expression, donc la grande majorité
+		// retourne null sans matcher — éviter ~10 string equals.
+		var head = mTokens.get();
+		var ttype = head.getType();
+		if (ttype != TokenType.STRING && ttype != TokenType.VOID
+				&& ttype != TokenType.NULL && ttype != TokenType.FUNCTION) {
+			if (mandatory) {
+				addError(new AnalyzeError(head, AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+			}
+			return null;
+		}
+		var word = head.getWord();
 		var simple = SIMPLE_TYPES.get(word);
 		if (simple != null) return new LeekType(mTokens.eat(), simple);
 		if (!first && word.equals("null")) return new LeekType(mTokens.eat(), Type.NULL);
