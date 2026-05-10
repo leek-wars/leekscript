@@ -125,6 +125,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mRedefinedFunctions.add(function);
 	}
 
+	public boolean hasRedefinedFunctions() {
+		return !mRedefinedFunctions.isEmpty();
+	}
+
 	public boolean isRedefinedFunction(String function) {
 		// isEmpty fast path : pour la plupart des IAs aucune fonction n'est redéfinie
 		// (LeekExpression.preAnalyze.line 1068, uniquement déclenché par

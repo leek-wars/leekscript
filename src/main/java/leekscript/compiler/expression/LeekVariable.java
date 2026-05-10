@@ -223,8 +223,8 @@ public class LeekVariable extends Expression {
 			this.variableType = constant.getType();
 			return;
 		}
-		// Redefined function
-		if (mainBlock.isRedefinedFunction(name)) {
+		// Redefined function — skip carrément si aucune redef dans tout le programme.
+		if (mainBlock.hasRedefinedFunctions() && mainBlock.isRedefinedFunction(name)) {
 			this.variableType = Type.ANY;
 			return;
 		}
@@ -248,6 +248,8 @@ public class LeekVariable extends Expression {
 		if (this.variable != null) {
 			this.variableType = this.variable.getType();
 		}
+		// Court-circuit pour les variables THIS/THIS_CLASS/SUPER : check par type
+		// avant d'appeler getCurrentClass() qui n'a de sens que pour ces variantes.
 		if (this.type == VariableType.THIS) {
 			this.variableType = compiler.getCurrentClass().getType();
 		} else if (this.type == VariableType.THIS_CLASS) {
@@ -255,12 +257,14 @@ public class LeekVariable extends Expression {
 		} else if (this.type == VariableType.SUPER && compiler.getCurrentClass().getParent() != null) {
 			this.variableType = compiler.getCurrentClass().getParent().getClassValueType();
 		}
-		// Redefined function
-		if (compiler.getMainBlock().isRedefinedFunction(token.getWord())) {
+		// Redefined function — skip carrément si aucune redef dans tout le programme
+		// (cas majoritaire). Le précédent isEmpty fast-path est dans le call ; ici
+		// on évite aussi le compiler.getMainBlock() + l'appel.
+		var mainBlock = compiler.getMainBlock();
+		if (mainBlock.hasRedefinedFunctions() && mainBlock.isRedefinedFunction(token.getWord())) {
 			this.variableType = Type.ANY;
 			return;
 		}
-		// System.out.println("[Variable] " + token.getWord() + " type=" + this.variableType);
 	}
 
 	public ClassDeclarationInstruction getClassDeclaration() {
