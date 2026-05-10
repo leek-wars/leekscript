@@ -15,12 +15,20 @@ public class LexicalParserTokenStream {
 	}
 
 	public Token eat() {
+		// Lit le token courant puis avance — évite get(-1) qui re-fait l'addition
+		// et le bounds check du cursor + (-1).
+		Token t;
+		if (cursor < tokens.size()) {
+			t = tokens.get(cursor);
+		} else {
+			t = EOFToken;
+		}
 		cursor++;
-		return get(-1);
+		return t;
 	}
 
 	public void skip() {
-		eat();
+		cursor++;
 	}
 
 	public void unskip() {
@@ -40,7 +48,9 @@ public class LexicalParserTokenStream {
 	}
 
 	public Token get() {
-		return get(0);
+		// Variante sans offset : skip l'addition et le check negative-index.
+		// Hot path appelé des centaines de milliers de fois pendant firstPass+secondPass.
+		return cursor < tokens.size() ? tokens.get(cursor) : EOFToken;
 	}
 
 	public Token get(int offset) {
