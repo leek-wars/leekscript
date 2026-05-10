@@ -1,12 +1,100 @@
 package leekscript.compiler;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import leekscript.common.Error;
 
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 
 public class LexicalParser {
+
+	/**
+	 * Métadonnées d'un keyword pour le dispatch rapide dans tryParseIdentifier.
+	 * minVersion : version minimum à partir de laquelle le mot est un keyword.
+	 * emit : valeur passée à addToken (null = utilise le mot original ; non-null
+	 *        pour les remappings comme "and" → "&&").
+	 */
+	private static record KeywordInfo(int minVersion, String emit, TokenType type) {}
+
+	// Map case-sensitive (v3+). Pour v1-2 on lowercase d'abord (alloc) — le
+	// fallback d'origine est conservé si tu préfères, mais le HashMap a 70
+	// entrées donc le coût est négligeable.
+	private static final Map<String, KeywordInfo> KEYWORDS = buildKeywords();
+
+	private static Map<String, KeywordInfo> buildKeywords() {
+		var m = new HashMap<String, KeywordInfo>(128);
+		m.put("and",         new KeywordInfo(1, "&&", TokenType.OPERATOR));
+		m.put("or",          new KeywordInfo(1, "||", TokenType.OPERATOR));
+		m.put("xor",         new KeywordInfo(1, null, TokenType.OPERATOR));
+		m.put("instanceof",  new KeywordInfo(2, null, TokenType.OPERATOR));
+		m.put("as",          new KeywordInfo(1, null, TokenType.AS));
+		m.put("var",         new KeywordInfo(1, null, TokenType.VAR));
+		m.put("global",      new KeywordInfo(1, null, TokenType.GLOBAL));
+		m.put("return",      new KeywordInfo(1, null, TokenType.RETURN));
+		m.put("constructor", new KeywordInfo(2, null, TokenType.CONSTRUCTOR));
+		m.put("final",       new KeywordInfo(3, null, TokenType.FINAL));
+		m.put("for",         new KeywordInfo(1, null, TokenType.FOR));
+		m.put("if",          new KeywordInfo(1, null, TokenType.IF));
+		m.put("while",       new KeywordInfo(1, null, TokenType.WHILE));
+		m.put("static",      new KeywordInfo(2, null, TokenType.STATIC));
+		m.put("in",          new KeywordInfo(1, null, TokenType.IN));
+		m.put("abstract",    new KeywordInfo(3, null, TokenType.ABSTRACT));
+		m.put("await",       new KeywordInfo(3, null, TokenType.AWAIT));
+		m.put("break",       new KeywordInfo(1, null, TokenType.BREAK));
+		m.put("continue",    new KeywordInfo(1, null, TokenType.CONTINUE));
+		m.put("import",      new KeywordInfo(3, null, TokenType.IMPORT));
+		m.put("export",      new KeywordInfo(3, null, TokenType.EXPORT));
+		m.put("goto",        new KeywordInfo(3, null, TokenType.GOTO));
+		m.put("switch",      new KeywordInfo(3, null, TokenType.SWITCH));
+		m.put("super",       new KeywordInfo(2, null, TokenType.SUPER));
+		m.put("class",       new KeywordInfo(2, null, TokenType.CLASS));
+		m.put("catch",       new KeywordInfo(3, null, TokenType.CATCH));
+		m.put("extends",     new KeywordInfo(2, null, TokenType.EXTENDS));
+		m.put("true",        new KeywordInfo(1, null, TokenType.TRUE));
+		m.put("false",       new KeywordInfo(1, null, TokenType.FALSE));
+		m.put("const",       new KeywordInfo(3, null, TokenType.CONST));
+		m.put("char",        new KeywordInfo(3, null, TokenType.CHAR));
+		m.put("enum",        new KeywordInfo(3, null, TokenType.ENUM));
+		m.put("eval",        new KeywordInfo(3, null, TokenType.EVAL));
+		m.put("case",        new KeywordInfo(3, null, TokenType.CASE));
+		m.put("float",       new KeywordInfo(3, null, TokenType.FLOAT));
+		m.put("double",      new KeywordInfo(3, null, TokenType.DOUBLE));
+		m.put("byte",        new KeywordInfo(3, null, TokenType.BYTE));
+		m.put("do",          new KeywordInfo(1, null, TokenType.DO));
+		m.put("try",         new KeywordInfo(3, null, TokenType.TRY));
+		m.put("void",        new KeywordInfo(3, null, TokenType.VOID));
+		m.put("with",        new KeywordInfo(3, null, TokenType.WITH));
+		m.put("yield",       new KeywordInfo(3, null, TokenType.YIELD));
+		m.put("finally",     new KeywordInfo(3, null, TokenType.FINALLY));
+		m.put("interface",   new KeywordInfo(3, null, TokenType.INTERFACE));
+		m.put("long",        new KeywordInfo(3, null, TokenType.LONG));
+		m.put("let",         new KeywordInfo(3, null, TokenType.LET));
+		m.put("native",      new KeywordInfo(3, null, TokenType.NATIVE));
+		m.put("new",         new KeywordInfo(2, null, TokenType.NEW));
+		m.put("package",     new KeywordInfo(3, null, TokenType.PACKAGE));
+		m.put("this",        new KeywordInfo(2, null, TokenType.THIS));
+		m.put("function",    new KeywordInfo(1, null, TokenType.FUNCTION));
+		m.put("implements",  new KeywordInfo(3, null, TokenType.IMPLEMENTS));
+		m.put("int",         new KeywordInfo(3, null, TokenType.INT));
+		m.put("not",         new KeywordInfo(1, null, TokenType.NOT));
+		m.put("null",        new KeywordInfo(1, null, TokenType.NULL));
+		m.put("private",     new KeywordInfo(2, null, TokenType.PRIVATE));
+		m.put("protected",   new KeywordInfo(2, null, TokenType.PROTECTED));
+		m.put("public",      new KeywordInfo(2, null, TokenType.PUBLIC));
+		m.put("short",       new KeywordInfo(3, null, TokenType.SHORT));
+		m.put("else",        new KeywordInfo(1, null, TokenType.ELSE));
+		m.put("include",     new KeywordInfo(1, null, TokenType.INCLUDE));
+		m.put("throws",      new KeywordInfo(3, null, TokenType.THROWS));
+		m.put("throw",       new KeywordInfo(3, null, TokenType.THROW));
+		m.put("transient",   new KeywordInfo(3, null, TokenType.THROWS));
+		m.put("volatile",    new KeywordInfo(3, null, TokenType.VOLATILE));
+		m.put("default",     new KeywordInfo(3, null, TokenType.DEFAULT));
+		m.put("synchronized",new KeywordInfo(3, null, TokenType.SYNCHRONIZED));
+		m.put("typeof",      new KeywordInfo(3, null, TokenType.TYPEOF));
+		return m;
+	}
 
 	public interface ErrorReporter {
 		void report(AnalyzeError error);
@@ -146,142 +234,14 @@ public class LexicalParser {
 
 		var word = stream.getSubStringSince(startingPoint);
 
-		if (wordEquals(word, "and")) {
-			addToken("&&", TokenType.OPERATOR);
-		} else if (wordEquals(word, "or")) {
-			addToken("||", TokenType.OPERATOR);
-		} else if (wordEquals(word, "xor")) {
-			addToken(word, TokenType.OPERATOR);
-		} else if (version >= 2 && wordEquals(word, "instanceof")) {
-			addToken(word, TokenType.OPERATOR);
-		} else if (wordEquals(word, "as")) {
-			addToken(word, TokenType.AS);
-		} else if (wordEquals(word, "var")) {
-			addToken(word, TokenType.VAR);
-		} else if (wordEquals(word, "global")) {
-			addToken(word, TokenType.GLOBAL);
-		} else if (wordEquals(word, "return")) {
-			addToken(word, TokenType.RETURN);
-		} else if (version >= 2 && wordEquals(word, "constructor")) {
-			addToken(word, TokenType.CONSTRUCTOR);
-		} else if (version >= 3 && wordEquals(word, "final")) {
-			addToken(word, TokenType.FINAL);
-		} else if (wordEquals(word, "for")) {
-			addToken(word, TokenType.FOR);
-		} else if (wordEquals(word, "if")) {
-			addToken(word, TokenType.IF);
-		} else if (wordEquals(word, "while")) {
-			addToken(word, TokenType.WHILE);
-		} else if (version >= 2 && wordEquals(word, "static")) {
-			addToken(word, TokenType.STATIC);
-		} else if (wordEquals(word, "in")) {
-			addToken(word, TokenType.IN);
-		} else if (version >= 3 && wordEquals(word, "abstract")) {
-			addToken(word, TokenType.ABSTRACT);
-		} else if (version >= 3 && wordEquals(word, "await")) {
-			addToken(word, TokenType.AWAIT);
-		} else if (wordEquals(word, "break")) {
-			addToken(word, TokenType.BREAK);
-		} else if (wordEquals(word, "continue")) {
-			addToken(word, TokenType.CONTINUE);
-		} else if (version >= 3 && wordEquals(word, "import")) {
-			addToken(word, TokenType.IMPORT);
-		} else if (version >= 3 && wordEquals(word, "export")) {
-			addToken(word, TokenType.EXPORT);
-		} else if (version >= 3 && wordEquals(word, "goto")) {
-			addToken(word, TokenType.GOTO);
-		} else if (version >= 3 && wordEquals(word, "switch")) {
-			addToken(word, TokenType.SWITCH);
-		} else if (version >= 2 && wordEquals(word, "super")) {
-			addToken(word, TokenType.SUPER);
-		} else if (version >= 2 && word.equals("class")) {
-			addToken(word, TokenType.CLASS);
-		} else if (version >= 3 && wordEquals(word, "catch")) {
-			addToken(word, TokenType.CATCH);
-		} else if (version >= 2 && wordEquals(word, "extends")) {
-			addToken(word, TokenType.EXTENDS);
-		} else if (wordEquals(word, "true")) {
-			addToken(word, TokenType.TRUE);
-		} else if (wordEquals(word, "false")) {
-			addToken(word, TokenType.FALSE);
-		} else if (version >= 3 && wordEquals(word, "const")) {
-			addToken(word, TokenType.CONST);
-		} else if (version >= 3 && wordEquals(word, "char")) {
-			addToken(word, TokenType.CHAR);
-		} else if (version >= 3 && wordEquals(word, "enum")) {
-			addToken(word, TokenType.ENUM);
-		} else if (version >= 3 && wordEquals(word, "eval")) {
-			addToken(word, TokenType.EVAL);
-		} else if (version >= 3 && wordEquals(word, "case")) {
-			addToken(word, TokenType.CASE);
-		} else if (version >= 3 && wordEquals(word, "float")) {
-			addToken(word, TokenType.FLOAT);
-		} else if (version >= 3 && wordEquals(word, "double")) {
-			addToken(word, TokenType.DOUBLE);
-		} else if (version >= 3 && wordEquals(word, "byte")) {
-			addToken(word, TokenType.BYTE);
-		} else if (wordEquals(word, "do")) {
-			addToken(word, TokenType.DO);
-		} else if (version >= 3 && wordEquals(word, "try")) {
-			addToken(word, TokenType.TRY);
-		} else if (version >= 3 && wordEquals(word, "void")) {
-			addToken(word, TokenType.VOID);
-		} else if (version >= 3 && wordEquals(word, "with")) {
-			addToken(word, TokenType.WITH);
-		} else if (version >= 3 && wordEquals(word, "yield")) {
-			addToken(word, TokenType.YIELD);
-		} else if (version >= 3 && wordEquals(word, "finally")) {
-			addToken(word, TokenType.FINALLY);
-		} else if (version >= 3 && wordEquals(word, "interface")) {
-			addToken(word, TokenType.INTERFACE);
-		} else if (version >= 3 && wordEquals(word, "long")) {
-			addToken(word, TokenType.LONG);
-		} else if (version >= 3 && wordEquals(word, "let")) {
-			addToken(word, TokenType.LET);
-		} else if (version >= 3 && wordEquals(word, "native")) {
-			addToken(word, TokenType.NATIVE);
-		} else if (version >= 2 && wordEquals(word, "new")) {
-			addToken(word, TokenType.NEW);
-		} else if (version >= 3 && wordEquals(word, "package")) {
-			addToken(word, TokenType.PACKAGE);
-		} else if (version >= 2 && wordEquals(word, "this")) {
-			addToken(word, TokenType.THIS);
-		} else if (wordEquals(word, "function")) {
-			addToken(word, TokenType.FUNCTION);
-		} else if (version >= 3 && wordEquals(word, "implements")) {
-			addToken(word, TokenType.IMPLEMENTS);
-		} else if (version >= 3 && wordEquals(word, "int")) {
-			addToken(word, TokenType.INT);
-		} else if (wordEquals(word, "not")) {
-			addToken(word, TokenType.NOT);
-		} else if (wordEquals(word, "null")) {
-			addToken(word, TokenType.NULL);
-		} else if (version >= 2 && wordEquals(word, "private")) {
-			addToken(word, TokenType.PRIVATE);
-		} else if (version >= 2 && wordEquals(word, "protected")) {
-			addToken(word, TokenType.PROTECTED);
-		} else if (version >= 2 && wordEquals(word, "public")) {
-			addToken(word, TokenType.PUBLIC);
-		} else if (version >= 3 && wordEquals(word, "short")) {
-			addToken(word, TokenType.SHORT);
-		} else if (wordEquals(word, "else")) {
-			addToken(word, TokenType.ELSE);
-		} else if (wordEquals(word, "include")) {
-			addToken(word, TokenType.INCLUDE);
-		} else if (version >= 3 && wordEquals(word, "throws")) {
-			addToken(word, TokenType.THROWS);
-		} else if (version >= 3 && wordEquals(word, "throw")) {
-			addToken(word, TokenType.THROW);
-		} else if (version >= 3 && wordEquals(word, "transient")) {
-			addToken(word, TokenType.THROWS);
-		} else if (version >= 3 && wordEquals(word, "volatile")) {
-			addToken(word, TokenType.VOLATILE);
-		} else if (version >= 3 && wordEquals(word, "default")) {
-			addToken(word, TokenType.DEFAULT);
-		} else if (version >= 3 && wordEquals(word, "synchronized")) {
-			addToken(word, TokenType.SYNCHRONIZED);
-		} else if (version >= 3 && wordEquals(word, "typeof")) {
-			addToken(word, TokenType.TYPEOF);
+		// Lookup keyword via HashMap au lieu de ~70 wordEquals séquentiels.
+		// v1-2 sont case-insensitive, v3+ case-sensitive.
+		// Exception: 'class' reste case-sensitive même en v1/v2 — un identifiant
+		// 'Class' est valide en v2 (cf. test `class A {} Class clazz = A`).
+		var info = KEYWORDS.get(version <= 2 ? word.toLowerCase() : word);
+		if (info != null && version >= info.minVersion
+			&& !(info.type == TokenType.CLASS && version <= 2 && !word.equals("class"))) {
+			addToken(info.emit != null ? info.emit : word, info.type);
 		} else {
 			addToken(word, TokenType.STRING);
 		}
@@ -441,13 +401,6 @@ public class LexicalParser {
 	private void addToken(String word, TokenType type) {
 		// System.out.println("addToken " + word + " " + type + " " + stream.getLineCounter() + " " + stream.getCharCounter());
 		tokens.add(new Token(type, word, aiFile, stream.getLineCounter(), stream.getCharCounter()));
-	}
-
-	private boolean wordEquals(String word, String expected) {
-		if (version <= 2) {
-			return word.equalsIgnoreCase(expected);
-		}
-		return word.equals(expected);
 	}
 
 	private boolean charEquals(char c, char expected) {
