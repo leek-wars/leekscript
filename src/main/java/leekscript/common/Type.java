@@ -203,17 +203,34 @@ public class Type {
 			}
 		}
 		if (all.size() == 1) return all.iterator().next();
-		// var cached = compoundTypes.get(all);
-		// if (cached != null) return cached;
 		var type = new CompoundType(all);
-		// compoundTypes.put(all, type);
 		return type;
 	}
+
+	// Cache lazy pour le pattern dominant `T | NULL` (~70% des appels à
+	// compound() pendant l'analyse). Évite l'alloc de 2 HashSets + CompoundType
+	// + String.join à chaque element access typé nullable.
+	private Type nullableForm;
 
 	public static Type compound(Type type1, Type type2) {
 		if (type1 == Type.VOID) return type2;
 		if (type2 == Type.VOID) return type1;
 		if (type1 == type2) return type1;
+		// Fast path : T | NULL (et NULL | T) — cache directement sur Type T.
+		if (type2 == Type.NULL && !(type1 instanceof CompoundType)) {
+			var cached = type1.nullableForm;
+			if (cached != null) return cached;
+			return type1.nullableForm = buildCompound(type1, type2);
+		}
+		if (type1 == Type.NULL && !(type2 instanceof CompoundType)) {
+			var cached = type2.nullableForm;
+			if (cached != null) return cached;
+			return type2.nullableForm = buildCompound(type2, type1);
+		}
+		return buildCompound(type1, type2);
+	}
+
+	private static Type buildCompound(Type type1, Type type2) {
 		var all = new HashSet<Type>();
 		all.add(type1);
 		all.add(type2);
@@ -242,19 +259,12 @@ public class Type {
 	}
 
 	public static Type array(Type type) {
-		// var cached = arrayTypes.get(type);
-		// if (cached != null) return cached;
 		var array = new ArrayType(type);
-		// arrayTypes.put(type, array);
 		return array;
 	}
 
 	public static Type map(Type key, Type value) {
-		// var entry = new AbstractMap.SimpleEntry<Type, Type>(key, value);
-		// var cached = mapTypes.get(entry);
-		// if (cached != null) return cached;
 		var map = new MapType(key, value);
-		// mapTypes.put(entry, map);
 		return map;
 	}
 
