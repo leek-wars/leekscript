@@ -1366,12 +1366,13 @@ public abstract class AI {
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) % real(y);
 		}
-		var y_int = longint(y);
+		long y_int = (y instanceof Long ly) ? ly : longint(y);
 		if (version == 1 && y_int == 0) {
 			addSystemLog(AILog.ERROR, Error.DIVISION_BY_ZERO);
 			return null;
 		}
-		return longint(x) % y_int;
+		long x_int = (x instanceof Long lx) ? lx : longint(x);
+		return x_int % y_int;
 	}
 
 	public long pow(long x, long y) throws LeekRunException {
