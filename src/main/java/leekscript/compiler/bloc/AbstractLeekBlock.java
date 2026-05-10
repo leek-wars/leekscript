@@ -139,11 +139,34 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	}
 
 	public LeekVariable getVariable(String variable, boolean includeClassMembers) {
-		var v = mVariables.get(variable);
-		if (v != null) return v;
-		if (mParent != null)
-			return mParent.getVariable(variable, includeClassMembers);
+		// Fast path : la majorité des blocs (if/while/for) ont mVariables vide.
+		// On évite le HashMap.get + on déroule la récursion en boucle pour les
+		// blocs sans override (ClassMethodBlock casse la boucle pour préserver
+		// son lookup polymorphe sur la classe ou les arguments).
+		AbstractLeekBlock block = this;
+		while (block != null) {
+			if (!block.mVariables.isEmpty()) {
+				var v = block.mVariables.get(variable);
+				if (v != null) return v;
+			}
+			AbstractLeekBlock parent = block.mParent;
+			// Si le parent override getVariable (ClassMethodBlock...), on ne peut
+			// pas continuer la boucle : il faut dispatcher polymorphement.
+			if (parent != null && parent.overridesGetVariable()) {
+				return parent.getVariable(variable, includeClassMembers);
+			}
+			block = parent;
+		}
 		return null;
+	}
+
+	/**
+	 * Override-flag pour permettre le déroulement de la chaîne dans getVariable.
+	 * Surchargé par ClassMethodBlock qui ajoute sa propre logique (this/super,
+	 * fields de classe...).
+	 */
+	protected boolean overridesGetVariable() {
+		return false;
 	}
 
 	public boolean hasGlobal(String globale) {

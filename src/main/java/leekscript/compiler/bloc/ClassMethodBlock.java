@@ -106,6 +106,11 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 	}
 
 	@Override
+	protected boolean overridesGetVariable() {
+		return true;
+	}
+
+	@Override
 	public LeekVariable getVariable(String variable, boolean includeClassMembers) {
 		// Arguments
 		// for (var parameter : mParameters) {
