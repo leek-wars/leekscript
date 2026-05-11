@@ -1,10 +1,8 @@
 package leekscript.common;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import leekscript.compiler.Complete;
 
@@ -71,32 +69,43 @@ public class CompoundType extends Type {
 
 	@Override
 	public boolean isNumber() {
-		return this.types.stream().allMatch(t -> t.isNumber());
+		for (var t : this.types) if (!t.isNumber()) return false;
+		return true;
 	}
 
 	@Override
 	public Type element() {
-		return Type.compound(this.types.stream().map(t -> t.element()).collect(Collectors.toCollection(HashSet::new)));
+		var result = new HashSet<Type>();
+		for (var t : this.types) result.add(t.element());
+		return Type.compound(result);
 	}
 
 	@Override
 	public Type elementAccess(int version, boolean strict) {
-		return Type.compound(this.types.stream().map(t -> t.elementAccess(version, strict)).collect(Collectors.toCollection(HashSet::new)));
+		var result = new HashSet<Type>();
+		for (var t : this.types) result.add(t.elementAccess(version, strict));
+		return Type.compound(result);
 	}
 
 	@Override
 	public Type elementAccess(int version, boolean strict, String key) {
-		return Type.compound(this.types.stream().map(t -> t.elementAccess(version, strict, key)).collect(Collectors.toCollection(HashSet::new)));
+		var result = new HashSet<Type>();
+		for (var t : this.types) result.add(t.elementAccess(version, strict, key));
+		return Type.compound(result);
 	}
 
 	@Override
 	public Type key() {
-		return Type.compound(this.types.stream().map(t -> t.key()).collect(Collectors.toCollection(HashSet::new)));
+		var result = new HashSet<Type>();
+		for (var t : this.types) result.add(t.key());
+		return Type.compound(result);
 	}
 
 	@Override
 	public Type member(String member) {
-		return Type.compound(this.types.stream().map(t -> t.member(member)).collect(Collectors.toCollection(HashSet::new)));
+		var result = new HashSet<Type>();
+		for (var t : this.types) result.add(t.member(member));
+		return Type.compound(result);
 	}
 
 	public HashSet<Type> getTypes() {
@@ -187,12 +196,22 @@ public class CompoundType extends Type {
 
 	@Override
 	public int getMinArguments() {
-		return this.types.stream().map(t -> t.getMinArguments()).min(Comparator.naturalOrder()).get();
+		int min = Integer.MAX_VALUE;
+		for (var t : this.types) {
+			int v = t.getMinArguments();
+			if (v < min) min = v;
+		}
+		return min;
 	}
 
 	@Override
 	public int getMaxArguments() {
-		return this.types.stream().map(t -> t.getMaxArguments()).max(Comparator.naturalOrder()).get();
+		int max = Integer.MIN_VALUE;
+		for (var t : this.types) {
+			int v = t.getMaxArguments();
+			if (v > max) max = v;
+		}
+		return max;
 	}
 
 	@Override
@@ -207,17 +226,23 @@ public class CompoundType extends Type {
 
 	@Override
 	public Type getArgument(int a) {
-		return Type.compound(this.types.stream().map(t -> t.getArgument(a)).collect(Collectors.toCollection(HashSet::new)));
+		var result = new HashSet<Type>();
+		for (var t : this.types) result.add(t.getArgument(a));
+		return Type.compound(result);
 	}
 
 	@Override
 	public Type getArgument(int argumentCount, int a) {
-		return Type.compound(this.types.stream().map(t -> t.getArgument(argumentCount, a)).collect(Collectors.toCollection(HashSet::new)));
+		var result = new HashSet<Type>();
+		for (var t : this.types) result.add(t.getArgument(argumentCount, a));
+		return Type.compound(result);
 	}
 
 	@Override
 	public Type returnType() {
-		return Type.compound(this.types.stream().map(t -> t.returnType()).collect(Collectors.toCollection(HashSet::new)));
+		var result = new HashSet<Type>();
+		for (var t : this.types) result.add(t.returnType());
+		return Type.compound(result);
 	}
 
 	public Type removeType(Type target) {
@@ -232,7 +257,8 @@ public class CompoundType extends Type {
 			if (!found) return this;
 			return kept != null ? kept : this;
 		}
-		var remaining = this.types.stream().filter(t -> t != target).collect(Collectors.toCollection(HashSet::new));
+		var remaining = new HashSet<Type>();
+		for (var t : this.types) if (t != target) remaining.add(t);
 		if (remaining.isEmpty()) return this;
 		if (remaining.size() == 1) return remaining.iterator().next();
 		return Type.compound(remaining);
@@ -245,7 +271,8 @@ public class CompoundType extends Type {
 				if (t != Type.NULL) return t;
 			}
 		}
-		var remaining = this.types.stream().filter(t -> t != Type.NULL).collect(Collectors.toCollection(HashSet::new));
+		var remaining = new HashSet<Type>();
+		for (var t : this.types) if (t != Type.NULL) remaining.add(t);
 		if (remaining.size() > 1) {
 			return Type.compound(remaining);
 		}
@@ -254,7 +281,7 @@ public class CompoundType extends Type {
 
 	@Override
 	public String toString() {
-		if (types.size() == 2 && types.stream().anyMatch(t -> t == Type.NULL)) {
+		if (types.size() == 2 && containsNull()) {
 			for (var t : types) {
 				if (t != Type.NULL) return t.toString() + "?";
 			}
@@ -263,7 +290,8 @@ public class CompoundType extends Type {
 	}
 
 	public boolean isWarning() {
-		return this.types.stream().anyMatch(t -> t.isWarning());
+		for (var t : this.types) if (t.isWarning()) return true;
+		return false;
 	}
 
 
@@ -278,7 +306,7 @@ public class CompoundType extends Type {
 		}
 		if (set.size() == 1) return set.iterator().next();
 		if (types.size() == 2) {
-			if (types.stream().anyMatch(t -> t == Type.NULL)) {
+			if (containsNull()) {
 				for (var t : types) {
 					if (t != Type.NULL) {
 						if (t == Type.BOOL || t == Type.INT || t == Type.REAL) {
@@ -303,7 +331,7 @@ public class CompoundType extends Type {
 		}
 		if (set.size() == 1) return set.iterator().next();
 		if (types.size() == 2) {
-			if (types.stream().anyMatch(t -> t == Type.NULL)) {
+			if (containsNull()) {
 				for (var t : types)
 					if (t != Type.NULL)
 						return t.getJavaName(version);
