@@ -573,8 +573,11 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public Complete complete(Token token) {
-		// System.out.println("OA complete " + this.object.getType());
-		return this.object.getType().complete();
+		var objectType = this.object.getType();
+		if (objectType == null) {
+			return new Complete(Type.ANY);
+		}
+		return objectType.complete();
 	}
 
 	public LeekVariable getVariable() {
