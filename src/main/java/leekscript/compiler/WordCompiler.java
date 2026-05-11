@@ -451,7 +451,7 @@ public class WordCompiler {
 			// Déclaration de variable ou expression ?
 			if (mTokens.get().getType() == TokenType.STRING) {
 				// Déclaration de variable Class a = ...
-				variableDeclaration(type, new ArrayList<>());
+				variableDeclaration(type, NO_ANNOTATIONS);
 			} else {
 				// Class.toto, on revient d'un token et on parse une expression
 				mTokens.setPosition(save);
