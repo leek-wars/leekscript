@@ -62,6 +62,12 @@ public class Token {
 		return location;
 	}
 
+	// Accès direct au champ — évite d'allouer la Location quand on n'a besoin que
+	// de la ligne (cf. WordCompiler.compileWord appelé par token statement-level).
+	public int getStartLine() {
+		return startLine;
+	}
+
 	public void setExpression(Expression expression) {
 		this.expression = expression;
 	}

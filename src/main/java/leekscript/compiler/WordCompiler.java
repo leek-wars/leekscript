@@ -357,7 +357,7 @@ public class WordCompiler {
 	}
 
 	private void compileWord() throws LeekCompilerException {
-		mLine = mTokens.get().getLocation().getStartLine();
+		mLine = mTokens.get().getStartLine();
 		mMain.addInstruction();
 		Token word = mTokens.get();
 		// switch sur enum : tableswitch JIT-friendly vs ~17 if/else if. Sur Quantum
