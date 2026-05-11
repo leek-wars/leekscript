@@ -221,6 +221,13 @@ public class WordCompiler {
 
 					mMain.addFunctionDeclaration(funcName.getWord(), param_count);
 
+					// firstPass ne cherche que les declarations top-level. Le body
+					// de la fonction n'en contient pas (les anonymous functions et
+					// blocs nested ne sont jamais visibles ici). On skip jusqu'au }
+					// matchant — sinon le main loop walkait le body token par token
+					// via le else { skip; } (~45% du temps de firstPass sur Quantum).
+					skipToMatchingBraceFirstPass();
+
 				} else if (tt == TokenType.CLASS) {
 
 					mTokens.skip();
@@ -235,9 +242,10 @@ public class WordCompiler {
 
 							var clazz = new ClassDeclarationInstruction(className, mLine, mAI, false, getMainBlock());
 							mMain.defineClass(clazz);
-							// System.out.println("Define class " + clazz.getName());
 						}
 					}
+					// Pareil pour le body de classe : skipper jusqu'à la } matchante.
+					skipToMatchingBraceFirstPass();
 				} else {
 					mTokens.skip();
 				}
@@ -246,6 +254,39 @@ public class WordCompiler {
 		} catch (IndexOutOfBoundsException e) {
 			e.printStackTrace(System.out);
 			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.END_OF_SCRIPT_UNEXPECTED));
+		}
+	}
+
+	/**
+	 * Skip jusqu'à l'accolade fermante du body courant. Utilisé dans firstPass
+	 * pour passer outre le corps des function/class — firstPass ne s'intéresse
+	 * qu'aux declarations top-level, le contenu du body ne lui apporte rien.
+	 *
+	 * Cherche d'abord le `{`, en s'arrêtant à `;` (pour les forward declarations
+	 * `function f()` sans body, ou les types `Function<...>`). Puis compte
+	 * l'imbrication des accolades pour trouver le `}` matchant.
+	 */
+	private void skipToMatchingBraceFirstPass() {
+		// Étape 1 : trouver le `{` (ou abandonner sur `;` / EOF / autre top-level)
+		while (mTokens.hasMoreTokens()) {
+			var t = mTokens.get().getType();
+			if (t == TokenType.ACCOLADE_LEFT) break;
+			if (t == TokenType.END_INSTRUCTION) return; // forward decl
+			// Si on tombe sur un autre token top-level avant le `{`, c'est qu'il
+			// n'y a pas de body — on laisse le main loop reprendre.
+			if (t == TokenType.INCLUDE || t == TokenType.GLOBAL
+					|| t == TokenType.FUNCTION || t == TokenType.CLASS) return;
+			mTokens.skip();
+		}
+		if (!mTokens.hasMoreTokens()) return;
+		mTokens.skip(); // eat the {
+		// Étape 2 : compteur de braces jusqu'au matching }
+		int depth = 1;
+		while (mTokens.hasMoreTokens() && depth > 0) {
+			var t = mTokens.get().getType();
+			if (t == TokenType.ACCOLADE_LEFT) depth++;
+			else if (t == TokenType.ACCOLADE_RIGHT) depth--;
+			mTokens.skip();
 		}
 	}
 
