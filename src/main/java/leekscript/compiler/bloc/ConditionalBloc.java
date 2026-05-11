@@ -88,11 +88,20 @@ public class ConditionalBloc extends AbstractLeekBlock {
 			var saved = narrowingInfo.applyTrue();
 
 			// Step 3b: Clear lastAssignedType on narrowed variables to avoid stale data
-			// from assignments before the if block
-			for (var v : narrowingInfo.getFalseNarrowings().keySet()) v.clearLastAssignedType();
-			for (var key : narrowingInfo.getFalsePropertyNarrowings().keySet()) {
-				var v = narrowingInfo.getPropertyVariables().get(key);
-				if (v != null) v.clearLastAssignedType();
+			// from assignments before the if block. Garde `!isEmpty()` : la grande
+			// majorité des conditions n'ont aucun narrowing, et itérer Map.of()
+			// alloue quand même un MapNIterator (~64MB de garbage observé en JFR).
+			var falseN = narrowingInfo.getFalseNarrowings();
+			if (!falseN.isEmpty()) {
+				for (var v : falseN.keySet()) v.clearLastAssignedType();
+			}
+			var falsePropN = narrowingInfo.getFalsePropertyNarrowings();
+			if (!falsePropN.isEmpty()) {
+				var propVars = narrowingInfo.getPropertyVariables();
+				for (var key : falsePropN.keySet()) {
+					var v = propVars.get(key);
+					if (v != null) v.clearLastAssignedType();
+				}
 			}
 
 			// Step 4: Apply property narrowings to the block
@@ -145,11 +154,14 @@ public class ConditionalBloc extends AbstractLeekBlock {
 		}
 		// Apply this parent's false narrowings
 		if (parent.narrowingInfo != null) {
-			for (var entry : parent.narrowingInfo.getFalseNarrowings().entrySet()) {
-				if (!saved.containsKey(entry.getKey())) {
-					saved.put(entry.getKey(), entry.getKey().getType());
+			var falseN = parent.narrowingInfo.getFalseNarrowings();
+			if (!falseN.isEmpty()) {
+				for (var entry : falseN.entrySet()) {
+					if (!saved.containsKey(entry.getKey())) {
+						saved.put(entry.getKey(), entry.getKey().getType());
+					}
+					entry.getKey().setType(entry.getValue());
 				}
-				entry.getKey().setType(entry.getValue());
 			}
 		}
 	}
