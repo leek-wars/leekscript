@@ -546,4 +546,37 @@ public class TestFunction extends TestCommon {
 		code("function f(a, b = 10) { return a + b } return f()").error(Error.INVALID_PARAMETER_COUNT);
 	}
 
+	/**
+	 * Le fast-path canBeLambda dans readExpression skip la détection lambda quand le
+	 * head ne peut clairement pas démarrer une lambda. Couvre les cas frontières :
+	 *   - head=STRING + next=OPERATOR(`<`) doit garder la slow path (Array<T> typed lambda)
+	 *   - head=STRING + next=OPERATOR(`+/=/...`) doit skip (expression normale)
+	 *   - head=STRING + next=BRACKET_LEFT/PAR_LEFT/DOT doit skip (access/call)
+	 *   - lambdas typées sans parens (`integer x => x`) doivent toujours matcher
+	 *   - lambdas dans contexte liste (`map([1,2,3], x => x * 2)`) doivent matcher
+	 */
+	@Test
+	public void testLambdaFastPathDetection() throws Exception {
+		section("Lambda fast-path detection edge cases");
+		// 1. Lambdas qui DOIVENT être détectées (canBeLambda=true)
+		code("var f = x => x * 2 return f(5)").equals("10");                              // head=STRING, next=ARROW
+		code("var f = (a, b) => a + b return f(3, 4)").equals("7");                       // head=PAR_LEFT
+		code_v4_("var f = integer x => x + 1 return f(10)").equals("11");                 // head=STRING(int type), next=STRING
+		// 2. Non-lambdas avec head=STRING — le fast-path doit skip la lambda detection sans casser le parse
+		code("var x = 5 var y = x return y").equals("5");                                 // head=STRING, next=END_INSTRUCTION
+		code("var x = 5 var y = x + 1 return y").equals("6");                             // head=STRING, next=OPERATOR(+)
+		code("var x = 5 var y = x == 5 return y").equals("true");                         // head=STRING, next=OPERATOR(==)
+		code("var x = 5 var y = x < 10 return y").equals("true");                         // head=STRING, next=OPERATOR(<) — false positive canBeLambda, doit retomber correctement
+		code_v4_("var arr = [1, 2, 3] return arr[1]").equals("2");                        // head=STRING, next=BRACKET_LEFT
+		code("function f() { return 42 } return f()").equals("42");                       // head=STRING, next=PAR_LEFT
+		// 3. Lambda dans contexte liste (inList=true) — la garde `!inList || parenthesis`
+		// est touchée par le fast-path
+		code_v4_("var r = arrayMap([1, 2, 3], x => x * 10) return r").equals("[10, 20, 30]");
+		// 4. Expression commençant par opérateur unaire ou nombre — head ≠ lambda-starter, skip entier
+		code("var x = -42 return x").equals("-42");                                       // head=OPERATOR
+		code("var x = !true return x").equals("false");                                   // head=OPERATOR
+		code("var x = 42 return x").equals("42");                                         // head=NUMBER
+		code_v4_("var x = [1, 2, 3] return x").equals("[1, 2, 3]");                       // head=BRACKET_LEFT
+	}
+
 }

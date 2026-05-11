@@ -493,4 +493,26 @@ public class TestEdgeCases extends TestCommon {
 		code_v4_("function modify(arr) { push(arr, 99) } var a = [1, 2, 3] modify(a) return a").equals("[1, 2, 3, 99]");
 	}
 
+	/**
+	 * Couvre le cache de matching brackets pré-calculé à la lex (LexicalParser.computeMatchingBrackets)
+	 * et son utilisation dans WordCompiler.skipToMatchingBraceFirstPass + le skip de default
+	 * value dans la signature. Le cache stocke matchIdx+1 (0 = pas de match) ; un off-by-one
+	 * dans le décodage ou un mismatch cross-type (`{[}` ne doit pas matcher `{` et `}`)
+	 * casserait silencieusement ces skips.
+	 */
+	@Test
+	public void testBracketMatchingCache() throws Exception {
+		section("Bracket matching cache");
+		// Deep nesting de chaque type — exerce le stack interne
+		code_v4_("function f() { return ((((((1)))))) } return f()").equals("1");
+		code_v4_("return [[[[[1]]]]][0][0][0][0][0]").equals("1");
+		// Mixed brackets imbriqués cross-type — firstPass skip body via le cache, le `{` matche bien son `}`
+		code_v4_("function f() { var a = [[1, [2, 3]], [4]] return a[0][1][0] } return f()").equals("2");
+		// Default value contenant des sous-expressions parenthésées + arrays + objects :
+		// le skip default value dans la signature utilise le cache pour sauter en O(1)
+		code_v4_("function f(any a = [1, [2, 3]], any b = ['x' : (1 + 2) * 3]) { return [a, b] } return f()").equals("[[1, [2, 3]], [\"x\" : 9]]");
+		// Classe avec method dont le body contient des accolades imbriquées (object literal)
+		code_v4_("class A { public m() { var o = ['a' : ['b' : 1]] return o['a']['b'] } } return new A().m()").equals("1");
+	}
+
 }

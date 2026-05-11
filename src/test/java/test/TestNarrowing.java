@@ -398,4 +398,25 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("integer | null x = 5; if (x == null) { return 0 } return abs(x)").noWarning().equals("5");
 	}
 
+	/**
+	 * Couvre la garde `!isEmpty()` ajoutée dans ConditionalBloc.analyze pour ne pas
+	 * allouer un MapNIterator quand le narrowingInfo n'a aucune narrowing à clear.
+	 * Vérifie que les `if` sans narrowing (cas dominant) restent corrects, et que
+	 * les chains de else-if avec narrowing à un seul niveau propagent bien.
+	 */
+	@Test
+	public void testNarrowing_EmptyIterGuard() throws Exception {
+		section("Narrowing: empty narrowing maps (isEmpty guard)");
+		// if avec condition non narrowable (appel de fonction, pas de == null / != null)
+		// → narrowingInfo.getFalseNarrowings() retourne Map.of() vide, l'iter doit être skip
+		code_v4_("function isOK() { return true } if (isOK()) { return 1 } return 0").equals("1");
+		// if (arithmetic comparison non-null) → narrowingInfo a falseNarrowings vides
+		code_v4_("var x = 10 if (x > 5) { return 1 } return 0").equals("1");
+		// if-else-if chain où aucune branche ne narrow rien
+		code_v4_("var x = 1 if (x == 0) { return 0 } else if (x > 100) { return 100 } else { return x }").equals("1");
+		// if avec narrowing actif mélangé avec une assignation qui doit invalider lastAssignedType
+		// (la garde isEmpty protège le clear ; on vérifie que ça reste correct quand non-empty)
+		code_v4_("integer | null x = null; if (x == null) { x = 42 } return abs(x)").noWarning().equals("42");
+	}
+
 }

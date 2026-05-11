@@ -158,4 +158,25 @@ public class TestAnnotations extends TestCommon {
 		// @todo with @unused: both annotations apply independently
 		code_strict_v4_("@todo @unused function stub() { return 0; } return 0").warning(Error.ANNOTATION_TODO);
 	}
+
+	/**
+	 * Couvre le sentinel NO_ANNOTATIONS (List.of()) utilisé dans classDeclaration et
+	 * variableDeclaration. Le partage de l'instance immuable au lieu d'allouer un
+	 * ArrayList vide à chaque membre/declaration est correct ssi (1) applyAnnotations
+	 * skip si vide, (2) les comparaisons par référence avec NO_ANNOTATIONS détectent
+	 * bien le cas vide pour basculer à un vrai ArrayList quand on découvre une annotation.
+	 */
+	@Test
+	public void testClassMembersNoAnnotationSentinel() throws Exception {
+		section("Class members — NO_ANNOTATIONS sentinel");
+		// Classe sans aucune annotation sur ses membres — tous prennent NO_ANNOTATIONS
+		code_v4_("class A { public integer x = 0 public get() { return this.x } } var a = new A() return a.get()").equals("0");
+		// Classe avec annotation sur UN membre seulement : le sentinel doit bien
+		// basculer vers ArrayList<> uniquement pour le membre concerné, sans
+		// muter l'instance partagée
+		code_v4_("class B { public integer a = 1 @deprecated public integer b = 2 public integer c = 3 public sum() { return this.a + this.c } } return new B().sum()").equals("4");
+		// Plusieurs classes successives sans annotations : chacune doit avoir sa propre
+		// vue propre (régression possible si NO_ANNOTATIONS était mutée)
+		code_v4_("class C1 { public integer x = 10 } class C2 { public integer x = 20 } return new C1().x + new C2().x").equals("30");
+	}
 }
