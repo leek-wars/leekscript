@@ -214,10 +214,75 @@ public class LexicalParser {
 			stream.next();
 		}
 		var result = new LexicalParserTokenStream(tokens, new Token(TokenType.END_OF_FILE, "", new Location(aiFile, stream.getLineCounter(), stream.getCharCounter())));
+		result.setMatchingBrackets(computeMatchingBrackets(tokens));
 		if (IACompiler.PHASE_TIMINGS_ENABLED) {
 			IACompiler.LEX_NANOS.addAndGet(System.nanoTime() - t0);
 		}
 		return result;
+	}
+
+	/**
+	 * Pré-calcule en O(n) les paires de brackets matchantes ({↔}, [↔], (↔)).
+	 * Permet au syntax pass de skipper un body en O(1) au lieu de re-compter la
+	 * profondeur token par token à chaque skip-to-brace.
+	 *
+	 * Tolérant aux brackets non balancées (code mal formé) : on émet juste -1
+	 * pour ceux qui n'ont pas de match, sans erreur — le parser syntax émettra
+	 * l'erreur appropriée si besoin.
+	 */
+	private static int[] computeMatchingBrackets(ArrayList<Token> tokens) {
+		int n = tokens.size();
+		int[] match = new int[n];
+		// -1 = pas de match. Init paresseuse : on remplit seulement les positions
+		// de brackets, le reste reste à 0. On utilise 0 comme sentinelle pour
+		// "non-bracket" en stockant matchIdx+1 (et le caller fait -1 au reverse).
+		// → Simplification : init explicite à -1 pour la clarté du caller.
+		java.util.Arrays.fill(match, -1);
+		// Stack de 3 piles séparées (une par type) pour gérer les mismatches
+		// (`{[}` doit pas matcher `{` et `}`).
+		int[] stackBrace = new int[64], stackBracket = new int[64], stackParen = new int[64];
+		int spBrace = 0, spBracket = 0, spParen = 0;
+		for (int i = 0; i < n; i++) {
+			TokenType t = tokens.get(i).getType();
+			switch (t) {
+				case ACCOLADE_LEFT:
+					if (spBrace == stackBrace.length) stackBrace = java.util.Arrays.copyOf(stackBrace, spBrace * 2);
+					stackBrace[spBrace++] = i;
+					break;
+				case ACCOLADE_RIGHT:
+					if (spBrace > 0) {
+						int open = stackBrace[--spBrace];
+						match[open] = i;
+						match[i] = open;
+					}
+					break;
+				case BRACKET_LEFT:
+					if (spBracket == stackBracket.length) stackBracket = java.util.Arrays.copyOf(stackBracket, spBracket * 2);
+					stackBracket[spBracket++] = i;
+					break;
+				case BRACKET_RIGHT:
+					if (spBracket > 0) {
+						int open = stackBracket[--spBracket];
+						match[open] = i;
+						match[i] = open;
+					}
+					break;
+				case PAR_LEFT:
+					if (spParen == stackParen.length) stackParen = java.util.Arrays.copyOf(stackParen, spParen * 2);
+					stackParen[spParen++] = i;
+					break;
+				case PAR_RIGHT:
+					if (spParen > 0) {
+						int open = stackParen[--spParen];
+						match[open] = i;
+						match[i] = open;
+					}
+					break;
+				default:
+					break;
+			}
+		}
+		return match;
 	}
 
 	private static boolean isOperatorStart(char c) {

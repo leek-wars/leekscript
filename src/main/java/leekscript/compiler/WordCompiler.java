@@ -196,18 +196,28 @@ public class WordCompiler {
 						mTokens.skip();
 						param_count++;
 
-						// Skip default value expression (= expr)
+						// Skip default value expression (= expr). On utilise le cache
+						// de matching brackets pour sauter en O(1) au-dessus des
+						// sous-expressions ((), [], {}) au lieu de compter la profondeur.
 						if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals("=")) {
 							mTokens.skip(); // skip =
-							int depth = 0;
 							while (mTokens.hasMoreTokens()) {
 								var type = mTokens.get().getType();
-								if (type == TokenType.PAR_LEFT || type == TokenType.BRACKET_LEFT || type == TokenType.ACCOLADE_LEFT) depth++;
-								else if (type == TokenType.PAR_RIGHT || type == TokenType.BRACKET_RIGHT || type == TokenType.ACCOLADE_RIGHT) {
-									if (depth == 0) break;
-									depth--;
-								} else if (type == TokenType.VIRG && depth == 0) break;
-								mTokens.skip();
+								if (type == TokenType.PAR_LEFT || type == TokenType.BRACKET_LEFT || type == TokenType.ACCOLADE_LEFT) {
+									int closeIdx = mTokens.getMatchingBracket(mTokens.getCursor());
+									if (closeIdx > mTokens.getCursor()) {
+										mTokens.setCursor(closeIdx + 1);
+										continue;
+									}
+									// fallback : skip juste le `(` et continue
+									mTokens.skip();
+								} else if (type == TokenType.PAR_RIGHT || type == TokenType.BRACKET_RIGHT || type == TokenType.ACCOLADE_RIGHT) {
+									break; // on est à la profondeur 0 → fin du default value
+								} else if (type == TokenType.VIRG) {
+									break; // virgule de séparation de params
+								} else {
+									mTokens.skip();
+								}
 							}
 						}
 
@@ -262,9 +272,9 @@ public class WordCompiler {
 	 * pour passer outre le corps des function/class — firstPass ne s'intéresse
 	 * qu'aux declarations top-level, le contenu du body ne lui apporte rien.
 	 *
-	 * Cherche d'abord le `{`, en s'arrêtant à `;` (pour les forward declarations
-	 * `function f()` sans body, ou les types `Function<...>`). Puis compte
-	 * l'imbrication des accolades pour trouver le `}` matchant.
+	 * Utilise le cache de matching brackets précalculé par LexicalParser pour
+	 * sauter en O(1) au `}` matchant, au lieu de compter la profondeur token par
+	 * token. Tombe sur le slow path si pas de match (code mal formé).
 	 */
 	private void skipToMatchingBraceFirstPass() {
 		// Étape 1 : trouver le `{` (ou abandonner sur `;` / EOF / autre top-level)
@@ -279,14 +289,21 @@ public class WordCompiler {
 			mTokens.skip();
 		}
 		if (!mTokens.hasMoreTokens()) return;
-		mTokens.skip(); // eat the {
-		// Étape 2 : compteur de braces jusqu'au matching }
-		int depth = 1;
-		while (mTokens.hasMoreTokens() && depth > 0) {
-			var t = mTokens.get().getType();
-			if (t == TokenType.ACCOLADE_LEFT) depth++;
-			else if (t == TokenType.ACCOLADE_RIGHT) depth--;
+		// Étape 2 : skip en O(1) via la table de matching pré-calculée à la lex.
+		int openIdx = mTokens.getCursor();
+		int closeIdx = mTokens.getMatchingBracket(openIdx);
+		if (closeIdx > openIdx) {
+			mTokens.setCursor(closeIdx + 1); // skip past the closing }
+		} else {
+			// Fallback (brackets non balancées) : compteur à l'ancienne.
 			mTokens.skip();
+			int depth = 1;
+			while (mTokens.hasMoreTokens() && depth > 0) {
+				var t = mTokens.get().getType();
+				if (t == TokenType.ACCOLADE_LEFT) depth++;
+				else if (t == TokenType.ACCOLADE_RIGHT) depth--;
+				mTokens.skip();
+			}
 		}
 	}
 
