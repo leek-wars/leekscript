@@ -1327,12 +1327,15 @@ public class WordCompiler {
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			word = mTokens.get();
-			var classAnnotations = new ArrayList<Token>();
+			// Lazy : la grande majorité des membres de classe n'ont aucune annotation.
+			// Avant on allouait un ArrayList vide à chaque itération (×N méthodes).
+			List<Token> classAnnotations = NO_ANNOTATIONS;
 			// In class body, any @identifier is an annotation (@ references not valid here)
 			while (version >= 4
 					&& mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("@")
 					&& mTokens.get(1).getType() == TokenType.STRING) {
 				mTokens.skip(); // consume '@'
+				if (classAnnotations == NO_ANNOTATIONS) classAnnotations = new ArrayList<>();
 				classAnnotations.add(mTokens.eat()); // consume annotation name
 				word = mTokens.get();
 			}
