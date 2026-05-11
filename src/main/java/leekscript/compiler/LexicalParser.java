@@ -1,6 +1,7 @@
 package leekscript.compiler;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -213,8 +214,7 @@ public class LexicalParser {
 			error.report(new AnalyzeError(new Location(aiFile, stream.getLineCounter(), stream.getCharCounter()), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
 			stream.next();
 		}
-		var result = new LexicalParserTokenStream(tokens, new Token(TokenType.END_OF_FILE, "", new Location(aiFile, stream.getLineCounter(), stream.getCharCounter())));
-		result.setMatchingBrackets(computeMatchingBrackets(tokens));
+		var result = new LexicalParserTokenStream(tokens, new Token(TokenType.END_OF_FILE, "", new Location(aiFile, stream.getLineCounter(), stream.getCharCounter())), computeMatchingBrackets(tokens));
 		if (IACompiler.PHASE_TIMINGS_ENABLED) {
 			IACompiler.LEX_NANOS.addAndGet(System.nanoTime() - t0);
 		}
@@ -232,50 +232,48 @@ public class LexicalParser {
 	 */
 	private static int[] computeMatchingBrackets(ArrayList<Token> tokens) {
 		int n = tokens.size();
+		// On stocke matchIdx+1 (0 = pas de match) pour profiter de l'init zéro du new int[]
+		// au lieu de payer un Arrays.fill(-1) sur toute la longueur ; getMatchingBracket
+		// fait -1 au reverse. Tolérant aux brackets non balancées : pas d'erreur ici,
+		// le parser syntax émettra le diag approprié si besoin.
 		int[] match = new int[n];
-		// -1 = pas de match. Init paresseuse : on remplit seulement les positions
-		// de brackets, le reste reste à 0. On utilise 0 comme sentinelle pour
-		// "non-bracket" en stockant matchIdx+1 (et le caller fait -1 au reverse).
-		// → Simplification : init explicite à -1 pour la clarté du caller.
-		java.util.Arrays.fill(match, -1);
-		// Stack de 3 piles séparées (une par type) pour gérer les mismatches
-		// (`{[}` doit pas matcher `{` et `}`).
+		// 3 piles séparées (une par type) pour gérer les mismatches genre `{[}`.
 		int[] stackBrace = new int[64], stackBracket = new int[64], stackParen = new int[64];
 		int spBrace = 0, spBracket = 0, spParen = 0;
 		for (int i = 0; i < n; i++) {
 			TokenType t = tokens.get(i).getType();
 			switch (t) {
 				case ACCOLADE_LEFT:
-					if (spBrace == stackBrace.length) stackBrace = java.util.Arrays.copyOf(stackBrace, spBrace * 2);
+					if (spBrace == stackBrace.length) stackBrace = Arrays.copyOf(stackBrace, spBrace * 2);
 					stackBrace[spBrace++] = i;
 					break;
 				case ACCOLADE_RIGHT:
 					if (spBrace > 0) {
 						int open = stackBrace[--spBrace];
-						match[open] = i;
-						match[i] = open;
+						match[open] = i + 1;
+						match[i] = open + 1;
 					}
 					break;
 				case BRACKET_LEFT:
-					if (spBracket == stackBracket.length) stackBracket = java.util.Arrays.copyOf(stackBracket, spBracket * 2);
+					if (spBracket == stackBracket.length) stackBracket = Arrays.copyOf(stackBracket, spBracket * 2);
 					stackBracket[spBracket++] = i;
 					break;
 				case BRACKET_RIGHT:
 					if (spBracket > 0) {
 						int open = stackBracket[--spBracket];
-						match[open] = i;
-						match[i] = open;
+						match[open] = i + 1;
+						match[i] = open + 1;
 					}
 					break;
 				case PAR_LEFT:
-					if (spParen == stackParen.length) stackParen = java.util.Arrays.copyOf(stackParen, spParen * 2);
+					if (spParen == stackParen.length) stackParen = Arrays.copyOf(stackParen, spParen * 2);
 					stackParen[spParen++] = i;
 					break;
 				case PAR_RIGHT:
 					if (spParen > 0) {
 						int open = stackParen[--spParen];
-						match[open] = i;
-						match[i] = open;
+						match[open] = i + 1;
+						match[i] = open + 1;
 					}
 					break;
 				default:

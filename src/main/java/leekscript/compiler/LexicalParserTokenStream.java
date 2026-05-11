@@ -8,17 +8,14 @@ public class LexicalParserTokenStream {
 	private ArrayList<Token> tokens;
 	private Token EOFToken;
 	private int cursor = 0;
-	// Index du `}` (resp `)`, `]`) matchant pour chaque `{` (resp `(`, `[`),
-	// et symétriquement le `{` matchant pour chaque `}`. -1 si pas de match
-	// ou si le token n'est pas une bracket. Pré-calculé en O(n) à la lex.
-	private int[] matchingBracket;
+	// matchingBracket[i] = (index du `}`/`)`/`]` matchant) + 1, ou (index du `{`/`(`/`[`
+	// matchant) + 1, ou 0 si pas une bracket / pas de match. Le +1 permet d'utiliser
+	// l'init zéro du new int[] et d'éviter Arrays.fill(-1). Pré-calculé O(n) à la lex.
+	private final int[] matchingBracket;
 
-	public LexicalParserTokenStream(ArrayList<Token> tokens, Token EOFToken) {
+	public LexicalParserTokenStream(ArrayList<Token> tokens, Token EOFToken, int[] matchingBracket) {
 		this.tokens = tokens;
 		this.EOFToken = EOFToken;
-	}
-
-	public void setMatchingBrackets(int[] matchingBracket) {
 		this.matchingBracket = matchingBracket;
 	}
 
@@ -27,7 +24,7 @@ public class LexicalParserTokenStream {
 	 * -1 si pas une bracket ou pas de match.
 	 */
 	public int getMatchingBracket(int index) {
-		return matchingBracket != null && index < matchingBracket.length ? matchingBracket[index] : -1;
+		return matchingBracket[index] - 1;
 	}
 
 	public int getCursor() {
