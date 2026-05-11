@@ -204,8 +204,9 @@ public class WordCompiler {
 							while (mTokens.hasMoreTokens()) {
 								var type = mTokens.get().getType();
 								if (type == TokenType.PAR_LEFT || type == TokenType.BRACKET_LEFT || type == TokenType.ACCOLADE_LEFT) {
-									int closeIdx = mTokens.getMatchingBracket(mTokens.getCursor());
-									if (closeIdx > mTokens.getCursor()) {
+									int openIdx = mTokens.getCursor();
+									int closeIdx = mTokens.getMatchingBracket(openIdx);
+									if (closeIdx > openIdx) {
 										mTokens.setCursor(closeIdx + 1);
 										continue;
 									}
@@ -1236,6 +1237,9 @@ public class WordCompiler {
 	}
 
 	private void applyAnnotations(Annotatable target, List<Token> annotations) throws LeekCompilerException {
+		// Garde isEmpty : itérer un List.of() vide alloue quand même un ListItr.
+		// La majorité des declarations n'ont pas d'annotation.
+		if (annotations.isEmpty()) return;
 		for (var ann : annotations) {
 			var a = Annotation.fromString(ann.getWord());
 			if (a != null) {
@@ -1328,7 +1332,6 @@ public class WordCompiler {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			word = mTokens.get();
 			// Lazy : la grande majorité des membres de classe n'ont aucune annotation.
-			// Avant on allouait un ArrayList vide à chaque itération (×N méthodes).
 			List<Token> classAnnotations = NO_ANNOTATIONS;
 			// In class body, any @identifier is an annotation (@ references not valid here)
 			while (version >= 4
@@ -1553,12 +1556,42 @@ public class WordCompiler {
 
 		var retour = new LeekExpression();
 
-		// Lambda
+		// Lambda — fast path : on ne tente la détection que si le head peut commencer
+		// une lambda. Évite getPosition() (alloc d'un record) + eatType (2 HashMap
+		// lookups) + setPosition (reset) pour les expressions communes qui ne sont
+		// clairement pas des lambdas (`x.foo`, `func(...)`, `x + 1`, `x = 5`, `arr[i]`,
+		// nombres, opérateurs, `[`, `{`, etc.). Pour head=STRING (cas le plus commun),
+		// on regarde le 2e token : seuls ARROW (`x =>`), VIRG (`x, y =>`), STRING
+		// (`Type x =>`) ou un OPERATOR commençant par `<` (`Array<int> x =>`) peuvent
+		// vraiment être des lambdas.
 		boolean parenthesis = false;
 		Token lambdaToken = null;
 		LeekType type1 = null;
+		var headType = mTokens.get().getType();
+		boolean canBeLambda;
+		if (headType == TokenType.STRING) {
+			var next = mTokens.get(1);
+			var nextType = next.getType();
+			if (nextType == TokenType.ARROW || nextType == TokenType.VIRG || nextType == TokenType.STRING) {
+				canBeLambda = true;
+			} else if (nextType == TokenType.OPERATOR) {
+				// Seul `<` (Array<...>, Map<...>, Function<...>) prefix une type
+				// paramétrée. Tous les autres opérateurs (`+`, `=`, `==`, `?`,...)
+				// excluent la lambda.
+				canBeLambda = next.getWord().charAt(0) == '<';
+			} else {
+				canBeLambda = false;
+			}
+		} else {
+			canBeLambda = headType == TokenType.PAR_LEFT
+					|| headType == TokenType.ARROW
+					|| headType == TokenType.VOID
+					|| headType == TokenType.NULL
+					|| headType == TokenType.FUNCTION;
+		}
+		if (canBeLambda) {
 		var pos = mTokens.getPosition();
-		if (mTokens.get().getType() == TokenType.PAR_LEFT) {
+		if (headType == TokenType.PAR_LEFT) {
 			lambdaToken = mTokens.eat();
 			parenthesis = true;
 		}
@@ -1668,6 +1701,7 @@ public class WordCompiler {
 			// Pas une lambda, on revient au début
 			mTokens.setPosition(pos);
 		}
+		} // end if (canBeLambda)
 
 		while (mTokens.hasMoreTokens()) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
