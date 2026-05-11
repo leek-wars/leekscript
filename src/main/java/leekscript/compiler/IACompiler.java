@@ -218,10 +218,14 @@ public class IACompiler {
 
 			// System.out.println("Parse time = " + Util.formatDurationNanos(parseTime) + ", analyzeTime = " + Util.formatDurationNanos(analyzeTime));
 
+			// Boucle combinée : ajoute toutes les erreurs au informations ET détecte
+			// si une est de niveau ERROR — évite un 2e parcours via stream.
+			boolean hasError = false;
 			for (var error : ai.getErrors()) {
 				informations.add(error.toJSON());
+				if (error.level == AnalyzeErrorLevel.ERROR) hasError = true;
 			}
-			result.success = ai.getErrors().stream().noneMatch(e -> e.level == AnalyzeErrorLevel.ERROR);
+			result.success = !hasError;
 		} catch (LeekCompilerException e) {
 			if (e.getError() == Error.TOO_MUCH_ERRORS) {
 				result.tooMuchErrors = e;

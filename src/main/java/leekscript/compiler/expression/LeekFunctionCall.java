@@ -638,7 +638,9 @@ public class LeekFunctionCall extends Expression {
 			compiler.addError(new AnalyzeError(getLocation(), level, Error.INVALID_PARAMETER_COUNT));
 		}
 
-		var types = mParameters.stream().map(p -> p.getType()).collect(Collectors.toList());
+		// Boucle au lieu de stream+collect — appelé pour chaque function call analyzed.
+		var types = new ArrayList<Type>(mParameters.size());
+		for (var p : mParameters) types.add(p.getType());
 		var cast = functionType.acceptsArguments(types);
 		if (cast.ordinal() > CastType.UPCAST.ordinal()) {
 
