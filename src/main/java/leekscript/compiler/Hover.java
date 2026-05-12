@@ -43,7 +43,7 @@ public class Hover {
 		}
 		o.putPOJO("location", location.toJSON());
 		o.putPOJO("alias", alias);
-		if (defined != null) {
+		if (defined != null && defined.getFile() != null) {
 			o.putPOJO("defined", defined.toJSON());
 		}
 		if (size != -1) {
