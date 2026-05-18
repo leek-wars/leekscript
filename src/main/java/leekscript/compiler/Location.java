@@ -71,9 +71,11 @@ public class Location {
 	}
 
 	public boolean sameStart(Location other) {
-		return this.file.getId() == other.file.getId()
-			&& this.startLine == other.startLine
-			&& this.startColumn == other.startColumn;
+		return this.startLine == other.startLine
+			&& this.startColumn == other.startColumn
+			&& (this.file == other.file
+				|| (this.file != null && other.file != null
+					&& this.file.getId() == other.file.getId()));
 	}
 
 	public Object toJSON() {
