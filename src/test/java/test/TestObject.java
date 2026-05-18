@@ -342,6 +342,9 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static m(x, x) {} }").error(Error.DUPLICATED_ARGUMENT);
 		code_v2_("class A { constructor(x, x) {} }").error(Error.DUPLICATED_ARGUMENT);
 
+		section("Overloaded instance method with typed params (issue #3869)");
+		code_v2_("class B { integer x = 0 } class A { m(B b, B c) { return 1 } m(any a, any b, any c) { return 2 } } var a = new A() var b = new B() return a.m(b, b)").equals("1");
+
 		section("Field access by array access");
 		code_v2_("var test = {} test['a'] = 8 return test").equals("{a: 8}");
 		code_v2_("var test = {} test['a'] = 8 test['b'] = 12 return test").equals("{a: 8, b: 12}");

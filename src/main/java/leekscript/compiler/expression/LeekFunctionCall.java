@@ -571,6 +571,9 @@ public class LeekFunctionCall extends Expression {
 								} else if (method.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(current))) {
 									compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_METHOD, new String[] { current.getName(), oa.getField() }));
 								}
+								// Résout l'overload concrète pour que compileConvert utilise les types
+								// déclarés au lieu du compound (Versions) qui dégrade en (Object).
+								functionType = method.block.getType();
 								break end;
 							}
 						}
