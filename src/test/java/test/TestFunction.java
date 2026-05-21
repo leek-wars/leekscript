@@ -205,6 +205,15 @@ public class TestFunction extends TestCommon {
 	}
 
 	@Test
+	public void testDefault_null_parameter() throws Exception {
+		section("Default null parameter (regression: javac cannot infer var = null)");
+		code_v4_("function f(x = null) { return x == null ? 1 : 2 } return f()").equals("1");
+		code_v4_("function f(x = null) { return x == null ? 1 : 2 } return f(7)").equals("2");
+		code_v4_("function f(a, b = null) { return b == null ? a : a + b } return f(3)").equals("3");
+		code_v4_("function f(a, b = null) { return b == null ? a : a + b } return f(3, 4)").equals("7");
+	}
+
+	@Test
 	public void testCapture_argument() throws Exception {
 		section("Capture argument");
 		code_v1("function f(@a) { return function() { a += 2 } }; var x = 10 f(x)() return x;").equals("12");

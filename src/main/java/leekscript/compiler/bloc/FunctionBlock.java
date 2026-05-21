@@ -247,18 +247,20 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 		for (int i = paramCount; i < maxParameters; i++) {
 			var declaration = mParameterDeclarations.get(i);
 			var defaultValue = defaultValues.get(i);
+			var parameter = mParameters.get(i);
 			if (declaration.isCaptured()) {
-				writer.addCode("final var u_" + mParameters.get(i) + " = new Box<" + declaration.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
+				writer.addCode("final var u_" + parameter + " = new Box<" + declaration.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
 				defaultValue.writeJavaCode(mainblock, writer, false);
 				writer.addLine(");");
 				writer.addCounter(defaultValue.operations);
 			} else {
-				writer.addCode("var u_" + mParameters.get(i) + " = ");
 				if (v1) {
-					writer.addCode("new Box(" + writer.getAIThis() + ", ");
+					writer.addCode("var u_" + parameter + " = new Box(" + writer.getAIThis() + ", ");
 					defaultValue.writeJavaCode(mainblock, writer, false);
 					writer.addLine(");");
 				} else {
+					// Type explicite : `var u_x = null;` n'est pas inférable par javac.
+					writer.addCode(declaration.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + parameter + " = ");
 					defaultValue.writeJavaCode(mainblock, writer, false);
 					writer.addLine(";");
 				}
