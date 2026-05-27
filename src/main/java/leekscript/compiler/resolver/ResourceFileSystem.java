@@ -25,7 +25,7 @@ public class ResourceFileSystem extends FileSystem {
 
 	@Override
 	public Folder getRoot(int owner) {
-		System.out.println("ResourceFileSystem.getRoot()");
+		// Pas de notion d'owner pour cette FS, les callers traitent null comme "skip"
 		return null;
 	}
 
