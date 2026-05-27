@@ -571,6 +571,10 @@ public class TestFunction extends TestCommon {
 		code("var f = x => x * 2 return f(5)").equals("10");                              // head=STRING, next=ARROW
 		code("var f = (a, b) => a + b return f(3, 4)").equals("7");                       // head=PAR_LEFT
 		code_v4_("var f = integer x => x + 1 return f(10)").equals("11");                 // head=STRING(int type), next=STRING
+		code_v4_("var f = integer? x => x ?? 0 return f(null)").equals("0");              // head=STRING, next=OPERATOR(?) : nullable type
+		code_v4_("var f = integer? x => x ?? 0 return f(7)").equals("7");                 // idem, branche non-null
+		code_v4_("return arrayFilter([1, null, 2, null, 3], integer? c => c != null)").equals("[1, 2, 3]"); // nullable type devant un identifiant single-arg (callback)
+		code_v4_("var f = integer | string x => x return f(42)").equals("42");            // head=STRING, next=OPERATOR(|) : union type
 		// 2. Non-lambdas avec head=STRING — le fast-path doit skip la lambda detection sans casser le parse
 		code("var x = 5 var y = x return y").equals("5");                                 // head=STRING, next=END_INSTRUCTION
 		code("var x = 5 var y = x + 1 return y").equals("6");                             // head=STRING, next=OPERATOR(+)

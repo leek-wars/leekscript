@@ -1575,10 +1575,13 @@ public class WordCompiler {
 			if (nextType == TokenType.ARROW || nextType == TokenType.VIRG || nextType == TokenType.STRING) {
 				canBeLambda = true;
 			} else if (nextType == TokenType.OPERATOR) {
-				// Seul `<` (Array<...>, Map<...>, Function<...>) prefix une type
-				// paramétrée. Tous les autres opérateurs (`+`, `=`, `==`, `?`,...)
-				// excluent la lambda.
-				canBeLambda = next.getWord().charAt(0) == '<';
+				// Modificateurs de type acceptés par eatType :
+				//   `<` → générique (Array<int>, Map<K,V>, Function<...>)
+				//   `?` → nullable (integer? c => ...)
+				//   `|` → union (integer | string c => ...)
+				// Les autres opérateurs (`+`, `=`, `==`, `*`, ...) excluent la lambda.
+				char c = next.getWord().charAt(0);
+				canBeLambda = c == '<' || c == '?' || c == '|';
 			} else {
 				canBeLambda = false;
 			}
