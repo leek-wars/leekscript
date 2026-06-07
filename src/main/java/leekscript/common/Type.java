@@ -106,11 +106,16 @@ public class Type {
 
 		if (this == REAL) {
 			if (type == INT) {
-				return CastType.SAFE_DOWNCAST;
+				// integer -> real : élargissement vers le sur-type, sûr (pas de
+				// perte conceptuelle). UPCAST => pas de warning "conversion
+				// dangereuse" sur ex. sqrt(integer). Cf #2428.
+				return CastType.UPCAST;
 			}
 		}
 		if (this == INT) {
 			if (type == REAL) {
+				// real -> integer : troncature de la partie décimale, conversion
+				// réellement lossy => downcast (warning en strict).
 				return CastType.SAFE_DOWNCAST;
 			}
 		}

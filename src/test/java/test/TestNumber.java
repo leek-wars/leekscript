@@ -1259,6 +1259,14 @@ public class TestNumber extends TestCommon {
 		code_v2_("return sqrt(16)").equals("4.0");
 		code_v1("return sqrt(25)").equals("5");
 		code_v2_("return sqrt(25)").equals("5.0");
+		// #2428 : integer -> real est un élargissement sûr (UPCAST), pas une
+		// conversion dangereuse. sqrt(integer) ne doit pas warner en strict.
+		code_strict_v4_("return sqrt(4)").noWarning();
+		code_strict_v4_("var x = 4; return sqrt(x)").noWarning();
+		code_strict_v4_("real r = 4; return r").noWarning();
+		// Le sens inverse, real -> integer, reste une troncature lossy : il doit
+		// toujours warner (SAFE_DOWNCAST => DANGEROUS_CONVERSION) en strict.
+		code_strict_v4_("function f(integer x) { return x } return f(1.5)").warning(Error.DANGEROUS_CONVERSION);
 	}
 
 	@Test
