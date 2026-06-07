@@ -592,4 +592,16 @@ public class TestFunction extends TestCommon {
 		code_v4_("var x = [1, 2, 3] return x").equals("[1, 2, 3]");                       // head=BRACKET_LEFT
 	}
 
+	@Test
+	public void testReferenceParameterTyped() throws Exception {
+		section("Reference parameter with primitive type (#3991)");
+		// Un paramètre par référence (@) typé primitif générait du Java invalide
+		// (signature `long p_x` + `p_x instanceof Box`). Le type doit rester ANY.
+		code("function getCellGauche(integer @iCell) { return iCell - 18 } var a = 38 return getCellGauche(a)").equals("20");
+		code("function f(integer @iCell) { var g = -> iCell return iCell - 18 + g() } var a = 38 return f(a)").equals("58");
+		// La sémantique par référence (écriture dans l'appelant) reste préservée en v1.
+		code_v1("function inc(@x) { x = x + 1 } var a = 5 inc(a) return a").equals("6");
+		code_v1("function inc(integer @x) { x = x + 1 } var a = 5 inc(a) return a").equals("6");
+	}
+
 }

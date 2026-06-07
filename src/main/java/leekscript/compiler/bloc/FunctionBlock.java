@@ -101,7 +101,11 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.DEFAULT_ARGUMENT_NOT_END));
 		}
 
-		var type = leekType != null ? leekType.getType() : Type.ANY;
+		// Un paramètre par référence (@) est implémenté par une Box (objet mutable
+		// partagé avec l'appelant) : son type Java ne peut donc pas être un primitif.
+		// La signature ferait `long p_x` alors que le corps fait `p_x instanceof Box`
+		// et `(Box) p_x`, ce qui ne compile pas (cf. #3991). On force le type à ANY.
+		var type = is_reference ? Type.ANY : (leekType != null ? leekType.getType() : Type.ANY);
 		mParameters.add(token.getWord());
 		mParametersTypes.add(leekType);
 		mReferences.add(is_reference);
