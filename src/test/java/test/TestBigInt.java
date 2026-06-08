@@ -155,4 +155,37 @@ public class TestBigInt extends TestCommon {
 		// Combinaison
 		code_v4_("return ((1L << 80) | 1) & 1").equals("1");
 	}
+
+	@Test
+	public void testBuiltins() throws Exception {
+		section("Fonctions built-in");
+		// abs / min / max -> big_integer
+		code_v4_("return abs(-5L)").equals("5");
+		code_v4_("var x = abs(-5L) return x instanceof BigInteger").equals("true");
+		code_v4_("return abs(5L)").equals("5");
+		code_v4_("return min(5L, 3L)").equals("3");
+		code_v4_("return max(5L, 3L)").equals("5");
+		code_v4_("var x = max(5L, 3L) return x instanceof BigInteger").equals("true");
+		// pow (fonction) -> big_integer
+		code_v4_("return pow(2L, 10)").equals("1024");
+		code_v4_("return pow(2L, 100) == 1L << 100").equals("true");
+		// binString / hexString sans troncature au-delà de 64 bits
+		code_v4_("return binString(5L)").equals("\"101\"");
+		code_v4_("return hexString(255L)").equals("\"ff\"");
+		code_v4_("return hexString(1L << 80)").equals("\"100000000000000000000\"");
+		// LS4 inchangé (les versions integer/real restent sélectionnées)
+		code_v4_("return abs(-5)").equals("5");
+		code_v4_("return max(5, 3)").equals("5");
+		code_v4_("return pow(5, 3)").equals("125.0");
+
+		section("Conteneurs et clone");
+		// Tableaux et maps de big_integer
+		code_v4_("var a = [5L, 3L, 1L] return a[0] + a[2]").equals("6");
+		code_v4_("var a = [5L, 3L, 1L] return arrayMax(a) == 5L").equals("true");
+		code_v4_("var m = [:] m['x'] = 1000000000000000000000L return m['x'] == 1000000000000000000000L").equals("true");
+		// clone (big_integer immutable)
+		code_v4_("var a = 5L var b = clone(a) return b == 5L").equals("true");
+		// JSON
+		code_v4_("return jsonEncode(5L)").equals("\"5\"");
+	}
 }

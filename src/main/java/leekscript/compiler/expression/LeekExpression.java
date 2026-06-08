@@ -915,6 +915,9 @@ public class LeekExpression extends Expression {
 				mExpression2.writeJavaCode(mainblock, writer, true);
 				if (parenthesis) writer.addCode(")");
 			} else {
+				// big_integer : caster le résultat (minus retourne Number) pour
+				// satisfaire un contexte Java typé BigIntegerValue (#bigint)
+				if (type == Type.BIG_INT) writer.addCode("(BigIntegerValue) ");
 				writer.addCode("minus(");
 				mExpression2.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");

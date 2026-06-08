@@ -204,10 +204,20 @@ public class JavaWriter {
 
 		// System.out.println("convert " + value.getType() + " to " + type);
 		// Conversions impliquant big_integer (#bigint)
-		if (type == Type.BIG_INT && value.getType() != Type.BIG_INT) {
-			addCode("BigIntegerValue.valueOf(" + getAIThis() + ", ");
-			value.writeJavaCode(mainblock, this, false);
-			addCode(")");
+		if (type == Type.BIG_INT) {
+			if (value.getType() == Type.BIG_INT) {
+				// Déjà un big_integer, mais le type Java de l'expression peut être
+				// Number/Object (ex résultat de minus()/add()) : cast explicite pour
+				// satisfaire un paramètre Java typé BigIntegerValue.
+				if (parenthesis) addCode("(");
+				addCode("(BigIntegerValue) ");
+				value.writeJavaCode(mainblock, this, true);
+				if (parenthesis) addCode(")");
+			} else {
+				addCode("BigIntegerValue.valueOf(" + getAIThis() + ", ");
+				value.writeJavaCode(mainblock, this, false);
+				addCode(")");
+			}
 			return;
 		}
 		if (value.getType() == Type.BIG_INT && (type == Type.INT || type == Type.REAL)) {
@@ -425,17 +435,21 @@ public class JavaWriter {
 			}
 			addLine(") throws LeekRunException {");
 
-			// Conflicting versions ?
+			// Conflicting versions ? On teste chaque version (sauf la première qui
+			// sert de fallback) par instanceof, et on appelle la première qui matche.
+			// La boucle gère N>2 versions (ex: REAL/INT/BIG_INT).
 			if (versions.size() > 1) {
-				var other_version = versions.get(1);
-				addCode("if (");
-				for (int a = 0; a < other_version.arguments.length; ++a) {
-					if (a > 0) addCode(" && ");
-					addCode("a" + a + " instanceof " + other_version.arguments[a].getJavaName(block.getVersion()) + " x" + a);
+				for (int vi = 1; vi < versions.size(); vi++) {
+					var other_version = versions.get(vi);
+					addCode("if (");
+					for (int a = 0; a < other_version.arguments.length; ++a) {
+						if (a > 0) addCode(" && ");
+						addCode("a" + a + " instanceof " + other_version.arguments[a].getJavaName(block.getVersion()) + " x" + a);
+					}
+					addLine(") {");
+					writeFunctionCall(block, other_version, true);
+					addLine("}");
 				}
-				addLine(") {");
-				writeFunctionCall(block, other_version, true);
-				addLine("}");
 			}
 
 			int a = 0;

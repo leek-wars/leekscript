@@ -27,17 +27,22 @@ public class LeekFunctions {
 		/**
 		 * Fonctions Number (mathématiques)
 		 */
+		// Ordre : la version REAL sert de fallback (conversion totale via real()),
+		// INT et BIG_INT sont sélectionnées par instanceof dans le dispatcher générique.
 		method("abs", "Number", 2, true, new CallableVersion[] {
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT }),
+			new CallableVersion(Type.BIG_INT, new Type[] { Type.BIG_INT }),
 		});
 		method("min", "Number", 2, true, new CallableVersion[] {
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL, Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT, Type.INT }),
+			new CallableVersion(Type.BIG_INT, new Type[] { Type.BIG_INT, Type.BIG_INT }),
 		});
 		method("max", "Number", 2, true, new CallableVersion[] {
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL, Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT, Type.INT }),
+			new CallableVersion(Type.BIG_INT, new Type[] { Type.BIG_INT, Type.BIG_INT }),
 		});
 		method("cos", "Number", 30, true, Type.REAL, new Type[] { Type.REAL });
 		method("sin", "Number", 30, true, Type.REAL, new Type[] { Type.REAL });
@@ -66,7 +71,10 @@ public class LeekFunctions {
 		method("log2", "Number", 23, true, Type.REAL, new Type[] { Type.REAL });
 		method("log10", "Number", 23, true, Type.REAL, new Type[] { Type.REAL });
 		method("exp", "Number", 40, true, Type.REAL, new Type[] { Type.REAL });
-		method("pow", "Number", 140, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
+		method("pow", "Number", 140, true, new CallableVersion[] {
+			new CallableVersion(Type.REAL, new Type[] { Type.REAL, Type.REAL }),
+			new CallableVersion(Type.BIG_INT, new Type[] { Type.BIG_INT, Type.INT }),
+		});
 		method("rand", "Number", 30, true, Type.REAL, new Type[0]);
 		method("randInt", "Number", 30, true, Type.INT, new Type[] { Type.INT, Type.INT });
 		method("randFloat", "Number", 30, true, Type.REAL, new Type[] { Type.REAL, Type.REAL }).setMaxVersion(3, "randReal");
@@ -80,8 +88,14 @@ public class LeekFunctions {
 		method("byteReverse", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
 		method("rotateLeft", "Number", 1, true, Type.INT, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
 		method("rotateRight", "Number", 1, true, Type.INT, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
-		method("binString", "Number", 10, true, Type.STRING, new Type[] { Type.INT }).setMinVersion(4);
-		method("hexString", "Number", 10, true, Type.STRING, new Type[] { Type.INT }).setMinVersion(4);
+		method("binString", "Number", 10, true, new CallableVersion[] {
+			new CallableVersion(Type.STRING, new Type[] { Type.INT }),
+			new CallableVersion(Type.STRING, new Type[] { Type.BIG_INT }),
+		}).setMinVersion(4);
+		method("hexString", "Number", 10, true, new CallableVersion[] {
+			new CallableVersion(Type.STRING, new Type[] { Type.INT }),
+			new CallableVersion(Type.STRING, new Type[] { Type.BIG_INT }),
+		}).setMinVersion(4);
 		method("realBits", "Number", 1, true, Type.INT, new Type[] { Type.REAL }).setMinVersion(4);
 		method("bitsToReal", "Number", 1, true, Type.REAL, new Type[] { Type.INT }).setMinVersion(4);
 		method("isFinite", "Number", 1, true, Type.BOOL, new Type[] { Type.REAL }).setMinVersion(4);

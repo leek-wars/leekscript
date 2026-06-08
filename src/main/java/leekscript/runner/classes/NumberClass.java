@@ -1,6 +1,8 @@
 package leekscript.runner.classes;
 
 import leekscript.runner.AI;
+import leekscript.runner.LeekRunException;
+import leekscript.runner.values.BigIntegerValue;
 
 public class NumberClass {
 
@@ -12,6 +14,10 @@ public class NumberClass {
 		return Math.abs(x);
 	}
 
+	public static BigIntegerValue abs(AI ai, BigIntegerValue x) throws LeekRunException {
+		return x.abs();
+	}
+
 	public static long min(AI ai, long x, long y) {
 		return Math.min(x, y);
 	}
@@ -20,12 +26,20 @@ public class NumberClass {
 		return Math.min(x, y);
 	}
 
+	public static BigIntegerValue min(AI ai, BigIntegerValue x, BigIntegerValue y) throws LeekRunException {
+		return x.min(y);
+	}
+
 	public static long max(AI ai, long x, long y) {
 		return Math.max(x, y);
 	}
 
 	public static double max(AI ai, double x, double y) {
 		return Math.max(x, y);
+	}
+
+	public static BigIntegerValue max(AI ai, BigIntegerValue x, BigIntegerValue y) throws LeekRunException {
+		return x.max(y);
 	}
 
 	public static double cos(AI ai, double x) {
@@ -122,6 +136,11 @@ public class NumberClass {
 		return Math.pow(x, y);
 	}
 
+	public static BigIntegerValue pow(AI ai, BigIntegerValue x, long y) throws LeekRunException {
+		if (y < 0) return BigIntegerValue.valueOf(ai, 0L);
+		return x.pow((int) y);
+	}
+
 	public static double rand(AI ai) {
 		return ai.getRandom().getDouble();
 	}
@@ -184,8 +203,16 @@ public class NumberClass {
 		return Long.toBinaryString(x);
 	}
 
+	public static String binString(AI ai, BigIntegerValue x) throws LeekRunException {
+		return x.toString(2);
+	}
+
 	public static String hexString(AI ai, long x) {
 		return Long.toHexString(x);
+	}
+
+	public static String hexString(AI ai, BigIntegerValue x) throws LeekRunException {
+		return x.toString(16);
 	}
 
 	public static long realBits(AI ai, double x) {
