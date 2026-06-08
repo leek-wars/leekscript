@@ -91,4 +91,38 @@ public class TestClass extends TestCommon {
 		code_v2_("class A { public m() { return this.unknownMethod() } } return new A().m()").equals("null");
 	}
 
+	/**
+	 * Optional chaining `obj?.field` / `obj?.method()` (#2272) : court-circuite à null
+	 * si l'objet est null, sinon accès/appel normal.
+	 */
+	@Test
+	public void testOptional_chaining() throws Exception {
+		section("Optional chaining");
+		// Accès champ sur objet non null
+		code_v4_("class A { public x = 42 } var a = new A() return a?.x").equals("42");
+		// Appel de méthode sur objet non null
+		code_v4_("class A { method m() { return 7 } } var a = new A() return a?.m()").equals("7");
+		// Méthode avec arguments
+		code_v4_("class A { method add(a, b) { return a + b } } var a = new A() return a?.add(3, 4)").equals("7");
+		// Court-circuit : objet null → null
+		code_v4_("class A { public x = 42 } A? a = null return a?.x").equals("null");
+		code_v4_("class A { method m() { return 7 } } A? a = null return a?.m()").equals("null");
+		// Chaîne : un maillon null court-circuite la suite
+		code_v4_("class A { public next = null public v = 1 } var a = new A() return a?.next?.v").equals("null");
+		// Chaîne d'appels
+		code_v4_("class A { method self() { return this } public x = 9 } var a = new A() return a?.self()?.x").equals("9");
+		// Objet anonyme
+		code_v4_("var o = {x: 5} return o?.x").equals("5");
+		code_v4_("var o = null return o?.x").equals("null");
+		// Résultat utilisé dans une expression
+		code_v4_("class A { public x = 10 } var a = new A() return a?.x + 5").equals("15");
+		// `.` normal puis `?.`
+		code_v4_("class B { public v = 3 } class A { public b = null } var a = new A() a.b = new B() return a.b?.v").equals("3");
+		// Le ternaire reste non ambigu
+		code_v4_("class A { public x = 7 } var a = new A() return true ? a.x : 0").equals("7");
+		code_v4_("return 1 > 2 ? 10 : 20").equals("20");
+		// Accès optionnel non assignable
+		code_v4_("class A { public x = 1 } var a = new A() a?.x = 5 return a.x").error(Error.CANT_ASSIGN_VALUE);
+	}
+
 }

@@ -143,7 +143,14 @@ public class LeekFunctionCall extends Expression {
 			var object = ((LeekObjectAccess) mExpression).getObject();
 			var field = ((LeekObjectAccess) mExpression).getField();
 
-			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
+			if (((LeekObjectAccess) mExpression).isOptional()) {
+				// Appel de méthode optionnel `obj?.method()` : null si l'objet est null,
+				// sinon appel dynamique. L'objet n'est évalué qu'une fois (en argument).
+				writer.addCode("callObjectAccessNullSafe(");
+				object.writeJavaCode(mainblock, writer, false);
+				writer.addCode(", \"" + field + "\", \"u_" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
+
+			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
 				// super.field()
 				// writer.addCode("u_this.callSuperMethod(this, \"" + field + "_" + mParameters.size() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 
@@ -548,7 +555,9 @@ public class LeekFunctionCall extends Expression {
 					}
 				}
 			}
-		} else if (mExpression instanceof LeekObjectAccess) {
+		} else if (mExpression instanceof LeekObjectAccess && !((LeekObjectAccess) mExpression).isOptional()) {
+			// (les accès optionnels `obj?.method()` passent par le chemin dynamique
+			//  null-safe : on ne résout pas la méthode statiquement)
 
 			var oa = (LeekObjectAccess) mExpression;
 			var o = oa.getObject();

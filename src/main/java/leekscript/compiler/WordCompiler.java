@@ -1792,6 +1792,14 @@ public class WordCompiler {
 					function.setClosingParenthesis(mTokens.get());
 					retour.addFunction(function);
 
+				} else if (word.getType() == TokenType.OPERATOR && word.getWord().equals("?")
+						&& mTokens.get(1).getType() == TokenType.DOT
+						&& mTokens.get(2).getType() == TokenType.STRING) {
+					// Optional chaining `obj?.field` / `obj?.method()` (#2272)
+					mTokens.skip(); // ?
+					var dot = mTokens.eat(); // .
+					var name = mTokens.get();
+					retour.addObjectAccess(dot, name, true);
 				} else if (word.getType() == TokenType.DOT) {
 					// Object access
 					var dot = mTokens.eat();

@@ -1698,6 +1698,24 @@ public abstract class AI {
 		return null;
 	}
 
+	/**
+	 * Accès optionnel `obj?.field` (#2272) : retourne null si l'objet est null,
+	 * sinon délègue à {@link #getField}. L'objet n'est évalué qu'une fois (argument).
+	 */
+	public Object getFieldNullSafe(Object value, String field, ClassLeekValue fromClass) throws LeekRunException {
+		if (value == null) return null;
+		return getField(value, field, fromClass);
+	}
+
+	/**
+	 * Appel de méthode optionnel `obj?.method()` (#2272) : retourne null si l'objet
+	 * est null, sinon délègue à {@link #callObjectAccess}.
+	 */
+	public Object callObjectAccessNullSafe(Object value, String field, String method, ClassLeekValue fromClass, Object... args) throws LeekRunException {
+		if (value == null) return null;
+		return callObjectAccess(value, field, method, fromClass, args);
+	}
+
 	public Object getField(Object value, String field, ClassLeekValue fromClass) throws LeekRunException {
 		if (field.equals("class")) {
 			return classOf(value);

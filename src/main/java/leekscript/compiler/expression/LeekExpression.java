@@ -230,21 +230,25 @@ public class LeekExpression extends Expression {
 	}
 
 	public void addObjectAccess(Token dot, Token name) {
+		addObjectAccess(dot, name, false);
+	}
+
+	public void addObjectAccess(Token dot, Token name, boolean optional) {
 		if (mExpression1 != null && mExpression2 == null) {
 			if (mExpression1 instanceof LeekExpression le1 && !isTerminalOperator(le1.getOperator())) {
-				le1.addObjectAccess(dot, name);
+				le1.addObjectAccess(dot, name, optional);
 			} else {
-				mExpression1 = new LeekObjectAccess(mExpression1, dot, name);
+				mExpression1 = new LeekObjectAccess(mExpression1, dot, name, optional);
 			}
 		} else if (mExpression2 != null) {
 			if (mOperator == Operators.AS) {
 				// For AS, mExpression2 is the target type, not an operand.
 				// Wrap the entire AS expression and reset this node.
-				wrapAndReset(new LeekObjectAccess(cloneAsSubExpression(), dot, name));
+				wrapAndReset(new LeekObjectAccess(cloneAsSubExpression(), dot, name, optional));
 			} else if (mExpression2 instanceof LeekExpression le2 && !isTerminalOperator(le2.getOperator()))
-				le2.addObjectAccess(dot, name);
+				le2.addObjectAccess(dot, name, optional);
 			else {
-				mExpression2 = new LeekObjectAccess(mExpression2, dot, name);
+				mExpression2 = new LeekObjectAccess(mExpression2, dot, name, optional);
 			}
 		}
 	}

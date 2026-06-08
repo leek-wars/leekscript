@@ -25,17 +25,27 @@ public class LeekObjectAccess extends Expression {
 	private Type type = Type.ANY;
 	private boolean isFinal = false;
 	private boolean isLeftValue = true;
+	private boolean optional = false; // accès optionnel `obj?.field` (#2272)
 	private LeekVariable variable;
 	private ClassType resolvedOnClassType; // ClassType used for field resolution during analysis
 
 	public LeekObjectAccess(Expression object, Token dot, Token field) {
+		this(object, dot, field, false);
+	}
+
+	public LeekObjectAccess(Expression object, Token dot, Token field, boolean optional) {
 		this.object = object;
 		this.field = field;
 		this.dot = dot;
+		this.optional = optional;
 		dot.setExpression(this);
 		if (field != null) {
 			field.setExpression(this);
 		}
+	}
+
+	public boolean isOptional() {
+		return optional;
 	}
 
 	@Override
@@ -74,7 +84,7 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public boolean nullable() {
-		return object.nullable();
+		return optional || object.nullable();
 	}
 
 
@@ -200,6 +210,13 @@ public class LeekObjectAccess extends Expression {
 				}
 			}
 		}
+
+		// Accès optionnel `obj?.field` : la valeur peut être null (résultat nullable),
+		// on passe par le chemin dynamique null-safe et le résultat n'est pas assignable.
+		if (optional) {
+			this.type = Type.ANY;
+			this.isLeftValue = false;
+		}
 	}
 
 	public String getField() {
@@ -212,6 +229,13 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
+		if (optional && field != null && !field.getWord().equals("class")) {
+			// Accès optionnel `obj?.field` : null si l'objet est null, sinon getField
+			writer.addCode("getFieldNullSafe(");
+			object.writeJavaCode(mainblock, writer, false);
+			writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+			return;
+		}
 		if (mainblock.getWordCompiler().getVersion() >= 2 && field.getWord().equals("class")) {
 			writer.addCode("classOf(");
 			object.writeJavaCode(mainblock, writer, false);
