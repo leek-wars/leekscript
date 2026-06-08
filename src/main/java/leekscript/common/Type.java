@@ -154,6 +154,16 @@ public class Type {
 		return this == INT || this == REAL || this == BIG_INT;
 	}
 
+	/**
+	 * Vrai si une opération arithmétique entre `this` et `type` doit produire un
+	 * big_integer : l'un des deux est big_integer et l'autre est un nombre, un
+	 * booléen ou null (#bigint).
+	 */
+	public boolean bigIntArithmetic(Type type) {
+		return (this == BIG_INT && (type.isNumber() || type == BOOL || type == NULL))
+			|| ((this.isNumber() || this == BOOL || this == NULL) && type == BIG_INT);
+	}
+
 	public String toString() {
 		return getCode();
 	}
@@ -457,6 +467,7 @@ public class Type {
 			return Type.compound(result);
 		}
 
+		if (bigIntArithmetic(type)) return Type.BIG_INT;
 		if ((this == Type.INT || this == Type.BOOL || this == Type.NULL) && (type == Type.INT || type == Type.BOOL || type == Type.NULL)) return Type.INT;
 		if ((this.isNumber() || this == Type.BOOL || this == Type.NULL) && (type.isNumber() || type == Type.BOOL || type == Type.NULL)) return Type.REAL;
 
@@ -488,6 +499,7 @@ public class Type {
 			return Type.compound(result);
 		}
 
+		if (bigIntArithmetic(type)) return Type.BIG_INT;
 		if ((this == Type.INT || this == Type.BOOL || this == Type.NULL) && (type == Type.INT || type == Type.BOOL || type == Type.NULL)) return Type.INT;
 		if ((this.isNumber() || this == Type.BOOL || this == Type.NULL) && (type.isNumber() || type == Type.BOOL || type == Type.NULL)) return Type.REAL;
 
@@ -506,6 +518,7 @@ public class Type {
 			return Type.compound(result);
 		}
 
+		if (bigIntArithmetic(type)) return Type.BIG_INT;
 		if ((this == Type.INT || this == Type.BOOL || this == Type.NULL) && (type == Type.INT || type == Type.BOOL || type == Type.NULL)) return Type.INT;
 		if ((this.isNumber() || this == Type.BOOL || this == Type.NULL) && (type.isNumber() || type == Type.BOOL || type == Type.NULL)) return Type.REAL;
 
@@ -541,6 +554,7 @@ public class Type {
 			return Type.compound(result);
 		}
 
+		if (bigIntArithmetic(type)) return Type.BIG_INT;
 		if ((this == Type.INT || this == Type.BOOL || this == Type.NULL) && (type == Type.INT || type == Type.BOOL || type == Type.NULL)) return Type.INT;
 		if ((this.isNumber() || this == Type.BOOL || this == Type.NULL) && (type.isNumber() || type == Type.BOOL || type == Type.NULL)) return Type.REAL;
 

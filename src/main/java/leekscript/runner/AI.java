@@ -137,6 +137,7 @@ public abstract class AI {
 	public final ClassLeekValue integerClass;
 	public final ClassLeekValue realClass;
 	public final ClassLeekValue numberClass;
+	public final ClassLeekValue bigintegerClass;
 	public final ClassLeekValue arrayClass;
 	public final ClassLeekValue legacyArrayClass;
 	public final ClassLeekValue mapClass;
@@ -347,6 +348,7 @@ public abstract class AI {
 		numberClass = new ClassLeekValue(this, "Number", valueClass);
 		realClass = new ClassLeekValue(this, "Real", numberClass);
 		integerClass = new ClassLeekValue(this, "Integer", realClass);
+		bigintegerClass = new ClassLeekValue(this, "BigInteger", numberClass);
 		arrayClass = new ClassLeekValue(this, "Array", valueClass);
 		legacyArrayClass = new ClassLeekValue(this, "Array", valueClass);
 		mapClass = new ClassLeekValue(this, "Map", valueClass);
@@ -955,24 +957,45 @@ public abstract class AI {
 
 	public boolean less(Object x, Object y) throws LeekRunException {
 		if (x instanceof Long lx && y instanceof Long ly) return lx < ly;
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			if (isIntegerLike(x) && isIntegerLike(y)) return BigIntegerValue.valueOf(this, x).compareTo(BigIntegerValue.valueOf(this, y)) < 0;
+			return real(x) < real(y);
+		}
 		if (x instanceof Number nx && y instanceof Number ny) return nx.doubleValue() < ny.doubleValue();
 		return real(x) < real(y);
 	}
 
 	public boolean more(Object x, Object y) throws LeekRunException {
 		if (x instanceof Long lx && y instanceof Long ly) return lx > ly;
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			if (isIntegerLike(x) && isIntegerLike(y)) return BigIntegerValue.valueOf(this, x).compareTo(BigIntegerValue.valueOf(this, y)) > 0;
+			return real(x) > real(y);
+		}
 		if (x instanceof Number nx && y instanceof Number ny) return nx.doubleValue() > ny.doubleValue();
 		return real(x) > real(y);
 	}
 
+	/** Vrai si la valeur est un entier exact (Long, big_integer ou booléen). */
+	private static boolean isIntegerLike(Object v) {
+		return v instanceof Long || v instanceof BigIntegerValue || v instanceof Boolean;
+	}
+
 	public boolean lessequals(Object x, Object y) throws LeekRunException {
 		if (x instanceof Long lx && y instanceof Long ly) return lx <= ly;
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			if (isIntegerLike(x) && isIntegerLike(y)) return BigIntegerValue.valueOf(this, x).compareTo(BigIntegerValue.valueOf(this, y)) <= 0;
+			return real(x) <= real(y);
+		}
 		if (x instanceof Number nx && y instanceof Number ny) return nx.doubleValue() <= ny.doubleValue();
 		return real(x) <= real(y);
 	}
 
 	public boolean moreequals(Object x, Object y) throws LeekRunException {
 		if (x instanceof Long lx && y instanceof Long ly) return lx >= ly;
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			if (isIntegerLike(x) && isIntegerLike(y)) return BigIntegerValue.valueOf(this, x).compareTo(BigIntegerValue.valueOf(this, y)) >= 0;
+			return real(x) >= real(y);
+		}
 		if (x instanceof Number nx && y instanceof Number ny) return nx.doubleValue() >= ny.doubleValue();
 		return real(x) >= real(y);
 	}
@@ -1104,6 +1127,8 @@ public abstract class AI {
 			return (long) (double) value;
 		} else if (value instanceof Long) {
 			return (Long) value;
+		} else if (value instanceof BigIntegerValue big) {
+			return big.longValue();
 		} else if (value instanceof Boolean) {
 			return ((Boolean) value) ? 1 : 0;
 		} else if (value instanceof ObjectLeekValue) {
@@ -1146,6 +1171,8 @@ public abstract class AI {
 			return (Double) value;
 		} else if (value instanceof Long) {
 			return (Long) value;
+		} else if (value instanceof BigIntegerValue big) {
+			return big.doubleValue();
 		} else if (value instanceof Boolean) {
 			return ((Boolean) value) ? 1 : 0;
 		} else if (value instanceof ObjectLeekValue) {
@@ -1198,12 +1225,14 @@ public abstract class AI {
 	public Object minus(Object value) throws LeekRunException {
 		if (value instanceof Long l) return -(long) l;
 		if (value instanceof Double d) return -(double) d;
+		if (value instanceof BigIntegerValue big) return big.negate();
 		return -longint(value);
 	}
 
 	public Number minus(Number value) throws LeekRunException {
 		if (value instanceof Long l) return -(long) l;
 		if (value instanceof Double d) return -(double) d;
+		if (value instanceof BigIntegerValue big) return big.negate();
 		return -longint(value);
 	}
 
@@ -1312,6 +1341,9 @@ public abstract class AI {
 			return retour;
 		}
 
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			return BigIntegerValue.valueOf(this, x).add(BigIntegerValue.valueOf(this, y));
+		}
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) + real(y);
 		}
@@ -1343,6 +1375,9 @@ public abstract class AI {
 	}
 
 	public Object sub(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			return BigIntegerValue.valueOf(this, x).subtract(BigIntegerValue.valueOf(this, y));
+		}
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) - real(y);
 		}
@@ -1350,6 +1385,9 @@ public abstract class AI {
 	}
 
 	public Object mul(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			return BigIntegerValue.valueOf(this, x).multiply(BigIntegerValue.valueOf(this, y));
+		}
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) * real(y);
 		}
@@ -1375,6 +1413,10 @@ public abstract class AI {
 	}
 
 	public Object mod(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			// `%` = reste (signe du dividende), comme l'opérateur entier
+			return BigIntegerValue.valueOf(this, x).remainder(BigIntegerValue.valueOf(this, y));
+		}
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) % real(y);
 		}
@@ -1404,6 +1446,14 @@ public abstract class AI {
 	}
 
 	public Number pow(Object x, Object y) throws LeekRunException {
+		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
+			var base = BigIntegerValue.valueOf(this, x);
+			long exp = longint(y);
+			// Exposant négatif : résultat fractionnaire tronqué à 0 (comme la
+			// puissance entière `Math.pow` castée en long).
+			if (exp < 0) return BigIntegerValue.valueOf(this, 0L);
+			return base.pow((int) exp);
+		}
 		if (x instanceof Double || y instanceof Double) {
 			return Math.pow(real(x), real(y));
 		}
@@ -3516,6 +3566,7 @@ public abstract class AI {
 	public ClassLeekValue classOf(Object value) {
 		if (value == null) return nullClass;
 		if (value instanceof Long) return integerClass;
+		if (value instanceof BigIntegerValue) return bigintegerClass;
 		if (value instanceof Double) return realClass;
 		if (value instanceof Boolean) return booleanClass;
 		if (value instanceof LegacyArrayLeekValue) return legacyArrayClass;

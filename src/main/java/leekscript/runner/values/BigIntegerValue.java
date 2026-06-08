@@ -121,6 +121,16 @@ public class BigIntegerValue extends Number implements LeekValue {
 		return new BigIntegerValue(ai, value.mod(m.value));
 	}
 
+	/**
+	 * Reste de la division (opérateur `%`) : le signe suit le dividende, comme
+	 * l'opérateur `%` sur les entiers. À distinguer de {@link #mod} (toujours positif).
+	 */
+	public BigIntegerValue remainder(BigIntegerValue m) throws LeekRunException {
+		ops(value.bitLength() / 50);
+		m.ops();
+		return new BigIntegerValue(ai, value.remainder(m.value));
+	}
+
 	public BigIntegerValue shiftLeft(int n) throws LeekRunException {
 		binaryShiftOps(n);
 		return new BigIntegerValue(ai, value.shiftLeft(n));

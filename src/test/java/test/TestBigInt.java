@@ -83,4 +83,54 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return 123456789012345678901234567890L == 123456789012345678901234567890L").equals("true");
 		code_v4_("return 123456789012345678901234567890L == 123456789012345678901234567891L").equals("false");
 	}
+
+	@Test
+	public void testArithmetic() throws Exception {
+		section("Arithmétique");
+		// + - * : résultat big_integer (promotion)
+		code_v4_("return 2L + 5").equals("7");
+		code_v4_("return 5L + 5").equals("10");
+		code_v4_("return 10 - 3L").equals("7");
+		code_v4_("return 5 * 5L").equals("25");
+		code_v4_("var x = 5L + 5 return x instanceof BigInteger").equals("true");
+		code_v4_("var x = 5 * 5L return x instanceof BigInteger").equals("true");
+		// `/` = division flottante → real
+		code_v4_("return 15L / 3").equals("5.0");
+		code_v4_("return 15L / 2").equals("7.5");
+		code_v4_("var x = 15L / 3 return x instanceof Real").equals("true");
+		// `%` = reste → big_integer
+		code_v4_("return 15L % 4").equals("3");
+		code_v4_("return 17L % 5").equals("2");
+		// `**` puissance → big_integer
+		code_v4_("return 12L ** 2").equals("144");
+		code_v4_("return 2 ** 10L").equals("1024");
+		// Négation
+		code_v4_("return -5L").equals("-5");
+		code_v4_("return -(-1L)").equals("1");
+		code_v4_("return -12L * 2").equals("-24");
+		code_v4_("return -12L ** 2").equals("144");
+		code_v4_("return -12L + 2").equals("-10");
+		// Au-delà de 2^63 (le gros intérêt du big_integer)
+		code_v4_("return 9223372036854775807L + 1 == 9223372036854775808L").equals("true");
+		code_v4_("big_integer a = 1000000000000L return a * a == 1000000000000000000000000L").equals("true");
+	}
+
+	@Test
+	public void testComparisons() throws Exception {
+		section("Comparaisons");
+		code_v4_("return 2L < 5").equals("true");
+		code_v4_("return 12 < 5L").equals("false");
+		code_v4_("return 5L > 2").equals("true");
+		code_v4_("return 2L >= 2").equals("true");
+		code_v4_("return 2L <= 2").equals("true");
+		code_v4_("return 3L <= 2").equals("false");
+		// Exactitude au-delà de 2^53 (où une comparaison en double échouerait)
+		code_v4_("return 9007199254740993L > 9007199254740992L").equals("true");
+		code_v4_("return 100000000000000000000L + 1 > 100000000000000000000L").equals("true");
+		code_v4_("return 1267650600228229401496703205376L > 1267650600228229401496703205375L").equals("true");
+		// instanceof
+		code_v4_("return 5L instanceof BigInteger").equals("true");
+		code_v4_("return 5L instanceof Number").equals("true");
+		code_v4_("return 5 instanceof BigInteger").equals("false");
+	}
 }

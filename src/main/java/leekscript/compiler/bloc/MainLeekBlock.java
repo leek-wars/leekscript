@@ -99,6 +99,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			realClass.addStaticField(wordCompiler, new Token("MAX_VALUE"), Type.REAL, new LeekNumber(new Token(""), Double.MAX_VALUE, 0, Type.REAL), AccessLevel.PUBLIC, true);
 			addClass(realClass);
 
+			addClass(new ClassDeclarationInstruction(new Token("BigInteger"), 0, ai, true, this, Type.BIG_INT));
+
 			addClass(new ClassDeclarationInstruction(new Token("Number"), 0, ai, true, this, Type.INT_OR_REAL));
 			addClass(new ClassDeclarationInstruction(new Token("Array"), 0, ai, true, this, Type.ARRAY, Type.EMPTY_ARRAY));
 			if (ai.getVersion() >= 4) {
