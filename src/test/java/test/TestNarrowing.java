@@ -266,6 +266,16 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	@Test
+	public void testAs_real_on_union() throws Exception {
+		section("'as real' on integer|real union must not warn (#2450)");
+		// `a` a le type union integer|real ; le caster en real est sûr (upcast),
+		// aucune conversion dangereuse ne doit être signalée.
+		code_strict_v4_("integer|real a = 2; real b = a as real; return b").noWarning();
+		code_strict_v4_("integer|real a = 2; real b = a as real; return b").almost(2.0);
+		code_strict_v4_("real|integer a = 2; real b = a as real; return b").noWarning();
+	}
+
+	@Test
 	public void testCompound_type_with_map_and_integer_instanceof() throws Exception {
 		section("Compound type integer|Map? with instanceof Map narrowing");
 		// Bug: isMapOrNull() returned true for integer|Map? causing toMapOrNull()
