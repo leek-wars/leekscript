@@ -566,6 +566,7 @@ public class LeekFunctionCall extends Expression {
 
 				// on regarde si le nombre d'arguments est correct
 				var current = o.getType() instanceof ClassType ct2 ? ct2.getClassDeclaration() : ((LeekVariable) o).getClassDeclaration().getParent();
+				boolean resolved = false;
 				end:
 				while (current != null) {
 					var methods = current.getMethod(oa.getField());
@@ -583,11 +584,28 @@ public class LeekFunctionCall extends Expression {
 								// Résout l'overload concrète pour que compileConvert utilise les types
 								// déclarés au lieu du compound (Versions) qui dégrade en (Object).
 								functionType = method.block.getType();
+								resolved = true;
 								break end;
 							}
 						}
 					}
 					current = current.getParent();
+				}
+
+				// super.method() : la méthode doit être résolue statiquement sur un ancêtre.
+				// Le code généré est `super.u_method(...)`, qui ne compile pas en Java si
+				// la méthode n'existe pas (ou existe avec un autre nombre d'arguments).
+				// Sans cette vérification, l'erreur n'était détectée qu'au moment de la
+				// compilation Java côté worker (issue #4010).
+				if (!resolved && o instanceof LeekVariable sv && sv.getVariableType() == VariableType.SUPER) {
+					var parent = sv.getClassDeclaration().getParent();
+					if (is_method) {
+						// La méthode existe sur un ancêtre mais pas avec ce nombre d'arguments
+						compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
+					} else {
+						var className = parent != null ? parent.getName() : sv.getClassDeclaration().getName();
+						compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_METHOD, new String[] { className, oa.getField() }));
+					}
 				}
 
 			} else if (o instanceof LeekVariable v && (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS)) {

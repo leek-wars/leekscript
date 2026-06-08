@@ -425,6 +425,17 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { m(null|Array<integer> x) { return x } } class B extends A { m(null|Array<integer> x) { return super.m(x) } } return new B().m([1, 2])").equals("[1, 2]");
 		code_v2_("class A { m(null|Array<integer> x) { return x == null ? 'none' : count(x) } } class B extends A { m(null|Array<integer> x) { return super.m(null) } } return new B().m([1])").equals("\"none\"");
 
+		// Issue #4010: super.method() vers une méthode inexistante sur les ancêtres
+		// générait du Java invalide (super.u_method) qui plantait à la compilation Java
+		// côté worker. On doit lever une erreur d'analyse propre.
+		code_v2_("class A {} class B extends A { m() { return super.foo() } } return new B().m()").error(Error.UNKNOWN_METHOD);
+		code_v2_("class A { foo() { return 1 } } class B extends A { foo() { return super.bar() } } return new B().foo()").error(Error.UNKNOWN_METHOD);
+		// La méthode existe sur l'ancêtre mais avec un autre nombre d'arguments
+		code_v2_("class A { foo(x) { return x } } class B extends A { foo() { return super.foo() } } return new B().foo()").error(Error.INVALID_PARAMETER_COUNT);
+		// Cas valides : la méthode est bien résolue sur un ancêtre (pas d'erreur)
+		code_v2_("class A { foo() { return 'ok' } } class B extends A { foo() { return super.foo() } } return new B().foo()").equals("\"ok\"");
+		code_v2_("class A { foo() { return 'ok' } } class B extends A {} class C extends B { foo() { return super.foo() } } return new C().foo()").equals("\"ok\"");
+
 		// Issue #3159: StackOverflowError quand parent et fille ont une valeur
 		// par défaut sur leur constructeur. Le `return init(...)` du fall-through
 		// dispatchait virtuellement vers la sous-classe, créant une boucle via
