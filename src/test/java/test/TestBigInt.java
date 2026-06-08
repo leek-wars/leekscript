@@ -49,6 +49,10 @@ public class TestBigInt extends TestCommon {
 		code_v4_("big_integer a = 5L a = 9L return a").equals("9");
 		// Valeur par défaut
 		code_v4_("big_integer a return a").equals("0");
+		// Constructeur BigInteger() -> 0
+		code_v4_("return BigInteger()").equals("0");
+		code_v4_("var x = BigInteger() return x instanceof BigInteger").equals("true");
+		code_v4_("return (BigInteger() + 1) << 100 == 1L << 100").equals("true");
 	}
 
 	@Test

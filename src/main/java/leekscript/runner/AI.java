@@ -1296,11 +1296,23 @@ public abstract class AI {
 	}
 
 	public BigIntegerValue bigShl(Object x, Object n) throws LeekRunException {
-		return BigIntegerValue.valueOf(this, x).shiftLeft((int) longint(n));
+		return BigIntegerValue.valueOf(this, x).shiftLeft(intShift(n));
 	}
 
 	public BigIntegerValue bigShr(Object x, Object n) throws LeekRunException {
-		return BigIntegerValue.valueOf(this, x).shiftRight((int) longint(n));
+		return BigIntegerValue.valueOf(this, x).shiftRight(intShift(n));
+	}
+
+	/**
+	 * Montant de décalage borné à l'intervalle d'un int (un `(int)` direct
+	 * wrapperait un décalage ≥ 2³¹ vers un négatif → résultat silencieusement faux ;
+	 * le clamp produit à la place une erreur propre OUT_OF_MEMORY au runtime).
+	 */
+	private int intShift(Object n) throws LeekRunException {
+		long s = longint(n);
+		if (s > Integer.MAX_VALUE) return Integer.MAX_VALUE;
+		if (s < Integer.MIN_VALUE) return Integer.MIN_VALUE;
+		return (int) s;
 	}
 
 	public BigIntegerValue bigNot(Object x) throws LeekRunException {
@@ -3709,6 +3721,10 @@ public abstract class AI {
 
 	public long new_integerClass() {
 		return 0l;
+	}
+
+	public BigIntegerValue new_bigintegerClass() throws LeekRunException {
+		return new BigIntegerValue(this, 0);
 	}
 
 	public double new_realClass() {
