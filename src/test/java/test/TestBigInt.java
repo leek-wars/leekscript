@@ -192,4 +192,82 @@ public class TestBigInt extends TestCommon {
 		// JSON
 		code_v4_("return jsonEncode(5L)").equals("\"5\"");
 	}
+
+	@Test
+	public void testIncrementDecrement() throws Exception {
+		section("Increment / decrement (#bug trouvé : ne compilait pas)");
+		code_v4_("big_integer a = 5L a++ return a").equals("6");
+		code_v4_("big_integer a = 5L a-- return a").equals("4");
+		code_v4_("big_integer a = 5L return ++a").equals("6");
+		code_v4_("big_integer a = 5L return --a").equals("4");
+		// post-fixe retourne l'ancienne valeur
+		code_v4_("big_integer a = 5L return a++").equals("5");
+		code_v4_("big_integer a = 5L return a--").equals("5");
+		// au-delà de 64 bits
+		code_v4_("big_integer a = (1L << 100) a++ return a == (1L << 100) + 1").equals("true");
+		code_v4_("big_integer a = (1L << 100) a-- return a == (1L << 100) - 1").equals("true");
+		// boucle d'incrément
+		code_v4_("big_integer a = 0L for (var i = 0; i < 1000; i++) a++ return a").equals("1000");
+		// global
+		code_v4_("global g = 5L g++ return g").equals("6");
+	}
+
+	@Test
+	public void testBooleanContext() throws Exception {
+		section("Contexte booléen (#bug trouvé : bigint toujours falsy)");
+		code_v4_("if (5L) { return 1 } else { return 0 }").equals("1");
+		code_v4_("if (0L) { return 1 } else { return 0 }").equals("0");
+		code_v4_("if (1L << 100) { return 1 } else { return 0 }").equals("1");
+		code_v4_("return !5L").equals("false");
+		code_v4_("return !0L").equals("true");
+		code_v4_("return 5L && true").equals("true");
+		code_v4_("return 0L && true").equals("false");
+		code_v4_("return 0L || true").equals("true");
+		code_v4_("return 5L ? \"a\" : \"b\"").equals("\"a\"");
+		code_v4_("return 0L ? \"a\" : \"b\"").equals("\"b\"");
+	}
+
+	@Test
+	public void testMixedArgs() throws Exception {
+		section("Arguments mixtes bigint/integer (#bug trouvé : troncature)");
+		// max/min avec un bigint et un integer : l'integer est promu, le bigint
+		// n'est PAS tronqué.
+		code_v4_("return max(1L << 100, 5) == 1L << 100").equals("true");
+		code_v4_("return max(5, 1L << 100) == 1L << 100").equals("true");
+		code_v4_("return min(1L << 100, 5) == 5L").equals("true");
+		code_v4_("var x = max(1L << 100, 5) return x instanceof BigInteger").equals("true");
+		// pow avec exposant integer ou bigint
+		code_v4_("return pow(2L, 100) == 1L << 100").equals("true");
+		code_v4_("return pow(2, 10L) == 1024L").equals("true");
+		code_v4_("return pow(2L, 10L) == 1024L").equals("true");
+		// abs
+		code_v4_("return abs(1L << 100) == 1L << 100").equals("true");
+		code_v4_("return abs(-(1L << 100)) == 1L << 100").equals("true");
+	}
+
+	@Test
+	public void testEdgeCases() throws Exception {
+		section("Cas limites");
+		// puissances signées
+		code_v4_("return (-1L) ** 100 == 1L").equals("true");
+		code_v4_("return (-1L) ** 101 == -1L").equals("true");
+		code_v4_("return 0L ** 5").equals("0");
+		code_v4_("return 5L ** 0").equals("1");
+		// modulo négatif : signe du dividende (comme integer)
+		code_v4_("return -7L % 3L").equals("-1");
+		code_v4_("return 7L % -3L").equals("1");
+		code_v4_("return -7L \\ 2L").equals("-3");
+		// gros modulo
+		code_v4_("return (1L << 1000) % 1000000007L").equals("688423210");
+		// factorielle 50 exacte
+		code_v4_("big_integer f = 1 for (var i = 2; i <= 50; i++) f = f * i return f == 30414093201713378043612608166064768844377641568960512000000000000L").equals("true");
+		// clone (immutable) et conteneurs
+		code_v4_("var a = [1L, [2L, 3L]] var b = clone(a, 2) return b[1][0] == 2L").equals("true");
+		code_v4_("return \"x=\" + (1L << 64)").equals("\"x=18446744073709551616\"");
+		// big_integer comme clé de map (hashCode/equals)
+		code_v4_("var m = [(1L << 100): \"ok\"] return m[1L << 100]").equals("\"ok\"");
+		// dédup dans un set
+		code_v4_("return setSize(<5L, 5L, 3L>)").equals("2");
+		code_v4_("return setSize(<(1L << 100), (1L << 100)>)").equals("1");
+	}
 }

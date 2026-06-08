@@ -125,11 +125,18 @@ public class Type {
 			}
 		}
 		if (this == BIG_INT) {
-			// integer/real -> big_integer : conversion explicite. SAFE_DOWNCAST (et
-			// non UPCAST) pour que la résolution d'overload préfère les versions
-			// integer/real d'une fonction quand les arguments sont des integer/real
-			// (ex `pow(5, 3)` doit rester la version réelle, pas big_integer).
-			if (type == INT || type == REAL) {
+			// integer -> big_integer : élargissement SANS perte => UPCAST. Nécessaire
+			// pour que `max(big, 5)` promeuve le 5 en big_integer (sinon la version
+			// integer de max tronque le big_integer). Les fonctions surchargées
+			// integer/real/big_integer évitent quand même de choisir big_integer pour
+			// des args integer (ex `pow(5, 3)`) car leur version big_integer attend
+			// (big_integer, big_integer) : les deux UPCAST égalisent la version real
+			// et le dispatch runtime retombe sur real.
+			if (type == INT) {
+				return CastType.UPCAST;
+			}
+			// real -> big_integer : troncature de la partie décimale => downcast.
+			if (type == REAL) {
 				return CastType.SAFE_DOWNCAST;
 			}
 		}

@@ -1014,6 +1014,8 @@ public abstract class AI {
 			return (Long) value != 0;
 		} else if (value instanceof Double) {
 			return (Double) value != 0;
+		} else if (value instanceof BigIntegerValue big) {
+			return !big.isZero();
 		} else if (value instanceof ObjectLeekValue) {
 			return ((ObjectLeekValue) value).size() != 0;
 		} else if (value instanceof NativeObjectLeekValue o) {

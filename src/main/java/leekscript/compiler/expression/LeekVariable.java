@@ -614,10 +614,19 @@ public class LeekVariable extends Expression {
 		}
 	}
 
+	/**
+	 * Cast à insérer devant un `add()/sub()` dont le résultat (Object) est réaffecté
+	 * à une variable big_integer typée — sinon `BigIntegerValue x = add(...)` ne
+	 * compile pas. (#bigint)
+	 */
+	private String bigCast() {
+		return this.variableType == Type.BIG_INT ? "(BigIntegerValue) " : "";
+	}
+
 	@Override
 	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("sub(" + token.getWord() + " = add(" + token.getWord() + ", 1l), 1l)");
+			writer.addCode("sub(" + token.getWord() + " = " + bigCast() + "add(" + token.getWord() + ", 1l), 1l)");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_inc(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.GLOBAL) {
@@ -626,7 +635,7 @@ public class LeekVariable extends Expression {
 			} else if (this.variableType.isPrimitiveNumber()) {
 				writer.addCode("g_" + token.getWord() + "++");
 			} else {
-				writer.addCode("sub(g_" + token.getWord() + " = add(g_" + token.getWord() + ", 1l), 1l)");
+				writer.addCode("sub(g_" + token.getWord() + " = " + bigCast() + "add(g_" + token.getWord() + ", 1l), 1l)");
 			}
 		} else {
 			if (isBox()) {
@@ -634,7 +643,7 @@ public class LeekVariable extends Expression {
 			} else if (this.variableType.isPrimitiveNumber()) {
 				writer.addCode("u_" + token.getWord() + "++");
 			} else {
-				writer.addCode("sub(u_" + token.getWord() + " = add(u_" + token.getWord() + ", 1l), 1l)");
+				writer.addCode("sub(u_" + token.getWord() + " = " + bigCast() + "add(u_" + token.getWord() + ", 1l), 1l)");
 			}
 		}
 	}
@@ -642,7 +651,7 @@ public class LeekVariable extends Expression {
 	@Override
 	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
-			writer.addCode("add(" + token.getWord() + " = sub(" + token.getWord() + ", 1l), 1l)");
+			writer.addCode("add(" + token.getWord() + " = " + bigCast() + "sub(" + token.getWord() + ", 1l), 1l)");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_dec(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.GLOBAL) {
@@ -651,7 +660,7 @@ public class LeekVariable extends Expression {
 			} else if (this.variableType.isPrimitiveNumber()) {
 				writer.addCode("g_" + token.getWord() + "--");
 			} else {
-				writer.addCode("add(g_" + token.getWord() + " = sub(g_" + token.getWord() + ", 1l), 1l)");
+				writer.addCode("add(g_" + token.getWord() + " = " + bigCast() + "sub(g_" + token.getWord() + ", 1l), 1l)");
 			}
 		} else {
 			if (isBox()) {
@@ -659,7 +668,7 @@ public class LeekVariable extends Expression {
 			} else if (this.variableType.isPrimitiveNumber()) {
 				writer.addCode("u_" + token.getWord() + "--");
 			} else {
-				writer.addCode("add(u_" + token.getWord() + " = sub(u_" + token.getWord() + ", 1l), 1l)");
+				writer.addCode("add(u_" + token.getWord() + " = " + bigCast() + "sub(u_" + token.getWord() + ", 1l), 1l)");
 			}
 		}
 	}
@@ -668,7 +677,7 @@ public class LeekVariable extends Expression {
 	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = add(" + token.getWord() + ", 1l)");
+			writer.addCode(token.getWord() + " = " + bigCast() + "add(" + token.getWord() + ", 1l)");
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pre_inc(\"" + token.getWord() + "\")");
@@ -679,7 +688,7 @@ public class LeekVariable extends Expression {
 				writer.addCode("++g_" + token.getWord());
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = add(g_" + token.getWord() + ", 1l)");
+				writer.addCode("g_" + token.getWord() + " = " + bigCast() + "add(g_" + token.getWord() + ", 1l)");
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
@@ -689,7 +698,7 @@ public class LeekVariable extends Expression {
 				writer.addCode("++u_" + token.getWord());
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = add(u_" + token.getWord() + ", 1l)");
+				writer.addCode("u_" + token.getWord() + " = " + bigCast() + "add(u_" + token.getWord() + ", 1l)");
 				if (parenthesis) writer.addCode(")");
 			}
 		}
@@ -699,7 +708,7 @@ public class LeekVariable extends Expression {
 	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = sub(" + token.getWord() + ", 1l)");
+			writer.addCode(token.getWord() + " = " + bigCast() + "sub(" + token.getWord() + ", 1l)");
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pre_dec(\"" + token.getWord() + "\")");
@@ -710,7 +719,7 @@ public class LeekVariable extends Expression {
 				writer.addCode("--g_" + token.getWord());
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = sub(g_" + token.getWord() + ", 1l)");
+				writer.addCode("g_" + token.getWord() + " = " + bigCast() + "sub(g_" + token.getWord() + ", 1l)");
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
@@ -720,7 +729,7 @@ public class LeekVariable extends Expression {
 				writer.addCode("--u_" + token.getWord());
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = sub(u_" + token.getWord() + ", 1l)");
+				writer.addCode("u_" + token.getWord() + " = " + bigCast() + "sub(u_" + token.getWord() + ", 1l)");
 				if (parenthesis) writer.addCode(")");
 			}
 		}

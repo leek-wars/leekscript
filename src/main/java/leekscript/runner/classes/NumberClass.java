@@ -136,9 +136,10 @@ public class NumberClass {
 		return Math.pow(x, y);
 	}
 
-	public static BigIntegerValue pow(AI ai, BigIntegerValue x, long y) throws LeekRunException {
-		if (y < 0) return BigIntegerValue.valueOf(ai, 0L);
-		return x.pow((int) y);
+	public static BigIntegerValue pow(AI ai, BigIntegerValue x, BigIntegerValue y) throws LeekRunException {
+		long exp = y.longValue();
+		if (exp < 0) return BigIntegerValue.valueOf(ai, 0L);
+		return x.pow((int) Math.min(exp, Integer.MAX_VALUE));
 	}
 
 	public static double rand(AI ai) {

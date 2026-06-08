@@ -556,6 +556,12 @@ public class JavaWriter {
 		if (type == Type.INT) {
 			return "longint(" + v + ")";
 		}
+		if (type == Type.BIG_INT) {
+			// Conversion vers big_integer dans les wrappers de fonctions système
+			// génériques : promotion via valueOf (un cast brut `(BigIntegerValue) v`
+			// échouerait pour un Long/Double et retomberait sur la valeur par défaut). #bigint
+			return "BigIntegerValue.valueOf(" + getAIThis() + ", " + v + ")";
+		}
 		if (type == Type.REAL) {
 			return "real(" + v + ")";
 		}
