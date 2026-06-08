@@ -1,5 +1,6 @@
 package leekscript.compiler;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekAnonymousFunction;
 import leekscript.compiler.expression.LeekArray;
 import leekscript.compiler.expression.LegacyLeekArray;
+import leekscript.compiler.expression.LeekBigInteger;
 import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekCompoundType;
 import leekscript.compiler.expression.LeekExpression;
@@ -691,6 +693,7 @@ public class WordCompiler {
 		"integer", Type.INT,
 		"real", Type.REAL,
 		"string", Type.STRING,
+		"big_integer", Type.BIG_INT,
 		"Class", Type.CLASS,
 		"Object", Type.OBJECT
 	);
@@ -1897,6 +1900,20 @@ public class WordCompiler {
 					if (s.contains("__")) {
 						addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.MULTIPLE_NUMERIC_SEPARATORS));
 					}
+					if (s.endsWith("L")) {
+						// Littéral big_integer : suffixe explicite `L` (#bigint). Les
+						// littéraux sans `L` gardent leur comportement actuel (int/real),
+						// pour ne rien changer au LS4 existant.
+						var body = s.substring(0, s.length() - 1).replace("_", "");
+						var radix = body.startsWith("0x") ? 16 : body.startsWith("0b") ? 2 : 10;
+						if (radix != 10) body = body.substring(2);
+						try {
+							retour.addExpression(new LeekBigInteger(word, new BigInteger(body, radix)));
+						} catch (NumberFormatException e) {
+							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
+							retour.addExpression(new LeekBigInteger(word, BigInteger.ZERO));
+						}
+					} else {
 					try {
 						var radix = s.startsWith("0x") ? 16 : s.startsWith("0b") ? 2 : 10;
 						s = word.getWord().replace("_", "");
@@ -1910,6 +1927,7 @@ public class WordCompiler {
 							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
 							retour.addExpression(new LeekNumber(word, 0, 0, Type.INT));
 						}
+					}
 					}
 
 				} else if (word.getType() == TokenType.LEMNISCATE) {

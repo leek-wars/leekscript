@@ -27,6 +27,7 @@ public class Type {
 	public static final Type INT = new Type("integer", "i", "long", "Long", "0l");
 	public static final Type REAL = new Type("real", "r", "double", "Double", "0.0");
 	public static final Type STRING = new Type("string", "s", "String", "String", "\"\"");
+	public static final Type BIG_INT = new BigIntegerType();
 	public static final Type OBJECT = new ObjectType();
 	public static final FunctionType FUNCTION = new FunctionType(Type.ANY);
 	public static final Type MAP = map(Type.ANY, Type.ANY);
@@ -118,6 +119,24 @@ public class Type {
 				// réellement lossy => downcast (warning en strict).
 				return CastType.SAFE_DOWNCAST;
 			}
+			// big_integer -> integer : peut déborder les 64 bits, lossy => downcast.
+			if (type == BIG_INT) {
+				return CastType.SAFE_DOWNCAST;
+			}
+		}
+		if (this == BIG_INT) {
+			// integer -> big_integer : élargissement sans perte (comme integer -> real).
+			if (type == INT) {
+				return CastType.UPCAST;
+			}
+			// real -> big_integer : troncature de la partie décimale => downcast.
+			if (type == REAL) {
+				return CastType.SAFE_DOWNCAST;
+			}
+		}
+		if (this == REAL && type == BIG_INT) {
+			// big_integer -> real : perte de précision pour les grands nombres => downcast.
+			return CastType.SAFE_DOWNCAST;
 		}
 		if (this == FUNCTION) {
 			if (type instanceof ClassValueType) {
@@ -132,7 +151,7 @@ public class Type {
 	}
 
 	public boolean isNumber() {
-		return this == INT || this == REAL;
+		return this == INT || this == REAL || this == BIG_INT;
 	}
 
 	public String toString() {

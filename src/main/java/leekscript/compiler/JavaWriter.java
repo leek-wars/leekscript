@@ -203,6 +203,19 @@ public class JavaWriter {
 	public void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type, boolean parenthesis) {
 
 		// System.out.println("convert " + value.getType() + " to " + type);
+		// Conversions impliquant big_integer (#bigint)
+		if (type == Type.BIG_INT && value.getType() != Type.BIG_INT) {
+			addCode("BigIntegerValue.valueOf(" + getAIThis() + ", ");
+			value.writeJavaCode(mainblock, this, false);
+			addCode(")");
+			return;
+		}
+		if (value.getType() == Type.BIG_INT && (type == Type.INT || type == Type.REAL)) {
+			addCode("((Number) ");
+			value.writeJavaCode(mainblock, this, true);
+			addCode(type == Type.INT ? ").longValue()" : ").doubleValue()");
+			return;
+		}
 		if (type == Type.REAL && value.getType().isIntOrReal()) {
 			// Cast via (Number) to keep this safe when value emits a primitive
 			// (e.g. a `?? 0` ternary that unboxes Double + long to primitive double)

@@ -13,6 +13,7 @@ import leekscript.runner.values.FunctionLeekValue;
 import leekscript.runner.values.GenericArrayLeekValue;
 import leekscript.runner.values.GenericMapLeekValue;
 import leekscript.runner.values.IntegerIntervalLeekValue;
+import leekscript.runner.values.BigIntegerValue;
 import leekscript.runner.values.IntervalLeekValue;
 import leekscript.runner.values.RealIntervalLeekValue;
 import leekscript.runner.values.SetLeekValue;
@@ -814,6 +815,17 @@ public abstract class AI {
 		// pour les longs > 2^53.
 		if (x instanceof Long lx && y instanceof Long ly) return (long) lx == (long) ly;
 		if (x == null) return y == null;
+		// big_integer : comparaison EXACTE quand les deux côtés sont des entiers
+		// (sinon doubleValue() perdrait les chiffres au-delà de 2^53). Face à un
+		// réel, on retombe sur la comparaison double (sémantique real).
+		if (x instanceof BigIntegerValue bx) {
+			if (y instanceof BigIntegerValue by) return bx.getValue().equals(by.getValue());
+			if (y instanceof Long ly) return bx.getValue().equals(java.math.BigInteger.valueOf(ly));
+			if (y instanceof Boolean by) return bx.getValue().equals(by ? java.math.BigInteger.ONE : java.math.BigInteger.ZERO);
+		} else if (y instanceof BigIntegerValue by) {
+			if (x instanceof Long lx) return by.getValue().equals(java.math.BigInteger.valueOf(lx));
+			if (x instanceof Boolean bx) return by.getValue().equals(bx ? java.math.BigInteger.ONE : java.math.BigInteger.ZERO);
+		}
 		if (x instanceof Number) {
 			var n = ((Number) x).doubleValue();
 			if (y instanceof Number) {
@@ -1588,6 +1600,8 @@ public abstract class AI {
 			return set.string(this, new HashSet<Object>());
 		} else if (value instanceof IntervalLeekValue interval) {
 			return interval.string(this, new HashSet<Object>());
+		} else if (value instanceof BigIntegerValue big) {
+			return big.string(this, new HashSet<Object>());
 		} else if (value instanceof String) {
 			return "\"" + value + "\"";
 		} else if (value instanceof ClassLeekValue) {
@@ -1624,6 +1638,8 @@ public abstract class AI {
 			return ((SetLeekValue) value).string(this, visited);
 		} else if (value instanceof IntervalLeekValue) {
 			return ((IntervalLeekValue) value).string(this, visited);
+		} else if (value instanceof BigIntegerValue) {
+			return ((BigIntegerValue) value).string(this, visited);
 		} else if (value instanceof String) {
 			return "\"" + value + "\"";
 		} else if (value instanceof ClassLeekValue) {
