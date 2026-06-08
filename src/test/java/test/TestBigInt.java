@@ -133,4 +133,26 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return 5L instanceof Number").equals("true");
 		code_v4_("return 5 instanceof BigInteger").equals("false");
 	}
+
+	@Test
+	public void testBitwise() throws Exception {
+		section("Opérations binaires");
+		// Division entière `\` → big_integer
+		code_v4_("return 15L \\ 3").equals("5");
+		code_v4_("return 17L \\ 5").equals("3");
+		code_v4_("var x = 15L \\ 3 return x instanceof BigInteger").equals("true");
+		// ET / OU / XOR / NON
+		code_v4_("return 12L & 10").equals("8");
+		code_v4_("return 12L | 1").equals("13");
+		code_v4_("return 12L ^ 10").equals("6");
+		code_v4_("return ~5L").equals("-6");
+		code_v4_("return ~(~12L)").equals("12");
+		// Décalages — au-delà de 64 bits (le cœur du big_integer)
+		code_v4_("return 1L << 100 == 1267650600228229401496703205376L").equals("true");
+		code_v4_("big_integer x = 1 return x << 150 == 1427247692705959881058285969449495136382746624L").equals("true");
+		code_v4_("return (1L << 200) >> 100 == 1L << 100").equals("true");
+		code_v4_("return (1L << 64) >> 64").equals("1");
+		// Combinaison
+		code_v4_("return ((1L << 80) | 1) & 1").equals("1");
+	}
 }

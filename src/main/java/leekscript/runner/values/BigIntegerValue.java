@@ -103,7 +103,12 @@ public class BigIntegerValue extends Number implements LeekValue {
 	}
 
 	public BigIntegerValue pow(int exponent) throws LeekRunException {
-		ops(value.bitLength() / 2000 * exponent);
+		// Coût proportionnel à la taille du résultat (~ exponent * bits de la base),
+		// chargé AVANT le calcul pour borner l'allocation/CPU. Un simple
+		// `bitLength / 2000 * exponent` tombait à 0 op pour les petites bases
+		// (ex `2L ** 1000000` quasi gratuit).
+		long resultBits = (long) exponent * Math.max(1, value.bitLength());
+		ai.ops((int) Math.min(Integer.MAX_VALUE, 1 + resultBits / 64));
 		return new BigIntegerValue(ai, value.pow(exponent));
 	}
 

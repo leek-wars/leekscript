@@ -1270,6 +1270,38 @@ public abstract class AI {
 		return longint(x) >>> longint(y);
 	}
 
+	// Opérations binaires sur big_integer (#bigint) : division entière `\`, bits
+	// `& | ^ ~` et décalages `<< >>`. Les opérandes sont promus en big_integer ;
+	// le décalage `>>>` est traité comme `>>` (pas de largeur fixe en précision
+	// arbitraire). Le résultat reste un big_integer.
+	public BigIntegerValue bigIntdiv(Object x, Object y) throws LeekRunException {
+		return BigIntegerValue.valueOf(this, x).divide(BigIntegerValue.valueOf(this, y));
+	}
+
+	public BigIntegerValue bigAnd(Object x, Object y) throws LeekRunException {
+		return BigIntegerValue.valueOf(this, x).and(BigIntegerValue.valueOf(this, y));
+	}
+
+	public BigIntegerValue bigOr(Object x, Object y) throws LeekRunException {
+		return BigIntegerValue.valueOf(this, x).or(BigIntegerValue.valueOf(this, y));
+	}
+
+	public BigIntegerValue bigXor(Object x, Object y) throws LeekRunException {
+		return BigIntegerValue.valueOf(this, x).xor(BigIntegerValue.valueOf(this, y));
+	}
+
+	public BigIntegerValue bigShl(Object x, Object n) throws LeekRunException {
+		return BigIntegerValue.valueOf(this, x).shiftLeft((int) longint(n));
+	}
+
+	public BigIntegerValue bigShr(Object x, Object n) throws LeekRunException {
+		return BigIntegerValue.valueOf(this, x).shiftRight((int) longint(n));
+	}
+
+	public BigIntegerValue bigNot(Object x) throws LeekRunException {
+		return BigIntegerValue.valueOf(this, x).not();
+	}
+
 	public long add(long x, long y) throws LeekRunException {
 		return x + y;
 	}

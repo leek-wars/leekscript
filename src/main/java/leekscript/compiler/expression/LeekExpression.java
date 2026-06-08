@@ -496,6 +496,26 @@ public class LeekExpression extends Expression {
 		return this;
 	}
 
+	/** Émet un appel runtime bigint binaire `(BigIntegerValue) method(e1, e2)` (#bigint). */
+	private void writeBigIntBinary(MainLeekBlock mainblock, JavaWriter writer, String method, boolean parenthesis) {
+		if (parenthesis) writer.addCode("(");
+		writer.addCode("(BigIntegerValue) " + method + "(");
+		mExpression1.writeJavaCode(mainblock, writer, false);
+		writer.addCode(", ");
+		mExpression2.writeJavaCode(mainblock, writer, false);
+		writer.addCode(")");
+		if (parenthesis) writer.addCode(")");
+	}
+
+	/** Émet un appel runtime bigint unaire `(BigIntegerValue) method(e2)` (#bigint). */
+	private void writeBigIntUnary(MainLeekBlock mainblock, JavaWriter writer, String method, boolean parenthesis) {
+		if (parenthesis) writer.addCode("(");
+		writer.addCode("(BigIntegerValue) " + method + "(");
+		mExpression2.writeJavaCode(mainblock, writer, false);
+		writer.addCode(")");
+		if (parenthesis) writer.addCode(")");
+	}
+
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 
@@ -618,6 +638,7 @@ public class LeekExpression extends Expression {
 			// }
 			return;
 		case Operators.INTEGER_DIVISION: // Division entière
+			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigIntdiv", parenthesis); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" / ");
@@ -643,6 +664,7 @@ public class LeekExpression extends Expression {
 			return;
 			// Les binaires
 		case Operators.BITAND:
+			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigAnd", parenthesis); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" & ");
@@ -650,6 +672,7 @@ public class LeekExpression extends Expression {
 			if (parenthesis) writer.addCode(")");
 			return;
 		case Operators.BITOR:
+			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigOr", parenthesis); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" | ");
@@ -657,6 +680,7 @@ public class LeekExpression extends Expression {
 			if (parenthesis) writer.addCode(")");
 			return;
 		case Operators.BITXOR:
+			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigXor", parenthesis); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" ^ ");
@@ -664,6 +688,7 @@ public class LeekExpression extends Expression {
 			if (parenthesis) writer.addCode(")");
 			return;
 		case Operators.SHIFT_LEFT:
+			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigShl", parenthesis); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" << ");
@@ -671,6 +696,7 @@ public class LeekExpression extends Expression {
 			if (parenthesis) writer.addCode(")");
 			return;
 		case Operators.SHIFT_RIGHT:
+			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigShr", parenthesis); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" >> ");
@@ -678,6 +704,7 @@ public class LeekExpression extends Expression {
 			if (parenthesis) writer.addCode(")");
 			return;
 		case Operators.SHIFT_UNSIGNED_RIGHT:
+			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigShr", parenthesis); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" >>> ");
@@ -876,6 +903,7 @@ public class LeekExpression extends Expression {
 			writer.getBoolean(mainblock, mExpression2, true);
 			return;
 		case Operators.BITNOT:
+			if (type == Type.BIG_INT) { writeBigIntUnary(mainblock, writer, "bigNot", parenthesis); return; }
 			writer.addCode("bnot(");
 			mExpression2.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
@@ -1308,8 +1336,16 @@ public class LeekExpression extends Expression {
 		} else if (mOperator == Operators.NOT || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.MOREEQUALS || mOperator == Operators.LESSEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.AND || mOperator == Operators.OR || mOperator == Operators.XOR || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS || mOperator == Operators.INSTANCEOF || mOperator == Operators.IN || mOperator == Operators.NOT_IN) {
 			type = Type.BOOL;
 		}
-		else if (mOperator == Operators.BITAND || mOperator == Operators.BITNOT || mOperator == Operators.BITOR  || mOperator == Operators.BITXOR || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT || mOperator == Operators.INTEGER_DIVISION) {
-			type = Type.INT;
+		else if (mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR || mOperator == Operators.INTEGER_DIVISION) {
+			// big_integer si l'un des deux opérandes est big_integer (#bigint)
+			type = ((mExpression1 != null && mExpression1.getType() == Type.BIG_INT) || mExpression2.getType() == Type.BIG_INT) ? Type.BIG_INT : Type.INT;
+		}
+		else if (mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT) {
+			// le décalage suit le type de l'opérande gauche (le nombre décalé)
+			type = (mExpression1 != null && mExpression1.getType() == Type.BIG_INT) ? Type.BIG_INT : Type.INT;
+		}
+		else if (mOperator == Operators.BITNOT) {
+			type = mExpression2.getType() == Type.BIG_INT ? Type.BIG_INT : Type.INT;
 		}
 		else if (mOperator == Operators.COALESCE) {
 			var leftType = mExpression1.getType();
