@@ -254,8 +254,8 @@ public class LeekArrayAccess extends Expression {
 				stride.writeJavaCode(mainblock, writer, false);
 			}
 			writer.addCode(")");
-		} else if (mTabular instanceof LeekVariable v && v.getVariableType() == VariableType.THIS && mCase instanceof LeekString) {
-			writer.addCode(((LeekString) mCase).getText());
+		} else if (mTabular instanceof LeekVariable v && v.getVariableType() == VariableType.THIS && mCase instanceof LeekString ls && ls.getText().matches("[\\p{L}_$][\\p{L}\\p{N}_$]*")) {
+			writer.addCode(ls.getText()); // clé restreinte à un identifiant (cf. condition) : pas de texte arbitraire émis dans le code généré
 		} else if (mTabular.getType() instanceof LegacyArrayType) {
 			mTabular.writeJavaCode(mainblock, writer, true);
 			writer.addCode(".get(");

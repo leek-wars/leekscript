@@ -353,6 +353,10 @@ public class TestObject extends TestCommon {
 		code_v2_("class Test { a b c constructor(a, b, c) { this.a = a this.b = b this.c = c } } var test1 = new Test(1, 2, 3) var test2 = new Test() for (var field in test1.class.fields) { test2[field] = test1[field] } return test2").equals("Test {a: 1, b: 2, c: 3}");
 		code_v2_("class Test { a b c constructor(a, b, c) { this.a = a this.b = b this.c = c } } var test1 = new Test(1, 2, 3) var test2 = new Test() for (var field in test2.class.fields) { test2[field] = test1[field] } return test2").equals("Test {a: 1, b: 2, c: 3}");
 		code_v2_("class A { a = 6 m() { return this['a'] } } return new A().m()").equals("6");
+		// Une clé this[...] non-identifiant passe par l'accès générique (champ inexistant -> null),
+		// au lieu d'être émise telle quelle dans le code généré.
+		code_v2_("class A { a = 6 m() { return this['a + 1'] } } return new A().m()").equals("null");
+		code_v2_("class A { a = 6 m() { return this['a; b'] } } return new A().m()").equals("null");
 
 		section("Operators on field by array access");
 		code_v2_("class A { a = 10 } var a = new A(); return --a['a']").equals("9");
