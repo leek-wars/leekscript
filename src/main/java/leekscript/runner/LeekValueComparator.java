@@ -24,6 +24,11 @@ public class LeekValueComparator {
 				if (v1 instanceof Long l1 && v2 instanceof Long l2) {
 					return Long.compare(l1, l2);
 				}
+				// big_integer : comparaison EXACTE au-delà de 2^53. #bigint
+				if ((v1 instanceof leekscript.runner.values.BigIntegerValue || v2 instanceof leekscript.runner.values.BigIntegerValue)
+						&& leekscript.runner.values.BigIntegerValue.isIntegerLike(v1) && leekscript.runner.values.BigIntegerValue.isIntegerLike(v2)) {
+					return leekscript.runner.values.BigIntegerValue.compareIntegers(v1, v2);
+				}
 				return Double.compare(n1.doubleValue(), n2.doubleValue());
 			} else if (v2 instanceof Boolean || v2 == null)
 				return 1;

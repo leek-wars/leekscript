@@ -73,6 +73,12 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 				if (v1 instanceof Long l1 && v2 instanceof Long l2) {
 					return Long.compare(l1, l2);
 				}
+				// big_integer : comparaison EXACTE (Double.compare perdrait les
+				// chiffres au-delà de 2^53 -> gros entiers mal triés). #bigint
+				if ((v1 instanceof BigIntegerValue || v2 instanceof BigIntegerValue)
+						&& BigIntegerValue.isIntegerLike(v1) && BigIntegerValue.isIntegerLike(v2)) {
+					return BigIntegerValue.compareIntegers(v1, v2);
+				}
 				return Double.compare(((Number) v1).doubleValue(), ((Number) v2).doubleValue());
 			} else if (type1 == LeekValueType.STRING) {
 				return ((String) v1).compareTo((String) v2);

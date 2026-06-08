@@ -228,6 +228,24 @@ public class BigIntegerValue extends Number implements LeekValue {
 		return value;
 	}
 
+	/** Vrai si la valeur est un entier exact (Long, big_integer ou booléen). */
+	public static boolean isIntegerLike(Object v) {
+		return v instanceof Long || v instanceof BigIntegerValue || v instanceof Boolean;
+	}
+
+	/** Vue BigInteger d'une valeur entière exacte (sans AI, pour la comparaison/tri). */
+	public static BigInteger toBigInteger(Object v) {
+		if (v instanceof BigIntegerValue bv) return bv.value;
+		if (v instanceof Long l) return BigInteger.valueOf(l);
+		if (v instanceof Boolean b) return b ? BigInteger.ONE : BigInteger.ZERO;
+		return BigInteger.ZERO;
+	}
+
+	/** Comparaison EXACTE de deux entiers exacts (cf. {@link #isIntegerLike}). */
+	public static int compareIntegers(Object v1, Object v2) {
+		return toBigInteger(v1).compareTo(toBigInteger(v2));
+	}
+
 	public int signum() {
 		return value.signum();
 	}

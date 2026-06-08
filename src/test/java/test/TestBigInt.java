@@ -270,4 +270,24 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return setSize(<5L, 5L, 3L>)").equals("2");
 		code_v4_("return setSize(<(1L << 100), (1L << 100)>)").equals("1");
 	}
+
+	@Test
+	public void testSortAndJson() throws Exception {
+		section("Tri par défaut (#bug : comparaison double lossy)");
+		code_v4_("return arraySort([3L, 1L, 2L])").equals("[1, 2, 3]");
+		// Gros bigints différant en deçà de la précision double : doivent être
+		// triés EXACTEMENT (une comparaison double les verrait égaux).
+		code_v4_("return arraySort([(1L << 70) + 2, (1L << 70) + 1, (1L << 70)])[0] == 1L << 70").equals("true");
+		code_v4_("var a = arraySort([(1L << 70) + 1, (1L << 70)]) return a[0] == 1L << 70").equals("true");
+		code_v4_("return arraySort([(1L << 100), 5L, (1L << 50)])[0] == 5L").equals("true");
+
+		section("jsonEncode (#bug : valeur tronquée -> JSON invalide)");
+		code_v4_("return jsonEncode(5L)").equals("\"5\"");
+		// Au-delà de 64 bits : le nombre COMPLET (pas la string cropée) -> JSON valide
+		code_v4_("return jsonEncode(1L << 70)").equals("\"1180591620717411303424\"");
+		code_v4_("return jsonEncode([5L, (1L << 80)])").equals("\"[5,1208925819614629174706176]\"");
+		// round-trip : encode produit du JSON valide (le décode d'un entier
+		// surdimensionné donne un real, JSON n'ayant pas de type entier arbitraire)
+		code_v4_("return jsonEncode(jsonDecode(jsonEncode(123L)))").equals("\"123\"");
+	}
 }

@@ -1779,6 +1779,12 @@ public abstract class AI {
 		if (v instanceof NativeObjectLeekValue o) {
 			return o.toJSON(this, visited);
 		}
+		if (v instanceof BigIntegerValue big) {
+			// Le BigIntegerValue.toString() tronque les grands nombres (affichage) :
+			// pour le JSON il faut la valeur entière COMPLÈTE, sinon le JSON est
+			// invalide. On passe le java.math.BigInteger. #bigint
+			return big.getValue();
+		}
 		return v;
 	}
 
