@@ -3163,11 +3163,13 @@ public abstract class AI {
 	public SetLeekValue setLiteralRange(SetLeekValue set, Object startObject, Object endObject) throws LeekRunException {
 		long start = longint(startObject);
 		long end = longint(endObject);
-		ops(1 + Math.abs(end - start));
+		// ops par élément : borne l'exécution par le budget d'opérations et évite
+		// l'overflow d'un `end - start` sur des bornes extrêmes (ex: <MIN..MAX>).
+		ops(1);
 		if (start <= end) {
-			for (long i = start; i <= end; i++) set.setPut(this, i);
+			for (long i = start; i <= end; i++) { ops(1); set.setPut(this, i); }
 		} else {
-			for (long i = start; i >= end; i--) set.setPut(this, i);
+			for (long i = start; i >= end; i--) { ops(1); set.setPut(this, i); }
 		}
 		return set;
 	}
