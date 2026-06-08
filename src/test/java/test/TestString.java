@@ -153,4 +153,52 @@ public class TestString extends TestCommon {
 		code("return length('hello')").equals("5");
 	}
 
+	/**
+	 * Accès indexé sur les chaînes (#3138) : caractère, index négatif, slices, comme
+	 * pour les listes. Fonctionne avec une variable typée `string`, non typée (`var`),
+	 * `any` ou directement sur un littéral.
+	 */
+	@Test
+	public void testString_indexAccess() throws Exception {
+		section("String index access");
+		// Caractère
+		code_v4_("var s = 'hello' return s[0]").equals("\"h\"");
+		code_v4_("var s = 'hello' return s[1]").equals("\"e\"");
+		code_v4_("string s = 'hello' return s[4]").equals("\"o\"");
+		code_v4_("any s = 'hello' return s[1]").equals("\"e\"");
+		code_v4_("return 'hello'[1]").equals("\"e\"");
+		// Index négatif (depuis la fin)
+		code_v4_("var s = 'hello' return s[-1]").equals("\"o\"");
+		code_v4_("var s = 'hello' return s[-5]").equals("\"h\"");
+		// Hors-bornes → null
+		code_v4_("var s = 'hello' return s[10]").equals("null");
+		code_v4_("var s = '' return s[0]").equals("null");
+		// Unicode
+		code_v4_("var s = 'café' return s[3]").equals("\"é\"");
+		// Concaténation de caractères
+		code_v4_("var s = 'hello' return s[0] + s[-1]").equals("\"ho\"");
+		code_v4_("string s = 'abc' var r = '' for (var i = 0; i < 3; i++) r += s[i] return r").equals("\"abc\"");
+
+		section("String slices");
+		code_v4_("var s = 'hello' return s[1:4]").equals("\"ell\"");
+		code_v4_("string s = 'hello' return s[1:4]").equals("\"ell\"");
+		code_v4_("any s = 'hello' return s[1:4]").equals("\"ell\"");
+		code_v4_("return 'hello'[1:4]").equals("\"ell\"");
+		// Bornes ouvertes
+		code_v4_("var s = 'hello' return s[:3]").equals("\"hel\"");
+		code_v4_("var s = 'hello' return s[2:]").equals("\"llo\"");
+		code_v4_("var s = 'hello' return s[:]").equals("\"hello\"");
+		// Index négatifs
+		code_v4_("var s = 'hello' return s[-3:]").equals("\"llo\"");
+		code_v4_("var s = 'hello' return s[:-2]").equals("\"hel\"");
+		// Pas (stride)
+		code_v4_("var s = 'hello' return s[::2]").equals("\"hlo\"");
+		code_v4_("var s = 'hello' return s[1:4:2]").equals("\"el\"");
+		// Pas négatif → inversion
+		code_v4_("var s = 'hello' return s[::-1]").equals("\"olleh\"");
+		code_v4_("string s = 'hello' return s[::-1]").equals("\"olleh\"");
+		// Slice vide
+		code_v4_("var s = 'hello' return s[3:1]").equals("\"\"");
+	}
+
 }

@@ -281,12 +281,18 @@ public class Type {
 		if (this == ANY) {
 			return Type.ANY;
 		}
+		if (this == STRING) {
+			return Type.INT;
+		}
 		return Type.NULL;
 	}
 
 	public Type element() {
 		if (this == ANY) {
 			return Type.ANY;
+		}
+		if (this == STRING) {
+			return Type.STRING;
 		}
 		return Type.NULL;
 	}
@@ -295,12 +301,18 @@ public class Type {
 		if (this == ANY) {
 			return Type.ANY;
 		}
+		if (this == STRING) {
+			return Type.STRING;
+		}
 		return Type.NULL;
 	}
 
 	public Type elementAccess(int version, boolean strict, String key) {
 		if (this == ANY) {
 			return Type.ANY;
+		}
+		if (this == STRING) {
+			return Type.STRING;
 		}
 		return Type.NULL;
 	}
@@ -317,14 +329,14 @@ public class Type {
 	}
 
 	public boolean isIndexable() {
-		return false;
+		return this == STRING;
 	}
 
 	public boolean canBeIndexable() {
 		if (this == ANY) {
 			return true;
 		}
-		return false;
+		return this == STRING;
 	}
 
 	public boolean canBeCallable() {

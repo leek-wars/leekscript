@@ -191,15 +191,54 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
-		if (colon != null) {
-			if (mCase != null && endIndex != null) {
-				writer.addCode("range(");
-			} else if (mCase != null) {
-				writer.addCode("range_start(");
-			} else if (endIndex != null) {
-				writer.addCode("range_end(");
+		if (mTabular.getType() == Type.STRING) {
+			// Accès indexé sur une chaîne : caractère ou sous-chaîne (comme les listes)
+			if (colon != null) {
+				if (mCase != null && endIndex != null) {
+					writer.addCode("rangeString(");
+				} else if (mCase != null) {
+					writer.addCode("rangeString_start(");
+				} else if (endIndex != null) {
+					writer.addCode("rangeString_end(");
+				} else {
+					writer.addCode("rangeString_all(");
+				}
+				mTabular.writeJavaCode(mainblock, writer, false);
+				if (mCase != null) {
+					writer.addCode(", ");
+					mCase.writeJavaCode(mainblock, writer, false);
+				}
+				if (endIndex != null) {
+					writer.addCode(", ");
+					endIndex.writeJavaCode(mainblock, writer, false);
+				}
+				if (stride != null) {
+					writer.addCode(", ");
+					stride.writeJavaCode(mainblock, writer, false);
+				}
+				writer.addCode(")");
 			} else {
-				writer.addCode("range_all(");
+				writer.addCode("getString(");
+				mTabular.writeJavaCode(mainblock, writer, false);
+				writer.addCode(", ");
+				mCase.writeJavaCode(mainblock, writer, false);
+				writer.addCode(")");
+			}
+			return;
+		}
+		if (colon != null) {
+			// Type ANY : la valeur peut être un tableau, un intervalle ou une chaîne
+			// au runtime, on dispatche donc dynamiquement (rangeDynamic retourne une
+			// chaîne pour les strings, un tableau sinon).
+			var prefix = mTabular.getType() == Type.ANY ? "rangeDynamic" : "range";
+			if (mCase != null && endIndex != null) {
+				writer.addCode(prefix + "(");
+			} else if (mCase != null) {
+				writer.addCode(prefix + "_start(");
+			} else if (endIndex != null) {
+				writer.addCode(prefix + "_end(");
+			} else {
+				writer.addCode(prefix + "_all(");
 			}
 			mTabular.writeJavaCode(mainblock, writer, false);
 			if (mCase != null) {

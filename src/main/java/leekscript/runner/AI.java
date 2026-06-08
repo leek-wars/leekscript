@@ -2926,6 +2926,9 @@ public abstract class AI {
 	}
 
 	public Object get(Object value, Object index, ClassLeekValue fromClass) throws LeekRunException {
+		if (value instanceof String) {
+			return getString((String) value, index);
+		}
 		if (value instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) value).get(index);
 		}
@@ -3042,6 +3045,138 @@ public abstract class AI {
 		}
 		addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { value });
 		return null;
+	}
+
+	/**
+	 * Accès indexé sur une chaîne : retourne le caractère à l'index donné sous
+	 * forme de chaîne. Les index négatifs comptent depuis la fin (comme les
+	 * listes), un index hors-bornes retourne null.
+	 */
+	public String getString(String string, Object index) throws LeekRunException {
+		ops(1);
+		long i = longint(index);
+		if (i < 0) i += string.length();
+		if (i < 0 || i >= string.length()) return null;
+		return String.valueOf(string.charAt((int) i));
+	}
+
+	public String stringSlice(String string, Object startValue, Object endValue, long stride) throws LeekRunException {
+		int length = string.length();
+		if (stride == 0) stride = 1;
+		int start, end;
+		if (startValue == null) {
+			start = stride > 0 ? 0 : length - 1;
+		} else {
+			start = integer(startValue);
+			if (start < 0) start += length;
+			if (stride > 0) {
+				start = Math.max(0, start);
+			} else {
+				start = Math.min(length - 1, start);
+			}
+		}
+		if (endValue == null) {
+			end = stride > 0 ? length : -1;
+		} else {
+			end = integer(endValue);
+			if (end < 0) end += length;
+			if (stride > 0) {
+				end = Math.min(length, end);
+			} else {
+				end = Math.max(-1, end);
+			}
+		}
+		int step = (int) Math.abs(stride);
+		int size = Math.max(0, stride > 0 ? (end - start + step - 1) / step : (start - end + step - 1) / step);
+		ops(1 + size);
+		var result = new StringBuilder(size);
+		if (stride > 0) {
+			for (int i = start; i < end; i += stride) {
+				result.append(string.charAt(i));
+			}
+		} else {
+			for (int i = start; i > end; i += stride) {
+				result.append(string.charAt(i));
+			}
+		}
+		return result.toString();
+	}
+
+	/**
+	 * Dispatch dynamique pour les slices sur une valeur de type ANY : retourne une
+	 * sous-chaîne si la valeur est une chaîne, sinon délègue à {@link #range} (tableaux,
+	 * intervalles).
+	 */
+	public Object rangeDynamic(Object value, Object start, Object end) throws LeekRunException {
+		if (value instanceof String s) return stringSlice(s, start, end, 1l);
+		return range(value, start, end);
+	}
+
+	public Object rangeDynamic(Object value, Object start, Object end, Object strideObject) throws LeekRunException {
+		if (value instanceof String s) return stringSlice(s, start, end, longint(strideObject));
+		return range(value, start, end, strideObject);
+	}
+
+	public Object rangeDynamic_start(Object value, Object start) throws LeekRunException {
+		if (value instanceof String s) return stringSlice(s, start, null, 1l);
+		return range_start(value, start);
+	}
+
+	public Object rangeDynamic_start(Object value, Object start, Object strideObject) throws LeekRunException {
+		if (value instanceof String s) return stringSlice(s, start, null, longint(strideObject));
+		return range_start(value, start, strideObject);
+	}
+
+	public Object rangeDynamic_end(Object value, Object end) throws LeekRunException {
+		if (value instanceof String s) return stringSlice(s, null, end, 1l);
+		return range_end(value, end);
+	}
+
+	public Object rangeDynamic_end(Object value, Object end, Object strideObject) throws LeekRunException {
+		if (value instanceof String s) return stringSlice(s, null, end, longint(strideObject));
+		return range_end(value, end, strideObject);
+	}
+
+	public Object rangeDynamic_all(Object value) throws LeekRunException {
+		if (value instanceof String s) return stringSlice(s, null, null, 1l);
+		return range_all(value);
+	}
+
+	public Object rangeDynamic_all(Object value, Object strideObject) throws LeekRunException {
+		if (value instanceof String s) return stringSlice(s, null, null, longint(strideObject));
+		return range_all(value, strideObject);
+	}
+
+	public String rangeString(String string, Object start, Object end) throws LeekRunException {
+		return stringSlice(string, start, end, 1l);
+	}
+
+	public String rangeString(String string, Object start, Object end, Object strideObject) throws LeekRunException {
+		return stringSlice(string, start, end, longint(strideObject));
+	}
+
+	public String rangeString_start(String string, Object start) throws LeekRunException {
+		return stringSlice(string, start, null, 1l);
+	}
+
+	public String rangeString_start(String string, Object start, Object strideObject) throws LeekRunException {
+		return stringSlice(string, start, null, longint(strideObject));
+	}
+
+	public String rangeString_end(String string, Object end) throws LeekRunException {
+		return stringSlice(string, null, end, 1l);
+	}
+
+	public String rangeString_end(String string, Object end, Object strideObject) throws LeekRunException {
+		return stringSlice(string, null, end, longint(strideObject));
+	}
+
+	public String rangeString_all(String string) throws LeekRunException {
+		return stringSlice(string, null, null, 1l);
+	}
+
+	public String rangeString_all(String string, Object strideObject) throws LeekRunException {
+		return stringSlice(string, null, null, longint(strideObject));
 	}
 
 	public static Method findMethod(Class<?> clazz, String methodName, int argsLength) {
