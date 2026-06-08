@@ -2068,7 +2068,16 @@ public class WordCompiler {
 		while (mTokens.hasMoreTokens() && (mTokens.get().getType() != TokenType.OPERATOR || !mTokens.get().getWord().equals(">"))) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 
-			set.addValue(readExpression(true, true));
+			var value = readExpression(true, true);
+
+			if (mTokens.get().getType() == TokenType.DOT_DOT) {
+				// Intervalle `a..b` : set d'entiers de a à b (#2335)
+				mTokens.skip();
+				var end = readExpression(true, true);
+				set.addRange(value, end);
+			} else {
+				set.addValue(value);
+			}
 
 			if (mTokens.get().getType() == TokenType.VIRG) {
 				mTokens.skip();

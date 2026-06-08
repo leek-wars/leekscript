@@ -3147,6 +3147,31 @@ public abstract class AI {
 		return range_all(value, strideObject);
 	}
 
+	/**
+	 * Ajoute une valeur simple à un littéral set en construction et retourne le set
+	 * (pour permettre le chaînage). Voir {@link #setLiteralRange}.
+	 */
+	public SetLeekValue setLiteralAdd(SetLeekValue set, Object value) throws LeekRunException {
+		set.setPut(this, value);
+		return set;
+	}
+
+	/**
+	 * Ajoute l'intervalle d'entiers `start..end` (inclus, dans les deux sens) à un
+	 * littéral set en construction et retourne le set (#2335).
+	 */
+	public SetLeekValue setLiteralRange(SetLeekValue set, Object startObject, Object endObject) throws LeekRunException {
+		long start = longint(startObject);
+		long end = longint(endObject);
+		ops(1 + Math.abs(end - start));
+		if (start <= end) {
+			for (long i = start; i <= end; i++) set.setPut(this, i);
+		} else {
+			for (long i = start; i >= end; i--) set.setPut(this, i);
+		}
+		return set;
+	}
+
 	public String rangeString(String string, Object start, Object end) throws LeekRunException {
 		return stringSlice(string, start, end, 1l);
 	}

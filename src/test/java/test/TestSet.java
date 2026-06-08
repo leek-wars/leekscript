@@ -21,6 +21,30 @@ public class TestSet extends TestCommon {
 		code_v3_("Set<integer> a = new Set() return a").equals("<>");
 	}
 
+	/**
+	 * Littéral set avec intervalle d'entiers `<a..b>` (#2335).
+	 */
+	@Test
+	public void testSet_range() throws Exception {
+		section("Set range literal");
+		code("return <1..5>").equals("<1, 2, 3, 4, 5>");
+		code("return <1..1>").equals("<1>");
+		// Sens décroissant
+		code("return <5..1>").equals("<5, 4, 3, 2, 1>");
+		// Mélange valeurs simples et intervalles
+		code("return <1, 5..8, 20>").equals("<1, 5, 6, 7, 8, 20>");
+		code("return <1..3, 10, 20..22>").equals("<1, 2, 3, 10, 20, 21, 22>");
+		// Bornes dynamiques
+		code("var a = 3 var b = 7 return <a..b>").equals("<3, 4, 5, 6, 7>");
+		// Doublons fusionnés par le set
+		code("return <1..3, 2..4>").equals("<1, 2, 3, 4>");
+		// Équivalences
+		code("return <1..3> == <1, 2, 3>").equals("true");
+		code("return setSize(<1..100>)").equals("100");
+		// Un intervalle entre crochets reste un élément intervalle (pas d'expansion)
+		code("return <[1..10]>").equals("<[1..10]>");
+	}
+
 	@Test
 	public void testSet_typing() throws Exception {
 		section("Set typing");
