@@ -958,7 +958,7 @@ public abstract class AI {
 	public boolean less(Object x, Object y) throws LeekRunException {
 		if (x instanceof Long lx && y instanceof Long ly) return lx < ly;
 		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
-			if (isIntegerLike(x) && isIntegerLike(y)) return BigIntegerValue.valueOf(this, x).compareTo(BigIntegerValue.valueOf(this, y)) < 0;
+			if (isIntegerLike(x) && isIntegerLike(y)) return bigCompare(x, y) < 0;
 			return real(x) < real(y);
 		}
 		if (x instanceof Number nx && y instanceof Number ny) return nx.doubleValue() < ny.doubleValue();
@@ -968,7 +968,7 @@ public abstract class AI {
 	public boolean more(Object x, Object y) throws LeekRunException {
 		if (x instanceof Long lx && y instanceof Long ly) return lx > ly;
 		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
-			if (isIntegerLike(x) && isIntegerLike(y)) return BigIntegerValue.valueOf(this, x).compareTo(BigIntegerValue.valueOf(this, y)) > 0;
+			if (isIntegerLike(x) && isIntegerLike(y)) return bigCompare(x, y) > 0;
 			return real(x) > real(y);
 		}
 		if (x instanceof Number nx && y instanceof Number ny) return nx.doubleValue() > ny.doubleValue();
@@ -980,10 +980,15 @@ public abstract class AI {
 		return v instanceof Long || v instanceof BigIntegerValue || v instanceof Boolean;
 	}
 
+	/** Compare deux entiers exacts via BigInteger (sans perte au-delà de 2^53). */
+	private int bigCompare(Object x, Object y) throws LeekRunException {
+		return BigIntegerValue.valueOf(this, x).compareTo(BigIntegerValue.valueOf(this, y));
+	}
+
 	public boolean lessequals(Object x, Object y) throws LeekRunException {
 		if (x instanceof Long lx && y instanceof Long ly) return lx <= ly;
 		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
-			if (isIntegerLike(x) && isIntegerLike(y)) return BigIntegerValue.valueOf(this, x).compareTo(BigIntegerValue.valueOf(this, y)) <= 0;
+			if (isIntegerLike(x) && isIntegerLike(y)) return bigCompare(x, y) <= 0;
 			return real(x) <= real(y);
 		}
 		if (x instanceof Number nx && y instanceof Number ny) return nx.doubleValue() <= ny.doubleValue();
@@ -993,7 +998,7 @@ public abstract class AI {
 	public boolean moreequals(Object x, Object y) throws LeekRunException {
 		if (x instanceof Long lx && y instanceof Long ly) return lx >= ly;
 		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
-			if (isIntegerLike(x) && isIntegerLike(y)) return BigIntegerValue.valueOf(this, x).compareTo(BigIntegerValue.valueOf(this, y)) >= 0;
+			if (isIntegerLike(x) && isIntegerLike(y)) return bigCompare(x, y) >= 0;
 			return real(x) >= real(y);
 		}
 		if (x instanceof Number nx && y instanceof Number ny) return nx.doubleValue() >= ny.doubleValue();
