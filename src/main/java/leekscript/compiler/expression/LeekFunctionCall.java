@@ -45,6 +45,21 @@ public class LeekFunctionCall extends Expression {
 	private Type functionType = Type.ANY;
 	private FunctionBlock resolvedFunction = null;
 
+	// Méthodes natives exposées en `u_` sur la classe de base des objets générés
+	// (NativeObjectLeekValue), ex: keys(). Un `super.method()` vers l'une d'elles
+	// compile correctement en `super.u_method()` même sans déclaration utilisateur,
+	// donc l'analyse ne doit pas la rejeter. Clés sous la forme "nom_arité".
+	private static final java.util.Set<String> NATIVE_OBJECT_METHODS = computeNativeObjectMethods();
+	private static java.util.Set<String> computeNativeObjectMethods() {
+		var set = new java.util.HashSet<String>();
+		for (var m : leekscript.runner.AI.NativeObjectLeekValue.class.getMethods()) {
+			if (m.getName().startsWith("u_")) {
+				set.add(m.getName().substring(2) + "_" + m.getParameterCount());
+			}
+		}
+		return set;
+	}
+
 	public LeekFunctionCall(Token openParenthesis) {
 		this.openParenthesis = openParenthesis;
 		this.openParenthesis.setExpression(this);
@@ -596,13 +611,16 @@ public class LeekFunctionCall extends Expression {
 				// Le code généré est `super.u_method(...)`, qui ne compile pas en Java si
 				// la méthode n'existe pas (ou existe avec un autre nombre d'arguments).
 				// Sans cette vérification, l'erreur n'était détectée qu'au moment de la
-				// compilation Java côté worker (issue #4010).
-				if (!resolved && o instanceof LeekVariable sv && sv.getVariableType() == VariableType.SUPER) {
-					var parent = sv.getClassDeclaration().getParent();
+				// compilation Java côté worker (issue #4010). On épargne les méthodes
+				// natives de la classe de base (ex: super.keys()), dont le `super.u_method()`
+				// compile et fonctionne réellement.
+				if (!resolved && o instanceof LeekVariable sv && sv.getVariableType() == VariableType.SUPER
+						&& !NATIVE_OBJECT_METHODS.contains(oa.getField() + "_" + mParameters.size())) {
 					if (is_method) {
 						// La méthode existe sur un ancêtre mais pas avec ce nombre d'arguments
 						compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
 					} else {
+						var parent = sv.getClassDeclaration().getParent();
 						var className = parent != null ? parent.getName() : sv.getClassDeclaration().getName();
 						compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_METHOD, new String[] { className, oa.getField() }));
 					}

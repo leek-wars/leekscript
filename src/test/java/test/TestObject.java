@@ -435,6 +435,9 @@ public class TestObject extends TestCommon {
 		// Cas valides : la méthode est bien résolue sur un ancêtre (pas d'erreur)
 		code_v2_("class A { foo() { return 'ok' } } class B extends A { foo() { return super.foo() } } return new B().foo()").equals("\"ok\"");
 		code_v2_("class A { foo() { return 'ok' } } class B extends A {} class C extends B { foo() { return super.foo() } } return new C().foo()").equals("\"ok\"");
+		// super vers une méthode native de la classe de base (keys) : doit rester accepté
+		// et fonctionnel, pas de régression (super.u_keys() existe sur NativeObjectLeekValue).
+		code_v2_("class A { x = 1 } class B extends A { m() { return super.keys() } } return new B().m()").equals("[\"x\"]");
 
 		// Issue #3159: StackOverflowError quand parent et fille ont une valeur
 		// par défaut sur leur constructeur. Le `return init(...)` du fall-through
