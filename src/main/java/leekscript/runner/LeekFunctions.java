@@ -499,6 +499,11 @@ public class LeekFunctions {
 		return null;
 	}
 
+	/** Fonctions de la bibliotheque standard (hors fonctions "extra" comme le combat). */
+	public static Map<String, LeekFunctions> getStandardFunctions() {
+		return functions;
+	}
+
 	/*
 	 * Lancer la fonction
 	 */
