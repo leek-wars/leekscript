@@ -184,7 +184,8 @@ public class NumberClass {
 		return Long.bitCount(x);
 	}
 
-	public static long bitCount(AI ai, BigIntegerValue x) {
+	public static long bitCount(AI ai, BigIntegerValue x) throws LeekRunException {
+		ai.ops(1 + x.bitLength() / 256); // O(n) sur le nombre de mots, comme xor
 		return x.bitCount();
 	}
 
@@ -192,7 +193,8 @@ public class NumberClass {
 		return Long.numberOfTrailingZeros(x);
 	}
 
-	public static long trailingZeros(AI ai, BigIntegerValue x) {
+	public static long trailingZeros(AI ai, BigIntegerValue x) throws LeekRunException {
+		ai.ops(1 + x.bitLength() / 512); // scan des mots de poids faible, comme or
 		return x.getLowestSetBit();
 	}
 
@@ -218,6 +220,7 @@ public class NumberClass {
 	}
 
 	public static BigIntegerValue setBit(AI ai, BigIntegerValue x, long pos, boolean val) throws LeekRunException {
+		ai.ops(1 + x.bitLength() / 128); // reconstruit le tableau de mots, comme and
 		return x.setBit((int) pos, val);
 	}
 

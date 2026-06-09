@@ -81,8 +81,8 @@ public class LeekFunctions {
 		method("randReal", "Number", 30, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
 		method("hypot", "Number", 187, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
 		method("signum", "Number", 2, true, new CallableVersion[] {
-			new CallableVersion(Type.INT, new Type[] { Type.INT }),
 			new CallableVersion(Type.INT, new Type[] { Type.REAL }),
+			new CallableVersion(Type.INT, new Type[] { Type.INT }),
 			new CallableVersion(Type.INT, new Type[] { Type.BIG_INT }),
 		});
 		method("bitCount", "Number", 1, true, new CallableVersion[] {
