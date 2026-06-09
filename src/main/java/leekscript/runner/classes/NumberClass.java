@@ -168,16 +168,73 @@ public class NumberClass {
 		return Math.hypot(x, y);
 	}
 
+	public static long signum(AI ai, long x) {
+		return Long.signum(x);
+	}
+
 	public static long signum(AI ai, double x) {
 		return (long) Math.signum(x);
+	}
+
+	public static long signum(AI ai, BigIntegerValue x) {
+		return x.signum();
 	}
 
 	public static long bitCount(AI ai, long x) {
 		return Long.bitCount(x);
 	}
 
+	public static long bitCount(AI ai, BigIntegerValue x) {
+		return x.bitCount();
+	}
+
 	public static long trailingZeros(AI ai, long x) {
 		return Long.numberOfTrailingZeros(x);
+	}
+
+	public static long trailingZeros(AI ai, BigIntegerValue x) {
+		return x.getLowestSetBit();
+	}
+
+	public static long bitLength(AI ai, long x) {
+		return 64 - Long.numberOfLeadingZeros(x);
+	}
+
+	public static long bitLength(AI ai, BigIntegerValue x) {
+		return x.bitLength();
+	}
+
+	// setBit/testBit sur long : `1L << pos` (et non `1 << pos`) pour ne pas déborder à pos >= 31.
+	public static long setBit(AI ai, long x, long pos, boolean val) {
+		return val ? (x | (1L << pos)) : (x & ~(1L << pos));
+	}
+
+	public static long setBit(AI ai, long x, long pos, long val) {
+		return setBit(ai, x, pos, val != 0);
+	}
+
+	public static long setBit(AI ai, long x, long pos) {
+		return setBit(ai, x, pos, true);
+	}
+
+	public static BigIntegerValue setBit(AI ai, BigIntegerValue x, long pos, boolean val) throws LeekRunException {
+		return x.setBit((int) pos, val);
+	}
+
+	public static BigIntegerValue setBit(AI ai, BigIntegerValue x, long pos, long val) throws LeekRunException {
+		return x.setBit((int) pos, val != 0);
+	}
+
+	public static BigIntegerValue setBit(AI ai, BigIntegerValue x, long pos) throws LeekRunException {
+		return x.setBit((int) pos, true);
+	}
+
+	public static boolean testBit(AI ai, long x, long pos) {
+		return (x & (1L << pos)) != 0;
+	}
+
+	public static boolean testBit(AI ai, BigIntegerValue x, long pos) {
+		return x.testBit((int) pos);
 	}
 
 	public static long leadingZeros(AI ai, long x) {

@@ -194,6 +194,43 @@ public class TestBigInt extends TestCommon {
 	}
 
 	@Test
+	public void testBitFunctions() throws Exception {
+		section("Fonctions de bits big_integer (héritées de Batary)");
+		// bitLength
+		code_v4_("return bitLength(255L)").equals("8");
+		code_v4_("return bitLength(5L)").equals("3");
+		code_v4_("return bitLength(1L << 100)").equals("101");
+		// bitCount
+		code_v4_("return bitCount(255L)").equals("8");
+		code_v4_("return bitCount((1L << 100) - 1L)").equals("100");
+		// trailingZeros (lowest set bit)
+		code_v4_("return trailingZeros(8L)").equals("3");
+		code_v4_("return trailingZeros(1L << 100)").equals("100");
+		// signum
+		code_v4_("return signum(-5L)").equals("-1");
+		code_v4_("return signum(0L)").equals("0");
+		code_v4_("return signum(5L)").equals("1");
+		// setBit -> big_integer
+		code_v4_("return setBit(0L, 100) == 1L << 100").equals("true");
+		code_v4_("var x = setBit(0L, 100) return x instanceof BigInteger").equals("true");
+		code_v4_("return setBit(5L, 0, false)").equals("4");
+		code_v4_("return setBit(0L, 1, true)").equals("2");
+		// testBit
+		code_v4_("return testBit(5L, 0)").equals("true");
+		code_v4_("return testBit(5L, 1)").equals("false");
+		code_v4_("return testBit(1L << 100, 100)").equals("true");
+		code_v4_("return testBit(1L << 100, 99)").equals("false");
+		// versions integer (LS4) — nouvellement disponibles, comportement standard
+		code_v4_("return bitLength(255)").equals("8");
+		code_v4_("return bitCount(7)").equals("3");
+		code_v4_("return signum(-5)").equals("-1");
+		code_v4_("return testBit(5, 0)").equals("true");
+		code_v4_("return setBit(0, 3)").equals("8");
+		// setBit integer au-delà de 31 bits (1L << pos, sinon débordement int)
+		code_v4_("return setBit(0, 40)").equals("1099511627776");
+	}
+
+	@Test
 	public void testIncrementDecrement() throws Exception {
 		section("Increment / decrement (#bug trouvé : ne compilait pas)");
 		code_v4_("big_integer a = 5L a++ return a").equals("6");

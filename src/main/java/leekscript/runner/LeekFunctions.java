@@ -80,9 +80,35 @@ public class LeekFunctions {
 		method("randFloat", "Number", 30, true, Type.REAL, new Type[] { Type.REAL, Type.REAL }).setMaxVersion(3, "randReal");
 		method("randReal", "Number", 30, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
 		method("hypot", "Number", 187, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
-		method("signum", "Number", 2, true, Type.INT, new Type[] { Type.REAL });
-		method("bitCount", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
-		method("trailingZeros", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
+		method("signum", "Number", 2, true, new CallableVersion[] {
+			new CallableVersion(Type.INT, new Type[] { Type.INT }),
+			new CallableVersion(Type.INT, new Type[] { Type.REAL }),
+			new CallableVersion(Type.INT, new Type[] { Type.BIG_INT }),
+		});
+		method("bitCount", "Number", 1, true, new CallableVersion[] {
+			new CallableVersion(Type.INT, new Type[] { Type.INT }),
+			new CallableVersion(Type.INT, new Type[] { Type.BIG_INT }),
+		}).setMinVersion(4);
+		method("trailingZeros", "Number", 1, true, new CallableVersion[] {
+			new CallableVersion(Type.INT, new Type[] { Type.INT }),
+			new CallableVersion(Type.INT, new Type[] { Type.BIG_INT }),
+		}).setMinVersion(4);
+		method("bitLength", "Number", 1, true, new CallableVersion[] {
+			new CallableVersion(Type.INT, new Type[] { Type.INT }),
+			new CallableVersion(Type.INT, new Type[] { Type.BIG_INT }),
+		}).setMinVersion(4);
+		method("setBit", "Number", 1, true, new CallableVersion[] {
+			new CallableVersion(Type.INT, new Type[] { Type.INT, Type.INT }),
+			new CallableVersion(Type.INT, new Type[] { Type.INT, Type.INT, Type.INT }),
+			new CallableVersion(Type.INT, new Type[] { Type.INT, Type.INT, Type.BOOL }),
+			new CallableVersion(Type.BIG_INT, new Type[] { Type.BIG_INT, Type.INT }),
+			new CallableVersion(Type.BIG_INT, new Type[] { Type.BIG_INT, Type.INT, Type.INT }),
+			new CallableVersion(Type.BIG_INT, new Type[] { Type.BIG_INT, Type.INT, Type.BOOL }),
+		}).setMinVersion(4);
+		method("testBit", "Number", 1, true, new CallableVersion[] {
+			new CallableVersion(Type.BOOL, new Type[] { Type.INT, Type.INT }),
+			new CallableVersion(Type.BOOL, new Type[] { Type.BIG_INT, Type.INT }),
+		}).setMinVersion(4);
 		method("leadingZeros", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
 		method("bitReverse", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
 		method("byteReverse", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
