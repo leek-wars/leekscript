@@ -167,9 +167,11 @@ public class LeekFunctionCall extends Expression {
 
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
 				// super.field()
-				// writer.addCode("u_this.callSuperMethod(this, \"" + field + "_" + mParameters.size() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
-
-				writer.addCode("super.u_" + field + "(");
+				// Super qualifié (u_Class.super) : dans une fonction anonyme, le code est
+				// généré dans une classe interne Java (FunctionLeekValue) où le `super` nu
+				// désignerait la classe de base de la closure et non le parent de la classe
+				// utilisateur (issue #4070).
+				writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".super.u_" + field + "(");
 				addComma = false;
 
 			} else if (object instanceof LeekVariable v && v.getVariableType() == VariableType.CLASS) {
@@ -244,7 +246,9 @@ public class LeekFunctionCall extends Expression {
 			// writer.addCode("u_" + variable.getClassDeclaration().getParent().getName());
 			// writer.addCode(".callConstructor(u_this");
 
-			writer.addCode("super.init(");
+			// Qualifié pour la même raison que super.method() : valable aussi depuis
+			// une fonction anonyme (classe interne Java) du constructeur (issue #4070).
+			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".super.init(");
 			addComma = false;
 
 		} else if (mExpression instanceof LeekVariable v && v.getVariableType() == VariableType.METHOD) {

@@ -439,6 +439,13 @@ public class TestObject extends TestCommon {
 		// et fonctionnel, pas de régression (super.u_keys() existe sur NativeObjectLeekValue).
 		code_v2_("class A { x = 1 } class B extends A { m() { return super.keys() } } return new B().m()").equals("[\"x\"]");
 
+		// Issue #4070: super.method() dans une fonction anonyme générait un `super` Java
+		// non qualifié qui désignait la classe de base de la closure (FunctionLeekValue)
+		// au lieu du parent de la classe utilisateur → erreur javac "cannot find symbol".
+		code_v2_("class A { foo() { return 'ok' } } class B extends A { m() { var f = function() { return super.foo() } return f() } } return new B().m()").equals("\"ok\"");
+		code_v2_("class A { foo() { return 7 } } class B extends A { m() { var f = function() { var g = function() { return super.foo() } return g() } return f() } } return new B().m()").equals("7");
+		code_v2_("class A { x constructor() { x = 1 } } class B extends A { constructor() { var f = function() { super() } f() } } return new B().x").equals("1");
+
 		// Issue #3159: StackOverflowError quand parent et fille ont une valeur
 		// par défaut sur leur constructeur. Le `return init(...)` du fall-through
 		// dispatchait virtuellement vers la sous-classe, créant une boucle via
