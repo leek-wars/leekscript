@@ -323,12 +323,23 @@ public class LeekArrayAccess extends Expression {
 	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
-		if (expr.getType() != Type.ANY && mainblock.isStrict()) {
+		// La valeur renvoyée par .set()/.put() est la valeur *coercée* stockée dans le
+		// conteneur : son type est celui de l'élément, pas celui de l'expression de droite.
+		// Caster le résultat vers expr.getType() génère du Java invalide quand les deux
+		// diffèrent (ex : une expression real stockée dans un Map<integer, integer> :
+		// MapLeekValue.set renvoie un Long, et (Double) Long ne compile pas).
+		Type castType = expr.getType();
+		if (mTabular.getType() instanceof ArrayType at) {
+			castType = at.element();
+		} else if (mTabular.getType() instanceof MapType mt) {
+			castType = mt.element();
+		}
+		if (castType != Type.ANY && mainblock.isStrict()) {
 			if (parenthesis) writer.addCode("(");
-			if (expr.getType().isPrimitive()) {
-				writer.addCode("(" + expr.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+			if (castType.isPrimitive()) {
+				writer.addCode("(" + castType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
-			writer.addCode("(" + expr.getType().getJavaName(mainblock.getVersion()) + ") ");
+			writer.addCode("(" + castType.getJavaName(mainblock.getVersion()) + ") ");
 		}
 		if (mTabular.getType() instanceof ArrayType at) {
 			mTabular.writeJavaCode(mainblock, writer, true);
@@ -361,7 +372,7 @@ public class LeekArrayAccess extends Expression {
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 		}
-		if (expr.getType() != Type.ANY && mainblock.isStrict()) {
+		if (castType != Type.ANY && mainblock.isStrict()) {
 			if (parenthesis) writer.addCode(")");
 		}
 	}

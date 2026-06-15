@@ -34,6 +34,20 @@ public class TestEdgeCases extends TestCommon {
 	}
 
 	@Test
+	public void testAssignRealIntoIntMap() throws Exception {
+		section("Assigning a real expression into an integer map (operations enabled)");
+		// Production error #11227756: `gain[puce] = effet[2] * (1 + getWisdom() / 100)`
+		// in strict v4. The map value is coerced to long, but the result of .set() was
+		// cast to the RHS type (Double) -> javac "Long cannot be converted to Double".
+		// The assignment is wrapped in ops(...), so the cast is always emitted.
+		code_strict_v4_("Map<integer, integer> gain = [:]; gain[1] = 6 * (1 + 50 / 100); return gain[1]").equals("9");
+		code_strict_v4_("Map<integer, integer> gain = [:]; gain[1] = 4.0; return gain[1]").equals("4");
+		// Assignment used as a value (not just a statement): the cast must still match the
+		// element type, not the RHS type.
+		code_strict_v4_("Map<integer, integer> gain = [:]; integer v = (gain[1] = 6 * 1.5); return v").equals("9");
+	}
+
+	@Test
 	public void testDeep_recursion_with_temporary_arrays() throws Exception {
 		section("Deep recursion with temporary arrays");
 		// Simple recursion creating arrays at each level
