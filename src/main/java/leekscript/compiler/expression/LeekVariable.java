@@ -902,7 +902,11 @@ public class LeekVariable extends Expression {
 			if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = (" + resultType.getJavaName(mainblock.getVersion()) + ") mul(u_" + token.getWord() + ", ");
+				writer.addCode("u_" + token.getWord() + " = ");
+				if (this.variableType != Type.ANY) {
+					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("mul(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -950,7 +954,11 @@ public class LeekVariable extends Expression {
 				writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = (" + resultType.getJavaName(mainblock.getVersion()) + ") pow(u_" + token.getWord() + ", ");
+				writer.addCode("u_" + token.getWord() + " = ");
+				if (this.variableType != Type.ANY) {
+					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("pow(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");

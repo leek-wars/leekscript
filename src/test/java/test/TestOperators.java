@@ -313,4 +313,20 @@ public class TestOperators extends TestCommon {
 		System.out.println(results);
 	}
 
+	@Test
+	public void testCompoundAssign_typedLocal_nonPrimitiveRHS() throws Exception {
+		section("Typed local compound operators with any-typed RHS");
+		// Regression: `*=` / `**=` on a typed local with a non-primitive RHS
+		// produced `u_x = (Number) mul(u_x, ...)` which Java rejects when u_x is long.
+		code_v2_("function f() { return 5; } integer x = 10; x += f(); return x;").equals("15");
+		code_v2_("function f() { return 5; } integer x = 10; x -= f(); return x;").equals("5");
+		code_v2_("function f() { return 5; } integer x = 10; x *= f(); return x;").equals("50");
+		code_v2_("function f() { return 5; } real x = 10; x /= f(); return x;").equals("2.0");
+		code_v2_("function f() { return 5; } integer x = 10; x %= f(); return x;").equals("0");
+		code_v2_("function f() { return 5; } integer x = 2; x **= f(); return x;").equals("32");
+		// Compound `Number` (integer|real) RHS via map value
+		code_v2_("global cfg = ['k': 2, 'r': 1.5]; integer x = 10; x *= cfg['k']; return x;").equals("20");
+		code_v2_("global cfg = ['k': 2, 'r': 1.5]; integer x = 2; x **= cfg['k']; return x;").equals("4");
+	}
+
 }
