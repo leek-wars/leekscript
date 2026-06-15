@@ -45,6 +45,8 @@ public class TestEdgeCases extends TestCommon {
 		// Assignment used as a value (not just a statement): the cast must still match the
 		// element type, not the RHS type.
 		code_strict_v4_("Map<integer, integer> gain = [:]; integer v = (gain[1] = 6 * 1.5); return v").equals("9");
+		// Same bug on the array branch: real expression coerced into an integer array.
+		code_strict_v4_("Array<integer> a = [0]; a[0] = 3 * (1 + 50 / 100); return a[0]").equals("4");
 	}
 
 	@Test
