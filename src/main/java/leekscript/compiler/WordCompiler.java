@@ -2,8 +2,11 @@ package leekscript.compiler;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import leekscript.common.Annotation;
 import leekscript.common.AccessLevel;
@@ -65,6 +68,14 @@ public class WordCompiler {
 	private AbstractLeekBlock mCurrentFunction;
 	private ClassDeclarationInstruction mCurrentClass;
 	private LexicalParserTokenStream mTokens;
+
+	// Purity tracking for @pure verification. Side effects and call edges are
+	// recorded per function during analyze(), then resolved transitively after
+	// the whole program is analyzed (a callee may be analyzed after its caller).
+	private final Set<AbstractLeekBlock> mImpureFunctions = new HashSet<>();
+	private final Map<AbstractLeekBlock, Set<AbstractLeekBlock>> mFunctionCallees = new HashMap<>();
+	private final ArrayList<PureCall> mDeferredPureCalls = new ArrayList<>();
+	private record PureCall(AbstractLeekBlock callee, Location location) {}
 	private int mLine;
 	private AIFile mAI = null;
 	private final int version;
@@ -356,6 +367,7 @@ public class WordCompiler {
 		setCurrentFunction(mMain);
 		mMain.preAnalyze(this);
 		mMain.analyze(this);
+		resolvePurity();
 	}
 
 	private void compileWord() throws LeekCompilerException {
@@ -2469,6 +2481,71 @@ public class WordCompiler {
 
 	public AbstractLeekBlock getCurrentFunction() {
 		return mCurrentFunction;
+	}
+
+	/**
+	 * Returns the function/method currently being analyzed if it is annotated
+	 * {@code @pure}, otherwise null. Used to verify that the body of a {@code @pure}
+	 * function does not perform side effects. Nested anonymous functions reset the
+	 * current function, so side effects inside a lambda defined within a {@code @pure}
+	 * function are not attributed to it.
+	 */
+	public AbstractLeekBlock getCurrentPureFunction() {
+		if (mCurrentFunction instanceof FunctionBlock fb && fb.hasAnnotation(Annotation.PURE)) return fb;
+		if (mCurrentFunction instanceof ClassMethodBlock cm && cm.hasAnnotation(Annotation.PURE)) return cm;
+		return null;
+	}
+
+	/** Marks the function currently being analyzed as having a direct side effect. */
+	public void recordSideEffect() {
+		mImpureFunctions.add(mCurrentFunction);
+	}
+
+	/** Records that the function currently being analyzed calls {@code callee}. */
+	public void recordCallee(AbstractLeekBlock callee) {
+		mFunctionCallees.computeIfAbsent(mCurrentFunction, k -> new HashSet<>()).add(callee);
+	}
+
+	/**
+	 * Defers a purity check for a call made from a {@code @pure} function: after the
+	 * whole program is analyzed, {@code callee} is checked for transitive purity and
+	 * a warning is emitted at {@code location} if it turns out to be impure.
+	 */
+	public void recordPureCall(AbstractLeekBlock callee, Location location) {
+		mDeferredPureCalls.add(new PureCall(callee, location));
+	}
+
+	/**
+	 * Resolves deferred {@code @pure} call checks once the full call graph is known.
+	 * A call from a pure function is only flagged when the callee is transitively
+	 * impure, so calling an unannotated-but-actually-pure function is allowed.
+	 */
+	private void resolvePurity() throws LeekCompilerException {
+		if (mDeferredPureCalls.isEmpty()) return;
+		var memo = new HashMap<AbstractLeekBlock, Boolean>();
+		for (var call : mDeferredPureCalls) {
+			if (isTransitivelyImpure(call.callee(), memo, new HashSet<>())) {
+				var name = call.callee() instanceof FunctionBlock fb ? fb.getName() : "?";
+				PurityChecker.reportNotPure(this, call.location(), name);
+			}
+		}
+	}
+
+	private boolean isTransitivelyImpure(AbstractLeekBlock f, Map<AbstractLeekBlock, Boolean> memo, Set<AbstractLeekBlock> visiting) {
+		var cached = memo.get(f);
+		if (cached != null) return cached;
+		if (mImpureFunctions.contains(f)) return true; // direct side effect
+		if (!visiting.add(f)) return false; // recursion cycle: assume pure
+		boolean impure = false;
+		var callees = mFunctionCallees.get(f);
+		if (callees != null) {
+			for (var callee : callees) {
+				if (isTransitivelyImpure(callee, memo, visiting)) { impure = true; break; }
+			}
+		}
+		visiting.remove(f);
+		memo.put(f, impure);
+		return impure;
 	}
 
 	public void addError(AnalyzeError analyzeError) throws LeekCompilerException {

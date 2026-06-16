@@ -10,6 +10,7 @@ import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.PurityChecker;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.ClassMethodBlock;
@@ -718,6 +719,24 @@ public class LeekFunctionCall extends Expression {
 					"(" + String.join(", ", types.stream().map(t -> t.toString()).collect(Collectors.toList())) + ")",
 					"(" + String.join(", ", functionType.getArguments().stream().map(t -> t.toString()).collect(Collectors.toList())) + ")",
 				}));
+			}
+		}
+
+		// @pure : record side effects and call edges for purity analysis. Calling a
+		// side-effecting builtin is a direct side effect; calling another user
+		// function is resolved transitively after the whole program is analyzed, so
+		// an unannotated-but-actually-pure callee does not make the caller impure.
+		if (system_function != null) {
+			if (PurityChecker.isImpureSystemFunction(system_function.getName())) {
+				compiler.recordSideEffect();
+				if (compiler.getCurrentPureFunction() != null) {
+					PurityChecker.reportNotPure(compiler, getLocation(), system_function.getName());
+				}
+			}
+		} else if (resolvedFunction != null) {
+			compiler.recordCallee(resolvedFunction);
+			if (compiler.getCurrentPureFunction() != null) {
+				compiler.recordPureCall(resolvedFunction, getLocation());
 			}
 		}
 	}
