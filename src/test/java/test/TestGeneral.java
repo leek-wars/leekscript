@@ -297,6 +297,16 @@ public class TestGeneral extends TestCommon {
 		code_strict_v4_("function even(n) { if (n == 0) return true return odd(n - 1) } function odd(n) { if (n == 0) return false return even(n - 1) } return even(4)").noWarning();
 		// Function called from a nested block inside another function
 		code_strict_v4_("function helper() -> integer { return 1 } function f() -> integer { integer r = 0 for (var i = 0; i < 3; i++) { r += helper() } return r } return f()").noWarning();
+		// Entry-point functions (invoked by the host runtime, e.g. hooks) are never
+		// flagged as unused even though nothing in the script calls them (issue #4165).
+		leekscript.runner.LeekFunctions.setEntryPointFunctions(java.util.Set.of("beforeFight", "afterFight"));
+		try {
+			code_strict_v4_("function afterFight() { return 0 } return 0").noWarning();
+			// A regular unused function is still flagged when entry points are registered.
+			code_strict_v4_("function f() { return 0 } return 0").warning(Error.UNUSED_FUNCTION);
+		} finally {
+			leekscript.runner.LeekFunctions.setEntryPointFunctions(null);
+		}
 	}
 
 	@Test

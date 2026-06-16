@@ -409,6 +409,14 @@ public class LeekFunctions {
 
 	private static String extraFunctionsImport;
 
+	/**
+	 * Top-level user functions that the host runtime invokes itself (e.g. lifecycle
+	 * hooks called by reflection), so nothing in the script calls them. They must not
+	 * be reported as unused in strict mode. Populated by the embedder, like
+	 * {@link #setExtraFunctions}.
+	 */
+	private static java.util.Set<String> entryPointFunctions = java.util.Collections.emptySet();
+
 	private final String name;
 	private int mArguments = Integer.MIN_VALUE;
 	private int mArgumentsMin = Integer.MAX_VALUE;
@@ -455,6 +463,14 @@ public class LeekFunctions {
 	public static void setExtraFunctions(Map<String, LeekFunctions> extraFunctions, String extraFunctionsImport) {
 		LeekFunctions.extraFunctions = extraFunctions;
 		LeekFunctions.extraFunctionsImport = extraFunctionsImport;
+	}
+
+	public static void setEntryPointFunctions(java.util.Set<String> names) {
+		LeekFunctions.entryPointFunctions = names == null ? java.util.Collections.emptySet() : names;
+	}
+
+	public static boolean isEntryPointFunction(String name) {
+		return entryPointFunctions.contains(name);
 	}
 
 	public static boolean isExtraFunction(String name) {

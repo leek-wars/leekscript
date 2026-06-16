@@ -11,6 +11,7 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable;
+import leekscript.runner.LeekFunctions;
 import leekscript.compiler.instruction.LeekExpressionInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.common.Annotation;
@@ -301,7 +302,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 				var vt = v.getVariableType();
 				if (vt == LeekVariable.VariableType.LOCAL || vt == LeekVariable.VariableType.ARGUMENT || vt == LeekVariable.VariableType.GLOBAL) {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.UNUSED_VARIABLE, new String[] { v.getName() }));
-				} else if (vt == LeekVariable.VariableType.FUNCTION) {
+				} else if (vt == LeekVariable.VariableType.FUNCTION && !LeekFunctions.isEntryPointFunction(v.getName())) {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.UNUSED_FUNCTION, new String[] { v.getName() }));
 				}
 			}
