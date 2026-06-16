@@ -457,6 +457,9 @@ public class TestCommon {
 	public Case code_strict_v4_(String code) {
 		return new Case(code, true, 4, LeekScript.LATEST_VERSION, true);
 	}
+	public Case code_strict_v4(String code) {
+		return new Case(code, true, 4, 4, true);
+	}
 	public Case code_v5(String code) {
 		return new Case(code, true, 5, 5);
 	}

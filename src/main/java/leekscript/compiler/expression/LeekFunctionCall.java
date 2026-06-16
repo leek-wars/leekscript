@@ -33,6 +33,7 @@ import leekscript.common.ClassValueType;
 import leekscript.common.CompoundType;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
+import leekscript.common.LanguageFeature;
 import leekscript.common.MapType;
 import leekscript.common.SetType;
 import leekscript.common.Type;
@@ -451,6 +452,13 @@ public class LeekFunctionCall extends Expression {
 			writer.addCode(".execute(");
 			addComma = false;
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SYSTEM_FUNCTION) {
+			// Fonction système générique dont le retour a été inféré vers un type
+			// concret : la méthode Java est effacée (retourne Object / un type plus
+			// général, ex. ArrayLeekValue.arrayMax -> Object). On caste vers le type
+			// inféré pour que le code appelant reste bien typé.
+			if (systemReturnContainsTypeVariable() && this.type != Type.ANY && this.type != Type.VOID) {
+				writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+			}
 			if (unsafe || mainblock.getVersion() <= 3) {
 				if (callable_versions != null) {
 					var key = writer.generateGenericFunction(callable_versions);
@@ -1075,9 +1083,20 @@ public class LeekFunctionCall extends Expression {
 			Map<TypeVariable, Type> bindings = null;
 			if (version.isGeneric()) {
 				bindings = new HashMap<>();
-				for (int i = 0; i < mParameters.size(); ++i) {
-					inferTypeVariables(version.arguments[i], mParameters.get(i).getType(), bindings);
+				// En v5, on infère les variables de type depuis les arguments effectifs.
+				if (LanguageFeature.GENERICS.enabledIn(compiler.getVersion())) {
+					for (int i = 0; i < mParameters.size(); ++i) {
+						inferTypeVariables(version.arguments[i], mParameters.get(i).getType(), bindings);
+					}
 				}
+				// Toute variable non liée (non inférée, ou générics désactivés en v1-4)
+				// est effacée vers sa borne (ANY) : un `T` brut ne doit jamais fuir dans
+				// le type résultat (il casserait l'assignabilité). Ainsi v1-4 voit la
+				// signature exactement comme l'ancienne version non générique.
+				var vars = new java.util.HashSet<TypeVariable>();
+				for (var arg : version.arguments) collectTypeVariables(arg, vars);
+				collectTypeVariables(version.return_type, vars);
+				for (var v : vars) bindings.putIfAbsent(v, Type.ANY);
 			}
 			int distance = 0;
 			var version_errors = new ArrayList<AnalyzeError>();
@@ -1157,16 +1176,47 @@ public class LeekFunctionCall extends Expression {
 			inferTypeVariables(formal.key(), actual.key(), bindings);
 			inferTypeVariables(formal.element(), actual.element(), bindings);
 		} else if (formal instanceof FunctionType formalFn && actual instanceof FunctionType actualFn) {
+			// Le type de retour d'un callback est covariant : on en infère R. Les types
+			// de paramètres sont contravariants — T *entre* dans le callback (il vient
+			// d'ailleurs, ex. l'élément du tableau), on ne l'infère donc PAS depuis eux,
+			// ce qui polluerait T avec le `any` d'un lambda non typé. Ex :
+			// arrayMap(Array<T>, Function<(T,int,Array<T>) => R>) -> Array<R> : T se lie
+			// depuis le tableau, R depuis le retour du callback.
 			inferTypeVariables(formalFn.returnType(), actualFn.returnType(), bindings);
-			int n = Math.min(formalFn.getArguments().size(), actualFn.getArguments().size());
-			for (int i = 0; i < n; ++i) {
-				inferTypeVariables(formalFn.getArguments().get(i), actualFn.getArguments().get(i), bindings);
-			}
 		} else if (formal instanceof CompoundType formalCompound) {
 			// Formal like `T?` (T | null) : infer against each branch.
 			for (var t : formalCompound.getTypes()) {
 				inferTypeVariables(t, actual, bindings);
 			}
+		}
+	}
+
+	/**
+	 * True if the selected system-function version(s) declare a generic return type
+	 * (the Java method is erased, so the call result needs a cast to the inferred type).
+	 */
+	private boolean systemReturnContainsTypeVariable() {
+		if (callable_versions == null) return false;
+		for (var version : callable_versions) {
+			if (version.return_type.containsTypeVariable()) return true;
+		}
+		return false;
+	}
+
+	/** Collects every {@link TypeVariable} occurring in a (possibly nested) type. */
+	private void collectTypeVariables(Type type, java.util.Set<TypeVariable> out) {
+		if (type instanceof TypeVariable variable) {
+			out.add(variable);
+		} else if (type instanceof ArrayType || type instanceof SetType) {
+			collectTypeVariables(type.element(), out);
+		} else if (type instanceof MapType) {
+			collectTypeVariables(type.key(), out);
+			collectTypeVariables(type.element(), out);
+		} else if (type instanceof FunctionType function) {
+			collectTypeVariables(function.returnType(), out);
+			for (var a : function.getArguments()) collectTypeVariables(a, out);
+		} else if (type instanceof CompoundType compound) {
+			for (var t : compound.getTypes()) collectTypeVariables(t, out);
 		}
 	}
 

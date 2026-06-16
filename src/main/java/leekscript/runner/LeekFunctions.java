@@ -5,6 +5,7 @@ import java.util.Map;
 
 import leekscript.common.FunctionType;
 import leekscript.common.Type;
+import leekscript.common.TypeVariable;
 import leekscript.compiler.LeekScript;
 
 public class LeekFunctions {
@@ -188,8 +189,8 @@ public class LeekFunctions {
 		});
 		method("inArray", "Array", Type.BOOL, new Type[] { Type.ARRAY, Type.ANY });
 		method("reverse", "Array", Type.VOID, new Type[] { Type.ARRAY });
-		method("arrayMin", "Array", Type.ANY, new Type[] { Type.ARRAY });
-		method("arrayMax", "Array", Type.ANY, new Type[] { Type.ARRAY });
+		{ var t = new TypeVariable("T"); method("arrayMin", "Array", t, new Type[] { Type.array(t) }); }
+		{ var t = new TypeVariable("T"); method("arrayMax", "Array", t, new Type[] { Type.array(t) }); }
 		method("sum", "Array", Type.REAL, new Type[] { Type.ARRAY });
 		method("average", "Array", Type.REAL, new Type[] { Type.ARRAY });
 		method("fill", "Array", new CallableVersion[] {
@@ -205,8 +206,13 @@ public class LeekFunctions {
 		}).setMinVersion(4);
 		method("pushAll", "Array", Type.VOID, new Type[] { Type.ARRAY, Type.ARRAY });
 		method("assocReverse", "Array", Type.VOID, new Type[] { Type.ARRAY }).setMaxVersion(3);
-		method("arrayMap", "Array", Type.ARRAY, new Type[] { Type.ARRAY, new FunctionType(Type.ANY, 0, Type.ANY, Type.INT, Type.ARRAY) });
-		method("arrayFilter", "Array", Type.ARRAY, new Type[] { Type.ARRAY, new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY ) });
+		// arrayMap(Array, (any, int, Array) => R) -> Array<R> : R se lie depuis le retour
+		// du callback. Les params du callback restent `any` : LeekScript ne type pas
+		// contextuellement les lambdas, et y substituer un type le rendrait incompatible
+		// avec un lambda non typé (params vérifiés de façon covariante).
+		{ var r = new TypeVariable("R"); method("arrayMap", "Array", Type.array(r), new Type[] { Type.ARRAY, new FunctionType(r, 0, Type.ANY, Type.INT, Type.ARRAY) }); }
+		// arrayFilter(Array<T>, (any, int, Array) => bool) -> Array<T> : type d'élément préservé.
+		{ var t = new TypeVariable("T"); method("arrayFilter", "Array", Type.array(t), new Type[] { Type.array(t), new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY) }); }
 		method("arrayFind", "Array", Type.ANY, new Type[] { Type.ARRAY, new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY) }).setMinVersion(4);
 		method("arrayFlatten", "Array", new CallableVersion[] {
 			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, Type.INT }),
@@ -233,8 +239,8 @@ public class LeekFunctions {
 		}).setMinVersion(4);
 		method("arrayFrequencies", "Array", Type.MAP, new Type[] { Type.ARRAY }).setMinVersion(4);
 		method("arrayChunk", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.INT }).setMinVersion(4);
-		method("arrayUnique", "Array", Type.ARRAY, new Type[] { Type.ARRAY }).setMinVersion(4);
-		method("arrayRotate", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.INT }).setMinVersion(4);
+		{ var t = new TypeVariable("T"); method("arrayUnique", "Array", Type.array(t), new Type[] { Type.array(t) }).setMinVersion(4); }
+		{ var t = new TypeVariable("T"); method("arrayRotate", "Array", Type.array(t), new Type[] { Type.array(t), Type.INT }).setMinVersion(4); }
 		method("arrayClear", "Array", 1, Type.ARRAY, new Type[] { Type.ARRAY }).setMinVersion(4);
 		method("arrayToSet", "Array", Type.SET, new Type[] { Type.ARRAY });
 

@@ -67,6 +67,40 @@ public class TestGenerics extends TestCommon {
 	}
 
 	@Test
+	public void genericSystemFunctions() throws Exception {
+		section("Generics / system functions");
+		// arrayUnique(Array<T>) -> Array<T> : the element type is preserved.
+		code_v5("var a = arrayUnique([1, 1, 2, 3, 3]) return a").equals("[1, 2, 3]");
+		// arrayMax(Array<T>) -> T : the inferred return type is the element type, so
+		// it can be assigned to a concrete typed variable with no warning (proves the
+		// erased Object return is cast back to the inferred type at the call site).
+		code_strict_v5_("integer m = arrayMax([3, 1, 4, 1, 5]) return m").noWarning();
+		code_v5("return arrayMax([3, 1, 4, 1, 5]) + 1").equals("6");
+		code_strict_v5_("string s = arrayMax(['a', 'c', 'b']) return s").noWarning();
+		// v4 must keep the old loose typing (no generic inference): arrayMax returns
+		// any, so assigning to integer is an unsafe downcast (warning), not silent.
+		code_strict_v4("integer m = arrayMax([3, 1, 4]) return m").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+	}
+
+	@Test
+	public void genericHigherOrderSystemFunctions() throws Exception {
+		section("Generics / higher-order system functions");
+		// Runtime behaviour is unchanged.
+		code_v5("return arrayMap([1, 2, 3], function(v) { return v * 2 })").equals("[2, 4, 6]");
+		code_v5("return arrayFilter([1, 2, 3, 4], function(v) { return v > 2 })").equals("[3, 4]");
+		// arrayFilter(Array<T>, predicate) -> Array<T> : the element type comes ONLY
+		// from the array, not from the (untyped) callback parameter. This proves the
+		// contravariant inference fix — T stays integer, not integer|any, so the
+		// result is assignable to Array<integer> with no warning.
+		// arrayFilter(Array<T>, predicate) -> Array<T> : the element type comes from the
+		// array, so the result is assignable to Array<integer> with no warning (typed
+		// predicate so its bool return matches cleanly).
+		code_strict_v5_("function keep(integer n) -> boolean { return n > 2 } Array<integer> a = arrayFilter([1, 2, 3, 4], keep) return a").noWarning();
+		// arrayMap(Array<T>, (T) => R) -> Array<R> : R is taken from a typed callback.
+		code_strict_v5_("function dbl(integer n) -> integer { return n * 2 } Array<integer> a = arrayMap([1, 2, 3], dbl) return a").noWarning();
+	}
+
+	@Test
 	public void onlyAvailableInV5() throws Exception {
 		section("Generics / version gate");
 		// `function name<T>` is a version-5 feature; in v4 the `<` after the name is
