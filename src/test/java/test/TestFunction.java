@@ -604,4 +604,22 @@ public class TestFunction extends TestCommon {
 		code_v1("function inc(integer @x) { x = x + 1 } var a = 5 inc(a) return a").equals("6");
 	}
 
+	@Test
+	public void testCallTernaryFunctionReference() throws Exception {
+		section("Appel d'une référence de fonction issue d'un ternaire (#11229172)");
+		// Appeler `(cond ? f1 : f2)()` passe par le chemin dynamique execute() (le type
+		// est un CompoundType, pas un FunctionType). Le résultat (Object) doit être casté
+		// vers le type de retour concret, sinon le Java généré ne compile pas côté worker
+		// (`Object cannot be converted to SetLeekValue`).
+		code_v2_("function f1() { return <1> } function f2() { return <2> } function g(boolean c) { return (c ? f1 : f2)() } return g(true)").equals("<1>");
+		code_v2_("function f1() { return <1> } function f2() { return <2> } function g(boolean c) { return (c ? f1 : f2)() } return g(false)").equals("<2>");
+		// Idem avec un type de retour tableau.
+		code_v2_("function f1() { return [1] } function f2() { return [2] } function g(boolean c) { return (c ? f1 : f2)() } return g(true)").equals("[1]");
+		// Référence directe (non ternaire) : ne doit pas régresser.
+		code_v2_("function f1() { return <1> } function g() { var h = f1 return h() } return g()").equals("<1>");
+		// Résultat ignoré : le cast ne doit pas produire "not a statement".
+		code_v2_("function f1() { return <1> } function f2() { return <2> } function g(boolean c) { (c ? f1 : f2)() } return g(true)").equals("null");
+		code_v2_("function f1() { return <1> } function f2() { return <2> } (true ? f1 : f2)()").equals("<1>");
+	}
+
 }

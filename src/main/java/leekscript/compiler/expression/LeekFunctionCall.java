@@ -322,6 +322,12 @@ public class LeekFunctionCall extends Expression {
 					addFinalParenthesis = false;
 				}
 			} else {
+				// Appel dynamique (execute → Object) : on caste vers le type de retour
+				// concret pour que le Java généré respecte le type annoncé par getType()
+				// (sinon `Object cannot be converted to SetLeekValue` côté worker).
+				if (this.type != Type.ANY && this.type != Type.VOID && !this.type.isPrimitive()) {
+					writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
 				writer.addCode("execute(");
 				mExpression.writeJavaCode(mainblock, writer, false);
 			}
@@ -332,6 +338,13 @@ public class LeekFunctionCall extends Expression {
 			writer.addCode(", null");
 			convertPrimitive = true;
 		} else {
+			// Idem : appel dynamique via execute (retourne Object), on caste vers le
+			// type de retour concret quand il est connu (ex. ternaire de références de
+			// fonctions `cond ? f1 : f2`, dont le type est un CompoundType non géré par
+			// la branche FunctionType ci-dessus).
+			if (this.type != Type.ANY && this.type != Type.VOID && !this.type.isPrimitive()) {
+				writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+			}
 			writer.addCode("execute(");
 			mExpression.writeJavaCode(mainblock, writer, false);
 		}
