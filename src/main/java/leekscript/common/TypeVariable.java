@@ -16,7 +16,7 @@ public class TypeVariable extends Type {
 
 	private final String varName;
 	/** Upper bound; defaults to {@link Type#ANY} (unbounded). */
-	private Type superType;
+	private final Type superType;
 
 	public TypeVariable(String name) {
 		this(name, Type.ANY);
@@ -30,14 +30,6 @@ public class TypeVariable extends Type {
 
 	public String getName() {
 		return varName;
-	}
-
-	public Type getSuperType() {
-		return superType;
-	}
-
-	public void setSuperType(Type superType) {
-		this.superType = superType;
 	}
 
 	@Override

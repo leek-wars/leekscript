@@ -172,10 +172,6 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		return null;
 	}
 
-	public boolean isGeneric() {
-		return typeParameters != null;
-	}
-
 	@Override
 	public String getCode() {
 		String r = "class " + token.getWord();

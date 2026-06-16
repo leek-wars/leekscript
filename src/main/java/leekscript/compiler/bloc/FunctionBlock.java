@@ -190,10 +190,6 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		return null;
 	}
 
-	public boolean isGeneric() {
-		return typeParameters != null;
-	}
-
 	@Override
 	public boolean hasVariable(String variable) {
 		return mVariables != null && mVariables.containsKey(variable);
