@@ -24,13 +24,20 @@ import leekscript.compiler.instruction.ClassDeclarationInstruction.ClassDeclarat
 import leekscript.runner.CallableVersion;
 import leekscript.runner.LeekFunctions;
 import leekscript.runner.classes.SystemClass;
+import java.util.Map;
+
 import leekscript.common.AccessLevel;
+import leekscript.common.ArrayType;
 import leekscript.common.ClassType;
 import leekscript.common.ClassValueType;
+import leekscript.common.CompoundType;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
+import leekscript.common.MapType;
+import leekscript.common.SetType;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
+import leekscript.common.TypeVariable;
 
 public class LeekFunctionCall extends Expression {
 
@@ -471,11 +478,18 @@ public class LeekFunctionCall extends Expression {
 			}
 
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.FUNCTION) {
+			user_function = mainblock.getUserFunction(((LeekVariable) mExpression).getName());
+			// Fonction générique : la méthode Java est effacée (retour `Object`). On
+			// caste vers le type de retour concret inféré pour que le code appelant
+			// reste bien typé (l'affectation déballe le wrapper si primitif).
+			if (user_function != null && user_function.getType().returnType().containsTypeVariable()
+					&& this.type != Type.ANY && this.type != Type.VOID) {
+				writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+			}
 			writer.addCode("f_");
 			writer.addCode(((LeekVariable) mExpression).getName());
 			writer.addCode("(");
 			addComma = false;
-			user_function = mainblock.getUserFunction(((LeekVariable) mExpression).getName());
 			typedArguments = true;
 		} else if (mExpression.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null) {
 			if (isStaticClassReference(writer)) {
@@ -1047,15 +1061,29 @@ public class LeekFunctionCall extends Expression {
 
 		// Find best version
 		ArrayList<CallableVersion> best_versions = new ArrayList<>();
+		// Type de retour accumulé sur le meilleur palier (compound des versions à
+		// égalité). Accumulé en place pour éviter une liste parallèle à best_versions.
+		Type best_return = Type.VOID;
 		int best_distance = 9999;
 		List<AnalyzeError> errors = null;
 		for (var version : versions) {
 			if (version.arguments.length != mParameters.size()) continue;
+			// Versions génériques : on infère les variables de type à partir des
+			// arguments effectifs, puis on substitue dans les types des paramètres
+			// (pour le check de compatibilité) et dans le type de retour. No-op pour
+			// les versions non génériques (cas dominant), donc zéro impact existant.
+			Map<TypeVariable, Type> bindings = null;
+			if (version.isGeneric()) {
+				bindings = new HashMap<>();
+				for (int i = 0; i < mParameters.size(); ++i) {
+					inferTypeVariables(version.arguments[i], mParameters.get(i).getType(), bindings);
+				}
+			}
 			int distance = 0;
 			var version_errors = new ArrayList<AnalyzeError>();
 			boolean version_unsafe = false;
 			for (int i = 0; i < mParameters.size(); ++i) {
-				var f_type = version.arguments[i];
+				var f_type = bindings != null ? version.arguments[i].substitute(bindings) : version.arguments[i];
 				var a_type = mParameters.get(i).getType();
 				var cast_type = f_type.accepts(a_type);
 				if (cast_type == CastType.INCOMPATIBLE) {
@@ -1083,13 +1111,17 @@ public class LeekFunctionCall extends Expression {
 				else if (cast_type == CastType.INCOMPATIBLE) distance += 10000;
 			}
 			if (distance > 1000) distance = 1000;
+			// Type de retour de cette version, substitué si générique.
+			var returnType = bindings != null ? version.return_type.substitute(bindings) : version.return_type;
 			// System.out.println("version = " + version + " distance = " + distance);
 			if (distance == best_distance) {
 				best_versions.add(version);
+				best_return = Type.compound(best_return, returnType);
 			} else if (distance < best_distance) {
 				best_distance = distance;
 				best_versions.clear();
 				best_versions.add(version);
+				best_return = returnType;
 				unsafe = version_unsafe;
 				errors = version_errors;
 			}
@@ -1101,14 +1133,40 @@ public class LeekFunctionCall extends Expression {
 		}
 		if (best_versions.size() > 0) {
 			callable_versions = best_versions;
-			type = Type.VOID;
-			for (var version : callable_versions) {
-				type = Type.compound(type, version.return_type);
-			}
-			// type = best_versions.get(0).return_type;
+			type = best_return;
 			// System.out.println("[FC] version=" + best_versions.get(0) + " type=" + type + " unsafe=" + unsafe);
 		} else {
 			unsafe = true;
+		}
+	}
+
+	/**
+	 * Infers generic type-variable bindings by structurally matching a (possibly
+	 * generic) formal parameter type against the concrete actual argument type.
+	 * Multiple occurrences of the same variable are joined into a compound type.
+	 */
+	private void inferTypeVariables(Type formal, Type actual, Map<TypeVariable, Type> bindings) {
+		if (formal instanceof TypeVariable variable) {
+			var existing = bindings.get(variable);
+			bindings.put(variable, existing == null ? actual : Type.compound(existing, actual));
+		} else if (formal instanceof ArrayType && actual instanceof ArrayType) {
+			inferTypeVariables(formal.element(), actual.element(), bindings);
+		} else if (formal instanceof SetType && actual instanceof SetType) {
+			inferTypeVariables(formal.element(), actual.element(), bindings);
+		} else if (formal instanceof MapType && actual instanceof MapType) {
+			inferTypeVariables(formal.key(), actual.key(), bindings);
+			inferTypeVariables(formal.element(), actual.element(), bindings);
+		} else if (formal instanceof FunctionType formalFn && actual instanceof FunctionType actualFn) {
+			inferTypeVariables(formalFn.returnType(), actualFn.returnType(), bindings);
+			int n = Math.min(formalFn.getArguments().size(), actualFn.getArguments().size());
+			for (int i = 0; i < n; ++i) {
+				inferTypeVariables(formalFn.getArguments().get(i), actualFn.getArguments().get(i), bindings);
+			}
+		} else if (formal instanceof CompoundType formalCompound) {
+			// Formal like `T?` (T | null) : infer against each branch.
+			for (var t : formalCompound.getTypes()) {
+				inferTypeVariables(t, actual, bindings);
+			}
 		}
 	}
 

@@ -11,6 +11,7 @@ public class CallableVersion {
 	public LeekFunctions function;
 	public Type type;
 	private final boolean[] nullKept;
+	private final boolean generic;
 
 	public CallableVersion(Type return_type) {
 		this(return_type, new Type[0]);
@@ -21,6 +22,9 @@ public class CallableVersion {
 		this.arguments = arguments;
 		this.type = Type.function(return_type, arguments);
 		this.nullKept = new boolean[arguments.length];
+		boolean g = return_type.containsTypeVariable();
+		if (!g) for (var a : arguments) if (a.containsTypeVariable()) { g = true; break; }
+		this.generic = g;
 	}
 
 	/**
@@ -51,5 +55,14 @@ public class CallableVersion {
 
 	public Type getType() {
 		return type;
+	}
+
+	/**
+	 * True if this signature mentions any type variable (generic version). Generic
+	 * versions trigger type-variable inference + substitution at the call site
+	 * ({@code LeekFunctionCall.verifyVersions}).
+	 */
+	public boolean isGeneric() {
+		return generic;
 	}
 }

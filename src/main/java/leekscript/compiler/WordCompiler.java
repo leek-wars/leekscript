@@ -11,7 +11,9 @@ import leekscript.common.Annotation;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
+import leekscript.common.LanguageFeature;
 import leekscript.common.Type;
+import leekscript.common.TypeVariable;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.compiler.bloc.AnonymousFunctionBlock;
@@ -295,6 +297,14 @@ public class WordCompiler {
 					}
 					if (!isAvailable(funcName, false)) {
 						throw new LeekCompilerException(mTokens.get(), Error.FUNCTION_NAME_UNAVAILABLE);
+					}
+					// Sauter les paramètres de type génériques `name<T, U>` (version >= 5) :
+					// au firstPass on ne compte que les paramètres, pas besoin de les résoudre.
+					if (LanguageFeature.GENERICS.enabledIn(getVersion()) && mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("<")) {
+						while (mTokens.hasMoreTokens() && !mTokens.get().getWord().startsWith(">")) {
+							mTokens.skip();
+						}
+						if (mTokens.hasMoreTokens()) mTokens.skip(); // '>'
 					}
 					if (mTokens.eat().getType() != TokenType.PAR_LEFT) {
 						if (functionToken.getWord().equals("Function")) {
@@ -704,6 +714,13 @@ public class WordCompiler {
 		if (!isAvailable(funcName, false)) {
 			throw new LeekCompilerException(mTokens.get(), Error.FUNCTION_NAME_UNAVAILABLE);
 		}
+		// Paramètres de type génériques : `function name<T, U>(...)` (version >= 5).
+		// Placés après le nom pour ne pas entrer en conflit avec le type `Function<...>`
+		// (que `function<` introduit déjà côté expression).
+		List<TypeVariable> typeParameters = null;
+		if (LanguageFeature.GENERICS.enabledIn(getVersion()) && mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("<")) {
+			typeParameters = eatTypeParameters();
+		}
 		if (mTokens.eat().getType() != TokenType.PAR_LEFT) {
 			if (functionToken.getWord().equals("Function")) {
 				// Déclaration de type
@@ -717,6 +734,11 @@ public class WordCompiler {
 		var previousFunction = mCurrentFunction;
 		FunctionBlock block = new FunctionBlock(mCurentBlock, mMain, funcName);
 		applyAnnotations(block, annotations);
+		// Les paramètres de type doivent être visibles avant de lire les types des
+		// paramètres et le type de retour (ils résolvent `T` en TypeVariable).
+		if (typeParameters != null) {
+			for (var variable : typeParameters) block.addTypeParameter(variable);
+		}
 		mCurentBlock = block;
 		setCurrentFunction(block);
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.PAR_RIGHT) {
@@ -785,6 +807,48 @@ public class WordCompiler {
 		setCurrentFunction(previousFunction);
 	}
 
+	/**
+	 * Parses a generic type-parameter list `<T, U, ...>` (version >= 5). The opening
+	 * `<` is the current token. Each parameter becomes a distinct {@link TypeVariable}.
+	 */
+	private List<TypeVariable> eatTypeParameters() throws LeekCompilerException {
+		mTokens.eat(); // '<'
+		var list = new ArrayList<TypeVariable>();
+		while (mTokens.hasMoreTokens() && !mTokens.get().getWord().startsWith(">")) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+			if (mTokens.get().getType() != TokenType.STRING) {
+				addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+				break;
+			}
+			var nameToken = mTokens.eat();
+			list.add(new TypeVariable(nameToken.getWord()));
+			if (mTokens.get().getType() == TokenType.VIRG) {
+				mTokens.eat();
+			} else {
+				break;
+			}
+		}
+		if (mTokens.get().getWord().startsWith(">")) {
+			mTokens.eat(); // '>'
+		} else {
+			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CLOSING_CHEVRON_EXPECTED));
+		}
+		return list;
+	}
+
+	/** Resolves a type-parameter name visible from the current block (enclosing generic functions). */
+	private TypeVariable findTypeParameter(String name) {
+		AbstractLeekBlock block = mCurentBlock;
+		while (block != null) {
+			if (block instanceof FunctionBlock fb) {
+				var variable = fb.getTypeParameter(name);
+				if (variable != null) return variable;
+			}
+			block = block.getParent();
+		}
+		return null;
+	}
+
 	private LeekType eatType(boolean first, boolean mandatory) throws LeekCompilerException {
 
 		var type = eatOptionalType(first, mandatory);
@@ -850,6 +914,11 @@ public class WordCompiler {
 		var word = head.getWord();
 		var simple = SIMPLE_TYPES.get(word);
 		if (simple != null) return new LeekType(mTokens.eat(), simple);
+		// Paramètre de type générique en portée (`T` dans `function f<T>(T x)`).
+		if (LanguageFeature.GENERICS.enabledIn(getVersion())) {
+			var typeVariable = findTypeParameter(word);
+			if (typeVariable != null) return new LeekType(mTokens.eat(), typeVariable);
+		}
 		if (!first && word.equals("null")) return new LeekType(mTokens.eat(), Type.NULL);
 		if (word.equals("Array") || word.equals("Set")) {
 			boolean isArray = word.equals("Array");

@@ -457,6 +457,15 @@ public class TestCommon {
 	public Case code_strict_v4_(String code) {
 		return new Case(code, true, 4, LeekScript.LATEST_VERSION, true);
 	}
+	public Case code_v5(String code) {
+		return new Case(code, true, 5, 5);
+	}
+	public Case code_v5_(String code) {
+		return new Case(code, true, 5, LeekScript.LATEST_VERSION);
+	}
+	public Case code_strict_v5_(String code) {
+		return new Case(code, true, 5, LeekScript.LATEST_VERSION, true);
+	}
 	public Case DISABLED_code_v4_(String code) {
 		return new Case(code, false, 4, LeekScript.LATEST_VERSION);
 	}

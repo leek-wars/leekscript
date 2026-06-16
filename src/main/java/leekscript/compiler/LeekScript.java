@@ -13,7 +13,7 @@ import leekscript.common.Error;
 
 public class LeekScript {
 
-	public final static int LATEST_VERSION = 4;
+	public final static int LATEST_VERSION = 5;
 	private static AtomicLong id = new AtomicLong(1);
 
 	private static ResourceFileSystem defaultFileSystem = new ResourceFileSystem();

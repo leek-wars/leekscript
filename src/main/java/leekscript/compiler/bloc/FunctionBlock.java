@@ -43,6 +43,9 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 	private LeekVariable variable;
 	// Lazy : la grande majorité des fonctions n'ont aucune annotation.
 	private EnumSet<Annotation> annotations = null;
+	// Paramètres de type génériques (`function<T> f(...)`, version >= 5). Lazy :
+	// la quasi-totalité des fonctions ne sont pas génériques.
+	private ArrayList<leekscript.common.TypeVariable> typeParameters = null;
 
 	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -170,6 +173,25 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 
 	public void setReturnType(Type type) {
 		this.type.setReturnType(type);
+	}
+
+	public void addTypeParameter(leekscript.common.TypeVariable variable) {
+		if (typeParameters == null) typeParameters = new ArrayList<>();
+		typeParameters.add(variable);
+	}
+
+	/** Resolves a type-parameter name (e.g. {@code T}) declared on this function, or null. */
+	public leekscript.common.TypeVariable getTypeParameter(String name) {
+		if (typeParameters != null) {
+			for (var variable : typeParameters) {
+				if (variable.getName().equals(name)) return variable;
+			}
+		}
+		return null;
+	}
+
+	public boolean isGeneric() {
+		return typeParameters != null;
 	}
 
 	@Override

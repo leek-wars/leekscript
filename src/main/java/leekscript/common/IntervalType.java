@@ -43,6 +43,17 @@ public class IntervalType extends Type {
 		return type;
 	}
 
+	@Override
+	public boolean containsTypeVariable() {
+		return type.containsTypeVariable();
+	}
+
+	@Override
+	public Type substitute(java.util.Map<TypeVariable, Type> bindings) {
+		var s = type.substitute(bindings);
+		return s == type ? this : new IntervalType(s);
+	}
+
 	public boolean canBeIterable() {
 		return true;
 	}

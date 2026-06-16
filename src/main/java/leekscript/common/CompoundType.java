@@ -308,6 +308,20 @@ public class CompoundType extends Type {
 		return false;
 	}
 
+	@Override
+	public boolean containsTypeVariable() {
+		for (var t : this.types) if (t.containsTypeVariable()) return true;
+		return false;
+	}
+
+	@Override
+	public Type substitute(java.util.Map<TypeVariable, Type> bindings) {
+		if (!containsTypeVariable()) return this;
+		var result = new HashSet<Type>();
+		for (var t : this.types) result.add(t.substitute(bindings));
+		return Type.compound(result);
+	}
+
 
 	public boolean isIntOrReal() {
 		return types.size() == 2 && types.contains(Type.INT) && types.contains(Type.REAL);

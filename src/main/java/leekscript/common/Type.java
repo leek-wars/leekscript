@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import leekscript.compiler.Complete;
@@ -602,6 +603,21 @@ public class Type {
 	}
 
 	public boolean isWarning() {
+		return false;
+	}
+
+	/**
+	 * Replaces every {@link TypeVariable} occurring in this type by its binding in
+	 * {@code bindings}, recursively. Unbound variables and concrete types are left
+	 * untouched. Used during generic call resolution (language version 5). The
+	 * default returns {@code this}; parameterized types override it.
+	 */
+	public Type substitute(Map<TypeVariable, Type> bindings) {
+		return this;
+	}
+
+	/** True if this type contains a {@link TypeVariable} (directly or nested). */
+	public boolean containsTypeVariable() {
 		return false;
 	}
 

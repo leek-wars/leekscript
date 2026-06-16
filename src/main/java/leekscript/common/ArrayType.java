@@ -92,6 +92,17 @@ public class ArrayType extends Type {
 	}
 
 	@Override
+	public boolean containsTypeVariable() {
+		return type.containsTypeVariable();
+	}
+
+	@Override
+	public Type substitute(java.util.Map<TypeVariable, Type> bindings) {
+		var s = type.substitute(bindings);
+		return s == type ? this : Type.array(s);
+	}
+
+	@Override
 	public int hashCode() {
 		return this.type.hashCode() * 31 + 1;
 	}

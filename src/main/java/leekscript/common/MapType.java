@@ -73,6 +73,18 @@ public class MapType extends Type {
 	}
 
 	@Override
+	public boolean containsTypeVariable() {
+		return key.containsTypeVariable() || value.containsTypeVariable();
+	}
+
+	@Override
+	public Type substitute(java.util.Map<TypeVariable, Type> bindings) {
+		var k = key.substitute(bindings);
+		var v = value.substitute(bindings);
+		return (k == key && v == value) ? this : Type.map(k, v);
+	}
+
+	@Override
 	public int hashCode() {
 		return (this.key.hashCode() * 31 + this.value.hashCode()) * 31 + 2;
 	}

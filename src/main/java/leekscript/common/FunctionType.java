@@ -150,6 +150,25 @@ public class FunctionType extends Type {
 	}
 
 	@Override
+	public boolean containsTypeVariable() {
+		if (return_type.containsTypeVariable()) return true;
+		for (var a : arguments) if (a.containsTypeVariable()) return true;
+		return false;
+	}
+
+	@Override
+	public Type substitute(java.util.Map<TypeVariable, Type> bindings) {
+		if (!containsTypeVariable()) return this;
+		var newArguments = new ArrayList<Type>(arguments.size());
+		for (var a : arguments) newArguments.add(a.substitute(bindings));
+		var ft = new FunctionType(return_type.substitute(bindings), newArguments);
+		ft.minArguments = this.minArguments;
+		ft.maxArguments = this.maxArguments;
+		ft.updateName();
+		return ft;
+	}
+
+	@Override
 	public String getCode() {
 		String r = "Function<";
 		for (int a = 0; a < arguments.size(); ++a) {
