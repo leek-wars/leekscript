@@ -309,6 +309,23 @@ public class TestBigInt extends TestCommon {
 	}
 
 	@Test
+	public void testDosGuards() throws Exception {
+		section("Garde-fous DoS (carrés successifs, puissance, taille max)");
+		// Scénario joueur : n *= n en boucle. La taille double à chaque tour, donc le
+		// plafond de taille coupe net (avant de générer un nombre gigantesque qui ferait
+		// ramer le serveur), en quelques ms au lieu de plusieurs secondes.
+		code_v4_("big_integer n = 100000L for (var i in [0..100]) { n *= n } return n")
+			.error(leekscript.common.Error.OUT_OF_MEMORY);
+		// Puissance produisant un résultat démesuré : refusée AVANT le calcul.
+		code_v4_("return 2L ** 100000000").error(leekscript.common.Error.OUT_OF_MEMORY);
+		// Décalage produisant un nombre au-delà de la taille max : refusé.
+		code_v4_("return 1L << 2000000").error(leekscript.common.Error.OUT_OF_MEMORY);
+		// Les usages raisonnables restent OK (2 * 2^1000 = 2^1001 -> 1002 bits).
+		code_v4_("big_integer n = 2L for (var i = 0; i < 1000; i++) n *= 2 return bitLength(n)").equals("1002");
+		code_v4_("return 2L ** 10000 == 1L << 10000").equals("true");
+	}
+
+	@Test
 	public void testSortAndJson() throws Exception {
 		section("Tri par défaut (#bug : comparaison double lossy)");
 		code_v4_("return arraySort([3L, 1L, 2L])").equals("[1, 2, 3]");

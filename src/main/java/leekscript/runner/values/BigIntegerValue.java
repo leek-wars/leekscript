@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.util.Set;
 
 import leekscript.AILog;
+import leekscript.common.Error;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 
@@ -32,18 +33,23 @@ public class BigIntegerValue extends Number implements LeekValue {
 	private final static double BASE_FACTOR = Math.log10(2); // conversion base 2 -> base 10
 	private final static double BIT_LIMIT = STRING_CROP_LIMIT * 2 / BASE_FACTOR; // bits correspondant au crop limit
 
+	// Taille maximale (en bits) d'un big_integer. ~1 million de bits = ~315 000
+	// chiffres décimaux : largement suffisant pour tout usage légitime, mais borne
+	// le coût CPU/RAM d'une opération unique (une multiplication de deux nombres de
+	// cette taille reste de l'ordre de la dizaine de ms). Empêche qu'un calcul comme
+	// `n *= n` en boucle ne génère un nombre gigantesque qui ferait ramer le serveur.
+	public final static long MAX_BITLENGTH = 1L << 20;
+
 	public BigIntegerValue(AI ai, String val, int radix) throws LeekRunException {
 		this.ai = ai;
 		this.value = new BigInteger(val, radix);
-		ops(4);
-		ai.allocateRAM(this, value.bitLength() / 64);
+		register();
 	}
 
 	public BigIntegerValue(AI ai, String val) throws LeekRunException {
 		this.ai = ai;
 		this.value = new BigInteger(val);
-		ops(4);
-		ai.allocateRAM(this, value.bitLength() / 64);
+		register();
 	}
 
 	public BigIntegerValue(AI ai, double val) throws LeekRunException {
@@ -52,22 +58,19 @@ public class BigIntegerValue extends Number implements LeekValue {
 		// pour les grands réels (un simple `(long) val` saturerait à Long.MAX/MIN).
 		// Infinity/NaN ne sont pas représentables : on garde la saturation `(long)`.
 		this.value = Double.isFinite(val) ? java.math.BigDecimal.valueOf(val).toBigInteger() : BigInteger.valueOf((long) val);
-		ops(4);
-		ai.allocateRAM(this, value.bitLength() / 64);
+		register();
 	}
 
 	public BigIntegerValue(AI ai, long val) throws LeekRunException {
 		this.ai = ai;
 		this.value = BigInteger.valueOf(val);
-		ops(4);
-		ai.allocateRAM(this, value.bitLength() / 64);
+		register();
 	}
 
 	public BigIntegerValue(AI ai, BigInteger val) throws LeekRunException {
 		this.ai = ai;
 		this.value = val;
-		ops(4);
-		ai.allocateRAM(this, value.bitLength() / 64);
+		register();
 	}
 
 	public BigIntegerValue add(BigIntegerValue val) throws LeekRunException {
@@ -83,32 +86,43 @@ public class BigIntegerValue extends Number implements LeekValue {
 	}
 
 	public BigIntegerValue multiply(BigIntegerValue val) throws LeekRunException {
-		if (value.bitLength() < 5000) {
-			ops(value.bitLength() / 100);
-		} else {
-			ops(value.bitLength() / 50);
-		}
-		if (val.value.bitLength() < 5000) {
-			val.ops(val.value.bitLength() / 100);
-		} else {
-			val.ops(val.value.bitLength() / 50);
-		}
+		long bitsA = value.bitLength();
+		long bitsB = val.value.bitLength();
+		// Refuse de produire un nombre dépassant la taille max AVANT de lancer la
+		// multiplication (sinon le calcul Java, très coûteux en CPU et en mémoire
+		// transitoire, aurait déjà eu lieu au moment de construire le résultat).
+		checkResultSize(bitsA + bitsB);
+		// Coût ~ produit des tailles en mots : borne haute du coût réel (Java reste
+		// sous-quadratique au-delà de quelques milliers de bits). Indispensable car un
+		// coût LINÉAIRE laissait `n *= n` (carrés successifs, taille qui double à chaque
+		// tour) atteindre des nombres de plusieurs centaines de Mo avant que la limite
+		// d'opérations ne réagisse.
+		ai.ops(mulCost(bitsA, bitsB));
 		return new BigIntegerValue(ai, value.multiply(val.value));
 	}
 
 	public BigIntegerValue divide(BigIntegerValue val) throws LeekRunException {
-		ops(15);
-		val.ops();
+		// La division d'un grand nombre par un autre est aussi coûteuse qu'une
+		// multiplication : on la facture pareil (le résultat ne grandit pas).
+		ai.ops(mulCost(value.bitLength(), val.value.bitLength()));
 		return new BigIntegerValue(ai, value.divide(val.value));
 	}
 
 	public BigIntegerValue pow(int exponent) throws LeekRunException {
-		// Coût proportionnel à la taille du résultat (~ exponent * bits de la base),
-		// chargé AVANT le calcul pour borner l'allocation/CPU. Un simple
-		// `bitLength / 2000 * exponent` tombait à 0 op pour les petites bases
-		// (ex `2L ** 1000000` quasi gratuit).
-		long resultBits = (long) exponent * Math.max(1, value.bitLength());
-		ai.ops((int) Math.min(Integer.MAX_VALUE, 1 + resultBits / 64));
+		long baseBits = value.bitLength();
+		// base ∈ {-1, 0, 1} ou exposant ≤ 0 : résultat trivial (instantané), on garde
+		// le comportement existant (value.pow(exponent) lève si exponent < 0).
+		if (baseBits <= 1 || exponent <= 0) {
+			ops(1);
+			return new BigIntegerValue(ai, value.pow(exponent));
+		}
+		// Taille du résultat ~ exponent * bits de la base. On refuse les résultats
+		// trop grands AVANT le calcul, et on facture le coût du dernier carré
+		// (qui domine l'exponentiation rapide) plutôt qu'un coût linéaire qui rendait
+		// `2L ** 1000000` quasi gratuit.
+		long resultBits = (long) exponent * baseBits;
+		checkResultSize(resultBits);
+		ai.ops(mulCost(resultBits / 2, resultBits / 2));
 		return new BigIntegerValue(ai, value.pow(exponent));
 	}
 
@@ -121,8 +135,7 @@ public class BigIntegerValue extends Number implements LeekValue {
 	}
 
 	public BigIntegerValue mod(BigIntegerValue m) throws LeekRunException {
-		ops(value.bitLength() / 50);
-		m.ops();
+		ai.ops(mulCost(value.bitLength(), m.value.bitLength()));
 		return new BigIntegerValue(ai, value.mod(m.value));
 	}
 
@@ -131,8 +144,7 @@ public class BigIntegerValue extends Number implements LeekValue {
 	 * l'opérateur `%` sur les entiers. À distinguer de {@link #mod} (toujours positif).
 	 */
 	public BigIntegerValue remainder(BigIntegerValue m) throws LeekRunException {
-		ops(value.bitLength() / 50);
-		m.ops();
+		ai.ops(mulCost(value.bitLength(), m.value.bitLength()));
 		return new BigIntegerValue(ai, value.remainder(m.value));
 	}
 
@@ -329,6 +341,35 @@ public class BigIntegerValue extends Number implements LeekValue {
 
 	private void binaryShiftOps(int n) throws LeekRunException {
 		ops(n < 4000 ? 1 : n / 2000);
+	}
+
+	/**
+	 * Coût d'une multiplication (ou division/modulo) de deux nombres de tailles
+	 * données, proportionnel au produit des tailles en mots de 64 bits. C'est une
+	 * borne HAUTE du coût réel (Java passe en Karatsuba/Toom-Cook au-delà de quelques
+	 * milliers de bits, donc moins cher), ce qui garantit qu'on ne sous-facture jamais.
+	 * Le facteur 8 laisse de la marge pour les usages légitimes (ex : exponentiation
+	 * modulaire sur quelques milliers de bits) tout en stoppant net les carrés successifs.
+	 */
+	private static long mulCost(long bitsA, long bitsB) {
+		long wa = Math.max(1, bitsA / 64);
+		long wb = Math.max(1, bitsB / 64);
+		return 1 + wa * wb / 8;
+	}
+
+	/** Refuse, AVANT le calcul, une opération qui produirait un nombre trop grand. */
+	private void checkResultSize(long resultBits) throws LeekRunException {
+		if (resultBits > MAX_BITLENGTH) {
+			ai.getLogs().addLog(AILog.WARNING, "[BigInteger] résultat trop grand : " + resultBits + " bits (max " + MAX_BITLENGTH + ")");
+			throw new LeekRunException(Error.OUT_OF_MEMORY);
+		}
+	}
+
+	/** Enregistre un nouveau big_integer : vérifie la taille puis facture ops + RAM. */
+	private void register() throws LeekRunException {
+		checkResultSize(value.bitLength());
+		ops(4);
+		ai.allocateRAM(this, value.bitLength() / 64);
 	}
 
 	private void ops() throws LeekRunException {
