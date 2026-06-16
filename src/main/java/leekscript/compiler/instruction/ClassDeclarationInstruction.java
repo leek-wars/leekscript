@@ -32,7 +32,7 @@ import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 import leekscript.runner.AI;
 
-public class ClassDeclarationInstruction extends LeekInstruction {
+public class ClassDeclarationInstruction extends LeekInstruction implements leekscript.compiler.TypeParameterScope {
 
 	public static class ClassDeclarationField extends LeekExpression {
 
@@ -151,6 +151,29 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 	public String getName() {
 		return token.getWord();
+	}
+
+	// Paramètres de type génériques (`class Box<T> { ... }`, version >= 5). Lazy :
+	// la quasi-totalité des classes ne sont pas génériques.
+	private java.util.ArrayList<leekscript.common.TypeVariable> typeParameters = null;
+
+	public void addTypeParameter(leekscript.common.TypeVariable variable) {
+		if (typeParameters == null) typeParameters = new java.util.ArrayList<>();
+		typeParameters.add(variable);
+	}
+
+	@Override
+	public leekscript.common.TypeVariable getTypeParameter(String name) {
+		if (typeParameters != null) {
+			for (var variable : typeParameters) {
+				if (variable.getName().equals(name)) return variable;
+			}
+		}
+		return null;
+	}
+
+	public boolean isGeneric() {
+		return typeParameters != null;
 	}
 
 	@Override

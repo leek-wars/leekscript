@@ -26,7 +26,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.CallableVersion;
 
-public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
+public class FunctionBlock extends AbstractLeekBlock implements Annotatable, leekscript.compiler.TypeParameterScope {
 
 	private Token token;
 	private int mId;

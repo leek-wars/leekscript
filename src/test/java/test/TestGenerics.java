@@ -46,6 +46,27 @@ public class TestGenerics extends TestCommon {
 	}
 
 	@Test
+	public void genericClasses() throws Exception {
+		section("Generics / classes");
+		// A generic class: the type parameter is usable as a field type and a
+		// constructor parameter type. Works via erasure (runtime stays dynamic).
+		code_v5("class Box<T> { T value constructor(T v) { this.value = v } } var b = new Box(5) return b.value").equals("5");
+		code_v5("class Box<T> { T value constructor(T v) { this.value = v } } var b = new Box('hello') return b.value").equals("\"hello\"");
+		// Type parameter as a method return type.
+		code_v5("class Box<T> { T value constructor(T v) { this.value = v } public T get() { return this.value } } return new Box(42).get()").equals("42");
+		// Several type parameters.
+		code_v5("class Pair<A, B> { A a B b constructor(A a, B b) { this.a = a this.b = b } } var p = new Pair(1, 'x') return p.b").equals("\"x\"");
+	}
+
+	@Test
+	public void genericClassTypeChecksInStrict() throws Exception {
+		section("Generics / classes strict");
+		// Assigning the constructor param (type T) to a field (type T) and returning
+		// a T-typed field from a T-returning method must not warn in strict mode.
+		code_strict_v5_("class Box<T> { T value constructor(T v) { this.value = v } public T get() { return this.value } } return new Box(1).get()").noWarning();
+	}
+
+	@Test
 	public void onlyAvailableInV5() throws Exception {
 		section("Generics / version gate");
 		// `function name<T>` is a version-5 feature; in v4 the `<` after the name is

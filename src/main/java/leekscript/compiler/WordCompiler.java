@@ -836,15 +836,22 @@ public class WordCompiler {
 		return list;
 	}
 
-	/** Resolves a type-parameter name visible from the current block (enclosing generic functions). */
+	/**
+	 * Resolves a type-parameter name visible from the current parse position:
+	 * enclosing generic functions (block chain) then the enclosing generic class.
+	 */
 	private TypeVariable findTypeParameter(String name) {
 		AbstractLeekBlock block = mCurentBlock;
 		while (block != null) {
-			if (block instanceof FunctionBlock fb) {
-				var variable = fb.getTypeParameter(name);
+			if (block instanceof TypeParameterScope scope) {
+				var variable = scope.getTypeParameter(name);
 				if (variable != null) return variable;
 			}
 			block = block.getParent();
+		}
+		if (mCurrentClass != null) {
+			var variable = mCurrentClass.getTypeParameter(name);
+			if (variable != null) return variable;
 		}
 		return null;
 	}
@@ -1535,6 +1542,13 @@ public class WordCompiler {
 		}
 		mMain.addClassList(classDeclaration);
 		mCurrentClass = classDeclaration;
+
+		// Paramètres de type génériques : `class Box<T, U> { ... }` (version >= 5).
+		// mCurrentClass est déjà posé : les `T` des champs/méthodes se résolvent via
+		// findTypeParameter pendant le parse du corps.
+		if (LanguageFeature.GENERICS.enabledIn(getVersion()) && mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("<")) {
+			for (var variable : eatTypeParameters()) classDeclaration.addTypeParameter(variable);
+		}
 
 		if (mTokens.get().getType() == TokenType.EXTENDS) {
 			mTokens.skip();

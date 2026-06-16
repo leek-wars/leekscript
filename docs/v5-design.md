@@ -63,8 +63,15 @@ Suppression dure dans une v5.x ultérieure une fois la télémétrie au vert.
      les versions non génériques (zéro impact sur l'existant).
    - Codegen : retour effacé en `Object`, re-casté vers le type inféré au site
      d'appel.
-4. **Classes utilisateur génériques** : `class Box<T> { T value; ... }`,
-   instanciées en `ParameterizedClassType` (ClassType + bindings).
+4. **Classes utilisateur génériques** : `class Box<T> { T value; ... }`.
+   - ✅ Déclaration + portée + effacement : `class Box<T>` parse, `T` se résout
+     dans les types des champs/méthodes/constructeur (portée = classe courante,
+     via l'interface partagée `TypeParameterScope` qu'implémentent `FunctionBlock`
+     et `ClassDeclarationInstruction`). Fonctionne end-to-end par effacement
+     (`T` ≈ `any` à l'usage pour l'instant).
+   - ⏳ Reste : typage précis à l'instanciation via `ParameterizedClassType`
+     (ClassType + bindings) → `new Box(5)` donne `b.value : integer`. `member()`
+     substituera les bindings.
 5. **Signatures système génériques** : remplacer les `Type[]` figés de
    `CallableVersion` par des signatures pouvant référencer des `TypeVariable`.
    Ex : `Array.map<T,R>(self: T[], f: T => R) -> R[]`. Bénéfice immédiat :
