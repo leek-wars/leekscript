@@ -291,6 +291,9 @@ public class TestLoops extends TestCommon {
 	public void testForeach_Minus_argument() throws Exception {
 		section("Foreach - argument");
 		code("function main(r) { for (var x in [1, 2, 3]) { for (var y in [4, 5, 6]) { push(r, x * y) }} return r } return main([]);").equals("[4, 5, 6, 8, 10, 12, 12, 15, 18]");
+		// #11229404 : un paramètre par référence (@) est une Box ; le réutiliser comme
+		// itérateur de foreach non-déclaratif générait `u_x = (Object) ...` sur une Box.
+		code("function f(@cell, mp) { for (cell in [7, 8]) {} return cell; } return f(0, 1);").equals("8");
 	}
 
 	@Test
