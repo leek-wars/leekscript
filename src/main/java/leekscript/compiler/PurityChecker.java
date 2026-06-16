@@ -14,6 +14,7 @@ import leekscript.compiler.expression.LeekObjectAccess;
 import leekscript.compiler.expression.LeekParenthesis;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
+import leekscript.runner.LeekFunctions;
 
 /**
  * Static purity analysis for the {@code @pure} annotation. A function annotated
@@ -40,10 +41,12 @@ import leekscript.compiler.expression.Operators;
  */
 public class PurityChecker {
 
-	// Built-in functions that mutate one of their arguments in place or perform
-	// I/O. LeekFunctions carries no purity metadata, so the side-effecting
-	// builtins are listed explicitly here (return type is not a reliable signal:
-	// e.g. pop/setPut mutate but return a value).
+	// Standard-library builtins that mutate one of their arguments in place or
+	// perform I/O. These are listed explicitly here because the standard library
+	// registers them without purity metadata (return type is not a reliable signal:
+	// e.g. pop/setPut mutate but return a value). Extra functions provided by a host
+	// (e.g. the Leek Wars generator) instead declare their purity directly on the
+	// LeekFunctions object via setImpure(); see isImpureSystemFunction below.
 	private static final Set<String> IMPURE_SYSTEM_FUNCTIONS = Set.of(
 		// I/O
 		"debug", "debugW", "debugE", "debugC",
@@ -59,8 +62,17 @@ public class PurityChecker {
 		"setPut", "setRemove", "setClear"
 	);
 
-	public static boolean isImpureSystemFunction(String name) {
-		return IMPURE_SYSTEM_FUNCTIONS.contains(name);
+	/**
+	 * Whether calling the builtin {@code function} introduces a side effect, making
+	 * a {@code @pure} caller impure. A builtin is impure when it has explicitly
+	 * declared itself so ({@link LeekFunctions#isPure()} is false — how host-provided
+	 * functions such as the generator's game actions opt in) or when it is one of the
+	 * standard-library mutators/I/O functions listed in {@link #IMPURE_SYSTEM_FUNCTIONS}.
+	 */
+	public static boolean isImpureSystemFunction(LeekFunctions function) {
+		if (function == null) return false;
+		if (!function.isPure()) return true;
+		return IMPURE_SYSTEM_FUNCTIONS.contains(function.getName());
 	}
 
 	/**

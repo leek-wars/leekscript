@@ -727,7 +727,7 @@ public class LeekFunctionCall extends Expression {
 		// function is resolved transitively after the whole program is analyzed, so
 		// an unannotated-but-actually-pure callee does not make the caller impure.
 		if (system_function != null) {
-			if (PurityChecker.isImpureSystemFunction(system_function.getName())) {
+			if (PurityChecker.isImpureSystemFunction(system_function)) {
 				compiler.recordSideEffect();
 				if (compiler.getCurrentPureFunction() != null) {
 					PurityChecker.reportNotPure(compiler, getLocation(), system_function.getName());
