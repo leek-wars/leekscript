@@ -77,6 +77,25 @@ public class TestMethods extends TestCommon {
 	}
 
 	@Test
+	public void stringMethods() throws Exception {
+		section("Methods / string (static helper shape)");
+		// String methods live in the static StringClass helper, not as instance methods
+		// on the Java String — the codegen branches on isStatic.
+		code_v5("return \"hello\".length()").equals("5");
+		code_v5("var s = \"hello\" return s.length()").equals("5");
+		code_v5("string s = \"hello\" return s.length()").equals("5");
+		code_v5("return \"hello\".charAt(1)").equals("\"e\"");
+		code_v5("return \"hello world\".split(\" \")").equals("[\"hello\", \"world\"]");
+		code_v5("return \"Hello\".toUpper()").equals("\"HELLO\"");
+		code_v5("return \"hello\".contains(\"ell\")").equals("true");
+		code_v5("return \"  hi  \".trim()").equals("\"hi\"");
+		// substring(index, length).
+		code_v5("return \"hello\".substring(1, 3)").equals("\"ell\"");
+		code_v5("return \"hello\".replace(\"l\", \"L\")").equals("\"heLLo\"");
+		code_strict_v5_("string s = \"abc\" integer n = s.length() return n").noWarning();
+	}
+
+	@Test
 	public void onlyInV5() throws Exception {
 		section("Methods / version gate");
 		// In v1-4 the method form does not resolve (the value-method OO library is a

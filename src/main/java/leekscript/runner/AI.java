@@ -3790,27 +3790,45 @@ public abstract class AI {
 		if (version >= 5) {
 			String stdClass = standardClassOfValue(value);
 			var builtin = stdClass == null ? null : leekscript.runner.LeekFunctions.getMethod(stdClass, field);
-			if (builtin != null) {
-				// getJavaName() : le nom leekscript (ex. `map`) peut différer de la
-				// méthode Java (ex. `arrayMap`).
-				var candidates = methodCache.get(value.getClass()).get(builtin.getJavaName());
-				if (candidates != null) {
-					for (var m : candidates) {
-						var params = m.getParameterTypes();
-						if (params.length == args.length + 1 && params[0] == AI.class) {
-							Object[] full = new Object[args.length + 1];
-							full[0] = this;
-							System.arraycopy(args, 0, full, 1, args.length);
-							try {
+			if (builtin != null) try {
+				// getJavaName() : le nom leekscript (ex. `map`) peut différer de la méthode Java (`arrayMap`).
+				if (builtin.isStatic()) {
+					// Méthode statique d'un helper : StringClass.length(ai, value, args...).
+					Class<?> helper = Class.forName("leekscript.runner.classes." + stdClass + "Class");
+					var candidates = methodCache.get(helper).get(builtin.getJavaName());
+					if (candidates != null) {
+						for (var m : candidates) {
+							var params = m.getParameterTypes();
+							if (java.lang.reflect.Modifier.isStatic(m.getModifiers()) && params.length == args.length + 2 && params[0] == AI.class) {
+								Object[] full = new Object[args.length + 2];
+								full[0] = this;
+								full[1] = value;
+								System.arraycopy(args, 0, full, 2, args.length);
+								return m.invoke(null, full);
+							}
+						}
+					}
+				} else {
+					// Méthode d'instance sur la value class : ((ArrayLeekValue) value).sort(ai, args...).
+					var candidates = methodCache.get(value.getClass()).get(builtin.getJavaName());
+					if (candidates != null) {
+						for (var m : candidates) {
+							var params = m.getParameterTypes();
+							if (params.length == args.length + 1 && params[0] == AI.class) {
+								Object[] full = new Object[args.length + 1];
+								full[0] = this;
+								System.arraycopy(args, 0, full, 1, args.length);
 								return m.invoke(value, full);
-							} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-								if (e.getCause() instanceof LeekRunException lre) throw lre;
-								addSystemLog(AILog.ERROR, e);
-								return null;
 							}
 						}
 					}
 				}
+			} catch (ClassNotFoundException e) {
+				// pas de helper -> on tombe sur l'erreur UNKNOWN_FIELD
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+				if (e.getCause() instanceof LeekRunException lre) throw lre;
+				addSystemLog(AILog.ERROR, e);
+				return null;
 			}
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { value, field });
@@ -3822,6 +3840,7 @@ public abstract class AI {
 		if (value instanceof ArrayLeekValue) return "Array";
 		if (value instanceof MapLeekValue) return "Map";
 		if (value instanceof leekscript.runner.values.SetLeekValue) return "Set";
+		if (value instanceof String) return "String";
 		return null;
 	}
 

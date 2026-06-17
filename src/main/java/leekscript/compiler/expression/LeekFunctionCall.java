@@ -398,20 +398,26 @@ public class LeekFunctionCall extends Expression {
 				addComma = false;
 				typedArguments = true;
 			} else if (is_builtin_method) {
-				// array.sort() -> ((ArrayLeekValue) array).sort(ai, ...). Le receveur est
-				// l'objet ; les arguments restent dans mParameters.
-				var receiverType = object.getType();
+				// Le receveur est l'objet ; les arguments restent dans mParameters.
 				// Retour effacé d'une méthode générique (ex. array.max() -> Object) :
 				// caste vers le type inféré.
 				if (systemReturnContainsTypeVariable() && this.type != Type.ANY && this.type != Type.VOID) {
 					writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
 				}
-				writer.addCode("((" + receiverType.getJavaName(mainblock.getVersion()) + ") ");
-				object.writeJavaCode(mainblock, writer, true);
-				// getJavaName() : le nom leekscript (ex. `map`) peut différer de la
-				// méthode Java (ex. `arrayMap`).
-				writer.addCode(")." + system_function.getJavaName() + "(" + writer.getAIThis());
-				addComma = true;
+				if (system_function.isStatic()) {
+					// "hello".length() -> StringClass.length(ai, "hello", ...) : méthode
+					// statique du helper, le receveur est le premier argument après l'AI.
+					writer.addCode(system_function.getStandardClass() + "Class." + system_function.getJavaName() + "(" + writer.getAIThis() + ", ");
+					object.writeJavaCode(mainblock, writer, false);
+					addComma = true;
+				} else {
+					// array.sort() -> ((ArrayLeekValue) array).sort(ai, ...). getJavaName() :
+					// le nom leekscript (ex. `map`) peut différer de la méthode Java (`arrayMap`).
+					writer.addCode("((" + object.getType().getJavaName(mainblock.getVersion()) + ") ");
+					object.writeJavaCode(mainblock, writer, true);
+					writer.addCode(")." + system_function.getJavaName() + "(" + writer.getAIThis());
+					addComma = true;
+				}
 			} else {
 				// object.field() : Méthode ou bien appel d'un champ
 				if (type != Type.ANY) {
@@ -884,9 +890,7 @@ public class LeekFunctionCall extends Expression {
 				var builtinClass = standardClassOf(o.getType());
 				if (builtinClass != null) {
 					var builtinMethod = LeekFunctions.getMethod(builtinClass, oa.getField());
-					// Méthodes d'instance uniquement (le receveur = arg0) ; les méthodes
-					// statiques ne s'appellent pas en `valeur.méthode()`.
-					if (builtinMethod != null && !builtinMethod.isStatic() && resolveBuiltinMethod(compiler, o.getType(), builtinMethod)) {
+					if (builtinMethod != null && resolveBuiltinMethod(compiler, o.getType(), builtinMethod)) {
 						return;
 					}
 				}
@@ -1240,15 +1244,16 @@ public class LeekFunctionCall extends Expression {
 	}
 
 	/**
-	 * The standard-library class name of a built-in receiver type whose methods are
-	 * instance methods on the value's Java class (so `((ArrayLeekValue) x).sort(ai)`
-	 * is valid codegen). String/Number are excluded: their methods live in static
-	 * helper classes (StringClass/NumberClass), which need a different call shape.
+	 * The standard-library class name of a built-in receiver type that exposes
+	 * methods. Array/Map/Set methods are instance methods on the value class
+	 * (`((ArrayLeekValue) x).sort(ai)`); String methods are static helpers
+	 * (`StringClass.length(ai, s)`) — the codegen branches on {@code isStatic()}.
 	 */
 	private static String standardClassOf(Type type) {
 		if (type instanceof ArrayType) return "Array";
 		if (type instanceof MapType) return "Map";
 		if (type instanceof SetType) return "Set";
+		if (type == Type.STRING) return "String";
 		return null;
 	}
 

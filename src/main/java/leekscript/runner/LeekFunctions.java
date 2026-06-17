@@ -447,6 +447,7 @@ public class LeekFunctions {
 		String standardClass = type instanceof leekscript.common.ArrayType ? "Array"
 			: type instanceof leekscript.common.MapType ? "Map"
 			: type instanceof leekscript.common.SetType ? "Set"
+			: type == Type.STRING ? "String"
 			: null;
 		return standardClass == null ? null : getMethod(standardClass, name);
 	}
