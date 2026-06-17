@@ -211,6 +211,42 @@ public class TestArray extends TestCommon {
 		code_strict_v4_("class A { public x = 5 } var a = new A() integer? x = a?[\"x\"] return x").equals("5");
 	}
 
+	/**
+	 * Non-régression : un ternaire compact dont les branches sont des littéraux
+	 * tableau (`cond?[a]:[b]`, sans espace) compilait avant l'ajout de `a?[b]` et
+	 * doit continuer à se comporter comme un ternaire. L'accès optionnel ne doit
+	 * revendiquer `?[` que lorsque le `?` ne possède pas de `:` de ternaire :
+	 * autrement dit, seulement des séquences qui étaient déjà des erreurs.
+	 */
+	@Test
+	public void testOptional_array_access_ternary_disambiguation() throws Exception {
+		section("Array.operator ?[] vs ternaire compact");
+		// Ternaire compact, branches tableau : reste un ternaire
+		code_v4_("var c = true return c?[1]:[2]").equals("[1]");
+		code_v4_("var c = false return c?[1]:[2]").equals("[2]");
+		code_v4_("var c = true return c?[1, 2]:[3, 4]").equals("[1, 2]");
+		code_v4_("return 1 > 2 ?[1, 2]:[3, 4]").equals("[3, 4]");
+		// Condition entre parenthèses (le scan doit gérer la profondeur)
+		code_v4_("var x = 1 return (x > 0)?[1]:[2]").equals("[1]");
+		// Branche `then` tableau, branche `else` scalaire
+		code_v4_("var c = true return c?[1]:9").equals("[1]");
+		// Tranche dans la branche : le `:` interne ne doit pas être pris pour
+		// le `:` du ternaire
+		code_v4_("var c = true var a = [10, 20, 30] return c?[a[0]]:[a[1]]").equals("[10]");
+
+		// Un `?.` (chaînage optionnel) dans la branche `then` ne doit pas être pris
+		// pour un `?` de ternaire : `c?[g][0]?.h : 0` reste le ternaire valide
+		// `c ? ([g][0]?.h) : 0` (et non un accès optionnel `c?[g]` cassé).
+		code_v4_("class A { public h = 9 } var g = new A() var c = true return c?[g][0]?.h:0").equals("9");
+
+		// ...mais l'accès optionnel reste fonctionnel quand il n'y a pas de `:`
+		// de ternaire à voler (sinon on aurait sur-corrigé) :
+		code_v4_("var a = [10, 20, 30] return a?[1]").equals("20");
+		code_v4_("var a = [10, 20, 30] return a?[0] + a?[2]").equals("40");
+		code_v4_("var a = [[1, 2], [3, 4]] return a?[0]?[1]").equals("2");
+		code_v4_("var a = null return a?[1]").equals("null");
+	}
+
 	@Test
 	public void testTyped_array_numeric_coercion() throws Exception {
 		section("Typed array numeric coercion");

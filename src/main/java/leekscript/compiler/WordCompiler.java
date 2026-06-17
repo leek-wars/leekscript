@@ -106,6 +106,43 @@ public class WordCompiler {
 		return la.getEndLine() == lb.getStartLine() && lb.getStartColumn() == la.getEndColumn() + 1;
 	}
 
+	// Le `?` à la position courante possède-t-il un `:` de ternaire ? On scanne en
+	// avant à profondeur de parenthésage 0 : le premier `:` non apparié à un `?`
+	// imbriqué appartient à ce `?`, c'est donc un ternaire et pas un accès `a?[b]`.
+	// Sert à ne JAMAIS revendiquer `?[` quand le code était un ternaire compact
+	// valide (`cond?[a]:[b]`) : l'accès optionnel ne prend que des séquences qui
+	// auraient sinon été des erreurs (ternaire sans `:`). Les `:` de tranche
+	// (`a?[0:1]`) et les `,`/`:` de littéraux sont à profondeur > 0, donc ignorés.
+	private boolean ternaryColonAhead() {
+		int depth = 0;
+		int pendingQuestion = 0;
+		for (int i = 1; ; i++) {
+			var token = mTokens.get(i);
+			var type = token.getType();
+			if (type == TokenType.END_OF_FILE) return false;
+			if (type == TokenType.BRACKET_LEFT || type == TokenType.PAR_LEFT || type == TokenType.ACCOLADE_LEFT) {
+				depth++;
+			} else if (type == TokenType.BRACKET_RIGHT || type == TokenType.PAR_RIGHT || type == TokenType.ACCOLADE_RIGHT) {
+				if (depth == 0) return false; // fermeture du contexte englobant : fin d'expression
+				depth--;
+			} else if (depth == 0) {
+				if (type == TokenType.END_INSTRUCTION || type == TokenType.VIRG) return false;
+				if (type == TokenType.OPERATOR && token.getWord().equals("?")) {
+					// Seul un vrai `?` de ternaire ouvre un niveau. `?.` (chaînage
+					// optionnel) et `?[` (accès optionnel collé) n'en sont pas : les
+					// compter ferait consommer à tort le `:` du ternaire englobant.
+					var next = mTokens.get(i + 1);
+					boolean notTernary = next.getType() == TokenType.DOT
+							|| (next.getType() == TokenType.BRACKET_LEFT && adjacent(token, next));
+					if (!notTernary) pendingQuestion++;
+				} else if (type == TokenType.OPERATOR && token.getWord().equals(":")) {
+					if (pendingQuestion == 0) return true; // ce `:` est à nous → ternaire
+					pendingQuestion--;
+				}
+			}
+		}
+	}
+
 	public void readCode() throws LeekCompilerException {
 
 		firstPass();
@@ -1729,10 +1766,13 @@ public class WordCompiler {
 				// Accès indexé optionnel `a?[b]` : court-circuite à null si `a` est null.
 				// Le `?` doit être collé au `[` pour lever l'ambiguïté avec le ternaire
 				// `cond ? [1, 2] : [3, 4]` (dont les branches sont des littéraux tableau).
+				// Et il ne doit pas posséder de `:` de ternaire (cas du ternaire compact
+				// `cond?[a]:[b]`, sans espace, qui restait sinon cassé) : on ne revendique
+				// `?[` que pour des séquences qui auraient autrement été des erreurs.
 				boolean optionalBracket = false;
 				if (word.getType() == TokenType.OPERATOR && word.getWord().equals("?")
 						&& mTokens.get(1).getType() == TokenType.BRACKET_LEFT && !inInterval
-						&& adjacent(word, mTokens.get(1))) {
+						&& adjacent(word, mTokens.get(1)) && !ternaryColonAhead()) {
 					mTokens.skip(); // ?
 					word = mTokens.get(); // [
 					optionalBracket = true;
