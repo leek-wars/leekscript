@@ -95,9 +95,9 @@ public class TestClass extends TestCommon {
 	public void testMethod_call_with_nullable_argument() throws Exception {
 		section("Method call with nullable argument");
 		// Calling a method without this. prefix with a nullable parameter
-		code_v2_("class A { private Array<integer> list = [] private add(integer | null v) { if (v != null) { push(list, v) } } public run() { add(null) add(3) return list } } return new A().run()").equals("[3]");
+		code_v2_4("class A { private Array<integer> list = [] private add(integer | null v) { if (v != null) { push(list, v) } } public run() { add(null) add(3) return list } } return new A().run()").equals("[3]");
 		// Same with this. prefix
-		code_v2_("class A { private Array<integer> list = [] private add(integer | null v) { if (v != null) { push(list, v) } } public run() { this.add(null) this.add(3) return list } } return new A().run()").equals("[3]");
+		code_v2_4("class A { private Array<integer> list = [] private add(integer | null v) { if (v != null) { push(list, v) } } public run() { this.add(null) this.add(3) return list } } return new A().run()").equals("[3]");
 		// Nullable field passed to method without this.
 		code_v2_("class A { private integer? val = null private get(integer? v) { return v } public run() { return get(val) } } return new A().run()").equals("null");
 		code_v2_("class A { private integer? val = null private get(integer? v) { return v } public run() { val = 42 return get(val) } } return new A().run()").equals("42");

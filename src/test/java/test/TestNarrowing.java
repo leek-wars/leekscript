@@ -105,8 +105,8 @@ public class TestNarrowing extends TestCommon {
 	public void testCase_4_instanceof_narrowing() throws Exception {
 		section("Case 4: instanceof narrowing");
 		// instanceof narrows the type (class types like Array)
-		code_v4_("Array | string x = [1, 2]; if (x instanceof Array) { return count(x) } return 0").noWarning();
-		code_v4_("Array | string x = [1, 2]; if (x instanceof Array) { return count(x) } return 0").equals("2");
+		code_v4("Array | string x = [1, 2]; if (x instanceof Array) { return count(x) } return 0").noWarning();
+		code_v4("Array | string x = [1, 2]; if (x instanceof Array) { return count(x) } return 0").equals("2");
 	}
 
 	@Test
@@ -192,8 +192,8 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("Map | integer x = [1 : 'a', 2 : 'b']; if (x instanceof Map) { return x[1] } return 0").noWarning();
 		code_v4_("Map | integer x = [1 : 'a', 2 : 'b']; if (x instanceof Map) { return x[1] } return 0").equals("\"a\"");
 		// Array | string narrowed to Array → count() and subscript work
-		code_v4_("Array | string x = [1, 2, 3]; if (x instanceof Array) { return count(x) } return 0").noWarning();
-		code_v4_("Array | string x = [1, 2, 3]; if (x instanceof Array) { return count(x) } return 0").equals("3");
+		code_v4("Array | string x = [1, 2, 3]; if (x instanceof Array) { return count(x) } return 0").noWarning();
+		code_v4("Array | string x = [1, 2, 3]; if (x instanceof Array) { return count(x) } return 0").equals("3");
 		code_v4_("Array | string x = [10, 20, 30]; if (x instanceof Array) { return x[1] } return 0").noWarning();
 		code_v4_("Array | string x = [10, 20, 30]; if (x instanceof Array) { return x[1] } return 0").equals("20");
 		// Map access after instanceof inside && short-circuit
@@ -330,8 +330,8 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("class Cell { integer id = 5 } Cell | integer x = 3; if (x instanceof Cell) { return x.id } else { return abs(x) }").noWarning();
 		code_v4_("class Cell { integer id = 5 } Cell | integer x = new Cell(); if (x instanceof Cell) { return x.id } else { return abs(x) }").equals("5");
 		// Narrowed to integer and used in arithmetic
-		code_v4_("Array | integer x = 7; if (x instanceof Array) { return count(x) } else { return x + 1 }").equals("8");
-		code_v4_("Array | integer x = [1, 2]; if (x instanceof Array) { return count(x) } else { return x + 1 }").equals("2");
+		code_v4("Array | integer x = 7; if (x instanceof Array) { return count(x) } else { return x + 1 }").equals("8");
+		code_v4("Array | integer x = [1, 2]; if (x instanceof Array) { return count(x) } else { return x + 1 }").equals("2");
 		// Narrowed to integer and passed to a function expecting integer
 		code_v4_("Map | integer x = 42; if (x instanceof Map) { return 0 } else { return abs(x) }").equals("42");
 		code_v4_("Map | integer x = 42; if (x instanceof Map) { return 0 } else { return abs(x) }").noWarning();

@@ -250,7 +250,7 @@ public class TestOperators extends TestCommon {
 	public void testComparison_always_false() throws Exception {
 		section("Comparison always false");
 		code_v4_("5.5 == true").warning(Error.COMPARISON_ALWAYS_FALSE);
-		code_v4_("count([]) == 'hello'").warning(Error.COMPARISON_ALWAYS_FALSE);
+		code_v4("count([]) == 'hello'").warning(Error.COMPARISON_ALWAYS_FALSE);
 		code_v4_("[:] == {}").warning(Error.COMPARISON_ALWAYS_FALSE);
 		code_v4_("(function() {}) == null").warning(Error.COMPARISON_ALWAYS_FALSE);
 		code_v4_("Array == 12").warning(Error.COMPARISON_ALWAYS_FALSE);
@@ -260,7 +260,7 @@ public class TestOperators extends TestCommon {
 	public void testComparison_always_true() throws Exception {
 		section("Comparison always true");
 		code_v4_("5.5 != true").warning(Error.COMPARISON_ALWAYS_TRUE);
-		code_v4_("count([]) != 'hello'").warning(Error.COMPARISON_ALWAYS_TRUE);
+		code_v4("count([]) != 'hello'").warning(Error.COMPARISON_ALWAYS_TRUE);
 		code_v4_("[:] != {}").warning(Error.COMPARISON_ALWAYS_TRUE);
 		code_v4_("(function() {}) != null").warning(Error.COMPARISON_ALWAYS_TRUE);
 		code_v4_("Array != 12").warning(Error.COMPARISON_ALWAYS_TRUE);

@@ -113,8 +113,8 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { f static v() { return 55 } constructor(x, y = v()) { f = x * y } } return A(9).f").equals("495");
 		code_v2_("class A { f constructor(x, y = x) { f = x * y } } return A(9).f").equals("81");
 		code_v2_("class A { f constructor(x, y = x, z = y) { f = x * y * z } } return A(9).f").equals("729");
-		code_v2_("class A { f constructor(x = 12) { f = arrayMap([1, 1, 1], (_) => x) } } return new A().f").equals("[12, 12, 12]");
-		code_v2_("class A { f constructor(x = 12, y = x) { f = arrayMap([1, 1, 1], (_) => x + y) } } return new A().f").equals("[24, 24, 24]");
+		code_v2_4("class A { f constructor(x = 12) { f = arrayMap([1, 1, 1], (_) => x) } } return new A().f").equals("[12, 12, 12]");
+		code_v2_4("class A { f constructor(x = 12, y = x) { f = arrayMap([1, 1, 1], (_) => x + y) } } return new A().f").equals("[24, 24, 24]");
 
 		section("Static fields");
 		code_v2_("class A { static x }").equals("null");
@@ -281,7 +281,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static final a = 12 } A.a = 15").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_v2_("class A { static final a = 12 } A.a += 10 return A.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_v2_("class A { static final a = [] } A.a += 10 return A.a").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
-		code_v4_("class A { static final a = [1, 2, 3] } arrayClear(A.a) return A.a").equals("[]");
+		code_v4("class A { static final a = [1, 2, 3] } arrayClear(A.a) return A.a").equals("[]");
 		code_v2_("class A { static final a = 12 } A['a'] = 15 return A['a']").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_v2_("class A { static final a = 12 } A['a'] += 15 return A['a']").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_v3_("Real.MAX_VALUE++").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
@@ -360,8 +360,8 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { static v() { return 55 } static m(x, y = v()) { return x * y } } return A.m(9)").equals("495");
 		code_v2_("class A { static m(x, y = x) { return x * y } } return A.m(9)").equals("81");
 		code_v2_("class A { static m(x, y = x, z = y) { return x * y * z } } return A.m(9)").equals("729");
-		code_v2_("class A { static m(x = 12) { return arrayMap([1, 1, 1], (_) => x) } } return A.m()").equals("[12, 12, 12]");
-		code_v2_("class A { static m(x = 12, y = x) { return arrayMap([1, 1, 1], (_) => x + y) } } return A.m()").equals("[24, 24, 24]");
+		code_v2_4("class A { static m(x = 12) { return arrayMap([1, 1, 1], (_) => x) } } return A.m()").equals("[12, 12, 12]");
+		code_v2_4("class A { static m(x = 12, y = x) { return arrayMap([1, 1, 1], (_) => x + y) } } return A.m()").equals("[24, 24, 24]");
 
 		section("Static method null argument");
 		code_v2_("class Debug { static log(x) { debug(x) } } Debug.log(null)").equals("null");
@@ -390,8 +390,8 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { v() { return 55 } m(x, y = v()) { return x * y } } return new A().m(9)").equals("495");
 		code_v2_("class A { m(x, y = x) { return x * y } } return new A().m(9)").equals("81");
 		code_v2_("class A { m(x, y = x, z = y) { return x * y * z } } return new A().m(9)").equals("729");
-		code_v2_("class A { m(x = 12) { return arrayMap([1, 1, 1], (_) => x) } } return new A().m()").equals("[12, 12, 12]");
-		code_v2_("class A { m(x = 12, y = x) { return arrayMap([1, 1, 1], (_) => x + y) } } return new A().m()").equals("[24, 24, 24]");
+		code_v2_4("class A { m(x = 12) { return arrayMap([1, 1, 1], (_) => x) } } return new A().m()").equals("[12, 12, 12]");
+		code_v2_4("class A { m(x = 12, y = x) { return arrayMap([1, 1, 1], (_) => x + y) } } return new A().m()").equals("[24, 24, 24]");
 
 		section("Duplicated method argument");
 		code_v2_("class A { m(x, x) {} }").error(Error.DUPLICATED_ARGUMENT);
@@ -489,7 +489,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { public x(a) { return a } } class B extends A { public x(a, b) { return x(a + b) } } return new B().x(5, 7)").equals("12");
 		code_v2_("class A { m(null|Array<integer> x) { return x } } class B extends A { m(null|Array<integer> x) { return super.m(x) } } return new B().m(null)").equals("null");
 		code_v2_("class A { m(null|Array<integer> x) { return x } } class B extends A { m(null|Array<integer> x) { return super.m(x) } } return new B().m([1, 2])").equals("[1, 2]");
-		code_v2_("class A { m(null|Array<integer> x) { return x == null ? 'none' : count(x) } } class B extends A { m(null|Array<integer> x) { return super.m(null) } } return new B().m([1])").equals("\"none\"");
+		code_v2_4("class A { m(null|Array<integer> x) { return x == null ? 'none' : count(x) } } class B extends A { m(null|Array<integer> x) { return super.m(null) } } return new B().m([1])").equals("\"none\"");
 
 		// Issue #4010: super.method() vers une méthode inexistante sur les ancêtres
 		// générait du Java invalide (super.u_method) qui plantait à la compilation Java
@@ -570,7 +570,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { private x; constructor() { this.x = []; } } return new A()").equals("A {x: []}");
 		code_v2_("class Parent { private chaine = 'Nawak'; public get_chaine_parent() { return this.chaine; } } class Enfant extends Parent { public get_chaine_enfant() { return this.get_chaine_parent() } } var e = Enfant() return [e.get_chaine_parent(), e.get_chaine_enfant() ]").equals("[\"Nawak\", \"Nawak\"]");
 		code_v2_("class Parent { protected chaine = 'Nawak'; public get_chaine_parent() { return this.chaine; } } class Enfant extends Parent { public get_chaine_enfant() { return this.get_chaine_parent() } } var e = Enfant() return [e.get_chaine_parent(), e.get_chaine_enfant() ]").equals("[\"Nawak\", \"Nawak\"]");
-		code_v2_("class A { private x; constructor() { this.x = [] push(this.x, 10); } } return new A()").equals("A {x: [10]}");
+		code_v2_4("class A { private x; constructor() { this.x = [] push(this.x, 10); } } return new A()").equals("A {x: [10]}");
 		code_v2_("class A { private x } class B extends A { m() { this.x = 12 } }").error(Error.PRIVATE_FIELD);
 
 		code_v2_("class A { private x = 10 m() { return x } } var a = new A() return a.m()").equals("10");
@@ -673,7 +673,7 @@ public class TestObject extends TestCommon {
 
 		section("Constructor as function");
 		code_v2_("class A { x constructor(x) { this.x = x } } var f = A var o = {c: f} return o.c('a')").equals("A {x: \"a\"}");
-		code_v2_("class A { x constructor(x) { this.x = x } } var a = [1, 2, 3, 4] return arrayMap(a, A)").equals("[A {x: 1}, A {x: 2}, A {x: 3}, A {x: 4}]");
+		code_v2_4("class A { x constructor(x) { this.x = x } } var a = [1, 2, 3, 4] return arrayMap(a, A)").equals("[A {x: 1}, A {x: 2}, A {x: 3}, A {x: 4}]");
 
 		section("Access levels: static methods");
 		code_v2_("class A { static m() { return 10 } } return A.m()").equals("10");
@@ -690,16 +690,16 @@ public class TestObject extends TestCommon {
 
 		section("Initialization of fields");
 		code_v2_("class A { x = [1, 2, 3] } var a = new A() return a.x").equals("[1, 2, 3]");
-		code_v2_("class A { x = [1, 2, 3] } var a = new A() push(a.x, 4) var b = new A() return b.x").equals("[1, 2, 3]");
+		code_v2_4("class A { x = [1, 2, 3] } var a = new A() push(a.x, 4) var b = new A() return b.x").equals("[1, 2, 3]");
 		code_v2_("class B { y = 10 } class A { x = new B() } var a = new A() return a.x").equals("B {y: 10}");
 		code_v2_("class B { y = 10 } class A { x = new B() } var a = new A() return a.x.y").equals("10");
 		code_v2_("class B { y = 10 } class A { static x = new B() } return A.x").equals("B {y: 10}");
 
 		section("Initialization of static fields");
-		code_v2_("class A { public static x = arrayMap([1, 3, 5], function(y) { return y ** 3 }) } return A.x").equals("[1, 27, 125]");
-		code_v2_("class A { static x = arrayMap([1, 3, 5], function(y) { return y ** 3 }) } return A.x").equals("[1, 27, 125]");
+		code_v2_4("class A { public static x = arrayMap([1, 3, 5], function(y) { return y ** 3 }) } return A.x").equals("[1, 27, 125]");
+		code_v2_4("class A { static x = arrayMap([1, 3, 5], function(y) { return y ** 3 }) } return A.x").equals("[1, 27, 125]");
 		code_v2_3("class Map { public static obstacles = toUpper('hello') } return Map.obstacles").equals("\"HELLO\"");
-		code_v4_("class Map { public static obstacles = toUpper('hello') } return Map.obstacles").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v4("class Map { public static obstacles = toUpper('hello') } return Map.obstacles").error(Error.VARIABLE_NAME_UNAVAILABLE);
 
 		section("Method is a system method");
 		code_v2_("class A { sqrt() { return sqrt(25) } }").equals("null");
@@ -778,7 +778,7 @@ public class TestObject extends TestCommon {
 		code_v2_("class a { static method() { return '42' } } class b { toto constructor() { this.toto = a.method } m() { return this.toto() } } var o = new b() return o.m()").equals("\"42\"");
 		code_v2_("class Test { private static method_1() { return 4 } private static method_2() { return 9 } public static array = [1: Test.method_1, 2: Test.method_2] } return [Test.array[1](), Test.array[2]()]").equals("[4, 9]");
 		code_v2_3("class Test { private static method_1() { return 4 } private static method_2() { return 9 } public static array = [1: Test.method_1, 2: Test.method_2] } return arrayMap(Test.array, function(x) { return x() })").equals("[1 : 4, 2 : 9]");
-		code_v4_("class Test { private static method_1() { return 4 } private static method_2() { return 9 } public static map = [1: Test.method_1, 2: Test.method_2] } return mapMap(Test.map, function(x) { return x() })").equals("[1 : 4, 2 : 9]");
+		code_v4("class Test { private static method_1() { return 4 } private static method_2() { return 9 } public static map = [1: Test.method_1, 2: Test.method_2] } return mapMap(Test.map, function(x) { return x() })").equals("[1 : 4, 2 : 9]");
 		code_v2_("class A { a a() { return 12 } } return new A().a()").equals("12");
 		code_v2_("class A { static m(v) { return v } } var f = A.m return [A.m(5), A['m'](6), f(7)]").equals("[5, 6, 7]");
 
@@ -943,19 +943,19 @@ public class TestObject extends TestCommon {
 
 		section("Class.methods");
 		code_v2_("class A { static methods }").error(Error.NONE);
-		code_v2_("class A { a() {} b() {} static c() {} } return arraySort(A.methods)").equals("[\"a\", \"b\"]");
+		code_v2_4("class A { a() {} b() {} static c() {} } return arraySort(A.methods)").equals("[\"a\", \"b\"]");
 		code_v2_("class A { } A.methods = 'toto'").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_v3_("return Array.methods").equals("[]");
 		code_v3_("return Integer.methods").equals("[]");
-		code_v2_("class B { a() {} } class A extends B { b() {} } return arraySort(A.methods)").equals("[\"a\", \"b\"]");
-		code_v2_("class B { a() {} } class A extends B { b() {} b(x) {} } return arraySort(A.methods)").equals("[\"a\", \"b\", \"b\"]");
+		code_v2_4("class B { a() {} } class A extends B { b() {} } return arraySort(A.methods)").equals("[\"a\", \"b\"]");
+		code_v2_4("class B { a() {} } class A extends B { b() {} b(x) {} } return arraySort(A.methods)").equals("[\"a\", \"b\", \"b\"]");
 
 		section("Class.staticMethods");
 		code_v2_("class A { static staticMethods }").error(Error.NONE);
 		code_v2_("class A { a() {} b() {} static c() {} static d() {} } return A.staticMethods").equals("[\"c\", \"d\"]");
 		code_v2_("class A { } A.staticMethods = 'toto'").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
-		code_v2_("class B { static a() {} } class A extends B { static b() {} } return arraySort(A.staticMethods)").equals("[\"a\", \"b\"]");
-		code_v2_("class B { static a() {} } class A extends B { static b() {} static b(x) {} } return arraySort(A.staticMethods)").equals("[\"a\", \"b\", \"b\"]");
+		code_v2_4("class B { static a() {} } class A extends B { static b() {} } return arraySort(A.staticMethods)").equals("[\"a\", \"b\"]");
+		code_v2_4("class B { static a() {} } class A extends B { static b() {} static b(x) {} } return arraySort(A.staticMethods)").equals("[\"a\", \"b\", \"b\"]");
 
 		section("Object.string()");
 		code_v2_("return string({x: 1, y: 2, z: 3})").equals("\"{x: 1, y: 2, z: 3}\"");
@@ -1064,7 +1064,7 @@ public class TestObject extends TestCommon {
 		code_v3_("return {a: 1, b: 1}.values()").equals("[1, 1]");
 		code_v3_("return {a: 5, b: 'toto', c: true, d: function() { return 5 } }.values()").equals("[5, \"toto\", true, #Anonymous Function]");
 		code_v3_("return {c: 5, a: 'toto', d: true, b: function() { return 5 } }.values()").equals("[5, \"toto\", true, #Anonymous Function]");
-		code_v3_("return count({a: 1, b: 1}.values())").equals("2");
+		code_v3_4("return count({a: 1, b: 1}.values())").equals("2");
 
 		section("Object.isTrue()");
 		code_v2_("if ({x: 12}) { return 5 } else { return 12 }").equals("5");

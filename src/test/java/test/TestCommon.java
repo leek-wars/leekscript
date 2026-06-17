@@ -391,6 +391,25 @@ public class TestCommon {
 	public Case code_strict(String code) {
 		return new Case(code, true, 1, LeekScript.LATEST_VERSION, true);
 	}
+	// Variantes capées à v4 (formes libres stdlib supprimées en v5).
+	public Case code_strict_v1_4(String code) {
+		return new Case(code, true, 1, 4, true);
+	}
+	public Case code_strict_v2_4(String code) {
+		return new Case(code, true, 2, 4, true);
+	}
+	public Case code_v3_4(String code) {
+		return new Case(code, true, 3, 4);
+	}
+	public Case file_v1_4(String code) {
+		return new Case(code, true, 1, 4);
+	}
+	public Case file_v2_4(String code) {
+		return new Case(code, true, 2, 4);
+	}
+	public Case file_v4(String code) {
+		return new Case(code, true, 4, 4);
+	}
 	public Case file(String code) {
 		return new Case(code, true);
 	}

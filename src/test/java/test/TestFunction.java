@@ -157,14 +157,14 @@ public class TestFunction extends TestCommon {
 		// code("var fact = (x, a) -> { if x == 0m then return a end return fact(x - 1, x * a) } fact(10m, 1m)").equals("3628800");
 		// code("function test() { var fact = x -> if x == 1 { 1 } else { fact(x - 1) * x } fact(8) } test()").equals("40320");
 		file_v1("ai/code/knapsack.leek").equals("761");
-		file_v2_("ai/code/knapsack_2.leek").equals("761");
+		file_v2_4("ai/code/knapsack_2.leek").equals("761");
 		code("function cellsInRange(i) { var areaInRange = []; if (i == 0) { return cellsInRange(10); } else { return areaInRange; } } var myRange = cellsInRange(0); return myRange").equals("[]");
 	}
 
 	@Test
 	public void testRedefinition() throws Exception {
 		section("Redefinition");
-		code("var count = count([1, 2, 3]) return count;").equals("3");
+		code_v1_4("var count = count([1, 2, 3]) return count;").equals("3");
 		code("var d = debug d('salut')").equals("null");
 		code_v1_3("abs = 2 return abs").equals("2");
 		code_v4_("abs = 2 return abs").error(Error.CANNOT_REDEFINE_FUNCTION);
@@ -175,16 +175,16 @@ public class TestFunction extends TestCommon {
 		code_v1_3("function f(x, y, z) { return x + y * z } cos = f return cos(1, 2, 3)").equals("7");
 		code_v4_("function f(x, y, z) { return x + y * z } cos = f return cos(1, 2, 3)").error(Error.CANNOT_REDEFINE_FUNCTION);
 		code_v1_3("isEmpty = function() { return 'salut' } if (!isEmpty()) { return 'wrong' } return 'ok'").equals("\"ok\"");
-		code_v4_("isEmpty = function() { return 'salut' } if (!isEmpty()) { return 'wrong' } return 'ok'").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code_v4("isEmpty = function() { return 'salut' } if (!isEmpty()) { return 'wrong' } return 'ok'").error(Error.CANNOT_REDEFINE_FUNCTION);
 		code_v1_3("var _count = count; count = function(x) { return _count(x) } return count([1, 2, 3])").equals("3");
-		code_v4_("var _count = count; count = function(x) { return _count(x) } return count([1, 2, 3])").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code_v4("var _count = count; count = function(x) { return _count(x) } return count([1, 2, 3])").error(Error.CANNOT_REDEFINE_FUNCTION);
 		code_v1_3("var _count = count; count = function(x) { return _count(x) } return count([1, 2, 3]) > count([])").equals("true");
-		code_v4_("var _count = count; count = function(x) { return _count(x) } return count([1, 2, 3]) > count([])").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code_v4("var _count = count; count = function(x) { return _count(x) } return count([1, 2, 3]) > count([])").error(Error.CANNOT_REDEFINE_FUNCTION);
 		code_v1_3("function f() { return count([1, 2, 3]) } var _count = count; count = function(x) { return _count(x) } return f()").equals("3");
-		code_v4_("function f() { return count([1, 2, 3]) } var _count = count; count = function(x) { return _count(x) } return f()").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code_v4("function f() { return count([1, 2, 3]) } var _count = count; count = function(x) { return _count(x) } return f()").error(Error.CANNOT_REDEFINE_FUNCTION);
 		code_v1_3("function f() { return count([1, 2, 3]) > count([]) } var _count = count; count = function(x) { return _count(x) } return f()").equals("true");
-		code_v4_("function f() { return count([1, 2, 3]) > count([]) } var _count = count; count = function(x) { return _count(x) } return f()").error(Error.CANNOT_REDEFINE_FUNCTION);
-		code("function isEmpty(x) { return 12 } return !isEmpty(1) && !isEmpty(2)").equals("false");
+		code_v4("function f() { return count([1, 2, 3]) > count([]) } var _count = count; count = function(x) { return _count(x) } return f()").error(Error.CANNOT_REDEFINE_FUNCTION);
+		code_v1_4("function isEmpty(x) { return 12 } return !isEmpty(1) && !isEmpty(2)").equals("false");
 		// Une fonction système redéfinie vit dans un Box `rfunction_<nom>`, jamais dans
 		// un `u_<nom>` : les opérateurs de MUTATION l'ignoraient et émettaient `u_<nom>`,
 		// non déclaré → « cannot find symbol » à la compilation Java (combat ingénérable,
@@ -222,7 +222,7 @@ public class TestFunction extends TestCommon {
 	public void testSystem_function_as_argument() throws Exception {
 		section("System function as argument");
 		code_v1("function t(@f) { return function(@a) { return arrayMap(a, f); } } return t(sqrt)([1, 4, 9, 16, 25]);").equals("[1, 2, 3, 4, 5]");
-		code_v2_("function t(f) { return function(a) { return arrayMap(a, f); } } return t(sqrt)([1, 4, 9, 16, 25]);").equals("[1.0, 2.0, 3.0, 4.0, 5.0]");
+		code_v2_4("function t(f) { return function(a) { return arrayMap(a, f); } } return t(sqrt)([1, 4, 9, 16, 25]);").equals("[1.0, 2.0, 3.0, 4.0, 5.0]");
 	}
 
 	@Test
@@ -277,7 +277,7 @@ public class TestFunction extends TestCommon {
 		code("var x = 10 var f = function() { return x } var a = f() a += 5 return x").equals("10");
 		code_v1("var x = [] var f = function() { return @x } var a = f() push(a, 5) return x").equals("[5]");
 		code_v1("var x = [] var f = function() { return x } var a = f() push(a, 5) return x").equals("[]");
-		code_v2_("var x = [] var f = function() { return x } var a = f() push(a, 5) return x").equals("[5]");
+		code_v2_4("var x = [] var f = function() { return x } var a = f() push(a, 5) return x").equals("[5]");
 	}
 
 	@Test
@@ -289,12 +289,12 @@ public class TestFunction extends TestCommon {
 		code("var tab = [2, 3, 4, 5, 6]; var r = []; for (var i : var j in tab) { r[i] = function() { return j; }; } return 4;").equals("4");
 		code_strict_v4_("var tab = [2, 3, 4, 5, 6]; var r = []; for (var i : var j in tab) { r[i] = function() { return j; }; } return 4;").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
 		code_v1("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return retour").equals("[2, 1, 2, 1, 2]");
-		code_v2_("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return retour").equals("[2.0, 1, 2.0, 1, 2.0]");
+		code_v2_4("var retour = [];for(var i=0;i<5;i++){if(i&1){var sqrt=function(e){return 1;}; push(retour, sqrt(4));}else{push(retour, sqrt(4));}}return retour").equals("[2.0, 1, 2.0, 1, 2.0]");
 		code_v1("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3]");
-		code_v2_("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3, 12]");
+		code_v2_4("var r = [1, 2, 3] var f = function() { return r } var x = f() push(x, 12) return r").equals("[1, 2, 3, 12]");
 		code("function f() { return [1, 2, 3] } var x = f();").equals("null");
-		code("var x = arrayMap([1, 2, 3], function(x) { return x });").equals("null");
-		code("any x = arrayMap([1, 2, 3], function(x) { return x }); debug(x);").equals("null");
+		code_v1_4("var x = arrayMap([1, 2, 3], function(x) { return x });").equals("null");
+		code_v1_4("any x = arrayMap([1, 2, 3], function(x) { return x }); debug(x);").equals("null");
 		code("any toto = 12; var f = function() { toto = 'salut'; }; [true, 12, f][2](); return toto").equals("\"salut\"");
 		code("any toto = 12; var f = function() { toto = 'salut'; }; var g = function() { return f; }; g()() return toto").equals("\"salut\"");
 		code_v1("function Coordonate(@par_x, @par_y) { var x = par_x; var y = par_y; var getX = function(){ return x; }; var getY = function(){ return y; };return @(function(@method) { if(method === 'getX'){ return getX; } if(method === 'getY'){ return getY;	} }); } var c = Coordonate(5, 12) return [c('getX')(), c('getY')()]").equals("[5, 12]");
@@ -313,14 +313,14 @@ public class TestFunction extends TestCommon {
 		code("getOperations()").equals("0");
 		code("var a = [function() { return 12 }] return a[0]()").equals("12");
 		code_v1("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[]");
-		code_v2_("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[0, 1, 2, 3, 4]");
+		code_v2_4("function push_to_array(array) { return function(element) { push(array, element); } } var arrayCurry = []; var functionToCall = push_to_array(arrayCurry); for (var i = 0; i < 5; i++) functionToCall(i); return arrayCurry").equals("[0, 1, 2, 3, 4]");
 	}
 
 	@Test
 	public void testModify_argument() throws Exception {
 		section("Modify argument");
 		code("function test(x) { x += 10 return x } return test(5)").equals("15");
-		code("var a = [1, 2, 3] function test(x) { push(x, 10) return x } return [a, test([])]").equals("[[1, 2, 3], [10]]");
+		code_v1_4("var a = [1, 2, 3] function test(x) { push(x, 10) return x } return [a, test([])]").equals("[[1, 2, 3], [10]]");
 
 		code("function f(arg, arg) { return arg } return f(1, 2)").error(Error.PARAMETER_NAME_UNAVAILABLE);
 	}
@@ -328,7 +328,7 @@ public class TestFunction extends TestCommon {
 	@Test
 	public void testKnapsack_variants() throws Exception {
 		section("Knapsack variants");
-		code("var items = [[37, 3], [47, 10], [28, 5]] var all = []; return count(all);").equals("0");
+		code_v1_4("var items = [[37, 3], [47, 10], [28, 5]] var all = []; return count(all);").equals("0");
 		code_v1("var aux; aux = function() {}; aux();").equals("null");
 		code_v1("var aux = function(current) {}; aux([0, []]);").equals("null");
 		code_v1("var aux = function(@current) {}; aux([0, []]);").equals("null");
@@ -373,28 +373,28 @@ public class TestFunction extends TestCommon {
 		code("var m = ['A', 'T', 'C', 'G'];").equals("null");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) {} return abs(100 * (count / tests) - 52) < 12;").equals("false");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) {} } return abs(100 * (count / tests) - 52) < 12;").equals("false");
-		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) {} var c = contains(adn, 'GAGA'); if (c) count++ } return abs(100 * (count / tests) - 52) < 12;").equals("false");
+		code_v1_4("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) {} var c = contains(adn, 'GAGA'); if (c) count++ } return abs(100 * (count / tests) - 52) < 12;").equals("false");
 		code("var m = ['A', 'T', 'C', 'G'] var adn = '' adn += m[randInt(0, 4)] null").equals("null");
 		code("var m = ['A', 'T', 'C', 'G'] var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] }").equals("null");
-		code("var adn = 'testtest' contains(adn, 'GAGA');").equals("false");
+		code_v1_4("var adn = 'testtest' contains(adn, 'GAGA');").equals("false");
 		code("var m = ['A', 'T', 'C', 'G'] var adn = 'testtest' adn += m[randInt(0, 4)] null").equals("null");
-		code("var m = ['A', 'T', 'C', 'G'] var adn = 'testtest' adn += m[randInt(0, 4)] contains(adn, 'GAGA')").equals("false");
-		code("var adn = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' var c = contains(adn, 'GAGA');").equals("null");
-		code("var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA');").equals("null");
-		code("var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
-		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA');").equals("null");
+		code_v1_4("var m = ['A', 'T', 'C', 'G'] var adn = 'testtest' adn += m[randInt(0, 4)] contains(adn, 'GAGA')").equals("false");
+		code_v1_4("var adn = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' var c = contains(adn, 'GAGA');").equals("null");
+		code_v1_4("var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA');").equals("null");
+		code_v1_4("var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code_v1_4("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA');").equals("null");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] }").equals("null");
-		code("var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code_v1_4("var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += 'A' } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
 		code("var count = 0 var m = ['A', 'T', 'C', 'G'] var adn = '' for (var j = 0; j < 200; j++) { adn += m[0] } var c = false if (c) count++").equals("null");
-		code("var count = 0 var m = ['A', 'T', 'C', 'G'] var adn = '' adn += m[0] var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
-		code("var count = 0 var m = ['A', 'T', 'C', 'G'] var adn = '' for (var j = 0; j < 200; j++) { adn += m[0] } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code_v1_4("var count = 0 var m = ['A', 'T', 'C', 'G'] var adn = '' adn += m[0] var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code_v1_4("var count = 0 var m = ['A', 'T', 'C', 'G'] var adn = '' for (var j = 0; j < 200; j++) { adn += m[0] } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 50; j++) { adn += m[randInt(0, 4)] } var c = true; if (c) count++").equals("null");
 		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 50; j++) { adn += m[randInt(0, 4)] } var c = false; if (c) count++").equals("null");
-		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 50; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
-		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 100; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
-		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
-		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++ }").equals("null");
-		code("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++ } return abs(100 * (count / tests) - 52) < 12;").equals("true");
+		code_v1_4("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 50; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code_v1_4("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 100; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code_v1_4("var m = ['A', 'T', 'C', 'G'] var count = 0 var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++").equals("null");
+		code_v1_4("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++ }").equals("null");
+		code_v1_4("var m = ['A', 'T', 'C', 'G'] var count = 0 var tests = 500 for (var k = 0; k < tests; k++) { var adn = '' for (var j = 0; j < 200; j++) { adn += m[randInt(0, 4)] } var c = contains(adn, 'GAGA'); if (c) count++ } return abs(100 * (count / tests) - 52) < 12;").equals("true");
 		code_v1("var items = [[37, 3], [47, 10], [28, 5]] var all = []; var aux; aux = function(@current, i, tp, added, last) { if (count(current[1])) push(all, current);	var item_count = count(items); for (var j = i; j < item_count; ++j) { var item = @items[j];	var item_id = item[0]; var cost = item[1]; if (cost > tp) continue;var new_added = added; new_added[item_id] = true; var copy = current; push(copy[1], @[item, cost, 1]); copy[0] += cost; aux(copy, j, tp - cost, new_added, item_id); } }; aux([0, []], 0, 25, [], -1); return count(all);").equals("44");
 	}
 
@@ -402,19 +402,19 @@ public class TestFunction extends TestCommon {
 	public void testSystem_function_typing() throws Exception {
 		section("System function typing");
 		code_v1_3("count('hello')").equals("0");
-		code_v4_("count('hello')").warning(Error.WRONG_ARGUMENT_TYPE);
+		code_v4("count('hello')").warning(Error.WRONG_ARGUMENT_TYPE);
 		code("return abs(12) < 50").equals("true");
 		code("return round(abs(cos(2)) + 5)").equals("5");
 		code("var a = cos return round(acos(a(2)))").equals("2");
 		code_v1("return arrayMap([1, 2, 3], cos)").equals("[0,54, -0,416, -0,99]");
-		code_v2_("return arrayMap([1, 2, 3], cos)").equals("[0.5403023058681398, -0.4161468365471424, -0.9899924966004454]");
+		code_v2_4("return arrayMap([1, 2, 3], cos)").equals("[0.5403023058681398, -0.4161468365471424, -0.9899924966004454]");
 		code_v1("return arrayMap([1, 2, 3], atan2)").equals("[0, 0,464, 0,588]");
 		code_v2_3("return arrayMap([1, 2, 3], atan2)").equals("[0.0, 0.4636476090008061, 0.5880026035475675]");
-		code_v4_("return arrayMap([1, 2, 3], atan2)").equals("[1.5707963267948966, 1.1071487177940904, 0.982793723247329]");
+		code_v4("return arrayMap([1, 2, 3], atan2)").equals("[1.5707963267948966, 1.1071487177940904, 0.982793723247329]");
 		code_v1("var a = [cos, sin, tan] return arrayMap(a, function(f) { return f(5) })").equals("[0,284, -0,959, -3,381]");
-		code_v2_("var a = [cos, sin, tan] return arrayMap(a, function(f) { return f(5) })").equals("[0.28366218546322625, -0.9589242746631385, -3.380515006246586]");
-		code("return arrayMap(split('salut', ''), length)").equals("[1, 1, 1, 1, 1]");
-		code("return count(arrayFlatten([[1],[2]]))").equals("2");
+		code_v2_4("var a = [cos, sin, tan] return arrayMap(a, function(f) { return f(5) })").equals("[0.28366218546322625, -0.9589242746631385, -3.380515006246586]");
+		code_v1_4("return arrayMap(split('salut', ''), length)").equals("[1, 1, 1, 1, 1]");
+		code_v1_4("return count(arrayFlatten([[1],[2]]))").equals("2");
 		code("var a = toUpper, b = arrayMap return b(['a', 'b'], a)").equals("[\"A\", \"B\"]");
 		code_v1("return sqrt()").equals("0");
 		code_v2("return sqrt()").equals("0.0");
@@ -424,8 +424,8 @@ public class TestFunction extends TestCommon {
 		code_v3_("return sqrt(25, 16, 9)").error(Error.INVALID_PARAMETER_COUNT);
 		code_v1("var a = sqrt return a(25, 16, 9)").equals("5");
 		code_v2_("var a = sqrt return a(25, 16, 9)").equals("5.0");
-		code("return count(unknown([1, 2, 3, 4, 5]))").equals("5");
-		code("return count(unknown(12))").equals("0");
+		code_v1_4("return count(unknown([1, 2, 3, 4, 5]))").equals("5");
+		code_v1_4("return count(unknown(12))").equals("0");
 		code("return string(count)").equals("\"#Function count\"");
 		// Une fonction déclarée porte son nom, elle n'est pas anonyme (#5042)
 		code("function f() {} return string(f)").equals("\"#Function f\"");
@@ -620,7 +620,7 @@ public class TestFunction extends TestCommon {
 		// Default parameter with array
 		code("function f(a = [1, 2, 3]) { return a } return f()").equals("[1, 2, 3]");
 		// Default array parameter followed by another parameter
-		code("function f(a = [1, 2], b = 10) { return count(a) + b } return f()").equals("12");
+		code_v1_4("function f(a = [1, 2], b = 10) { return count(a) + b } return f()").equals("12");
 		// Error: default parameter not at end
 		code("function f(a = 5, b) { return a + b } return f(1, 2)").error(Error.DEFAULT_ARGUMENT_NOT_END);
 		// Too many arguments
@@ -724,7 +724,7 @@ public class TestFunction extends TestCommon {
 		code_v4_("var f = integer x => x + 1 return f(10)").equals("11");                 // head=STRING(int type), next=STRING
 		code_v4_("var f = integer? x => x ?? 0 return f(null)").equals("0");              // head=STRING, next=OPERATOR(?) : nullable type
 		code_v4_("var f = integer? x => x ?? 0 return f(7)").equals("7");                 // idem, branche non-null
-		code_v4_("return arrayFilter([1, null, 2, null, 3], integer? c => c != null)").equals("[1, 2, 3]"); // nullable type devant un identifiant single-arg (callback)
+		code_v4("return arrayFilter([1, null, 2, null, 3], integer? c => c != null)").equals("[1, 2, 3]"); // nullable type devant un identifiant single-arg (callback)
 		code_v4_("var f = integer | string x => x return f(42)").equals("42");            // head=STRING, next=OPERATOR(|) : union type
 		// 2. Non-lambdas avec head=STRING — le fast-path doit skip la lambda detection sans casser le parse
 		code("var x = 5 var y = x return y").equals("5");                                 // head=STRING, next=END_INSTRUCTION
@@ -735,7 +735,7 @@ public class TestFunction extends TestCommon {
 		code("function f() { return 42 } return f()").equals("42");                       // head=STRING, next=PAR_LEFT
 		// 3. Lambda dans contexte liste (inList=true) — la garde `!inList || parenthesis`
 		// est touchée par le fast-path
-		code_v4_("var r = arrayMap([1, 2, 3], x => x * 10) return r").equals("[10, 20, 30]");
+		code_v4("var r = arrayMap([1, 2, 3], x => x * 10) return r").equals("[10, 20, 30]");
 		// 4. Expression commençant par opérateur unaire ou nombre — head ≠ lambda-starter, skip entier
 		code("var x = -42 return x").equals("-42");                                       // head=OPERATOR
 		code("var x = !true return x").equals("false");                                   // head=OPERATOR

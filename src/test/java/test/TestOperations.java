@@ -73,7 +73,7 @@ public class TestOperations extends TestCommon {
 			new ReplStep("m['a'] = 1", 4),
 			new ReplStep("var a = m['a']", 3),
 			new ReplStep("Array t = []", 1),
-			new ReplStep("push(t, 2)", 2),
+			new ReplStep("t.push(2)", 1),
 			new ReplStep("t[0] = 1", 3),
 			new ReplStep("var b = t[0]", 2)
 		);

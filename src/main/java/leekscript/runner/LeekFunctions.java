@@ -399,6 +399,23 @@ public class LeekFunctions {
 		method("fileRead", "System", 1, true, Type.STRING, new Type[] { Type.STRING }).setFileArgument();
 		method("getSourceLine", "System", 1, true, Type.INT, new Type[0]).setCallSite(CallSite.LINE);
 		method("getSourceFile", "System", 1, true, Type.STRING, new Type[0]).setCallSite(CallSite.FILE);
+
+		// v5, OO stdlib : les fonctions à receveur (Array/Map/Set/String) n'ont plus de
+		// forme libre en v5. `arrayMap(a, f)` / `push(a, x)` / `length(s)` -> erreur dure
+		// (REMOVED_FUNCTION) pointant vers la forme méthode `a.map(f)` / `a.push(x)` /
+		// `s.length()`. La forme méthode passe par resolveBuiltinMethod (ne vérifie pas
+		// maxVersion), donc capper la forme libre à v4 ne la casse pas. Number/Value/JSON/
+		// System/Color gardent leur forme libre (math + utilitaires, certains sans receveur).
+		for (var f : functions.values()) {
+			if (("Array".equals(f.standardClass) || "Map".equals(f.standardClass)
+					|| "Set".equals(f.standardClass) || "String".equals(f.standardClass))
+					&& f.maxVersion >= 5) {
+				f.maxVersion = 4;
+				if (f.replacement == null) {
+					f.replacement = (f.methodName != null ? f.methodName : f.name) + "()";
+				}
+			}
+		}
 	}
 
 	private static LeekFunctions method(String name, String clazz, Type return_type, Type[] arguments) {
@@ -483,6 +500,9 @@ public class LeekFunctions {
 	// Découple le nom leekscript du nom Java : permet d'exposer la méthode `map`
 	// (v5) tout en appelant la méthode Java existante `arrayMap`. Défaut = name.
 	private String javaName = null;
+	// Nom de la méthode propre équivalente, pour le message d'erreur quand la forme
+	// libre est supprimée en v5. Défaut = name ; mis à jour par alias().
+	private String methodName = null;
 
 	public LeekFunctions(String standardClass, String name, int operations, boolean isStatic, Type return_type, Type[] arguments) {
 		this(standardClass, name, operations, isStatic, new CallableVersion[] { new CallableVersion(return_type, arguments) });
@@ -663,6 +683,7 @@ public class LeekFunctions {
 		copy.javaName = this.name;
 		copy.minVersion = 5;
 		methodsByClass.computeIfAbsent(standardClass, k -> new HashMap<>()).put(methodName, copy);
+		this.methodName = methodName; // pour le message d'erreur de suppression v5
 		return this;
 	}
 	public static String getExtraFunctionsImport() {

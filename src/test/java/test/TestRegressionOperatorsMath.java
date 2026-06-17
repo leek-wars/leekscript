@@ -151,10 +151,10 @@ public class TestRegressionOperatorsMath extends TestCommon {
 		code_v4_("var a = " + R("3.7") + " return floor(a)").equals("3");
 		code_v4_("var a = " + R("3.2") + " return ceil(a)").equals("4");
 		code_v4_("var a = " + R("3.5") + " return round(a)").equals("4");
-		code_v4_("var s = [\"abc\", 1][0] return substring(s, 1)").equals("\"bc\"");
-		code_v4_("var s = [\"hello\", 1][0] return indexOf(s, \"l\")").equals("2");
-		code_v4_("var x = [[3, 1, 2], 0][0] return arrayMax(x)").equals("3");
-		code_v4_("var x = [5, \"x\"][0] var arr = [3, 1, 5, 2] return inArray(arr, x)").equals("true");
+		code_v4("var s = [\"abc\", 1][0] return substring(s, 1)").equals("\"bc\"");
+		code_v4("var s = [\"hello\", 1][0] return indexOf(s, \"l\")").equals("2");
+		code_v4("var x = [[3, 1, 2], 0][0] return arrayMax(x)").equals("3");
+		code_v4("var x = [5, \"x\"][0] var arr = [3, 1, 5, 2] return inArray(arr, x)").equals("true");
 	}
 
 	@Test

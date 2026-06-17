@@ -29,12 +29,12 @@ public class TestLoops extends TestCommon {
 		code("var i = 0 while (i < 10) i++ return i;").equals("10");
 		// code("var i = 5 while (i-- > 0) { System.print(i) }").output("4\n3\n2\n1\n0\n");
 		code("while (true) { return 12 }").equals("12");
-		code("var n = 5 var a = [] while (n--) { push(a, 1) }").equals("null");
-		code("var n = 5 var a = [] while (n--) { push(a, 1) } return a;").equals("[1, 1, 1, 1, 1]");
-		code("var n = 5 var a = [] while (n--) { push(a, 1) } return a;").equals("[1, 1, 1, 1, 1]");
+		code_v1_4("var n = 5 var a = [] while (n--) { push(a, 1) }").equals("null");
+		code_v1_4("var n = 5 var a = [] while (n--) { push(a, 1) } return a;").equals("[1, 1, 1, 1, 1]");
+		code_v1_4("var n = 5 var a = [] while (n--) { push(a, 1) } return a;").equals("[1, 1, 1, 1, 1]");
 		code("var mp = 10, grow = [100] while (mp--) { grow = [1] } return grow;").equals("[1]");
 		// DISABLED_code("var a = [] while |a += 'a'| < 5 { a += 'b' } return a;").equals("['a', 'b', 'a', 'b', 'a']");
-		code("var s = 0 var j = [] while (count(j) < 10) { push(j, 'a') s++ } return s;").equals("10");
+		code_v1_4("var s = 0 var j = [] while (count(j) < 10) { push(j, 'a') s++ } return s;").equals("10");
 		// DISABLED_code("var s = [] var i = 10 while (i--) { if i < 5 { s += i } else { s += ('a'.code() + i).char() } } return s;").equals("['j', 'i', 'h', 'g', 'f', 4, 3, 2, 1, 0]");
 		// DISABLED_code("var s = <> var i = 10 while (i--) { if i < 5 { s += i } else { s += ('a'.code() + i).char() } } return s;").equals("<0, 1, 2, 3, 4, 'f', 'g', 'h', 'i', 'j'>");
 		// DISABLED_code("var s = [:] var i = 10 while (i--) { if i < 5 { s[i] = 5.5 } else { s['a'] = i } } return s;").equals("[0: 5.5, 1: 5.5, 2: 5.5, 3: 5.5, 4: 5.5, 'a': 5]");
@@ -50,12 +50,12 @@ public class TestLoops extends TestCommon {
 	@Test
 	public void testDouble_while_loops() throws Exception {
 		section("Double while loops");
-		code("var s = [] var i = 0 while (i < 2) { i++ var j = 0 while (j < 3) { j++ push(s, j) }} return s;").equals("[1, 2, 3, 1, 2, 3]");
-		code("var s = [] var i = 0 var j = 0 while (i < 2) { i++ j = 0 while (j < 3) { j++ push(s, j) }} return s;").equals("[1, 2, 3, 1, 2, 3]");
-		code("var s = [] var i = 0 var j = 0 while (i < 4) { j = i i++ while (j < 4) { j++ push(s, j) }} return s;").equals("[1, 2, 3, 4, 2, 3, 4, 3, 4, 4]");
-		code("var s = [] var i = 0 while (i < 2) { i++ var j = 0 while (j < 2) { j++ var k = 0 while (k < 2) { k++ push(s, k) }}} return s;").equals("[1, 2, 1, 2, 1, 2, 1, 2]");
+		code_v1_4("var s = [] var i = 0 while (i < 2) { i++ var j = 0 while (j < 3) { j++ push(s, j) }} return s;").equals("[1, 2, 3, 1, 2, 3]");
+		code_v1_4("var s = [] var i = 0 var j = 0 while (i < 2) { i++ j = 0 while (j < 3) { j++ push(s, j) }} return s;").equals("[1, 2, 3, 1, 2, 3]");
+		code_v1_4("var s = [] var i = 0 var j = 0 while (i < 4) { j = i i++ while (j < 4) { j++ push(s, j) }} return s;").equals("[1, 2, 3, 4, 2, 3, 4, 3, 4, 4]");
+		code_v1_4("var s = [] var i = 0 while (i < 2) { i++ var j = 0 while (j < 2) { j++ var k = 0 while (k < 2) { k++ push(s, k) }}} return s;").equals("[1, 2, 1, 2, 1, 2, 1, 2]");
 		code_v1("var s = [] var i = 0 while (i < 2) { i++ push(s, 0.5) var j = 0 while (j < 3) { j++ push(s, j) }} return s;").equals("[0,5, 1, 2, 3, 0,5, 1, 2, 3]");
-		code_v2_("var s = [] var i = 0 while (i < 2) { i++ push(s, 0.5) var j = 0 while (j < 3) { j++ push(s, j) }} return s;").equals("[0.5, 1, 2, 3, 0.5, 1, 2, 3]");
+		code_v2_4("var s = [] var i = 0 while (i < 2) { i++ push(s, 0.5) var j = 0 while (j < 3) { j++ push(s, j) }} return s;").equals("[0.5, 1, 2, 3, 0.5, 1, 2, 3]");
 		// DISABLED_code("var s = [] var i = 0 while (i < 2) { i++ s.push([]) var j = 0 while j < 3 { j++ s[|s| - 1] += 1 }} s").equals("[[1, 1, 1], [1, 1, 1]]");
 		// DISABLED_code("var s = [] var i = 0 while (i < 2) { i++ s.push([]) var j = 0 while j < 3 { j++ s[|s| - 1] += ('a'.code() + 3 * (i - 1) + j - 1).char() }} s").equals("[['a', 'b', 'c'], ['d', 'e', 'f']]");
 		// file("test/code/loops/lot_of_whiles_int.leek").equals("30030");
@@ -175,7 +175,7 @@ public class TestLoops extends TestCommon {
 		code("var a = 0 for (var i = 0; i < 10; i++) { a++ } return a;").equals("10");
 		code("var a = 0 for (var i = 0; i < 10; i++) { if (i < 5) { continue } a++ } return a;").equals("5");
 		code("var a = 0 for (var i = 0; i < 10; i++) { if (i > 5) { break } a++ } return a;").equals("6");
-		code("var c = 0 for (var t = []; count(t) < 10; push(t, 'x')) { c++ } return c;").equals("10");
+		code_v1_4("var c = 0 for (var t = []; count(t) < 10; push(t, 'x')) { c++ } return c;").equals("10");
 		// DISABLED_code("var s = 0 for (var m = [1: 3, 2: 2, 3: 1]; m; var l = 0 for (k, x in m) { l = k } m.erase(l)) { for (x in m) { s += x } } return s;").equals("14");
 		code("for (var i = 0; ['', i < 10][1]; i++) {}").equals("null");
 		// DISABLED_code("var i = ['', 1][1] for (; i < 10; i <<= 1) {}").equals("null");
@@ -196,8 +196,8 @@ public class TestLoops extends TestCommon {
 		code("var i = 0 for (i = 0; i < 10; i++) { if (i == 5) { break } } return i;").equals("5");
 		code_v1("var i var c = 0 for (i = 0; i < 20; i += 0.573) { c++ } return i;").equals("20,055");
 		code_v2_("var i var c = 0 for (i = 0; i < 20; i += 0.573) { c++ } return i;").equals("20.05500000000001");
-		code("var i = 's' var c = 0 for (i = []; count(i) < 8; push(i, 1)) { c++ } return i;").equals("[1, 1, 1, 1, 1, 1, 1, 1]");
-		code_strict("any i = 's' var c = 0 for (i = []; count(i) < 8; push(i, 1)) { c++ } return i;").equals("[1, 1, 1, 1, 1, 1, 1, 1]");
+		code_v1_4("var i = 's' var c = 0 for (i = []; count(i) < 8; push(i, 1)) { c++ } return i;").equals("[1, 1, 1, 1, 1, 1, 1, 1]");
+		code_strict_v1_4("any i = 's' var c = 0 for (i = []; count(i) < 8; push(i, 1)) { c++ } return i;").equals("[1, 1, 1, 1, 1, 1, 1, 1]");
 		// DISABLED_code("var i = 0 for (; i < 10; i += 0.5) { } return i;").equals("10");
 		// code("var i = 0 for (i = 2l; i < 10; i += 0.5) { } return i;").equals("10");
 	}
@@ -257,10 +257,10 @@ public class TestLoops extends TestCommon {
 	public void testMix_for_and_while_loops() throws Exception {
 		section("Mix for and while loops");
 		code("var s = 0 for (var i = 0; i < 10; i += 1) { var j = 10 while (j--) { s++ }} return s;").equals("100");
-		code("var s = [] for (var i = 0; i < 2; i += 1) { var j = 0 while (j < 3) { j++ push(s, 1) }} return s;").equals("[1, 1, 1, 1, 1, 1]");
-		code("var s = 0 for (var i = 0; i < 10; i += 1) { var j = [] while (count(j) < 10) { push(j, 'a') s++ }} return s;").equals("100");
-		code("var s = [] var i = 3 while (i--) { for (var j = 0; j < 2; ++j) { push(s, j) }} return s;").equals("[0, 1, 0, 1, 0, 1]");
-		code("var s = [] var i = 3 var j while (i--) { for (j = 0; j < 2; ++j) { push(s, j) }} return s;").equals("[0, 1, 0, 1, 0, 1]");
+		code_v1_4("var s = [] for (var i = 0; i < 2; i += 1) { var j = 0 while (j < 3) { j++ push(s, 1) }} return s;").equals("[1, 1, 1, 1, 1, 1]");
+		code_v1_4("var s = 0 for (var i = 0; i < 10; i += 1) { var j = [] while (count(j) < 10) { push(j, 'a') s++ }} return s;").equals("100");
+		code_v1_4("var s = [] var i = 3 while (i--) { for (var j = 0; j < 2; ++j) { push(s, j) }} return s;").equals("[0, 1, 0, 1, 0, 1]");
+		code_v1_4("var s = [] var i = 3 var j while (i--) { for (j = 0; j < 2; ++j) { push(s, j) }} return s;").equals("[0, 1, 0, 1, 0, 1]");
 		code("for (var x in [1, 2, 3]) { for (var x = 0; x < 10; ++x) { } }").error(Error.VARIABLE_NAME_UNAVAILABLE);
 
 		header("Foreach loops");
@@ -320,7 +320,7 @@ public class TestLoops extends TestCommon {
 	@Test
 	public void testForeach_Minus_double() throws Exception {
 		section("Foreach - double");
-		code("var r = [] for (var x in [1, 2, 3]) { for (var y in [4, 5, 6]) { push(r, x * y) }} return r;").equals("[4, 5, 6, 8, 10, 12, 12, 15, 18]");
+		code_v1_4("var r = [] for (var x in [1, 2, 3]) { for (var y in [4, 5, 6]) { push(r, x * y) }} return r;").equals("[4, 5, 6, 8, 10, 12, 12, 15, 18]");
 		// code("var r = [] for x in ['a', 'b', 'c'] { for y in [4, 5, 6] { r += x * y }} r").equals("['aaaa', 'aaaaa', 'aaaaaa', 'bbbb', 'bbbbb', 'bbbbbb', 'cccc', 'ccccc', 'cccccc']");
 		code("for (var x in [1, 2, 3]) { for (var x in [4, 5, 6]) { } }").error(Error.VARIABLE_NAME_UNAVAILABLE);
 		code("for (var x : var y1 in [1, 2, 3]) { for (var x : var y2 in [4, 5, 6]) { } }").error(Error.VARIABLE_NAME_UNAVAILABLE);
@@ -348,8 +348,8 @@ public class TestLoops extends TestCommon {
 		code_v1("var a = [1, 2, 3] for (var @e in a) { (function() { e = 5 })() } return a;").equals("[1, 2, 3]");
 		code_v1("var a = [1, 2, 3] for (var i : var @e in a) { (function() { e = 5 })() } return a;").equals("[1, 2, 3]");
 		code("var a = [1, 2, 3] for (var i : var v in a) { (function() { i += 1 })() } return a;").equals("[1, 2, 3]");
-		code("var x for (x in [1, 2]) { return arrayMap([3, 4], function(y) { return x }) }").equals("[1, 1]");
-		code("var x var y for (x : y in [1, 2]) { return arrayMap([3, 4], function(z) { return x + y }) }").equals("[1, 1]");
+		code_v1_4("var x for (x in [1, 2]) { return arrayMap([3, 4], function(y) { return x }) }").equals("[1, 1]");
+		code_v1_4("var x var y for (x : y in [1, 2]) { return arrayMap([3, 4], function(z) { return x + y }) }").equals("[1, 1]");
 	}
 
 	@Test
@@ -363,7 +363,7 @@ public class TestLoops extends TestCommon {
 	@Test
 	public void testForeach_Minus_argument() throws Exception {
 		section("Foreach - argument");
-		code("function main(r) { for (var x in [1, 2, 3]) { for (var y in [4, 5, 6]) { push(r, x * y) }} return r } return main([]);").equals("[4, 5, 6, 8, 10, 12, 12, 15, 18]");
+		code_v1_4("function main(r) { for (var x in [1, 2, 3]) { for (var y in [4, 5, 6]) { push(r, x * y) }} return r } return main([]);").equals("[4, 5, 6, 8, 10, 12, 12, 15, 18]");
 		// #11229404 : un paramètre par référence (@) est une Box ; le réutiliser comme
 		// itérateur de foreach non-déclaratif générait `u_x = (Object) ...` sur une Box.
 		code("function f(@cell, mp) { for (cell in [7, 8]) {} return cell; } return f(0, 1);").equals("8");
@@ -391,13 +391,13 @@ public class TestLoops extends TestCommon {
 		section("Foreach - variable used in container");
 		code("for (var x in x) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 		code("for (var x in [x]) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
-		code("for (var x in arrayMap(x, => 12)) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code_v1_4("for (var x in arrayMap(x, => 12)) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 		code("for (var x : var y in x) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 		code("for (var x : var y in [x]) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
-		code("for (var x : var y in arrayMap(x, => 12)) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code_v1_4("for (var x : var y in arrayMap(x, => 12)) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 		code("for (var x : var y in y) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 		code("for (var x : var y in [y]) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
-		code("for (var x : var y in arrayMap(y, => 12)) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code_v1_4("for (var x : var y in arrayMap(y, => 12)) {}").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 
 		// header("Foreach - unknown container");
 		// code("for x in ['hello', 12345][0] { print(x) }").equals("h\ne\nl\nl\no\n");
@@ -436,8 +436,8 @@ public class TestLoops extends TestCommon {
 		// code("for (var x = 0; x < 2; ++x) { var a = 'a' for (var y = 0; y < 2; ++y) { var b = 'b' break 2 var c = 'c' } var d = 'd' } return 0;").equals("0");
 		// code("while (true) { break 0 }").error(ls::Error::Type::BREAK_LEVEL_ZERO, {});
 		// code("while (true) { continue 0 }").error(ls::Error::Type::CONTINUE_LEVEL_ZERO, {});
-		code("arrayMap([1, 2, 3], function(arr) { if (1) continue })").error(Error.CONTINUE_OUT_OF_LOOP);
-		code("for (var i in [1, 2, 3]) { arrayMap([1, 2, 3], function(arr) { if (1) continue }) }").error(Error.CONTINUE_OUT_OF_LOOP);
+		code_v1_4("arrayMap([1, 2, 3], function(arr) { if (1) continue })").error(Error.CONTINUE_OUT_OF_LOOP);
+		code_v1_4("for (var i in [1, 2, 3]) { arrayMap([1, 2, 3], function(arr) { if (1) continue }) }").error(Error.CONTINUE_OUT_OF_LOOP);
 	}
 
 }

@@ -414,7 +414,7 @@ public class TestAnnotations extends TestCommon {
 		// Classe avec annotation sur UN membre seulement : le sentinel doit bien
 		// basculer vers ArrayList<> uniquement pour le membre concerné, sans
 		// muter l'instance partagée
-		code_v4_("class B { public integer a = 1 @deprecated public integer b = 2 public integer c = 3 public sum() { return this.a + this.c } } return new B().sum()").equals("4");
+		code_v4("class B { public integer a = 1 @deprecated public integer b = 2 public integer c = 3 public sum() { return this.a + this.c } } return new B().sum()").equals("4");
 		// Plusieurs classes successives sans annotations : chacune doit avoir sa propre
 		// vue propre (régression possible si NO_ANNOTATIONS était mutée)
 		code_v4_("class C1 { public integer x = 10 } class C2 { public integer x = 20 } return new C1().x + new C2().x").equals("30");

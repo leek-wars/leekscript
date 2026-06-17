@@ -318,7 +318,7 @@ public class TestGeneral extends TestCommon {
 		// Underscore prefix suppresses warning
 		code_strict_v4_("function _f() { return 0 } return 0").noWarning();
 		// Function passed as a callback counts as used
-		code_strict_v4_("function f(x) { return x } return arrayMap([1, 2], f)").noWarning();
+		code_strict_v4("function f(x) { return x } return arrayMap([1, 2], f)").noWarning();
 		// Function called only from another function (not from main code)
 		code_strict_v4_("function helper() { return 1 } function main_fn() { return helper() } return main_fn()").noWarning();
 		// Mutual recursion: both functions count as used

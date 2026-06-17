@@ -176,9 +176,9 @@ public class TestGlobals extends TestCommon {
 	public void testTypes() throws Exception {
 		section("Types");
 		code("global boolean? x = null; return x").equals("null");
-		code("global boolean x; x = count([]) == 0; return x").equals("true");
+		code_v1_4("global boolean x; x = count([]) == 0; return x").equals("true");
 		code("global boolean? x = null; x = 1 == 2; return x").equals("false");
-		code("global Array<string> w = split('hello', ''); return w").equals("[\"h\", \"e\", \"l\", \"l\", \"o\"]");
+		code_v1_4("global Array<string> w = split('hello', ''); return w").equals("[\"h\", \"e\", \"l\", \"l\", \"o\"]");
 		code_v4_("function f() { return [:] } global Map c = f(); return c").equals("[:]");
 		code_strict("global a = [0] a[0] = 12 return a").equals("[12]");
 		code_v1("global real x = 56 return x").equals("56");

@@ -120,7 +120,7 @@ public class TestJSON extends TestCommon {
 		code("return jsonDecode('[\"a\",\"b\",\"c\"]')").equals("[\"a\", \"b\", \"c\"]");
 		code("return jsonDecode('[[],[[],[]],[]]')").equals("[[], [[], []], []]");
 		code_v1("return average(jsonDecode('[1, 2, 3, 4, 5]'))").equals("3");
-		code_v2_("return average(jsonDecode('[1, 2, 3, 4, 5]'))").equals("3.0");
+		code_v2_4("return average(jsonDecode('[1, 2, 3, 4, 5]'))").equals("3.0");
 
 		code_v1_3("return jsonDecode('{}')").equals("[]");
 		code_v1_3("return jsonDecode('{\"a\":1,\"b\":2,\"c\":3}')").equals("[\"a\" : 1, \"b\" : 2, \"c\" : 3]");

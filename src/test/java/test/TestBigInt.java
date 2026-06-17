@@ -209,7 +209,7 @@ public class TestBigInt extends TestCommon {
 		section("Conteneurs et clone");
 		// Tableaux et maps de big_integer
 		code_v4_("var a = [5L, 3L, 1L] return a[0] + a[2]").equals("6");
-		code_v4_("var a = [5L, 3L, 1L] return arrayMax(a) == 5L").equals("true");
+		code_v4("var a = [5L, 3L, 1L] return arrayMax(a) == 5L").equals("true");
 		code_v4_("var m = [:] m['x'] = 1000000000000000000000L return m['x'] == 1000000000000000000000L").equals("true");
 		// clone (big_integer immutable)
 		code_v4_("var a = 5L var b = clone(a) return b == 5L").equals("true");
@@ -341,8 +341,8 @@ public class TestBigInt extends TestCommon {
 		// big_integer comme clé de map (hashCode/equals)
 		code_v4_("var m = [(1L << 100): \"ok\"] return m[1L << 100]").equals("\"ok\"");
 		// dédup dans un set
-		code_v4_("return setSize(<5L, 5L, 3L>)").equals("2");
-		code_v4_("return setSize(<(1L << 100), (1L << 100)>)").equals("1");
+		code_v4("return setSize(<5L, 5L, 3L>)").equals("2");
+		code_v4("return setSize(<(1L << 100), (1L << 100)>)").equals("1");
 	}
 
 	@Test
@@ -384,12 +384,12 @@ public class TestBigInt extends TestCommon {
 	@Test
 	public void testSortAndJson() throws Exception {
 		section("Tri par défaut (#bug : comparaison double lossy)");
-		code_v4_("return arraySort([3L, 1L, 2L])").equals("[1, 2, 3]");
+		code_v4("return arraySort([3L, 1L, 2L])").equals("[1, 2, 3]");
 		// Gros bigints différant en deçà de la précision double : doivent être
 		// triés EXACTEMENT (une comparaison double les verrait égaux).
-		code_v4_("return arraySort([(1L << 70) + 2, (1L << 70) + 1, (1L << 70)])[0] == 1L << 70").equals("true");
-		code_v4_("var a = arraySort([(1L << 70) + 1, (1L << 70)]) return a[0] == 1L << 70").equals("true");
-		code_v4_("return arraySort([(1L << 100), 5L, (1L << 50)])[0] == 5L").equals("true");
+		code_v4("return arraySort([(1L << 70) + 2, (1L << 70) + 1, (1L << 70)])[0] == 1L << 70").equals("true");
+		code_v4("var a = arraySort([(1L << 70) + 1, (1L << 70)]) return a[0] == 1L << 70").equals("true");
+		code_v4("return arraySort([(1L << 100), 5L, (1L << 50)])[0] == 5L").equals("true");
 
 		section("jsonEncode (#bug : valeur tronquée -> JSON invalide)");
 		code_v4_("return jsonEncode(5L)").equals("\"5\"");
