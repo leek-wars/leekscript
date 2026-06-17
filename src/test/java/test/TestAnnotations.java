@@ -225,6 +225,35 @@ public class TestAnnotations extends TestCommon {
 			}
 			return 0;
 			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
+
+		// Covariance also applies to an implicit override (no @override annotation):
+		// the narrowed return type still lets the result call a child-only method.
+		code_v4_("""
+			class Animal {
+				Animal self() { return this; }
+			}
+			class Dog extends Animal {
+				Dog self() { return this; }
+				bark() { return "woof"; }
+			}
+			return new Dog().self().bark();
+			""").equals("\"woof\"");
+
+		// A sibling subclass is not a subtype of the parent's return type, so it is
+		// rejected: only narrowing along the inheritance chain is allowed.
+		code_v4_("""
+			class Animal {}
+			class Dog extends Animal {}
+			class Cat extends Animal {}
+			class A {
+				Dog get() { return new Dog(); }
+			}
+			class B extends A {
+				@override
+				Cat get() { return new Cat(); }
+			}
+			return 0;
+			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
 	}
 
 	@Test
