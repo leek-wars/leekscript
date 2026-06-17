@@ -239,6 +239,14 @@ public class LeekObjectAccess extends Expression {
 			var fieldWord = field.getWord();
 			var superClassDecl = isSuper ? objectType.getClassDeclaration() : null;
 			var memberType = superClassDecl != null ? superClassDecl.getType().member(fieldWord) : objectType.member(fieldWord);
+			// Méthode de bibliothèque standard sur un type natif (v5, OO stdlib) : `count`
+			// n'est pas un "membre" d'Array au sens classique mais une méthode valide, on
+			// ne doit donc pas la signaler comme membre inexistant.
+			if (memberType.isWarning() && leekscript.common.LanguageFeature.OO_STDLIB.enabledIn(compiler.getVersion())
+					&& leekscript.runner.LeekFunctions.methodFor(objectType, fieldWord) != null) {
+				// Type callable (la résolution réelle de l'appel est faite par LeekFunctionCall).
+				memberType = Type.FUNCTION;
+			}
 			if (memberType.isWarning()) {
 
 				// Champ d'une lecture `m[k]` sous mapContainsKey : avertissement selon la valeur sans null

@@ -438,6 +438,19 @@ public class LeekFunctions {
 		return byName == null ? null : byName.get(name);
 	}
 
+	/**
+	 * Méthode de bibliothèque standard appelable en `valeur.méthode()` sur un type
+	 * natif (Array/Map/Set, dont les méthodes sont des méthodes d'instance Java sur
+	 * la value class), ou null. Source unique de vérité pour le compilateur.
+	 */
+	public static LeekFunctions methodFor(Type type, String name) {
+		String standardClass = type instanceof leekscript.common.ArrayType ? "Array"
+			: type instanceof leekscript.common.MapType ? "Map"
+			: type instanceof leekscript.common.SetType ? "Set"
+			: null;
+		return standardClass == null ? null : getMethod(standardClass, name);
+	}
+
 	private static Map<String, LeekFunctions> extraFunctions = null;
 
 	private static String extraFunctionsImport;

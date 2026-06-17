@@ -882,7 +882,9 @@ public class LeekFunctionCall extends Expression {
 				var builtinClass = standardClassOf(o.getType());
 				if (builtinClass != null) {
 					var builtinMethod = LeekFunctions.getMethod(builtinClass, oa.getField());
-					if (builtinMethod != null && resolveBuiltinMethod(compiler, o.getType(), builtinMethod)) {
+					// Méthodes d'instance uniquement (le receveur = arg0) ; les méthodes
+					// statiques ne s'appellent pas en `valeur.méthode()`.
+					if (builtinMethod != null && !builtinMethod.isStatic() && resolveBuiltinMethod(compiler, o.getType(), builtinMethod)) {
 						return;
 					}
 				}
@@ -1235,13 +1237,16 @@ public class LeekFunctionCall extends Expression {
 		return false;
 	}
 
-	/** The standard-library class name of a built-in receiver type, or null. */
+	/**
+	 * The standard-library class name of a built-in receiver type whose methods are
+	 * instance methods on the value's Java class (so `((ArrayLeekValue) x).sort(ai)`
+	 * is valid codegen). String/Number are excluded: their methods live in static
+	 * helper classes (StringClass/NumberClass), which need a different call shape.
+	 */
 	private static String standardClassOf(Type type) {
 		if (type instanceof ArrayType) return "Array";
 		if (type instanceof MapType) return "Map";
 		if (type instanceof SetType) return "Set";
-		if (type == Type.STRING) return "String";
-		if (type.isNumber()) return "Number";
 		return null;
 	}
 

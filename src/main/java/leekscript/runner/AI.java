@@ -3782,7 +3782,43 @@ public abstract class AI {
 				}
 			}
 		}
+		// Méthode de bibliothèque standard sur un type natif (v5, OO stdlib) : le
+		// receveur a un type statique `any` (ex. `var x = [...]; x.sort()`), donc la
+		// résolution se fait ici, au runtime. Restreint aux vraies méthodes leekscript
+		// (pas aux méthodes Java héritées comme ArrayList.add) et aux méthodes prenant
+		// l'AI en premier param (désambiguïse ArrayLeekValue.sort(AI) de ArrayList.sort).
+		if (version >= 5) {
+			String stdClass = standardClassOfValue(value);
+			if (stdClass != null && leekscript.runner.LeekFunctions.getMethod(stdClass, field) != null) {
+				var candidates = methodCache.get(value.getClass()).get(field);
+				if (candidates != null) {
+					for (var m : candidates) {
+						var params = m.getParameterTypes();
+						if (params.length == args.length + 1 && params[0] == AI.class) {
+							Object[] full = new Object[args.length + 1];
+							full[0] = this;
+							System.arraycopy(args, 0, full, 1, args.length);
+							try {
+								return m.invoke(value, full);
+							} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+								if (e.getCause() instanceof LeekRunException lre) throw lre;
+								addSystemLog(AILog.ERROR, e);
+								return null;
+							}
+						}
+					}
+				}
+			}
+		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { value, field });
+		return null;
+	}
+
+	/** Standard-library class of a runtime native value whose methods are instance methods on its Java class. */
+	private static String standardClassOfValue(Object value) {
+		if (value instanceof ArrayLeekValue) return "Array";
+		if (value instanceof MapLeekValue) return "Map";
+		if (value instanceof leekscript.runner.values.SetLeekValue) return "Set";
 		return null;
 	}
 
