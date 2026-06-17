@@ -8,8 +8,13 @@ on:
 
 jobs:
   review:
+    # Les runs `pull_request` venant d'un fork n'ont ni secrets ni token OIDC
+    # (restriction GitHub), donc l'action ne peut pas s'authentifier et le job
+    # échouerait en rouge. On limite l'auto-review aux PR internes ; sur un fork
+    # le job est simplement sauté. Pour reviewer un PR de fork, commenter `@claude`
+    # (le trigger `issue_comment` tourne en contexte base, avec les creds).
     if: |
-      (github.event_name == 'pull_request') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
     runs-on: ubuntu-latest
     permissions:
