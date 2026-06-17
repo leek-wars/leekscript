@@ -497,10 +497,11 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 							var childReturn = childType.returnType();
 
 							// Type de retour : identique, ou réduit à une sous-classe (covariance).
-							// On limite la covariance aux types classe : c'est le seul cas que le
-							// Java généré peut représenter (u_Enfant extends u_Parent permet un
-							// retour covariant). Java n'autorise pas non plus la covariance entre
-							// primitifs (ex. double -> long), on reste donc cohérent.
+							// On limite la covariance aux types classe pour rester cohérent avec
+							// Java, qui autorise la covariance de retour entre types référence mais
+							// pas entre primitifs (ex. double -> long). Note : les méthodes générées
+							// retournent toujours Object, donc cette restriction est purement
+							// sémantique et n'est pas imposée par le code généré.
 							var returnCast = parentReturn.accepts(childReturn);
 							boolean compatible = returnCast == CastType.EQUALS
 								|| (returnCast == CastType.UPCAST && parentReturn instanceof ClassType && childReturn instanceof ClassType);
