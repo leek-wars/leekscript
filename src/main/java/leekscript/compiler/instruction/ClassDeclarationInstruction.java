@@ -486,10 +486,41 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						var parentVersion = parentMethod.get(version.getKey());
 						if (parentVersion != null) {
 							foundInParent = true;
-							if (block.getType().accepts(parentVersion.block.getType()) != CastType.EQUALS) {
+							// Compatibilité de type entre la méthode surchargée et celle du parent,
+							// comme en Java :
+							//  - le type de retour peut être réduit (covariance) : l'enfant peut
+							//    retourner un sous-type de ce que retourne le parent ;
+							//  - les types des paramètres restent invariants (doivent être identiques).
+							var childType = block.getType();
+							var parentType = parentVersion.block.getType();
+							var parentReturn = parentType.returnType();
+							var childReturn = childType.returnType();
+
+							// Type de retour : identique, ou réduit à une sous-classe (covariance).
+							// On limite la covariance aux types classe : c'est le seul cas que le
+							// Java généré peut représenter (u_Enfant extends u_Parent permet un
+							// retour covariant). Java n'autorise pas non plus la covariance entre
+							// primitifs (ex. double -> long), on reste donc cohérent.
+							var returnCast = parentReturn.accepts(childReturn);
+							boolean compatible = returnCast == CastType.EQUALS
+								|| (returnCast == CastType.UPCAST && parentReturn instanceof ClassType && childReturn instanceof ClassType);
+
+							// Paramètres : chaque type doit rester identique (invariant).
+							if (compatible) {
+								var parentArgs = parentType.getArguments();
+								var childArgs = childType.getArguments();
+								for (int a = 0; a < Math.min(parentArgs.size(), childArgs.size()); ++a) {
+									if (parentArgs.get(a).accepts(childArgs.get(a)) != CastType.EQUALS) {
+										compatible = false;
+										break;
+									}
+								}
+							}
+
+							if (!compatible) {
 								compiler.addError(new AnalyzeError(block.getLocation(), AnalyzeErrorLevel.ERROR, Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE, new String[] {
-									block.getType().toString(),
-									parentVersion.block.getType().toString()
+									childType.toString(),
+									parentType.toString()
 								}));
 							}
 							// Une override ne peut pas réduire la visibilité (LSP : ce qui est public dans le parent doit le rester).
