@@ -33,6 +33,7 @@ import leekscript.common.ClassValueType;
 import leekscript.common.CompoundType;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
+import leekscript.common.IntervalType;
 import leekscript.common.LanguageFeature;
 import leekscript.common.MapType;
 import leekscript.common.SetType;
@@ -1207,7 +1208,7 @@ public class LeekFunctionCall extends Expression {
 	private void collectTypeVariables(Type type, java.util.Set<TypeVariable> out) {
 		if (type instanceof TypeVariable variable) {
 			out.add(variable);
-		} else if (type instanceof ArrayType || type instanceof SetType) {
+		} else if (type instanceof ArrayType || type instanceof SetType || type instanceof IntervalType) {
 			collectTypeVariables(type.element(), out);
 		} else if (type instanceof MapType) {
 			collectTypeVariables(type.key(), out);
