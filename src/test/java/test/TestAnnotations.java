@@ -254,6 +254,33 @@ public class TestAnnotations extends TestCommon {
 			}
 			return 0;
 			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
+
+		// `any` is the top type, so narrowing an untyped (any) parent return to a
+		// class is covariance too: a common case where a child types a parent method.
+		code_v4_("""
+			class Animal {
+				wrap() { return this; }
+			}
+			class Dog extends Animal {
+				@override
+				Dog wrap() { return this; }
+				bark() { return "woof"; }
+			}
+			return new Dog().wrap().bark();
+			""").equals("\"woof\"");
+
+		// But narrowing `any` to a primitive stays rejected, consistent with the
+		// primitive restriction (Java forbids Object -> int covariant returns too).
+		code_v4_("""
+			class A {
+				get() { return 1; }
+			}
+			class B extends A {
+				@override
+				integer get() { return 2; }
+			}
+			return 0;
+			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
 	}
 
 	@Test

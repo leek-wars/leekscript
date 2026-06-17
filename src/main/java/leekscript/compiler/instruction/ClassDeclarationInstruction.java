@@ -496,15 +496,20 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 							var parentReturn = parentType.returnType();
 							var childReturn = childType.returnType();
 
-							// Type de retour : identique, ou réduit à une sous-classe (covariance).
-							// On limite la covariance aux types classe pour rester cohérent avec
-							// Java, qui autorise la covariance de retour entre types référence mais
-							// pas entre primitifs (ex. double -> long). Note : les méthodes générées
+							// Type de retour : identique, ou réduit (covariance). On n'autorise la
+							// réduction que vers un type classe, pour rester cohérent avec Java qui
+							// autorise la covariance entre types référence mais pas entre primitifs
+							// (ex. double -> long). Le parent peut être une classe (réduction vers
+							// une sous-classe) ou `any` (le type top : le réduire vers une classe
+							// est de la covariance aussi, cas courant d'une méthode parent non
+							// typée surchargée par un enfant typé). Note : les méthodes générées
 							// retournent toujours Object, donc cette restriction est purement
 							// sémantique et n'est pas imposée par le code généré.
 							var returnCast = parentReturn.accepts(childReturn);
 							boolean compatible = returnCast == CastType.EQUALS
-								|| (returnCast == CastType.UPCAST && parentReturn instanceof ClassType && childReturn instanceof ClassType);
+								|| (returnCast == CastType.UPCAST
+									&& childReturn instanceof ClassType
+									&& (parentReturn instanceof ClassType || parentReturn == Type.ANY));
 
 							// Paramètres : chaque type doit rester identique (invariant).
 							if (compatible) {
