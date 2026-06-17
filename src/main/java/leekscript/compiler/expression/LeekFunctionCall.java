@@ -453,18 +453,25 @@ public class LeekFunctionCall extends Expression {
 		// appelé 2× dans le chemin (et appel de fonction = hot path).
 		var exprType = mExpression.getType();
 		boolean strict = compiler.getMainBlock().isStrict();
-		if (strict && !exprType.isCallable()) {
-			compiler.addError(new AnalyzeError(mExpression.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAY_NOT_BE_CALLABLE, new String[] {
-				mExpression.toString(),
-				exprType.toString()
-			} ));
-		}
-		else if (!exprType.canBeCallable()) {
-			var level = strict ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
-			compiler.addError(new AnalyzeError(mExpression.getLocation(), level, Error.NOT_CALLABLE, new String[] {
-				mExpression.toString(),
-				exprType.toString()
-			} ));
+		// Appel optionnel `obj?.method()` : l'accès optionnel a un type statique ANY
+		// (résultat nullable) et passe par le chemin dynamique null-safe
+		// (callObjectAccessNullSafe). On ne vérifie donc pas la callabilité, sinon faux
+		// positif "pourrait ne pas être appelable" en mode strict (#4204).
+		boolean optionalAccess = mExpression instanceof LeekObjectAccess oa && oa.isOptional();
+		if (!optionalAccess) {
+			if (strict && !exprType.isCallable()) {
+				compiler.addError(new AnalyzeError(mExpression.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAY_NOT_BE_CALLABLE, new String[] {
+					mExpression.toString(),
+					exprType.toString()
+				} ));
+			}
+			else if (!exprType.canBeCallable()) {
+				var level = strict ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+				compiler.addError(new AnalyzeError(mExpression.getLocation(), level, Error.NOT_CALLABLE, new String[] {
+					mExpression.toString(),
+					exprType.toString()
+				} ));
+			}
 		}
 
 		this.functionType = mExpression.getType();

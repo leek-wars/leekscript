@@ -123,6 +123,11 @@ public class TestClass extends TestCommon {
 		code_v4_("return 1 > 2 ? 10 : 20").equals("20");
 		// Accès optionnel non assignable
 		code_v4_("class A { public x = 1 } var a = new A() a?.x = 5 return a.x").error(Error.CANT_ASSIGN_VALUE);
+		// Appel de méthode optionnel en mode strict : pas de faux warning "may not be
+		// callable" (l'accès optionnel passe par le chemin dynamique null-safe) (#4204)
+		code_strict_v4_("class A { a(b) { return b } compute() { return this?.a(5) } } var x = new A() return x.compute()").equals("5");
+		code_strict_v4_("class A { method m() { return 7 } } var a = new A() return a?.m()").noWarning();
+		code_strict_v4_("class A { method add(a, b) { return a + b } } var a = new A() return a?.add(3, 4)").noWarning();
 	}
 
 }
