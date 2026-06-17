@@ -3789,8 +3789,11 @@ public abstract class AI {
 		// l'AI en premier param (désambiguïse ArrayLeekValue.sort(AI) de ArrayList.sort).
 		if (version >= 5) {
 			String stdClass = standardClassOfValue(value);
-			if (stdClass != null && leekscript.runner.LeekFunctions.getMethod(stdClass, field) != null) {
-				var candidates = methodCache.get(value.getClass()).get(field);
+			var builtin = stdClass == null ? null : leekscript.runner.LeekFunctions.getMethod(stdClass, field);
+			if (builtin != null) {
+				// getJavaName() : le nom leekscript (ex. `map`) peut différer de la
+				// méthode Java (ex. `arrayMap`).
+				var candidates = methodCache.get(value.getClass()).get(builtin.getJavaName());
 				if (candidates != null) {
 					for (var m : candidates) {
 						var params = m.getParameterTypes();

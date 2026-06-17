@@ -408,7 +408,9 @@ public class LeekFunctionCall extends Expression {
 				}
 				writer.addCode("((" + receiverType.getJavaName(mainblock.getVersion()) + ") ");
 				object.writeJavaCode(mainblock, writer, true);
-				writer.addCode(")." + field + "(" + writer.getAIThis());
+				// getJavaName() : le nom leekscript (ex. `map`) peut différer de la
+				// méthode Java (ex. `arrayMap`).
+				writer.addCode(")." + system_function.getJavaName() + "(" + writer.getAIThis());
 				addComma = true;
 			} else {
 				// object.field() : Méthode ou bien appel d'un champ
