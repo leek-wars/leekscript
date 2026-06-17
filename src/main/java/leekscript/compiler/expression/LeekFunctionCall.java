@@ -198,6 +198,8 @@ public class LeekFunctionCall extends Expression {
 					writer.addCode("u_" + field + "(");
 					addComma = false;
 				} else if (this.functionType instanceof FunctionType ft) {
+					// run() retourne Object : on caste vers le wrapper avant .doubleValue()/etc.
+					writeConvertPrimitiveCast(writer);
 					writer.addCode("this." + field);
 					writer.addCode(".run(");
 					writer.addCode(writer.getAIThis());
@@ -332,6 +334,8 @@ public class LeekFunctionCall extends Expression {
 				mExpression.writeJavaCode(mainblock, writer, false);
 			}
 		} else if (this.functionType instanceof FunctionType) {
+			// run() retourne Object : on caste vers le wrapper avant .doubleValue()/etc.
+			writeConvertPrimitiveCast(writer);
 			mExpression.writeJavaCode(mainblock, writer, true);
 			writer.addCode(".run(");
 			writer.addCode(writer.getAIThis());
@@ -399,15 +403,32 @@ public class LeekFunctionCall extends Expression {
 			writer.addCode(")");
 		}
 		if (convertPrimitive) {
+			// Ferme le cast ouvert par writeConvertPrimitiveCast() : ((Number) X.run(...)).doubleValue()
 			if (this.type == Type.INT) {
-				writer.addCode(".longValue()");
+				writer.addCode(").longValue()");
 			} else if (this.type == Type.REAL) {
-				writer.addCode(".doubleValue()");
+				writer.addCode(").doubleValue()");
 			} else if (this.type == Type.BOOL) {
-				writer.addCode(".booleanValue()");
+				writer.addCode(").booleanValue()");
 			}
 		}
 		writer.addPosition(openParenthesis);
+	}
+
+	/**
+	 * Le résultat d'un appel de valeur fonction (`FunctionLeekValue.run(...)`) est
+	 * typé `Object`. Quand le type de retour inféré est primitif, on doit caster
+	 * vers le wrapper Java correspondant avant d'appeler `.doubleValue()` /
+	 * `.longValue()` / `.booleanValue()` (sinon `Object` n'a pas ces méthodes).
+	 * Émet le préfixe `((Number) ` / `((Boolean) ` ; le suffixe `)` est écrit par
+	 * le bloc convertPrimitive. No-op si le type n'est pas primitif.
+	 */
+	private void writeConvertPrimitiveCast(JavaWriter writer) {
+		if (this.type == Type.INT || this.type == Type.REAL) {
+			writer.addCode("((Number) ");
+		} else if (this.type == Type.BOOL) {
+			writer.addCode("((Boolean) ");
+		}
 	}
 
 	@Override

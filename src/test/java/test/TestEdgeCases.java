@@ -24,6 +24,15 @@ public class TestEdgeCases extends TestCommon {
 	}
 
 	@Test
+	public void testParenthesizedSystemFunctionCall() throws Exception {
+		// Parenthéser une fonction système la fait passer par le chemin valeur-fonction
+		// (run() -> Object). Avec un retour primitif, le code généré faisait
+		// Object.doubleValue() -> erreur de compilation Java côté worker (#11229886).
+		code_v1("var x = (sqrt)(16); return x").equals("4");
+		code_v1("var x = (abs)(-3); return x").equals("3");
+	}
+
+	@Test
 	public void testCoalesce_real_with_int_default() throws Exception {
 		section("Coalesce on real-typed value with int 0 fallback");
 		// Production error #11225528: ternary mixing Double and 0l unboxes to primitive double, breaking .doubleValue().
