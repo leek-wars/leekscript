@@ -448,6 +448,7 @@ public class LeekFunctions {
 			: type instanceof leekscript.common.MapType ? "Map"
 			: type instanceof leekscript.common.SetType ? "Set"
 			: type == Type.STRING ? "String"
+			: type.isNumber() ? "Number"
 			: null;
 		return standardClass == null ? null : getMethod(standardClass, name);
 	}

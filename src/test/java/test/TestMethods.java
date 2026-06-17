@@ -96,6 +96,25 @@ public class TestMethods extends TestCommon {
 	}
 
 	@Test
+	public void numberMethods() throws Exception {
+		section("Methods / number (static helper, overload selection)");
+		// Number methods are static NumberClass helpers with int/real/big_integer
+		// overloads; the runtime dispatch selects the overload matching the actual type
+		// (reflection does no widening). Literal receivers (5.abs()) are avoided: the
+		// lexer would read `5.` as a real, so a typed/var receiver is used.
+		code_v5("integer x = -5 return x.abs()").equals("5");
+		code_v5("var x = -5 return x.abs()").equals("5");
+		code_v5("real x = 9.0 return x.sqrt()").equals("3.0");
+		code_v5("var x = 9.0 return x.sqrt()").equals("3.0");
+		code_v5("integer x = 9 return x.sqrt()").equals("3.0");
+		code_v5("var x = 9 return x.sqrt()").equals("3.0");
+		code_v5("integer x = 5 return x.min(3)").equals("3");
+		code_v5("var x = 7 return x.max(10)").equals("10");
+		code_v5("real x = 2.5 return x.floor()").equals("2");
+		code_strict_v5_("integer x = -5 integer a = x.abs() return a").noWarning();
+	}
+
+	@Test
 	public void onlyInV5() throws Exception {
 		section("Methods / version gate");
 		// In v1-4 the method form does not resolve (the value-method OO library is a

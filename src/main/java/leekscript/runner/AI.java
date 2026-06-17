@@ -3799,7 +3799,7 @@ public abstract class AI {
 					if (candidates != null) {
 						for (var m : candidates) {
 							var params = m.getParameterTypes();
-							if (java.lang.reflect.Modifier.isStatic(m.getModifiers()) && params.length == args.length + 2 && params[0] == AI.class) {
+							if (java.lang.reflect.Modifier.isStatic(m.getModifiers()) && params.length == args.length + 2 && params[0] == AI.class && staticArgsMatch(params, value, args)) {
 								Object[] full = new Object[args.length + 2];
 								full[0] = this;
 								full[1] = value;
@@ -3814,7 +3814,7 @@ public abstract class AI {
 					if (candidates != null) {
 						for (var m : candidates) {
 							var params = m.getParameterTypes();
-							if (params.length == args.length + 1 && params[0] == AI.class) {
+							if (params.length == args.length + 1 && params[0] == AI.class && instanceArgsMatch(params, args)) {
 								Object[] full = new Object[args.length + 1];
 								full[0] = this;
 								System.arraycopy(args, 0, full, 1, args.length);
@@ -3841,7 +3841,31 @@ public abstract class AI {
 		if (value instanceof MapLeekValue) return "Map";
 		if (value instanceof leekscript.runner.values.SetLeekValue) return "Set";
 		if (value instanceof String) return "String";
+		if (value instanceof Number) return "Number";
 		return null;
+	}
+
+	// Sélection de surcharge pour le dispatch des méthodes natives au runtime :
+	// la réflexion ne fait pas de widening (Long ne passe pas à un param double),
+	// donc on ne retient que la surcharge dont les types acceptent les arguments réels.
+	private static boolean staticArgsMatch(Class<?>[] params, Object value, Object[] args) {
+		if (!argMatches(params[1], value)) return false;
+		for (int i = 0; i < args.length; i++) if (!argMatches(params[2 + i], args[i])) return false;
+		return true;
+	}
+	private static boolean instanceArgsMatch(Class<?>[] params, Object[] args) {
+		for (int i = 0; i < args.length; i++) if (!argMatches(params[1 + i], args[i])) return false;
+		return true;
+	}
+	private static boolean argMatches(Class<?> param, Object arg) {
+		if (param.isPrimitive()) {
+			if (param == long.class) return arg instanceof Long;
+			if (param == double.class) return arg instanceof Double;
+			if (param == boolean.class) return arg instanceof Boolean;
+			if (param == int.class) return arg instanceof Integer;
+			return false;
+		}
+		return arg == null || param.isInstance(arg);
 	}
 
 	public Object execute(Object function, Object... args) throws LeekRunException {
