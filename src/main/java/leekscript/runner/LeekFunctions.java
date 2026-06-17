@@ -250,37 +250,37 @@ public class LeekFunctions {
 		/**
 		 * Map functions
 		 */
-		method("mapSize", "Map", 1, Type.INT, new Type[] { Type.MAP }).setMinVersion(4);
-		method("mapIsEmpty", "Map", 2, Type.BOOL, new Type[] { Type.MAP }).setMinVersion(4);
-		method("mapClear", "Map", 1, Type.MAP, new Type[] { Type.MAP }).setMinVersion(4);
+		method("mapSize", "Map", 1, Type.INT, new Type[] { Type.MAP }).alias("size").setMinVersion(4);
+		method("mapIsEmpty", "Map", 2, Type.BOOL, new Type[] { Type.MAP }).alias("isEmpty").setMinVersion(4);
+		method("mapClear", "Map", 1, Type.MAP, new Type[] { Type.MAP }).alias("clear").setMinVersion(4);
 		method("mapGet", "Map", 2, new CallableVersion[] {
 			new CallableVersion(Type.ANY, new Type[] { Type.MAP, Type.ANY, Type.ANY }),
 			new CallableVersion(Type.ANY, new Type[] { Type.MAP, Type.ANY }),
-		}).setMinVersion(4);
-		method("mapValues", "Map", Type.ARRAY, new Type[] { Type.MAP }).setMinVersion(4);
-		method("mapKeys", "Map", Type.ARRAY, new Type[] { Type.MAP }).setMinVersion(4);
-		method("mapKeySet", "Map", Type.SET, new Type[] { Type.MAP }).setMinVersion(4);
-		method("mapIter", "Map", Type.VOID, new Type[] { Type.MAP, new FunctionType(Type.ANY, 0, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
-		method("mapMap", "Map", Type.MAP, new Type[] { Type.MAP, new FunctionType(Type.ANY, 0, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
-		method("mapSum", "Map", Type.REAL, new Type[] { Type.MAP }).setMinVersion(4);
-		method("mapAverage", "Map", Type.REAL, new Type[] { Type.MAP }).setMinVersion(4);
-		method("mapMin", "Map", Type.ANY, new Type[] { Type.MAP }).setMinVersion(4);
-		method("mapMax", "Map", Type.ANY, new Type[] { Type.MAP }).setMinVersion(4);
-		method("mapSearch", "Map", Type.ANY, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
-		method("mapContains", "Map", Type.BOOL, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
-		method("mapContainsKey", "Map", 1, Type.BOOL, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
-		method("mapRemove", "Map", 2, Type.ANY, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
-		method("mapRemoveAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
-		method("mapReplace", "Map", 3, Type.ANY, new Type[] { Type.MAP, Type.ANY, Type.ANY }).setMinVersion(4);
-		method("mapReplaceAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.MAP }).setMinVersion(4);
-		method("mapFill", "Map", Type.VOID, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
-		method("mapEvery", "Map", Type.BOOL, new Type[] { Type.MAP, new FunctionType(Type.ANY, 1, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
-		method("mapSome", "Map", Type.BOOL, new Type[] { Type.MAP, new FunctionType(Type.ANY, 1, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
-		method("mapFold", "Map", Type.ANY, new Type[] { Type.MAP, new FunctionType(Type.ANY, 2, Type.ANY, Type.ANY, Type.ANY, Type.MAP), Type.ANY }).setMinVersion(4);
-		method("mapFilter", "Map", Type.MAP, new Type[] { Type.MAP, new FunctionType(Type.BOOL, 0, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
-		method("mapMerge", "Map", Type.ANY, new Type[] { Type.MAP, Type.MAP }).setMinVersion(4);
-		method("mapPut", "Map", 3, Type.ANY, new Type[] { Type.MAP, Type.ANY, Type.ANY }).setMinVersion(4);
-		method("mapPutAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.MAP }).setMinVersion(4);
+		}).alias("get").setMinVersion(4);
+		method("mapValues", "Map", Type.ARRAY, new Type[] { Type.MAP }).alias("values").setMinVersion(4);
+		method("mapKeys", "Map", Type.ARRAY, new Type[] { Type.MAP }).alias("keys").setMinVersion(4);
+		method("mapKeySet", "Map", Type.SET, new Type[] { Type.MAP }).alias("keySet").setMinVersion(4);
+		method("mapIter", "Map", Type.VOID, new Type[] { Type.MAP, new FunctionType(Type.ANY, 0, Type.ANY, Type.ANY, Type.MAP) }).alias("iter").setMinVersion(4);
+		method("mapMap", "Map", Type.MAP, new Type[] { Type.MAP, new FunctionType(Type.ANY, 0, Type.ANY, Type.ANY, Type.MAP) }).alias("map").setMinVersion(4);
+		method("mapSum", "Map", Type.REAL, new Type[] { Type.MAP }).alias("sum").setMinVersion(4);
+		method("mapAverage", "Map", Type.REAL, new Type[] { Type.MAP }).alias("average").setMinVersion(4);
+		method("mapMin", "Map", Type.ANY, new Type[] { Type.MAP }).alias("min").setMinVersion(4);
+		method("mapMax", "Map", Type.ANY, new Type[] { Type.MAP }).alias("max").setMinVersion(4);
+		method("mapSearch", "Map", Type.ANY, new Type[] { Type.MAP, Type.ANY }).alias("search").setMinVersion(4);
+		method("mapContains", "Map", Type.BOOL, new Type[] { Type.MAP, Type.ANY }).alias("contains").setMinVersion(4);
+		method("mapContainsKey", "Map", 1, Type.BOOL, new Type[] { Type.MAP, Type.ANY }).alias("containsKey").setMinVersion(4);
+		method("mapRemove", "Map", 2, Type.ANY, new Type[] { Type.MAP, Type.ANY }).alias("remove").setMinVersion(4);
+		method("mapRemoveAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.ANY }).alias("removeAll").setMinVersion(4);
+		method("mapReplace", "Map", 3, Type.ANY, new Type[] { Type.MAP, Type.ANY, Type.ANY }).alias("replace").setMinVersion(4);
+		method("mapReplaceAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.MAP }).alias("replaceAll").setMinVersion(4);
+		method("mapFill", "Map", Type.VOID, new Type[] { Type.MAP, Type.ANY }).alias("fill").setMinVersion(4);
+		method("mapEvery", "Map", Type.BOOL, new Type[] { Type.MAP, new FunctionType(Type.ANY, 1, Type.ANY, Type.ANY, Type.MAP) }).alias("every").setMinVersion(4);
+		method("mapSome", "Map", Type.BOOL, new Type[] { Type.MAP, new FunctionType(Type.ANY, 1, Type.ANY, Type.ANY, Type.MAP) }).alias("some").setMinVersion(4);
+		method("mapFold", "Map", Type.ANY, new Type[] { Type.MAP, new FunctionType(Type.ANY, 2, Type.ANY, Type.ANY, Type.ANY, Type.MAP), Type.ANY }).alias("fold").setMinVersion(4);
+		method("mapFilter", "Map", Type.MAP, new Type[] { Type.MAP, new FunctionType(Type.BOOL, 0, Type.ANY, Type.ANY, Type.MAP) }).alias("filter").setMinVersion(4);
+		method("mapMerge", "Map", Type.ANY, new Type[] { Type.MAP, Type.MAP }).alias("merge").setMinVersion(4);
+		method("mapPut", "Map", 3, Type.ANY, new Type[] { Type.MAP, Type.ANY, Type.ANY }).alias("put").setMinVersion(4);
+		method("mapPutAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.MAP }).alias("putAll").setMinVersion(4);
 		method("assocSort", "Map", new CallableVersion[] {
 			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY, Type.INT }),
 			new CallableVersion(Type.VOID, new Type[] { Type.ARRAY }),
@@ -294,22 +294,22 @@ public class LeekFunctions {
 		/**
 		 * Set functions
 		 */
-		method("setPut", "Set", 3, Type.BOOL, new Type[] { Type.SET, Type.ANY });
-		method("setPutAll", "Set", Type.VOID, new Type[] { Type.SET, Type.SET });
-		method("setRemove", "Set", 2, Type.BOOL, new Type[] { Type.SET, Type.ANY });
-		method("setClear", "Set", 1, Type.SET, new Type[] { Type.SET });
+		method("setPut", "Set", 3, Type.BOOL, new Type[] { Type.SET, Type.ANY }).alias("put");
+		method("setPutAll", "Set", Type.VOID, new Type[] { Type.SET, Type.SET }).alias("putAll");
+		method("setRemove", "Set", 2, Type.BOOL, new Type[] { Type.SET, Type.ANY }).alias("remove");
+		method("setClear", "Set", 1, Type.SET, new Type[] { Type.SET }).alias("clear");
 		// 1 op comme l'opérateur `in`, qui fait exactement la même recherche par hachage (#2613)
-		method("setContains", "Set", 1, Type.BOOL, new Type[] { Type.SET, Type.ANY });
-		method("setSize", "Set", 1, Type.INT, new Type[] { Type.SET });
+		method("setContains", "Set", 1, Type.BOOL, new Type[] { Type.SET, Type.ANY }).alias("contains");
+		method("setSize", "Set", 1, Type.INT, new Type[] { Type.SET }).alias("size");
 		// Lecture de champ : ne peut pas coûter plus que setContains, qui hache et compare
-		method("setIsEmpty", "Set", 1, Type.BOOL, new Type[] { Type.SET });
-		method("setIsSubsetOf", "Set", Type.BOOL, new Type[] { Type.SET, Type.SET });
-		method("setUnion", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
-		method("setIntersection", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
-		method("setDifference", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
-		method("setDisjunction", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
-		method("setFilter", "Set", Type.SET, new Type[] { Type.SET, new FunctionType(Type.BOOL, 0, Type.ANY, Type.SET) });
-		method("setToArray", "Set", Type.ARRAY, new Type[] { Type.SET });
+		method("setIsEmpty", "Set", 1, Type.BOOL, new Type[] { Type.SET }).alias("isEmpty");
+		method("setIsSubsetOf", "Set", Type.BOOL, new Type[] { Type.SET, Type.SET }).alias("isSubsetOf");
+		method("setUnion", "Set", Type.SET, new Type[] { Type.SET, Type.SET }).alias("union");
+		method("setIntersection", "Set", Type.SET, new Type[] { Type.SET, Type.SET }).alias("intersection");
+		method("setDifference", "Set", Type.SET, new Type[] { Type.SET, Type.SET }).alias("difference");
+		method("setDisjunction", "Set", Type.SET, new Type[] { Type.SET, Type.SET }).alias("disjunction");
+		method("setFilter", "Set", Type.SET, new Type[] { Type.SET, new FunctionType(Type.BOOL, 0, Type.ANY, Type.SET) }).alias("filter");
+		method("setToArray", "Set", Type.ARRAY, new Type[] { Type.SET }).alias("toArray");
 
 		/**
 		 * Interval functions

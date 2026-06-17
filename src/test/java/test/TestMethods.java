@@ -54,6 +54,29 @@ public class TestMethods extends TestCommon {
 	}
 
 	@Test
+	public void mapMethods() throws Exception {
+		section("Methods / map");
+		code_v5("var m = [1: 10, 2: 20] return m.size()").equals("2");
+		code_v5("var m = [1: 10, 2: 20] return m.keys()").equals("[1, 2]");
+		code_v5("var m = [1: 10, 2: 20] return m.values()").equals("[10, 20]");
+		code_v5("var m = [1: 10, 2: 20] return m.contains(10)").equals("true");
+		code_v5("var m = [1: 10, 2: 20] return m.containsKey(2)").equals("true");
+		code_v5("Map<integer, integer> m = [1: 10, 2: 20] return m.size()").equals("2"); // typed
+		// mapMap callback is (value, key, map).
+		code_v5("var m = [1: 10, 2: 20] return m.map((value, key) -> value * 2)").equals("[1 : 20, 2 : 40]");
+	}
+
+	@Test
+	public void setMethods() throws Exception {
+		section("Methods / set");
+		code_v5("var s = <1, 2, 3> return s.size()").equals("3");
+		code_v5("var s = <1, 2, 3> return s.contains(2)").equals("true");
+		code_v5("var s = <1, 2, 3> return s.toArray()").equals("[1, 2, 3]");
+		code_v5("var s = <1, 2> return s.union(<2, 3>)").equals("<1, 2, 3>");
+		code_v5("var s = <1, 2, 3, 4> return s.filter(x -> x > 2)").equals("<3, 4>");
+	}
+
+	@Test
 	public void onlyInV5() throws Exception {
 		section("Methods / version gate");
 		// In v1-4 the method form does not resolve (the value-method OO library is a
