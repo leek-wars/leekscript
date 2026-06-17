@@ -133,6 +133,98 @@ public class TestAnnotations extends TestCommon {
 			}
 			return 0;
 			""").error(Error.ANNOTATION_OVERRIDE_NO_PARENT);
+
+		section("@override — covariant return type");
+
+		// Narrowing the return type (covariance, like Java): the child may return a
+		// subtype of what the parent returns. Here self() narrows Animal → Dog, so the
+		// statically-typed result can call a Dog-only method.
+		code_v4_("""
+			class Animal {
+				Animal self() { return this; }
+			}
+			class Dog extends Animal {
+				@override
+				Dog self() { return this; }
+				bark() { return "woof"; }
+			}
+			return new Dog().self().bark();
+			""").equals("\"woof\"");
+
+		// Covariance is limited to class types, like Java: a primitive return type
+		// cannot be narrowed (Java forbids real → integer covariant returns too).
+		code_v4_("""
+			class A {
+				real get() { return 1.5; }
+			}
+			class B extends A {
+				@override
+				integer get() { return 2; }
+			}
+			return new B().get();
+			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
+
+		// Covariance over several levels of inheritance.
+		code_v4_("""
+			class Animal {
+				Animal self() { return this; }
+			}
+			class Dog extends Animal {}
+			class Puppy extends Dog {
+				@override
+				Puppy self() { return this; }
+				yip() { return "yip"; }
+			}
+			return new Puppy().self().yip();
+			""").equals("\"yip\"");
+
+		// Identical return type is still accepted.
+		code_v4_("""
+			class Animal {
+				Animal self() { return this; }
+			}
+			class Dog extends Animal {
+				@override
+				Animal self() { return this; }
+			}
+			return new Dog().self() == null ? 0 : 1;
+			""").equals("1");
+
+		// Widening the return type (supertype) is rejected.
+		code_v4_("""
+			class Animal {
+				Dog get() { return new Dog(); }
+			}
+			class Dog extends Animal {
+				@override
+				Animal get() { return new Animal(); }
+			}
+			return 0;
+			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
+
+		// Unrelated return type is rejected.
+		code_v4_("""
+			class Animal {
+				integer get() { return 1; }
+			}
+			class Dog extends Animal {
+				@override
+				string get() { return "x"; }
+			}
+			return 0;
+			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
+
+		// Parameter types remain invariant (like Java): changing them is rejected.
+		code_v4_("""
+			class Animal {
+				set(integer x) { return x; }
+			}
+			class Dog extends Animal {
+				@override
+				set(string x) { return x; }
+			}
+			return 0;
+			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
 	}
 
 	@Test
