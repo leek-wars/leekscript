@@ -27,9 +27,18 @@ public class LeekArrayAccess extends Expression {
 	private Token colon2;
 	private Expression stride;
 	private Type type;
+	private boolean optional = false; // accès indexé optionnel `a?[b]`
 
 	public LeekArrayAccess(Token openingBracket) {
 		openingBracket.setExpression(this);
+	}
+
+	public void setOptional(boolean optional) {
+		this.optional = optional;
+	}
+
+	public boolean isOptional() {
+		return optional;
 	}
 
 	public void setTabular(Expression tabular) {
@@ -186,6 +195,14 @@ public class LeekArrayAccess extends Expression {
 		} else {
 			var key = mCase instanceof LeekString ls ? ls.getText() : null;
 			this.type = mTabular.getType().elementAccess(compiler.getMainBlock().getVersion(), compiler.getMainBlock().isStrict(), key);
+		}
+
+		// Accès indexé optionnel `a?[b]` : identique à `a[b]` au runtime (l'indexation
+		// renvoie déjà null pour un conteneur null ou un index hors bornes), mais le
+		// résultat est explicitement typé `element | null`. Utile surtout en mode
+		// strict, où `a[b]` est sinon typé non-null. Résultat nullable ⇒ pas une lvalue.
+		if (optional) {
+			this.type = Type.compound(this.type, Type.NULL);
 		}
 	}
 
@@ -662,7 +679,8 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public boolean isLeftValue() {
-		return true;
+		// Un accès optionnel `a?[b]` n'est pas assignable (résultat nullable)
+		return !optional;
 	}
 
 	@Override

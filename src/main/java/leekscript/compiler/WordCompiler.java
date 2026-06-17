@@ -98,6 +98,14 @@ public class WordCompiler {
 		if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 	}
 
+	// Vrai si `b` suit immédiatement `a` dans le source (aucun espace entre les deux),
+	// utilisé pour distinguer `a?[i]` (accès optionnel) de `a ? [i] : [j]` (ternaire).
+	private static boolean adjacent(Token a, Token b) {
+		var la = a.getLocation();
+		var lb = b.getLocation();
+		return la.getEndLine() == lb.getStartLine() && lb.getStartColumn() == la.getEndColumn() + 1;
+	}
+
 	public void readCode() throws LeekCompilerException {
 
 		firstPass();
@@ -1718,6 +1726,18 @@ public class WordCompiler {
 			if (retour.needOperator()) {
 				// Si on attend un opérateur mais qu'il vient pas
 
+				// Accès indexé optionnel `a?[b]` : court-circuite à null si `a` est null.
+				// Le `?` doit être collé au `[` pour lever l'ambiguïté avec le ternaire
+				// `cond ? [1, 2] : [3, 4]` (dont les branches sont des littéraux tableau).
+				boolean optionalBracket = false;
+				if (word.getType() == TokenType.OPERATOR && word.getWord().equals("?")
+						&& mTokens.get(1).getType() == TokenType.BRACKET_LEFT && !inInterval
+						&& adjacent(word, mTokens.get(1))) {
+					mTokens.skip(); // ?
+					word = mTokens.get(); // [
+					optionalBracket = true;
+				}
+
 				if (word.getType() == TokenType.BRACKET_LEFT && !inInterval) {
 
 					var save = mTokens.getPosition();
@@ -1777,7 +1797,7 @@ public class WordCompiler {
 							throw new LeekCompilerException(mTokens.get(), Error.CLOSING_SQUARE_BRACKET_EXPECTED);
 						}
 					}
-					retour.addBracket(bracket, start, colon, end, colon2, stride, mTokens.get());
+					retour.addBracket(bracket, start, colon, end, colon2, stride, mTokens.get(), optionalBracket);
 
 				} else if (word.getType() == TokenType.PAR_LEFT) {
 

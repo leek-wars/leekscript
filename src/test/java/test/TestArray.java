@@ -164,6 +164,53 @@ public class TestArray extends TestCommon {
 		code("var a = [1, 2, 3] integer b = a[0] return b").equals("1");
 	}
 
+	/**
+	 * Accès indexé optionnel `a?[b]` : au runtime identique à `a[b]` (l'indexation
+	 * renvoie déjà null pour un conteneur null ou un index hors bornes), mais le
+	 * résultat est typé `element | null`. Utile surtout en mode strict, où `a[b]`
+	 * est sinon typé non-null. Le `?` doit être collé au `[` pour ne pas être
+	 * confondu avec le ternaire `cond ? [..] : [..]`.
+	 */
+	@Test
+	public void testOptional_array_access() throws Exception {
+		section("Array.operator ?[]");
+		// Au runtime, `a?[b]` se comporte exactement comme `a[b]`
+		code_v4_("var a = [10, 20, 30] return a?[1]").equals("20");
+		code_v4_("var a = [10, 20, 30] return a?[0] + a?[2]").equals("40");
+		code_v4_("var a = null return a?[1]").equals("null");
+		// Map
+		code_v4_("var m = [\"x\": 5] return m?[\"x\"]").equals("5");
+		code_v4_("Map<string, integer>? m = null return m?[\"x\"]").equals("null");
+		// String
+		code_v4_("var s = \"abc\" return s?[1]").equals("\"b\"");
+		code_v4_("string? s = null return s?[1]").equals("null");
+		// Tranche
+		code_v4_("var a = [10, 20, 30] return a?[0:1]").equals("[10]");
+		// Objet / classe : indexation par nom de membre
+		code_v4_("class A { public x = 5 } var a = new A() return a?[\"x\"]").equals("5");
+		code_v4_("class A { public x = 5 } A? a = null return a?[\"x\"]").equals("null");
+		// Chaînage
+		code_v4_("var a = [[1, 2], [3, 4]] return a?[0]?[1]").equals("2");
+		code_v4_("var a = null return a?[0]?[1]").equals("null");
+		// Le ternaire avec branches tableau reste non ambigu (espace entre `?` et `[`)
+		code_v4_("var c = true return c ? [1, 2] : [3, 4]").equals("[1, 2]");
+		code_v4_("return 1 > 2 ? [1, 2] : [3, 4]").equals("[3, 4]");
+		// Accès optionnel non assignable
+		code_v4_("var a = [1] a?[0] = 5 return a").error(Error.CANT_ASSIGN_VALUE);
+
+		// Le `?` force le type `element | null`, visible en mode strict où `a[b]`
+		// est sinon typé non-null :
+		// `a[0]` y est non-null (assignable à integer sans broncher)...
+		code_strict_v4_("Array<integer> a = [1] integer x = a[0] return x").equals("1");
+		// ...alors que `a?[0]` est `integer | null` : assigner à un integer non-null
+		// est une conversion descendante (avertissement en strict)...
+		code_strict_v4_("Array<integer> a = [1] integer x = a?[0] return x").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+		// ...et s'assigne sans broncher à un type nullable.
+		code_strict_v4_("Array<integer> a = [1] integer? x = a?[0] return x").equals("1");
+		// Classe en mode strict : `obj?[member]` est nullable
+		code_strict_v4_("class A { public x = 5 } var a = new A() integer? x = a?[\"x\"] return x").equals("5");
+	}
+
 	@Test
 	public void testTyped_array_numeric_coercion() throws Exception {
 		section("Typed array numeric coercion");

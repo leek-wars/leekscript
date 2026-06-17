@@ -197,7 +197,7 @@ public class LeekExpression extends Expression {
 		mExpression2 = null;
 	}
 
-	private static LeekArrayAccess createArrayAccess(Token bracket, Expression tabular, Expression casevalue, Token colon, Expression endIndex, Token colon2, Expression stride, Token closingBracket) {
+	private static LeekArrayAccess createArrayAccess(Token bracket, Expression tabular, Expression casevalue, Token colon, Expression endIndex, Token colon2, Expression stride, Token closingBracket, boolean optional) {
 		var exp = new LeekArrayAccess(bracket);
 		exp.setTabular(tabular);
 		exp.setCase(casevalue);
@@ -206,25 +206,30 @@ public class LeekExpression extends Expression {
 		exp.setColon2(colon2);
 		exp.setStride(stride);
 		exp.setClosingBracket(closingBracket);
+		exp.setOptional(optional);
 		return exp;
 	}
 
 	public void addBracket(Token bracket, Expression casevalue, Token colon, Expression endIndex, Token colon2, Expression stride, Token closingBracket) {
+		addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket, false);
+	}
+
+	public void addBracket(Token bracket, Expression casevalue, Token colon, Expression endIndex, Token colon2, Expression stride, Token closingBracket, boolean optional) {
 		// On doit ajouter ce crochet au dernier élément ajouté
 		if (mExpression1 != null && mExpression2 == null) {
 			if (mExpression1 instanceof LeekExpression le1 && !isTerminalOperator(le1.getOperator()))
-				le1.addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket);
+				le1.addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket, optional);
 			else {
-				mExpression1 = createArrayAccess(bracket, mExpression1, casevalue, colon, endIndex, colon2, stride, closingBracket);
+				mExpression1 = createArrayAccess(bracket, mExpression1, casevalue, colon, endIndex, colon2, stride, closingBracket, optional);
 			}
 		}
 		else if (mExpression2 != null) {
 			if (mOperator == Operators.AS) {
-				wrapAndReset(createArrayAccess(bracket, cloneAsSubExpression(), casevalue, colon, endIndex, colon2, stride, closingBracket));
+				wrapAndReset(createArrayAccess(bracket, cloneAsSubExpression(), casevalue, colon, endIndex, colon2, stride, closingBracket, optional));
 			} else if (mExpression2 instanceof LeekExpression le2 && !isTerminalOperator(le2.getOperator()))
-				le2.addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket);
+				le2.addBracket(bracket, casevalue, colon, endIndex, colon2, stride, closingBracket, optional);
 			else {
-				mExpression2 = createArrayAccess(bracket, mExpression2, casevalue, colon, endIndex, colon2, stride, closingBracket);
+				mExpression2 = createArrayAccess(bracket, mExpression2, casevalue, colon, endIndex, colon2, stride, closingBracket, optional);
 			}
 		}
 	}
