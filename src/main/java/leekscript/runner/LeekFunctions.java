@@ -11,6 +11,9 @@ import leekscript.compiler.LeekScript;
 public class LeekFunctions {
 
 	private static HashMap<String, LeekFunctions> functions = new HashMap<>();
+	// standardClass -> nom de méthode -> fonction (méthodes appelables en `valeur.méthode()`).
+	// Déclaré AVANT le bloc static d'enregistrement (ordre d'init statique).
+	private static final Map<String, Map<String, LeekFunctions>> methodsByClass = new HashMap<>();
 
 	static {
 		/**
@@ -422,7 +425,17 @@ public class LeekFunctions {
 	private static LeekFunctions method(String name, String clazz, int operations, boolean isStatic, CallableVersion[] versions) {
 		var function = new LeekFunctions(clazz, name, operations, isStatic, versions);
 		functions.put(name, function);
+		// Index par type pour la résolution des méthodes `valeur.méthode()` (v5,
+		// pilier OO). Permet `Array.filter` et `Map.filter` de coexister par un nom
+		// propre, là où la table plate `functions` n'autorise qu'un seul `filter`.
+		if (clazz != null) methodsByClass.computeIfAbsent(clazz, k -> new HashMap<>()).put(name, function);
 		return function;
+	}
+
+	/** Méthode système exposée sur un type natif (ex. "Array","map"), ou null. */
+	public static LeekFunctions getMethod(String standardClass, String name) {
+		var byName = methodsByClass.get(standardClass);
+		return byName == null ? null : byName.get(name);
 	}
 
 	private static Map<String, LeekFunctions> extraFunctions = null;

@@ -9,7 +9,10 @@ package leekscript.common;
 public enum LanguageFeature {
 
 	/** Generic user functions and type variables: {@code function name<T>(...)}. */
-	GENERICS(5);
+	GENERICS(5),
+
+	/** Object-oriented standard library: methods on built-in values, {@code array.map(f)}. */
+	OO_STDLIB(5);
 
 	public final int since;
 

@@ -53,6 +53,9 @@ public class LeekFunctionCall extends Expression {
 	private LeekFunctions system_function = null;
 	private boolean is_method = false;
 	private boolean is_static_method = false;
+	// Appel de méthode sur un type natif : `array.sort()`, `array.map(f)` (v5, OO
+	// stdlib). Résolu comme `sort(array)` mais codegen `((ArrayLeekValue) array).sort(ai)`.
+	private boolean is_builtin_method = false;
 	private ClassDeclarationMethod method;
 	private ClassMethodBlock constructorBlock = null;
 	private Type functionType = Type.ANY;
@@ -394,6 +397,19 @@ public class LeekFunctionCall extends Expression {
 				writer.addCode(".u_" + field + "(");
 				addComma = false;
 				typedArguments = true;
+			} else if (is_builtin_method) {
+				// array.sort() -> ((ArrayLeekValue) array).sort(ai, ...). Le receveur est
+				// l'objet ; les arguments restent dans mParameters.
+				var receiverType = object.getType();
+				// Retour effacé d'une méthode générique (ex. array.max() -> Object) :
+				// caste vers le type inféré.
+				if (systemReturnContainsTypeVariable() && this.type != Type.ANY && this.type != Type.VOID) {
+					writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+				}
+				writer.addCode("((" + receiverType.getJavaName(mainblock.getVersion()) + ") ");
+				object.writeJavaCode(mainblock, writer, true);
+				writer.addCode(")." + field + "(" + writer.getAIThis());
+				addComma = true;
 			} else {
 				// object.field() : Méthode ou bien appel d'un champ
 				if (type != Type.ANY) {
@@ -532,7 +548,9 @@ public class LeekFunctionCall extends Expression {
 		}
 
 		int argCount = mParameters.size();
-		if (system_function != null) {
+		if (system_function != null && !is_builtin_method) {
+			// Pour une méthode native, le receveur est déjà émis (objet), pas un
+			// paramètre : argCount reste mParameters.size().
 			argCount = callable_versions != null ? callable_versions.get(0).arguments.length : system_function.getVersions()[0].arguments.length;
 		}
 		for (int i = 0; i < argCount; i++) {
@@ -856,6 +874,19 @@ public class LeekFunctionCall extends Expression {
 
 			var oa = (LeekObjectAccess) mExpression;
 			var o = oa.getObject();
+
+			// Méthode sur un type natif (v5, OO stdlib) : array.sort(), array.map(f)...
+			// Résolue comme `name(receiver, ...)`. Un type natif ne matche aucun des
+			// checks ClassType ci-dessous, donc on traite ce cas en premier.
+			if (LanguageFeature.OO_STDLIB.enabledIn(compiler.getVersion())) {
+				var builtinClass = standardClassOf(o.getType());
+				if (builtinClass != null) {
+					var builtinMethod = LeekFunctions.getMethod(builtinClass, oa.getField());
+					if (builtinMethod != null && resolveBuiltinMethod(compiler, o.getType(), builtinMethod)) {
+						return;
+					}
+				}
+			}
 
 			if (o.getType() instanceof ClassType ct || (o instanceof LeekVariable lv && lv.getVariableType() == VariableType.SUPER)) {
 
@@ -1202,6 +1233,76 @@ public class LeekFunctionCall extends Expression {
 			if (version.return_type.containsTypeVariable()) return true;
 		}
 		return false;
+	}
+
+	/** The standard-library class name of a built-in receiver type, or null. */
+	private static String standardClassOf(Type type) {
+		if (type instanceof ArrayType) return "Array";
+		if (type instanceof MapType) return "Map";
+		if (type instanceof SetType) return "Set";
+		if (type == Type.STRING) return "String";
+		if (type.isNumber()) return "Number";
+		return null;
+	}
+
+	/**
+	 * Resolves `receiver.name(params...)` as the built-in method `name` on the
+	 * receiver's type, treating the receiver as the implicit first argument (so
+	 * `array.sort()` == `sort(array)`). Picks the best overload (generic inference
+	 * included), sets {@code type}/{@code callable_versions}, and returns true on
+	 * success. Used for the OO standard library (version 5).
+	 */
+	private boolean resolveBuiltinMethod(WordCompiler compiler, Type receiverType, LeekFunctions method) {
+		int arity = mParameters.size() + 1; // + le receveur
+		var argTypes = new ArrayList<Type>(arity);
+		argTypes.add(receiverType);
+		for (var p : mParameters) argTypes.add(p.getType());
+
+		CallableVersion best = null;
+		int bestDistance = Integer.MAX_VALUE;
+		Type bestReturn = Type.VOID;
+		boolean bestUnsafe = false;
+		for (var version : method.getVersions()) {
+			if (version.arguments.length != arity) continue;
+			Map<TypeVariable, Type> bindings = null;
+			if (version.isGeneric()) {
+				bindings = new HashMap<>();
+				if (LanguageFeature.GENERICS.enabledIn(compiler.getVersion())) {
+					for (int i = 0; i < arity; ++i) inferTypeVariables(version.arguments[i], argTypes.get(i), bindings);
+				}
+				var vars = new java.util.HashSet<TypeVariable>();
+				for (var arg : version.arguments) collectTypeVariables(arg, vars);
+				collectTypeVariables(version.return_type, vars);
+				for (var v : vars) bindings.putIfAbsent(v, Type.ANY);
+			}
+			int distance = 0;
+			boolean unsafe = false;
+			for (int i = 0; i < arity; ++i) {
+				var f_type = bindings != null ? version.arguments[i].substitute(bindings) : version.arguments[i];
+				var cast = f_type.accepts(argTypes.get(i));
+				if (cast != CastType.EQUALS) unsafe = true;
+				if (cast == CastType.UPCAST) distance += 1;
+				else if (cast == CastType.SAFE_DOWNCAST) distance += 100;
+				else if (cast == CastType.UNSAFE_DOWNCAST) distance += 1000;
+				else if (cast == CastType.INCOMPATIBLE) distance += 10000;
+			}
+			if (distance > 1000) distance = 1000;
+			if (distance < bestDistance) {
+				bestDistance = distance;
+				best = version;
+				bestReturn = bindings != null ? version.return_type.substitute(bindings) : version.return_type;
+				bestUnsafe = unsafe;
+			}
+		}
+		if (best == null) return false;
+		this.system_function = method;
+		this.is_builtin_method = true;
+		this.unsafe = bestUnsafe;
+		this.callable_versions = new ArrayList<>();
+		this.callable_versions.add(best);
+		this.functionType = best.getType();
+		this.type = bestReturn;
+		return true;
 	}
 
 	/** Collects every {@link TypeVariable} occurring in a (possibly nested) type. */
