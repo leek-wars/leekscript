@@ -429,6 +429,12 @@ public class LeekFunctions {
 	private int minVersion = 1;
 	private int maxVersion = LeekScript.LATEST_VERSION;
 	private String replacement = null;
+	// Whether calling this builtin produces no observable side effect. Consulted by
+	// the @pure annotation check. Defaults to true (most builtins only compute or
+	// read state); side-effecting builtins (I/O, in-place mutators, and — for the
+	// generator — game actions such as moveToward/useChip/say) opt out via
+	// setImpure().
+	private boolean pure = true;
 
 	public LeekFunctions(String standardClass, String name, int operations, boolean isStatic, Type return_type, Type[] arguments) {
 		this(standardClass, name, operations, isStatic, new CallableVersion[] { new CallableVersion(return_type, arguments) });
@@ -559,6 +565,23 @@ public class LeekFunctions {
 	public boolean isStatic() {
 		return isStatic;
 	}
+
+	/** Whether this builtin is free of observable side effects (see {@link #pure}). */
+	public boolean isPure() {
+		return pure;
+	}
+
+	/**
+	 * Declares this builtin as having an observable side effect (I/O, in-place
+	 * mutation of an argument, or — for generator/extra functions — an action on the
+	 * fight state). Calling it from a {@code @pure} function is then reported.
+	 * Fluent so it can be chained on a {@code method(...)} registration.
+	 */
+	public LeekFunctions setImpure() {
+		this.pure = false;
+		return this;
+	}
+
 	public String getName() {
 		return name;
 	}

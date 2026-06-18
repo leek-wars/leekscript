@@ -66,6 +66,67 @@ public class TestAnnotations extends TestCommon {
 
 		// @pure is visible by @unused so both can be combined
 		code_strict_v4_("@pure @unused function helper() { return 0; } return 0").noWarning();
+
+		// --- Purity checking ---
+
+		// Pure function using only its own locals/parameters → no warning
+		code_v4_("@pure function f() { var local = 0; local = 1; return local } return f()").noWarning();
+		code_v4_("@pure function f() { var local = 0; local = 1; return local } return f()").equals("1");
+
+		// Mutating a local array/map of its own is pure
+		code_v4_("@pure function f() { var a = [1, 2]; a[0] = 5; return a } return f()").noWarning();
+
+		// Writing to a global is a side effect → not pure
+		code_v4_("global g = 0; @pure function f() { g = 1; return g } return f()").warning(Error.ANNOTATION_NOT_PURE);
+
+		// Incrementing a global is a side effect → not pure
+		code_v4_("global g = 0; @pure function f() { g++; return g } return f()").warning(Error.ANNOTATION_NOT_PURE);
+
+		// Calling a side-effecting builtin (I/O) → not pure
+		code_v4_("@pure function f(a) { debug(a); return a } return f(1)").warning(Error.ANNOTATION_NOT_PURE);
+
+		// Calling an array-mutating builtin → not pure
+		code_v4_("@pure function f(arr) { push(arr, 1); return arr } return f([])").warning(Error.ANNOTATION_NOT_PURE);
+
+		// Calling a pure builtin (no mutation) → still pure
+		code_v4_("@pure function f(a) { return abs(a) } return f(-3)").noWarning();
+		code_v4_("@pure function f(a) { return abs(a) } return f(-3)").equals("3");
+
+		// Calling another @pure function is fine
+		code_v4_("@pure function helper(x) { return x * 2 } @pure function f(x) { return helper(x) } return f(2)").noWarning();
+		code_v4_("@pure function helper(x) { return x * 2 } @pure function f(x) { return helper(x) } return f(2)").equals("4");
+
+		// Calling an unannotated but actually-pure function is fine: purity is verified
+		// transitively, not by requiring the @pure annotation everywhere
+		code_v4_("function helper(x) { return x * 2 } @pure function f(x) { return helper(x) } return f(2)").noWarning();
+		code_v4_("function helper(x) { return x * 2 } @pure function f(x) { return helper(x) } return f(2)").equals("4");
+
+		// ...even through a chain of unannotated pure functions
+		code_v4_("function a(x) { return b(x) } function b(x) { return x + 1 } @pure function f(x) { return a(x) } return f(1)").noWarning();
+		code_v4_("function a(x) { return b(x) } function b(x) { return x + 1 } @pure function f(x) { return a(x) } return f(1)").equals("2");
+
+		// Calling an unannotated function that IS impure → warning
+		code_v4_("global g = 0; function bump() { g = 1; return g } @pure function f() { return bump() } return f()").warning(Error.ANNOTATION_NOT_PURE);
+
+		// ...including impurity reached transitively through another function
+		code_v4_("function a() { return b() } function b() { debug(1); return 0 } @pure function f() { return a() } return f()").warning(Error.ANNOTATION_NOT_PURE);
+
+		// Recursion on a @pure function is allowed (it calls itself, which is @pure)
+		code_v4_("@pure function fact(n) { return n <= 1 ? 1 : n * fact(n - 1) } return fact(5)").noWarning();
+		code_v4_("@pure function fact(n) { return n <= 1 ? 1 : n * fact(n - 1) } return fact(5)").equals("120");
+
+		// Side effects inside a lambda defined within a @pure function are NOT attributed
+		// to it (the lambda is a separate scope): defining it is pure.
+		code_v4_("global g = 0; @pure function f() { var fn = function() { g = 1 }; return 0 } return f()").noWarning();
+
+		// @pure on a method: mutating the object (this) is a side effect → not pure
+		code_v4_("""
+			class A {
+				public integer x = 0
+				@pure setX() { this.x = 1; return this.x }
+			}
+			return new A().setX()
+			""").warning(Error.ANNOTATION_NOT_PURE);
 	}
 
 	@Test

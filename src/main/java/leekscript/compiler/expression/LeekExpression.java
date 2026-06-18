@@ -2,6 +2,7 @@ package leekscript.compiler.expression;
 
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.NarrowingInfo;
+import leekscript.compiler.PurityChecker;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -1174,6 +1175,13 @@ public class LeekExpression extends Expression {
 
 			if (mExpression1 instanceof LeekArrayAccess)
 				((LeekArrayAccess) mExpression1).setLeftValue(true);
+
+			// @pure : assigning to state outside the function is a side effect
+			var mutated = PurityChecker.externalMutation(mExpression1, compiler.getCurrentFunction());
+			if (mutated != null) {
+				compiler.recordSideEffect();
+				if (compiler.getCurrentPureFunction() != null) PurityChecker.reportNotPure(compiler, getLocation(), mutated);
+			}
 		}
 
 		if (Operators.isIncrement(mOperator)) {
@@ -1197,6 +1205,13 @@ public class LeekExpression extends Expression {
 					mExpression2.toString(),
 					mExpression2.getType().toString()
 				}));
+			}
+
+			// @pure : incrementing state outside the function is a side effect
+			var mutated = PurityChecker.externalMutation(mExpression2, compiler.getCurrentFunction());
+			if (mutated != null) {
+				compiler.recordSideEffect();
+				if (compiler.getCurrentPureFunction() != null) PurityChecker.reportNotPure(compiler, getLocation(), mutated);
 			}
 		}
 
