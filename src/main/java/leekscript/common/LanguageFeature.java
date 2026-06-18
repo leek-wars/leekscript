@@ -4,7 +4,7 @@ package leekscript.common;
  * Named language features and the version they were introduced in. Centralizes
  * version gates so the compiler stops scattering magic {@code version >= N}
  * literals. New v5 gates route through here; the ~100 pre-existing v2/v3/v4
- * gates are migrated opportunistically (see docs/v5-design.md §0).
+ * gates are migrated opportunistically (see docs/v5.md §0).
  */
 public enum LanguageFeature {
 
