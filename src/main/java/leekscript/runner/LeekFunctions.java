@@ -369,8 +369,8 @@ public class LeekFunctions {
 		/**
 		 * JSON functions
 		 */
-		method("jsonEncode", "JSON", true, Type.STRING, new Type[] { Type.ANY });
-		method("jsonDecode", "JSON", true, Type.ANY, new Type[] { Type.STRING });
+		method("jsonEncode", "JSON", true, Type.STRING, new Type[] { Type.ANY }).alias("encode");
+		method("jsonDecode", "JSON", true, Type.ANY, new Type[] { Type.STRING }).alias("decode");
 
 		/**
 		 * Color functions
@@ -477,8 +477,15 @@ public class LeekFunctions {
 	 * d'autres namespaces pourront mapper leur nom vers une classe standard ici.
 	 */
 	public static String namespaceStandardClass(String namespaceName) {
-		if ("Math".equals(namespaceName)) return "Number";
-		return null;
+		switch (namespaceName) {
+			// `Math` regroupe les fonctions de la classe standard "Number".
+			case "Math": return "Number";
+			// Les autres namespaces portent le nom de leur classe standard.
+			case "Number": case "String": case "Array": case "Map":
+			case "Set": case "JSON": case "System":
+				return namespaceName;
+			default: return null;
+		}
 	}
 
 	/**

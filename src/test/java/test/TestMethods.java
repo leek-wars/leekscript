@@ -136,6 +136,33 @@ public class TestMethods extends TestCommon {
 	}
 
 	@Test
+	public void otherNamespaces() throws Exception {
+		section("Namespaces / JSON, String, Array, Map, Set, System, Number");
+		// JSON : noms propres via alias (jsonEncode -> JSON.encode).
+		code_v5("return JSON.encode([1, 2, 3])").equals("\"[1,2,3]\"");
+		code_v5("return JSON.decode(\"[1,2,3]\")").equals("[1, 2, 3]");
+		// String : helpers statiques (StringClass.charAt...).
+		code_v5("return String.charAt(\"hello\", 1)").equals("\"e\"");
+		code_v5("return String.length(\"hello\")").equals("5");
+		code_v5("return String.split(\"a,b,c\", \",\")").equals("[\"a\", \"b\", \"c\"]");
+		// Array : la forme namespace reste valide même si la forme libre est retirée v5.
+		code_v5("var a = [3, 1, 2] Array.sort(a) return a").equals("[1, 2, 3]");
+		code_v5("return Array.count([5, 1, 9])").equals("3");
+		code_v5("return Array.map([1, 2, 3], x -> x * 2)").equals("[2, 4, 6]");
+		// Map / Set.
+		code_v5("var m = [1: 10, 2: 20] return Map.size(m)").equals("2");
+		code_v5("var s = <1, 2, 3> return Set.contains(s, 2)").equals("true");
+		// Number namespace (équivalent de Math pour les fonctions Number).
+		code_v5("return Number.sqrt(9.0)").equals("3.0");
+		// System namespace (fonctions sans receveur : debug, getOperations...).
+		code_v5("System.debug(42) return 1").equals("1");
+		// La forme libre retirée reste une erreur (le namespace ne la ressuscite pas).
+		code_v5("var a = [3, 1, 2] sort(a) return a").error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT);
+		// Avant la v5 ces namespaces de fonctions ne sont pas exposés.
+		code_v4("return JSON.encode([1])").error(leekscript.common.Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
+	}
+
+	@Test
 	public void onlyInV5() throws Exception {
 		section("Methods / version gate");
 		// In v1-4 the method form does not resolve (the value-method OO library is a

@@ -661,7 +661,7 @@ public class LeekFunctionCall extends Expression {
 				addComma = false;
 			}
 		} else if (system_function.isStatic()) {
-			writer.addCode(system_function.getStandardClass() + "Class." + system_function.getName() + "(" + writer.getAIThis());
+			writer.addCode(system_function.getStandardClass() + "Class." + system_function.getJavaName() + "(" + writer.getAIThis());
 		} else {
 			if (mParameters.get(0).getType() != Type.ANY) {
 				writer.addCode("((" + mParameters.get(0).getType().getJavaName(mainblock.getVersion()) + ") ");
@@ -670,7 +670,7 @@ public class LeekFunctionCall extends Expression {
 			if (mParameters.get(0).getType() != Type.ANY) {
 				writer.addCode(")");
 			}
-			writer.addCode("." + system_function.getName() + "(" + writer.getAIThis());
+			writer.addCode("." + system_function.getJavaName() + "(" + writer.getAIThis());
 			skipFirstArg = true;
 		}
 		return new boolean[] { addComma, skipFirstArg };
@@ -1100,7 +1100,10 @@ public class LeekFunctionCall extends Expression {
 			operations += f.getOperations();
 		}
 
-		if (compiler.getVersion() > f.getMaxVersion()) {
+		// La suppression de version (maxVersion) ne concerne que la FORME LIBRE
+		// (`sort(a)` retiré en v5) : la fonction existe toujours en méthode et en
+		// namespace. Un appel qualifié `Array.sort(a)` n'est donc pas soumis au retrait.
+		if (compiler.getVersion() > f.getMaxVersion() && !is_namespace_function) {
 			// Fonction supprimée
 			if (f.getReplacement() != null) {
 				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION_REPLACEMENT, new String[] {
