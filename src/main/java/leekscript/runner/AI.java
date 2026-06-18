@@ -163,6 +163,7 @@ public abstract class AI {
 	public final ClassLeekValue classClass;
 	public final ClassLeekValue jsonClass;
 	public final ClassLeekValue systemClass;
+	public final ClassLeekValue mathClass;
 
 	public static class RamUsage extends WeakReference<Object> {
 		private int value;
@@ -376,12 +377,17 @@ public abstract class AI {
 		classClass = new ClassLeekValue(this, "Class", valueClass);
 		jsonClass = new ClassLeekValue(this, "JSON");
 		systemClass = new ClassLeekValue(this, "System");
+		mathClass = new ClassLeekValue(this, "Math");
 
 		try {
 			integerClass.addStaticField(this, "MIN_VALUE", Type.INT, Long.MIN_VALUE, AccessLevel.PUBLIC, true);
 			integerClass.addStaticField(this, "MAX_VALUE", Type.INT, Long.MAX_VALUE, AccessLevel.PUBLIC, true);
 			realClass.addStaticField(this, "MIN_VALUE", Type.REAL, Double.MIN_VALUE, AccessLevel.PUBLIC, true);
 			realClass.addStaticField(this, "MAX_VALUE", Type.REAL, Double.MAX_VALUE, AccessLevel.PUBLIC, true);
+			// Constantes du namespace Math (v5) ; gardé côté compile par MainLeekBlock.
+			mathClass.addStaticField(this, "PI", Type.REAL, Math.PI, AccessLevel.PUBLIC, true);
+			mathClass.addStaticField(this, "E", Type.REAL, Math.E, AccessLevel.PUBLIC, true);
+			mathClass.addStaticField(this, "Infinity", Type.REAL, Double.POSITIVE_INFINITY, AccessLevel.PUBLIC, true);
 		} catch (LeekRunException e) {
 			// No exception possible for LS2+
 		}

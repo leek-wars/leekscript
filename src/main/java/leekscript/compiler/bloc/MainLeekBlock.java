@@ -138,7 +138,13 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			// (pas de type valeur), comme JSON/System. Gardé v>=5 pour ne pas réserver
 			// le nom `Math` dans les versions antérieures.
 			if (ai.getVersion() >= 5) {
-				addClass(new ClassDeclarationInstruction(new Token("Math"), 0, ai, true, this).notInstantiable());
+				var mathClass = new ClassDeclarationInstruction(new Token("Math"), 0, ai, true, this).notInstantiable();
+				// Constantes mathématiques en accès de champ (pendant v5 des constantes
+				// libres PI/E/Infinity). NaN non exposé : non représentable en littéral Java.
+				mathClass.addStaticField(wordCompiler, new Token("PI"), Type.REAL, new LeekNumber(new Token(""), Math.PI, 0, Type.REAL), AccessLevel.PUBLIC, true);
+				mathClass.addStaticField(wordCompiler, new Token("E"), Type.REAL, new LeekNumber(new Token(""), Math.E, 0, Type.REAL), AccessLevel.PUBLIC, true);
+				mathClass.addStaticField(wordCompiler, new Token("Infinity"), Type.REAL, new LeekNumber(new Token(""), Double.POSITIVE_INFINITY, 0, Type.REAL), AccessLevel.PUBLIC, true);
+				addClass(mathClass);
 			}
 		}
 	}

@@ -374,6 +374,21 @@ public class TestNumber extends TestCommon {
 	}
 
 	@Test
+	public void testMathConstants() throws Exception {
+		section("Math namespace constants (v5)");
+		// Constantes du namespace Math (accès de champ), pendant v5 des constantes libres.
+		code_v5("return Math.PI").almost(Math.PI);
+		code_v5("return Math.E").almost(Math.E);
+		code_v5("return Math.PI.class").equals("<class Real>");
+		code_v5("return Math.PI * 2 > 6").equals("true");
+		code_v5("return Math.Infinity > Real.MAX_VALUE").equals("true");
+		// Champs constants : non assignables.
+		code_v5("Math.PI = 3").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		// v<5 : le namespace Math n'existe pas (nom non réservé avant v5).
+		code_v4("return Math.PI").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+	}
+
+	@Test
 	public void testOperatorUnaryMinus() throws Exception {
 		/*
 		 * Operators
