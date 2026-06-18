@@ -18,6 +18,12 @@ public class TestArray extends TestCommon {
 		code_v3_("return new Array").equals("[]");
 		code_v3_("return new Array()").equals("[]");
 		code_v3_("return new Array() + 1").equals("[1]");
+		// Régression #new-array-inversion : `new Array` doit produire le même type que le
+		// littéral [] — LegacyArrayLeekValue (associatif) en v3, ArrayLeekValue (dense) en v4+.
+		// Les branches v3/v4 du codegen NEW étaient inversées. L'affectation éparse les départage :
+		// associatif -> [100 : true], dense -> hors borne silencieux -> [].
+		code_v3("var a = new Array a[100] = true return a").equals("[100 : true]");
+		code_v4("var a = new Array a[100] = true return a").equals("[]");
 		code("return [];").equals("[]");
 		code("return [1];").equals("[1]");
 		code("return [1, 2, 3];").equals("[1, 2, 3]");

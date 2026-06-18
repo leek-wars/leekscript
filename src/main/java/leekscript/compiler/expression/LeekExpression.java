@@ -931,10 +931,12 @@ public class LeekExpression extends Expression {
 		case Operators.NEW:
 			if (mExpression2 instanceof LeekVariable) {
 				if (mainblock.getWordCompiler().getVersion() >= 3 && ((LeekVariable) mExpression2).toString().equals("Array")) {
+					// Aligné sur les littéraux et AI.newArray() : v4+ = ArrayLeekValue (dense),
+					// v3 = LegacyArrayLeekValue (associatif). Les branches étaient inversées.
 					if (mainblock.getWordCompiler().getVersion() >= 4) {
-						writer.addCode("new LegacyArrayLeekValue(" + writer.getAIThis() + ")");
-					} else {
 						writer.addCode("new ArrayLeekValue(" + writer.getAIThis() + ")");
+					} else {
+						writer.addCode("new LegacyArrayLeekValue(" + writer.getAIThis() + ")");
 					}
 				} else if (mainblock.getWordCompiler().getVersion() >= 4 && ((LeekVariable) mExpression2).toString().equals("Map")) {
 					writer.addCode("new MapLeekValue(" + writer.getAIThis() + ")");
