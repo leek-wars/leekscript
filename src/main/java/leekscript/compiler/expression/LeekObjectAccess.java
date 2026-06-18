@@ -437,7 +437,13 @@ public class LeekObjectAccess extends Expression {
 				// le type (instanceof), il faut caster le résultat. Vaut pour `this.champ` comme
 				// pour `obj.champ` (#4933) — seul le receveur diffère.
 				boolean needResultCast = needsNarrowedResultCast();
-				if (needResultCast) {
+				// Champ d'une classe générique instanciée (receveur `Box<integer>`, champ
+				// déclaré `T` -> effacé `Object` en Java) : on caste vers le type concret
+				// inféré, sinon affecter le champ `Object` à un primitif casse au javac.
+				boolean needGenericCast = object.getType() instanceof leekscript.common.ParameterizedClassType
+						&& variable.getType().containsTypeVariable()
+						&& type != Type.ANY && type != Type.VOID;
+				if (needResultCast || needGenericCast) {
 					writer.addCode("((");
 					writer.addCode(type.getJavaName(mainblock.getVersion()));
 					writer.addCode(") ");
@@ -449,7 +455,7 @@ public class LeekObjectAccess extends Expression {
 					writer.addCode(".");
 					writer.addCode(field.getWord());
 				}
-				if (needResultCast) {
+				if (needResultCast || needGenericCast) {
 					writer.addCode(")");
 				}
 			} else if (type == Type.BIG_INT) {

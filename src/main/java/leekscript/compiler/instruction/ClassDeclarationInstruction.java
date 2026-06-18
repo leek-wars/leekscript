@@ -172,6 +172,16 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		return null;
 	}
 
+	/** Liste ordonnée des paramètres de type (`class Box<T, U>` -> [T, U]), ou null si non générique. */
+	public java.util.ArrayList<leekscript.common.TypeVariable> getTypeParameters() {
+		return typeParameters;
+	}
+
+	/** True si la classe déclare des paramètres de type (`class Box<T>`). */
+	public boolean isGeneric() {
+		return typeParameters != null;
+	}
+
 	@Override
 	public String getCode() {
 		String r = "class " + token.getWord();

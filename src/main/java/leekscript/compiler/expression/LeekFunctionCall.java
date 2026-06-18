@@ -30,6 +30,7 @@ import leekscript.common.AccessLevel;
 import leekscript.common.ArrayType;
 import leekscript.common.ClassType;
 import leekscript.common.ClassValueType;
+import leekscript.common.ParameterizedClassType;
 import leekscript.common.CompoundType;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
@@ -60,6 +61,10 @@ public class LeekFunctionCall extends Expression {
 	// stdlib objet). Résolu et généré comme l'ancienne forme libre `sqrt(x)`, juste
 	// qualifié par le namespace ; réutilise tout le chemin system_function.
 	private boolean is_namespace_function = false;
+	// Un cast `((Type) …)` de retour effacé générique a été ouvert sur le callee : il
+	// faut le refermer après la parenthèse finale de l'appel (précédence Java : sinon
+	// `(Type) x.m()` se lit `(Type)(x.m())` et casse un accès chaîné `x.m().n()`).
+	private boolean wrapReturnCast = false;
 	private ClassDeclarationMethod method;
 	private ClassMethodBlock constructorBlock = null;
 	private Type functionType = Type.ANY;
@@ -404,6 +409,15 @@ public class LeekFunctionCall extends Expression {
 				addComma = false;
 				typedArguments = true;
 			} else if (is_method) {
+				// Méthode d'une classe générique instanciée (receveur `Box<integer>`) : la
+				// méthode Java est effacée (retour `Object`). On caste vers le type de retour
+				// concret inféré, sinon un `ops((Object)…, n)` affecté à un primitif casse au
+				// javac (« inference variable T has incompatible bounds »).
+				if (object.getType() instanceof ParameterizedClassType
+						&& functionType instanceof FunctionType ft && ft.returnType().containsTypeVariable()
+						&& this.type != Type.ANY && this.type != Type.VOID) {
+					openGenericReturnCast(mainblock, writer);
+				}
 				object.writeJavaCode(mainblock, writer, true);
 				writer.addCode(".u_" + field + "(");
 				addComma = false;
@@ -413,7 +427,7 @@ public class LeekFunctionCall extends Expression {
 				// Retour effacé d'une méthode générique (ex. array.max() -> Object) :
 				// caste vers le type inféré.
 				if (systemReturnContainsTypeVariable() && this.type != Type.ANY && this.type != Type.VOID) {
-					writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+					openGenericReturnCast(mainblock, writer);
 				}
 				if (system_function.isStatic()) {
 					// "hello".length() -> StringClass.length(ai, "hello", ...) : méthode
@@ -499,7 +513,7 @@ public class LeekFunctionCall extends Expression {
 			// reste bien typé (l'affectation déballe le wrapper si primitif).
 			if (user_function != null && user_function.getType().returnType().containsTypeVariable()
 					&& this.type != Type.ANY && this.type != Type.VOID) {
-				writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+				openGenericReturnCast(mainblock, writer);
 			}
 			writer.addCode("f_");
 			writer.addCode(((LeekVariable) mExpression).getName());
@@ -600,6 +614,10 @@ public class LeekFunctionCall extends Expression {
 		if (closeOptionalCall) {
 			writer.addCode(" : null)");
 		}
+		if (wrapReturnCast) {
+			// Ferme le cast `((Type) <appel>)` ouvert sur le callee (retour effacé générique).
+			writer.addCode(")");
+		}
 		if (convertPrimitive) {
 			// Ferme le cast ouvert par writeConvertPrimitiveCast() : ((Number) X.run(...)).doubleValue()
 			if (this.type == Type.INT) {
@@ -640,13 +658,26 @@ public class LeekFunctionCall extends Expression {
 	 * ou méthode d'instance `((ArrayLeekValue) x).sort(mUAI`. Partagé par l'appel
 	 * libre `sqrt(x)` et l'appel qualifié de namespace `Math.sqrt(x)` (v5).
 	 */
+	/**
+	 * Ouvre un cast `((Type) …)` du retour effacé d'un appel générique vers le type
+	 * concret inféré (`this.type`). Le cast est refermé après la parenthèse finale de
+	 * l'appel via {@link #wrapReturnCast} (précédence Java : un cast bare `(Type) x.m()`
+	 * se lirait `(Type)(x.m())` et casserait un accès chaîné `x.m().n()`). Les gardes
+	 * « le retour déclaré contient une variable de type » diffèrent par site d'appel et
+	 * restent donc chez l'appelant.
+	 */
+	private void openGenericReturnCast(MainLeekBlock mainblock, JavaWriter writer) {
+		writer.addCode("((" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+		wrapReturnCast = true;
+	}
+
 	private boolean[] writeSystemFunctionCallee(MainLeekBlock mainblock, JavaWriter writer) {
 		boolean addComma = true;
 		boolean skipFirstArg = false;
 		// Fonction système générique dont le retour a été inféré vers un type concret :
 		// la méthode Java est effacée (Object), on caste vers le type inféré.
 		if (systemReturnContainsTypeVariable() && this.type != Type.ANY && this.type != Type.VOID) {
-			writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+			openGenericReturnCast(mainblock, writer);
 		}
 		if (unsafe || mainblock.getVersion() <= 3) {
 			if (callable_versions != null) {
@@ -875,7 +906,24 @@ public class LeekFunctionCall extends Expression {
 					this.constructorBlock = constructor.block;
 					v.getToken().setExpression(this);
 				}
-				this.type = clazz.getEmptyType();
+				// Instanciation de classe générique (v5) : on infère les arguments de type
+				// depuis les arguments du constructeur (même mécanique que les fonctions
+				// génériques) pour produire un `Box<integer>` au lieu d'un `Box` brut où T
+				// est effacé à any. No-op pour les classes non génériques / v1-4 (gelé).
+				if (LanguageFeature.GENERICS.enabledIn(compiler.getVersion()) && clazz.isGeneric()
+						&& constructor != null && constructor.block != null) {
+					Map<TypeVariable, Type> bindings = new HashMap<>();
+					var ctorArgs = constructor.block.getType().getArguments();
+					for (int i = 0; i < mParameters.size() && i < ctorArgs.size(); ++i) {
+						inferTypeVariables(ctorArgs.get(i), mParameters.get(i).getType(), bindings);
+					}
+					// Toute variable de classe non inférée est effacée vers sa borne (ANY) :
+					// un `T` brut ne doit jamais fuir dans le type résultat.
+					for (var tp : clazz.getTypeParameters()) bindings.putIfAbsent(tp, Type.ANY);
+					this.type = new ParameterizedClassType(clazz, bindings);
+				} else {
+					this.type = clazz.getEmptyType();
+				}
 
 			} else if (v.getVariableType() == VariableType.SUPER) {
 

@@ -66,6 +66,67 @@ public class TestGenerics extends TestCommon {
 		code_strict_v5_("class Box<T> { T value constructor(T v) { this.value = v } public T get() { return this.value } } return new Box(1).get()").noWarning();
 	}
 
+	// `class Box<T> { ... }` shared by the instantiation-precision tests below.
+	private static final String BOX = "class Box<T> { T value constructor(T v) { this.value = v } public T get() { return this.value } } ";
+
+	@Test
+	public void inferredClassTypeIsPrecise() throws Exception {
+		section("Generics / classes inferred instantiation precision");
+		// new Box(5) infers Box<integer> from the constructor argument, so .get() and
+		// .value read back as integer (assignable to integer with no warning) — proves
+		// T is no longer erased to any at the use site.
+		code_strict_v5_(BOX + "integer i = new Box(5).get() return i").noWarning();
+		code_strict_v5_("class Box<T> { T value constructor(T v) { this.value = v } } integer i = new Box(5).value return i").noWarning();
+		// new Box('hello') infers Box<string>: .get()/.value are string, NOT assignable
+		// to integer (any would be a silent unsafe downcast — this proves T = string).
+		code_strict_v5_(BOX + "integer i = new Box('hello').get() return i").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v5_("class Box<T> { T value constructor(T v) { this.value = v } } integer i = new Box('hello').value return i").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		// Through a local variable (not only the chained form).
+		code_strict_v5_(BOX + "var b = new Box(5) integer i = b.get() return i").noWarning();
+		// Several type parameters: new Pair(1, 'x') infers Pair<integer, string>.
+		code_strict_v5_("class Pair<A, B> { A a B b constructor(A a, B b) { this.a = a this.b = b } } string s = new Pair(1, 'x').b return s").noWarning();
+		code_strict_v5_("class Pair<A, B> { A a B b constructor(A a, B b) { this.a = a this.b = b } } integer i = new Pair(1, 'x').b return i").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		// Runtime still correct (erasure unchanged): the precise type is compile-time only.
+		code_v5(BOX + "var b = new Box(5) return b.get() + 1").equals("6");
+		// Non-integer primitives exercise the codegen wrapper cast (Double / Boolean), not
+		// just Long — both method return and field access.
+		code_strict_v5_(BOX + "real r = new Box(5.5).get() return r").noWarning();
+		code_v5(BOX + "return new Box(5.5).get() * 2").equals("11.0");
+		code_v5("class Box<T> { T value constructor(T v) { this.value = v } } var b = new Box(5.5) return b.value + 1").equals("6.5");
+		code_strict_v5_(BOX + "boolean b = new Box(true).get() return b").noWarning();
+		code_strict_v5_("class Box<T> { T value constructor(T v) { this.value = v } } boolean b2 = new Box(false).value return b2").noWarning();
+		code_v5(BOX + "return !new Box(true).get()").equals("false");
+	}
+
+	@Test
+	public void inferredClassTypeChained() throws Exception {
+		section("Generics / classes chained generic receiver (cast precedence)");
+		// Chained generic receiver: Box<Box<integer>>. The erased-return cast must be
+		// PARENTHESIZED — `(Long) x.get().get()` would parse as `(Long)(x.get().get())`
+		// and call .get() on the erased Object. Method-then-method and method-then-field.
+		code_v5(BOX + "return new Box(new Box(5)).get().get() + 1").equals("6");
+		code_v5(BOX + "return new Box(new Box(5)).get().value + 1").equals("6");
+		code_strict_v5_(BOX + "integer i = new Box(new Box(5)).get().get() return i").noWarning();
+		// Same precedence hazard via a generic user function returning a parameterized class.
+		code_v5(BOX + "function id<T>(T x) -> T { return x } return id(new Box(5)).get() + 1").equals("6");
+		// And via a generic system method (array.max() -> the element, a Box).
+		code_v5(BOX + "return [new Box(5)].max().get() + 1").equals("6");
+	}
+
+	@Test
+	public void genericClassInheritanceAndEdges() throws Exception {
+		section("Generics / classes inheritance + erasure edges");
+		// Inherited member whose type is a PARENT type variable not bound by the subclass
+		// instantiation (B extends A, raw): it must erase to any, NOT leak a raw T (which
+		// used to raise a hard ASSIGNMENT_INCOMPATIBLE_TYPE even in non-strict v5).
+		code_v5("class A<U> { U v constructor(U x) { this.v = x } public U get() { return this.v } } class B<T> extends A { constructor(T x) { super(x) } } var b = new B(5) integer i = b.get() return i").equals("5");
+		// Phantom type parameter (T appears in no constructor argument): erases to any.
+		code_v5("class Box<T> { integer fixed constructor() { this.fixed = 7 } public T make() { return this.fixed } } return new Box().make()").equals("7");
+		// A T-typed method parameter is checked against the ERASED bound (any), so a
+		// wrong-typed argument is accepted (documents the current erasure-boundary limit).
+		code_v5("class Box<T> { T value constructor(T v) { this.value = v } public void set(T v) { this.value = v } public T get() { return this.value } } var b = new Box(5) b.set('x') return b.get()").equals("\"x\"");
+	}
+
 	@Test
 	public void genericSystemFunctions() throws Exception {
 		section("Generics / system functions");
