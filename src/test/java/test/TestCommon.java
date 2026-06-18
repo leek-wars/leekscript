@@ -224,6 +224,28 @@ public class TestCommon {
 			});
 		}
 
+		/** Vérifie qu'une erreur a été LOGGÉE au runtime (addSystemLog), p. ex. VALUE_IS_NOT_AN_ARRAY en v3+. */
+		public String logsError(Error type) {
+			return run(new Checker() {
+				public boolean check(Result result) { return result.loggedErrors.contains(type.ordinal()); }
+				public String getExpected() { return "logs " + type.name(); }
+				public String getResult(Result result) {
+					return result.loggedErrors.isEmpty() ? "no log" : "logs ordinals " + result.loggedErrors;
+				}
+			});
+		}
+
+		/** Vérifie qu'une erreur n'a PAS été loggée au runtime (côté v1-2 silencieux). */
+		public String doesNotLog(Error type) {
+			return run(new Checker() {
+				public boolean check(Result result) { return !result.loggedErrors.contains(type.ordinal()); }
+				public String getExpected() { return "no log of " + type.name(); }
+				public String getResult(Result result) {
+					return result.loggedErrors.contains(type.ordinal()) ? "logged " + type.name() : "ok";
+				}
+			});
+		}
+
 		public void almost(double expected) {
 			almost(expected, 1e-10);
 		}
@@ -300,6 +322,13 @@ public class TestCommon {
 				ai.maxOperations = this.maxOperations;
 				ai.maxRAM = this.maxRAM;
 
+				// Capture des erreurs loggées au runtime : on remplace le stream par défaut
+				// (System.out) du BasicAILog par un collecteur de la clé d'erreur (index 3).
+				final var loggedErrors = new ArrayList<Integer>();
+				ai.getLogs().setStream(a -> {
+					if (a.size() > 3 && a.get(3).isNumber()) loggedErrors.add(a.get(3).intValue());
+				});
+
 				t = System.nanoTime();
 				var v = ai.runIA();
 				long exec_time = (System.nanoTime() - t) / 1000;
@@ -312,6 +341,7 @@ public class TestCommon {
 				// RAM de chaque conteneur v4 vivant = son coût réel (cf. RamInvariant), `v` gardé vivant jusque-là
 				ramErrors = RamInvariant.violations(ai);
 				Reference.reachabilityFence(v);
+				result.loggedErrors = loggedErrors;
 
 			} catch (LeekCompilerException e) {
 				// e.printStackTrace();
@@ -372,6 +402,9 @@ public class TestCommon {
 		Object[] parameters;
 		long operations;
 		long exec_time;
+		// Ordinaux des erreurs loggées au runtime (addSystemLog), p. ex. VALUE_IS_NOT_AN_ARRAY
+		// en v3+ : ce ne sont ni des erreurs d'analyse ni des exceptions, juste des logs.
+		List<Integer> loggedErrors = Collections.emptyList();
 
 		public Result(String result, AI ai, Error error, Object[] parameters, long operations, long exec_time) {
 			this.result = result;

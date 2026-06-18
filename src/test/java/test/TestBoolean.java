@@ -29,6 +29,19 @@ public class TestBoolean extends TestCommon {
 	}
 
 	@Test
+	public void testKeywordOperatorCaseSensitivity() throws Exception {
+		section("Logical operator keywords: case-insensitive in v1-2, case-sensitive in v3+");
+		// Pendant du test des littéraux True/TRUE ci-dessus, mais pour les OPÉRATEURS.
+		// v1-2 : lexer case-insensitive, `AND` majuscule est l'opérateur logique.
+		code_v1_2("return true AND false").equals("false");
+		// v3+ : seules les minuscules sont des mots-clés ; `and` marche...
+		code_v3("return true and false").equals("false");
+		// ...mais `AND` majuscule est un identifiant, donc `return true AND false` casse
+		// (le `return` termine, `AND false` devient une instruction inatteignable).
+		code_v3("return true AND false").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+	}
+
+	@Test
 	public void testBoolean_operator_Not() throws Exception {
 		section("Boolean.operator !");
 		code_v1_2("return not true").equals("false");

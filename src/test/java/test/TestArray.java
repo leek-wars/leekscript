@@ -330,6 +330,19 @@ public class TestArray extends TestCommon {
 	}
 
 	@Test
+	public void testValueIsNotAnArrayLog() throws Exception {
+		section("Indexing a non-array logs VALUE_IS_NOT_AN_ARRAY in v3+ (silent in v1-2)");
+		// Différence runtime v2/v3 : indexer une valeur non-tableau retourne null dans
+		// toutes les versions, mais v3+ LOGGE en plus une erreur VALUE_IS_NOT_AN_ARRAY
+		// (AI.get, gate `version >= 3`) ; v1-2 sont silencieuses. Seul le log distingue.
+		code_v3("var x = 5 return x[0]").logsError(Error.VALUE_IS_NOT_AN_ARRAY);
+		code_v1_2("var x = 5 return x[0]").doesNotLog(Error.VALUE_IS_NOT_AN_ARRAY);
+		// La valeur retournée est null des deux côtés (le log est la seule différence).
+		code_v1_2("var x = 5 return x[0]").equals("null");
+		code_v3("var x = 5 return x[0]").equals("null");
+	}
+
+	@Test
 	public void testAccess_with_booleans() throws Exception {
 		section("Access with booleans");
 		code("return [1, 2, 3][false]").equals("1");
