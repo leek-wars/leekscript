@@ -228,16 +228,16 @@ public class TestEdgeCases extends TestCommon {
 	public void testDeep_recursion_with_temporary_arrays() throws Exception {
 		section("Deep recursion with temporary arrays");
 		// Simple recursion creating arrays at each level
-		code_v4_("function rec(depth) { if (depth == 0) return [] var a = [1, 2, 3] return rec(depth - 1) } return count(rec(100))").equals("0");
+		code_v4("function rec(depth) { if (depth == 0) return [] var a = [1, 2, 3] return rec(depth - 1) } return count(rec(100))").equals("0");
 
 		// Recursion that accumulates array references
-		code_v4_("function rec(depth, acc) { if (depth == 0) return acc push(acc, [depth, depth * 2]) return rec(depth - 1, acc) } return count(rec(50, []))").equals("50");
+		code_v4("function rec(depth, acc) { if (depth == 0) return acc push(acc, [depth, depth * 2]) return rec(depth - 1, acc) } return count(rec(50, []))").equals("50");
 
 		// Tree-like recursion (simulates minimax)
 		code_v4_("function tree(depth) { if (depth == 0) return 1 var left = tree(depth - 1) var right = tree(depth - 1) return left + right } return tree(10)").equals("1024");
 
 		// Tree recursion with array creation at each node - returns nested array
-		code_v4_("function tree(depth) { if (depth == 0) return [1] var arr = [] push(arr, tree(depth - 1)) push(arr, tree(depth - 1)) return arr } return count(tree(5))").equals("2");
+		code_v4("function tree(depth) { if (depth == 0) return [1] var arr = [] push(arr, tree(depth - 1)) push(arr, tree(depth - 1)) return arr } return count(tree(5))").equals("2");
 
 		/**
 		 * Minimax simulation - this pattern caused OOM in tournaments
@@ -248,10 +248,10 @@ public class TestEdgeCases extends TestCommon {
 	public void testMinimaxMinuslike_patterns() throws Exception {
 		section("Minimax-like patterns");
 		// Minimax without pruning - creates many temporary arrays
-		code_v4_("function minimax(depth, isMax) { if (depth == 0) return randInt(0, 100) var scores = [] for (var i = 0; i < 3; i++) push(scores, minimax(depth - 1, !isMax)) if (isMax) return arrayMax(scores) else return arrayMin(scores) } return minimax(4, true) >= 0").equals("true");
+		code_v4("function minimax(depth, isMax) { if (depth == 0) return randInt(0, 100) var scores = [] for (var i = 0; i < 3; i++) push(scores, minimax(depth - 1, !isMax)) if (isMax) return arrayMax(scores) else return arrayMin(scores) } return minimax(4, true) >= 0").equals("true");
 
 		// Minimax with move generation - simplified version
-		code_v4_("function minimax2(val, depth, isMax) { if (depth == 0) return val var scores = [] for (var i = -1; i <= 1; i++) push(scores, minimax2(val + i, depth - 1, !isMax)) if (isMax) return arrayMax(scores) else return arrayMin(scores) } return minimax2(0, 3, true) >= -3").equals("true");
+		code_v4("function minimax2(val, depth, isMax) { if (depth == 0) return val var scores = [] for (var i = -1; i <= 1; i++) push(scores, minimax2(val + i, depth - 1, !isMax)) if (isMax) return arrayMax(scores) else return arrayMin(scores) } return minimax2(0, 3, true) >= -3").equals("true");
 
 		/**
 		 * Nested data structures - potential memory issues
@@ -262,16 +262,16 @@ public class TestEdgeCases extends TestCommon {
 	public void testDeeply_nested_structures() throws Exception {
 		section("Deeply nested structures");
 		// Deep array nesting - typeOf returns a number
-		code_v4_("var a = [1] for (var i = 0; i < 50; i++) a = [a] return count(a)").equals("1");
+		code_v4("var a = [1] for (var i = 0; i < 50; i++) a = [a] return count(a)").equals("1");
 
 		// Deep map nesting - use mapSize instead of count
-		code_v4_("any m = ['a': 1] for (var i = 0; i < 50; i++) m = ['nested': m] return mapSize(m)").equals("1");
+		code_v4("any m = ['a': 1] for (var i = 0; i < 50; i++) m = ['nested': m] return mapSize(m)").equals("1");
 
 		// Deep object nesting
 		code_v4_("class Node { any value; any next; } var n = new Node() n.value = 1 for (var i = 0; i < 50; i++) { var newN = new Node() newN.value = i newN.next = n n = newN } return n.value").equals("49");
 
 		// Mixed nesting - use mapSize
-		code_v4_("any x = 1 for (var i = 0; i < 20; i++) x = ['arr': [x, x]] return mapSize(x)").equals("1");
+		code_v4("any x = 1 for (var i = 0; i < 20; i++) x = ['arr': [x, x]] return mapSize(x)").equals("1");
 
 		/**
 		 * Edge cases with null references - related to NPE fixes
@@ -282,12 +282,12 @@ public class TestEdgeCases extends TestCommon {
 	public void testNull_reference_edge_cases() throws Exception {
 		section("Null reference edge cases");
 		// Null in array operations
-		code_v4_("var a = [null, null, null] return count(a)").equals("3");
-		code_v4_("var a = [1, 2, 3] return arrayFoldLeft(a, (acc, v) -> acc + v, 0)").equals("6");
-		code_v4_("var a = [null] push(a, null) return count(a)").equals("2");
+		code_v4("var a = [null, null, null] return count(a)").equals("3");
+		code_v4("var a = [1, 2, 3] return arrayFoldLeft(a, (acc, v) -> acc + v, 0)").equals("6");
+		code_v4("var a = [null] push(a, null) return count(a)").equals("2");
 
 		// Null in map operations - use mapSize for maps
-		code_v4_("any m = ['a': null, 'b': null] return mapSize(m)").equals("2");
+		code_v4("any m = ['a': null, 'b': null] return mapSize(m)").equals("2");
 		code_v4_("any m = [:] m['x'] = null return m['x']").equals("null");
 
 		// Null function arguments
@@ -372,15 +372,15 @@ public class TestEdgeCases extends TestCommon {
 	public void testRAM_limit_edge_cases() throws Exception {
 		section("RAM limit edge cases");
 		// Array that grows to limit
-		code_v4_("var a = [] for (var i = 0; i < 1000; i++) push(a, i) return count(a)").max_ram(50000).equals("1000");
-		code_v4_("var a = [] for (var i = 0; i < 100000; i++) push(a, i) return count(a)").max_ram(1000).error(Error.OUT_OF_MEMORY);
+		code_v4("var a = [] for (var i = 0; i < 1000; i++) push(a, i) return count(a)").max_ram(50000).equals("1000");
+		code_v4("var a = [] for (var i = 0; i < 100000; i++) push(a, i) return count(a)").max_ram(1000).error(Error.OUT_OF_MEMORY);
 
 		// Map that grows to limit - use any type and mapSize
-		code_v4_("any m = [:] for (var i = 0; i < 1000; i++) m[i] = i return mapSize(m)").max_ram(50000).equals("1000");
-		code_v4_("any m = [:] for (var i = 0; i < 100000; i++) m[i] = i return mapSize(m)").max_ram(1000).error(Error.OUT_OF_MEMORY);
+		code_v4("any m = [:] for (var i = 0; i < 1000; i++) m[i] = i return mapSize(m)").max_ram(50000).equals("1000");
+		code_v4("any m = [:] for (var i = 0; i < 100000; i++) m[i] = i return mapSize(m)").max_ram(1000).error(Error.OUT_OF_MEMORY);
 
 		// String concatenation memory
-		code_v4_("var s = '' for (var i = 0; i < 1000; i++) s += 'x' return length(s)").max_ram(50000).equals("1000");
+		code_v4("var s = '' for (var i = 0; i < 1000; i++) s += 'x' return length(s)").max_ram(50000).equals("1000");
 
 		/**
 		 * Garbage collection scenarios - testing that temporary objects are freed
@@ -391,7 +391,7 @@ public class TestEdgeCases extends TestCommon {
 	public void testGC_scenarios_Minus_temporary_object_cleanup() throws Exception {
 		section("GC scenarios - temporary object cleanup");
 		// Create and discard many arrays (should not OOM if GC works)
-		code_v4_("for (var i = 0; i < 100; i++) { var temp = [] for (var j = 0; j < 1000; j++) push(temp, j) } return 'ok'").max_ram(100000).equals("\"ok\"");
+		code_v4("for (var i = 0; i < 100; i++) { var temp = [] for (var j = 0; j < 1000; j++) push(temp, j) } return 'ok'").max_ram(100000).equals("\"ok\"");
 
 		// Create and discard many maps
 		// Headroom 2x sur la version Map (entries plus lourdes que push) pour absorber la variance GC du runner CI sans perdre l'intent du test (cap << 1MB qui serait l'accumulation totale sans GC)
@@ -409,13 +409,13 @@ public class TestEdgeCases extends TestCommon {
 	public void testComplex_data_structure_patterns() throws Exception {
 		section("Complex data structure patterns");
 		// Graph-like structure (adjacency list) - use global
-		code_v4_("global graph = [:] for (var i = 0; i < 10; i++) graph[i] = [] for (var i = 0; i < 10; i++) for (var j = i + 1; j < 10; j++) { push(graph[i], j) push(graph[j], i) } return count(graph[0])").equals("9");
+		code_v4("global graph = [:] for (var i = 0; i < 10; i++) graph[i] = [] for (var i = 0; i < 10; i++) for (var j = i + 1; j < 10; j++) { push(graph[i], j) push(graph[j], i) } return count(graph[0])").equals("9");
 
 		// Matrix operations
-		code_v4_("function createMatrix(n) { var m = [] for (var i = 0; i < n; i++) { var row = [] for (var j = 0; j < n; j++) push(row, i * n + j) push(m, row) } return m } var mat = createMatrix(10) return mat[5][5]").equals("55");
+		code_v4("function createMatrix(n) { var m = [] for (var i = 0; i < n; i++) { var row = [] for (var j = 0; j < n; j++) push(row, i * n + j) push(m, row) } return m } var mat = createMatrix(10) return mat[5][5]").equals("55");
 
 		// Priority queue simulation - use global
-		code_v4_("global pq = [] function pqPush(val) { push(pq, val) sort(pq) } function pqPop() { return shift(pq) } for (var i = 10; i > 0; i--) pqPush(i) return pqPop()").equals("1");
+		code_v4("global pq = [] function pqPush(val) { push(pq, val) sort(pq) } function pqPop() { return shift(pq) } for (var i = 10; i > 0; i--) pqPush(i) return pqPop()").equals("1");
 
 		/**
 		 * Edge cases with closures and memory
@@ -426,7 +426,7 @@ public class TestEdgeCases extends TestCommon {
 	public void testClosure_memory_edge_cases() throws Exception {
 		section("Closure memory edge cases");
 		// Closure capturing large array
-		code_v4_("var large = [] for (var i = 0; i < 1000; i++) push(large, i) var f = function() { return count(large) } return f()").equals("1000");
+		code_v4("var large = [] for (var i = 0; i < 1000; i++) push(large, i) var f = function() { return count(large) } return f()").equals("1000");
 
 		// Multiple closures sharing state
 		code_v4_("var shared = [0] var inc = function() { shared[0]++ } var get = function() { return shared[0] } for (var i = 0; i < 100; i++) inc() return get()").equals("100");
@@ -443,7 +443,7 @@ public class TestEdgeCases extends TestCommon {
 	public void testType_coercion_edge_cases() throws Exception {
 		section("Type coercion edge cases");
 		// Mixed type arrays
-		code_v4_("var a = [1, 'two', 3.0, null, true] return count(a)").equals("5");
+		code_v4("var a = [1, 'two', 3.0, null, true] return count(a)").equals("5");
 
 		// String coercion
 		code_v4_("return 'value: ' + 42").equals("\"value: 42\"");
@@ -467,9 +467,9 @@ public class TestEdgeCases extends TestCommon {
 		code_v4_("var x = 9223372036854775807 return x + 1").equals("-9223372036854775808"); // Overflow
 
 		// Empty structures
-		code_v4_("var a = [] return count(a)").equals("0");
-		code_v4_("any m = [:] return mapSize(m)").equals("0");
-		code_v4_("var s = '' return length(s)").equals("0");
+		code_v4("var a = [] return count(a)").equals("0");
+		code_v4("any m = [:] return mapSize(m)").equals("0");
+		code_v4("var s = '' return length(s)").equals("0");
 
 		// Single element structures
 		code_v4_("var a = [42] return a[0]").equals("42");
@@ -487,7 +487,7 @@ public class TestEdgeCases extends TestCommon {
 		code_v4_("function buildTree(depth) { if (depth == 0) return ['leaf': true, 'data': [1, 2, 3]] return ['left': buildTree(depth - 1), 'right': buildTree(depth - 1), 'data': [depth]] } var tree = buildTree(3) return tree['data'][0]").equals("3");
 
 		// Recursive array transformation
-		code_v4_("function transform(arr, depth) { if (depth == 0) return arr return transform(arrayMap(arr, x -> x * 2), depth - 1) } return transform([1, 2, 3, 4], 3)").equals("[8, 16, 24, 32]");
+		code_v4("function transform(arr, depth) { if (depth == 0) return arr return transform(arrayMap(arr, x -> x * 2), depth - 1) } return transform([1, 2, 3, 4], 3)").equals("[8, 16, 24, 32]");
 
 		// Dynamic programming pattern with memoization
 		code_v4_("function fib(n, memo) { if (n <= 1) return n if (memo[n] != null) return memo[n] memo[n] = fib(n - 1, memo) + fib(n - 2, memo) return memo[n] } any memo = [:] return fib(30, memo)").equals("832040");
@@ -501,13 +501,13 @@ public class TestEdgeCases extends TestCommon {
 	public void testTournamentMinuslike_stress_scenarios() throws Exception {
 		section("Tournament-like stress scenarios");
 		// Multiple sequential computations (like tournament rounds)
-		code_v4_("var results = [] for (var round = 0; round < 8; round++) { var scores = [] for (var i = 0; i < 100; i++) push(scores, randInt(0, 1000)) push(results, arrayMax(scores)) } return count(results)").equals("8");
+		code_v4("var results = [] for (var round = 0; round < 8; round++) { var scores = [] for (var i = 0; i < 100; i++) push(scores, randInt(0, 1000)) push(results, arrayMax(scores)) } return count(results)").equals("8");
 
 		// Simulate 16 fights in first round (tournament pattern)
-		code_v4_("function simulateFight() { var moves = [] for (var turn = 0; turn < 64; turn++) { push(moves, [randInt(0, 10), randInt(0, 10)]) } return randInt(0, 2) } var winners = [] for (var i = 0; i < 16; i++) { var winner = simulateFight() push(winners, winner) } return count(winners)").equals("16");
+		code_v4("function simulateFight() { var moves = [] for (var turn = 0; turn < 64; turn++) { push(moves, [randInt(0, 10), randInt(0, 10)]) } return randInt(0, 2) } var winners = [] for (var i = 0; i < 16; i++) { var winner = simulateFight() push(winners, winner) } return count(winners)").equals("16");
 
 		// Deep tree search with alpha-beta like pruning
-		code_v4_("function search(depth, alpha, beta, isMax) { if (depth == 0) return randInt(-100, 100) for (var i = 0; i < 3; i++) { var score = search(depth - 1, alpha, beta, !isMax) if (isMax) { alpha = max(alpha, score) } else { beta = min(beta, score) } if (beta <= alpha) break } return isMax ? alpha : beta } return search(5, -1000, 1000, true) >= -1000").equals("true");
+		code_v4("function search(depth, alpha, beta, isMax) { if (depth == 0) return randInt(-100, 100) for (var i = 0; i < 3; i++) { var score = search(depth - 1, alpha, beta, !isMax) if (isMax) { alpha = max(alpha, score) } else { beta = min(beta, score) } if (beta <= alpha) break } return isMax ? alpha : beta } return search(5, -1000, 1000, true) >= -1000").equals("true");
 
 		/**
 		 * Value conversions edge cases
@@ -532,8 +532,8 @@ public class TestEdgeCases extends TestCommon {
 		code_v4_("class A { integer? v constructor(integer? v) { this.v = v } } var a = new A(3) if (a.v!) { return 1 } return 0").equals("1");
 
 		// as Type.method() - the dot/call must apply to the cast result, not the type
-		code_v4_("class G { boolean check() { return true } } var m = ['a': new G()] if (!mapGet(m, 'a', new G()) as G.check()) { return 0 } return 1").equals("1");
-		code_v4_("class G { boolean check() { return true } } var m = ['a': new G()] var g = mapGet(m, 'a', new G()) as G if (g.check()) { return 1 } return 0").equals("1");
+		code_v4("class G { boolean check() { return true } } var m = ['a': new G()] if (!mapGet(m, 'a', new G()) as G.check()) { return 0 } return 1").equals("1");
+		code_v4("class G { boolean check() { return true } } var m = ['a': new G()] var g = mapGet(m, 'a', new G()) as G if (g.check()) { return 1 } return 0").equals("1");
 		// issue #2874: `test as Test.no()` should behave like `(test as Test).no()`
 		code_v4_("class Test { public boolean no(){ return false } } var test = new Test() if (test as Test.no()) { return 1 } return 0").equals("0");
 		code_v4_("class Test { public boolean no(){ return false } } var test = new Test() return '' + (test as Test.no()) + ',' + ((test as Test).no())").equals("\"false,false\"");
@@ -621,7 +621,7 @@ public class TestEdgeCases extends TestCommon {
 
 		// Type checking with typeOf
 		code_v4_("any x = 42 if (typeOf(x) == 1) { return x + 1 } return 0").equals("43"); // 1 = integer type
-		code_v4_("any x = 'hello' if (typeOf(x) == 3) { return length(x) } return 0").equals("5"); // 3 = string type
+		code_v4("any x = 'hello' if (typeOf(x) == 3) { return length(x) } return 0").equals("5"); // 3 = string type
 
 		/**
 		 * Edge cases with operators and assignments
@@ -690,18 +690,18 @@ public class TestEdgeCases extends TestCommon {
 	public void testReference_vs_copy_semantics() throws Exception {
 		section("Reference vs copy semantics");
 		// Array reference behavior
-		code_v4_("var a = [1, 2, 3] var b = a push(b, 4) return a").equals("[1, 2, 3, 4]");
-		code_v4_("var a = [1, 2, 3] var b = clone(a) push(b, 4) return a").equals("[1, 2, 3]");
+		code_v4("var a = [1, 2, 3] var b = a push(b, 4) return a").equals("[1, 2, 3, 4]");
+		code_v4("var a = [1, 2, 3] var b = clone(a) push(b, 4) return a").equals("[1, 2, 3]");
 
 		// Map reference behavior
 		code_v4_("any a = ['x': 1] any b = a b['y'] = 2 return a").equals("[\"x\" : 1, \"y\" : 2]");
-		code_v4_("any a = ['x': 1] any b = clone(a) b['y'] = 2 return mapSize(a)").equals("1");
+		code_v4("any a = ['x': 1] any b = clone(a) b['y'] = 2 return mapSize(a)").equals("1");
 
 		// Nested structure reference
 		code_v4_("var outer = [[1, 2, 3]] var inner = outer[0] inner[0] = 99 return outer").equals("[[99, 2, 3]]");
 
 		// Function parameter reference
-		code_v4_("function modify(arr) { push(arr, 99) } var a = [1, 2, 3] modify(a) return a").equals("[1, 2, 3, 99]");
+		code_v4("function modify(arr) { push(arr, 99) } var a = [1, 2, 3] modify(a) return a").equals("[1, 2, 3, 99]");
 	}
 
 	/**
