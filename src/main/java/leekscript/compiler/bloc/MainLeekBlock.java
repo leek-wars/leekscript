@@ -131,6 +131,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			addClass(new ClassDeclarationInstruction(new Token("Function"), 0, ai, true, this, Type.FUNCTION).notInstantiable());
 			addClass(new ClassDeclarationInstruction(new Token("JSON"), 0, ai, true, this).notInstantiable());
 			addClass(new ClassDeclarationInstruction(new Token("System"), 0, ai, true, this).notInstantiable());
+
+			// v5 (pilier 2, stdlib objet) : namespace `Math` regroupant les fonctions
+			// mathématiques (`Math.sqrt(x)`, `Math.abs(x)`, `Math.rand()`...). Forme
+			// canonique remplaçant les formes libres `sqrt(x)`/`abs(x)`. Pur namespace
+			// (pas de type valeur), comme JSON/System. Gardé v>=5 pour ne pas réserver
+			// le nom `Math` dans les versions antérieures.
+			if (ai.getVersion() >= 5) {
+				addClass(new ClassDeclarationInstruction(new Token("Math"), 0, ai, true, this).notInstantiable());
+			}
 		}
 	}
 

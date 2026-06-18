@@ -470,6 +470,27 @@ public class LeekFunctions {
 		return standardClass == null ? null : getMethod(standardClass, name);
 	}
 
+	/**
+	 * Classe standard sous-jacente d'un namespace built-in écrit dans le code (v5).
+	 * Le namespace `Math` expose les fonctions mathématiques, qui portent la classe
+	 * standard "Number" en interne (`NumberClass.sqrt(ai, x)`). Mécanisme général :
+	 * d'autres namespaces pourront mapper leur nom vers une classe standard ici.
+	 */
+	public static String namespaceStandardClass(String namespaceName) {
+		if ("Math".equals(namespaceName)) return "Number";
+		return null;
+	}
+
+	/**
+	 * Fonction d'un namespace built-in appelée en forme qualifiée `Namespace.func(...)`
+	 * (v5), ou null. Résolue exactement comme l'ancienne forme libre `func(...)` :
+	 * `Math.sqrt(x)` == `sqrt(x)`, `Math.rand()` == `rand()`.
+	 */
+	public static LeekFunctions namespaceFunction(String namespaceName, String field) {
+		var standardClass = namespaceStandardClass(namespaceName);
+		return standardClass == null ? null : getMethod(standardClass, field);
+	}
+
 	private static Map<String, LeekFunctions> extraFunctions = null;
 
 	private static String extraFunctionsImport;

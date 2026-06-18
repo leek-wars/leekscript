@@ -125,6 +125,18 @@ public class LeekObjectAccess extends Expression {
 		// Expression incomplète
 		if (field == null) return;
 
+		// v5 (pilier 2, stdlib objet) : accès à une fonction de namespace built-in,
+		// `Math.sqrt`, `Math.rand`... Le membre n'existe pas au sens classique mais
+		// la fonction est valide (callable) ; la résolution réelle de l'appel est
+		// faite par LeekFunctionCall. On évite ici de signaler un membre inexistant.
+		if (object instanceof LeekVariable nv && nv.getVariableType() == VariableType.CLASS
+				&& leekscript.common.LanguageFeature.OO_STDLIB.enabledIn(compiler.getVersion())
+				&& leekscript.runner.LeekFunctions.namespaceFunction(nv.getName(), field.getWord()) != null) {
+			this.type = Type.FUNCTION;
+			this.isLeftValue = false;
+			return;
+		}
+
 		if (field.getWord().equals("class")) {
 			var clazz = object.getType().getClassDeclaration();
 			type = clazz == null ? Type.CLASS : clazz.getClassValueType();

@@ -56,6 +56,10 @@ public class LeekFunctionCall extends Expression {
 	// Appel de méthode sur un type natif : `array.sort()`, `array.map(f)` (v5, OO
 	// stdlib). Résolu comme `sort(array)` mais codegen `((ArrayLeekValue) array).sort(ai)`.
 	private boolean is_builtin_method = false;
+	// Appel de fonction de namespace built-in : `Math.sqrt(x)`, `Math.rand()` (v5,
+	// stdlib objet). Résolu et généré comme l'ancienne forme libre `sqrt(x)`, juste
+	// qualifié par le namespace ; réutilise tout le chemin system_function.
+	private boolean is_namespace_function = false;
 	private ClassDeclarationMethod method;
 	private ClassMethodBlock constructorBlock = null;
 	private Type functionType = Type.ANY;
@@ -348,6 +352,12 @@ public class LeekFunctionCall extends Expression {
 				typedArguments = true;
 
 			} else if (object instanceof LeekVariable v && v.getVariableType() == VariableType.CLASS) {
+				if (is_namespace_function) {
+					// Math.sqrt(x) -> NumberClass.sqrt(mUAI, x) : même émission que la forme libre.
+					var state = writeSystemFunctionCallee(mainblock, writer);
+					addComma = state[0];
+					skipFirstArg = state[1];
+				} else {
 				// Class.method() : Méthode statique connue
 				var method = v.getClassDeclaration().getStaticMethod(field, mParameters.size());
 				if (method != null) {
@@ -364,6 +374,7 @@ public class LeekFunctionCall extends Expression {
 						writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 					}
 					writer.addCode("u_" + v.getClassDeclaration().getName() + ".callStaticField(\"" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
+				}
 				}
 			} else if (object instanceof LeekVariable v && v.getVariableType() == VariableType.THIS) {
 				var method = mainblock.getWordCompiler().getCurrentClass().getMethodName(field, mParameters.size());
@@ -477,38 +488,9 @@ public class LeekFunctionCall extends Expression {
 			writer.addCode(".execute(");
 			addComma = false;
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.SYSTEM_FUNCTION) {
-			// Fonction système générique dont le retour a été inféré vers un type
-			// concret : la méthode Java est effacée (retourne Object / un type plus
-			// général, ex. ArrayLeekValue.arrayMax -> Object). On caste vers le type
-			// inféré pour que le code appelant reste bien typé.
-			if (systemReturnContainsTypeVariable() && this.type != Type.ANY && this.type != Type.VOID) {
-				writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
-			}
-			if (unsafe || mainblock.getVersion() <= 3) {
-				if (callable_versions != null) {
-					var key = writer.generateGenericFunction(callable_versions);
-					writer.addCode(system_function.getStandardClass() + "_" + key + "(");
-					addComma = false;
-				} else {
-					var list = new ArrayList<CallableVersion>();
-					list.add(system_function.getVersions()[0]);
-					writer.generateGenericFunction(list);
-					writer.addCode(system_function.getStandardClass() + "_" + system_function.getName() + "_" + system_function.getVersions()[0].getParametersSignature() + "(");
-					addComma = false;
-				}
-			} else if (system_function.isStatic()) {
-				writer.addCode(system_function.getStandardClass() + "Class." + system_function.getName() + "(" + writer.getAIThis());
-			} else {
-				if (mParameters.get(0).getType() != Type.ANY) {
-					writer.addCode("((" + mParameters.get(0).getType().getJavaName(mainblock.getVersion()) + ") ");
-				}
-				mParameters.get(0).writeJavaCode(mainblock, writer, true);
-				if (mParameters.get(0).getType() != Type.ANY) {
-					writer.addCode(")");
-				}
-				writer.addCode("." + system_function.getName() + "(" + writer.getAIThis());
-				skipFirstArg = true;
-			}
+			var state = writeSystemFunctionCallee(mainblock, writer);
+			addComma = state[0];
+			skipFirstArg = state[1];
 
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.FUNCTION) {
 			user_function = mainblock.getUserFunction(((LeekVariable) mExpression).getName());
@@ -652,6 +634,49 @@ public class LeekFunctionCall extends Expression {
 	}
 
 	/**
+	 * Émet le callee d'un appel de fonction système et renvoie l'état
+	 * {addComma, skipFirstArg} pour la boucle d'arguments. Trois formes : wrapper
+	 * générique (v<=3 ou appel unsafe), helper statique `NumberClass.sqrt(mUAI`,
+	 * ou méthode d'instance `((ArrayLeekValue) x).sort(mUAI`. Partagé par l'appel
+	 * libre `sqrt(x)` et l'appel qualifié de namespace `Math.sqrt(x)` (v5).
+	 */
+	private boolean[] writeSystemFunctionCallee(MainLeekBlock mainblock, JavaWriter writer) {
+		boolean addComma = true;
+		boolean skipFirstArg = false;
+		// Fonction système générique dont le retour a été inféré vers un type concret :
+		// la méthode Java est effacée (Object), on caste vers le type inféré.
+		if (systemReturnContainsTypeVariable() && this.type != Type.ANY && this.type != Type.VOID) {
+			writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
+		}
+		if (unsafe || mainblock.getVersion() <= 3) {
+			if (callable_versions != null) {
+				var key = writer.generateGenericFunction(callable_versions);
+				writer.addCode(system_function.getStandardClass() + "_" + key + "(");
+				addComma = false;
+			} else {
+				var list = new ArrayList<CallableVersion>();
+				list.add(system_function.getVersions()[0]);
+				writer.generateGenericFunction(list);
+				writer.addCode(system_function.getStandardClass() + "_" + system_function.getName() + "_" + system_function.getVersions()[0].getParametersSignature() + "(");
+				addComma = false;
+			}
+		} else if (system_function.isStatic()) {
+			writer.addCode(system_function.getStandardClass() + "Class." + system_function.getName() + "(" + writer.getAIThis());
+		} else {
+			if (mParameters.get(0).getType() != Type.ANY) {
+				writer.addCode("((" + mParameters.get(0).getType().getJavaName(mainblock.getVersion()) + ") ");
+			}
+			mParameters.get(0).writeJavaCode(mainblock, writer, true);
+			if (mParameters.get(0).getType() != Type.ANY) {
+				writer.addCode(")");
+			}
+			writer.addCode("." + system_function.getName() + "(" + writer.getAIThis());
+			skipFirstArg = true;
+		}
+		return new boolean[] { addComma, skipFirstArg };
+	}
+
+	/**
 	 * Le résultat d'un appel de valeur fonction (`FunctionLeekValue.run(...)`) est
 	 * typé `Object`. Quand le type de retour inféré est primitif, on doit caster
 	 * vers le wrapper Java correspondant avant d'appeler `.doubleValue()` /
@@ -766,7 +791,7 @@ public class LeekFunctionCall extends Expression {
 					// Est-ce que c'est une fonction système ?
 					system_function = LeekFunctions.getValue(v.getName(), compiler.getOptions().useExtra());
 					if (system_function != null) {
-						verifySystemFunction(compiler, v, system_function);
+						verifySystemFunction(compiler, v.getToken(), system_function);
 
 						if (mParameters.size() >= system_function.getArgumentsMin() && mParameters.size() <= system_function.getArguments()) {
 							v.setVariableType(VariableType.SYSTEM_FUNCTION);
@@ -805,7 +830,7 @@ public class LeekFunctionCall extends Expression {
 					// Est-ce que c'est une fonction système ?
 					system_function = LeekFunctions.getValue(v.getName(), compiler.getOptions().useExtra());
 					if (system_function != null) {
-						verifySystemFunction(compiler, v, system_function);
+						verifySystemFunction(compiler, v.getToken(), system_function);
 						if (mParameters.size() >= system_function.getArgumentsMin() && mParameters.size() <= system_function.getArguments()) {
 							v.setVariableType(VariableType.SYSTEM_FUNCTION);
 							return; // OK, fonction système
@@ -832,7 +857,7 @@ public class LeekFunctionCall extends Expression {
 					// Nothing
 				} else {
 					system_function = LeekFunctions.getValue(v.getName(), compiler.getOptions().useExtra());
-					verifySystemFunction(compiler, v, system_function);
+					verifySystemFunction(compiler, v.getToken(), system_function);
 				}
 
 			} else if (v.getVariableType() == VariableType.CLASS) {
@@ -891,6 +916,20 @@ public class LeekFunctionCall extends Expression {
 				if (builtinClass != null) {
 					var builtinMethod = LeekFunctions.getMethod(builtinClass, oa.getField());
 					if (builtinMethod != null && resolveBuiltinMethod(compiler, o.getType(), builtinMethod)) {
+						return;
+					}
+				}
+				// Fonction de namespace built-in : `Math.sqrt(x)`, `Math.rand()`. Le
+				// receveur est un namespace (classe interne), pas une valeur ; les
+				// arguments restent les arguments réels (pas d'injection de receveur).
+				// Résolue et vérifiée comme l'ancienne forme libre `sqrt(x)`.
+				if (o instanceof LeekVariable nv && nv.getVariableType() == VariableType.CLASS
+						&& LanguageFeature.OO_STDLIB.enabledIn(compiler.getVersion())) {
+					var nsFunction = LeekFunctions.namespaceFunction(nv.getName(), oa.getField());
+					if (nsFunction != null) {
+						this.system_function = nsFunction;
+						this.is_namespace_function = true;
+						verifySystemFunction(compiler, oa.getFieldToken(), nsFunction);
 						return;
 					}
 				}
@@ -1054,7 +1093,7 @@ public class LeekFunctionCall extends Expression {
 		mParameters.set(0, new LeekFileContent(path, field));
 	}
 
-	private void verifySystemFunction(WordCompiler compiler, LeekVariable v, LeekFunctions f) throws LeekCompilerException {
+	private void verifySystemFunction(WordCompiler compiler, Token token, LeekFunctions f) throws LeekCompilerException {
 
 		if (f.getOperations() > 0) {
 			// System.out.println("cost of " + f.getName() + " : " + f.getOperations());
@@ -1064,13 +1103,13 @@ public class LeekFunctionCall extends Expression {
 		if (compiler.getVersion() > f.getMaxVersion()) {
 			// Fonction supprimée
 			if (f.getReplacement() != null) {
-				compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION_REPLACEMENT, new String[] {
+				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION_REPLACEMENT, new String[] {
 					String.valueOf(f.getMaxVersion()),
 					String.valueOf(compiler.getVersion()),
 					f.getReplacement()
 				}));
 			} else {
-				compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION, new String[] {
+				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION, new String[] {
 					String.valueOf(f.getMaxVersion()),
 					String.valueOf(compiler.getVersion())
 				}));
@@ -1079,7 +1118,7 @@ public class LeekFunctionCall extends Expression {
 		}
 		if (compiler.getVersion() < f.getMinVersion()) {
 			// Fonction non disponible
-			compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.FUNCTION_NOT_AVAILABLE, new String[] {
+			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.FUNCTION_NOT_AVAILABLE, new String[] {
 				String.valueOf(f.getMinVersion()),
 				String.valueOf(compiler.getVersion())
 			}));
@@ -1089,7 +1128,7 @@ public class LeekFunctionCall extends Expression {
 		// Verify argument count
 		if (compiler.getVersion() >= 3) {
 			if (mParameters.size() > f.getArguments() || mParameters.size() < f.getArgumentsMin()) {
-				compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
+				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
 			}
 		}
 

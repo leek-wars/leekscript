@@ -115,6 +115,27 @@ public class TestMethods extends TestCommon {
 	}
 
 	@Test
+	public void mathNamespace() throws Exception {
+		section("Namespace / Math (Math.sqrt(x), Math.rand()...)");
+		// Forme canonique v5 des fonctions mathématiques : `Math.sqrt(x)` au lieu de
+		// `sqrt(x)`. Résolue et générée comme l'ancienne forme libre (NumberClass.sqrt).
+		code_v5("return Math.sqrt(16)").equals("4.0");
+		code_v5("return Math.abs(-5)").equals("5");
+		code_v5("return Math.max(3, 7)").equals("7");
+		code_v5("return Math.min(3, 7)").equals("3");
+		code_v5("return Math.floor(2.7)").equals("2");
+		code_v5("return Math.pow(2, 10)").equals("1024.0");
+		code_v5("var x = -3 return Math.abs(x)").equals("3");
+		// Fonctions sans receveur de valeur : seul le namespace les expose proprement.
+		code_v5("var r = Math.randInt(0, 5) return r >= 0 && r <= 5").equals("true");
+		code_v5("var r = Math.rand() return r >= 0.0 && r < 1.0").equals("true");
+		// Le type de retour est correctement propagé (pas de cast Object).
+		code_strict_v5_("real r = Math.sqrt(9.0) return r").noWarning();
+		// Le namespace Math n'existe pas avant la v5.
+		code_v4("return Math.sqrt(16)").error(leekscript.common.Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+	}
+
+	@Test
 	public void onlyInV5() throws Exception {
 		section("Methods / version gate");
 		// In v1-4 the method form does not resolve (the value-method OO library is a
