@@ -37,6 +37,9 @@ public class Module {
 	// Imports de fonctions : nom local -> module source (le nom importé est, pour
 	// l'instant, identique au nom exporté ; l'aliasing `as` viendra plus tard).
 	private final Map<String, Module> importedFunctions = new HashMap<>();
+	// Idem pour les variables/globales de niveau module (export var / export global).
+	private final Set<String> exportedVars = new HashSet<>();
+	private final Map<String, Module> importedVars = new HashMap<>();
 
 	public Module(AIFile file, int id, boolean main) {
 		this.file = file;
@@ -78,5 +81,22 @@ public class Module {
 	/** Module source si {@code name} est importé dans ce module, sinon null. */
 	public Module getImportedFunctionSource(String name) {
 		return importedFunctions.get(name);
+	}
+
+	public void addExportedVar(String name) {
+		exportedVars.add(name);
+	}
+
+	public boolean isExportedVar(String name) {
+		return exportedVars.contains(name);
+	}
+
+	public void addImportedVar(String localName, Module source) {
+		importedVars.put(localName, source);
+	}
+
+	/** Module source si la variable {@code name} est importée dans ce module, sinon null. */
+	public Module getImportedVarSource(String name) {
+		return importedVars.get(name);
 	}
 }

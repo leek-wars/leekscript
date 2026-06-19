@@ -34,6 +34,8 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 	// true (global) = champ initialisé UNE fois (garde g_init, persiste sur le combat).
 	// false (var top-level v5) = champ RÉ-INITIALISÉ chaque tour (pas de garde g_init).
 	private boolean persistent = true;
+	// Module v5 propriétaire (préfixe le nom du champ). null = module principal.
+	private leekscript.compiler.bloc.Module module;
 
 	public LeekGlobalDeclarationInstruction(Token token, Token variableToken, LeekType leekType) {
 		this.token = token;
@@ -47,6 +49,16 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 
 	public boolean isPersistent() {
 		return persistent;
+	}
+
+	public void setModule(leekscript.compiler.bloc.Module module) {
+		this.module = module;
+	}
+
+	/** Nom du champ Java (`g_<internalName>`), préfixé par le module pour éviter les
+	 * collisions entre modules ; vide pour le module principal → byte-identique. */
+	public String getInternalName() {
+		return (module == null ? "" : module.prefix()) + variableToken.getWord();
 	}
 
 	@Override
@@ -74,7 +86,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
-		final String name = variableToken.getWord();
+		final String name = getInternalName();
 		// Persistant (global) : init une seule fois, gardée par g_init. Non persistant
 		// (var top-level v5) : ré-init nue, l'assignation re-tourne à chaque runIA.
 		if (persistent) writer.addCode("if (!g_init_" + name + ") { ");
@@ -118,11 +130,18 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 		// On ajoute la variable
 		this.variable = new LeekVariable(compiler, variableToken, VariableType.GLOBAL, leekType == null ? Type.ANY : leekType.getType());
 		this.variable.setGlobalDeclaration(this);
+		this.variable.setGlobalPrefix(module == null ? "" : module.prefix());
 		this.type = this.variable.getType();
 		if (annotations != null) {
 			for (var a : annotations) this.variable.addAnnotation(a);
 		}
-		compiler.getCurrentBlock().addVariable(this.variable);
+		// Registre module-aware (clé = nom interne préfixé), pour résoudre les imports.
+		compiler.getMainBlock().addGlobalVar(getInternalName(), this.variable);
+		// Le module principal garde ses globales dans le bloc partagé (résolution par
+		// chaîne de blocs, byte-identique) ; un module importé NON (anti-fuite + collision).
+		if (module == null || module.isMain()) {
+			compiler.getCurrentBlock().addVariable(this.variable);
+		}
 	}
 
 	@Override

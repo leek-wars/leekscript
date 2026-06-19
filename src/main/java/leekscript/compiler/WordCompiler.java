@@ -261,7 +261,8 @@ public class WordCompiler {
 					if (mTokens.eat().getType() != TokenType.PAR_RIGHT) throw new LeekCompilerException(mTokens.get(), Error.CLOSING_PARENTHESIS_EXPECTED);
 
 				} else if (tt == TokenType.GLOBAL) {
-					mPendingExport = false; // export de globale pas encore géré (3b = fonctions)
+					boolean exported = mPendingExport; // `export global` : globale exportée du module
+					mPendingExport = false;
 					mTokens.skip();
 					eatType(true, false);
 					// Type-classe défini plus loin : eatType ne l'a pas résolu (pas
@@ -279,7 +280,8 @@ public class WordCompiler {
 					if (!isGlobalAvailable(global) || mMain.hasDeclaredGlobal(global.getWord())) {
 						addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { global.getWord() }));
 					} else {
-						mMain.addGlobal(global.getWord());
+						if (mModule.isMain()) mMain.addGlobal(global.getWord());
+						if (exported) mModule.addExportedVar(global.getWord());
 					}
 					if (mTokens.get().getWord().equals("=")) {
 						mTokens.skip();
@@ -291,7 +293,8 @@ public class WordCompiler {
 						if (!isGlobalAvailable(global) || mMain.hasDeclaredGlobal(global.getWord())) {
 							addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { global.getWord() }));
 						} else {
-							mMain.addGlobal(global.getWord());
+							if (mModule.isMain()) mMain.addGlobal(global.getWord());
+							if (exported) mModule.addExportedVar(global.getWord());
 						}
 						if (mTokens.get().getWord().equals("=")) {
 							mTokens.skip();
@@ -412,6 +415,26 @@ public class WordCompiler {
 					mTokens.skip();
 				} else if (tt == TokenType.IMPORT) {
 					importStatement(true);
+				} else if (tt == TokenType.VAR && mPendingExport) {
+					// `export var x [= e] [, y ...]` : on enregistre les noms exportés du
+					// module (pour le binding d'import) ; le champ lui-même est créé au
+					// secondPass. firstPass ne suit les var QUE quand elles sont exportées.
+					mPendingExport = false;
+					mTokens.skip(); // var
+					while (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.STRING) {
+						mModule.addExportedVar(mTokens.get().getWord());
+						mTokens.skip();
+						if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals("=")) {
+							mTokens.skip();
+							readExpression(true);
+						}
+						if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VIRG) {
+							mTokens.skip();
+							continue;
+						}
+						break;
+					}
+					if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) mTokens.skip();
 				} else {
 					// `export` suivi d'autre chose qu'une fonction (ex: `export var`) :
 					// firstPass ne suit pas ces déclarations, on évite que le flag fuite
@@ -778,12 +801,13 @@ public class WordCompiler {
 			}
 			for (var nameToken : names) {
 				var name = nameToken.getWord();
-				if (!module.isExportedFunction(name)) {
-					// Non exporté (ou pas une fonction : 3b ne gère que les fonctions).
+				if (module.isExportedFunction(name)) {
+					mModule.addImportedFunction(name, module);
+				} else if (module.isExportedVar(name)) {
+					mModule.addImportedVar(name, module);
+				} else {
 					addError(new AnalyzeError(nameToken, AnalyzeErrorLevel.ERROR, Error.SYMBOL_NOT_EXPORTED, new String[] { name }));
-					continue;
 				}
-				mModule.addImportedFunction(name, module);
 			}
 		} else {
 			mMain.importModule(this, path); // secondPass du module cible (codegen)
@@ -1533,6 +1557,7 @@ public class WordCompiler {
 			throw variableNameError(word, Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
 		}
 		var variable = new LeekGlobalDeclarationInstruction(token, word, type);
+		variable.setModule(mModule);
 		applyAnnotations(variable, annotations);
 		// On regarde si une valeur est assignée
 		if (mTokens.get().getWord().equals("=")) {
@@ -1552,6 +1577,7 @@ public class WordCompiler {
 			word = mTokens.eat();
 			if (word.getType() != TokenType.STRING) throw variableNameError(word, Error.VAR_NAME_EXPECTED);
 			variable = new LeekGlobalDeclarationInstruction(token, word, type);
+			variable.setModule(mModule);
 			applyAnnotations(variable, annotations);
 			// On regarde si une valeur est assignée
 			if (mTokens.get().getWord().equals("=")) {
@@ -1662,9 +1688,13 @@ public class WordCompiler {
 		if (fieldMode) {
 			var field = new LeekGlobalDeclarationInstruction(word, word, type);
 			field.setPersistent(false);
+			field.setModule(mModule);
+			if (mExporting) mModule.addExportedVar(word.getWord());
 			applyAnnotations(field, annotations);
 			if (value != null) field.setValue(value);
-			mMain.addGlobal(word.getWord());
+			// Seul le module principal peuple le namespace global plat (mGlobales) ;
+			// les champs des modules importés vivent dans mGlobalVars (module-aware).
+			if (mModule.isMain()) mMain.addGlobal(word.getWord());
 			mMain.addGlobalDeclaration(field);
 			mCurentBlock.addInstruction(this, field);
 		} else {

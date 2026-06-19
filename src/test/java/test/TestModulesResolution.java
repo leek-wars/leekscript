@@ -125,6 +125,50 @@ public class TestModulesResolution {
 	}
 
 	// =========================================================================
+	// Variables de module (export var / export global)
+	// =========================================================================
+
+	@Test
+	public void importExportedVar() throws Exception {
+		write("state.leek", "export var hp = 100");
+		String main = writeMain("import { hp } from \"state\"\nreturn hp");
+		assertEquals("100", run(main));
+	}
+
+	@Test
+	public void importExportedGlobalAndUseInFunction() throws Exception {
+		// export global lu par une fonction de l'importateur.
+		write("conf.leek", "export global LIMIT = 50");
+		String main = writeMain(
+			"import { LIMIT } from \"conf\"\n" +
+			"function ok(x) { return x < LIMIT }\n" +
+			"return ok(10) and !ok(100)");
+		assertEquals("true", run(main));
+	}
+
+	@Test
+	public void nonExportedVarIsNotImportable() throws Exception {
+		write("state.leek", "var secret = 1\nexport var shown = 2");
+		String main = writeMain("import { secret } from \"state\"\nreturn 0");
+		var errors = compileAndCollectErrors(main);
+		assertTrue(errors.contains(Error.SYMBOL_NOT_EXPORTED), "import d'un var non exporté doit échouer, got: " + errors);
+	}
+
+	@Test
+	public void sameVarNameInTwoModulesNoCollision() throws Exception {
+		// state a un champ `count` (g_$m1$count) ; le principal a son propre `count`
+		// (local u_count). getCount() lit CELUI de state. Aucune collision.
+		write("state.leek",
+			"export var count = 100\n" +
+			"export function getCount() { return count }");
+		String main = writeMain(
+			"import { getCount } from \"state\"\n" +
+			"var count = 1\n" +
+			"return count + getCount()");
+		assertEquals("101", run(main));
+	}
+
+	// =========================================================================
 	// Imports transitifs
 	// =========================================================================
 

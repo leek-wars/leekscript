@@ -40,6 +40,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	// d'un ordre stable.
 	private final HashSet<String> mGlobales = new HashSet<>();
 	private final ArrayList<LeekGlobalDeclarationInstruction> mGlobalesDeclarations = new ArrayList<>();
+	// Registre module-aware des variables de niveau module (clé = nom interne préfixé
+	// `$m<id>$<name>`) : backing LeekVariable, pour résoudre les imports cross-module.
+	private final Map<String, leekscript.compiler.expression.LeekVariable> mGlobalVars = new HashMap<>();
 	private final HashSet<String> mRedefinedFunctions = new HashSet<String>();
 	private final HashMap<String, FunctionBlock> mFunctions = new HashMap<>();
 	private final ArrayList<AnonymousFunctionBlock> mAnonymousFunctions = new ArrayList<AnonymousFunctionBlock>();
@@ -358,6 +361,24 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return mFunctions.get(name);
 	}
 
+	public void addGlobalVar(String internalName, leekscript.compiler.expression.LeekVariable variable) {
+		mGlobalVars.put(internalName, variable);
+	}
+
+	/** Résolution module-aware d'une variable de niveau module : imports d'abord, puis
+	 * champs propres du module (clé préfixée). Un module importé n'a PAS de fallback vers
+	 * le namespace global plat (privacy). Retourne la backing LeekVariable ou null. */
+	public leekscript.compiler.expression.LeekVariable getGlobal(String name, Module module) {
+		if (module != null) {
+			var src = module.getImportedVarSource(name);
+			if (src != null) return mGlobalVars.get(src.prefix() + name);
+			var own = mGlobalVars.get(module.prefix() + name);
+			if (own != null) return own;
+			if (!module.isMain()) return null;
+		}
+		return mGlobalVars.get(name);
+	}
+
 	@Override
 	public boolean hasGlobal(String globale) {
 		return mGlobales.contains(globale);
@@ -470,18 +491,18 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 		writer.addLine("}"); // Fin staticInit
 
-		// Variables globales
+		// Variables globales (nom de champ préfixé par module : getInternalName)
 		for (var global : mGlobalesDeclarations) {
-			// System.out.println("declare global " + global.getName() + " type " + global.getType());
+			var fieldName = global.getInternalName();
 			if (getWordCompiler().getVersion() >= 2) {
-				writer.addLine("private " + global.getType().getJavaPrimitiveName(getVersion()) + " g_" + global.getName() + " = " + global.getType().getDefaultValue(writer, getVersion()) + ";");
+				writer.addLine("private " + global.getType().getJavaPrimitiveName(getVersion()) + " g_" + fieldName + " = " + global.getType().getDefaultValue(writer, getVersion()) + ";");
 			} else {
-				writer.addLine("private Box<" + global.getType().getJavaName(getVersion()) + "> g_" + global.getName() + " = new Box<" + global.getType().getJavaName(getVersion()) + ">(" + writer.getAIThis() + ");");
+				writer.addLine("private Box<" + global.getType().getJavaName(getVersion()) + "> g_" + fieldName + " = new Box<" + global.getType().getJavaName(getVersion()) + ">(" + writer.getAIThis() + ");");
 			}
 			// Garde d'init une-fois : seulement pour les champs persistants (global).
 			// Un var top-level v5 (non persistant) est ré-initialisé chaque tour.
 			if (global.isPersistent()) {
-				writer.addLine("private boolean g_init_" + global.getName() + " = false;");
+				writer.addLine("private boolean g_init_" + fieldName + " = false;");
 			}
 		}
 		// Fonctions redéfinies
