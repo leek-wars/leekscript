@@ -92,6 +92,23 @@ public class TestClass extends TestCommon {
 	}
 
 	/**
+	 * #4268 : foreach sans `var` dont l'itérateur porte le nom d'un champ de classe
+	 * (ici hérité). preAnalyze trouvait le champ (includeClassMembers=true) et ne
+	 * signalait pas d'erreur, mais analyze résout avec false → iteratorVariable=null
+	 * → NPE dans ForeachBlock.writeJavaCode. Doit produire une erreur propre, pas crasher.
+	 */
+	@Test
+	public void testForeach_iterator_shadows_class_field() throws Exception {
+		section("Issue #4268 - foreach iterator named like a class field (no var)");
+		// Champ direct
+		code_v2_4("class A { public field = [1, 2, 3] public m() { for (field in field) {} } } return new A().m()").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		// Champ hérité (cas exact du rapport : Enemy extends Leek, `cell` défini dans Leek)
+		code_v2_4("class P { public cell = 0 } class C extends P { public m(any arr) { for (cell in arr) {} } } return new C().m([1, 2])").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		// Sanity : avec `var`, c'est une déclaration valide et ça itère normalement
+		code_v2_4("class A { public field = [1, 2, 3] public m() { var s = 0 for (var x in field) { s += x } return s } } return new A().m()").equals("6");
+	}
+
+	/**
 	 * Optional chaining `obj?.field` / `obj?.method()` (#2272) : court-circuite à null
 	 * si l'objet est null, sinon accès/appel normal.
 	 */
