@@ -478,7 +478,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			} else {
 				writer.addLine("private Box<" + global.getType().getJavaName(getVersion()) + "> g_" + global.getName() + " = new Box<" + global.getType().getJavaName(getVersion()) + ">(" + writer.getAIThis() + ");");
 			}
-			writer.addLine("private boolean g_init_" + global.getName() + " = false;");
+			// Garde d'init une-fois : seulement pour les champs persistants (global).
+			// Un var top-level v5 (non persistant) est ré-initialisé chaque tour.
+			if (global.isPersistent()) {
+				writer.addLine("private boolean g_init_" + global.getName() + " = false;");
+			}
 		}
 		// Fonctions redéfinies
 		for (String redefined : mRedefinedFunctions) {

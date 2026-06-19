@@ -21,6 +21,18 @@ public class TestModules extends TestCommon {
 	}
 
 	@Test
+	public void moduleFieldVar() throws Exception {
+		section("Modules (v5) - export var / global = champs du module");
+		// `export var` = champ : visible des fonctions du module (un `var` nu ne l'est pas).
+		code_v5_("export var x = 5 function f() { return x } return f()").equals("5");
+		code_v5_("export var c = 0 c = c + 3 return c").equals("3");
+		// `global` = champ persistant, visible des fonctions (inchangé).
+		code_v5_("global g = 7 function f() { return g } return f()").equals("7");
+		// Un `var` NU au top-level reste un local : invisible aux fonctions.
+		code_v5_("var y = 5 function f() { return y } return f()").error(leekscript.common.Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+	}
+
+	@Test
 	public void versionGate() throws Exception {
 		section("Modules (v5) - export/import réservés avant v5");
 		// export/import sont des features v5 : erreur dure avant v5 (mots-clés réservés depuis v3).

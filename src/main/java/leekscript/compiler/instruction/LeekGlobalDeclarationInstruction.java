@@ -31,11 +31,22 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 	private LeekVariable variable;
 	// Lazy : la grande majorité des globals n'ont aucune annotation.
 	private EnumSet<Annotation> annotations = null;
+	// true (global) = champ initialisé UNE fois (garde g_init, persiste sur le combat).
+	// false (var top-level v5) = champ RÉ-INITIALISÉ chaque tour (pas de garde g_init).
+	private boolean persistent = true;
 
 	public LeekGlobalDeclarationInstruction(Token token, Token variableToken, LeekType leekType) {
 		this.token = token;
 		this.variableToken = variableToken;
 		this.leekType = leekType;
+	}
+
+	public void setPersistent(boolean persistent) {
+		this.persistent = persistent;
+	}
+
+	public boolean isPersistent() {
+		return persistent;
 	}
 
 	@Override
@@ -63,9 +74,12 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
-		writer.addCode("if (!g_init_" + variableToken.getWord() + ") { ");
+		final String name = variableToken.getWord();
+		// Persistant (global) : init une seule fois, gardée par g_init. Non persistant
+		// (var top-level v5) : ré-init nue, l'assignation re-tourne à chaque runIA.
+		if (persistent) writer.addCode("if (!g_init_" + name + ") { ");
 		if (mainblock.getWordCompiler().getVersion() >= 2) {
-			writer.addCode("g_" + variableToken.getWord() + " = ");
+			writer.addCode("g_" + name + " = ");
 			if (mValue != null) {
 				if (variable.getType() != Type.ANY) {
 					writer.addCode("(" + variable.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
@@ -79,14 +93,15 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 		} else {
 			// Même type que la déclaration du champ (MainLeekBlock) : en strict, celui inféré de la
 			// valeur, que la variable perd à sa première affectation (#5324)
-			writer.addCode("g_" + variableToken.getWord() + " = new Box<" + type.getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
+			writer.addCode("g_" + name + " = new Box<" + type.getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
 			if (mValue != null) mValue.compileL(mainblock, writer, false);
 			else writer.addCode("null");
 			writer.addCode(", " + (mValue != null ? mValue.getOperations() : 0) + ")");
 		}
-		writer.addCode("; g_init_" + variableToken.getWord() + " = true;");
+		writer.addCode(";");
+		if (persistent) writer.addCode(" g_init_" + name + " = true;");
 		if (mainblock.getWordCompiler().getVersion() >= 2) writer.addCode(" ops(1);");
-		writer.addLine(" }", getLocation());
+		writer.addLine(persistent ? " }" : "", getLocation());
 	}
 
 	@Override

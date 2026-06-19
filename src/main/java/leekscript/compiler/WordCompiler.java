@@ -69,7 +69,9 @@ public class WordCompiler {
 	// fichiers importés reçoivent leur propre Module via setModule().
 	private leekscript.compiler.bloc.Module mModule;
 	// `export` rencontré : la prochaine déclaration top-level sera exportée.
+	// mPendingExport = firstPass ; mExporting = secondPass (en cours de compileWord).
 	private boolean mPendingExport = false;
+	private boolean mExporting = false;
 	private AbstractLeekBlock mCurentBlock;
 	private AbstractLeekBlock mCurrentFunction;
 	private ClassDeclarationInstruction mCurrentClass;
@@ -411,6 +413,10 @@ public class WordCompiler {
 				} else if (tt == TokenType.IMPORT) {
 					importStatement(true);
 				} else {
+					// `export` suivi d'autre chose qu'une fonction (ex: `export var`) :
+					// firstPass ne suit pas ces déclarations, on évite que le flag fuite
+					// vers la prochaine fonction.
+					mPendingExport = false;
 					mTokens.skip();
 				}
 			}
@@ -631,7 +637,9 @@ public class WordCompiler {
 					return;
 				}
 				mTokens.skip();
+				mExporting = true;
 				compileWord();
+				mExporting = false;
 				return;
 			case IMPORT:
 				importStatement(false);
@@ -1608,24 +1616,24 @@ public class WordCompiler {
 	}
 
 	private void variableDeclaration(LeekType type, List<Token> annotations) throws LeekCompilerException {
+		// v5 : `export var x` AU NIVEAU MODULE est un CHAMP du module (ré-init chaque
+		// tour, visible des fonctions, importable). Un `var` NU reste un local de runIA
+		// (per-turn, idiome LW, et c'est ce dont dépendent session/REPL et le coût en
+		// ops). À l'intérieur d'une fonction/bloc, c'est toujours un local.
+		boolean fieldMode = mExporting && (mCurentBlock instanceof MainLeekBlock) && LanguageFeature.MODULES.enabledIn(version);
+
 		// Il y a au moins une premiere variable
 		Token word = mTokens.eat();
 		if (word.getType() != TokenType.STRING) {
 			throw variableNameError(word, Error.VAR_NAME_EXPECTED);
 		}
-		LeekVariableDeclarationInstruction variable = new LeekVariableDeclarationInstruction(this, word, getCurrentFunction(), type);
-		applyAnnotations(variable, annotations);
-		// On regarde si une valeur est assignée
+		Expression value = null;
 		if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals("=")) {
 			mTokens.skip();
-
-			// Arrow function ?
 			boolean isArrowFunction = mTokens.isArrowFunctionAhead();
-
-			// Si oui on récupère la valeur en question
-			variable.setValue(readExpression(!isArrowFunction));
+			value = readExpression(!isArrowFunction);
 		}
-		mCurentBlock.addInstruction(this, variable);
+		registerVariableDeclaration(word, type, annotations, fieldMode, value);
 
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VIRG) {
 
@@ -1635,19 +1643,35 @@ public class WordCompiler {
 			mTokens.skip();// On passe la virgule
 			word = mTokens.eat();
 			if (word.getType() != TokenType.STRING) throw variableNameError(word, Error.VAR_NAME_EXPECTED);
-			variable = new LeekVariableDeclarationInstruction(this, word, getCurrentFunction(), type);
-			applyAnnotations(variable, annotations);
-			// On regarde si une valeur est assignée
+			value = null;
 			if (mTokens.get().getWord().equals("=")) {
 				mTokens.skip();
-				// Si oui on récupère la valeur en question
-				variable.setValue(readExpression(true));
+				value = readExpression(true);
 			}
-			// On ajoute la variable
-			mCurentBlock.addInstruction(this, variable);
+			registerVariableDeclaration(word, type, annotations, fieldMode, value);
 		}
 		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
 			mTokens.skip();
+		}
+	}
+
+	/** Crée et enregistre une déclaration de variable. En {@code fieldMode} (v5, niveau
+	 * module) c'est un champ module non persistant (ré-init chaque tour) via
+	 * {@link LeekGlobalDeclarationInstruction} ; sinon un local classique. */
+	private void registerVariableDeclaration(Token word, LeekType type, List<Token> annotations, boolean fieldMode, Expression value) throws LeekCompilerException {
+		if (fieldMode) {
+			var field = new LeekGlobalDeclarationInstruction(word, word, type);
+			field.setPersistent(false);
+			applyAnnotations(field, annotations);
+			if (value != null) field.setValue(value);
+			mMain.addGlobal(word.getWord());
+			mMain.addGlobalDeclaration(field);
+			mCurentBlock.addInstruction(this, field);
+		} else {
+			var variable = new LeekVariableDeclarationInstruction(this, word, getCurrentFunction(), type);
+			applyAnnotations(variable, annotations);
+			if (value != null) variable.setValue(value);
+			mCurentBlock.addInstruction(this, variable);
 		}
 	}
 
