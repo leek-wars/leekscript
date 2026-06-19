@@ -776,7 +776,7 @@ public class LeekFunctionCall extends Expression {
 		// appelé 2× dans le chemin (et appel de fonction = hot path).
 		var exprType = mExpression.getType();
 		boolean strict = compiler.getMainBlock().isStrict();
-		// Appel optionnel `obj?.method()` : l'accès optionnel a un type statique ANY
+		// Appel optionnel `obj?.method()` : l'accès optionnel est typé `membre | null`
 		// (résultat nullable) et passe par le chemin dynamique null-safe
 		// (callObjectAccessNullSafe). On ne vérifie donc pas la callabilité, sinon faux
 		// positif "pourrait ne pas être appelable" en mode strict (#4204).
