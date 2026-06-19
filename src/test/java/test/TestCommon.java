@@ -226,24 +226,20 @@ public class TestCommon {
 
 		/** Vérifie qu'une erreur a été LOGGÉE au runtime (addSystemLog), p. ex. VALUE_IS_NOT_AN_ARRAY en v3+. */
 		public String logsError(Error type) {
-			return run(new Checker() {
-				public boolean check(Result result) { return result.loggedErrors.contains(type.ordinal()); }
-				public String getExpected() { return "logs " + type.name(); }
-				public String getResult(Result result) {
-					return result.loggedErrors.isEmpty() ? "no log" : "logs ordinals " + result.loggedErrors;
-				}
-			});
+			return run(logChecker(type, true));
 		}
 
 		/** Vérifie qu'une erreur n'a PAS été loggée au runtime (côté v1-2 silencieux). */
 		public String doesNotLog(Error type) {
-			return run(new Checker() {
-				public boolean check(Result result) { return !result.loggedErrors.contains(type.ordinal()); }
-				public String getExpected() { return "no log of " + type.name(); }
-				public String getResult(Result result) {
-					return result.loggedErrors.contains(type.ordinal()) ? "logged " + type.name() : "ok";
-				}
-			});
+			return run(logChecker(type, false));
+		}
+
+		private Checker logChecker(Error type, boolean shouldLog) {
+			return new Checker() {
+				public boolean check(Result result) { return result.loggedErrors.contains(type.ordinal()) == shouldLog; }
+				public String getExpected() { return (shouldLog ? "logs " : "no log of ") + type.name(); }
+				public String getResult(Result result) { return "logged ordinals " + result.loggedErrors; }
+			};
 		}
 
 		public void almost(double expected) {
