@@ -128,6 +128,10 @@ public class TestClass extends TestCommon {
 		code_strict_v4_("class A { a(b) { return b } compute() { return this?.a(5) } } var x = new A() return x.compute()").equals("5");
 		code_strict_v4_("class A { method m() { return 7 } } var a = new A() return a?.m()").noWarning();
 		code_strict_v4_("class A { method add(a, b) { return a + b } } var a = new A() return a?.add(3, 4)").noWarning();
+		// `obj?.field` est typé `membre | null` (et non ANY) : le type du membre est
+		// conservé, exploitable en mode strict, sans faux warning (#4204).
+		code_strict_v4_("class A { public integer x = 10 } var a = new A() return a?.x + 5").equals("15");
+		code_strict_v4_("class A { public integer x = 10 } var a = new A() return a?.x + 5").noWarning();
 	}
 
 }

@@ -211,10 +211,14 @@ public class LeekObjectAccess extends Expression {
 			}
 		}
 
-		// Accès optionnel `obj?.field` : la valeur peut être null (résultat nullable),
-		// on passe par le chemin dynamique null-safe et le résultat n'est pas assignable.
+		// Accès optionnel `obj?.field` : court-circuite à null si l'objet est null,
+		// le résultat est donc explicitement typé `membre | null` (cohérent avec
+		// l'accès indexé optionnel `a?[b]`, cf. LeekArrayAccess). On conserve le type
+		// du membre au lieu de retomber sur ANY, pour que `obj?.methode()` se résolve
+		// correctement en mode strict (#4204) ; l'expression passe par le chemin
+		// dynamique null-safe et n'est pas assignable.
 		if (optional) {
-			this.type = Type.ANY;
+			this.type = Type.compound(this.type, Type.NULL);
 			this.isLeftValue = false;
 		}
 	}
