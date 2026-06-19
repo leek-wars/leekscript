@@ -232,9 +232,13 @@ public class LeekVariable extends Expression {
 		// imports). Les vraies locales/params (LOCAL/ARGUMENT) ne sont pas concernées.
 		// TODO 3c (classes/globales) : envisager une vraie hiérarchie de blocs par
 		// module (la chaîne ne remonterait pas au principal) plutôt que ce filtre.
-		if (v != null && (v.getVariableType() == VariableType.FUNCTION || v.getVariableType() == VariableType.GLOBAL)
-				&& compiler.getModule() != null && !compiler.getModule().isMain()) {
-			v = null;
+		if (v != null && compiler.getModule() != null && !compiler.getModule().isMain()) {
+			var vt = v.getVariableType();
+			// Fuite via le bloc partagé : fonction/globale/classe-USER du module PRINCIPAL.
+			// Les classes INTERNES (Array/Map/...) ne fuient pas (visibles partout).
+			boolean leaked = vt == VariableType.FUNCTION || vt == VariableType.GLOBAL
+					|| (vt == VariableType.CLASS && v.getClassDeclaration() != null && !v.getClassDeclaration().internal);
+			if (leaked) v = null;
 		}
 		if (v != null) {
 			this.type = v.getVariableType();
@@ -282,6 +286,14 @@ public class LeekVariable extends Expression {
 			this.globalPrefix = gv.getGlobalPrefix();
 			this.variable = gv;
 			gv.addUsage();
+			return;
+		}
+		// Classes importées (et classes propres d'un module importé, hors bloc partagé).
+		var clazz = mainBlock.getDefinedClass(name, compiler.getModule());
+		if (clazz != null) {
+			this.type = VariableType.CLASS;
+			this.classDeclaration = clazz;
+			this.variableType = clazz.classValueType;
 			return;
 		}
 		// LS constants

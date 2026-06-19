@@ -387,19 +387,22 @@ public class WordCompiler {
 
 				} else if (tt == TokenType.CLASS) {
 
-					mPendingExport = false; // export de classe pas encore géré (3b = fonctions)
+					boolean exportedClass = mPendingExport; // `export class`
+					mPendingExport = false;
 					mTokens.skip();
 					if (mTokens.hasMoreTokens()) {
 						var className = mTokens.eat();
 
 						if (className.getType() == TokenType.STRING) {
 
-							if (mMain.getDefinedClass(className.getWord()) != null) {
+							if (mMain.getDefinedClass(className.getWord(), mModule) != null) {
 								throw new LeekCompilerException(className, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { className.getWord() });
 							}
 
 							var clazz = new ClassDeclarationInstruction(className, mLine, mAI, false, getMainBlock());
+							clazz.setModule(mModule); // module v5 (préfixe le nom de codegen)
 							mMain.defineClass(clazz);
+							if (exportedClass) mModule.addExportedClass(className.getWord());
 						}
 					}
 					// Pareil pour le body de classe : skipper jusqu'à la } matchante.
@@ -805,6 +808,8 @@ public class WordCompiler {
 					mModule.addImportedFunction(name, module);
 				} else if (module.isExportedVar(name)) {
 					mModule.addImportedVar(name, module);
+				} else if (module.isExportedClass(name)) {
+					mModule.addImportedClass(name, module);
 				} else {
 					addError(new AnalyzeError(nameToken, AnalyzeErrorLevel.ERROR, Error.SYMBOL_NOT_EXPORTED, new String[] { name }));
 				}
@@ -1180,7 +1185,7 @@ public class WordCompiler {
 			return functionType;
 		}
 
-		var clazz = mMain.getDefinedClass(word);
+		var clazz = mMain.getDefinedClass(word, mModule);
 		if (clazz != null) {
 			return new LeekType(mTokens.eat(), clazz.getType());
 		}
@@ -1714,7 +1719,7 @@ public class WordCompiler {
 		if (isKeyword(word)) {
 			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() }));
 		}
-		ClassDeclarationInstruction classDeclaration = mMain.getDefinedClass(word.getWord());
+		ClassDeclarationInstruction classDeclaration = mMain.getDefinedClass(word.getWord(), mModule);
 		if (classDeclaration == null) {
 			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] { word.getWord() }));
 			return;

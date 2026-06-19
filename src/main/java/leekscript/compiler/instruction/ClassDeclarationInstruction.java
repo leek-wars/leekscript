@@ -419,7 +419,12 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	public void declare(WordCompiler compiler) {
 		// On ajoute la classe
 		this.classValueType = new ClassValueType(this);
-		compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.CLASS, this.classValueType, this));
+		// Le principal (et les classes internes) déclarent la CLASS-var dans le bloc
+		// partagé (résolution par chaîne de blocs, byte-identique) ; une classe d'un
+		// module importé NON (anti-fuite/collision) → résolue via getDefinedClass(module).
+		if (module == null || module.isMain()) {
+			compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.CLASS, this.classValueType, this));
+		}
 	}
 
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
@@ -1116,7 +1121,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	}
 
 	public void createStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addLine("createStaticClass_" + token.getWord() + "();");
+		writer.addLine("createStaticClass_" + getInternalName() + "();");
 	}
 
 	/** Types dont la valeur par défaut n'est pas null (cf. champs d'instance, qui sont
@@ -1127,7 +1132,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 
 	public void writeCreateStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
 
-		writer.addLine("private void createStaticClass_" + token.getWord() + "() throws LeekRunException {");
+		writer.addLine("private void createStaticClass_" + getInternalName() + "() throws LeekRunException {");
 
 		mainblock.getWordCompiler().setCurrentClass(this);
 		mainblock.getWordCompiler().setCurrentBlock(staticInitBlock);
@@ -1160,12 +1165,12 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	}
 
 	public void initializeStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addLine("initClass_" + token.getWord() + "();");
+		writer.addLine("initClass_" + getInternalName() + "();");
 	}
 
 	public void writeInitializeStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
 
-		writer.addLine("private void initClass_" + token.getWord() + "() throws LeekRunException {");
+		writer.addLine("private void initClass_" + getInternalName() + "() throws LeekRunException {");
 
 		mainblock.getWordCompiler().setCurrentClass(this);
 		mainblock.getWordCompiler().setCurrentBlock(staticInitBlock);

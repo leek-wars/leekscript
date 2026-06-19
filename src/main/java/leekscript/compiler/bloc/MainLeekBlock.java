@@ -602,8 +602,26 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public void defineClass(ClassDeclarationInstruction classDeclaration) {
-		mUserClasses.put(classDeclaration.getName(), classDeclaration);
-		mDefinedClasses.put(classDeclaration.getName(), classDeclaration);
+		// Clé = nom interne préfixé par module (byte-identique pour le principal).
+		mUserClasses.put(classDeclaration.getInternalName(), classDeclaration);
+		mDefinedClasses.put(classDeclaration.getInternalName(), classDeclaration);
+	}
+
+	/** Résolution module-aware d'une classe : imports d'abord, puis classes propres du
+	 * module (clé préfixée), puis classes internes (Array/Map/... visibles partout). Un
+	 * module importé ne voit PAS les classes USER du principal (privacy). */
+	public ClassDeclarationInstruction getDefinedClass(String name, leekscript.compiler.bloc.Module module) {
+		if (module != null) {
+			var src = module.getImportedClassSource(name);
+			if (src != null) return mDefinedClasses.get(src.prefix() + name);
+			var own = mDefinedClasses.get(module.prefix() + name);
+			if (own != null) return own;
+		}
+		var flat = mDefinedClasses.get(name);
+		if (module != null && !module.isMain() && flat != null && !flat.internal) {
+			return null; // classe user du principal invisible depuis un module importé
+		}
+		return flat;
 	}
 
 	public void addClassList(ClassDeclarationInstruction classDeclaration) {

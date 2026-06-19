@@ -169,6 +169,51 @@ public class TestModulesResolution {
 	}
 
 	// =========================================================================
+	// Classes de module (export class)
+	// =========================================================================
+
+	@Test
+	public void importExportedClass() throws Exception {
+		write("geo.leek", "export class Vec { public integer x\nconstructor(v) { this.x = v } }");
+		String main = writeMain("import { Vec } from \"geo\"\nvar v = new Vec(7)\nreturn v.x");
+		assertEquals("7", run(main));
+	}
+
+	@Test
+	public void importExportedClassWithMethod() throws Exception {
+		write("geo.leek",
+			"export class Vec {\n" +
+			"  public integer x\n" +
+			"  constructor(v) { this.x = v }\n" +
+			"  public doubled() { return this.x * 2 }\n" +
+			"}");
+		String main = writeMain("import { Vec } from \"geo\"\nreturn new Vec(8).doubled()");
+		assertEquals("16", run(main));
+	}
+
+	@Test
+	public void nonExportedClassIsNotImportable() throws Exception {
+		write("geo.leek", "class Hidden {}\nexport class Shown {}");
+		String main = writeMain("import { Hidden } from \"geo\"\nreturn 0");
+		var errors = compileAndCollectErrors(main);
+		assertTrue(errors.contains(Error.SYMBOL_NOT_EXPORTED), "import d'une classe non exportée doit échouer, got: " + errors);
+	}
+
+	@Test
+	public void sameClassNameInTwoModulesNoCollision() throws Exception {
+		// geo a une classe privée Box ; le principal a SA propre Box. Pas de collision.
+		write("geo.leek",
+			"class Box { public integer v\nconstructor(x) { this.v = x } }\n" +
+			"export function makeBox(x) { var b = new Box(x)\nreturn b.v }");
+		String main = writeMain(
+			"class Box { public integer v\nconstructor(x) { this.v = x * 10 } }\n" +
+			"import { makeBox } from \"geo\"\n" +
+			"var b = new Box(5)\n" +
+			"return b.v + makeBox(3)");
+		assertEquals("53", run(main));
+	}
+
+	// =========================================================================
 	// Imports transitifs
 	// =========================================================================
 
