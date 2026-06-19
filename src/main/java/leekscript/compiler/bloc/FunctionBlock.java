@@ -65,6 +65,10 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	// type de retour (union de leurs types). Lazy ; les fonctions anonymes imbriquées
 	// sont exclues (getCurrentFunction y vaut l'anonyme, pas ce FunctionBlock).
 	private ArrayList<leekscript.compiler.instruction.LeekReturnInstruction> bodyReturns = null;
+	// #43 T2 : drapeau d'analyse idempotente. L'inférence à la demande (LeekFunctionCall
+	// déclenche analyze de l'appelé) peut appeler analyze plusieurs fois et en ré-entrance ;
+	// on n'analyse qu'une fois.
+	private boolean analysisStarted = false;
 
 	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -292,6 +296,12 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
+		// #43 T2 : analyse idempotente. L'inférence à la demande peut déclencher analyze
+		// d'un appelé avant la boucle principale, et un cycle se ré-entre. On n'analyse
+		// qu'une fois ; un appel ré-entrant retourne aussitôt → le type de l'appelé en cours
+		// d'analyse vaut ANY (récursion sûre, pas de point fixe).
+		if (analysisStarted) return;
+		analysisStarted = true;
 		var initialFunction = compiler.getCurrentFunction();
 		var initialModule = compiler.getModule();
 		compiler.setCurrentFunction(this);

@@ -69,4 +69,24 @@ public class TestInference extends TestCommon {
 		// La substitution donne un type précis : `integer m = f(5)` ne warn pas en strict.
 		code_strict_v5_("function f<T>(T x) { return x } integer m = f(5) return m").noWarning();
 	}
+
+	@Test
+	public void testReturnTypeInference_propagation() throws Exception {
+		section("Return type inference — propagation à travers les appels (#43 T2)");
+
+		// Chaîne de helpers a -> b -> c -> littéral. L'analyse à la demande infère c avant b
+		// avant a, quel que soit l'ordre de déclaration (a déclaré AVANT c) → a() est typé
+		// `integer`, donc `integer m = a()` ne warn pas en strict.
+		code_strict_v5_("function a() { return b() } function b() { return c() } function c() { return 42 } integer m = a() return m").noWarning();
+		code_v5("function a() { return b() } function b() { return c() } function c() { return 42 } return a()").equals("42");
+
+		// Récursion mutuelle via l'analyse à la demande : pas de boucle infinie ni de crash,
+		// runtime correct (le type retombe sur any pour le cycle).
+		code_v5("function ping(n) { if (n <= 0) { return 0 } return pong(n - 1) } function pong(n) { return ping(n - 1) } return ping(5)").equals("0");
+
+		// Sûreté de la ré-entrance : la valeur par défaut d'un paramètre de l'appelé ne voit
+		// PAS les locales de l'appelant (la résolution se fait en preAnalyze, contexte correct,
+		// avant toute analyse à la demande). `leaked` reste donc inconnu dans callee.
+		code_v5("function caller() { var leaked = 99 return callee() } function callee(p = leaked) { return p } return caller()").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+	}
 }

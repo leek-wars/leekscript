@@ -1,7 +1,7 @@
 # Design : inférence de types inter-procédurale (#43)
 
 > Document de design. Branche `v5`, Phase 6.
-> Statut : **Tranche 1 IMPLÉMENTÉE** (suite 17041/0, zéro régression v1-4) ; tranches 2-3 PROPOSÉES.
+> Statut : **Tranches 1-2 IMPLÉMENTÉES** (suite 17047/0, zéro régression v1-4) ; tranche 3 PROPOSÉE.
 
 ## 1. Problème
 
@@ -102,21 +102,28 @@ croit `Object` = autoboxing Java (correct). Donc même propagation partielle = s
 sont intacts (gate). Plan : lancer la suite, inspecter chaque diff, corriger les
 comptes attendus là où le nouveau codegen est correct.
 
-### Tranche 2 — ordre topologique d'analyse
+### Tranche 2 ✅ — propagation déterministe par analyse à la demande
 
-Analyser les **appelés avant les appelants** pour une propagation **déterministe et
-complète** (tout appelant voit le type inféré de l'appelé).
+> **FAIT.** Approche révisée : **analyse paresseuse à la demande**, plus simple et sûre que
+> le tri topologique explicite initialement prévu (pas de graphe d'appels). Tout appelant
+> voit le type inféré de l'appelé, quel que soit l'ordre de déclaration.
 
-- Construire un graphe d'appels (scan syntaxique post-parse des `LeekFunctionCall` dont
-  le callee est une variable nommant une fonction utilisateur).
-- Tri topologique ; les composantes fortement connexes (récursion mutuelle) sont
-  analysées dans un ordre quelconque interne → leurs appels intra-SCC restent ANY
-  (ou point fixe ultérieur).
-- Changer l'ordre de la boucle `MainLeekBlock.analyze`.
+`FunctionBlock.analyze` devient **idempotent** (drapeau `analysisStarted` ; un appel
+ré-entrant ou répété retourne aussitôt). Quand `LeekFunctionCall.analyze` résout un appelé
+utilisateur (gardé v5), il déclenche `f.analyze()` **à la demande** AVANT de lire son type
+(`verifyVersions`) → l'appelé est inféré juste à temps. La demande fixe l'ordre effectif ;
+les cycles sont cassés par le drapeau (un appelé en cours d'analyse vaut ANY → l'union
+retombe sur ANY, sound, pas de boucle infinie).
 
-**Risque** plus élevé : l'ordre d'analyse peut influencer l'ordre des erreurs émises et
-tout effet de bord ordonné (narrowing inter-fonctions, save/restore de module). À
-auditer : l'analyse est-elle indépendante de l'ordre hormis l'ordre des messages ?
+**Sûreté de la ré-entrance** : la résolution des variables (y compris les valeurs par défaut
+des paramètres) se fait en **preAnalyze** — passe unique sur toutes les fonctions, AVANT
+toute `analyze` — donc dans le bon contexte ; l'analyse à la demande ne re-déclenche que
+`analyze` (types + inférence), où `currentBlock` / `currentFunction` / `module` sont
+sauvegardés-restaurés (FunctionBlock + AbstractLeekBlock.analyze). Aucune fuite de portée
+(testé : la valeur par défaut d'un appelé ne voit pas les locales de l'appelant). **v1-4
+byte-identique** : le déclencheur est gardé v5 et, sans lui, chaque fonction n'est analysée
+qu'une fois par la boucle → le drapeau est inerte. Tests `TestInference` (propagation
+`a→b→c`, récursion mutuelle, sûreté de portée).
 
 ### Tranche 3 — inférence des types de paramètres / spécialisation
 

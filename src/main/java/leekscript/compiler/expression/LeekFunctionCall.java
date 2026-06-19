@@ -909,6 +909,14 @@ public class LeekFunctionCall extends Expression {
 					if (f == compiler.getCurrentFunction() && f.hasAnnotation(leekscript.common.Annotation.TAILREC)) {
 						f.registerRecursiveCall(this);
 					}
+					// #43 T2 : analyser l'appelé À LA DEMANDE pour que son type de retour
+					// inféré soit prêt avant qu'on le lise (verifyVersions ci-dessous).
+					// Idempotent (FunctionBlock.analyze garde un drapeau) ; un cycle (appelé
+					// en cours d'analyse) retombe sur ANY. Propagation déterministe quel que
+					// soit l'ordre de déclaration des fonctions.
+					if (leekscript.common.LanguageFeature.RETURN_TYPE_INFERENCE.enabledIn(compiler.getVersion())) {
+						f.analyze(compiler);
+					}
 					if (mParameters.size() < f.getMinParameters() || mParameters.size() > f.getMaxParameters()) {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
 					}
@@ -997,6 +1005,11 @@ public class LeekFunctionCall extends Expression {
 					if (fb != null) {
 						this.namespaceUserFunction = fb;
 						this.resolvedFunction = fb;
+						// #43 T2 : analyse à la demande aussi pour la forme namespace `Ns.func()`,
+						// pour que l'inférence du type de retour s'y propage comme pour un appel direct.
+						if (leekscript.common.LanguageFeature.RETURN_TYPE_INFERENCE.enabledIn(compiler.getVersion())) {
+							fb.analyze(compiler);
+						}
 						if (mParameters.size() < fb.getMinParameters() || mParameters.size() > fb.getMaxParameters()) {
 							compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
 						}
