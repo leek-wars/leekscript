@@ -125,16 +125,40 @@ byte-identique** : le déclencheur est gardé v5 et, sans lui, chaque fonction n
 qu'une fois par la boucle → le drapeau est inerte. Tests `TestInference` (propagation
 `a→b→c`, récursion mutuelle, sûreté de portée).
 
-### Tranche 3 — inférence des types de paramètres / spécialisation
+### Tranche 3 — inférence des types de paramètres / spécialisation (CHANTIER DÉDIÉ)
 
-Le gros gain (débloque le cas `getHP(entity)` de l'issue). Deux pistes :
-- Inférer le type d'un paramètre depuis l'union des types d'arguments sur tous les sites
-  d'appel (global, fragile si appels dynamiques).
-- **Spécialisation / monomorphisation** : générer une version Java par profil de types
-  d'arguments observés. Multiplicatif avec les autres optimisations, mais gros chantier
-  (proche de la monomorphisation générique).
+Le gros gain de l'issue (débloque `getHP(entity)`), mais **fondamentalement plus lourd**
+que T1/T2 : le type d'un paramètre n'est PAS déductible de la fonction seule, il dépend
+des **sites d'appel**. Or l'architecture actuelle analyse chaque corps **une seule fois**
+(preAnalyze fige la résolution, analyze fige les types). Deux approches réelles, aucune ne
+rentre proprement comme une tranche contenue :
 
-Hors périmètre immédiat ; à concevoir séparément après tranches 1-2.
+**Piste A — point fixe whole-program (union des types d'arguments).** Inférer le type d'un
+paramètre = union des types d'arguments observés sur tous les sites d'appel, puis ré-analyser
+le corps avec ces types. Sound (le paramètre reçoit bien l'un de ces types). MAIS :
+- les types d'arguments exigent l'analyse des corps APPELANTS (pour typer les args), qui
+  exige les types de retour des appelés (T1/T2) → dépendance circulaire = **itération à
+  point fixe** sur tout le programme ;
+- ré-analyser les corps **duplique les erreurs** → il faut une passe de collecte *sans
+  émission d'erreur* distincte de la passe finale, ou un mécanisme de déduplication ;
+- fragile : un seul appel avec un argument `any` (ou un appel dynamique / via variable)
+  fait retomber le paramètre sur `any`.
+
+**Piste B — spécialisation / monomorphisation.** Générer une version Java spécialisée par
+profil de types d'arguments observé (`getHP_Entity`, `getHP_any`…) + dispatch au site
+d'appel. La plus **sound** (chaque version est correcte pour son profil) et la plus
+performante (multiplicatif avec les autres optimisations de types), mais **gros changement
+codegen** : émission de N corps, sélection de la bonne variante par site, explosion
+potentielle du nombre de variantes, interaction avec la récursion et les fermetures.
+
+**Pourquoi pas une tranche contenue.** Contrairement à T1/T2 (greffées sur la passe analyze
+existante sans rien réordonner de structurel), T3 impose soit un moteur de point fixe
+multi-passes avec gestion des erreurs, soit un étage de monomorphisation au codegen. Les
+deux sont des projets à part entière, avec un vrai risque d'**unsoundness** si bâclés
+(violation du principe « jamais régresser »). **Recommandation : chantier dédié**, à concevoir
+et implémenter séparément, pas en fin de session. T1+T2 livrent déjà la **solution 1 de
+l'issue #43** (inférence inter-procédurale des types de retour) ; T3 correspond aux
+solutions 2-3 (annotations encouragées / spécialisation).
 
 ## 5. Points de décision (à valider)
 
