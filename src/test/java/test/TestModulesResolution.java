@@ -1,18 +1,13 @@
 package test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.AfterEach;
@@ -22,19 +17,16 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
 
 import leekscript.common.Error;
-import leekscript.compiler.AIFile;
-import leekscript.compiler.Folder;
 import leekscript.compiler.JavaCompiler;
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.Options;
 import leekscript.compiler.exceptions.LeekCompilerException;
-import leekscript.compiler.resolver.FileSystem;
 import leekscript.runner.AI;
 
 /**
  * Modules v5 (pilier 3, phase 3b) — résolution multi-fichiers : import effectif,
  * visibilité privée par défaut, codegen sans collision entre modules, imports
- * transitifs. Harness filesystem identique à {@link TestIncludeCache}.
+ * transitifs. Harness filesystem partagé {@link RamFileSystem} (cf. TestIncludeCache).
  *
  * @Isolated : LeekScript.setFileSystem est un singleton statique.
  */
@@ -42,14 +34,14 @@ import leekscript.runner.AI;
 public class TestModulesResolution {
 
 	@TempDir Path tmpRoot;
-	private TmpFileSystem fs;
+	private RamFileSystem fs;
 	private static final AtomicLong UNIQUE = new AtomicLong();
 	private String uniqueId;
 
 	@BeforeEach
 	void setUp() {
 		uniqueId = Long.toHexString(System.nanoTime()) + "_" + UNIQUE.incrementAndGet();
-		fs = new TmpFileSystem(tmpRoot);
+		fs = new RamFileSystem(tmpRoot, LeekScript.LATEST_VERSION);
 		LeekScript.setFileSystem(fs);
 	}
 
@@ -186,135 +178,5 @@ public class TestModulesResolution {
 		}
 		file.getErrors().forEach(e -> errors.add(e.error));
 		return errors;
-	}
-
-	// =========================================================================
-	// FileSystem RAM (copie de TestIncludeCache.TmpFileSystem)
-	// =========================================================================
-
-	static class TmpFileSystem extends FileSystem {
-		private final Path root;
-		private final Map<Integer, Folder> rootFolders = new HashMap<>();
-		private final Map<String, AIFile> filesByPath = new HashMap<>();
-
-		TmpFileSystem(Path root) {
-			this.root = root;
-		}
-
-		@Override
-		public synchronized Iterable<AIFile> listAllFiles(int owner) {
-			var list = new ArrayList<AIFile>();
-			if (!Files.exists(root)) return list;
-			try (var walk = Files.walk(root)) {
-				walk.filter(p -> p.toString().endsWith(".leek") && Files.isRegularFile(p)).forEach(p -> {
-					var rel = root.relativize(p).toString().replace(java.io.File.separatorChar, '/');
-					rel = rel.substring(0, rel.length() - ".leek".length());
-					var f = getFileByPath(rel, owner);
-					if (f != null) list.add(f);
-				});
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			return list;
-		}
-
-		synchronized AIFile getFileByPath(String filePath, int owner) {
-			var key = owner + ":" + filePath;
-			var cached = filesByPath.get(key);
-			if (cached != null && getAITimestamp(cached) == cached.getTimestamp()) return cached;
-			var fsPath = root.resolve(filePath + ".leek");
-			try {
-				var code = Files.readString(fsPath);
-				long mtime = Files.getLastModifiedTime(fsPath).toMillis();
-				var rootFolder = getRoot(owner);
-				var folder = resolveParent(filePath, rootFolder);
-				var file = new AIFile(filePath, code, mtime, LeekScript.LATEST_VERSION, folder, owner,
-						Objects.hash(owner, filePath) & 0xfffffff, false);
-				folder.addFile(file);
-				filesByPath.put(key, file);
-				return file;
-			} catch (Exception e) {
-				return null;
-			}
-		}
-
-		private Folder resolveParent(String filePath, Folder rootFolder) {
-			var parts = filePath.split("/");
-			var current = rootFolder;
-			for (int i = 0; i < parts.length - 1; i++) {
-				var sub = current.getFolder(parts[i]);
-				if (sub == null) return current;
-				current = sub;
-			}
-			return current;
-		}
-
-		@Override public Folder getRoot() { return null; }
-
-		@Override
-		public synchronized Folder getRoot(int owner) {
-			var f = rootFolders.get(owner);
-			if (f != null) return f;
-			f = new Folder(owner, this);
-			f.setParent(f);
-			f.setRoot(f);
-			rootFolders.put(owner, f);
-			return f;
-		}
-
-		@Override public Folder getRoot(int owner, int farmer) { return null; }
-
-		@Override
-		public synchronized Folder findFolder(String name, Folder current) {
-			var path = buildChild(current, name);
-			if (!Files.isDirectory(root.resolve(path))) return null;
-			return new Folder(name.hashCode(), current.getOwner(), name, current, getRoot(current.getOwner()), this,
-					System.currentTimeMillis());
-		}
-
-		@Override
-		public synchronized AIFile findFile(String name, Folder folder) throws FileNotFoundException {
-			var filePath = buildChild(folder, name);
-			var key = folder.getOwner() + ":" + filePath;
-			var cached = filesByPath.get(key);
-			if (cached != null && getAITimestamp(cached) == cached.getTimestamp()) return cached;
-			var fsPath = root.resolve(filePath + ".leek");
-			try {
-				var code = Files.readString(fsPath);
-				long mtime = Files.getLastModifiedTime(fsPath).toMillis();
-				var file = new AIFile(filePath, code, mtime, LeekScript.LATEST_VERSION, folder, folder.getOwner(),
-						Objects.hash(folder.getOwner(), filePath) & 0xfffffff, false);
-				filesByPath.put(key, file);
-				return file;
-			} catch (IOException e) {
-				throw new FileNotFoundException(filePath);
-			}
-		}
-
-		private String buildChild(Folder folder, String name) {
-			var parts = new ArrayList<String>();
-			parts.add(name);
-			var c = folder;
-			while (c != null && c.getParent() != c) {
-				parts.add(0, c.getName());
-				c = c.getParent();
-			}
-			return String.join("/", parts);
-		}
-
-		@Override public AIFile getFileById(int id, int farmer) { return null; }
-		@Override public Folder getFolderById(int id, int farmer) { return getRoot(farmer); }
-
-		@Override
-		public long getAITimestamp(AIFile ai) {
-			try {
-				return Files.getLastModifiedTime(root.resolve(ai.getPath() + ".leek")).toMillis();
-			} catch (Exception e) {
-				return Long.MAX_VALUE;
-			}
-		}
-
-		@Override public void loadDependencies(AIFile ai) {}
-		@Override public long getFolderTimestamp(Folder folder) { return Long.MAX_VALUE; }
 	}
 }

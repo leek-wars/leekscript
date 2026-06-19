@@ -28,6 +28,9 @@ public class Module {
 	private final AIFile file;
 	private final int id;
 	private final boolean main;
+	// Préfixe de codegen précalculé (immuable) : prefix() est appelé sur chaque
+	// résolution de nom, autant ne pas réallouer la chaîne à chaque fois.
+	private final String prefix;
 
 	// Noms de fonctions exportées par ce module (sous-ensemble de ses fonctions).
 	private final Set<String> exportedFunctions = new HashSet<>();
@@ -39,6 +42,7 @@ public class Module {
 		this.file = file;
 		this.id = id;
 		this.main = main;
+		this.prefix = main ? "" : "$m" + id + "$";
 	}
 
 	public AIFile getFile() {
@@ -56,7 +60,7 @@ public class Module {
 	/** Préfixe de codegen, intégré dans les noms Java (`f_`, `ufunction_`, ...).
 	 * Vide pour le module principal → v1–v4 byte-identique. */
 	public String prefix() {
-		return main ? "" : "$m" + id + "$";
+		return prefix;
 	}
 
 	public void addExportedFunction(String name) {

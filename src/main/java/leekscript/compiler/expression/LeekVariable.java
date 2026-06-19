@@ -214,6 +214,8 @@ public class LeekVariable extends Expression {
 		// blocs (toutes les FunctionBlock sont parentées au bloc principal). On
 		// l'ignore : la résolution doit passer par le module (fonctions propres +
 		// imports). Les vraies locales/params (LOCAL/ARGUMENT) ne sont pas concernées.
+		// TODO 3c (classes/globales) : envisager une vraie hiérarchie de blocs par
+		// module (la chaîne ne remonterait pas au principal) plutôt que ce filtre.
 		if (v != null && v.getVariableType() == VariableType.FUNCTION
 				&& compiler.getModule() != null && !compiler.getModule().isMain()) {
 			v = null;
@@ -384,6 +386,12 @@ public class LeekVariable extends Expression {
 
 	public FunctionBlock getFunctionDeclaration() {
 		return functionDeclaration;
+	}
+
+	/** FunctionBlock à émettre pour une variable de type FUNCTION : le bloc résolu et
+	 * caché en preAnalyze (module-aware), sinon résolution main-context de secours. */
+	public FunctionBlock getResolvedFunction(MainLeekBlock mainblock) {
+		return functionDeclaration != null ? functionDeclaration : mainblock.getUserFunction(token.getWord());
 	}
 
 	public Token getToken() {
@@ -589,7 +597,7 @@ public class LeekVariable extends Expression {
 		} else if (mainblock.isRedefinedFunction(token.getWord())) {
 			writer.addCode("rfunction_" + token.getWord() + ".get()");
 		} else if (type == VariableType.FUNCTION) {
-			FunctionBlock user_function = functionDeclaration != null ? functionDeclaration : mainblock.getUserFunction(token.getWord());
+			FunctionBlock user_function = getResolvedFunction(mainblock);
 			writer.generateAnonymousUserFunction(user_function);
 			writer.addCode("ufunction_" + user_function.getInternalName());
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
@@ -755,7 +763,7 @@ public class LeekVariable extends Expression {
 			}
 			else writer.addCode("null");
 		} else if (type == VariableType.FUNCTION) {
-			FunctionBlock user_function = functionDeclaration != null ? functionDeclaration : mainblock.getUserFunction(token.getWord());
+			FunctionBlock user_function = getResolvedFunction(mainblock);
 			writer.generateAnonymousUserFunction(user_function);
 			writer.addCode("ufunction_" + user_function.getInternalName());
 		} else if (type == VariableType.CLASS) {

@@ -508,9 +508,7 @@ public class LeekFunctionCall extends Expression {
 
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.FUNCTION) {
 			// Bloc résolu en preAnalyze (module-aware) ; fallback main-context.
-			user_function = ((LeekVariable) mExpression).getFunctionDeclaration() != null
-					? ((LeekVariable) mExpression).getFunctionDeclaration()
-					: mainblock.getUserFunction(((LeekVariable) mExpression).getName());
+			user_function = ((LeekVariable) mExpression).getResolvedFunction(mainblock);
 			// Fonction générique : la méthode Java est effacée (retour `Object`). On
 			// caste vers le type de retour concret inféré pour que le code appelant
 			// reste bien typé (l'affectation déballe le wrapper si primitif).

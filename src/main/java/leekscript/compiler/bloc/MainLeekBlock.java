@@ -66,15 +66,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	// fichier était re-parsé et ses classes redéclarées → VARIABLE_NAME_UNAVAILABLE
 	// intermittent sur une IA pourtant valide.
 	private final Map<String, AIFile> mIncluded = new LinkedHashMap<>();
-	private final Set<String> mIncludedFirstPass = new HashSet<String>();
+	private final Map<String, AIFile> mIncludedFirstPass = new HashMap<>();
 	// Modules v5 (import/export). mMainModule = l'entrypoint + ses include() (préfixe
 	// vide → byte-identique v1-4). mModules = les fichiers importés (un Module chacun,
 	// préfixe collision-proof). Dédoublonnage d'import par includeKey (comme les
 	// includes) : le cache du FileSystem peut recréer l'AIFile d'un même fichier.
 	private final Module mMainModule;
 	private final Map<String, Module> mModules = new HashMap<>();
-	private final Set<String> mImportedFirstPass = new HashSet<String>();
-	private final Set<String> mImported = new HashSet<String>();
+	private final Map<String, AIFile> mImportedFirstPass = new HashMap<>();
+	private final Map<String, AIFile> mImported = new HashMap<>();
 	private int mModuleId = 1;
 	private int mCounter = 0;
 	private int mCountInstruction = 0;
@@ -88,8 +88,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMain = this;
 
 		// On ajoute l'IA pour pas pouvoir l'include
-		mIncluded.put(ai.getKey(), ai);
-		mIncludedFirstPass.add(ai.getKey());
+		mIncluded.put(includeKey(ai), ai);
+		mIncludedFirstPass.put(includeKey(ai), ai);
 		mAIName = ai.getPath();
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
@@ -202,34 +202,61 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMinLevel = min_level;
 	}
 
-	public boolean includeAIFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {
+	/** Identité d'un fichier inclus, stable d'une instance d'AIFile à l'autre (le
+	 *  cache du FileSystem peut en recréer une pour le même fichier).
+	 *  L'id sert de discriminant et non le seul chemin : sous NativeFileSystem
+	 *  (CLI, combats locaux) AIFile.path ne vaut que le nom de feuille et le
+	 *  propriétaire est toujours 0, donc `a/utils` et `b/utils` se confondraient
+	 *  et le second include serait avalé. L'id, lui, est dérivé du chemin complet
+	 *  dans toutes les implémentations. */
+	private static String includeKey(AIFile ai) {
+		return ai.getKey();
+	}
+
+	/**
+	 * Cœur partagé d'include() (v≤4) et import (v5) : résout le fichier, déduplique,
+	 * compile le child avec son propre WordCompiler, propage les erreurs sur l'AIFile
+	 * appelant. Retourne l'AIFile résolu (même déjà dédupliqué) ou null si introuvable.
+	 *
+	 * @param dedup déduplication propre à la passe/au mode, par includeKey (le cache du
+	 *        FileSystem peut recréer l'AIFile d'un même fichier)
+	 * @param moduleProvider fournit/crée le Module v5 posé sur le child (null pour
+	 *        include = fusion à plat dans le module principal)
+	 * @param firstPass true = firstPass (+ clearErrors), false = secondPass
+	 */
+	private AIFile compileChild(WordCompiler compiler, String path, Map<String, AIFile> dedup,
+			java.util.function.Function<AIFile, Module> moduleProvider, boolean firstPass) throws LeekCompilerException {
+		AIFile ai;
 		try {
-			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
-			var key = ai.getKey();
-			if (mIncludedFirstPass.contains(key)) {
-				return true;
-			}
-			// Hack dégueu à retirer, crash du daemon dans un cas précis d'include infini
-			if (mIncludedFirstPass.size() > 500) {
-				throw new LeekCompilerException(compiler.getTokenStream().get(), Error.UNKNOWN_ERROR);
-			}
-			ai.clearErrors();
-			mIncludedFirstPass.add(key);
-			var previousAI = mCompiler.getCurrentAI();
-			mCompiler.setCurrentAI(ai);
-			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion(), compiler.getOptions());
-			newCompiler.setMainBlock(this);
-			try {
-				newCompiler.firstPass();
-			} catch (LeekCompilerException e) {
-				recordIncludeError(ai, e);
-			}
-			compiler.getAI().getErrors().addAll(ai.getErrors());
-			mCompiler.setCurrentAI(previousAI);
-			return true;
+			ai = mCompiler.getCurrentAI().getFolder().resolve(path);
 		} catch (FileNotFoundException e) {
-			return false;
+			return null;
 		}
+		var key = includeKey(ai);
+		if (dedup.containsKey(key)) return ai;
+		// Hack dégueu à retirer, crash du daemon dans un cas précis d'include/import infini
+		if (dedup.size() > 500) {
+			throw new LeekCompilerException(compiler.getTokenStream().get(), Error.UNKNOWN_ERROR);
+		}
+		if (firstPass) ai.clearErrors(); // includeAI/importModule (secondPass) ne clear pas
+		dedup.put(key, ai);
+		var previousAI = mCompiler.getCurrentAI();
+		mCompiler.setCurrentAI(ai);
+		WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion(), compiler.getOptions());
+		newCompiler.setMainBlock(this);
+		if (moduleProvider != null) newCompiler.setModule(moduleProvider.apply(ai));
+		try {
+			if (firstPass) newCompiler.firstPass(); else newCompiler.secondPass();
+		} catch (LeekCompilerException e) {
+			recordIncludeError(ai, e);
+		}
+		compiler.getAI().getErrors().addAll(ai.getErrors());
+		mCompiler.setCurrentAI(previousAI);
+		return ai;
+	}
+
+	public boolean includeAIFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {
+		return compileChild(compiler, path, mIncludedFirstPass, null, true) != null;
 	}
 
 	// On absorbe l'exception pour que les autres includes soient parsés, mais on
@@ -242,33 +269,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public boolean includeAI(WordCompiler compiler, String path) throws LeekCompilerException {
-		try {
-			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
-			var key = ai.getKey();
-			if (mIncluded.containsKey(key)) {
-				return true;
-			}
-			// Hack dégueu à retirer, crash du daemon dans un cas précis d'include infini
-			if (mIncluded.size() > 500) {
-				throw new LeekCompilerException(compiler.getTokenStream().get(), Error.UNKNOWN_ERROR);
-			}
-			// ai.clearErrors();
-			mIncluded.put(key, ai);
-			var previousAI = mCompiler.getCurrentAI();
-			mCompiler.setCurrentAI(ai);
-			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion(), compiler.getOptions());
-			newCompiler.setMainBlock(this);
-			try {
-				newCompiler.secondPass();
-			} catch (LeekCompilerException e) {
-				recordIncludeError(ai, e);
-			}
-			compiler.getAI().getErrors().addAll(ai.getErrors());
-			mCompiler.setCurrentAI(previousAI);
-			return true;
-		} catch (FileNotFoundException e) {
-			return false;
-		}
+		return compileChild(compiler, path, mIncluded, null, false) != null;
 	}
 
 	/**
@@ -279,63 +280,14 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * est introuvable. v5 modules, phase 3b.
 	 */
 	public Module importModuleFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {
-		try {
-			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
-			var module = getOrCreateModule(ai);
-			if (mImportedFirstPass.contains(includeKey(ai))) {
-				return module;
-			}
-			if (mImportedFirstPass.size() > 500) {
-				throw new LeekCompilerException(compiler.getTokenStream().get(), Error.UNKNOWN_ERROR);
-			}
-			ai.clearErrors();
-			mImportedFirstPass.add(includeKey(ai));
-			var previousAI = mCompiler.getCurrentAI();
-			mCompiler.setCurrentAI(ai);
-			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion(), compiler.getOptions());
-			newCompiler.setMainBlock(this);
-			newCompiler.setModule(module);
-			try {
-				newCompiler.firstPass();
-			} catch (LeekCompilerException e) {
-				recordIncludeError(ai, e);
-			}
-			compiler.getAI().getErrors().addAll(ai.getErrors());
-			mCompiler.setCurrentAI(previousAI);
-			return module;
-		} catch (FileNotFoundException e) {
-			return null;
-		}
+		var ai = compileChild(compiler, path, mImportedFirstPass, this::getOrCreateModule, true);
+		return ai == null ? null : getOrCreateModule(ai);
 	}
 
 	/** secondPass d'un module importé. Miroir de {@link #includeAI}. */
 	public Module importModule(WordCompiler compiler, String path) throws LeekCompilerException {
-		try {
-			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
-			var module = getOrCreateModule(ai);
-			if (mImported.contains(includeKey(ai))) {
-				return module;
-			}
-			if (mImported.size() > 500) {
-				throw new LeekCompilerException(compiler.getTokenStream().get(), Error.UNKNOWN_ERROR);
-			}
-			mImported.add(includeKey(ai));
-			var previousAI = mCompiler.getCurrentAI();
-			mCompiler.setCurrentAI(ai);
-			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion(), compiler.getOptions());
-			newCompiler.setMainBlock(this);
-			newCompiler.setModule(module);
-			try {
-				newCompiler.secondPass();
-			} catch (LeekCompilerException e) {
-				recordIncludeError(ai, e);
-			}
-			compiler.getAI().getErrors().addAll(ai.getErrors());
-			mCompiler.setCurrentAI(previousAI);
-			return module;
-		} catch (FileNotFoundException e) {
-			return null;
-		}
+		var ai = compileChild(compiler, path, mImported, this::getOrCreateModule, false);
+		return ai == null ? null : getOrCreateModule(ai);
 	}
 
 	public boolean hasUserFunction(String name, boolean use_declarations) {
@@ -399,7 +351,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			var src = module.getImportedFunctionSource(name);
 			if (src != null) return mFunctions.get(src.prefix() + name);
 			var own = mFunctions.get(module.prefix() + name);
-			if (own != null || !module.isMain()) return own;
+			if (own != null) return own;
+			// Un module importé n'a PAS de fallback vers le namespace global (privacy).
+			if (!module.isMain()) return null;
 		}
 		return mFunctions.get(name);
 	}
@@ -444,7 +398,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * du champ statique qui le porte, ou null si le fichier, ou le total des fichiers lus, est trop gros.
 	 */
 	public String addFileContent(AIFile file) {
-		var key = file.getKey();
+		var key = includeKey(file);
 		var field = mFileFields.get(key);
 		if (field != null) return field;
 		var content = file.getCode();

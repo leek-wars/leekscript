@@ -238,12 +238,7 @@ public class WordCompiler {
 
 				if (tt == TokenType.INCLUDE) {
 					var token = mTokens.eat();
-					if (LanguageFeature.MODULES.enabledIn(getVersion())) {
-						// include() supprimé en v5 : remplacé par import/export.
-						addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.INCLUDE_REMOVED_IN_V5));
-						skipParenthesizedArgument();
-						continue;
-					}
+					if (rejectIncludeInV5(token)) continue;
 					// On vérifie qu'on est dans le bloc principal
 					if (!mCurentBlock.equals(mMain)) throw new LeekCompilerException(mTokens.get(), Error.INCLUDE_ONLY_IN_MAIN_BLOCK);
 					// Sans parenthèse, la seconde passe dit ce qui ne va pas, à sa place dans le
@@ -787,6 +782,16 @@ public class WordCompiler {
 		}
 	}
 
+	/** En v5, include() est supprimé (remplacé par import/export). Si on compile en v5,
+	 * signale l'erreur, consomme l'argument `(...)` et retourne true (l'appelant doit
+	 * arrêter de traiter la directive). Appelé depuis firstPass ET includeBlock. */
+	private boolean rejectIncludeInV5(Token token) throws LeekCompilerException {
+		if (!LanguageFeature.MODULES.enabledIn(getVersion())) return false;
+		addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.INCLUDE_REMOVED_IN_V5));
+		skipParenthesizedArgument();
+		return true;
+	}
+
 	/** Consomme une séquence `( ... )` à partir du token courant (best-effort, pour
 	 * resynchroniser le parsing après une directive rejetée). */
 	private void skipParenthesizedArgument() {
@@ -801,12 +806,7 @@ public class WordCompiler {
 
 		if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 
-		if (LanguageFeature.MODULES.enabledIn(getVersion())) {
-			// include() supprimé en v5 : remplacé par import/export.
-			addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.INCLUDE_REMOVED_IN_V5));
-			skipParenthesizedArgument();
-			return;
-		}
+		if (rejectIncludeInV5(token)) return;
 
 		// On vérifie qu'on est dans le bloc principal
 		if (!mCurentBlock.equals(mMain)) throw new LeekCompilerException(mTokens.get(), Error.INCLUDE_ONLY_IN_MAIN_BLOCK);
