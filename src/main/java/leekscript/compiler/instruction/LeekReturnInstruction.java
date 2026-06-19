@@ -15,6 +15,8 @@ import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
+import leekscript.compiler.expression.LeekFunctionCall;
+import leekscript.compiler.expression.LeekTernaire;
 import leekscript.common.Error;
 
 public class LeekReturnInstruction extends LeekInstruction {
@@ -58,6 +60,11 @@ public class LeekReturnInstruction extends LeekInstruction {
 		this.returnType = Type.ANY;
 		if (expression != null) {
 			expression.analyze(compiler);
+			// @tailrec : marque les appels récursifs atteignables en position terminale.
+			// `return? f()` peut poursuivre l'exécution si f() est faux : non terminal.
+			if (!optional) {
+				markTailCalls(expression, compiler);
+			}
 		}
 
 		// Vérification du type de retour
@@ -95,6 +102,23 @@ public class LeekReturnInstruction extends LeekInstruction {
 					compiler.getCurrentFunction().getType().returnType().toString()
 				}));
 			}
+		}
+	}
+
+	// @tailrec : marque récursivement comme terminaux les appels récursifs atteignables
+	// en position de queue depuis cette expression de retour : l'appel lui-même, à travers
+	// les parenthèses (trim, `return (f(x))`) et les DEUX branches d'un ternaire
+	// (`return c ? f(a) : f(b)`). Les opérateurs binaires/unaires (`f(n) + 1`, `x && f(n)`)
+	// et la condition d'un ternaire ne propagent PAS la position terminale.
+	private void markTailCalls(Expression expr, WordCompiler compiler) {
+		var e = expr.trim();
+		if (e instanceof LeekFunctionCall fc) {
+			if (fc.getResolvedFunction() != null && fc.getResolvedFunction() == compiler.getCurrentFunction()) {
+				fc.setTailPosition(true);
+			}
+		} else if (e instanceof LeekTernaire t) {
+			markTailCalls(t.getExpression1(), compiler);
+			markTailCalls(t.getExpression2(), compiler);
 		}
 	}
 

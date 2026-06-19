@@ -49,6 +49,10 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	// Paramètres de type génériques (`function<T> f(...)`, version >= 5). Lazy :
 	// la quasi-totalité des fonctions ne sont pas génériques.
 	private ArrayList<leekscript.common.TypeVariable> typeParameters = null;
+	// @tailrec : appels récursifs collectés pendant l'analyse du corps, validés
+	// ensuite (doivent tous être en position terminale). Lazy : seules les
+	// fonctions @tailrec qui s'appellent elles-mêmes en collectent.
+	private ArrayList<leekscript.compiler.expression.LeekFunctionCall> recursiveCalls = null;
 
 	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -275,6 +279,16 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 			}
 		}
 		super.analyze(compiler);
+		// @tailrec : après l'analyse du corps, tout appel récursif collecté doit être
+		// en position terminale (expression directe d'un `return` non optionnel).
+		// Sinon, erreur dure pointant l'appel fautif. Inactif sans l'annotation.
+		if (recursiveCalls != null && hasAnnotation(Annotation.TAILREC)) {
+			for (var call : recursiveCalls) {
+				if (!call.isTailPosition()) {
+					compiler.addError(new AnalyzeError(call.getLocation(), AnalyzeErrorLevel.ERROR, Error.ANNOTATION_TAILREC_NOT_TAIL, new String[] { getName() }));
+				}
+			}
+		}
 		compiler.setCurrentFunction(initialFunction);
 		compiler.setModule(initialModule);
 	}
@@ -424,6 +438,13 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 
 	public boolean hasAnnotation(Annotation a) {
 		return annotations != null && annotations.contains(a);
+	}
+
+	// @tailrec : un appel résolu vers cette fonction (récursion directe) signale sa
+	// présence ici pendant l'analyse de son propre corps, pour validation a posteriori.
+	public void registerRecursiveCall(leekscript.compiler.expression.LeekFunctionCall call) {
+		if (recursiveCalls == null) recursiveCalls = new ArrayList<>();
+		recursiveCalls.add(call);
 	}
 
 	public void declare(WordCompiler compiler) {

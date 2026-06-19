@@ -100,6 +100,50 @@ public class TestAnnotations extends TestCommon {
 	}
 
 	@Test
+	public void testTailrec() throws Exception {
+		section("@tailrec");
+
+		// Appel récursif en position terminale (expression directe d'un return) : OK.
+		code_v4_("@tailrec function sum(n, acc) { if (n == 0) return acc; return sum(n - 1, acc + n); } return sum(5, 0)").equals("15");
+		// Appel terminal dans une branche if : OK.
+		code_v4_("@tailrec function f(n) { if (n <= 0) return 0; return f(n - 1); } return f(3)").equals("0");
+		// Plusieurs returns, seul le terminal est récursif : OK.
+		code_v4_("@tailrec function fact(n, acc) { if (n <= 1) return acc; return fact(n - 1, acc * n); } return fact(5, 1)").equals("120");
+		// @tailrec sur une fonction non récursive : vacueusement valide.
+		code_v4_("@tailrec function f(n) { return n + 1; } return f(5)").equals("6");
+		// Appel terminal entre parenthèses : `return (f(x))` reste terminal (trim).
+		code_v4_("@tailrec function f(n) { if (n <= 0) return 0; return (f(n - 1)); } return f(3)").equals("0");
+		// Ternaire en position retour : les deux branches sont terminales.
+		code_v4_("@tailrec function sum(n, acc) { return n == 0 ? acc : sum(n - 1, acc + n); } return sum(5, 0)").equals("15");
+		// Ternaire avec un appel récursif dans CHAQUE branche : terminal des deux côtés.
+		code_v4_("@tailrec function f(n) { if (n <= 0) return 0; return n % 2 == 0 ? f(n - 1) : f(n - 2); } return f(4)").equals("0");
+
+		// Appel récursif non terminal (imbriqué dans un opérateur binaire) : erreur.
+		code_v4_("@tailrec function bad(n) { if (n == 0) return 0; return bad(n - 1) + 1; } return bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		// Appel récursif en instruction (résultat ignoré) : erreur.
+		code_v4_("@tailrec function bad(n) { if (n > 0) { bad(n - 1); } return 0; } return bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		// Appel récursif dans une déclaration de variable : erreur.
+		code_v4_("@tailrec function bad(n) { if (n == 0) return 0; var x = bad(n - 1); return x; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		// Appel récursif imbriqué comme argument de lui-même : l'appel interne n'est pas terminal.
+		code_v4_("@tailrec function bad(n) { if (n <= 0) return 0; return bad(bad(n - 1)); } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		// `return?` peut poursuivre l'exécution : l'appel n'est pas terminal.
+		code_v4_("@tailrec function bad(n) { if (n == 0) return 0; return? bad(n - 1); return 0; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		// Appel récursif dans la CONDITION d'un ternaire : la fonction poursuit avec une
+		// branche après, donc non terminal.
+		code_v4_("@tailrec function bad(n) { if (n <= 0) return 1; return bad(n - 1) > 0 ? 1 : 0; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		// Branche de ternaire non terminale (appel imbriqué dans un opérateur) : erreur.
+		code_v4_("@tailrec function bad(n) { return n <= 0 ? 0 : bad(n - 1) + 1; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+
+		// Non-régression : récursion non terminale SANS @tailrec = aucune erreur (opt-in).
+		code_v4_("function rec(n) { if (n == 0) return 0; return rec(n - 1) + 1; } return rec(3)").equals("3");
+		// Appel terminal vers une AUTRE fonction (pas de la récursion) : pas concerné.
+		code_v4_("@tailrec function f(n) { return g(n); } function g(n) { return n * 2; } return f(5)").equals("10");
+		// Un appel récursif logé dans une fonction anonyme n'est pas un appel terminal de
+		// la fonction englobante (fonction courante = l'anonyme) : pas de faux positif.
+		code_v4_("@tailrec function f(n) { var g = function() { return f(n - 1); }; return n; } return f(5)").equals("5");
+	}
+
+	@Test
 	public void testOverride() throws Exception {
 		section("@override");
 

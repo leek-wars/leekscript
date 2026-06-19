@@ -73,6 +73,9 @@ public class LeekFunctionCall extends Expression {
 	private ClassMethodBlock constructorBlock = null;
 	private Type functionType = Type.ANY;
 	private FunctionBlock resolvedFunction = null;
+	// @tailrec : vrai si cet appel est l'expression directe d'un `return` non
+	// optionnel (position terminale). Renseigné par LeekReturnInstruction.analyze.
+	private boolean tailPosition = false;
 
 	// Méthodes natives exposées en `u_` sur la classe de base des objets générés
 	// (NativeObjectLeekValue), ex: keys(). Un `super.method()` vers l'une d'elles
@@ -113,6 +116,14 @@ public class LeekFunctionCall extends Expression {
 
 	public FunctionBlock getResolvedFunction() {
 		return resolvedFunction;
+	}
+
+	public void setTailPosition(boolean tailPosition) {
+		this.tailPosition = tailPosition;
+	}
+
+	public boolean isTailPosition() {
+		return tailPosition;
 	}
 
 	@Override
@@ -893,6 +904,11 @@ public class LeekFunctionCall extends Expression {
 				var f = v.getFunctionDeclaration() != null ? v.getFunctionDeclaration() : compiler.getMainBlock().getUserFunction(v.getName());
 				if (f != null) {
 					resolvedFunction = f;
+					// @tailrec : récursion directe (la fonction courante s'appelle elle-même).
+					// On l'enregistre pour valider sa position après l'analyse du corps.
+					if (f == compiler.getCurrentFunction() && f.hasAnnotation(leekscript.common.Annotation.TAILREC)) {
+						f.registerRecursiveCall(this);
+					}
 					if (mParameters.size() < f.getMinParameters() || mParameters.size() > f.getMaxParameters()) {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
 					}
