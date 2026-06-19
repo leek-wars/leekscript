@@ -153,6 +153,24 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		return token.getWord();
 	}
 
+	// Module v5 propriétaire (préfixe le nom de codegen `u_<Class>`). null = principal.
+	private leekscript.compiler.bloc.Module module;
+
+	public void setModule(leekscript.compiler.bloc.Module module) {
+		this.module = module;
+	}
+
+	public leekscript.compiler.bloc.Module getModule() {
+		return module;
+	}
+
+	/** Nom de codegen de la classe (`u_<internalName>`), préfixé par module pour éviter
+	 * les collisions ; vide pour le principal → byte-identique. getName() reste le nom
+	 * source (affichage/résolution). */
+	public String getInternalName() {
+		return (module == null ? "" : module.prefix()) + token.getWord();
+	}
+
 	// Paramètres de type génériques (`class Box<T> { ... }`, version >= 5). Lazy :
 	// la quasi-totalité des classes ne sont pas génériques.
 	private java.util.ArrayList<leekscript.common.TypeVariable> typeParameters = null;
@@ -650,7 +668,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 
 	public void declareJava(MainLeekBlock mainblock, JavaWriter writer) {
 		mainblock.getWordCompiler().setCurrentClass(this);
-		String className = "u_" + token.getWord();
+		String className = "u_" + getInternalName();
 
 		// Declare the actuel class
 		var parentName = parent == null ? "NativeObjectLeekValue" : parent.getJavaName(mainblock);
@@ -999,7 +1017,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 				case "Map": return "MapLeekValue";
 			}
 		}
-		return "u_" + token.getWord();
+		return "u_" + getInternalName();
 	}
 
 	private String getClassName(MainLeekBlock block) {
@@ -1009,7 +1027,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 			}
 			return token.getWord().toLowerCase() + "Class";
 		}
-		return "u_" + token.getWord();
+		return "u_" + getInternalName();
 	}
 
 	public void defineClass(MainLeekBlock mainblock, JavaWriter writer) {
@@ -1027,7 +1045,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		mainblock.getWordCompiler().setCurrentClass(this);
 
 		// Create the class in the constructor of the AI
-		String className = "u_" + token.getWord();
+		String className = "u_" + getInternalName();
 
 		if (parent != null) {
 			writer.addLine(className + ".setParent(" + parent.getClassName(mainblock) + ");");
@@ -1115,7 +1133,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		mainblock.getWordCompiler().setCurrentBlock(staticInitBlock);
 
 		// Create the class in the constructor of the AI
-		String className = "u_" + token.getWord();
+		String className = "u_" + getInternalName();
 
 		// First create all static fields
 		for (var field : staticFields.entrySet()) {
@@ -1153,7 +1171,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		mainblock.getWordCompiler().setCurrentBlock(staticInitBlock);
 
 		// Create the class in the constructor of the AI
-		String className = "u_" + token.getWord();
+		String className = "u_" + getInternalName();
 
 		// Second assign values for fields with values
 		for (var field : staticFields.entrySet()) {
@@ -1262,7 +1280,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	public String getMethodName(String name, int argumentCount) {
 		var versions = methods.get(name);
 		if (versions != null) {
-			if (versions.containsKey(argumentCount)) return getName() + "_" + name + "_" + argumentCount;
+			if (versions.containsKey(argumentCount)) return getInternalName() + "_" + name + "_" + argumentCount;
 		}
 		if (parent != null) {
 			return parent.getMethodName(name, argumentCount);
@@ -1287,7 +1305,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	public String getStaticMethodName(String name, int argumentCount) {
 		var versions = staticMethods.get(name);
 		if (versions != null) {
-			if (versions.containsKey(argumentCount)) return getName() + "_" + name + "_" + argumentCount;
+			if (versions.containsKey(argumentCount)) return getInternalName() + "_" + name + "_" + argumentCount;
 		}
 		if (parent != null) {
 			return parent.getStaticMethodName(name, argumentCount);

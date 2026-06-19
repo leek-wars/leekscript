@@ -576,7 +576,7 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.THIS_CLASS) {
 			writeThisClass(mainblock, writer);
 		} else if (type == VariableType.SUPER) {
-			writer.addCode("u_" + classDeclaration.getParent().getName());
+			writer.addCode("u_" + classDeclaration.getParent().getInternalName());
 		} else if (type == VariableType.FIELD) {
 			// Le champ Java garde son type déclaré : sans cast, `if (m instanceof B) m.doStuff()`
 			// cherche la méthode de B sur une variable de type A → « cannot find symbol » (#4933).
@@ -667,7 +667,7 @@ public class LeekVariable extends Expression {
 					writer.addCode(token.getWord().toLowerCase() + "Class");
 				}
 			} else {
-				writer.addCode("u_" + token.getWord());
+				writer.addCode("u_" + classDeclaration.getInternalName());
 			}
 		} else {
 			// Check if the variable was narrowed during analysis: if the expression's type
@@ -756,7 +756,7 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.THIS_CLASS) {
 			writeThisClass(mainblock, writer);
 		} else if (type == VariableType.SUPER) {
-			writer.addCode("u_" + classDeclaration.getParent().getName());
+			writer.addCode("u_" + classDeclaration.getParent().getInternalName());
 		} else if (type == VariableType.FIELD) {
 			writer.addCode("this.getFieldL(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.STATIC_FIELD) {
@@ -798,7 +798,7 @@ public class LeekVariable extends Expression {
 			if (classDeclaration.internal) {
 				writer.addCode(token.getWord().toLowerCase() + "Class");
 			} else {
-				writer.addCode("u_" + token.getWord());
+				writer.addCode("u_" + classDeclaration.getInternalName());
 			}
 		} else {
 			if (isWrapper()) {

@@ -378,7 +378,7 @@ public class LeekFunctionCall extends Expression {
 						if (parenthesis) { writer.addCode("("); castParenthesis = true; }
 						writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 					}
-					writer.addCode("u_" + v.getClassDeclaration().getName() + ".callStaticField(\"" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
+					writer.addCode("u_" + v.getClassDeclaration().getInternalName() + ".callStaticField(\"" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 				}
 				}
 			} else if (object instanceof LeekVariable v && v.getVariableType() == VariableType.THIS) {
@@ -405,7 +405,7 @@ public class LeekFunctionCall extends Expression {
 					writer.addCode("callObjectAccess(" + mainblock.getWordCompiler().getCurrentClassVariable() + ".this, \"" + field + "\", \"u_" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 				}
 			} else if (is_static_method) {
-				writer.addCode("u_" + method.block.getClassDeclaration().getName() + "_" + field + "_" + mParameters.size() + "(");
+				writer.addCode("u_" + method.block.getClassDeclaration().getInternalName() + "_" + field + "_" + mParameters.size() + "(");
 				addComma = false;
 				typedArguments = true;
 			} else if (is_method) {

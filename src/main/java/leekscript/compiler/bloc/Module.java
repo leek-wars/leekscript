@@ -40,6 +40,9 @@ public class Module {
 	// Idem pour les variables/globales de niveau module (export var / export global).
 	private final Set<String> exportedVars = new HashSet<>();
 	private final Map<String, Module> importedVars = new HashMap<>();
+	// Idem pour les classes (export class).
+	private final Set<String> exportedClasses = new HashSet<>();
+	private final Map<String, Module> importedClasses = new HashMap<>();
 
 	public Module(AIFile file, int id, boolean main) {
 		this.file = file;
@@ -98,5 +101,22 @@ public class Module {
 	/** Module source si la variable {@code name} est importée dans ce module, sinon null. */
 	public Module getImportedVarSource(String name) {
 		return importedVars.get(name);
+	}
+
+	public void addExportedClass(String name) {
+		exportedClasses.add(name);
+	}
+
+	public boolean isExportedClass(String name) {
+		return exportedClasses.contains(name);
+	}
+
+	public void addImportedClass(String localName, Module source) {
+		importedClasses.put(localName, source);
+	}
+
+	/** Module source si la classe {@code name} est importée dans ce module, sinon null. */
+	public Module getImportedClassSource(String name) {
+		return importedClasses.get(name);
 	}
 }
