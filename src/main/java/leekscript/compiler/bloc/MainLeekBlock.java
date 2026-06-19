@@ -98,6 +98,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 		if (ai.getVersion() >= 3) {
 
+			// MIROIR COMPILE des classes internes (typage). Toute classe/constante déclarée
+			// ici DOIT l'être aussi côté runtime (AI.java) et vice-versa, sinon le code
+			// généré (getField, new XxxLeekValue...) ne résout pas. Constantes Math = source
+			// unique LeekConstants.MATH_NAMESPACE.
 			var valueClass = new ClassDeclarationInstruction(new Token("Value"), 0, ai, true, this, Type.ANY).notInstantiable();
 			valueClass.addField(wordCompiler, new Token("class"), Type.CLASS, null, AccessLevel.PUBLIC, true);
 			addClass(valueClass);

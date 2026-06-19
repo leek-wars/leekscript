@@ -359,6 +359,10 @@ public abstract class AI {
 			}
 		};
 
+		// MIROIR RUNTIME des classes internes. Toute classe/constante interne déclarée ici
+		// DOIT l'être aussi côté compile (MainLeekBlock, pour le typage) et vice-versa,
+		// sinon un `getField(xxxClass, ...)` généré ne résout pas (cf. bug Math.PI). Les
+		// constantes Math viennent de la source unique LeekConstants.MATH_NAMESPACE.
 		valueClass = new ClassLeekValue(this, "Value");
 		nullClass = new ClassLeekValue(this, "Null", valueClass);
 		booleanClass = new ClassLeekValue(this, "Boolean", valueClass);
