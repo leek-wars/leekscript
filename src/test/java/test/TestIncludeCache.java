@@ -57,6 +57,9 @@ public class TestIncludeCache {
 	// tmpRoots distincts.
 	private static final AtomicLong UNIQUE = new AtomicLong();
 	private String uniqueId;
+	// include() est une feature v≤4 (supprimée en v5 au profit de import/export),
+	// donc tout ce harness compile en v4.
+	private static final int INCLUDE_VERSION = 4;
 
 	@BeforeEach
 	void setUp() {
@@ -776,8 +779,8 @@ public class TestIncludeCache {
 		// shared.leek définit helper(). main1 l'utilise, main2 non.
 		// → pas de UNUSED_FUNCTION car utilisé dans au moins un entrypoint.
 		write("shared.leek", "function helper() { return 42; }\n");
-		write("Main1_" + uniqueId + ".leek", "// @strict\ninclude(\"shared\");\nreturn helper();");
-		write("Main2_" + uniqueId + ".leek", "// @strict\ninclude(\"shared\");\nreturn 0;");
+		write("Main1_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"shared\");\nreturn helper();");
+		write("Main2_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"shared\");\nreturn 0;");
 
 		var shared = fs.getRoot(0).resolve("shared");
 		var result = IACompiler.analyzeWithIncludes(shared);
@@ -791,8 +794,8 @@ public class TestIncludeCache {
 		// shared.leek définit helper(). Ni main1 ni main2 ne l'utilisent.
 		// → UNUSED_FUNCTION doit apparaître (intersection = présent dans tous).
 		write("shared.leek", "function helper() { return 42; }\n");
-		write("Main1_" + uniqueId + ".leek", "// @strict\ninclude(\"shared\");\nreturn 0;");
-		write("Main2_" + uniqueId + ".leek", "// @strict\ninclude(\"shared\");\nreturn 0;");
+		write("Main1_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"shared\");\nreturn 0;");
+		write("Main2_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"shared\");\nreturn 0;");
 
 		var shared = fs.getRoot(0).resolve("shared");
 		var result = IACompiler.analyzeWithIncludes(shared);
@@ -806,8 +809,8 @@ public class TestIncludeCache {
 		// shared.leek a une vraie erreur de syntaxe (variable inconnue).
 		// Deux entrypoints l'incluent → l'erreur doit apparaître UNE seule fois.
 		write("shared.leek", "function bad() { return unknown_var; }\n");
-		write("Main1_" + uniqueId + ".leek", "include(\"shared\");\nreturn bad();");
-		write("Main2_" + uniqueId + ".leek", "include(\"shared\");\nreturn bad();");
+		write("Main1_" + uniqueId + ".leek", "// @version:4\ninclude(\"shared\");\nreturn bad();");
+		write("Main2_" + uniqueId + ".leek", "// @version:4\ninclude(\"shared\");\nreturn bad();");
 
 		var shared = fs.getRoot(0).resolve("shared");
 		var result = IACompiler.analyzeWithIncludes(shared);
@@ -1083,7 +1086,7 @@ public class TestIncludeCache {
 		var file = fs.getRoot(0).resolve(name);
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass("AI");
-		var options = new Options(LeekScript.LATEST_VERSION, false, true, true, null, true);
+		var options = new Options(INCLUDE_VERSION, false, true, true, null, true);
 		AI ai = JavaCompiler.compile(file, options);
 		ai.init();
 		ai.staticInit();
@@ -1097,7 +1100,7 @@ public class TestIncludeCache {
 		var file = fs.getRoot(0).resolve(name);
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass("AI");
-		var options = new Options(LeekScript.LATEST_VERSION, false, true, true, null, true);
+		var options = new Options(INCLUDE_VERSION, false, true, true, null, true);
 		var errors = new ArrayList<Error>();
 		try {
 			JavaCompiler.compile(file, options);
@@ -1165,7 +1168,7 @@ public class TestIncludeCache {
 				long mtime = Files.getLastModifiedTime(fsPath).toMillis();
 				var rootFolder = getRoot(owner);
 				var folder = resolveParent(filePath, rootFolder);
-				var file = new AIFile(filePath, code, mtime, LeekScript.LATEST_VERSION, folder, owner,
+				var file = new AIFile(filePath, code, mtime, INCLUDE_VERSION, folder, owner,
 						Objects.hash(owner, filePath) & 0xfffffff, false);
 				folder.addFile(file);
 				filesByPath.put(key, file);
@@ -1219,7 +1222,7 @@ public class TestIncludeCache {
 			try {
 				var code = Files.readString(fsPath);
 				long mtime = Files.getLastModifiedTime(fsPath).toMillis();
-				var file = new AIFile(filePath, code, mtime, LeekScript.LATEST_VERSION, folder, folder.getOwner(),
+				var file = new AIFile(filePath, code, mtime, INCLUDE_VERSION, folder, folder.getOwner(),
 						Objects.hash(folder.getOwner(), filePath) & 0xfffffff, false);
 				filesByPath.put(key, file);
 				return file;

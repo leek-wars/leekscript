@@ -238,6 +238,12 @@ public class WordCompiler {
 
 				if (tt == TokenType.INCLUDE) {
 					var token = mTokens.eat();
+					if (LanguageFeature.MODULES.enabledIn(getVersion())) {
+						// include() supprimé en v5 : remplacé par import/export.
+						addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.INCLUDE_REMOVED_IN_V5));
+						skipParenthesizedArgument();
+						continue;
+					}
 					// On vérifie qu'on est dans le bloc principal
 					if (!mCurentBlock.equals(mMain)) throw new LeekCompilerException(mTokens.get(), Error.INCLUDE_ONLY_IN_MAIN_BLOCK);
 					// Sans parenthèse, la seconde passe dit ce qui ne va pas, à sa place dans le
@@ -781,9 +787,26 @@ public class WordCompiler {
 		}
 	}
 
+	/** Consomme une séquence `( ... )` à partir du token courant (best-effort, pour
+	 * resynchroniser le parsing après une directive rejetée). */
+	private void skipParenthesizedArgument() {
+		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.PAR_LEFT) {
+			mTokens.skip();
+			while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.PAR_RIGHT) mTokens.skip();
+			if (mTokens.hasMoreTokens()) mTokens.skip(); // )
+		}
+	}
+
 	private void includeBlock(Token token) throws LeekCompilerException {
 
 		if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
+		if (LanguageFeature.MODULES.enabledIn(getVersion())) {
+			// include() supprimé en v5 : remplacé par import/export.
+			addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.INCLUDE_REMOVED_IN_V5));
+			skipParenthesizedArgument();
+			return;
+		}
 
 		// On vérifie qu'on est dans le bloc principal
 		if (!mCurentBlock.equals(mMain)) throw new LeekCompilerException(mTokens.get(), Error.INCLUDE_ONLY_IN_MAIN_BLOCK);

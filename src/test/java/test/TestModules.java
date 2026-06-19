@@ -27,4 +27,11 @@ public class TestModules extends TestCommon {
 		code_v4("export function f() { return 1 } return f()").error(Error.KEYWORD_UNEXPECTED);
 		code_v4("import { x } from \"utils\" return 1").error(Error.KEYWORD_UNEXPECTED);
 	}
+
+	@Test
+	public void includeRemovedInV5() throws Exception {
+		section("Modules (v5) - include() supprimé au profit de import/export");
+		// include() est une feature v≤4 ; en v5 c'est une erreur dure.
+		code_v5("include(\"utils\") return 1").error(Error.INCLUDE_REMOVED_IN_V5);
+	}
 }
