@@ -58,6 +58,13 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	// affiné vers `typeGuardType` dans la branche vraie. -1 / null = pas de guard.
 	private int typeGuardParam = -1;
 	private Type typeGuardType = null;
+	// #43 (v5) : le type de retour vient-il d'une annotation explicite `-> Type` (ou d'un
+	// type guard) ? Si oui on n'infère pas ; sinon on infère depuis les `return` du corps.
+	private boolean returnTypeExplicit = false;
+	// #43 : instructions `return` du corps, collectées pendant analyze pour inférer le
+	// type de retour (union de leurs types). Lazy ; les fonctions anonymes imbriquées
+	// sont exclues (getCurrentFunction y vaut l'anonyme, pas ce FunctionBlock).
+	private ArrayList<leekscript.compiler.instruction.LeekReturnInstruction> bodyReturns = null;
 
 	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -218,6 +225,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 
 	public void setReturnType(Type type) {
 		this.type.setReturnType(type);
+		this.returnTypeExplicit = true;
 	}
 
 	public void addTypeParameter(leekscript.common.TypeVariable variable) {
@@ -263,13 +271,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		var types = new Type[mTypes.size()];
 		for (int t = 0; t < types.length; ++t) types[t] = mTypes.get(t);
 		// Créer une version pour chaque arité possible
-		var versionsList = new ArrayList<CallableVersion>();
-		for (int p = minParameters; p <= maxParameters; ++p) {
-			var versionTypes = new Type[p];
-			for (int t = 0; t < p; ++t) versionTypes[t] = mTypes.get(t);
-			versionsList.add(new CallableVersion(this.type.getReturnType(), versionTypes));
-		}
-		this.versions = versionsList.toArray(new CallableVersion[0]);
+		buildVersions();
 
 		var initialFunction = compiler.getCurrentFunction();
 		// Le corps d'une fonction se résout dans le module qui la déclare (imports +
@@ -310,6 +312,31 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 				if (!call.isTailPosition()) {
 					compiler.addError(new AnalyzeError(call.getLocation(), AnalyzeErrorLevel.ERROR, Error.ANNOTATION_TAILREC_NOT_TAIL, new String[] { getName() }));
 				}
+			}
+		}
+		// #43 (v5) : inférer le type de retour depuis les `return` du corps si pas
+		// d'annotation explicite. Union des types retournés ; + NULL si le corps peut
+		// tomber en fin (retour implicite null) ou n'a aucun return. Un appel récursif
+		// vaut ANY au moment de l'analyse → l'union retombe sur ANY (pas de point fixe).
+		// On reconstruit les versions ET on aligne le type de chaque `return` sur le type
+		// inféré, sinon la signature Java inférée et la conversion des `return` divergent.
+		// `mEndInstruction == 0` = même condition que le retour implicite du codegen.
+		if (!returnTypeExplicit && leekscript.common.LanguageFeature.RETURN_TYPE_INFERENCE.enabledIn(compiler.getVersion())) {
+			Type inferred = null;
+			if (bodyReturns != null) {
+				for (var ret : bodyReturns) {
+					inferred = inferred == null ? ret.getReturnedType() : Type.compound(inferred, ret.getReturnedType());
+				}
+			}
+			if (inferred == null) {
+				inferred = Type.NULL;
+			} else if (mEndInstruction == 0) {
+				inferred = Type.compound(inferred, Type.NULL);
+			}
+			this.type.setReturnType(inferred);
+			buildVersions();
+			if (bodyReturns != null) {
+				for (var ret : bodyReturns) ret.setInferredReturnType(inferred);
 			}
 		}
 		compiler.setCurrentFunction(initialFunction);
@@ -468,6 +495,25 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	public void registerRecursiveCall(leekscript.compiler.expression.LeekFunctionCall call) {
 		if (recursiveCalls == null) recursiveCalls = new ArrayList<>();
 		recursiveCalls.add(call);
+	}
+
+	// #43 : un `return` du corps s'enregistre ici pendant l'analyse, pour l'inférence du
+	// type de retour (cf. analyze).
+	public void registerReturn(leekscript.compiler.instruction.LeekReturnInstruction ret) {
+		if (bodyReturns == null) bodyReturns = new ArrayList<>();
+		bodyReturns.add(ret);
+	}
+
+	// Construit les CallableVersion (une par arité) depuis le type de retour courant.
+	// Appelé en preAnalyze, puis reconstruit après inférence du type de retour (#43).
+	private void buildVersions() {
+		var versionsList = new ArrayList<CallableVersion>();
+		for (int p = minParameters; p <= maxParameters; ++p) {
+			var versionTypes = new Type[p];
+			for (int t = 0; t < p; ++t) versionTypes[t] = mTypes.get(t);
+			versionsList.add(new CallableVersion(this.type.getReturnType(), versionTypes));
+		}
+		this.versions = versionsList.toArray(new CallableVersion[0]);
 	}
 
 	public void declare(WordCompiler compiler) {

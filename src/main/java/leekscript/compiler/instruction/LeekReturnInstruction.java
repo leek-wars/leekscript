@@ -67,6 +67,13 @@ public class LeekReturnInstruction extends LeekInstruction {
 			}
 		}
 
+		// #43 : enregistrer ce `return` pour l'inférence du type de retour de la fonction
+		// englobante (ignoré au niveau principal et dans les anonymes/méthodes : la fonction
+		// courante n'y est pas un FunctionBlock).
+		if (compiler.getCurrentFunction() instanceof leekscript.compiler.bloc.FunctionBlock fb) {
+			fb.registerReturn(this);
+		}
+
 		// Vérification du type de retour
 		var functionType = compiler.getCurrentFunction().getType();
 		if (functionType != null) {
@@ -103,6 +110,18 @@ public class LeekReturnInstruction extends LeekInstruction {
 				}));
 			}
 		}
+	}
+
+	// #43 : type de la valeur retournée (NULL pour un `return` nu), pour l'inférence du
+	// type de retour de la fonction englobante (FunctionBlock.analyze).
+	public Type getReturnedType() {
+		return expression == null ? Type.NULL : expression.getType();
+	}
+
+	// #43 : aligne le returnType (utilisé au codegen pour convertir la valeur retournée)
+	// sur le type inféré de la fonction, une fois l'inférence faite.
+	public void setInferredReturnType(Type type) {
+		this.returnType = type;
 	}
 
 	// @tailrec : marque récursivement comme terminaux les appels récursifs atteignables

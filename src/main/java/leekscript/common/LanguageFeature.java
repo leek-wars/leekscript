@@ -18,7 +18,10 @@ public enum LanguageFeature {
 	MODULES(5),
 
 	/** Type guard functions: {@code function f(any x) -> x is Type} narrows the argument. */
-	TYPE_GUARDS(5);
+	TYPE_GUARDS(5),
+
+	/** Inter-procedural inference of non-annotated function return types (#43). */
+	RETURN_TYPE_INFERENCE(5);
 
 	public final int since;
 
