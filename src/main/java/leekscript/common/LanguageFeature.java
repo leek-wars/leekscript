@@ -15,7 +15,10 @@ public enum LanguageFeature {
 	OO_STDLIB(5),
 
 	/** Modules: {@code import}/{@code export}, one file = one module, private-by-default. */
-	MODULES(5);
+	MODULES(5),
+
+	/** Type guard functions: {@code function f(any x) -> x is Type} narrows the argument. */
+	TYPE_GUARDS(5);
 
 	public final int since;
 

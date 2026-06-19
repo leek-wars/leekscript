@@ -969,11 +969,33 @@ public class WordCompiler {
 		if (mTokens.get().getType() == TokenType.ARROW) {
 			mTokens.skip();
 
-			var returnType = eatType(false, true);
-			if (returnType == null) {
-				addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+			// Type guard (#42, v5) : `-> param is Type` au lieu d'un type de retour. La
+			// fonction renvoie un booléen ; `param` est affiné vers `Type` dans la branche
+			// vraie quand l'appel sert de condition (narrowing, cf. NarrowingInfo).
+			if (leekscript.common.LanguageFeature.TYPE_GUARDS.enabledIn(getVersion())
+					&& mTokens.get().getType() == TokenType.STRING
+					&& mTokens.get(1).getWord().equals("is")) {
+				Token paramToken = mTokens.eat();
+				mTokens.skip(); // `is`
+				var guardType = eatType(false, true);
+				if (guardType == null) {
+					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+				} else {
+					int idx = block.getParameterIndex(paramToken.getWord());
+					if (idx < 0) {
+						addError(new AnalyzeError(paramToken, AnalyzeErrorLevel.ERROR, Error.TYPE_GUARD_PARAMETER_UNKNOWN, new String[] { paramToken.getWord() }));
+					} else {
+						block.setTypeGuard(idx, guardType.getType());
+					}
+				}
+				block.setReturnType(Type.BOOL);
 			} else {
-				block.setReturnType(returnType.getType());
+				var returnType = eatType(false, true);
+				if (returnType == null) {
+					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+				} else {
+					block.setReturnType(returnType.getType());
+				}
 			}
 		}
 

@@ -53,6 +53,11 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	// ensuite (doivent tous être en position terminale). Lazy : seules les
 	// fonctions @tailrec qui s'appellent elles-mêmes en collectent.
 	private ArrayList<leekscript.compiler.expression.LeekFunctionCall> recursiveCalls = null;
+	// Type guard (#42, v5) : `function f(any x) -> p is Type`. La fonction renvoie un
+	// booléen ; quand un appel sert de condition, l'argument à `typeGuardParam` est
+	// affiné vers `typeGuardType` dans la branche vraie. -1 / null = pas de guard.
+	private int typeGuardParam = -1;
+	private Type typeGuardType = null;
 
 	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -88,6 +93,24 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 
 	public int countParameters() {
 		return mParameters.size();
+	}
+
+	public int getParameterIndex(String name) {
+		return mParameters.indexOf(name);
+	}
+
+	// Type guard (#42) : enregistré au parse (`-> p is Type`), lu par NarrowingInfo.
+	public void setTypeGuard(int paramIndex, Type type) {
+		this.typeGuardParam = paramIndex;
+		this.typeGuardType = type;
+	}
+
+	public int getTypeGuardParam() {
+		return typeGuardParam;
+	}
+
+	public Type getTypeGuardType() {
+		return typeGuardType;
 	}
 
 	public int getMinParameters() {

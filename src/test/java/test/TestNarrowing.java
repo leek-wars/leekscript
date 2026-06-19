@@ -880,4 +880,21 @@ public class TestNarrowing extends TestCommon {
 		code_strict_v4_("Map<integer, integer?> a = [1: 2]; if (mapContainsKey(a, 1)) { a[1] = null } return a").equals("[1 : null]");
 		code_strict_v4_("Map<integer, integer> a = [1: 2]; if (mapContainsKey(a, 1)) { a[1] += 5; a[1]++ } return a").equals("[1 : 8]");
 	}
+	@Test
+	public void testCase_6_type_guard() throws Exception {
+		section("Case 6: type guard functions (#42)");
+
+		// Le guard affine l'argument dans la branche vraie ET la branche fausse : `v.m()`
+		// (méthode de B) dans le if et `v.length()` (méthode de string) après l'early
+		// return ne warnent pas en strict, alors qu'ils warneraient sur `B | string`.
+		code_strict_v5_("class B { public integer m() { return 9 } } function isB(any x) -> x is B { return x instanceof B } B | string v = \"hi\" if (isB(v)) { return v.m() } return v.length()").noWarning();
+		// Runtime : v vaut \"hi\" (pas un B), le guard est faux, on retourne la longueur.
+		code_v5("class B { public integer m() { return 9 } } function isB(any x) -> x is B { return x instanceof B } B | string v = \"hi\" if (isB(v)) { return v.m() } return v.length()").equals("2");
+		// Runtime : v est un B, le guard est vrai, on appelle m().
+		code_v5("class B { public integer m() { return 9 } } function isB(any x) -> x is B { return x instanceof B } B | string v = new B() if (isB(v)) { return v.m() } return 0").equals("9");
+
+		// Le paramètre référencé par le guard doit exister.
+		code_v5("function bad(any x) -> y is integer { return true } return 0").error(Error.TYPE_GUARD_PARAMETER_UNKNOWN);
+	}
+
 }
