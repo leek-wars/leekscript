@@ -61,6 +61,10 @@ public class LeekFunctionCall extends Expression {
 	// stdlib objet). Résolu et généré comme l'ancienne forme libre `sqrt(x)`, juste
 	// qualifié par le namespace ; réutilise tout le chemin system_function.
 	private boolean is_namespace_function = false;
+	// v5 (3c) : `Ns.func(args)` où Ns est un namespace de module (import * as Ns).
+	private leekscript.compiler.bloc.FunctionBlock namespaceUserFunction = null;
+	// v5 (3c) : `new Ns.Class(args)` — classe d'un namespace de module.
+	private leekscript.compiler.instruction.ClassDeclarationInstruction namespaceConstructorClass = null;
 	// Un cast `((Type) …)` de retour effacé générique a été ouvert sur le callee : il
 	// faut le refermer après la parenthèse finale de l'appel (précédence Java : sinon
 	// `(Type) x.m()` se lit `(Type)(x.m())` et casse un accès chaîné `x.m().n()`).
@@ -322,7 +326,19 @@ public class LeekFunctionCall extends Expression {
 		// Appel optionnel `obj?.m(...)` émis en `(obj instanceof Object $o ? callObjectAccess($o, ...)`, à refermer
 		boolean closeOptionalCall = false;
 
-		if (mExpression instanceof LeekObjectAccess) {
+		if (namespaceConstructorClass != null) {
+			// v5 (3c) : `new Ns.Class(args)` -> new_u_<internalName>(args).
+			writer.addCode("new_u_" + namespaceConstructorClass.getInternalName() + "(");
+			addComma = false;
+		} else if (namespaceUserFunction != null) {
+			// v5 (3c) : `Ns.func(args)` -> appel direct de la fonction du module aliasé.
+			if (namespaceUserFunction.getType().returnType().containsTypeVariable()
+					&& this.type != Type.ANY && this.type != Type.VOID) {
+				openGenericReturnCast(mainblock, writer);
+			}
+			writer.addCode("f_" + namespaceUserFunction.getInternalName() + "(");
+			addComma = false;
+		} else if (mExpression instanceof LeekObjectAccess) {
 			// Object access : object.field()
 			var object = ((LeekObjectAccess) mExpression).getObject();
 			var field = ((LeekObjectAccess) mExpression).getField();
@@ -956,6 +972,38 @@ public class LeekFunctionCall extends Expression {
 
 			var oa = (LeekObjectAccess) mExpression;
 			var o = oa.getObject();
+
+			// v5 (3c) : appel sur un namespace de module — `Ns.func(args)` ou `new Ns.Class(args)`.
+			if (o instanceof LeekVariable nsv && nsv.getVariableType() == VariableType.MODULE_NAMESPACE) {
+				var nsModule = nsv.getNamespaceModule();
+				if (nsModule.isExportedFunction(oa.getField())) {
+					var fb = compiler.getMainBlock().getUserFunction(oa.getField(), nsModule);
+					if (fb != null) {
+						this.namespaceUserFunction = fb;
+						this.resolvedFunction = fb;
+						if (mParameters.size() < fb.getMinParameters() || mParameters.size() > fb.getMaxParameters()) {
+							compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
+						}
+						verifyVersions(compiler, fb.getVersions());
+						return;
+					}
+				}
+				if (nsModule.isExportedClass(oa.getField())) {
+					var clazz = compiler.getMainBlock().getDefinedClass(oa.getField(), nsModule);
+					var constructor = clazz.getConstructor(mParameters.size());
+					operations += 1;
+					if (constructor == null) {
+						compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { clazz.getName() }));
+					} else if (constructor.block != null) {
+						this.constructorBlock = constructor.block;
+					}
+					this.namespaceConstructorClass = clazz;
+					this.type = clazz.getEmptyType();
+					return;
+				}
+				compiler.addError(new AnalyzeError(oa.getFieldToken(), AnalyzeErrorLevel.ERROR, Error.SYMBOL_NOT_EXPORTED, new String[] { oa.getField() }));
+				return;
+			}
 
 			// Méthode sur un type natif (v5, OO stdlib) : array.sort(), array.map(f)...
 			// Résolue comme `name(receiver, ...)`. Un type natif ne matche aucun des

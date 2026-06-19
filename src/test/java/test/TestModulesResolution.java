@@ -214,6 +214,49 @@ public class TestModulesResolution {
 	}
 
 	// =========================================================================
+	// Import namespace (import * as Ns)
+	// =========================================================================
+
+	@Test
+	public void namespaceFunctionCall() throws Exception {
+		write("geo.leek", "export function clamp(x, lo, hi) { return x < lo ? lo : (x > hi ? hi : x) }");
+		String main = writeMain("import * as Geo from \"geo\"\nreturn Geo.clamp(15, 0, 10)");
+		assertEquals("10", run(main));
+	}
+
+	@Test
+	public void namespaceVarAccess() throws Exception {
+		write("state.leek", "export var hp = 42");
+		String main = writeMain("import * as State from \"state\"\nreturn State.hp");
+		assertEquals("42", run(main));
+	}
+
+	@Test
+	public void namespaceGlobalUsedInFunction() throws Exception {
+		write("conf.leek", "export global LIMIT = 5");
+		String main = writeMain(
+			"import * as Conf from \"conf\"\n" +
+			"function ok(x) { return x < Conf.LIMIT }\n" +
+			"return ok(3) and !ok(9)");
+		assertEquals("true", run(main));
+	}
+
+	@Test
+	public void namespaceClassNew() throws Exception {
+		write("geo.leek", "export class Vec { public integer x\nconstructor(v) { this.x = v } }");
+		String main = writeMain("import * as Geo from \"geo\"\nvar v = new Geo.Vec(9)\nreturn v.x");
+		assertEquals("9", run(main));
+	}
+
+	@Test
+	public void namespaceNonExportedMemberFails() throws Exception {
+		write("geo.leek", "function secret() { return 1 }\nexport function shown() { return 2 }");
+		String main = writeMain("import * as Geo from \"geo\"\nreturn Geo.secret()");
+		var errors = compileAndCollectErrors(main);
+		assertTrue(errors.contains(Error.SYMBOL_NOT_EXPORTED), "membre namespace non exporté doit échouer, got: " + errors);
+	}
+
+	// =========================================================================
 	// Imports transitifs
 	// =========================================================================
 

@@ -39,6 +39,15 @@ public class LeekObjectAccess extends Expression {
 		this.calledAsMethod = calledAsMethod;
 	}
 
+	// v5 (3c) : `Ns.membre` quand `object` est un namespace de module (import * as Ns).
+	private leekscript.compiler.bloc.FunctionBlock namespaceFunction;
+	private LeekVariable namespaceGlobal;
+	private leekscript.compiler.instruction.ClassDeclarationInstruction namespaceClass;
+
+	public leekscript.compiler.bloc.FunctionBlock getNamespaceFunction() {
+		return namespaceFunction;
+	}
+
 	public LeekObjectAccess(Expression object, Token dot, Token field) {
 		this(object, dot, field, false);
 	}
@@ -134,6 +143,27 @@ public class LeekObjectAccess extends Expression {
 				&& leekscript.runner.LeekFunctions.namespaceFunction(nv.getName(), field.getWord()) != null) {
 			this.type = Type.FUNCTION;
 			this.isLeftValue = false;
+			return;
+		}
+
+		// v5 (3c) : membre d'un namespace de module, `Ns.clamp`, `Ns.hp`, `Ns.Vec`.
+		if (object instanceof LeekVariable nsv && nsv.getVariableType() == VariableType.MODULE_NAMESPACE) {
+			var nsModule = nsv.getNamespaceModule();
+			var fieldName = field.getWord();
+			var main = compiler.getMainBlock();
+			this.isLeftValue = false;
+			if (nsModule.isExportedFunction(fieldName)) {
+				this.namespaceFunction = main.getUserFunction(fieldName, nsModule);
+				this.type = Type.FUNCTION;
+			} else if (nsModule.isExportedVar(fieldName)) {
+				this.namespaceGlobal = main.getGlobal(fieldName, nsModule);
+				this.type = this.namespaceGlobal != null ? this.namespaceGlobal.getType() : Type.ANY;
+			} else if (nsModule.isExportedClass(fieldName)) {
+				this.namespaceClass = main.getDefinedClass(fieldName, nsModule);
+				this.type = this.namespaceClass != null ? this.namespaceClass.classValueType : Type.CLASS;
+			} else {
+				compiler.addError(new AnalyzeError(field, AnalyzeErrorLevel.ERROR, Error.SYMBOL_NOT_EXPORTED, new String[] { fieldName }));
+			}
 			return;
 		}
 
@@ -400,6 +430,20 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
+		// v5 (3c) : membre d'un namespace de module en position de valeur.
+		if (namespaceGlobal != null) {
+			writer.addCode(namespaceGlobal.globalName());
+			return;
+		}
+		if (namespaceClass != null) {
+			writer.addCode("u_" + namespaceClass.getInternalName());
+			return;
+		}
+		if (namespaceFunction != null) {
+			writer.generateAnonymousUserFunction(namespaceFunction);
+			writer.addCode("ufunction_" + namespaceFunction.getInternalName());
+			return;
+		}
 		if (optional && field != null && !field.getWord().equals("class")) {
 			// Accès optionnel `obj?.field` : null si l'objet est null, sinon getField
 			writer.addCode("getFieldNullSafe(");

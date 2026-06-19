@@ -767,6 +767,18 @@ public class WordCompiler {
 		if (!enabled) {
 			addError(new AnalyzeError(importToken, AnalyzeErrorLevel.ERROR, Error.KEYWORD_UNEXPECTED));
 		}
+		// import * as Ns  (import namespace) ; `as` est un soft keyword
+		Token namespaceAlias = null;
+		if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals("*")) {
+			mTokens.skip(); // *
+			if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals("as")) {
+				mTokens.skip(); // as
+				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.STRING) {
+					namespaceAlias = mTokens.get();
+					mTokens.skip();
+				}
+			}
+		}
 		// { a, b }
 		var names = new ArrayList<Token>();
 		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.ACCOLADE_LEFT) {
@@ -801,6 +813,10 @@ public class WordCompiler {
 			if (module == null) {
 				addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.AI_NOT_EXISTING, new String[] { path }));
 				return;
+			}
+			if (namespaceAlias != null) {
+				// import * as Ns : alias du module entier ; `Ns.membre` résout les exports.
+				mModule.addNamespaceImport(namespaceAlias.getWord(), module);
 			}
 			for (var nameToken : names) {
 				var name = nameToken.getWord();

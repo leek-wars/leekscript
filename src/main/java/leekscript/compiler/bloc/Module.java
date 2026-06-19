@@ -43,6 +43,8 @@ public class Module {
 	// Idem pour les classes (export class).
 	private final Set<String> exportedClasses = new HashSet<>();
 	private final Map<String, Module> importedClasses = new HashMap<>();
+	// Imports namespace `import * as Ns from "..."` : alias local -> module source.
+	private final Map<String, Module> namespaceImports = new HashMap<>();
 
 	public Module(AIFile file, int id, boolean main) {
 		this.file = file;
@@ -118,5 +120,14 @@ public class Module {
 	/** Module source si la classe {@code name} est importée dans ce module, sinon null. */
 	public Module getImportedClassSource(String name) {
 		return importedClasses.get(name);
+	}
+
+	public void addNamespaceImport(String alias, Module source) {
+		namespaceImports.put(alias, source);
+	}
+
+	/** Module aliasé par {@code alias} via `import * as alias`, sinon null. */
+	public Module getNamespaceImport(String alias) {
+		return namespaceImports.get(alias);
 	}
 }

@@ -30,7 +30,7 @@ import java.util.Set;
 public class LeekVariable extends Expression {
 
 	public static enum VariableType {
-		LOCAL, GLOBAL, ARGUMENT, FIELD, STATIC_FIELD, THIS, THIS_CLASS, CLASS, SUPER, METHOD, STATIC_METHOD, SYSTEM_CONSTANT, SYSTEM_FUNCTION, FUNCTION, ITERATOR
+		LOCAL, GLOBAL, ARGUMENT, FIELD, STATIC_FIELD, THIS, THIS_CLASS, CLASS, SUPER, METHOD, STATIC_METHOD, SYSTEM_CONSTANT, SYSTEM_FUNCTION, FUNCTION, ITERATOR, MODULE_NAMESPACE
 	}
 
 	private final Token token;
@@ -47,6 +47,8 @@ public class LeekVariable extends Expression {
 	// Préfixe module du champ pour le codegen GLOBAL (`g_<prefix><name>`). "" = module
 	// principal (byte-identique). Renseigné depuis la backing var en preAnalyze.
 	private String globalPrefix = "";
+	// Module aliasé quand cette variable est un namespace `import * as Ns`.
+	private leekscript.compiler.bloc.Module namespaceModule = null;
 	private Type declaredType = null;
 	private Type lastAssignedType = null;
 	// Suivi d'une variable pour NarrowingInfo (cases de map), posé au preAnalyze. Drapeaux dans un
@@ -296,6 +298,17 @@ public class LeekVariable extends Expression {
 			this.variableType = clazz.classValueType;
 			return;
 		}
+		// Namespace de module `import * as Ns` : Ns seul n'a pas de valeur, il sert
+		// uniquement de receveur à `Ns.membre` (résolu par LeekObjectAccess).
+		if (compiler.getModule() != null) {
+			var ns = compiler.getModule().getNamespaceImport(name);
+			if (ns != null) {
+				this.type = VariableType.MODULE_NAMESPACE;
+				this.namespaceModule = ns;
+				this.variableType = Type.ANY;
+				return;
+			}
+		}
 		// LS constants
 		var constant = LeekConstants.get(name);
 		if (constant != null) {
@@ -426,6 +439,10 @@ public class LeekVariable extends Expression {
 
 	public FunctionBlock getFunctionDeclaration() {
 		return functionDeclaration;
+	}
+
+	public leekscript.compiler.bloc.Module getNamespaceModule() {
+		return namespaceModule;
 	}
 
 	/** FunctionBlock à émettre pour une variable de type FUNCTION : le bloc résolu et
