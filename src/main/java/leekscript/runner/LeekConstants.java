@@ -43,6 +43,14 @@ public enum LeekConstants implements ILeekConstant {
 		for (LeekConstants c : values()) byName.put(c.name(), c);
 	}
 
+	/**
+	 * Constantes exposées par le namespace `Math` en v5 (accès de champ `Math.PI`...).
+	 * Source UNIQUE, consommée à la fois côté compile (MainLeekBlock, typage) et runtime
+	 * (AI, valeur) : éviter une double déclaration divergente. NaN exclu (non représentable
+	 * en littéral Java côté codegen).
+	 */
+	public static final LeekConstants[] MATH_NAMESPACE = { PI, E, Infinity };
+
 	private double value;
 	private Type type;
 

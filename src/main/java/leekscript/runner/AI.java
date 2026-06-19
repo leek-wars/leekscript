@@ -384,10 +384,11 @@ public abstract class AI {
 			integerClass.addStaticField(this, "MAX_VALUE", Type.INT, Long.MAX_VALUE, AccessLevel.PUBLIC, true);
 			realClass.addStaticField(this, "MIN_VALUE", Type.REAL, Double.MIN_VALUE, AccessLevel.PUBLIC, true);
 			realClass.addStaticField(this, "MAX_VALUE", Type.REAL, Double.MAX_VALUE, AccessLevel.PUBLIC, true);
-			// Constantes du namespace Math (v5) ; gardé côté compile par MainLeekBlock.
-			mathClass.addStaticField(this, "PI", Type.REAL, Math.PI, AccessLevel.PUBLIC, true);
-			mathClass.addStaticField(this, "E", Type.REAL, Math.E, AccessLevel.PUBLIC, true);
-			mathClass.addStaticField(this, "Infinity", Type.REAL, Double.POSITIVE_INFINITY, AccessLevel.PUBLIC, true);
+			// Constantes du namespace Math (v5) : même source LeekConstants.MATH_NAMESPACE
+			// que le côté compile (MainLeekBlock), pour ne pas diverger.
+			for (var c : LeekConstants.MATH_NAMESPACE) {
+				mathClass.addStaticField(this, c.name(), c.getType(), c.getValue(), AccessLevel.PUBLIC, true);
+			}
 		} catch (LeekRunException e) {
 			// No exception possible for LS2+
 		}
