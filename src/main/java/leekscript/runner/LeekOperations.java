@@ -4,7 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.IdentityHashMap;
 import java.util.Set;
 
-import leekscript.ErrorManager;
+import leekscript.AILog;
 import leekscript.runner.AI.NativeObjectLeekValue;
 import leekscript.runner.values.ArrayLeekValue;
 import leekscript.runner.values.Box;
@@ -83,8 +83,15 @@ public class LeekOperations {
 			Object object = null;
 			try {
 				object = o.getClass().getConstructor(ai.getClass(), o.getClass(), int.class).newInstance(ai, o, level);
-			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e1) {
-				ErrorManager.exception(e1);
+			} catch (InvocationTargetException e1) {
+				// Cause normale (limite d'opérations / RAM) : on la propage comme erreur joueur.
+				if (e1.getCause() instanceof LeekRunException lre) throw lre;
+				// Sinon : erreur dans le constructeur de copie de l'objet. On la route vers le log
+				// du combat (cause réelle déballée, visible par le joueur) plutôt que de la cracher
+				// sur stdout via le stub ErrorManager, qui spammait les logs du worker.
+				ai.addSystemLog(AILog.ERROR, e1);
+			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | NoSuchMethodException | SecurityException e1) {
+				ai.addSystemLog(AILog.ERROR, e1);
 			}
 			ai.allocateRAM(object, 2 * o.size());
 			return object;

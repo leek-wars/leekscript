@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.Set;
 
 import leekscript.AILog;
-import leekscript.ErrorManager;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.common.AccessLevel;
@@ -443,7 +442,10 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 				// Erreur normale (trop d'opés ou RAM)
 				throw (LeekRunException) e1.getCause();
 			}
-			ErrorManager.exception(e1);
+			// Erreur dans le constructeur de la classe utilisateur : on la route vers le log du
+			// combat (cause réelle déballée, visible par le joueur) plutôt que de la cracher sur
+			// stdout via le stub ErrorManager, qui spammait les logs du worker.
+			ai.addSystemLog(AILog.ERROR, e1);
 		}
 
 		// Recherche d'un constructeur à N arguments puis N - 1, N - 2 etc.

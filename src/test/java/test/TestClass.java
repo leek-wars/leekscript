@@ -151,4 +151,16 @@ public class TestClass extends TestCommon {
 		code_strict_v4_("class A { public integer x = 10 } var a = new A() return a?.x + 5").noWarning();
 	}
 
+	@Test
+	public void testClass_clone_error_routing() throws Exception {
+		section("Class clone() error routing (no stdout swallow)");
+		// Deep-clone d'une instance de classe imbriquée : copies indépendantes
+		code_v4_("class B { public integer x = 5 } class A { public B b = new B() } var a = new A() var c = clone(a, 3) c.b.x = 9 return [a.b.x, c.b.x]").equals("[5, 9]");
+		// Un clone qui dépasse la limite RAM dans le constructeur de copie doit remonter
+		// proprement OUT_OF_MEMORY (avant : avalé + craché sur stdout par le stub ErrorManager,
+		// qui spammait les logs du worker).
+		long low_ram = 10_000;
+		code_v4("class A { public data = [] public fill() { for (var i = 0; i < 8000; ++i) push(data, i) } } var a = new A() a.fill() return clone(a, 2)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
+	}
+
 }
