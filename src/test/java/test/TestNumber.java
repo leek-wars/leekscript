@@ -1431,7 +1431,7 @@ public class TestNumber extends TestCommon {
 		code_v1_4("var a = rand() return a > 1").equals("false");
 		code_v1_4("var a = randInt(2067, 2070) return a >= 2067 and a < 2070").equals("true");
 		code_v1_3("var a = randFloat(500, 510) return a >= 500 and a < 510").equals("true");
-		code_v4_("var a = randReal(500, 510) return a >= 500 and a < 510").equals("true");
+		code_v4("var a = randReal(500, 510) return a >= 500 and a < 510").equals("true"); // randReal = forme libre math (retiré en v5)
 	}
 
 	@Test

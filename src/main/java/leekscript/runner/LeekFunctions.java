@@ -404,17 +404,8 @@ public class LeekFunctions {
 		// forme libre en v5. `arrayMap(a, f)` / `push(a, x)` / `length(s)` -> erreur dure
 		// (REMOVED_FUNCTION) pointant vers la forme méthode `a.map(f)` / `a.push(x)` /
 		// `s.length()`. La forme méthode passe par resolveBuiltinMethod (ne vérifie pas
-		// maxVersion), donc capper la forme libre à v4 ne la casse pas. Number/Value/JSON/
-		// System/Color gardent leur forme libre (math + utilitaires, certains sans receveur).
-		// v5 : les fonctions mathématiques (standardClass Number) n'ont plus de forme libre.
-		// Liste EXPLICITE : "Number" regroupe aussi des utilitaires bit/entier (binString,
-		// bitLength, hexString, bitReverse, isNaN, leadingZeros...) qui ne sont PAS des maths
-		// et gardent leur forme libre.
-		final var REMOVED_MATH = java.util.Set.of(
-			"abs", "acos", "asin", "atan", "atan2", "cbrt", "ceil", "cos", "exp", "floor",
-			"hypot", "log", "log10", "log2", "max", "min", "pow", "rand", "randInt",
-			"randFloat", "round", "signum", "sin", "sqrt", "tan", "toDegrees", "toRadians"
-		);
+		// maxVersion), donc capper la forme libre à v4 ne la casse pas. Value/JSON/System/
+		// Color gardent leur forme libre.
 		for (var f : functions.values()) {
 			if (("Array".equals(f.standardClass) || "Map".equals(f.standardClass)
 					|| "Set".equals(f.standardClass) || "String".equals(f.standardClass))
@@ -423,9 +414,13 @@ public class LeekFunctions {
 				if (f.replacement == null) {
 					f.replacement = (f.methodName != null ? f.methodName : f.name) + "()";
 				}
-			} else if (REMOVED_MATH.contains(f.name) && f.maxVersion >= 5) {
-				// Erreur dure pointant vers le namespace `Math.sqrt(x)`. La forme namespace
-				// reste valide (gardée par !is_namespace_function) et résout Math.f -> Number.f.
+			} else if ("Number".equals(f.standardClass) && f.minVersion < 4 && f.maxVersion >= 5) {
+				// Fonctions MATH -> erreur dure pointant vers `Math.sqrt(x)`. La distinction
+				// math vs utilitaire est portée par minVersion À LA DÉCLARATION (pas une liste
+				// de noms séparée à maintenir) : les fonctions math sont les historiques (v1-3),
+				// les utilitaires bit/entier de Number (binString, bitLength, isNaN, bitReverse,
+				// leadingZeros...) ont été ajoutés en v4 (minVersion>=4) et restent libres.
+				// La forme namespace `Math.f` reste valide (gardée par !is_namespace_function).
 				f.maxVersion = 4;
 				if (f.replacement == null) {
 					f.replacement = "Math." + f.name;
