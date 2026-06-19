@@ -18,7 +18,7 @@ public class TestEuler extends TestCommon {
 		// DISABLED_file("ai/euler/pe004.leek").equals("906609");
 		file("ai/euler/pe005.leek").equals("232792560");
 		file("ai/euler/pe006.leek").equals("25164150");
-		file_v1_4("ai/euler/pe007.leek").equals("104743"); // sqrt() en forme libre (retiré en v5)
+		file("ai/euler/pe007.leek").maxVersion(4).equals("104743"); // sqrt() en forme libre (retiré en v5)
 		file_v4("ai/euler/pe008.leek").equals("23514624000");
 		file("ai/euler/pe009.leek").equals("31875000");
 		// DISABLED_file("ai/euler/pe010.leek").equals("142913828922");

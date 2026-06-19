@@ -389,6 +389,21 @@ public class TestCommon {
 			this.debug = true;
 			return this;
 		}
+
+		/**
+		 * Cape la plage de versions à l'exécution, p. ex. `code("sqrt(x)").maxVersion(4)`
+		 * pour un test qui n'a plus de sens en v5 (forme libre retirée). Évite de devoir
+		 * échanger le helper (`code` -> `code_v1_4`) ou d'inventer un `code_vX_Y` par plage.
+		 */
+		public Case maxVersion(int version) {
+			this.version_max = version;
+			return this;
+		}
+
+		public Case minVersion(int version) {
+			this.version_min = version;
+			return this;
+		}
 	}
 
 	public static class Result {

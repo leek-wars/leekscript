@@ -51,7 +51,7 @@ public class TestFiles extends TestCommon {
 		file("ai/code/recursive_2_vars.leek").equals("1021");
 		file("ai/code/global_functions_1.leek").equals("false");
 		file("ai/code/global_functions_2.leek").equals("[false, true]");
-		file_v1_4("ai/code/recursive_2_functions.leek").equals("10"); // floor() en forme libre (retiré en v5)
+		file("ai/code/recursive_2_functions.leek").maxVersion(4).equals("10"); // floor() en forme libre (retiré en v5)
 		// DISABLED_file("test/code/recursive_2_versions.leek").equals("9.5");
 		// DISABLED_file("test/code/swap.leek").equals("[{p: 1}, {p: 3}, {p: 4}, {p: 12}, {p: 5}]");
 		file_v2_("ai/code/classes_simple.leek").equals("[\"Ferrari\", \"Maserati\", \"Lamborghini\"]");
