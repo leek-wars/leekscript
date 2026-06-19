@@ -12,7 +12,10 @@ public enum LanguageFeature {
 	GENERICS(5),
 
 	/** Object-oriented standard library: methods on built-in values, {@code array.map(f)}. */
-	OO_STDLIB(5);
+	OO_STDLIB(5),
+
+	/** Modules: {@code import}/{@code export}, one file = one module, private-by-default. */
+	MODULES(5);
 
 	public final int since;
 

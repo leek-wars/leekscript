@@ -387,6 +387,15 @@ public class WordCompiler {
 					}
 					// Pareil pour le body de classe : skipper jusqu'à la } matchante.
 					skipToMatchingBraceFirstPass();
+				} else if (tt == TokenType.EXPORT) {
+					// v5 modules (3a) : `export` préfixe une déclaration top-level. On le
+					// consomme ; la déclaration suivante est collectée par l'itération suivante.
+					if (!LanguageFeature.MODULES.enabledIn(getVersion())) {
+						addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.KEYWORD_UNEXPECTED));
+					}
+					mTokens.skip();
+				} else if (tt == TokenType.IMPORT) {
+					importStatement();
 				} else {
 					mTokens.skip();
 				}
@@ -598,6 +607,20 @@ public class WordCompiler {
 			case SWITCH:
 				switchBlock();
 				return;
+			case EXPORT:
+				// v5 modules (3a) : consomme `export`, puis parse la déclaration suivante
+				// (function/class/global) normalement.
+				if (!LanguageFeature.MODULES.enabledIn(version)) {
+					addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.KEYWORD_UNEXPECTED));
+					mTokens.skip();
+					return;
+				}
+				mTokens.skip();
+				compileWord();
+				return;
+			case IMPORT:
+				importStatement();
+				return;
 			case INCLUDE: {
 				var token = mTokens.eat();
 				includeBlock(token);
@@ -678,6 +701,34 @@ public class WordCompiler {
 
 	public void writeJava(String className, JavaWriter writer, String AIClass, Options options) {
 		mMain.writeJavaCode(writer, className, AIClass, options);
+	}
+
+	/**
+	 * Parse une instruction `import { a, b } from "file"` (v5 modules, phase 3a).
+	 * 3a = SYNTAXE SEULE : on consomme les tokens et on valide le gate de version ; la
+	 * résolution du module et la liaison des noms importés arrivent en 3b. `from` est un
+	 * soft keyword (identifiant, pas dans KEYWORDS).
+	 */
+	private void importStatement() throws LeekCompilerException {
+		var importToken = mTokens.eat(); // `import`
+		if (!LanguageFeature.MODULES.enabledIn(getVersion())) {
+			addError(new AnalyzeError(importToken, AnalyzeErrorLevel.ERROR, Error.KEYWORD_UNEXPECTED));
+		}
+		// { a, b }
+		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.ACCOLADE_LEFT) {
+			mTokens.skip();
+			while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+				mTokens.skip(); // nom importé
+				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VIRG) mTokens.skip();
+			}
+			if (mTokens.hasMoreTokens()) mTokens.skip(); // }
+		}
+		// from "file"
+		if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals("from")) {
+			mTokens.skip();
+			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VAR_STRING) mTokens.skip();
+		}
+		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) mTokens.skip();
 	}
 
 	private void includeBlock(Token token) throws LeekCompilerException {
