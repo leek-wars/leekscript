@@ -140,6 +140,10 @@ public class ForeachBlock extends AbstractLeekBlock {
 		String it = "i" + block_count;
 		String ar = "ar" + block_count;
 		String iterator_name = mainblock.hasGlobal(mIterator.getWord()) ? ("g_" + mIterator) : "u_" + mIterator;
+		// Filet defensif : depuis #4268 iteratorVariable ne devrait plus etre null ici
+		// (preAnalyze emet une erreur d'analyse propre), mais on degrade en cast Object
+		// plutot que de crasher le worker a la generation de code si un autre chemin le laissait null.
+		String iterJavaType = iteratorVariable != null ? iteratorVariable.getType().getJavaName(mainblock.getVersion()) : "Object";
 
 		// Container
 		writer.addCode("final var " + ar + " = ops(");
@@ -153,7 +157,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		writer.addCode("if (isIterable(" + ar + ")) { ");
 		if (mIsDeclaration) {
 			if (declaration.isCaptured()) {
-				writer.addCode("final Wrapper<" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + "> " + iterator_name + " = new Wrapper<" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ">(new Box(" + writer.getAIThis() + ", null));");
+				writer.addCode("final Wrapper<" + iterJavaType + "> " + iterator_name + " = new Wrapper<" + iterJavaType + ">(new Box(" + writer.getAIThis() + ", null));");
 			} else if (mainblock.getVersion() >= 2) {
 				writer.addCode(declaration.getVariable().getType().getJavaName(mainblock.getVersion()) + " " + iterator_name + " = null;");
 				writer.addCounter(1);
@@ -174,15 +178,15 @@ public class ForeachBlock extends AbstractLeekBlock {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isBox()) {
 				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
 			} else if (mIsDeclaration) {
-				writer.addCode(iterator_name + " = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
+				writer.addCode(iterator_name + " = (" + iterJavaType + ") " + var + ".getValue();");
 			} else {
-				writer.addCode(iterator_name + " = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
+				writer.addCode(iterator_name + " = (" + iterJavaType + ") " + var + ".getValue();");
 			}
 		} else if (mainblock.getVersion() >= 2) {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isBox()) {
 				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
 			} else {
-				writer.addCode(iterator_name + " = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") " + var + ".getValue();");
+				writer.addCode(iterator_name + " = (" + iterJavaType + ") " + var + ".getValue();");
 			}
 		} else {
 			if (mReference) {
