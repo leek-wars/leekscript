@@ -37,6 +37,17 @@ public class TestClass extends TestCommon {
 	}
 
 	@Test
+	public void testStaticMethodReference_higherOrder() throws Exception {
+		section("Static method reference passed to higher-order function (#11714)");
+		// arrayMap appelle le callback avec (élément, index, tableau) : comme une fonction
+		// classique ou un built-in (cos, atan2), une référence de méthode statique doit
+		// ignorer les arguments en trop et retomber sur la surcharge de plus grande arité.
+		code_v2_("class A { public static addOne(n) { return n + 1 } } return arrayMap([1, 2, 3], A.addOne)").equals("[2, 3, 4]");
+		// Appel direct avec l'arité exacte inchangé
+		code_v2_("class A { public static addOne(n) { return n + 1 } } return A.addOne(5)").equals("6");
+	}
+
+	@Test
 	public void testMethod_call_with_nullable_argument() throws Exception {
 		section("Method call with nullable argument");
 		// Calling a method without this. prefix with a nullable parameter

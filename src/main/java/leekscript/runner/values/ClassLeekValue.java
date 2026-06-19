@@ -172,12 +172,21 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 	public void addGenericStaticMethod(String method) {
 		genericStaticMethods.put(method, new FunctionLeekValue(0) {
 			public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
-				final var methodCode = "u_" + method + "_" + arguments.length;
-				final var m = staticMethods.get(methodCode);
+				var m = staticMethods.get("u_" + method + "_" + arguments.length);
 				if (m != null) {
 					return m.value.run(ai, null, arguments);
 				}
-				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(methodCode) });
+				// Référence de méthode passée à une fonction d'ordre supérieur (arrayMap, etc.) :
+				// celle-ci appelle le callback avec des arguments supplémentaires (élément, index,
+				// tableau). Comme une fonction classique ignore les arguments en trop, on retombe
+				// sur la surcharge de plus grande arité <= au nombre d'arguments fournis (#11714).
+				for (int n = arguments.length - 1; n >= 0; --n) {
+					m = staticMethods.get("u_" + method + "_" + n);
+					if (m != null) {
+						return m.value.run(ai, null, Arrays.copyOfRange(arguments, 0, n));
+					}
+				}
+				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError("u_" + method + "_" + arguments.length) });
 				return null;
 			}
 		});
