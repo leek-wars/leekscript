@@ -776,7 +776,7 @@ public class JavaWriter {
 
 	public void writeAnonymousUserFunctions(MainLeekBlock block) {
 		for (var function : anonymousUserFunctions) {
-			addCode("private FunctionLeekValue ufunction_" + function.getName() + " = ");
+			addCode("private FunctionLeekValue ufunction_" + function.getInternalName() + " = ");
 			function.compileAnonymousFunction(block, this);
 			addLine(";");
 			addLine();

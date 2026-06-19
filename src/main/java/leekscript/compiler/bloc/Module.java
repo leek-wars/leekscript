@@ -1,0 +1,78 @@
+package leekscript.compiler.bloc;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import leekscript.compiler.AIFile;
+
+/**
+ * Un module v5 = un fichier source. Contrairement à {@code include()} qui fusionne
+ * tout à plat dans le {@link MainLeekBlock}, un module a ses symboles privés par
+ * défaut : seuls les symboles marqués {@code export} sont visibles via
+ * {@code import { ... } from "..."}.
+ *
+ * <p>Le module principal (l'entrypoint et tout ce qu'il {@code include()}) a
+ * {@link #isMain} = true et un préfixe de codegen vide : les noms émis restent
+ * identiques au bit près à v1–v4. Les modules importés reçoivent un préfixe
+ * collision-proof {@code $m<id>$} (le {@code $} n'est pas un caractère
+ * d'identifiant LeekScript, donc aucun nom utilisateur ne peut entrer en
+ * collision avec un nom qualifié).
+ *
+ * <p>Pilier 3 (modules), phase 3b. Slice 1 : fonctions uniquement. Les classes,
+ * les globales et {@code import * as Ns} viennent ensuite.
+ */
+public class Module {
+
+	private final AIFile file;
+	private final int id;
+	private final boolean main;
+
+	// Noms de fonctions exportées par ce module (sous-ensemble de ses fonctions).
+	private final Set<String> exportedFunctions = new HashSet<>();
+	// Imports de fonctions : nom local -> module source (le nom importé est, pour
+	// l'instant, identique au nom exporté ; l'aliasing `as` viendra plus tard).
+	private final Map<String, Module> importedFunctions = new HashMap<>();
+
+	public Module(AIFile file, int id, boolean main) {
+		this.file = file;
+		this.id = id;
+		this.main = main;
+	}
+
+	public AIFile getFile() {
+		return file;
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public boolean isMain() {
+		return main;
+	}
+
+	/** Préfixe de codegen, intégré dans les noms Java (`f_`, `ufunction_`, ...).
+	 * Vide pour le module principal → v1–v4 byte-identique. */
+	public String prefix() {
+		return main ? "" : "$m" + id + "$";
+	}
+
+	public void addExportedFunction(String name) {
+		exportedFunctions.add(name);
+	}
+
+	public boolean isExportedFunction(String name) {
+		return exportedFunctions.contains(name);
+	}
+
+	public void addImportedFunction(String localName, Module source) {
+		importedFunctions.put(localName, source);
+	}
+
+	/** Module source si {@code name} est importé dans ce module, sinon null. */
+	public Module getImportedFunctionSource(String name) {
+		return importedFunctions.get(name);
+	}
+}

@@ -207,8 +207,17 @@ public class LeekVariable extends Expression {
 		// Cache locale du nom : token.getWord() était appelé jusqu'à 5× dans la
 		// cascade de lookups, et getMainBlock() 2×.
 		final String name = token.getWord();
-		// Local variables first
+		// Local variables first.
 		var v = compiler.getCurrentBlock().getVariable(name, true);
+		// Dans un module importé, une variable de type FUNCTION trouvée dans le bloc
+		// partagé est une fonction du module PRINCIPAL qui « fuit » via la chaîne de
+		// blocs (toutes les FunctionBlock sont parentées au bloc principal). On
+		// l'ignore : la résolution doit passer par le module (fonctions propres +
+		// imports). Les vraies locales/params (LOCAL/ARGUMENT) ne sont pas concernées.
+		if (v != null && v.getVariableType() == VariableType.FUNCTION
+				&& compiler.getModule() != null && !compiler.getModule().isMain()) {
+			v = null;
+		}
 		if (v != null) {
 			this.type = v.getVariableType();
 			this.variableType = v.getType();
@@ -231,11 +240,14 @@ public class LeekVariable extends Expression {
 			return;
 		}
 		final var mainBlock = compiler.getMainBlock();
-		// Global user functions
-		var f = mainBlock.getUserFunction(name);
+		// Global user functions — résolution module-aware (imports + fonctions du
+		// module courant ; privacy pour les modules importés). Cache le bloc résolu
+		// pour que le codegen émette le bon nom interne (préfixé par module).
+		var f = mainBlock.getUserFunction(name, compiler.getModule());
 		if (f != null) {
 			this.type = VariableType.FUNCTION;
 			this.variableType = f.getType();
+			this.functionDeclaration = f;
 			f.getVariable().addUsage();
 			if (f.hasAnnotation(Annotation.DEPRECATED)) {
 				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_DEPRECATED_CALL, new String[] { f.getName() }));
@@ -577,9 +589,9 @@ public class LeekVariable extends Expression {
 		} else if (mainblock.isRedefinedFunction(token.getWord())) {
 			writer.addCode("rfunction_" + token.getWord() + ".get()");
 		} else if (type == VariableType.FUNCTION) {
-			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
+			FunctionBlock user_function = functionDeclaration != null ? functionDeclaration : mainblock.getUserFunction(token.getWord());
 			writer.generateAnonymousUserFunction(user_function);
-			writer.addCode("ufunction_" + token.getWord());
+			writer.addCode("ufunction_" + user_function.getInternalName());
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
 			var constant = LeekConstants.get(token.getWord());
 			if (constant.getType() == Type.INT) writer.addCode(String.valueOf(constant.getIntValue()) + "l");
@@ -597,7 +609,7 @@ public class LeekVariable extends Expression {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
 			if (user_function != null) {
 				writer.generateAnonymousUserFunction(user_function);
-				writer.addCode("ufunction_" + token.getWord());
+				writer.addCode("ufunction_" + user_function.getInternalName());
 			} else {
 				var system_function = LeekFunctions.getValue(token.getWord(), writer.getOptions().useExtra());
 				writer.generateAnonymousSystemFunction(system_function);
@@ -721,7 +733,7 @@ public class LeekVariable extends Expression {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
 			if (user_function != null) {
 				writer.generateAnonymousUserFunction(user_function);
-				writer.addCode("ufunction_" + token.getWord());
+				writer.addCode("ufunction_" + user_function.getInternalName());
 			} else {
 				var system_function = LeekFunctions.getValue(token.getWord(), writer.getOptions().useExtra());
 				writer.generateAnonymousSystemFunction(system_function);
@@ -743,9 +755,9 @@ public class LeekVariable extends Expression {
 			}
 			else writer.addCode("null");
 		} else if (type == VariableType.FUNCTION) {
-			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
+			FunctionBlock user_function = functionDeclaration != null ? functionDeclaration : mainblock.getUserFunction(token.getWord());
 			writer.generateAnonymousUserFunction(user_function);
-			writer.addCode("ufunction_" + token.getWord());
+			writer.addCode("ufunction_" + user_function.getInternalName());
 		} else if (type == VariableType.CLASS) {
 			if (classDeclaration.internal) {
 				writer.addCode(token.getWord().toLowerCase() + "Class");

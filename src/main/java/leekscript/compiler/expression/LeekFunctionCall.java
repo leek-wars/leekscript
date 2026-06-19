@@ -507,7 +507,10 @@ public class LeekFunctionCall extends Expression {
 			skipFirstArg = state[1];
 
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.FUNCTION) {
-			user_function = mainblock.getUserFunction(((LeekVariable) mExpression).getName());
+			// Bloc résolu en preAnalyze (module-aware) ; fallback main-context.
+			user_function = ((LeekVariable) mExpression).getFunctionDeclaration() != null
+					? ((LeekVariable) mExpression).getFunctionDeclaration()
+					: mainblock.getUserFunction(((LeekVariable) mExpression).getName());
 			// Fonction générique : la méthode Java est effacée (retour `Object`). On
 			// caste vers le type de retour concret inféré pour que le code appelant
 			// reste bien typé (l'affectation déballe le wrapper si primitif).
@@ -516,7 +519,7 @@ public class LeekFunctionCall extends Expression {
 				openGenericReturnCast(mainblock, writer);
 			}
 			writer.addCode("f_");
-			writer.addCode(((LeekVariable) mExpression).getName());
+			writer.addCode(user_function != null ? user_function.getInternalName() : ((LeekVariable) mExpression).getName());
 			writer.addCode("(");
 			addComma = false;
 			typedArguments = true;
@@ -873,7 +876,7 @@ public class LeekFunctionCall extends Expression {
 
 			} else if (v.getVariableType() == VariableType.FUNCTION) {
 
-				var f = compiler.getMainBlock().getUserFunction(v.getName());
+				var f = v.getFunctionDeclaration() != null ? v.getFunctionDeclaration() : compiler.getMainBlock().getUserFunction(v.getName());
 				if (f != null) {
 					resolvedFunction = f;
 					if (mParameters.size() < f.getMinParameters() || mParameters.size() > f.getMaxParameters()) {

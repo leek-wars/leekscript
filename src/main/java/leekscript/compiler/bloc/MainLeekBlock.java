@@ -67,6 +67,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	// intermittent sur une IA pourtant valide.
 	private final Map<String, AIFile> mIncluded = new LinkedHashMap<>();
 	private final Set<String> mIncludedFirstPass = new HashSet<String>();
+	// Modules v5 (import/export). mMainModule = l'entrypoint + ses include() (préfixe
+	// vide → byte-identique v1-4). mModules = les fichiers importés (un Module chacun,
+	// préfixe collision-proof). Dédoublonnage d'import par includeKey (comme les
+	// includes) : le cache du FileSystem peut recréer l'AIFile d'un même fichier.
+	private final Module mMainModule;
+	private final Map<String, Module> mModules = new HashMap<>();
+	private final Set<String> mImportedFirstPass = new HashSet<String>();
+	private final Set<String> mImported = new HashSet<String>();
+	private int mModuleId = 1;
 	private int mCounter = 0;
 	private int mCountInstruction = 0;
 	private final IACompiler mCompiler;
@@ -84,6 +93,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mAIName = ai.getPath();
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
+		mMainModule = new Module(ai, 0, true);
+		mModules.put(includeKey(ai), mMainModule);
 
 		if (ai.getVersion() >= 2) {
 			var classClass = new ClassDeclarationInstruction(new Token("Class"), 0, ai, true, this, Type.CLASS).notInstantiable();
@@ -260,14 +271,106 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 	}
 
+	/**
+	 * Compile (firstPass) un module importé et retourne son {@link Module}. Miroir
+	 * de {@link #includeAIFirstPass}, mais le module garde ses symboles privés :
+	 * le child WordCompiler reçoit son propre Module (préfixe collision-proof), au
+	 * lieu de fusionner à plat dans le module principal. Retourne null si le fichier
+	 * est introuvable. v5 modules, phase 3b.
+	 */
+	public Module importModuleFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {
+		try {
+			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
+			var module = getOrCreateModule(ai);
+			if (mImportedFirstPass.contains(includeKey(ai))) {
+				return module;
+			}
+			if (mImportedFirstPass.size() > 500) {
+				throw new LeekCompilerException(compiler.getTokenStream().get(), Error.UNKNOWN_ERROR);
+			}
+			ai.clearErrors();
+			mImportedFirstPass.add(includeKey(ai));
+			var previousAI = mCompiler.getCurrentAI();
+			mCompiler.setCurrentAI(ai);
+			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion(), compiler.getOptions());
+			newCompiler.setMainBlock(this);
+			newCompiler.setModule(module);
+			try {
+				newCompiler.firstPass();
+			} catch (LeekCompilerException e) {
+				recordIncludeError(ai, e);
+			}
+			compiler.getAI().getErrors().addAll(ai.getErrors());
+			mCompiler.setCurrentAI(previousAI);
+			return module;
+		} catch (FileNotFoundException e) {
+			return null;
+		}
+	}
+
+	/** secondPass d'un module importé. Miroir de {@link #includeAI}. */
+	public Module importModule(WordCompiler compiler, String path) throws LeekCompilerException {
+		try {
+			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
+			var module = getOrCreateModule(ai);
+			if (mImported.contains(includeKey(ai))) {
+				return module;
+			}
+			if (mImported.size() > 500) {
+				throw new LeekCompilerException(compiler.getTokenStream().get(), Error.UNKNOWN_ERROR);
+			}
+			mImported.add(includeKey(ai));
+			var previousAI = mCompiler.getCurrentAI();
+			mCompiler.setCurrentAI(ai);
+			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion(), compiler.getOptions());
+			newCompiler.setMainBlock(this);
+			newCompiler.setModule(module);
+			try {
+				newCompiler.secondPass();
+			} catch (LeekCompilerException e) {
+				recordIncludeError(ai, e);
+			}
+			compiler.getAI().getErrors().addAll(ai.getErrors());
+			mCompiler.setCurrentAI(previousAI);
+			return module;
+		} catch (FileNotFoundException e) {
+			return null;
+		}
+	}
+
 	public boolean hasUserFunction(String name, boolean use_declarations) {
-		if (mFunctions.containsKey(name)) {
+		return hasUserFunction(name, use_declarations, mMainModule);
+	}
+
+	public boolean hasUserFunction(String name, boolean use_declarations, Module module) {
+		String key = (module == null) ? name : module.prefix() + name;
+		if (mFunctions.containsKey(key)) {
 			return true;
 		}
-		if (use_declarations && mUserFunctions.containsKey(name)) {
+		if (use_declarations && mUserFunctions.containsKey(key)) {
+			return true;
+		}
+		if (module != null && module.getImportedFunctionSource(name) != null) {
 			return true;
 		}
 		return false;
+	}
+
+	public Module getMainModule() {
+		return mMainModule;
+	}
+
+	public Module getModule(AIFile file) {
+		return mModules.get(includeKey(file));
+	}
+
+	/** Crée (ou retourne) le Module associé à un fichier importé. */
+	public Module getOrCreateModule(AIFile file) {
+		var existing = mModules.get(includeKey(file));
+		if (existing != null) return existing;
+		var module = new Module(file, mModuleId++, false);
+		mModules.put(includeKey(file), module);
+		return module;
 	}
 
 	public void addFunctionDeclaration(String name, int count_param) {
@@ -285,6 +388,19 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public FunctionBlock getUserFunction(String name) {
+		return mFunctions.get(name);
+	}
+
+	/** Résolution module-aware : imports d'abord, puis fonctions propres du module
+	 * (clé préfixée). Un module non-principal n'a PAS de fallback vers le namespace
+	 * global plat (c'est ce qui rend ses voisins privés). */
+	public FunctionBlock getUserFunction(String name, Module module) {
+		if (module != null) {
+			var src = module.getImportedFunctionSource(name);
+			if (src != null) return mFunctions.get(src.prefix() + name);
+			var own = mFunctions.get(module.prefix() + name);
+			if (own != null || !module.isMain()) return own;
+		}
 		return mFunctions.get(name);
 	}
 
@@ -306,7 +422,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public void addFunction(FunctionBlock block) {
 		block.setId(mFunctionId);
 		mFunctionId++;
-		mFunctions.put(block.getName(), block);
+		mFunctions.put(block.getInternalName(), block);
 	}
 
 	@Override

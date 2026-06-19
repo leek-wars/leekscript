@@ -30,6 +30,9 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 
 	private Token token;
 	private int mId;
+	// Module v5 propriétaire (préfixe le nom de codegen). null = module principal
+	// (préfixe vide → byte-identique v1-4).
+	private Module module;
 	private final ArrayList<String> mParameters = new ArrayList<String>();
 	private final ArrayList<LeekType> mParametersTypes = new ArrayList<LeekType>();
 	private final ArrayList<LeekVariableDeclarationInstruction> mParameterDeclarations = new ArrayList<>();
@@ -62,6 +65,21 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 
 	public String getName() {
 		return token.getWord();
+	}
+
+	public void setModule(Module module) {
+		this.module = module;
+	}
+
+	public Module getModule() {
+		return module;
+	}
+
+	/** Nom utilisé dans le code Java généré (`f_`, `ufunction_`). Préfixé par le
+	 * module pour éviter les collisions entre modules ; vide pour le module
+	 * principal → v1-4 byte-identique. */
+	public String getInternalName() {
+		return (module == null ? "" : module.prefix()) + token.getWord();
 	}
 
 	public int countParameters() {
@@ -227,7 +245,12 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		this.versions = versionsList.toArray(new CallableVersion[0]);
 
 		var initialFunction = compiler.getCurrentFunction();
+		// Le corps d'une fonction se résout dans le module qui la déclare (imports +
+		// fonctions privées du module), pas dans celui de l'appelant. La phase analyze
+		// traverse tout via le compilateur principal, d'où ce save/restore du module.
+		var initialModule = compiler.getModule();
 		compiler.setCurrentFunction(this);
+		if (module != null) compiler.setModule(module);
 		for (var value : defaultValues) {
 			if (value != null) {
 				value.preAnalyze(compiler);
@@ -235,12 +258,15 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		}
 		super.preAnalyze(compiler);
 		compiler.setCurrentFunction(initialFunction);
+		compiler.setModule(initialModule);
 	}
 
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		var initialFunction = compiler.getCurrentFunction();
+		var initialModule = compiler.getModule();
 		compiler.setCurrentFunction(this);
+		if (module != null) compiler.setModule(module);
 		for (int i = 0; i < defaultValues.size(); ++i) {
 			var value = defaultValues.get(i);
 			if (value != null) {
@@ -250,6 +276,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		}
 		super.analyze(compiler);
 		compiler.setCurrentFunction(initialFunction);
+		compiler.setModule(initialModule);
 	}
 
 	@Override
@@ -267,7 +294,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	private void writeJavaCodeForArity(MainLeekBlock mainblock, JavaWriter writer, int paramCount) {
 		final boolean v1 = mainblock.getVersion() <= 1;
 		StringBuilder sb = new StringBuilder();
-		sb.append("private " + this.type.returnType().getJavaPrimitiveName(mainblock.getVersion()) + " f_").append(token.getWord()).append("(");
+		sb.append("private " + this.type.returnType().getJavaPrimitiveName(mainblock.getVersion()) + " f_").append(getInternalName()).append("(");
 		for (int i = 0; i < paramCount; i++) {
 			if (i != 0)
 				sb.append(", ");
@@ -372,7 +399,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		// Une fonction déclarée a un nom : on le transmet à la valeur fonction pour que
 		// `string(f)` affiche `#Function f` et non `#Anonymous Function` (#5042).
 		writer.addCode("new FunctionLeekValue(" + this.countParameters() + ", \"#Function " + this.getName() + "\") { public Object run(AI ai, Object thiz, Object... values) throws LeekRunException {");
-		writer.addCode("return f_" + this + "(");
+		writer.addCode("return f_" + getInternalName() + "(");
 		for (int a = 0; a < this.countParameters(); ++a) {
 			if (a > 0) writer.addCode(", ");
 			writer.addCode("values.length > " + a + " ? " + (type != Type.ANY ? "(" + type.getArgument(a).getJavaName(mainblock.getVersion()) + ")" : "") + " values[" + a + "] : ");
@@ -404,7 +431,14 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		if (annotations != null) {
 			for (var a : annotations) variable.addAnnotation(a);
 		}
-		compiler.getCurrentBlock().addVariable(variable);
+		// Les fonctions du module principal (entrypoint + include) sont déclarées comme
+		// variables du bloc partagé : c'est le chemin de résolution historique (et la
+		// forme « fonction-valeur »). Les fonctions d'un module IMPORTÉ ne le sont pas :
+		// elles ne se résolvent que via getUserFunction(name, module) module-aware, pour
+		// ne pas polluer le namespace principal ni casser la privacy.
+		if (module == null || module.isMain()) {
+			compiler.getCurrentBlock().addVariable(variable);
+		}
 	}
 
 	public LeekVariable getVariable() {

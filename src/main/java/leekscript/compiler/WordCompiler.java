@@ -65,6 +65,11 @@ public class WordCompiler {
 	private static final List<Token> NO_ANNOTATIONS = List.of();
 
 	private MainLeekBlock mMain;
+	// Module v5 en cours de compilation (par défaut le module principal). Les
+	// fichiers importés reçoivent leur propre Module via setModule().
+	private leekscript.compiler.bloc.Module mModule;
+	// `export` rencontré : la prochaine déclaration top-level sera exportée.
+	private boolean mPendingExport = false;
 	private AbstractLeekBlock mCurentBlock;
 	private AbstractLeekBlock mCurrentFunction;
 	private ClassDeclarationInstruction mCurrentClass;
@@ -253,6 +258,7 @@ public class WordCompiler {
 					if (mTokens.eat().getType() != TokenType.PAR_RIGHT) throw new LeekCompilerException(mTokens.get(), Error.CLOSING_PARENTHESIS_EXPECTED);
 
 				} else if (tt == TokenType.GLOBAL) {
+					mPendingExport = false; // export de globale pas encore géré (3b = fonctions)
 					mTokens.skip();
 					eatType(true, false);
 					// Type-classe défini plus loin : eatType ne l'a pas résolu (pas
@@ -360,7 +366,11 @@ public class WordCompiler {
 						addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS));
 					}
 
-					mMain.addFunctionDeclaration(funcName.getWord(), param_count);
+					mMain.addFunctionDeclaration(mModule.prefix() + funcName.getWord(), param_count);
+					if (mPendingExport) {
+						mModule.addExportedFunction(funcName.getWord());
+						mPendingExport = false;
+					}
 
 					// firstPass ne cherche que les declarations top-level. Le body
 					// de la fonction n'en contient pas (les anonymous functions et
@@ -371,6 +381,7 @@ public class WordCompiler {
 
 				} else if (tt == TokenType.CLASS) {
 
+					mPendingExport = false; // export de classe pas encore géré (3b = fonctions)
 					mTokens.skip();
 					if (mTokens.hasMoreTokens()) {
 						var className = mTokens.eat();
@@ -388,14 +399,16 @@ public class WordCompiler {
 					// Pareil pour le body de classe : skipper jusqu'à la } matchante.
 					skipToMatchingBraceFirstPass();
 				} else if (tt == TokenType.EXPORT) {
-					// v5 modules (3a) : `export` préfixe une déclaration top-level. On le
-					// consomme ; la déclaration suivante est collectée par l'itération suivante.
+					// v5 modules : `export` préfixe une déclaration top-level. On le
+					// consomme et on mémorise que la prochaine déclaration est exportée
+					// (consommé par la branche FUNCTION ; 3b = fonctions seulement).
 					if (!LanguageFeature.MODULES.enabledIn(getVersion())) {
 						addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.KEYWORD_UNEXPECTED));
 					}
+					mPendingExport = true;
 					mTokens.skip();
 				} else if (tt == TokenType.IMPORT) {
-					importStatement();
+					importStatement(true);
 				} else {
 					mTokens.skip();
 				}
@@ -608,8 +621,9 @@ public class WordCompiler {
 				switchBlock();
 				return;
 			case EXPORT:
-				// v5 modules (3a) : consomme `export`, puis parse la déclaration suivante
-				// (function/class/global) normalement.
+				// v5 modules : consomme `export`, puis parse la déclaration suivante
+				// (function/class/global) normalement. La visibilité exportée a été
+				// enregistrée au firstPass.
 				if (!LanguageFeature.MODULES.enabledIn(version)) {
 					addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.KEYWORD_UNEXPECTED));
 					mTokens.skip();
@@ -619,7 +633,7 @@ public class WordCompiler {
 				compileWord();
 				return;
 			case IMPORT:
-				importStatement();
+				importStatement(false);
 				return;
 			case INCLUDE: {
 				var token = mTokens.eat();
@@ -704,31 +718,67 @@ public class WordCompiler {
 	}
 
 	/**
-	 * Parse une instruction `import { a, b } from "file"` (v5 modules, phase 3a).
-	 * 3a = SYNTAXE SEULE : on consomme les tokens et on valide le gate de version ; la
-	 * résolution du module et la liaison des noms importés arrivent en 3b. `from` est un
-	 * soft keyword (identifiant, pas dans KEYWORDS).
+	 * Parse et traite `import { a, b } from "file"` (v5 modules, phase 3b). `from` est
+	 * un soft keyword (identifiant, pas dans KEYWORDS).
+	 *
+	 * <p>Au firstPass : compile le module cible (firstPass) puis lie chaque nom importé
+	 * dans le module courant — erreur si le fichier est introuvable ou si le nom n'est
+	 * pas exporté. Au secondPass : déclenche le secondPass du module cible (génération
+	 * du code). Le binding lui-même n'est fait qu'une fois, au firstPass.
 	 */
-	private void importStatement() throws LeekCompilerException {
+	private void importStatement(boolean firstPass) throws LeekCompilerException {
 		var importToken = mTokens.eat(); // `import`
-		if (!LanguageFeature.MODULES.enabledIn(getVersion())) {
+		boolean enabled = LanguageFeature.MODULES.enabledIn(getVersion());
+		if (!enabled) {
 			addError(new AnalyzeError(importToken, AnalyzeErrorLevel.ERROR, Error.KEYWORD_UNEXPECTED));
 		}
 		// { a, b }
+		var names = new ArrayList<Token>();
 		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.ACCOLADE_LEFT) {
 			mTokens.skip();
 			while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+				if (mTokens.get().getType() == TokenType.STRING) names.add(mTokens.get());
 				mTokens.skip(); // nom importé
 				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VIRG) mTokens.skip();
 			}
 			if (mTokens.hasMoreTokens()) mTokens.skip(); // }
 		}
 		// from "file"
+		Token pathToken = null;
+		String path = null;
 		if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals("from")) {
 			mTokens.skip();
-			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VAR_STRING) mTokens.skip();
+			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VAR_STRING) {
+				pathToken = mTokens.get();
+				path = pathToken.getWord();
+				path = path.substring(1, path.length() - 1); // retire les guillemets
+				mTokens.skip();
+			}
 		}
 		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) mTokens.skip();
+
+		// MODULES désactivé (v<5) : tokens consommés, gate déjà signalé, on ne résout pas.
+		if (!enabled) return;
+		if (path == null) return; // import malformé : tokens consommés, on n'analyse pas plus
+
+		if (firstPass) {
+			var module = mMain.importModuleFirstPass(this, path);
+			if (module == null) {
+				addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.AI_NOT_EXISTING, new String[] { path }));
+				return;
+			}
+			for (var nameToken : names) {
+				var name = nameToken.getWord();
+				if (!module.isExportedFunction(name)) {
+					// Non exporté (ou pas une fonction : 3b ne gère que les fonctions).
+					addError(new AnalyzeError(nameToken, AnalyzeErrorLevel.ERROR, Error.SYMBOL_NOT_EXPORTED, new String[] { name }));
+					continue;
+				}
+				mModule.addImportedFunction(name, module);
+			}
+		} else {
+			mMain.importModule(this, path); // secondPass du module cible (codegen)
+		}
 	}
 
 	private void includeBlock(Token token) throws LeekCompilerException {
@@ -784,6 +834,7 @@ public class WordCompiler {
 
 		var previousFunction = mCurrentFunction;
 		FunctionBlock block = new FunctionBlock(mCurentBlock, mMain, funcName);
+		block.setModule(mModule); // module v5 (préfixe le nom de codegen)
 		applyAnnotations(block, annotations);
 		// Les paramètres de type doivent être visibles avant de lire les types des
 		// paramètres et le type de retour (ils résolvent `T` en TypeVariable).
@@ -2805,7 +2856,7 @@ public class WordCompiler {
 		// if(LeekFunctions.isFunction(word) >= 0 || mMain.hasGlobal(word) ||
 		// mMain.hasUserFunction(word, allFunctions) ||
 		// mCurentBlock.hasVariable(word)) return false;
-		if (mMain.hasGlobal(word.getWord()) || mMain.hasUserFunction(word.getWord(), allFunctions) || mCurentBlock.hasVariable(word.getWord())) return false;
+		if (mMain.hasGlobal(word.getWord()) || mMain.hasUserFunction(word.getWord(), allFunctions, mModule) || mCurentBlock.hasVariable(word.getWord())) return false;
 		return true;
 	}
 
@@ -2816,7 +2867,7 @@ public class WordCompiler {
 		if (getVersion() >= 3 && isKeyword(word)) return false;
 		// if(LeekFunctions.isFunction(word) >= 0 || mMain.hasUserFunction(word,
 		// false) || mCurentBlock.hasVariable(word)) return false;
-		if (mMain.hasUserFunction(word.getWord(), false) || mCurentBlock.hasVariable(word.getWord())) return false;
+		if (mMain.hasUserFunction(word.getWord(), false, mModule) || mCurentBlock.hasVariable(word.getWord())) return false;
 		return true;
 	}
 
@@ -2876,6 +2927,17 @@ public class WordCompiler {
 		this.mMain = main;
 		mCurentBlock = main;
 		mCurrentFunction = main;
+		// Par défaut, on compile dans le module principal (entrypoint + include()).
+		// importModule*() écrasera ça via setModule() pour les fichiers importés.
+		this.mModule = main.getMainModule();
+	}
+
+	public leekscript.compiler.bloc.Module getModule() {
+		return mModule;
+	}
+
+	public void setModule(leekscript.compiler.bloc.Module module) {
+		this.mModule = module;
 	}
 
 	public boolean isInConstructor() {
