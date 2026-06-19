@@ -272,8 +272,6 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	@Override
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 
-		var types = new Type[mTypes.size()];
-		for (int t = 0; t < types.length; ++t) types[t] = mTypes.get(t);
 		// Créer une version pour chaque arité possible
 		buildVersions();
 

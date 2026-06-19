@@ -130,6 +130,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 	// (`return c ? f(a) : f(b)`). Les opérateurs binaires/unaires (`f(n) + 1`, `x && f(n)`)
 	// et la condition d'un ternaire ne propagent PAS la position terminale.
 	private void markTailCalls(Expression expr, WordCompiler compiler) {
+		if (expr == null) return; // branche de ternaire incomplète (entrée malformée)
 		var e = expr.trim();
 		if (e instanceof LeekFunctionCall fc) {
 			if (fc.getResolvedFunction() != null && fc.getResolvedFunction() == compiler.getCurrentFunction()) {
