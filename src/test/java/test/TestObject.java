@@ -702,18 +702,18 @@ public class TestObject extends TestCommon {
 		code_v4("class Map { public static obstacles = toUpper('hello') } return Map.obstacles").error(Error.VARIABLE_NAME_UNAVAILABLE);
 
 		section("Method is a system method");
-		code_v2_("class A { sqrt() { return sqrt(25) } }").equals("null");
+		code_v2_4("class A { sqrt() { return sqrt(25) } }").equals("null");
 		code_v2("return sqrt(25, 12)").error(Error.NONE);
-		code_v3_("return sqrt(25, 12)").error(Error.INVALID_PARAMETER_COUNT);
+		code_v3_4("return sqrt(25, 12)").error(Error.INVALID_PARAMETER_COUNT);
 		code_v2_("class A {} return new A().sqrt()").equals("null");
-		code_v2_("class A { sqrt() { return sqrt(25) } } return new A().sqrt()").equals("5.0");
-		code_v2_("class A { sqrt() { return sqrt(10, 15) } sqrt(x, y) { return sqrt(x + y) } } return new A().sqrt()").equals("5.0");
+		code_v2_4("class A { sqrt() { return sqrt(25) } } return new A().sqrt()").equals("5.0");
+		code_v2_4("class A { sqrt() { return sqrt(10, 15) } sqrt(x, y) { return sqrt(x + y) } } return new A().sqrt()").equals("5.0");
 
 		section("Static method is a system method");
-		code_v2_("class A { static sqrt() { return sqrt(25) } }").equals("null");
+		code_v2_4("class A { static sqrt() { return sqrt(25) } }").equals("null");
 		code_v2_("class A {} return new A().sqrt()").equals("null");
-		code_v2_("class A { static sqrt() { return sqrt(25) } } return A.sqrt()").equals("5.0");
-		code_v2_("class A { static sqrt() { return sqrt(10, 15) } static sqrt(x, y) { return sqrt(x + y) } } return A.sqrt()").equals("5.0");
+		code_v2_4("class A { static sqrt() { return sqrt(25) } } return A.sqrt()").equals("5.0");
+		code_v2_4("class A { static sqrt() { return sqrt(10, 15) } static sqrt(x, y) { return sqrt(x + y) } } return A.sqrt()").equals("5.0");
 
 		section("Method as value");
 		code_v2_("class A { x = 12 m() { return x } } var o = new A() var r = [A.m] return r[0](o)").equals("12");

@@ -257,9 +257,9 @@ public class TestArray extends TestCommon {
 	public void testTyped_array_numeric_coercion() throws Exception {
 		section("Typed array numeric coercion");
 		// issue #2872: storing an int into Array<real> must coerce to real
-		code_v4_("Array<real> a = [0.0] a[0] = round(1.5) return a[0]").equals("2.0");
+		code_v4("Array<real> a = [0.0] a[0] = round(1.5) return a[0]").equals("2.0");
 		code_v4_("Array<real> a = [0.0] a[0] = 5 return a[0]").equals("5.0");
-		code_v4_("Array<real> a = [0.0, 0.0] a[0] = round(1.5) a[1] = round(2.5) return a").equals("[2.0, 3.0]");
+		code_v4("Array<real> a = [0.0, 0.0] a[0] = round(1.5) a[1] = round(2.5) return a").equals("[2.0, 3.0]");
 		// Un entier rangé tel quel dans un Array<real> (littéral, push) se lit en real
 		// (ClassCastException Long -> Double auparavant)
 		code_v4_("Array<real> tab = [1] real value = tab[0] return value").equals("1.0");

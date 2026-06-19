@@ -108,27 +108,27 @@ public class TestRegressionOperatorsMath extends TestCommon {
 	@Test
 	public void testMathFunctionsTyped() throws Exception {
 		section("Fonctions Math (arguments typés)");
-		code_v4_("return abs(-5)").equals("5");
-		code_v4_("return abs(-5.5)").equals("5.5");
-		code_v4_("return min(3, 7)").equals("3");
-		code_v4_("return max(3, 7)").equals("7");
-		code_v4_("return min(3.5, 2.0)").equals("2.0");
-		code_v4_("return max(3.5, 2.0)").equals("3.5");
-		code_v4_("return pow(2, 3)").equals("8.0");
-		code_v4_("return floor(3.7)").equals("3");
-		code_v4_("return ceil(3.2)").equals("4");
-		code_v4_("return round(3.5)").equals("4");
-		code_v4_("return signum(-3)").equals("-1");
+		code_v4("return abs(-5)").equals("5");
+		code_v4("return abs(-5.5)").equals("5.5");
+		code_v4("return min(3, 7)").equals("3");
+		code_v4("return max(3, 7)").equals("7");
+		code_v4("return min(3.5, 2.0)").equals("2.0");
+		code_v4("return max(3.5, 2.0)").equals("3.5");
+		code_v4("return pow(2, 3)").equals("8.0");
+		code_v4("return floor(3.7)").equals("3");
+		code_v4("return ceil(3.2)").equals("4");
+		code_v4("return round(3.5)").equals("4");
+		code_v4("return signum(-3)").equals("-1");
 		code_v4_("return binString(5)").equals("\"101\"");
 		code_v4_("return hexString(255)").equals("\"ff\"");
-		code("return sqrt(16.0)").almost(4.0);
-		code("return cbrt(27.0)").almost(3.0);
-		code("return cos(0.0)").almost(1.0);
-		code("return sin(0.0)").almost(0.0);
-		code("return exp(0.0)").almost(1.0);
-		code("return log(1.0)").almost(0.0);
-		code("return hypot(3.0, 4.0)").almost(5.0);
-		code("return atan2(0.0, 1.0)").almost(0.0);
+		code_v1_4("return sqrt(16.0)").almost(4.0);
+		code_v1_4("return cbrt(27.0)").almost(3.0);
+		code_v1_4("return cos(0.0)").almost(1.0);
+		code_v1_4("return sin(0.0)").almost(0.0);
+		code_v1_4("return exp(0.0)").almost(1.0);
+		code_v1_4("return log(1.0)").almost(0.0);
+		code_v1_4("return hypot(3.0, 4.0)").almost(5.0);
+		code_v1_4("return atan2(0.0, 1.0)").almost(0.0);
 	}
 
 	@Test
@@ -137,20 +137,20 @@ public class TestRegressionOperatorsMath extends TestCommon {
 		// Les fonctions dont big_integer a ajouté une version (abs/min/max/pow/
 		// binString/hexString) : vérifier que le dispatcher choisit toujours la
 		// bonne version integer/real pour des valeurs integer/real.
-		code_v4_("var a = " + I(-5) + " return abs(a)").equals("5");
-		code_v4_("var a = " + R("-5.5") + " return abs(a)").equals("5.5");
-		code_v4_("var a = " + I(3) + " var b = " + I(7) + " return min(a, b)").equals("3");
-		code_v4_("var a = " + I(3) + " var b = " + I(7) + " return max(a, b)").equals("7");
-		code_v4_("var a = " + I(3) + " var b = " + R("7.5") + " return max(a, b)").equals("7.5");
-		code_v4_("var a = " + R("2.5") + " var b = " + I(1) + " return min(a, b)").equals("1.0");
-		code_v4_("var a = " + I(2) + " var b = " + I(10) + " return pow(a, b)").equals("1024.0");
+		code_v4("var a = " + I(-5) + " return abs(a)").equals("5");
+		code_v4("var a = " + R("-5.5") + " return abs(a)").equals("5.5");
+		code_v4("var a = " + I(3) + " var b = " + I(7) + " return min(a, b)").equals("3");
+		code_v4("var a = " + I(3) + " var b = " + I(7) + " return max(a, b)").equals("7");
+		code_v4("var a = " + I(3) + " var b = " + R("7.5") + " return max(a, b)").equals("7.5");
+		code_v4("var a = " + R("2.5") + " var b = " + I(1) + " return min(a, b)").equals("1.0");
+		code_v4("var a = " + I(2) + " var b = " + I(10) + " return pow(a, b)").equals("1024.0");
 		code_v4_("var a = " + I(255) + " return hexString(a)").equals("\"ff\"");
 		code_v4_("var a = " + I(5) + " return binString(a)").equals("\"101\"");
 		// Autres fonctions multi-versions (non touchées mais passant par le même
 		// dispatcher généralisé) : régression possible si le dispatcher était cassé.
-		code_v4_("var a = " + R("3.7") + " return floor(a)").equals("3");
-		code_v4_("var a = " + R("3.2") + " return ceil(a)").equals("4");
-		code_v4_("var a = " + R("3.5") + " return round(a)").equals("4");
+		code_v4("var a = " + R("3.7") + " return floor(a)").equals("3");
+		code_v4("var a = " + R("3.2") + " return ceil(a)").equals("4");
+		code_v4("var a = " + R("3.5") + " return round(a)").equals("4");
 		code_v4("var s = [\"abc\", 1][0] return substring(s, 1)").equals("\"bc\"");
 		code_v4("var s = [\"hello\", 1][0] return indexOf(s, \"l\")").equals("2");
 		code_v4("var x = [[3, 1, 2], 0][0] return arrayMax(x)").equals("3");

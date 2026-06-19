@@ -1011,39 +1011,39 @@ public class TestNumber extends TestCommon {
 		*/
 		section("Number.abs()");
 		// code("return abs;").equals("<function>");
-		code("return abs(-12);").equals("12");
+		code_v1_4("return abs(-12);").equals("12");
 		code_v1("return abs(-19.5);").equals("19,5");
-		code_v2_("return abs(-19.5);").equals("19.5");
-		code("return abs(12);").equals("12");
+		code_v2_4("return abs(-19.5);").equals("19.5");
+		code_v1_4("return abs(12);").equals("12");
 		// code("return abs(-16436435l)").equals("16436435");
 		code_v1("return abs(-12.67);").equals("12,67");
-		code_v2_("return abs(-12.67);").equals("12.67");
-		code("return abs(['a', -15][1]);").equals("15");
+		code_v2_4("return abs(-12.67);").equals("12.67");
+		code_v1_4("return abs(['a', -15][1]);").equals("15");
 		// code("return (-17).abs()").equals("17");
 		// code("return (-19.5).abs()").equals("19.5");
 		// code("return 12.abs").equals("<function>");
 		// code("abs([1, 'salut'][1])").exception(ls::vm::Exception::WRONG_ARGUMENT_TYPE);
 		code_v1("return abs(null)").equals("0");
-		code_v2_("return abs(null)").equals("0.0");
-		code_strict("return abs(null)").error(Error.WRONG_ARGUMENT_TYPE);
-		code("var ax = randInt(-17, 17) var ay = randInt(-17 + abs(ax), 17 - abs(ax))").debug().equals("null");
+		code_v2_4("return abs(null)").equals("0.0");
+		code_strict_v1_4("return abs(null)").error(Error.WRONG_ARGUMENT_TYPE);
+		code_v1_4("var ax = randInt(-17, 17) var ay = randInt(-17 + abs(ax), 17 - abs(ax))").debug().equals("null");
 	}
 
 	@Test
 	public void testExp() throws Exception {
 		section("Number.exp()");
 		code_v1("return exp(0)").equals("1");
-		code_v2_("return exp(0)").equals("1.0");
+		code_v2_4("return exp(0)").equals("1.0");
 		code_v1("return exp(1)").equals("2,718");
-		code_v2_("return exp(1)").almost(Math.E);
+		code_v2_4("return exp(1)").almost(Math.E);
 		code_v1("return exp(4)").equals("54,598");
-		code_v2_("return exp(4)").almost(54.598150033144236204);
+		code_v2_4("return exp(4)").almost(54.598150033144236204);
 		code_v1("return exp(4.89)").equals("132,954");
-		code_v2_("return exp(4.89)").almost(132.953574051282743085);
+		code_v2_4("return exp(4.89)").almost(132.953574051282743085);
 		code_v1("return exp(-2.97)").equals("0,051");
-		code_v2_("return exp(-2.97)").almost(0.051303310331919108);
+		code_v2_4("return exp(-2.97)").almost(0.051303310331919108);
 		code_v1("return exp(['a', 7.78][1])").equals("2 392,275");
-		code_v2_("return exp(['a', 7.78][1])").almost(2392.274820537377763685);
+		code_v2_4("return exp(['a', 7.78][1])").almost(2392.274820537377763685);
 		// code("return 0.exp();").equals("1");
 		// code("return 1.exp();").almost(Math.E);
 		// code("return 7.exp();").almost(1096.633158428458500566);
@@ -1056,65 +1056,65 @@ public class TestNumber extends TestCommon {
 	@Test
 	public void testFloor() throws Exception {
 		section("Number.floor()");
-		code("return floor(5.9);").equals("5");
-		code("var a = 5 return floor(a);").equals("5");
-		code("var a = 5.4 return floor(a);").equals("5");
-		code("return floor(['a', -14.7][1]);").equals("-15");
-		code("return floor(5.5);").equals("5");
-		code("return floor(1.897)").equals("1");
-		code("return floor(3.01)").equals("3");
+		code_v1_4("return floor(5.9);").equals("5");
+		code_v1_4("var a = 5 return floor(a);").equals("5");
+		code_v1_4("var a = 5.4 return floor(a);").equals("5");
+		code_v1_4("return floor(['a', -14.7][1]);").equals("-15");
+		code_v1_4("return floor(5.5);").equals("5");
+		code_v1_4("return floor(1.897)").equals("1");
+		code_v1_4("return floor(3.01)").equals("3");
 	}
 
 	@Test
 	public void testRound() throws Exception {
 		section("Number.round()");
-		code("return round(5.7)").equals("6");
-		code("return round(5.4)").equals("5");
-		code("return round(['a', -15.89][1])").equals("-16");
-		code("return round(12)").equals("12");
-		code("return round(-1000)").equals("-1000");
-		code("return round(1.897)").equals("2");
-		code("return round(3.01)").equals("3");
+		code_v1_4("return round(5.7)").equals("6");
+		code_v1_4("return round(5.4)").equals("5");
+		code_v1_4("return round(['a', -15.89][1])").equals("-16");
+		code_v1_4("return round(12)").equals("12");
+		code_v1_4("return round(-1000)").equals("-1000");
+		code_v1_4("return round(1.897)").equals("2");
+		code_v1_4("return round(3.01)").equals("3");
 	}
 
 	@Test
 	public void testCeil() throws Exception {
 		section("Number.ceil()");
-		code("return ceil(5.1)").equals("6");
-		code("return ceil(188)").equals("188");
-		code("return ceil(1.897)").equals("2");
-		code("return ceil(3.01)").equals("4");
+		code_v1_4("return ceil(5.1)").equals("6");
+		code_v1_4("return ceil(188)").equals("188");
+		code_v1_4("return ceil(1.897)").equals("2");
+		code_v1_4("return ceil(3.01)").equals("4");
 	}
 
 	@Test
 	public void testMax() throws Exception {
 		section("Number.max()");
-		code("return max(8, 5)").equals("8");
-		code("return max(8, 88)").equals("88");
-		code("return max(5, 12);").equals("12");
+		code_v1_4("return max(8, 5)").equals("8");
+		code_v1_4("return max(8, 88)").equals("88");
+		code_v1_4("return max(5, 12);").equals("12");
 		code_v1("return max(5.0, 12);").equals("12");
-		code_v2_("return max(5.0, 12);").equals("12.0");
+		code_v2_4("return max(5.0, 12);").equals("12.0");
 		code_v1("return max(75.7, 12);").equals("75,7");
-		code_v2_("return max(75.7, 12);").almost(75.7);
+		code_v2_4("return max(75.7, 12);").almost(75.7);
 		code_v1("return max(5, 12.451);").equals("12,451");
-		code_v2_("return max(5, 12.451);").almost(12.451);
-		code("return max([5, 'a'][0], 4);").equals("5");
-		code("return max([5, 'a'][0], 76);").equals("76");
-		code("return max(4, [5, 'a'][0]);").equals("5");
-		code("return max(77, [5, 'a'][0]);").equals("77");
-		code("return max([55, 'a'][0], [5, 'a'][0]);").equals("55");
+		code_v2_4("return max(5, 12.451);").almost(12.451);
+		code_v1_4("return max([5, 'a'][0], 4);").equals("5");
+		code_v1_4("return max([5, 'a'][0], 76);").equals("76");
+		code_v1_4("return max(4, [5, 'a'][0]);").equals("5");
+		code_v1_4("return max(77, [5, 'a'][0]);").equals("77");
+		code_v1_4("return max([55, 'a'][0], [5, 'a'][0]);").equals("55");
 		code_v1("return max(5, 12.8);").equals("12,8");
-		code_v2_("return max(5, 12.8);").equals("12.8");
+		code_v2_4("return max(5, 12.8);").equals("12.8");
 		code_v1("return max(15.7, 12.8);").equals("15,7");
-		code_v2_("return max(15.7, 12.8);").equals("15.7");
+		code_v2_4("return max(15.7, 12.8);").equals("15.7");
 		code_v1("return max([15.7, ''][0], 12.8);").equals("15,7");
-		code_v2_("return max([15.7, ''][0], 12.8);").equals("15.7");
+		code_v2_4("return max([15.7, ''][0], 12.8);").equals("15.7");
 		code_v1("return max(5.5, [12.8, ''][0]);").equals("12,8");
-		code_v2_("return max(5.5, [12.8, ''][0]);").equals("12.8");
+		code_v2_4("return max(5.5, [12.8, ''][0]);").equals("12.8");
 		code_v1("var a = 0.8 return max(0, a)").equals("0,8");
-		code_v2_("var a = 0.8 return max(0, a)").equals("0.8");
+		code_v2_4("var a = 0.8 return max(0, a)").equals("0.8");
 		code_v1("real value = 5 value *= max(1, 1.1) return value").equals("5,5");
-		code_v2_("real value = 5 value *= max(1, 1.1) return value").equals("5.5");
+		code_v2_4("real value = 5 value *= max(1, 1.1) return value").equals("5.5");
 		// code("return 2.max([7.5, ''][0]);").equals("7.5");
 		// code("return [2, ''][0].max([7.5, ''][0]);").equals("7.5");
 		// code("2.max([7.5, ''][1])").exception(ls::vm::Exception::WRONG_ARGUMENT_TYPE);
@@ -1127,28 +1127,28 @@ public class TestNumber extends TestCommon {
 	@Test
 	public void testMin() throws Exception {
 		section("Number.min()");
-		code("return min(8, 5)").equals("5");
-		code("return min(8, 88)").equals("8");
-		code("return min(5, 12)").equals("5");
+		code_v1_4("return min(8, 5)").equals("5");
+		code_v1_4("return min(8, 88)").equals("8");
+		code_v1_4("return min(5, 12)").equals("5");
 		code_v1("return min(75.7, 12)").equals("12");
-		code_v2_("return min(75.7, 12)").almost(12.0);
+		code_v2_4("return min(75.7, 12)").almost(12.0);
 		code_v1("return min(5, 12.451)").equals("5");
-		code_v2_("return min(5, 12.451)").almost(5.0);
-		code("return min([5, 'a'][0], 4)").equals("4");
-		code("return min([5, 'a'][0], 76)").equals("5");
-		code("return min(4, [5, 'a'][0])").equals("4");
-		code("return min(77, [5, 'a'][0])").equals("5");
-		code("return min([55, 'a'][0], [5, 'a'][0])").equals("5");
+		code_v2_4("return min(5, 12.451)").almost(5.0);
+		code_v1_4("return min([5, 'a'][0], 4)").equals("4");
+		code_v1_4("return min([5, 'a'][0], 76)").equals("5");
+		code_v1_4("return min(4, [5, 'a'][0])").equals("4");
+		code_v1_4("return min(77, [5, 'a'][0])").equals("5");
+		code_v1_4("return min([55, 'a'][0], [5, 'a'][0])").equals("5");
 		code_v1("return min(5, 12.8)").equals("5");
-		code_v2_("return min(5, 12.8)").equals("5.0");
+		code_v2_4("return min(5, 12.8)").equals("5.0");
 		code_v1("return min(15.7, 12.8)").equals("12,8");
-		code_v2_("return min(15.7, 12.8)").equals("12.8");
+		code_v2_4("return min(15.7, 12.8)").equals("12.8");
 		code_v1("return min([15.7, ''][0], 12.8)").equals("12,8");
-		code_v2_("return min([15.7, ''][0], 12.8)").equals("12.8");
+		code_v2_4("return min([15.7, ''][0], 12.8)").equals("12.8");
 		code_v1("return min(5.5, [12.8, ''][0])").equals("5,5");
-		code_v2_("return min(5.5, [12.8, ''][0])").equals("5.5");
+		code_v2_4("return min(5.5, [12.8, ''][0])").equals("5.5");
 		code_v1("return -min(15.7, 12)").equals("-12");
-		code_v2_("return -min(15.7, 12)").equals("-12.0");
+		code_v2_4("return -min(15.7, 12)").equals("-12.0");
 		// code("return min(5l, 10.5);").equals("5");
 		// code("return min(5l, 10);").equals("5");
 		// code("return min(true, 10l);").equals("1");
@@ -1159,128 +1159,128 @@ public class TestNumber extends TestCommon {
 	public void testCos() throws Exception {
 		section("Number.cos()");
 		code_v1("return cos(0)").equals("1");
-		code_v2_("return cos(0)").equals("1.0");
+		code_v2_4("return cos(0)").equals("1.0");
 		code_v1("return cos(2.5)").equals("-0,801");
-		code_v2_("return cos(2.5)").almost(Math.cos(2.5));
+		code_v2_4("return cos(2.5)").almost(Math.cos(2.5));
 		code_v1("return cos(PI)").equals("-1");
-		code_v2_("return cos(PI)").equals("-1.0");
+		code_v2_4("return cos(PI)").equals("-1.0");
 		code_v1("return cos(PI / 2)").equals("0");
-		code_v2_("return cos(PI / 2)").almost(0.0);
+		code_v2_4("return cos(PI / 2)").almost(0.0);
 		// code("return π.cos()").equals("-1");
 		// code("return ['', π][1].cos()").equals("-1");
 		code_v1("return cos(['', PI][1]);").equals("-1");
-		code_v2_("return cos(['', PI][1]);").equals("-1.0");
+		code_v2_4("return cos(['', PI][1]);").equals("-1.0");
 		code_v1("return cos(PI);").equals("-1");
-		code_v2_("return cos(PI);").equals("-1.0");
+		code_v2_4("return cos(PI);").equals("-1.0");
 	}
 
 	@Test
 	public void testAcos() throws Exception {
 		section("Number.acos()");
 		code_v1("return acos(1)").equals("0");
-		code_v2_("return acos(1)").equals("0.0");
+		code_v2_4("return acos(1)").equals("0.0");
 		code_v1("return acos(-1)").equals("3,142");
-		code_v2_("return acos(-1)").almost(Math.PI);
+		code_v2_4("return acos(-1)").almost(Math.PI);
 		code_v1("return acos(0)").equals("1,571");
-		code_v2_("return acos(0)").almost(Math.PI / 2);
+		code_v2_4("return acos(0)").almost(Math.PI / 2);
 		// code("return (-0.33).acos()").almost(1.907099901948877019);
 		code_v1("return acos(['y', 0][1])").equals("1,571");
-		code_v2_("return acos(['y', 0][1])").almost(Math.PI / 2);
+		code_v2_4("return acos(['y', 0][1])").almost(Math.PI / 2);
 	}
 
 	@Test
 	public void testSin() throws Exception {
 		section("Number.sin()");
 		code_v1("return sin(0)").equals("0");
-		code_v2_("return sin(0)").equals("0.0");
+		code_v2_4("return sin(0)").equals("0.0");
 		code_v1("return sin(2.5)").equals("0,598");
-		code_v2_("return sin(2.5)").almost(Math.sin(2.5));
+		code_v2_4("return sin(2.5)").almost(Math.sin(2.5));
 		code_v1("return sin(PI)").equals("0");
-		code_v2_("return sin(PI)").almost(0.0);
+		code_v2_4("return sin(PI)").almost(0.0);
 		code_v1("return sin(PI / 2)").equals("1");
-		code_v2_("return sin(PI / 2)").equals("1.0");
+		code_v2_4("return sin(PI / 2)").equals("1.0");
 		code_v1("return sin(- PI / 2)").equals("-1");
-		code_v2_("return sin(- PI / 2)").equals("-1.0");
+		code_v2_4("return sin(- PI / 2)").equals("-1.0");
 		code_v1("return sin(['', PI / 2][1])").equals("1");
-		code_v2_("return sin(['', PI / 2][1])").equals("1.0");
+		code_v2_4("return sin(['', PI / 2][1])").equals("1.0");
 		code_v1("return sin(PI / 2)").equals("1");
-		code_v2_("return sin(PI / 2)").equals("1.0");
+		code_v2_4("return sin(PI / 2)").equals("1.0");
 	}
 
 	@Test
 	public void testTan() throws Exception {
 		section("Number.tan()");
 		code_v1("return tan(0)").equals("0");
-		code_v2_("return tan(0)").equals("0.0");
+		code_v2_4("return tan(0)").equals("0.0");
 		code_v1("return tan(2.5)").equals("-0,747");
-		code_v2_("return tan(2.5)").almost(Math.tan(2.5));
+		code_v2_4("return tan(2.5)").almost(Math.tan(2.5));
 		code_v1("return tan(PI)").equals("-0");
-		code_v2_("return tan(PI)").almost(0.0);
+		code_v2_4("return tan(PI)").almost(0.0);
 		code_v1("return tan(PI / 4)").equals("1");
-		code_v2_("return tan(PI / 4)").almost(1.0);
+		code_v2_4("return tan(PI / 4)").almost(1.0);
 		code_v1("return tan(- PI / 4)").equals("-1");
-		code_v2_("return tan(- PI / 4)").almost(-1.0);
+		code_v2_4("return tan(- PI / 4)").almost(-1.0);
 		code_v1("return tan(['', PI / 4][1])").equals("1");
-		code_v2_("return tan(['', PI / 4][1])").almost(1.0);
+		code_v2_4("return tan(['', PI / 4][1])").almost(1.0);
 	}
 
 	@Test
 	public void testAsin() throws Exception {
 		section("Number.asin()");
 		code_v1("return asin(0)").equals("0");
-		code_v2_("return asin(0)").equals("0.0");
+		code_v2_4("return asin(0)").equals("0.0");
 		code_v1("return asin(-1)").equals("-1,571");
-		code_v2_("return asin(-1)").almost(-Math.PI / 2);
+		code_v2_4("return asin(-1)").almost(-Math.PI / 2);
 		code_v1("return asin(1)").equals("1,571");
-		code_v2_("return asin(1)").almost(Math.PI / 2);
+		code_v2_4("return asin(1)").almost(Math.PI / 2);
 		// code("return 0.33.asin()").almost(0.33630357515398035);
 		code_v1("return asin(['y', -1][1])").equals("-1,571");
-		code_v2_("return asin(['y', -1][1])").almost(-Math.PI / 2);
+		code_v2_4("return asin(['y', -1][1])").almost(-Math.PI / 2);
 	}
 
 	@Test
 	public void testAtan() throws Exception {
 		section("Number.atan()");
 		code_v1("return atan(1)").equals("0,785");
-		code_v2_("return atan(1)").almost(Math.PI / 4);
+		code_v2_4("return atan(1)").almost(Math.PI / 4);
 		code_v1("return atan(-1)").equals("-0,785");
-		code_v2_("return atan(-1)").almost(-Math.PI / 4);
+		code_v2_4("return atan(-1)").almost(-Math.PI / 4);
 		code_v1("return atan(0.5)").equals("0,464");
-		code_v2_("return atan(0.5)").almost(0.463647609000806094);
+		code_v2_4("return atan(0.5)").almost(0.463647609000806094);
 		// code("return 0.atan()").equals("0");
 		code_v1("return atan(['y', 0.5][1])").equals("0,464");
-		code_v2_("return atan(['y', 0.5][1])").almost(0.463647609000806094);
+		code_v2_4("return atan(['y', 0.5][1])").almost(0.463647609000806094);
 	}
 
 	@Test
 	public void testAtan2() throws Exception {
 		section("Number.atan2()");
 		code_v1("return atan2(1, 1)").equals("0,785");
-		code_v2_("return atan2(1, 1)").almost(Math.PI / 4);
+		code_v2_4("return atan2(1, 1)").almost(Math.PI / 4);
 		code_v1("return atan2(150.78, 150.78)").equals("0,785");
-		code_v2_("return atan2(150.78, 150.78)").almost(Math.PI / 4);
+		code_v2_4("return atan2(150.78, 150.78)").almost(Math.PI / 4);
 		code_v1("return atan2(1, 0)").equals("1,571");
-		code_v2_("return atan2(1, 0)").almost(Math.PI / 2);
+		code_v2_4("return atan2(1, 0)").almost(Math.PI / 2);
 		code_v1("return atan2(-1, 0)").equals("-1,571");
-		code_v2_("return atan2(-1, 0)").almost(-Math.PI / 2);
+		code_v2_4("return atan2(-1, 0)").almost(-Math.PI / 2);
 		code_v1("return atan2(0, 1)").equals("0");
-		code_v2_("return atan2(0, 1)").equals("0.0");
+		code_v2_4("return atan2(0, 1)").equals("0.0");
 		code_v1("return atan2(0, -1)").equals("3,142");
-		code_v2_("return atan2(0, -1)").almost(Math.PI);
+		code_v2_4("return atan2(0, -1)").almost(Math.PI);
 		code_v1("return atan2(12.12, 42.42)").equals("0,278");
-		code_v2_("return atan2(12.12, 42.42)").almost(0.278299659005111333);
+		code_v2_4("return atan2(12.12, 42.42)").almost(0.278299659005111333);
 		// code("return 1.atan2(1)").almost(Math.PI / 4);
 		// code("return ['', -1][1].atan2(1)").almost(-Math.PI / 4);
 		// code("return 1.atan2(['', -1][1])").almost(3 * Math.PI / 4);
 		// code("return ['', -1][1].atan2(['', -1][1])").almost(-3 * Math.PI / 4);
 		code_v1("return atan2(1, 1)").equals("0,785");
-		code_v2_("return atan2(1, 1)").almost(Math.PI / 4);
+		code_v2_4("return atan2(1, 1)").almost(Math.PI / 4);
 		code_v1("return atan2(['', -1][1], 1)").equals("-0,785");
-		code_v2_("return atan2(['', -1][1], 1)").almost(-Math.PI / 4);
+		code_v2_4("return atan2(['', -1][1], 1)").almost(-Math.PI / 4);
 		code_v1("return atan2(1, ['', -1][1])").equals("2,356");
-		code_v2_("return atan2(1, ['', -1][1])").almost(3 * Math.PI / 4);
+		code_v2_4("return atan2(1, ['', -1][1])").almost(3 * Math.PI / 4);
 		code_v1("return atan2(['', -1][1], ['', -1][1])").equals("-2,356");
-		code_v2_("return atan2(['', -1][1], ['', -1][1])").almost(-3 * Math.PI / 4);
+		code_v2_4("return atan2(['', -1][1], ['', -1][1])").almost(-3 * Math.PI / 4);
 		// code("return atan2(1, true)").almost(Math.PI / 4);
 		// code("return atan2(true, false)").almost(Math.PI / 2);
 	}
@@ -1288,11 +1288,11 @@ public class TestNumber extends TestCommon {
 	@Test
 	public void testCbrt() throws Exception {
 		section("Number.cbrt()");
-		code("return cbrt(125)").almost(5.0);
-		code("return cbrt(1000)").almost(10.0);
-		code("return cbrt(1728)").almost(12.0, 1e-14);
+		code_v1_4("return cbrt(125)").almost(5.0);
+		code_v1_4("return cbrt(1000)").almost(10.0);
+		code_v1_4("return cbrt(1728)").almost(12.0, 1e-14);
 		// code("return 1728.cbrt()").almost(12.0, 0.00000000000001);
-		code("return cbrt(['', 1728][1])").almost(12.0, 0.00000000000001);
+		code_v1_4("return cbrt(['', 1728][1])").almost(12.0, 0.00000000000001);
 		// code("return ['', 1728][1].cbrt()").almost(12.0, 0.00000000000001);
 	}
 
@@ -1300,12 +1300,12 @@ public class TestNumber extends TestCommon {
 	public void testHypot() throws Exception {
 		section("Number.hypot");
 		code_v1("return hypot(3, 4)").equals("5");
-		code_v2_("return hypot(3, 4)").equals("5.0");
+		code_v2_4("return hypot(3, 4)").equals("5.0");
 		// code("return 3.hypot(4)").equals("5");
 		code_v1("return hypot(34, 74)").equals("81,437");
-		code_v2_("return hypot(34, 74)").almost(81.437092286);
+		code_v2_4("return hypot(34, 74)").almost(81.437092286);
 		code_v1("return hypot([34, ''][0], 74)").equals("81,437");
-		code_v2_("return hypot([34, ''][0], 74)").almost(81.437092286);
+		code_v2_4("return hypot([34, ''][0], 74)").almost(81.437092286);
 	}
 
 	@Test
@@ -1317,31 +1317,31 @@ public class TestNumber extends TestCommon {
 		// code("12.5.signum()").equals("1");
 		// code("-12.signum()").equals("-1");
 		// code("-12.5.signum()").equals("-1");
-		code("return signum(0)").equals("0");
-		code("return signum(12)").equals("1");
-		code("return signum(-17)").equals("-1");
-		code("return signum(-12.5)").equals("-1");
-		code("return signum(85)").equals("1");
+		code_v1_4("return signum(0)").equals("0");
+		code_v1_4("return signum(12)").equals("1");
+		code_v1_4("return signum(-17)").equals("-1");
+		code_v1_4("return signum(-12.5)").equals("-1");
+		code_v1_4("return signum(85)").equals("1");
 	}
 
 	@Test
 	public void testSqrt() throws Exception {
 		section("Number.sqrt");
 		code_v1("return sqrt(2)").equals("1,414");
-		code_v2_("return sqrt(2)").almost(Math.sqrt(2));
+		code_v2_4("return sqrt(2)").almost(Math.sqrt(2));
 		// code("return sqrt(123456789123456789123456789)").equals("11111111066111");
 		// code("return sqrt(55m ** 20m)").equals("253295162119140625");
 		// code("return sqrt(12m + 5m)").equals("4");
 		// code("return var n = 12; n.sqrt()").equals("3.4641016151");
 		// code("return let f = sqrt f(5)").equals("2.2360679775");
 		code_v1("return sqrt(16)").equals("4");
-		code_v2_("return sqrt(16)").equals("4.0");
+		code_v2_4("return sqrt(16)").equals("4.0");
 		code_v1("return sqrt(25)").equals("5");
-		code_v2_("return sqrt(25)").equals("5.0");
+		code_v2_4("return sqrt(25)").equals("5.0");
 		// #2428 : integer -> real est un élargissement sûr (UPCAST), pas une
 		// conversion dangereuse. sqrt(integer) ne doit pas warner en strict.
-		code_strict_v4_("return sqrt(4)").noWarning();
-		code_strict_v4_("var x = 4; return sqrt(x)").noWarning();
+		code_strict_v4("return sqrt(4)").noWarning();
+		code_strict_v4("var x = 4; return sqrt(x)").noWarning();
 		code_strict_v4_("real r = 4; return r").noWarning();
 		// Le sens inverse, real -> integer, reste une troncature lossy : il doit
 		// toujours warner (SAFE_DOWNCAST => DANGEROUS_CONVERSION) en strict.
@@ -1356,13 +1356,13 @@ public class TestNumber extends TestCommon {
 		// code("return (-π / 2).toDegrees()").equals("-90");
 		// code("return 0.toDegrees()").equals("0");
 		code_v1("return toDegrees(PI)").equals("180");
-		code_v2_("return toDegrees(PI)").equals("180.0");
+		code_v2_4("return toDegrees(PI)").equals("180.0");
 		code_v1("return toDegrees(PI / 2)").equals("90");
-		code_v2_("return toDegrees(PI / 2)").equals("90.0");
+		code_v2_4("return toDegrees(PI / 2)").equals("90.0");
 		code_v1("return toDegrees(-PI / 2)").equals("-90");
-		code_v2_("return toDegrees(-PI / 2)").equals("-90.0");
+		code_v2_4("return toDegrees(-PI / 2)").equals("-90.0");
 		code_v1("return toDegrees(0)").equals("0");
-		code_v2_("return toDegrees(0)").equals("0.0");
+		code_v2_4("return toDegrees(0)").equals("0.0");
 	}
 
 	@Test
@@ -1373,13 +1373,13 @@ public class TestNumber extends TestCommon {
 		// code("return (-90).toRadians()").almost(-Math.PI / 2);
 		// code("return 0.toRadians()").equals("0");
 		code_v1("return toRadians(180)").equals("3,142");
-		code_v2_("return toRadians(180)").almost(Math.PI);
+		code_v2_4("return toRadians(180)").almost(Math.PI);
 		code_v1("return toRadians(90)").equals("1,571");
-		code_v2_("return toRadians(90)").almost(Math.PI / 2);
+		code_v2_4("return toRadians(90)").almost(Math.PI / 2);
 		code_v1("return toRadians(-90)").equals("-1,571");
-		code_v2_("return toRadians(-90)").almost(-Math.PI / 2);
+		code_v2_4("return toRadians(-90)").almost(-Math.PI / 2);
 		code_v1("return toRadians(0)").equals("0");
-		code_v2_("return toRadians(0)").equals("0.0");
+		code_v2_4("return toRadians(0)").equals("0.0");
 	}
 
 	@Test
@@ -1387,27 +1387,27 @@ public class TestNumber extends TestCommon {
 		section("Number.log");
 		// code("1.log()").equals("0");
 		code_v1("return log(1)").equals("0");
-		code_v2_("return log(1)").equals("0.0");
+		code_v2_4("return log(1)").equals("0.0");
 		code_v1("return log(E)").equals("1");
-		code_v2_("return log(E)").equals("1.0");
+		code_v2_4("return log(E)").equals("1.0");
 		// code("123456.log()").equals("11.7236400963");
 		code_v1("return log(654321)").equals("13,391");
-		code_v2_("return log(654321)").almost(13.3913533357);
+		code_v2_4("return log(654321)").almost(13.3913533357);
 		code_v1("return log([55555, ''][0])").equals("10,925");
-		code_v2_("return log([55555, ''][0])").almost(10.9251288);
+		code_v2_4("return log([55555, ''][0])").almost(10.9251288);
 	}
 
 	@Test
 	public void testLog10() throws Exception {
 		section("Number.log10");
 		code_v1("return log10(10)").equals("1");
-		code_v2_("return log10(10)").equals("1.0");
+		code_v2_4("return log10(10)").equals("1.0");
 		// code("return 1.log10()").equals("0");
 		// code("return 123456.log10()").equals("5.0915122016");
 		code_v1("return log10(654321)").equals("5,816");
-		code_v2_("return log10(654321)").almost(5.8157908589);
+		code_v2_4("return log10(654321)").almost(5.8157908589);
 		code_v1("return log10([55555, ''][0])").equals("4,745");
-		code_v2_("return log10([55555, ''][0])").almost(4.7447231519);
+		code_v2_4("return log10([55555, ''][0])").almost(4.7447231519);
 	}
 
 	@Test
@@ -1415,9 +1415,9 @@ public class TestNumber extends TestCommon {
 		section("Number.pow");
 		// code("2.pow(10)").equals("1024");
 		code_v1("return pow(5, 3)").equals("125");
-		code_v2_("return pow(5, 3)").equals("125.0");
+		code_v2_4("return pow(5, 3)").equals("125.0");
 		code_v1("return pow(2, 10)").equals("1 024");
-		code_v2_("return pow(2, 10)").equals("1024.0");
+		code_v2_4("return pow(2, 10)").equals("1024.0");
 		// code("pow([10, ''][0], 5)").equals("100000");
 		// code("3000.pow(3)").equals("2147483648");
 		// code("return pow(3000, 3)").equals("2147483648");
@@ -1427,9 +1427,9 @@ public class TestNumber extends TestCommon {
 	@Test
 	public void testRand() throws Exception {
 		section("Number.rand()");
-		code("var a = rand() return a >= 0 and a <= 1").equals("true");
-		code("var a = rand() return a > 1").equals("false");
-		code("var a = randInt(2067, 2070) return a >= 2067 and a < 2070").equals("true");
+		code_v1_4("var a = rand() return a >= 0 and a <= 1").equals("true");
+		code_v1_4("var a = rand() return a > 1").equals("false");
+		code_v1_4("var a = randInt(2067, 2070) return a >= 2067 and a < 2070").equals("true");
 		code_v1_3("var a = randFloat(500, 510) return a >= 500 and a < 510").equals("true");
 		code_v4_("var a = randReal(500, 510) return a >= 500 and a < 510").equals("true");
 	}

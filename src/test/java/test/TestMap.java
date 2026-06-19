@@ -164,7 +164,7 @@ public class TestMap extends TestCommon {
 	public void testTyped_map_numeric_coercion() throws Exception {
 		section("Typed map numeric coercion");
 		// issue #2872: storing an int into a Map<_, real> must coerce to real
-		code_v4_("Map<integer, real> m = new Map() m[1] = round(1.5) return m[1]").equals("2.0");
+		code_v4("Map<integer, real> m = new Map() m[1] = round(1.5) return m[1]").equals("2.0");
 		code_v4_("Map<integer, real> m = new Map() m[1] = 5 return m[1]").equals("5.0");
 		// Un entier d'un littéral rangé tel quel dans une Map<K, real> se lit en real
 		code_v4_("Map<integer, real> a = [1: 0] Map<integer, real> b = [1: 1] real r = 0.5 return r >= a[1] * b[1]").equals("true");

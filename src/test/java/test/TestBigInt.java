@@ -188,23 +188,23 @@ public class TestBigInt extends TestCommon {
 	public void testBuiltins() throws Exception {
 		section("Fonctions built-in");
 		// abs / min / max -> big_integer
-		code_v4_("return abs(-5L)").equals("5");
-		code_v4_("var x = abs(-5L) return x instanceof BigInteger").equals("true");
-		code_v4_("return abs(5L)").equals("5");
-		code_v4_("return min(5L, 3L)").equals("3");
-		code_v4_("return max(5L, 3L)").equals("5");
-		code_v4_("var x = max(5L, 3L) return x instanceof BigInteger").equals("true");
+		code_v4("return abs(-5L)").equals("5");
+		code_v4("var x = abs(-5L) return x instanceof BigInteger").equals("true");
+		code_v4("return abs(5L)").equals("5");
+		code_v4("return min(5L, 3L)").equals("3");
+		code_v4("return max(5L, 3L)").equals("5");
+		code_v4("var x = max(5L, 3L) return x instanceof BigInteger").equals("true");
 		// pow (fonction) -> big_integer
-		code_v4_("return pow(2L, 10)").equals("1024");
-		code_v4_("return pow(2L, 100) == 1L << 100").equals("true");
+		code_v4("return pow(2L, 10)").equals("1024");
+		code_v4("return pow(2L, 100) == 1L << 100").equals("true");
 		// binString / hexString sans troncature au-delà de 64 bits
 		code_v4_("return binString(5L)").equals("\"101\"");
 		code_v4_("return hexString(255L)").equals("\"ff\"");
 		code_v4_("return hexString(1L << 80)").equals("\"100000000000000000000\"");
 		// LS4 inchangé (les versions integer/real restent sélectionnées)
-		code_v4_("return abs(-5)").equals("5");
-		code_v4_("return max(5, 3)").equals("5");
-		code_v4_("return pow(5, 3)").equals("125.0");
+		code_v4("return abs(-5)").equals("5");
+		code_v4("return max(5, 3)").equals("5");
+		code_v4("return pow(5, 3)").equals("125.0");
 
 		section("Conteneurs et clone");
 		// Tableaux et maps de big_integer
@@ -231,9 +231,9 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return trailingZeros(8L)").equals("3");
 		code_v4_("return trailingZeros(1L << 100)").equals("100");
 		// signum
-		code_v4_("return signum(-5L)").equals("-1");
-		code_v4_("return signum(0L)").equals("0");
-		code_v4_("return signum(5L)").equals("1");
+		code_v4("return signum(-5L)").equals("-1");
+		code_v4("return signum(0L)").equals("0");
+		code_v4("return signum(5L)").equals("1");
 		// setBit -> big_integer
 		code_v4_("return setBit(0L, 100) == 1L << 100").equals("true");
 		code_v4_("var x = setBit(0L, 100) return x instanceof BigInteger").equals("true");
@@ -260,7 +260,7 @@ public class TestBigInt extends TestCommon {
 		// versions integer (LS4) — nouvellement disponibles, comportement standard
 		code_v4_("return bitLength(255)").equals("8");
 		code_v4_("return bitCount(7)").equals("3");
-		code_v4_("return signum(-5)").equals("-1");
+		code_v4("return signum(-5)").equals("-1");
 		code_v4_("return testBit(5, 0)").equals("true");
 		code_v4_("return setBit(0, 3)").equals("8");
 		// setBit integer au-delà de 31 bits (1L << pos, sinon débordement int)
@@ -306,17 +306,17 @@ public class TestBigInt extends TestCommon {
 		section("Arguments mixtes bigint/integer (#bug trouvé : troncature)");
 		// max/min avec un bigint et un integer : l'integer est promu, le bigint
 		// n'est PAS tronqué.
-		code_v4_("return max(1L << 100, 5) == 1L << 100").equals("true");
-		code_v4_("return max(5, 1L << 100) == 1L << 100").equals("true");
-		code_v4_("return min(1L << 100, 5) == 5L").equals("true");
-		code_v4_("var x = max(1L << 100, 5) return x instanceof BigInteger").equals("true");
+		code_v4("return max(1L << 100, 5) == 1L << 100").equals("true");
+		code_v4("return max(5, 1L << 100) == 1L << 100").equals("true");
+		code_v4("return min(1L << 100, 5) == 5L").equals("true");
+		code_v4("var x = max(1L << 100, 5) return x instanceof BigInteger").equals("true");
 		// pow avec exposant integer ou bigint
-		code_v4_("return pow(2L, 100) == 1L << 100").equals("true");
-		code_v4_("return pow(2, 10L) == 1024L").equals("true");
-		code_v4_("return pow(2L, 10L) == 1024L").equals("true");
+		code_v4("return pow(2L, 100) == 1L << 100").equals("true");
+		code_v4("return pow(2, 10L) == 1024L").equals("true");
+		code_v4("return pow(2L, 10L) == 1024L").equals("true");
 		// abs
-		code_v4_("return abs(1L << 100) == 1L << 100").equals("true");
-		code_v4_("return abs(-(1L << 100)) == 1L << 100").equals("true");
+		code_v4("return abs(1L << 100) == 1L << 100").equals("true");
+		code_v4("return abs(-(1L << 100)) == 1L << 100").equals("true");
 	}
 
 	@Test

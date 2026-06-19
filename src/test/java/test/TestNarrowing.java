@@ -17,50 +17,50 @@ public class TestNarrowing extends TestCommon {
 	public void testBasic_null_check_if() throws Exception {
 		section("Basic null check: if (x != null)");
 		// With narrowing: abs(x) should not warn inside if (x != null)
-		code_v4_("integer | null x = 5; if (x != null) { return abs(x) } return 0").noWarning();
+		code_v4("integer | null x = 5; if (x != null) { return abs(x) } return 0").noWarning();
 		// Functional correctness
-		code_v4_("integer | null x = 5; if (x != null) { return abs(x) } return 0").equals("5");
-		code_v4_("integer | null x = -3; if (x != null) { return abs(x) } return 0").equals("3");
-		code_v4_("integer | null x = null; if (x != null) { return abs(x) } return 0").equals("0");
+		code_v4("integer | null x = 5; if (x != null) { return abs(x) } return 0").equals("5");
+		code_v4("integer | null x = -3; if (x != null) { return abs(x) } return 0").equals("3");
+		code_v4("integer | null x = null; if (x != null) { return abs(x) } return 0").equals("0");
 	}
 
 	@Test
 	public void testEquality_null_check_if() throws Exception {
 		section("Equality null check: if (x == null)");
 		// x == null: in else branch, x is non-null
-		code_v4_("integer | null x = 5; if (x == null) { return 0 } else { return abs(x) }").noWarning();
-		code_v4_("integer | null x = 5; if (x == null) { return 0 } else { return abs(x) }").equals("5");
+		code_v4("integer | null x = 5; if (x == null) { return 0 } else { return abs(x) }").noWarning();
+		code_v4("integer | null x = 5; if (x == null) { return 0 } else { return abs(x) }").equals("5");
 	}
 
 	@Test
 	public void testTruthy_check_if() throws Exception {
 		section("Truthy check: if (x)");
 		// Truthy check narrows nullable to non-null in true branch
-		code_v4_("integer | null x = 5; if (x) { return abs(x) } return 0").noWarning();
-		code_v4_("integer | null x = 5; if (x) { return abs(x) } return 0").equals("5");
-		code_v4_("integer | null x = null; if (x) { return abs(x) } return 0").equals("0");
+		code_v4("integer | null x = 5; if (x) { return abs(x) } return 0").noWarning();
+		code_v4("integer | null x = 5; if (x) { return abs(x) } return 0").equals("5");
+		code_v4("integer | null x = null; if (x) { return abs(x) } return 0").equals("0");
 	}
 
 	@Test
 	public void testCase_1_AndAnd_Divide_OrOr_operators() throws Exception {
 		section("Case 1: && / || operators");
 		// && combines narrowings
-		code_v4_("integer | null x = 5; integer | null y = 3; if (x != null && y != null) { return abs(x) + abs(y) } return 0").noWarning();
-		code_v4_("integer | null x = 5; integer | null y = 3; if (x != null && y != null) { return abs(x) + abs(y) } return 0").equals("8");
+		code_v4("integer | null x = 5; integer | null y = 3; if (x != null && y != null) { return abs(x) + abs(y) } return 0").noWarning();
+		code_v4("integer | null x = 5; integer | null y = 3; if (x != null && y != null) { return abs(x) + abs(y) } return 0").equals("8");
 		// || combines false narrowings
 		code_v4_("integer | null x = null; integer | null y = null; if (x == null || y == null) { return 0 }").equals("0");
 		// Short-circuit: x != null && abs(x) → x is narrowed in the right operand
-		code_v4_("integer | null x = 5; if (x != null && abs(x) > 0) { return 1 } return 0").noWarning();
-		code_v4_("integer | null x = 5; if (x != null && abs(x) > 0) { return 1 } return 0").equals("1");
+		code_v4("integer | null x = 5; if (x != null && abs(x) > 0) { return 1 } return 0").noWarning();
+		code_v4("integer | null x = 5; if (x != null && abs(x) > 0) { return 1 } return 0").equals("1");
 	}
 
 	@Test
 	public void testCase_2_Early_return_narrowing() throws Exception {
 		section("Case 2: Early return narrowing");
 		// if (x == null) return → x is non-null after
-		code_v4_("integer | null x = 5; if (x == null) return 0; return abs(x)").noWarning();
-		code_v4_("integer | null x = 5; if (x == null) return 0; return abs(x)").equals("5");
-		code_v4_("integer | null x = null; if (x == null) return 0; return abs(x)").equals("0");
+		code_v4("integer | null x = 5; if (x == null) return 0; return abs(x)").noWarning();
+		code_v4("integer | null x = 5; if (x == null) return 0; return abs(x)").equals("5");
+		code_v4("integer | null x = null; if (x == null) return 0; return abs(x)").equals("0");
 		// if (x != null) { ... } with no else doesn't narrow after
 		// (only early return narrows)
 	}
@@ -69,10 +69,10 @@ public class TestNarrowing extends TestCommon {
 	public void testCase_3_While_loop_narrowing() throws Exception {
 		section("Case 3: While loop narrowing");
 		// while (x != null) → x is non-null inside loop
-		code_v4_("integer | null x = 5; var r = 0; while (x != null) { r = abs(x); x = null } return r").max_ops(1000).noWarning();
-		code_v4_("integer | null x = 5; var r = 0; while (x != null) { r = abs(x); x = null } return r").max_ops(1000).equals("5");
+		code_v4("integer | null x = 5; var r = 0; while (x != null) { r = abs(x); x = null } return r").max_ops(1000).noWarning();
+		code_v4("integer | null x = 5; var r = 0; while (x != null) { r = abs(x); x = null } return r").max_ops(1000).equals("5");
 		// After reassignment (w = null), w is narrowed to null type (assignment narrowing)
-		code_v4_("integer | null w = 5; var r = 0; while (w != null) { r = abs(w); w = null } return r").max_ops(1000).noWarning();
+		code_v4("integer | null w = 5; var r = 0; while (w != null) { r = abs(w); w = null } return r").max_ops(1000).noWarning();
 	}
 
 	@Test
@@ -113,50 +113,50 @@ public class TestNarrowing extends TestCommon {
 	public void testCase_5_Assignment_in_condition() throws Exception {
 		section("Case 5: Assignment in condition");
 		// (x = getValue()) != null → x is narrowed in the if body
-		code_v4_("function f() => integer | null { return 5 } integer | null x = null; if ((x = f()) != null) { return abs(x) } return 0").noWarning();
-		code_v4_("function f() => integer | null { return 5 } integer | null x = null; if ((x = f()) != null) { return abs(x) } return 0").equals("5");
+		code_v4("function f() => integer | null { return 5 } integer | null x = null; if ((x = f()) != null) { return abs(x) } return 0").noWarning();
+		code_v4("function f() => integer | null { return 5 } integer | null x = null; if ((x = f()) != null) { return abs(x) } return 0").equals("5");
 	}
 
 	@Test
 	public void testNegation_Not() throws Exception {
 		section("Negation: !(x == null)");
-		code_v4_("integer | null x = 5; if (!(x == null)) { return abs(x) } return 0").noWarning();
-		code_v4_("integer | null x = 5; if (!(x == null)) { return abs(x) } return 0").equals("5");
+		code_v4("integer | null x = 5; if (!(x == null)) { return abs(x) } return 0").noWarning();
+		code_v4("integer | null x = 5; if (!(x == null)) { return abs(x) } return 0").equals("5");
 	}
 
 	@Test
 	public void testEarly_return_in_function_with_parameter() throws Exception {
 		section("Early return in function with parameter");
 		// Early return narrowing should work with function parameters too
-		code_v4_("function process(integer | null val) { if (val == null) return null; return abs(val) } return process(5)").noWarning();
-		code_v4_("function process(integer | null val) { if (val == null) return null; return abs(val) } return process(5)").equals("5");
+		code_v4("function process(integer | null val) { if (val == null) return null; return abs(val) } return process(5)").noWarning();
+		code_v4("function process(integer | null val) { if (val == null) return null; return abs(val) } return process(5)").equals("5");
 		// Bare return (no value) should also narrow
-		code_v4_("function process(integer | null val) { if (val == null) return null; debug(abs(val)) } process(5)").noWarning();
+		code_v4("function process(integer | null val) { if (val == null) return null; debug(abs(val)) } process(5)").noWarning();
 		// Exact user pattern: return without value
-		code_v4_("function process(integer | null val) { if (val == null) { return } debug(abs(val)) } process(5)").noWarning();
+		code_v4("function process(integer | null val) { if (val == null) { return } debug(abs(val)) } process(5)").noWarning();
 		// Function not called - should still narrow correctly
-		code_v4_("function process(integer | null val) { if (val == null) { return } debug(abs(val)) }").noWarning();
+		code_v4("function process(integer | null val) { if (val == null) { return } debug(abs(val)) }").noWarning();
 	}
 
 	@Test
 	public void testElseMinusif_chains() throws Exception {
 		section("Else-if chains");
-		code_v4_("integer | null x = 5; integer | null y = 3; if (x == null) { return 0 } else if (y == null) { return abs(x) } else { return abs(x) + abs(y) }").noWarning();
-		code_v4_("integer | null x = 5; integer | null y = 3; if (x == null) { return 0 } else if (y == null) { return abs(x) } else { return abs(x) + abs(y) }").equals("8");
+		code_v4("integer | null x = 5; integer | null y = 3; if (x == null) { return 0 } else if (y == null) { return abs(x) } else { return abs(x) + abs(y) }").noWarning();
+		code_v4("integer | null x = 5; integer | null y = 3; if (x == null) { return 0 } else if (y == null) { return abs(x) } else { return abs(x) + abs(y) }").equals("8");
 	}
 
 	@Test
 	public void testSwitch_narrowing() throws Exception {
 		section("Switch narrowing");
 		// case null → variable is null, other cases → variable is non-null
-		code_v4_("integer | null x = 5; switch (x) { case null: return 0; default: return abs(x) }").noWarning();
-		code_v4_("integer | null x = 5; switch (x) { case null: return 0; default: return abs(x) }").equals("5");
-		code_v4_("integer | null x = null; switch (x) { case null: return 0; default: return abs(x) }").equals("0");
+		code_v4("integer | null x = 5; switch (x) { case null: return 0; default: return abs(x) }").noWarning();
+		code_v4("integer | null x = 5; switch (x) { case null: return 0; default: return abs(x) }").equals("5");
+		code_v4("integer | null x = null; switch (x) { case null: return 0; default: return abs(x) }").equals("0");
 		// Non-null case value: variable is non-null
-		code_v4_("integer | null x = 5; switch (x) { case null: return 0; case 5: return abs(x); default: return abs(x) }").noWarning();
-		code_v4_("integer | null x = 5; switch (x) { case null: return 0; case 5: return abs(x); default: return abs(x) }").equals("5");
+		code_v4("integer | null x = 5; switch (x) { case null: return 0; case 5: return abs(x); default: return abs(x) }").noWarning();
+		code_v4("integer | null x = 5; switch (x) { case null: return 0; case 5: return abs(x); default: return abs(x) }").equals("5");
 		// Without case null, default can't be narrowed
-		code_v4_("integer | null x = 5; switch (x) { case 5: return abs(x); default: return 0 }").noWarning();
+		code_v4("integer | null x = 5; switch (x) { case 5: return abs(x); default: return 0 }").noWarning();
 	}
 
 	@Test
@@ -326,18 +326,18 @@ public class TestNarrowing extends TestCommon {
 		section("Instanceof narrowing to primitive type in else branch");
 		// Union type narrowed to integer in else branch (the instanceof-excluded type)
 		// The Java variable is Object but needs to be passed as long
-		code_v4_("class Cell { integer id = 5 } Cell | integer x = 3; if (x instanceof Cell) { return x.id } else { return abs(x) }").equals("3");
-		code_v4_("class Cell { integer id = 5 } Cell | integer x = 3; if (x instanceof Cell) { return x.id } else { return abs(x) }").noWarning();
-		code_v4_("class Cell { integer id = 5 } Cell | integer x = new Cell(); if (x instanceof Cell) { return x.id } else { return abs(x) }").equals("5");
+		code_v4("class Cell { integer id = 5 } Cell | integer x = 3; if (x instanceof Cell) { return x.id } else { return abs(x) }").equals("3");
+		code_v4("class Cell { integer id = 5 } Cell | integer x = 3; if (x instanceof Cell) { return x.id } else { return abs(x) }").noWarning();
+		code_v4("class Cell { integer id = 5 } Cell | integer x = new Cell(); if (x instanceof Cell) { return x.id } else { return abs(x) }").equals("5");
 		// Narrowed to integer and used in arithmetic
 		code_v4("Array | integer x = 7; if (x instanceof Array) { return count(x) } else { return x + 1 }").equals("8");
 		code_v4("Array | integer x = [1, 2]; if (x instanceof Array) { return count(x) } else { return x + 1 }").equals("2");
 		// Narrowed to integer and passed to a function expecting integer
-		code_v4_("Map | integer x = 42; if (x instanceof Map) { return 0 } else { return abs(x) }").equals("42");
-		code_v4_("Map | integer x = 42; if (x instanceof Map) { return 0 } else { return abs(x) }").noWarning();
+		code_v4("Map | integer x = 42; if (x instanceof Map) { return 0 } else { return abs(x) }").equals("42");
+		code_v4("Map | integer x = 42; if (x instanceof Map) { return 0 } else { return abs(x) }").noWarning();
 		// Narrowed to real in else branch
-		code_v4_("Array | real x = 3.14; if (x instanceof Array) { return 0 } else { return floor(x) }").equals("3");
-		code_v4_("Array | real x = 3.14; if (x instanceof Array) { return 0 } else { return floor(x) }").noWarning();
+		code_v4("Array | real x = 3.14; if (x instanceof Array) { return 0 } else { return floor(x) }").equals("3");
+		code_v4("Array | real x = 3.14; if (x instanceof Array) { return 0 } else { return floor(x) }").noWarning();
 		// Variable used as function argument in else branch
 		code_v4_("class A { integer v = 0 } A | integer x = 10; function add(integer a, integer b) { return a + b } if (x instanceof A) { return x.v } else { return add(x, 5) }").equals("15");
 		code_v4_("class A { integer v = 0 } A | integer x = 10; function add(integer a, integer b) { return a + b } if (x instanceof A) { return x.v } else { return add(x, 5) }").noWarning();
@@ -425,20 +425,20 @@ public class TestNarrowing extends TestCommon {
 		section("Assignment narrowing: variable narrowed to assigned expression type");
 		// After if (x == null) { x = nonNull }, x is non-null
 		// Simple local variable
-		code_v4_("integer | null x = null; if (x == null) { x = 5 } return abs(x)").noWarning();
-		code_v4_("integer | null x = null; if (x == null) { x = 5 } return abs(x)").equals("5");
+		code_v4("integer | null x = null; if (x == null) { x = 5 } return abs(x)").noWarning();
+		code_v4("integer | null x = null; if (x == null) { x = 5 } return abs(x)").equals("5");
 		// Class field with this.field syntax (user-reported pattern)
 		code_v4_("class T { T? a = null; T a_() { if (this.a == null) { this.a = new T() } return this.a } } return new T().a_()").noWarning();
 		// Class field without this prefix
 		code_v4_("class T { T? a = null; T a_() { if (a == null) { a = new T() } return a } } return new T().a_()").noWarning();
 		// Assignment narrows type: after x = nonNull, x is non-null
-		code_v4_("integer | null x = null; x = 42; return abs(x)").noWarning();
-		code_v4_("integer | null x = null; x = 42; return abs(x)").equals("42");
+		code_v4("integer | null x = null; x = 42; return abs(x)").noWarning();
+		code_v4("integer | null x = null; x = 42; return abs(x)").equals("42");
 		// Assignment to null narrows type to null (stale narrowing reset)
-		code_strict_v4_("integer | null w = 5; var r = 0; while (w != null) { r = abs(w); w = null } return r").max_ops(1000).noWarning();
+		code_strict_v1_4("integer | null w = 5; var r = 0; while (w != null) { r = abs(w); w = null } return r").max_ops(1000).noWarning();
 		// Stale lastAssignedType must not cause false positive:
 		// x = 42 before the if must not make if (x == null) { debug() } narrow x
-		code_strict_v4_("function f(integer | null x) { x = 42; x = null; if (x == null) { debug(0) } return abs(x) }").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v1_4("function f(integer | null x) { x = 42; x = null; if (x == null) { debug(0) } return abs(x) }").warning(Error.DANGEROUS_CONVERSION);
 		// Field with method call after assignment: must NOT narrow (side effects could nullify)
 		code_strict_v4_("class T { T? a = null; reset() { a = null } T? a_() { if (a == null) { a = new T(); reset() } return a } }").noWarning();
 		// Field with single instruction: must narrow
@@ -446,9 +446,9 @@ public class TestNarrowing extends TestCommon {
 		// if (x != null) { x = nonNull } must NOT apply false narrowing (x → null)
 		// This pattern differs from if (x == null) { x = nonNull } — here the false
 		// branch means x was null, so applying it would incorrectly narrow x to null.
-		code_v4_("integer | null x = null; if (x != null) { x = 42 } if (x == null) { x = 0 } return abs(x)").noWarning();
-		code_v4_("integer | null x = null; if (x != null) { x = 42 } if (x == null) { x = 0 } return abs(x)").equals("0");
-		code_v4_("integer | null x = 5; if (x != null) { x = 42 } if (x == null) { x = 0 } return abs(x)").equals("42");
+		code_v4("integer | null x = null; if (x != null) { x = 42 } if (x == null) { x = 0 } return abs(x)").noWarning();
+		code_v4("integer | null x = null; if (x != null) { x = 42 } if (x == null) { x = 0 } return abs(x)").equals("0");
+		code_v4("integer | null x = 5; if (x != null) { x = 42 } if (x == null) { x = 0 } return abs(x)").equals("42");
 	}
 
 	@Test
@@ -491,16 +491,16 @@ public class TestNarrowing extends TestCommon {
 		// Condition sans aucune narrowing : NarrowingInfo reste tout-null
 		code_v4_("function getFoo() => boolean { return true } if (getFoo()) { return 1 } return 0").noWarning().equals("1");
 		// AND avec une seule branche narrowante : l'autre branche skip dans mergeInto
-		code_v4_("integer | null x = 5; function getFoo() => boolean { return true } if (x != null && getFoo()) { return abs(x) } return 0").noWarning().equals("5");
-		code_v4_("integer | null x = 5; function getFoo() => boolean { return true } if (getFoo() && x != null) { return abs(x) } return 0").noWarning().equals("5");
+		code_v4("integer | null x = 5; function getFoo() => boolean { return true } if (x != null && getFoo()) { return abs(x) } return 0").noWarning().equals("5");
+		code_v4("integer | null x = 5; function getFoo() => boolean { return true } if (getFoo() && x != null) { return abs(x) } return 0").noWarning().equals("5");
 		// OR avec une seule branche narrowante : pareil
-		code_v4_("integer | null x = 5; integer | null y = null; if (x == null || y == null) { return 0 } return abs(x) + abs(y)").noWarning().equals("0");
+		code_v4("integer | null x = 5; integer | null y = null; if (x == null || y == null) { return 0 } return abs(x) + abs(y)").noWarning().equals("0");
 		// NOT inversion d'une condition sans narrowing
 		code_v4_("function getFoo() => boolean { return true } if (!getFoo()) { return 0 } return 1").noWarning().equals("1");
 		// NOT inversion d'un null check : trueNarrowings ↔ falseNarrowings
-		code_v4_("integer | null x = 5; if (!(x != null)) { return 0 } return abs(x)").noWarning().equals("5");
+		code_v4("integer | null x = 5; if (!(x != null)) { return 0 } return abs(x)").noWarning().equals("5");
 		// AND combinant deux null checks sur des variables différentes
-		code_v4_("integer | null x = 5; integer | null y = 3; if (x != null && y != null) { return abs(x) + abs(y) } return 0").noWarning().equals("8");
+		code_v4("integer | null x = 5; integer | null y = 3; if (x != null && y != null) { return abs(x) + abs(y) } return 0").noWarning().equals("8");
 		// Imbrication NOT(AND)
 		code_v4_("integer | null x = 5; integer | null y = 3; if (!(x == null && y == null)) { return 1 } return 0").noWarning().equals("1");
 	}
@@ -513,11 +513,11 @@ public class TestNarrowing extends TestCommon {
 	public void testNarrowing_FirstIfNoParentChain() throws Exception {
 		section("Narrowing: first-if without parent chain (fast path)");
 		// Premier if sans else-if : mParentCondition est null, applyParentFalseNarrowings → null
-		code_v4_("integer | null x = 5; if (x != null) { return abs(x) } return 0").noWarning().equals("5");
+		code_v4("integer | null x = 5; if (x != null) { return abs(x) } return 0").noWarning().equals("5");
 		// Premier if isolé, plusieurs séquentiels (chacun avec mParentCondition = null)
-		code_v4_("integer | null x = 5; if (x != null) { x = 10 } integer | null y = 3; if (y != null) { return abs(y) + abs(x!) } return 0").noWarning().equals("13");
+		code_v4("integer | null x = 5; if (x != null) { x = 10 } integer | null y = 3; if (y != null) { return abs(y) + abs(x!) } return 0").noWarning().equals("13");
 		// if-then-without-else : pas de chain
-		code_v4_("integer | null x = 5; if (x == null) { return 0 } return abs(x)").noWarning().equals("5");
+		code_v4("integer | null x = 5; if (x == null) { return 0 } return abs(x)").noWarning().equals("5");
 	}
 
 	/**
@@ -538,7 +538,7 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("var x = 1 if (x == 0) { return 0 } else if (x > 100) { return 100 } else { return x }").equals("1");
 		// if avec narrowing actif mélangé avec une assignation qui doit invalider lastAssignedType
 		// (la garde isEmpty protège le clear ; on vérifie que ça reste correct quand non-empty)
-		code_v4_("integer | null x = null; if (x == null) { x = 42 } return abs(x)").noWarning().equals("42");
+		code_v4("integer | null x = null; if (x == null) { x = 42 } return abs(x)").noWarning().equals("42");
 	}
 
 
