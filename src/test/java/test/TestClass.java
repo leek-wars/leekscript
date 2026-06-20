@@ -45,6 +45,14 @@ public class TestClass extends TestCommon {
 		code_v2_("class A { public static addOne(n) { return n + 1 } } return arrayMap([1, 2, 3], A.addOne)").equals("[2, 3, 4]");
 		// Appel direct avec l'arité exacte inchangé
 		code_v2_("class A { public static addOne(n) { return n + 1 } } return A.addOne(5)").equals("6");
+		// Méthode 2 params : la référence rapporte sa vraie arité, donc les HOF legacy (v1-3)
+		// lui passent (clé, valeur) au lieu d'1 seul argument. v4 passe (élément, index).
+		code_v2_3("class A { public static m2(a, b) { return a * 10 + b } } return arrayMap([1, 2, 3], A.m2)").equals("[1, 12, 23]");
+		code_v4_("class A { public static m2(a, b) { return a * 10 + b } } return arrayMap([1, 2, 3], A.m2)").equals("[10, 21, 32]");
+		// Méthode avec plus de params que fournis : les manquants sont paddés à null (comme une
+		// fonction classique), m4 renvoie son 1er argument donc on retrouve clé (v1-3) / élément (v4).
+		code_v2_3("class A { public static m4(a, b, c, d) { return a } } return arrayMap([1, 2, 3], A.m4)").equals("[0, 1, 2]");
+		code_v4_("class A { public static m4(a, b, c, d) { return a } } return arrayMap([1, 2, 3], A.m4)").equals("[1, 2, 3]");
 	}
 
 	@Test

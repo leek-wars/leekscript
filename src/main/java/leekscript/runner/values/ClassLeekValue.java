@@ -170,23 +170,44 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 	}
 
 	public void addGenericStaticMethod(String method) {
-		genericStaticMethods.put(method, new FunctionLeekValue(0) {
+		// Toutes les surcharges (u_<method>_<arité>) sont déjà enregistrées ici : on lit les
+		// arités disponibles pour que la référence se comporte comme une vraie fonction (#11714).
+		final String prefix = "u_" + method + "_";
+		int max = -1;
+		for (var key : staticMethods.keySet()) {
+			if (key.startsWith(prefix)) {
+				try {
+					max = Math.max(max, Integer.parseInt(key.substring(prefix.length())));
+				} catch (NumberFormatException e) {}
+			}
+		}
+		// Arité rapportée = la plus grande surcharge, pour que les fonctions d'ordre supérieur
+		// legacy (v1-3, qui adaptent via getArgumentsCount) passent le bon nombre d'arguments.
+		final int maxArity = Math.max(0, max);
+		genericStaticMethods.put(method, new FunctionLeekValue(maxArity) {
 			public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
-				var m = staticMethods.get("u_" + method + "_" + arguments.length);
+				// Surcharge exacte
+				var m = staticMethods.get(prefix + arguments.length);
 				if (m != null) {
 					return m.value.run(ai, null, arguments);
 				}
-				// Référence de méthode passée à une fonction d'ordre supérieur (arrayMap, etc.) :
-				// celle-ci appelle le callback avec des arguments supplémentaires (élément, index,
-				// tableau). Comme une fonction classique ignore les arguments en trop, on retombe
-				// sur la surcharge de plus grande arité <= au nombre d'arguments fournis (#11714).
+				// Référence passée à une fonction d'ordre supérieur (arrayMap, etc.) qui appelle le
+				// callback avec (élément, index, tableau) : on choisit la surcharge la plus proche
+				// et on ajuste les arguments (tronque le surplus, padde les manquants à null) pour
+				// se comporter comme une fonction classique.
+				int target = -1;
 				for (int n = arguments.length - 1; n >= 0; --n) {
-					m = staticMethods.get("u_" + method + "_" + n);
-					if (m != null) {
-						return m.value.run(ai, null, Arrays.copyOfRange(arguments, 0, n));
+					if (staticMethods.containsKey(prefix + n)) { target = n; break; }
+				}
+				if (target < 0) {
+					for (int n = arguments.length + 1; n <= maxArity; ++n) {
+						if (staticMethods.containsKey(prefix + n)) { target = n; break; }
 					}
 				}
-				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError("u_" + method + "_" + arguments.length) });
+				if (target >= 0) {
+					return staticMethods.get(prefix + target).value.run(ai, null, Arrays.copyOf(arguments, target));
+				}
+				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(prefix + arguments.length) });
 				return null;
 			}
 		});
