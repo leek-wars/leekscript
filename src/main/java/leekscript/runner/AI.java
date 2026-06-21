@@ -577,11 +577,12 @@ public abstract class AI {
 			// System.out.println(element.getClassName() + " " + element.getMethodName() + " " + element.getLineNumber());
 			if (element.getClassName().startsWith("AI_")) {
 				var loc = getErrorLocalisation(element.getLineNumber());
-				if (!loc.isEmpty()) {
-					sb.append(loc);
-				} else {
-					sb.append("\t▶ ").append(element.getMethodName()).append(", java line ").append(element.getLineNumber()).append("\n");
+				if (loc.isEmpty()) {
+					// Frame interne synthétique (runIA, helpers stdlib inlinés Array_count_a...) sans
+					// ligne LeekScript : on ne l'expose pas à l'utilisateur (bruit + fuite d'internes) — #11874
+					continue;
 				}
+				sb.append(loc);
 				if (count++ > 50) {
 					sb.append("[...]");
 					break;
