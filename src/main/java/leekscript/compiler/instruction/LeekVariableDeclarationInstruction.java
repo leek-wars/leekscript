@@ -345,6 +345,11 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 		return type;
 	}
 
+	/** #43 T3 : spécialise le type déclaré (paramètre d'une variante monomorphisée v5). */
+	public void setType(Type type) {
+		this.type = type;
+	}
+
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub

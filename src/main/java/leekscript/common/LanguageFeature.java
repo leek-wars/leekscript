@@ -21,7 +21,11 @@ public enum LanguageFeature {
 	TYPE_GUARDS(5),
 
 	/** Inter-procedural inference of non-annotated function return types (#43). */
-	RETURN_TYPE_INFERENCE(5);
+	RETURN_TYPE_INFERENCE(5),
+
+	/** Monomorphisation : inférence des types de PARAMÈTRES non annotés via spécialisation
+	 *  par profil d'arguments (variantes re-parsées, dispatch statique) (#43, tranche 3). */
+	PARAMETER_TYPE_INFERENCE(5);
 
 	public final int since;
 

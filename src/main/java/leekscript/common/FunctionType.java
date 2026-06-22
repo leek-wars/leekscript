@@ -43,6 +43,16 @@ public class FunctionType extends Type {
 		this.updateName();
 	}
 
+	/** #43 T3 : remplace le type du paramètre {@code a} (variante monomorphisée v5). Les sites
+	 *  d'appel lisent ce type au codegen pour convertir leurs arguments. */
+	public void setArgument(int a, Type type) {
+		assert type != null;
+		if (a >= 0 && a < arguments.size()) {
+			arguments.set(a, type);
+			this.updateName();
+		}
+	}
+
 	private void updateName() {
 		this.name = "(";
 		for (int a = 0; a < arguments.size(); ++a) {

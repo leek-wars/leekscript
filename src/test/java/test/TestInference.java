@@ -89,4 +89,70 @@ public class TestInference extends TestCommon {
 		// avant toute analyse à la demande). `leaked` reste donc inconnu dans callee.
 		code_v5("function caller() { var leaked = 99 return callee() } function callee(p = leaked) { return p } return caller()").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 	}
+
+	@Test
+	public void testParameterMonomorphization() throws Exception {
+		section("Parameter monomorphization (#43 tranche 3)");
+
+		// Cœur : un paramètre non annoté appelé avec un type concret crée une VARIANTE
+		// spécialisée (corps re-parsé + analysé typé, 1×). Son type de retour précis se
+		// PROPAGE à l'appelant → en strict v5, `integer m = dbl(5)` ne warn plus (dbl(5)
+		// dispatche vers la variante dbl$i qui renvoie int). v4 (off) → x any → warn.
+		code_strict_v5_("function dbl(x) { return x * 2 } integer m = dbl(5) return m").noWarning();
+		code_strict_v4("function dbl(x) { return x * 2 } integer m = dbl(5) return m").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+		// Runtime correct (la variante produit la même valeur).
+		code_v5("function dbl(x) { return x * 2 } return dbl(21)").equals("42");
+		code_v4_("function dbl(x) { return x * 2 } return dbl(21)").equals("42");
+
+		// Argument = local typé (pas un littéral) : profil int détecté pareil.
+		code_v5("function dbl(x) { return x * 2 } var n = 7 return dbl(n)").equals("14");
+
+		// real et bool.
+		code_strict_v5_("function half(x) { return x / 2.0 } real r = half(9) return r").noWarning();
+		code_v5("function neg(b) { return !b } return neg(true)").equals("false");
+
+		// Profils MULTIPLES : la même fonction appelée int ET real → DEUX variantes (id$i, id$r),
+		// chacune correcte. (id$a — appel any — garderait la générique.)
+		code_v5("function id(x) { return x } return id(5) + id(10)").equals("15");
+		code_v5("function id(x) { return x } return [id(5), id(2.5)]").equals("[5, 2.5]");
+	}
+
+	@Test
+	public void testParameterMonomorphization_safety() throws Exception {
+		section("Parameter monomorphization — sûreté (#43 T3)");
+
+		// Récursion : l'appel récursif (n int) dispatche vers la MÊME variante (cache avant
+		// analyse → pas de boucle). Runtime correct.
+		code_v5("function fact(n) { if (n <= 1) { return 1 } return n * fact(n - 1) } return fact(5)").equals("120");
+
+		// Abandon de variante : spécialiser x en int rendrait `x[0]` invalide → la variante est
+		// abandonnée SANS erreur visible, l'appelant garde la générique (accès dynamique → null).
+		code_v5("function f(x) { return x[0] } return f(5)").equals("null");
+
+		// Paramètre annoté : inchangé (pas de variante, déjà typé).
+		code_v5("function f(integer x) { return x * 2 } return f(9)").equals("18");
+
+		// Fonction utilisée comme VALEUR (échappe) : l'appel dynamique via la variable utilise la
+		// générique ; un appel direct concret peut quand même se spécialiser. Runtime correct.
+		code_v5("function f(x) { return x * 2 } var g = f return g(5) + f(10)").equals("30");
+
+		// Appel avec un argument any (non concret) → pas de variante, générique. Correct.
+		code_v5("function dbl(x) { return x * 2 } var a = [1] return dbl(a[0])").equals("2");
+
+		// Fermeture DANS un corps monomorphisé : la variante re-parse une closure fraîche qui
+		// capture le paramètre typé. Runtime correct (pas de collision d'identité de closure).
+		code_v5("function apply(x) { var f = u -> u + x return f(10) } return apply(5)").equals("15");
+
+		// Chaîne de monomorphisation : twice(5) → twice$i dont le corps appelle inc(int) →
+		// inc$i (typé), imbriqué. Propagation à travers les variantes.
+		code_v5("function inc(x) { return x + 1 } function twice(x) { return inc(inc(x)) } return twice(5)").equals("7");
+
+		// Mutuelle récursion typée : ping(int)/pong(int) créent ping$i/pong$i. Pas de boucle de
+		// création (cache avant analyse). Runtime correct.
+		code_v5("function ping(n) { if (n <= 0) { return 0 } return pong(n - 1) } function pong(n) { return ping(n - 1) } return ping(6)").equals("0");
+
+		// Variante créée depuis une MÉTHODE (currentClass posée) : la fonction libre s'analyse
+		// hors contexte de classe (currentClass annulé). Runtime correct.
+		code_v5("function dbl(x) { return x * 2 } class A { m() { return dbl(5) } } return new A().m()").equals("10");
+	}
 }

@@ -541,6 +541,45 @@ public class WordCompiler {
 		mMain.analyze(this);
 	}
 
+	/**
+	 * #43 T3 (monomorphisation) — re-parse le CORPS d'une fonction dans un bloc frais
+	 * {@code fresh} (variante spécialisée), à partir de la position mémorisée après le `{`.
+	 * Reconstruit un AST propre (résolution des symboles dans le contexte courant) que la
+	 * variante analysera UNE seule fois (pas de ré-analyse → pas de problème d'idempotence).
+	 * Boucle bornée : s'arrête quand le `}` du corps referme {@code fresh} (mCurentBlock
+	 * repasse au parent). Sauvegarde/restaure la position du flux + le bloc/fonction courants
+	 * pour être appelable en pleine analyse (le flux de tokens n'est plus utilisé en phase
+	 * d'analyse). Ne déclare rien globalement : un corps ne contient que des instructions et
+	 * des fonctions anonymes inline (les fonctions/classes nommées sont réservées au bloc
+	 * principal).
+	 */
+	public void reparseFunctionBody(leekscript.compiler.bloc.FunctionBlock fresh) throws LeekCompilerException {
+		var savePos = mTokens.getPosition();
+		var saveBlock = mCurentBlock;
+		var saveFunction = mCurrentFunction;
+		var saveClass = mCurrentClass;
+		var saveLine = mLine;
+		try {
+			mTokens.setPosition(fresh.getBodyStart());
+			mCurentBlock = fresh;
+			setCurrentFunction(fresh);
+			mCurrentClass = null;
+			var parent = fresh.getParent();
+			while (mTokens.hasMoreTokens() && mCurentBlock != parent) {
+				if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+				endCurrentInstruction();
+				if (!mTokens.hasMoreTokens() || mCurentBlock == parent) break;
+				compileWord();
+			}
+		} finally {
+			mCurentBlock = saveBlock;
+			setCurrentFunction(saveFunction);
+			mCurrentClass = saveClass;
+			mLine = saveLine;
+			mTokens.setPosition(savePos);
+		}
+	}
+
 	private void compileWord() throws LeekCompilerException {
 		mLine = mTokens.get().getStartLine();
 		mMain.addInstruction();
@@ -1002,6 +1041,11 @@ public class WordCompiler {
 		// On regarde s'il y a des accolades
 		if (mTokens.eat().getType() != TokenType.ACCOLADE_LEFT) {
 			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+		}
+		// #43 T3 : mémoriser le 1er token du corps pour pouvoir le re-parser dans une variante
+		// monomorphisée (le corps est ensuite parsé par la boucle principale dans mCurentBlock).
+		if (leekscript.common.LanguageFeature.PARAMETER_TYPE_INFERENCE.enabledIn(getVersion())) {
+			block.setBodyStart(mTokens.getPosition());
 		}
 		mMain.addFunction(block);
 		setCurrentFunction(previousFunction);
@@ -3003,7 +3047,27 @@ public class WordCompiler {
 		return mCurrentFunction;
 	}
 
+	// #43 T3 : mode silencieux pour l'analyse d'une variante monomorphisée. Une variante
+	// spécialisée peut rendre le corps invalide (ex. `x[0]` quand x est spécialisé int) : ses
+	// diagnostics ne doivent PAS atteindre l'utilisateur (le code générique était valide). On
+	// compte les erreurs niveau ERROR pour décider d'abandonner la variante (→ générique).
+	// Pile (la création d'une variante peut, en cascade, en créer d'autres) : chaque niveau
+	// compte ses propres erreurs ; toute analyse de variante en cours supprime l'émission.
+	private final java.util.ArrayList<int[]> silentStack = new java.util.ArrayList<>();
+
+	public void beginSilent() {
+		silentStack.add(new int[] { 0 });
+	}
+
+	public int endSilent() {
+		return silentStack.remove(silentStack.size() - 1)[0];
+	}
+
 	public void addError(AnalyzeError analyzeError) throws LeekCompilerException {
+		if (!silentStack.isEmpty()) {
+			if (analyzeError.level == AnalyzeErrorLevel.ERROR) silentStack.get(silentStack.size() - 1)[0]++;
+			return;
+		}
 		this.mAI.getErrors().add(analyzeError);
 		if (this.mAI.getErrors().size() > 10000) {
 			throw new LeekCompilerException(mTokens.getEndOfFileToken(), Error.TOO_MUCH_ERRORS);

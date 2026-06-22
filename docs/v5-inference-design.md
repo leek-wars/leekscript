@@ -127,38 +127,109 @@ qu'une fois par la boucle → le drapeau est inerte. Tests `TestInference` (prop
 
 ### Tranche 3 — inférence des types de paramètres / spécialisation (CHANTIER DÉDIÉ)
 
-Le gros gain de l'issue (débloque `getHP(entity)`), mais **fondamentalement plus lourd**
-que T1/T2 : le type d'un paramètre n'est PAS déductible de la fonction seule, il dépend
-des **sites d'appel**. Or l'architecture actuelle analyse chaque corps **une seule fois**
-(preAnalyze fige la résolution, analyze fige les types). Deux approches réelles, aucune ne
-rentre proprement comme une tranche contenue :
+Le gros gain de l'issue (débloque `getHP(entity)` → `hp * 2` typé chez l'appelant), mais
+**fondamentalement plus lourd** que T1/T2 : le type d'un paramètre n'est PAS déductible de
+la fonction seule, il dépend des **sites d'appel**. Or l'architecture analyse chaque corps
+**une seule fois** (preAnalyze fige la résolution, analyze fige les types).
 
-**Piste A — point fixe whole-program (union des types d'arguments).** Inférer le type d'un
-paramètre = union des types d'arguments observés sur tous les sites d'appel, puis ré-analyser
-le corps avec ces types. Sound (le paramètre reçoit bien l'un de ces types). MAIS :
-- les types d'arguments exigent l'analyse des corps APPELANTS (pour typer les args), qui
-  exige les types de retour des appelés (T1/T2) → dépendance circulaire = **itération à
-  point fixe** sur tout le programme ;
-- ré-analyser les corps **duplique les erreurs** → il faut une passe de collecte *sans
-  émission d'erreur* distincte de la passe finale, ou un mécanisme de déduplication ;
-- fragile : un seul appel avec un argument `any` (ou un appel dynamique / via variable)
-  fait retomber le paramètre sur `any`.
+#### Expérience menée (2026-06-22) : la piste « ré-analyse » est UNSOUND — abandonnée
 
-**Piste B — spécialisation / monomorphisation.** Générer une version Java spécialisée par
-profil de types d'arguments observé (`getHP_Entity`, `getHP_any`…) + dispatch au site
-d'appel. La plus **sound** (chaque version est correcte pour son profil) et la plus
-performante (multiplicatif avec les autres optimisations de types), mais **gros changement
-codegen** : émission de N corps, sélection de la bonne variante par site, explosion
-potentielle du nombre de variantes, interaction avec la récursion et les fermetures.
+On a implémenté et mesuré la **piste A** sous sa forme la plus propre : une analyse v5 en
+**deux passes** — passe 1 silencieuse (collecte des sites d'appel + types d'arguments, aucune
+erreur émise), puis on fige les types de paramètres spécialisés (= union des arguments observés,
+fonction non échappée, validée par ré-analyse + rollback), puis passe 2 **autoritaire** qui
+ré-analyse tout avec les paramètres spécialisés pour **propager les types de retour affinés aux
+appelants**. Détection d'échappement propre : `FunctionBlock.variable.getUsageCount()` (incrémenté
+1×/référence en preAnalyze) `==` nombre de sites d'appel directs ⇒ pas de fuite comme valeur.
 
-**Pourquoi pas une tranche contenue.** Contrairement à T1/T2 (greffées sur la passe analyze
-existante sans rien réordonner de structurel), T3 impose soit un moteur de point fixe
-multi-passes avec gestion des erreurs, soit un étage de monomorphisation au codegen. Les
-deux sont des projets à part entière, avec un vrai risque d'**unsoundness** si bâclés
-(violation du principe « jamais régresser »). **Recommandation : chantier dédié**, à concevoir
-et implémenter séparément, pas en fin de session. T1+T2 livrent déjà la **solution 1 de
-l'issue #43** (inférence inter-procédurale des types de retour) ; T3 correspond aux
-solutions 2-3 (annotations encouragées / spécialisation).
+**Résultat : ça MARCHE fonctionnellement.** `function dbl(x){return x*2}` appelé seulement avec
+des int → en strict v5, `integer m = dbl(5)` ne warn plus (x inféré int → retour int → propagé) ;
+v4 warn toujours. Rollback, échappement, récursion, union compound-conservatrice : OK. Suite
+**17061/17065**, et **v1-4 byte-identique** (le gate tient).
+
+**MAIS la ré-analyse n'est PAS idempotente** — 4 échecs v5 irréductibles, cause racine confirmée :
+1. **Compteur d'opérations.** `ConditionalBloc.analyze` fait `mCondition.operations++` (ligne ~82,
+   « +1 op pour le if »). Les feuilles (littéraux, variables) ne RÉINITIALISENT pas leur
+   `operations` dans leur propre `analyze` → un `++` externe **s'accumule** d'une passe à l'autre.
+   `if (1) {}` passe de 1 à 2 ops. Le compte d'ops est lu au codegen (`writer.addCounter`) → faux
+   au runtime (l'ops/tour est une mécanique de jeu). Les boucles (while/for) ont le même motif.
+2. **État de narrowing des champs.** `class A { static integer|null x = null; ... }` : après que la
+   passe 1 a vu `class.x = 12`, le `lastAssignedType`/`mNarrowedPropertyTypes` du champ **persiste**
+   en passe 2 → `if (class.x == null)` devient `COMPARISON_ALWAYS_FALSE` et l'affectation saute.
+   Cet état vit dans ~4 fichiers (ConditionalBloc, AbstractLeekBlock, LeekVariable, LeekExpression).
+
+**Conclusion : `analyze` n'est pas rejouable.** Rendre l'analyse idempotente (sortir les `++`
+d'ops du chemin analyze + reset du narrowing entre passes) est du whack-a-mole à couverture de
+test incomplète → risque de bugs v5 subtils (le compteur d'ops corrompu ne lève AUCUNE erreur).
+Toute approche par ré-analyse (2 passes OU mono-passe avec ré-analyse de corps) hérite du défaut.
+**Décision user (2026-06-22) : abandonner la ré-analyse, faire la monomorphisation.**
+
+#### Piste retenue — monomorphisation par RE-PARSE (chaque variante analysée 1×)
+
+Générer une **méthode Java spécialisée par profil de types d'arguments** observé
+(`f_dbl$i(long)`, `f_dbl$s(String)`, + générique `f_dbl(Object)` pour les sites any/dynamiques) ;
+chaque variante est analysée **exactement une fois** → aucune ré-analyse, aucun problème
+d'idempotence ni d'ops. Le dispatch est **statique** (le site d'appel connaît le profil de ses
+arguments au compile-time → il appelle directement la bonne variante, zéro coût runtime). Chaque
+variante a son propre type de retour précis → la propagation aux appelants est **sound par
+construction** (le site lit le retour de la variante, analysé une seule fois).
+
+**Faisabilité du corps frais — RE-PARSE plutôt que deep-clone d'AST** (pas d'infra de clone dans
+le code ; écrire `clone()` sur toute la hiérarchie expression/instruction = énorme et fragile) :
+- Le flux de tokens supporte `mTokens.getPosition()` / `setPosition()` (WordCompiler:636/645).
+- Une fonction est parsée par `functionBlock()` (en-tête : params + type retour), puis le `{`
+  (WordCompiler:914) ouvre le corps que la **boucle principale `compileWord` parse dans
+  `mCurentBlock = block`** jusqu'au `}` apparié.
+- Donc : enregistrer `block.bodyStartPosition = mTokens.getPosition()` juste après le `{`, et pour
+  chaque variante repositionner le flux à `bodyStartPosition`, créer un FunctionBlock frais avec
+  les params **pré-typés au profil**, re-parser le corps (boucle bornée par la profondeur
+  d'accolades) puis preAnalyze + analyze ce bloc frais **une seule fois** (AST propre, résolution
+  des symboles correcte dans le contexte de compilation courant).
+
+**Algorithme (worklist).**
+1. Analyse normale (T1/T2) : tous les sites d'appel résolus, args typés. Collecter par fonction
+   les **profils de types d'arguments** distincts des sites directs (réutiliser la collecte de
+   sites + l'échappement de l'expérience 2-passes ; `usageCount == sites` ⇒ non échappée).
+2. Worklist de `(fonction, profil)` où le profil a ≥1 type concret et la fonction est éligible
+   (non échappée, non point d'entrée, non redéfinie, non générique, pas de type guard, pas via
+   namespace, params non-référence). Pour chaque : re-parser+analyser une variante (params pinned
+   au profil). Une variante peut produire de nouveaux profils internes → enfiler. Dédup par
+   `(fonction, profil)`. Borne = fonctions × profils distincts (petit en pratique ; `log()` si on
+   cape).
+3. Codegen : émettre la générique + toutes les variantes ; chaque site d'appel émet l'appel de SA
+   variante (par profil) ou la générique.
+
+#### 1ʳᵉ TRANCHE IMPLÉMENTÉE ✅ (2026-06-22, suite 17063/0, v1-4 byte-identique)
+
+Monomorphisation **à la demande** (style T2), pas de post-pass : pendant l'analyse d'un appelant,
+`LeekFunctionCall.analyze` (branche `VariableType.FUNCTION`) calcule le profil de types des
+arguments et appelle `FunctionBlock.monomorphicVariantFor(compiler, argTypes)`. Si un paramètre non
+annoté est appelé avec int/real/bool, une **variante** est créée+analysée **1×** et mise en cache :
+
+- **Re-parse** du corps (`WordCompiler.reparseFunctionBody`) dans un `FunctionBlock` frais aux
+  paramètres pré-typés (`setParameterType` met à jour mTypes + FunctionType + déclaration + var
+  ARGUMENT). `functionBlock()` mémorise `bodyStart = mTokens.getPosition()` juste après le `{` ;
+  la boucle de re-parse est bornée (s'arrête quand le `}` referme le bloc frais), sauve/restaure
+  position+bloc+fonction+classe → appelable en pleine analyse (le flux de tokens est libre en phase
+  d'analyse). La variante est analysée 1× → **aucune ré-analyse, aucun problème d'idempotence**.
+- **Propagation** : `this.functionType`/`this.type` du site = ceux de la variante (retour précis
+  inféré par T1 sur le corps typé) → l'appelant voit le type précis (testé : strict v5
+  `integer m = dbl(5)` ne warn plus). **Dispatch statique** au codegen : `f_<internalName>$<profil>`.
+- **Codegen** : `FunctionBlock.writeJavaCode` émet la générique PUIS ses variantes (chacune un
+  `FunctionBlock` à part avec son suffixe `$i`/`$r`/`$b` + corps typé).
+- **Récursion** : variante ajoutée au cache AVANT son analyse → l'appel récursif de même profil la
+  retrouve (pas de boucle). Mutuelle OK.
+- **Abandon sûr** : la variante est analysée en mode SILENCIEUX (pile d'erreurs, la création peut
+  cascader) ; si la spécialisation rend le corps invalide (ex. `x[0]` sur un int), erreurs ≥1 →
+  variante jetée + profil mémorisé `failedProfiles` → l'appelant garde la générique, AUCUNE erreur
+  visible.
+
+**Limites de cette tranche (extensions futures) :** profils int/real/bool seulement (étendre aux
+classes pour `getHP(entity)`, Array/Map/Set, string) ; arité fixe (pas de paramètres par défaut) ;
+**fonctions du module PRINCIPAL uniquement** (les modules importés sont parsés par un WordCompiler
+enfant → leur `bodyStart` n'est pas dans le flux principal ; à re-parser via leur compilateur
+enfant) ; pas générique / pas type guard / `@référence` jamais spécialisé. Tests
+`TestInference.testParameterMonomorphization(_safety)`.
 
 ## 5. Points de décision (à valider)
 

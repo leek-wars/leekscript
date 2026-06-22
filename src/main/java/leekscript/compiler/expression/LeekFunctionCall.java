@@ -73,6 +73,9 @@ public class LeekFunctionCall extends Expression {
 	private ClassMethodBlock constructorBlock = null;
 	private Type functionType = Type.ANY;
 	private FunctionBlock resolvedFunction = null;
+	// #43 T3 (monomorphisation) : variante spécialisée vers laquelle ce site d'appel dispatche
+	// (selon le profil de types de ses arguments). null = appel de la fonction générique.
+	private FunctionBlock resolvedVariant = null;
 	// @tailrec : vrai si cet appel est l'expression directe d'un `return` non
 	// optionnel (position terminale). Renseigné par LeekReturnInstruction.analyze.
 	private boolean tailPosition = false;
@@ -544,7 +547,13 @@ public class LeekFunctionCall extends Expression {
 				openGenericReturnCast(mainblock, writer);
 			}
 			writer.addCode("f_");
-			writer.addCode(user_function != null ? user_function.getInternalName() : ((LeekVariable) mExpression).getName());
+			// #43 T3 : dispatch statique vers la variante monomorphisée si ce site en a résolu
+			// une (sinon nom générique). La variante a son propre nom Java suffixé par le profil.
+			if (resolvedVariant != null) {
+				writer.addCode(resolvedVariant.getInternalName());
+			} else {
+				writer.addCode(user_function != null ? user_function.getInternalName() : ((LeekVariable) mExpression).getName());
+			}
 			writer.addCode("(");
 			addComma = false;
 			typedArguments = true;
@@ -920,7 +929,27 @@ public class LeekFunctionCall extends Expression {
 					if (mParameters.size() < f.getMinParameters() || mParameters.size() > f.getMaxParameters()) {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
 					}
-					verifyVersions(compiler, f.getVersions());
+					// #43 T3 (monomorphisation) : selon le profil de types des arguments de CE
+					// site, dispatcher vers une variante spécialisée (créée+analysée 1× à la
+					// demande, mise en cache). La variante porte un type de retour précis →
+					// l'appelant le voit ici (this.type via verifyVersions) → propagation sound,
+					// sans aucune ré-analyse. Sinon (aucun param concret), on garde la générique.
+					FunctionBlock callTarget = f;
+					// Garde bon marché AVANT d'allouer argTypes : la plupart des fonctions ne
+					// sont pas monomorphisables → on évite la liste sur le chemin chaud.
+					if (leekscript.common.LanguageFeature.PARAMETER_TYPE_INFERENCE.enabledIn(compiler.getVersion())
+							&& f.isMonomorphizable()
+							&& !compiler.getMainBlock().isRedefinedFunction(v.getName())) {
+						var argTypes = new ArrayList<Type>(mParameters.size());
+						for (var p : mParameters) argTypes.add(p.getType());
+						var variant = f.monomorphicVariantFor(compiler, argTypes);
+						if (variant != null) {
+							this.resolvedVariant = variant;
+							callTarget = variant;
+							this.functionType = variant.getType();
+						}
+					}
+					verifyVersions(compiler, callTarget.getVersions());
 				}
 
 			} else if (v.getVariableType() == VariableType.SYSTEM_FUNCTION) {

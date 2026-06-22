@@ -69,6 +69,18 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	// déclenche analyze de l'appelé) peut appeler analyze plusieurs fois et en ré-entrance ;
 	// on n'analyse qu'une fois.
 	private boolean analysisStarted = false;
+	// #43 T3 (v5) — monomorphisation. Position du 1er token du CORPS (après le `{`), pour
+	// re-parser le corps dans une variante spécialisée (chaque variante analysée 1×, pas de
+	// ré-analyse).
+	private leekscript.compiler.LexicalParserTokenStream.LexicalParserTokenStreamPosition bodyStart = null;
+	// Suffixe de profil pour le nom Java d'une variante (`$i`, `$r`…). Vide = fonction
+	// générique. Le `$` n'est pas un caractère d'identifiant LeekScript → anti-collision.
+	private String variantSuffix = "";
+	// Variantes spécialisées de cette fonction (générique), indexées par clé de profil.
+	private java.util.LinkedHashMap<String, FunctionBlock> variants = null;
+	// Profils dont la variante a été ABANDONNÉE (spécialisation invalide → erreur) : on garde
+	// la générique et on ne retente pas.
+	private java.util.HashSet<String> failedProfiles = null;
 
 	public FunctionBlock(AbstractLeekBlock parent, MainLeekBlock main, Token token) {
 		super(parent, main);
@@ -97,9 +109,149 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 
 	/** Nom utilisé dans le code Java généré (`f_`, `ufunction_`). Préfixé par le
 	 * module pour éviter les collisions entre modules ; vide pour le module
-	 * principal → v1-4 byte-identique. */
+	 * principal → v1-4 byte-identique. Suffixé par le profil pour une variante
+	 * monomorphisée (#43 T3 ; vide pour la générique → inchangé). */
 	public String getInternalName() {
-		return (module == null ? "" : module.prefix()) + token.getWord();
+		return (module == null ? "" : module.prefix()) + token.getWord() + variantSuffix;
+	}
+
+	// #43 T3 — position du corps (pour re-parse) et machinerie des variantes.
+	public void setBodyStart(leekscript.compiler.LexicalParserTokenStream.LexicalParserTokenStreamPosition position) {
+		this.bodyStart = position;
+	}
+
+	public leekscript.compiler.LexicalParserTokenStream.LexicalParserTokenStreamPosition getBodyStart() {
+		return bodyStart;
+	}
+
+	public void setVariantSuffix(String suffix) {
+		this.variantSuffix = suffix;
+	}
+
+	public boolean isVariant() {
+		return !variantSuffix.isEmpty();
+	}
+
+	public void addVariant(String profileKey, FunctionBlock variant) {
+		if (variants == null) variants = new java.util.LinkedHashMap<>();
+		variants.put(profileKey, variant);
+	}
+
+	public FunctionBlock getVariant(String profileKey) {
+		return variants == null ? null : variants.get(profileKey);
+	}
+
+	public java.util.Collection<FunctionBlock> getVariants() {
+		return variants == null ? java.util.Collections.emptyList() : variants.values();
+	}
+
+	/** #43 T3 : spécialise le type du paramètre {@code i} (variante monomorphisée). Met à jour
+	 *  les quatre représentations : mTypes (versions), le FunctionType (lu au codegen par les
+	 *  appelants), la déclaration (signature Java) et la variable ARGUMENT (relue par le corps). */
+	public void setParameterType(int i, Type type) {
+		mTypes.set(i, type);
+		this.type.setArgument(i, type);
+		mParameterDeclarations.get(i).setType(type);
+		var argVar = mVariables == null ? null : mVariables.get(mParameters.get(i));
+		if (argVar != null) argVar.setType(type);
+	}
+
+	// #43 T3 — une fonction est monomorphisable si on peut re-parser+spécialiser son corps :
+	// corps mémorisé, pas déjà une variante, pas générique, pas un type guard, arité fixe (pas
+	// de paramètre optionnel — 1ʳᵉ tranche), et au moins un paramètre non annoté non-référence.
+	public boolean isMonomorphizable() {
+		if (bodyStart == null) return false;
+		if (isVariant()) return false;
+		if (typeParameters != null) return false;
+		if (typeGuardParam >= 0) return false;
+		if (minParameters != maxParameters) return false;
+		// La position du corps (bodyStart) appartient au flux de tokens du compilateur qui a
+		// parsé la fonction. Les modules IMPORTÉS sont parsés par un WordCompiler enfant (flux
+		// distinct) → re-parser depuis le flux principal lirait des tokens faux. On se restreint
+		// donc aux fonctions du module PRINCIPAL (parsé par le compilateur principal). Étendre
+		// aux modules importés = re-parser via leur compilateur enfant (tranche ultérieure).
+		if (module != null && !module.isMain()) return false;
+		for (int i = 0; i < mParameters.size(); i++) {
+			if (mParametersTypes.get(i) == null && !mReferences.get(i)) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * #43 T3 — variante monomorphisée pour un profil d'arguments donné, créée à la demande
+	 * (pendant l'analyse de l'appelant) et mise en cache. Re-parse le corps avec les paramètres
+	 * concrets pré-typés, l'analyse UNE fois, et la renvoie. {@code null} si aucun paramètre
+	 * n'est concrètement spécialisable pour ce profil (l'appelant garde la générique). La
+	 * variante est ajoutée au cache AVANT son analyse (récursion : un appel récursif de même
+	 * profil retrouve la variante en cours).
+	 */
+	public FunctionBlock monomorphicVariantFor(WordCompiler compiler, java.util.List<Type> argTypes) throws LeekCompilerException {
+		if (!isMonomorphizable()) return null;
+		if (argTypes.size() != mParameters.size()) return null;
+		// Profil : 'i'/'r'/'b' pour un paramètre non annoté appelé avec int/real/bool
+		// (spécialisable), 'a' sinon. La clé sert d'index de cache + de suffixe de nom Java.
+		var key = new StringBuilder();
+		var profile = new Type[mParameters.size()];
+		boolean anyConcrete = false;
+		for (int i = 0; i < mParameters.size(); i++) {
+			char marker = 'a';
+			if (mParametersTypes.get(i) == null && !mReferences.get(i)) { // spécialisable
+				var argType = argTypes.get(i);
+				if (argType == Type.INT)       { marker = 'i'; profile[i] = Type.INT;  anyConcrete = true; }
+				else if (argType == Type.REAL) { marker = 'r'; profile[i] = Type.REAL; anyConcrete = true; }
+				else if (argType == Type.BOOL) { marker = 'b'; profile[i] = Type.BOOL; anyConcrete = true; }
+			}
+			key.append(marker);
+		}
+		if (!anyConcrete) return null;
+		var k = key.toString();
+		if (failedProfiles != null && failedProfiles.contains(k)) return null;
+		var existing = getVariant(k);
+		if (existing != null) return existing;
+		// L'analyse de la variante est SILENCIEUSE : si la spécialisation rend le corps invalide
+		// (ex. `x[0]` sur un int), on abandonne la variante et l'appelant garde la générique
+		// (sans erreur visible : le code générique de l'utilisateur reste valide). On annule la
+		// classe courante : une fonction libre est analysée hors contexte de classe (la variante
+		// peut être créée depuis l'appel d'une méthode, où currentClass est posée).
+		var savedClass = compiler.getCurrentClass();
+		compiler.setCurrentClass(null);
+		compiler.beginSilent();
+		int errors;
+		FunctionBlock variant;
+		try {
+			variant = createVariant(compiler, profile, "$" + k);
+			addVariant(k, variant); // AVANT analyze : casse la récursion (même profil → variante en cours)
+			variant.preAnalyze(compiler);
+			variant.analyze(compiler);
+		} finally {
+			errors = compiler.endSilent();
+			compiler.setCurrentClass(savedClass);
+		}
+		if (errors > 0) {
+			if (variants != null) variants.remove(k);
+			if (failedProfiles == null) failedProfiles = new java.util.HashSet<>();
+			failedProfiles.add(k);
+			return null;
+		}
+		return variant;
+	}
+
+	// Crée une variante : FunctionBlock frais, mêmes paramètres (types concrets pour le profil),
+	// corps re-parsé dans un AST propre. Annoté du suffixe de profil pour le nom Java.
+	private FunctionBlock createVariant(WordCompiler compiler, Type[] profile, String suffix) throws LeekCompilerException {
+		var variant = new FunctionBlock(getParent(), mMain, token);
+		variant.setModule(module);
+		variant.setVariantSuffix(suffix);
+		variant.setBodyStart(bodyStart);
+		if (annotations != null) for (var a : annotations) variant.addAnnotation(a);
+		for (int i = 0; i < mParameterDeclarations.size(); i++) {
+			variant.addParameter(compiler, mParameterDeclarations.get(i).getToken(), mReferences.get(i), mParametersTypes.get(i), null);
+		}
+		for (int i = 0; i < profile.length; i++) {
+			if (profile[i] != null) variant.setParameterType(i, profile[i]);
+		}
+		compiler.reparseFunctionBody(variant);
+		return variant;
 	}
 
 	public int countParameters() {
@@ -360,6 +512,12 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		for (int paramCount = minParameters; paramCount <= maxParameters; paramCount++) {
 			writeJavaCodeForArity(mainblock, writer, paramCount);
+		}
+		// #43 T3 : émettre les variantes monomorphisées (méthodes `f_<nom>$<profil>`). Chacune
+		// a été analysée 1× avec ses paramètres typés → corps spécialisé. Les sites d'appel au
+		// profil correspondant dispatchent vers elles (LeekFunctionCall).
+		for (var variant : getVariants()) {
+			variant.writeJavaCode(mainblock, writer, parenthesis);
 		}
 	}
 
