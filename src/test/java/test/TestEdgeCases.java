@@ -43,6 +43,20 @@ public class TestEdgeCases extends TestCommon {
 	}
 
 	@Test
+	public void testCoalesce_chained_with_optional_access() throws Exception {
+		section("Chained coalesce whose middle operand is an optional (`?.`) object access");
+		// Production error #11231144: `this.m[k] ?? this.p?.get(k) ?? 0` in strict v4.
+		// The optional call `?.` emits callObjectAccessNullSafe(...) WITHOUT a return-type
+		// cast (unlike the regular `.` path), so the branch is Object-typed. The chained
+		// `??` reused that branch verbatim, leaving the outer conditional `... ? Object : 0l`
+		// -> javac "Object cannot be converted to long" in the worker.
+		code_strict_v4_("class S { private S? p; private Map<integer, integer> m = [:]; public constructor(S? prev) { this.p = prev; } public void set(integer k, integer v) { this.m[k] = v; } public integer get(integer k) { return this.m[k] ?? this.p?.get(k) ?? 0; } } var root = new S(null); return new S(root).get(5)").equals("0");
+		code_strict_v4_("class S { private S? p; private Map<integer, integer> m = [:]; public constructor(S? prev) { this.p = prev; } public void set(integer k, integer v) { this.m[k] = v; } public integer get(integer k) { return this.m[k] ?? this.p?.get(k) ?? 0; } } var root = new S(null); root.set(5, 7); return new S(root).get(5)").equals("7");
+		// Same gap on optional FIELD access used as the coalesce middle operand.
+		code_strict_v4_("class S { private S? p; private integer? v; public constructor(S? prev) { this.p = prev; } public void setV(integer x) { this.v = x; } public integer get() { return this.v ?? this.p?.v ?? 0; } } var root = new S(null); root.setV(9); return new S(root).get()").equals("9");
+	}
+
+	@Test
 	public void testAssignRealIntoIntMap() throws Exception {
 		section("Assigning a real expression into an integer map (operations enabled)");
 		// Production error #11227756: `gain[puce] = effet[2] * (1 + getWisdom() / 100)`

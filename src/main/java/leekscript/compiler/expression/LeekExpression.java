@@ -889,9 +889,14 @@ public class LeekExpression extends Expression {
 			if (parenthesis) writer.addCode("(");
 			writer.compileLoad(mainblock, mExpression1, true);
 			writer.addCode(" != null ? ");
-			mExpression1.writeJavaCode(mainblock, writer, true);
+			// Comme le ternaire (LeekTernaire), on convertit les deux branches vers le
+			// type résultant. Sinon une branche typée Object (ex. accès optionnel `?.`
+			// -> callObjectAccessNullSafe / getFieldNullSafe, émis sans cast) casse le
+			// javac quand le `??` doit produire un primitif : `... ? Object : 0l`
+			// -> « Object cannot be converted to long » (#11231144).
+			writer.compileConvert(mainblock, ARRAY, mExpression1, type, true);
 			writer.addCode(" : ");
-			mExpression2.writeJavaCode(mainblock, writer, true);
+			writer.compileConvert(mainblock, ARRAY, mExpression2, type, true);
 			if (parenthesis) writer.addCode(")");
 			return;
 		case Operators.XOR:
