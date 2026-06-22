@@ -68,6 +68,23 @@ public class TestModulesResolution {
 		assertEquals("25", run(main));
 	}
 
+	// #43 T3 : une fonction d'un module IMPORTÉ se monomorphise aussi. Le corps est re-parsé
+	// depuis le flux de tokens du module (compilateur enfant), pas le flux principal.
+	@Test
+	public void monomorphizeImportedFunction() throws Exception {
+		write("mathmod.leek", "export function dbl(x) { return x * 2 }\nexport function id(x) { return x }");
+		String main = writeMain("import { dbl, id } from \"mathmod\"\nreturn dbl(21) + id(0)");
+		assertEquals("42", run(main));
+	}
+
+	// Variante d'une fonction importée appelée récursivement (re-parse module + cache récursion).
+	@Test
+	public void monomorphizeImportedRecursive() throws Exception {
+		write("recmod.leek", "export function fact(n) { if (n <= 1) { return 1 } return n * fact(n - 1) }");
+		String main = writeMain("import { fact } from \"recmod\"\nreturn fact(5)");
+		assertEquals("120", run(main));
+	}
+
 	// =========================================================================
 	// Visibilité privée par défaut
 	// =========================================================================

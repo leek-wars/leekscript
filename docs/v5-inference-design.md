@@ -244,9 +244,13 @@ spécialisées (conservateur).
 - paramètres par défaut TOLÉRÉS, mais seuls les sites passant TOUS les arguments monomorphisent
   (la variante est créée sans valeur par défaut → params requis ; un appel partiel a
   `argTypes.size() != mParameters.size()` → garde la générique, qui conserve ses défauts) ;
-- **fonctions du module PRINCIPAL uniquement** (les modules importés sont parsés par un WordCompiler
-  enfant → leur `bodyStart` n'est pas dans le flux principal ; à re-parser via leur compilateur enfant) ;
 - pas générique / pas type guard / `@référence` jamais spécialisé.
+
+Les fonctions des **modules importés** sont aussi monomorphisées : chaque `FunctionBlock` mémorise
+son `AIFile` source (`setSourceFile`), et `reparseFunctionBody` bascule `mTokens` sur le flux de ce
+fichier le temps du re-parse (le `bodyStart` d'une fonction de module appartient au flux du
+compilateur enfant qui l'a parsée, pas au flux principal ; pour le module principal c'est le même
+flux). L'analyse de la variante se fait dans le bon module (FunctionBlock.analyze pose le module).
 
 Tests `TestInference.testParameterMonomorphization(_class/_safety)`.
 

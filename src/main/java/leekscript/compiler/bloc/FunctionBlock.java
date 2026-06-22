@@ -73,6 +73,10 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	// re-parser le corps dans une variante spécialisée (chaque variante analysée 1×, pas de
 	// ré-analyse).
 	private leekscript.compiler.LexicalParserTokenStream.LexicalParserTokenStreamPosition bodyStart = null;
+	// Fichier (et donc flux de tokens) qui a parsé cette fonction : le fichier principal, ou
+	// celui d'un module importé (parsé par un WordCompiler enfant). `bodyStart` est une position
+	// DANS ce flux → le re-parse de variante doit l'utiliser (pas forcément le flux principal).
+	private leekscript.compiler.AIFile sourceFile = null;
 	// Suffixe de profil pour le nom Java d'une variante (`$i`, `$r`…). Vide = fonction
 	// générique. Le `$` n'est pas un caractère d'identifiant LeekScript → anti-collision.
 	private String variantSuffix = "";
@@ -124,6 +128,14 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		return bodyStart;
 	}
 
+	public void setSourceFile(leekscript.compiler.AIFile file) {
+		this.sourceFile = file;
+	}
+
+	public leekscript.compiler.AIFile getSourceFile() {
+		return sourceFile;
+	}
+
 	public void setVariantSuffix(String suffix) {
 		this.variantSuffix = suffix;
 	}
@@ -163,16 +175,10 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	// par défaut → tous ses params requis ; un appel partiel a `argTypes.size() != mParameters.
 	// size()` et garde la générique, qui conserve ses défauts).
 	public boolean isMonomorphizable() {
-		if (bodyStart == null) return false;
+		if (bodyStart == null || sourceFile == null) return false;
 		if (isVariant()) return false;
 		if (typeParameters != null) return false;
 		if (typeGuardParam >= 0) return false;
-		// La position du corps (bodyStart) appartient au flux de tokens du compilateur qui a
-		// parsé la fonction. Les modules IMPORTÉS sont parsés par un WordCompiler enfant (flux
-		// distinct) → re-parser depuis le flux principal lirait des tokens faux. On se restreint
-		// donc aux fonctions du module PRINCIPAL (parsé par le compilateur principal). Étendre
-		// aux modules importés = re-parser via leur compilateur enfant (tranche ultérieure).
-		if (module != null && !module.isMain()) return false;
 		for (int i = 0; i < mParameters.size(); i++) {
 			if (mParametersTypes.get(i) == null && !mReferences.get(i)) return true;
 		}
@@ -282,6 +288,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		variant.setModule(module);
 		variant.setVariantSuffix(suffix);
 		variant.setBodyStart(bodyStart);
+		variant.setSourceFile(sourceFile);
 		if (annotations != null) for (var a : annotations) variant.addAnnotation(a);
 		for (int i = 0; i < mParameterDeclarations.size(); i++) {
 			variant.addParameter(compiler, mParameterDeclarations.get(i).getToken(), mReferences.get(i), mParametersTypes.get(i), null);

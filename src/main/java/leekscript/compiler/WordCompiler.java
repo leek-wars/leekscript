@@ -554,12 +554,16 @@ public class WordCompiler {
 	 * principal).
 	 */
 	public void reparseFunctionBody(leekscript.compiler.bloc.FunctionBlock fresh) throws LeekCompilerException {
-		var savePos = mTokens.getPosition();
+		var saveTokens = mTokens;
 		var saveBlock = mCurentBlock;
 		var saveFunction = mCurrentFunction;
 		var saveClass = mCurrentClass;
 		var saveLine = mLine;
 		try {
+			// Le corps vit dans le flux de tokens du FICHIER qui a parsé la fonction (le module
+			// importé pour une fonction importée ; le fichier principal sinon). On bascule mTokens
+			// sur ce flux le temps du re-parse. Pour le module principal c'est le même objet.
+			mTokens = fresh.getSourceFile().getTokenStream();
 			mTokens.setPosition(fresh.getBodyStart());
 			mCurentBlock = fresh;
 			setCurrentFunction(fresh);
@@ -572,11 +576,11 @@ public class WordCompiler {
 				compileWord();
 			}
 		} finally {
+			mTokens = saveTokens;
 			mCurentBlock = saveBlock;
 			setCurrentFunction(saveFunction);
 			mCurrentClass = saveClass;
 			mLine = saveLine;
-			mTokens.setPosition(savePos);
 		}
 	}
 
@@ -1042,10 +1046,12 @@ public class WordCompiler {
 		if (mTokens.eat().getType() != TokenType.ACCOLADE_LEFT) {
 			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
 		}
-		// #43 T3 : mémoriser le 1er token du corps pour pouvoir le re-parser dans une variante
-		// monomorphisée (le corps est ensuite parsé par la boucle principale dans mCurentBlock).
+		// #43 T3 : mémoriser le 1er token du corps + le fichier source (son flux de tokens) pour
+		// pouvoir re-parser le corps dans une variante monomorphisée. Pour un module importé,
+		// c'est le flux du compilateur enfant (mAI), pas le flux principal.
 		if (leekscript.common.LanguageFeature.PARAMETER_TYPE_INFERENCE.enabledIn(getVersion())) {
 			block.setBodyStart(mTokens.getPosition());
+			block.setSourceFile(getAI());
 		}
 		mMain.addFunction(block);
 		setCurrentFunction(previousFunction);
