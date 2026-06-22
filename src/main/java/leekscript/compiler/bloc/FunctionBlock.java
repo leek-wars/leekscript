@@ -183,7 +183,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	// leur propre type de valeur — ArrayType etc. — pas une ClassValueType ici).
 	private Type specializableProfileType(int i, Type argType) {
 		if (mParametersTypes.get(i) != null || mReferences.get(i)) return null;
-		if (argType == Type.INT || argType == Type.REAL || argType == Type.BOOL) return argType;
+		if (argType == Type.INT || argType == Type.REAL || argType == Type.BOOL || argType == Type.STRING) return argType;
 		if (argType instanceof leekscript.common.ClassValueType cvt
 				&& cvt.getClassDeclaration() != null && !cvt.getClassDeclaration().internal) {
 			return argType;

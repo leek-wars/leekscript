@@ -115,7 +115,16 @@ public class TestInference extends TestCommon {
 		// chacune correcte. (id$a — appel any — garderait la générique.)
 		code_v5("function id(x) { return x } return id(5) + id(10)").equals("15");
 		code_v5("function id(x) { return x } return [id(5), id(2.5)]").equals("[5, 2.5]");
+
+		// String : un paramètre appelé avec une string crée une variante typée (méthodes string
+		// résolues statiquement). Runtime correct. (En strict, le CORPS générique `s.length()`
+		// sur `any` warn FIELD_MAY_NOT_EXIST indépendamment — strict encourage l'annotation ;
+		// la conversion d'appel, elle, est bien propagée précise.)
+		code_v5("function up(s) { return s.toUpper() } return up(\"hi\")").equals("\"HI\"");
+		code_v5("function len(s) { return s.length() } return len(\"hello\")").equals("5");
+		code_v5("function f(s) { return s + \"!\" } return f(\"hi\")").equals("\"hi!\"");
 	}
+
 
 	@Test
 	public void testParameterMonomorphization_class() throws Exception {
