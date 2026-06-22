@@ -177,6 +177,20 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		return false;
 	}
 
+	// #43 T3 — type concret de spécialisation pour le paramètre i appelé avec argType, ou null
+	// si le paramètre n'est pas spécialisable (annoté, par référence) ou l'argument pas concret.
+	// Concret = int/real/bool, ou une classe UTILISATEUR (les classes internes Array/Map/… ont
+	// leur propre type de valeur — ArrayType etc. — pas une ClassValueType ici).
+	private Type specializableProfileType(int i, Type argType) {
+		if (mParametersTypes.get(i) != null || mReferences.get(i)) return null;
+		if (argType == Type.INT || argType == Type.REAL || argType == Type.BOOL) return argType;
+		if (argType instanceof leekscript.common.ClassValueType cvt
+				&& cvt.getClassDeclaration() != null && !cvt.getClassDeclaration().internal) {
+			return argType;
+		}
+		return null;
+	}
+
 	/**
 	 * #43 T3 — variante monomorphisée pour un profil d'arguments donné, créée à la demande
 	 * (pendant l'analyse de l'appelant) et mise en cache. Re-parse le corps avec les paramètres
@@ -188,26 +202,46 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	public FunctionBlock monomorphicVariantFor(WordCompiler compiler, java.util.List<Type> argTypes) throws LeekCompilerException {
 		if (!isMonomorphizable()) return null;
 		if (argTypes.size() != mParameters.size()) return null;
-		// Profil : 'i'/'r'/'b' pour un paramètre non annoté appelé avec int/real/bool
-		// (spécialisable), 'a' sinon. La clé sert d'index de cache + de suffixe de nom Java.
+		// Profil de spécialisation par paramètre : profile[i] = type concret (int/real/bool ou
+		// une classe utilisateur) si le paramètre non annoté est appelé avec, sinon null
+		// (inchangé). La clé `key` (délimitée par `|`, injective) indexe le cache des variantes.
 		var key = new StringBuilder();
 		var profile = new Type[mParameters.size()];
 		boolean anyConcrete = false;
+		boolean hasClass = false;
 		for (int i = 0; i < mParameters.size(); i++) {
-			char marker = 'a';
-			if (mParametersTypes.get(i) == null && !mReferences.get(i)) { // spécialisable
-				var argType = argTypes.get(i);
-				if (argType == Type.INT)       { marker = 'i'; profile[i] = Type.INT;  anyConcrete = true; }
-				else if (argType == Type.REAL) { marker = 'r'; profile[i] = Type.REAL; anyConcrete = true; }
-				else if (argType == Type.BOOL) { marker = 'b'; profile[i] = Type.BOOL; anyConcrete = true; }
+			key.append('|');
+			var concrete = specializableProfileType(i, argTypes.get(i));
+			if (concrete != null) {
+				profile[i] = concrete;
+				anyConcrete = true;
+				if (concrete instanceof leekscript.common.ClassValueType cvt) {
+					hasClass = true;
+					key.append('C').append(cvt.getClassDeclaration().getInternalName());
+				} else {
+					key.append(concrete.getSignature());
+				}
+			} else {
+				key.append('a');
 			}
-			key.append(marker);
 		}
 		if (!anyConcrete) return null;
 		var k = key.toString();
 		if (failedProfiles != null && failedProfiles.contains(k)) return null;
 		var existing = getVariant(k);
 		if (existing != null) return existing;
+		// Suffixe du nom Java : lisible (concat des signatures, ex. `$i`/`$ib`) pour un profil
+		// tout-primitif ; index séquentiel `$v<n>` dès qu'une classe est en jeu (un nom de classe
+		// n'a pas de jeton court garanti injectif comme suffixe). Unique par fonction dans les
+		// deux cas (le cache empêche deux variantes du même profil).
+		String suffix;
+		if (hasClass) {
+			suffix = "$v" + (variants == null ? 0 : variants.size());
+		} else {
+			var sb = new StringBuilder("$");
+			for (var t : profile) sb.append(t == null ? "a" : t.getSignature());
+			suffix = sb.toString();
+		}
 		// L'analyse de la variante est SILENCIEUSE : si la spécialisation rend le corps invalide
 		// (ex. `x[0]` sur un int), on abandonne la variante et l'appelant garde la générique
 		// (sans erreur visible : le code générique de l'utilisateur reste valide). On annule la
@@ -219,7 +253,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		int errors;
 		FunctionBlock variant;
 		try {
-			variant = createVariant(compiler, profile, "$" + k);
+			variant = createVariant(compiler, profile, suffix);
 			addVariant(k, variant); // AVANT analyze : casse la récursion (même profil → variante en cours)
 			variant.preAnalyze(compiler);
 			variant.analyze(compiler);

@@ -224,12 +224,21 @@ annoté est appelé avec int/real/bool, une **variante** est créée+analysée *
   variante jetée + profil mémorisé `failedProfiles` → l'appelant garde la générique, AUCUNE erreur
   visible.
 
-**Limites de cette tranche (extensions futures) :** profils int/real/bool seulement (étendre aux
-classes pour `getHP(entity)`, Array/Map/Set, string) ; arité fixe (pas de paramètres par défaut) ;
-**fonctions du module PRINCIPAL uniquement** (les modules importés sont parsés par un WordCompiler
-enfant → leur `bodyStart` n'est pas dans le flux principal ; à re-parser via leur compilateur
-enfant) ; pas générique / pas type guard / `@référence` jamais spécialisé. Tests
-`TestInference.testParameterMonomorphization(_safety)`.
+**Profils supportés :** int/real/bool **et classes utilisateur** (le `getHP(entity)` de l'issue :
+l'accès méthode/champ se résout statiquement, dispatch virtuel préservé pour les sous-classes —
+le paramètre est typé par le type STATIQUE de l'argument). Profil par paramètre = `specializableProfileType`
+(int/real/bool, ou `ClassValueType` non interne). Clé de cache `|`-délimitée (`C<internalName>` pour
+une classe) ; suffixe Java lisible `$i`/`$ib` pour un profil tout-primitif, `$v<n>` séquentiel dès
+qu'une classe est en jeu (pas de jeton court injectif pour un nom de classe). Les classes internes
+(Array/Map/Set → ArrayType/… pas ClassValueType) et génériques (`Box<int>` → ParameterizedClassType)
+ne sont pas spécialisées (conservateur).
+
+**Limites de cette tranche (extensions futures) :** Array/Map/Set/string pas encore (leurs valeurs
+ont un type dédié, pas ClassValueType) ; arité fixe (pas de paramètres par défaut) ; **fonctions du
+module PRINCIPAL uniquement** (les modules importés sont parsés par un WordCompiler enfant → leur
+`bodyStart` n'est pas dans le flux principal ; à re-parser via leur compilateur enfant) ; pas
+générique / pas type guard / `@référence` jamais spécialisé. Tests
+`TestInference.testParameterMonomorphization(_class/_safety)`.
 
 ## 5. Points de décision (à valider)
 

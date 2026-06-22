@@ -118,6 +118,30 @@ public class TestInference extends TestCommon {
 	}
 
 	@Test
+	public void testParameterMonomorphization_class() throws Exception {
+		section("Parameter monomorphization — types classe (#43 T3, getHP(entity))");
+
+		// Un paramètre non annoté appelé avec une instance de classe crée une variante typée :
+		// l'accès méthode se résout statiquement (plus de dispatch dynamique par nom).
+		code_v5("class A { getX() { return 7 } } function get(a) { return a.getX() } return get(new A())").equals("7");
+
+		// Le cas phare de l'issue #43 : un helper `getHP(entity)` non typé devient typé.
+		code_v5("class Entity { getLife() { return 100 } } function getHP(e) { return e.getLife() } return getHP(new Entity())").equals("100");
+
+		// DISPATCH VIRTUEL à travers la variante : le paramètre est typé par le type STATIQUE de
+		// l'argument ; une sous-classe redéfinissant la méthode appelle bien la redéfinition.
+		code_v5("class A { getX() { return 1 } } class B extends A { getX() { return 2 } } function get(a) { return a.getX() } return get(new B())").equals("2");
+		code_v5("class A { getX() { return 1 } } class B extends A { getX() { return 2 } } function get(a) { return a.getX() } A a = new B() return get(a)").equals("2");
+
+		// Profils MULTIPLES : la même fonction appelée avec deux classes différentes → deux
+		// variantes distinctes, chacune correcte.
+		code_v5("class A { v() { return 1 } } class C { v() { return 9 } } function get(x) { return x.v() } return get(new A()) + get(new C())").equals("10");
+
+		// Mélange primitif + classe selon le site d'appel (une variante par profil).
+		code_v5("class A { v() { return 3 } } function f(x) { return x } return f(5) + f(new A()).v()").equals("8");
+	}
+
+	@Test
 	public void testParameterMonomorphization_safety() throws Exception {
 		section("Parameter monomorphization — sûreté (#43 T3)");
 
