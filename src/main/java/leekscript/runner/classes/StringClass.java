@@ -91,7 +91,9 @@ public class StringClass {
 	}
 
 	public static ArrayLeekValue split(AI ai, String string, String delimiter) throws LeekRunException {
-		return split(ai, string, delimiter, 0);
+		// LS5 (#3419) : limite par défaut -1 → conserve les chaînes vides en fin (`"a,b,".split(",")`
+		// = ["a", "b", ""]). v4 (gelé) : 0 → Java supprime les vides de fin (["a", "b"]).
+		return split(ai, string, delimiter, ai.getVersion() >= 5 ? -1 : 0);
 	}
 
 	public static ArrayLeekValue split(AI ai, String string, String delimiter, long limit) throws LeekRunException {

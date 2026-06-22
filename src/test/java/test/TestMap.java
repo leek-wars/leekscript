@@ -608,4 +608,17 @@ public class TestMap extends TestCommon {
 		code_v4("return mapMerge([1 : 2, 3 : 4], [:])").equals("[1 : 2, 3 : 4]");
 	}
 
+	@Test
+	public void testMapPut_previousValue() throws Exception {
+		section("mapPut renvoie la valeur précédente en LS5 (#3726)");
+		// LS5 : put() renvoie la valeur PRÉCÉDENTE (null si la clé était absente).
+		code_v5("var m = [1 : 10] return m.put(1, 20)").equals("10");
+		code_v5("var m = [1 : 10] return m.put(2, 30)").equals("null");
+		// La valeur est bien écrite (effet inchangé).
+		code_v5("var m = [1 : 10] m.put(1, 20) return m[1]").equals("20");
+		// v1-4 (gelé) : la forme libre mapPut renvoie la valeur INSÉRÉE.
+		code_v4("var m = [1 : 10] return mapPut(m, 1, 20)").equals("20");
+		code_v4("var m = [1 : 10] mapPut(m, 1, 20) return m[1]").equals("20");
+	}
+
 }

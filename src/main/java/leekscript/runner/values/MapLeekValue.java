@@ -115,6 +115,17 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	}
 
 	public Object mapPut(AI ai, Object key, Object value) throws LeekRunException {
+		// LS5 (#3726) : mapPut/put renvoie la valeur PRÉCÉDENTE à cette clé (null si absente),
+		// comme Map.put en Java. v1-4 (gelé) : renvoie la valeur insérée.
+		if (ai.getVersion() >= 5) {
+			ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+			int sizeBefore = size();
+			Object previous = put(key, value);
+			if (size() > sizeBefore) {
+				ai.increaseRAM(ram, 2);
+			}
+			return previous;
+		}
 		return set(key, value);
 	}
 

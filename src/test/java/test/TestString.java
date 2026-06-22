@@ -216,4 +216,16 @@ public class TestString extends TestCommon {
 		code_v4_("var s = 'hello' return s[3:1]").equals("\"\"");
 	}
 
+	@Test
+	public void testSplit_defaultLimit() throws Exception {
+		section("split à limite -1 par défaut en LS5 (#3419)");
+		// LS5 : limite par défaut -1 → conserve les chaînes vides en fin.
+		code_v5("return 'a,b,'.split(',')").equals("[\"a\", \"b\", \"\"]");
+		code_v5("return 'a,,b'.split(',')").equals("[\"a\", \"\", \"b\"]");
+		// v4 (gelé) : limite 0 → Java supprime les chaînes vides de fin.
+		code_v4("return split('a,b,', ',')").equals("[\"a\", \"b\"]");
+		// Une limite explicite reste honorée dans les deux cas.
+		code_v5("return 'a,b,c'.split(',', 2)").equals("[\"a\", \"b,c\"]");
+	}
+
 }
