@@ -188,6 +188,9 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 				&& cvt.getClassDeclaration() != null && !cvt.getClassDeclaration().internal) {
 			return argType;
 		}
+		// Collections (Array/Map/Set) NON spécialisées pour l'instant : la couche méthodes sur
+		// receveur typé collection a des bugs préexistants (ex. `Map.size()` typé → IMPOSSIBLE_CAST)
+		// qu'il faut fiabiliser AVANT de spécialiser dessus. À reprendre après ce durcissement.
 		return null;
 	}
 
@@ -208,7 +211,11 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		var key = new StringBuilder();
 		var profile = new Type[mParameters.size()];
 		boolean anyConcrete = false;
-		boolean hasClass = false;
+		// Suffixe lisible (`$i`/`$ib`/`$s`) possible tant que tous les types concrets ont une
+		// signature courte injective distincte du non-spécialisé 'a' (primitifs i/r/b, string s).
+		// Une classe (nom variable, non garanti injectif comme suffixe court) force le suffixe
+		// séquentiel `$v<n>`.
+		boolean needsIndex = false;
 		for (int i = 0; i < mParameters.size(); i++) {
 			key.append('|');
 			var concrete = specializableProfileType(i, argTypes.get(i));
@@ -216,26 +223,22 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 				profile[i] = concrete;
 				anyConcrete = true;
 				if (concrete instanceof leekscript.common.ClassValueType cvt) {
-					hasClass = true;
+					needsIndex = true;
 					key.append('C').append(cvt.getClassDeclaration().getInternalName());
 				} else {
-					key.append(concrete.getSignature());
+					key.append(concrete.getSignature()); // primitif/string : i/r/b/s
 				}
-			} else {
-				key.append('a');
 			}
+			// non spécialisé : jeton vide (juste le délimiteur `|`)
 		}
 		if (!anyConcrete) return null;
 		var k = key.toString();
 		if (failedProfiles != null && failedProfiles.contains(k)) return null;
 		var existing = getVariant(k);
 		if (existing != null) return existing;
-		// Suffixe du nom Java : lisible (concat des signatures, ex. `$i`/`$ib`) pour un profil
-		// tout-primitif ; index séquentiel `$v<n>` dès qu'une classe est en jeu (un nom de classe
-		// n'a pas de jeton court garanti injectif comme suffixe). Unique par fonction dans les
-		// deux cas (le cache empêche deux variantes du même profil).
+		// Suffixe du nom Java, unique par fonction (le cache empêche deux variantes du même profil).
 		String suffix;
-		if (hasClass) {
+		if (needsIndex) {
 			suffix = "$v" + (variants == null ? 0 : variants.size());
 		} else {
 			var sb = new StringBuilder("$");

@@ -234,12 +234,19 @@ en jeu (pas de jeton court injectif pour un nom de classe). Les classes internes
 ArrayType/… pas ClassValueType) et génériques (`Box<int>` → ParameterizedClassType) ne sont pas
 spécialisées (conservateur).
 
-**Limites de cette tranche (extensions futures) :** Array/Map/Set pas encore (type d'ÉLÉMENT à
-encoder dans la clé + question de finesse Array<int> vs Array<any>) ; arité fixe (pas de paramètres
-par défaut) ; **fonctions du module PRINCIPAL uniquement** (les modules importés sont parsés par un
-WordCompiler enfant → leur `bodyStart` n'est pas dans le flux principal ; à re-parser via leur
-compilateur enfant) ; pas générique / pas type guard / `@référence` jamais spécialisé. Tests
-`TestInference.testParameterMonomorphization(_class/_safety)`.
+**Limites de cette tranche (extensions futures) :**
+- **Array/Map/Set pas encore** : il faudrait spécialiser vers le type LARGE (`Array<any>`, pas
+  `Array<int>` — un type d'élément précis changerait le retour de méthodes comme `sum()` int↔real,
+  donc la VALEUR). MAIS la couche « méthode sur receveur typé collection » a des **bugs préexistants**
+  (constaté : `function f(Map m) { return m.size() }` annoté → `IMPOSSIBLE_CAST` ; `[1=>10].size()`
+  direct → `null`). À fiabiliser AVANT de spécialiser des paramètres collection (sinon une variante
+  émettrait du code typé qui échoue au runtime, non rattrapé par l'abandon-sur-erreur-d'analyse).
+- arité fixe (pas de paramètres par défaut) ;
+- **fonctions du module PRINCIPAL uniquement** (les modules importés sont parsés par un WordCompiler
+  enfant → leur `bodyStart` n'est pas dans le flux principal ; à re-parser via leur compilateur enfant) ;
+- pas générique / pas type guard / `@référence` jamais spécialisé.
+
+Tests `TestInference.testParameterMonomorphization(_class/_safety)`.
 
 ## 5. Points de décision (à valider)
 
