@@ -90,6 +90,27 @@ public class TestInference extends TestCommon {
 		code_v5("function caller() { var leaked = 99 return callee() } function callee(p = leaked) { return p } return caller()").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 	}
 
+
+	@Test
+	public void testParameterMonomorphization_collections() throws Exception {
+		section("Parameter monomorphization — collections (#43 T3)");
+
+		// Array/Map/Set : un paramètre non annoté appelé avec une collection crée une variante
+		// typée vers le type LARGE (Array<any>/Map/Set) → méthodes en dispatch statique, sémantique
+		// préservée (sum() reste real, mutation visible, accès élément correct).
+		code_v5("function total(a) { return a.sum() } return total([1, 2, 3])").equals("6.0");
+		code_v5("function f(a) { a.push(4) return a } return f([1, 2, 3])").equals("[1, 2, 3, 4]");
+		code_v5("function first(a) { return a[0] } return first([7, 8, 9])").equals("7");
+		code_v5("function sz(m) { return m.size() } return sz([1 : 10, 2 : 20])").equals("2");
+		code_v5("function get(m) { return m[1] } return get([1 : 10, 2 : 20])").equals("10");
+		code_v5("function has(s) { return s.contains(2) } return has(<1, 2, 3>)").equals("true");
+
+		// Profils mixtes selon le site : array ET int → deux variantes distinctes.
+		code_v5("function id(x) { return x } return id([1, 2])[0] + id(5)").equals("6");
+	}
+
+
+
 	@Test
 	public void testParameterMonomorphization() throws Exception {
 		section("Parameter monomorphization (#43 tranche 3)");

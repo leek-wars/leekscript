@@ -197,9 +197,13 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 				&& cvt.getClassDeclaration() != null && !cvt.getClassDeclaration().internal) {
 			return argType;
 		}
-		// Collections (Array/Map/Set) NON spécialisées pour l'instant : la couche méthodes sur
-		// receveur typé collection a des bugs préexistants (ex. `Map.size()` typé → IMPOSSIBLE_CAST)
-		// qu'il faut fiabiliser AVANT de spécialiser dessus. À reprendre après ce durcissement.
+		// Collections : spécialiser vers le type LARGE (Array<any>/Map/Set), PAS le type d'élément
+		// précis. Un Array<int> précis pourrait changer le retour de méthodes (ex. sum() int vs
+		// real) = la VALEUR observable ; le type large suffit pour le dispatch statique des méthodes
+		// et préserve exactement la sémantique de la générique.
+		if (argType instanceof leekscript.common.ArrayType) return Type.ARRAY;
+		if (argType instanceof leekscript.common.MapType) return Type.MAP;
+		if (argType instanceof leekscript.common.SetType) return Type.SET;
 		return null;
 	}
 
@@ -234,8 +238,11 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 				if (concrete instanceof leekscript.common.ClassValueType cvt) {
 					needsIndex = true;
 					key.append('C').append(cvt.getClassDeclaration().getInternalName());
+				} else if (concrete == Type.INT || concrete == Type.REAL || concrete == Type.BOOL || concrete == Type.STRING) {
+					key.append(concrete.getSignature()); // primitif/string : i/r/b/s (distincts du non-spécialisé)
 				} else {
-					key.append(concrete.getSignature()); // primitif/string : i/r/b/s
+					needsIndex = true; // Array/Map/Set : signature 'a' collisionnerait avec le non-spécialisé
+					key.append(concrete.name); // "Array"/"Map"/"Set"
 				}
 			}
 		}

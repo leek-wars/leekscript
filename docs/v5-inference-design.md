@@ -227,20 +227,22 @@ annoté est appelé avec int/real/bool, une **variante** est créée+analysée *
 **Profils supportés :** int/real/bool, **string**, **et classes utilisateur** (le `getHP(entity)`
 de l'issue : l'accès méthode/champ se résout statiquement, dispatch virtuel préservé pour les
 sous-classes — le paramètre est typé par le type STATIQUE de l'argument). Profil par paramètre =
-`specializableProfileType` (int/real/bool/string, ou `ClassValueType` non interne). Clé de cache
-`|`-délimitée (`C<internalName>` pour une classe, sinon la signature du type) ; suffixe Java lisible
-`$i`/`$s`/`$ib` pour un profil de types à signature courte, `$v<n>` séquentiel dès qu'une classe est
-en jeu (pas de jeton court injectif pour un nom de classe). Les classes internes (Array/Map/Set →
-ArrayType/… pas ClassValueType) et génériques (`Box<int>` → ParameterizedClassType) ne sont pas
+`specializableProfileType` (int/real/bool/string, `ClassValueType` non interne, ou Array/Map/Set
+spécialisés vers le type LARGE). Clé de cache `|`-délimitée (`C<internalName>` pour une classe,
+`Array`/`Map`/`Set` pour une collection, sinon la signature i/r/b/s) ; suffixe Java lisible `$i`/`$s`/
+`$ib` pour un profil à signatures courtes, `$v<n>` séquentiel dès qu'une classe ou collection est en
+jeu (pas de jeton court injectif). Les génériques (`Box<int>` → ParameterizedClassType) ne sont pas
 spécialisées (conservateur).
 
+**Array/Map/Set ✅** : spécialisés vers le type **LARGE** (`Type.ARRAY`/`MAP`/`SET`, élément `any`),
+PAS le type d'élément précis — un `Array<int>` précis pourrait changer le retour de méthodes (`sum()`
+int vs real) = la VALEUR observable ; le type large suffit pour le dispatch statique des méthodes et
+préserve exactement la sémantique de la générique. (NB : une 1ʳᵉ tentative avait conclu à tort que la
+couche collection était cassée — c'était une erreur de syntaxe de test : `=>` est la flèche lambda,
+le littéral map est `[k : v]` ; et `count()` est Array-only, les maps ont `size()`. Les méthodes
+collection typées marchent.)
+
 **Limites de cette tranche (extensions futures) :**
-- **Array/Map/Set pas encore** : il faudrait spécialiser vers le type LARGE (`Array<any>`, pas
-  `Array<int>` — un type d'élément précis changerait le retour de méthodes comme `sum()` int↔real,
-  donc la VALEUR). MAIS la couche « méthode sur receveur typé collection » a des **bugs préexistants**
-  (constaté : `function f(Map m) { return m.size() }` annoté → `IMPOSSIBLE_CAST` ; `[1=>10].size()`
-  direct → `null`). À fiabiliser AVANT de spécialiser des paramètres collection (sinon une variante
-  émettrait du code typé qui échoue au runtime, non rattrapé par l'abandon-sur-erreur-d'analyse).
 - paramètres par défaut TOLÉRÉS, mais seuls les sites passant TOUS les arguments monomorphisent
   (la variante est créée sans valeur par défaut → params requis ; un appel partiel a
   `argTypes.size() != mParameters.size()` → garde la générique, qui conserve ses défauts) ;
@@ -252,7 +254,7 @@ fichier le temps du re-parse (le `bodyStart` d'une fonction de module appartient
 compilateur enfant qui l'a parsée, pas au flux principal ; pour le module principal c'est le même
 flux). L'analyse de la variante se fait dans le bon module (FunctionBlock.analyze pose le module).
 
-Tests `TestInference.testParameterMonomorphization(_class/_safety)`.
+Tests `TestInference.testParameterMonomorphization(_class/_collections/_safety)`.
 
 ## 5. Points de décision (à valider)
 
