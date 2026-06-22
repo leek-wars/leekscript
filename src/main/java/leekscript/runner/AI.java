@@ -3437,7 +3437,11 @@ public abstract class AI {
 							return null;
 						}
 						return execute(f.get(value), args);
-					} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
+					} catch (NoSuchFieldException e1) {
+						// Champ inexistant (typo) : deja logge proprement plus bas (Error.UNKNOWN_FIELD).
+						// Ne pas re-logger le brut ici : ca passe par "[AI] Unknown error" qui crache la
+						// stack sur stdout a chaque tour (spam Loki / canary Error log spike).
+					} catch (IllegalArgumentException | IllegalAccessException | SecurityException e1) {
 						addSystemLog(AILog.ERROR, e1);
 					}
 				} else {
@@ -3466,7 +3470,11 @@ public abstract class AI {
 							return null;
 						}
 						return execute(f.get(value), args);
-					} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
+					} catch (NoSuchFieldException e1) {
+						// Champ inexistant (typo) : deja logge proprement plus bas (Error.UNKNOWN_FIELD).
+						// Ne pas re-logger le brut ici : ca passe par "[AI] Unknown error" qui crache la
+						// stack sur stdout a chaque tour (spam Loki / canary Error log spike).
+					} catch (IllegalArgumentException | IllegalAccessException | SecurityException e1) {
 						addSystemLog(AILog.ERROR, e1);
 					}
 				}
