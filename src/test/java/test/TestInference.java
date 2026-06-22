@@ -187,5 +187,14 @@ public class TestInference extends TestCommon {
 		// Variante créée depuis une MÉTHODE (currentClass posée) : la fonction libre s'analyse
 		// hors contexte de classe (currentClass annulé). Runtime correct.
 		code_v5("function dbl(x) { return x * 2 } class A { m() { return dbl(5) } } return new A().m()").equals("10");
+
+		// Paramètres par DÉFAUT : seul l'appel TOUTES-args monomorphise (variante sans défaut,
+		// tous params requis). Un appel partiel garde la générique (qui conserve ses défauts).
+		code_v5("function f(x, y = 5) { return x + y } return f(3, 7)").equals("10"); // full-arg → variante
+		code_v5("function f(x, y = 5) { return x + y } return f(3)").equals("8");      // partiel → générique (défaut)
+		// Propagation sur l'appel full-arg : x+y (int,int) → int → pas de warn en strict.
+		code_strict_v5_("function f(x, y = 5) { return x + y } integer m = f(3, 7) return m").noWarning();
+		// Les deux formes d'appel coexistent dans le même programme.
+		code_v5("function f(x, y = 5) { return x + y } return f(3, 7) + f(3)").equals("18");
 	}
 }

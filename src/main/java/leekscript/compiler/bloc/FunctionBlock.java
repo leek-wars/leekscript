@@ -157,14 +157,16 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	}
 
 	// #43 T3 — une fonction est monomorphisable si on peut re-parser+spécialiser son corps :
-	// corps mémorisé, pas déjà une variante, pas générique, pas un type guard, arité fixe (pas
-	// de paramètre optionnel — 1ʳᵉ tranche), et au moins un paramètre non annoté non-référence.
+	// corps mémorisé, pas déjà une variante, pas générique, pas un type guard, et au moins un
+	// paramètre non annoté non-référence. Les paramètres optionnels sont tolérés : seuls les
+	// sites d'appel passant TOUS les arguments monomorphisent (la variante est créée sans valeur
+	// par défaut → tous ses params requis ; un appel partiel a `argTypes.size() != mParameters.
+	// size()` et garde la générique, qui conserve ses défauts).
 	public boolean isMonomorphizable() {
 		if (bodyStart == null) return false;
 		if (isVariant()) return false;
 		if (typeParameters != null) return false;
 		if (typeGuardParam >= 0) return false;
-		if (minParameters != maxParameters) return false;
 		// La position du corps (bodyStart) appartient au flux de tokens du compilateur qui a
 		// parsé la fonction. Les modules IMPORTÉS sont parsés par un WordCompiler enfant (flux
 		// distinct) → re-parser depuis le flux principal lirait des tokens faux. On se restreint

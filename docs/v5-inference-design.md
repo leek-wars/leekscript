@@ -241,7 +241,9 @@ spécialisées (conservateur).
   (constaté : `function f(Map m) { return m.size() }` annoté → `IMPOSSIBLE_CAST` ; `[1=>10].size()`
   direct → `null`). À fiabiliser AVANT de spécialiser des paramètres collection (sinon une variante
   émettrait du code typé qui échoue au runtime, non rattrapé par l'abandon-sur-erreur-d'analyse).
-- arité fixe (pas de paramètres par défaut) ;
+- paramètres par défaut TOLÉRÉS, mais seuls les sites passant TOUS les arguments monomorphisent
+  (la variante est créée sans valeur par défaut → params requis ; un appel partiel a
+  `argTypes.size() != mParameters.size()` → garde la générique, qui conserve ses défauts) ;
 - **fonctions du module PRINCIPAL uniquement** (les modules importés sont parsés par un WordCompiler
   enfant → leur `bodyStart` n'est pas dans le flux principal ; à re-parser via leur compilateur enfant) ;
 - pas générique / pas type guard / `@référence` jamais spécialisé.
