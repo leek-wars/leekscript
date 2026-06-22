@@ -2233,6 +2233,10 @@ public class WordCompiler {
 		}
 		} // end if (canBeLambda)
 
+		// #3175 : vrai si on vient de lire l'opérande droite d'un `instanceof` (une classe) et
+		// que d'éventuels paramètres de type `<...>` doivent être consommés et IGNORÉS.
+		boolean instanceofPendingParams = false;
+
 		while (mTokens.hasMoreTokens()) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			Token word = mTokens.get();
@@ -2240,6 +2244,27 @@ public class WordCompiler {
 				break;
 			}
 			if (retour.needOperator()) {
+				// #3175 : `x instanceof Array<Action>` — les paramètres de type sont EFFACÉS (le
+				// runtime ne porte pas le type d'élément ; `instanceof Array<X>` ≡ `instanceof
+				// Array`, comme `instanceof List<String>` en Java). On consomme le `<...>` apparié
+				// après la classe et on l'ignore.
+				if (instanceofPendingParams) {
+					instanceofPendingParams = false;
+					if (word.getType() == TokenType.OPERATOR && word.getWord().equals("<")) {
+						int depth = 0;
+						do {
+							var t = mTokens.get();
+							if (t.getType() == TokenType.OPERATOR) {
+								for (char ch : t.getWord().toCharArray()) {
+									if (ch == '<') depth++;
+									else if (ch == '>') depth--;
+								}
+							}
+							mTokens.skip();
+						} while (mTokens.hasMoreTokens() && depth > 0);
+						continue;
+					}
+				}
 				// Si on attend un opérateur mais qu'il vient pas
 
 				// Accès indexé optionnel `a?[b]` : court-circuite à null si `a` est null.
@@ -2381,6 +2406,15 @@ public class WordCompiler {
 					// Opérateur `a ?: b` : les deux tokens sont consommés ensemble.
 					mTokens.skip(); // ?
 					retour.addOperator(Operators.ELVIS, mTokens.eat()); // :
+					continue;
+
+				} else if (word.getType() == TokenType.OPERATOR && word.getWord().equals("instanceof")) {
+
+					// #3175 : la classe RHS est lue normalement ensuite ; on signale qu'un
+					// éventuel `<...>` qui suit est un effacement de type, pas une comparaison.
+					mTokens.skip();
+					retour.addOperator(Operators.INSTANCEOF, word);
+					instanceofPendingParams = true;
 					continue;
 
 				} else if (word.getType() == TokenType.OPERATOR && (!word.getWord().equals(">") || !inSet)) {
