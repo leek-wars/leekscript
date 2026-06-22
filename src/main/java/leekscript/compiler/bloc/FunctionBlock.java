@@ -179,8 +179,9 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 
 	// #43 T3 — type concret de spécialisation pour le paramètre i appelé avec argType, ou null
 	// si le paramètre n'est pas spécialisable (annoté, par référence) ou l'argument pas concret.
-	// Concret = int/real/bool, ou une classe UTILISATEUR (les classes internes Array/Map/… ont
-	// leur propre type de valeur — ArrayType etc. — pas une ClassValueType ici).
+	// Concret = int/real/bool/string, ou une classe UTILISATEUR. Le garde `!internal` est porteur :
+	// les classes internes (Number/String/… exposées en ClassValueType) sont exclues, et les
+	// collections (Array/Map/Set) ont de toute façon leur propre type de valeur (ArrayType…).
 	private Type specializableProfileType(int i, Type argType) {
 		if (mParametersTypes.get(i) != null || mReferences.get(i)) return null;
 		if (argType == Type.INT || argType == Type.REAL || argType == Type.BOOL || argType == Type.STRING) return argType;
@@ -217,7 +218,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		// séquentiel `$v<n>`.
 		boolean needsIndex = false;
 		for (int i = 0; i < mParameters.size(); i++) {
-			key.append('|');
+			key.append('|'); // délimiteur ; un paramètre non spécialisé laisse un jeton vide après
 			var concrete = specializableProfileType(i, argTypes.get(i));
 			if (concrete != null) {
 				profile[i] = concrete;
@@ -229,7 +230,6 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 					key.append(concrete.getSignature()); // primitif/string : i/r/b/s
 				}
 			}
-			// non spécialisé : jeton vide (juste le délimiteur `|`)
 		}
 		if (!anyConcrete) return null;
 		var k = key.toString();
