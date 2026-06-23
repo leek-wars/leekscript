@@ -423,6 +423,10 @@ public class TestNarrowing extends TestCommon {
 		// (asymétrie this/obj corrigée dans LeekObjectAccess.writeJavaCode).
 		code_v4_("class Item { integer id } class Weapon extends Item { integer dmg() { return 10 } } class Move { Item? item = null; integer run() { this.item = new Weapon(); if (this.item instanceof Weapon) { return this.item.dmg() } return 0 } } return new Move().run()").equals("10");
 		code_v4_("class Item { integer id } class Weapon extends Item { integer dmg() { return 10 } } class Move { Item? item = null; integer run() { this.item = new Weapon(); if (this.item instanceof Weapon) { return this.item.dmg() } return 0 } } return new Move().run()").noWarning();
+		// `this.field` réduit à STRING dans la branche fausse d'un instanceof : l'appel de
+		// méthode string `this.field.length()` (résolu en StringClass.length statique) doit
+		// recevoir un receveur casté en String (v5, OO stdlib).
+		code_v5("class B { public integer m() { return 9 } } class C { public B | string f = \"hi\" public run() { if (this.f instanceof B) { return this.f.m() } return this.f.length() } } return new C().run()").equals("2");
 	}
 
 	@Test
@@ -932,6 +936,9 @@ public class TestNarrowing extends TestCommon {
 		code_v5("class B { public integer m() { return 9 } } function isB(any x) -> x is B { return x instanceof B } class C { public B | string field = new B() } var c = new C() if (isB(c.field)) { return c.field.m() } return 0").equals("9");
 		// `obj.field`, branche fausse : le champ est réduit à string, `c.field.length()` OK.
 		code_v5("class B { public integer m() { return 9 } } function isB(any x) -> x is B { return x instanceof B } class C { public B | string field = \"hi\" } var c = new C() if (isB(c.field)) { return 0 } return c.field.length()").equals("2");
+		// `this.field` branche fausse réduit à string, `this.field.length()` (méthode string
+		// statique) OK : le receveur `this.field` est casté en String au codegen.
+		code_v5("class B { public integer m() { return 9 } } function isB(any x) -> x is B { return x instanceof B } class C { public B | string field = \"hi\" public run() { if (isB(this.field)) { return this.field.m() } return this.field.length() } } return new C().run()").equals("2");
 		// Strict : `this.field` affiné vers B dans la branche vraie, pas de warning sur m().
 		code_strict_v5_("class B { public integer m() { return 9 } } function isB(any x) -> x is B { return x instanceof B } class C { public B | string field = new B() public run() { if (isB(this.field)) { return this.field.m() } return 0 } } return new C().run()").noWarning();
 		// Guard porté par une méthode ET argument = accès de champ : les deux extensions
