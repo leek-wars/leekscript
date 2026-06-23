@@ -134,6 +134,18 @@ public class TestAnnotations extends TestCommon {
 		// Branche de ternaire non terminale (appel imbriqué dans un opérateur) : erreur.
 		code_v4_("@tailrec function bad(n) { return n <= 0 ? 0 : bad(n - 1) + 1; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
 
+		// Opérande DROIT d'un `||` en position retour : terminal (la valeur coercée en
+		// booléen de l'appel est retournée quand le court-circuit gauche ne se déclenche pas).
+		code_v4_("@tailrec function f(n) { return n <= 0 || f(n - 1); } return f(3)").equals("true");
+		// Idem pour `&&` : opérande droit terminal.
+		code_v4_("@tailrec function f(n) { return n > 0 && f(n - 1); } return f(3)").equals("false");
+		// Opérande droit d'un `||` à travers des parenthèses.
+		code_v4_("@tailrec function f(n) { return (n <= 0) || (f(n - 1)); } return f(3)").equals("true");
+		// Opérande GAUCHE d'un `||` : NON terminal (sa valeur est combinée avec la droite).
+		code_v4_("@tailrec function bad(n) { return bad(n - 1) || n <= 0; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		// Opérande gauche d'un `&&` : NON terminal.
+		code_v4_("@tailrec function bad(n) { return bad(n - 1) && n > 0; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+
 		// Non-régression : récursion non terminale SANS @tailrec = aucune erreur (opt-in).
 		code_v4_("function rec(n) { if (n == 0) return 0; return rec(n - 1) + 1; } return rec(3)").equals("3");
 		// Appel terminal vers une AUTRE fonction (pas de la récursion) : pas concerné.
