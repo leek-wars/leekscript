@@ -144,6 +144,37 @@ public class TestAnnotations extends TestCommon {
 	}
 
 	@Test
+	public void testTailrecMethod() throws Exception {
+		section("@tailrec sur méthode");
+
+		// Auto-appel non qualifié en position terminale : OK.
+		code_v4_("class A { @tailrec public sum(n, acc) { if (n == 0) return acc; return sum(n - 1, acc + n); } } return new A().sum(5, 0)").equals("15");
+		// Auto-appel qualifié this.m() en position terminale : OK.
+		code_v4_("class A { @tailrec public sum(n, acc) { if (n == 0) return acc; return this.sum(n - 1, acc + n); } } return new A().sum(5, 0)").equals("15");
+		// Méthode statique récursive terminale : OK.
+		code_v4_("class A { @tailrec public static sum(n, acc) { if (n == 0) return acc; return sum(n - 1, acc + n); } } return A.sum(5, 0)").equals("15");
+		// Ternaire en position retour : les deux branches sont terminales.
+		code_v4_("class A { @tailrec public sum(n, acc) { return n == 0 ? acc : sum(n - 1, acc + n); } } return new A().sum(5, 0)").equals("15");
+		// @tailrec sur une méthode non récursive : vacueusement valide.
+		code_v4_("class A { @tailrec public m(n) { return n + 1; } } return new A().m(5)").equals("6");
+
+		// Auto-appel imbriqué dans un opérateur binaire : erreur.
+		code_v4_("class A { @tailrec public bad(n) { if (n == 0) return 0; return bad(n - 1) + 1; } } return new A().bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		// Auto-appel qualifié this.bad() non terminal : erreur.
+		code_v4_("class A { @tailrec public bad(n) { if (n == 0) return 0; return this.bad(n - 1) + 1; } } return new A().bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		// Auto-appel en instruction (résultat ignoré) : erreur.
+		code_v4_("class A { @tailrec public bad(n) { if (n > 0) { bad(n - 1); } return 0; } } return new A().bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		// Méthode statique récursive non terminale : erreur.
+		code_v4_("class A { @tailrec public static bad(n) { if (n == 0) return 0; return bad(n - 1) + 1; } } return A.bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+
+		// Non-régression : récursion non terminale SANS @tailrec = aucune erreur (opt-in).
+		code_v4_("class A { public rec(n) { if (n == 0) return 0; return rec(n - 1) + 1; } } return new A().rec(3)").equals("3");
+		// Un auto-appel logé dans une fonction anonyme imbriquée dans la méthode n'est pas
+		// un appel terminal de la méthode (fonction courante = l'anonyme) : pas de faux positif.
+		code_v4_("class A { @tailrec public m(n) { var g = function() { return m(n - 1); }; return n; } } return new A().m(5)").equals("5");
+	}
+
+	@Test
 	public void testOverride() throws Exception {
 		section("@override");
 

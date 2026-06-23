@@ -39,6 +39,11 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 	private final FunctionType type;
 	// Lazy : la grande majorité des méthodes n'ont aucune annotation.
 	private EnumSet<Annotation> annotations = null;
+	// @tailrec : appels récursifs (this.m() / m() / Class.m() résolvant vers CETTE
+	// méthode) collectés pendant l'analyse du corps, validés ensuite — tous doivent
+	// être en position terminale. Mirror de FunctionBlock. Lazy : seules les méthodes
+	// @tailrec qui s'appellent elles-mêmes en collectent.
+	private ArrayList<leekscript.compiler.expression.LeekFunctionCall> recursiveCalls = null;
 
 	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isConstructor, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, Token token, Type returnType) {
 		super(parent, main);
@@ -57,6 +62,17 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 
 	public boolean hasAnnotation(Annotation a) {
 		return annotations != null && annotations.contains(a);
+	}
+
+	// @tailrec : un appel résolu vers cette méthode (récursion directe) s'enregistre
+	// ici pendant l'analyse de son propre corps, pour validation a posteriori.
+	public void registerRecursiveCall(leekscript.compiler.expression.LeekFunctionCall call) {
+		if (recursiveCalls == null) recursiveCalls = new ArrayList<>();
+		recursiveCalls.add(call);
+	}
+
+	public String getName() {
+		return token.getWord();
 	}
 
 	public void setId(int id) {
@@ -182,6 +198,16 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 			}
 		}
 		super.analyze(compiler);
+		// @tailrec : après l'analyse du corps, tout appel récursif collecté doit être
+		// en position terminale, sinon erreur dure pointant l'appel fautif (mirror
+		// FunctionBlock.analyze). Inactif sans l'annotation.
+		if (recursiveCalls != null && hasAnnotation(Annotation.TAILREC)) {
+			for (var call : recursiveCalls) {
+				if (!call.isTailPosition()) {
+					compiler.addError(new AnalyzeError(call.getLocation(), AnalyzeErrorLevel.ERROR, Error.ANNOTATION_TAILREC_NOT_TAIL, new String[] { getName() }));
+				}
+			}
+		}
 		compiler.setCurrentFunction(initialFunction);
 	}
 
