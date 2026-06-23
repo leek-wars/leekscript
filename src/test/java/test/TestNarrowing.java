@@ -898,6 +898,24 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	@Test
+	public void testCase_7_type_guard_method() throws Exception {
+		section("Case 7: type guard methods (#42)");
+
+		// Guard porté par une MÉTHODE d'instance, appel qualifié `this.isB(v)` : v est
+		// affiné vers B dans la branche vraie, réduit à string dans la branche fausse.
+		code_v5("class B { public integer m() { return 9 } } class A { public isB(any x) -> x is B { return x instanceof B } public run(B | string v) { if (this.isB(v)) { return v.m() } return v.length() } } return new A().run(new B())").equals("9");
+		// Runtime branche fausse : v vaut une string, le guard est faux.
+		code_v5("class B { public integer m() { return 9 } } class A { public isB(any x) -> x is B { return x instanceof B } public run(B | string v) { if (this.isB(v)) { return v.m() } return v.length() } } return new A().run(\"hi\")").equals("2");
+		// Appel non qualifié `isB(v)` depuis une autre méthode de la même classe.
+		code_v5("class B { public integer m() { return 9 } } class A { public isB(any x) -> x is B { return x instanceof B } public run(B | string v) { if (isB(v)) { return v.m() } return v.length() } } return new A().run(new B())").equals("9");
+		// Strict : les deux branches sont affinées (v.m() côté B, v.length() côté string),
+		// donc aucun warning, alors qu'ils warneraient sur `B | string`.
+		code_strict_v5_("class B { public integer m() { return 9 } } class A { public isB(any x) -> x is B { return x instanceof B } public run(B | string v) { if (this.isB(v)) { return v.m() } return v.length() } } return new A().run(\"hi\")").noWarning();
+		// Le paramètre référencé par le guard d'une méthode doit exister.
+		code_v5("class A { public bad(any x) -> y is integer { return true } } return 0").error(Error.TYPE_GUARD_PARAMETER_UNKNOWN);
+	}
+
+	@Test
 	public void testInstanceofParameterizedType() throws Exception {
 		section("instanceof avec type paramétré (#3175)");
 		// `instanceof Array<X>` parse et s'évalue comme `instanceof Array` (effacement : le

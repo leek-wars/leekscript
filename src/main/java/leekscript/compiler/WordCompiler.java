@@ -2009,6 +2009,33 @@ public class WordCompiler {
 		if (mTokens.eat().getType() != TokenType.PAR_RIGHT) {
 			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS));
 		}
+
+		// Type guard (#42, v5) : `public f(any x) -> x is Type`. Contrairement aux fonctions
+		// libres, le type de retour d'une méthode est en préfixe (`public T f(...)`) ; on
+		// réserve donc `-> ` après les paramètres au seul prédicat de type (la méthode renvoie
+		// un booléen). Gated v5 : sans TYPE_GUARDS, l'ARROW n'est pas consommée et la suite
+		// (attente du `{`) reste byte-identique à v1-4.
+		if (leekscript.common.LanguageFeature.TYPE_GUARDS.enabledIn(getVersion()) && mTokens.get().getType() == TokenType.ARROW) {
+			mTokens.skip();
+			if (mTokens.get().getType() == TokenType.STRING && mTokens.get(1).getWord().equals("is")) {
+				Token paramToken = mTokens.eat();
+				mTokens.skip(); // `is`
+				var guardType = eatType(false, true);
+				if (guardType == null) {
+					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+				} else {
+					int idx = method.getParameterIndex(paramToken.getWord());
+					if (idx < 0) {
+						addError(new AnalyzeError(paramToken, AnalyzeErrorLevel.ERROR, Error.TYPE_GUARD_PARAMETER_UNKNOWN, new String[] { paramToken.getWord() }));
+					} else {
+						method.setTypeGuard(idx, guardType.getType());
+					}
+				}
+			} else {
+				addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.TYPE_EXPECTED));
+			}
+		}
+
 		if (classDeclaration.hasMethod(token.getWord(), param_count)) {
 			throw new LeekCompilerException(mTokens.get(), Error.CONSTRUCTOR_ALREADY_EXISTS);
 		}

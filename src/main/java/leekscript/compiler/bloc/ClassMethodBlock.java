@@ -44,6 +44,11 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 	// être en position terminale. Mirror de FunctionBlock. Lazy : seules les méthodes
 	// @tailrec qui s'appellent elles-mêmes en collectent.
 	private ArrayList<leekscript.compiler.expression.LeekFunctionCall> recursiveCalls = null;
+	// Type guard (#42, v5) : `public f(any x) -> x is Type`. La méthode renvoie un
+	// booléen ; quand un appel sert de condition, l'argument à `typeGuardParam` est
+	// affiné vers `typeGuardType` dans la branche vraie. Mirror de FunctionBlock.
+	private int typeGuardParam = -1;
+	private Type typeGuardType = null;
 
 	public ClassMethodBlock(ClassDeclarationInstruction clazz, boolean isConstructor, boolean isStatic, AbstractLeekBlock parent, MainLeekBlock main, Token token, Type returnType) {
 		super(parent, main);
@@ -73,6 +78,31 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 
 	public String getName() {
 		return token.getWord();
+	}
+
+	public int getParameterIndex(String name) {
+		for (int i = 0; i < mParameters.size(); i++) {
+			if (mParameters.get(i).getWord().equals(name)) return i;
+		}
+		return -1;
+	}
+
+	// Type guard (#42) : enregistré au parse (`-> p is Type`), lu par NarrowingInfo. La
+	// méthode renvoie alors un booléen.
+	public void setTypeGuard(int paramIndex, Type type) {
+		this.typeGuardParam = paramIndex;
+		this.typeGuardType = type;
+		this.type.setReturnType(Type.BOOL);
+	}
+
+	@Override
+	public int getTypeGuardParam() {
+		return typeGuardParam;
+	}
+
+	@Override
+	public Type getTypeGuardType() {
+		return typeGuardType;
 	}
 
 	public void setId(int id) {

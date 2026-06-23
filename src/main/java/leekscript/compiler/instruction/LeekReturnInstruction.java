@@ -133,7 +133,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 		if (expr == null) return; // branche de ternaire incomplète (entrée malformée)
 		var e = expr.trim();
 		if (e instanceof LeekFunctionCall fc) {
-			var target = fc.getTailCallTarget();
+			var target = fc.getResolvedCallable();
 			if (target != null && target == compiler.getCurrentFunction()) {
 				fc.setTailPosition(true);
 			}

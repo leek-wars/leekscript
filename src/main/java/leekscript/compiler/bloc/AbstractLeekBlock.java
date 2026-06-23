@@ -54,6 +54,17 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		return mParent;
 	}
 
+	// Type guard (#42) : un callable porteur d'un prédicat `-> p is T` affine son
+	// argument quand l'appel sert de condition. Seuls FunctionBlock et ClassMethodBlock
+	// en posent un ; défaut = aucun guard (lu polymorphiquement par NarrowingInfo).
+	public int getTypeGuardParam() {
+		return -1;
+	}
+
+	public Type getTypeGuardType() {
+		return null;
+	}
+
 	public ConditionalBloc getLastOpenedConditionalBlock() {
 		LeekInstruction block = lastInstruction();
 		if (block instanceof ConditionalBloc) {

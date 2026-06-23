@@ -240,16 +240,17 @@ public class NarrowingInfo {
 
 		if (condition instanceof LeekFunctionCall call) {
 			extractMapContainsKey(call, info);
-			// Case: type guard function call (if (isString(x)) where isString a un prédicat
-			// `-> x is T`). On affine l'argument à l'index gardé vers le type du guard, comme
-			// un `instanceof`. Naturellement inerte hors v5 (aucun guard n'est jamais posé).
-			var fn = call.getResolvedFunction();
-			if (fn != null && fn.getTypeGuardType() != null) {
-				int idx = fn.getTypeGuardParam();
+			// Case: type guard call (if (isString(x)) where isString a un prédicat `-> x is T`).
+			// On affine l'argument à l'index gardé vers le type du guard, comme un `instanceof`.
+			// Le callable porteur du guard est une fonction libre OU une méthode (this.isB(x),
+			// isB(x), Class.isB(x)). Naturellement inerte hors v5 (aucun guard n'est jamais posé).
+			var callable = call.getResolvedCallable();
+			if (callable != null && callable.getTypeGuardType() != null) {
+				int idx = callable.getTypeGuardParam();
 				if (idx >= 0 && idx < call.getParameterCount()) {
 					var declVar = extractVariable(call.getParameter(idx));
 					if (declVar != null) {
-						Type guardType = fn.getTypeGuardType();
+						Type guardType = callable.getTypeGuardType();
 						info.trueOrAlloc().put(declVar, guardType);
 						Type currentType = declVar.getType();
 						if (currentType instanceof CompoundType ct) {

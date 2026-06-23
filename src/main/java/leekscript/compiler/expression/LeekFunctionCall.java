@@ -125,22 +125,21 @@ public class LeekFunctionCall extends Expression {
 		return resolvedFunction;
 	}
 
-	// @tailrec : cible d'un appel en position terminale — la fonction OU la méthode
-	// courante selon le chemin de résolution. Lue par LeekReturnInstruction.markTailCalls.
-	public leekscript.compiler.bloc.AbstractLeekBlock getTailCallTarget() {
+	// Callable vers lequel CET appel résout — la fonction (resolvedFunction) OU la
+	// méthode (resolvedMethod) selon le chemin de résolution. Sert au marquage @tailrec
+	// (LeekReturnInstruction.markTailCalls) et au narrowing type guard (NarrowingInfo).
+	public leekscript.compiler.bloc.AbstractLeekBlock getResolvedCallable() {
 		return resolvedFunction != null ? resolvedFunction : resolvedMethod;
 	}
 
-	// @tailrec sur méthode : si CET appel résout vers la méthode en cours d'analyse
-	// (récursion directe), on le mémorise pour le marquage de position terminale et,
-	// si la méthode porte @tailrec, on l'enregistre pour validation (mirror du cas
+	// Méthode résolue par CET appel (this.m() / m() / Class.m()). Mémorisée pour le
+	// narrowing type guard et, si l'appel est un auto-appel direct vers une méthode
+	// @tailrec, enregistrée pour validation de sa position terminale (mirror du cas
 	// fonction de LeekFunctionCall.analyze, branche VariableType.FUNCTION).
-	private void registerMethodSelfCall(WordCompiler compiler, ClassMethodBlock block) {
-		if (block == compiler.getCurrentFunction()) {
-			resolvedMethod = block;
-			if (block.hasAnnotation(leekscript.common.Annotation.TAILREC)) {
-				block.registerRecursiveCall(this);
-			}
+	private void resolveMethod(WordCompiler compiler, ClassMethodBlock block) {
+		resolvedMethod = block;
+		if (block == compiler.getCurrentFunction() && block.hasAnnotation(leekscript.common.Annotation.TAILREC)) {
+			block.registerRecursiveCall(this);
 		}
 	}
 
@@ -872,7 +871,7 @@ public class LeekFunctionCall extends Expression {
 									compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_METHOD, new String[] { current.getName(), v.getName() }));
 								}
 								functionType = m.block.getType();
-								registerMethodSelfCall(compiler, m.block);
+								resolveMethod(compiler, m.block);
 								break end;
 							}
 						}
@@ -912,7 +911,7 @@ public class LeekFunctionCall extends Expression {
 									compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_METHOD, new String[] { current.getName(), v.getName() }));
 								}
 								functionType = method.block.getType();
-								registerMethodSelfCall(compiler, method.block);
+								resolveMethod(compiler, method.block);
 								break end;
 							}
 						}
@@ -1137,7 +1136,7 @@ public class LeekFunctionCall extends Expression {
 								// Résout l'overload concrète pour que compileConvert utilise les types
 								// déclarés au lieu du compound (Versions) qui dégrade en (Object).
 								functionType = method.block.getType();
-								registerMethodSelfCall(compiler, method.block);
+								resolveMethod(compiler, method.block);
 								resolved = true;
 								break end;
 							}
@@ -1187,7 +1186,7 @@ public class LeekFunctionCall extends Expression {
 								is_static_method = true;
 								method = staticMethod;
 								functionType = staticMethod.block.getType();
-								registerMethodSelfCall(compiler, staticMethod.block);
+								resolveMethod(compiler, staticMethod.block);
 								// return; // OK
 								break end;
 							}
