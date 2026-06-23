@@ -197,6 +197,15 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 				&& cvt.getClassDeclaration() != null && !cvt.getClassDeclaration().internal) {
 			return argType;
 		}
+		// Classe générique instanciée (`Box<integer>`, ParameterizedClassType) : on spécialise
+		// vers le type paramétré PRÉCIS. Sûr (contrairement aux collections) : une classe user
+		// s'efface vers un seul code Java quel que soit T (pas d'overload système value-changing
+		// comme Array.sum() int/real) ; le typage précis n'affine que les membres (b.value : T->int)
+		// via la machinerie Phase 2 (substitution + cast d'effacement au site d'accès).
+		if (argType instanceof leekscript.common.ParameterizedClassType pct
+				&& pct.getClassDeclaration() != null && !pct.getClassDeclaration().internal) {
+			return argType;
+		}
 		// Collections : spécialiser vers le type LARGE (Array<any>/Map/Set), PAS le type d'élément
 		// précis. Un Array<int> précis pourrait changer le retour de méthodes (ex. sum() int vs
 		// real) = la VALEUR observable ; le type large suffit pour le dispatch statique des méthodes
@@ -235,7 +244,16 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 			if (concrete != null) {
 				profile[i] = concrete;
 				anyConcrete = true;
-				if (concrete instanceof leekscript.common.ClassValueType cvt) {
+				if (concrete instanceof leekscript.common.ParameterizedClassType pct) {
+						// Classe générique : clé = classe (internalName) + liaisons ordonnées, sinon
+						// Box<int>/Box<string> partageraient `concrete.name` ("Box") = collision de cache.
+						needsIndex = true;
+						key.append('G').append(pct.getClassDeclaration().getInternalName());
+						for (var tp : pct.getClassDeclaration().getTypeParameters()) {
+							var b = pct.getBindings().get(tp);
+							key.append(':').append(b == null ? "?" : b.getCode());
+						}
+					} else if (concrete instanceof leekscript.common.ClassValueType cvt) {
 					needsIndex = true;
 					key.append('C').append(cvt.getClassDeclaration().getInternalName());
 				} else if (concrete == Type.INT || concrete == Type.REAL || concrete == Type.BOOL || concrete == Type.STRING) {

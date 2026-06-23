@@ -172,6 +172,28 @@ public class TestInference extends TestCommon {
 	}
 
 	@Test
+	public void testParameterMonomorphization_generics() throws Exception {
+		section("Parameter monomorphization — classes génériques (#43 T3, Box<T>)");
+
+		String BOX = "class Box<T> { T value constructor(T v) { this.value = v } public T get() { return this.value } } ";
+		// Un paramètre non annoté appelé avec Box<integer> reçoit le type paramétré PRÉCIS :
+		// le corps re-parsé type b.get()/b.value en int → variante `f_unwrap$v0(u_Box)` au
+		// retour int qui se PROPAGE à l'appelant (confirmé white-box : `long u_r = ...$v0(...)`).
+		// (Comme pour string, le CORPS générique `b.get()` sur `any` warn FIELD_MAY_NOT_EXIST
+		// en strict indépendamment de la monomorphisation ; la conversion d'appel est précise.)
+		code_v5(BOX + "function unwrap(b) { return b.get() } return unwrap(new Box(5))").equals("5");
+		// Accès direct au champ générique précis dans la variante.
+		code_v5(BOX + "function val(b) { return b.value } return val(new Box(42))").equals("42");
+		// Box<string> : variante DISTINCTE (clé de cache injective par liaisons), retour string.
+		code_v5(BOX + "function unwrap(b) { return b.get() } return unwrap(new Box('hi'))").equals("\"hi\"");
+		// Box<integer> ET Box<string> de la MÊME fonction dans le même programme → deux
+		// variantes distinctes (la clé inclut les liaisons), chacune correcte.
+		code_v5(BOX + "function unwrap(b) { return b.get() } return unwrap(new Box(5)) + \", \" + unwrap(new Box('hi'))").equals("\"5, hi\"");
+		// Deux profils Box<int> de la même fonction → variante réutilisée (cache).
+		code_v5(BOX + "function len(b) { return b.get() } return len(new Box(5)) + len(new Box(7))").equals("12");
+	}
+
+	@Test
 	public void testParameterMonomorphization_safety() throws Exception {
 		section("Parameter monomorphization — sûreté (#43 T3)");
 
