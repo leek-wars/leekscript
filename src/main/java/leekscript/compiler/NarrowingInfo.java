@@ -248,15 +248,32 @@ public class NarrowingInfo {
 			if (callable != null && callable.getTypeGuardType() != null) {
 				int idx = callable.getTypeGuardParam();
 				if (idx >= 0 && idx < call.getParameterCount()) {
-					var declVar = extractVariable(call.getParameter(idx));
+					var arg = call.getParameter(idx);
+					Type guardType = callable.getTypeGuardType();
+					var declVar = extractVariable(arg);
 					if (declVar != null) {
-						Type guardType = callable.getTypeGuardType();
+						// Argument = variable simple : on affine la variable.
 						info.trueOrAlloc().put(declVar, guardType);
 						Type currentType = declVar.getType();
 						if (currentType instanceof CompoundType ct) {
 							Type remaining = ct.removeType(guardType);
 							if (remaining != currentType) {
 								info.falseOrAlloc().put(declVar, remaining);
+							}
+						}
+					} else {
+						// Argument = accès de champ (this.field / obj.field) : on affine la
+						// propriété, comme le cas property de `instanceof` (extractInstanceof).
+						String key = extractPropertyKey(arg);
+						if (key != null) {
+							var oa = (LeekObjectAccess) unwrap(arg);
+							info.truePropOrAlloc().put(key, guardType);
+							Type fieldType = oa.getType();
+							if (fieldType instanceof CompoundType ct) {
+								Type remaining = ct.removeType(guardType);
+								if (remaining != fieldType) {
+									info.falsePropOrAlloc().put(key, remaining);
+								}
 							}
 						}
 					}

@@ -418,6 +418,11 @@ public class TestNarrowing extends TestCommon {
 		// Passing narrowed property to a function expecting the subclass type
 		code_v4_("class Item { integer id } class Weapon extends Item { integer dmg = 10 } class Move { Item? item = null } function useWeapon(Weapon w) { return w.dmg } var m = new Move(); m.item = new Weapon(); if (m.item instanceof Weapon) { return useWeapon(m.item) } return 0").equals("10");
 		code_v4_("class Item { integer id } class Weapon extends Item { integer dmg = 10 } class Move { Item? item = null } function useWeapon(Weapon w) { return w.dmg } var m = new Move(); m.item = new Weapon(); if (m.item instanceof Weapon) { return useWeapon(m.item) } return 0").noWarning();
+		// Récepteur `this.field` (et pas seulement `obj.field`) : la propriété affinée doit
+		// aussi insérer le cast au codegen, sinon `this.field.method()` ne compile pas
+		// (asymétrie this/obj corrigée dans LeekObjectAccess.writeJavaCode).
+		code_v4_("class Item { integer id } class Weapon extends Item { integer dmg() { return 10 } } class Move { Item? item = null; integer run() { this.item = new Weapon(); if (this.item instanceof Weapon) { return this.item.dmg() } return 0 } } return new Move().run()").equals("10");
+		code_v4_("class Item { integer id } class Weapon extends Item { integer dmg() { return 10 } } class Move { Item? item = null; integer run() { this.item = new Weapon(); if (this.item instanceof Weapon) { return this.item.dmg() } return 0 } } return new Move().run()").noWarning();
 	}
 
 	@Test
@@ -913,6 +918,25 @@ public class TestNarrowing extends TestCommon {
 		code_strict_v5_("class B { public integer m() { return 9 } } class A { public isB(any x) -> x is B { return x instanceof B } public run(B | string v) { if (this.isB(v)) { return v.m() } return v.length() } } return new A().run(\"hi\")").noWarning();
 		// Le paramètre référencé par le guard d'une méthode doit exister.
 		code_v5("class A { public bad(any x) -> y is integer { return true } } return 0").error(Error.TYPE_GUARD_PARAMETER_UNKNOWN);
+	}
+
+	@Test
+	public void testCase_8_type_guard_field() throws Exception {
+		section("Case 8: type guard on a property-access argument (#42)");
+
+		// Argument du guard = accès de champ `this.field` : la propriété est affinée vers B
+		// dans la branche vraie (comme `if (this.field instanceof B)`), donc `this.field.m()`
+		// (méthode de B) compile et dispatche statiquement.
+		code_v5("class B { public integer m() { return 9 } } function isB(any x) -> x is B { return x instanceof B } class C { public B | string field = new B() public run() { if (isB(this.field)) { return this.field.m() } return 0 } } return new C().run()").equals("9");
+		// Argument = accès de champ via une variable locale `obj.field`, branche vraie (B).
+		code_v5("class B { public integer m() { return 9 } } function isB(any x) -> x is B { return x instanceof B } class C { public B | string field = new B() } var c = new C() if (isB(c.field)) { return c.field.m() } return 0").equals("9");
+		// `obj.field`, branche fausse : le champ est réduit à string, `c.field.length()` OK.
+		code_v5("class B { public integer m() { return 9 } } function isB(any x) -> x is B { return x instanceof B } class C { public B | string field = \"hi\" } var c = new C() if (isB(c.field)) { return 0 } return c.field.length()").equals("2");
+		// Strict : `this.field` affiné vers B dans la branche vraie, pas de warning sur m().
+		code_strict_v5_("class B { public integer m() { return 9 } } function isB(any x) -> x is B { return x instanceof B } class C { public B | string field = new B() public run() { if (isB(this.field)) { return this.field.m() } return 0 } } return new C().run()").noWarning();
+		// Guard porté par une méthode ET argument = accès de champ : les deux extensions
+		// se composent.
+		code_v5("class B { public integer m() { return 9 } } class C { public B | string field = new B() public isB(any x) -> x is B { return x instanceof B } public run() { if (this.isB(this.field)) { return this.field.m() } return 0 } } return new C().run()").equals("9");
 	}
 
 	@Test
