@@ -947,6 +947,20 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	@Test
+	public void testCase_9_type_guard_parameterized() throws Exception {
+		section("Case 9: type guard vers un type paramétré non interné (#42)");
+
+		String G = "function isArr(any x) -> x is Array<integer> { return x instanceof Array } ";
+		// Branche FAUSSE : `Array<integer> | string` est réduit à string en retirant le type
+		// paramétré non interné (removeType par égalité STRUCTURELLE), donc `v.length()` (méthode
+		// string) ne warn pas en strict — sans ça, v resterait `Array<integer> | string`.
+		code_strict_v5_(G + "Array<integer> | string v = \"hi\" if (isArr(v)) { return 0 } return v.length()").noWarning();
+		code_v5(G + "Array<integer> | string v = \"hi\" if (isArr(v)) { return 0 } return v.length()").equals("2");
+		// Branche VRAIE : v affiné en Array<integer>.
+		code_v5(G + "Array<integer> | string v = [1, 2, 3] if (isArr(v)) { return v.count() } return v.length()").equals("3");
+	}
+
+	@Test
 	public void testInstanceofParameterizedType() throws Exception {
 		section("instanceof avec type paramétré (#3175)");
 		// `instanceof Array<X>` parse et s'évalue comme `instanceof Array` (effacement : le

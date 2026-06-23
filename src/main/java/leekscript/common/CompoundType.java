@@ -246,19 +246,24 @@ public class CompoundType extends Type {
 	}
 
 	public Type removeType(Type target) {
+		// Égalité STRUCTURELLE (pas seulement l'identité) : les types internés (classes,
+		// primitifs) se comparent par identité via Object.equals, mais Array/Map/Set non
+		// internés (ex. `Array<integer>` issu d'un type guard) ont un equals structurel.
+		// Sans ça, la branche fausse d'un guard `-> x is Array<integer>` ne réduirait pas
+		// le compound (le `==` échouerait sur deux instances distinctes d'Array<integer>).
 		// Fast path : 2 éléments, on extrait le non-target sans alloc de HashSet+stream.
 		if (types.size() == 2) {
 			Type kept = null;
 			boolean found = false;
 			for (var t : types) {
-				if (t == target) found = true;
+				if (t == target || t.equals(target)) found = true;
 				else kept = t;
 			}
 			if (!found) return this;
 			return kept != null ? kept : this;
 		}
 		var remaining = new HashSet<Type>();
-		for (var t : this.types) if (t != target) remaining.add(t);
+		for (var t : this.types) if (!(t == target || t.equals(target))) remaining.add(t);
 		if (remaining.isEmpty()) return this;
 		if (remaining.size() == 1) return remaining.iterator().next();
 		return Type.compound(remaining);
