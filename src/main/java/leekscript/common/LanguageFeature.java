@@ -25,7 +25,10 @@ public enum LanguageFeature {
 
 	/** Monomorphisation : inférence des types de PARAMÈTRES non annotés via spécialisation
 	 *  par profil d'arguments (variantes re-parsées, dispatch statique) (#43, tranche 3). */
-	PARAMETER_TYPE_INFERENCE(5);
+	PARAMETER_TYPE_INFERENCE(5),
+
+	/** Une override ne peut pas réduire la visibilité (LSP) : erreur dure en v5, warning en v1-4 (#3781). */
+	STRICT_OVERRIDE_VISIBILITY(5);
 
 	public final int since;
 

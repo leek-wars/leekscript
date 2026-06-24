@@ -28,6 +28,7 @@ import leekscript.common.AccessLevel;
 import leekscript.common.ClassType;
 import leekscript.common.ClassValueType;
 import leekscript.common.Error;
+import leekscript.common.LanguageFeature;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 import leekscript.runner.AI;
@@ -635,9 +636,10 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 								}));
 							}
 							// Une override ne peut pas réduire la visibilité (LSP : ce qui est public dans le parent doit le rester).
-							// Warning en LS4 pour ne pas casser les IAs existantes ; à passer en ERROR en LS5.
+							// Erreur dure en LS5 ; warning en v1-4 pour ne pas casser les IAs existantes (#3781).
 							if (version.getValue().level.ordinal() > parentVersion.level.ordinal()) {
-								compiler.addError(new AnalyzeError(block.getLocation(), AnalyzeErrorLevel.WARNING, Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY, new String[] {
+								var level = LanguageFeature.STRICT_OVERRIDE_VISIBILITY.enabledIn(compiler.getVersion()) ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+								compiler.addError(new AnalyzeError(block.getLocation(), level, Error.OVERRIDDEN_METHOD_NARROWER_VISIBILITY, new String[] {
 									method.getKey(),
 									version.getValue().level.toString(),
 									parentVersion.level.toString()
