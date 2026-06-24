@@ -310,6 +310,17 @@ public class LeekFunctions {
 		method("setDisjunction", "Set", Type.SET, new Type[] { Type.SET, Type.SET }).alias("disjunction");
 		method("setFilter", "Set", Type.SET, new Type[] { Type.SET, new FunctionType(Type.BOOL, 0, Type.ANY, Type.SET) }).alias("filter");
 		method("setToArray", "Set", Type.ARRAY, new Type[] { Type.SET }).alias("toArray");
+		// Helpers de réduction + conversions (#24), alignés sur Map (gated v4 pour éviter toute collision avec d'anciennes IAs).
+		method("setSum", "Set", Type.REAL, new Type[] { Type.SET }).alias("sum").setMinVersion(4);
+		method("setAverage", "Set", Type.REAL, new Type[] { Type.SET }).alias("average").setMinVersion(4);
+		method("setMin", "Set", Type.ANY, new Type[] { Type.SET }).alias("min").setMinVersion(4);
+		method("setMax", "Set", Type.ANY, new Type[] { Type.SET }).alias("max").setMinVersion(4);
+		method("setEvery", "Set", Type.BOOL, new Type[] { Type.SET, new FunctionType(Type.BOOL, 0, Type.ANY, Type.SET) }).alias("every").setMinVersion(4);
+		method("setSome", "Set", Type.BOOL, new Type[] { Type.SET, new FunctionType(Type.BOOL, 0, Type.ANY, Type.SET) }).alias("some").setMinVersion(4);
+		method("setFold", "Set", Type.ANY, new Type[] { Type.SET, new FunctionType(Type.ANY, 0, Type.ANY, Type.ANY, Type.SET), Type.ANY }).alias("fold").setMinVersion(4);
+		method("setIter", "Set", Type.VOID, new Type[] { Type.SET, new FunctionType(Type.ANY, 0, Type.ANY, Type.SET) }).alias("iter").setMinVersion(4);
+		method("setToMap", "Set", Type.MAP, new Type[] { Type.SET }).alias("toMap").setMinVersion(4);
+		method("mapKeysToSet", "Map", Type.SET, new Type[] { Type.MAP }).alias("keysToSet").setMinVersion(4);
 
 		/**
 		 * Interval functions

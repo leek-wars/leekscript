@@ -9,6 +9,7 @@ import leekscript.runner.AI;
 import leekscript.runner.AI.RamUsage;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
+import leekscript.runner.LeekValueComparator;
 
 /**
  * Implémentation du type Set de LeekScript.
@@ -297,6 +298,110 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 	public LegacyArrayLeekValue setToArray_v1_3(AI ai) throws LeekRunException {
 		ai.ops(this.size() * 2);
 		var r = new LegacyArrayLeekValue(ai, this.toArray());
+		return r;
+	}
+
+	public Object setIter(AI ai, FunctionLeekValue function) throws LeekRunException {
+		ai.ops(1 + 2 * size());
+		for (var v : this) {
+			function.run(ai, null, v, this);
+		}
+		return null;
+	}
+
+	public double setSum(AI ai) throws LeekRunException {
+		ai.ops(1 + 3 * size());
+		double sum = 0;
+		for (var v : this) {
+			sum += ai.real(v);
+		}
+		return sum;
+	}
+
+	public double setAverage(AI ai) throws LeekRunException {
+		ai.ops(1 + 3 * size());
+		double average = 0;
+		for (var v : this) {
+			average += ai.real(v);
+		}
+		if (average == 0)
+			return 0.0;
+		return average / size();
+	}
+
+	public Object setMin(AI ai) throws LeekRunException {
+		ai.ops(1 + 3 * size());
+		if (size() == 0) return null;
+		var it = iterator();
+		Object min_value = it.next();
+		while (it.hasNext()) {
+			var val = it.next();
+			if (LeekValueComparator.compareAsc(val, min_value) < 0)
+				min_value = val;
+		}
+		return min_value;
+	}
+
+	public Object setMax(AI ai) throws LeekRunException {
+		ai.ops(1 + 3 * size());
+		if (size() == 0) return null;
+		var it = iterator();
+		Object max_value = it.next();
+		while (it.hasNext()) {
+			var val = it.next();
+			if (LeekValueComparator.compareAsc(val, max_value) > 0)
+				max_value = val;
+		}
+		return max_value;
+	}
+
+	public boolean setEvery(AI ai, FunctionLeekValue function) throws LeekRunException {
+		ai.opsNoCheck(1);
+		int i = 0;
+		for (var v : this) {
+			if (!ai.bool(function.run(ai, null, v, this))) {
+				ai.ops(2 * i);
+				return false;
+			}
+			i++;
+		}
+		ai.ops(2 * size());
+		return true;
+	}
+
+	public boolean setSome(AI ai, FunctionLeekValue function) throws LeekRunException {
+		ai.opsNoCheck(1);
+		int i = 0;
+		for (var v : this) {
+			if (ai.bool(function.run(ai, null, v, this))) {
+				ai.ops(2 * i);
+				return true;
+			}
+			i++;
+		}
+		ai.ops(2 * size());
+		return false;
+	}
+
+	public Object setFold(AI ai, FunctionLeekValue function, Object v) throws LeekRunException {
+		ai.ops(1 + 3 * size());
+		var result = v;
+		for (var val : this) {
+			result = function.run(ai, null, result, val, this);
+		}
+		return result;
+	}
+
+	// Conversion vers une map indexée par position (cohérent avec setToArray et l'itération for(k:v in set)).
+	public MapLeekValue setToMap(AI ai) throws LeekRunException {
+		ai.ops(1 + 2 * size());
+		var r = new MapLeekValue(ai);
+		long i = 0;
+		for (var v : this) {
+			r.set(i, v);
+			i++;
+		}
+		ai.increaseRAM(ram, 2 * r.size());
 		return r;
 	}
 }
