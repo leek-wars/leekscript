@@ -22,6 +22,7 @@ import leekscript.common.Annotation;
 import leekscript.compiler.Annotatable;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
+import leekscript.common.LanguageFeature;
 import leekscript.common.Type;
 
 import java.util.EnumSet;
@@ -293,8 +294,23 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 		if (compiler.getVersion() >= 2 && token.getWord().equals("this")) {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.THIS_NOT_ALLOWED_HERE));
 		} else {
-			// Vérification déjà existante (on vérifie les globales et fonctions seulement en 1.1 car il y a un léger bug en 1.0 avec les includes)
-			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(token.getWord()) || compiler.getMainBlock().hasUserFunction(token.getWord(), true))) || compiler.getCurrentBlock().hasVariable(token.getWord())) {
+			// Prédicat historique (inchangé en v1-4) : le nom est déjà pris par une globale/fonction program-wide
+			// (vérifié seulement en 1.1 car léger bug en 1.0 avec les includes) ou par une variable visible dans la
+			// chaîne de blocs (hasVariable est polymorphe : FunctionBlock isole ses propres locales).
+			boolean nameTaken = (compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(token.getWord()) || compiler.getMainBlock().hasUserFunction(token.getWord(), true)))
+				|| compiler.getCurrentBlock().hasVariable(token.getWord());
+			// #4237 : en v5, une variable locale peut MASQUER une fonction ou une globale homonyme (la résolution en
+			// lecture priorise déjà la locale). Restent interdits : la redéclaration d'une locale (même scope), le
+			// masquage d'une locale parente et le masquage d'une classe.
+			if (nameTaken && LanguageFeature.VARIABLE_SHADOWING.enabledIn(compiler.getVersion())) {
+				LeekVariable existing = compiler.getCurrentBlock().getVariable(token.getWord(), false);
+				// existing == null => le conflit vient du registre program-wide (fonction/globale) => masquable.
+				boolean shadowable = existing == null
+					|| existing.getVariableType() == VariableType.FUNCTION
+					|| existing.getVariableType() == VariableType.GLOBAL;
+				if (shadowable) nameTaken = false;
+			}
+			if (nameTaken) {
 				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] {
 					token.getWord()
 				}));

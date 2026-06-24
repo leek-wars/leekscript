@@ -11,6 +11,24 @@ public class TestGlobals extends TestCommon {
 
 
 		@Test
+	public void testShadowing() throws Exception {
+		section("Variable shadowing (#4237)");
+		// En v5, une variable locale peut masquer une FONCTION ou une GLOBALE homonyme ; erreur dure en v1-4.
+		code_v5("function foo() { return 1 } if (true) { var foo = 2 return foo } return 0").equals("2");
+		code_v2_4("function foo() { return 1 } if (true) { var foo = 2 return foo } return 0").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v5("global g = 1 if (true) { var g = 2 return g } return 0").equals("2");
+		code_v2_4("global g = 1 if (true) { var g = 2 return g } return 0").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		// Masquage au niveau top-level également
+		code_v5("function foo() { return 1 } var foo = 2 return foo").equals("2");
+		code_v2_4("function foo() { return 1 } var foo = 2 return foo").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v5("global g = 5 var g = 2 return g").equals("2");
+		// Restent interdits en v5 : redéclaration d'une locale (même scope), masquage d'une classe, masquage d'une locale parente.
+		code_v5("var a = 1 var a = 2 return a").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v5("class A {} var A = 12 return A").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v5("var foo = 1 if (true) { var foo = 2 return foo } return 0").error(Error.VARIABLE_NAME_UNAVAILABLE);
+	}
+
+		@Test
 	public void testGlobals() throws Exception {
 		section("Globals");
 		code("global x; return x;").equals("null");

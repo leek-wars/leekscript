@@ -28,7 +28,10 @@ public enum LanguageFeature {
 	PARAMETER_TYPE_INFERENCE(5),
 
 	/** Une override ne peut pas réduire la visibilité (LSP) : erreur dure en v5, warning en v1-4 (#3781). */
-	STRICT_OVERRIDE_VISIBILITY(5);
+	STRICT_OVERRIDE_VISIBILITY(5),
+
+	/** Une variable locale peut masquer une fonction/globale du même nom dans son scope (#4237). */
+	VARIABLE_SHADOWING(5);
 
 	public final int since;
 
