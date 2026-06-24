@@ -40,6 +40,7 @@ public enum TokenType {
 	IMPORT,
 	GOTO,
 	SWITCH,
+	MATCH,
 	SUPER,
 	CLASS,
 	CATCH,

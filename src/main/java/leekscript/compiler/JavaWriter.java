@@ -34,6 +34,9 @@ public class JavaWriter {
 	public HashMap<String, ArrayList<CallableVersion>> genericFunctions = new HashMap<>();
 	public HashSet<LeekFunctions> anonymousSystemFunctions = new HashSet<>();
 	public HashSet<FunctionBlock> anonymousUserFunctions = new HashSet<>();
+	// #2404 : champs temporaires des expressions `match` (un par match, déclarés au niveau classe
+	// pour permettre l'évaluation unique du sujet via une assignation-expression en position d'expression).
+	private final HashSet<Integer> matchTemps = new HashSet<>();
 	private boolean operationsEnabled = true;
 	public boolean lastInstruction = false;
 	public Options options;
@@ -642,6 +645,18 @@ public class JavaWriter {
 
 	public void generateAnonymousUserFunction(FunctionBlock function) {
 		anonymousUserFunctions.add(function);
+	}
+
+	/** Enregistre le champ temporaire d'une expression match (déclaré par {@link #writeMatchTempFields}). */
+	public void registerMatchTemp(int id) {
+		matchTemps.add(id);
+	}
+
+	/** Déclare les champs temporaires des expressions match au niveau de la classe AI générée. */
+	public void writeMatchTempFields() {
+		for (var id : matchTemps) {
+			addLine("private Object __match_" + id + ";");
+		}
 	}
 
 	public void generateAnonymousSystemFunction(LeekFunctions system_function) {

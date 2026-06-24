@@ -34,7 +34,10 @@ public enum LanguageFeature {
 	VARIABLE_SHADOWING(5),
 
 	/** Boucle courte `for <collection> { ... }` avec variable de boucle implicite `it` (#358). */
-	FOR_IMPLICIT_IT(5);
+	FOR_IMPLICIT_IT(5),
+
+	/** Expression `match (e) { v -> r, _ -> r }` (pattern matching par valeur) (#2404). */
+	MATCH(5);
 
 	public final int since;
 

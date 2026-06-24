@@ -92,6 +92,7 @@ public class LexicalParser {
 		m.put("export",      new KeywordInfo(3, null, TokenType.EXPORT));
 		m.put("goto",        new KeywordInfo(3, null, TokenType.GOTO));
 		m.put("switch",      new KeywordInfo(3, null, TokenType.SWITCH));
+		m.put("match",       new KeywordInfo(5, null, TokenType.MATCH));
 		m.put("super",       new KeywordInfo(2, null, TokenType.SUPER));
 		m.put("class",       new KeywordInfo(2, null, TokenType.CLASS));
 		m.put("catch",       new KeywordInfo(3, null, TokenType.CATCH));

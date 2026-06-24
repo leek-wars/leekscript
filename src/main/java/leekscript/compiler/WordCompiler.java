@@ -40,6 +40,7 @@ import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekFunctionCall;
 import leekscript.compiler.expression.LeekInterval;
 import leekscript.compiler.expression.LeekMap;
+import leekscript.compiler.expression.LeekMatch;
 import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekObject;
@@ -2651,6 +2652,8 @@ public class WordCompiler {
 					retour.addExpression(new LeekBoolean(word, false));
 				} else if (word.getType() == TokenType.FUNCTION) {
 					retour.addExpression(readAnonymousFunction());
+				} else if (word.getType() == TokenType.MATCH) {
+					retour.addExpression(readMatch(mTokens.eat()));
 				} else if (word.getType() == TokenType.NULL) {
 					retour.addExpression(new LeekNull(word));
 				} else if (getVersion() >= 2 && word.getType() == TokenType.NEW) {
@@ -2741,6 +2744,64 @@ public class WordCompiler {
 		if (isExpressionEnd(mTokens.get())) {
 			throw new LeekCompilerException(mTokens.get(), missingClosing);
 		}
+	}
+
+	// #2404 : `match (subject) { v1, v2 -> r, _ -> r }`. Appelé avec le mot-clé `match` déjà
+	// consommé ; laisse le curseur sur l'accolade fermante (consommée par la boucle appelante).
+	private Expression readMatch(Token matchToken) throws LeekCompilerException {
+		LeekMatch match = new LeekMatch(matchToken, mMain.getCount());
+
+		if (mTokens.eat().getType() != TokenType.PAR_LEFT) {
+			throw new LeekCompilerException(mTokens.get(), Error.OPENING_PARENTHESIS_EXPECTED);
+		}
+		match.setSubject(readExpression());
+		if (mTokens.eat().getType() != TokenType.PAR_RIGHT) {
+			throw new LeekCompilerException(mTokens.get(), Error.CLOSING_PARENTHESIS_EXPECTED);
+		}
+		if (mTokens.eat().getType() != TokenType.ACCOLADE_LEFT) {
+			throw new LeekCompilerException(mTokens.get(), Error.OPENING_CURLY_BRACKET_EXPECTED);
+		}
+
+		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+
+			var values = new java.util.ArrayList<Expression>();
+			boolean isDefault = false;
+
+			// Motif : joker `_` (cas par défaut) OU liste de valeurs séparées par des virgules jusqu'à `->`.
+			if (mTokens.get().getType() == TokenType.STRING && mTokens.get().getWord().equals("_")) {
+				isDefault = true;
+				mTokens.skip();
+			} else {
+				while (true) {
+					values.add(readExpression(true));
+					if (mTokens.get().getType() == TokenType.VIRG) {
+						mTokens.skip();
+					} else {
+						break;
+					}
+				}
+			}
+
+			if (mTokens.get().getType() != TokenType.ARROW) {
+				throw new LeekCompilerException(mTokens.get(), Error.ARROW_EXPECTED);
+			}
+			mTokens.skip();
+
+			var result = readExpression(true);
+			match.addBranch(new LeekMatch.Branch(values, result, isDefault));
+
+			// Séparateur de branche optionnel
+			if (mTokens.get().getType() == TokenType.VIRG) {
+				mTokens.skip();
+			}
+		}
+
+		if (mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CLOSING_PARENTHESIS_EXPECTED));
+		}
+		match.setClosingBrace(mTokens.get());
+		return match;
 	}
 
 	private Expression readSet(Token openingToken) throws LeekCompilerException {
