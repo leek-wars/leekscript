@@ -433,6 +433,10 @@ public class TestInterval extends TestCommon {
 		code_v5("return [1..3].toArray()").equals("[1, 2, 3]");
 		code_v5("return [1..3].toSet()").equals("<1, 2, 3>");
 		code_v5("return [0..10].average()").equals("5.0");
+		// Receveur de type statique abstrait Interval (bornes any) : dispatch dynamique au runtime,
+		// PAS de Java non compilable — revue #21
+		code_v5("function fInterval(a, b) { return [a..b].min() } return fInterval(1, 10)").equals("1");
+		code_v5("function fInterval(a, b) { return [a..b].max() } return fInterval(1, 10)").equals("10");
 		// La forme libre reste disponible en toute version (non régressée)
 		code("return intervalMin([1..2])").equals("1");
 	}

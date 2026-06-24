@@ -1542,7 +1542,12 @@ public class LeekFunctionCall extends Expression {
 		if (type instanceof ArrayType) return "Array";
 		if (type instanceof MapType) return "Map";
 		if (type instanceof SetType) return "Set";
-		if (type instanceof IntervalType) return "Interval";
+		// #4243 review : seulement les intervalles CONCRETS (element != any). Le type abstrait
+		// Interval (element any) se génère en `IntervalLeekValue` (base abstraite) qui ne porte
+		// PAS intervalMin/Max/toArray/toSet/intersection/combine (retours int vs double divergents) :
+		// y dispatcher une méthode produirait du Java non compilable. Receveur abstrait → pas de
+		// méthode OO statique (le runtime/forme libre reste disponible).
+		if (type instanceof IntervalType it && it.element() != Type.ANY) return "Interval";
 		if (type == Type.STRING) return "String";
 		if (type.isNumber()) return "Number";
 		return null;

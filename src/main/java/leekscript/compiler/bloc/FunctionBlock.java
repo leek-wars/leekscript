@@ -131,10 +131,6 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		this.overloadSuffix = suffix;
 	}
 
-	public String getOverloadSuffix() {
-		return overloadSuffix;
-	}
-
 	// #43 T3 — position du corps (pour re-parse) et machinerie des variantes.
 	public void setBodyStart(leekscript.compiler.LexicalParserTokenStream.LexicalParserTokenStreamPosition position) {
 		this.bodyStart = position;

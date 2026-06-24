@@ -68,11 +68,6 @@ public class LeekMatch extends Expression {
 		this.closingBrace = brace;
 	}
 
-	public boolean hasDefault() {
-		for (var b : branches) if (b.isDefault) return true;
-		return false;
-	}
-
 	@Override
 	public int getNature() {
 		return EXPRESSION;
@@ -116,10 +111,11 @@ public class LeekMatch extends Expression {
 		if (parenthesis) writer.addCode("(");
 
 		boolean subjectEmitted = false;
+		Expression def = null;
 		// Branches de valeur, dans l'ordre : cond_0 ? r_0 : cond_1 ? r_1 : ... : default
 		// (le ternaire Java est associatif à droite, donc pas de parenthèses imbriquées nécessaires)
 		for (var b : branches) {
-			if (b.isDefault) continue;
+			if (b.isDefault) { def = b.result; continue; }
 			writer.addCode("(");
 			boolean firstValue = true;
 			for (var v : b.values) {
@@ -142,13 +138,19 @@ public class LeekMatch extends Expression {
 			writer.addCode(" : ");
 		}
 
-		// Cas par défaut (ou null si absent)
-		Expression def = null;
-		for (var b : branches) if (b.isDefault) { def = b.result; break; }
-		if (def != null) {
-			writeResult(mainblock, writer, def);
+		if (subjectEmitted) {
+			// Cas par défaut (ou null si absent)
+			if (def != null) writeResult(mainblock, writer, def);
+			else writer.addCode("null");
 		} else {
-			writer.addCode("null");
+			// Aucune branche de valeur : on évalue tout de même le sujet (effets de bord) via
+			// eq(tmp = subject, tmp) — toujours vrai (réflexif) — puis on renvoie le défaut.
+			writer.addCode("eq(" + tmp + " = ");
+			subject.writeJavaCode(mainblock, writer, false);
+			writer.addCode(", " + tmp + ") ? ");
+			if (def != null) writeResult(mainblock, writer, def);
+			else writer.addCode("null");
+			writer.addCode(" : null");
 		}
 
 		if (parenthesis) writer.addCode(")");

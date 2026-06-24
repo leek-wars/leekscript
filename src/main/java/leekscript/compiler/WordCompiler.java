@@ -73,6 +73,10 @@ public class WordCompiler {
 	// mPendingExport = firstPass ; mExporting = secondPass (en cours de compileWord).
 	private boolean mPendingExport = false;
 	private boolean mExporting = false;
+	// #2404 : supprime la détection de lambda pour le PROCHAIN readExpression (motif de match :
+	// `ident -> expr` doit se lire comme un motif, pas comme la lambda `ident => expr`). Consommé
+	// (remis à false) dès l'entrée de readExpression → n'affecte que l'appel de tête, pas les imbriqués.
+	private boolean mSuppressLambda = false;
 	private AbstractLeekBlock mCurentBlock;
 	private AbstractLeekBlock mCurrentFunction;
 	private ClassDeclarationInstruction mCurrentClass;
@@ -2124,6 +2128,11 @@ public class WordCompiler {
 
 	public Expression readExpression(boolean inList, boolean inSet, boolean inInterval) throws LeekCompilerException {
 
+		// #2404 : on capture+réarme le drapeau de suppression de lambda pour qu'il ne s'applique
+		// qu'à CET appel (les sous-expressions imbriquées retrouvent la détection de lambda normale).
+		boolean suppressLambda = mSuppressLambda;
+		mSuppressLambda = false;
+
 		var retour = new LeekExpression();
 
 		// Lambda — fast path : on ne tente la détection que si le head peut commencer
@@ -2162,7 +2171,7 @@ public class WordCompiler {
 					|| headType == TokenType.NULL
 					|| headType == TokenType.FUNCTION;
 		}
-		if (canBeLambda) {
+		if (canBeLambda && !suppressLambda) {
 		var pos = mTokens.getPosition();
 		if (headType == TokenType.PAR_LEFT) {
 			lambdaToken = mTokens.eat();
@@ -2774,6 +2783,8 @@ public class WordCompiler {
 				mTokens.skip();
 			} else {
 				while (true) {
+					// Lire le motif SANS détection de lambda : `cst -> r` est un motif, pas `cst => r`.
+					mSuppressLambda = true;
 					values.add(readExpression(true));
 					if (mTokens.get().getType() == TokenType.VIRG) {
 						mTokens.skip();
@@ -3174,11 +3185,19 @@ public class WordCompiler {
 	private boolean isFunctionNameAvailableForDeclaration(Token word) {
 		if (getVersion() >= 3 && isKeyword(word)) return false;
 		if (mMain.hasGlobal(word.getWord())) return false;
-		var existing = mCurentBlock.getVariable(word.getWord(), false);
-		if (existing != null && existing.getVariableType() != VariableType.FUNCTION) return false;
-		boolean functionConflict = (existing != null && existing.getVariableType() == VariableType.FUNCTION)
-			|| mMain.hasUserFunction(word.getWord(), false, mModule);
-		if (functionConflict && !LanguageFeature.FUNCTION_OVERLOADING.enabledIn(getVersion())) return false;
+		// hasVariable est polymorphe (FunctionBlock n'inspecte QUE ses propres locales) : on garde
+		// EXACTEMENT le prédicat de l'ancien isAvailable(word, false) pour que v1-4 reste byte-identique.
+		boolean varConflict = mCurentBlock.hasVariable(word.getWord());
+		boolean functionConflict = mMain.hasUserFunction(word.getWord(), false, mModule);
+		if (!LanguageFeature.FUNCTION_OVERLOADING.enabledIn(getVersion())) {
+			return !(varConflict || functionConflict);
+		}
+		// v5 : un conflit avec une autre FONCTION est autorisé (surcharge) ; pas avec une
+		// variable/classe non-fonction. Le conflit fonction seul (functionConflict) passe.
+		if (varConflict) {
+			var existing = mCurentBlock.getVariable(word.getWord(), false);
+			if (existing != null && existing.getVariableType() != VariableType.FUNCTION) return false;
+		}
 		return true;
 	}
 

@@ -31,6 +31,11 @@ public class TestMatch extends TestCommon {
 		code_v5("return 10 + match (1) { 1 -> 5, _ -> 0 }").equals("15");
 		// Sujet variable, branches calculées
 		code_v5("var n = 4 return match (n % 2) { 0 -> \"pair\", _ -> \"impair\" }").equals("\"pair\"");
+		// Motif = identifiant nu (matche la VALEUR de la variable, pas une lambda) — revue #2404
+		code_v5("var y = 1 return match (1) { y -> \"a\", _ -> \"b\" }").equals("\"a\"");
+		code_v5("var y = 9 return match (1) { y -> \"a\", _ -> \"b\" }").equals("\"b\"");
+		// Match avec seulement un défaut : le sujet est tout de même évalué (effet de bord) — revue #2404
+		code_v5("global c = 0 function ff() { c = c + 1 return 2 } var r = match (ff()) { _ -> 99 } return [r, c]").equals("[99, 1]");
 		// En v1-4, `match` reste un identifiant ordinaire (byte-identique)
 		code_v4("var match = 7 return match").equals("7");
 		code_v4("function match() { return 3 } return match()").equals("3");
