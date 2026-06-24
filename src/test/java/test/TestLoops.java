@@ -318,6 +318,27 @@ public class TestLoops extends TestCommon {
 	}
 
 	@Test
+	public void testFor_implicit_it() throws Exception {
+		section("For implicit it (#358)");
+		// Forme courte `for <collection> { ... }` avec variable de boucle implicite `it`, en v5
+		code_v5("var s = 0 for [1, 2, 3] { s += it } return s").equals("6");
+		code_v5("var a = [1, 2, 3, 4] var s = 0 for a { s += it } return s").equals("10");
+		// Itération sur les valeurs d'une map
+		code_v5("var s = 0 for [10 : 1, 20 : 2, 30 : 3] { s += it } return s").equals("6");
+		// continue / collection vide
+		code_v5("var s = 0 for [1, 2, 3, 4] { if (it == 2) { continue } s += it } return s").equals("8");
+		code_v5("var s = 0 for [] { s += it } return s").equals("0");
+		// Sans accolades : une seule instruction
+		code_v5("var s = 0 for [1, 2, 3] s += it return s").equals("6");
+		// `it` reste un identifiant normal en dehors de la boucle
+		code_v5("var it = 5 return it").equals("5");
+		// En v1-4 la forme courte n'existe pas : `for <expr>` exige une parenthèse ouvrante
+		code_v4("for [1, 2, 3] { }").error(Error.OPENING_PARENTHESIS_EXPECTED);
+		// Limitation v1 : deux boucles implicites imbriquées entrent en collision sur `it`
+		code_v5("for [1, 2] { for [3, 4] { } }").error(Error.VARIABLE_NAME_UNAVAILABLE);
+	}
+
+	@Test
 	public void testForeach_Minus_double() throws Exception {
 		section("Foreach - double");
 		code_v1_4("var r = [] for (var x in [1, 2, 3]) { for (var y in [4, 5, 6]) { push(r, x * y) }} return r;").equals("[4, 5, 6, 8, 10, 12, 12, 15, 18]");

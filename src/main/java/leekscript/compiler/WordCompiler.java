@@ -1287,6 +1287,22 @@ public class WordCompiler {
 
 	private void forBlock() throws LeekCompilerException {
 		var token = mTokens.eat();
+		// #358 : forme courte `for <collection> { ... }` (v5), variable de boucle implicite `it`.
+		// Ne se déclenche qu'en l'absence de parenthèse ouvrante : `for (...)` garde son chemin v1-4 inchangé.
+		if (LanguageFeature.FOR_IMPLICIT_IT.enabledIn(getVersion()) && mTokens.get().getType() != TokenType.PAR_LEFT) {
+			// On lit la collection dans le scope parent avant d'attacher le bloc.
+			var array = readExpression();
+			ForeachBlock block = new ForeachBlock(mCurentBlock, mMain, true, token, false);
+			mCurentBlock.addInstruction(this, block);
+			mCurentBlock = block;
+			block.setArray(array);
+			// Itérateur synthétique `it`, localisé sur le mot-clé `for`.
+			block.setIterator(this, new Token(TokenType.STRING, "it", token.getLocation()), Type.ANY);
+			if (mTokens.get().getType() == TokenType.ACCOLADE_LEFT) {
+				mTokens.skip();
+			} else block.noAccolade();
+			return;
+		}
 		// Bloc de type for(i=0;i<5;i++) ou encore for(element in tableau)
 		// On peut déclarer une variable pendant l'instruction d'initialisation
 		if (mTokens.eat().getType() != TokenType.PAR_LEFT) {

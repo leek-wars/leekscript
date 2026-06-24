@@ -31,7 +31,10 @@ public enum LanguageFeature {
 	STRICT_OVERRIDE_VISIBILITY(5),
 
 	/** Une variable locale peut masquer une fonction/globale du même nom dans son scope (#4237). */
-	VARIABLE_SHADOWING(5);
+	VARIABLE_SHADOWING(5),
+
+	/** Boucle courte `for <collection> { ... }` avec variable de boucle implicite `it` (#358). */
+	FOR_IMPLICIT_IT(5);
 
 	public final int since;
 
