@@ -325,57 +325,61 @@ public class LeekFunctions {
 		/**
 		 * Interval functions
 		 */
+		// Alias OO v5 (interval.min(), interval.size()...) : forme méthode cohérente avec Array/Map/Set/String/Number.
+		// Le dispatch méthode est gardé v5 ; les fonctions libres intervalXxx restent disponibles à leurs versions.
 		method("intervalMin", "Interval", 1, new CallableVersion[] {
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL_INTERVAL}),
 			new CallableVersion(Type.INT, new Type[] { Type.INTEGER_INTERVAL }),
-		});
+		}).alias("min");
 		method("intervalMax", "Interval", 1, new CallableVersion[] {
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL_INTERVAL}),
 			new CallableVersion(Type.INT, new Type[] { Type.INTEGER_INTERVAL }),
-		});
+		}).alias("max");
+		// Pas d'alias OO `size` : intervalSize renvoie `from - to` (span négatif, bug de signe
+		// préexistant non testé) — on ne l'expose pas via l'API méthode tant qu'il n'est pas corrigé.
 		method("intervalSize", "Interval", 1, new CallableVersion[] {
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL_INTERVAL}),
 			new CallableVersion(Type.INT, new Type[] { Type.INTEGER_INTERVAL }),
 		});
-		method("intervalIsEmpty", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
-		method("intervalIsBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
-		method("intervalIsRightBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
-		method("intervalIsLeftBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
-		method("intervalIsClosed", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
-		method("intervalIsRightClosed", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
-		method("intervalIsLeftClosed", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL });
+		method("intervalIsEmpty", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).alias("isEmpty");
+		method("intervalIsBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).alias("isBounded");
+		method("intervalIsRightBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).alias("isRightBounded");
+		method("intervalIsLeftBounded", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).alias("isLeftBounded");
+		method("intervalIsClosed", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).alias("isClosed");
+		method("intervalIsRightClosed", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).alias("isRightClosed");
+		method("intervalIsLeftClosed", "Interval", 1, Type.BOOL, new Type[] { Type.INTERVAL }).alias("isLeftClosed");
 		method("intervalContains", "Interval", 2, new CallableVersion[] {
 			new CallableVersion(Type.BOOL, new Type[] { Type.INTERVAL, Type.INT }),
 			new CallableVersion(Type.BOOL, new Type[] { Type.INTERVAL, Type.REAL }),
 			new CallableVersion(Type.BOOL, new Type[] { Type.INTERVAL, Type.INT_OR_REAL }),
-		});
-		method("intervalAverage", "Interval", 3, Type.REAL, new Type[] { Type.INTERVAL });
+		}).alias("contains");
+		method("intervalAverage", "Interval", 3, Type.REAL, new Type[] { Type.INTERVAL }).alias("average");
 		method("intervalIntersection", "Interval", 3, new CallableVersion[] {
 			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.REAL_INTERVAL, Type.REAL_INTERVAL }),
 			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.INTEGER_INTERVAL, Type.REAL_INTERVAL }),
 			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.REAL_INTERVAL, Type.INTEGER_INTERVAL }),
 			new CallableVersion(Type.INTEGER_INTERVAL, new Type[] { Type.INTEGER_INTERVAL, Type.INTEGER_INTERVAL }),
-		});
+		}).alias("intersection");
 		method("intervalCombine", "Interval", 3, new CallableVersion[] {
 			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.REAL_INTERVAL, Type.REAL_INTERVAL }),
 			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.INTEGER_INTERVAL, Type.REAL_INTERVAL }),
 			new CallableVersion(Type.REAL_INTERVAL, new Type[] { Type.REAL_INTERVAL, Type.INTEGER_INTERVAL }),
 			new CallableVersion(Type.INTEGER_INTERVAL, new Type[] { Type.INTEGER_INTERVAL, Type.INTEGER_INTERVAL }),
-		});
+		}).alias("combine");
 		method("intervalToArray", "Interval", new CallableVersion[] {
 			new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.REAL_INTERVAL, Type.REAL }),
 			new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.REAL_INTERVAL}),
 			new CallableVersion(Type.ARRAY_REAL, new Type[] { Type.INTEGER_INTERVAL, Type.REAL }),
 			new CallableVersion(Type.ARRAY_INT, new Type[] { Type.INTEGER_INTERVAL, Type.INT }),
 			new CallableVersion(Type.ARRAY_INT, new Type[] { Type.INTEGER_INTERVAL}),
-		});
+		}).alias("toArray");
 		method("intervalToSet", "Interval", new CallableVersion[] {
 			new CallableVersion(Type.SET_REAL, new Type[] { Type.REAL_INTERVAL, Type.REAL }),
 			new CallableVersion(Type.SET_REAL, new Type[] { Type.REAL_INTERVAL}),
 			new CallableVersion(Type.SET_REAL, new Type[] { Type.INTEGER_INTERVAL, Type.REAL }),
 			new CallableVersion(Type.SET_INT, new Type[] { Type.INTEGER_INTERVAL, Type.INT }),
 			new CallableVersion(Type.SET_INT, new Type[] { Type.INTEGER_INTERVAL}),
-		});
+		}).alias("toSet");
 
 		/**
 		 * JSON functions

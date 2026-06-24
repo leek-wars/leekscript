@@ -3851,6 +3851,7 @@ public abstract class AI {
 		if (value instanceof ArrayLeekValue) return "Array";
 		if (value instanceof MapLeekValue) return "Map";
 		if (value instanceof leekscript.runner.values.SetLeekValue) return "Set";
+		if (value instanceof IntervalLeekValue) return "Interval";
 		if (value instanceof String) return "String";
 		if (value instanceof Number) return "Number";
 		return null;

@@ -1476,6 +1476,7 @@ public class LeekFunctionCall extends Expression {
 		if (type instanceof ArrayType) return "Array";
 		if (type instanceof MapType) return "Map";
 		if (type instanceof SetType) return "Set";
+		if (type instanceof IntervalType) return "Interval";
 		if (type == Type.STRING) return "String";
 		if (type.isNumber()) return "Number";
 		return null;

@@ -419,6 +419,25 @@ public class TestInterval extends TestCommon {
 	}
 
 	@Test
+	public void testInterval_oo_methods() throws Exception {
+		section("Interval OO methods (#21)");
+		// Forme méthode v5, cohérente avec Array/Map/Set/String/Number
+		code_v5("return [1..10].min()").equals("1");
+		code_v5("return [1..10].max()").equals("10");
+		code_v5("return [1..2].contains(1)").equals("true");
+		code_v5("return [1..2].contains(3)").equals("false");
+		code_v5("return [1..2].isEmpty()").equals("false");
+		code_v5("return [1..0].isEmpty()").equals("true");
+		code_v5("return [1..10].isBounded()").equals("true");
+		code_v5("var i = ]..[ return i.isBounded()").equals("false");
+		code_v5("return [1..3].toArray()").equals("[1, 2, 3]");
+		code_v5("return [1..3].toSet()").equals("<1, 2, 3>");
+		code_v5("return [0..10].average()").equals("5.0");
+		// La forme libre reste disponible en toute version (non régressée)
+		code("return intervalMin([1..2])").equals("1");
+	}
+
+	@Test
 	public void testInterval_iteration() throws Exception {
 		section("Interval iteration");
 		code("var i = [1..5] var x = 0 for (var y in i) x += y return x").equals("15");
