@@ -80,6 +80,9 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	// Suffixe de profil pour le nom Java d'une variante (`$i`, `$r`…). Vide = fonction
 	// générique. Le `$` n'est pas un caractère d'identifiant LeekScript → anti-collision.
 	private String variantSuffix = "";
+	// #4243 : suffixe de surcharge (`$ov1`, `$ov2`…). La 1ʳᵉ fonction d'un nom garde un suffixe
+	// vide (byte-identique au cas non surchargé) ; les suivantes sont distinguées dans le nom Java.
+	private String overloadSuffix = "";
 	// Variantes spécialisées de cette fonction (générique), indexées par clé de profil.
 	private java.util.LinkedHashMap<String, FunctionBlock> variants = null;
 	// Profils dont la variante a été ABANDONNÉE (spécialisation invalide → erreur) : on garde
@@ -116,7 +119,20 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	 * principal → v1-4 byte-identique. Suffixé par le profil pour une variante
 	 * monomorphisée (#43 T3 ; vide pour la générique → inchangé). */
 	public String getInternalName() {
-		return (module == null ? "" : module.prefix()) + token.getWord() + variantSuffix;
+		return (module == null ? "" : module.prefix()) + token.getWord() + overloadSuffix + variantSuffix;
+	}
+
+	/** Nom interne SANS suffixe (préfixe module + nom brut) : clé de regroupement des surcharges (#4243). */
+	public String publicInternalName() {
+		return (module == null ? "" : module.prefix()) + token.getWord();
+	}
+
+	public void setOverloadSuffix(String suffix) {
+		this.overloadSuffix = suffix;
+	}
+
+	public String getOverloadSuffix() {
+		return overloadSuffix;
 	}
 
 	// #43 T3 — position du corps (pour re-parse) et machinerie des variantes.

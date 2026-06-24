@@ -80,6 +80,9 @@ public class LeekFunctionCall extends Expression {
 	// #43 T3 (monomorphisation) : variante spécialisée vers laquelle ce site d'appel dispatche
 	// (selon le profil de types de ses arguments). null = appel de la fonction générique.
 	private FunctionBlock resolvedVariant = null;
+	// #4243 : surcharge sélectionnée pour ce site (nom Java + types de params utilisés au codegen).
+	// null = nom non surchargé. Le codegen substitue user_function par cette surcharge.
+	private FunctionBlock resolvedOverload = null;
 	// @tailrec : vrai si cet appel est l'expression directe d'un `return` non
 	// optionnel (position terminale). Renseigné par LeekReturnInstruction.analyze.
 	private boolean tailPosition = false;
@@ -561,6 +564,8 @@ public class LeekFunctionCall extends Expression {
 		} else if (mExpression instanceof LeekVariable && ((LeekVariable) mExpression).getVariableType() == VariableType.FUNCTION) {
 			// Bloc résolu en preAnalyze (module-aware) ; fallback main-context.
 			user_function = ((LeekVariable) mExpression).getResolvedFunction(mainblock);
+			// #4243 : utiliser la surcharge sélectionnée à l'analyse (nom Java + types de params).
+			if (resolvedOverload != null) user_function = resolvedOverload;
 			// Fonction générique : la méthode Java est effacée (retour `Object`). On
 			// caste vers le type de retour concret inféré pour que le code appelant
 			// reste bien typé (l'affectation déballe le wrapper si primitif).
@@ -936,6 +941,19 @@ public class LeekFunctionCall extends Expression {
 
 				var f = v.getFunctionDeclaration() != null ? v.getFunctionDeclaration() : compiler.getMainBlock().getUserFunction(v.getName());
 				if (f != null) {
+					// #4243 : nom surchargé → sélectionner la meilleure fonction selon le profil des
+					// arguments de CE site (dispatch statique par distance de cast). En v1-4 / nom non
+					// surchargé, f est inchangé (byte-identique).
+					if (LanguageFeature.FUNCTION_OVERLOADING.enabledIn(compiler.getVersion())
+							&& compiler.getMainBlock().isOverloaded(f)) {
+						var argTypes = new ArrayList<Type>(mParameters.size());
+						for (var p : mParameters) argTypes.add(p.getType());
+						f = selectBestOverload(compiler, v.getToken(), compiler.getMainBlock().getOverloads(f.publicInternalName()), argTypes);
+						resolvedOverload = f;
+						// La variable-fonction pointe sur la DERNIÈRE surcharge déclarée ; réaligner
+						// le functionType (utilisé pour la conversion des arguments) sur la surcharge choisie.
+						this.functionType = f.getType();
+					}
 					resolvedFunction = f;
 					// @tailrec : récursion directe (la fonction courante s'appelle elle-même).
 					// On l'enregistre pour valider sa position après l'analyse du corps.
@@ -963,6 +981,7 @@ public class LeekFunctionCall extends Expression {
 					// sont pas monomorphisables → on évite la liste sur le chemin chaud.
 					if (leekscript.common.LanguageFeature.PARAMETER_TYPE_INFERENCE.enabledIn(compiler.getVersion())
 							&& f.isMonomorphizable()
+							&& !compiler.getMainBlock().isOverloaded(f)
 							&& !compiler.getMainBlock().isRedefinedFunction(v.getName())) {
 						var argTypes = new ArrayList<Type>(mParameters.size());
 						for (var p : mParameters) argTypes.add(p.getType());
@@ -1322,6 +1341,53 @@ public class LeekFunctionCall extends Expression {
 		if (f.getVersions() != null) {
 			verifyVersions(compiler, f.getVersions());
 		}
+	}
+
+	// #4243 : distance >= cette valeur = incompatible (arité différente ou type incompatible).
+	private static final int OVERLOAD_INCOMPATIBLE = 100000;
+
+	// Sélectionne la meilleure surcharge pour le profil d'arguments de ce site (plus petite distance
+	// de cast). Égalité au minimum compatible → AMBIGUOUS_OVERLOAD. Aucune compatible → 1ʳᵉ candidate
+	// (verifyVersions émettra alors l'erreur de type usuelle).
+	private FunctionBlock selectBestOverload(WordCompiler compiler, Token token, ArrayList<FunctionBlock> candidates, ArrayList<Type> argTypes) throws LeekCompilerException {
+		FunctionBlock best = null;
+		int bestDistance = Integer.MAX_VALUE;
+		boolean ambiguous = false;
+		for (var candidate : candidates) {
+			int d = overloadDistance(candidate, argTypes);
+			if (d < bestDistance) {
+				bestDistance = d;
+				best = candidate;
+				ambiguous = false;
+			} else if (d == bestDistance && d < OVERLOAD_INCOMPATIBLE) {
+				ambiguous = true;
+			}
+		}
+		if (best == null) return candidates.get(0);
+		if (ambiguous && bestDistance < OVERLOAD_INCOMPATIBLE) {
+			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.AMBIGUOUS_OVERLOAD, new String[] { best.getName() }));
+		}
+		return best;
+	}
+
+	// Distance minimale (sur les arités compatibles) d'une candidate au profil d'arguments.
+	private int overloadDistance(FunctionBlock candidate, ArrayList<Type> argTypes) throws LeekCompilerException {
+		int n = argTypes.size();
+		int best = Integer.MAX_VALUE;
+		for (var version : candidate.getVersions()) {
+			if (version.arguments.length != n) continue;
+			int distance = 0;
+			for (int i = 0; i < n; ++i) {
+				var cast = version.arguments[i].accepts(argTypes.get(i));
+				if (cast == CastType.UPCAST) distance += 1;
+				else if (cast == CastType.SAFE_DOWNCAST) distance += 100;
+				else if (cast == CastType.UNSAFE_DOWNCAST) distance += 1000;
+				else if (cast == CastType.INCOMPATIBLE) distance += OVERLOAD_INCOMPATIBLE;
+				// CastType.EQUALS : +0
+			}
+			if (distance < best) best = distance;
+		}
+		return best;
 	}
 
 	public void verifyVersions(WordCompiler compiler, CallableVersion[] versions) throws LeekCompilerException {

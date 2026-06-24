@@ -932,7 +932,7 @@ public class WordCompiler {
 			throw new LeekCompilerException(mTokens.get(), Error.FUNCTION_NAME_EXPECTED);
 		}
 		Token funcName = mTokens.eat();
-		if (!isAvailable(funcName, false)) {
+		if (!isFunctionNameAvailableForDeclaration(funcName)) {
 			throw new LeekCompilerException(mTokens.get(), Error.FUNCTION_NAME_UNAVAILABLE);
 		}
 		// Paramètres de type génériques : `function name<T, U>(...)` (version >= 5).
@@ -3165,6 +3165,20 @@ public class WordCompiler {
 		// mMain.hasUserFunction(word, allFunctions) ||
 		// mCurentBlock.hasVariable(word)) return false;
 		if (mMain.hasGlobal(word.getWord()) || mMain.hasUserFunction(word.getWord(), allFunctions, mModule) || mCurentBlock.hasVariable(word.getWord())) return false;
+		return true;
+	}
+
+	// #4243 : disponibilité d'un nom pour DÉCLARER une fonction. En v5, un conflit avec une autre
+	// fonction du même nom est autorisé (surcharge) ; les conflits avec un mot-clé, une globale ou
+	// une variable/classe non-fonction restent interdits. v1-4 : comportement identique à isAvailable.
+	private boolean isFunctionNameAvailableForDeclaration(Token word) {
+		if (getVersion() >= 3 && isKeyword(word)) return false;
+		if (mMain.hasGlobal(word.getWord())) return false;
+		var existing = mCurentBlock.getVariable(word.getWord(), false);
+		if (existing != null && existing.getVariableType() != VariableType.FUNCTION) return false;
+		boolean functionConflict = (existing != null && existing.getVariableType() == VariableType.FUNCTION)
+			|| mMain.hasUserFunction(word.getWord(), false, mModule);
+		if (functionConflict && !LanguageFeature.FUNCTION_OVERLOADING.enabledIn(getVersion())) return false;
 		return true;
 	}
 

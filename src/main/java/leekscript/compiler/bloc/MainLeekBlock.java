@@ -45,6 +45,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final Map<String, leekscript.compiler.expression.LeekVariable> mGlobalVars = new HashMap<>();
 	private final HashSet<String> mRedefinedFunctions = new HashSet<String>();
 	private final HashMap<String, FunctionBlock> mFunctions = new HashMap<>();
+	// #4243 : surcharges de fonctions utilisateur (v5), regroupées par nom interne SANS suffixe
+	// (préfixe module + nom brut). Une entrée à >1 élément = nom surchargé → dispatch au site d'appel.
+	private final HashMap<String, ArrayList<FunctionBlock>> mOverloadSets = new HashMap<>();
 	private final ArrayList<AnonymousFunctionBlock> mAnonymousFunctions = new ArrayList<AnonymousFunctionBlock>();
 	// HashMap : mUserFunctions n'est jamais itéré, seulement containsKey/put. Pas
 	// besoin de l'ordre TreeMap. Quantum déclare ~100+ fonctions utilisateur.
@@ -397,7 +400,28 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public void addFunction(FunctionBlock block) {
 		block.setId(mFunctionId);
 		mFunctionId++;
+		// #4243 : regroupement des surcharges par nom public. La 1ʳᵉ fonction d'un nom garde un suffixe
+		// vide (nom interne inchangé) ; les suivantes reçoivent `$ov<n>` pour un nom Java unique.
+		var set = mOverloadSets.get(block.publicInternalName());
+		if (set == null) {
+			set = new ArrayList<>();
+			mOverloadSets.put(block.publicInternalName(), set);
+		} else {
+			block.setOverloadSuffix("$ov" + set.size());
+		}
+		set.add(block);
 		mFunctions.put(block.getInternalName(), block);
+	}
+
+	/** Surcharges déclarées sous ce nom interne public (préfixe module + nom brut), ou null. */
+	public ArrayList<FunctionBlock> getOverloads(String publicInternalName) {
+		return mOverloadSets.get(publicInternalName);
+	}
+
+	/** Vrai si la fonction participe à un ensemble de surcharges (>1 fonction de même nom). */
+	public boolean isOverloaded(FunctionBlock block) {
+		var set = mOverloadSets.get(block.publicInternalName());
+		return set != null && set.size() > 1;
 	}
 
 	@Override

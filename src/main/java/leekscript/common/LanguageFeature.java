@@ -37,7 +37,10 @@ public enum LanguageFeature {
 	FOR_IMPLICIT_IT(5),
 
 	/** Expression `match (e) { v -> r, _ -> r }` (pattern matching par valeur) (#2404). */
-	MATCH(5);
+	MATCH(5),
+
+	/** Surcharge de fonctions utilisateur par signature : dispatch statique au site d'appel (#4243). */
+	FUNCTION_OVERLOADING(5);
 
 	public final int since;
 
