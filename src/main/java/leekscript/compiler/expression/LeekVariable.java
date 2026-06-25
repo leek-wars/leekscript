@@ -623,6 +623,20 @@ public class LeekVariable extends Expression {
 		return this.variableType == Type.BIG_INT ? "(BigIntegerValue) " : "";
 	}
 
+	/**
+	 * Cast `(type) ` à insérer devant un `add()/sub()/...` d'une réaffectation
+	 * composée sur une globale. Une référence à une globale fige son `variableType`
+	 * lors de son analyse, qui a lieu AVANT l'inférence du type de la globale depuis
+	 * sa valeur d'initialisation (les fonctions sont analysées avant les globales).
+	 * Le champ Java de la globale est pourtant déclaré avec le type inféré : on lit
+	 * le type canonique (`this.variable`) pour émettre un cast cohérent et éviter un
+	 * COMPILE_JAVA "Object cannot be converted to long". (#4339)
+	 */
+	private String globalCast(int version) {
+		var castType = this.variable != null ? this.variable.getType() : this.variableType;
+		return castType != Type.ANY ? "(" + castType.getJavaPrimitiveName(version) + ") " : "";
+	}
+
 	@Override
 	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
@@ -763,10 +777,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = ");
-				if (this.variableType != Type.ANY) {
-					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
+				writer.addCode("g_" + token.getWord() + " = " + globalCast(mainblock.getVersion()));
 				writer.addCode("add(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
@@ -824,10 +835,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = ");
-				if (this.variableType != Type.ANY) {
-					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
+				writer.addCode("g_" + token.getWord() + " = " + globalCast(mainblock.getVersion()));
 				writer.addCode("sub(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
@@ -881,10 +889,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = ");
-				if (this.variableType != Type.ANY) {
-					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
+				writer.addCode("g_" + token.getWord() + " = " + globalCast(mainblock.getVersion()));
 				writer.addCode("mul(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
@@ -993,10 +998,7 @@ public class LeekVariable extends Expression {
 				writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = ");
-				if (this.variableType != Type.ANY) {
-					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
+				writer.addCode("g_" + token.getWord() + " = " + globalCast(mainblock.getVersion()));
 				if (mainblock.getVersion() == 1) {
 					writer.addCode("div_v1(g_" + token.getWord() + ", ");
 				} else {
@@ -1098,10 +1100,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = ");
-				if (this.variableType != Type.ANY) {
-					writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
+				writer.addCode("g_" + token.getWord() + " = " + globalCast(mainblock.getVersion()));
 				writer.addCode("mod(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");

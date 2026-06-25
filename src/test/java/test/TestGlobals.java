@@ -87,6 +87,25 @@ public class TestGlobals extends TestCommon {
 	}
 
 	@Test
+	public void testInferredGlobalCompoundInFunction() throws Exception {
+		// #4339 : une globale à type inféré (strict, sans type explicite) réaffectée
+		// avec `+=`/`-=`/... dans une FONCTION générait du Java invalide : le champ
+		// était typé `long` mais le site d'usage croyait le type `any` (snapshot figé
+		// avant l'inférence) → `g_x = add(g_x, ...)` sans cast → COMPILE_JAVA.
+		section("Inferred global compound-assign inside a function (#4339)");
+		code_strict_v4_("global x = 0; function f(any v) { x += v } f(5) return x").equals("5");
+		code_strict_v4_("global x = 10; function f(any v) { x -= v } f(5) return x").equals("5");
+		code_strict_v4_("global x = 2; function f(any v) { x *= v } f(5) return x").equals("10");
+		code_strict_v4_("global x = 17; function f(any v) { x %= v } f(5) return x").equals("2");
+		code_strict_v4_("global x = 10; function f(any v) { x /= v } f(5) return x").equals("2");
+		// Primitive RHS reste correct
+		code_strict_v4_("global x = 0; function f() { x += 5 } f() return x").equals("5");
+		// Comportement identique avec un type explicite
+		code_strict_v4_("global integer x = 0; function f(any v) { x += v } f(5) return x").equals("5");
+		code_strict_v4_("global real x = 0.0; function f(any v) { x += v } f(5) return x").equals("5.0");
+	}
+
+	@Test
 	public void testTypes() throws Exception {
 		section("Types");
 		code("global boolean? x = null; return x").equals("null");
