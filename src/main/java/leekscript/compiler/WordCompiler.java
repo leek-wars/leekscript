@@ -2,8 +2,10 @@ package leekscript.compiler;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import leekscript.common.Annotation;
 import leekscript.common.AccessLevel;
@@ -161,6 +163,20 @@ public class WordCompiler {
 			parse();
 			mTokens.reset();
 
+			// Pré-collecte des noms de classes : au firstPass, une classe définie
+			// plus loin n'est pas encore enregistrée via defineClass, donc eatType
+			// ne peut pas la résoudre dans une déclaration `global MaClasse v`. On
+			// récupère ces noms ici pour distinguer `global <Type> <nom>` de
+			// `global <nom>` (deux instructions accolées). (#2853)
+			Set<String> classNames = new HashSet<>();
+			while (mTokens.hasMoreTokens()) {
+				if (mTokens.get().getType() == TokenType.CLASS && mTokens.get(1).getType() == TokenType.STRING) {
+					classNames.add(mTokens.get(1).getWord());
+				}
+				mTokens.skip();
+			}
+			mTokens.reset();
+
 			while (mTokens.hasMoreTokens()) {
 
 				if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
@@ -190,6 +206,16 @@ public class WordCompiler {
 				} else if (tt == TokenType.GLOBAL) {
 					mTokens.skip();
 					eatType(true, false);
+					// Type-classe défini plus loin : eatType ne l'a pas résolu (pas
+					// encore enregistré) ni consommé. Si le token courant est un nom de
+					// classe connu suivi d'un autre identifiant (le vrai nom), c'est le
+					// type : on le saute pour ne pas le prendre pour le nom de la
+					// globale (sinon deux globales du même type -> faux doublon). (#2853)
+					if (mTokens.get().getType() == TokenType.STRING
+							&& classNames.contains(mTokens.get().getWord())
+							&& mTokens.get(1).getType() == TokenType.STRING) {
+						mTokens.skip();
+					}
 					var global = mTokens.eat();
 					// System.out.println("global = " + global.getWord() + " " + global.getLine());
 					if (!isGlobalAvailable(global) || mMain.hasDeclaredGlobal(global.getWord())) {

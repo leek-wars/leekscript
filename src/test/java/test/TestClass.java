@@ -28,6 +28,18 @@ public class TestClass extends TestCommon {
 	}
 
 	@Test
+	public void testClass_typed_global_defined_after() throws Exception {
+		section("Class - typed global with class defined after (#2853)");
+		// Une globale typée d'une classe définie plus loin : doit compiler
+		code_v4_("global MyClass var1 = new MyClass(); class MyClass {} return var1 != null").equals("true");
+		// Deux globales typées de la même classe définie plus loin : ne doit plus
+		// faussement déclencher VARIABLE_NAME_UNAVAILABLE (#2853)
+		code_v4_("global MyClass var1 = new MyClass(); global MyClass var2 = new MyClass(); class MyClass {} return var1 != null && var2 != null").equals("true");
+		// Idem en déclarations séparées avec valeurs ensuite
+		code_v4_("global MyClass a = new MyClass() global MyClass b = new MyClass() class MyClass { public integer x = 7 } return a.x + b.x").equals("14");
+	}
+
+	@Test
 	public void testClass_name() throws Exception {
 		section("Class.name");
 		code_v2_("class A { public m() { return name }} return new A().m()").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
