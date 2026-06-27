@@ -91,6 +91,21 @@ public class TestLoops extends TestCommon {
 	}
 
 	@Test
+	public void testDo_while_missing_condition() throws Exception {
+		section("Do while without closing condition");
+		// Un do sans accolade dont le corps absorbe le while de fermeture laissait
+		// la condition nulle et faisait planter la génération de code (NPE #4375).
+		// On attend désormais une erreur de compilation propre.
+		code("do while (true);").error(Error.WHILE_EXPECTED_AFTER_DO);
+		code("var i = 0 do while (i < 10);").error(Error.WHILE_EXPECTED_AFTER_DO);
+		code("do while (true) while (false);").error(Error.WHILE_EXPECTED_AFTER_DO);
+		// Formes valides : le corps (vide ou boucle complète) puis le while ferme le do.
+		code("do {} while (false);").equals("null");
+		code("do; while (false);").equals("null");
+		code("var i = 0 do while (i < 3) { i++ } while (false); return i;").equals("3");
+	}
+
+	@Test
 	public void testFor_loops() throws Exception {
 		section("For loops");
 		// code("for var i = 0; ; i++ {}").ops_limit(1000).exception(ls::vm::Exception::OPERATION_LIMIT_EXCEEDED);

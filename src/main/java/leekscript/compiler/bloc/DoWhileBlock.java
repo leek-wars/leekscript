@@ -1,6 +1,9 @@
 package leekscript.compiler.bloc;
 
+import leekscript.common.Error;
 import leekscript.common.Type;
+import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.Token;
@@ -30,7 +33,7 @@ public class DoWhileBlock extends AbstractLeekBlock {
 
 	@Override
 	public String getCode() {
-		return "do{\n" + super.getCode() + "}while(" + mCondition.toString() + ");";
+		return "do{\n" + super.getCode() + "}while(" + (mCondition == null ? "" : mCondition.toString()) + ");";
 	}
 
 	@Override
@@ -64,6 +67,12 @@ public class DoWhileBlock extends AbstractLeekBlock {
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		if (mCondition != null) {
 			mCondition.preAnalyze(compiler);
+		} else {
+			// Le corps a absorbé le while de fermeture (ex. corps vide « do while(c); »
+			// ou corps réduit à une boucle « do while(a) while(b); »), laissant la
+			// condition nulle. On émet une erreur propre plutôt que de laisser la
+			// génération de code planter sur un NullPointerException.
+			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.WHILE_EXPECTED_AFTER_DO));
 		}
 		super.preAnalyze(compiler);
 	}
