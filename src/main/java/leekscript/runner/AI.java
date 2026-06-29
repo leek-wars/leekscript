@@ -3684,7 +3684,7 @@ public abstract class AI {
 		}
 
 		ops(1);
-		addSystemLog(AILog.ERROR, Error.OPERATOR_IN_ON_INVALID_CONTAINER, new Object[] { value });
+		addSystemLog(AILog.ERROR, Error.OPERATOR_IN_ON_INVALID_CONTAINER, new Object[] { container });
 		return false;
 	}
 
