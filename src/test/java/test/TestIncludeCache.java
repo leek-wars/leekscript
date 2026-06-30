@@ -2,6 +2,7 @@ package test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.FileNotFoundException;
@@ -707,6 +708,25 @@ public class TestIncludeCache {
 			"entrypoint seul : UNUSED_FUNCTION attendu");
 		assertEquals(1, result.perEntrypoint.size(), "un seul entrypoint");
 		assertTrue(result.perEntrypoint.containsKey(file), "l'entrypoint doit être le fichier lui-même");
+	}
+
+	@Test
+	public void sharedInclude_mergedKeepsIncludedAIs_forTransitiveStats() throws Exception {
+		// Régression total_lines : deux entrypoints partagent un include. Analyser l'un
+		// d'eux passe par mergeResults() (perEntrypoint.size() > 1), qui ne propageait pas
+		// includedAIs → GeneratorAPI.addStats comptait total_lines = lignes du fichier seul,
+		// ignorant les include(). merged doit conserver les includes du fichier analysé.
+		write("shared.leek", "function s() { return 1; }\n");
+		write("Main1_" + uniqueId + ".leek", "include(\"shared\");\nreturn s();");
+		write("Main2_" + uniqueId + ".leek", "include(\"shared\");\nreturn s() + 10;");
+
+		var main1 = fs.getRoot(0).resolve("Main1_" + uniqueId);
+		var result = IACompiler.analyzeWithIncludes(main1);
+
+		assertTrue(result.perEntrypoint.size() > 1, "Main1 + Main2 frères partageant shared → chemin mergeResults");
+		assertNotNull(result.merged.includedAIs, "merged doit conserver includedAIs pour les stats transitives");
+		assertTrue(result.merged.includedAIs.stream().anyMatch(f -> f.getPath().equals("shared")),
+			"shared doit figurer dans includedAIs du fichier analysé");
 	}
 
 	private List<Error> collectErrors(IACompiler.AnalyzeResult result) {

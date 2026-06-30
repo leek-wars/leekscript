@@ -113,6 +113,15 @@ public class IACompiler {
 		var merged = perEntrypoint.size() == 1
 				? perEntrypoint.values().iterator().next()
 				: mergeResults(perEntrypoint);
+		// mergeResults() ne fusionne que les problèmes (dédup cross-entrypoints) et laisse
+		// includedAIs à null. Or GeneratorAPI calcule les total_lines/total_chars transitifs
+		// du fichier analysé à partir de merged.includedAIs : sans ça, dès qu'un include est
+		// partagé par plusieurs entrypoints (perEntrypoint.size() > 1), le total retombait aux
+		// seules lignes du fichier. On réattache les includes propres du fichier analysé.
+		if (merged.includedAIs == null) {
+			var ownResult = perEntrypoint.get(ai);
+			if (ownResult != null) merged.includedAIs = ownResult.includedAIs;
+		}
 		return new MultiAnalyzeResult(merged, perEntrypoint);
 	}
 
