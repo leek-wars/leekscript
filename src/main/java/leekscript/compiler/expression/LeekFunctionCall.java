@@ -376,7 +376,16 @@ public class LeekFunctionCall extends Expression {
 					}
 				} else {
 					if (user_function != null) {
-						parameter.compileL(mainblock, writer, false);
+						// Paramètre typé (ex. `Array x`) : la signature Java générée utilise le
+						// type concret, donc un argument ANY (`var` -> Box<Object>) doit être
+						// converti comme en V2+, sinon « incompatible types » à la compilation
+						// Java (#2743). Les paramètres non typés gardent le chargement L-value.
+						var argType = functionType.getArgument(mParameters.size(), i);
+						if (argType != Type.ANY) {
+							writer.compileConvert(mainblock, i, parameter, argType, false);
+						} else {
+							parameter.compileL(mainblock, writer, false);
+						}
 					} else if (system_function != null) {
 						if (unsafe) {
 							writer.compileLoad(mainblock, parameter, false);

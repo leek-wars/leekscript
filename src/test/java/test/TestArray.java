@@ -846,6 +846,16 @@ public class TestArray extends TestCommon {
 	}
 
 	@Test
+	public void testArray_typedParameter_variableArgument() throws Exception {
+		// #2743: passing a variable (typed or var) to an explicitly typed Array
+		// parameter must not break Java compilation, in every version.
+		section("#2743: typed Array parameter, variable argument");
+		code("function doSomeThing(Array someData) { return count(someData); } return doSomeThing([5, 45]);").equals("2");
+		code("function doSomeThing(Array someData) { return count(someData); } Array test = [5, 45]; return doSomeThing(test);").equals("2");
+		code("function doSomeThing(Array someData) { return count(someData); } var testbis = [5, 45]; return doSomeThing(testbis);").equals("2");
+	}
+
+	@Test
 	public void testArray_remove() throws Exception {
 		section("Array.remove()");
 		code("var r = ['a','b','c','d','e']; return remove(r, 1);").equals("\"b\"");
