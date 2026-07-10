@@ -360,7 +360,9 @@ public class LeekArrayAccess extends Expression {
 		}
 		if (mTabular.getType() instanceof ArrayType at) {
 			mTabular.writeJavaCode(mainblock, writer, true);
-			if (mainblock.isStrict()) {
+			// v1-3 : le runtime est LegacyArrayLeekValue, qui n'a que put()
+			// (sémantique legacy : clé associative, croissance). (#4465)
+			if (mainblock.isStrict() || mainblock.getVersion() <= 3) {
 				writer.addCode(".put(");
 			} else {
 				writer.addCode(".putv4(");
@@ -404,22 +406,16 @@ public class LeekArrayAccess extends Expression {
 		}
 		if (mTabular.getType() instanceof ArrayType at) {
 			mTabular.writeJavaCode(mainblock, writer, true);
-			if (mainblock.isStrict()) {
-				writer.addCode(".put(");
-			} else {
-				writer.addCode(".putv4(");
-			}
+			// compileSetCopy n'est appelé qu'en v1 : put() legacy, pas de putv4 (#4465)
+			writer.addCode(".put(");
 			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
 			writeValueWithElementCoercion(mainblock, writer, expr, at.element());
 			writer.addCode(")");
 		} else if (mTabular.getType() instanceof MapType mt) {
 			mTabular.writeJavaCode(mainblock, writer, true);
-			if (mainblock.isStrict()) {
-				writer.addCode(".set(");
-			} else {
-				writer.addCode(".setv4(");
-			}
+			// setv4 n'existe sur aucune classe runtime : MapLeekValue n'a que set() (#4465)
+			writer.addCode(".set(");
 			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
 			writeValueWithElementCoercion(mainblock, writer, expr, mt.element());

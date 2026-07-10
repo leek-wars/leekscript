@@ -42,6 +42,23 @@ public class TestGlobals extends TestCommon {
 	}
 
 	@Test
+	public void testGlobals_typedArrayAssignmentLegacy() throws Exception {
+		// #4465 : en v1-3, l'affectation indexée sur un tableau typé `Array` émettait
+		// `.putv4(...)`, inexistant sur LegacyArrayLeekValue -> COMPILE_JAVA.
+		section("Typed Array assignment in legacy versions (#4465)");
+		code_v1_3("global Array t = [] t[0] = 42 return t[0]").equals("42");
+		code_v1_3("global Array t = [] t[5] = 12 return t[5]").equals("12");
+		code_v1_3("global Array t = [] t['a'] = 7 return t['a']").equals("7");
+		code_v1_3("Array t = [] t[1] = 12 return t[1]").equals("12");
+		// Même famille : la branche Map typée de compileSetCopy (v1) émettait `.setv4(...)`,
+		// qui n'existe sur aucune classe runtime. L'IMPOSSIBLE_CAST est un comportement v1
+		// préexistant (déclaration typée sans valeur = Box à null) : on vérifie surtout
+		// que la compilation Java passe et que l'erreur reste côté joueur.
+		code_v1("global Map m m['a'] = 7 return m['a']").error(Error.IMPOSSIBLE_CAST);
+		code_v1("Map m m['a'] = 7 return m['a']").error(Error.IMPOSSIBLE_CAST);
+	}
+
+	@Test
 	public void testGlobals_operators() throws Exception {
 		section("Globals operators");
 		code("global x = 12; x++; return x;").equals("13");
