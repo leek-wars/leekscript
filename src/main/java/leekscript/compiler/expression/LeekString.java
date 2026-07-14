@@ -47,6 +47,7 @@ public class LeekString extends Expression {
 		String str = "";
 		int len = mString.length() - 1;
 		boolean v2plus = mainblock.getCompiler().getCurrentAI().getVersion() >= 2;
+		boolean v4plus = mainblock.getCompiler().getCurrentAI().getVersion() >= 4;
 		for (int i = 0; i < mString.length(); i++) {
 			if (mString.charAt(i) == '\n') str += "\\n";
 			else if (mString.charAt(i) == '"') str += "\\\"";
@@ -59,6 +60,11 @@ public class LeekString extends Expression {
 				// au lieu de 3.) Comportement v1 préservé.
 				else if (v2plus && len > i && mString.charAt(i + 1) == '"') {
 					str += "\\\"";
+					i++;
+				}
+				// v4+ : `\$` échappe l'interpolation — on émet un `$` littéral.
+				else if (v4plus && len > i && mString.charAt(i + 1) == '$') {
+					str += "$";
 					i++;
 				}
 				else {
