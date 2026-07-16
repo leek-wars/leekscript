@@ -168,4 +168,26 @@ public class TestRegressionOperatorsMath extends TestCommon {
 		code_v4_("var a = " + I(5) + " return a instanceof Real").equals("true");
 		code_v4_("var a = [\"x\", 1][0] return a instanceof String").equals("true");
 	}
+
+	/**
+	 * forum #11415 / issue #2744 — affectation composée sur une variable integer
+	 * avec un opérande boxé (ternaire int/real, any) : le cast Java primitif du
+	 * résultat de add()/mul()/... déboxait au mauvais type (ClassCastException
+	 * Double → Long) et crashait l'IA. Corrigé via longint()/real().
+	 */
+	@Test
+	public void testCompoundAssignBoxedOperand() throws Exception {
+		section("Affectation composée avec opérande boxé (ternaire int/real, any)");
+		code_v2_("integer a = 10 a *= (false ? 1 : 0.5) return a").equals("5");
+		code_v2_("integer a = 10 a *= (true ? 1 : 0.5) return a").equals("10");
+		code_v2_("integer a = 10 boolean b = false a *= (b ? 1 : 0.5) return a").equals("5");
+		code_v2_("integer a = 10 a += (false ? 1 : 0.5) return a").equals("10");
+		code_v2_("integer a = 10 a -= (false ? 1 : 0.5) return a").equals("9");
+		code_v2_("integer a = 10 a /= (false ? 1 : 0.5) return a").equals("20");
+		code_v4("integer a = 10 any b = 0.5 a *= b return a").equals("5");
+		code_v4("real a = 10.0 a *= (false ? 1 : 0.5) return a").equals("5.0");
+		code_v4("global integer g = 10 g *= (false ? 1 : 0.5) return g").equals("5");
+		code_v4("integer a = 10 a %= (false ? 3 : 4.0) return a").equals("2");
+		code_v4("integer a = 10 a **= (false ? 1 : 2.0) return a").equals("100");
+	}
 }
