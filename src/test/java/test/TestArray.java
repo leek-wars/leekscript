@@ -856,6 +856,19 @@ public class TestArray extends TestCommon {
 	}
 
 	@Test
+	public void testArray_typedParameter_indexedAccess() throws Exception {
+		// #4510: indexing a typed Array parameter (`someData[i]`) in the body must
+		// not break Java compilation. In V1 the parameter was boxed with a raw
+		// `new Box(...)`, so `u_someData.get()` was typed Object and `.get(i)`
+		// (array access) could not resolve (`cannot find symbol method get(long)`).
+		section("#4510: typed Array parameter, indexed access in body");
+		code("function doSomeThing(Array someData) { return someData[2]; } return doSomeThing([5, 45, \"poire\", \"pomme\"]);").equals("\"poire\"");
+		code("function doSomeThing(Array someData) { return @someData[2]; } return doSomeThing([5, 45, \"poire\", \"pomme\"]);").equals("\"poire\"");
+		// Cas exact du rapport #4510 : V1, strict, opérateur @ sur paramètre `Array`.
+		code_strict("function doSomeThing(Array someData) { return @someData[2]; } return doSomeThing([5, 45, \"poire\", \"pomme\"]);").equals("\"poire\"");
+	}
+
+	@Test
 	public void testArray_remove() throws Exception {
 		section("Array.remove()");
 		code("var r = ['a','b','c','d','e']; return remove(r, 1);").equals("\"b\"");

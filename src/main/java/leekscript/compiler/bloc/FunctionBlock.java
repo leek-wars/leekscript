@@ -238,7 +238,12 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 					}
 				} else {
 					if (v1) {
-						sb.append("new Box(" + writer.getAIThis() + ", copy(p_").append(parameter).append("));");
+						// Box typée (`Box<Type>`) et non brute : sinon `u_x.get()` est typé
+						// Object et un accès indexé sur un paramètre `Array x` (`x[i]`)
+						// génère `u_x.get().get(i)` = « cannot find symbol method get(long)
+						// on class Object ». Cf. la déclaration des locales typées et des
+						// paramètres capturés, déjà en `Box<Type>`. (#4510)
+						sb.append("new Box<" + declaration.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", copy(p_").append(parameter).append("));");
 					} else {
 						sb.append("p_").append(parameter).append(";");
 					}
