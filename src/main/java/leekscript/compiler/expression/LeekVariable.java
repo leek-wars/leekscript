@@ -624,6 +624,26 @@ public class LeekVariable extends Expression {
 	}
 
 	/**
+	 * Nom de la méthode runtime pour une assignation composée de bits
+	 * (|=, &=, ^=, <<=, >>=, >>>=). Sur une variable big_integer il faut la
+	 * variante bigOr/bigAnd/bigXor/bigShl/bigShr qui renvoie un BigIntegerValue :
+	 * les variantes long (bor/band/bxor/shl/shr/ushr) renvoient un long et
+	 * casseraient la réaffectation (« long cannot be converted to
+	 * BigIntegerValue »). (#bigint #4477)
+	 */
+	private String bitOpMethod(String longMethod) {
+		if (this.variableType != Type.BIG_INT) return longMethod;
+		switch (longMethod) {
+			case "bor": return "bigOr";
+			case "band": return "bigAnd";
+			case "bxor": return "bigXor";
+			case "shl": return "bigShl";
+			case "shr": case "ushr": return "bigShr";
+			default: return longMethod;
+		}
+	}
+
+	/**
 	 * Ouvre la conversion du résultat boxé d'un opérateur runtime (add()/sub()/
 	 * mul()/pow()/div()/mod()) vers le type déclaré de la variable et renvoie le
 	 * suffixe à écrire après l'appel. Un cast Java ((long) / (Long)) déboxe au
@@ -1149,7 +1169,7 @@ public class LeekVariable extends Expression {
 			if (variableType != Type.ANY) {
 				writer.addCode("(" + variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
-			writer.addCode("bor(" + token.getWord() + ", ");
+			writer.addCode(bitOpMethod("bor") + "(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 			if (parenthesis) writer.addCode(")");
@@ -1169,7 +1189,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = bor(g_" + token.getWord() + ", ");
+				writer.addCode("g_" + token.getWord() + " = " + bitOpMethod("bor") + "(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -1186,7 +1206,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = bor(u_" + token.getWord() + ", ");
+				writer.addCode("u_" + token.getWord() + " = " + bitOpMethod("bor") + "(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -1199,7 +1219,7 @@ public class LeekVariable extends Expression {
 	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = band(" + token.getWord() + ", ");
+			writer.addCode(token.getWord() + " = " + bitOpMethod("band") + "(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 			if (parenthesis) writer.addCode(")");
@@ -1219,7 +1239,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = band(g_" + token.getWord() + ", ");
+				writer.addCode("g_" + token.getWord() + " = " + bitOpMethod("band") + "(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -1236,7 +1256,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = band(u_" + token.getWord() + ", ");
+				writer.addCode("u_" + token.getWord() + " = " + bitOpMethod("band") + "(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -1248,7 +1268,7 @@ public class LeekVariable extends Expression {
 	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = bxor(" + token.getWord() + ", ");
+			writer.addCode(token.getWord() + " = " + bitOpMethod("bxor") + "(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 			if (parenthesis) writer.addCode(")");
@@ -1268,7 +1288,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = bxor(g_" + token.getWord() + ", ");
+				writer.addCode("g_" + token.getWord() + " = " + bitOpMethod("bxor") + "(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -1285,7 +1305,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = bxor(u_" + token.getWord() + ", ");
+				writer.addCode("u_" + token.getWord() + " = " + bitOpMethod("bxor") + "(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -1297,7 +1317,7 @@ public class LeekVariable extends Expression {
 	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = shl(" + token.getWord() + ", ");
+			writer.addCode(token.getWord() + " = " + bitOpMethod("shl") + "(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 			if (parenthesis) writer.addCode(")");
@@ -1317,7 +1337,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = shl(g_" + token.getWord() + ", ");
+				writer.addCode("g_" + token.getWord() + " = " + bitOpMethod("shl") + "(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -1334,7 +1354,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = shl(u_" + token.getWord() + ", ");
+				writer.addCode("u_" + token.getWord() + " = " + bitOpMethod("shl") + "(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -1346,7 +1366,7 @@ public class LeekVariable extends Expression {
 	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = shr(" + token.getWord() + ", ");
+			writer.addCode(token.getWord() + " = " + bitOpMethod("shr") + "(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 			if (parenthesis) writer.addCode(")");
@@ -1366,7 +1386,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = shr(g_" + token.getWord() + ", ");
+				writer.addCode("g_" + token.getWord() + " = " + bitOpMethod("shr") + "(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -1383,7 +1403,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = shr(u_" + token.getWord() + ", ");
+				writer.addCode("u_" + token.getWord() + " = " + bitOpMethod("shr") + "(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -1395,7 +1415,7 @@ public class LeekVariable extends Expression {
 	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = ushr(" + token.getWord() + ", ");
+			writer.addCode(token.getWord() + " = " + bitOpMethod("ushr") + "(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 			if (parenthesis) writer.addCode(")");
@@ -1415,7 +1435,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = ushr(g_" + token.getWord() + ", ");
+				writer.addCode("g_" + token.getWord() + " = " + bitOpMethod("ushr") + "(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");
@@ -1432,7 +1452,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = ushr(u_" + token.getWord() + ", ");
+				writer.addCode("u_" + token.getWord() + " = " + bitOpMethod("ushr") + "(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 				if (parenthesis) writer.addCode(")");

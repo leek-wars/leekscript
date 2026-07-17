@@ -161,6 +161,28 @@ public class TestBigInt extends TestCommon {
 	}
 
 	@Test
+	public void testBitwiseAssign() throws Exception {
+		section("Assignations composées binaires big_integer (#4477)");
+		// Variable locale
+		code_v4_("big_integer x = 12L x &= 10 return x").equals("8");
+		code_v4_("big_integer x = 12L x |= 1 return x").equals("13");
+		code_v4_("big_integer x = 12L x ^= 10 return x").equals("6");
+		code_v4_("big_integer x = 1L x <<= 100 return x == 1267650600228229401496703205376L").equals("true");
+		code_v4_("big_integer x = 1L << 200 x >>= 100 return x == 1L << 100").equals("true");
+		code_v4_("big_integer x = 1L << 200 x >>>= 100 return x == 1L << 100").equals("true");
+		// Décalage au-delà de 64 bits en membre droit (le cas qui plantait la compilation)
+		code_v4_("big_integer x = 0L x ^= 1L << 100 return x == 1L << 100").equals("true");
+		// Variable globale typée big_integer
+		code_v4_("global big_integer g = 5L g ^= 3 return g").equals("6");
+		code_v4_("global big_integer g = 0L g ^= 1L << 100 return g == 1L << 100").equals("true");
+		code_v4_("global big_integer g = 1L g <<= 100 return g == 1267650600228229401496703205376L").equals("true");
+		// Champ de classe (le cas exact du rapport d'erreur : `bitMask ^= 1L << cell`)
+		code_v4_("class A { big_integer bitMask = 0L; f(c) { bitMask ^= 1L << c return bitMask } } var a = new A() return a.f(100) == 1L << 100").equals("true");
+		code_v4_("class A { big_integer mask = 12L; f() { mask &= 10 return mask } } var a = new A() return a.f()").equals("8");
+		code_v4_("class A { big_integer mask = 1L; f() { mask <<= 100 return mask } } var a = new A() return a.f() == 1L << 100").equals("true");
+	}
+
+	@Test
 	public void testBuiltins() throws Exception {
 		section("Fonctions built-in");
 		// abs / min / max -> big_integer
