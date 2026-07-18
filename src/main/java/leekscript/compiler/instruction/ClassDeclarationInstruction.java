@@ -496,20 +496,22 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 							var parentReturn = parentType.returnType();
 							var childReturn = childType.returnType();
 
-							// Type de retour : identique, ou réduit (covariance). On n'autorise la
-							// réduction que vers un type classe, pour rester cohérent avec Java qui
+							// Type de retour : identique, ou réduit (covariance). On autorise la
+							// réduction vers un type référence, pour rester cohérent avec Java qui
 							// autorise la covariance entre types référence mais pas entre primitifs
-							// (ex. double -> long). Le parent peut être une classe (réduction vers
-							// une sous-classe) ou `any` (le type top : le réduire vers une classe
-							// est de la covariance aussi, cas courant d'une méthode parent non
-							// typée surchargée par un enfant typé). Note : les méthodes générées
-							// retournent toujours Object, donc cette restriction est purement
-							// sémantique et n'est pas imposée par le code généré.
+							// (ex. double -> long). Cela couvre les classes (réduction vers une
+							// sous-classe), mais aussi les conteneurs génériques (Array<any> ->
+							// Array<integer>, Set, Map...) et les autres types objet (string...) :
+							// tous ces cas sont de la covariance saine et déjà reconnus par
+							// accepts(). Le parent peut être `any` (le type top) ou un type
+							// référence plus large. On interdit seulement de réduire vers un
+							// primitif (integer/real/boolean), interdit en Java aussi. Note : les
+							// méthodes générées retournent toujours Object, donc cette restriction
+							// est purement sémantique et n'est pas imposée par le code généré.
 							var returnCast = parentReturn.accepts(childReturn);
+							boolean childIsPrimitive = childReturn == Type.INT || childReturn == Type.REAL || childReturn == Type.BOOL;
 							boolean compatible = returnCast == CastType.EQUALS
-								|| (returnCast == CastType.UPCAST
-									&& childReturn instanceof ClassType
-									&& (parentReturn instanceof ClassType || parentReturn == Type.ANY));
+								|| (returnCast == CastType.UPCAST && !childIsPrimitive);
 
 							// Paramètres : chaque type doit rester identique (invariant).
 							if (compatible) {

@@ -281,6 +281,98 @@ public class TestAnnotations extends TestCommon {
 			}
 			return 0;
 			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
+
+		// Covariance also applies to generic container types: Array<integer> is a
+		// subtype of Array<any>, so narrowing the array element type is allowed
+		// (issue #4533).
+		code_v4_("""
+			class A {
+				public Array<any> get() { return []; }
+			}
+			class B extends A {
+				@override
+				public Array<integer> get() { return [1, 2]; }
+			}
+			return new B().get();
+			""").equals("[1, 2]");
+
+		// Narrowing an untyped (any) parent return to a container type is covariance
+		// too, like narrowing to a class.
+		code_v4_("""
+			class A {
+				get() { return []; }
+			}
+			class B extends A {
+				@override
+				Array<integer> get() { return [1]; }
+			}
+			return new B().get();
+			""").equals("[1]");
+
+		// But widening the element type (Array<integer> -> Array<any>) stays rejected.
+		code_v4_("""
+			class A {
+				Array<integer> get() { return [1]; }
+			}
+			class B extends A {
+				@override
+				Array<any> get() { return []; }
+			}
+			return 0;
+			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
+
+		// Narrowing an untyped (any) parent return to string is covariance too:
+		// string is a reference type, not a primitive.
+		code_v4_("""
+			class A {
+				get() { return ""; }
+			}
+			class B extends A {
+				@override
+				string get() { return "x"; }
+			}
+			return new B().get();
+			""").equals("\"x\"");
+
+		// Narrowing `any` to boolean stays rejected: boolean is a primitive.
+		code_v4_("""
+			class A {
+				get() { return true; }
+			}
+			class B extends A {
+				@override
+				boolean get() { return false; }
+			}
+			return 0;
+			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
+
+		// Narrowing `any` to real stays rejected: real is a primitive.
+		code_v4_("""
+			class A {
+				get() { return 1.5; }
+			}
+			class B extends A {
+				@override
+				real get() { return 2.5; }
+			}
+			return 0;
+			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
+
+		// A sibling element type is not a subtype, so narrowing Array<Dog> to
+		// Array<Cat> is rejected (only narrowing along the chain is allowed).
+		code_v4_("""
+			class Animal {}
+			class Dog extends Animal {}
+			class Cat extends Animal {}
+			class A {
+				Array<Dog> get() { return []; }
+			}
+			class B extends A {
+				@override
+				Array<Cat> get() { return []; }
+			}
+			return 0;
+			""").error(Error.OVERRIDDEN_METHOD_DIFFERENT_TYPE);
 	}
 
 	@Test
