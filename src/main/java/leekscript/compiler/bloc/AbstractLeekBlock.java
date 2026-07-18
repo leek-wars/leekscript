@@ -322,4 +322,11 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	public boolean isInConstructor() {
 		return mParent != null && mParent.isInConstructor();
 	}
+
+	// Est-on dans une méthode statique (donc sans `this`) ? Utilisé pour savoir si
+	// le mot-clé `class` doit désigner la classe runtime de l'instance (méthode
+	// d'instance / constructeur) ou la classe englobante (méthode statique).
+	public boolean isInStaticMethod() {
+		return mParent != null && mParent.isInStaticMethod();
+	}
 }

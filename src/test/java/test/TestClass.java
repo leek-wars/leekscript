@@ -46,6 +46,11 @@ public class TestClass extends TestCommon {
 		code_v2_("class A { public m() { return class.name }} return new A().m()").equals("\"A\"");
 		code_v2_("class A { public static m() { return name }} return A.m()").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 		code_v2_("class A { public static m() { return class.name }} return A.m()").equals("\"A\"");
+		// #2619 : dans une méthode d'instance héritée, `class` doit désigner la classe
+		// runtime de l'objet (late static binding), pas la classe où la méthode est définie.
+		code_v2_("class A { public m() { return class.name }} class B extends A {} return new B().m()").equals("\"B\"");
+		code_v2_("class A { public m() { return class }} class B extends A {} return new B().m() == B").equals("true");
+		code_v2_("class A { constructor() {} public m() { return class.name }} class B extends A { constructor() {} } return new B().m()").equals("\"B\"");
 	}
 
 	@Test

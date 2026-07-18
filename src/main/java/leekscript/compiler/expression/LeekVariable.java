@@ -310,12 +310,27 @@ public class LeekVariable extends Expression {
 		return declaration != null && declaration.isWrapper();
 	}
 
+	// Émet le mot-clé `class`. Dans une méthode d'instance (ou un constructeur), il
+	// doit désigner la classe *runtime* de l'objet courant — sinon un `class` hérité
+	// d'une classe parente renverrait toujours la classe parente (bug #2619 :
+	// class.name affichait "A" au lieu de "B"). On le résout donc comme `this.class`
+	// via classOf(...). Dans une méthode statique il n'y a pas de `this` : on garde la
+	// classe englobante (compile-time).
+	private void writeThisClass(MainLeekBlock mainblock, JavaWriter writer) {
+		var classVariable = mainblock.getWordCompiler().getCurrentClassVariable();
+		if (writer.currentBlock != null && !writer.currentBlock.isInStaticMethod()) {
+			writer.addCode("classOf(" + classVariable + ".this)");
+		} else {
+			writer.addCode(classVariable);
+		}
+	}
+
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.THIS) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".this");
 		} else if (type == VariableType.THIS_CLASS) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable());
+			writeThisClass(mainblock, writer);
 		} else if (type == VariableType.SUPER) {
 			writer.addCode("u_" + classDeclaration.getParent().getName());
 		} else if (type == VariableType.FIELD) {
@@ -462,7 +477,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.THIS) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".this");
 		} else if (type == VariableType.THIS_CLASS) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable());
+			writeThisClass(mainblock, writer);
 		} else if (type == VariableType.SUPER) {
 			writer.addCode("u_" + classDeclaration.getParent().getName());
 		} else if (type == VariableType.FIELD) {

@@ -248,6 +248,13 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 		return false;
 	}
 
+	@Override
+	public boolean isInStaticMethod() {
+		// Le contexte statique s'arrête à la méthode : un constructeur ou une méthode
+		// d'instance possède un `this`, une méthode statique non.
+		return isStatic;
+	}
+
 	public int getMinParameters() {
 		return minParameters;
 	}
