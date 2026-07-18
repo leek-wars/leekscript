@@ -442,6 +442,11 @@ public class LeekFunctionCall extends Expression {
 
 	@Override
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
+		// #2861 : cet accès est appelé, donc un nom partagé champ/méthode doit viser la
+		// méthode (et non le champ, que getMember privilégierait par défaut).
+		if (mExpression instanceof LeekObjectAccess oa) {
+			oa.setCalledAsMethod(true);
+		}
 		mExpression.preAnalyze(compiler);
 		for (Expression parameter : mParameters) {
 			parameter.preAnalyze(compiler);
@@ -455,6 +460,10 @@ public class LeekFunctionCall extends Expression {
 
 		operations = 0;
 
+		// #2861 : cf. preAnalyze — l'accès appelé vise la méthode homonyme, pas le champ.
+		if (mExpression instanceof LeekObjectAccess oa) {
+			oa.setCalledAsMethod(true);
+		}
 		mExpression.analyze(compiler);
 		operations += mExpression.getOperations();
 

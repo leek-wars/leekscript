@@ -111,6 +111,21 @@ public class TestClass extends TestCommon {
 	}
 
 	@Test
+	public void testField_method_same_name() throws Exception {
+		section("Issue #2861 - champ et méthode homonymes");
+		// Appel : `t.monNom()` vise la méthode, sans erreur trompeuse « champ privé /
+		// non appelable » (le champ privé integer ne doit plus intercepter l'appel).
+		code_strict_v2_("class Test { private integer monNom; public integer monNom() { return 7; } } Test t = new Test(); return t.monNom()").equals("7");
+		// Lecture (sans parenthèses) : la sémantique de champ est préservée (priorité au
+		// champ), on lit bien la valeur du champ et non une référence de méthode.
+		code_v2_("class Test { public integer monNom = 5; public integer monNom() { return 7; } } Test t = new Test(); return t.monNom").equals("5");
+		// Écriture : l'affectation cible bien le champ.
+		code_v2_("class Test { public integer monNom = 5; public integer monNom() { return 7; } } Test t = new Test(); t.monNom = 9; return t.monNom").equals("9");
+		// Sans collision, tout compile normalement
+		code_v2_("class Test { private integer monNom = 3; public integer getMonNom() { return monNom; } } return new Test().getMonNom()").equals("3");
+	}
+
+	@Test
 	public void testNonMinusexistent_field_access() throws Exception {
 		section("Non-existent field access");
 		// this.field where field doesn't exist: error in strict, warning in non-strict

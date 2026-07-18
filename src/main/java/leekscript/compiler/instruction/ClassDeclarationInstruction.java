@@ -1108,6 +1108,19 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		return null;
 	}
 
+	// Variante de getMember limitée aux méthodes (ignore les champs). Sert à lever
+	// l'ambiguïté quand un champ et une méthode portent le même nom : getMember
+	// renvoie le champ, mais un accès de type appel/référence doit viser la méthode.
+	public LeekVariable getMethodMember(String token) {
+		var m = methodVariables.get(token);
+		if (m != null) return m;
+
+		if (parent != null) {
+			return parent.getMethodMember(token);
+		}
+		return null;
+	}
+
 	public LeekVariable getStaticMember(String token) {
 		var f = staticFieldVariables.get(token);
 		if (f != null) return f;

@@ -28,6 +28,13 @@ public class LeekObjectAccess extends Expression {
 	private boolean optional = false; // accès optionnel `obj?.field` (#2272)
 	private LeekVariable variable;
 	private ClassType resolvedOnClassType; // ClassType used for field resolution during analysis
+	private boolean calledAsMethod = false; // cet accès est la cible d'un appel `obj.field(...)` (#2861)
+
+	// Signalé par LeekFunctionCall avant l'analyse : quand l'accès est appelé, un nom
+	// partagé entre un champ et une méthode doit se résoudre sur la méthode.
+	public void setCalledAsMethod(boolean calledAsMethod) {
+		this.calledAsMethod = calledAsMethod;
+	}
 
 	public LeekObjectAccess(Expression object, Token dot, Token field) {
 		this(object, dot, field, false);
@@ -123,6 +130,13 @@ public class LeekObjectAccess extends Expression {
 		boolean isSuper = object instanceof LeekVariable v && v.getVariableType() == VariableType.SUPER;
 		var objectType = object.getType();
 		ClassType objectClassType = objectType instanceof ClassType ct ? ct : null;
+		// #2861 : si un champ et une méthode portent le même nom, getMember privilégie
+		// le champ. Quand cet accès est la cible d'un appel (`obj.nom()`), il doit viser
+		// la méthode, sinon la résolution sur le champ (ex. `private integer`) émet des
+		// erreurs trompeuses (« champ privé », « valeur non appelable »). On ne bascule
+		// que dans ce cas d'appel : la lecture/écriture d'un champ homonyme garde sa
+		// sémantique de champ (priorité au champ).
+		boolean resolvedToMethod = false;
 		if (objectClassType != null || isSuper) {
 			// this, check field exists in class
 			var clazz = objectClassType != null ? objectClassType.getClassDeclaration() : compiler.getCurrentClass().getParent();
@@ -131,6 +145,13 @@ public class LeekObjectAccess extends Expression {
 			}
 			if (clazz != null) {
 				this.variable = clazz.getMember(field.getWord());
+				if (this.calledAsMethod && this.variable != null && this.variable.getVariableType() == VariableType.FIELD) {
+					var methodVariable = clazz.getMethodMember(field.getWord());
+					if (methodVariable != null) {
+						this.variable = methodVariable;
+						resolvedToMethod = true;
+					}
+				}
 				if (this.variable == null) {
 					var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 					compiler.addError(new AnalyzeError(field, level, Error.CLASS_MEMBER_DOES_NOT_EXIST, new String[] {
@@ -139,9 +160,13 @@ public class LeekObjectAccess extends Expression {
 						clazz.getName()
 					}));
 				} else {
-					var error = clazz.canAccessField(field.getWord(), compiler.getCurrentClass());
-					if (error != null) {
-						compiler.addError(new AnalyzeError(this.getLocation(), AnalyzeErrorLevel.ERROR, error, new String[] { clazz.getName(), field.getWord() }));
+					// Résolu sur la méthode homonyme : le contrôle d'accès « champ » ne
+					// s'applique pas (la visibilité de la méthode est vérifiée à l'appel).
+					if (!resolvedToMethod) {
+						var error = clazz.canAccessField(field.getWord(), compiler.getCurrentClass());
+						if (error != null) {
+							compiler.addError(new AnalyzeError(this.getLocation(), AnalyzeErrorLevel.ERROR, error, new String[] { clazz.getName(), field.getWord() }));
+						}
 					}
 					this.isFinal = this.variable.isFinal();
 					this.isLeftValue = this.variable.isLeftValue();
@@ -180,24 +205,30 @@ public class LeekObjectAccess extends Expression {
 		}
 
 		// get type of member
-		var fieldWord = field.getWord();
-		var superClassDecl = isSuper ? objectType.getClassDeclaration() : null;
-		var memberType = superClassDecl != null ? superClassDecl.getType().member(fieldWord) : objectType.member(fieldWord);
-		if (memberType.isWarning()) {
+		// #2861 : quand on a basculé sur la méthode homonyme (appel), on conserve le
+		// type de la méthode déjà posé plus haut ; objectType.member() renverrait le
+		// type du champ (priorité au champ) et rendrait this.type/this.variable
+		// incohérents (type scalaire pour une méthode → faux « non appelable »).
+		if (!resolvedToMethod) {
+			var fieldWord = field.getWord();
+			var superClassDecl = isSuper ? objectType.getClassDeclaration() : null;
+			var memberType = superClassDecl != null ? superClassDecl.getType().member(fieldWord) : objectType.member(fieldWord);
+			if (memberType.isWarning()) {
 
-			if (memberType == Type.ERROR || compiler.getMainBlock().isStrict()) {
-				var level = memberType == Type.ERROR && compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
-				var error = memberType == Type.ERROR ? Error.CLASS_MEMBER_DOES_NOT_EXIST : Error.FIELD_MAY_NOT_EXIST;
+				if (memberType == Type.ERROR || compiler.getMainBlock().isStrict()) {
+					var level = memberType == Type.ERROR && compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+					var error = memberType == Type.ERROR ? Error.CLASS_MEMBER_DOES_NOT_EXIST : Error.FIELD_MAY_NOT_EXIST;
 
-				compiler.addError(new AnalyzeError(field, level, error, new String[] {
-					fieldWord,
-					object.toString(),
-					objectType.toString(),
-				}));
+					compiler.addError(new AnalyzeError(field, level, error, new String[] {
+						fieldWord,
+						object.toString(),
+						objectType.toString(),
+					}));
+				}
+				memberType = Type.replaceErrors(memberType);
 			}
-			memberType = Type.replaceErrors(memberType);
+			this.type = memberType;
 		}
-		this.type = memberType;
 
 		// Case 6: Check for property narrowing from enclosing conditional block
 		if (object instanceof LeekVariable lv) {
