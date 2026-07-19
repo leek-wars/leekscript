@@ -383,7 +383,17 @@ public class JavaWriter {
 		
 		if (type != Type.ANY) {
 			if (parenthesis) addCode("(");
-			addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") (");
+			addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+			// Un primitif (boolean/int/real) ne peut pas être casté directement vers un
+			// type référence en Java (ex. `EntityBuildType foo() { return obj.champBoolean }`).
+			// Cette conversion incompatible n'est qu'un warning en mode non strict : on passe
+			// par (Object) pour produire du Java compilable, sinon la compilation Java du worker
+			// crashe (COMPILE_JAVA) au lieu de rester un warning côté joueur. Comme la branche
+			// FunctionType ci-dessus.
+			if (value.getType().isPrimitive() && !type.isPrimitive()) {
+				addCode("(Object) ");
+			}
+			addCode("(");
 			value.writeJavaCode(mainblock, this, false);
 			addCode(")");
 			if (parenthesis) addCode(")");

@@ -918,5 +918,10 @@ public class TestObject extends TestCommon {
 
 		code_v2_("class A { real? x = null m() { this.x = 5 } } var a = new A() a.m() a.x").debug().equals("5.0");
 		code_v2_("class A { integer? x = null m() { x = 5.5 } } var a = new A() a.m() a.x").debug().equals("5");
+
+		// Un champ boolean renvoyé là où un type référence est attendu : la conversion est
+		// incompatible (warning non strict) mais NE DOIT PAS générer du Java non compilable
+		// (crash worker COMPILE_JAVA). Elle doit rester une erreur runtime propre (#11741953).
+		code_v2_("class T { public boolean b = true } class C { public T build() { return new T() } } class S { public T foo(C c) { return c.build().b } } var s = new S() return s.foo(new C())").equals("null");
 	}
 }
