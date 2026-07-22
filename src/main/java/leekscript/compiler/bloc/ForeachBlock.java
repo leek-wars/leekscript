@@ -68,7 +68,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		// Si c'est une déclaration on vérifie que le nom est disponible
 		if (mIsDeclaration) {
 			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
-				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { mIterator.getWord() }));
 			} else {
 				// this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL, declaration));
 			}

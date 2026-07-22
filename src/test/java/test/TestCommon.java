@@ -89,26 +89,29 @@ public class TestCommon {
 		}
 
 		public String error(Error type) {
+			return errorWith(type, (String[]) null);
+		}
+
+		// parameters == null : seul le type est vérifié
+		public String errorWith(Error type, String... parameters) {
 			return run(new Checker() {
 				public boolean check(Result result) {
 					if (result.error != null) {
-						return result.error == type;
+						return result.error == type && (parameters == null || Arrays.equals(result.parameters, parameters));
 					} else if (result.ai != null) {
 						var errors = result.ai.getFile().getErrors();
-						return errors.size() > 0 && errors.get(0).level == AnalyzeErrorLevel.ERROR && errors.get(0).error == type;
+						return errors.size() > 0 && errors.get(0).level == AnalyzeErrorLevel.ERROR && errors.get(0).error == type
+							&& (parameters == null || Arrays.equals(errors.get(0).parameters, parameters));
 					}
 					return false;
 				}
-				public String getExpected() { return "error " + type.name(); }
+				public String getExpected() { return "error " + type.name() + (parameters == null ? "" : " " + Arrays.toString(parameters)); }
 				public String getResult(Result result) {
 					if (result.error != null) {
 						return "error " + result.error.name() + " " + Arrays.toString(result.parameters);
 					} else if (result.ai != null) {
 						var errors = result.ai.getFile().getErrors();
-						if (errors.size() > 0) return "error " + errors.get(0).error.name();
-					}
-					if (result.error != Error.NONE) {
-						return result.error.name();
+						if (errors.size() > 0) return "error " + errors.get(0).error.name() + " " + Arrays.toString(errors.get(0).parameters);
 					}
 					return "no error";
 				}

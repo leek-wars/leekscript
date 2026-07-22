@@ -42,6 +42,15 @@ public class TestGlobals extends TestCommon {
 	}
 
 	@Test
+	public void testGlobals_duplicateName() throws Exception {
+		// #2863 : l'erreur VARIABLE_NAME_UNAVAILABLE partait sans paramètre,
+		// l'éditeur affichait le gabarit brut « Ce nom de variable « {0} » est indisponible »
+		section("Duplicate global name (#2863)");
+		code("global test global test").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, "test");
+		code("global a, a").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, "a");
+	}
+
+	@Test
 	public void testGlobals_typedArrayAssignmentLegacy() throws Exception {
 		// #4465 : en v1-3, l'affectation indexée sur un tableau typé `Array` émettait
 		// `.putv4(...)`, inexistant sur LegacyArrayLeekValue -> COMPILE_JAVA.

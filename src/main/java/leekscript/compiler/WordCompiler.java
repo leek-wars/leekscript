@@ -219,7 +219,7 @@ public class WordCompiler {
 					var global = mTokens.eat();
 					// System.out.println("global = " + global.getWord() + " " + global.getLine());
 					if (!isGlobalAvailable(global) || mMain.hasDeclaredGlobal(global.getWord())) {
-						addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+						addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { global.getWord() }));
 					} else {
 						mMain.addGlobal(global.getWord());
 					}
@@ -231,7 +231,7 @@ public class WordCompiler {
 						mTokens.skip();
 						global = mTokens.eat();
 						if (!isGlobalAvailable(global) || mMain.hasDeclaredGlobal(global.getWord())) {
-							addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+							addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { global.getWord() }));
 						} else {
 							mMain.addGlobal(global.getWord());
 						}
@@ -1332,7 +1332,7 @@ public class WordCompiler {
 		}
 
 		if (getVersion() >= 3 && isKeyword(word)) {
-			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() }));
 		}
 		LeekVariableDeclarationInstruction variable = new LeekVariableDeclarationInstruction(this, word, getCurrentFunction(), type);
 		applyAnnotations(variable, annotations);
@@ -1357,7 +1357,7 @@ public class WordCompiler {
 			word = mTokens.eat();
 			if (word.getType() != TokenType.STRING) throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED);
 			if (getVersion() >= 3 && isKeyword(word)) {
-				addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+				addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() }));
 			}
 			variable = new LeekVariableDeclarationInstruction(this, word, getCurrentFunction(), type);
 			applyAnnotations(variable, annotations);

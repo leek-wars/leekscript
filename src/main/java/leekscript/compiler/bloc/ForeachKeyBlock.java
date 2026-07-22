@@ -72,7 +72,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		// Si c'est une déclaration on vérifie que le nom est disponible
 		if (mIsKeyDeclaration) {
 			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mKeyIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mKeyIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mKeyIterator.getWord())) {
-				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { mKeyIterator.getWord() }));
 			} else {
 				// this.addVariable(new LeekVariable(mKeyIterator, VariableType.LOCAL, iteratorKeyDeclaration));
 			}
@@ -88,7 +88,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		// Si c'est une déclaration on vérifie que le nom est disponnible
 		if (mIsDeclaration) {
 			if ((compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(mIterator.getWord()) || compiler.getMainBlock().hasUserFunction(mIterator.getWord(), true))) || compiler.getCurrentBlock().hasVariable(mIterator.getWord())) {
-				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE));
+				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { mIterator.getWord() }));
 			} else {
 				// this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL, iteratorDeclaration));
 			}
