@@ -1885,6 +1885,54 @@ public abstract class AI {
 		return f;
 	}
 
+	/**
+	 * Écriture d'un champ d'objet natif via le chemin dynamique (objet manipulé en `any`).
+	 * Applique les mêmes conversions que le code généré statiquement (compileConvert) :
+	 * un champ `integer` reçoit longint(value), un champ `real` reçoit real(value), etc.
+	 * Sans ça, Field.set() jette IllegalArgumentException (ex : null ou un real assigné
+	 * à un long) et l'échec était remonté à tort en UNKNOWN_FIELD alors que le champ
+	 * existe. Retourne la valeur réellement affectée (valeur de l'expression d'assignation).
+	 */
+	private Object setFieldConverted(Object object, Field f, Object value) throws LeekRunException {
+		var type = f.getType();
+		try {
+			if (type == long.class) {
+				long v = longint(value);
+				f.setLong(object, v);
+				return v;
+			}
+			if (type == double.class) {
+				double v = real(value);
+				f.setDouble(object, v);
+				return v;
+			}
+			if (type == boolean.class) {
+				boolean v = bool(value);
+				f.setBoolean(object, v);
+				return v;
+			}
+			if (type == Long.class) {
+				var v = longintOrNull(value);
+				f.set(object, v);
+				return v;
+			}
+			if (type == Double.class) {
+				var v = realOrNull(value);
+				f.set(object, v);
+				return v;
+			}
+			f.set(object, value);
+			return value;
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			// Type incompatible non convertible (ex : un string dans un champ de classe) :
+			// même sémantique que le cast du chemin statique
+			addSystemLog(AILog.ERROR, Error.IMPOSSIBLE_CAST, new Object[] {
+				value == null ? "null" : javaTypeToLS(value.getClass().getName()),
+				javaTypeToLS(type.getName()) });
+			return null;
+		}
+	}
+
 	private boolean checkFieldAccessLevel(Field field, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		// Classe déclarante (pas value.getClass()) : une méthode héritée définie dans A
 		// doit garder l'accès à ses champs même si l'instance runtime est une sous-classe.
@@ -1908,10 +1956,9 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).initField(field, value);
 		}
 		try {
-			getFieldCached(object.getClass(), field).set(object, value);
-			return value;
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-			addSystemLog(AILog.ERROR, e);
+			return setFieldConverted(object, getFieldCached(object.getClass(), field), value);
+		} catch (NoSuchFieldException | SecurityException e) {
+			// Champ réellement inexistant
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
 		return null;
@@ -1934,10 +1981,9 @@ public abstract class AI {
 					this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 					return null;
 				}
-				f.set(object, value);
-				return value;
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-				// addSystemLog(AILog.ERROR, e);
+				return setFieldConverted(object, f, value);
+			} catch (NoSuchFieldException | SecurityException e) {
+				// Champ réellement inexistant
 			}
 		}
 		addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new Object[] { object, field });
@@ -1961,8 +2007,7 @@ public abstract class AI {
 				return null;
 			}
 			var previous = f.get(object);
-			var v = add(previous, 1l);
-			f.set(object, v);
+			setFieldConverted(object, f, add(previous, 1l));
 			return previous;
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
@@ -1988,9 +2033,7 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			var v = add(f.get(object), 1l);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, add(f.get(object), 1l));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2015,8 +2058,7 @@ public abstract class AI {
 				return null;
 			}
 			var previous = f.get(object);
-			var v = sub(previous, 1l);
-			f.set(object, v);
+			setFieldConverted(object, f, sub(previous, 1l));
 			return previous;
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
@@ -2041,9 +2083,7 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			var v = sub(f.get(object), 1l);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, sub(f.get(object), 1l));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2067,9 +2107,7 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			var v = add(f.get(object), value);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, add(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2094,9 +2132,8 @@ public abstract class AI {
 				return null;
 			}
 			var current = f.get(object);
-			var v = current != null ? current : value;
-			f.set(object, v);
-			return v;
+			if (current != null) return current;
+			return setFieldConverted(object, f, value);
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2120,9 +2157,7 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			var v = sub(f.get(object), value);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, sub(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2146,9 +2181,7 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			var v = mul(f.get(object), value);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, mul(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2172,9 +2205,7 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			var v = pow(f.get(object), value);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, pow(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2198,9 +2229,7 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			var v = div(f.get(object), value);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, div(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2224,9 +2253,7 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			var v = intdiv(f.get(object), value);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, intdiv(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2250,9 +2277,7 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			var v = mod(f.get(object), value);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, mod(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2270,9 +2295,7 @@ public abstract class AI {
 		try {
 			var f = getWriteableField(object, field, fromClass);
 			if (f == null) return null;
-			var v = bor(f.get(object), value);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, bor(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2290,9 +2313,7 @@ public abstract class AI {
 		try {
 			var f = getWriteableField(object, field, fromClass);
 			if (f == null) return null;
-			var v = band(f.get(object), value);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, band(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2310,9 +2331,7 @@ public abstract class AI {
 		try {
 			var f = getWriteableField(object, field, fromClass);
 			if (f == null) return null;
-			var v = bxor(f.get(object), value);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, bxor(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2330,9 +2349,7 @@ public abstract class AI {
 		try {
 			var f = getWriteableField(object, field, fromClass);
 			if (f == null) return null;
-			var v = shl(f.get(object), value);
-			f.set(object, v);
-			return v;
+			return setFieldConverted(object, f, shl(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2351,9 +2368,7 @@ public abstract class AI {
 			try {
 				var f = getWriteableField(object, field, fromClass);
 			if (f == null) return null;
-				var v = shr(f.get(object), value);
-				f.set(object, v);
-				return v;
+				return setFieldConverted(object, f, shr(f.get(object), value));
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				addSystemLog(AILog.ERROR, e);
 			}
@@ -2373,9 +2388,7 @@ public abstract class AI {
 			try {
 				var f = getWriteableField(object, field, fromClass);
 				if (f == null) return null;
-				var v = ushr(f.get(object), value);
-				f.set(object, v);
-				return v;
+				return setFieldConverted(object, f, ushr(f.get(object), value));
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				addSystemLog(AILog.ERROR, e);
 			}
