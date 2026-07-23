@@ -435,6 +435,31 @@ public class TestObject extends TestCommon {
 		// Cas valides : la méthode est bien résolue sur un ancêtre (pas d'erreur)
 		code_v2_("class A { foo() { return 'ok' } } class B extends A { foo() { return super.foo() } } return new B().foo()").equals("\"ok\"");
 		code_v2_("class A { foo() { return 'ok' } } class B extends A {} class C extends B { foo() { return super.foo() } } return new C().foo()").equals("\"ok\"");
+
+		// Issue #2770 : accès à un champ hérité via `super`. Un champ n'est ni
+		// polymorphe ni shadowable, `super.champ` = `this.champ` ; le receveur SUPER
+		// s'émettait en valeur de classe parente → UNKNOWN_FIELD / IMPOSSIBLE_CAST
+		// au runtime (lecture, écriture, composés, incréments).
+		code_v2_("class A { protected boolean _toto } class B extends A { constructor(boolean titi) { super._toto = titi } get() { return this._toto } } return new B(true).get()").equals("true");
+		code_v2_("class A { protected integer x = 7 } class B extends A { m() { return super.x } } return new B().m()").equals("7");
+		code_v2_("class A { protected integer x = 7 } class B extends A { m() { super.x = 9 return this.x } } return new B().m()").equals("9");
+		code_v2_("class A { public integer y = 3 } class B extends A { m() { super.y = 5 return this.y } } return new B().m()").equals("5");
+		code_v2_("class A { protected integer x = 7 } class B extends A { m() { super.x += 2 return this.x } } return new B().m()").equals("9");
+		code_v2_("class A { protected integer x = 7 } class B extends A { m() { super.x++ return this.x } } return new B().m()").equals("8");
+		// Dans une fonction anonyme (le code Java est généré dans une classe interne)
+		code_v2_("class A { protected integer x = 1 } class B extends A { m() { var f = function() { return super.x + 1 } return f() } } return new B().m()").equals("2");
+		// Champ et méthode via super dans la même expression
+		code_v2_("class A { protected integer x = 3 m() { return 10 } } class B extends A { m() { return super.m() + super.x } } return new B().m()").equals("13");
+		// En méthode statique il n'y a pas de `this` : un champ d'instance via super
+		// garde le chemin dynamique (erreur runtime propre, pas de COMPILE_JAVA),
+		// un champ statique via super se résout sur la classe parente.
+		code_v2_("class A { protected integer x = 7 } class B extends A { static m() { return super.x } } return B.m()").error(Error.IMPOSSIBLE_CAST);
+		code_v2_("class A { static integer s = 5 } class B extends A { static m() { return super.s } } return B.m()").equals("5");
+		// Un membre STATIQUE via super depuis une méthode d'instance garde aussi le
+		// receveur classe parente (getMember exclut les statiques → chemin dynamique) :
+		// comportement pré-fix à préserver, lecture comme écriture.
+		code_v2_("class A { static integer s = 5 } class B extends A { m() { return super.s } } return new B().m()").equals("5");
+		code_v2_("class A { static integer s = 5 } class B extends A { m() { super.s = 9 return A.s } } return new B().m()").equals("9");
 		// super vers une méthode native de la classe de base (keys) : doit rester accepté
 		// et fonctionnel, pas de régression (super.u_keys() existe sur NativeObjectLeekValue).
 		code_v2_("class A { x = 1 } class B extends A { m() { return super.keys() } } return new B().m()").equals("[\"x\"]");

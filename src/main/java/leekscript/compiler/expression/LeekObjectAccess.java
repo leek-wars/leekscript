@@ -262,12 +262,42 @@ public class LeekObjectAccess extends Expression {
 		return field;
 	}
 
+	// #2770 : un champ n'est ni polymorphe ni shadowable (FIELD_ALREADY_EXISTS),
+	// donc `super.champ` désigne le même stockage que `this.champ`. `super` seul
+	// s'émet en valeur de classe parente (u_Parent, pour le dispatch de méthodes) :
+	// l'utiliser comme receveur d'un accès CHAMP D'INSTANCE plantait au runtime
+	// (UNKNOWN_FIELD / IMPOSSIBLE_CAST). On ne traite le receveur SUPER comme THIS
+	// que dans ce cas précis : membre résolu = champ d'instance (getMember exclut
+	// les statiques) ET contexte d'instance (pas de `this` en méthode statique).
+	// Tout le reste (membre statique, membre inconnu, méthode statique) garde le
+	// receveur u_Parent d'origine, qui résout les statiques au runtime.
+	private boolean isSuperInstanceReceiver(JavaWriter writer) {
+		return object instanceof LeekVariable v && v.getVariableType() == VariableType.SUPER
+			&& this.variable != null && this.variable.getVariableType() == VariableType.FIELD
+			&& writer.currentBlock != null && !writer.currentBlock.isInStaticMethod();
+	}
+
+	private boolean isThisLikeReceiver(JavaWriter writer) {
+		return (object instanceof LeekVariable v && v.getVariableType() == VariableType.THIS)
+			|| isSuperInstanceReceiver(writer);
+	}
+
+	// Émission du receveur pour les chemins dynamiques (getField/setField/field_*) :
+	// SUPER en contexte d'instance → l'objet courant, sinon l'expression telle quelle.
+	private void writeReceiver(MainLeekBlock mainblock, JavaWriter writer) {
+		if (isSuperInstanceReceiver(writer)) {
+			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".this");
+		} else {
+			object.writeJavaCode(mainblock, writer, false);
+		}
+	}
+
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (optional && field != null && !field.getWord().equals("class")) {
 			// Accès optionnel `obj?.field` : null si l'objet est null, sinon getField
 			writer.addCode("getFieldNullSafe(");
-			object.writeJavaCode(mainblock, writer, false);
+			writeReceiver(mainblock, writer);
 			writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 			return;
 		}
@@ -278,7 +308,7 @@ public class LeekObjectAccess extends Expression {
 		} else {
 			if (this.variable != null && this.variable.getVariableType() == VariableType.METHOD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {
 				writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + field.getWord() + "\")");
-			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS && this.variable != null) {
+			} else if (isThisLikeReceiver(writer) && this.variable != null) {
 				writer.addCode(field.getWord());
 			} else if (object.getType() instanceof ClassType && !(type instanceof FunctionType) && this.variable != null) { // TODO : mieux détecter les méthodes
 				// Cast the entire field access if the type was narrowed (e.g., instanceof)
@@ -303,7 +333,7 @@ public class LeekObjectAccess extends Expression {
 					writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") ");
 				}
 				writer.addCode("getField(");
-				object.writeJavaCode(mainblock, writer, false);
+				writeReceiver(mainblock, writer);
 				writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 				if (type != Type.ANY) {
 					if (parenthesis) writer.addCode(")");
@@ -321,7 +351,7 @@ public class LeekObjectAccess extends Expression {
 			object.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else {
-			if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS && this.variable != null) {
+			if (isThisLikeReceiver(writer) && this.variable != null) {
 				writer.addCode(field.getWord());
 			} else if (object.getType() instanceof ClassType && this.variable != null) {
 				writeObjectWithNarrowingCast(mainblock, writer);
@@ -329,7 +359,7 @@ public class LeekObjectAccess extends Expression {
 				writer.addCode(field.getWord());
 			} else {
 				writer.addCode("getField(");
-				object.writeJavaCode(mainblock, writer, false);
+				writeReceiver(mainblock, writer);
 				writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 			}
 		}
@@ -344,7 +374,7 @@ public class LeekObjectAccess extends Expression {
 		// but the Java field is declared with the original type)
 		var fieldType = (this.variable != null) ? this.variable.getDeclaredType() : this.type;
 
-		if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.THIS && this.variable != null) {
+		if (isThisLikeReceiver(writer) && this.variable != null) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(field.getWord() + " = ");
 			writer.compileConvert(mainblock, 0, expr, fieldType, false);
@@ -357,7 +387,7 @@ public class LeekObjectAccess extends Expression {
 			if (parenthesis) writer.addCode(")");
 		} else {
 			writer.addCode("setField(");
-			object.writeJavaCode(mainblock, writer, false);
+			writeReceiver(mainblock, writer);
 			writer.addCode(", \"" + field.getWord() + "\", ");
 			writer.compileConvert(mainblock, 0, expr, this.type, false);
 			// expr.writeJavaCode(mainblock, writer);
@@ -374,7 +404,7 @@ public class LeekObjectAccess extends Expression {
 			writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
 		}
 		writer.addCode("field_inc(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 		if (this.type != Type.ANY) {
 			if (parenthesis) writer.addCode(")");
@@ -390,7 +420,7 @@ public class LeekObjectAccess extends Expression {
 			writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
 		}
 		writer.addCode("field_pre_inc(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 		if (this.type != Type.ANY) {
 			if (parenthesis) writer.addCode(")");
@@ -406,7 +436,7 @@ public class LeekObjectAccess extends Expression {
 			writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
 		}
 		writer.addCode("field_dec(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 		if (this.type != Type.ANY) {
 			if (parenthesis) writer.addCode(")");
@@ -422,7 +452,7 @@ public class LeekObjectAccess extends Expression {
 			writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
 		}
 		writer.addCode("field_pre_dec(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 		if (this.type != Type.ANY) {
 			if (parenthesis) writer.addCode(")");
@@ -434,7 +464,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_add_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -446,7 +476,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_sub_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -458,7 +488,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_mul_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -470,7 +500,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_pow_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -482,7 +512,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_div_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -494,7 +524,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_intdiv_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -506,7 +536,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_mod_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -518,7 +548,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_bor_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -530,7 +560,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_band_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -542,7 +572,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_bxor_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -554,7 +584,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_shl_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -566,7 +596,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_shr_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -578,7 +608,7 @@ public class LeekObjectAccess extends Expression {
 		// assert (object.isLeftValue() && !object.nullable());
 
 		writer.addCode("field_ushr_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
@@ -588,7 +618,7 @@ public class LeekObjectAccess extends Expression {
 	public void compileCoalesceEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// object.field ??= value
 		writer.addCode("field_coalesce_eq(");
-		object.writeJavaCode(mainblock, writer, false);
+		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
