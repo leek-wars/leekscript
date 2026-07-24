@@ -674,14 +674,12 @@ public abstract class AI {
 			Pattern r = Pattern.compile("Cannot invoke \"(.*)\" because \".*\" is null");
 			Matcher m = r.matcher(throwable.getMessage() != null ? throwable.getMessage() : "");
 			if (m.find()) {
-				var method = m.group(1);
-				var clazz = method.substring(0, method.lastIndexOf("."));
-				error.parameters = new Object[] { "null", javaTypeToLS(clazz) };
+				error.parameters = new Object[] { "null", javaTypeToLS(methodOwner(m.group(1))) };
 			} else {
 				Pattern r2 = Pattern.compile("Cannot invoke \"(.*)\" because the return value of \".*\" is null");
 				Matcher m2 = r2.matcher(throwable.getMessage() != null ? throwable.getMessage() : "");
 				if (m2.find()) {
-					error.parameters = new Object[] { "null", javaTypeToLS(m2.group(1)) };
+					error.parameters = new Object[] { "null", javaTypeToLS(methodOwner(m2.group(1))) };
 				} else {
 					Pattern r3 = Pattern.compile("Cannot read field \"(.*)\" because \".*\" is null");
 					Matcher m3 = r3.matcher(throwable.getMessage() != null ? throwable.getMessage() : "");
@@ -722,6 +720,16 @@ public abstract class AI {
 		addSystemLog(type, error.type.ordinal(), error.parameters, unwrapped);
 	}
 
+	// Extrait la classe porteuse d'une signature de méthode d'un message de NPE,
+	// ex : "a.b.SetLeekValue.setPut(a.b.AI, Object)" -> "a.b.SetLeekValue".
+	// Les points de la liste d'arguments ne doivent pas être pris pour le séparateur.
+	private String methodOwner(String signature) {
+		var paren = signature.indexOf('(');
+		var name = paren >= 0 ? signature.substring(0, paren) : signature;
+		var dot = name.lastIndexOf('.');
+		return dot >= 0 ? name.substring(0, dot) : name;
+	}
+
 	private String javaTypeToLS(String type) {
 		switch (type) {
 			case "boolean":
@@ -738,6 +746,8 @@ public abstract class AI {
 				return "real";
 			case "java.lang.String": return "string";
 			case "leekscript.runner.values.MapLeekValue": return "Map";
+			case "leekscript.runner.values.SetLeekValue": return "Set";
+			case "leekscript.runner.values.BigIntegerValue": return "big_integer";
 			case "leekscript.runner.values.ArrayLeekValue":
 			case "leekscript.runner.values.LegacyArrayLeekValue": return "Array";
 			case "leekscript.runner.values.RealIntervalLeekValue": return "Interval<real>";
@@ -3475,7 +3485,12 @@ public abstract class AI {
 				if (e.getCause() instanceof LeekRunException lre) {
 					throw lre;
 				} else if (e instanceof InvocationTargetException) {
+					// La méthode existe et a bien été appelée : l'erreur vient de son corps.
+					// On la logge puis on s'arrête là, sans tomber dans le fallback
+					// UNKNOWN_FIELD qui ajoutait une erreur parasite « champ inconnu »
+					// sur une méthode pourtant trouvée (forum 11320).
 					addSystemLog(AILog.ERROR, e);
+					return null;
 				} else {
 					try {
 						var f = getFieldCached(valueClass, field);

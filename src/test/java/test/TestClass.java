@@ -214,4 +214,24 @@ public class TestClass extends TestCommon {
 		code_v4("class A { public data = [] public fill() { for (var i = 0; i < 8000; ++i) push(data, i) } } var a = new A() a.fill() return clone(a, 2)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 	}
 
+	/**
+	 * Champ statique typé sans initialiseur : vaut null (contrairement à une variable
+	 * locale typée, initialisée à la valeur par défaut du type). L'erreur runtime doit
+	 * être propre : « null vers Set », pas une signature Java interne tronquée, et pas
+	 * d'erreur parasite « champ inconnu » sur une méthode qui existe (forum 11320).
+	 */
+	@Test
+	public void testClass_static_field_uninitialized_errors() throws Exception {
+		section("Static field uninitialized error messages (forum 11320)");
+		// Message propre : null vers Set (avant : "leekscript.runner.values.SetLeekValue.setPut(leekscript.runner")
+		code_v4_("class A { public static Set<integer> aSet; } setPut(A.aSet, 1); return A.aSet").errorWith(Error.IMPOSSIBLE_CAST, "null", "Set");
+		// Même chose via un appel de méthode statique typé
+		code_v4_("A.aMap[0] = new A(); A a = A.aMap[0]; a.update(); class A { public static Map<integer, A> aMap = new Map(); public static Set<A> aSet; public void update() { setPut(A.aSet, this); } } return 1").errorWith(Error.IMPOSSIBLE_CAST, "null", "Set");
+		// Appel dynamique (méthode trouvée, erreur DANS son corps) : l'erreur est loggée
+		// mais ne doit plus être suivie du parasite UNKNOWN_FIELD "update" ; l'exécution continue
+		code_v4_("A.aMap[0] = new A(); A.aMap[0].update(); class A { public static Map<integer, A> aMap = new Map(); public static Set<A> aSet; public void update() { setPut(A.aSet, this); } } return 1").equals("1");
+		// Une variable locale typée est initialisée à la valeur par défaut du type, elle
+		code_v4_("Set<integer> s; setPut(s, 1); return s").equals("<1>");
+	}
+
 }
