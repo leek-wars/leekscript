@@ -368,19 +368,6 @@ public class JavaWriter {
 				}
 			}
 		}
-		if (type instanceof FunctionType) {
-			if (parenthesis) {
-				addCode("(");
-			}
-			addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ")");
-			addCode(" (Object) ");
-			value.writeJavaCode(mainblock, this, true);
-			if (parenthesis) {
-				addCode(")");
-			}
-			return;
-		}
-		
 		if (type != Type.ANY) {
 			if (parenthesis) addCode("(");
 			addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
@@ -391,7 +378,7 @@ public class JavaWriter {
 			// `integer?` est assigné à un champ `Entity?`, rapport #11806855). Ces conversions ne
 			// sont qu'un warning en mode non strict : on passe par (Object) pour produire du Java
 			// compilable et une erreur runtime propre, sinon la compilation Java du worker crashe
-			// (COMPILE_JAVA). Comme la branche FunctionType ci-dessus.
+			// (COMPILE_JAVA).
 			if (!type.isPrimitive()) {
 				addCode("(Object) ");
 			}
