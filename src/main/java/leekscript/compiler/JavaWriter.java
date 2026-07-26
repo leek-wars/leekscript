@@ -384,13 +384,15 @@ public class JavaWriter {
 		if (type != Type.ANY) {
 			if (parenthesis) addCode("(");
 			addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-			// Un primitif (boolean/int/real) ne peut pas être casté directement vers un
-			// type référence en Java (ex. `EntityBuildType foo() { return obj.champBoolean }`).
-			// Cette conversion incompatible n'est qu'un warning en mode non strict : on passe
-			// par (Object) pour produire du Java compilable, sinon la compilation Java du worker
-			// crashe (COMPILE_JAVA) au lieu de rester un warning côté joueur. Comme la branche
-			// FunctionType ci-dessus.
-			if (value.getType().isPrimitive() && !type.isPrimitive()) {
+			// Un cast Java direct vers un type référence peut être rejeté par javac quand le
+			// type Java de la valeur est sans lien avec la cible : primitif → référence
+			// (ex. `EntityBuildType foo() { return obj.champBoolean }`), mais aussi référence →
+			// référence sans hiérarchie commune (ex. `Long` → classe utilisateur, quand un
+			// `integer?` est assigné à un champ `Entity?`, rapport #11806855). Ces conversions ne
+			// sont qu'un warning en mode non strict : on passe par (Object) pour produire du Java
+			// compilable et une erreur runtime propre, sinon la compilation Java du worker crashe
+			// (COMPILE_JAVA). Comme la branche FunctionType ci-dessus.
+			if (!type.isPrimitive()) {
 				addCode("(Object) ");
 			}
 			addCode("(");

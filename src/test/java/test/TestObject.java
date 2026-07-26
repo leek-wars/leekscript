@@ -948,5 +948,10 @@ public class TestObject extends TestCommon {
 		// incompatible (warning non strict) mais NE DOIT PAS générer du Java non compilable
 		// (crash worker COMPILE_JAVA). Elle doit rester une erreur runtime propre (#11741953).
 		code_v2_("class T { public boolean b = true } class C { public T build() { return new T() } } class S { public T foo(C c) { return c.build().b } } var s = new S() return s.foo(new C())").equals("null");
+
+		// Même famille avec une valeur non primitive (Long) assignée à un champ typé classe
+		// nullable : `(u_Entity) (Long)` est un cast Java invalide entre classes sans lien
+		// (crash worker COMPILE_JAVA, rapport #11806855). Doit rester une erreur runtime propre.
+		code_v4_("class A {} class B { public A? a  m(integer? v) { this.a = v } } var b = new B() b.m(5) return b.a").equals("null");
 	}
 }
