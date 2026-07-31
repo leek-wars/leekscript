@@ -501,6 +501,51 @@ public class LeekExpression extends Expression {
 		return this;
 	}
 
+	/**
+	 * Vrai si une valeur de ce type est forcément une instance d'objet, ou null, au
+	 * runtime : instance de classe, objet littéral, null, ou une union de ceux-là.
+	 * Les tableaux, maps et sets en sont exclus — leur égalité est structurelle.
+	 */
+	private static boolean isObjectReference(Type type) {
+		if (type instanceof ClassType || type == Type.OBJECT || type == Type.NULL) return true;
+		if (type instanceof CompoundType compound) {
+			for (var member : compound.getTypes()) {
+				if (!isObjectReference(member)) return false;
+			}
+			return true;
+		}
+		return false;
+	}
+
+	/** Les deux opérandes sont des références d'objet : `==` se réduit à l'identité. */
+	private boolean isReferenceComparison() {
+		return mExpression1 != null && mExpression2 != null
+			&& isObjectReference(mExpression1.getType())
+			&& isObjectReference(mExpression2.getType());
+	}
+
+	/**
+	 * `==` / `!=` sur deux références d'objet : comparaison d'adresse directe.
+	 *
+	 * equals_equals() rend exactement le même résultat — l'identité — mais par un
+	 * chemin très long. Les instances de classe étendent NativeObjectLeekValue, pas
+	 * ObjectLeekValue : elles ratent donc tous les tests rapides et finissent sur
+	 * `LeekValueManager.getType(x) == getType(y) && eq(x, y)`, soit deux cascades de
+	 * type complètes, puis celle de eq(), pour aboutir à Object.equals(). Une
+	 * trentaine de instanceof et quatre appels pour une comparaison de pointeur.
+	 *
+	 * Le cast en Object est nécessaire : Java refuse `==` entre deux types de classe
+	 * sans lien de parenté (Dog == Cat), que LeekScript accepte en rendant false.
+	 */
+	private void writeReferenceEquality(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis, String operator) {
+		if (parenthesis) writer.addCode("(");
+		writer.addCode("((Object) ");
+		mExpression1.writeJavaCode(mainblock, writer, false);
+		writer.addCode(") " + operator + " ");
+		mExpression2.writeJavaCode(mainblock, writer, true);
+		if (parenthesis) writer.addCode(")");
+	}
+
 	/** Émet un appel runtime bigint binaire `(BigIntegerValue) method(e1, e2)` (#bigint). */
 	private void writeBigIntBinary(MainLeekBlock mainblock, JavaWriter writer, String method, boolean parenthesis) {
 		if (parenthesis) writer.addCode("(");
@@ -726,6 +771,8 @@ public class LeekExpression extends Expression {
 					mExpression1.writeJavaCode(mainblock, writer, true);
 					writer.addCode(" == null");
 				}
+			} else if (isReferenceComparison()) {
+				writeReferenceEquality(mainblock, writer, parenthesis, "==");
 			} else {
 				writer.addCode("equals_equals(");
 				mExpression1.writeJavaCode(mainblock, writer, false);
@@ -735,6 +782,10 @@ public class LeekExpression extends Expression {
 			}
 			return;
 		case Operators.NOT_EQUALS_EQUALS:
+			if (isReferenceComparison()) {
+				writeReferenceEquality(mainblock, writer, parenthesis, "!=");
+				return;
+			}
 			writer.addCode("notequals_equals(");
 			mExpression1.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
@@ -742,6 +793,12 @@ public class LeekExpression extends Expression {
 			writer.addCode(")");
 			return;
 		case Operators.EQUALS:
+			// Deux références d'objet : identité dans toutes les versions, que `==`
+			// soit l'égalité stricte (v4+) ou l'égalité lâche eq() (v3 et avant).
+			if (isReferenceComparison()) {
+				writeReferenceEquality(mainblock, writer, parenthesis, "==");
+				return;
+			}
 			if (mainblock.getWordCompiler().getVersion() >= 4) {
 				if (mExpression1.getType() == Type.INT && mExpression2.getType() == Type.INT) {
 					if (parenthesis) writer.addCode("(");
@@ -825,6 +882,10 @@ public class LeekExpression extends Expression {
 			}
 			return;
 		case Operators.NOTEQUALS:
+			if (isReferenceComparison()) {
+				writeReferenceEquality(mainblock, writer, parenthesis, "!=");
+				return;
+			}
 			if (mainblock.getWordCompiler().getVersion() >= 4) {
 				writer.addCode("notequals_equals(");
 				mExpression1.writeJavaCode(mainblock, writer, false);

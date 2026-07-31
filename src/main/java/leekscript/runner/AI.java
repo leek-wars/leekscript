@@ -959,6 +959,15 @@ public abstract class AI {
 		if (x instanceof ObjectLeekValue && y instanceof ObjectLeekValue) {
 			return x.equals(y);
 		}
+		// Les instances de classe étendent NativeObjectLeekValue, PAS ObjectLeekValue :
+		// sans ce raccourci elles ratent tous les tests ci-dessus et traversent deux
+		// cascades LeekValueManager.getType() puis toute celle de eq(), pour aboutir
+		// à Object.equals(). Or l'identité est le seul résultat possible : face à un
+		// autre objet c'est l'identité, face à toute autre valeur les types diffèrent
+		// donc c'est faux — et `x == y` rend faux dans les deux cas.
+		if (x instanceof NativeObjectLeekValue || y instanceof NativeObjectLeekValue) {
+			return x == y;
+		}
 		return LeekValueManager.getType(x) == LeekValueManager.getType(y) && eq(x, y);
 	}
 
