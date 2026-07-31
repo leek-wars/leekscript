@@ -44,6 +44,15 @@ public class LeekString extends Expression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
+		writer.addCode(getJavaLiteral(mainblock));
+	}
+
+	/**
+	 * Littéral Java correspondant à cette chaîne, guillemets compris.
+	 * Extrait de writeJavaCode pour que SwitchBlock puisse l'utiliser comme label
+	 * de `case` ET comme clé de déduplication, sans réimplémenter les échappements.
+	 */
+	public String getJavaLiteral(MainLeekBlock mainblock) {
 		String str = "";
 		int len = mString.length() - 1;
 		boolean v2plus = mainblock.getCompiler().getCurrentAI().getVersion() >= 2;
@@ -77,7 +86,7 @@ public class LeekString extends Expression {
 			}
 			else str += mString.charAt(i);
 		}
-		writer.addCode("\"" + str + "\"");
+		return "\"" + str + "\"";
 	}
 
 	@Override

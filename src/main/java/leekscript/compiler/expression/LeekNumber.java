@@ -41,6 +41,14 @@ public class LeekNumber extends Expression {
 		return doubleValue == Double.POSITIVE_INFINITY;
 	}
 
+	public long getLongValue() {
+		return longValue;
+	}
+
+	public double getDoubleValue() {
+		return doubleValue;
+	}
+
 	@Override
 	public String toString() {
 		if (type == Type.REAL) {
