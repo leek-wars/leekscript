@@ -171,4 +171,77 @@ public class TestMethods extends TestCommon {
 		// The clean name is method-only: it does not become a free global function.
 		code_v5("return map([1, 2, 3], x -> x * 2)").error(leekscript.common.Error.UNKNOWN_VARIABLE_OR_FUNCTION);
 	}
+
+	@Test
+	public void intervalAndValueNamespaces() throws Exception {
+		section("Namespaces / Interval, Value");
+		// Interval : la forme namespace complète la forme méthode (i.min()), utile quand le
+		// receveur est un intervalle abstrait, non dispatché en méthode à la compilation.
+		code_v5("var i = [1..10] return Interval.min(i)").equals("1");
+		code_v5("var i = [1..10] return Interval.max(i)").equals("10");
+		code_v5("var i = [1..10] return Interval.contains(i, 5)").equals("true");
+		// Value : fonctions sans receveur de valeur naturel, la forme libre reste tolérée.
+		code_v5("return Value.string(42)").equals("\"42\"");
+		code_v5("return Value.typeOf(\"a\")").equals("3");
+		code_v5("return string(42)").equals("\"42\"");
+		// Aucun des deux namespaces n'existe avant la v5.
+		code_v4("var i = [1..10] return Interval.min(i)").error(leekscript.common.Error.CLASS_STATIC_MEMBER_DOES_NOT_EXIST);
+	}
+
+	@Test
+	public void arraySortHasCleanName() throws Exception {
+		section("Methods / arraySort -> sorted");
+		// sorted() renvoie un NOUVEAU tableau ; sort() trie en place. Les deux coexistent.
+		code_v5("var a = [3, 1, 2] var b = a.sorted() return [a, b]").equals("[[3, 1, 2], [1, 2, 3]]");
+		code_v5("var a = [3, 1, 2] return a.sorted((x, y) -> y - x)").equals("[3, 2, 1]");
+		code_v5("var a = [3, 1, 2] return Array.sorted(a)").equals("[1, 2, 3]");
+		// La forme libre est retirée en v5 et pointe désormais vers un nom propre.
+		code_v5("var a = [3, 1, 2] return arraySort(a)")
+			.error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT, "sorted()");
+	}
+
+	@Test
+	public void removedBeforeV5StaysRemoved() throws Exception {
+		section("Methods / removed before v5");
+		// Capping maxVersion at 4 for the OO migration only closes the FREE form: the method
+		// and namespace forms are the announced replacement and must keep resolving.
+		code_v5("var a = [3, 1, 2] a.sort() return a").equals("[1, 2, 3]");
+		code_v5("return \"abc\".length()").equals("3");
+		code_v5("var a = [1, 2] return Array.count(a)").equals("2");
+		// But a function genuinely removed from the language in v3 must not come back through
+		// the method or namespace door.
+		code_v5("Array<integer> a = [1, 2, 3] return a.subArray(0, 2)").error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT, "slice()");
+		// Receveur `var` : statiquement `any`, donc resolu au RUNTIME. Le filtre doit y etre aussi,
+		// sinon la fonction retiree revient silencieusement (erreur de champ inconnu attendue ici).
+		// Un champ inconnu sur receveur `var` est journalise sans faire echouer l'IA : la valeur
+		// vaut null. Avant le filtre runtime, ces deux appels renvoyaient tranquillement [1, 2] et
+		// la map amputee, ressuscitant une fonction retiree depuis la v3.
+		code_v5("var a = [1, 2, 3] return a.subArray(0, 2)").logsError(leekscript.common.Error.UNKNOWN_FIELD);
+		code_v5("var a = [1, 2, 3] return a.subArray(0, 2)").equals("null");
+		code_v5("var m = [1 : 2] m.removeKey(1) return m").logsError(leekscript.common.Error.UNKNOWN_FIELD);
+		code_v5("Map<integer, integer> m = [1 : 2] m.removeKey(1) return m").error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT, "remove()");
+		code_v5("var a = [1, 2, 3] return Array.subArray(a, 0, 2)").error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT);
+		code_v5("return Math.randFloat(0, 1)").error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT);
+	}
+
+	@Test
+	public void removalReplacementChain() throws Exception {
+		section("Methods / replacement chain");
+		// A function removed in v3 points at whatever replaced it back then, but that name
+		// may itself have lost its free form in v5. The suggestion must be resolved for the
+		// version being compiled, otherwise the player is sent to an identifier that does
+		// not compile either.
+		code_v4("var a = [1, 2, 3] return subArray(a, 0, 2)")
+			.error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT, "arraySlice");
+		code_v5("var a = [1, 2, 3] return subArray(a, 0, 2)")
+			.error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT, "slice()");
+		code_v4("var m = [1 : 2] removeKey(m, 1) return m")
+			.error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT, "mapRemove");
+		code_v5("var m = [1 : 2] removeKey(m, 1) return m")
+			.error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT, "remove()");
+		code_v4("return randFloat(0, 1)")
+			.error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT, "randReal");
+		code_v5("return randFloat(0, 1)")
+			.error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT, "Math.randReal");
+	}
 }

@@ -1,6 +1,7 @@
 package leekscript.runner;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import leekscript.common.FunctionType;
@@ -226,10 +227,15 @@ public class LeekFunctions {
 		method("arrayPartition", "Array", Type.ARRAY, new Type[] { Type.ARRAY, new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY) }).alias("partition");
 		method("arrayIter", "Array", Type.VOID, new Type[] { Type.ARRAY, new FunctionType(Type.ANY, 0, Type.ANY, Type.INT, Type.ARRAY) }).alias("iter");
 		method("arrayConcat", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.ARRAY }).alias("concat");
+		// `sorted` et non `sort` : contrairement à `sort()` qui trie EN PLACE, arraySort renvoie
+		// un NOUVEAU tableau. Même opposition que sorted()/sort() en Python et toSorted()/sort()
+		// en JS. Sans cet alias, arraySort serait la seule fonction Array sans forme OO propre,
+		// et son message de suppression v5 pointerait vers `arraySort()` — un nom qui n'a rien
+		// de canonique.
 		method("arraySort", "Array", new CallableVersion[] {
 			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY, new FunctionType(Type.INT_OR_REAL, Type.ANY, Type.ANY) }),
 			new CallableVersion(Type.ARRAY, new Type[] { Type.ARRAY })
-		});
+		}).alias("sorted");
 		method("arraySome", "Array", Type.BOOL, new Type[] { Type.ARRAY, new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY) }).alias("some").setMinVersion(4);
 		method("arrayEvery", "Array", Type.BOOL, new Type[] { Type.ARRAY, new FunctionType(Type.BOOL, 0, Type.ANY, Type.INT, Type.ARRAY) }).alias("every").setMinVersion(4);
 		method("arrayGet", "Array", 1, new CallableVersion[] {
@@ -426,6 +432,7 @@ public class LeekFunctions {
 					|| "Set".equals(f.standardClass) || "String".equals(f.standardClass))
 					&& f.maxVersion >= 5) {
 				f.maxVersion = 4;
+				f.ooDemoted = true;
 				if (f.replacement == null) {
 					f.replacement = (f.methodName != null ? f.methodName : f.name) + "()";
 				}
@@ -437,6 +444,7 @@ public class LeekFunctions {
 				// leadingZeros...) ont été ajoutés en v4 (minVersion>=4) et restent libres.
 				// La forme namespace `Math.f` reste valide (gardée par !is_namespace_function).
 				f.maxVersion = 4;
+				f.ooDemoted = true;
 				if (f.replacement == null) {
 					f.replacement = "Math." + f.name;
 				}
@@ -507,8 +515,12 @@ public class LeekFunctions {
 			// `Math` regroupe les fonctions de la classe standard "Number".
 			case "Math": return "Number";
 			// Les autres namespaces portent le nom de leur classe standard.
+			// `Interval` et `Value` ont leur classe interne déclarée depuis la v3 : les exposer
+			// ne réserve aucun identifiant nouveau, et referme deux trous de la grille v5
+			// (« plus de fonctions qui traînent seules »). `Color`, lui, n'a pas de classe
+			// interne : l'exposer demanderait d'en déclarer une, cf. §2.3.
 			case "Number": case "String": case "Array": case "Map":
-			case "Set": case "JSON": case "System":
+			case "Set": case "JSON": case "System": case "Interval": case "Value":
 				return namespaceName;
 			default: return null;
 		}
@@ -557,6 +569,12 @@ public class LeekFunctions {
 	// Nom de la méthode propre équivalente, pour le message d'erreur quand la forme
 	// libre est supprimée en v5. Défaut = name ; mis à jour par alias().
 	private String methodName = null;
+	// Vrai quand le cap `maxVersion = 4` vient de la migration OO v5 (§2.2/§2.4) et non d'un
+	// retrait réel du langage. Distinction porteuse : dans le premier cas la fonction existe
+	// toujours, seule sa forme LIBRE disparaît (la forme méthode/namespace est justement le
+	// remplacement) ; dans le second (`subArray`, `assocSort`, `removeKey`, `randFloat`...
+	// retirés en v3) elle ne doit revenir par AUCUNE forme.
+	private boolean ooDemoted = false;
 
 	public LeekFunctions(String standardClass, String name, int operations, boolean isStatic, Type return_type, Type[] arguments) {
 		this(standardClass, name, operations, isStatic, new CallableVersion[] { new CallableVersion(return_type, arguments) });
@@ -745,5 +763,39 @@ public class LeekFunctions {
 	}
 	public String getReplacement() {
 		return replacement;
+	}
+
+	/**
+	 * Vrai si la forme libre a été retirée par la migration OO v5 (§2.2/§2.4), la fonction
+	 * restant disponible en forme méthode/namespace. Faux pour un retrait réel du langage,
+	 * qui doit fermer TOUTES les formes.
+	 */
+	public boolean isOoDemoted() {
+		return ooDemoted;
+	}
+
+	/**
+	 * Nom de remplacement à afficher pour une compilation en version {@code version}.
+	 *
+	 * Une fonction retirée en v3/v4 pointe vers le nom qui l'a remplacée à l'époque
+	 * (`subArray` -> `arraySlice`), mais ce nom peut lui-même avoir perdu sa forme libre
+	 * en v5 : le joueur était alors renvoyé vers un identifiant qui ne compile pas non
+	 * plus. On suit la chaîne tant que la cible est elle aussi retirée à la version
+	 * demandée, pour atterrir sur la forme réellement valide : `subArray` -> `slice()`
+	 * en v5, mais toujours `arraySlice` en v4.
+	 */
+	public String getReplacement(int version) {
+		var current = replacement;
+		var seen = new HashSet<String>();
+		while (current != null && seen.add(current)) {
+			// Les formes canoniques v5 (`slice()`, `Math.abs`) ne sont pas des noms de
+			// fonction libre : `functions.get` renvoie null et la chaîne s'arrête là.
+			var target = functions.get(current);
+			if (target == null || target == this || version <= target.maxVersion || target.replacement == null) {
+				break;
+			}
+			current = target.replacement;
+		}
+		return current;
 	}
 }

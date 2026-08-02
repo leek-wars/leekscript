@@ -152,6 +152,54 @@ public class TestCommon {
 			});
 		}
 
+		/**
+		 * Comme {@link #error(Error)}, mais vérifie aussi les paramètres du message.
+		 * Utile quand c'est le CONTENU qui compte : le nom de remplacement affiché par
+		 * REMOVED_FUNCTION_REPLACEMENT doit être une forme réellement valide à la version
+		 * compilée, pas un identifiant lui-même retiré.
+		 */
+		public String error(Error type, String... expectedParameters) {
+			return run(new Checker() {
+				private Object[] parametersOf(Result result) {
+					// Selon le chemin de remontée, les paramètres arrivent soit sur le Result,
+					// soit seulement sur l'AnalyzeError du fichier : on prend le premier non vide.
+					if (result.error != null && result.parameters != null && result.parameters.length > 0) {
+						return result.parameters;
+					}
+					if (result.ai != null) {
+						var errors = result.ai.getFile().getErrors();
+						if (errors.size() > 0 && errors.get(0).parameters != null) return errors.get(0).parameters;
+					}
+					return result.error != null ? result.parameters : null;
+				}
+				public boolean check(Result result) {
+					var parameters = parametersOf(result);
+					if (parameters == null) return false;
+					if (result.error != null) {
+						if (result.error != type) return false;
+					} else if (result.ai != null) {
+						var errors = result.ai.getFile().getErrors();
+						if (errors.size() == 0 || errors.get(0).level != AnalyzeErrorLevel.ERROR || errors.get(0).error != type) return false;
+					} else {
+						return false;
+					}
+					for (var expected : expectedParameters) {
+						boolean found = false;
+						for (var parameter : parameters) {
+							if (expected.equals(String.valueOf(parameter))) { found = true; break; }
+						}
+						if (!found) return false;
+					}
+					return true;
+				}
+				public String getExpected() { return "error " + type.name() + " " + Arrays.toString(expectedParameters); }
+				public String getResult(Result result) {
+					var parameters = parametersOf(result);
+					return "error " + type.name() + " " + Arrays.toString(parameters);
+				}
+			});
+		}
+
 		public String warning(Error type) {
 			return run(new Checker() {
 				public boolean check(Result result) {

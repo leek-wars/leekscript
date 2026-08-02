@@ -3801,6 +3801,15 @@ public abstract class AI {
 		if (version >= 5) {
 			String stdClass = standardClassOfValue(value);
 			var builtin = stdClass == null ? null : leekscript.runner.LeekFunctions.getMethod(stdClass, field);
+			// Miroir runtime du contrôle fait à la compilation (LeekFunctionCall.resolveBuiltinMethod) :
+			// une fonction réellement retirée du langage (`subArray`, `removeKey`, `assocSort`... capées
+			// en v3) ne doit pas rester atteignable en forme méthode. Sans ce filtre, un receveur `var`
+			// — statiquement `any`, donc résolu ici et non à la compilation — la ressuscite silencieusement.
+			// Le cap `maxVersion = 4` de la migration OO v5, lui, ne vise que la forme libre : la forme
+			// méthode est le remplacement annoncé et doit continuer de passer.
+			if (builtin != null && version > builtin.getMaxVersion() && !builtin.isOoDemoted()) {
+				builtin = null;
+			}
 			if (builtin != null) try {
 				// getJavaName() : le nom leekscript (ex. `map`) peut différer de la méthode Java (`arrayMap`).
 				if (builtin.isStatic()) {

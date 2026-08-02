@@ -1113,7 +1113,7 @@ public class LeekFunctionCall extends Expression {
 				var builtinClass = standardClassOf(o.getType());
 				if (builtinClass != null) {
 					var builtinMethod = LeekFunctions.getMethod(builtinClass, oa.getField());
-					if (builtinMethod != null && resolveBuiltinMethod(compiler, o.getType(), builtinMethod)) {
+					if (builtinMethod != null && resolveBuiltinMethod(compiler, oa.getFieldToken(), o.getType(), builtinMethod)) {
 						return;
 					}
 				}
@@ -1302,14 +1302,17 @@ public class LeekFunctionCall extends Expression {
 
 		// La suppression de version (maxVersion) ne concerne que la FORME LIBRE
 		// (`sort(a)` retiré en v5) : la fonction existe toujours en méthode et en
-		// namespace. Un appel qualifié `Array.sort(a)` n'est donc pas soumis au retrait.
-		if (compiler.getVersion() > f.getMaxVersion() && !is_namespace_function) {
+		// namespace. Un appel qualifié `Array.sort(a)` n'est donc pas soumis au retrait —
+		// mais uniquement quand le retrait vient de la migration OO. Une fonction retirée
+		// du langage en v3 (`Array.assocSort`, `Math.randFloat`) reste une erreur sous
+		// toutes ses formes.
+		if (compiler.getVersion() > f.getMaxVersion() && !(is_namespace_function && f.isOoDemoted())) {
 			// Fonction supprimée
 			if (f.getReplacement() != null) {
 				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION_REPLACEMENT, new String[] {
 					String.valueOf(f.getMaxVersion()),
 					String.valueOf(compiler.getVersion()),
-					f.getReplacement()
+					f.getReplacement(compiler.getVersion())
 				}));
 			} else {
 				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION, new String[] {
@@ -1560,7 +1563,33 @@ public class LeekFunctionCall extends Expression {
 	 * included), sets {@code type}/{@code callable_versions}, and returns true on
 	 * success. Used for the OO standard library (version 5).
 	 */
-	private boolean resolveBuiltinMethod(WordCompiler compiler, Type receiverType, LeekFunctions method) {
+	private boolean resolveBuiltinMethod(WordCompiler compiler, Token token, Type receiverType, LeekFunctions method) throws LeekCompilerException {
+		// Une fonction réellement retirée du langage (`subArray`, `assocSort`, `keySort`,
+		// `removeKey`, `randFloat`... capées en v3) ne doit pas revenir par la porte de
+		// derrière en forme méthode. Le cap `maxVersion = 4` posé par la migration OO v5,
+		// lui, ne concerne QUE la forme libre : `s.length()` / `a.arrayMap(f)` doivent rester
+		// résolubles, la forme méthode étant précisément le remplacement annoncé.
+		//
+		// On émet l'erreur ici plutôt que de renvoyer false : une méthode non résolue sur un
+		// type natif retombe sur un no-op silencieux, et le joueur qui migre n'aurait aucun
+		// signal. Même diagnostic que la forme libre et la forme namespace.
+		if (compiler.getVersion() > method.getMaxVersion() && !method.isOoDemoted()) {
+			var replacement = method.getReplacement(compiler.getVersion());
+			if (replacement != null) {
+				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION_REPLACEMENT, new String[] {
+					String.valueOf(method.getMaxVersion()),
+					String.valueOf(compiler.getVersion()),
+					replacement
+				}));
+			} else {
+				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.REMOVED_FUNCTION, new String[] {
+					String.valueOf(method.getMaxVersion()),
+					String.valueOf(compiler.getVersion())
+				}));
+			}
+			return false;
+		}
+
 		int arity = mParameters.size() + 1; // + le receveur
 		var argTypes = new ArrayList<Type>(arity);
 		argTypes.add(receiverType);
