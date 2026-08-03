@@ -111,6 +111,33 @@ public class TestClass extends TestCommon {
 	}
 
 	@Test
+	public void testMethod_default_parameter_conversion() throws Exception {
+		section("Method default parameter type conversion (#4703)");
+
+		// Élargissement sûr int -> real : conversion implicite silencieuse, comme pour
+		// les fonctions et les variables. Ne doit plus crasher la compilation Java.
+		code_v2_("class Crash { public real attention(real douze = 12) { return douze } } return new Crash().attention()").equals("12.0");
+		code_v2_("class C { public real v = 0 constructor(real x = 12) { this.v = x } } return new C().v").equals("12.0");
+		code_v2_("class C { public static real s(real x = 12) { return x } } return C.s()").equals("12.0");
+		// Pas de warning même en mode strict (upcast sûr, cf #2428)
+		code_strict_v4_("class C { public real m(real x = 12) { return x } } return new C().m()").equals("12.0");
+
+		// Conversion lossy real -> integer : tronque au lieu de crasher...
+		code_v2_("class C { public integer m(integer x = 1.5) { return x } } return new C().m()").equals("1");
+		code_v2_("class C { constructor(integer x = 1.5) { debug(x) } } new C() return 1").equals("1");
+		code_v2_("class C { public static integer s(integer x = 1.5) { return x } } return C.s()").equals("1");
+		// ...avec warning en mode strict (comme une déclaration de variable typée)
+		code_strict_v4_("class C { public integer m(integer x = 1.5) { return x } } return new C().m()").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+
+		// Défaut réellement incompatible : erreur de compilation propre, plus de crash
+		code_v2_("class C { public real m(real x = \"abc\") { return x } } return new C().m()").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+
+		// Cohérence avec les autres types primitifs
+		code_v2_("class C { public integer m(integer x = 3) { return x } } return new C().m()").equals("3");
+		code_v2_("class C { public boolean m(boolean b = true) { return b } } return new C().m()").equals("true");
+	}
+
+	@Test
 	public void testField_method_same_name() throws Exception {
 		section("Issue #2861 - champ et méthode homonymes");
 		// Appel : `t.monNom()` vise la méthode, sans erreur trompeuse « champ privé /

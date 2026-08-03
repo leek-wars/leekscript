@@ -555,6 +555,19 @@ public class TestFunction extends TestCommon {
 		code("function f(a, b = 10) { return a + b } return f()").error(Error.INVALID_PARAMETER_COUNT);
 	}
 
+	@Test
+	public void testDefault_parameter_typed_conversion() throws Exception {
+		section("Default parameter typed conversion (#4703)");
+		// Élargissement sûr int -> real : conversion implicite silencieuse
+		code_v4_("function f(real x = 12) { return x } return f()").equals("12.0");
+		code_strict_v4_("function f(real x = 12) { return x } return f()").equals("12.0");
+		// Conversion lossy real -> integer : tronque au lieu de crasher, warning en strict
+		code_v4_("function f(integer x = 1.5) { return x } return f()").equals("1");
+		code_strict_v4_("function f(integer x = 1.5) { return x } return f()").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+		// Défaut incompatible : erreur propre
+		code_v4_("function f(real x = 'abc') { return x } return f()").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+	}
+
 	/**
 	 * Le fast-path canBeLambda dans readExpression skip la détection lambda quand le
 	 * head ne peut clairement pas démarrer une lambda. Couvre les cas frontières :

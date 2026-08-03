@@ -709,11 +709,11 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 					} else {
 						if (a >= construct.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
-							writer.addCode("final " + arg.getType().getJavaName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
-							if (arg.getType() != Type.ANY && !arg.getType().isPrimitive()) {
-								writer.addCode("(" + arg.getType().getJavaName(mainblock.getVersion()) + ") ");
-							}
-							defaultValue.writeJavaCode(mainblock, writer, false);
+							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
+							// compileConvert gère la conversion numérique (int<->real, big_integer),
+							// la troncature lossy et le cast des types référence : sans lui, un défaut
+							// comme `real x = 12` ou `integer x = 1.5` produit du Java non compilable.
+							writer.compileConvert(mainblock, 0, defaultValue, arg.getType(), false);
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
 						}
@@ -785,11 +785,11 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						// Valeur par défaut
 						if (a >= version.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
-							writer.addCode("final " + arg.getType().getJavaName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
-							if (arg.getType() != Type.ANY && !arg.getType().isPrimitive()) {
-								writer.addCode("(" + arg.getType().getJavaName(mainblock.getVersion()) + ") ");
-							}
-							defaultValue.writeJavaCode(mainblock, writer, false);
+							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
+							// compileConvert gère la conversion numérique (int<->real, big_integer),
+							// la troncature lossy et le cast des types référence : sans lui, un défaut
+							// comme `real x = 12` ou `integer x = 1.5` produit du Java non compilable.
+							writer.compileConvert(mainblock, 0, defaultValue, arg.getType(), false);
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
 						}
@@ -868,10 +868,10 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a >= version.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
 							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
-							if (arg.getType() != Type.ANY && !arg.getType().isPrimitive()) {
-								writer.addCode("(" + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-							}
-							defaultValue.writeJavaCode(mainblock, writer, false);
+							// compileConvert gère la conversion numérique (int<->real, big_integer),
+							// la troncature lossy et le cast des types référence : sans lui, un défaut
+							// comme `real x = 12` ou `integer x = 1.5` produit du Java non compilable.
+							writer.compileConvert(mainblock, 0, defaultValue, arg.getType(), false);
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
 						}

@@ -22,6 +22,7 @@ import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
+import leekscript.common.Type.CastType;
 
 public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 
@@ -172,13 +173,35 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(this);
-		for (var value : defaultValues) {
+		for (int i = 0; i < defaultValues.size(); ++i) {
+			var value = defaultValues.get(i);
 			if (value != null) {
 				value.analyze(compiler);
+				checkDefaultValueType(compiler, mParameterDeclarations.get(i).getType(), mParameters.get(i).getWord(), value);
 			}
 		}
 		super.analyze(compiler);
 		compiler.setCurrentFunction(initialFunction);
+	}
+
+	// Même vérification que pour une déclaration de variable typée : un défaut
+	// incompatible (`real x = "a"`) est une erreur, une conversion lossy
+	// (`integer x = 1.5`) un warning en mode strict, un élargissement sûr
+	// (`real x = 12`) reste silencieux. Cf. LeekVariableDeclarationInstruction.
+	private void checkDefaultValueType(WordCompiler compiler, Type paramType, String paramName, Expression value) throws LeekCompilerException {
+		var cast = paramType.accepts(value.getType());
+		if (cast.ordinal() > CastType.UPCAST.ordinal()) {
+			if (cast == CastType.INCOMPATIBLE || compiler.getMainBlock().isStrict()) {
+				var level = cast == CastType.INCOMPATIBLE ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+				var error = cast == CastType.INCOMPATIBLE ? Error.ASSIGNMENT_INCOMPATIBLE_TYPE : Error.DANGEROUS_CONVERSION_VARIABLE;
+				compiler.addError(new AnalyzeError(value.getLocation(), level, error, new String[] {
+					value.toString(),
+					value.getType().toString(),
+					paramName,
+					paramType.toString(),
+				}));
+			}
+		}
 	}
 
 	@Override
