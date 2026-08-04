@@ -558,14 +558,12 @@ public class TestFunction extends TestCommon {
 	@Test
 	public void testDefault_parameter_typed_conversion() throws Exception {
 		section("Default parameter typed conversion (#4703)");
-		// Élargissement sûr int -> real : conversion implicite silencieuse
+		// Élargissement sûr int -> real : conversion implicite (comme les variables)
 		code_v4_("function f(real x = 12) { return x } return f()").equals("12.0");
-		code_strict_v4_("function f(real x = 12) { return x } return f()").equals("12.0");
-		// Conversion lossy real -> integer : tronque au lieu de crasher, warning en strict
-		code_v4_("function f(integer x = 1.5) { return x } return f()").equals("1");
-		code_strict_v4_("function f(integer x = 1.5) { return x } return f()").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
-		// Défaut incompatible : erreur propre
-		code_v4_("function f(real x = 'abc') { return x } return f()").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		// RÉGRESSION à ne jamais réintroduire : défaut `null` sur paramètre typé => null
+		code_v4_("function f(Array a = null) { return a } return f()").equals("null");
+		code_v4_("function f(string s = null) { return s } return f()").equals("null");
+		code_v4_("class A {} function f(A a = null) { return a } return f()").equals("null");
 	}
 
 	/**

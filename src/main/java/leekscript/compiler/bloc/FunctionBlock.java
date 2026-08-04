@@ -5,7 +5,6 @@ import java.util.EnumSet;
 
 import leekscript.common.Annotation;
 import leekscript.common.Type;
-import leekscript.common.Type.CastType;
 import leekscript.compiler.Annotatable;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
@@ -180,35 +179,13 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		var initialFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(this);
-		for (int i = 0; i < defaultValues.size(); ++i) {
-			var value = defaultValues.get(i);
+		for (var value : defaultValues) {
 			if (value != null) {
 				value.analyze(compiler);
-				checkDefaultValueType(compiler, mParameterDeclarations.get(i).getType(), mParameters.get(i), value);
 			}
 		}
 		super.analyze(compiler);
 		compiler.setCurrentFunction(initialFunction);
-	}
-
-	// Même vérification que pour une déclaration de variable typée : un défaut
-	// incompatible (`real x = "a"`) est une erreur, une conversion lossy
-	// (`integer x = 1.5`) un warning en mode strict, un élargissement sûr
-	// (`real x = 12`) reste silencieux. Cf. LeekVariableDeclarationInstruction.
-	private void checkDefaultValueType(WordCompiler compiler, Type paramType, String paramName, Expression value) throws LeekCompilerException {
-		var cast = paramType.accepts(value.getType());
-		if (cast.ordinal() > CastType.UPCAST.ordinal()) {
-			if (cast == CastType.INCOMPATIBLE || compiler.getMainBlock().isStrict()) {
-				var level = cast == CastType.INCOMPATIBLE ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
-				var error = cast == CastType.INCOMPATIBLE ? Error.ASSIGNMENT_INCOMPATIBLE_TYPE : Error.DANGEROUS_CONVERSION_VARIABLE;
-				compiler.addError(new AnalyzeError(value.getLocation(), level, error, new String[] {
-					value.toString(),
-					value.getType().toString(),
-					paramName,
-					paramType.toString(),
-				}));
-			}
-		}
 	}
 
 	@Override
@@ -293,9 +270,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 				} else {
 					// Type explicite : `var u_x = null;` n'est pas inférable par javac.
 					writer.addCode(declaration.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + parameter + " = ");
-					// compileConvert gère la conversion numérique et le cast des types référence
-					// (cf. même correctif côté méthodes de classe).
-					writer.compileConvert(mainblock, 0, defaultValue, declaration.getType(), false);
+					defaultValue.writeJavaCode(mainblock, writer, false);
 					writer.addLine(";");
 				}
 				writer.addCounter(defaultValue.operations);

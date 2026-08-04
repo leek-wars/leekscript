@@ -710,10 +710,14 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a >= construct.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
 							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
-							// compileConvert gère la conversion numérique (int<->real, big_integer),
-							// la troncature lossy et le cast des types référence : sans lui, un défaut
-							// comme `real x = 12` ou `integer x = 1.5` produit du Java non compilable.
-							writer.compileConvert(mainblock, 0, defaultValue, arg.getType(), false);
+							// Nom primitif (real/int/bool) : autorise l'élargissement implicite
+							// `double u_x = 12l` sans le crash `Double u_x = 12l` (#4703). Pour les
+							// types référence, getJavaPrimitiveName == getJavaName : cast inchangé,
+							// `null` reste `null` (pas de conversion agressive à la compileConvert).
+							if (arg.getType() != Type.ANY && !arg.getType().isPrimitive()) {
+								writer.addCode("(" + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+							}
+							defaultValue.writeJavaCode(mainblock, writer, false);
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
 						}
@@ -786,10 +790,14 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a >= version.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
 							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
-							// compileConvert gère la conversion numérique (int<->real, big_integer),
-							// la troncature lossy et le cast des types référence : sans lui, un défaut
-							// comme `real x = 12` ou `integer x = 1.5` produit du Java non compilable.
-							writer.compileConvert(mainblock, 0, defaultValue, arg.getType(), false);
+							// Nom primitif (real/int/bool) : autorise l'élargissement implicite
+							// `double u_x = 12l` sans le crash `Double u_x = 12l` (#4703). Pour les
+							// types référence, getJavaPrimitiveName == getJavaName : cast inchangé,
+							// `null` reste `null` (pas de conversion agressive à la compileConvert).
+							if (arg.getType() != Type.ANY && !arg.getType().isPrimitive()) {
+								writer.addCode("(" + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+							}
+							defaultValue.writeJavaCode(mainblock, writer, false);
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
 						}
@@ -868,10 +876,14 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a >= version.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
 							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
-							// compileConvert gère la conversion numérique (int<->real, big_integer),
-							// la troncature lossy et le cast des types référence : sans lui, un défaut
-							// comme `real x = 12` ou `integer x = 1.5` produit du Java non compilable.
-							writer.compileConvert(mainblock, 0, defaultValue, arg.getType(), false);
+							// Nom primitif (real/int/bool) : autorise l'élargissement implicite
+							// `double u_x = 12l` sans le crash `Double u_x = 12l` (#4703). Pour les
+							// types référence, getJavaPrimitiveName == getJavaName : cast inchangé,
+							// `null` reste `null` (pas de conversion agressive à la compileConvert).
+							if (arg.getType() != Type.ANY && !arg.getType().isPrimitive()) {
+								writer.addCode("(" + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+							}
+							defaultValue.writeJavaCode(mainblock, writer, false);
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
 						}

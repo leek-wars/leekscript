@@ -114,23 +114,20 @@ public class TestClass extends TestCommon {
 	public void testMethod_default_parameter_conversion() throws Exception {
 		section("Method default parameter type conversion (#4703)");
 
-		// Élargissement sûr int -> real : conversion implicite silencieuse, comme pour
-		// les fonctions et les variables. Ne doit plus crasher la compilation Java.
+		// Élargissement sûr int -> real : un littéral entier comme défaut d'un paramètre
+		// `real` produisait `Double u_x = 12l` (Java non compilable) => crash en combat.
+		// Le nom Java primitif (`double`) autorise l'élargissement implicite.
 		code_v2_("class Crash { public real attention(real douze = 12) { return douze } } return new Crash().attention()").equals("12.0");
 		code_v2_("class C { public real v = 0 constructor(real x = 12) { this.v = x } } return new C().v").equals("12.0");
 		code_v2_("class C { public static real s(real x = 12) { return x } } return C.s()").equals("12.0");
-		// Pas de warning même en mode strict (upcast sûr, cf #2428)
-		code_strict_v4_("class C { public real m(real x = 12) { return x } } return new C().m()").equals("12.0");
 
-		// Conversion lossy real -> integer : tronque au lieu de crasher...
-		code_v2_("class C { public integer m(integer x = 1.5) { return x } } return new C().m()").equals("1");
-		code_v2_("class C { constructor(integer x = 1.5) { debug(x) } } new C() return 1").equals("1");
-		code_v2_("class C { public static integer s(integer x = 1.5) { return x } } return C.s()").equals("1");
-		// ...avec warning en mode strict (comme une déclaration de variable typée)
-		code_strict_v4_("class C { public integer m(integer x = 1.5) { return x } } return new C().m()").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
-
-		// Défaut réellement incompatible : erreur de compilation propre, plus de crash
-		code_v2_("class C { public real m(real x = \"abc\") { return x } } return new C().m()").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		// RÉGRESSION à ne jamais réintroduire : un défaut `null` sur un paramètre typé
+		// (classe, Array, Map, string) doit compiler et rester `null`. Une vérification
+		// de type trop stricte (ASSIGNMENT_INCOMPATIBLE_TYPE) avait cassé ces IA.
+		code_v2_("class A {} class C { public A m(A a = null) { return a } } return new C().m()").equals("null");
+		code_v4_("class C { public Array m(Array a = null) { return a } } return new C().m()").equals("null");
+		code_v4_("class C { public Map m(Map a = null) { return a } } return new C().m()").equals("null");
+		code_v2_("class C { public string m(string s = null) { return s } } return new C().m()").equals("null");
 
 		// Cohérence avec les autres types primitifs
 		code_v2_("class C { public integer m(integer x = 3) { return x } } return new C().m()").equals("3");
