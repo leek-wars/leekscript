@@ -19,6 +19,10 @@ public class LeekBoolean extends Expression {
 		token.setExpression(this);
 	}
 
+	public boolean getValue() {
+		return mValue;
+	}
+
 	@Override
 	public int getNature() {
 		return BOOLEAN;

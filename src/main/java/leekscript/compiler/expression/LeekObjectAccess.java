@@ -301,6 +301,19 @@ public class LeekObjectAccess extends Expression {
 			writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 			return;
 		}
+		// Champ statique `Classe.CHAMP` static final à initialiseur littéral :
+		// inliné (cf ConstantFolder). Résolution statique seulement (receveur =
+		// variable de classe, pas `class` dont la valeur dépend du runtime).
+		if (this.variable != null && this.variable.getVariableType() == VariableType.STATIC_FIELD
+			&& object instanceof LeekVariable classVariable && classVariable.getVariableType() == VariableType.CLASS) {
+			var constant = ConstantFolder.staticFinalLiteral(classVariable.getClassDeclaration(), field.getWord(), mainblock.getWordCompiler().getCurrentClass());
+			if (constant != null) {
+				writer.addCode("(");
+				constant.writeJavaCode(mainblock, writer, false);
+				writer.addCode(")");
+				return;
+			}
+		}
 		if (mainblock.getWordCompiler().getVersion() >= 2 && field.getWord().equals("class")) {
 			writer.addCode("classOf(");
 			object.writeJavaCode(mainblock, writer, false);

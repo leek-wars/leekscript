@@ -16,6 +16,7 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.expression.ConstantFolder;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
@@ -44,6 +45,15 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			this.level = level;
 			this.isFinal = isFinal;
 			this.type = type;
+		}
+
+		public Expression getExpression() {
+			return expression;
+		}
+
+		@Override
+		public boolean isFinal() {
+			return isFinal;
 		}
 
 		@Override
@@ -339,7 +349,10 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			return;
 		}
 		staticFields.put(word.getWord(), new ClassDeclarationField(word.getWord(), expr, level, isFinal, type));
-		staticFieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.STATIC_FIELD, type, isFinal));
+		// La classe déclarante est attachée à la variable canonique (et donc copiée
+		// sur chaque référence par LeekVariable.preAnalyze) : le codegen peut ainsi
+		// retrouver l'initialiseur d'un champ static final à inliner (ConstantFolder).
+		staticFieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.STATIC_FIELD, type, isFinal, this));
 	}
 
 	public void declare(WordCompiler compiler) {
@@ -1033,7 +1046,17 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		for (var field : staticFields.entrySet()) {
 			writer.addCode(className);
 			writer.addCode(".addStaticField(" + writer.getAIThis() + ", \"" + field.getKey() + "\", ");
-			writer.addCode("null");
+			// Champ constante de compilation : créé directement avec son littéral.
+			// La phase « null avant initField » disparaît pour ces champs : les
+			// lectures inlinées (ConstantFolder) restent donc cohérentes avec le
+			// champ runtime même pendant l'init statique, quel que soit l'ordre de
+			// déclaration des champs et des classes.
+			var constant = ConstantFolder.staticFinalLiteral(this, field.getKey(), this);
+			if (constant != null) {
+				constant.writeJavaCode(mainblock, writer, false);
+			} else {
+				writer.addCode("null");
+			}
 			writer.addCode(", AccessLevel." + field.getValue().level.name() + ", " + field.getValue().isFinal);
 			writer.addLine(");");
 		}

@@ -262,7 +262,10 @@ public class AIFile {
 	private void collectInheritedMethodLocations(Token token, Location definedLocation, Set<AIFile> filesToSearch, List<Location> locations) {
 		String methodName = token.getWord();
 
-		if (token.getExpression() instanceof LeekVariable v && v.getClassDeclaration() != null) {
+		// Restreint aux variables CLASS : les champs statiques portent désormais
+		// aussi leur classDeclaration (pour le pliage de constantes) et ne doivent
+		// pas être confondus avec un nom de classe ici.
+		if (token.getExpression() instanceof LeekVariable v && v.getVariableType() == LeekVariable.VariableType.CLASS && v.getClassDeclaration() != null) {
 			return;
 		}
 
@@ -321,7 +324,10 @@ public class AIFile {
 		if (token == null) return List.of();
 
 		Location classLocation = null;
-		if (token.getExpression() instanceof LeekVariable v && v.getClassDeclaration() != null) {
+		// Variables CLASS seulement : les champs statiques portent désormais aussi
+		// leur classDeclaration (pliage de constantes) et prendraient sinon la
+		// Location de la classe entière.
+		if (token.getExpression() instanceof LeekVariable v && v.getVariableType() == LeekVariable.VariableType.CLASS && v.getClassDeclaration() != null) {
 			classLocation = v.getClassDeclaration().getLocation();
 		} else if (token.getExpression() != null) {
 			classLocation = token.getLocation();

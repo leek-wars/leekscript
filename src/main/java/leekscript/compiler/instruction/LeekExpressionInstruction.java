@@ -50,6 +50,14 @@ public class LeekExpressionInstruction extends LeekInstruction {
 			if (trimmed instanceof LeekNull || trimmed instanceof LeekBoolean || trimmed instanceof LeekNumber || trimmed instanceof LeekString || trimmed instanceof LeekVariable || trimmed instanceof LeekObjectAccess || trimmed instanceof LeekArrayAccess || trimmed instanceof LeekAnonymousFunction) {
 				return;
 			}
+			// Appel à une fonction VIDE ou CONSTANTE (après pliage) dont le résultat
+			// est ignoré et les arguments purs : seul le `;` est émis — instruction
+			// vide inoffensive en bloc, et séparateur indispensable quand cette
+			// instruction est l'initialisation d'un `for`. (cf ConstantFolder)
+			if (trimmed instanceof LeekFunctionCall call && call.isEliminable(mainblock)) {
+				writer.addLine(";", getLocation());
+				return;
+			}
 		}
 
 		// Wrap an expression with a function call to avoid 'error: not a statement' error

@@ -7,8 +7,8 @@ import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.expression.ConstantFolder;
 import leekscript.compiler.expression.Expression;
-import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekExpressionException;
 
 public class WhileBlock extends AbstractLeekBlock {
@@ -38,8 +38,10 @@ public class WhileBlock extends AbstractLeekBlock {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// writer.addCounter(1);
 		writer.addCode("while (ops(");
-		// Prevent unreachable code error
-		if (mCondition instanceof LeekBoolean) {
+		// Prevent unreachable code error. Une condition constante après pliage
+		// (champ static final, !/&&/|| de littéraux — cf ConstantFolder) doit être
+		// enveloppée comme un littéral : `while (false)` serait rejeté par javac.
+		if (ConstantFolder.isConstantEmission(mCondition, mainblock, mainblock.getWordCompiler().getCurrentClass())) {
 			writer.addCode("bool(");
 			writer.getBoolean(mainblock, mCondition, false);
 			writer.addCode(")");

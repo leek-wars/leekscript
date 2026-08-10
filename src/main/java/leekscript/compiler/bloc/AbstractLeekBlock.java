@@ -142,6 +142,10 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		return mInstructions.size() == 0 ? null : mInstructions.get(mInstructions.size() - 1);
 	}
 
+	public ArrayList<LeekInstruction> getInstructions() {
+		return mInstructions;
+	}
+
 	public boolean hasVariable(String variable) {
 		return getVariable(variable, false) != null;
 	}

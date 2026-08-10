@@ -15,11 +15,13 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.expression.ConstantFolder;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekType;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.compiler.instruction.LeekReturnInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.CallableVersion;
 
@@ -283,6 +285,70 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 			writer.addLine("return " + type.returnType().getDefaultValue(writer, mainblock.getVersion()) + ";");
 		}
 		writer.addLine("}");
+	}
+
+	/**
+	 * Classification du corps après pliage des constantes (cf ConstantFolder),
+	 * pour l'élimination au site d'appel (LeekFunctionCall.isEliminable) :
+	 * - EMPTY : le corps ne fait rien (instructions toutes mortes après pliage,
+	 *   éventuellement suivies d'un `return` nu si la fonction renvoie any) —
+	 *   l'appel peut être supprimé, sa valeur est celle par défaut du type de
+	 *   retour (la même que celle du `return` implicite généré) ;
+	 * - CONSTANT : le corps se réduit à un unique `return <littéral>` — l'appel
+	 *   peut être substitué par le littéral (getConstantResult).
+	 * Les valeurs par défaut des paramètres sont évaluées côté callee et
+	 * disparaissent donc avec l'appel : on exige qu'elles soient littérales.
+	 */
+	public static enum BodyClassification { NONE, EMPTY, CONSTANT }
+
+	private BodyClassification bodyClassification = null;
+	private Expression constantResult = null;
+
+	public BodyClassification getBodyClassification(MainLeekBlock mainblock) {
+		if (bodyClassification == null) {
+			bodyClassification = classifyBody(mainblock);
+		}
+		return bodyClassification;
+	}
+
+	public Expression getConstantResult() {
+		return constantResult;
+	}
+
+	private BodyClassification classifyBody(MainLeekBlock mainblock) {
+		if (mainblock.getVersion() < 2) return BodyClassification.NONE;
+		// Une fonction globale s'exécute sans contexte de classe : seuls les champs
+		// publics sont pliables ici (parité avec le runtime, fromClass = null).
+		for (var value : defaultValues) {
+			if (value != null && ConstantFolder.literal(value, null) == null) return BodyClassification.NONE;
+		}
+		LeekReturnInstruction returnInstruction = null;
+		for (var instruction : mInstructions) {
+			if (ConstantFolder.isDeadInstruction(instruction, null)) continue;
+			// Le parser interdit toute instruction après un `return` non optionnel :
+			// une instruction vivante est donc soit l'unique return final, soit
+			// disqualifiante.
+			if (returnInstruction == null && instruction instanceof LeekReturnInstruction r && !r.isOptional()) {
+				returnInstruction = r;
+			} else {
+				return BodyClassification.NONE;
+			}
+		}
+		if (returnInstruction == null) return BodyClassification.EMPTY;
+		if (returnInstruction.getExpression() == null) {
+			// `return` nu = `return null` : équivalent au défaut seulement en any
+			return type.returnType() == Type.ANY ? BodyClassification.EMPTY : BodyClassification.NONE;
+		}
+		var literal = ConstantFolder.literal(returnInstruction.getExpression(), null);
+		if (literal == null) return BodyClassification.NONE;
+		// La conversion du littéral vers le type de retour peut lever (toArray…) :
+		// en instruction, l'appel éliminé la sauterait — refuser si elle n'est pas sûre.
+		var returnType = type.returnType();
+		if (returnType != Type.ANY && returnType.accepts(literal.getType()).ordinal() > Type.CastType.UPCAST.ordinal()) {
+			return BodyClassification.NONE;
+		}
+		constantResult = literal;
+		return BodyClassification.CONSTANT;
 	}
 
 	public void compileAnonymousFunction(MainLeekBlock mainblock, JavaWriter writer) {

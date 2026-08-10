@@ -10,7 +10,7 @@ import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
-import leekscript.compiler.expression.LeekBoolean;
+import leekscript.compiler.expression.ConstantFolder;
 import leekscript.compiler.expression.LeekExpressionException;
 
 public class DoWhileBlock extends AbstractLeekBlock {
@@ -45,8 +45,9 @@ public class DoWhileBlock extends AbstractLeekBlock {
 		if (writer.isOperationsEnabled()) {
 			writer.addCode("ops(");
 		}
-		// Prevent unreachable code error
-		if (mCondition instanceof LeekBoolean) {
+		// Prevent unreachable code error (aussi pour une condition constante après
+		// pliage — cf ConstantFolder)
+		if (ConstantFolder.isConstantEmission(mCondition, mainblock, mainblock.getWordCompiler().getCurrentClass())) {
 			writer.addCode("bool(");
 			writer.getBoolean(mainblock, mCondition, false);
 			writer.addCode(")");

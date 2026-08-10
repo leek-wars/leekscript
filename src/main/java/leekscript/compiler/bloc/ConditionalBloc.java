@@ -10,6 +10,7 @@ import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.expression.ConstantFolder;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
@@ -215,28 +216,38 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (mParentCondition == null) {
 			writer.addCode("if (");
-			if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
-				writer.addCode("ops(");
-			}
-			writer.getBoolean(mainblock, mCondition, false);
-			if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
-				writer.addCode(", " + mCondition.getOperations() + ")");
-			}
+			writeCondition(mainblock, writer);
 			writer.addLine(") {", getLocation());
 		} else if (mCondition != null) {
 			writer.addCode("else if (");
-			if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
-				writer.addCode("ops(");
-			}
-			writer.getBoolean(mainblock, mCondition, false);
-			if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
-				writer.addCode(", " + mCondition.getOperations() + ")");
-			}
+			writeCondition(mainblock, writer);
 			writer.addLine(") {", getLocation());
 		}
 		else writer.addLine("else {", getLocation());
 		super.writeJavaCode(mainblock, writer, false);
 		writer.addLine("}");
+	}
+
+	/**
+	 * Condition constante (littéraux et champs static final pliés par
+	 * ConstantFolder) : émise en `true`/`false` sans compteur d'opérations — un
+	 * `if` constant ne coûte plus rien, et javac élimine la branche morte du
+	 * bytecode. Pas de risque « unreachable » : la JLS (14.21) exempte le `if`
+	 * des règles d'atteignabilité, contrairement aux boucles.
+	 */
+	private void writeCondition(MainLeekBlock mainblock, JavaWriter writer) {
+		Boolean constant = ConstantFolder.truthiness(mCondition, mainblock.getWordCompiler().getCurrentClass());
+		if (constant != null) {
+			writer.addCode(constant ? "true" : "false");
+			return;
+		}
+		if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
+			writer.addCode("ops(");
+		}
+		writer.getBoolean(mainblock, mCondition, false);
+		if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) {
+			writer.addCode(", " + mCondition.getOperations() + ")");
+		}
 	}
 
 	public int getConditionEndBlock() {

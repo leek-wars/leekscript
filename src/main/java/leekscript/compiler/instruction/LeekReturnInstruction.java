@@ -27,6 +27,14 @@ public class LeekReturnInstruction extends LeekInstruction {
 		this.optional = optional;
 	}
 
+	public Expression getExpression() {
+		return expression;
+	}
+
+	public boolean isOptional() {
+		return optional;
+	}
+
 	@Override
 	public String getCode() {
 		return "return" + (optional ? " ?" : "") + (expression == null ? "" : " " + expression.toString()) + ";";

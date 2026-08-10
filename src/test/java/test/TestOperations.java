@@ -34,7 +34,10 @@ public class TestOperations extends TestCommon {
 	@Test
 	public void testConditions() throws Exception {
 		section("Conditions");
-		code("if (1) {}").ops(1);
+		// Une condition constante est pliée au codegen et ne coûte plus rien
+		// (cf ConstantFolder / TestConstantFolding).
+		code("if (1) {}").ops(0);
+		code("var x = 1 if (x) {}").ops(2);
 	}
 
 	@Test

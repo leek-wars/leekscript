@@ -7,7 +7,8 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
-import leekscript.compiler.expression.LeekBoolean;
+import leekscript.compiler.expression.ConstantFolder;
+import leekscript.compiler.expression.LeekFunctionCall;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
@@ -87,8 +88,9 @@ public class ForBlock extends AbstractLeekBlock {
 		if (writer.isOperationsEnabled()) {
 			writer.addCode("ops(");
 		}
-		// Prevent unreachable code error
-		if (mCondition instanceof LeekBoolean) {
+		// Prevent unreachable code error (aussi pour une condition constante après
+		// pliage — cf ConstantFolder : `for (;false;)` serait rejeté par javac)
+		if (ConstantFolder.isConstantEmission(mCondition, mainblock, mainblock.getWordCompiler().getCurrentClass())) {
 			writer.addCode("bool(");
 			writer.getBoolean(mainblock, mCondition, false);
 			writer.addCode(")");
@@ -101,10 +103,13 @@ public class ForBlock extends AbstractLeekBlock {
 		writer.addCode("; ");
 		if (writer.isOperationsEnabled()) {
 			writer.addCode("ops(");
-		}
-		mIncrementation.writeJavaCode(mainblock, writer, false);
-		if (writer.isOperationsEnabled()) {
+			mIncrementation.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", " + mIncrementation.getOperations() + ")");
+		} else if (!(mIncrementation.trim() instanceof LeekFunctionCall call && call.isEliminable(mainblock))) {
+			// Ops désactivées (CLI) : un appel éliminé se substituerait par sa valeur
+			// (« null »), qui n'est pas une statement expression valide en position
+			// d'incrément — on émet un update vide, valide en Java.
+			mIncrementation.writeJavaCode(mainblock, writer, false);
 		}
 		writer.addLine(") {", getLocation());
 		writer.addCounter(1);

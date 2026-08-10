@@ -57,6 +57,11 @@ public class LeekVariable extends Expression {
 		this.isFinal = isFinal;
 	}
 
+	public LeekVariable(Token token, VariableType variableType, Type type, boolean isFinal, ClassDeclarationInstruction classDeclaration) {
+		this(token, variableType, type, isFinal);
+		this.classDeclaration = classDeclaration;
+	}
+
 	public LeekVariable(WordCompiler compiler, Token token, VariableType variableType) {
 		this(token, variableType);
 		this.box = compiler.getVersion() <= 1;
@@ -336,6 +341,15 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.FIELD) {
 			writer.addCode(token.getWord());
 		} else if (type == VariableType.STATIC_FIELD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {
+			// Champ static final à initialiseur littéral : inliné, comme les
+			// constantes moteur (SYSTEM_CONSTANT ci-dessous). Cf ConstantFolder.
+			var constant = ConstantFolder.staticFinalLiteral(classDeclaration, token.getWord(), mainblock.getWordCompiler().getCurrentClass());
+			if (constant != null) {
+				writer.addCode("(");
+				constant.writeJavaCode(mainblock, writer, false);
+				writer.addCode(")");
+				return;
+			}
 			if (variableType != Type.ANY) {
 				if (parenthesis) writer.addCode("(");
 				if (variableType.isPrimitive()) {

@@ -144,8 +144,56 @@ public class LeekFunctionCall extends Expression {
 		}
 	}
 
+	/**
+	 * Appel substituable (couche 3 du pliage de constantes, cf ConstantFolder) :
+	 * fonction utilisateur globale résolue statiquement, non redéfinie, dont le
+	 * corps est VIDE ou CONSTANT après pliage, et dont tous les arguments sont
+	 * purs (ils ne seront jamais évalués puisque l'appel disparaît). Le coût de
+	 * l'appel (1 op côté callee) disparaît avec lui. Dispatch statique seulement :
+	 * les méthodes (virtuelles) et les valeurs de fonction ne sont pas touchées.
+	 */
+	public boolean isEliminable(MainLeekBlock mainblock) {
+		if (mainblock.getVersion() < 2 || resolvedFunction == null) return false;
+		if (!(mExpression instanceof LeekVariable v) || v.getVariableType() != VariableType.FUNCTION) return false;
+		if (mainblock.isRedefinedFunction(v.getName())) return false;
+		if (resolvedFunction.getBodyClassification(mainblock) == FunctionBlock.BodyClassification.NONE) return false;
+		var fromClass = mainblock.getWordCompiler().getCurrentClass();
+		for (int i = 0; i < mParameters.size(); i++) {
+			var parameter = mParameters.get(i);
+			if (!ConstantFolder.isPureSimpleArgument(parameter, fromClass)) return false;
+			// Un argument pur mais à coût non nul (moins unaire) serait facturé sans
+			// être émis dans certains contextes : l'appel éliminé doit être 0 op partout.
+			if (parameter.getOperations() != 0) return false;
+			// La conversion vers le type déclaré du paramètre est émise côté appelant
+			// et peut lever (toArray/toMap…) : ne l'éliminer que si elle est sûre.
+			var target = functionType.getArgument(mParameters.size(), i);
+			if (target != Type.ANY && target.accepts(parameter.getType()).ordinal() > Type.CastType.UPCAST.ordinal()) return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Valeur émise à la place d'un appel éliminé dont le résultat est utilisé :
+	 * le littéral du `return` (converti vers le type de retour déclaré) pour une
+	 * fonction CONSTANTE, la valeur par défaut du type de retour (celle du
+	 * `return` implicite du callee) pour une fonction VIDE.
+	 */
+	private void writeSubstitutedValue(MainLeekBlock mainblock, JavaWriter writer) {
+		if (resolvedFunction.getBodyClassification(mainblock) == FunctionBlock.BodyClassification.CONSTANT) {
+			writer.addCode("(");
+			writer.compileConvert(mainblock, 0, resolvedFunction.getConstantResult(), this.type, false);
+			writer.addCode(")");
+		} else {
+			writer.addCode(this.type.getDefaultValue(writer, mainblock.getVersion()));
+		}
+	}
+
 	@Override
 	public void compileL(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
+		if (isEliminable(mainblock)) {
+			writeSubstitutedValue(mainblock, writer);
+			return;
+		}
 		boolean addComma = true;
 		boolean addBrace = false;
 		boolean skipFirstArg = false;
