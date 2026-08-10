@@ -156,7 +156,26 @@ public class LeekFunctionCall extends Expression {
 		if (mainblock.getVersion() < 2 || resolvedFunction == null) return false;
 		if (!(mExpression instanceof LeekVariable v) || v.getVariableType() != VariableType.FUNCTION) return false;
 		if (mainblock.isRedefinedFunction(v.getName())) return false;
-		if (resolvedFunction.getBodyClassification(mainblock) == FunctionBlock.BodyClassification.NONE) return false;
+		if (resolvedFunction.getBodyClassification(mainblock).kind() == ConstantFolder.BodyKind.NONE) return false;
+		return hasEliminableArguments(mainblock);
+	}
+
+	/**
+	 * Élimination en POSITION D'INSTRUCTION seulement : en plus des fonctions
+	 * globales, les appels de méthodes STATIQUES résolues (dispatch figé à la
+	 * compilation, `private final` en Java — pas de virtualité) dont le corps est
+	 * VIDE ou CONSTANT. Restreint aux instructions : en expression, l'op d'analyse
+	 * du call (+1 pour Class.m()) resterait facturée par l'instruction englobante
+	 * sans être émise — en instruction, tout disparaît, comptage cohérent (0 op).
+	 */
+	public boolean isEliminableStatement(MainLeekBlock mainblock) {
+		if (isEliminable(mainblock)) return true;
+		if (mainblock.getVersion() < 2 || !is_static_method || method == null || method.block == null) return false;
+		if (method.block.getBodyClassification(mainblock).kind() == ConstantFolder.BodyKind.NONE) return false;
+		return hasEliminableArguments(mainblock);
+	}
+
+	private boolean hasEliminableArguments(MainLeekBlock mainblock) {
 		var fromClass = mainblock.getWordCompiler().getCurrentClass();
 		for (int i = 0; i < mParameters.size(); i++) {
 			var parameter = mParameters.get(i);
@@ -179,9 +198,10 @@ public class LeekFunctionCall extends Expression {
 	 * `return` implicite du callee) pour une fonction VIDE.
 	 */
 	private void writeSubstitutedValue(MainLeekBlock mainblock, JavaWriter writer) {
-		if (resolvedFunction.getBodyClassification(mainblock) == FunctionBlock.BodyClassification.CONSTANT) {
+		var classification = resolvedFunction.getBodyClassification(mainblock);
+		if (classification.kind() == ConstantFolder.BodyKind.CONSTANT) {
 			writer.addCode("(");
-			writer.compileConvert(mainblock, 0, resolvedFunction.getConstantResult(), this.type, false);
+			writer.compileConvert(mainblock, 0, classification.literal(), this.type, false);
 			writer.addCode(")");
 		} else {
 			writer.addCode(this.type.getDefaultValue(writer, mainblock.getVersion()));

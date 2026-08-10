@@ -17,6 +17,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.expression.ConstantFolder;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
@@ -195,6 +196,22 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 		if (mEndInstruction == 0) {
 			writer.addLine("return " + type.returnType().getDefaultValue(writer, mainblock.getVersion()) + ";");
 		}
+	}
+
+	/**
+	 * Classification du corps après pliage des constantes, pour l'élimination des
+	 * appels de méthodes STATIQUES en position d'instruction (cf
+	 * ConstantFolder.classifyBody). Le corps s'exécute dans le contexte de la
+	 * classe : ses champs private/protected sont pliables (parité runtime).
+	 */
+	private ConstantFolder.ClassifiedBody bodyClassification = null;
+
+	public ConstantFolder.ClassifiedBody getBodyClassification(MainLeekBlock mainblock) {
+		if (bodyClassification == null) {
+			bodyClassification = mainblock.getVersion() < 2 ? ConstantFolder.ClassifiedBody.NONE
+				: ConstantFolder.classifyBody(mInstructions, defaultValues, type.returnType(), clazz);
+		}
+		return bodyClassification;
 	}
 
 	public ClassDeclarationInstruction getClassDeclaration() {

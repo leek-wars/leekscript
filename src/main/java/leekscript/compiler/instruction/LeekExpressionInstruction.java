@@ -54,7 +54,7 @@ public class LeekExpressionInstruction extends LeekInstruction {
 			// est ignoré et les arguments purs : seul le `;` est émis — instruction
 			// vide inoffensive en bloc, et séparateur indispensable quand cette
 			// instruction est l'initialisation d'un `for`. (cf ConstantFolder)
-			if (trimmed instanceof LeekFunctionCall call && call.isEliminable(mainblock)) {
+			if (trimmed instanceof LeekFunctionCall call && call.isEliminableStatement(mainblock)) {
 				writer.addLine(";", getLocation());
 				return;
 			}

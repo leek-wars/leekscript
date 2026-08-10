@@ -235,9 +235,35 @@ public class TestConstantFolding extends TestCommon {
 	}
 
 	@Test
-	public void testNo_elimination_of_methods() throws Exception {
-		section("Pas d'élimination hors fonctions globales");
-		code_v2_("class A { static empty() {} } A.empty() return 1").equals("1");
+	public void testEarly_return_guard() throws Exception {
+		section("Garde à sortie anticipée : if (!X) return");
+		// NB : sans accolades, `return` avale l'expression qui suit (`return n++`)
+		code_v2_("class C { static final P = false } global n = 0 function g() { if (!C.P) { return } n++ } g() return n").equals("0");
+		code_v2_("class C { static final P = false } function g(x) { if (!C.P) { return } debug(x) } g(1) return 8").ops(0);
+		code_v2_("class C { static final P = false } function five() { if (!C.P) return 5 return 9 } return five()").equals("5");
+		code_v2_("class C { static final P = false } global n = 0 function g() { if (!C.P) { return } else { n++ } } g() return n").equals("0");
+		// Garde non constante : pas classifiable, l'appel reste
+		code_v2_("global on = true global n = 0 function g() { if (!on) { return } n++ } g() return n").equals("1");
+		// Garde constante-fausse : le reste du corps vit
+		code_v2_("class C { static final P = true } global n = 0 function g() { if (!C.P) { return } n++ } g() return n").equals("1");
+	}
+
+	@Test
+	public void testStatic_method_statement_call_eliminated() throws Exception {
+		section("Appel nu de méthode statique vide : 0 op");
+		code_v2_("class O { static start(x) {} } O.start(1) return 1").equals("1");
+		code_v2_("class O { static start(x) {} } O.start(1) return 1").ops(0);
+		code_v2_("class O { static final P = false static start(x) { if (!O.P) return } } O.start(1) return 1").ops(0);
+		// Garde sur constante PRIVÉE : le corps s'exécute dans le contexte de la classe
+		code_v2_("class O { private static final P = false static start(x) { if (!P) return } } O.start(2) return 4").ops(0);
+		// Non qualifié depuis une méthode de la même classe
+		code_v2_("class O { static final P = false static start() { if (!O.P) return } static run() { start() return 7 } } return O.run()").equals("7");
+		// En expression : pas substitué (conservateur), valeur et comptage inchangés
+		code_v2_("class O { static two() { return 2 } } return O.two() + 1").equals("3");
+		// Méthode d'instance : jamais éliminée (virtuelle)
+		code_v2_("class O { m() {} } var o = new O() o.m() return 1").equals("1");
+		// Corps vivant : l'appel reste, l'effet aussi
+		code_v2_("global n = 0 class Q { static final G = false static tick() { if (Q.G) {} n++ } } Q.tick() return n").equals("1");
 	}
 
 	@Test

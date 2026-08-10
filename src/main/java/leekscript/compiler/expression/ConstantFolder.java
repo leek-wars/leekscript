@@ -9,6 +9,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.BlankInstruction;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
+import leekscript.compiler.instruction.LeekReturnInstruction;
 
 /**
  * Constantes de compilation et pliage de constantes (feature « DCE moderne »).
@@ -236,5 +237,88 @@ public final class ConstantFolder {
 			if (!isDeadInstruction(instruction, fromClass)) return false;
 		}
 		return true;
+	}
+
+	public enum BodyKind { NONE, EMPTY, CONSTANT }
+
+	/** Résultat de {@link #classifyBody} ; literal non-null pour CONSTANT seulement. */
+	public record ClassifiedBody(BodyKind kind, Expression literal) {
+		public static final ClassifiedBody NONE = new ClassifiedBody(BodyKind.NONE, null);
+		public static final ClassifiedBody EMPTY = new ClassifiedBody(BodyKind.EMPTY, null);
+	}
+
+	/**
+	 * Classification d'un corps de fonction globale ou de méthode statique après
+	 * pliage, pour l'élimination au site d'appel :
+	 * - EMPTY : rien à exécuter — instructions toutes mortes, éventuellement
+	 *   terminées par un `return` nu (accepté seulement si le retour est any) ou
+	 *   par une garde à sortie anticipée `if (<constant vrai>) return` ;
+	 * - CONSTANT : se réduit à un unique `return <littéral>` dont la conversion
+	 *   vers le type de retour est sûre ;
+	 * - NONE : tout le reste.
+	 * Les valeurs par défaut des paramètres sont évaluées côté callee et
+	 * disparaissent avec l'appel : elles doivent être littérales. `fromClass` est
+	 * le contexte d'exécution du CORPS (null pour une fonction globale, la classe
+	 * pour une méthode statique) — il gouverne les champs pliables.
+	 */
+	public static ClassifiedBody classifyBody(List<LeekInstruction> instructions, List<Expression> defaultValues, Type returnType, ClassDeclarationInstruction fromClass) {
+		for (var value : defaultValues) {
+			if (value != null && literal(value, fromClass) == null) return ClassifiedBody.NONE;
+		}
+		LeekReturnInstruction returnInstruction = null;
+		for (var instruction : instructions) {
+			if (isDeadInstruction(instruction, fromClass)) continue;
+			if (returnInstruction != null) return ClassifiedBody.NONE;
+			if (instruction instanceof LeekReturnInstruction r && !r.isOptional()) {
+				returnInstruction = r;
+				continue;
+			}
+			// Idiome `if (!DEBUG) return` : la fonction se termine toujours là,
+			// le reste du corps est inatteignable.
+			if (instruction instanceof ConditionalBloc bloc) {
+				var terminating = terminatingReturn(bloc, fromClass);
+				if (terminating != null) {
+					returnInstruction = terminating;
+					break;
+				}
+			}
+			return ClassifiedBody.NONE;
+		}
+		if (returnInstruction == null) return ClassifiedBody.EMPTY;
+		if (returnInstruction.getExpression() == null) {
+			// `return` nu = `return null` : équivalent au défaut seulement en any
+			return returnType == Type.ANY ? ClassifiedBody.EMPTY : ClassifiedBody.NONE;
+		}
+		var literal = literal(returnInstruction.getExpression(), fromClass);
+		if (literal == null) return ClassifiedBody.NONE;
+		// La conversion du littéral vers le type de retour peut lever (toArray…) :
+		// refuser si elle n'est pas sûre (l'élimination la sauterait).
+		if (returnType != Type.ANY && returnType.accepts(literal.getType()).ordinal() > Type.CastType.UPCAST.ordinal()) {
+			return ClassifiedBody.NONE;
+		}
+		return new ClassifiedBody(BodyKind.CONSTANT, literal);
+	}
+
+	/**
+	 * Garde à sortie anticipée : le bloc est un `if` (tête de chaîne) à condition
+	 * constante VRAIE (donc pure) dont le corps se réduit, après pliage, à un
+	 * unique `return` nu ou littéral — idiome `if (!DEBUG) return`. La fonction se
+	 * termine alors toujours sur ce return : la suite (branches else comprises)
+	 * est inatteignable. Renvoie ce return, ou null si le motif ne correspond pas.
+	 */
+	public static LeekReturnInstruction terminatingReturn(ConditionalBloc bloc, ClassDeclarationInstruction fromClass) {
+		if (bloc.getParentCondition() != null || bloc.getCondition() == null) return null;
+		var constant = truthiness(bloc.getCondition(), fromClass);
+		if (constant == null || !constant) return null;
+		LeekReturnInstruction result = null;
+		for (var instruction : bloc.getInstructions()) {
+			if (isDeadInstruction(instruction, fromClass)) continue;
+			if (result == null && instruction instanceof LeekReturnInstruction r && !r.isOptional()) {
+				result = r;
+			} else {
+				return null;
+			}
+		}
+		return result;
 	}
 }
