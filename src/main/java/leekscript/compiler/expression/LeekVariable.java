@@ -315,6 +315,28 @@ public class LeekVariable extends Expression {
 		return declaration != null && declaration.isWrapper();
 	}
 
+	/**
+	 * Une fonction système redéfinie (`count = 0` en v1, cf. MainLeekBlock) vit dans un
+	 * `Box rfunction_<nom>`, pas dans un `u_<nom>` : ce dernier n'est jamais déclaré.
+	 * writeJavaCode/compileL/compileSet le savaient déjà, mais AUCUNE des méthodes de
+	 * mutation (+=, -=, ++, --, ...) ne le savait, et émettait `u_<nom>` → « cannot find
+	 * symbol » à la compilation Java, donc combat ingénérable (remonté en prod 08/2026).
+	 * Le Box supportant toutes ces opérations, on route simplement ces variables vers le
+	 * chemin Box déjà en place, avec le bon préfixe.
+	 */
+	private boolean isRedefinedFunction(MainLeekBlock mainblock) {
+		return mainblock.hasRedefinedFunctions() && mainblock.isRedefinedFunction(token.getWord());
+	}
+
+	private boolean isBoxLike(MainLeekBlock mainblock) {
+		return isBox() || isRedefinedFunction(mainblock);
+	}
+
+	/** Nom Java de la variable locale : `rfunction_x` si fonction redéfinie, `u_x` sinon. */
+	private String localName(MainLeekBlock mainblock) {
+		return (isRedefinedFunction(mainblock) ? "rfunction_" : "u_") + token.getWord();
+	}
+
 	// Émet le mot-clé `class`. Dans une méthode d'instance (ou un constructeur), il
 	// doit désigner la classe *runtime* de l'objet courant — sinon un `class` hérité
 	// d'une classe parente renverrait toujours la classe parente (bug #2619 :
@@ -723,8 +745,8 @@ public class LeekVariable extends Expression {
 				writer.addCode("sub(g_" + token.getWord() + " = " + bigCast() + "add(g_" + token.getWord() + ", 1l), 1l)");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".increment()");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".increment()");
 			} else if (this.variableType.isPrimitiveNumber()) {
 				writer.addCode("u_" + token.getWord() + "++");
 			} else {
@@ -748,8 +770,8 @@ public class LeekVariable extends Expression {
 				writer.addCode("add(g_" + token.getWord() + " = " + bigCast() + "sub(g_" + token.getWord() + ", 1l), 1l)");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".decrement()");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".decrement()");
 			} else if (this.variableType.isPrimitiveNumber()) {
 				writer.addCode("u_" + token.getWord() + "--");
 			} else {
@@ -777,8 +799,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".pre_increment()");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".pre_increment()");
 			} else if (this.variableType.isPrimitiveNumber()) {
 				writer.addCode("++u_" + token.getWord());
 			} else {
@@ -808,8 +830,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".pre_decrement()");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".pre_decrement()");
 			} else if (this.variableType.isPrimitiveNumber()) {
 				writer.addCode("--u_" + token.getWord());
 			} else {
@@ -854,8 +876,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".add_eq(");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".add_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion()) && !(expr instanceof LeekVariable lve && lve.hasNarrowingMismatch(mainblock.getVersion()))) {
@@ -909,8 +931,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".sub_eq(");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".sub_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion()) && !(expr instanceof LeekVariable lve && lve.hasNarrowingMismatch(mainblock.getVersion()))) {
@@ -964,8 +986,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".mul_eq(");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".mul_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion()) && !(expr instanceof LeekVariable lve && lve.hasNarrowingMismatch(mainblock.getVersion()))) {
@@ -1015,8 +1037,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".pow_eq(");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".pow_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else {
@@ -1068,11 +1090,11 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
+			if (isBoxLike(mainblock)) {
 				if (mainblock.getVersion() == 1) {
-					writer.addCode("u_" + token.getWord() + ".div_eq_v1(");
+					writer.addCode(localName(mainblock) + ".div_eq_v1(");
 				} else {
-					writer.addCode("u_" + token.getWord() + ".div_eq(");
+					writer.addCode(localName(mainblock) + ".div_eq(");
 				}
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
@@ -1120,8 +1142,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".intdiv_eq(");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".intdiv_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 
@@ -1169,8 +1191,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".mod_eq(");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".mod_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber()) {
@@ -1224,8 +1246,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".bor_eq(");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".bor_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
@@ -1274,8 +1296,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".band_eq(");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".band_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
@@ -1323,8 +1345,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".bxor_eq(");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".bxor_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
@@ -1372,8 +1394,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".shl_eq(");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".shl_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
@@ -1421,8 +1443,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".shr_eq(");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".shr_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
@@ -1470,8 +1492,8 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else {
-			if (isBox()) {
-				writer.addCode("u_" + token.getWord() + ".ushr_eq(");
+			if (isBoxLike(mainblock)) {
+				writer.addCode(localName(mainblock) + ".ushr_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber()) {
@@ -1492,6 +1514,14 @@ public class LeekVariable extends Expression {
 	@Override
 	public void compileCoalesceEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// a ??= b  =>  a = (a != null) ? a : b
+		// Fonction système redéfinie : Box `rfunction_<nom>`, quel que soit le VariableType
+		// (elles ne sont ni GLOBAL ni LOCAL, cf. isRedefinedFunction).
+		if (isRedefinedFunction(mainblock)) {
+			writer.addCode(localName(mainblock) + ".coalesce_eq(");
+			expr.writeJavaCode(mainblock, writer, false);
+			writer.addCode(")");
+			return;
+		}
 		if (type == VariableType.GLOBAL || type == VariableType.LOCAL) {
 			if (isBox()) {
 				// Box-based variable: use Box.coalesce_eq

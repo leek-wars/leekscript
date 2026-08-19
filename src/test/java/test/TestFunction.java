@@ -180,6 +180,29 @@ public class TestFunction extends TestCommon {
 		code_v1_3("function f() { return count([1, 2, 3]) > count([]) } var _count = count; count = function(x) { return _count(x) } return f()").equals("true");
 		code_v4_("function f() { return count([1, 2, 3]) > count([]) } var _count = count; count = function(x) { return _count(x) } return f()").error(Error.CANNOT_REDEFINE_FUNCTION);
 		code("function isEmpty(x) { return 12 } return !isEmpty(1) && !isEmpty(2)").equals("false");
+		// Une fonction système redéfinie vit dans un Box `rfunction_<nom>`, jamais dans
+		// un `u_<nom>` : les opérateurs de MUTATION l'ignoraient et émettaient `u_<nom>`,
+		// non déclaré → « cannot find symbol » à la compilation Java (combat ingénérable,
+		// remonté en prod 08/2026 sur `count = 0; count += 1` dans une fonction).
+		code_v1_3("function f() { count = 0; count += 1; return count; } return f()").equals("1");
+		code_v1_3("function f() { count = 5; count -= 2; return count; } return f()").equals("3");
+		code_v1_3("function f() { count = 3; count *= 4; return count; } return f()").equals("12");
+		code_v1("function f() { count = 10; count /= 2; return count; } return f()").equals("5");
+		code_v2_3("function f() { count = 10; count /= 2; return count; } return f()").equals("5.0");
+		code_v1_3("function f() { count = 7; count %= 4; return count; } return f()").equals("3");
+		code_v1_3("function f() { count = 2; count **= 3; return count; } return f()").equals("8");
+		code_v1_3("function f() { count = 6; count &= 3; return count; } return f()").equals("2");
+		code_v1_3("function f() { count = 6; count |= 1; return count; } return f()").equals("7");
+		// `^` = puissance en v1, xor à partir de la v2
+		code_v1("function f() { count = 6; count ^= 3; return count; } return f()").equals("216");
+		code_v2_3("function f() { count = 6; count ^= 3; return count; } return f()").equals("5");
+		code_v1_3("function f() { count = 1; count <<= 3; return count; } return f()").equals("8");
+		code_v1_3("function f() { count = 8; count >>= 2; return count; } return f()").equals("2");
+		code_v1_3("function f() { count = 0; count++; return count; } return f()").equals("1");
+		code_v1_3("function f() { count = 0; ++count; return count; } return f()").equals("1");
+		code_v1_3("function f() { count = 5; count--; return count; } return f()").equals("4");
+		code_v1_3("function f() { count = 5; --count; return count; } return f()").equals("4");
+
 		code("var max = 0 return max < 12").equals("true");
 		code("var max = 0 if (max < 12) { max = 5 } return max").equals("5");
 		code("abs++; return 0").error(Error.CANNOT_REDEFINE_FUNCTION);
