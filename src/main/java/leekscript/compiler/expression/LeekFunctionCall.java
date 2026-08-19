@@ -220,6 +220,12 @@ public class LeekFunctionCall extends Expression {
 		boolean addFinalParenthesis = true;
 		FunctionBlock user_function = null;
 		boolean convertPrimitive = false;
+		// Un cast en préfixe (`(u_Entity) execute(...)`) a une priorité plus faible que
+		// l'accès membre : si l'appelant demande des parenthèses (typiquement parce que
+		// l'appel est le receveur d'un `.u_method()`), il faut envelopper cast compris,
+		// sinon Java lit `(u_Entity) (execute(...).u_method())` et le receveur reste
+		// Object → « cannot find symbol » à la compilation Java.
+		boolean castParenthesis = false;
 
 		if (mExpression instanceof LeekObjectAccess) {
 			// Object access : object.field()
@@ -254,6 +260,7 @@ public class LeekFunctionCall extends Expression {
 					// Champ statique
 					// writer.addCode("execute(" + v.getClassDeclaration().getName() + "." + field);
 					if (type != Type.ANY) {
+						if (parenthesis) { writer.addCode("("); castParenthesis = true; }
 						writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 					}
 					writer.addCode("u_" + v.getClassDeclaration().getName() + ".callStaticField(\"" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
@@ -290,6 +297,7 @@ public class LeekFunctionCall extends Expression {
 			} else {
 				// object.field() : Méthode ou bien appel d'un champ
 				if (type != Type.ANY) {
+					if (parenthesis) { writer.addCode("("); castParenthesis = true; }
 					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 				}
 				writer.addCode("callObjectAccess(");
@@ -396,6 +404,7 @@ public class LeekFunctionCall extends Expression {
 				// concret pour que le Java généré respecte le type annoncé par getType()
 				// (sinon `Object cannot be converted to SetLeekValue` côté worker).
 				if (this.type != Type.ANY && this.type != Type.VOID && !this.type.isPrimitive()) {
+					if (parenthesis) { writer.addCode("("); castParenthesis = true; }
 					writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 				}
 				writer.addCode("execute(");
@@ -415,6 +424,7 @@ public class LeekFunctionCall extends Expression {
 			// fonctions `cond ? f1 : f2`, dont le type est un CompoundType non géré par
 			// la branche FunctionType ci-dessus).
 			if (this.type != Type.ANY && this.type != Type.VOID && !this.type.isPrimitive()) {
+				if (parenthesis) { writer.addCode("("); castParenthesis = true; }
 				writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode("execute(");
@@ -488,6 +498,9 @@ public class LeekFunctionCall extends Expression {
 			} else if (this.type == Type.BOOL) {
 				writer.addCode(").booleanValue()");
 			}
+		}
+		if (castParenthesis) {
+			writer.addCode(")");
 		}
 		writer.addPosition(openParenthesis);
 	}
