@@ -148,6 +148,32 @@ public class JavaCompiler {
 		}
 	}
 
+	/** Nombre de lignes de Java généré conservées de part et d'autre de la ligne fautive. */
+	private static final int EXCERPT_CONTEXT = 12;
+	private static final int EXCERPT_MAX_LINE = 4000;
+
+	/**
+	 * Extrait numéroté du Java généré autour de la ligne rejetée par javac. Joint au
+	 * rapport d'erreur : sans lui, un COMPILE_JAVA n'est pas diagnosticable après coup
+	 * (le message javac ne montre que la ligne fautive, et le source LeekScript stocké
+	 * avec l'erreur est re-téléchargé donc potentiellement différent de ce qui a été
+	 * compilé). Les lignes générées peuvent être très longues : on les tronque.
+	 */
+	public static String javaExcerpt(String javaCode, int javaLine) {
+		if (javaCode == null || javaLine <= 0) return null;
+		var lines = javaCode.split("\n", -1);
+		if (javaLine > lines.length) return null;
+		int from = Math.max(0, javaLine - 1 - EXCERPT_CONTEXT);
+		int to = Math.min(lines.length, javaLine + EXCERPT_CONTEXT);
+		var sb = new StringBuilder("Java généré (lignes " + (from + 1) + "-" + to + ", `>` = ligne rejetée par javac) :\n");
+		for (int i = from; i < to; i++) {
+			var line = lines[i];
+			if (line.length() > EXCERPT_MAX_LINE) line = line.substring(0, EXCERPT_MAX_LINE) + " […]";
+			sb.append(i + 1 == javaLine ? "> " : "  ").append(i + 1).append(": ").append(line).append('\n');
+		}
+		return sb.toString();
+	}
+
 	public static AI compile(AIFile file, Options options) throws LeekScriptException, LeekCompilerException {
 
 		var root = new File(IA_PATH);
@@ -255,7 +281,8 @@ public class JavaCompiler {
 				if (output.toString().contains("code too large")) {
 					throw new LeekScriptException(Error.CODE_TOO_LARGE, output.toString(), location);
 				} else {
-					throw new LeekScriptException(Error.COMPILE_JAVA, output.toString(), location);
+					throw new LeekScriptException(Error.COMPILE_JAVA, output.toString(), location)
+						.details(javaExcerpt(file.getCompiledCode().getJavaCode(), javaLine));
 				}
 			}
 
