@@ -73,8 +73,27 @@ public class TestLoops extends TestCommon {
 		code("do { break } while (true);").equals("null");
 		code("do { if (true) return 12 } while (true); return 1;").equals("12");
 		code("var t = 0; do { t++; return t; } while (t < 5);").equals("1");
-		// TODO catch error
-		// code("var t = 0; do { t++; return t;} while (t < 5); return 2;").equals("1");
+		// Le corps s'exécute au moins une fois et retourne : la suite est du code mort
+		code("var t = 0; do { t++; return t;} while (t < 5); return 2;").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+	}
+
+	@Test
+	public void testDo_while_abrupt_exit_completes_normally() throws Exception {
+		section("Do while : un break/continue le rend terminable normalement");
+		// `do { ... return }` ne retourne plus toujours dès qu'un break ou un
+		// continue peut en sortir : le return implicite qui suit doit être émis,
+		// sinon javac réclame un « missing return statement ».
+		code_v3_("function f(x) { do { if (x == 1) break return 1 } while (x > 5) } return f(1)").equals("null");
+		code_v3_("function f(x) { do { if (x == 1) continue return 1 } while (x > 5) } return f(1)").equals("null");
+		code_v3_("function f(x) { do { if (x == 2) break return 1 } while (x > 5) } return f(1)").equals("1");
+		// Et le code qui suit la boucle redevient légal
+		code_v3_("function f(x) { do { if (x == 1) break return 1 } while (x > 5) return 2 } return f(1)").equals("2");
+		// Un break qui vise une boucle imbriquée ne compte pas : le do-while
+		// retourne toujours, et la suite reste du code mort
+		code_v3_("function f(x) { do { for (var i = 0; i < 2; i++) { if (x == 1) break } return 1 } while (x > 5) } return f(1)").equals("1");
+		code_v3_("function f(x) { do { for (var i = 0; i < 2; i++) { if (x == 1) break } return 1 } while (x > 5) return 2 }").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		// En revanche un continue dans un switch imbriqué vise bien le do-while
+		code_v3_("function f(x) { do { switch (x) { case 1: continue default: } return 1 } while (x > 5) } return f(1)").equals("null");
 	}
 
 	@Test

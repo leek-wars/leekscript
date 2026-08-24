@@ -2,6 +2,7 @@ package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import leekscript.common.Type;
@@ -19,7 +20,6 @@ import leekscript.compiler.expression.LeekParenthesis;
 import leekscript.compiler.expression.LeekString;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
-import leekscript.compiler.instruction.LeekBreakInstruction;
 
 public class SwitchBlock extends AbstractLeekBlock {
 
@@ -121,14 +121,20 @@ public class SwitchBlock extends AbstractLeekBlock {
 				}
 
 				Type narrowedType = null;
-				if (caseHasNull && !caseHasNonNull) {
+				if (c.isDefault) {
+					// Le default s'exécute pour toute valeur non capturée ailleurs.
+					// S'il porte lui-même `case null:`, son corps couvre null ET le
+					// reste : aucun narrowing possible (le réduire à null donnait des
+					// constantes à la place de la variable, donc des résultats faux).
+					if (!caseHasNull && hasNullCase) {
+						// Default with explicit null case elsewhere: narrow to non-null
+						narrowedType = switchVar.getType().assertNotNull();
+					}
+				} else if (caseHasNull && !caseHasNonNull) {
 					// Pure null case: narrow to null
 					narrowedType = Type.NULL;
-				} else if (!caseHasNull && !c.isDefault) {
+				} else if (!caseHasNull) {
 					// Non-null case values: narrow to non-null
-					narrowedType = switchVar.getType().assertNotNull();
-				} else if (c.isDefault && hasNullCase) {
-					// Default with explicit null case elsewhere: narrow to non-null
 					narrowedType = switchVar.getType().assertNotNull();
 				}
 
@@ -498,6 +504,25 @@ public class SwitchBlock extends AbstractLeekBlock {
 		return true;
 	}
 
+	/**
+	 * Un `break` écrit dans un case vise ce switch. Pas de `capturesContinue` en
+	 * regard : un `continue`, lui, vise toujours la boucle englobante.
+	 */
+	@Override
+	public boolean capturesBreak() {
+		return true;
+	}
+
+	/** Les corps de case ne sont pas dans mInstructions : sans ça la traversée les rate. */
+	@Override
+	public List<AbstractLeekBlock> getNestedBlocks() {
+		var blocks = new ArrayList<AbstractLeekBlock>(mCases.size());
+		for (var c : mCases) {
+			blocks.add(c.body);
+		}
+		return blocks;
+	}
+
 	@Override
 	public int getEndBlock() {
 		// Le switch « retourne toujours » si : il a un default, chaque case retourne,
@@ -505,7 +530,9 @@ public class SwitchBlock extends AbstractLeekBlock {
 		// rendre terminable normalement, et javac exigerait alors un return après.
 		// Lu aussi par writeJavaCode pour décider du bouclier `if (true)`.
 		for (var c : mCases) {
-			if (c.body.getEndBlock() != 1 || containsBreak(c.body)) return 0;
+			// Seul le `break` compte ici : un `continue` dans un case vise la boucle
+			// englobante, il ne fait pas sortir du switch.
+			if (c.body.getEndBlock() != 1 || containsAbruptExit(c.body, true, false)) return 0;
 		}
 		return hasDefault() ? 1 : 0;
 	}
@@ -515,27 +542,6 @@ public class SwitchBlock extends AbstractLeekBlock {
 			if (c.isDefault) return true;
 		}
 		return false;
-	}
-
-	/**
-	 * Cherche un `break` qui vise ce switch : direct dans le corps du case, ou caché
-	 * dans un if/else (les else sont des instructions sœurs du if, donc parcourus).
-	 * Seuls les blocs qui capturent le break (boucles, switchs imbriqués) arrêtent
-	 * la descente ; tout autre bloc est traversé — un futur bloc inconnu se dégrade
-	 * ainsi en bouclier superflu, pas en « missing return statement » javac.
-	 */
-	private static boolean containsBreak(AbstractLeekBlock block) {
-		for (var instruction : block.getInstructions()) {
-			if (instruction instanceof LeekBreakInstruction) return true;
-			if (instruction instanceof AbstractLeekBlock bloc && !capturesBreak(bloc) && containsBreak(bloc)) return true;
-		}
-		return false;
-	}
-
-	/** Blocs qu'un `break` interne vise eux-mêmes, plutôt que ce switch. */
-	private static boolean capturesBreak(AbstractLeekBlock block) {
-		return block instanceof WhileBlock || block instanceof DoWhileBlock || block instanceof ForBlock
-			|| block instanceof ForeachBlock || block instanceof ForeachKeyBlock || block instanceof SwitchBlock;
 	}
 
 	@Override

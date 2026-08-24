@@ -169,6 +169,47 @@ public class TestSwitch extends TestCommon {
 	}
 
 	@Test
+	public void testSwitch_null_case_merged_with_default() throws Exception {
+		section("Switch : case null: partageant le corps du default");
+		// Le corps est celui du default : il s'exécute pour TOUTE valeur, on ne peut
+		// donc pas y réduire le sujet à null (sans quoi le code émis remplaçait la
+		// variable par des constantes null — résultats faux, sans aucune erreur).
+		code_v3_("integer | null x = 5 switch (x) { case null: default: return x ** 2 }").equals("25");
+		code_v3_("integer | null x = null switch (x) { case null: default: return 7 }").equals("7");
+		// Le narrowing normal reste actif quand les deux labels sont séparés
+		code_v3_("integer | null x = 5 switch (x) { case null: return 1 default: return x ** 2 }").equals("25");
+		code_v3_("integer | null x = null switch (x) { case null: return 1 default: return 2 }").equals("1");
+	}
+
+	@Test
+	public void testSwitch_duplicate_default() throws Exception {
+		section("Switch : un seul default autorisé");
+		// Deux default: donnaient un `duplicate default label` javac (erreur interne)
+		code_v3_("var x = 1 switch (x) { default: return 1 default: return 2 }").error(Error.SWITCH_DUPLICATE_DEFAULT);
+		code_v3_("var x = 1 switch (x) { default: default: return 1 }").error(Error.SWITCH_DUPLICATE_DEFAULT);
+	}
+
+	@Test
+	public void testSwitch_continue_needs_enclosing_loop() throws Exception {
+		section("Switch : continue exige une boucle englobante");
+		// Le switch capture le break mais jamais le continue : hors boucle, le Java
+		// émis était rejeté par javac au lieu d'une erreur d'analyse propre.
+		code_v3_("var x = 1 switch (x) { case 1: continue } return 2").error(Error.CONTINUE_OUT_OF_LOOP);
+		code_v3_("var f = function(x) { switch (x) { case 1: continue } } return f(1)").error(Error.CONTINUE_OUT_OF_LOOP);
+		// Dans une boucle, il vise cette boucle et reste légal
+		code_v3_("var s = 0 for (var i = 0; i < 3; i++) { switch (i) { case 0: continue default: s += 1 } } return s").equals("2");
+		code_v3_("var s = 0 var i = 0 while (i < 3) { i++ switch (i) { case 1: continue default: s += 1 } } return s").equals("2");
+	}
+
+	@Test
+	public void testSwitch_unclosed() throws Exception {
+		section("Switch sans accolade fermante");
+		// Le reste du fichier était avalé par le dernier case, sans un mot
+		code_v3_("var x = 5 switch (x) { case 1: x = 10\nreturn x").error(Error.OPEN_BLOC_REMAINING);
+		code_v3_("var x = 5 switch (x) { case 1: x = 10 }\nreturn x").equals("5");
+	}
+
+	@Test
 	public void testSwitch_dead_code_after_returning_switch() throws Exception {
 		section("Dead code after an all-returning switch");
 		// Verrouille getEndBlock() == 1 : sans lui, ce code mort serait accepté.

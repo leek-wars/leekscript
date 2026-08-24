@@ -2,6 +2,7 @@ package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import leekscript.compiler.Token;
@@ -12,6 +13,8 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.runner.LeekFunctions;
+import leekscript.compiler.instruction.LeekBreakInstruction;
+import leekscript.compiler.instruction.LeekContinueInstruction;
 import leekscript.compiler.instruction.LeekExpressionInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.common.Annotation;
@@ -236,6 +239,56 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		if (mParent == null || this instanceof AnonymousFunctionBlock)
 			return false;
 		return mParent.isBreakable();
+	}
+
+	/** Y a-t-il une boucle englobante, seule cible possible d'un `continue` ? */
+	public boolean isContinuable() {
+		if (mParent == null || this instanceof AnonymousFunctionBlock)
+			return false;
+		return mParent.isContinuable();
+	}
+
+	/** Ce bloc est-il la cible d'un `break` écrit à l'intérieur ? (boucles et switch) */
+	public boolean capturesBreak() {
+		return false;
+	}
+
+	/** Ce bloc est-il la cible d'un `continue` écrit à l'intérieur ? (boucles seules) */
+	public boolean capturesContinue() {
+		return false;
+	}
+
+	/** Blocs imbriqués absents de la liste d'instructions (les corps de case d'un switch). */
+	public List<AbstractLeekBlock> getNestedBlocks() {
+		return List.of();
+	}
+
+	/**
+	 * Cherche dans `block` un `break` / `continue` qui vise le bloc englobant plutôt
+	 * qu'un bloc imbriqué. On descend dans les blocs intérieurs, mais en cessant de
+	 * chercher ce que chacun capture lui-même — un `continue` dans un switch
+	 * imbriqué vise bien la boucle qui l'englobe, pas le switch.
+	 *
+	 * Sert aux blocs dont la sortie abrupte change la terminaison telle que la voit
+	 * javac (JLS 14.21/14.22) : un tel `break`/`continue` rend le bloc terminable
+	 * normalement, donc le return implicite qui suit obligatoire.
+	 */
+	public static boolean containsAbruptExit(AbstractLeekBlock block, boolean huntBreak, boolean huntContinue) {
+		for (var instruction : block.getInstructions()) {
+			if (huntBreak && instruction instanceof LeekBreakInstruction) return true;
+			if (huntContinue && instruction instanceof LeekContinueInstruction) return true;
+			if (instruction instanceof AbstractLeekBlock child && descendForAbruptExit(child, huntBreak, huntContinue)) return true;
+		}
+		for (var child : block.getNestedBlocks()) {
+			if (descendForAbruptExit(child, huntBreak, huntContinue)) return true;
+		}
+		return false;
+	}
+
+	private static boolean descendForAbruptExit(AbstractLeekBlock child, boolean huntBreak, boolean huntContinue) {
+		var childBreak = huntBreak && !child.capturesBreak();
+		var childContinue = huntContinue && !child.capturesContinue();
+		return (childBreak || childContinue) && containsAbruptExit(child, childBreak, childContinue);
 	}
 
 	@Override

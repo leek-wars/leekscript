@@ -284,6 +284,21 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	}
 
 	@Override
+	public boolean isContinuable() {
+		return true;
+	}
+
+	@Override
+	public boolean capturesBreak() {
+		return true;
+	}
+
+	@Override
+	public boolean capturesContinue() {
+		return true;
+	}
+
+	@Override
 	public int getEndBlock() {
 		return 0;
 	}

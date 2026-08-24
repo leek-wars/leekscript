@@ -510,7 +510,10 @@ public class WordCompiler {
 				mCurentBlock.addInstruction(this, new LeekBreakInstruction(word));
 				return;
 			case CONTINUE: {
-				if (!mCurentBlock.isBreakable()) {
+				// isBreakable() ne convient pas : un switch capture le break, mais un
+				// `continue` y vise toujours la boucle englobante — s'il n'y en a pas,
+				// le Java émis serait rejeté par javac (« continue outside of loop »).
+				if (!mCurentBlock.isContinuable()) {
 					addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CONTINUE_OUT_OF_LOOP));
 				}
 				var token = mTokens.eat();
@@ -1073,6 +1076,10 @@ public class WordCompiler {
 		var switchBlock = new SwitchBlock(mCurentBlock, mMain, token);
 		switchBlock.setExpression(exp);
 
+		// Un seul `default:` par switch : deux donneraient un `default:` en double
+		// dans le Java émis, rejeté par javac (« duplicate default label »).
+		boolean hasDefault = false;
+
 		// Parse cases
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
@@ -1090,11 +1097,15 @@ public class WordCompiler {
 					}
 					mTokens.skip(); // :
 				} else if (mTokens.get().getType() == TokenType.DEFAULT) {
-					mTokens.skip(); // default
+					var defaultToken = mTokens.eat(); // default
 					if (!mTokens.get().getWord().equals(":")) {
 						throw new LeekCompilerException(mTokens.get(), Error.COLON_EXPECTED_AFTER_CASE);
 					}
 					mTokens.skip(); // :
+					if (hasDefault) {
+						addError(new AnalyzeError(defaultToken, AnalyzeErrorLevel.ERROR, Error.SWITCH_DUPLICATE_DEFAULT));
+					}
+					hasDefault = true;
 					isDefault = true;
 				} else {
 					break;
@@ -1142,6 +1153,10 @@ public class WordCompiler {
 		// Eat closing }
 		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.ACCOLADE_RIGHT) {
 			mTokens.skip();
+		} else {
+			// Sans accolade fermante, tout le reste du fichier a été avalé par le
+			// dernier case : le signaler plutôt que de compiler un programme amputé.
+			addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.OPEN_BLOC_REMAINING));
 		}
 
 		mCurentBlock.addInstruction(this, switchBlock);

@@ -65,6 +65,35 @@ public class DoWhileBlock extends AbstractLeekBlock {
 		return true;
 	}
 
+	@Override
+	public boolean isContinuable() {
+		return true;
+	}
+
+	@Override
+	public boolean capturesBreak() {
+		return true;
+	}
+
+	@Override
+	public boolean capturesContinue() {
+		return true;
+	}
+
+	/**
+	 * Seule boucle qui peut « toujours retourner » : son corps s'exécute au moins une
+	 * fois, donc `do { return } while (c)` ne se termine jamais normalement — d'où
+	 * l'absence de l'override `return 0` des autres boucles. Mais un `break` ou un
+	 * `continue` atteignable la rend terminable normalement (JLS 14.21), et le return
+	 * implicite qui suit redevient obligatoire, sans quoi javac réclame un
+	 * « missing return statement ».
+	 */
+	@Override
+	public int getEndBlock() {
+		if (super.getEndBlock() != 1) return 0;
+		return containsAbruptExit(this, true, true) ? 0 : 1;
+	}
+
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		if (mCondition != null) {
 			mCondition.preAnalyze(compiler);
