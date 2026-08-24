@@ -3,6 +3,8 @@ package test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 
+import leekscript.common.Error;
+
 @ExtendWith(SummaryExtension.class)
 public class TestSwitch extends TestCommon {
 
@@ -125,6 +127,56 @@ public class TestSwitch extends TestCommon {
 	public void testEmpty_switch() throws Exception {
 		section("Empty switch");
 		code_v3_("var x = 1 switch (x) {} return 'ok'").equals("\"ok\"");
+	}
+
+	@Test
+	public void testSwitch_all_paths_abrupt_with_fallthrough() throws Exception {
+		section("Switch with all paths abrupt through fall-through (#4892)");
+		// Un case qui fallthrough dans un default qui return : javac prouve que le
+		// switch ne se termine jamais normalement, et le code émis après (le return
+		// implicite de la fonction) doit quand même compiler.
+		code_v3_("function f(x) { var a = 7 switch (x) { case 1: a = 8 default: return a } } return f(1)").equals("8");
+		code_v3_("function f(x) { var a = 7 switch (x) { case 1: a = 8 default: return a } } return f(2)").equals("7");
+		// Même chose dans le bloc principal
+		code_v3_("var a = 1 switch (a) { case 1: a = 2 default: return a }").equals("2");
+		// Chemin chaîne de comparaisons (label non constant)
+		code_v3_("function f(x) { var a = 7 switch (x) { case 1 + 0: a = 8 default: return a } } return f(1)").equals("8");
+		// Tous les groupes abrupts via continue : le code après le switch est mort
+		// à l'exécution mais doit rester compilable
+		code_v3_("var s = 0 for (var i = 0; i < 3; i++) { switch (i) { case 0: continue default: continue } s += 1 } return s").equals("0");
+	}
+
+	@Test
+	public void testSwitch_conditional_break_in_returning_cases() throws Exception {
+		section("Switch with conditional break in all-returning cases");
+		// Un break caché dans un if fait sortir du switch : il ne « retourne » pas
+		// toujours, le code après doit être accepté et un return final émis.
+		code_v3_("function f(x) { switch (x) { case 1: if (x == 1) break return 'r1' default: return 'r2' } return 'after' } return f(1)").equals("\"after\"");
+		code_v3_("function f(x) { switch (x) { case 1: if (x == 1) break return 'r1' default: return 'r2' } } return f(1)").equals("null");
+		code_v3_("function f(x) { switch (x) { case 1: if (x == 1) break return 'r1' default: return 'r2' } } return f(2)").equals("\"r2\"");
+		// Break enfoui deux niveaux de if plus bas
+		code_v3_("function f(x) { switch (x) { case 1: if (x >= 1) { if (x == 1) break } return 'r1' default: return 'r2' } } return f(1)").equals("null");
+	}
+
+	@Test
+	public void testSwitch_shield_in_all_function_contexts() throws Exception {
+		section("Switch fall-through shield in method, constructor, anonymous function");
+		// Méthode, constructeur et fonction anonyme émettent leur return implicite
+		// comme les fonctions globales : mêmes cas limites d'atteignabilité javac.
+		code_v3_("class A { public m(x) { var a = 1 switch (x) { case 1: a = 2 default: return a } } } return new A().m(1)").equals("2");
+		code_v3_("class A { public v = 0 constructor(x) { switch (x) { case 1: this.v = 2 default: return } } } return new A(1).v").equals("2");
+		code_v3_("var f = function(x) { var a = 1 switch (x) { case 1: a = 2 default: return a } } return f(1)").equals("2");
+	}
+
+	@Test
+	public void testSwitch_dead_code_after_returning_switch() throws Exception {
+		section("Dead code after an all-returning switch");
+		// Verrouille getEndBlock() == 1 : sans lui, ce code mort serait accepté.
+		code_v3_("function f(x) { switch (x) { case 1: return 1 default: return 2 } return 3 } return f(1)").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		// Un break dans une boucle imbriquée vise la boucle, pas le switch : le
+		// switch retourne toujours et le code qui suit reste du code mort.
+		code_v3_("function f(x) { switch (x) { case 1: for (var i = 0; i < 3; i++) { if (x == 1) break } return 'r1' default: return 'r2' } return 3 } return f(1)").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v3_("function f(x) { switch (x) { case 1: for (var i = 0; i < 3; i++) { if (x == 1) break } return 'r1' default: return 'r2' } } return f(1)").equals("\"r1\"");
 	}
 
 }

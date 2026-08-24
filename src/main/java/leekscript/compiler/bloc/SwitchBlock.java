@@ -19,6 +19,7 @@ import leekscript.compiler.expression.LeekParenthesis;
 import leekscript.compiler.expression.LeekString;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.Operators;
+import leekscript.compiler.instruction.LeekBreakInstruction;
 
 public class SwitchBlock extends AbstractLeekBlock {
 
@@ -147,6 +148,18 @@ public class SwitchBlock extends AbstractLeekBlock {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
+		// getEndBlock() est volontairement conservateur : un case qui fallthrough ne
+		// compte pas comme retournant. Mais javac, lui, raisonne par groupes : avec
+		// un default et un dernier groupe abrupt (return/continue), il peut prouver
+		// que le switch ne se termine jamais normalement et rejeter le code émis
+		// après en « unreachable statement » — typiquement le return implicite de la
+		// fonction. Le bloc s'ouvre alors en `if (true) {`, exempté de l'analyse
+		// d'atteignabilité (JLS 14.21), sans effet sur le bytecode. Surtout pas de
+		// bouclier quand getEndBlock() == 1 : le return implicite n'est alors pas
+		// émis du tout, et javac réclamerait un « missing return statement ».
+		// Les accolades du bloc sont ouvertes/fermées ici pour les trois chemins.
+		boolean shield = hasDefault() && getEndBlock() == 0;
+		writer.addLine(shield ? "if (true) {" : "{");
 		var dispatch = buildConstantDispatch(mainblock);
 		if (dispatch == null) {
 			writeComparisonChain(mainblock, writer);
@@ -155,6 +168,7 @@ public class SwitchBlock extends AbstractLeekBlock {
 		} else {
 			writeGuardedDispatch(mainblock, writer, dispatch);
 		}
+		writer.addLine("}"); // end block
 	}
 
 	/**
@@ -299,8 +313,6 @@ public class SwitchBlock extends AbstractLeekBlock {
 	private void writeDirectDispatch(MainLeekBlock mainblock, JavaWriter writer, ConstantDispatch dispatch) {
 		String swVar = "__sw_" + mId;
 
-		writer.addLine("{");
-
 		if (dispatch.string) {
 			writer.addCode("String " + swVar + " = ");
 			writer.getString(mainblock, mExpression, false);
@@ -344,7 +356,6 @@ public class SwitchBlock extends AbstractLeekBlock {
 		}
 
 		writer.addLine("}"); // end switch
-		writer.addLine("}"); // end block
 	}
 
 	/**
@@ -357,8 +368,6 @@ public class SwitchBlock extends AbstractLeekBlock {
 		String swVar = "__sw_" + mId;
 		String siVar = "__si_" + mId;
 		String svVar = "__swv_" + mId;
-
-		writer.addLine("{");
 
 		writer.addCode("Object " + swVar + " = ");
 		mExpression.writeJavaCode(mainblock, writer, false);
@@ -401,15 +410,12 @@ public class SwitchBlock extends AbstractLeekBlock {
 		writer.addLine("}");
 
 		writeBodies(mainblock, writer, siVar);
-		writer.addLine("}"); // end block
 	}
 
 	/** Chemin général : labels non constants ou sujet de type incompatible, `eq()` obligatoire. */
 	private void writeComparisonChain(MainLeekBlock mainblock, JavaWriter writer) {
 		String swVar = "__sw_" + mId;
 		String siVar = "__si_" + mId;
-
-		writer.addLine("{");
 
 		// Store the switch expression in a temp variable
 		writer.addCode("Object " + swVar + " = ");
@@ -423,7 +429,6 @@ public class SwitchBlock extends AbstractLeekBlock {
 		writer.addLine("int " + siVar + " = -1;");
 		writeIndexChain(mainblock, writer, swVar, siVar);
 		writeBodies(mainblock, writer, siVar);
-		writer.addLine("}"); // end block
 	}
 
 	/**
@@ -495,15 +500,42 @@ public class SwitchBlock extends AbstractLeekBlock {
 
 	@Override
 	public int getEndBlock() {
-		// Switch always completes if it has a default and all cases return
-		boolean hasDefault = false;
-		boolean allReturn = true;
+		// Le switch « retourne toujours » si : il a un default, chaque case retourne,
+		// et aucun break n'en sort — un `if (x) break` avant un return suffit à le
+		// rendre terminable normalement, et javac exigerait alors un return après.
+		// Lu aussi par writeJavaCode pour décider du bouclier `if (true)`.
 		for (var c : mCases) {
-			if (c.isDefault) hasDefault = true;
-			if (c.body.getEndBlock() != 1) allReturn = false;
+			if (c.body.getEndBlock() != 1 || containsBreak(c.body)) return 0;
 		}
-		if (hasDefault && allReturn) return 1;
-		return 0;
+		return hasDefault() ? 1 : 0;
+	}
+
+	private boolean hasDefault() {
+		for (var c : mCases) {
+			if (c.isDefault) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Cherche un `break` qui vise ce switch : direct dans le corps du case, ou caché
+	 * dans un if/else (les else sont des instructions sœurs du if, donc parcourus).
+	 * Seuls les blocs qui capturent le break (boucles, switchs imbriqués) arrêtent
+	 * la descente ; tout autre bloc est traversé — un futur bloc inconnu se dégrade
+	 * ainsi en bouclier superflu, pas en « missing return statement » javac.
+	 */
+	private static boolean containsBreak(AbstractLeekBlock block) {
+		for (var instruction : block.getInstructions()) {
+			if (instruction instanceof LeekBreakInstruction) return true;
+			if (instruction instanceof AbstractLeekBlock bloc && !capturesBreak(bloc) && containsBreak(bloc)) return true;
+		}
+		return false;
+	}
+
+	/** Blocs qu'un `break` interne vise eux-mêmes, plutôt que ce switch. */
+	private static boolean capturesBreak(AbstractLeekBlock block) {
+		return block instanceof WhileBlock || block instanceof DoWhileBlock || block instanceof ForBlock
+			|| block instanceof ForeachBlock || block instanceof ForeachKeyBlock || block instanceof SwitchBlock;
 	}
 
 	@Override
