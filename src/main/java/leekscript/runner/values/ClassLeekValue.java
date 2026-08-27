@@ -346,7 +346,7 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		return result.div_eq(value);
 	}
 
-	public long field_intdiv_eq(String field, Object value) throws LeekRunException {
+	public Object field_intdiv_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.intdiv_eq(value);
 	}
@@ -356,32 +356,32 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		return result.mod_eq(value);
 	}
 
-	public long field_bor_eq(String field, Object value) throws LeekRunException {
+	public Object field_bor_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.bor_eq(value);
 	}
 
-	public long field_bxor_eq(String field, Object value) throws LeekRunException {
+	public Object field_bxor_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.bxor_eq(value);
 	}
 
-	public long field_band_eq(String field, Object value) throws LeekRunException {
+	public Object field_band_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.band_eq(value);
 	}
 
-	public long field_shl_eq(String field, Object value) throws LeekRunException {
+	public Object field_shl_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.shl_eq(value);
 	}
 
-	public long field_shr_eq(String field, Object value) throws LeekRunException {
+	public Object field_shr_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.shr_eq(value);
 	}
 
-	public long field_ushr_eq(String field, Object value) throws LeekRunException {
+	public Object field_ushr_eq(String field, Object value) throws LeekRunException {
 		var result = getFieldL(field);
 		return result.ushr_eq(value);
 	}

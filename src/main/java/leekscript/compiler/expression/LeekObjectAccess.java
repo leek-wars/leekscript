@@ -337,6 +337,20 @@ public class LeekObjectAccess extends Expression {
 				if (needResultCast) {
 					writer.addCode(")");
 				}
+			} else if (type == Type.BIG_INT) {
+				// Champ lu par le chemin dynamique (Object) : une valeur rangée par
+				// `/=` ou `??=` peut être un Long ou un Double. On convertit au lieu
+				// de caster, sinon ClassCastException. (#bigint #4908)
+				writer.addCode("BigIntegerValue.valueOf(" + writer.getAIThis() + ", getField(");
+				writeReceiver(mainblock, writer);
+				writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + "))");
+			} else if (type == Type.INT || type == Type.REAL) {
+				// Idem pour les champs numériques : `Z.b /= 4` range un Double dans un
+				// champ integer, `Z.r \= 2` un Long dans un champ real. On convertit
+				// plutôt que de caster. (#4908)
+				writer.addCode("((Number) getField(");
+				writeReceiver(mainblock, writer);
+				writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + "))." + (type == Type.INT ? "longValue()" : "doubleValue()"));
 			} else {
 				if (type != Type.ANY) {
 					if (parenthesis) writer.addCode("(");

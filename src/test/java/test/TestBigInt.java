@@ -366,4 +366,89 @@ public class TestBigInt extends TestCommon {
 		// surdimensionné donne un real, JSON n'ayant pas de type entier arbitraire)
 		code_v4_("return jsonEncode(jsonDecode(jsonEncode(123L)))").equals("\"123\"");
 	}
+
+	/**
+	 * #4908 : un big_integer rangé dans un emplacement non typé en Java (champ
+	 * statique, champ d'objet dynamique, case de tableau, valeur de map, globale,
+	 * box) était tronqué à 64 bits par les opérations binaires composées, ce qui
+	 * faisait ensuite planter la lecture du champ (castée en BigIntegerValue).
+	 */
+	@Test
+	public void testCompoundAssignOnUntypedSlots() throws Exception {
+		section("Opérations composées sur des emplacements non typés (#4908)");
+
+		// Le repro du rapport
+		code_v4_("class Z { private static BigInteger bigInt = 0L; public static BigInteger t() { debug(Z.bigInt); Z.bigInt |= 1; debug(Z.bigInt); return Z.bigInt; } } return Z.t();").equals("1");
+
+		// Champ statique, accès qualifié et non qualifié
+		code_v4_("class Z { public static BigInteger b = 1L << 100; public static void t() { Z.b |= 1; } } Z.t(); return Z.b == (1L << 100) + 1;").equals("true");
+		code_v4_("class Z { public static BigInteger b = 1L << 100; public static void t() { b |= 1; } } Z.t(); return Z.b == (1L << 100) + 1;").equals("true");
+		code_v4_("class Z { public static BigInteger b = 0xFFL; public static void t() { Z.b &= 0x0FL; } } Z.t(); return Z.b;").equals("15");
+		code_v4_("class Z { public static BigInteger b = 0xFFL; public static void t() { Z.b ^= 0x0FL; } } Z.t(); return Z.b;").equals("240");
+		code_v4_("class Z { public static BigInteger b = 1L; public static void t() { Z.b <<= 100; } } Z.t(); return Z.b == 1L << 100;").equals("true");
+		code_v4_("class Z { public static BigInteger b = 1L << 100; public static void t() { Z.b >>= 100; } } Z.t(); return Z.b;").equals("1");
+		code_v4_("class Z { public static BigInteger b = 1L << 100; public static void t() { Z.b \\= 1L << 50; } } Z.t(); return Z.b == 1L << 50;").equals("true");
+		code_v4_("class Z { public static BigInteger b = 1L << 100; public static void t() { Z.b++; } } Z.t(); return Z.b == (1L << 100) + 1;").equals("true");
+		code_v4_("class Z { public static BigInteger b = 1L << 100; public static void t() { Z.b--; } } Z.t(); return Z.b == (1L << 100) - 1;").equals("true");
+		// Héritage : champ déclaré dans la classe parente
+		code_v4_("class A { public static BigInteger b = 1L << 100; } class B extends A {} B.b |= 1; return B.b == (1L << 100) + 1;").equals("true");
+		// Boucle mêlant décalage et ou binaire : 201 bits à 1
+		code_v4_("class Z { public static BigInteger b = 1L; public static BigInteger t() { for (var i = 0; i < 200; i++) { b <<= 1; b |= 1; } return b; } } return Z.t() == (1L << 201) - 1;").equals("true");
+
+		// Champ d'instance lu/écrit par le chemin dynamique
+		code_v4_("class Z { public BigInteger b = 1L << 100; public void t() { this.b |= 1; } } var z = new Z(); z.t(); return z.b == (1L << 100) + 1;").equals("true");
+		code_v4_("class Z { public BigInteger b = 1L << 100; } var z = new Z(); z.b |= 1; return z.b == (1L << 100) + 1;").equals("true");
+
+		// Globale, case de tableau, valeur de map, variable capturée (box)
+		code_v4_("global g = 1L << 100; g |= 1; return g == (1L << 100) + 1;").equals("true");
+		code_v4_("var a = [1L << 100]; a[0] |= 1; return a[0] == (1L << 100) + 1;").equals("true");
+		code_v4_("var a = [1L << 100]; a[0]++; return a[0] == (1L << 100) + 1;").equals("true");
+		code_v4_("var m = ['k': 1L << 100]; m['k'] |= 1; return m['k'] == (1L << 100) + 1;").equals("true");
+		code_v4_("var m = ['k': 1L << 100]; m['k']++; return m['k'] == (1L << 100) + 1;").equals("true");
+		code_v4_("var x = 1L << 100; var f = function() { x |= 1; }; f(); return x == (1L << 100) + 1;").equals("true");
+		code_v4_("class Z { public static Array<BigInteger> a = [1L << 100]; } Z.a[0] |= 1; return Z.a[0] == (1L << 100) + 1;").equals("true");
+
+		// Non-régression : sans big_integer, les entiers restent sur 64 bits
+		code_v4_("var a = [12]; a[0] |= 1; return a[0];").equals("13");
+		code_v4_("var m = ['k': 12]; m['k'] <<= 2; return m['k'];").equals("48");
+		code_v4_("var a = [-1]; a[0] >>>= 60; return a[0];").equals("15");
+		code_v4_("var a = [7]; a[0] \\= 2; return a[0];").equals("3");
+		code_v4_("global g = 12; g |= 1; return g;").equals("13");
+		code_v4_("class Z { public static integer b = 12; public static void t() { b |= 1; } } Z.t(); return Z.b;").equals("13");
+	}
+
+	/** #4908 : affectations dans un champ statique big_integer (stocké en Object). */
+	@Test
+	public void testStaticFieldAssign() throws Exception {
+		section("Affectation d'un champ statique big_integer (#4908)");
+		code_v4_("class Z { public static BigInteger b = 0L; } Z.b = 5; return Z.b;").equals("5");
+		code_v4_("class Z { public static BigInteger b = 0L; public static void t() { b = 5; } } Z.t(); return Z.b;").equals("5");
+		code_v4_("class Z { public BigInteger b = 0L; } var z = new Z(); z.b = 5; return z.b;").equals("5");
+		code_v4_("class Z { public BigInteger b = 0L; public void t() { b = 5; } } var z = new Z(); z.t(); return z.b;").equals("5");
+		code_v4_("class Z { public static BigInteger b = 10L; public static void t() { Z.b += 1; } } Z.t(); return Z.b;").equals("11");
+		code_v4_("class Z { public static BigInteger b = 10L; public static void t() { Z.b -= 3; } } Z.t(); return Z.b;").equals("7");
+		code_v4_("class Z { public static BigInteger b = 10L; public static void t() { Z.b *= 3; } } Z.t(); return Z.b;").equals("30");
+		code_v4_("class Z { public static BigInteger b = 10L; public static void t() { Z.b %= 3; } } Z.t(); return Z.b;").equals("1");
+		code_v4_("class Z { public static BigInteger b = 2L; public static void t() { Z.b **= 10; } } Z.t(); return Z.b;").equals("1024");
+		// `/` renvoie un real : la division tronque vers le big_integer
+		code_v4_("big_integer x = 10L; x /= 2; return x;").equals("5");
+		code_v4_("big_integer x = 7L; x /= 2; return x;").equals("3");
+		code_v4_("class Z { public static BigInteger b = 10L; } Z.b /= 4; return Z.b;").equals("2");
+		code_v4_("class Z { public static BigInteger b = 10L; } Z.b /= 4; return Z.b + 1;").equals("3");
+	}
+
+	/** #4908 : `??=` sur un champ statique ne compilait pas, quel que soit le type. */
+	@Test
+	public void testCoalesceAssignStaticField() throws Exception {
+		section("`??=` sur un champ statique (#4908)");
+		// Un champ statique numérique vaut 0 (pas null) : `??=` ne le remplace donc pas
+		code_v4_("class Z { public static BigInteger b; public static BigInteger t() { b ??= 5; return b; } } return Z.t();").equals("0");
+		code_v4_("class Z { public static BigInteger b = 7L; public static BigInteger t() { b ??= 5; return b; } } return Z.t();").equals("7");
+		code_v4_("class Z { public static integer b; public static integer t() { b ??= 5; return b; } } return Z.t();").equals("0");
+		code_v4_("class Z { public static integer b = 3; public static integer t() { b ??= 5; return b; } } return Z.t();").equals("3");
+		code_v4_("class Z { public static integer b; } Z.b ??= 5; return Z.b;").equals("0");
+		code_v4_("class Z { public static string s; public static string t() { s ??= 'x'; return s; } } return Z.t();").equals("\"x\"");
+		code_v4_("class Z { public static b; public static t() { b ??= 5; return b; } } return Z.t();").equals("5");
+		code_v4_("class Z { public static Array a; public static Array t() { a ??= [1]; return a; } } return Z.t();").equals("[1]");
+	}
 }

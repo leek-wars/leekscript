@@ -186,9 +186,9 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		return v;
 	}
 
-	public long put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Object put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.intdiv(get(key), value);
+		var v = ai.intdivAny(get(key), value);
 		put(key, v);
 		return v;
 	}
@@ -209,21 +209,21 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 
 	public Object put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.band(get(key), value);
+		var v = ai.bandAny(get(key), value);
 		put(key, v);
 		return v;
 	}
 
 	public Object put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.bor(get(key), value);
+		var v = ai.borAny(get(key), value);
 		put(key, v);
 		return v;
 	}
 
 	public Object put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.bxor(get(key), value);
+		var v = ai.bxorAny(get(key), value);
 		put(key, v);
 		return v;
 	}
@@ -238,21 +238,21 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 
 	public Object put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.shr(get(key), value);
+		var v = ai.shrAny(get(key), value);
 		put(key, v);
 		return v;
 	}
 
 	public Object put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.ushr(get(key), value);
+		var v = ai.ushrAny(get(key), value);
 		put(key, v);
 		return v;
 	}
 
 	public Object put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.shl(get(key), value);
+		var v = ai.shlAny(get(key), value);
 		put(key, v);
 		return v;
 	}

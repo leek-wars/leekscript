@@ -372,6 +372,22 @@ public class LeekVariable extends Expression {
 				writer.addCode(")");
 				return;
 			}
+			// Un champ statique est stocké en Object : une valeur rangée par un chemin
+			// dynamique (`/=`, `??=`…) peut être un Long ou un Double. Pour big_integer
+			// on convertit au lieu de caster, sinon la lecture jette une
+			// ClassCastException (IMPOSSIBLE_CAST). (#bigint #4908)
+			if (variableType == Type.BIG_INT) {
+				writer.addCode("BigIntegerValue.valueOf(" + writer.getAIThis() + ", " + mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + token.getWord() + "\"))");
+				return;
+			}
+			// Idem pour integer et real : une opération composée peut avoir rangé
+			// l'autre type numérique (`b /= 4` range un Double, `b \= 2` un Long).
+			// On convertit comme le fait openResultConversion pour les variables
+			// locales, au lieu d'un cast Java qui jetterait une ClassCastException.
+			if (variableType == Type.INT || variableType == Type.REAL) {
+				writer.addCode("((Number) " + mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + token.getWord() + "\"))." + (variableType == Type.INT ? "longValue()" : "doubleValue()"));
+				return;
+			}
 			if (variableType != Type.ANY) {
 				if (parenthesis) writer.addCode("(");
 				if (variableType.isPrimitive()) {
@@ -578,7 +594,7 @@ public class LeekVariable extends Expression {
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".setField(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer, false);
+			writeStaticFieldValue(mainblock, writer, expr);
 			writer.addCode(")");
 		} else if (mainblock.isRedefinedFunction(token.getWord())) {
 			writer.addCode("rfunction_" + token.getWord() + ".set(");
@@ -634,7 +650,7 @@ public class LeekVariable extends Expression {
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".setField(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer, false);
+			writeStaticFieldValue(mainblock, writer, expr);
 			writer.addCode(")");
 		} else if (mainblock.isRedefinedFunction(token.getWord())) {
 			writer.addCode("rfunction_" + token.getWord() + ".set(");
@@ -666,6 +682,23 @@ public class LeekVariable extends Expression {
 	}
 
 	/**
+	 * Valeur écrite dans un champ statique (`setField`, qui stocke un Object sans
+	 * connaître le type déclaré du champ). Un champ `big_integer` doit recevoir un
+	 * BigIntegerValue : sans conversion, `b = 5` y range un Long et la lecture
+	 * suivante, castée en BigIntegerValue par le code généré, jette une
+	 * ClassCastException. Limité à big_integer : les autres types ont toujours été
+	 * stockés tels quels par ce chemin. (#bigint #4908)
+	 */
+	private void writeStaticFieldValue(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
+		var fieldType = (variable != null) ? variable.getDeclaredType() : variableType;
+		if (fieldType == Type.BIG_INT) {
+			writer.compileConvert(mainblock, 0, expr, fieldType, false);
+		} else {
+			expr.writeJavaCode(mainblock, writer, false);
+		}
+	}
+
+	/**
 	 * Cast à insérer devant un `add()/sub()` dont le résultat (Object) est réaffecté
 	 * à une variable big_integer typée — sinon `BigIntegerValue x = add(...)` ne
 	 * compile pas. (#bigint)
@@ -683,6 +716,10 @@ public class LeekVariable extends Expression {
 	 * BigIntegerValue »). (#bigint #4477)
 	 */
 	private String bitOpMethod(String longMethod) {
+		// Emplacement non typé (Object en Java) : la promotion se décide au runtime,
+		// sinon un big_integer rangé dans une globale ou un champ `any` est tronqué
+		// à 64 bits par longint(). (#bigint #4908)
+		if (this.variableType == Type.ANY) return longMethod + "Any";
 		if (this.variableType != Type.BIG_INT) return longMethod;
 		switch (longMethod) {
 			case "bor": return "bigOr";
@@ -709,6 +746,14 @@ public class LeekVariable extends Expression {
 		}
 		if (castType == Type.REAL) {
 			writer.addCode("real(");
+			return ")";
+		}
+		// big_integer : `/` renvoie un double, un cast Java échouerait à la compilation
+		// (« double cannot be converted to BigIntegerValue »). valueOf convertit, et
+		// rend la valeur telle quelle quand l'opérateur a déjà renvoyé un big_integer.
+		// (#bigint #4908)
+		if (castType == Type.BIG_INT) {
+			writer.addCode("BigIntegerValue.valueOf(" + writer.getAIThis() + ", ");
 			return ")";
 		}
 		if (castType != Type.ANY) {
@@ -1538,12 +1583,30 @@ public class LeekVariable extends Expression {
 			}
 		}
 
+		// Un champ statique n'est pas un champ Java de la ClassLeekValue : il faut
+		// passer par getField/setField. Sans ça le Java généré ne compile pas
+		// (« cannot find symbol: variable b »), pour tous les types. (#4908)
+		if (type == VariableType.STATIC_FIELD) {
+			var clazz = mainblock.getWordCompiler().getCurrentClassVariable();
+			var read = clazz + ".getField(\"" + token.getWord() + "\")";
+			writer.addCode(clazz + ".setField(\"" + token.getWord() + "\", ");
+			if (this.variableType == Type.BIG_INT) {
+				writer.addCode("BigIntegerValue.valueOf(" + writer.getAIThis() + ", ");
+			}
+			writer.addCode("(" + read + " != null ? " + read + " : ");
+			expr.writeJavaCode(mainblock, writer, false);
+			writer.addCode(")");
+			if (this.variableType == Type.BIG_INT) {
+				writer.addCode(")");
+			}
+			writer.addCode(")");
+			return;
+		}
+
 		// Fallback: explicit ternary assignment on the underlying storage
 		String varName;
 		if (type == VariableType.FIELD) {
 			varName = token.getWord();
-		} else if (type == VariableType.STATIC_FIELD) {
-			varName = mainblock.getWordCompiler().getCurrentClassVariable() + "." + token.getWord();
 		} else if (type == VariableType.GLOBAL) {
 			varName = "g_" + token.getWord();
 		} else {

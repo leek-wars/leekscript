@@ -308,11 +308,11 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return new_value;
 	}
 
-	public long put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Object put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = boundedIndex(ai, key);
-		if (i < 0) return 0;
-		var new_value = ai.intdiv(get(i), value);
+		if (i < 0) return 0l;
+		var new_value = ai.intdivAny(get(i), value);
 		set(i, new_value);
 		return new_value;
 	}
@@ -326,56 +326,56 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return new_value;
 	}
 
-	public long put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Object put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = boundedIndex(ai, key);
-		if (i < 0) return 0;
-		var new_value = ai.bor(get(i), value);
+		if (i < 0) return 0l;
+		var new_value = ai.borAny(get(i), value);
 		set(i, new_value);
 		return new_value;
 	}
 
-	public long put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Object put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = boundedIndex(ai, key);
-		if (i < 0) return 0;
-		var new_value = ai.band(get(i), value);
+		if (i < 0) return 0l;
+		var new_value = ai.bandAny(get(i), value);
 		set(i, new_value);
 		return new_value;
 	}
 
-	public long put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Object put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = boundedIndex(ai, key);
-		if (i < 0) return 0;
-		var new_value = ai.bxor(get(i), value);
+		if (i < 0) return 0l;
+		var new_value = ai.bxorAny(get(i), value);
 		set(i, new_value);
 		return new_value;
 	}
 
-	public long put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Object put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = boundedIndex(ai, key);
-		if (i < 0) return 0;
-		var new_value = ai.shl(get(i), value);
+		if (i < 0) return 0l;
+		var new_value = ai.shlAny(get(i), value);
 		set(i, new_value);
 		return new_value;
 	}
 
-	public long put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Object put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = boundedIndex(ai, key);
-		if (i < 0) return 0;
-		var new_value = ai.shr(get(i), value);
+		if (i < 0) return 0l;
+		var new_value = ai.shrAny(get(i), value);
 		set(i, new_value);
 		return new_value;
 	}
 
-	public long put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
+	public Object put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = boundedIndex(ai, key);
-		if (i < 0) return 0;
-		var new_value = ai.ushr(get(i), value);
+		if (i < 0) return 0l;
+		var new_value = ai.ushrAny(get(i), value);
 		set(i, new_value);
 		return new_value;
 	}

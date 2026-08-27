@@ -739,10 +739,12 @@ public abstract class AI {
 			case "long":
 			case "java.lang.Long":
 			case "java.lang.Long.longValue()":
+			case "java.lang.Number.longValue()":
 				return "integer";
 			case "double":
 			case "java.lang.Double":
 			case "java.lang.Double.doubleValue()":
+			case "java.lang.Number.doubleValue()":
 				return "real";
 			case "java.lang.String": return "string";
 			case "leekscript.runner.values.MapLeekValue": return "Map";
@@ -1341,6 +1343,46 @@ public abstract class AI {
 		return BigIntegerValue.valueOf(this, x).not();
 	}
 
+	// Variantes « any » des opérations binaires, pour les emplacements dont le type
+	// n'est pas connu à la compilation (case de tableau, valeur de map, champ, box) :
+	// la promotion en big_integer s'y décide au runtime. Les variantes long
+	// tronqueraient le big_integer à 64 bits (longint()), et réécrire ce long dans un
+	// emplacement déclaré big_integer casse la lecture suivante, qui est castée en
+	// BigIntegerValue. (#bigint #4908)
+	private boolean anyBig(Object x, Object y) {
+		return x instanceof BigIntegerValue || y instanceof BigIntegerValue;
+	}
+
+	public Object borAny(Object x, Object y) throws LeekRunException {
+		return anyBig(x, y) ? bigOr(x, y) : bor(x, y);
+	}
+
+	public Object bandAny(Object x, Object y) throws LeekRunException {
+		return anyBig(x, y) ? bigAnd(x, y) : band(x, y);
+	}
+
+	public Object bxorAny(Object x, Object y) throws LeekRunException {
+		return anyBig(x, y) ? bigXor(x, y) : bxor(x, y);
+	}
+
+	public Object shlAny(Object x, Object y) throws LeekRunException {
+		return anyBig(x, y) ? bigShl(x, y) : shl(x, y);
+	}
+
+	public Object shrAny(Object x, Object y) throws LeekRunException {
+		return anyBig(x, y) ? bigShr(x, y) : shr(x, y);
+	}
+
+	// `>>>` n'a pas de sens en précision arbitraire (pas de largeur fixe) : même
+	// traitement que `>>`, comme la variante typée bigShr.
+	public Object ushrAny(Object x, Object y) throws LeekRunException {
+		return anyBig(x, y) ? bigShr(x, y) : ushr(x, y);
+	}
+
+	public Object intdivAny(Object x, Object y) throws LeekRunException {
+		return anyBig(x, y) ? bigIntdiv(x, y) : intdiv(x, y);
+	}
+
 	public long add(long x, long y) throws LeekRunException {
 		return x + y;
 	}
@@ -1586,25 +1628,25 @@ public abstract class AI {
 		return null;
 	}
 
-	public long bor_eq(Object x, Object y) throws LeekRunException {
+	public Object bor_eq(Object x, Object y) throws LeekRunException {
 		if (x instanceof Box) {
 			return ((Box) x).bor_eq(y);
 		}
-		return 0;
+		return 0l;
 	}
 
-	public long band_eq(Object x, Object y) throws LeekRunException {
+	public Object band_eq(Object x, Object y) throws LeekRunException {
 		if (x instanceof Box) {
 			return ((Box) x).band_eq(y);
 		}
-		return 0;
+		return 0l;
 	}
 
-	public long bxor_eq(Object x, Object y) throws LeekRunException {
+	public Object bxor_eq(Object x, Object y) throws LeekRunException {
 		if (x instanceof Box) {
 			return ((Box) x).bxor_eq(y);
 		}
-		return 0;
+		return 0l;
 	}
 
 	public Object increment(Object x) throws LeekRunException {
@@ -1940,6 +1982,14 @@ public abstract class AI {
 				f.set(object, v);
 				return v;
 			}
+			// Un champ big_integer accepte n'importe quel nombre : sans cette
+			// conversion, Field.set() jette IllegalArgumentException pour un Long
+			// (`obj.big = 5`) et l'affectation était silencieusement perdue. (#bigint)
+			if (type == BigIntegerValue.class) {
+				var v = value == null ? null : BigIntegerValue.valueOf(this, value);
+				f.set(object, v);
+				return v;
+			}
 			f.set(object, value);
 			return value;
 		} catch (IllegalArgumentException | IllegalAccessException e) {
@@ -2272,7 +2322,7 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			return setFieldConverted(object, f, intdiv(f.get(object), value));
+			return setFieldConverted(object, f, intdivAny(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2314,7 +2364,7 @@ public abstract class AI {
 		try {
 			var f = getWriteableField(object, field, fromClass);
 			if (f == null) return null;
-			return setFieldConverted(object, f, bor(f.get(object), value));
+			return setFieldConverted(object, f, borAny(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2332,7 +2382,7 @@ public abstract class AI {
 		try {
 			var f = getWriteableField(object, field, fromClass);
 			if (f == null) return null;
-			return setFieldConverted(object, f, band(f.get(object), value));
+			return setFieldConverted(object, f, bandAny(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2350,7 +2400,7 @@ public abstract class AI {
 		try {
 			var f = getWriteableField(object, field, fromClass);
 			if (f == null) return null;
-			return setFieldConverted(object, f, bxor(f.get(object), value));
+			return setFieldConverted(object, f, bxorAny(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2368,7 +2418,7 @@ public abstract class AI {
 		try {
 			var f = getWriteableField(object, field, fromClass);
 			if (f == null) return null;
-			return setFieldConverted(object, f, shl(f.get(object), value));
+			return setFieldConverted(object, f, shlAny(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2387,7 +2437,7 @@ public abstract class AI {
 			try {
 				var f = getWriteableField(object, field, fromClass);
 			if (f == null) return null;
-				return setFieldConverted(object, f, shr(f.get(object), value));
+				return setFieldConverted(object, f, shrAny(f.get(object), value));
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				addSystemLog(AILog.ERROR, e);
 			}
@@ -2407,7 +2457,7 @@ public abstract class AI {
 			try {
 				var f = getWriteableField(object, field, fromClass);
 				if (f == null) return null;
-				return setFieldConverted(object, f, ushr(f.get(object), value));
+				return setFieldConverted(object, f, ushrAny(f.get(object), value));
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				addSystemLog(AILog.ERROR, e);
 			}
@@ -2819,7 +2869,7 @@ public abstract class AI {
 		return null;
 	}
 
-	public long put_intdiv_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
+	public Object put_intdiv_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) array).put_intdiv_eq(this, key, value);
 		}
@@ -2840,8 +2890,8 @@ public abstract class AI {
 		if (array instanceof NativeObjectLeekValue) {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
-				if (f == null) return 0;
-				var v = intdiv(f.get(array), value);
+				if (f == null) return 0l;
+				var v = intdivAny(f.get(array), value);
 				f.set(array, v);
 				return v;
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
@@ -2850,7 +2900,7 @@ public abstract class AI {
 		}
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
-		return 0;
+		return 0l;
 	}
 
 	public Object put_bor_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
@@ -2875,7 +2925,7 @@ public abstract class AI {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
 				if (f == null) return null;
-				var v = bor(f.get(array), value);
+				var v = borAny(f.get(array), value);
 				f.set(array, v);
 				return v;
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
@@ -2909,7 +2959,7 @@ public abstract class AI {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
 				if (f == null) return null;
-				var v = band(f.get(array), value);
+				var v = bandAny(f.get(array), value);
 				f.set(array, v);
 				return v;
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
@@ -2943,7 +2993,7 @@ public abstract class AI {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
 				if (f == null) return null;
-				var v = shl(f.get(array), value);
+				var v = shlAny(f.get(array), value);
 				f.set(array, v);
 				return v;
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
@@ -2977,7 +3027,7 @@ public abstract class AI {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
 				if (f == null) return null;
-				var v = shr(f.get(array), value);
+				var v = shrAny(f.get(array), value);
 				f.set(array, v);
 				return v;
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
@@ -3011,7 +3061,7 @@ public abstract class AI {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
 				if (f == null) return null;
-				var v = ushr(f.get(array), value);
+				var v = ushrAny(f.get(array), value);
 				f.set(array, v);
 				return v;
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
@@ -3045,7 +3095,7 @@ public abstract class AI {
 			try {
 				var f = getWriteableField(array, string(key), fromClass);
 				if (f == null) return null;
-				var v = bxor(f.get(array), value);
+				var v = bxorAny(f.get(array), value);
 				f.set(array, v);
 				return v;
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {

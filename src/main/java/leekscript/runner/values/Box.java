@@ -90,6 +90,10 @@ public class Box<T> {
 			mValue = value + 1;
 			return (T) value;
 		}
+		if (mValue instanceof BigIntegerValue value) {
+			mValue = mUAI.add(value, 1l);
+			return (T) value;
+		}
 		// Cohérent avec ai.add(null, 1) = 1 et MapLeekValue.put_inc :
 		// null en contexte numérique vaut 0. Évite un INVALID_OPERATOR + log
 		// chaud (5000 fois pour `m[k]++` sur clé absente, 58× plus lent).
@@ -113,6 +117,10 @@ public class Box<T> {
 			mValue = value - 1;
 			return (T) value;
 		}
+		if (mValue instanceof BigIntegerValue value) {
+			mValue = mUAI.sub(value, 1l);
+			return (T) value;
+		}
 		if (mValue == null) {
 			mValue = -1l;
 			return (T) (Long) 0l;
@@ -129,6 +137,9 @@ public class Box<T> {
 		if (mValue instanceof Double) {
 			return (T) (mValue = (Double) mValue + 1);
 		}
+		if (mValue instanceof BigIntegerValue big) {
+			return (T) (mValue = mUAI.add(big, 1l));
+		}
 		if (mValue == null) {
 			return (T) (mValue = (Long) 1l);
 		}
@@ -143,6 +154,9 @@ public class Box<T> {
 		}
 		if (mValue instanceof Double) {
 			return (T) (mValue = (Double) mValue - 1);
+		}
+		if (mValue instanceof BigIntegerValue big) {
+			return (T) (mValue = mUAI.sub(big, 1l));
 		}
 		if (mValue == null) {
 			return (T) (mValue = (Long) (-1l));
@@ -160,6 +174,7 @@ public class Box<T> {
 		// mUAI.ops(1);
 		if (mValue instanceof Long l) return -(long) l;
 		if (mValue instanceof Double d) return -(double) d;
+		if (mValue instanceof BigIntegerValue big) return big.negate();
 		return -mUAI.longint(mValue);
 	}
 
@@ -182,28 +197,28 @@ public class Box<T> {
 		return mValue = mUAI.pow(mValue, val);
 	}
 
-	public long band_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.band(mValue, val));
+	public Object band_eq(Object val) throws LeekRunException {
+		return mValue = mUAI.bandAny(mValue, val);
 	}
 
-	public long bor_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.bor(mValue, val));
+	public Object bor_eq(Object val) throws LeekRunException {
+		return mValue = mUAI.borAny(mValue, val);
 	}
 
-	public long bxor_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.bxor(mValue, val));
+	public Object bxor_eq(Object val) throws LeekRunException {
+		return mValue = mUAI.bxorAny(mValue, val);
 	}
 
-	public long shl_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.shl(mValue, val));
+	public Object shl_eq(Object val) throws LeekRunException {
+		return mValue = mUAI.shlAny(mValue, val);
 	}
 
-	public long shr_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.shr(mValue, val));
+	public Object shr_eq(Object val) throws LeekRunException {
+		return mValue = mUAI.shrAny(mValue, val);
 	}
 
-	public long ushr_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.ushr(mValue, val));
+	public Object ushr_eq(Object val) throws LeekRunException {
+		return mValue = mUAI.ushrAny(mValue, val);
 	}
 
 	public double div_eq(Object val) throws LeekRunException {
@@ -214,8 +229,8 @@ public class Box<T> {
 		return mValue = mUAI.div_v1(mValue, val);
 	}
 
-	public long intdiv_eq(Object val) throws LeekRunException {
-		return (long) (mValue = mUAI.intdiv(mValue, val));
+	public Object intdiv_eq(Object val) throws LeekRunException {
+		return mValue = mUAI.intdivAny(mValue, val);
 	}
 
 	public Object mod_eq(Object val) throws LeekRunException {

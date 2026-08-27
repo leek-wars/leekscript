@@ -93,27 +93,27 @@ public class Wrapper<T> {
 		return variable.pow_eq(x);
 	}
 
-	public long band_eq(Object x) throws LeekRunException {
+	public Object band_eq(Object x) throws LeekRunException {
 		return variable.band_eq(x);
 	}
 
-	public long bor_eq(Object x) throws LeekRunException {
+	public Object bor_eq(Object x) throws LeekRunException {
 		return variable.bor_eq(x);
 	}
 
-	public long bxor_eq(Object x) throws LeekRunException {
+	public Object bxor_eq(Object x) throws LeekRunException {
 		return variable.bxor_eq(x);
 	}
 
-	public long shl_eq(Object x) throws LeekRunException {
+	public Object shl_eq(Object x) throws LeekRunException {
 		return variable.shl_eq(x);
 	}
 
-	public long shr_eq(Object x) throws LeekRunException {
+	public Object shr_eq(Object x) throws LeekRunException {
 		return variable.shr_eq(x);
 	}
 
-	public long ushr_eq(Object x) throws LeekRunException {
+	public Object ushr_eq(Object x) throws LeekRunException {
 		return variable.ushr_eq(x);
 	}
 

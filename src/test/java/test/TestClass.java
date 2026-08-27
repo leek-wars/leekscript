@@ -239,10 +239,12 @@ public class TestClass extends TestCommon {
 	}
 
 	/**
-	 * Champ statique typé sans initialiseur : vaut null (contrairement à une variable
-	 * locale typée, initialisée à la valeur par défaut du type). L'erreur runtime doit
-	 * être propre : « null vers Set », pas une signature Java interne tronquée, et pas
-	 * d'erreur parasite « champ inconnu » sur une méthode qui existe (forum 11320).
+	 * Champ statique typé sans initialiseur : vaut null pour les types qui acceptent
+	 * null (Set, Array, string, classes…), comme un champ d'instance du même type.
+	 * Les types numériques et boolean, eux, valent 0 / 0.0 / false (cf.
+	 * testClass_static_field_defaults). L'erreur runtime doit être propre :
+	 * « null vers Set », pas une signature Java interne tronquée, et pas d'erreur
+	 * parasite « champ inconnu » sur une méthode qui existe (forum 11320).
 	 */
 	@Test
 	public void testClass_static_field_uninitialized_errors() throws Exception {
@@ -258,4 +260,56 @@ public class TestClass extends TestCommon {
 		code_v4_("Set<integer> s; setPut(s, 1); return s").equals("<1>");
 	}
 
+	/**
+	 * #4908 : un champ statique vit dans une Box (Object), pas dans un champ Java typé.
+	 * Sans valeur initiale il valait donc null même pour un integer/real/boolean, et la
+	 * lecture — qui déballe un long — plantait en IMPOSSIBLE_CAST.
+	 */
+	@Test
+	public void testClass_static_field_defaults() throws Exception {
+		section("Valeur par défaut d'un champ statique typé (#4908)");
+		code_v4_("class Z { public static integer b; } return Z.b;").equals("0");
+		code_v4_("class Z { public static real r; } return Z.r;").equals("0.0");
+		code_v4_("class Z { public static boolean f; } return Z.f;").equals("false");
+		code_v4_("class Z { public static BigInteger b; } return Z.b;").equals("0");
+		code_v4_("class Z { public static integer b; public static integer t() { return b; } } return Z.t();").equals("0");
+		code_v4_("class Z { public static integer b; } Z.b++; return Z.b;").equals("1");
+		code_v4_("class Z { public static integer b; } Z.b += 5; return Z.b;").equals("5");
+		code_v4_("class Z { public static BigInteger b; } Z.b |= 1; return Z.b;").equals("1");
+		code_v4_("class A { public static integer b; } class B extends A {} return B.b;").equals("0");
+		// Les types qui acceptent null gardent null, comme les champs d'instance
+		code_v4_("class Z { public static string s; } return Z.s;").equals("null");
+		code_v4_("class Z { public static Array a; } return Z.a;").equals("null");
+		code_v4_("class Z { public static string s; } Z.s ??= 'x'; return Z.s;").equals("\"x\"");
+		code_v4_("class Z { public static Array a; } Z.a ??= [1]; return Z.a;").equals("[1]");
+		// Champ avec valeur : inchangé
+		code_v4_("class Z { public static final integer C = 42; } return Z.C;").equals("42");
+	}
+
+	/**
+	 * #4908 : une opération composée range dans la Box le type que renvoie l'opérateur
+	 * (`/=` un real, `\\=` un integer), pas le type déclaré du champ. La lecture doit
+	 * donc convertir au lieu de caster, sinon ClassCastException / IMPOSSIBLE_CAST.
+	 */
+	@Test
+	public void testClass_static_field_numeric_compound() throws Exception {
+		section("Opérations composées sur un champ numérique statique (#4908)");
+		code_v4_("class Z { public static integer b = 10; } Z.b /= 4; return Z.b;").equals("2");
+		code_v4_("class Z { public static integer b = 10; } Z.b += 1.5; return Z.b;").equals("11");
+		code_v4_("class Z { public static integer b = 10; } Z.b *= 1.5; return Z.b;").equals("15");
+		code_v4_("class Z { public static integer b = 7; } Z.b %= 2.5; return Z.b;").equals("2");
+		code_v4_("class Z { public static integer b = 10; public static integer t() { b /= 4; return b; } } return Z.t();").equals("2");
+		code_v4_("class Z { public static integer b = 10; public static integer t() { b += 1.5; return b; } } return Z.t();").equals("11");
+		code_v4_("class Z { public static real r = 10.0; } Z.r \\= 3; return Z.r;").equals("3.0");
+		code_v4_("class Z { public static real r = 10.0; public static real t() { r \\= 3; return r; } } return Z.t();").equals("3.0");
+		// Champ d'instance lu par le chemin dynamique
+		code_v4_("class Z { public integer b = 10; } var z = new Z(); z.b /= 4; return z.b;").equals("2");
+		code_v4_("class Z { public real r = 10.0; } var z = new Z(); z.r \\= 3; return z.r;").equals("3.0");
+		// Non-régression
+		code_v4_("class Z { public static integer b = 10; } Z.b += 1; return Z.b;").equals("11");
+		code_v4_("class Z { public static integer b = 10; } Z.b++; return Z.b;").equals("11");
+		code_v4_("class Z { public static integer b = 10; } Z.b = 3; return Z.b + 1;").equals("4");
+		code_v4_("class Z { public static real r = 1.5; } Z.r += 1; return Z.r;").equals("2.5");
+		code_v4_("class Z { public static real r = 2.5; } return Z.r;").equals("2.5");
+	}
 }

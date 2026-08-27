@@ -252,12 +252,12 @@ public class ObjectLeekValue implements LeekValue {
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_intdiv_eq(String field, Object value) throws LeekRunException {
+	public Object field_intdiv_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
 				clazz.ai.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { clazz.name, field });
-				return 0;
+				return 0l;
 			}
 			return result.intdiv_eq(value);
 		}
@@ -276,72 +276,72 @@ public class ObjectLeekValue implements LeekValue {
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_bor_eq(String field, Object value) throws LeekRunException {
+	public Object field_bor_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
 				clazz.ai.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { clazz.name, field });
-				return 0;
+				return 0l;
 			}
 			return result.bor_eq(value);
 		}
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_bxor_eq(String field, Object value) throws LeekRunException {
+	public Object field_bxor_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
 				clazz.ai.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { clazz.name, field });
-				return 0;
+				return 0l;
 			}
 			return result.bxor_eq(value);
 		}
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_band_eq(String field, Object value) throws LeekRunException {
+	public Object field_band_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
 				clazz.ai.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { clazz.name, field });
-				return 0;
+				return 0l;
 			}
 			return result.band_eq(value);
 		}
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_shl_eq(String field, Object value) throws LeekRunException {
+	public Object field_shl_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
 				clazz.ai.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { clazz.name, field });
-				return 0;
+				return 0l;
 			}
 			return result.shl_eq(value);
 		}
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_shr_eq(String field, Object value) throws LeekRunException {
+	public Object field_shr_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
 				clazz.ai.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { clazz.name, field });
-				return 0;
+				return 0l;
 			}
 			return result.shr_eq(value);
 		}
 		throw new LeekRunException(Error.UNKNOWN_FIELD);
 	}
 
-	public long field_ushr_eq(String field, Object value) throws LeekRunException {
+	public Object field_ushr_eq(String field, Object value) throws LeekRunException {
 		var result = fields.get(field);
 		if (result != null) {
 			if (result.isFinal) {
 				clazz.ai.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { clazz.name, field });
-				return 0;
+				return 0l;
 			}
 			return result.ushr_eq(value);
 		}

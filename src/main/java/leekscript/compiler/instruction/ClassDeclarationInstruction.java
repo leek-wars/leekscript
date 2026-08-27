@@ -1032,6 +1032,12 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		writer.addLine("createStaticClass_" + token.getWord() + "();");
 	}
 
+	/** Types dont la valeur par défaut n'est pas null (cf. champs d'instance, qui sont
+	 * de vrais champs Java primitifs). */
+	private static boolean hasZeroDefault(Type type) {
+		return type == Type.INT || type == Type.REAL || type == Type.BOOL || type == Type.BIG_INT;
+	}
+
 	public void writeCreateStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
 
 		writer.addLine("private void createStaticClass_" + token.getWord() + "() throws LeekRunException {");
@@ -1086,6 +1092,17 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				writer.addCode(className);
 				writer.addCode(".initField(\"" + field.getKey() + "\", ");
 				writer.compileConvert(mainblock, 0, field.getValue().expression, field.getValue().getType(), false);
+				writer.addLine(");");
+			} else if (hasZeroDefault(field.getValue().getType())) {
+				// Un champ statique est stocké dans une Box, qui vaut null tant que
+				// rien ne l'initialise — alors qu'un champ d'instance est un vrai champ
+				// Java et vaut donc 0 / 0.0 / false. Sans ça, `class Z { static integer
+				// b; }` puis `Z.b` lit null et le code généré, qui déballe un long,
+				// plante (IMPOSSIBLE_CAST). Les types qui acceptent null (string,
+				// Array, classes…) gardent null, comme les champs d'instance. (#4908)
+				writer.addCode(className);
+				writer.addCode(".initField(\"" + field.getKey() + "\", ");
+				writer.addCode(field.getValue().getType().getDefaultValue(writer, mainblock.getVersion()));
 				writer.addLine(");");
 			}
 		}
