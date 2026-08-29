@@ -288,8 +288,11 @@ public class LeekObjectAccess extends Expression {
 	 * faut alors caster le résultat pour que javac trouve les membres du type narrowé.
 	 */
 	private boolean needsNarrowedResultCast() {
-		return type instanceof ClassType ct && variable.getType() != type
-			&& !(variable.getType() instanceof ClassType vct && vct == ct);
+		return type instanceof ClassType && variable.getType() != type
+			// Cast seulement s'il est légal depuis le type du champ : un `instanceof` toujours
+			// faux (`integer m; if (m instanceof B)`) narrowe vers un type sans lien, et le cast
+			// ferait échouer javac sur du code mort.
+			&& variable.getType().accepts(type) != Type.CastType.INCOMPATIBLE;
 	}
 
 	// Émission du receveur pour les chemins dynamiques (getField/setField/field_*) :

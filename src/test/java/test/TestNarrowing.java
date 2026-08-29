@@ -232,6 +232,28 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("class A {} class B extends A { integer go() { return 7 } } class C { A m = new B() } var c = new C(); if (c.m instanceof B) { return c.m.go() } return 0").equals("7");
 	}
 
+	/**
+	 * Un `instanceof` sans lien avec le type déclaré du champ (donc toujours faux) narrowe quand
+	 * même vers le type testé : le cast serait illégal en Java (« incompatible types ») et ferait
+	 * échouer la compilation d'une IA qui passait très bien. On n'émet donc le cast que s'il est
+	 * légal, et le code mort reste compilable.
+	 */
+	@Test
+	public void testInstanceof_narrowing_incompatible_type_no_cast() throws Exception {
+		section("Instanceof narrowing: pas de cast quand le type testé est incompatible");
+		// Classes sans lien de parenté
+		code_v4_("class A {} class D {} class C { A m = new A(); test() { if (m instanceof D) { return 1 } return 0 } } return new C().test()").equals("0");
+		// Champ primitif testé contre une classe, avec et sans `this`
+		code_v4_("class B {} class C { integer m = 1; test() { if (m instanceof B) { return 1 } return 0 } } return new C().test()").equals("0");
+		code_v4_("class B {} class C { integer m = 1; test() { if (this.m instanceof B) { return 1 } return 0 } } return new C().test()").equals("0");
+		code_v4_("class B {} class C { integer m = 1 } var c = new C(); if (c.m instanceof B) { return 1 } return 0").equals("0");
+		// Types conteneurs incompatibles entre eux
+		code_v4_("class C { Array m = [1]; test() { if (m instanceof Map) { return 1 } return 0 } } return new C().test()").equals("0");
+		code_v4_("class C { Map m = [1 : 2]; test() { if (m instanceof Array) { return 1 } return 0 } } return new C().test()").equals("0");
+		code_v4_("class C { Set m = <1>; test() { if (m instanceof Array) { return 1 } return 0 } } return new C().test()").equals("0");
+		code_v4_("class C { string m = 'x'; test() { if (m instanceof Array) { return 1 } return 0 } } return new C().test()").equals("0");
+	}
+
 	@Test
 	public void testInstanceof_primitive_narrowing_in_else_branch() throws Exception {
 		section("Instanceof narrowing to primitive type in else branch");

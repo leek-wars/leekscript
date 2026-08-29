@@ -511,7 +511,17 @@ public class LeekVariable extends Expression {
 	 * (e.g., integer → long), the caller must use a safe helper instead.
 	 */
 	private boolean needsNarrowingCast(int version) {
-		return hasNarrowingMismatch(version) && !this.variableType.isPrimitive();
+		return hasNarrowingMismatch(version) && !this.variableType.isPrimitive() && isNarrowingCastLegal();
+	}
+
+	/**
+	 * Le cast vers le type narrowé est-il seulement légal en Java depuis le type déclaré ?
+	 * Une condition toujours fausse (`Array m; if (m instanceof Map) { ... }`) narrowe vers un
+	 * type sans lien : émettre le cast ferait échouer javac (« incompatible types ») sur du code
+	 * mort qui compilait très bien avant. On retombe alors sur l'émission sans cast.
+	 */
+	private boolean isNarrowingCastLegal() {
+		return this.variable.getType().accepts(this.variableType) != Type.CastType.INCOMPATIBLE;
 	}
 
 	/**
