@@ -282,6 +282,16 @@ public class LeekObjectAccess extends Expression {
 			|| isSuperInstanceReceiver(writer);
 	}
 
+	/**
+	 * L'analyse a-t-elle narrowé cet accès (`if (obj.champ instanceof B)`) vers un type
+	 * plus précis que celui du champ ? Le champ Java, lui, garde son type déclaré : il
+	 * faut alors caster le résultat pour que javac trouve les membres du type narrowé.
+	 */
+	private boolean needsNarrowedResultCast() {
+		return type instanceof ClassType ct && variable.getType() != type
+			&& !(variable.getType() instanceof ClassType vct && vct == ct);
+	}
+
 	// Émission du receveur pour les chemins dynamiques (getField/setField/field_*) :
 	// SUPER en contexte d'instance → l'objet courant, sinon l'expression telle quelle.
 	private void writeReceiver(MainLeekBlock mainblock, JavaWriter writer) {
@@ -322,10 +332,21 @@ public class LeekObjectAccess extends Expression {
 			if (this.variable != null && this.variable.getVariableType() == VariableType.METHOD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {
 				writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + field.getWord() + "\")");
 			} else if (isThisLikeReceiver(writer) && this.variable != null) {
+				// `this.champ` s'émet directement sur le champ Java, qui garde son type
+				// déclaré : même besoin de cast qu'un `obj.champ` narrowé (#4933).
+				boolean needResultCast = needsNarrowedResultCast();
+				if (needResultCast) {
+					writer.addCode("((");
+					writer.addCode(type.getJavaName(mainblock.getVersion()));
+					writer.addCode(") ");
+				}
 				writer.addCode(field.getWord());
+				if (needResultCast) {
+					writer.addCode(")");
+				}
 			} else if (object.getType() instanceof ClassType && !(type instanceof FunctionType) && this.variable != null) { // TODO : mieux détecter les méthodes
 				// Cast the entire field access if the type was narrowed (e.g., instanceof)
-				boolean needResultCast = type instanceof ClassType ct2 && variable.getType() != type && !(variable.getType() instanceof ClassType vct && vct == ct2);
+				boolean needResultCast = needsNarrowedResultCast();
 				if (needResultCast) {
 					writer.addCode("((");
 					writer.addCode(type.getJavaName(mainblock.getVersion()));

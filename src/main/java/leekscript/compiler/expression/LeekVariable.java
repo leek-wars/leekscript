@@ -361,7 +361,9 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.SUPER) {
 			writer.addCode("u_" + classDeclaration.getParent().getName());
 		} else if (type == VariableType.FIELD) {
-			writer.addCode(token.getWord());
+			// Le champ Java garde son type déclaré : sans cast, `if (m instanceof B) m.doStuff()`
+			// cherche la méthode de B sur une variable de type A → « cannot find symbol » (#4933).
+			writeNarrowed(mainblock, writer, token.getWord());
 		} else if (type == VariableType.STATIC_FIELD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {
 			// Champ static final à initialiseur littéral : inliné, comme les
 			// constantes moteur (SYSTEM_CONSTANT ci-dessous). Cf ConstantFolder.
@@ -451,40 +453,38 @@ public class LeekVariable extends Expression {
 				writer.addCode("u_" + token.getWord());
 			}
 		} else {
+			// Check if the variable was narrowed during analysis: if the expression's type
+			// differs from the declaration variable's Java type, emit a cast so that
+			// methods like .get(), .doubleValue() work on the narrowed type.
 			if (isWrapper() || isBox()) {
-				if (this.variable != null && needsNarrowingCast(mainblock.getVersion())) {
-					writer.addCode("((" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") u_" + token.getWord() + ".get())");
-				} else if (this.variable != null && needsPrimitiveNarrowingConversion(mainblock.getVersion())) {
-					if (this.variableType == Type.INT) {
-						writer.addCode("longint(u_" + token.getWord() + ".get())");
-					} else if (this.variableType == Type.REAL) {
-						writer.addCode("real(u_" + token.getWord() + ".get())");
-					} else {
-						writer.addCode("u_" + token.getWord() + ".get()");
-					}
-				} else {
-					writer.addCode("u_" + token.getWord() + ".get()");
-				}
+				writeNarrowed(mainblock, writer, "u_" + token.getWord() + ".get()");
 			} else {
-				// Check if the variable was narrowed during analysis: if the expression's type
-				// differs from the declaration variable's Java type, emit a cast so that
-				// methods like .get(), .doubleValue() work on the narrowed type.
-				if (this.variable != null && needsNarrowingCast(mainblock.getVersion())) {
-					writer.addCode("((" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") u_" + token.getWord() + ")");
-				} else if (this.variable != null && needsPrimitiveNarrowingConversion(mainblock.getVersion())) {
-					// Variable narrowed to a primitive type (e.g., Cell|integer → integer),
-					// but declared as Object in Java. Use safe conversion helpers.
-					if (this.variableType == Type.INT) {
-						writer.addCode("longint(u_" + token.getWord() + ")");
-					} else if (this.variableType == Type.REAL) {
-						writer.addCode("real(u_" + token.getWord() + ")");
-					} else {
-						writer.addCode("u_" + token.getWord());
-					}
-				} else {
-					writer.addCode("u_" + token.getWord());
-				}
+				writeNarrowed(mainblock, writer, "u_" + token.getWord());
 			}
+		}
+	}
+
+	/**
+	 * Émet la référence Java `base`, en l'adaptant au type narrowé quand la déclaration
+	 * Java est plus large que ce que l'analyse a déduit (`if (x instanceof B)`, `x != null`…).
+	 * Sans cela le code généré appelle une méthode du type narrowé sur une variable
+	 * déclarée avec le type d'origine, et javac refuse.
+	 */
+	private void writeNarrowed(MainLeekBlock mainblock, JavaWriter writer, String base) {
+		if (this.variable != null && needsNarrowingCast(mainblock.getVersion())) {
+			writer.addCode("((" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") " + base + ")");
+		} else if (this.variable != null && needsPrimitiveNarrowingConversion(mainblock.getVersion())) {
+			// Variable narrowed to a primitive type (e.g., Cell|integer → integer),
+			// but declared as Object in Java. Use safe conversion helpers.
+			if (this.variableType == Type.INT) {
+				writer.addCode("longint(" + base + ")");
+			} else if (this.variableType == Type.REAL) {
+				writer.addCode("real(" + base + ")");
+			} else {
+				writer.addCode(base);
+			}
+		} else {
+			writer.addCode(base);
 		}
 	}
 

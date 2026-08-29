@@ -209,6 +209,29 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("class Item {} class Chip extends Item { boolean flag = true } class Holder { static Item item = new Chip(); test() { if (class.item instanceof Chip && class.item.flag) { return 1 } return 0 } } return new Holder().test()").noWarning();
 	}
 
+	/**
+	 * Appel de MÉTHODE sur un champ narrowé (#4933). Le champ Java garde son type déclaré :
+	 * sans cast, javac ne trouve pas la méthode du type narrowé et l'IA ne compile plus
+	 * (« Votre IA n'a pas pu être compilée correctement »). Un accès à un CHAMP passait
+	 * déjà, d'où un bug longtemps invisible.
+	 */
+	@Test
+	public void testInstanceof_narrowing_method_call_on_field() throws Exception {
+		section("Instanceof narrowing: method call on a narrowed field");
+		// Champ d'instance désigné sans `this`
+		code_v4_("class A {} class B extends A { integer go() { return 7 } } class C { A m = new B(); test() { if (m instanceof B) { return m.go() } return 0 } } return new C().test()").equals("7");
+		code_v4_("class A {} class B extends A { integer go() { return 7 } } class C { A m = new B(); test() { if (m instanceof B) { return m.go() } return 0 } } return new C().test()").noWarning();
+		// Même champ désigné par `this`
+		code_v4_("class A {} class B extends A { integer go() { return 7 } } class C { A m = new B(); test() { if (this.m instanceof B) { return this.m.go() } return 0 } } return new C().test()").equals("7");
+		code_v4_("class A {} class B extends A { integer go() { return 7 } } class C { A m = new B(); test() { if (this.m instanceof B) { return this.m.go() } return 0 } } return new C().test()").noWarning();
+		// Branche else d'un `!(x instanceof T)`
+		code_v4_("class A {} class B extends A { integer go() { return 7 } } class C { A m = new B(); test() { if (!(m instanceof B)) { return 0 } else { return m.go() } } } return new C().test()").equals("7");
+		// Un champ qui n'est pas du type testé prend bien la branche else
+		code_v4_("class A {} class B extends A { integer go() { return 7 } } class C { A m = new A(); test() { if (m instanceof B) { return m.go() } return 0 } } return new C().test()").equals("0");
+		// Champ d'une autre instance (déjà couvert par le cast de receveur, non-régression)
+		code_v4_("class A {} class B extends A { integer go() { return 7 } } class C { A m = new B() } var c = new C(); if (c.m instanceof B) { return c.m.go() } return 0").equals("7");
+	}
+
 	@Test
 	public void testInstanceof_primitive_narrowing_in_else_branch() throws Exception {
 		section("Instanceof narrowing to primitive type in else branch");
