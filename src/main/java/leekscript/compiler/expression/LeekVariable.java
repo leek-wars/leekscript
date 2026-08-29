@@ -471,9 +471,11 @@ public class LeekVariable extends Expression {
 	 * déclarée avec le type d'origine, et javac refuse.
 	 */
 	private void writeNarrowed(MainLeekBlock mainblock, JavaWriter writer, String base) {
-		if (this.variable != null && needsNarrowingCast(mainblock.getVersion())) {
+		// Pas de garde sur `this.variable` : hasNarrowingMismatch, en tête des deux prédicats,
+		// répond déjà false quand il est null.
+		if (needsNarrowingCast(mainblock.getVersion())) {
 			writer.addCode("((" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") " + base + ")");
-		} else if (this.variable != null && needsPrimitiveNarrowingConversion(mainblock.getVersion())) {
+		} else if (needsPrimitiveNarrowingConversion(mainblock.getVersion())) {
 			// Variable narrowed to a primitive type (e.g., Cell|integer → integer),
 			// but declared as Object in Java. Use safe conversion helpers.
 			if (this.variableType == Type.INT) {
@@ -509,19 +511,15 @@ public class LeekVariable extends Expression {
 	 * Only for non-primitive narrowed types (e.g., Map, Array) where a Java
 	 * cast like ((MapLSClass) u_var) is valid. For primitive narrowed types
 	 * (e.g., integer → long), the caller must use a safe helper instead.
+	 *
+	 * Dernière condition : le cast doit aussi être LÉGAL depuis le type déclaré. Une condition
+	 * toujours fausse (`Array m; if (m instanceof Map) { ... }`) narrowe vers un type sans lien, et
+	 * le cast ferait échouer javac (« incompatible types ») sur du code mort qui compilait très
+	 * bien avant. Réponse « non » dans ce cas, donc émission sans cast, comme avant le narrowing.
 	 */
 	private boolean needsNarrowingCast(int version) {
-		return hasNarrowingMismatch(version) && !this.variableType.isPrimitive() && isNarrowingCastLegal();
-	}
-
-	/**
-	 * Le cast vers le type narrowé est-il seulement légal en Java depuis le type déclaré ?
-	 * Une condition toujours fausse (`Array m; if (m instanceof Map) { ... }`) narrowe vers un
-	 * type sans lien : émettre le cast ferait échouer javac (« incompatible types ») sur du code
-	 * mort qui compilait très bien avant. On retombe alors sur l'émission sans cast.
-	 */
-	private boolean isNarrowingCastLegal() {
-		return this.variable.getType().accepts(this.variableType) != Type.CastType.INCOMPATIBLE;
+		return hasNarrowingMismatch(version) && !this.variableType.isPrimitive()
+			&& this.variable.getType().castableFrom(this.variableType);
 	}
 
 	/**

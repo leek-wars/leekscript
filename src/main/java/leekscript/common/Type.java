@@ -79,6 +79,14 @@ public class Type {
 		this.defaultValue = defaultValue;
 	}
 
+	/**
+	 * Un cast Java depuis `type` vers ce type est-il seulement légal ? Raccourci du
+	 * `accepts(...) != INCOMPATIBLE` que le compilateur écrit un peu partout.
+	 */
+	public boolean castableFrom(Type type) {
+		return accepts(type) != CastType.INCOMPATIBLE;
+	}
+
 	public CastType accepts(Type type) {
 		if (type == this) return CastType.EQUALS;
 		if (this == ANY) return CastType.UPCAST;

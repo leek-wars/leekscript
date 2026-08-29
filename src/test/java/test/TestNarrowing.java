@@ -254,6 +254,25 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("class C { string m = 'x'; test() { if (m instanceof Array) { return 1 } return 0 } } return new C().test()").equals("0");
 	}
 
+	/**
+	 * Le cas FIELD passe désormais par le même chemin que les variables locales, donc aussi par la
+	 * conversion vers un type PRIMITIF (`longint(...)` / `real(...)`) et pas seulement par le cast.
+	 * Surface nouvelle : on la verrouille ici.
+	 */
+	@Test
+	public void testInstanceof_narrowing_field_to_primitive() throws Exception {
+		section("Instanceof narrowing: champ narrowé vers un type primitif");
+		// Champ d'union narrowé vers integer dans la branche else, puis utilisé en arithmétique
+		code_v4_("class C { Map | integer m = 5; test() { if (m instanceof Map) { return 0 } else { return m + 1 } } } return new C().test()").equals("6");
+		code_v4_("class C { Map | integer m = 5; test() { if (m instanceof Map) { return 0 } else { return m + 1 } } } return new C().test()").noWarning();
+		// NB : la même chose écrite `this.m` ne compile PAS, et ne compilait déjà pas avant ce
+		// correctif (vérifié par un build de la révision précédente). LeekObjectAccess n'a pas de
+		// chemin de conversion vers un primitif, seulement le cast de classe : `this.m + 1` émet
+		// `m + 1l` avec m en Object. Bug distinct, non traité ici.
+		// Et le cas où la branche est bien prise
+		code_v4_("class C { Map | integer m = [1 : 2]; test() { if (m instanceof Map) { return 1 } else { return m + 1 } } } return new C().test()").equals("1");
+	}
+
 	@Test
 	public void testInstanceof_primitive_narrowing_in_else_branch() throws Exception {
 		section("Instanceof narrowing to primitive type in else branch");

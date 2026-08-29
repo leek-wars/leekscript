@@ -288,11 +288,11 @@ public class LeekObjectAccess extends Expression {
 	 * faut alors caster le résultat pour que javac trouve les membres du type narrowé.
 	 */
 	private boolean needsNarrowedResultCast() {
-		return type instanceof ClassType && variable.getType() != type
+		return variable != null && type instanceof ClassType && variable.getType() != type
 			// Cast seulement s'il est légal depuis le type du champ : un `instanceof` toujours
 			// faux (`integer m; if (m instanceof B)`) narrowe vers un type sans lien, et le cast
 			// ferait échouer javac sur du code mort.
-			&& variable.getType().accepts(type) != Type.CastType.INCOMPATIBLE;
+			&& variable.getType().castableFrom(type);
 	}
 
 	// Émission du receveur pour les chemins dynamiques (getField/setField/field_*) :
@@ -334,30 +334,25 @@ public class LeekObjectAccess extends Expression {
 		} else {
 			if (this.variable != null && this.variable.getVariableType() == VariableType.METHOD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {
 				writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + field.getWord() + "\")");
-			} else if (isThisLikeReceiver(writer) && this.variable != null) {
-				// `this.champ` s'émet directement sur le champ Java, qui garde son type
-				// déclaré : même besoin de cast qu'un `obj.champ` narrowé (#4933).
+			} else if (this.variable != null && (isThisLikeReceiver(writer)
+					// TODO : mieux détecter les méthodes
+					|| (object.getType() instanceof ClassType && !(type instanceof FunctionType)))) {
+				// Accès direct au champ Java, qui garde son type déclaré : si l'analyse a narrowé
+				// le type (instanceof), il faut caster le résultat. Vaut pour `this.champ` comme
+				// pour `obj.champ` (#4933) — seul le receveur diffère.
 				boolean needResultCast = needsNarrowedResultCast();
 				if (needResultCast) {
 					writer.addCode("((");
 					writer.addCode(type.getJavaName(mainblock.getVersion()));
 					writer.addCode(") ");
 				}
-				writer.addCode(field.getWord());
-				if (needResultCast) {
-					writer.addCode(")");
+				if (isThisLikeReceiver(writer)) {
+					writer.addCode(field.getWord());
+				} else {
+					writeObjectWithNarrowingCast(mainblock, writer);
+					writer.addCode(".");
+					writer.addCode(field.getWord());
 				}
-			} else if (object.getType() instanceof ClassType && !(type instanceof FunctionType) && this.variable != null) { // TODO : mieux détecter les méthodes
-				// Cast the entire field access if the type was narrowed (e.g., instanceof)
-				boolean needResultCast = needsNarrowedResultCast();
-				if (needResultCast) {
-					writer.addCode("((");
-					writer.addCode(type.getJavaName(mainblock.getVersion()));
-					writer.addCode(") ");
-				}
-				writeObjectWithNarrowingCast(mainblock, writer);
-				writer.addCode(".");
-				writer.addCode(field.getWord());
 				if (needResultCast) {
 					writer.addCode(")");
 				}
