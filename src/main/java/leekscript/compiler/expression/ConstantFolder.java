@@ -68,24 +68,13 @@ public final class ConstantFolder {
 
 	/**
 	 * Champ statique de `clazz` (hiérarchie comprise) LISIBLE depuis `fromClass`,
-	 * ou null. Miroir exact du contrôle d'accès runtime
-	 * (ClassLeekValue.getStaticField) : une lecture interdite renvoie null + log
-	 * d'erreur au runtime — elle ne doit donc jamais être pliée ni jugée pure.
+	 * ou null. Même contrôle d'accès que l'analyse (canAccessStaticField) : une
+	 * lecture interdite renvoie null + log d'erreur au runtime — elle ne doit
+	 * donc jamais être pliée ni jugée pure.
 	 */
 	private static ClassDeclarationInstruction.ClassDeclarationField readableStaticField(ClassDeclarationInstruction clazz, String fieldName, ClassDeclarationInstruction fromClass) {
-		var declaring = clazz;
-		ClassDeclarationInstruction.ClassDeclarationField field = null;
-		while (declaring != null) {
-			field = declaring.getStaticFields().get(fieldName);
-			if (field != null) break;
-			declaring = declaring.getParent();
-		}
-		if (field == null) return null;
-		if (fromClass != declaring && field.level != AccessLevel.PUBLIC) {
-			if (fromClass == null || !fromClass.descendsFrom(declaring)) return null;
-			if (field.level == AccessLevel.PRIVATE) return null;
-		}
-		return field;
+		if (clazz.canAccessStaticField(fieldName, fromClass) != null) return null;
+		return clazz.getStaticField(fieldName);
 	}
 
 	/**

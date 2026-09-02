@@ -1299,20 +1299,19 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	/**
 	 * Visibilité d'un champ statique vu depuis `fromClass` (null = hors de toute classe),
 	 * en remontant jusqu'à la classe qui le déclare. Mêmes règles que le runtime
-	 * (ClassLeekValue.getStaticField) : privé = classe déclarante seule, protégé = classe
-	 * déclarante et ses descendantes. Null si l'accès est autorisé.
+	 * (ClassLeekValue.getField → getStaticField) : privé = classe déclarante seule,
+	 * protégé = classe déclarante et ses descendantes. Contrairement à canAccessField,
+	 * pas de clause « ancêtre » : le runtime n'en a pas pour les statiques.
+	 * Null si l'accès est autorisé (ou si le champ n'existe pas).
 	 */
 	public Error canAccessStaticField(String field, ClassDeclarationInstruction fromClass) {
 		var f = staticFields.get(field);
 		if (f != null) {
-			if (fromClass == this) return null;
+			if (fromClass == this || f.level == AccessLevel.PUBLIC) return null;
 			if (fromClass != null && fromClass.descendsFrom(this)) {
 				return f.level == AccessLevel.PRIVATE ? Error.PRIVATE_STATIC_FIELD : null;
 			}
-			if (f.level != AccessLevel.PUBLIC) {
-				return f.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_FIELD : Error.PRIVATE_STATIC_FIELD;
-			}
-			return null;
+			return f.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_FIELD : Error.PRIVATE_STATIC_FIELD;
 		}
 		if (parent != null) {
 			return parent.canAccessStaticField(field, fromClass);

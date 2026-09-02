@@ -807,9 +807,10 @@ public class LeekFunctionCall extends Expression {
 					// Si c'est un champ statique, on accepte de l'appeler
 					var field = clazz.getStaticField(oa.getField());
 					if (field != null) {
-						var accessError = clazz.canAccessStaticField(oa.getField(), compiler.getCurrentClass());
-						if (accessError != null) {
-							compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, accessError, new String[] { clazz.getName(), oa.getField() }));
+						if (field.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != clazz) {
+							compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.PRIVATE_STATIC_FIELD, new String[] { clazz.getName(), oa.getField() }));
+						} else if (field.level == AccessLevel.PROTECTED && (compiler.getCurrentClass() == null || !compiler.getCurrentClass().descendsFrom(clazz))) {
+							compiler.addError(new AnalyzeError(oa.getLastToken(), AnalyzeErrorLevel.ERROR, Error.PROTECTED_STATIC_FIELD, new String[] { clazz.getName(), oa.getField() }));
 						}
 						is_static_method = true;
 					} else {
