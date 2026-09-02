@@ -485,7 +485,12 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		// privé sans un mot, alors que `new Parent()` était bien refusé (#2760). Avertissement
 		// hors strict pour ne pas refuser des IA qui compilaient.
 		if (parent != null && !parent.internal) {
-			var parentConstructor = parent.getConstructor(0);
+			// Lookup NON hérité : le `super.init()` vise l'init du parent direct. Passer par
+			// getConstructor(0), qui remonte la hiérarchie, signalait aussi les classes
+			// intermédiaires qui ne déclarent aucun constructeur — en les nommant à tort, et
+			// de façon dépendante de l'ordre de déclaration. Chaque classe est signalée pour
+			// son propre appel implicite, une fois, avec le bon nom.
+			var parentConstructor = parent.getConstructors().get(0);
 			if (parentConstructor != null && parentConstructor.block != null && parentConstructor.level == AccessLevel.PRIVATE) {
 				var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 				compiler.addError(new AnalyzeError(token, level, Error.PRIVATE_CONSTRUCTOR, new String[] { parent.getName() }));

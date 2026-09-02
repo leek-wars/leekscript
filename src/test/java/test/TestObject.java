@@ -571,6 +571,13 @@ public class TestObject extends TestCommon {
 		code_strict_v2_("class A { protected constructor() { } } class B extends A {} return new B()").equals("B {}");
 		code_strict_v2_("class A { public constructor() { } } class B extends A {} return new B()").equals("B {}");
 		code_strict_v2_("class A { public x = 1 } class B extends A {} return new B()").equals("B {x: 1}");
+		// Seule la classe dont le parent DIRECT déclare le constructeur privé est signalée :
+		// les intermédiaires n'en déclarent aucun, quel que soit l'ordre de déclaration.
+		code_strict_v2_("class A { private constructor() {} } class B extends A {} class C extends B {} return new C()").error(Error.PRIVATE_CONSTRUCTOR);
+		code_strict_v2_("class C extends B {} class B extends A {} class A { private constructor() {} } return new C()").error(Error.PRIVATE_CONSTRUCTOR);
+		code_strict_v2_("class C extends B {} class B extends A {} class A { constructor() {} } return new C()").equals("C {}");
+		// Un constructeur privé à arguments ne bloque pas : la fille appelle l'init 0-arg public
+		code_strict_v2_("class A { private constructor(integer v) {} } class B extends A {} return new B()").equals("B {}");
 		code_v2_("class A { private constructor() {} static getInstance() { return new A() } } return A.getInstance()").equals("A {}");
 
 		section("Inheritance fields");

@@ -283,7 +283,8 @@ public class LeekFunctions {
 		// 1 op comme l'opérateur `in`, qui fait exactement la même recherche par hachage (#2613)
 		method("setContains", "Set", 1, Type.BOOL, new Type[] { Type.SET, Type.ANY });
 		method("setSize", "Set", 1, Type.INT, new Type[] { Type.SET });
-		method("setIsEmpty", "Set", 2, Type.BOOL, new Type[] { Type.SET });
+		// Lecture de champ : ne peut pas coûter plus que setContains, qui hache et compare
+		method("setIsEmpty", "Set", 1, Type.BOOL, new Type[] { Type.SET });
 		method("setIsSubsetOf", "Set", Type.BOOL, new Type[] { Type.SET, Type.SET });
 		method("setUnion", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
 		method("setIntersection", "Set", Type.SET, new Type[] { Type.SET, Type.SET });
