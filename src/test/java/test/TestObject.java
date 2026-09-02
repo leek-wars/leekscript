@@ -563,7 +563,14 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { public x; constructor(integer v) { this.x = v } } class B extends A {} return B(7).x").equals("7");
 		code_v2_("class A { public x; constructor(integer v) { this.x = v } } class B extends A {} return new B(7).x").equals("7");
 		code_v2_("class A { constructor(integer v) {} } class B extends A {} class C extends B {} return new C(7) != null").equals("true");
-		code_v2_("class A { private constructor() { } } class B extends A {} return new B()").equals("B {}");
+		// #2760 : le `super.init()` implicite d'une fille appelait le constructeur privé du parent
+		// sans un mot. Erreur en strict, avertissement sinon (des IA compilaient avec).
+		code_v2_("class A { private constructor() { } } class B extends A {} return new B()").warning(Error.PRIVATE_CONSTRUCTOR);
+		code_strict_v2_("class A { private constructor() { } } class B extends A {} return new B()").error(Error.PRIVATE_CONSTRUCTOR);
+		code_strict_v2_("class A { private constructor() { } } class B extends A { constructor() {} } return new B()").error(Error.PRIVATE_CONSTRUCTOR);
+		code_strict_v2_("class A { protected constructor() { } } class B extends A {} return new B()").equals("B {}");
+		code_strict_v2_("class A { public constructor() { } } class B extends A {} return new B()").equals("B {}");
+		code_strict_v2_("class A { public x = 1 } class B extends A {} return new B()").equals("B {x: 1}");
 		code_v2_("class A { private constructor() {} static getInstance() { return new A() } } return A.getInstance()").equals("A {}");
 
 		section("Inheritance fields");

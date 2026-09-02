@@ -479,6 +479,19 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				constructor.block.analyze(compiler);
 			}
 		}
+		// Tout constructeur d'une classe fille émet un `super.init()` implicite (cf. codegen),
+		// y compris quand la fille n'en déclare aucun. Si le constructeur sans argument du
+		// parent est privé, cet appel est illégal : `new Fille()` exécutait le constructeur
+		// privé sans un mot, alors que `new Parent()` était bien refusé (#2760). Avertissement
+		// hors strict pour ne pas refuser des IA qui compilaient.
+		if (parent != null && !parent.internal) {
+			var parentConstructor = parent.getConstructor(0);
+			if (parentConstructor != null && parentConstructor.block != null && parentConstructor.level == AccessLevel.PRIVATE) {
+				var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+				compiler.addError(new AnalyzeError(token, level, Error.PRIVATE_CONSTRUCTOR, new String[] { parent.getName() }));
+			}
+		}
+
 		// Ajout du constructeur à 0 argument par défaut en public
 		if (!constructors.containsKey(0)) {
 			constructors.put(0, new ClassDeclarationMethod(null, AccessLevel.PUBLIC));
