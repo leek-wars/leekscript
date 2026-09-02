@@ -181,6 +181,17 @@ public class LeekObjectAccess extends Expression {
 			if (this.variable != null) {
 				this.type = this.variable.getType();
 				this.isFinal = this.variable.isFinal();
+				// #4967 : `A.champ` sur un statique privé/protégé passait sans un mot
+				// (l'écriture aboutissait, la lecture ne plantait qu'au runtime). Même
+				// contrôle que pour les champs d'instance ; simple avertissement hors
+				// strict pour ne pas refuser des IA qui compilaient.
+				if (this.variable.getVariableType() == VariableType.STATIC_FIELD) {
+					var error = clazz.canAccessStaticField(field.getWord(), compiler.getCurrentClass());
+					if (error != null) {
+						var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+						compiler.addError(new AnalyzeError(this.getLocation(), level, error, new String[] { clazz.getName(), field.getWord() }));
+					}
+				}
 			} else {
 				this.variable = compiler.getMainBlock().getUserClass("Class").getMember(field.getWord());
 				if (this.variable != null) {

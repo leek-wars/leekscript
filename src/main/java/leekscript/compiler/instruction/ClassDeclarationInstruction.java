@@ -1296,6 +1296,30 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		return null;
 	}
 
+	/**
+	 * Visibilité d'un champ statique vu depuis `fromClass` (null = hors de toute classe),
+	 * en remontant jusqu'à la classe qui le déclare. Mêmes règles que le runtime
+	 * (ClassLeekValue.getStaticField) : privé = classe déclarante seule, protégé = classe
+	 * déclarante et ses descendantes. Null si l'accès est autorisé.
+	 */
+	public Error canAccessStaticField(String field, ClassDeclarationInstruction fromClass) {
+		var f = staticFields.get(field);
+		if (f != null) {
+			if (fromClass == this) return null;
+			if (fromClass != null && fromClass.descendsFrom(this)) {
+				return f.level == AccessLevel.PRIVATE ? Error.PRIVATE_STATIC_FIELD : null;
+			}
+			if (f.level != AccessLevel.PUBLIC) {
+				return f.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_FIELD : Error.PRIVATE_STATIC_FIELD;
+			}
+			return null;
+		}
+		if (parent != null) {
+			return parent.canAccessStaticField(field, fromClass);
+		}
+		return null;
+	}
+
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
