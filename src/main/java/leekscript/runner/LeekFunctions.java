@@ -251,7 +251,7 @@ public class LeekFunctions {
 		method("mapMax", "Map", Type.ANY, new Type[] { Type.MAP }).setMinVersion(4);
 		method("mapSearch", "Map", Type.ANY, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
 		method("mapContains", "Map", Type.BOOL, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
-		method("mapContainsKey", "Map", 2, Type.BOOL, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
+		method("mapContainsKey", "Map", 1, Type.BOOL, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
 		method("mapRemove", "Map", 2, Type.ANY, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
 		method("mapRemoveAll", "Map", Type.VOID, new Type[] { Type.MAP, Type.ANY }).setMinVersion(4);
 		method("mapReplace", "Map", 3, Type.ANY, new Type[] { Type.MAP, Type.ANY, Type.ANY }).setMinVersion(4);
@@ -280,7 +280,8 @@ public class LeekFunctions {
 		method("setPut", "Set", 3, Type.BOOL, new Type[] { Type.SET, Type.ANY });
 		method("setRemove", "Set", 2, Type.BOOL, new Type[] { Type.SET, Type.ANY });
 		method("setClear", "Set", 1, Type.SET, new Type[] { Type.SET });
-		method("setContains", "Set", 2, Type.BOOL, new Type[] { Type.SET, Type.ANY });
+		// 1 op comme l'opérateur `in`, qui fait exactement la même recherche par hachage (#2613)
+		method("setContains", "Set", 1, Type.BOOL, new Type[] { Type.SET, Type.ANY });
 		method("setSize", "Set", 1, Type.INT, new Type[] { Type.SET });
 		method("setIsEmpty", "Set", 2, Type.BOOL, new Type[] { Type.SET });
 		method("setIsSubsetOf", "Set", Type.BOOL, new Type[] { Type.SET, Type.SET });
