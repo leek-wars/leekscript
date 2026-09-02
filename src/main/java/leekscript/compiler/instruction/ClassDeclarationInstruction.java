@@ -1298,10 +1298,11 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 
 	/**
 	 * Visibilité d'un champ statique vu depuis `fromClass` (null = hors de toute classe),
-	 * en remontant jusqu'à la classe qui le déclare. Mêmes règles que le runtime
-	 * (ClassLeekValue.getField → getStaticField) : privé = classe déclarante seule,
-	 * protégé = classe déclarante et ses descendantes. Contrairement à canAccessField,
-	 * pas de clause « ancêtre » : le runtime n'en a pas pour les statiques.
+	 * en remontant jusqu'à la classe qui le déclare. Mêmes règles que le runtime en
+	 * lecture (ClassLeekValue.getField → getStaticField) : privé = classe déclarante
+	 * seule, protégé = classe déclarante et ses descendantes ; l'écriture, que le runtime
+	 * ne contrôle pas, est refusée de la même façon à l'analyse. Contrairement à
+	 * canAccessField, pas de clause « ancêtre » : le runtime n'en a pas pour les statiques.
 	 * Null si l'accès est autorisé (ou si le champ n'existe pas).
 	 */
 	public Error canAccessStaticField(String field, ClassDeclarationInstruction fromClass) {

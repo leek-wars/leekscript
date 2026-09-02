@@ -2,7 +2,6 @@ package leekscript.compiler.expression;
 
 import java.util.List;
 
-import leekscript.common.AccessLevel;
 import leekscript.common.Type;
 import leekscript.compiler.bloc.ConditionalBloc;
 import leekscript.compiler.expression.LeekVariable.VariableType;
