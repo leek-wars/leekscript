@@ -711,6 +711,31 @@ public class TestIncludeCache {
 	}
 
 	@Test
+	public void siblingEntrypoint_errorsDoNotLeakIntoAnalyzedEntrypoint() throws Exception {
+		// Deux IA racines indépendantes partagent un utilitaire, et déclarent chacune un
+		// global de même nom dans un fichier qui lui est propre. Analyser l'une compilait
+		// aussi l'autre (frère partageant un include) et fusionnait TOUS ses problèmes :
+		// le joueur voyait, sur l'IA ouverte, un faux doublon signalé dans un fichier
+		// absent de ses propres include.
+		write("sharedUtil.leek", "function su() { return 1; }\n");
+		// LibB n'appartient qu'à EntryB et contient une vraie erreur.
+		write("LibB_" + uniqueId + ".leek", "function libB() { return variableQuiNexistePas_" + uniqueId + "; }\n");
+		write("EntryA_" + uniqueId + ".leek", "include(\"sharedUtil\");\nreturn su();");
+		write("EntryB_" + uniqueId + ".leek", "include(\"sharedUtil\");\ninclude(\"LibB_" + uniqueId + "\");\nreturn su() + libB();");
+
+		var entryA = fs.getRoot(0).resolve("EntryA_" + uniqueId);
+		var result = IACompiler.analyzeWithIncludes(entryA);
+
+		assertTrue(result.perEntrypoint.size() > 1, "EntryA + EntryB frères partageant sharedUtil");
+		for (var node : result.merged.informations) {
+			assertFalse(node.get(1).stringValue().startsWith("LibB_"),
+				"aucun problème d'un fichier propre au frère ne doit remonter : " + node);
+		}
+		assertFalse(collectErrors(result.merged).contains(Error.UNKNOWN_VARIABLE_OR_FUNCTION),
+			"l'erreur de LibB appartient à EntryB seul, elle ne doit pas apparaître sur EntryA");
+	}
+
+	@Test
 	public void sharedInclude_mergedKeepsIncludedAIs_forTransitiveStats() throws Exception {
 		// Régression total_lines : deux entrypoints partagent un include. Analyser l'un
 		// d'eux passe par mergeResults() (perEntrypoint.size() > 1), qui ne propageait pas

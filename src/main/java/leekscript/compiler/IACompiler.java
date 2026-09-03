@@ -10,6 +10,7 @@ import leekscript.common.Error;
 import leekscript.common.Type;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -110,9 +111,11 @@ public class IACompiler {
 				perEntrypoint.put(ep, new IACompiler().analyze(ep));
 			}
 		}
+		// `ai` absent de perEntrypoint = fichier inclus : chaque includer est une lecture
+		// légitime du fichier édité, on ne filtre pas.
 		var merged = perEntrypoint.size() == 1
 				? perEntrypoint.values().iterator().next()
-				: mergeResults(perEntrypoint);
+				: mergeResults(perEntrypoint, perEntrypoint.containsKey(ai) ? ai : null);
 		// mergeResults() ne fusionne que les problèmes (dédup cross-entrypoints) et laisse
 		// includedAIs à null. Or GeneratorAPI calcule les total_lines/total_chars transitifs
 		// du fichier analysé à partir de merged.includedAIs : sans ça, dès qu'un include est
@@ -134,6 +137,19 @@ public class IACompiler {
 	 * Autres erreurs : union dédupliquée par (fichier, ligne, colonne, code).
 	 */
 	public static AnalyzeResult mergeResults(Map<AIFile, AnalyzeResult> results) {
+		return mergeResults(results, null);
+	}
+
+	/**
+	 * @param primary compilation dont les problèmes doivent être rendus, ou null pour les
+	 * rendre tous. Les autres entrées ne servent alors qu'au dénominateur de l'intersection
+	 * UNUSED_*. Sans ce filtre, analyser une IA racine renvoyait aussi les erreurs des
+	 * entrypoints frères — compilés uniquement pour cette intersection — et l'éditeur
+	 * affichait au joueur les erreurs d'un programme qu'il n'avait pas ouvert, dans des
+	 * fichiers absents de ses propres include (deux IA déclarant chacune un global de même
+	 * nom se signalaient mutuellement un doublon inexistant).
+	 */
+	public static AnalyzeResult mergeResults(Map<AIFile, AnalyzeResult> results, AIFile primary) {
 		int unusedVariableOrdinal = Error.UNUSED_VARIABLE.ordinal();
 		int unusedFunctionOrdinal = Error.UNUSED_FUNCTION.ordinal();
 
@@ -155,9 +171,18 @@ public class IACompiler {
 
 		var unusedFirst = new LinkedHashMap<String, JsonNode>();
 		var unusedCounts = new HashMap<String, int[]>();
+		// Avertissements UNUSED_* effectivement produits par la compilation primaire : les
+		// frères comptent pour l'intersection, mais un avertissement qu'eux seuls émettent
+		// (fichier absent des include du fichier analysé) ne doit pas remonter.
+		var primaryUnused = new HashSet<String>();
 		var otherProblems = new LinkedHashMap<String, JsonNode>();
-		for (var result : results.values()) {
+		for (var entry : results.entrySet()) {
+			var result = entry.getValue();
 			if (result == null || result.informations == null) continue;
+			// Comparaison par chemin plutôt que par identité : le cache de fichiers peut
+			// rendre deux instances d'AIFile pour le même fichier.
+			boolean isPrimary = primary == null || entry.getKey() == primary
+					|| entry.getKey().getPath().equals(primary.getPath());
 			for (JsonNode problem : result.informations) {
 				int ordinal = problem.get(6).intValue();
 				String key = problem.get(1).stringValue() + ":"
@@ -167,13 +192,15 @@ public class IACompiler {
 				if (ordinal == unusedVariableOrdinal || ordinal == unusedFunctionOrdinal) {
 					unusedFirst.putIfAbsent(key, problem);
 					unusedCounts.computeIfAbsent(key, k -> new int[1])[0]++;
-				} else {
+					if (isPrimary) primaryUnused.add(key);
+				} else if (isPrimary) {
 					otherProblems.putIfAbsent(key, problem);
 				}
 			}
 		}
 		var informations = Json.createArray();
 		for (var e : unusedFirst.entrySet()) {
+			if (primary != null && !primaryUnused.contains(e.getKey())) continue;
 			String filePath = e.getValue().get(1).stringValue();
 			int relevant = fileRelevance.getOrDefault(filePath, 0);
 			if (relevant > 0 && unusedCounts.get(e.getKey())[0] == relevant) informations.add(e.getValue());
