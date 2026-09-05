@@ -441,7 +441,6 @@ public class LeekObjectAccess extends Expression {
 			writer.compileConvert(mainblock, 0, expr, fieldType, false);
 			if (parenthesis) writer.addCode(")");
 		} else {
-			if (parenthesis) writer.addCode("(");
 			var close = openFieldResult(mainblock, writer);
 			writer.addCode("setField(");
 			writeReceiver(mainblock, writer);
@@ -449,7 +448,6 @@ public class LeekObjectAccess extends Expression {
 			writer.compileConvert(mainblock, 0, expr, this.type, false);
 			// expr.writeJavaCode(mainblock, writer);
 			writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-			if (parenthesis) writer.addCode(")");
 		}
 	}
 
@@ -521,14 +519,12 @@ public class LeekObjectAccess extends Expression {
 	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_add_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
@@ -536,14 +532,12 @@ public class LeekObjectAccess extends Expression {
 	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_sub_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
@@ -551,14 +545,12 @@ public class LeekObjectAccess extends Expression {
 	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_mul_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
@@ -566,14 +558,12 @@ public class LeekObjectAccess extends Expression {
 	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_pow_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
@@ -581,14 +571,12 @@ public class LeekObjectAccess extends Expression {
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_div_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
@@ -596,14 +584,12 @@ public class LeekObjectAccess extends Expression {
 	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_intdiv_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
@@ -611,14 +597,12 @@ public class LeekObjectAccess extends Expression {
 	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_mod_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
@@ -626,14 +610,12 @@ public class LeekObjectAccess extends Expression {
 	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_bor_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
@@ -641,14 +623,12 @@ public class LeekObjectAccess extends Expression {
 	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_band_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
@@ -656,14 +636,12 @@ public class LeekObjectAccess extends Expression {
 	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_bxor_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
@@ -671,14 +649,12 @@ public class LeekObjectAccess extends Expression {
 	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_shl_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
@@ -686,14 +662,12 @@ public class LeekObjectAccess extends Expression {
 	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_shr_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
@@ -701,27 +675,23 @@ public class LeekObjectAccess extends Expression {
 	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// assert (object.isLeftValue() && !object.nullable());
 
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_ushr_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	@Override
 	public void compileCoalesceEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// object.field ??= value
-		if (parenthesis) writer.addCode("(");
 		var close = openFieldResult(mainblock, writer);
 		writer.addCode("field_coalesce_eq(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-		if (parenthesis) writer.addCode(")");
 	}
 
 	/**
@@ -731,7 +701,7 @@ public class LeekObjectAccess extends Expression {
 	 * to long ». Renvoie le texte à écrire pour refermer.
 	 */
 	private String openFieldResult(MainLeekBlock mainblock, JavaWriter writer) {
-		return writer.openResultConversion(mainblock.getVersion(), this.type);
+		return writer.openFieldResultConversion(mainblock.getVersion(), this.type);
 	}
 
 	@Override

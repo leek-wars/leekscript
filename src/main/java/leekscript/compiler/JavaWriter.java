@@ -202,9 +202,8 @@ public class JavaWriter {
 
 	/**
 	 * Ouvre la conversion du résultat d'une opération qui renvoie un Object là où
-	 * l'expression a un type précis : opérateurs runtime (add()/sub()/mul()/pow()/
-	 * div()/mod()) et helpers de champ (setField(), field_*_eq()). Renvoie le
-	 * suffixe à écrire après l'appel pour refermer.
+	 * l'expression a un type précis : opérateurs runtime add()/sub()/mul()/pow()/
+	 * div()/mod(). Renvoie le suffixe à écrire après l'appel pour refermer.
 	 *
 	 * Pour integer/real on passe par longint()/real() et non par un cast Java :
 	 * celui-ci déboxe au type exact et crashe (ClassCastException Double → Long)
@@ -230,6 +229,26 @@ public class JavaWriter {
 		}
 		if (castType != Type.ANY) {
 			addCode("(" + castType.getJavaPrimitiveName(version) + ") ");
+		}
+		return "";
+	}
+
+	/**
+	 * Comme {@link #openResultConversion}, mais pour le résultat d'un helper de champ
+	 * (setField(), field_*_eq()) : une écriture de champ est aussi une instruction à
+	 * part entière, dont la valeur est alors ignorée. On se limite donc aux
+	 * conversions qui sont des appels — un cast Java nu ne compile pas comme
+	 * instruction (« error: not a statement »), et il déboxerait au type exact là où
+	 * un type nullable (`integer|null`) peut légitimement porter l'autre type
+	 * numérique. Les types référence gardent donc leur résultat en Object.
+	 */
+	public String openFieldResultConversion(int version, Type castType) {
+		if (castType == Type.BOOL) {
+			addCode("bool(");
+			return ")";
+		}
+		if (castType == Type.INT || castType == Type.REAL || castType == Type.BIG_INT) {
+			return openResultConversion(version, castType);
 		}
 		return "";
 	}
