@@ -441,7 +441,7 @@ public class LeekObjectAccess extends Expression {
 			writer.compileConvert(mainblock, 0, expr, fieldType, false);
 			if (parenthesis) writer.addCode(")");
 		} else {
-			var close = openFieldResult(mainblock, writer);
+			var close = writer.openFieldResultConversion(this.type);
 			writer.addCode("setField(");
 			writeReceiver(mainblock, writer);
 			writer.addCode(", \"" + field.getWord() + "\", ");
@@ -517,191 +517,97 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_add_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_add_eq", expr);
 	}
 
 	@Override
 
 	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_sub_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_sub_eq", expr);
 	}
 
 	@Override
 
 	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_mul_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_mul_eq", expr);
 	}
 
 	@Override
 
 	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_pow_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_pow_eq", expr);
 	}
 
 	@Override
 
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_div_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_div_eq", expr);
 	}
 
 	@Override
 
 	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_intdiv_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_intdiv_eq", expr);
 	}
 
 	@Override
 
 	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_mod_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_mod_eq", expr);
 	}
 
 	@Override
 
 	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_bor_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_bor_eq", expr);
 	}
 
 	@Override
 
 	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_band_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_band_eq", expr);
 	}
 
 	@Override
 
 	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_bxor_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_bxor_eq", expr);
 	}
 
 	@Override
 
 	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_shl_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_shl_eq", expr);
 	}
 
 	@Override
 
 	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_shr_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_shr_eq", expr);
 	}
 
 	@Override
 
 	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert (object.isLeftValue() && !object.nullable());
-
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_ushr_eq(");
-		writeReceiver(mainblock, writer);
-		writer.addCode(", \"" + field.getWord() + "\", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		compileFieldOperation(mainblock, writer, "field_ushr_eq", expr);
 	}
 
 	@Override
 	public void compileCoalesceEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// object.field ??= value
-		var close = openFieldResult(mainblock, writer);
-		writer.addCode("field_coalesce_eq(");
+		compileFieldOperation(mainblock, writer, "field_coalesce_eq", expr);
+	}
+
+	/**
+	 * Écriture composée `objet.champ <op>= valeur` : tous les opérateurs passent par le
+	 * même helper de runtime, au nom près.
+	 */
+	private void compileFieldOperation(MainLeekBlock mainblock, JavaWriter writer, String helper, Expression expr) {
+		var close = writer.openFieldResultConversion(this.type);
+		writer.addCode(helper + "(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
-	}
-
-	/**
-	 * Ouvre la conversion du résultat d'un helper de champ (`setField`, `field_*_eq`) :
-	 * ils renvoient un Object, que javac refuse quand l'écriture est utilisée comme
-	 * valeur (`return Classe.champ = 5`) — COMPILE_JAVA « Object cannot be converted
-	 * to long ». Renvoie le texte à écrire pour refermer.
-	 */
-	private String openFieldResult(MainLeekBlock mainblock, JavaWriter writer) {
-		return writer.openFieldResultConversion(mainblock.getVersion(), this.type);
 	}
 
 	@Override

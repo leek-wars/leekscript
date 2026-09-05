@@ -601,7 +601,7 @@ public class LeekVariable extends Expression {
 			writer.compileConvert(mainblock, 0, expr, fieldType, false);
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			var close = openStaticFieldResult(writer, mainblock.getVersion());
+			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".setField(\"" + token.getWord() + "\", ");
 			writeStaticFieldValue(mainblock, writer, expr);
 			writer.addCode(")" + close);
@@ -658,7 +658,7 @@ public class LeekVariable extends Expression {
 			expr.writeJavaCode(mainblock, writer, false);
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			var close = openStaticFieldResult(writer, mainblock.getVersion());
+			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".setField(\"" + token.getWord() + "\", ");
 			writeStaticFieldValue(mainblock, writer, expr);
 			writer.addCode(")" + close);
@@ -741,21 +741,6 @@ public class LeekVariable extends Expression {
 		}
 	}
 
-	/** Cf {@link JavaWriter#openResultConversion}. */
-	private String openResultConversion(JavaWriter writer, int version, Type castType) {
-		return writer.openResultConversion(version, castType);
-	}
-
-	/**
-	 * Conversion du résultat d'une écriture de champ statique. Un champ statique est
-	 * stocké en Object : `setField` et les `field_*` renvoient un Object, que javac
-	 * refuse quand l'écriture est utilisée comme valeur (`return champ = 5` dans une
-	 * fonction typée) — COMPILE_JAVA « Object cannot be converted to long ».
-	 */
-	private String openStaticFieldResult(JavaWriter writer, int version) {
-		return writer.openFieldResultConversion(version, this.variableType);
-	}
-
 	/**
 	 * Type cible pour la conversion sur une globale. Une référence à une globale
 	 * fige son `variableType` lors de son analyse, qui a lieu AVANT l'inférence du
@@ -774,7 +759,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			writer.addCode("sub(" + token.getWord() + " = " + bigCast() + "add(" + token.getWord() + ", 1l), 1l)");
 		} else if (type == VariableType.STATIC_FIELD) {
-			var close = openStaticFieldResult(writer, mainblock.getVersion());
+			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_inc(\"" + token.getWord() + "\")" + close);
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
@@ -800,7 +785,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			writer.addCode("add(" + token.getWord() + " = " + bigCast() + "sub(" + token.getWord() + ", 1l), 1l)");
 		} else if (type == VariableType.STATIC_FIELD) {
-			var close = openStaticFieldResult(writer, mainblock.getVersion());
+			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_dec(\"" + token.getWord() + "\")" + close);
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
@@ -828,7 +813,7 @@ public class LeekVariable extends Expression {
 			writer.addCode(token.getWord() + " = " + bigCast() + "add(" + token.getWord() + ", 1l)");
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			var close = openStaticFieldResult(writer, mainblock.getVersion());
+			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pre_inc(\"" + token.getWord() + "\")" + close);
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
@@ -860,7 +845,7 @@ public class LeekVariable extends Expression {
 			writer.addCode(token.getWord() + " = " + bigCast() + "sub(" + token.getWord() + ", 1l)");
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			var close = openStaticFieldResult(writer, mainblock.getVersion());
+			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pre_dec(\"" + token.getWord() + "\")" + close);
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
@@ -890,13 +875,13 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = openResultConversion(writer, mainblock.getVersion(), variableType);
+			var close = writer.openResultConversion(mainblock.getVersion(), variableType);
 			writer.addCode("add(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			var close = openStaticFieldResult(writer, mainblock.getVersion());
+			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_add_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -913,7 +898,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = openResultConversion(writer, mainblock.getVersion(), globalCastType());
+				var close = writer.openResultConversion(mainblock.getVersion(), globalCastType());
 				writer.addCode("add(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -932,7 +917,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				var close = openResultConversion(writer, mainblock.getVersion(), this.variableType);
+				var close = writer.openResultConversion(mainblock.getVersion(), this.variableType);
 				writer.addCode("add_eq(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -946,13 +931,13 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = openResultConversion(writer, mainblock.getVersion(), variableType);
+			var close = writer.openResultConversion(mainblock.getVersion(), variableType);
 			writer.addCode("sub(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			var close = openStaticFieldResult(writer, mainblock.getVersion());
+			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_sub_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -969,7 +954,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = openResultConversion(writer, mainblock.getVersion(), globalCastType());
+				var close = writer.openResultConversion(mainblock.getVersion(), globalCastType());
 				writer.addCode("sub(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -988,7 +973,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				var close = openResultConversion(writer, mainblock.getVersion(), this.variableType);
+				var close = writer.openResultConversion(mainblock.getVersion(), this.variableType);
 				writer.addCode("sub(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1002,13 +987,13 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = openResultConversion(writer, mainblock.getVersion(), variableType);
+			var close = writer.openResultConversion(mainblock.getVersion(), variableType);
 			writer.addCode("mul(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			var close = openStaticFieldResult(writer, mainblock.getVersion());
+			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_mul_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -1025,7 +1010,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = openResultConversion(writer, mainblock.getVersion(), globalCastType());
+				var close = writer.openResultConversion(mainblock.getVersion(), globalCastType());
 				writer.addCode("mul(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1044,7 +1029,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				var close = openResultConversion(writer, mainblock.getVersion(), this.variableType);
+				var close = writer.openResultConversion(mainblock.getVersion(), this.variableType);
 				writer.addCode("mul(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1059,13 +1044,13 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = openResultConversion(writer, mainblock.getVersion(), variableType);
+			var close = writer.openResultConversion(mainblock.getVersion(), variableType);
 			writer.addCode("pow(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
-			var close = openStaticFieldResult(writer, mainblock.getVersion());
+			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pow_eq(\"" + token.getWord() + "\", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -1077,7 +1062,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = openResultConversion(writer, mainblock.getVersion(), globalCastType());
+				var close = writer.openResultConversion(mainblock.getVersion(), globalCastType());
 				writer.addCode("pow(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1091,7 +1076,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				var close = openResultConversion(writer, mainblock.getVersion(), this.variableType);
+				var close = writer.openResultConversion(mainblock.getVersion(), this.variableType);
 				writer.addCode("pow(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1105,7 +1090,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = openResultConversion(writer, mainblock.getVersion(), variableType);
+			var close = writer.openResultConversion(mainblock.getVersion(), variableType);
 			writer.addCode("div(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -1126,7 +1111,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = openResultConversion(writer, mainblock.getVersion(), globalCastType());
+				var close = writer.openResultConversion(mainblock.getVersion(), globalCastType());
 				if (mainblock.getVersion() == 1) {
 					writer.addCode("div_v1(g_" + token.getWord() + ", ");
 				} else {
@@ -1153,7 +1138,7 @@ public class LeekVariable extends Expression {
 					writer.addCode(")");
 				} else {
 					writer.addCode("u_" + token.getWord() + " = ");
-					var close = openResultConversion(writer, mainblock.getVersion(), this.variableType);
+					var close = writer.openResultConversion(mainblock.getVersion(), this.variableType);
 					writer.addCode("div(u_" + token.getWord() + ", ");
 					expr.writeJavaCode(mainblock, writer, false);
 					writer.addCode(")" + close);
@@ -1209,7 +1194,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = openResultConversion(writer, mainblock.getVersion(), variableType);
+			var close = writer.openResultConversion(mainblock.getVersion(), variableType);
 			writer.addCode("mod(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -1231,7 +1216,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = openResultConversion(writer, mainblock.getVersion(), globalCastType());
+				var close = writer.openResultConversion(mainblock.getVersion(), globalCastType());
 				writer.addCode("mod(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1250,7 +1235,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				var close = openResultConversion(writer, mainblock.getVersion(), this.variableType);
+				var close = writer.openResultConversion(mainblock.getVersion(), this.variableType);
 				writer.addCode("mod(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1591,7 +1576,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.STATIC_FIELD) {
 			var clazz = mainblock.getWordCompiler().getCurrentClassVariable();
 			var read = clazz + ".getField(\"" + token.getWord() + "\")";
-			var close = openStaticFieldResult(writer, mainblock.getVersion());
+			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(clazz + ".setField(\"" + token.getWord() + "\", ");
 			if (this.variableType == Type.BIG_INT) {
 				writer.addCode("BigIntegerValue.valueOf(" + writer.getAIThis() + ", ");

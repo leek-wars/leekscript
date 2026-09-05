@@ -329,6 +329,8 @@ public class TestClass extends TestCommon {
 		code_v4_("class Z { public static integer b = 4; public static integer t() { return Z.b += 2; } } return Z.t();").equals("6");
 		code_v4_("class Z { public static integer b = 4; public static integer t() { return Z.b *= 2; } } return Z.t();").equals("8");
 		code_v4_("class Z { public static integer b = 10; public static integer t() { return Z.b /= 4; } } return Z.t();").equals("2");
+		// ++/-- qualifiés : chemin field_inc/field_pre_inc de LeekObjectAccess, qui
+		// convertissait déjà son résultat — ici par symétrie avec le bloc suivant.
 		code_v4_("class Z { public static integer b = 4; public static integer t() { return Z.b++; } } return Z.t();").equals("4");
 		code_v4_("class Z { public static integer b = 4; public static integer t() { return ++Z.b; } } return Z.t();").equals("5");
 		code_v4_("class Z { public static integer b = 4; public static integer t() { return Z.b ??= 2; } } return Z.t();").equals("4");

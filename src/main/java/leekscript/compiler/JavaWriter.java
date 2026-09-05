@@ -211,21 +211,9 @@ public class JavaWriter {
 	 * `integer a; a *= (b ? 1 : 0.5)` (#2744).
 	 */
 	public String openResultConversion(int version, Type castType) {
-		if (castType == Type.INT) {
-			addCode("longint(");
-			return ")";
-		}
-		if (castType == Type.REAL) {
-			addCode("real(");
-			return ")";
-		}
-		// big_integer : `/` renvoie un double, un cast Java échouerait à la compilation
-		// (« double cannot be converted to BigIntegerValue »). valueOf convertit, et
-		// rend la valeur telle quelle quand l'opérateur a déjà renvoyé un big_integer.
-		// (#bigint #4908)
-		if (castType == Type.BIG_INT) {
-			addCode("BigIntegerValue.valueOf(" + getAIThis() + ", ");
-			return ")";
+		var call = openCallConversion(castType);
+		if (call != null) {
+			return call;
 		}
 		if (castType != Type.ANY) {
 			addCode("(" + castType.getJavaPrimitiveName(version) + ") ");
@@ -242,15 +230,38 @@ public class JavaWriter {
 	 * un type nullable (`integer|null`) peut légitimement porter l'autre type
 	 * numérique. Les types référence gardent donc leur résultat en Object.
 	 */
-	public String openFieldResultConversion(int version, Type castType) {
+	public String openFieldResultConversion(Type castType) {
 		if (castType == Type.BOOL) {
 			addCode("bool(");
 			return ")";
 		}
-		if (castType == Type.INT || castType == Type.REAL || castType == Type.BIG_INT) {
-			return openResultConversion(version, castType);
+		var call = openCallConversion(castType);
+		return call != null ? call : "";
+	}
+
+	/**
+	 * Les conversions qui prennent la forme d'un appel, donc utilisables partout, y
+	 * compris là où le Java généré doit rester une instruction valide. Renvoie null
+	 * quand le type n'en a pas.
+	 */
+	private String openCallConversion(Type castType) {
+		if (castType == Type.INT) {
+			addCode("longint(");
+			return ")";
 		}
-		return "";
+		if (castType == Type.REAL) {
+			addCode("real(");
+			return ")";
+		}
+		// big_integer : `/` renvoie un double, un cast Java échouerait à la compilation
+		// (« double cannot be converted to BigIntegerValue »). valueOf convertit, et
+		// rend la valeur telle quelle quand l'opérateur a déjà renvoyé un big_integer.
+		// (#bigint #4908)
+		if (castType == Type.BIG_INT) {
+			addCode("BigIntegerValue.valueOf(" + getAIThis() + ", ");
+			return ")";
+		}
+		return null;
 	}
 
 	public void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type, boolean parenthesis) {
