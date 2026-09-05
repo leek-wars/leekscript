@@ -200,6 +200,40 @@ public class JavaWriter {
 		}
 	}
 
+	/**
+	 * Ouvre la conversion du résultat d'une opération qui renvoie un Object là où
+	 * l'expression a un type précis : opérateurs runtime (add()/sub()/mul()/pow()/
+	 * div()/mod()) et helpers de champ (setField(), field_*_eq()). Renvoie le
+	 * suffixe à écrire après l'appel pour refermer.
+	 *
+	 * Pour integer/real on passe par longint()/real() et non par un cast Java :
+	 * celui-ci déboxe au type exact et crashe (ClassCastException Double → Long)
+	 * quand l'opération a renvoyé l'autre type numérique, ex.
+	 * `integer a; a *= (b ? 1 : 0.5)` (#2744).
+	 */
+	public String openResultConversion(int version, Type castType) {
+		if (castType == Type.INT) {
+			addCode("longint(");
+			return ")";
+		}
+		if (castType == Type.REAL) {
+			addCode("real(");
+			return ")";
+		}
+		// big_integer : `/` renvoie un double, un cast Java échouerait à la compilation
+		// (« double cannot be converted to BigIntegerValue »). valueOf convertit, et
+		// rend la valeur telle quelle quand l'opérateur a déjà renvoyé un big_integer.
+		// (#bigint #4908)
+		if (castType == Type.BIG_INT) {
+			addCode("BigIntegerValue.valueOf(" + getAIThis() + ", ");
+			return ")";
+		}
+		if (castType != Type.ANY) {
+			addCode("(" + castType.getJavaPrimitiveName(version) + ") ");
+		}
+		return "";
+	}
+
 	public void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type, boolean parenthesis) {
 
 		// System.out.println("convert " + value.getType() + " to " + type);
