@@ -18,6 +18,41 @@ public class TestString extends TestCommon {
 	}
 
 	@Test
+	public void testString_interpolation() throws Exception {
+		// String interpolation (v4+) : sucre syntaxique au-dessus de la concaténation.
+		// "a${expr}b" est desugaré en ("a" + (expr) + "b") au niveau du lexer, donc
+		// le code Java généré (et le coût en opérations) est identique à une
+		// concaténation écrite à la main.
+		section("String interpolation");
+		code_v4_("var name = \"Bob\" return \"Hello ${name}!\"").equals("\"Hello Bob!\"");
+		code_v4_("return \"${1 + 2}\"").equals("\"3\"");
+		code_v4_("return \"${42}\"").equals("\"42\""); // un entier interpolé devient une chaîne
+		code_v4_("var a = 2 var b = 3 return \"${a}+${b}=${a + b}\"").equals("\"2+3=5\"");
+		code_v4_("var x = 5 return \"x=${x}.\"").equals("\"x=5.\"");
+		code_v4_("var arr = [1, 2, 3] return \"arr=${arr}, len=${count(arr)}\"").equals("\"arr=[1, 2, 3], len=3\"");
+		// Interpolation imbriquée
+		code_v4_("return \"out ${ \"in ${1 + 1}\" }!\"").equals("\"out in 2!\"");
+		// Une chaîne sans ${ reste un littéral simple
+		code_v4_("return \"no interpolation\"").equals("\"no interpolation\"");
+		// Coût identique à la concaténation manuelle
+		code_v4_("var n = \"Bob\" return \"Hi ${n}!\" == \"Hi \" + n + \"!\"").equals("true");
+	}
+
+	@Test
+	public void testString_interpolation_escaping() throws Exception {
+		section("String interpolation escaping");
+		// \$ échappe l'interpolation et produit un $ littéral
+		code_v4_("var n = 1 return \"\\${n}=${n}\"").equals("\"${n}=1\"");
+		code_v4_("return \"cost \\$5\"").equals("\"cost $5\"");
+		// Un $ seul (non suivi de {) reste littéral
+		code_v4_("return \"price: 5$\"").equals("\"price: 5$\"");
+		// Les chaînes à guillemets simples ne sont jamais interpolées
+		code_v4_("return '${1 + 1}'").equals("\"${1 + 1}\"");
+		// Avant la v4, ${ } est un littéral (pas d'interpolation)
+		code_v1_3("return \"a${1}b\"").equals("\"a${1}b\"");
+	}
+
+	@Test
 	public void testString_charAt() throws Exception {
 		section("String.charAt()");
 		code("return charAt('bonjour', 1)").equals("\"o\"");
