@@ -32,11 +32,13 @@ public class PragmaParser {
 		for (String line : code.split("\n", -1)) {
 			Matcher m = PRAGMA_PATTERN.matcher(line);
 			if (!m.matches() || !m.group(1).equals("version") || m.group(2) == null) continue;
+			// Même règle qu'apply : une valeur invalide est ignorée (elle y produit une erreur
+			// sans fixer la version), le pragma valide suivant compte.
 			try {
 				int v = Integer.parseInt(m.group(2));
-				return v >= 1 && v <= LeekScript.LATEST_VERSION ? v : null;
+				if (v >= 1 && v <= LeekScript.LATEST_VERSION) return v;
 			} catch (NumberFormatException e) {
-				return null;
+				// valeur non numérique : ignorée
 			}
 		}
 		return null;
