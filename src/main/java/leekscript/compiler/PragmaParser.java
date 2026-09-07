@@ -1,5 +1,7 @@
 package leekscript.compiler;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,52 +23,60 @@ public class PragmaParser {
 		"^\\s*//\\s*@([A-Za-z_][A-Za-z0-9_]*)(?:\\s*:\\s*(\\S+))?\\s*$"
 	);
 
+	/** Un pragma trouvé dans le code, avec sa position (colonnes à base 1, fin exclusive). */
+	private record Pragma(String name, String value, int line, int startCol, int endCol) {}
+
+	/** Tous les pragmas du code, dans l'ordre du fichier. Seule lecture du code : apply et declaredVersion en dépendent. */
+	private static List<Pragma> scan(String code) {
+		var pragmas = new ArrayList<Pragma>();
+		if (code == null || code.indexOf("//") < 0) return pragmas;
+		String[] lines = code.split("\n", -1);
+		for (int i = 0; i < lines.length; i++) {
+			String line = lines[i];
+			Matcher m = PRAGMA_PATTERN.matcher(line);
+			if (!m.matches()) continue;
+			pragmas.add(new Pragma(m.group(1), m.group(2), i + 1, line.indexOf('@') + 1, line.length() + 1));
+		}
+		return pragmas;
+	}
+
+	/** Valeur d'un <code>@version:N</code> si elle est un entier de 1 à LATEST_VERSION, sinon null. */
+	private static Integer parseVersion(String value) {
+		if (value == null) return null;
+		try {
+			int v = Integer.parseInt(value);
+			return v >= 1 && v <= LeekScript.LATEST_VERSION ? v : null;
+		} catch (NumberFormatException e) {
+			return null;
+		}
+	}
+
 	/**
 	 * Version déclarée par le premier pragma <code>// @version:N</code> valide du fichier, ou
-	 * null s'il n'en déclare aucune. Sans effet de bord, contrairement à {@link #apply} : ni
-	 * erreur ajoutée au fichier, ni version modifiée.
+	 * null s'il n'en déclare aucune. Même règle qu'{@link #apply} (une valeur invalide y produit
+	 * une erreur sans fixer la version, le pragma valide suivant compte), mais sans effet de
+	 * bord : ni erreur ajoutée au fichier, ni version modifiée.
 	 */
 	public static Integer declaredVersion(AIFile file) {
-		String code = file.getCode();
-		if (code == null || code.indexOf("//") < 0) return null;
-		for (String line : code.split("\n", -1)) {
-			Matcher m = PRAGMA_PATTERN.matcher(line);
-			if (!m.matches() || !m.group(1).equals("version") || m.group(2) == null) continue;
-			// Même règle qu'apply : une valeur invalide est ignorée (elle y produit une erreur
-			// sans fixer la version), le pragma valide suivant compte.
-			try {
-				int v = Integer.parseInt(m.group(2));
-				if (v >= 1 && v <= LeekScript.LATEST_VERSION) return v;
-			} catch (NumberFormatException e) {
-				// valeur non numérique : ignorée
-			}
+		for (var pragma : scan(file.getCode())) {
+			if (!pragma.name().equals("version")) continue;
+			Integer v = parseVersion(pragma.value());
+			if (v != null) return v;
 		}
 		return null;
 	}
 
 	public static void apply(AIFile file) {
 
-		String code = file.getCode();
-		if (code == null || code.indexOf("//") < 0) return;
-
 		Integer version = null;
 		int versionLine = -1;
 		boolean strict = false;
 		int strictLine = -1;
 
-		String[] lines = code.split("\n", -1);
-		for (int i = 0; i < lines.length; i++) {
-			String line = lines[i];
-			Matcher m = PRAGMA_PATTERN.matcher(line);
-			if (!m.matches()) continue;
-
-			int lineNum = i + 1;
-			int startCol = line.indexOf('@') + 1;
-			int endCol = line.length() + 1;
-			Location loc = new Location(file, lineNum, startCol, lineNum, endCol);
-
-			String name = m.group(1);
-			String value = m.group(2);
+		for (var pragma : scan(file.getCode())) {
+			Location loc = new Location(file, pragma.line(), pragma.startCol(), pragma.line(), pragma.endCol());
+			String name = pragma.name();
+			String value = pragma.value();
 
 			switch (name) {
 				case "version": {
@@ -74,23 +84,13 @@ public class PragmaParser {
 						file.getErrors().add(new AnalyzeError(loc, AnalyzeErrorLevel.ERROR, Error.PRAGMA_DUPLICATE, new String[]{"version"}));
 						break;
 					}
-					if (value == null) {
-						file.getErrors().add(new AnalyzeError(loc, AnalyzeErrorLevel.ERROR, Error.PRAGMA_INVALID_VALUE, new String[]{"version", ""}));
-						break;
-					}
-					int v;
-					try {
-						v = Integer.parseInt(value);
-					} catch (NumberFormatException e) {
-						file.getErrors().add(new AnalyzeError(loc, AnalyzeErrorLevel.ERROR, Error.PRAGMA_INVALID_VALUE, new String[]{"version", value}));
-						break;
-					}
-					if (v < 1 || v > LeekScript.LATEST_VERSION) {
-						file.getErrors().add(new AnalyzeError(loc, AnalyzeErrorLevel.ERROR, Error.PRAGMA_INVALID_VALUE, new String[]{"version", value}));
+					Integer v = parseVersion(value);
+					if (v == null) {
+						file.getErrors().add(new AnalyzeError(loc, AnalyzeErrorLevel.ERROR, Error.PRAGMA_INVALID_VALUE, new String[]{"version", value == null ? "" : value}));
 						break;
 					}
 					version = v;
-					versionLine = lineNum;
+					versionLine = pragma.line();
 					break;
 				}
 				case "strict": {
@@ -103,7 +103,7 @@ public class PragmaParser {
 						break;
 					}
 					strict = true;
-					strictLine = lineNum;
+					strictLine = pragma.line();
 					break;
 				}
 				default:

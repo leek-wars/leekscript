@@ -755,7 +755,7 @@ public class TestIncludeCache {
 		assertEquals(1, legacy.getKey().getVersion());
 		assertFalse(legacy.getValue().success, "l'IA LS1 reste compilée, et invalide, pour l'état de l'arbre");
 		assertTrue(result.merged.success, "la vue du fichier inclus ignore l'includer LS1 : " + result.merged.informations);
-		assertEquals(0, result.merged.informations.size());
+		assertTrue(result.merged.informations.valueStream().noneMatch(p -> p.get(0).intValue() == 0), "aucune erreur");
 	}
 
 	@Test
@@ -770,7 +770,53 @@ public class TestIncludeCache {
 
 		assertEquals(1, result.perEntrypoint.size());
 		assertFalse(result.merged.success);
-		assertTrue(collectErrors(result.merged).contains(Error.UNKNOWN_VARIABLE_OR_FUNCTION), "`class` lu comme un identifiant en LS1");
+		assertTrue(result.merged.informations.valueStream().anyMatch(p -> p.get(0).intValue() == 0 && p.get(1).stringValue().startsWith("Lib_")),
+			"les erreurs de la lecture LS1 restent visibles sur la lib : " + result.merged.informations);
+	}
+
+	@Test
+	public void includeDeclaringVersion_otherVersionIncluderThatCompiles_isKept() throws Exception {
+		// Une lib `@version:4` à la syntaxe sage est lue sans erreur par une IA v3 : cette
+		// lecture est légitime, elle compte pour l'intersection des UNUSED_* (helper() n'est
+		// utilisé QUE par l'IA v3 : pas de faux avertissement) et ses problèmes remontent.
+		write("Lib_" + uniqueId + ".leek", "// @version:4\nfunction helper() { return 1; }\nfunction other() { return 2; }\n");
+		write("Modern_" + uniqueId + ".leek", "// @strict\ninclude(\"Lib_" + uniqueId + "\");\nreturn other();");
+		write("Older_" + uniqueId + ".leek", "// @version:3\n// @strict\ninclude(\"Lib_" + uniqueId + "\");\nreturn helper() + other();");
+
+		var lib = fs.getRoot(0).resolve("Lib_" + uniqueId);
+		var result = IACompiler.analyzeWithIncludes(lib);
+
+		assertEquals(2, result.perEntrypoint.size());
+		assertTrue(result.perEntrypoint.values().stream().allMatch(r -> r.success), "les deux includers compilent");
+		assertFalse(collectErrors(result.merged).contains(Error.UNUSED_FUNCTION),
+			"helper() est utilisé par l'IA v3, qui doit compter : " + result.merged.informations);
+	}
+
+	@Test
+	public void includeDeclaringOlderVersion_brokenLegacyIncluderIsDropped_whenAModernOneCompiles() throws Exception {
+		// Lib `@version:3` (posé quand 3 était la dernière version) incluse par un main sans
+		// pragma (donc LATEST, qui la compile très bien) et par une vieille IA `@version:1`
+		// qui échoue : aucun includer n'a exactement la version déclarée, mais le bruit LS1
+		// doit quand même disparaître de la vue de la lib.
+		write("Lib_" + uniqueId + ".leek", "// @version:3\nclass Foo { x = 1; }\nfunction lib() { return new Foo(); }\n");
+		write("Main_" + uniqueId + ".leek", "include(\"Lib_" + uniqueId + "\");\nreturn lib();");
+		write("Legacy_" + uniqueId + ".leek", "// @version:1\ninclude(\"Lib_" + uniqueId + "\");\nreturn lib();");
+
+		var lib = fs.getRoot(0).resolve("Lib_" + uniqueId);
+		var result = IACompiler.analyzeWithIncludes(lib);
+
+		assertEquals(2, result.perEntrypoint.size());
+		assertTrue(result.merged.success, "seule la lecture du main moderne compte : " + result.merged.informations);
+	}
+
+	@Test
+	public void declaredVersion_followsApplyRules_withoutSideEffects() {
+		var file = new AIFile("p", "// @version:abc\n// @version:2\nreturn 1;", 0, LeekScript.LATEST_VERSION, 0, false);
+		assertEquals(2, leekscript.compiler.PragmaParser.declaredVersion(file), "valeur invalide ignorée, le pragma valide suivant compte");
+		assertEquals(0, file.getErrors().size(), "aucune erreur ajoutée");
+		assertEquals(LeekScript.LATEST_VERSION, file.getVersion(), "version du fichier inchangée");
+		assertEquals(null, leekscript.compiler.PragmaParser.declaredVersion(new AIFile("p", "return 1;", 0, 4, 0, false)));
+		assertEquals(null, leekscript.compiler.PragmaParser.declaredVersion(new AIFile("p", "// @version:99\nreturn 1;", 0, 4, 0, false)));
 	}
 
 	@Test
