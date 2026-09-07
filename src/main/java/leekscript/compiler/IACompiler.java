@@ -112,10 +112,12 @@ public class IACompiler {
 			}
 		}
 		// `ai` absent de perEntrypoint = fichier inclus : chaque includer est une lecture
-		// légitime du fichier édité, on ne filtre pas.
-		var merged = perEntrypoint.size() == 1
-				? perEntrypoint.values().iterator().next()
-				: mergeResults(perEntrypoint, perEntrypoint.containsKey(ai) ? ai : null);
+		// légitime du fichier édité, on ne filtre pas — sauf ceux qui le lisent dans une autre
+		// version que celle qu'il déclare (cf. compatibleIncluders).
+		var mergeInput = perEntrypoint.containsKey(ai) ? perEntrypoint : compatibleIncluders(ai, perEntrypoint);
+		var merged = mergeInput.size() == 1
+				? mergeInput.values().iterator().next()
+				: mergeResults(mergeInput, perEntrypoint.containsKey(ai) ? ai : null);
 		// mergeResults() ne fusionne que les problèmes (dédup cross-entrypoints) et laisse
 		// includedAIs à null. Or GeneratorAPI calcule les total_lines/total_chars transitifs
 		// du fichier analysé à partir de merged.includedAIs : sans ça, dès qu'un include est
@@ -126,6 +128,32 @@ public class IACompiler {
 			if (ownResult != null) merged.includedAIs = ownResult.includedAIs;
 		}
 		return new MultiAnalyzeResult(merged, perEntrypoint);
+	}
+
+	/**
+	 * Includers dont la vue fusionnée d'un fichier inclus doit tenir compte.
+	 *
+	 * Un fichier inclus est compilé dans la version de CHAQUE includer, jamais dans la
+	 * sienne. Une vieille IA `@version:1` qui inclut (même transitivement) un fichier
+	 * `@version:4` le lit donc avec la grammaire LS1 : `class` inconnu, `new` refusé,
+	 * fonctions « indisponibles en LeekScript 1 »... Ces erreurs sont celles de l'IA LS1,
+	 * qui reste invalide et les affiche quand on l'ouvre ; fusionnées dans la vue du fichier
+	 * inclus, elles noient le joueur sous des dizaines de fausses erreurs, et leur nombre
+	 * varie selon l'entrypoint qui a analysé le fichier en dernier.
+	 *
+	 * Un fichier qui déclare sa version n'est donc jugé que par les includers de cette
+	 * version. Sans pragma, il n'a pas de version propre : toutes les lectures sont
+	 * légitimes. Si aucun includer n'est compatible, on garde tout : le fichier n'est
+	 * jamais compilé dans la version qu'il déclare, autant le montrer.
+	 */
+	static Map<AIFile, AnalyzeResult> compatibleIncluders(AIFile ai, Map<AIFile, AnalyzeResult> perEntrypoint) {
+		Integer declared = PragmaParser.declaredVersion(ai);
+		if (declared == null) return perEntrypoint;
+		var compatible = new LinkedHashMap<AIFile, AnalyzeResult>();
+		for (var entry : perEntrypoint.entrySet()) {
+			if (entry.getKey().getVersion() == declared) compatible.put(entry.getKey(), entry.getValue());
+		}
+		return compatible.isEmpty() ? perEntrypoint : compatible;
 	}
 
 	/**

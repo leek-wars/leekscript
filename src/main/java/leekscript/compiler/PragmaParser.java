@@ -21,6 +21,27 @@ public class PragmaParser {
 		"^\\s*//\\s*@([A-Za-z_][A-Za-z0-9_]*)(?:\\s*:\\s*(\\S+))?\\s*$"
 	);
 
+	/**
+	 * Version déclarée par le premier pragma <code>// @version:N</code> valide du fichier, ou
+	 * null s'il n'en déclare aucune. Sans effet de bord, contrairement à {@link #apply} : ni
+	 * erreur ajoutée au fichier, ni version modifiée.
+	 */
+	public static Integer declaredVersion(AIFile file) {
+		String code = file.getCode();
+		if (code == null || code.indexOf("//") < 0) return null;
+		for (String line : code.split("\n", -1)) {
+			Matcher m = PRAGMA_PATTERN.matcher(line);
+			if (!m.matches() || !m.group(1).equals("version") || m.group(2) == null) continue;
+			try {
+				int v = Integer.parseInt(m.group(2));
+				return v >= 1 && v <= LeekScript.LATEST_VERSION ? v : null;
+			} catch (NumberFormatException e) {
+				return null;
+			}
+		}
+		return null;
+	}
+
 	public static void apply(AIFile file) {
 
 		String code = file.getCode();

@@ -736,6 +736,59 @@ public class TestIncludeCache {
 	}
 
 	@Test
+	public void includeDeclaringVersion_mismatchedIncluderErrorsDoNotLeakIntoIncludedFile() throws Exception {
+		// Un fichier `@version:4` à syntaxe objet, inclus par une IA moderne (LS4) ET par une
+		// vieille IA `@version:1`. Un include est compilé dans la version de son includer :
+		// l'IA LS1 lit donc le fichier avec la grammaire LS1 (`class` inconnu, `new` refusé...).
+		// Ces erreurs sont les siennes ; elles ne doivent pas s'afficher sur le fichier inclus,
+		// dont la vue fusionnait jusqu'ici tous les includers.
+		write("Lib_" + uniqueId + ".leek", "// @version:4\nclass Foo { x = 1; }\nfunction lib() { return new Foo(); }\n");
+		write("Modern_" + uniqueId + ".leek", "include(\"Lib_" + uniqueId + "\");\nreturn lib();");
+		write("Legacy_" + uniqueId + ".leek", "// @version:1\ninclude(\"Lib_" + uniqueId + "\");\nreturn lib();");
+
+		var lib = fs.getRoot(0).resolve("Lib_" + uniqueId);
+		var result = IACompiler.analyzeWithIncludes(lib);
+
+		assertEquals(2, result.perEntrypoint.size(), "les deux includers sont compilés");
+		var legacy = result.perEntrypoint.entrySet().stream()
+			.filter(e -> e.getKey().getPath().startsWith("Legacy_")).findFirst().orElseThrow();
+		assertEquals(1, legacy.getKey().getVersion());
+		assertFalse(legacy.getValue().success, "l'IA LS1 reste compilée, et invalide, pour l'état de l'arbre");
+		assertTrue(result.merged.success, "la vue du fichier inclus ignore l'includer LS1 : " + result.merged.informations);
+		assertEquals(0, result.merged.informations.size());
+	}
+
+	@Test
+	public void includeDeclaringVersion_onlyMismatchedIncluders_keepsTheirErrors() throws Exception {
+		// Sans aucun includer de la version déclarée, le fichier n'est jamais compilé dans
+		// cette version : on montre les erreurs de ses vrais includers plutôt que rien.
+		write("Lib_" + uniqueId + ".leek", "// @version:4\nclass Foo { x = 1; }\nfunction lib() { return new Foo(); }\n");
+		write("Legacy_" + uniqueId + ".leek", "// @version:1\ninclude(\"Lib_" + uniqueId + "\");\nreturn lib();");
+
+		var lib = fs.getRoot(0).resolve("Lib_" + uniqueId);
+		var result = IACompiler.analyzeWithIncludes(lib);
+
+		assertEquals(1, result.perEntrypoint.size());
+		assertFalse(result.merged.success);
+		assertTrue(collectErrors(result.merged).contains(Error.UNKNOWN_VARIABLE_OR_FUNCTION), "`class` lu comme un identifiant en LS1");
+	}
+
+	@Test
+	public void includeWithoutPragma_keepsUnionOfAllIncluders() throws Exception {
+		// Sans pragma, le fichier n'a pas de version propre : chaque includer est une lecture
+		// légitime et l'union des problèmes est conservée (comportement historique).
+		write("Lib_" + uniqueId + ".leek", "class Foo { x = 1; }\nfunction lib() { return new Foo(); }\n");
+		write("Modern_" + uniqueId + ".leek", "include(\"Lib_" + uniqueId + "\");\nreturn lib();");
+		write("Legacy_" + uniqueId + ".leek", "// @version:1\ninclude(\"Lib_" + uniqueId + "\");\nreturn lib();");
+
+		var lib = fs.getRoot(0).resolve("Lib_" + uniqueId);
+		var result = IACompiler.analyzeWithIncludes(lib);
+
+		assertEquals(2, result.perEntrypoint.size());
+		assertFalse(result.merged.success, "l'includer LS1 compte toujours pour un fichier sans version déclarée");
+	}
+
+	@Test
 	public void sharedInclude_mergedKeepsIncludedAIs_forTransitiveStats() throws Exception {
 		// Régression total_lines : deux entrypoints partagent un include. Analyser l'un
 		// d'eux passe par mergeResults() (perEntrypoint.size() > 1), qui ne propageait pas
