@@ -835,6 +835,47 @@ public class TestIncludeCache {
 	}
 
 	@Test
+	public void equippedFile_isAnalyzedAsItsOwnRoot_evenWhenIncluded() throws Exception {
+		// Un fichier équipé sur un poireau est compilé seul par le worker : sa validité vient
+		// de sa propre compilation, pas de la lecture qu'en fait une vieille IA LS1 qui l'inclut.
+		write("Equipped_" + uniqueId + ".leek", "class Foo { x = 1; }\nreturn new Foo();\n");
+		write("Legacy_" + uniqueId + ".leek", "// @version:1\ninclude(\"Equipped_" + uniqueId + "\");\nreturn 1;");
+		var file = fs.getRoot(0).resolve("Equipped_" + uniqueId);
+
+		// Non équipé et sans pragma : seule lecture = l'IA LS1, ses erreurs remontent.
+		var before = IACompiler.analyzeWithIncludes(file);
+		assertFalse(before.perEntrypoint.containsKey(file));
+		assertFalse(before.merged.success);
+
+		fs.equipped.add("Equipped_" + uniqueId);
+		var result = IACompiler.analyzeWithIncludes(file);
+		assertTrue(result.perEntrypoint.containsKey(file), "compilé comme racine");
+		assertEquals(2, result.perEntrypoint.size(), "l'IA LS1 est compilée aussi, en frère");
+		assertTrue(result.merged.success, "sa propre compilation fait foi : " + result.merged.informations);
+		var legacy = result.perEntrypoint.entrySet().stream()
+			.filter(e -> e.getKey().getPath().startsWith("Legacy_")).findFirst().orElseThrow();
+		assertFalse(legacy.getValue().success, "l'IA LS1 garde son propre verdict");
+	}
+
+	@Test
+	public void equippedFile_includerCountsForUnusedIntersection() throws Exception {
+		// helper() n'est pas utilisé par le fichier équipé lui-même, mais par l'IA qui l'inclut :
+		// cet includer compte dans l'intersection des UNUSED_*, pas de faux avertissement.
+		write("Equipped_" + uniqueId + ".leek", "// @strict\nfunction helper() { return 1; }\nreturn 0;\n");
+		write("User_" + uniqueId + ".leek", "// @strict\ninclude(\"Equipped_" + uniqueId + "\");\nreturn helper();");
+		fs.equipped.add("Equipped_" + uniqueId);
+
+		var file = fs.getRoot(0).resolve("Equipped_" + uniqueId);
+		var alone = new IACompiler().analyze(file);
+		assertTrue(collectErrors(alone).contains(Error.UNUSED_FUNCTION), "seul, helper() est bien inutilisé");
+
+		var result = IACompiler.analyzeWithIncludes(file);
+		assertTrue(result.perEntrypoint.containsKey(file));
+		assertFalse(collectErrors(result.merged).contains(Error.UNUSED_FUNCTION),
+			"helper() est utilisé par l'IA qui l'inclut : " + result.merged.informations);
+	}
+
+	@Test
 	public void sharedInclude_mergedKeepsIncludedAIs_forTransitiveStats() throws Exception {
 		// Régression total_lines : deux entrypoints partagent un include. Analyser l'un
 		// d'eux passe par mergeResults() (perEntrypoint.size() > 1), qui ne propageait pas
@@ -928,6 +969,13 @@ public class TestIncludeCache {
 
 	static class TmpFileSystem extends FileSystem {
 		private final Path root;
+		/** Chemins « équipés sur un poireau » : analysés en racine même s'ils sont inclus. */
+		final java.util.Set<String> equipped = new java.util.HashSet<>();
+
+		@Override
+		public boolean isEquipped(AIFile file) {
+			return equipped.contains(file.getPath());
+		}
 		private final Map<Integer, Folder> rootFolders = new HashMap<>();
 		private final Map<String, AIFile> filesByPath = new HashMap<>();
 

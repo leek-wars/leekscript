@@ -86,24 +86,28 @@ public class IACompiler {
 		var fs = LeekScript.getFileSystem();
 		var includers = fs.getIncluders(ai);
 		var perEntrypoint = new LinkedHashMap<AIFile, AnalyzeResult>();
-		if (includers.isEmpty()) {
+		// Un fichier équipé sur un poireau est compilé SEUL par le worker, quelle que soit la
+		// façon dont d'autres IA l'incluent : c'est sa propre compilation qui dit s'il est
+		// valide. Il est donc traité en racine même s'il a des includers ; ceux-ci deviennent
+		// des frères (dénominateur des UNUSED_*, erreurs non rendues sur lui).
+		if (includers.isEmpty() || fs.isEquipped(ai)) {
 			// ai est un entrypoint racine : compiler aussi les entrypoints frères qui
 			// partagent les mêmes includes, pour que la déduplication cross-entrypoints
 			// s'applique aux avertissements sur les fichiers inclus.
 			fs.loadDependencies(ai);
 			var result = new IACompiler().analyze(ai);
 			perEntrypoint.put(ai, result);
+			var siblings = new LinkedHashSet<AIFile>(includers);
 			if (result.includedAIs != null) {
-				var siblings = new LinkedHashSet<AIFile>();
 				for (var included : result.includedAIs) {
 					for (var sibling : fs.getIncluders(included)) {
 						if (sibling != ai) siblings.add(sibling);
 					}
 				}
-				for (var sibling : siblings) {
-					fs.loadDependencies(sibling);
-					perEntrypoint.put(sibling, new IACompiler().analyze(sibling));
-				}
+			}
+			for (var sibling : siblings) {
+				fs.loadDependencies(sibling);
+				perEntrypoint.put(sibling, new IACompiler().analyze(sibling));
 			}
 		} else {
 			for (var ep : includers) {

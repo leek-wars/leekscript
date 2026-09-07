@@ -96,4 +96,14 @@ public abstract class FileSystem {
 		}
 		return result;
 	}
+
+	/**
+	 * Le fichier est-il équipé sur un poireau (ou tout autre usage où il est compilé SEUL,
+	 * comme point d'entrée) ? Un tel fichier est analysé comme racine même s'il est inclus
+	 * ailleurs : sa propre compilation fait foi. Faux par défaut (tests, mode embarqué) ;
+	 * les FileSystem adossés au serveur surchargent.
+	 */
+	public boolean isEquipped(AIFile file) {
+		return false;
+	}
 }
