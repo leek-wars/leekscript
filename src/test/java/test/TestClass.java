@@ -359,4 +359,16 @@ public class TestClass extends TestCommon {
 		// Un champ nullable garde son stockage dynamique : pas de conversion imposée
 		code_v4_("class Z { public static integer|null b = 1; } Z.b = null; return Z.b;").equals("null");
 	}
+
+	@Test
+	public void testClass_method_default_null_on_primitive_parameter() throws Exception {
+		section("Class method - default null on primitive parameter (prod error #11872155)");
+		code_v4_("class M { public computeDistance(integer from, integer to = null) { return to } } var m = new M() return m.computeDistance(1)").equals("null");
+		code_v4_("class M { public computeDistance(integer from, integer to = null) { return to } } var m = new M() return m.computeDistance(1, 2)").equals("2");
+		code_v4_("class M { public static f(real r = null) { return r } } return M.f()").equals("null");
+		code_v4_("class M { public x constructor(integer x = null) { this.x = x } } return new M().x").equals("null");
+		code_v4_("class M { public x constructor(integer x = null) { this.x = x } } return new M(5).x").equals("5");
+		// Types référence : inchangés (#4703)
+		code_v4_("class A {} class M { public f(A a = null) { return a } } return new M().f()").equals("null");
+	}
 }

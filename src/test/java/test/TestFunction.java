@@ -656,4 +656,23 @@ public class TestFunction extends TestCommon {
 		code_v2_("function f1() { return <1> } function f2() { return <2> } (true ? f1 : f2)()").equals("<1>");
 	}
 
+
+	@Test
+	public void testDefault_null_on_primitive_parameter() throws Exception {
+		section("Default null on primitive parameter (prod error #11872155)");
+		// `long u_to = null` ne compilait pas en Java : le paramètre est traité comme non typé
+		code_v4_("function f(integer from, integer to = null) { return to } return f(1)").equals("null");
+		code_v4_("function f(integer from, integer to = null) { return to } return f(1, 2)").equals("2");
+		code_v4_("function f(integer from, integer to = null) { return to } return f(1, 2.5)").equals("2.5");
+		code_v4_("function f(real to = null) { return to } return f()").equals("null");
+		code_v4_("function f(boolean b = null) { return b } return f()").equals("null");
+		code_v4_("function f(integer to = null) { return to == null ? 12 : to + 1 } return f() + f(1)").equals("14");
+		code_v3_("function f(integer from, integer to = null) { return to } return f(1)").equals("null");
+		// Types référence : inchangés (#4703)
+		code_v4_("function f(Array a = null) { return a } return f()").equals("null");
+		code_v4_("function f(string s = null) { return s } return f()").equals("null");
+		code_v4_("class A {} function f(A a = null) { return a } return f()").equals("null");
+		// Un défaut non nul garde le type primitif
+		code_v4_("function f(integer to = 3) { return to } return f()").equals("3");
+	}
 }
