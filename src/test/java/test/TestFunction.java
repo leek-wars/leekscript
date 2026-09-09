@@ -668,6 +668,7 @@ public class TestFunction extends TestCommon {
 		code_v4_("function f(boolean b = null) { return b } return f()").equals("null");
 		code_v4_("function f(integer to = null) { return to == null ? 12 : to + 1 } return f() + f(1)").equals("14");
 		code_v3_("function f(integer from, integer to = null) { return to } return f(1)").equals("null");
+		code_v4_("function f(integer to = (null)) { return to } return f()").equals("null");
 		// Types référence : inchangés (#4703)
 		code_v4_("function f(Array a = null) { return a } return f()").equals("null");
 		code_v4_("function f(string s = null) { return s } return f()").equals("null");

@@ -16,7 +16,6 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
-import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.ConstantFolder;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -99,7 +98,7 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 
 		// Défaut `null` sur un paramètre primitif : `final long u_to = null` ne compile pas en
 		// Java (erreur prod #11872155). Paramètre traité comme non typé, cf. FunctionBlock.
-		if (defaultValue instanceof LeekNull && type.isPrimitive()) {
+		if (FunctionBlock.isNullLiteral(defaultValue) && type.isPrimitive()) {
 			type = Type.ANY;
 		}
 

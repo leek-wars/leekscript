@@ -366,6 +366,7 @@ public class TestClass extends TestCommon {
 		code_v4_("class M { public computeDistance(integer from, integer to = null) { return to } } var m = new M() return m.computeDistance(1)").equals("null");
 		code_v4_("class M { public computeDistance(integer from, integer to = null) { return to } } var m = new M() return m.computeDistance(1, 2)").equals("2");
 		code_v4_("class M { public static f(real r = null) { return r } } return M.f()").equals("null");
+		code_v4_("class M { public f(integer to = (null)) { return to } } return new M().f()").equals("null");
 		code_v4_("class M { public x constructor(integer x = null) { this.x = x } } return new M().x").equals("null");
 		code_v4_("class M { public x constructor(integer x = null) { this.x = x } } return new M(5).x").equals("5");
 		// Types référence : inchangés (#4703)

@@ -19,6 +19,7 @@ import leekscript.compiler.expression.ConstantFolder;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekNull;
+import leekscript.compiler.expression.LeekParenthesis;
 import leekscript.compiler.expression.LeekType;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -113,7 +114,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 		// généré `long u_to = null` ne compile pas — l'IA plantait à chaque combat (erreur prod
 		// #11872155). Même traitement que la référence : le paramètre devient non typé, `null`
 		// garde sa sémantique dynamique. Les types référence (`A a = null`) sont inchangés.
-		var nullDefaultOnPrimitive = defaultValue instanceof LeekNull && declaredType.isPrimitive();
+		var nullDefaultOnPrimitive = isNullLiteral(defaultValue) && declaredType.isPrimitive();
 		var type = is_reference || nullDefaultOnPrimitive ? Type.ANY : declaredType;
 		mParameters.add(token.getWord());
 		mParametersTypes.add(leekType);
@@ -131,6 +132,14 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 			minParameters++;
 		}
 		this.type.add_argument(type, defaultValue != null);
+	}
+
+	/** `null`, éventuellement entre parenthèses (`(null)`). */
+	public static boolean isNullLiteral(Expression expression) {
+		while (expression instanceof LeekParenthesis parenthesis) {
+			expression = parenthesis.getExpression();
+		}
+		return expression instanceof LeekNull;
 	}
 
 	public void setReturnType(Type type) {
