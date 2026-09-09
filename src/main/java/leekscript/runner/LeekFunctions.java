@@ -15,9 +15,9 @@ public class LeekFunctions {
 		/**
 		 * Fonctions Value
 		 */
-		method("string", "Value", 8, true, Type.STRING, new Type[] { Type.ANY });
-		method("number", "Value", 10, true, Type.INT_OR_REAL, new Type[] { Type.ANY });
-		method("typeOf", "Value", 8, true, Type.INT, new Type[] { Type.ANY });
+		method("string", "Value", 6, true, Type.STRING, new Type[] { Type.ANY });
+		method("number", "Value", 3, true, Type.INT_OR_REAL, new Type[] { Type.ANY });
+		method("typeOf", "Value", 1, true, Type.INT, new Type[] { Type.ANY });
 		method("clone", "Value", true, new CallableVersion[] {
 			new CallableVersion(Type.ANY, new Type[] { Type.ANY, Type.INT }),
 			new CallableVersion(Type.ANY, new Type[] { Type.ANY }),
@@ -29,58 +29,58 @@ public class LeekFunctions {
 		 */
 		// Ordre : la version REAL sert de fallback (conversion totale via real()),
 		// INT et BIG_INT sont sélectionnées par instanceof dans le dispatcher générique.
-		method("abs", "Number", 2, true, new CallableVersion[] {
+		method("abs", "Number", 1, true, new CallableVersion[] {
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT }),
 			new CallableVersion(Type.BIG_INT, new Type[] { Type.BIG_INT }),
 		});
-		method("min", "Number", 2, true, new CallableVersion[] {
+		method("min", "Number", 1, true, new CallableVersion[] {
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL, Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT, Type.INT }),
 			new CallableVersion(Type.BIG_INT, new Type[] { Type.BIG_INT, Type.BIG_INT }),
 		});
-		method("max", "Number", 2, true, new CallableVersion[] {
+		method("max", "Number", 1, true, new CallableVersion[] {
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL, Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT, Type.INT }),
 			new CallableVersion(Type.BIG_INT, new Type[] { Type.BIG_INT, Type.BIG_INT }),
 		});
-		method("cos", "Number", 30, true, Type.REAL, new Type[] { Type.REAL });
-		method("sin", "Number", 30, true, Type.REAL, new Type[] { Type.REAL });
-		method("tan", "Number", 30, true, Type.REAL, new Type[] { Type.REAL });
-		method("acos", "Number", 30, true, Type.REAL, new Type[] { Type.REAL });
-		method("asin", "Number", 30, true, Type.REAL, new Type[] { Type.REAL });
-		method("atan", "Number", 30, true, Type.REAL, new Type[] { Type.REAL });
-		method("atan2", "Number", 35, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
-		method("toRadians", "Number", 5, true, Type.REAL, new Type[] { Type.REAL });
-		method("toDegrees", "Number", 5, true, Type.REAL, new Type[] { Type.REAL });
-		method("ceil", "Number", 2, true, new CallableVersion[] {
+		method("cos", "Number", 3, true, Type.REAL, new Type[] { Type.REAL });
+		method("sin", "Number", 3, true, Type.REAL, new Type[] { Type.REAL });
+		method("tan", "Number", 4, true, Type.REAL, new Type[] { Type.REAL });
+		method("acos", "Number", 3, true, Type.REAL, new Type[] { Type.REAL });
+		method("asin", "Number", 3, true, Type.REAL, new Type[] { Type.REAL });
+		method("atan", "Number", 3, true, Type.REAL, new Type[] { Type.REAL });
+		method("atan2", "Number", 4, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
+		method("toRadians", "Number", 3, true, Type.REAL, new Type[] { Type.REAL });
+		method("toDegrees", "Number", 3, true, Type.REAL, new Type[] { Type.REAL });
+		method("ceil", "Number", 1, true, new CallableVersion[] {
 			new CallableVersion(Type.INT, new Type[] { Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT }),
 		});
-		method("floor", "Number", 2, true, new CallableVersion[] {
+		method("floor", "Number", 1, true, new CallableVersion[] {
 			new CallableVersion(Type.INT, new Type[] { Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT }),
 		});
-		method("round", "Number", 2, true, new CallableVersion[] {
+		method("round", "Number", 1, true, new CallableVersion[] {
 			new CallableVersion(Type.INT, new Type[] { Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT }),
 		});
-		method("sqrt", "Number", 8, true, Type.REAL, new Type[] { Type.REAL });
-		method("cbrt", "Number", 62, true, Type.REAL, new Type[] { Type.REAL });
-		method("log", "Number", 39, true, Type.REAL, new Type[] { Type.REAL });
-		method("log2", "Number", 23, true, Type.REAL, new Type[] { Type.REAL });
-		method("log10", "Number", 23, true, Type.REAL, new Type[] { Type.REAL });
-		method("exp", "Number", 40, true, Type.REAL, new Type[] { Type.REAL });
-		method("pow", "Number", 140, true, new CallableVersion[] {
+		method("sqrt", "Number", 3, true, Type.REAL, new Type[] { Type.REAL });
+		method("cbrt", "Number", 5, true, Type.REAL, new Type[] { Type.REAL });
+		method("log", "Number", 4, true, Type.REAL, new Type[] { Type.REAL });
+		method("log2", "Number", 5, true, Type.REAL, new Type[] { Type.REAL });
+		method("log10", "Number", 5, true, Type.REAL, new Type[] { Type.REAL });
+		method("exp", "Number", 2, true, Type.REAL, new Type[] { Type.REAL });
+		method("pow", "Number", 7, true, new CallableVersion[] {
 			new CallableVersion(Type.REAL, new Type[] { Type.REAL, Type.REAL }),
 			new CallableVersion(Type.BIG_INT, new Type[] { Type.BIG_INT, Type.BIG_INT }),
 		});
-		method("rand", "Number", 30, true, Type.REAL, new Type[0]);
-		method("randInt", "Number", 30, true, Type.INT, new Type[] { Type.INT, Type.INT });
-		method("randFloat", "Number", 30, true, Type.REAL, new Type[] { Type.REAL, Type.REAL }).setMaxVersion(3, "randReal");
-		method("randReal", "Number", 30, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
-		method("hypot", "Number", 187, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
-		method("signum", "Number", 2, true, new CallableVersion[] {
+		method("rand", "Number", 3, true, Type.REAL, new Type[0]);
+		method("randInt", "Number", 2, true, Type.INT, new Type[] { Type.INT, Type.INT });
+		method("randFloat", "Number", 3, true, Type.REAL, new Type[] { Type.REAL, Type.REAL }).setMaxVersion(3, "randReal");
+		method("randReal", "Number", 3, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
+		method("hypot", "Number", 2, true, Type.REAL, new Type[] { Type.REAL, Type.REAL });
+		method("signum", "Number", 1, true, new CallableVersion[] {
 			new CallableVersion(Type.INT, new Type[] { Type.REAL }),
 			new CallableVersion(Type.INT, new Type[] { Type.INT }),
 			new CallableVersion(Type.INT, new Type[] { Type.BIG_INT }),
@@ -114,26 +114,26 @@ public class LeekFunctions {
 		method("byteReverse", "Number", 1, true, Type.INT, new Type[] { Type.INT }).setMinVersion(4);
 		method("rotateLeft", "Number", 1, true, Type.INT, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
 		method("rotateRight", "Number", 1, true, Type.INT, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
-		method("binString", "Number", 10, true, new CallableVersion[] {
+		method("binString", "Number", 9, true, new CallableVersion[] {
 			new CallableVersion(Type.STRING, new Type[] { Type.INT }),
 			new CallableVersion(Type.STRING, new Type[] { Type.BIG_INT }),
 		}).setMinVersion(4);
-		method("hexString", "Number", 10, true, new CallableVersion[] {
+		method("hexString", "Number", 6, true, new CallableVersion[] {
 			new CallableVersion(Type.STRING, new Type[] { Type.INT }),
 			new CallableVersion(Type.STRING, new Type[] { Type.BIG_INT }),
 		}).setMinVersion(4);
 		method("realBits", "Number", 1, true, Type.INT, new Type[] { Type.REAL }).setMinVersion(4);
-		method("bitsToReal", "Number", 1, true, Type.REAL, new Type[] { Type.INT }).setMinVersion(4);
+		method("bitsToReal", "Number", 3, true, Type.REAL, new Type[] { Type.INT }).setMinVersion(4);
 		method("isFinite", "Number", 1, true, Type.BOOL, new Type[] { Type.REAL }).setMinVersion(4);
 		method("isInfinite", "Number", 1, true, Type.BOOL, new Type[] { Type.REAL }).setMinVersion(4);
 		method("isNaN", "Number", 1, true, Type.BOOL, new Type[] { Type.REAL }).setMinVersion(4);
-		method("isPermutation", "Number", 50, true, Type.BOOL, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
+		method("isPermutation", "Number", 10, true, Type.BOOL, new Type[] { Type.INT, Type.INT }).setMinVersion(4);
 
 		/**
 		 * Fonctions String
 		 */
-		method("charAt", "String", 8, true, Type.STRING, new Type[] { Type.STRING, Type.INT });
-		method("length", "String", 15, true, Type.INT, new Type[] { Type.STRING });
+		method("charAt", "String", 4, true, Type.STRING, new Type[] { Type.STRING, Type.INT });
+		method("length", "String", 1, true, Type.INT, new Type[] { Type.STRING });
 		method("substring", "String", true, new CallableVersion[] {
 			new CallableVersion(Type.STRING, new Type[] { Type.STRING, Type.INT, Type.INT }),
 			new CallableVersion(Type.STRING, new Type[] { Type.STRING, Type.INT }),
@@ -152,8 +152,8 @@ public class LeekFunctions {
 		method("startsWith", "String", true, Type.BOOL, new Type[] { Type.STRING, Type.STRING });
 		method("endsWith", "String", true, Type.BOOL, new Type[] { Type.STRING, Type.STRING });
 		method("contains", "String", true, Type.BOOL, new Type[] { Type.STRING, Type.STRING });
-		method("trim", "String", 10, true, Type.STRING, new Type[] { Type.STRING });
-		method("codePointAt", "String", 5, true, new CallableVersion[] {
+		method("trim", "String", 5, true, Type.STRING, new Type[] { Type.STRING });
+		method("codePointAt", "String", 1, true, new CallableVersion[] {
 			new CallableVersion(Type.INT, new Type[] { Type.STRING, Type.INT }),
 			new CallableVersion(Type.INT, new Type[] { Type.STRING }),
 		});
