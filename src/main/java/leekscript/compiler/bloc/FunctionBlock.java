@@ -19,7 +19,6 @@ import leekscript.compiler.expression.ConstantFolder;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekNull;
-import leekscript.compiler.expression.LeekParenthesis;
 import leekscript.compiler.expression.LeekType;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
@@ -108,14 +107,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 		// partagé avec l'appelant) : son type Java ne peut donc pas être un primitif.
 		// La signature ferait `long p_x` alors que le corps fait `p_x instanceof Box`
 		// et `(Box) p_x`, ce qui ne compile pas (cf. #3991). On force le type à ANY.
-		var declaredType = leekType != null ? leekType.getType() : Type.ANY;
-		// Un défaut `null` sur un paramètre primitif (`integer to = null`) : les valeurs par
-		// défaut ne sont pas type-checkées (cf. #4703, elles ne doivent pas l'être) et le Java
-		// généré `long u_to = null` ne compile pas — l'IA plantait à chaque combat (erreur prod
-		// #11872155). Même traitement que la référence : le paramètre devient non typé, `null`
-		// garde sa sémantique dynamique. Les types référence (`A a = null`) sont inchangés.
-		var nullDefaultOnPrimitive = isNullLiteral(defaultValue) && declaredType.isPrimitive();
-		var type = is_reference || nullDefaultOnPrimitive ? Type.ANY : declaredType;
+		var type = is_reference ? Type.ANY : parameterType(leekType != null ? leekType.getType() : Type.ANY, defaultValue);
 		mParameters.add(token.getWord());
 		mParametersTypes.add(leekType);
 		mReferences.add(is_reference);
@@ -134,12 +126,20 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 		this.type.add_argument(type, defaultValue != null);
 	}
 
-	/** `null`, éventuellement entre parenthèses (`(null)`). */
-	public static boolean isNullLiteral(Expression expression) {
-		while (expression instanceof LeekParenthesis parenthesis) {
-			expression = parenthesis.getExpression();
+	/**
+	 * Type effectif d'un paramètre déclaré `declared` avec la valeur par défaut `defaultValue`.
+	 *
+	 * Les valeurs par défaut ne sont pas type-checkées (cf. #4703, elles ne doivent pas l'être) ;
+	 * un défaut `null` sur un type primitif (`integer to = null`) donnait `long u_to = null`, qui
+	 * ne compile pas en Java : l'IA plantait à chaque combat (erreur prod #11872155). Le paramètre
+	 * devient non typé, `null` garde sa sémantique dynamique ; les types référence (`A a = null`)
+	 * sont inchangés. Partagé avec les méthodes de classe (ClassMethodBlock).
+	 */
+	public static Type parameterType(Type declared, Expression defaultValue) {
+		if (declared.isPrimitive() && defaultValue != null && defaultValue.trim() instanceof LeekNull) {
+			return Type.ANY;
 		}
-		return expression instanceof LeekNull;
+		return declared;
 	}
 
 	public void setReturnType(Type type) {

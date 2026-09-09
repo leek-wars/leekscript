@@ -96,12 +96,7 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 			}));
 		}
 
-		// Défaut `null` sur un paramètre primitif : `final long u_to = null` ne compile pas en
-		// Java (erreur prod #11872155). Paramètre traité comme non typé, cf. FunctionBlock.
-		if (FunctionBlock.isNullLiteral(defaultValue) && type.isPrimitive()) {
-			type = Type.ANY;
-		}
-
+		type = FunctionBlock.parameterType(type, defaultValue);
 		mParameters.add(token);
 		defaultValues.add(defaultValue);
 		var declaration = new LeekVariableDeclarationInstruction(compiler, token, this, type);
