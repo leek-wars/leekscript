@@ -149,12 +149,12 @@ public class BigIntegerValue extends Number implements LeekValue {
 	}
 
 	public BigIntegerValue shiftLeft(int n) throws LeekRunException {
-		binaryShiftOps(n);
+		shiftOps(n);
 		return new BigIntegerValue(ai, value.shiftLeft(n));
 	}
 
 	public BigIntegerValue shiftRight(int n) throws LeekRunException {
-		binaryShiftOps(n);
+		shiftOps(-(long) n);
 		return new BigIntegerValue(ai, value.shiftRight(n));
 	}
 
@@ -339,8 +339,28 @@ public class BigIntegerValue extends Number implements LeekValue {
 		return value.hashCode();
 	}
 
-	private void binaryShiftOps(int n) throws LeekRunException {
-		ops(n < 4000 ? 1 : n / 2000);
+	/**
+	 * Coût et garde-fou de taille d'un décalage. `shift` est le décalage EFFECTIF
+	 * vers la gauche, négatif pour un décalage vers la droite.
+	 *
+	 * Un montant négatif décale dans l'AUTRE sens (`x >> -n` fait exactement le
+	 * travail de `x << n`) : c'est donc ce décalage effectif, et non le montant
+	 * écrit, qui détermine le coût — sinon deux écritures du même calcul se
+	 * facturent différemment (#5038).
+	 *
+	 * Seul un décalage vers la gauche fait grandir le nombre : lui seul est facturé
+	 * à l'amplitude, et lui seul peut dépasser la taille max. Le contrôle a lieu
+	 * AVANT le calcul Java, car le clamp de `AI.intShift` laisse passer des montants
+	 * de l'ordre de 2³¹, dont l'allocation (des centaines de Mo) aurait déjà eu lieu
+	 * au moment où le constructeur du résultat vérifie la taille.
+	 */
+	private void shiftOps(long shift) throws LeekRunException {
+		if (shift <= 0) { // décalage vers la droite : le résultat ne peut que rétrécir
+			ops(1);
+			return;
+		}
+		checkResultSize(value.bitLength() + shift);
+		ops(shift < 4000 ? 1 : (int) (shift / 2000));
 	}
 
 	/**

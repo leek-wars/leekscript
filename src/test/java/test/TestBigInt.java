@@ -345,6 +345,25 @@ public class TestBigInt extends TestCommon {
 		// Les usages raisonnables restent OK (2 * 2^1000 = 2^1001 -> 1002 bits).
 		code_v4_("big_integer n = 2L for (var i = 0; i < 1000; i++) n *= 2 return bitLength(n)").equals("1002");
 		code_v4_("return 2L ** 10000 == 1L << 10000").equals("true");
+		// Décalage vers la gauche écrit avec un montant négatif : même garde-fou.
+		code_v4_("return 1L >> -2000000").error(leekscript.common.Error.OUT_OF_MEMORY);
+	}
+
+	/**
+	 * #5038 : deux écritures du MÊME décalage doivent coûter le même nombre
+	 * d'opérations. Le coût se calculait sur le montant signé, si bien qu'un montant
+	 * négatif — qui décale dans l'autre sens — tombait dans la branche « petit
+	 * décalage » et se facturait 1 op quelle que soit son amplitude.
+	 */
+	@Test
+	public void testShiftCostSymmetry() throws Exception {
+		section("Coût symétrique des décalages (#5038)");
+		// `x >> -n` fait le travail de `x << n` : même résultat, même coût
+		// (le montant négatif est préparé hors mesure : le moins unaire est lui-même
+		// une opération, il coûterait 1 op de plus sans rapport avec le décalage)
+		code_v4_("var p = 20000 var m = -20000 big_integer x = 0xfffffffffL var a = getOperations() var l = x << p var b = getOperations() var r = x >> m var c = getOperations() return l == r and (b - a) == (c - b)").equals("true");
+		// et réciproquement `x << -n` fait le travail de `x >> n`
+		code_v4_("var p = 20000 var m = -20000 big_integer x = 1L << 40000 var a = getOperations() var l = x >> p var b = getOperations() var r = x << m var c = getOperations() return l == r and (b - a) == (c - b)").equals("true");
 	}
 
 	@Test
