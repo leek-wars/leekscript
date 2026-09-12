@@ -589,6 +589,49 @@ public class TestFunction extends TestCommon {
 		code_v4_("class A {} function f(A a = null) { return a } return f()").equals("null");
 	}
 
+	@Test
+	public void testDefault_parameter_incompatible_type() throws Exception {
+		section("Default parameter of incompatible type (#5053)");
+		// Un défaut dont le type est incompatible avec le paramètre émettait
+		// `SetLeekValue u_s = <ArrayLeekValue>` : rejeté par javac, donc COMPILE_JAVA et
+		// l'IA qui plante à chaque combat (erreur prod #11885593). L'IA compile désormais,
+		// et le défaut se comporte comme le même argument passé explicitement.
+		// Argument fourni : le défaut n'est pas évalué, l'IA tourne normalement
+		code_v4_("function f(integer a, Set<integer> s = [1, 2]) { return a } return f(1, <3>)").equals("1");
+		// Défaut évalué : même erreur runtime que `f(1, [1, 2])` sur un paramètre Set
+		code_v4_("function f(integer a, Set<integer> s = [1, 2]) { return a } return f(1)").error(Error.IMPOSSIBLE_CAST);
+		code_v4_("function f(integer a, Set<integer> s) { return a } return f(1, [1, 2])").error(Error.IMPOSSIBLE_CAST);
+		// Fonction passée en valeur (wrapper FunctionLeekValue, 2e erreur de la trace)
+		code_v4_("function f(integer a, Set<integer> s = [1, 2]) { return a } function g(Function<integer => integer> h) { return h(1) } return g(f)").error(Error.IMPOSSIBLE_CAST);
+		// Méthode statique et constructeur
+		code_v4_("class A { public static integer m(integer a, Set<integer> s = [1, 2]) { return a } } return A.m(1, <3>)").equals("1");
+		code_v4_("class A { public integer v; public constructor(integer a, Set<integer> s = [1, 2]) { this.v = a } } return new A(1, <3>).v").equals("1");
+		// Défaut de type `any` sur un paramètre typé : le cast manquait dans les fonctions
+		// globales, présent depuis toujours dans les méthodes de classe
+		code_v4_("function g() => any { return [1, 2] } function f(integer a, Array<integer> t = g()) { return count(t) } return f(1)").equals("2");
+		// Défaut qui émet du Java infixe : la conversion doit envelopper l'expression
+		// entière, sinon elle ne porte que sur la condition
+		code_v4_("function f(Array<integer> t = true ? [1, 2] : [3]) { return count(t) } return f()").equals("2");
+		code_v4_("function g() => Array<integer>? { return null } function f(Array<integer> t = g() ?? [1, 2]) { return count(t) } return f()").equals("2");
+		// Cibles primitives : `long u_x = 12.5` / `boolean u_b = <ArrayLeekValue>` ne
+		// compilaient pas non plus
+		code_v4_("function f(integer x = 12.5) { return x } return f()").equals("12");
+		code_v4_("function f(boolean b = [1, 2]) { return b } return f()").equals("true");
+	}
+
+	@Test
+	public void testConversion_to_boolean() throws Exception {
+		section("Conversion vers boolean (#5053)");
+		// Un cast Java nu `(boolean) <ArrayLeekValue>` est rejeté par javac : la
+		// conversion vers boolean passe par bool(), comme longint()/real()
+		code_v4_("function f(boolean b) { return b } return f([1, 2])").equals("true");
+		code_v4_("function f(boolean b) { return b } return f('x')").equals("true");
+		code_v4_("function f(boolean b) { return b } return f([])").equals("false");
+		code_v4_("function f() => boolean { return [1, 2] } return f()").equals("true");
+		// Une assignation de type incompatible reste une erreur d'analyse
+		code_v4_("boolean b = [1, 2]; return b").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+	}
+
 	/**
 	 * Le fast-path canBeLambda dans readExpression skip la détection lambda quand le
 	 * head ne peut clairement pas démarrer une lambda. Couvre les cas frontières :

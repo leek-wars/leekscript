@@ -733,22 +733,17 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a < construct.getKey()) {
 							writer.addCode("p_" + arg.getToken());
 						} else {
-							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer, false);
+							writer.compileDefaultValue(mainblock, a, block.getDefaultValues().get(a), arg.getType());
 							writer.addCode(", " + block.getDefaultValues().get(a).operations);
 						}
 						writer.addLine(");");
 					} else {
 						if (a >= construct.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
+							// Nom primitif (real/int/bool) : `double u_x` et non `Double u_x`, que
+							// l'initialisation par un `long` ferait crasher (#4703).
 							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
-							// Nom primitif (real/int/bool) : autorise l'élargissement implicite
-							// `double u_x = 12l` sans le crash `Double u_x = 12l` (#4703). Pour les
-							// types référence, getJavaPrimitiveName == getJavaName : cast inchangé,
-							// `null` reste `null` (pas de conversion agressive à la compileConvert).
-							if (arg.getType() != Type.ANY && !arg.getType().isPrimitive()) {
-								writer.addCode("(" + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-							}
-							defaultValue.writeJavaCode(mainblock, writer, false);
+							writer.compileDefaultValue(mainblock, a, defaultValue, arg.getType());
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
 						}
@@ -812,7 +807,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a < version.getKey()) {
 							writer.addCode("p_" + arg.getToken());
 						} else {
-							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer, false);
+							writer.compileDefaultValue(mainblock, a, block.getDefaultValues().get(a), arg.getType());
 							writer.addCode(", " + block.getDefaultValues().get(a).operations);
 						}
 						writer.addLine(");");
@@ -820,15 +815,10 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						// Valeur par défaut
 						if (a >= version.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
+							// Nom primitif (real/int/bool) : `double u_x` et non `Double u_x`, que
+							// l'initialisation par un `long` ferait crasher (#4703).
 							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
-							// Nom primitif (real/int/bool) : autorise l'élargissement implicite
-							// `double u_x = 12l` sans le crash `Double u_x = 12l` (#4703). Pour les
-							// types référence, getJavaPrimitiveName == getJavaName : cast inchangé,
-							// `null` reste `null` (pas de conversion agressive à la compileConvert).
-							if (arg.getType() != Type.ANY && !arg.getType().isPrimitive()) {
-								writer.addCode("(" + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-							}
-							defaultValue.writeJavaCode(mainblock, writer, false);
+							writer.compileDefaultValue(mainblock, a, defaultValue, arg.getType());
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
 						}
@@ -898,7 +888,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						if (a < version.getKey()) {
 							writer.addCode("p_" + arg.getToken());
 						} else {
-							block.getDefaultValues().get(a).writeJavaCode(mainblock, writer, false);
+							writer.compileDefaultValue(mainblock, a, block.getDefaultValues().get(a), arg.getType());
 							writer.addCode(", " + block.getDefaultValues().get(a).operations);
 						}
 						writer.addLine(");");
@@ -906,15 +896,10 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 						// Valeur par défaut
 						if (a >= version.getKey()) {
 							var defaultValue = block.getDefaultValues().get(a);
+							// Nom primitif (real/int/bool) : `double u_x` et non `Double u_x`, que
+							// l'initialisation par un `long` ferait crasher (#4703).
 							writer.addCode("final " + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + arg.getName() + " = ");
-							// Nom primitif (real/int/bool) : autorise l'élargissement implicite
-							// `double u_x = 12l` sans le crash `Double u_x = 12l` (#4703). Pour les
-							// types référence, getJavaPrimitiveName == getJavaName : cast inchangé,
-							// `null` reste `null` (pas de conversion agressive à la compileConvert).
-							if (arg.getType() != Type.ANY && !arg.getType().isPrimitive()) {
-								writer.addCode("(" + arg.getType().getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-							}
-							defaultValue.writeJavaCode(mainblock, writer, false);
+							writer.compileDefaultValue(mainblock, a, defaultValue, arg.getType());
 							writer.addLine(";");
 							writer.addCounter(defaultValue.operations);
 						}

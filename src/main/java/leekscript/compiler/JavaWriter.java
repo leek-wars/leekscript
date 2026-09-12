@@ -264,6 +264,34 @@ public class JavaWriter {
 		return null;
 	}
 
+	/**
+	 * Écrit la valeur par défaut d'un paramètre typé `type`, à l'initialisation de
+	 * la variable `u_<param>` de l'arité qui ne reçoit pas cet argument.
+	 *
+	 * Les valeurs par défaut ne sont pas type-checkées (cf #4703, elles ne doivent pas
+	 * l'être) : rien n'interdit `Set<integer> s = [1, 2]`, qui émettait
+	 * `SetLeekValue u_s = <ArrayLeekValue>` — rejeté par javac, donc COMPILE_JAVA et
+	 * l'IA qui ne compile plus du tout (issue #5053). Le défaut passe donc par la
+	 * conversion commune, qui lui applique le même traitement qu'au même argument passé
+	 * explicitement (cf LeekFunctionCall).
+	 *
+	 * Seul `null` est émis tel quel, avec un cast pour être typé : c'est la RÉGRESSION
+	 * #4703 à ne jamais réintroduire, `Array t = null` doit rester `null` et non devenir
+	 * le tableau vide de `toArray`. Passer par un type cible `T|null` (toArrayOrNull & co)
+	 * rendrait ce cas inutile, mais CompoundType rapporte `Object` comme nom Java : le
+	 * cast émis ne serait plus assignable pour les autres types référence.
+	 */
+	public void compileDefaultValue(MainLeekBlock mainblock, int index, Expression value, Type type) {
+		if (value.getType() == Type.NULL) {
+			if (type != Type.ANY && !type.isPrimitive()) {
+				addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+			}
+			value.writeJavaCode(mainblock, this, true);
+			return;
+		}
+		compileConvert(mainblock, index, value, type, true);
+	}
+
 	public void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type, boolean parenthesis) {
 
 		// System.out.println("convert " + value.getType() + " to " + type);
@@ -386,6 +414,13 @@ public class JavaWriter {
 				addCode(")");
 				return;
 			}
+		} else if (type == Type.BOOL) {
+			// Symétrique de longint()/real() : un cast Java nu `(boolean) <ArrayLeekValue>`
+			// est rejeté par javac (COMPILE_JAVA). Le fast-path EQUALS ci-dessus a déjà
+			// traité les valeurs déjà booléennes : on n'arrive ici que sur une valeur que
+			// le cast aurait fait échouer, à la compilation ou à l'exécution.
+			getBoolean(mainblock, value, parenthesis);
+			return;
 		}
 		// int?, real?
 		if (type instanceof CompoundType ct) {

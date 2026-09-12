@@ -277,7 +277,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 			var parameter = mParameters.get(i);
 			if (declaration.isCaptured()) {
 				writer.addCode("final var u_" + parameter + " = new Box<" + declaration.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
-				defaultValue.writeJavaCode(mainblock, writer, false);
+				writer.compileDefaultValue(mainblock, i, defaultValue, declaration.getType());
 				writer.addLine(");");
 				writer.addCounter(defaultValue.operations);
 			} else {
@@ -288,7 +288,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 				} else {
 					// Type explicite : `var u_x = null;` n'est pas inférable par javac.
 					writer.addCode(declaration.getType().getJavaPrimitiveName(mainblock.getVersion()) + " u_" + parameter + " = ");
-					defaultValue.writeJavaCode(mainblock, writer, false);
+					writer.compileDefaultValue(mainblock, i, defaultValue, declaration.getType());
 					writer.addLine(";");
 				}
 				writer.addCounter(defaultValue.operations);
@@ -326,7 +326,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 			if (a > 0) writer.addCode(", ");
 			writer.addCode("values.length > " + a + " ? " + (type != Type.ANY ? "(" + type.getArgument(a).getJavaName(mainblock.getVersion()) + ")" : "") + " values[" + a + "] : ");
 			if (defaultValues.get(a) != null) {
-				defaultValues.get(a).writeJavaCode(mainblock, writer, false);
+				writer.compileDefaultValue(mainblock, a, defaultValues.get(a), this.type.getArgument(a));
 			} else {
 				writer.addCode(this.type.getArgument(a).getDefaultValue(writer, mainblock.getVersion()));
 			}
