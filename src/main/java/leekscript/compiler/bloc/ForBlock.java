@@ -4,6 +4,7 @@ import leekscript.common.Type;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
@@ -76,7 +77,16 @@ public class ForBlock extends AbstractLeekBlock {
 		if (mCondition != null) mCondition.analyze(compiler);
 		if (mIncrementation != null) mIncrementation.analyze(compiler);
 		compiler.setCurrentBlock(initialBlock);
-		super.analyze(compiler);
+
+		if (mCondition != null) {
+			// Apply narrowing from for condition to the loop body
+			var narrowingInfo = NarrowingInfo.extract(mCondition);
+			var saved = narrowingInfo.applyTrue();
+			super.analyze(compiler);
+			NarrowingInfo.restore(saved);
+		} else {
+			super.analyze(compiler);
+		}
 	}
 
 	@Override

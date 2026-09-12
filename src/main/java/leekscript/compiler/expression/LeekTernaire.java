@@ -3,6 +3,7 @@ package leekscript.compiler.expression;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
@@ -278,9 +279,21 @@ public class LeekTernaire extends LeekExpression {
 		if (mCondition != null) {
 			mCondition.analyze(compiler);
 			operations = 1 + mCondition.getOperations();
+
+			// Apply narrowing from the condition to each branch
+			var narrowingInfo = NarrowingInfo.extract(mCondition);
+
+			var savedTrue = narrowingInfo.applyTrue();
+			mExpression1.analyze(compiler);
+			NarrowingInfo.restore(savedTrue);
+
+			var savedFalse = narrowingInfo.applyFalse();
+			mExpression2.analyze(compiler);
+			NarrowingInfo.restore(savedFalse);
+		} else {
+			mExpression1.analyze(compiler);
+			mExpression2.analyze(compiler);
 		}
-		mExpression1.analyze(compiler);
-		mExpression2.analyze(compiler);
 
 		if (mExpression1.operations == mExpression2.operations) {
 			operations += mExpression1.operations;

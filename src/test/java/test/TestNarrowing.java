@@ -76,6 +76,32 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	@Test
+	public void testCase_3b_For_loop_narrowing() throws Exception {
+		section("Case 3b: For loop narrowing");
+		// for (...; a != null; ...) → a is non-null inside loop (issue #5050)
+		code_v4_("integer | null a = 4; var r = 0; for (integer i = 0; i < 10 && a != null; i++) { r = abs(a); a = null } return r").max_ops(1000).noWarning();
+		code_v4_("integer | null a = 4; var r = 0; for (integer i = 0; i < 10 && a != null; i++) { r = abs(a); a = null } return r").max_ops(1000).equals("4");
+		// Condition seule, sans opérande supplémentaire
+		code_v4_("integer | null b = 7; var r = 0; for (var i = 0; b != null; i++) { r = abs(b); b = null } return r").max_ops(1000).noWarning();
+		// Le narrowing ne fuit pas après la boucle
+		code_v4_("integer | null c = 4; for (var i = 0; i < 1 && c != null; i++) {} return c == null ? 0 : 1").max_ops(1000).equals("1");
+	}
+
+	@Test
+	public void testCase_3c_Ternary_narrowing() throws Exception {
+		section("Case 3c: Ternary narrowing");
+		// a != null ? abs(a) : 0 → a is non-null in the true branch (issue #5050)
+		code_v4_("integer | null a = 4; return a != null ? abs(a) : 0").noWarning();
+		code_v4_("integer | null a = 4; return a != null ? abs(a) : 0").equals("4");
+		code_v4_("integer | null a = null; return a != null ? abs(a) : 0").equals("0");
+		// Branche fausse : a == null ? 0 : abs(a)
+		code_v4_("integer | null a = -3; return a == null ? 0 : abs(a)").noWarning();
+		code_v4_("integer | null a = -3; return a == null ? 0 : abs(a)").equals("3");
+		// Le narrowing ne fuit pas hors du ternaire
+		code_v4_("integer | null a = 4; var r = a != null ? 1 : 0; return a == null ? 0 : r").equals("1");
+	}
+
+	@Test
 	public void testCase_4_instanceof_narrowing() throws Exception {
 		section("Case 4: instanceof narrowing");
 		// instanceof narrows the type (class types like Array)
