@@ -597,8 +597,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var fieldType = (variable != null) ? variable.getDeclaredType() : variableType;
-			writer.compileConvert(mainblock, 0, expr, fieldType, false);
+			writer.compileConvert(mainblock, 0, expr, getJavaDeclarationType(), false);
 			if (parenthesis) writer.addCode(")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			var close = writer.openFieldResultConversion(this.variableType);
@@ -700,7 +699,7 @@ public class LeekVariable extends Expression {
 	 * stockés tels quels par ce chemin. (#bigint #4908)
 	 */
 	private void writeStaticFieldValue(MainLeekBlock mainblock, JavaWriter writer, Expression expr) {
-		var fieldType = (variable != null) ? variable.getDeclaredType() : variableType;
+		var fieldType = getJavaDeclarationType();
 		if (fieldType == Type.BIG_INT) {
 			writer.compileConvert(mainblock, 0, expr, fieldType, false);
 		} else {
@@ -717,22 +716,28 @@ public class LeekVariable extends Expression {
 	 * (issue #5052). On applique la même conversion que `x += 1` (cf compileAddEq).
 	 *
 	 * La forme suffixe renvoie l'ancienne valeur en défaisant l'opération à l'extérieur
-	 * de l'affectation, d'où l'opérateur inverse autour.
+	 * de l'affectation, d'où l'opérateur inverse autour. `parenthesis` ne concerne que la
+	 * forme préfixe : la forme suffixe est déjà délimitée par son sub()/add() extérieur.
 	 *
-	 * La cible de la conversion est le type DÉCLARÉ de l'emplacement, jamais le type
-	 * narrowé de cette référence (même règle que compileSet) : `Map | string x` narrowée
-	 * vers Map reste déclarée `Object` en Java, et convertir vers MapLeekValue ferait un
-	 * IMPOSSIBLE_CAST là où le code tournait.
+	 * La cible de la conversion est le type DÉCLARÉ de l'emplacement (javaSlotType), jamais
+	 * le type narrowé de cette référence : `Map | string x` narrowée vers Map reste déclarée
+	 * `Object` en Java, et convertir vers MapLeekValue ferait un IMPOSSIBLE_CAST là où le
+	 * code tournait.
 	 */
 	private void writeIncrement(MainLeekBlock mainblock, JavaWriter writer, String name, boolean increment, boolean suffix, boolean parenthesis) {
-		var castType = type == VariableType.GLOBAL ? globalCastType() : getJavaDeclarationType();
+		var slotType = javaSlotType();
 		if (suffix) {
 			writer.addCode(increment ? "sub(" : "add(");
 		} else if (parenthesis) {
 			writer.addCode("(");
 		}
 		writer.addCode(name + " = ");
-		var close = writer.openResultConversion(mainblock.getVersion(), castType);
+		// Sur un emplacement `integer` la conversion serait l'identité : add(long, long) et
+		// sub(Long, Long) renvoient déjà un long. On l'économise, sinon chaque incrément boxe
+		// le résultat pour le repasser à longint() (+12 % mesuré sur un champ `integer`).
+		// `real` en a besoin, lui : il n'existe pas de surcharge add(double, ...), le résultat
+		// arriverait en Object.
+		var close = slotType == Type.INT ? "" : writer.openResultConversion(mainblock.getVersion(), slotType);
 		writer.addCode((increment ? "add(" : "sub(") + name + ", 1l)" + close);
 		if (suffix) {
 			writer.addCode(", 1l)");
@@ -778,106 +783,78 @@ public class LeekVariable extends Expression {
 		return this.variable != null ? this.variable.getType() : this.variableType;
 	}
 
+	/**
+	 * Type avec lequel l'emplacement Java de cette variable est DÉCLARÉ — jamais le type
+	 * narrowé de cette référence. Une globale lit son type canonique (cf globalCastType),
+	 * un champ et une locale leur type de déclaration (même règle que compileSet).
+	 */
+	private Type javaSlotType() {
+		return type == VariableType.GLOBAL ? globalCastType() : getJavaDeclarationType();
+	}
+
+	/**
+	 * L'emplacement Java accepte-t-il l'opérateur natif `++` / `--` ? Il y faut un nombre
+	 * primitif déclaré avec ce type, ou avec son type boîte (`Long`/`Double`), que javac
+	 * incrémente aussi. Une variable narrowée vers integer mais déclarée `Object`
+	 * (`Array | integer`) ne l'accepte pas : `ops(u_x++, 1)` donne « bad operand type
+	 * Object for unary operator '++' », le même COMPILE_JAVA que #5052.
+	 */
+	private boolean hasPrimitiveJavaSlot(int version) {
+		if (!this.variableType.isPrimitiveNumber()) return false;
+		if (!hasNarrowingMismatch(version)) return true;
+		return javaSlotType().getJavaPrimitiveName(version).equals(this.variableType.getJavaName(version));
+	}
+
 	@Override
 	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
-		if (type == VariableType.FIELD) {
-			writeIncrement(mainblock, writer, token.getWord(), true, true, parenthesis);
-		} else if (type == VariableType.STATIC_FIELD) {
-			var close = writer.openFieldResultConversion(this.variableType);
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_inc(\"" + token.getWord() + "\")" + close);
-		} else if (type == VariableType.GLOBAL) {
-			if (isBox()) {
-				writer.addCode("g_" + token.getWord() + ".increment()");
-			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
-				writer.addCode("g_" + token.getWord() + "++");
-			} else {
-				writeIncrement(mainblock, writer, "g_" + token.getWord(), true, true, parenthesis);
-			}
-		} else {
-			if (isBoxLike(mainblock)) {
-				writer.addCode(localName(mainblock) + ".increment()");
-			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
-				writer.addCode("u_" + token.getWord() + "++");
-			} else {
-				writeIncrement(mainblock, writer, "u_" + token.getWord(), true, true, parenthesis);
-			}
-		}
+		compileIncDec(mainblock, writer, true, true, parenthesis, "increment", "field_inc");
 	}
 
 	@Override
 	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
-		if (type == VariableType.FIELD) {
-			writeIncrement(mainblock, writer, token.getWord(), false, true, parenthesis);
-		} else if (type == VariableType.STATIC_FIELD) {
-			var close = writer.openFieldResultConversion(this.variableType);
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_dec(\"" + token.getWord() + "\")" + close);
-		} else if (type == VariableType.GLOBAL) {
-			if (isBox()) {
-				writer.addCode("g_" + token.getWord() + ".decrement()");
-			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
-				writer.addCode("g_" + token.getWord() + "--");
-			} else {
-				writeIncrement(mainblock, writer, "g_" + token.getWord(), false, true, parenthesis);
-			}
-		} else {
-			if (isBoxLike(mainblock)) {
-				writer.addCode(localName(mainblock) + ".decrement()");
-			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
-				writer.addCode("u_" + token.getWord() + "--");
-			} else {
-				writeIncrement(mainblock, writer, "u_" + token.getWord(), false, true, parenthesis);
-			}
-		}
+		compileIncDec(mainblock, writer, false, true, parenthesis, "decrement", "field_dec");
 	}
 
 	@Override
 	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
-		if (type == VariableType.FIELD) {
-			writeIncrement(mainblock, writer, token.getWord(), true, false, parenthesis);
-		} else if (type == VariableType.STATIC_FIELD) {
-			var close = writer.openFieldResultConversion(this.variableType);
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pre_inc(\"" + token.getWord() + "\")" + close);
-		} else if (type == VariableType.GLOBAL) {
-			if (isBox()) {
-				writer.addCode("g_" + token.getWord() + ".pre_increment()");
-			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
-				writer.addCode("++g_" + token.getWord());
-			} else {
-				writeIncrement(mainblock, writer, "g_" + token.getWord(), true, false, parenthesis);
-			}
-		} else {
-			if (isBoxLike(mainblock)) {
-				writer.addCode(localName(mainblock) + ".pre_increment()");
-			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
-				writer.addCode("++u_" + token.getWord());
-			} else {
-				writeIncrement(mainblock, writer, "u_" + token.getWord(), true, false, parenthesis);
-			}
-		}
+		compileIncDec(mainblock, writer, true, false, parenthesis, "pre_increment", "field_pre_inc");
 	}
 
 	@Override
 	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
+		compileIncDec(mainblock, writer, false, false, parenthesis, "pre_decrement", "field_pre_dec");
+	}
+
+	/**
+	 * Les quatre incréments ne diffèrent que par deux booléens et le nom du helper runtime
+	 * appelé sur un Box (`increment`, `pre_decrement`, ...) ou sur un champ statique
+	 * (`field_inc`, `field_pre_dec`, ...) : ces noms restent passés en littéral, pour qu'un
+	 * grep les retrouve depuis ClassLeekValue.
+	 */
+	private void compileIncDec(MainLeekBlock mainblock, JavaWriter writer, boolean increment, boolean suffix, boolean parenthesis, String boxMethod, String fieldHelper) {
+		var javaOperator = increment ? "++" : "--";
 		if (type == VariableType.FIELD) {
-			writeIncrement(mainblock, writer, token.getWord(), false, false, parenthesis);
+			writeIncrement(mainblock, writer, token.getWord(), increment, suffix, parenthesis);
 		} else if (type == VariableType.STATIC_FIELD) {
 			var close = writer.openFieldResultConversion(this.variableType);
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pre_dec(\"" + token.getWord() + "\")" + close);
+			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + "." + fieldHelper + "(\"" + token.getWord() + "\")" + close);
 		} else if (type == VariableType.GLOBAL) {
+			var name = "g_" + token.getWord();
 			if (isBox()) {
-				writer.addCode("g_" + token.getWord() + ".pre_decrement()");
-			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
-				writer.addCode("--g_" + token.getWord());
+				writer.addCode(name + "." + boxMethod + "()");
+			} else if (hasPrimitiveJavaSlot(mainblock.getVersion())) {
+				writer.addCode(suffix ? name + javaOperator : javaOperator + name);
 			} else {
-				writeIncrement(mainblock, writer, "g_" + token.getWord(), false, false, parenthesis);
+				writeIncrement(mainblock, writer, name, increment, suffix, parenthesis);
 			}
 		} else {
+			var name = "u_" + token.getWord();
 			if (isBoxLike(mainblock)) {
-				writer.addCode(localName(mainblock) + ".pre_decrement()");
-			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
-				writer.addCode("--u_" + token.getWord());
+				writer.addCode(localName(mainblock) + "." + boxMethod + "()");
+			} else if (hasPrimitiveJavaSlot(mainblock.getVersion())) {
+				writer.addCode(suffix ? name + javaOperator : javaOperator + name);
 			} else {
-				writeIncrement(mainblock, writer, "u_" + token.getWord(), false, false, parenthesis);
+				writeIncrement(mainblock, writer, name, increment, suffix, parenthesis);
 			}
 		}
 	}

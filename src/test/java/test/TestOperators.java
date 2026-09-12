@@ -355,6 +355,7 @@ public class TestOperators extends TestCommon {
 		code_v4_("integer | real y = 1; global x = y; x++; return x;").equals("2");
 		code_v4_("integer | real y = 1; global x = y; return x--;").equals("1");
 		code_v4_("integer | real y = 1; global x = y; return ++x;").equals("2");
+		code_v4_("integer | real y = 1; global x = y; return --x;").equals("0");
 
 		section("Increment on a typed field");
 		// Récepteur implicite : seule forme qui passe par VariableType.FIELD, `this.v++`
@@ -363,18 +364,14 @@ public class TestOperators extends TestCommon {
 		code_v4_("class A { public integer | real v = 5; public m() { return v++ } } return (new A()).m();").equals("5");
 		code_v4_("class A { public integer | real v = 5; public m() { return ++v } } return (new A()).m();").equals("6");
 		code_v4_("class A { public integer | real v = 5; public m() { return --v } } return (new A()).m();").equals("4");
-		// Un champ `integer` est déclaré `long` : l'affectation a besoin de longint()
+		// Un champ déclaré `long` / `double` en Java (TestObject couvre la matrice complète)
 		code_v4_("class A { public integer v = 5; public m() { v++; return v } } return (new A()).m();").equals("6");
-		code_v4_("class A { public integer v = 5; public m() { return v++ } } return (new A()).m();").equals("5");
 		code_v4_("class A { public real v = 5.5; public m() { return --v } } return (new A()).m();").equals("4.5");
+		// Sur un champ déclaré `Number`, le récepteur explicite passe par LeekObjectAccess
 		code_v4_("class A { public integer | real v = 5; public m() { return this.v++ } } return (new A()).m();").equals("5");
 		code_v4_("class A { public integer | real v = 5; public m() { return ++this.v } } return (new A()).m();").equals("6");
-
-		section("Increment on a big_integer");
-		code_v4_("big_integer x = 5L; x++; return x;").equals("6");
-		code_v4_("big_integer x = 5L; return x--;").equals("5");
-		code_v4_("big_integer x = 5L; return ++x;").equals("6");
-		code_v4_("big_integer x = 1L << 100; x++; return x == (1L << 100) + 1;").equals("true");
+		// big_integer : couvert par TestBigInt#testIncrementDecrement, dont la conversion
+		// passe maintenant par openResultConversion (BigIntegerValue.valueOf)
 	}
 
 	@Test
@@ -390,9 +387,15 @@ public class TestOperators extends TestCommon {
 		code_v4_("Array | real x = 5.5; if (x instanceof Array) { return 0 } else { x++; return x }").equals("6.5");
 		// Témoin : `x += 1` sur le même code, déjà gardé
 		code_v4_("Array | integer x = 5; if (x instanceof Array) { return 0 } else { x += 1; return x }").equals("6");
+		// Narrowée vers integer mais déclarée `Long` : javac incrémente une boîte, le chemin
+		// rapide reste donc valable (et c'est le moins cher)
+		code_v4_("integer | null x = 5; if (x != null) { x++; return x } return 0;").equals("6");
+		code_v4_("integer | null x = 5; if (x != null) { return x-- } return 0;").equals("5");
+		code_v4_("real | null x = 5.5; if (x != null) { return ++x } return 0;").equals("6.5");
 
-		// Narrowée vers un type référence : convertir vers le type narrowé ferait un
-		// IMPOSSIBLE_CAST, l'emplacement Java restant déclaré `Object`
+		section("Increment on a reference-narrowed variable");
+		// Convertir vers le type narrowé ferait un IMPOSSIBLE_CAST, l'emplacement Java
+		// restant déclaré `Object`
 		code_v4_("Map | string x = [1: 2]; if (x instanceof Map) { return x++ } return 0;").equals("1");
 		code_v4_("Map | string x = [1: 2]; if (x instanceof Map) { return ++x } return 0;").equals("2");
 		code_v4_("class A { public Map | string v = [1: 2]; public m() { if (v instanceof Map) { return v++ } return 0 } } return (new A()).m();").equals("1");
