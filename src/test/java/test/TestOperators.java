@@ -329,4 +329,50 @@ public class TestOperators extends TestCommon {
 		code_v2_("global cfg = ['k': 2, 'r': 1.5]; integer x = 2; x **= cfg['k']; return x;").equals("4");
 	}
 
+	@Test
+	public void testIncrement_nonPrimitiveLocation() throws Exception {
+		section("Increment on a location Java does not declare as a primitive number");
+		// Regression: `x++` passe par add()/sub(), qui renvoient un Object. Sans conversion
+		// vers le type déclaré, `integer | real x = 5; x++` émettait `u_x = add(u_x, 1l)` sur
+		// un `Number u_x`, rejeté par javac : COMPILE_JAVA et l'IA ne compilait plus (#5052).
+		code_v4_("integer | real x = 5; x++; return x;").equals("6");
+		code_v4_("integer | real x = 5; x--; return x;").equals("4");
+		code_v4_("integer | real x = 5; ++x; return x;").equals("6");
+		code_v4_("integer | real x = 5; --x; return x;").equals("4");
+		code_v4_("integer | real x = 5; return x++;").equals("5");
+		code_v4_("integer | real x = 5; return x--;").equals("5");
+		code_v4_("integer | real x = 5; return ++x;").equals("6");
+		code_v4_("integer | real x = 5; return --x;").equals("4");
+		code_v4_("integer | real x = 5.5; x++; return x;").equals("6.5");
+		code_v4_("integer | real x = 5; return [x++, x++, x];").equals("[5, 6, 7]");
+
+		section("Increment on a nullable local");
+		code_v4_("integer | null x = 5; x++; return x;").equals("6");
+		code_v4_("integer | null x = 5; return x--;").equals("5");
+		code_v4_("real | null x = 5.5; ++x; return x;").equals("6.5");
+
+		section("Increment on a Number global");
+		code_v4_("integer | real y = 1; global x = y; x++; return x;").equals("2");
+		code_v4_("integer | real y = 1; global x = y; return x--;").equals("1");
+		code_v4_("integer | real y = 1; global x = y; return ++x;").equals("2");
+
+		section("Increment on a typed field");
+		code_v4_("class A { public integer | real v = 5; public m() { this.v++; return this.v } } return (new A()).m();").equals("6");
+		code_v4_("class A { public integer | real v = 5; public m() { return this.v++ } } return (new A()).m();").equals("5");
+		code_v4_("class A { public integer | real v = 5; public m() { return ++this.v } } return (new A()).m();").equals("6");
+		code_v4_("class A { public integer | real v = 5; public m() { return --this.v } } return (new A()).m();").equals("4");
+		// Un champ `integer` est déclaré `long` : l'affectation a besoin de longint()
+		code_v4_("class A { public integer v = 5; public m() { this.v++; return this.v } } return (new A()).m();").equals("6");
+		code_v4_("class A { public integer v = 5; public m() { return this.v++ } } return (new A()).m();").equals("5");
+		code_v4_("class A { public integer v = 5; public m() { return ++this.v } } return (new A()).m();").equals("6");
+		code_v4_("class A { public real v = 5.5; public m() { this.v--; return this.v } } return (new A()).m();").equals("4.5");
+		code_v4_("class A { public real v = 5.5; public m() { return --this.v } } return (new A()).m();").equals("4.5");
+
+		section("Increment on a big_integer");
+		code_v4_("big_integer x = 5L; x++; return x;").equals("6");
+		code_v4_("big_integer x = 5L; return x--;").equals("5");
+		code_v4_("big_integer x = 5L; return ++x;").equals("6");
+		code_v4_("big_integer x = 1L << 100; x++; return x == (1L << 100) + 1;").equals("true");
+	}
+
 }
