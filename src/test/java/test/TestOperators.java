@@ -357,22 +357,46 @@ public class TestOperators extends TestCommon {
 		code_v4_("integer | real y = 1; global x = y; return ++x;").equals("2");
 
 		section("Increment on a typed field");
-		code_v4_("class A { public integer | real v = 5; public m() { this.v++; return this.v } } return (new A()).m();").equals("6");
+		// Récepteur implicite : seule forme qui passe par VariableType.FIELD, `this.v++`
+		// étant un LeekObjectAccess avec ses propres helpers field_inc()
+		code_v4_("class A { public integer | real v = 5; public m() { v++; return v } } return (new A()).m();").equals("6");
+		code_v4_("class A { public integer | real v = 5; public m() { return v++ } } return (new A()).m();").equals("5");
+		code_v4_("class A { public integer | real v = 5; public m() { return ++v } } return (new A()).m();").equals("6");
+		code_v4_("class A { public integer | real v = 5; public m() { return --v } } return (new A()).m();").equals("4");
+		// Un champ `integer` est déclaré `long` : l'affectation a besoin de longint()
+		code_v4_("class A { public integer v = 5; public m() { v++; return v } } return (new A()).m();").equals("6");
+		code_v4_("class A { public integer v = 5; public m() { return v++ } } return (new A()).m();").equals("5");
+		code_v4_("class A { public real v = 5.5; public m() { return --v } } return (new A()).m();").equals("4.5");
 		code_v4_("class A { public integer | real v = 5; public m() { return this.v++ } } return (new A()).m();").equals("5");
 		code_v4_("class A { public integer | real v = 5; public m() { return ++this.v } } return (new A()).m();").equals("6");
-		code_v4_("class A { public integer | real v = 5; public m() { return --this.v } } return (new A()).m();").equals("4");
-		// Un champ `integer` est déclaré `long` : l'affectation a besoin de longint()
-		code_v4_("class A { public integer v = 5; public m() { this.v++; return this.v } } return (new A()).m();").equals("6");
-		code_v4_("class A { public integer v = 5; public m() { return this.v++ } } return (new A()).m();").equals("5");
-		code_v4_("class A { public integer v = 5; public m() { return ++this.v } } return (new A()).m();").equals("6");
-		code_v4_("class A { public real v = 5.5; public m() { this.v--; return this.v } } return (new A()).m();").equals("4.5");
-		code_v4_("class A { public real v = 5.5; public m() { return --this.v } } return (new A()).m();").equals("4.5");
 
 		section("Increment on a big_integer");
 		code_v4_("big_integer x = 5L; x++; return x;").equals("6");
 		code_v4_("big_integer x = 5L; return x--;").equals("5");
 		code_v4_("big_integer x = 5L; return ++x;").equals("6");
 		code_v4_("big_integer x = 1L << 100; x++; return x == (1L << 100) + 1;").equals("true");
+	}
+
+	@Test
+	public void testIncrement_narrowedVariable() throws Exception {
+		section("Increment on a narrowed variable");
+		// Narrowée vers integer/real mais déclarée `Object` en Java : le chemin rapide
+		// `u_x++` donnait « bad operand type Object for unary operator '++' », soit le
+		// même COMPILE_JAVA que #5052. Même garde que compileAddEq.
+		code_v4_("Array | integer x = 5; if (x instanceof Array) { return 0 } else { x++; return x }").equals("6");
+		code_v4_("Array | integer x = 5; if (x instanceof Array) { return 0 } else { x--; return x }").equals("4");
+		code_v4_("Array | integer x = 5; if (x instanceof Array) { return 0 } else { return ++x }").equals("6");
+		code_v4_("Array | integer x = 5; if (x instanceof Array) { return 0 } else { return --x }").equals("4");
+		code_v4_("Array | real x = 5.5; if (x instanceof Array) { return 0 } else { x++; return x }").equals("6.5");
+		// Témoin : `x += 1` sur le même code, déjà gardé
+		code_v4_("Array | integer x = 5; if (x instanceof Array) { return 0 } else { x += 1; return x }").equals("6");
+
+		// Narrowée vers un type référence : convertir vers le type narrowé ferait un
+		// IMPOSSIBLE_CAST, l'emplacement Java restant déclaré `Object`
+		code_v4_("Map | string x = [1: 2]; if (x instanceof Map) { return x++ } return 0;").equals("1");
+		code_v4_("Map | string x = [1: 2]; if (x instanceof Map) { return ++x } return 0;").equals("2");
+		code_v4_("class A { public Map | string v = [1: 2]; public m() { if (v instanceof Map) { return v++ } return 0 } } return (new A()).m();").equals("1");
+		code_v4_("class A { public Map | string v = [1: 2]; public m() { if (v instanceof Map) { return ++v } return 0 } } return (new A()).m();").equals("2");
 	}
 
 }

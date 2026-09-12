@@ -718,8 +718,14 @@ public class LeekVariable extends Expression {
 	 *
 	 * La forme suffixe renvoie l'ancienne valeur en défaisant l'opération à l'extérieur
 	 * de l'affectation, d'où l'opérateur inverse autour.
+	 *
+	 * La cible de la conversion est le type DÉCLARÉ de l'emplacement, jamais le type
+	 * narrowé de cette référence (même règle que compileSet) : `Map | string x` narrowée
+	 * vers Map reste déclarée `Object` en Java, et convertir vers MapLeekValue ferait un
+	 * IMPOSSIBLE_CAST là où le code tournait.
 	 */
-	private void writeIncrement(MainLeekBlock mainblock, JavaWriter writer, String name, boolean increment, boolean suffix, boolean parenthesis, Type castType) {
+	private void writeIncrement(MainLeekBlock mainblock, JavaWriter writer, String name, boolean increment, boolean suffix, boolean parenthesis) {
+		var castType = type == VariableType.GLOBAL ? globalCastType() : getJavaDeclarationType();
 		if (suffix) {
 			writer.addCode(increment ? "sub(" : "add(");
 		} else if (parenthesis) {
@@ -775,25 +781,25 @@ public class LeekVariable extends Expression {
 	@Override
 	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
-			writeIncrement(mainblock, writer, token.getWord(), true, true, parenthesis, this.variableType);
+			writeIncrement(mainblock, writer, token.getWord(), true, true, parenthesis);
 		} else if (type == VariableType.STATIC_FIELD) {
 			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_inc(\"" + token.getWord() + "\")" + close);
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".increment()");
-			} else if (this.variableType.isPrimitiveNumber()) {
+			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
 				writer.addCode("g_" + token.getWord() + "++");
 			} else {
-				writeIncrement(mainblock, writer, "g_" + token.getWord(), true, true, parenthesis, globalCastType());
+				writeIncrement(mainblock, writer, "g_" + token.getWord(), true, true, parenthesis);
 			}
 		} else {
 			if (isBoxLike(mainblock)) {
 				writer.addCode(localName(mainblock) + ".increment()");
-			} else if (this.variableType.isPrimitiveNumber()) {
+			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
 				writer.addCode("u_" + token.getWord() + "++");
 			} else {
-				writeIncrement(mainblock, writer, "u_" + token.getWord(), true, true, parenthesis, this.variableType);
+				writeIncrement(mainblock, writer, "u_" + token.getWord(), true, true, parenthesis);
 			}
 		}
 	}
@@ -801,25 +807,25 @@ public class LeekVariable extends Expression {
 	@Override
 	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
-			writeIncrement(mainblock, writer, token.getWord(), false, true, parenthesis, this.variableType);
+			writeIncrement(mainblock, writer, token.getWord(), false, true, parenthesis);
 		} else if (type == VariableType.STATIC_FIELD) {
 			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_dec(\"" + token.getWord() + "\")" + close);
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".decrement()");
-			} else if (this.variableType.isPrimitiveNumber()) {
+			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
 				writer.addCode("g_" + token.getWord() + "--");
 			} else {
-				writeIncrement(mainblock, writer, "g_" + token.getWord(), false, true, parenthesis, globalCastType());
+				writeIncrement(mainblock, writer, "g_" + token.getWord(), false, true, parenthesis);
 			}
 		} else {
 			if (isBoxLike(mainblock)) {
 				writer.addCode(localName(mainblock) + ".decrement()");
-			} else if (this.variableType.isPrimitiveNumber()) {
+			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
 				writer.addCode("u_" + token.getWord() + "--");
 			} else {
-				writeIncrement(mainblock, writer, "u_" + token.getWord(), false, true, parenthesis, this.variableType);
+				writeIncrement(mainblock, writer, "u_" + token.getWord(), false, true, parenthesis);
 			}
 		}
 	}
@@ -827,25 +833,25 @@ public class LeekVariable extends Expression {
 	@Override
 	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
-			writeIncrement(mainblock, writer, token.getWord(), true, false, parenthesis, this.variableType);
+			writeIncrement(mainblock, writer, token.getWord(), true, false, parenthesis);
 		} else if (type == VariableType.STATIC_FIELD) {
 			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pre_inc(\"" + token.getWord() + "\")" + close);
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".pre_increment()");
-			} else if (this.variableType.isPrimitiveNumber()) {
+			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
 				writer.addCode("++g_" + token.getWord());
 			} else {
-				writeIncrement(mainblock, writer, "g_" + token.getWord(), true, false, parenthesis, globalCastType());
+				writeIncrement(mainblock, writer, "g_" + token.getWord(), true, false, parenthesis);
 			}
 		} else {
 			if (isBoxLike(mainblock)) {
 				writer.addCode(localName(mainblock) + ".pre_increment()");
-			} else if (this.variableType.isPrimitiveNumber()) {
+			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
 				writer.addCode("++u_" + token.getWord());
 			} else {
-				writeIncrement(mainblock, writer, "u_" + token.getWord(), true, false, parenthesis, this.variableType);
+				writeIncrement(mainblock, writer, "u_" + token.getWord(), true, false, parenthesis);
 			}
 		}
 	}
@@ -853,25 +859,25 @@ public class LeekVariable extends Expression {
 	@Override
 	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
-			writeIncrement(mainblock, writer, token.getWord(), false, false, parenthesis, this.variableType);
+			writeIncrement(mainblock, writer, token.getWord(), false, false, parenthesis);
 		} else if (type == VariableType.STATIC_FIELD) {
 			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_pre_dec(\"" + token.getWord() + "\")" + close);
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				writer.addCode("g_" + token.getWord() + ".pre_decrement()");
-			} else if (this.variableType.isPrimitiveNumber()) {
+			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
 				writer.addCode("--g_" + token.getWord());
 			} else {
-				writeIncrement(mainblock, writer, "g_" + token.getWord(), false, false, parenthesis, globalCastType());
+				writeIncrement(mainblock, writer, "g_" + token.getWord(), false, false, parenthesis);
 			}
 		} else {
 			if (isBoxLike(mainblock)) {
 				writer.addCode(localName(mainblock) + ".pre_decrement()");
-			} else if (this.variableType.isPrimitiveNumber()) {
+			} else if (this.variableType.isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion())) {
 				writer.addCode("--u_" + token.getWord());
 			} else {
-				writeIncrement(mainblock, writer, "u_" + token.getWord(), false, false, parenthesis, this.variableType);
+				writeIncrement(mainblock, writer, "u_" + token.getWord(), false, false, parenthesis);
 			}
 		}
 	}
