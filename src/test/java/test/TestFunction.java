@@ -422,6 +422,12 @@ public class TestFunction extends TestCommon {
 		code("return count(unknown([1, 2, 3, 4, 5]))").equals("5");
 		code("return count(unknown(12))").equals("0");
 		code("return string(count)").equals("\"#Function count\"");
+		// Une fonction déclarée porte son nom, elle n'est pas anonyme (#5042)
+		code("function f() {} return string(f)").equals("\"#Function f\"");
+		code("function f() {} var g = f return string(g)").equals("\"#Function f\"");
+		code("function f() {} return string([f])").equals("\"[#Function f]\"");
+		code("return string(x -> x)").equals("\"#Anonymous Function\"");
+		code("return string(function() {})").equals("\"#Anonymous Function\"");
 	}
 
 	@Test

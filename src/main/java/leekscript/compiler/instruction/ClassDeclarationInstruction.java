@@ -997,7 +997,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			for (var version : method.getValue().entrySet()) {
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
 				writer.addCode(className);
-				writer.addCode(".addStaticMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(1) { public Object run(AI ai, Object thiz, Object... args) throws LeekRunException { return " + methodName + "(");
+				writer.addCode(".addStaticMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(1, \"#Function " + token.getWord() + "." + method.getKey() + "\") { public Object run(AI ai, Object thiz, Object... args) throws LeekRunException { return " + methodName + "(");
 				int i = 0;
 				for (var a = 0; a < version.getKey(); ++a) {
 					if (i > 0) writer.addCode(", ");
@@ -1015,7 +1015,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		for (var method : methods.entrySet()) {
 			for (var version : method.getValue().entrySet()) {
 				writer.addCode(className);
-				writer.addLine(".addMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(0) { public Object run(AI ai, Object thiz, Object... args) throws LeekRunException {");
+				writer.addLine(".addMethod(\"" + method.getKey() + "\", " + version.getKey() + ", new FunctionLeekValue(0, \"#Function " + token.getWord() + "." + method.getKey() + "\") { public Object run(AI ai, Object thiz, Object... args) throws LeekRunException {");
 				writer.addCode("return ((" + className + ") thiz).u_" + method.getKey() + "(");
 				int i = 0;
 				for (var a = 0; a < version.getKey(); ++a) {

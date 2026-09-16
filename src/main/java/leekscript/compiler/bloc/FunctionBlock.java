@@ -320,7 +320,9 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 	}
 
 	public void compileAnonymousFunction(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addCode("new FunctionLeekValue(" + this.countParameters() + ") { public Object run(AI ai, Object thiz, Object... values) throws LeekRunException {");
+		// Une fonction déclarée a un nom : on le transmet à la valeur fonction pour que
+		// `string(f)` affiche `#Function f` et non `#Anonymous Function` (#5042).
+		writer.addCode("new FunctionLeekValue(" + this.countParameters() + ", \"#Function " + this.getName() + "\") { public Object run(AI ai, Object thiz, Object... values) throws LeekRunException {");
 		writer.addCode("return f_" + this + "(");
 		for (int a = 0; a < this.countParameters(); ++a) {
 			if (a > 0) writer.addCode(", ");

@@ -140,7 +140,8 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 	}
 
 	public void addGenericMethod(String method) {
-		genericMethods.put(method, new FunctionLeekValue<Object>(1) {
+		// Nommée pour que `string(a.m)` affiche `#Function A.m` et non `#Anonymous Function` (#5042)
+		genericMethods.put(method, new FunctionLeekValue<Object>(1, "#Function " + name + "." + method) {
 			public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
 
 				if (arguments.length == 0) {
@@ -184,7 +185,7 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		// Arité rapportée = la plus grande surcharge, pour que les fonctions d'ordre supérieur
 		// legacy (v1-3, qui adaptent via getArgumentsCount) passent le bon nombre d'arguments.
 		final int maxArity = Math.max(0, max);
-		genericStaticMethods.put(method, new FunctionLeekValue(maxArity) {
+		genericStaticMethods.put(method, new FunctionLeekValue(maxArity, "#Function " + name + "." + method) {
 			public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
 				// Surcharge exacte
 				var m = staticMethods.get(prefix + arguments.length);

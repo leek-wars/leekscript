@@ -646,7 +646,9 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { m(x, y) { return x * y } } var f = A.m return f(new A(), 5, 12)").equals("60");
 		code_v2_("class A { m(x, y) { return x * y } } var f = new A().m return f(new A(), 5, 12)").equals("60");
 		code_v2_("class A { m(x, y) { return x * y } } var f = A.m return f(new A(), 5)").equals("null");
-		code_v2_("class A { x constructor() { this.x = this.m } m() {} } return new A().x").equals("#Anonymous Function");
+		code_v2_("class A { x constructor() { this.x = this.m } m() {} } return new A().x").equals("#Function A.m");
+		code_v2_("class A { m() {} } return string(A.m)").equals("\"#Function A.m\"");
+		code_v2_("class A { static s() {} } return string(A.s)").equals("\"#Function A.s\"");
 
 		section("Assign to method");
 		code_v2_("class A { m() {} } A.m = 12").error(Error.CANT_ASSIGN_VALUE);
