@@ -48,9 +48,13 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { a = 10 m() { return 12 } } var a = new A(); return a.m()").equals("12");
 		code_v2_("class A { a = 10 m() { return 13 } } var a = new A(); return a['m']()").equals("13");
 		code_v2_("class A { a = 10 m() { return 13 } } var a = new A(); var m = 'm' return a[m]()").equals("13");
+		// `a.m` est une méthode LIÉE à `a` : elle s'appelle avec les seuls arguments de la
+		// méthode (#5133). L'objet en premier argument n'est plus nécessaire ; il est encore
+		// toléré comme n'importe quel argument en trop d'une fonction LeekScript (ignoré).
+		code_v2_("class A { a = 10 m() { return a } } var a = new A(); var array = [a.m] return array[0]()").equals("10");
 		code_v2_("class A { a = 10 m() { return a } } var a = new A(); var array = [a.m] return array[0](a)").equals("10");
-		code_v2_("class A { a = 10 m() { return a } } var a = new A(); var array = [a['m']] return array[0](a)").equals("10");
-		code_v2_("class A { a = 10 m(x) { return a * x } } var a = new A(); var array = [a['m']] return array[0](a, 5)").equals("50");
+		code_v2_("class A { a = 10 m() { return a } } var a = new A(); var array = [a['m']] return array[0]()").equals("10");
+		code_v2_("class A { a = 10 m(x) { return a * x } } var a = new A(); var array = [a['m']] return array[0](5)").equals("50");
 
 		section("Specific class names");
 		code_v2_("class AI { m() { return 'ok' } } return new AI().m()").equals("\"ok\"");
@@ -644,8 +648,31 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { m() { return [1, 2, 3] } } var o = new A() var r = [A.m] var m = r[0] return m(o)").equals("[1, 2, 3]");
 		code_v2_("class A { m(x, y) { return x * y } } class B { x = A.m } return new B().x(new A(), 5, 12)").equals("60");
 		code_v2_("class A { m(x, y) { return x * y } } var f = A.m return f(new A(), 5, 12)").equals("60");
-		code_v2_("class A { m(x, y) { return x * y } } var f = new A().m return f(new A(), 5, 12)").equals("60");
 		code_v2_("class A { m(x, y) { return x * y } } var f = A.m return f(new A(), 5)").equals("null");
+
+		// Méthode LIÉE : prise sur un OBJET, `o.m` capture son receveur et s'appelle avec les
+		// seuls arguments de la méthode (#5133). La forme non liée reste celle de la CLASSE.
+		code_v2_("class A { m(x, y) { return x * y } } var f = new A().m return f(5, 12)").equals("60");
+		code_v2_("class A { x = 12 m() { return x } } var o = new A() var f = o.m return f()").equals("12");
+		code_v2_("class A { x = 12 m() { return x } } var o = new A() return o['m']()").equals("12");
+		code_v2_("class A { x = 12 m() { return x } } var o = new A() var r = {f: o.m} return r.f()").equals("12");
+		// Le receveur est bien celui de l'accès, pas le dernier objet créé
+		code_v2_("class A { x constructor(v) { x = v } m() { return x } } var f = new A(1).m var g = new A(2).m return [f(), g()]").equals("[1, 2]");
+		// Méthode héritée : la référence remonte la hiérarchie (UNKNOWN_FIELD auparavant)
+		code_v2_("class A { m(x) { return x * 2 } } class B extends A {} var f = new B().m return f(21)").equals("42");
+		// Depuis une AUTRE classe : le receveur était ignoré, la méthode était cherchée dans
+		// la classe courante et l'accès valait null
+		code_v2_("class A { m() { return 12 } } class B { run(a) { var f = a.m return f() } } return new B().run(new A())").equals("12");
+		// `this.m` est lié à `this`
+		code_v2_("class A { x = 7 m() { return x } run() { var f = this.m return f() } } return new A().run()").equals("7");
+		// Passage à une fonction d'ordre supérieur, et à un paramètre de type Function
+		code_v2_("class A { twice(x) { return x * 2 } } var o = new A() return arrayMap([1, 2, 3], o.twice)").equals("[2, 4, 6]");
+		code_v2_("class A { boolean los(integer a, integer b) { return a < b } } function test(Function<integer, integer => boolean> f) { return f(5, 6) } return test(new A().los)").equals("true");
+		code_strict_v2_("class A { boolean los(integer a, integer b) { return a < b } } function test(Function<integer, integer => boolean> f) { return f(5, 6) } return test(new A().los)").equals("true");
+		// Une méthode liée reste nommée comme la méthode
+		code_v2_("class A { m() {} } return string(new A().m)").equals("\"#Function A.m\"");
+		// Forme non liée d'une méthode héritée : `B.m` était refusé à la compilation
+		code_v2_("class A { m(x) { return x * 2 } } class B extends A {} var f = B.m return f(new B(), 21)").equals("42");
 		code_v2_("class A { x constructor() { this.x = this.m } m() {} } return new A().x").equals("#Function A.m");
 		code_v2_("class A { m() {} } return string(A.m)").equals("\"#Function A.m\"");
 		code_v2_("class A { static s() {} } return string(A.s)").equals("\"#Function A.s\"");

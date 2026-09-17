@@ -1923,7 +1923,9 @@ public abstract class AI {
 				// Method ?
 				try {
 					var clazz = (ClassLeekValue) getFieldCached(this.getClass(), valueClass.getSimpleName()).get(this);
-					var method = clazz.genericMethods.get(field);
+					// Méthode utilisée comme valeur (`obj.m`) : liée à son receveur (#5133)
+					var method = clazz.getBoundMethod(value, field);
+					if (method == null) method = clazz.genericMethods.get(field);
 					if (method != null) return method;
 				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
 					addSystemLog(AILog.ERROR, e1);
@@ -3184,7 +3186,9 @@ public abstract class AI {
 				// Method ?
 				try {
 					var clazz = (ClassLeekValue) getFieldCached(this.getClass(), valueClass.getSimpleName()).get(this);
-					var method = clazz.genericMethods.get(fieldName);
+					// Méthode utilisée comme valeur (`obj["m"]`) : liée à son receveur (#5133)
+					var method = clazz.getBoundMethod(value, fieldName);
+					if (method == null) method = clazz.genericMethods.get(fieldName);
 					if (method != null) return method;
 				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
 					addSystemLog(AILog.ERROR, e1);

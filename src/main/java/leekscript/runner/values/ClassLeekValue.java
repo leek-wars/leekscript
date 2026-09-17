@@ -144,14 +144,22 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		genericMethods.put(method, new FunctionLeekValue<Object>(1, "#Function " + name + "." + method) {
 			public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
 
+				// Le receveur est le PREMIER argument de la forme non liée. L'erreur était
+				// jusqu'ici seulement journalisée : l'appel continuait quand même et plantait
+				// sur une ClassCastException Java au lieu de s'arrêter proprement.
 				if (arguments.length == 0) {
 					ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValueType.getParamString(arguments), "1+" });
-				} else if (arguments[0].getClass() != clazz) {
+					return null;
+				}
+				// `isInstance` et non `getClass() != clazz` : un objet d'une SOUS-classe est un
+				// receveur parfaitement valide pour `A.m(objet, …)` (fausse erreur sinon).
+				if (clazz != null && !clazz.isInstance(arguments[0])) {
 					ai.addSystemLog(AILog.ERROR, Error.CAN_NOT_EXECUTE_WITH_ARGUMENTS, new String[] { LeekValueType.getParamString(arguments), "object" });
+					return null;
 				}
 
 				final var methodCode = method + "_" + (arguments.length - 1);
-				final var m = methods.get(methodCode);
+				final var m = findMethod(methodCode);
 				if (m != null) {
 					return m.value.run(ai, arguments[0], Arrays.copyOfRange(arguments, 1, arguments.length));
 				}
@@ -159,6 +167,76 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 				return null;
 			}
 		});
+	}
+
+	// Une méthode héritée n'est pas recopiée dans la `methods` de la sous-classe : toute
+	// résolution par nom_arité doit remonter la hiérarchie.
+	private ClassMethod findMethod(String methodCode) {
+		var current = this;
+		while (current != null) {
+			var m = current.methods.get(methodCode);
+			if (m != null) return m;
+			current = current.parent;
+		}
+		return null;
+	}
+
+	// Plus grande arité déclarée pour ce nom de méthode, hiérarchie comprise, ou -1 si
+	// aucune méthode ne porte ce nom.
+	private int getMaxArity(String method) {
+		final String prefix = method + "_";
+		int max = -1;
+		var current = this;
+		while (current != null) {
+			for (var key : current.methods.keySet()) {
+				if (key.startsWith(prefix)) {
+					try {
+						max = Math.max(max, Integer.parseInt(key.substring(prefix.length())));
+					} catch (NumberFormatException e) {}
+				}
+			}
+			current = current.parent;
+		}
+		return max;
+	}
+
+	/**
+	 * Méthode LIÉE à un objet : `t.m` capture son receveur comme une fermeture et s'appelle
+	 * donc avec les seuls arguments de la méthode, `f(5, 6)` et non `f(t, 5, 6)` (#5133).
+	 * C'est ce que dit déjà le TYPE de `t.m` (la signature de la méthode, sans receveur) ;
+	 * la valeur renvoyée, elle, était la méthode générique non liée, d'où l'incohérence.
+	 * La forme non liée reste accessible par la classe : `A.m(objet, 5, 6)`.
+	 * Renvoie null si aucune méthode de ce nom n'existe.
+	 */
+	public Object getBoundMethod(Object object, String method) {
+		final int maxArity = getMaxArity(method);
+		if (maxArity < 0) return null;
+		return new FunctionLeekValue<Object>(maxArity, "#Function " + name + "." + method) {
+			public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
+				// Surcharge exacte
+				var m = findMethod(method + "_" + arguments.length);
+				if (m != null) {
+					return m.value.run(ai, object, arguments);
+				}
+				// Référence passée à une fonction d'ordre supérieur (arrayMap, etc.) qui appelle
+				// le callback avec (élément, index, tableau) : on choisit la surcharge la plus
+				// proche et on ajuste les arguments, comme pour les méthodes statiques (#11714).
+				int target = -1;
+				for (int n = arguments.length - 1; n >= 0; --n) {
+					if (findMethod(method + "_" + n) != null) { target = n; break; }
+				}
+				if (target < 0) {
+					for (int n = arguments.length + 1; n <= maxArity; ++n) {
+						if (findMethod(method + "_" + n) != null) { target = n; break; }
+					}
+				}
+				if (target >= 0) {
+					return findMethod(method + "_" + target).value.run(ai, object, Arrays.copyOf(arguments, target));
+				}
+				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(method + "_" + arguments.length) });
+				return null;
+			}
+		};
 	}
 
 	public void addStaticMethod(String method, int argCount, FunctionLeekValue function, AccessLevel level) throws LeekRunException {

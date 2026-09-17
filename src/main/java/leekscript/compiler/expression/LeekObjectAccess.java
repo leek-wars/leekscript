@@ -196,7 +196,14 @@ public class LeekObjectAccess extends Expression {
 					this.type = this.variable.getType();
 					this.isFinal = this.variable.isFinal();
 				} else {
-					var m = clazz != null ? clazz.getMethod(field.getWord()) : null;
+					// `A.m` : la méthode peut être HÉRITÉE, on remonte la hiérarchie — sans quoi
+					// `B.m` était refusé à la compilation alors que le runtime sait la résoudre.
+					var declaration = clazz;
+					var m = declaration != null ? declaration.getMethod(field.getWord()) : null;
+					while (m == null && declaration != null && declaration.getParent() != null) {
+						declaration = declaration.getParent();
+						m = declaration.getMethod(field.getWord());
+					}
 					if (m != null) {
 						this.isLeftValue = false;
 						for (var mm : m.entrySet()) {
@@ -341,9 +348,12 @@ public class LeekObjectAccess extends Expression {
 			object.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else {
-			if (this.variable != null && this.variable.getVariableType() == VariableType.METHOD && mainblock.getWordCompiler().getCurrentClassVariable() != null) {
-				writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + field.getWord() + "\")");
-			} else if (this.variable != null && (isThisLikeReceiver(writer)
+			// Méthode utilisée comme VALEUR (`obj.m`, `this.m`) : elle passe par le chemin
+			// dynamique ci-dessous, seul à savoir la lier à son receveur (#5133). L'ancien
+			// code émettait ici `<classe courante>.getField("m")`, qui ignorait le receveur :
+			// depuis une autre classe, `t.m` cherchait `m` dans la mauvaise classe (null).
+			boolean methodValue = this.variable != null && this.variable.getVariableType() == VariableType.METHOD;
+			if (this.variable != null && !methodValue && (isThisLikeReceiver(writer)
 					// TODO : mieux détecter les méthodes
 					|| (object.getType() instanceof ClassType && !(type instanceof FunctionType)))) {
 				// Accès direct au champ Java, qui garde son type déclaré : si l'analyse a narrowé

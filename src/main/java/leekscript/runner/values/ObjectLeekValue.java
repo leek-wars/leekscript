@@ -92,7 +92,11 @@ public class ObjectLeekValue implements LeekValue {
 				}
 			}
 		}
-		var method = clazz.genericMethods.get(field);
+		// Méthode utilisée comme valeur (`obj.m`) : elle est LIÉE à cet objet, donc appelée
+		// avec les seuls arguments de la méthode (#5133). La recherche remonte la hiérarchie,
+		// une méthode héritée n'étant pas recopiée dans la sous-classe.
+		var method = clazz.getBoundMethod(this, field);
+		if (method == null) method = clazz.genericMethods.get(field);
 		if (method != null) return method;
 
 		clazz.ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_FIELD, new String[] { clazz.name, field });
