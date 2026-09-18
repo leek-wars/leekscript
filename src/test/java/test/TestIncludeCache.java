@@ -561,6 +561,31 @@ public class TestIncludeCache {
 		assertTrue(errors.contains(Error.FUNCTION_NAME_UNAVAILABLE), "got: " + errors);
 	}
 
+	// =========================================================================
+	// Éviction du cache de fichiers pendant une compilation : la dédup d'include
+	// (mIncluded/mIncludedFirstPass) se fait par référence d'AIFile. Si le cache
+	// du FileSystem évince un fichier au milieu de la compilation, le résoudre à
+	// nouveau fabrique une DEUXIÈME instance pour le même chemin, la dédup rate,
+	// et le fichier est parsé deux fois → sa classe est déclarée deux fois.
+	// =========================================================================
+
+	@Test
+	public void evictedIncludeIsNotParsedTwice() throws Exception {
+		// Les fichiers sont dans un sous-dossier : les Folder du worker sont
+		// recréés à chaque resolve (getFolderTimestamp = Long.MAX_VALUE), donc
+		// leur cache interne ne rattrape pas l'éviction, contrairement à la racine.
+		write("lib/C.leek", "class Foo { }");
+		write("lib/A.leek", "include(\"C\");\nfunction a() { return 1; }");
+		write("lib/B.leek", "include(\"C\");\nfunction b() { return 2; }");
+		String main = writeMain("include(\"lib/A\");\ninclude(\"lib/B\");\nreturn a() + b();");
+
+		fs.maxCachedFiles = 1; // C est évincé entre l'include par A et celui par B
+
+		var errors = compileAndCollectErrors(main);
+		assertFalse(errors.contains(Error.VARIABLE_NAME_UNAVAILABLE),
+				"un include évincé du cache ne doit pas redéclarer sa classe, got: " + errors);
+	}
+
 	@Test
 	public void cleanIncludeProducesNoSpuriousErrors() throws Exception {
 		write("lib.leek", "function f() { return 1; }\nfunction g() { return 2; }\n");
@@ -977,7 +1002,15 @@ public class TestIncludeCache {
 			return equipped.contains(file.getPath());
 		}
 		private final Map<Integer, Folder> rootFolders = new HashMap<>();
-		private final Map<String, AIFile> filesByPath = new HashMap<>();
+		/** Borne LRU du cache, comme MAX_CACHED_FILES du DbFileSystem worker/daemon. */
+		int maxCachedFiles = Integer.MAX_VALUE;
+		private final Map<String, AIFile> filesByPath = new java.util.LinkedHashMap<>(16, 0.75f, true) {
+			private static final long serialVersionUID = 1L;
+			@Override
+			protected boolean removeEldestEntry(Map.Entry<String, AIFile> eldest) {
+				return size() > maxCachedFiles;
+			}
+		};
 
 		TmpFileSystem(Path root) {
 			this.root = root;

@@ -4,6 +4,8 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,8 +51,14 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private int mMinLevel = 1;
 	private int mAnonymousId = 1;
 	private int mFunctionId = 1;
-	private final Set<AIFile> mIncluded = new HashSet<AIFile>();
-	private final Set<AIFile> mIncludedFirstPass = new HashSet<AIFile>();
+	// Dédup des includes par (owner, chemin) et NON par référence d'AIFile : le
+	// cache de fichiers du FileSystem (LRU borné côté worker/daemon) peut évincer
+	// un fichier au milieu d'une compilation, et le resolve suivant fabrique alors
+	// une deuxième instance pour le même chemin. Avec une dédup par référence, le
+	// fichier était re-parsé et ses classes redéclarées → VARIABLE_NAME_UNAVAILABLE
+	// intermittent sur une IA pourtant valide.
+	private final Map<String, AIFile> mIncluded = new LinkedHashMap<>();
+	private final Set<String> mIncludedFirstPass = new HashSet<String>();
 	private int mCounter = 0;
 	private int mCountInstruction = 0;
 	private final IACompiler mCompiler;
@@ -63,8 +71,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMain = this;
 
 		// On ajoute l'IA pour pas pouvoir l'include
-		mIncluded.add(ai);
-		mIncludedFirstPass.add(ai);
+		mIncluded.put(includeKey(ai), ai);
+		mIncludedFirstPass.add(includeKey(ai));
 		mAIName = ai.getPath();
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
@@ -155,10 +163,17 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMinLevel = min_level;
 	}
 
+	/** Identité d'un fichier inclus : son chemin chez son propriétaire, stable d'une
+	 *  instance d'AIFile à l'autre (le cache du FileSystem peut en recréer une). */
+	private static String includeKey(AIFile ai) {
+		return ai.getOwner() + ":" + ai.getPath();
+	}
+
 	public boolean includeAIFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {
 		try {
 			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
-			if (mIncludedFirstPass.contains(ai)) {
+			var key = includeKey(ai);
+			if (mIncludedFirstPass.contains(key)) {
 				return true;
 			}
 			// Hack dégueu à retirer, crash du daemon dans un cas précis d'include infini
@@ -166,7 +181,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				throw new LeekCompilerException(compiler.getTokenStream().get(), Error.UNKNOWN_ERROR);
 			}
 			ai.clearErrors();
-			mIncludedFirstPass.add(ai);
+			mIncludedFirstPass.add(key);
 			var previousAI = mCompiler.getCurrentAI();
 			mCompiler.setCurrentAI(ai);
 			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion(), compiler.getOptions());
@@ -196,7 +211,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public boolean includeAI(WordCompiler compiler, String path) throws LeekCompilerException {
 		try {
 			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
-			if (mIncluded.contains(ai)) {
+			var key = includeKey(ai);
+			if (mIncluded.containsKey(key)) {
 				return true;
 			}
 			// Hack dégueu à retirer, crash du daemon dans un cas précis d'include infini
@@ -204,7 +220,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				throw new LeekCompilerException(compiler.getTokenStream().get(), Error.UNKNOWN_ERROR);
 			}
 			// ai.clearErrors();
-			mIncluded.add(ai);
+			mIncluded.put(key, ai);
 			var previousAI = mCompiler.getCurrentAI();
 			mCompiler.setCurrentAI(ai);
 			WordCompiler newCompiler = new WordCompiler(ai, compiler.getVersion(), compiler.getOptions());
@@ -425,7 +441,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public Set<AIFile> getIncludedAIs() {
-		return mIncluded;
+		return new LinkedHashSet<>(mIncluded.values());
 	}
 
 	public List<ClassDeclarationInstruction> getUserClasses() {
