@@ -584,6 +584,24 @@ public class TestIncludeCache {
 		var errors = compileAndCollectErrors(main);
 		assertFalse(errors.contains(Error.VARIABLE_NAME_UNAVAILABLE),
 				"un include évincé du cache ne doit pas redéclarer sa classe, got: " + errors);
+		// Et dans l'autre sens : une dédup trop large avalerait le second include
+		// sans lever d'erreur de déclaration. On vérifie que tout est bien inclus.
+		assertEquals(0, errors.size(), "got: " + errors);
+		assertEquals("3", run(main));
+	}
+
+	@Test
+	public void sameFileNameInTwoFoldersBothIncluded() throws Exception {
+		// Deux fichiers de même nom de feuille dans deux dossiers : la dédup
+		// d'include doit les distinguer, y compris quand le FileSystem ne met
+		// que le nom de feuille dans AIFile.path (NativeFileSystem).
+		write("a/utils.leek", "function ua() { return 1; }");
+		write("b/utils.leek", "function ub() { return 2; }");
+		String main = writeMain("include(\"a/utils\");\ninclude(\"b/utils\");\nreturn ua() + ub();");
+
+		var errors = compileAndCollectErrors(main);
+		assertEquals(0, errors.size(), "got: " + errors);
+		assertEquals("3", run(main));
 	}
 
 	@Test

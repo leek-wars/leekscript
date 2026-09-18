@@ -163,10 +163,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMinLevel = min_level;
 	}
 
-	/** Identité d'un fichier inclus : son chemin chez son propriétaire, stable d'une
-	 *  instance d'AIFile à l'autre (le cache du FileSystem peut en recréer une). */
+	/** Identité d'un fichier inclus, stable d'une instance d'AIFile à l'autre (le
+	 *  cache du FileSystem peut en recréer une pour le même fichier).
+	 *  L'id sert de discriminant et non le seul chemin : sous NativeFileSystem
+	 *  (CLI, combats locaux) AIFile.path ne vaut que le nom de feuille et le
+	 *  propriétaire est toujours 0, donc `a/utils` et `b/utils` se confondraient
+	 *  et le second include serait avalé. L'id, lui, est dérivé du chemin complet
+	 *  dans toutes les implémentations. */
 	private static String includeKey(AIFile ai) {
-		return ai.getOwner() + ":" + ai.getPath();
+		return ai.getId() + ":" + ai.getOwner() + ":" + ai.getPath();
 	}
 
 	public boolean includeAIFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {
