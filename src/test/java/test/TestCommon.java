@@ -92,6 +92,26 @@ public class TestCommon {
 			return errorWith(type, (String[]) null);
 		}
 
+		/**
+		 * Erreur refusée à L'ANALYSE (donc soulignée dans l'éditeur), et pas
+		 * seulement levée au runtime : `error()` accepte les deux, ce qui ne
+		 * distingue pas un diagnostic manquant d'un diagnostic présent (#5176).
+		 */
+		public String compileError(Error type) {
+			return run(new Checker() {
+				public boolean check(Result result) {
+					// Une erreur d'analyse fait échouer la compilation : pas d'AI produite
+					return result.ai == null && result.error == type;
+				}
+				public String getExpected() { return "compile error " + type.name(); }
+				public String getResult(Result result) {
+					if (result.ai == null && result.error != Error.NONE) return "compile error " + result.error.name();
+					if (result.error != Error.NONE) return "runtime error " + result.error.name();
+					return "no error";
+				}
+			});
+		}
+
 		// parameters == null : seul le type est vérifié
 		public String errorWith(Error type, String... parameters) {
 			return run(new Checker() {

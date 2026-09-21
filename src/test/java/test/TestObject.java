@@ -273,6 +273,30 @@ public class TestObject extends TestCommon {
 		code_v3_("Real.MAX_VALUE <<= 10").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 		code_v3_("Real.MAX_VALUE >>>= 10").error(Error.CANNOT_ASSIGN_FINAL_FIELD);
 
+		// #5176 : un champ static final assigné sous son nom NU (depuis un membre de la
+		// classe) n'était refusé qu'au runtime, alors qu'un champ d'instance l'est à
+		// l'analyse. compileError() vérifie bien le diagnostic de compilation : error()
+		// accepte aussi l'erreur runtime, et ne distinguait donc pas les deux.
+		code_v4_("class A { private static final string S; static m() { S = 'test' } } A.m() return 1").compileError(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v4_("class A { private static final string S = 'a'; static m() { S = 'test' } } A.m() return 1").compileError(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v4_("class A { private static final string S; static m() { A.S = 'test' } } A.m() return 1").compileError(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v4_("class A { static final integer N = 1 static m() { N += 2 } } A.m() return 1").compileError(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v4_("class A { static final integer N = 1 static m() { N++ } } A.m() return 1").compileError(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v4_("class A { static final integer N = 1 static m() { --N } } A.m() return 1").compileError(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v4_("class A { public static final integer N = 1 } A.N = 2 return A.N").compileError(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		// Un champ STATIQUE final n'a pas de constructeur où s'initialiser : contrairement
+		// à un champ d'instance, le constructeur ne l'exempte pas.
+		code_v4_("class A { private static final string S; constructor() { S = 'test' } } return new A()").compileError(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		code_v4_("class A { static final X = 5 constructor() { A.X = 9 } } new A() return A.X").compileError(Error.CANNOT_ASSIGN_FINAL_FIELD);
+		// Non-régressions : statique non final, champ d'instance dans le constructeur,
+		// locale homonyme du champ, et lecture du champ.
+		code_v4_("class A { public static integer N = 1 static m() { N = 2 } } A.m() return A.N").equals("2");
+		code_v4_("class A { public static integer N = 1 } A.N = 2 return A.N").equals("2");
+		code_v4_("class A { final integer n constructor(x) { n = x } } return new A(7).n").equals("7");
+		code_v4_("class A { final integer n constructor(x) { this.n = x } } return new A(7).n").equals("7");
+		code_v4_("class A { static final integer N = 1 static m() { integer N = 2 N = 3 return N } } return A.m()").equals("3");
+		code_v4_("class A { static final integer N = 42 static m() { return N } } return A.m()").equals("42");
+
 		/**
 		 * Methods
 		 */

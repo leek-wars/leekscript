@@ -1183,6 +1183,17 @@ public class LeekExpression extends Expression {
 		}
 	}
 
+	/**
+	 * La cible d'affectation désigne-t-elle un champ STATIQUE, sous sa forme nue
+	 * (`S`, depuis un membre de la classe) ou qualifiée (`A.S`) ?
+	 */
+	private static boolean isStaticFieldTarget(Expression target) {
+		var member = target instanceof LeekObjectAccess access ? access.getVariable()
+			: target instanceof LeekVariable variable ? variable
+			: null;
+		return member != null && member.getVariableType() == VariableType.STATIC_FIELD;
+	}
+
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 
@@ -1222,11 +1233,18 @@ public class LeekExpression extends Expression {
 		if (Operators.isAssign(mOperator)) {
 			if (mExpression1.isFinal()) {
 				if (mExpression1 instanceof LeekObjectAccess) {
-					if (!compiler.isInConstructor()) {
+					if (isStaticFieldTarget(mExpression1) || !compiler.isInConstructor()) {
 						compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD));
 					}
-				} else if (mExpression1 instanceof LeekVariable) {
-					if (((LeekVariable) mExpression1).getVariableType() == VariableType.FIELD) {
+				} else if (mExpression1 instanceof LeekVariable variable) {
+					// #5176 : un champ STATIQUE final n'a pas de constructeur où
+					// s'initialiser (seul son initialiseur de déclaration le peut) :
+					// l'exemption du constructeur, elle, ne vaut que pour un champ
+					// d'instance. Sans ce cas, `S = …` dans une méthode statique ne
+					// levait rien à l'analyse et n'échouait qu'au runtime.
+					if (variable.getVariableType() == VariableType.STATIC_FIELD) {
+						compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD));
+					} else if (variable.getVariableType() == VariableType.FIELD) {
 						if (!compiler.isInConstructor()) {
 							compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD));
 						}
@@ -1244,7 +1262,9 @@ public class LeekExpression extends Expression {
 
 		if (Operators.isIncrement(mOperator)) {
 			if (mExpression2.isFinal()) {
-				if (mExpression2 instanceof LeekObjectAccess) {
+				// `S++` sur un champ statique final était déjà refusé, mais sous le
+				// libellé « valeur finale » : c'est bien un CHAMP (#5176).
+				if (mExpression2 instanceof LeekObjectAccess || isStaticFieldTarget(mExpression2)) {
 					compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD));
 				} else {
 					compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANNOT_ASSIGN_FINAL_VALUE));
