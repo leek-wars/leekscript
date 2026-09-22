@@ -1,5 +1,6 @@
 package leekscript.compiler.instruction;
 
+import leekscript.common.CompoundType;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 import leekscript.compiler.Token;
@@ -64,6 +65,17 @@ public class LeekReturnInstruction extends LeekInstruction {
 		var actualType = expression == null ? Type.VOID : expression.getType();
 
 		var cast = returnType.accepts(actualType);
+		// `return?` ne renvoie que si la valeur est vraie, donc jamais null (#5183). Le type privé
+		// de null ne sert qu'à retirer un diagnostic, jamais à l'aggraver : un `integer?` renvoyé par
+		// une fonction `string?` passerait de warning à erreur et refuserait une IA qui compilait.
+		if (optional && actualType instanceof CompoundType ct && ct.containsNull()) {
+			var nonNullType = ct.assertNotNull();
+			var nonNullCast = returnType.accepts(nonNullType);
+			if (nonNullCast.ordinal() < cast.ordinal()) {
+				actualType = nonNullType;
+				cast = nonNullCast;
+			}
+		}
 		if (cast.ordinal() > CastType.UPCAST.ordinal()) {
 
 			if (cast == CastType.INCOMPATIBLE || compiler.getMainBlock().isStrict()) {
@@ -92,9 +104,15 @@ public class LeekReturnInstruction extends LeekInstruction {
 				writer.addCode("ops(" + finalExpression.getOperations() + "); ");
 			}
 			if (optional) {
+				// La conversion précède le test : vers un Array/Map/Set non nullable, toArray/toMap/toSet
+				// planteraient sur un null que bool() doit simplement écarter (#5183)
+				var type = returnType;
+				if ((type.isArray() || type.isMap() || type.isSet()) && finalExpression.getType().canBeNull()) {
+					type = Type.compound(type, Type.NULL);
+				}
 				String r = "r" + mainblock.getCount();
-				writer.addCode(returnType.getJavaName(mainblock.getVersion()) + " " + r + " = ");
-				writer.compileConvert(mainblock, 0, finalExpression, returnType, false);
+				writer.addCode(type.getJavaName(mainblock.getVersion()) + " " + r + " = ");
+				writer.compileConvert(mainblock, 0, finalExpression, type, false);
 				writer.addLine("; if (bool(" + r + ")) return " + r + ";", getLocation());
 			} else {
 				writer.addCode("return ");

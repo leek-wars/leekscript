@@ -530,6 +530,28 @@ public class TestFunction extends TestCommon {
 	}
 
 	@Test
+	public void testConditional_return_type() throws Exception {
+		section("Conditional return type (#5183)");
+		// `return?` ne renvoie que les valeurs vraies, donc jamais null : le type
+		// vérifié est celui de l'expression privé de null
+		code_strict_v4_("global Map<integer, Map<integer, integer>> cache = [:] function a(integer b) => Map<integer, integer> { return? cache[b] return [3: 3] } cache[2] = [1: 1] cache[1] = [2: 2] return [a(1), a(2), a(3), a(0)]").equals("[[2 : 2], [1 : 1], [3 : 3], [3 : 3]]");
+		code_strict_v4_("global Map<integer, Map<integer, integer>> cache = [:] function a(integer b) => Map<integer, integer> { return? cache[b] return [3: 3] } return a(1)").noWarning();
+		code_strict_v4_("function f(integer? x) => integer { return? x return 12 } return [f(5), f(null), f(0)]").equals("[5, 12, 12]");
+		code_strict_v4_("function f(integer? x) => integer { return? x return 12 } return f(5)").noWarning();
+		// La conversion, faite avant le test, laisse passer null : plus de plantage sur un retour Array/Map/Set non nullable
+		code_v4_("function f(Array<integer>? a) => Array<integer> { return? a return [3] } return [f([1]), f(null)]").equals("[[1], [3]]");
+		code_v4_("function f(Map<integer, integer>? m) => Map<integer, integer> { return? m return [3: 3] } return [f([1: 1]), f(null)]").equals("[[1 : 1], [3 : 3]]");
+		code_v4_("function f(Set<integer>? s) => Set<integer> { return? s return <3> } return [f(<1>), f(null)]").equals("[<1>, <3>]");
+		code_v4_("function f(m) => Map { return? m return [:] } return f(null)").equals("[:]");
+		// Le reste du type est toujours vérifié
+		code_strict_v4_("function f(string? s) => integer { return? s return 12 } return f('a')").compileError(Error.INCOMPATIBLE_TYPE);
+		// … sans jamais aggraver un diagnostic : ce warning ne devient pas une erreur
+		code_strict_v4_("function f(integer? x) => string? { return? x return null } return f(null)").warning(Error.DANGEROUS_CONVERSION);
+		// Sans `?`, null peut sortir : le warning reste
+		code_strict_v4_("function f(integer? x) => integer { return x } return f(5)").warning(Error.DANGEROUS_CONVERSION);
+	}
+
+	@Test
 	public void testReturn_type_warnings() throws Exception {
 		section("Return type warnings");
 
