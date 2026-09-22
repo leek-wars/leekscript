@@ -534,19 +534,30 @@ public class TestFunction extends TestCommon {
 		section("Conditional return type (#5183)");
 		// `return?` ne renvoie que les valeurs vraies, donc jamais null : le type
 		// vérifié est celui de l'expression privé de null
-		code_strict_v4_("global Map<integer, Map<integer, integer>> cache = [:] function a(integer b) => Map<integer, integer> { return? cache[b] return [3: 3] } cache[2] = [1: 1] cache[1] = [2: 2] return [a(1), a(2), a(3), a(0)]").equals("[[2 : 2], [1 : 1], [3 : 3], [3 : 3]]");
-		code_strict_v4_("global Map<integer, Map<integer, integer>> cache = [:] function a(integer b) => Map<integer, integer> { return? cache[b] return [3: 3] } return a(1)").noWarning();
-		code_strict_v4_("function f(integer? x) => integer { return? x return 12 } return [f(5), f(null), f(0)]").equals("[5, 12, 12]");
-		code_strict_v4_("function f(integer? x) => integer { return? x return 12 } return f(5)").noWarning();
+		var cache = "global Map<integer, Map<integer, integer>> cache = [:] function a(integer b) => Map<integer, integer> { return? cache[b] return [3: 3] } cache[2] = [1: 1] cache[1] = [2: 2] return [a(1), a(2), a(3), a(0)]";
+		code_strict_v4_(cache).equals("[[2 : 2], [1 : 1], [3 : 3], [3 : 3]]");
+		code_strict_v4_(cache).noWarning();
+		var nullableInteger = "function f(integer? x) => integer { return? x return 12 } return [f(5), f(null), f(0)]";
+		code_strict_v4_(nullableInteger).equals("[5, 12, 12]");
+		code_strict_v4_(nullableInteger).noWarning();
 		// La conversion, faite avant le test, laisse passer null : plus de plantage sur un retour Array/Map/Set non nullable
 		code_v4_("function f(Array<integer>? a) => Array<integer> { return? a return [3] } return [f([1]), f(null)]").equals("[[1], [3]]");
 		code_v4_("function f(Map<integer, integer>? m) => Map<integer, integer> { return? m return [3: 3] } return [f([1: 1]), f(null)]").equals("[[1 : 1], [3 : 3]]");
 		code_v4_("function f(Set<integer>? s) => Set<integer> { return? s return <3> } return [f(<1>), f(null)]").equals("[<1>, <3>]");
 		code_v4_("function f(m) => Map { return? m return [:] } return f(null)").equals("[:]");
+		// … même sous un type statique non nullable : champ non initialisé, défaut `= null`
+		code_v4_("class A { Map<integer, integer> m } function f(A a) => Map { return? a.m return [:] } return f(new A())").equals("[:]");
+		code_v4_("function f(Array<integer> a = null) => Array { return? a return [3] } return [f(), f([1])]").equals("[[3], [1]]");
+		// … et sur les expressions émises en Object (`?.`, `??=`), que javac refuse d'écrire telles quelles
+		code_v4_("class A { Array<integer> x = [1] } function f(A? a) => Array<integer> { return? a?.x return [3] } return [f(new A()), f(null)]").equals("[[1], [3]]");
+		code_v4_("class A { public Map<integer, integer> m() { return [1: 1] } } function f(A? a) => Map<integer, integer> { return? a?.m() return [3: 3] } return [f(new A()), f(null)]").equals("[[1 : 1], [3 : 3]]");
+		code_v4_("global Map<integer, Array<integer>> M = [:] function f(integer k) => Array<integer> { return? (M[k] ??= [k]) return [3] } return [f(1), f(2), count(f(1))]").equals("[[1], [2], 1]");
 		// Le reste du type est toujours vérifié
 		code_strict_v4_("function f(string? s) => integer { return? s return 12 } return f('a')").compileError(Error.INCOMPATIBLE_TYPE);
 		// … sans jamais aggraver un diagnostic : ce warning ne devient pas une erreur
 		code_strict_v4_("function f(integer? x) => string? { return? x return null } return f(null)").warning(Error.DANGEROUS_CONVERSION);
+		// Vers big_integer, la conversion journalise une erreur sur null : le warning reste
+		code_strict_v4_("function f(integer? x) => big_integer { return? x return 12 } return f(5)").warning(Error.DANGEROUS_CONVERSION);
 		// Sans `?`, null peut sortir : le warning reste
 		code_strict_v4_("function f(integer? x) => integer { return x } return f(5)").warning(Error.DANGEROUS_CONVERSION);
 	}

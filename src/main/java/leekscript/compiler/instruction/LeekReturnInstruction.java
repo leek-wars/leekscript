@@ -68,7 +68,9 @@ public class LeekReturnInstruction extends LeekInstruction {
 		// `return?` ne renvoie que si la valeur est vraie, donc jamais null (#5183). Le type privé
 		// de null ne sert qu'à retirer un diagnostic, jamais à l'aggraver : un `integer?` renvoyé par
 		// une fonction `string?` passerait de warning à erreur et refuserait une IA qui compilait.
-		if (optional && actualType instanceof CompoundType ct && ct.containsNull()) {
+		// Sauf vers big_integer : sa conversion, faite avant le test, journalise une erreur sur un
+		// null (BigIntegerValue.valueOf), et ce warning le signale.
+		if (optional && returnType != Type.BIG_INT && actualType instanceof CompoundType ct && ct.containsNull()) {
 			var nonNullType = ct.assertNotNull();
 			var nonNullCast = returnType.accepts(nonNullType);
 			if (nonNullCast.ordinal() < cast.ordinal()) {
@@ -104,15 +106,21 @@ public class LeekReturnInstruction extends LeekInstruction {
 				writer.addCode("ops(" + finalExpression.getOperations() + "); ");
 			}
 			if (optional) {
-				// La conversion précède le test : vers un Array/Map/Set non nullable, toArray/toMap/toSet
-				// planteraient sur un null que bool() doit simplement écarter (#5183)
-				var type = returnType;
-				if ((type.isArray() || type.isMap() || type.isSet()) && finalExpression.getType().canBeNull()) {
-					type = Type.compound(type, Type.NULL);
-				}
+				// La conversion précède le test : vers un Array/Map/Set, toArray/toMap/toSet planteraient
+				// sur un null que bool() doit simplement écarter (#5183), même sous un type statique non
+				// nullable (champ non initialisé, défaut `= null`). Leur variante OrNull, identique hors
+				// null, reçoit l'expression telle quelle : pas d'écriture brute, que javac refuse pour les
+				// expressions émises en Object (`a?.x`, `m[k] ??= v`…).
 				String r = "r" + mainblock.getCount();
-				writer.addCode(type.getJavaName(mainblock.getVersion()) + " " + r + " = ");
-				writer.compileConvert(mainblock, 0, finalExpression, type, false);
+				writer.addCode(returnType.getJavaName(mainblock.getVersion()) + " " + r + " = ");
+				var converter = orNullConverter(mainblock, finalExpression.getType());
+				if (converter != null) {
+					writer.addCode(converter + "(0, ");
+					finalExpression.writeJavaCode(mainblock, writer, false);
+					writer.addCode(")");
+				} else {
+					writer.compileConvert(mainblock, 0, finalExpression, returnType, false);
+				}
 				writer.addLine("; if (bool(" + r + ")) return " + r + ";", getLocation());
 			} else {
 				writer.addCode("return ");
@@ -124,6 +132,18 @@ public class LeekReturnInstruction extends LeekInstruction {
 				writer.addLine(";", getLocation());
 			}
 		}
+	}
+
+	/**
+	 * Variante OrNull du convertisseur qu'émettrait compileConvert vers le type de retour
+	 * Array/Map/Set (même forme, `f(0, expression)`), ou null s'il n'en émet aucun.
+	 */
+	private String orNullConverter(MainLeekBlock mainblock, Type valueType) {
+		if (returnType.accepts(valueType).ordinal() <= CastType.EQUALS.ordinal()) return null;
+		if (returnType.isArray()) return mainblock.getVersion() >= 4 ? "toArrayOrNull" : "toLegacyArrayOrNull";
+		if (returnType.isMap()) return "toMapOrNull";
+		if (returnType.isSet()) return "toSetOrNull";
+		return null;
 	}
 
 	@Override
