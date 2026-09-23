@@ -641,7 +641,11 @@ public class LeekObjectAccess extends Expression {
 				}
 			}
 		}
-		var clazz = object.getType().getClassDeclaration();
+		// Survol d'un arbre jamais analysé : aucune expression n'a de type. Le survol
+		// est le seul chemin qui y accède (le compilateur, lui, analyse toujours
+		// avant), d'où le même garde-fou que `complete()` plus bas.
+		var objectType = object.getType();
+		var clazz = objectType == null ? null : objectType.getClassDeclaration();
 		if (clazz != null && field != null) {
 			var member = clazz.getMember(field.getWord());
 			if (member != null) {

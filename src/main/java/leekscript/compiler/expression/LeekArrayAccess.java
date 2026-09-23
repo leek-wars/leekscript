@@ -26,7 +26,12 @@ public class LeekArrayAccess extends Expression {
 	private Token closingBracket;
 	private Token colon2;
 	private Expression stride;
-	private Type type;
+	// `analyze()` pose le vrai type, mais l'éditeur interroge aussi des arbres qui
+	// n'ont jamais été analysés (une IA dont l'analyse a échoué ou expiré reste en
+	// cache côté démon, tokens posés). `getType()` ne doit jamais rendre null : tout
+	// le compilateur le déréférence sans test, comme les autres expressions qui
+	// partent déjà de ANY.
+	private Type type = Type.ANY;
 	private boolean optional = false; // accès indexé optionnel `a?[b]`
 
 	public LeekArrayAccess(Token openingBracket) {
