@@ -630,12 +630,15 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public Hover hover(Token token) {
-		if (object instanceof LeekVariable) {
+		// `field` est nul sur un accès inachevé (`A.` en cours de frappe, que le parseur
+		// construit tel quel), et la classe n'est résolue que par l'analyse : l'éditeur
+		// interroge les deux états.
+		if (object instanceof LeekVariable && field != null) {
 			var v = (LeekVariable) object;
 			if (v.getVariableType() == VariableType.CLASS) {
 				var clazz = v.getClassDeclaration();
 
-				var staticMember = clazz.getStaticMember(field.getWord());
+				var staticMember = clazz == null ? null : clazz.getStaticMember(field.getWord());
 				if (staticMember != null) {
 					return new Hover(staticMember.getType(), getLocation(), staticMember.getLocation());
 				}
