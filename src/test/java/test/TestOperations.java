@@ -72,6 +72,44 @@ public class TestOperations extends TestCommon {
 		);
 	}
 
+	/**
+	 * #5226 : une variable de session garde son type déclaré d'une ligne à l'autre. Relue en `any`,
+	 * `BigInteger a = 1` puis `a << 64` décalait un long 64 bits et rendait 1.
+	 */
+	@Test
+	public void testSessionKeepsDeclaredType() throws Exception {
+		section("Console session (REPL) : type déclaré");
+		runReplResults(
+			new String[] { "BigInteger a = 1", null },
+			new String[] { "a << 64", "18446744073709551616" },
+			new String[] { "a <<= 3", "8" },
+			new String[] { "[a & 1, ~a, a \\ 2]", "[0, -9, 4]" },
+			new String[] { "a = 5", "5" },
+			new String[] { "a << 64 == 92233720368547758080L", "true" },
+			new String[] { "integer i = 5", null },
+			new String[] { "i = 2.5", "2" },
+			new String[] { "real r = 1", null },
+			new String[] { "r / 4", "0.25" },
+			new String[] { "var v = 1", null },
+			new String[] { "v = 'str'", "\"str\"" }
+		);
+	}
+
+	private void runReplResults(String[]... steps) throws Exception {
+		var session = new Session(LeekScript.LATEST_VERSION, false);
+		for (var step : steps) {
+			var ai = LeekScript.compileSnippet(step[0], "AI", new Options(session));
+			ai.maxOperations = 1_000_000;
+			ai.maxRAM = 1_000_000;
+			ai.init();
+			ai.staticInit();
+			var v = ai.runIA(session);
+			if (step[1] != null) {
+				assertEquals(step[1], ai.export(v), "résultat pour: " + step[0]);
+			}
+		}
+	}
+
 	private void runRepl(ReplStep... steps) throws Exception {
 		var session = new Session(LeekScript.LATEST_VERSION, false);
 		// Les constructeurs générés chargent des champs statiques système qui

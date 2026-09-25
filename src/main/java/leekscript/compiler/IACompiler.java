@@ -337,6 +337,7 @@ public class IACompiler {
 			if (options.session() != null) {
 				for (var name : options.session().getVariables().keySet()) {
 					var variable = new LeekVariable(new Token(name), VariableType.LOCAL, true);
+					variable.setType(options.session().getType(name));
 					main.addVariable(variable);
 				}
 			}

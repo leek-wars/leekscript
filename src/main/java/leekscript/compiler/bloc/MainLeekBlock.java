@@ -393,7 +393,13 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			// comptabilisées sur cette exécution, pas sur l'AI qui les a créées.
 			writer.addLine("session.rebindAll(this);");
 			for (var variable : options.session().getVariables().keySet()) {
-				writer.addLine("var u_" + variable + " = session.getVariable(\"" + variable + "\");");
+				var type = options.session().getType(variable);
+				if (type == Type.ANY) {
+					writer.addLine("var u_" + variable + " = session.getVariable(\"" + variable + "\");");
+				} else {
+					// Box typée, comme une variable capturée : `.get()` rend alors le type déclaré
+					writer.addLine("@SuppressWarnings(\"unchecked\") var u_" + variable + " = (Box<" + type.getJavaName(getVersion()) + ">) (Box) session.getVariable(\"" + variable + "\");");
+				}
 			}
 		}
 
@@ -435,6 +441,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		if (writer.options.session() != null && mVariables != null) {
 			for (var variable : mVariables.entrySet()) {
 				if (!writer.options.session().getVariables().containsKey(variable.getKey()) && variable.getValue().getVariableType() == VariableType.LOCAL) {
+					writer.options.session().setType(variable.getKey(), variable.getValue().getDeclaredType());
 					writer.addLine("session.setVariable(" + writer.getAIThis() + ", \"" + variable.getKey() + "\", u_" + variable.getKey() + ");");
 				}
 			}

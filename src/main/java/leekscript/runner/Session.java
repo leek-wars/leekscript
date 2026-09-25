@@ -2,12 +2,17 @@ package leekscript.runner;
 
 import java.util.TreeMap;
 
+import leekscript.common.Type;
 import leekscript.compiler.LeekScript;
 import leekscript.runner.values.Box;
 
 public class Session {
 
 	private TreeMap<String, Box<Object>> variables = new TreeMap<>();
+	// Type déclaré des variables (`integer a = 1`), pour qu'une ligne suivante ne les relise pas en `any`
+	// (#5226 : `BigInteger a = 1` puis `a << 64` décalait un long). Seuls les types sans lien avec une
+	// classe de l'IA compilée sont retenus, cf `keepsType`.
+	private TreeMap<String, Type> types = new TreeMap<>();
 	private int version;
 	private boolean strict;
 
@@ -42,6 +47,19 @@ public class Session {
 
 	public Box<Object> getVariable(String name) {
 		return variables.get(name);
+	}
+
+	public static boolean keepsType(Type type) {
+		return type == Type.INT || type == Type.REAL || type == Type.BOOL || type == Type.STRING || type == Type.BIG_INT;
+	}
+
+	public void setType(String name, Type type) {
+		if (keepsType(type)) types.put(name, type);
+		else types.remove(name);
+	}
+
+	public Type getType(String name) {
+		return types.getOrDefault(name, Type.ANY);
 	}
 
 	public int getVersion() {
