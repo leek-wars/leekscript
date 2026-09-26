@@ -211,32 +211,63 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 	public Object getBoundMethod(Object object, String method) {
 		final int maxArity = getMaxArity(method);
 		if (maxArity < 0) return null;
-		return new FunctionLeekValue<Object>(maxArity, "#Function " + name + "." + method) {
-			public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
-				// Surcharge exacte
-				var m = findMethod(method + "_" + arguments.length);
-				if (m != null) {
-					return m.value.run(ai, object, arguments);
-				}
-				// Référence passée à une fonction d'ordre supérieur (arrayMap, etc.) qui appelle
-				// le callback avec (élément, index, tableau) : on choisit la surcharge la plus
-				// proche et on ajuste les arguments, comme pour les méthodes statiques (#11714).
-				int target = -1;
-				for (int n = arguments.length - 1; n >= 0; --n) {
+		return new BoundMethod(object, method, maxArity);
+	}
+
+	/**
+	 * Chaque accès `t.m` crée une NOUVELLE méthode liée : il lui faut une égalité de valeur,
+	 * sans quoi `t.m == t.m` vaut false et un Set ou une Map ne retrouve jamais la méthode
+	 * qu'on y a rangée (#5242). Deux méthodes liées sont égales si elles portent le même nom
+	 * sur le MÊME objet (identité, comme `==` entre objets). Le hash reprend celui de l'objet,
+	 * son id, déterministe d'un combat à l'autre.
+	 */
+	private class BoundMethod extends FunctionLeekValue<Object> {
+
+		private final Object object;
+		private final String method;
+		private final int maxArity;
+
+		BoundMethod(Object object, String method, int maxArity) {
+			super(maxArity, "#Function " + ClassLeekValue.this.name + "." + method);
+			this.object = object;
+			this.method = method;
+			this.maxArity = maxArity;
+		}
+
+		public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
+			// Surcharge exacte
+			var m = findMethod(method + "_" + arguments.length);
+			if (m != null) {
+				return m.value.run(ai, object, arguments);
+			}
+			// Référence passée à une fonction d'ordre supérieur (arrayMap, etc.) qui appelle
+			// le callback avec (élément, index, tableau) : on choisit la surcharge la plus
+			// proche et on ajuste les arguments, comme pour les méthodes statiques (#11714).
+			int target = -1;
+			for (int n = arguments.length - 1; n >= 0; --n) {
+				if (findMethod(method + "_" + n) != null) { target = n; break; }
+			}
+			if (target < 0) {
+				for (int n = arguments.length + 1; n <= maxArity; ++n) {
 					if (findMethod(method + "_" + n) != null) { target = n; break; }
 				}
-				if (target < 0) {
-					for (int n = arguments.length + 1; n <= maxArity; ++n) {
-						if (findMethod(method + "_" + n) != null) { target = n; break; }
-					}
-				}
-				if (target >= 0) {
-					return findMethod(method + "_" + target).value.run(ai, object, Arrays.copyOf(arguments, target));
-				}
-				ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(method + "_" + arguments.length) });
-				return null;
 			}
-		};
+			if (target >= 0) {
+				return findMethod(method + "_" + target).value.run(ai, object, Arrays.copyOf(arguments, target));
+			}
+			ai.addSystemLog(leekscript.AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { name, createMethodError(method + "_" + arguments.length) });
+			return null;
+		}
+
+		@Override
+		public boolean equals(Object other) {
+			return other instanceof BoundMethod bound && bound.object == object && bound.method.equals(method);
+		}
+
+		@Override
+		public int hashCode() {
+			return 31 * object.hashCode() + method.hashCode();
+		}
 	}
 
 	public void addStaticMethod(String method, int argCount, FunctionLeekValue function, AccessLevel level) throws LeekRunException {

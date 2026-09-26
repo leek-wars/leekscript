@@ -701,6 +701,20 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { m() {} } return string(A.m)").equals("\"#Function A.m\"");
 		code_v2_("class A { static s() {} } return string(A.s)").equals("\"#Function A.s\"");
 
+		// Chaque accès `o.m` crée une nouvelle méthode liée, mais c'est la même VALEUR : même
+		// méthode sur le même objet. Un Set, une Map ou `==` doivent la retrouver (#5242).
+		code_v4_("class A { m() {} } Set<Function> set; A a = new A(); setPut(set, a.m); setPut(set, a.m); var n = setSize(set); setRemove(set, a.m); return [n, setSize(set)]").equals("[1, 0]");
+		code_strict_v4_("class A { m() {} } Set<Function> set; A a = new A(); setPut(set, a.m); setPut(set, a.m); var n = setSize(set); setRemove(set, a.m); return [n, setSize(set)]").equals("[1, 0]");
+		code_v4_("class A { m() {} } var a = new A() var m = [:] m[a.m] = 1 m[a.m] = 2 return [mapSize(m), m[a.m]]").equals("[1, 2]");
+		code_v2_("class A { m() {} } var a = new A() return [a.m == a.m, a.m != a.m, a.m == a['m']]").equals("[true, false, true]");
+		code_v2_("class A { m() {} } var a = new A() return [inArray([a.m], a.m), search([12, a.m], a.m)]").equals("[true, 1]");
+		code_v2_("class A { m() {} run() { return this.m == this.m } } return new A().run()").equals("true");
+		code_v2_("class A { m() {} } class B extends A {} var b = new B() return b.m == b.m").equals("true");
+		code_strict_v4_("class A { m() {} } A a = new A() Function f = a.m Function g = a.m return f == g").equals("true");
+		// Un autre objet, une autre méthode ou la forme non liée restent des valeurs différentes
+		code_v2_("class A { m() {} n() {} } var a = new A() var b = new A() return [a.m == b.m, a.m == a.n, a.m == A.m]").equals("[false, false, false]");
+		code_v4_("class A { m() {} } var s = <> setPut(s, new A().m) setPut(s, new A().m) return setSize(s)").equals("2");
+
 		section("Assign to method");
 		code_v2_("class A { m() {} } A.m = 12").error(Error.CANT_ASSIGN_VALUE);
 
