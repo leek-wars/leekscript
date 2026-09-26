@@ -225,13 +225,11 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 
 		private final Object object;
 		private final String method;
-		private final int maxArity;
 
 		BoundMethod(Object object, String method, int maxArity) {
 			super(maxArity, "#Function " + ClassLeekValue.this.name + "." + method);
 			this.object = object;
 			this.method = method;
-			this.maxArity = maxArity;
 		}
 
 		public Object run(AI ai, Object thiz, Object... arguments) throws LeekRunException {
@@ -248,7 +246,7 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 				if (findMethod(method + "_" + n) != null) { target = n; break; }
 			}
 			if (target < 0) {
-				for (int n = arguments.length + 1; n <= maxArity; ++n) {
+				for (int n = arguments.length + 1; n <= getArgumentsCount(); ++n) {
 					if (findMethod(method + "_" + n) != null) { target = n; break; }
 				}
 			}
