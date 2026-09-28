@@ -1502,4 +1502,59 @@ public class TestNumber extends TestCommon {
 		code_v4_("return isPermutation(11112222, 22221111)").equals("true");
 		code_v4_("return isPermutation(123456, 12345678)").equals("false");
 	}
+
+	@Test
+	public void testToFixed() throws Exception {
+		section("Number.toFixed");
+		code("return toFixed(1.0, 2)").equals("\"1.00\"");
+		code_v4_("return toFixed(1.5, 2)").equals("\"1.50\"");
+		code_v4_("return toFixed(3.14159, 2)").equals("\"3.14\"");
+		code_v4_("return toFixed(3.14159, 4)").equals("\"3.1416\"");
+		code_v4_("return toFixed(2.999, 2)").equals("\"3.00\"");
+		code_v4_("return toFixed(0.05, 2)").equals("\"0.05\"");
+		code_v4_("return toFixed(0.1 + 0.2, 2)").equals("\"0.30\"");
+		code_v4_("return toFixed(2.5, 0)").equals("\"3\"");
+		// Arrondi sur l'écriture la plus courte du réel, demis loin de zéro
+		code_v4_("return toFixed(1.005, 2)").equals("\"1.01\"");
+		code_v4_("return toFixed(2.675, 2)").equals("\"2.68\"");
+		code_v4_("return toFixed(0.125, 2)").equals("\"0.13\"");
+		code_v4_("return toFixed(-2.5, 0)").equals("\"-3\"");
+		code_v4_("return toFixed(-0.5, 2)").equals("\"-0.50\"");
+		// Jamais de "-0.00"
+		code_v4_("return toFixed(-0.004, 2)").equals("\"0.00\"");
+		code_v4_("return toFixed(-0.0, 2)").equals("\"0.00\"");
+		// Jamais d'exposant
+		code_v4_("return toFixed(12345678.9, 2)").equals("\"12345678.90\"");
+		code_v4_("return toFixed(1e20, 2)").equals("\"100000000000000000000.00\"");
+		code_v4_("return toFixed(0.00001, 2)").equals("\"0.00\"");
+		code_v4_("return toFixed(0.00001, 6)").equals("\"0.000010\"");
+		// Non finis : comme string()
+		code_v4_("return toFixed(NaN, 2)").equals("\"NaN\"");
+		code_v4_("return toFixed(Infinity, 2)").equals("\"∞\"");
+		code_v4_("return toFixed(-Infinity, 2)").equals("\"-∞\"");
+		// Décimales bornées à 0..100
+		code_v4_("return toFixed(3.14159, -3)").equals("\"3\"");
+		code_v4_("return length(toFixed(1.5, 1000000000))").equals("102");
+		code_v4_("return length(toFixed(7, 500))").equals("102");
+		// Entiers exacts, y compris au-delà de 2^53 et en big_integer
+		code_v4_("return toFixed(1, 2)").equals("\"1.00\"");
+		code_v4_("return toFixed(-5, 3)").equals("\"-5.000\"");
+		code_v4_("return toFixed(9007199254740993, 1)").equals("\"9007199254740993.0\"");
+		code_v4_("return toFixed(1L << 80, 2)").equals("\"1208925819614629174706176.00\"");
+		code_v4_("return length(toFixed(1L << 80, 1000))").equals("126");
+		// Arguments non typés : la version est choisie à l'exécution
+		code_v4_("var x = 1 return toFixed(x, 2)").equals("\"1.00\"");
+		code_v4_("var x = 9007199254740993 return toFixed(x, 0)").equals("\"9007199254740993\"");
+		code_v4_("var x = 1.005 var d = 2 return toFixed(x, d)").equals("\"1.01\"");
+		code_v4_("var b = 1L << 80 return toFixed(b, 0)").equals("\"1208925819614629174706176\"");
+		code_v4_("var f = toFixed return [f(1.5, 2), f(2, 1)]").equals("[\"1.50\", \"2.0\"]");
+		code_v4_("return arrayMap([1, 2.5], x -> toFixed(x, 1))").equals("[\"1.0\", \"2.5\"]");
+		// Disponible dans toutes les versions
+		code("var x = 2 return toFixed(x / 3, 3)").equals("\"0.667\"");
+		code_v3_("return toFixed(1.5)").compileError(Error.INVALID_PARAMETER_COUNT);
+		// Une fonction, une variable ou une globale du joueur du même nom reste prioritaire
+		code("function toFixed(x) { return 'mine' } return toFixed(1.5)").equals("\"mine\"");
+		code("var toFixed = function(x, d) { return 'mine' } return toFixed(1.5, 2)").equals("\"mine\"");
+		code("global toFixed = 12 return toFixed").equals("12");
+	}
 }

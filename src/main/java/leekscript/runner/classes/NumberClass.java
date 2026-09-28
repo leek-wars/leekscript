@@ -1,5 +1,8 @@
 package leekscript.runner.classes;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.values.BigIntegerValue;
@@ -274,6 +277,39 @@ public class NumberClass {
 
 	public static String hexString(AI ai, BigIntegerValue x) throws LeekRunException {
 		return x.toString(16);
+	}
+
+	// Arrondi sur l'écriture la plus courte du réel, celle de string() : toFixed(1.005, 2) vaut
+	// "1.01" (JS donne "1.00"). Décimales bornées à 0..100, jamais d'exposant ni de "-0.00".
+	public static String toFixed(AI ai, double x, long digits) throws LeekRunException {
+		if (Double.isNaN(x)) return "NaN";
+		if (Double.isInfinite(x)) return x > 0 ? "∞" : "-∞";
+		int scale = fixedScale(digits);
+		var decimal = BigDecimal.valueOf(x);
+		// N'arrondir que s'il y a des chiffres en trop : un setScale qui ajoute des zéros multiplie la
+		// mantisse (par 10^400 pour toFixed(1e300, 100)), alors que les zéros s'écrivent tout de suite
+		if (decimal.scale() > scale) decimal = decimal.setScale(scale, RoundingMode.HALF_UP);
+		return withDecimals(ai, decimal.toPlainString(), Math.max(0, decimal.scale()), scale);
+	}
+
+	// Entiers : exacts au-delà de 2^53, où un passage par le réel perdrait des chiffres
+	public static String toFixed(AI ai, long x, long digits) throws LeekRunException {
+		return withDecimals(ai, String.valueOf(x), 0, fixedScale(digits));
+	}
+
+	public static String toFixed(AI ai, BigIntegerValue x, long digits) throws LeekRunException {
+		return withDecimals(ai, x.toString(10), 0, fixedScale(digits));
+	}
+
+	// Complète `plain`, qui porte `decimals` chiffres après le point, jusqu'à `scale` chiffres
+	private static String withDecimals(AI ai, String plain, int decimals, int scale) throws LeekRunException {
+		var result = decimals >= scale ? plain : plain + (decimals == 0 ? "." : "") + "0".repeat(scale - decimals);
+		ai.ops(result.length() / 3);
+		return result;
+	}
+
+	private static int fixedScale(long digits) {
+		return (int) Math.max(0, Math.min(100, digits));
 	}
 
 	public static long realBits(AI ai, double x) {

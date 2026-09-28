@@ -122,6 +122,11 @@ public class LeekFunctions {
 			new CallableVersion(Type.STRING, new Type[] { Type.INT }),
 			new CallableVersion(Type.STRING, new Type[] { Type.BIG_INT }),
 		}).setMinVersion(4);
+		method("toFixed", "Number", 40, true, new CallableVersion[] {
+			new CallableVersion(Type.STRING, new Type[] { Type.REAL, Type.INT }),
+			new CallableVersion(Type.STRING, new Type[] { Type.INT, Type.INT }),
+			new CallableVersion(Type.STRING, new Type[] { Type.BIG_INT, Type.INT }),
+		});
 		method("realBits", "Number", 1, true, Type.INT, new Type[] { Type.REAL }).setMinVersion(4);
 		method("bitsToReal", "Number", 3, true, Type.REAL, new Type[] { Type.INT }).setMinVersion(4);
 		method("isFinite", "Number", 1, true, Type.BOOL, new Type[] { Type.REAL }).setMinVersion(4);
