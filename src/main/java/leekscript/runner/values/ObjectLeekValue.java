@@ -389,18 +389,7 @@ public class ObjectLeekValue implements LeekValue {
 		if (resultM == null) {
 			var result = fields.get(field);
 			if (result != null) {
-				// Private : Access from same class
-				if (result.level == AccessLevel.PRIVATE && fromClass != clazz) {
-					clazz.ai.addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new String[] { clazz.name, field });
-					return null;
-				}
-				// Protected : Access from descendant
-				if (result.level == AccessLevel.PROTECTED && (fromClass != clazz && !clazz.descendsFrom(fromClass))) {
-					clazz.ai.addSystemLog(AILog.ERROR, result.level == AccessLevel.PROTECTED ? Error.PROTECTED_FIELD : Error.PRIVATE_FIELD, new String[] { clazz.name, field });
-					return null;
-				}
-				// Call the value
-				return clazz.ai.execute(result.mValue, arguments);
+				return callField(result, field, fromClass, arguments);
 			}
 			// Pas de méthode
 			var underscore = method.lastIndexOf("_");
@@ -441,8 +430,15 @@ public class ObjectLeekValue implements LeekValue {
 		}
 		if (result == null) {
 			int underscore = method.lastIndexOf("_");
+			// Un champ qui contient une fonction s'appelle par crochets comme par le point
+			// (`o['f']()` comme `o.f()`, cf. callAccess) : la méthode d'abord, le champ sinon.
+			var name = method.substring(0, underscore);
+			var field = fields.get(name);
+			if (field != null) {
+				return callField(field, name, fromClass, arguments);
+			}
 			int argCount = Integer.parseInt(method.substring(underscore + 1));
-			String methodRealName = method.substring(0, underscore) + "(";
+			String methodRealName = name + "(";
 			for (int i = 0; i < argCount; ++i) {
 				if (i > 0) methodRealName += ", ";
 				methodRealName += "x";
@@ -453,6 +449,21 @@ public class ObjectLeekValue implements LeekValue {
 		}
 		// Call method with new arguments, add the object at the beginning
 		return result.run(clazz.ai, this, arguments);
+	}
+
+	/** Appelle la valeur d'un champ, avec les mêmes droits d'accès qu'une lecture. */
+	private Object callField(ObjectVariableValue value, String field, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
+		// Private : Access from same class
+		if (value.level == AccessLevel.PRIVATE && fromClass != clazz) {
+			clazz.ai.addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new String[] { clazz.name, field });
+			return null;
+		}
+		// Protected : Access from descendant
+		if (value.level == AccessLevel.PROTECTED && (fromClass != clazz && !clazz.descendsFrom(fromClass))) {
+			clazz.ai.addSystemLog(AILog.ERROR, Error.PROTECTED_FIELD, new String[] { clazz.name, field });
+			return null;
+		}
+		return clazz.ai.execute(value.mValue, arguments);
 	}
 
 	public Object callSuperMethod(AI ai, String method, ClassLeekValue currentClass, Object... arguments) throws LeekRunException {

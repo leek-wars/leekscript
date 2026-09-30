@@ -56,6 +56,24 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { a = 10 m() { return a } } var a = new A(); var array = [a['m']] return array[0]()").equals("10");
 		code_v2_("class A { a = 10 m(x) { return a * x } } var a = new A(); var array = [a['m']] return array[0](5)").equals("50");
 
+		section("Field function called with brackets");
+		// Un champ qui contient une fonction s'appelle par crochets comme par le point :
+		// `o['f']()` cherchait seulement une méthode, « Méthode f() inconnue dans la classe
+		// Object » (rapport forum, topic 11217).
+		code_v2_("return {f: function() { return 12 }}['f']()").equals("12");
+		code_v2_("return {f: _ => 'coucou'}['f']()").equals("\"coucou\"");
+		code_v2_("var o = {f: x => x + 1} return o['f'](2)").equals("3");
+		code_v2_("var o = {f: x => x + 1} var k = 'f' return o[k](2)").equals("3");
+		code_v2_("var o = {f: x => x + 1} return [o['f'](2), o.f(2), (o['f'])(2)]").equals("[3, 3, 3]");
+		code_v2_("class A { f = x => x * 2 } var a = new A() return a['f'](4)").equals("8");
+		// Une méthode garde la priorité sur le champ de même nom, comme avec le point
+		code_v2_("class A { m() { return 1 } } var a = new A() return a['m']()").equals("1");
+		// Rien à ce nom : toujours une méthode inconnue (loguée, null) ; un champ privé reste
+		// privé (sinon 1)
+		code_v2_("return {a: 1}['b']()").equals("null");
+		code_v2_("class A {} return new A()['b']()").equals("null");
+		code_v2_("class A { private f = x => x } var a = new A() return a['f'](1)").equals("null");
+
 		section("Specific class names");
 		code_v2_("class AI { m() { return 'ok' } } return new AI().m()").equals("\"ok\"");
 

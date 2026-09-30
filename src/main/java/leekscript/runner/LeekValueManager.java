@@ -187,6 +187,11 @@ public class LeekValueManager {
 			var methodName = ai.string(key);
 			var m = AI.findMethod(array.getClass(), "u_" + methodName, arguments.length);
 			if (m == null) {
+				// Un champ qui contient une fonction s'appelle par crochets comme par le point
+				// (`a['f']()` comme `a.f()`) : même chemin, droits d'accès compris.
+				if (hasField(array.getClass(), methodName)) {
+					return ai.callObjectAccess(array, methodName, "u_" + methodName, fromClass, arguments);
+				}
 				ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { array.getClass().getSimpleName().substring(2), ClassLeekValue.createMethodError(methodName + "_" + arguments.length) });
 				return null;
 			}
@@ -203,6 +208,15 @@ public class LeekValueManager {
 			return ((ClassLeekValue) array).callMethod("u_" + ai.string(key) + "_" + arguments.length, fromClass, arguments);
 		} else {
 			return ai.execute(ai.get(array, key, fromClass), arguments);
+		}
+	}
+
+	private static boolean hasField(Class<?> clazz, String name) {
+		try {
+			AI.getFieldCached(clazz, name);
+			return true;
+		} catch (NoSuchFieldException e) {
+			return false;
 		}
 	}
 }
