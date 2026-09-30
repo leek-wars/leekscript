@@ -419,6 +419,19 @@ public class TestNumber extends TestCommon {
 		code_v2_("return - -0.0").equals("0.0");
 		code_v2_("var a = [- -0.0] return a").equals("[0.0]");
 		code_v2_("return - -0.0 ** 2").equals("0.0");
+		// ∞ et π sont des littéraux : même pliage (var best = -∞)
+		code("return -∞").equals("-∞");
+		code("return -∞").ops(0);
+		code_v2_("return (-∞).class").equals("<class Real>");
+		code("var best = -∞ return best < -1e300").equals("true");
+		code("return -∞ + 1").equals("-∞");
+		code("return - -∞").equals("∞");
+		code_v2_("return -π").equals("-3.141592653589793");
+		code("return -π").ops(0);
+		code_v2_("return -π ** 2").equals("9.869604401089358");
+		code_v2_("return [-π, -∞]").equals("[-3.141592653589793, -∞]");
+		code("return ]-∞..0]").equals("]-∞..0]");
+		code("return [-∞..0]").error(Error.INTERVAL_INFINITE_CLOSED);
 		// -1e999 reste une borne infinie d'intervalle
 		code("return ]-1e999..5]").equals("]-∞..5]");
 		code("return [-1e999..0]").error(Error.INTERVAL_INFINITE_CLOSED);

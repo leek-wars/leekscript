@@ -1629,6 +1629,12 @@ public class WordCompiler {
 		return method;
 	}
 
+	// Littéral numérique : nombre écrit, ∞ ou π.
+	private static boolean isNumberLiteral(Token token) {
+		var type = token.getType();
+		return type == TokenType.NUMBER || type == TokenType.LEMNISCATE || type == TokenType.PI;
+	}
+
 	// Le nombre qui suit le moins courant porte-t-il un accès ou un suffixe (5.x, 5[i], 5(), 5?.x,
 	// 5?[i], 5!, 5++) ? Le moins s'applique alors à tout l'accès, comme avant #2623. Mêmes règles
 	// que la boucle de readExpression, à suivre si elle en gagne ; dans le doute (`?[` d'un ternaire
@@ -2012,12 +2018,12 @@ public class WordCompiler {
 					break;
 				} else break;
 			} else {
-				// Un moins qui précède directement un nombre fait partie du littéral : même valeur, sans
-				// l'opération du moins à l'exécution (#2623). Sauf si le nombre porte un accès (-12.class,
-				// -5[0], -5()…) : le moins s'applique alors à tout l'accès, comme avant.
+				// Un moins qui précède directement un nombre, ∞ et π compris, fait partie du littéral :
+				// même valeur, sans l'opération du moins à l'exécution (#2623). Sauf si le nombre porte
+				// un accès (-12.class, -5[0], -5()…) : le moins s'applique alors à tout l'accès, comme avant.
 				Token sign = null;
 				if (word.getType() == TokenType.OPERATOR && word.getWord().equals("-")
-						&& mTokens.get(1).getType() == TokenType.NUMBER && !numberHasAccess(inInterval)) {
+						&& isNumberLiteral(mTokens.get(1)) && !numberHasAccess(inInterval)) {
 					sign = word;
 					mTokens.skip();
 					word = mTokens.get();
@@ -2061,11 +2067,11 @@ public class WordCompiler {
 
 				} else if (word.getType() == TokenType.LEMNISCATE) {
 
-					retour.addExpression(new LeekNumber(word, Double.POSITIVE_INFINITY, 0, Type.REAL));
+					retour.addExpression(new LeekNumber(sign, word, sign != null ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY, 0, Type.REAL));
 
 				} else if (word.getType() == TokenType.PI) {
 
-					retour.addExpression(new LeekNumber(word, Math.PI, 0, Type.REAL));
+					retour.addExpression(new LeekNumber(sign, word, sign != null ? -Math.PI : Math.PI, 0, Type.REAL));
 
 				} else if (word.getType() == TokenType.VAR_STRING) {
 
