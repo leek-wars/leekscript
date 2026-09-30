@@ -185,12 +185,13 @@ public class LeekValueManager {
 			// declared with typed parameters like `u_test_fct(long)` are found
 			// when invoked via array-access syntax `obj["name"](args)`.
 			var methodName = ai.string(key);
-			var m = AI.findMethod(array.getClass(), "u_" + methodName, arguments.length);
+			var javaName = "u_" + methodName;
+			var m = AI.findMethod(array.getClass(), javaName, arguments.length);
 			if (m == null) {
 				// Un champ qui contient une fonction s'appelle par crochets comme par le point
 				// (`a['f']()` comme `a.f()`) : même chemin, droits d'accès compris.
 				if (hasField(array.getClass(), methodName)) {
-					return ai.callObjectAccess(array, methodName, "u_" + methodName, fromClass, arguments);
+					return ai.callObjectAccess(array, methodName, javaName, fromClass, arguments);
 				}
 				ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { array.getClass().getSimpleName().substring(2), ClassLeekValue.createMethodError(methodName + "_" + arguments.length) });
 				return null;

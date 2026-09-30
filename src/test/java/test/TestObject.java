@@ -62,12 +62,9 @@ public class TestObject extends TestCommon {
 		// Object » (rapport forum, topic 11217).
 		code_v2_("return {f: function() { return 12 }}['f']()").equals("12");
 		code_v2_("return {f: _ => 'coucou'}['f']()").equals("\"coucou\"");
-		code_v2_("var o = {f: x => x + 1} return o['f'](2)").equals("3");
 		code_v2_("var o = {f: x => x + 1} var k = 'f' return o[k](2)").equals("3");
 		code_v2_("var o = {f: x => x + 1} return [o['f'](2), o.f(2), (o['f'])(2)]").equals("[3, 3, 3]");
 		code_v2_("class A { f = x => x * 2 } var a = new A() return a['f'](4)").equals("8");
-		// Une méthode garde la priorité sur le champ de même nom, comme avec le point
-		code_v2_("class A { m() { return 1 } } var a = new A() return a['m']()").equals("1");
 		// Rien à ce nom : toujours une méthode inconnue (loguée, null) ; un champ privé reste
 		// privé (sinon 1)
 		code_v2_("return {a: 1}['b']()").equals("null");

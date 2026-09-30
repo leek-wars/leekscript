@@ -429,29 +429,20 @@ public class ObjectLeekValue implements LeekValue {
 			}
 		}
 		if (result == null) {
-			int underscore = method.lastIndexOf("_");
-			// Un champ qui contient une fonction s'appelle par crochets comme par le point
-			// (`o['f']()` comme `o.f()`, cf. callAccess) : la méthode d'abord, le champ sinon.
-			var name = method.substring(0, underscore);
+			// Pas de méthode : le champ, s'il contient une fonction (`o['f']()` comme `o.f()`)
+			var name = method.substring(0, method.lastIndexOf("_"));
 			var field = fields.get(name);
 			if (field != null) {
 				return callField(field, name, fromClass, arguments);
 			}
-			int argCount = Integer.parseInt(method.substring(underscore + 1));
-			String methodRealName = name + "(";
-			for (int i = 0; i < argCount; ++i) {
-				if (i > 0) methodRealName += ", ";
-				methodRealName += "x";
-			}
-			methodRealName += ")";
-			clazz.ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { clazz.name, methodRealName });
+			clazz.ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { clazz.name, ClassLeekValue.createMethodError(method) });
 			return null;
 		}
 		// Call method with new arguments, add the object at the beginning
 		return result.run(clazz.ai, this, arguments);
 	}
 
-	/** Appelle la valeur d'un champ, avec les mêmes droits d'accès qu'une lecture. */
+	/** Appelle la valeur d'un champ, avec les droits d'accès de l'appel `o.f()`. */
 	private Object callField(ObjectVariableValue value, String field, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
 		// Private : Access from same class
 		if (value.level == AccessLevel.PRIVATE && fromClass != clazz) {
