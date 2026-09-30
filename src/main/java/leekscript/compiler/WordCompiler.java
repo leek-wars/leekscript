@@ -1795,6 +1795,7 @@ public class WordCompiler {
 		}
 		} // end if (canBeLambda)
 
+		Token unaryMinus = null; // Dernier moins unaire posé, cf. -9223372036854775808 plus bas
 		while (mTokens.hasMoreTokens()) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			Token word = mTokens.get();
@@ -2022,11 +2023,17 @@ public class WordCompiler {
 						retour.addExpression(new LeekNumber(word, 0, Long.parseLong(s, radix), Type.INT));
 					} catch (NumberFormatException e) {
 						s = word.getWord().replace("_", "");
-						try {
-							retour.addExpression(new LeekNumber(word, Double.parseDouble(s), 0, Type.REAL));
-						} catch (NumberFormatException e2) {
-							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
-							retour.addExpression(new LeekNumber(word, 0, 0, Type.INT));
+						if (getVersion() >= 4 && s.equals("9223372036854775808") && mTokens.get(-1) == unaryMinus) {
+							// -9223372036854775808 est l'entier minimal : lu avec son signe, il reste entier (#2623).
+							// Seul, 2^63 dépasse les entiers et devient réel ; le moins unaire ramène MIN à MIN.
+							retour.addExpression(new LeekNumber(word, 0, Long.MIN_VALUE, Type.INT));
+						} else {
+							try {
+								retour.addExpression(new LeekNumber(word, Double.parseDouble(s), 0, Type.REAL));
+							} catch (NumberFormatException e2) {
+								addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
+								retour.addExpression(new LeekNumber(word, 0, 0, Type.INT));
+							}
 						}
 					}
 					}
@@ -2155,6 +2162,7 @@ public class WordCompiler {
 					if (Operators.isUnaryPrefix(operator)) {
 						// Si oui on l'ajoute
 						retour.addUnaryPrefix(operator, word);
+						if (operator == Operators.UNARY_MINUS) unaryMinus = word;
 					} else {
 						addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.OPERATOR_UNEXPECTED));
 					}

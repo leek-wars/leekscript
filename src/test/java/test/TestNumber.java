@@ -376,6 +376,17 @@ public class TestNumber extends TestCommon {
 		section("Number.operator unary -");
 		code("var a = [12, ''] var b = a[0]; return -b;").equals("-12");
 		code("return -(12 ** 2);").equals("-144");
+		// L'entier minimal s'écrit avec son signe, sans passer par un réel (#2623)
+		code_v4_("return -9223372036854775808").equals("-9223372036854775808");
+		code_v4_("return (-9223372036854775808).class").equals("<class Integer>");
+		code_v4_("return -9_223_372_036_854_775_808").equals("-9223372036854775808");
+		code_strict_v4_("integer m = -9223372036854775808; return m").noWarning();
+		code_strict_v4_("integer m = -9223372036854775808; return m").equals("-9223372036854775808");
+		// Sans moins unaire collé, 2^63 reste un réel, comme avant
+		code_v4_("return 9223372036854775808").equals("9.223372036854776E18");
+		code_v4_("return 1 - 9223372036854775808").equals("-9.223372036854776E18");
+		code_v4_("return -(9223372036854775808)").equals("-9.223372036854776E18");
+		code_v2_3("return -9223372036854775808").equals("-9.223372036854776E18");
 		// DISABLED_code("return -(12m ** 2);").equals("-144");
 		// DISABLED_code("-100m").equals("-100");
 	}
