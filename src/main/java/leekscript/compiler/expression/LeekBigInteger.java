@@ -19,12 +19,19 @@ import leekscript.compiler.bloc.MainLeekBlock;
 public class LeekBigInteger extends Expression {
 
 	private final Token token;
+	private final Token sign; // Moins collé au nombre (-5L), cf. LeekNumber
 	private final BigInteger value;
 
 	public LeekBigInteger(Token token, BigInteger value) {
+		this(null, token, value);
+	}
+
+	public LeekBigInteger(Token sign, Token token, BigInteger value) {
+		this.sign = sign;
 		this.token = token;
 		this.value = value;
 		this.token.setExpression(this);
+		if (sign != null) sign.setExpression(this);
 	}
 
 	@Override
@@ -71,7 +78,7 @@ public class LeekBigInteger extends Expression {
 
 	@Override
 	public Location getLocation() {
-		return token.getLocation();
+		return sign != null ? new Location(sign.getLocation(), token.getLocation()) : token.getLocation();
 	}
 
 	@Override

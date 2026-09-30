@@ -376,17 +376,29 @@ public class TestNumber extends TestCommon {
 		section("Number.operator unary -");
 		code("var a = [12, ''] var b = a[0]; return -b;").equals("-12");
 		code("return -(12 ** 2);").equals("-144");
-		// L'entier minimal s'écrit avec son signe, sans passer par un réel (#2623)
-		code_v4_("return -9223372036854775808").equals("-9223372036854775808");
-		code_v4_("return (-9223372036854775808).class").equals("<class Integer>");
-		code_v4_("return -9_223_372_036_854_775_808").equals("-9223372036854775808");
+		// Un moins collé à un nombre fait partie du littéral : même valeur, sans opération (#2623)
+		code("return -5").equals("-5");
+		code("return -5").ops(0);
+		code("return -2.5").ops(0);
+		code("return -0x10").equals("-16");
+		code("return 3 - -5").equals("8");
+		code("return -2 ** 2").equals("4");
+		code_v4_("return -5L").equals("-5");
+		code_v2_("return -1e999 < -1e308").equals("true");
+		// L'entier minimal s'écrit avec son signe, sans passer par un réel
+		code("return -9223372036854775808").equals("-9223372036854775808");
+		code_v2_("return (-9223372036854775808).class").equals("<class Integer>");
+		code("return -9_223_372_036_854_775_808").equals("-9223372036854775808");
+		code("return -0x8000000000000000").equals("-9223372036854775808");
 		code_strict_v4_("integer m = -9223372036854775808; return m").noWarning();
 		code_strict_v4_("integer m = -9223372036854775808; return m").equals("-9223372036854775808");
-		// Sans moins unaire collé, 2^63 reste un réel, comme avant
+		// Sans moins collé, 2^63 reste un réel, comme avant
 		code_v4_("return 9223372036854775808").equals("9.223372036854776E18");
 		code_v4_("return 1 - 9223372036854775808").equals("-9.223372036854776E18");
 		code_v4_("return -(9223372036854775808)").equals("-9.223372036854776E18");
-		code_v2_3("return -9223372036854775808").equals("-9.223372036854776E18");
+		// Un nombre qui porte un accès garde le moins sur tout l'accès
+		code("return -[5][0]").equals("-5");
+		code("return -12.class").error(Error.INVALID_NUMBER);
 		// DISABLED_code("return -(12m ** 2);").equals("-144");
 		// DISABLED_code("-100m").equals("-100");
 	}

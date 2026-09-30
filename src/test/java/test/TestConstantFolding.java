@@ -331,12 +331,14 @@ public class TestConstantFolding extends TestCommon {
 	}
 
 	@Test
-	public void testUnary_minus_arg_not_eliminated() throws Exception {
-		section("Argument à coût non nul (moins unaire) : facturation identique partout");
+	public void testNegative_literal_arg() throws Exception {
+		section("Littéral négatif en argument : facturé comme un littéral positif (#2623)");
 		code_v2_("function foo(x) {} foo(-5) return 1").equals("1");
-		code_v2_("function foo(x) {} foo(-5) return 1").ops(2);
+		code_v2_("function foo(x) {} foo(-5) return 1").ops(0);
+		code_v2_("function foo(x) {} foo(5) return 1").ops(0);
 		code_v2_("function two(x) { return 2 } return two(-5)").equals("2");
-		code_v2_("function two(x) { return 2 } return two(-5)").ops(2);
+		code_v2_("function two(x) { return 2 } return two(-5)").ops(0);
+		code_v2_("function two(x) { return 2 } return two(5)").ops(0);
 	}
 
 	@Test

@@ -1795,7 +1795,7 @@ public class WordCompiler {
 		}
 		} // end if (canBeLambda)
 
-		Token unaryMinus = null; // Dernier moins unaire posé, cf. -9223372036854775808 plus bas
+		Token negativeSign = null; // Moins unaire collé au nombre qui suit : il fait partie du littéral
 		while (mTokens.hasMoreTokens()) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			Token word = mTokens.get();
@@ -1998,6 +1998,8 @@ public class WordCompiler {
 				} else break;
 			} else {
 				if (word.getType() == TokenType.NUMBER) {
+					var sign = negativeSign != null && mTokens.get(-1) == negativeSign ? negativeSign : null;
+					negativeSign = null;
 					var s = word.getWord();
 					if (s.contains("__")) {
 						addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.MULTIPLE_NUMERIC_SEPARATORS));
@@ -2010,7 +2012,8 @@ public class WordCompiler {
 						var radix = body.startsWith("0x") ? 16 : body.startsWith("0b") ? 2 : 10;
 						if (radix != 10) body = body.substring(2);
 						try {
-							retour.addExpression(new LeekBigInteger(word, new BigInteger(body, radix)));
+							var value = new BigInteger(body, radix);
+							retour.addExpression(new LeekBigInteger(sign, word, sign != null ? value.negate() : value));
 						} catch (NumberFormatException e) {
 							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
 							retour.addExpression(new LeekBigInteger(word, BigInteger.ZERO));
@@ -2020,20 +2023,16 @@ public class WordCompiler {
 						var radix = s.startsWith("0x") ? 16 : s.startsWith("0b") ? 2 : 10;
 						s = word.getWord().replace("_", "");
 						if (radix != 10) s = s.substring(2);
-						retour.addExpression(new LeekNumber(word, 0, Long.parseLong(s, radix), Type.INT));
+						// Avec son signe : -9223372036854775808 est l'entier minimal, alors que 2^63 seul déborde
+						retour.addExpression(new LeekNumber(sign, word, 0, Long.parseLong(sign != null ? "-" + s : s, radix), Type.INT));
 					} catch (NumberFormatException e) {
 						s = word.getWord().replace("_", "");
-						if (getVersion() >= 4 && s.equals("9223372036854775808") && mTokens.get(-1) == unaryMinus) {
-							// -9223372036854775808 est l'entier minimal : lu avec son signe, il reste entier (#2623).
-							// Seul, 2^63 dépasse les entiers et devient réel ; le moins unaire ramène MIN à MIN.
-							retour.addExpression(new LeekNumber(word, 0, Long.MIN_VALUE, Type.INT));
-						} else {
-							try {
-								retour.addExpression(new LeekNumber(word, Double.parseDouble(s), 0, Type.REAL));
-							} catch (NumberFormatException e2) {
-								addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
-								retour.addExpression(new LeekNumber(word, 0, 0, Type.INT));
-							}
+						try {
+							var value = Double.parseDouble(s);
+							retour.addExpression(new LeekNumber(sign, word, sign != null ? -value : value, 0, Type.REAL));
+						} catch (NumberFormatException e2) {
+							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
+							retour.addExpression(new LeekNumber(word, 0, 0, Type.INT));
 						}
 					}
 					}
@@ -2161,8 +2160,17 @@ public class WordCompiler {
 
 					if (Operators.isUnaryPrefix(operator)) {
 						// Si oui on l'ajoute
-						retour.addUnaryPrefix(operator, word);
-						if (operator == Operators.UNARY_MINUS) unaryMinus = word;
+						// -5 est un littéral, pas une négation à l'exécution : même valeur, sans l'opération
+						// (#2623). Sauf si le nombre porte un accès (-12.class, -5[0], -5()) : le moins
+						// s'applique alors à tout l'accès, comme avant.
+						var next = mTokens.get(2).getType();
+						if (operator == Operators.UNARY_MINUS && mTokens.get(1).getType() == TokenType.NUMBER
+								&& next != TokenType.DOT && next != TokenType.BRACKET_LEFT && next != TokenType.PAR_LEFT
+								&& !(next == TokenType.OPERATOR && (mTokens.get(2).getWord().equals("?.") || mTokens.get(2).getWord().equals("!")))) {
+							negativeSign = word;
+						} else {
+							retour.addUnaryPrefix(operator, word);
+						}
 					} else {
 						addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.OPERATOR_UNEXPECTED));
 					}

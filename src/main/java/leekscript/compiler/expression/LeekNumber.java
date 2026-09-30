@@ -15,16 +15,23 @@ import leekscript.compiler.bloc.MainLeekBlock;
 public class LeekNumber extends Expression {
 
 	protected final Token token;
+	private final Token sign; // Moins collé au nombre (-5), s'il y en a un : la position commence à lui
 	private final double doubleValue;
 	private final long longValue;
 	private Type type;
 
 	public LeekNumber(Token token, double doubleValue, long longValue, Type type) {
+		this(null, token, doubleValue, longValue, type);
+	}
+
+	public LeekNumber(Token sign, Token token, double doubleValue, long longValue, Type type) {
+		this.sign = sign;
 		this.token = token;
 		this.doubleValue = doubleValue;
 		this.longValue = longValue;
 		this.type = type;
 		this.token.setExpression(this);
+		if (sign != null) sign.setExpression(this);
 	}
 
 	@Override
@@ -107,7 +114,7 @@ public class LeekNumber extends Expression {
 
 	@Override
 	public Location getLocation() {
-		return token.getLocation();
+		return sign != null ? new Location(sign.getLocation(), token.getLocation()) : token.getLocation();
 	}
 
 	@Override
