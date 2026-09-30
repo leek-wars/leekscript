@@ -71,6 +71,12 @@ public class TestObject extends TestCommon {
 		code_v2_("class A {} return new A()['b']()").equals("null");
 		code_v2_("class A { private f = x => x } var a = new A() return a['f'](1)").equals("null");
 
+		section("Unknown method called with a dot");
+		// Par le point, sur un objet anonyme non typé : méthode inconnue loguée, null, et l'IA
+		// continue (le nom de l'erreur se lisait dans « u_b » : NumberFormatException).
+		code_v2_("function f(o) { return o.b() } return f({a: 1})").equals("null");
+		code_v2_("function f(o) { return o.b(1, 2) } return [f({a: 1}), 12]").equals("[null, 12]");
+
 		section("Specific class names");
 		code_v2_("class AI { m() { return 'ok' } } return new AI().m()").equals("\"ok\"");
 

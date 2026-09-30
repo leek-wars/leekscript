@@ -391,16 +391,9 @@ public class ObjectLeekValue implements LeekValue {
 			if (result != null) {
 				return callField(result, field, fromClass, arguments);
 			}
-			// Pas de méthode
-			var underscore = method.lastIndexOf("_");
-			var argCount = Integer.parseInt(method.substring(underscore + 1));
-			String methodRealName = method.substring(0, underscore) + "(";
-			for (int i = 0; i < argCount; ++i) {
-				if (i > 0) methodRealName += ", ";
-				methodRealName += "x";
-			}
-			methodRealName += ")";
-			clazz.ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { clazz.name, methodRealName });
+			// Pas de méthode. `method` vaut ici « u_nom », sans arité : le nom de l'erreur se
+			// construit sur le champ, sinon « u_b » donnait une NumberFormatException.
+			clazz.ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { clazz.name, ClassLeekValue.createMethodError(field + "_" + arguments.length) });
 			return null;
 		}
 
