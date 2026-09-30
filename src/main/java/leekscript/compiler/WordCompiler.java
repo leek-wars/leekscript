@@ -1629,6 +1629,18 @@ public class WordCompiler {
 		return method;
 	}
 
+	// Le jeton à `offset` ouvre-t-il un accès sur ce qui le précède (.x, [i], (), ?.x, ?[i], x!) ?
+	// Prudent : `?[` compte même quand c'est un ternaire, on garde alors l'ancien parsing.
+	private boolean hasAccess(int offset) {
+		var token = mTokens.get(offset);
+		var type = token.getType();
+		if (type == TokenType.DOT || type == TokenType.BRACKET_LEFT || type == TokenType.PAR_LEFT) return true;
+		if (type != TokenType.OPERATOR) return false;
+		if (token.getWord().equals("!")) return true;
+		var after = mTokens.get(offset + 1).getType();
+		return token.getWord().equals("?") && (after == TokenType.DOT || after == TokenType.BRACKET_LEFT);
+	}
+
 	public Expression readExpression() throws LeekCompilerException {
 		return readExpression(false, false, false);
 	}
@@ -2016,7 +2028,7 @@ public class WordCompiler {
 							retour.addExpression(new LeekBigInteger(sign, word, sign != null ? value.negate() : value));
 						} catch (NumberFormatException e) {
 							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
-							retour.addExpression(new LeekBigInteger(word, BigInteger.ZERO));
+							retour.addExpression(new LeekBigInteger(sign, word, BigInteger.ZERO));
 						}
 					} else {
 					try {
@@ -2032,7 +2044,7 @@ public class WordCompiler {
 							retour.addExpression(new LeekNumber(sign, word, sign != null ? -value : value, 0, Type.REAL));
 						} catch (NumberFormatException e2) {
 							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
-							retour.addExpression(new LeekNumber(word, 0, 0, Type.INT));
+							retour.addExpression(new LeekNumber(sign, word, 0, 0, Type.INT));
 						}
 					}
 					}
@@ -2163,10 +2175,7 @@ public class WordCompiler {
 						// -5 est un littéral, pas une négation à l'exécution : même valeur, sans l'opération
 						// (#2623). Sauf si le nombre porte un accès (-12.class, -5[0], -5()) : le moins
 						// s'applique alors à tout l'accès, comme avant.
-						var next = mTokens.get(2).getType();
-						if (operator == Operators.UNARY_MINUS && mTokens.get(1).getType() == TokenType.NUMBER
-								&& next != TokenType.DOT && next != TokenType.BRACKET_LEFT && next != TokenType.PAR_LEFT
-								&& !(next == TokenType.OPERATOR && (mTokens.get(2).getWord().equals("?.") || mTokens.get(2).getWord().equals("!")))) {
+						if (operator == Operators.UNARY_MINUS && mTokens.get(1).getType() == TokenType.NUMBER && !hasAccess(2)) {
 							negativeSign = word;
 						} else {
 							retour.addUnaryPrefix(operator, word);

@@ -45,7 +45,8 @@ public class LeekNumber extends Expression {
 	}
 
 	public boolean isInfinity() {
-		return doubleValue == Double.POSITIVE_INFINITY;
+		// Les deux signes : -1e999 est un littéral depuis #2623, et une borne infinie d'intervalle
+		return Double.isInfinite(doubleValue);
 	}
 
 	public long getLongValue() {

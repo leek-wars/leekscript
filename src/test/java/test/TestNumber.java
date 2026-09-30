@@ -399,6 +399,18 @@ public class TestNumber extends TestCommon {
 		// Un nombre qui porte un accès garde le moins sur tout l'accès
 		code("return -[5][0]").equals("-5");
 		code("return -12.class").error(Error.INVALID_NUMBER);
+		code("return -5 ? 1 : 2").equals("1");
+		code("return -2.5 as integer").equals("-2");
+		code("return -5!").equals("-5");
+		code("return -5++").error(Error.CANT_ASSIGN_VALUE);
+		code("var a = -5?[0] return a").equals("0");
+		code("return -5 ?[1] : [2]").equals("[1]");
+		code_v1("return -0.0").equals("-0");
+		code_v4_("return -0.0").equals("-0.0");
+		code_v4_("return 1 / -0.0").equals("-∞");
+		// -1e999 reste une borne infinie d'intervalle
+		code("return ]-1e999..5]").equals("]-∞..5]");
+		code("return [-1e999..0]").error(Error.INTERVAL_INFINITE_CLOSED);
 		// DISABLED_code("return -(12m ** 2);").equals("-144");
 		// DISABLED_code("-100m").equals("-100");
 	}
