@@ -1186,4 +1186,36 @@ public class TestArray extends TestCommon {
 		code_v4_("Array<Array<integer>> a = [[5, 15]] real b = a[0][1] return b").equals("15.0");
 	}
 
+	/**
+	 * Une écriture composée dans un élément (`t[k] += v`, `t[k]++`, `t[k] ??= v`) passe par
+	 * un helper runtime qui renvoie un Object, même typée integer ou boolean. Lue comme
+	 * condition, elle était écrite `put_add_eq(…) != 0l` ou telle quelle : COMPILE_JAVA
+	 * « bad operand types », et l'IA ne compilait plus du tout (#5300).
+	 */
+	@Test
+	public void testArray_element_update_as_condition() throws Exception {
+		section("Écriture composée dans un élément, lue comme condition");
+		// Le cas de l'erreur prod : un compteur de profilage derrière un drapeau de debug
+		var profiling = "global boolean T = true; global Array<integer> P = [0, 0]; global integer K = 1; function f() { integer p = 3; T && (P[K] += 10 - p); return P } return f()";
+		code(profiling).equals("[0, 7]");
+		code_strict(profiling).equals("[0, 7]");
+		code("boolean t = false; Array<integer> a = [0, 2]; t || (a[1] -= 5); return a").equals("[0, -3]");
+		code("Array<integer> a = [0, 2]; if (a[1] *= 3) { return a } return null").equals("[0, 6]");
+		code("Array<integer> a = [0, 2]; return !(a[0] += 0)").equals("true");
+		code("Array<integer> a = [0, 2]; return (a[1] **= 2) ? a : null").equals("[0, 4]");
+		code("Array<integer> a = [3]; return (a[0] += 1) xor false").equals("true");
+		// Conditions de boucle
+		code("Array<integer> a = [3]; var n = 0; while (a[0] -= 1) { n++ } return [a, n]").equals("[[0], 2]");
+		code("Array<integer> a = [3]; do { } while (a[0] -= 1); return a").equals("[0]");
+		code("Array<integer> a = [3]; for (var i = 0; a[0] -= 1; i++) { } return a").equals("[0]");
+		// Map et tableau imbriqué
+		code_v4_("Map<integer, integer> m = [1: 2]; boolean t = true; t && (m[1] += 5); return m").equals("[1 : 7]");
+		code("Array<Array<integer>> a = [[0, 2]]; boolean t = true; t && (a[0][1] += 5); return a").equals("[[0, 7]]");
+		// ++, -- et ??= ne sont typés integer ou boolean qu'en strict
+		code_strict("boolean t = true; Array<integer> a = [0, 2]; var r = t && (a[1]++) && (++a[1]) && (a[1]--) && (--a[1]); return [r, a]").equals("[true, [0, 2]]");
+		code_strict("Array<integer> a = [0]; if (!(a[0]++)) { return a } return null").equals("[1]");
+		code_strict("Array<integer> a = [3]; boolean t = true; t && (a[0] ??= 4); return a").equals("[3]");
+		code_strict("Array<boolean> a = [false]; if (a[0] ??= true) { return 1 } return a").equals("[false]");
+	}
+
 }

@@ -132,6 +132,15 @@ public abstract class Expression {
 		return true;
 	}
 
+	/**
+	 * Le Java écrit est un Object alors que getType() annonce un type primitif : le
+	 * consommateur doit passer par la conversion runtime (bool()…), pas par son chemin
+	 * primitif. Faux par défaut, seules les expressions qui le savent le signalent.
+	 */
+	public boolean hasObjectJavaResult() {
+		return false;
+	}
+
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {}
 
 	public abstract void analyze(WordCompiler compiler) throws LeekCompilerException;

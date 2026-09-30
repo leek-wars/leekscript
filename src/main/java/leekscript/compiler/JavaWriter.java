@@ -142,9 +142,11 @@ public class JavaWriter {
 	}
 
 	public void getBoolean(MainLeekBlock mainblock, Expression expression, boolean parenthesis) {
-		if (expression.getType() == Type.BOOL) {
+		// Un Object sous un type integer ou boolean ne se convertit que par bool() (#5300).
+		var type = expression.trim().hasObjectJavaResult() ? Type.ANY : expression.getType();
+		if (type == Type.BOOL) {
 			expression.writeJavaCode(mainblock, this, parenthesis);
-		} else if (expression.getType() == Type.INT) {
+		} else if (type == Type.INT) {
 			if (parenthesis) {
 				addCode("(");
 			}

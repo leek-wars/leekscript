@@ -1167,11 +1167,7 @@ public class LeekExpression extends Expression {
 		if (mExpression1 != null) mExpression1.preAnalyze(compiler);
 		if (mExpression2 != null) mExpression2.preAnalyze(compiler);
 
-		Expression assignTarget = Operators.isAssign(mOperator) ? mExpression1
-			: Operators.isIncrement(mOperator) ? mExpression2
-			: null;
-
-		if (assignTarget instanceof LeekVariable v
+		if (assignTarget() instanceof LeekVariable v
 			&& (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION)) {
 			// V<=3 allows redefining a function via plain `=` (legacy). Every other form
 			// (compound assign, ++, --) is undefined — reject in all versions.
@@ -1525,6 +1521,27 @@ public class LeekExpression extends Expression {
 
 	public boolean needsWrapper() {
 		return mOperator == Operators.OR || mOperator == Operators.AND || mOperator == Operators.XOR || mOperator == Operators.ADD || mOperator == Operators.MINUS || mOperator == Operators.MULTIPLIE || mOperator == Operators.DIVIDE || mOperator == Operators.MODULUS || mOperator == Operators.POWER || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.LESSEQUALS || mOperator == Operators.MOREEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS;
+	}
+
+	/**
+	 * L'opérande écrit par une affectation (`x = v`, `x += v`…) ou un incrément (`x++`,
+	 * `--x`…), null pour les autres opérateurs.
+	 */
+	private Expression assignTarget() {
+		return Operators.isAssign(mOperator) ? mExpression1
+			: Operators.isIncrement(mOperator) ? mExpression2
+			: null;
+	}
+
+	/**
+	 * Écriture composée dans un élément de tableau ou de map (`t[k] += v`, `t[k]++`,
+	 * `t[k] ??= v`…) : le helper runtime (put_add_eq, put_inc…) renvoie un Object, quel
+	 * que soit le type calculé à l'analyse. `=` en est exclu : son type suit déjà son Java
+	 * (cast en strict, `| null` sinon).
+	 */
+	@Override
+	public boolean hasObjectJavaResult() {
+		return mOperator != Operators.ASSIGN && assignTarget() instanceof LeekArrayAccess;
 	}
 
 	@Override
