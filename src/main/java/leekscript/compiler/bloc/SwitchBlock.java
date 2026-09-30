@@ -222,7 +222,7 @@ public class SwitchBlock extends AbstractLeekBlock {
 		if (expression instanceof LeekNumber number) {
 			return number.getType() == Type.INT ? number.getLongValue() : null;
 		}
-		// `case -1:` n'est pas un littéral mais un moins unaire appliqué à un littéral.
+		// `case -(1):` : un moins unaire appliqué à un littéral (`case -1:` est un littéral depuis #2623).
 		if (expression instanceof LeekExpression operation && operation.getOperator() == Operators.UNARY_MINUS && operation.getExpression2() != null) {
 			var operand = unwrapParenthesis(operation.getExpression2());
 			if (operand instanceof LeekNumber number && number.getType() == Type.INT) {

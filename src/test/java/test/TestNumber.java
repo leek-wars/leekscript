@@ -405,6 +405,13 @@ public class TestNumber extends TestCommon {
 		code("return -5++").error(Error.CANT_ASSIGN_VALUE);
 		code("var a = -5?[0] return a").equals("0");
 		code("return -5 ?[1] : [2]").equals("[1]");
+		// Un ternaire espacé et la borne haute d'un intervalle n'ont pas d'accès : le moins y est plié
+		code("return -5 ? [1] : [2]").equals("[1]");
+		code_v4_("return -5 ? [1] : [2]").ops(3);
+		code_v4_("return 5 ? [1] : [2]").ops(3);
+		code("return [-10..-5[").equals("[-10..-5[");
+		code("return [-10..-5[").ops(2);
+		code("return [10..5[").ops(2);
 		code_v1("return -0.0").equals("-0");
 		code_v4_("return -0.0").equals("-0.0");
 		code_v4_("return 1 / -0.0").equals("-∞");

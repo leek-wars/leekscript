@@ -180,7 +180,7 @@ public class LeekFunctionCall extends Expression {
 		for (int i = 0; i < mParameters.size(); i++) {
 			var parameter = mParameters.get(i);
 			if (!ConstantFolder.isPureSimpleArgument(parameter, fromClass)) return false;
-			// Un argument pur mais à coût non nul (moins unaire) serait facturé sans
+			// Un argument pur mais à coût non nul (moins unaire, `-(5)`) serait facturé sans
 			// être émis dans certains contextes : l'appel éliminé doit être 0 op partout.
 			if (parameter.getOperations() != 0) return false;
 			// La conversion vers le type déclaré du paramètre est émise côté appelant

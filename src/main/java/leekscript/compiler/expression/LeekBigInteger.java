@@ -19,12 +19,8 @@ import leekscript.compiler.bloc.MainLeekBlock;
 public class LeekBigInteger extends Expression {
 
 	private final Token token;
-	private final Token sign; // Moins collé au nombre (-5L), cf. LeekNumber
+	private final Token sign; // Moins qui précède le nombre (-5L), s'il y en a un, cf. LeekNumber
 	private final BigInteger value;
-
-	public LeekBigInteger(Token token, BigInteger value) {
-		this(null, token, value);
-	}
 
 	public LeekBigInteger(Token sign, Token token, BigInteger value) {
 		this.sign = sign;

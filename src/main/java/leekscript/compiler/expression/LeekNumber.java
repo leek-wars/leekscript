@@ -15,7 +15,7 @@ import leekscript.compiler.bloc.MainLeekBlock;
 public class LeekNumber extends Expression {
 
 	protected final Token token;
-	private final Token sign; // Moins collé au nombre (-5), s'il y en a un : la position commence à lui
+	private final Token sign; // Moins qui précède le nombre (-5), s'il y en a un : la position commence à lui
 	private final double doubleValue;
 	private final long longValue;
 	private Type type;

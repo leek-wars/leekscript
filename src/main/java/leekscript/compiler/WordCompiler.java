@@ -1629,16 +1629,20 @@ public class WordCompiler {
 		return method;
 	}
 
-	// Le jeton à `offset` ouvre-t-il un accès sur ce qui le précède (.x, [i], (), ?.x, ?[i], x!) ?
-	// Prudent : `?[` compte même quand c'est un ternaire, on garde alors l'ancien parsing.
-	private boolean hasAccess(int offset) {
-		var token = mTokens.get(offset);
-		var type = token.getType();
-		if (type == TokenType.DOT || type == TokenType.BRACKET_LEFT || type == TokenType.PAR_LEFT) return true;
+	// Le nombre qui suit le moins courant porte-t-il un accès ou un suffixe (5.x, 5[i], 5(), 5?.x,
+	// 5?[i], 5!, 5++) ? Le moins s'applique alors à tout l'accès, comme avant #2623. Mêmes règles
+	// que la boucle de readExpression, à suivre si elle en gagne ; dans le doute (`?[` d'un ternaire
+	// compact), on garde l'ancien parsing, qui ne coûte qu'une opération.
+	private boolean numberHasAccess(boolean inInterval) {
+		var next = mTokens.get(2);
+		var type = next.getType();
+		if (type == TokenType.DOT || type == TokenType.PAR_LEFT) return true;
+		if (type == TokenType.BRACKET_LEFT) return !inInterval; // `[1..-5[` : le crochet ferme l'intervalle
 		if (type != TokenType.OPERATOR) return false;
-		if (token.getWord().equals("!")) return true;
-		var after = mTokens.get(offset + 1).getType();
-		return token.getWord().equals("?") && (after == TokenType.DOT || after == TokenType.BRACKET_LEFT);
+		if (Operators.isUnarySuffix(Operators.getOperator(next.getWord(), getVersion()))) return true;
+		if (!next.getWord().equals("?")) return false;
+		var after = mTokens.get(3);
+		return after.getType() == TokenType.DOT || (after.getType() == TokenType.BRACKET_LEFT && !inInterval && adjacent(next, after));
 	}
 
 	public Expression readExpression() throws LeekCompilerException {
@@ -1807,7 +1811,6 @@ public class WordCompiler {
 		}
 		} // end if (canBeLambda)
 
-		Token negativeSign = null; // Moins unaire collé au nombre qui suit : il fait partie du littéral
 		while (mTokens.hasMoreTokens()) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			Token word = mTokens.get();
@@ -2009,9 +2012,18 @@ public class WordCompiler {
 					break;
 				} else break;
 			} else {
+				// Un moins qui précède directement un nombre fait partie du littéral : même valeur, sans
+				// l'opération du moins à l'exécution (#2623). Sauf si le nombre porte un accès (-12.class,
+				// -5[0], -5()…) : le moins s'applique alors à tout l'accès, comme avant.
+				Token sign = null;
+				if (word.getType() == TokenType.OPERATOR && word.getWord().equals("-")
+						&& mTokens.get(1).getType() == TokenType.NUMBER && !numberHasAccess(inInterval)) {
+					sign = word;
+					mTokens.skip();
+					word = mTokens.get();
+				}
 				if (word.getType() == TokenType.NUMBER) {
-					var sign = negativeSign != null && mTokens.get(-1) == negativeSign ? negativeSign : null;
-					negativeSign = null;
+					var minus = sign != null ? "-" : "";
 					var s = word.getWord();
 					if (s.contains("__")) {
 						addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.MULTIPLE_NUMERIC_SEPARATORS));
@@ -2024,8 +2036,7 @@ public class WordCompiler {
 						var radix = body.startsWith("0x") ? 16 : body.startsWith("0b") ? 2 : 10;
 						if (radix != 10) body = body.substring(2);
 						try {
-							var value = new BigInteger(body, radix);
-							retour.addExpression(new LeekBigInteger(sign, word, sign != null ? value.negate() : value));
+							retour.addExpression(new LeekBigInteger(sign, word, new BigInteger(minus + body, radix)));
 						} catch (NumberFormatException e) {
 							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
 							retour.addExpression(new LeekBigInteger(sign, word, BigInteger.ZERO));
@@ -2036,12 +2047,11 @@ public class WordCompiler {
 						s = word.getWord().replace("_", "");
 						if (radix != 10) s = s.substring(2);
 						// Avec son signe : -9223372036854775808 est l'entier minimal, alors que 2^63 seul déborde
-						retour.addExpression(new LeekNumber(sign, word, 0, Long.parseLong(sign != null ? "-" + s : s, radix), Type.INT));
+						retour.addExpression(new LeekNumber(sign, word, 0, Long.parseLong(minus + s, radix), Type.INT));
 					} catch (NumberFormatException e) {
 						s = word.getWord().replace("_", "");
 						try {
-							var value = Double.parseDouble(s);
-							retour.addExpression(new LeekNumber(sign, word, sign != null ? -value : value, 0, Type.REAL));
+							retour.addExpression(new LeekNumber(sign, word, Double.parseDouble(minus + s), 0, Type.REAL));
 						} catch (NumberFormatException e2) {
 							addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.INVALID_NUMBER));
 							retour.addExpression(new LeekNumber(sign, word, 0, 0, Type.INT));
@@ -2172,14 +2182,7 @@ public class WordCompiler {
 
 					if (Operators.isUnaryPrefix(operator)) {
 						// Si oui on l'ajoute
-						// -5 est un littéral, pas une négation à l'exécution : même valeur, sans l'opération
-						// (#2623). Sauf si le nombre porte un accès (-12.class, -5[0], -5()) : le moins
-						// s'applique alors à tout l'accès, comme avant.
-						if (operator == Operators.UNARY_MINUS && mTokens.get(1).getType() == TokenType.NUMBER && !hasAccess(2)) {
-							negativeSign = word;
-						} else {
-							retour.addUnaryPrefix(operator, word);
-						}
+						retour.addUnaryPrefix(operator, word);
 					} else {
 						addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.OPERATOR_UNEXPECTED));
 					}
