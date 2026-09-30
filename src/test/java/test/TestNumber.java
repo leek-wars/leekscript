@@ -408,6 +408,10 @@ public class TestNumber extends TestCommon {
 		code_v1("return -0.0").equals("-0");
 		code_v4_("return -0.0").equals("-0.0");
 		code_v4_("return 1 / -0.0").equals("-∞");
+		code_v1("return - -0.0").equals("0");
+		code_v2_("return - -0.0").equals("0.0");
+		code_v2_("var a = [- -0.0] return a").equals("[0.0]");
+		code_v2_("return - -0.0 ** 2").equals("0.0");
 		// -1e999 reste une borne infinie d'intervalle
 		code("return ]-1e999..5]").equals("]-∞..5]");
 		code("return [-1e999..0]").error(Error.INTERVAL_INFINITE_CLOSED);

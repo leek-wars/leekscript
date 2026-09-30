@@ -87,10 +87,11 @@ public class LeekNumber extends Expression {
 			if (doubleValue == Double.POSITIVE_INFINITY) {
 				writer.addCode("Double.POSITIVE_INFINITY");
 			} else if (doubleValue == Double.NEGATIVE_INFINITY) {
-				// Atteignable via les littéraux négatifs synthétisés par ConstantFolder
-				// (`-1e999`) : String.valueOf donnerait « -Infinity », invalide en Java.
+				// Littéral `-1e999` (#2623), ou synthétisé par ConstantFolder : String.valueOf
+				// donnerait « -Infinity », invalide en Java.
 				writer.addCode("Double.NEGATIVE_INFINITY");
-			} else if (parenthesis && doubleValue < 0) {
+			} else if (parenthesis && Double.compare(doubleValue, 0.0) < 0) {
+				// -0.0 compris (#2623) : `- -0.0` donnerait `--0.0`, que javac refuse
 				writer.addCode("(" + doubleValue + ")");
 			} else {
 				writer.addCode(String.valueOf(doubleValue));
