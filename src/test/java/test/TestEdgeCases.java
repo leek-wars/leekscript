@@ -83,6 +83,18 @@ public class TestEdgeCases extends TestCommon {
 	}
 
 	@Test
+	public void testCoalesce_element_read_charged_once() throws Exception {
+		section("Coalesce reads an element once, and charges it once (#5300)");
+		// `m[k] ?? d` read the element twice when it was not null: one more operation for an
+		// array, two for a map. The difference with a plain read is now the `??` alone.
+		var cost = "var a = getOperations(); var r = {E} ?? 0; var b = getOperations(); var s = {E}; var c = getOperations(); return [r, (b - a) - (c - b)]";
+		code("var m = [1: 5]; " + cost.replace("{E}", "m[1]")).equals("[5, 1]");
+		code("var t = [5]; " + cost.replace("{E}", "t[0]")).equals("[5, 1]");
+		code("var mm = [[1, 2], [3, 4]]; " + cost.replace("{E}", "mm[1][0]")).equals("[3, 1]");
+		code("var m = [1: null]; " + cost.replace("{E}", "m[1]")).equals("[0, 1]");
+	}
+
+	@Test
 	public void testCoalesceAssign_value_evaluated_only_if_null() throws Exception {
 		section("Coalesce-assign evaluates its value only if the target is null (#5300)");
 		// `t[k] ??= v`, `o.f ??= v`, `A.S ??= v` and the variables in a Box (v1) evaluated `v`

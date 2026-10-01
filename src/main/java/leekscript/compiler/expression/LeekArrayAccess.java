@@ -85,13 +85,6 @@ public class LeekArrayAccess extends Expression {
 		return mTabular;
 	}
 
-	/**
-	 * Tranche `t[a:b]` ou `t[a:b:c]`, et non accès à un élément.
-	 */
-	public boolean isSlice() {
-		return colon != null;
-	}
-
 	public Expression getCase() {
 		return mCase;
 	}

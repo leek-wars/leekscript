@@ -1543,19 +1543,16 @@ public class LeekExpression extends Expression {
 	}
 
 	/**
-	 * Relire l'expression rend la même valeur sans effet de bord : variable, littéral, champ ou
-	 * élément d'une expression elle-même pure (la lecture d'un élément est alors facturée deux
-	 * fois). Un appel, une écriture ou un incrément, non.
+	 * Relire l'expression rend la même valeur, sans effet de bord ni coût : variable, littéral, ou
+	 * champ d'une expression elle-même pure. Un appel, une écriture ou un incrément, non ; un
+	 * élément non plus, dont la lecture est facturée (#5300).
 	 */
 	private static boolean isPureRead(Expression expression) {
 		var e = expression.trim();
 		if (e instanceof LeekVariable || e instanceof LeekNumber || e instanceof LeekBigInteger || e instanceof LeekString || e instanceof LeekBoolean || e instanceof LeekNull) {
 			return true;
 		}
-		if (e instanceof LeekObjectAccess access) {
-			return isPureRead(access.getObject());
-		}
-		return e instanceof LeekArrayAccess access && !access.isSlice() && isPureRead(access.getTabular()) && isPureRead(access.getCase());
+		return e instanceof LeekObjectAccess access && isPureRead(access.getObject());
 	}
 
 	/**
