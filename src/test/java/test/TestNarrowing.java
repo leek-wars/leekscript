@@ -545,4 +545,18 @@ public class TestNarrowing extends TestCommon {
 		// Le narrowing ne fuit pas après l'expression
 		code_strict_v4_("class A { string? str = null; void m() { var b = this.str != null && startsWith(this.str, \"a\"); startsWith(this.str, \"a\") } }").warning(Error.DANGEROUS_CONVERSION);
 	}
+
+	/**
+	 * Un champ `integer | boolean | null` narrowé par sa véracité vaut `boolean | integer` :
+	 * `x!` dessus ne doit pas le réduire à `boolean` (chemin rapide de
+	 * `CompoundType.assertNotNull`, qui prenait toute union de deux types pour `T | null`).
+	 * Cas de prod : `this.on ? [this.on! : true] : …` rendait `[true : true]`.
+	 */
+	@Test
+	public void testProperty_narrowing_keeps_two_type_union() throws Exception {
+		section("Property narrowing: non-null assertion on a two-type union");
+		code_v4_("class A { integer | boolean | null on = 42; m() { return this.on ? [this.on! : true] : [:] } } return new A().m()").equals("[42 : true]");
+		code_v4_("class A { integer | boolean | null on = 42; m() { return this.on ? this.on! : 0 } } return new A().m()").equals("42");
+		code_v4_("integer | boolean x = 42; return [x! : true]").equals("[42 : true]");
+	}
 }

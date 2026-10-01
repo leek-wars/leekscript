@@ -265,6 +265,11 @@ public class CompoundType extends Type {
 	}
 
 	public Type assertNotNull() {
+		// Rien à retirer : une union sans null reste elle-même. Le chemin rapide
+		// ci-dessous rendait le PREMIER des deux types de `boolean | integer` : un champ
+		// narrowé à `boolean | integer` (#5303) donnait `this.on!` de type boolean, et
+		// `[this.on! : true]` devenait `[true : true]` en prod.
+		if (!containsNull()) return this;
 		// Fast path : T | NULL (cas dominant), on retourne T directement.
 		if (types.size() == 2) {
 			for (var t : types) {
