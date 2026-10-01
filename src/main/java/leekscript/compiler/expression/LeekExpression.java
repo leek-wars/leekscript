@@ -28,6 +28,7 @@ public class LeekExpression extends Expression {
 	protected Expression mExpression2 = null;
 	protected LeekExpression mParent = null;
 	protected Type type = Type.ANY;
+	private int version; // cf hasObjectJavaResult : sur un Box, `/=` et les incréments en dépendent
 
 	public LeekExpression() {}
 
@@ -800,7 +801,9 @@ public class LeekExpression extends Expression {
 				return;
 			}
 			if (mainblock.getWordCompiler().getVersion() >= 4) {
-				if (mExpression1.getType() == Type.INT && mExpression2.getType() == Type.INT) {
+				// Deux Long (variables en Box) : le `==` de Java comparerait les références, ils passent
+				// par equals_equals comme deux valeurs any (#5300)
+				if (mExpression1.getType() == Type.INT && mExpression2.getType() == Type.INT && !(mExpression1.hasBoxedJavaResult() && mExpression2.hasBoxedJavaResult())) {
 					if (parenthesis) writer.addCode("(");
 					writer.getInt(mainblock, mExpression1, true);
 					writer.addCode(" == ");
@@ -1199,6 +1202,7 @@ public class LeekExpression extends Expression {
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 
 		compiler.checkInterrupted();
+		version = compiler.getVersion();
 
 		// Opérateur @ déprécié en LS 2+
 		if (mOperator == Operators.REFERENCE && compiler.getVersion() >= 2) {
@@ -1524,7 +1528,10 @@ public class LeekExpression extends Expression {
 	}
 
 	public boolean needsWrapper() {
-		return mOperator == Operators.OR || mOperator == Operators.AND || mOperator == Operators.XOR || mOperator == Operators.ADD || mOperator == Operators.MINUS || mOperator == Operators.MULTIPLIE || mOperator == Operators.DIVIDE || mOperator == Operators.MODULUS || mOperator == Operators.POWER || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.LESSEQUALS || mOperator == Operators.MOREEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS;
+		return mOperator == Operators.OR || mOperator == Operators.AND || mOperator == Operators.XOR || mOperator == Operators.ADD || mOperator == Operators.MINUS || mOperator == Operators.MULTIPLIE || mOperator == Operators.DIVIDE || mOperator == Operators.MODULUS || mOperator == Operators.POWER || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.LESSEQUALS || mOperator == Operators.MOREEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS
+			// `t[k] ??= v` et `o.f ??= v` peuvent s'écrire en expression switch, qui n'est pas une
+			// instruction Java (cf LeekArrayAccess.compileCoalesceEq)
+			|| mOperator == Operators.COALESCE_ASSIGN && (mExpression1 instanceof LeekArrayAccess || mExpression1 instanceof LeekObjectAccess);
 	}
 
 	/**
@@ -1620,8 +1627,9 @@ public class LeekExpression extends Expression {
 	 * Écriture composée dans un élément de tableau ou de map (`t[k] += v`, `t[k]++`,
 	 * `t[k] ??= v`…) : le helper runtime (put_add_eq, put_inc…) renvoie un Object, quel
 	 * que soit le type calculé à l'analyse. `=` en est exclu : son type suit déjà son Java
-	 * (cast en strict, `| null` sinon). `??`, `as` et `!` le transmettent quand ils gardent
-	 * leur opérande tel quel (cf writeJavaCode).
+	 * (cast en strict, `| null` sinon). Idem pour une variable en Box, `=` compris (cf
+	 * LeekVariable.writesObjectThroughBox). `??`, `as` et `!` le transmettent quand ils
+	 * gardent leur opérande tel quel (cf writeJavaCode).
 	 */
 	@Override
 	public boolean hasObjectJavaResult() {
@@ -1639,7 +1647,20 @@ public class LeekExpression extends Expression {
 		if (mOperator == Operators.NON_NULL_ASSERTION) {
 			return JavaWriter.keepsObject(mExpression2, type);
 		}
-		return mOperator != Operators.ASSIGN && assignTarget() instanceof LeekArrayAccess;
+		var target = assignTarget();
+		if (target instanceof LeekVariable variable) {
+			return variable.writesObjectThroughBox(mOperator, version);
+		}
+		return mOperator != Operators.ASSIGN && target instanceof LeekArrayAccess;
+	}
+
+	/** `x++` sur une variable en Box<T> : T, boxé (un Wrapper rend un Object, cf hasObjectJavaResult). */
+	@Override
+	public boolean hasBoxedJavaResult() {
+		if (mExpression2 == null) {
+			return mExpression1 != null && mExpression1.hasBoxedJavaResult(); // simple enveloppe, cf trim()
+		}
+		return Operators.isIncrement(mOperator) && mExpression2 instanceof LeekVariable variable && variable.isBoxSlot() && !hasObjectJavaResult();
 	}
 
 	@Override

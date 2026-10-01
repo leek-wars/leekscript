@@ -672,24 +672,39 @@ public class LeekArrayAccess extends Expression {
 	@Override
 	public void compileCoalesceEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// a[index] ??= b
-		writer.addCode("put_coalesce_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
 		var fromClass = mainblock.getWordCompiler().getCurrentClass();
-		// `b` n'est évaluée que si l'élément est null (#5300), quand le tableau et l'index se
-		// relisent pour le savoir
-		boolean lazy = !ConstantFolder.isHarmlessValue(expr, fromClass) && ConstantFolder.isSilentRead(mTabular, fromClass) && ConstantFolder.isSilentRead(mCase, fromClass);
+		// `b` n'est évaluée que si l'élément est null (#5300), sauf si l'évaluer ne se voit pas
+		boolean lazy = !ConstantFolder.isHarmlessValue(expr, fromClass);
+		// Le test relit le tableau et l'index ; s'ils ne se relisent pas sans effet, leurs valeurs
+		// sont gardées dans des locales Java, celles d'une expression switch
+		boolean bind = lazy && !(ConstantFolder.isSilentRead(mTabular, fromClass) && ConstantFolder.isSilentRead(mCase, fromClass));
+		Runnable tabular = () -> mTabular.writeJavaCode(mainblock, writer, false);
+		Runnable key = () -> mCase.writeJavaCode(mainblock, writer, false);
+		if (bind) {
+			var id = mainblock.getCount();
+			writer.addCode("(switch (0) { default -> { Object $t" + id + " = ");
+			tabular.run();
+			writer.addCode("; Object $k" + id + " = ");
+			key.run();
+			writer.addCode("; yield ");
+			tabular = () -> writer.addCode("$t" + id);
+			key = () -> writer.addCode("$k" + id);
+		}
+		writer.addCode("put_coalesce_eq(");
+		tabular.run();
+		writer.addCode(", ");
+		key.run();
+		writer.addCode(", ");
 		if (lazy) {
 			writer.addCode("put_coalesce_needed(");
-			mTabular.writeJavaCode(mainblock, writer, false);
+			tabular.run();
 			writer.addCode(", ");
-			mCase.writeJavaCode(mainblock, writer, false);
+			key.run();
 			writer.addCode(") ? ");
 		}
 		expr.writeJavaCode(mainblock, writer, false);
 		writer.addCode((lazy ? " : null" : "") + ", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		if (bind) writer.addCode("; } })");
 	}
 
 	public void setLeftValue(boolean b) {

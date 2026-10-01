@@ -100,9 +100,6 @@ public class TestEdgeCases extends TestCommon {
 		code_v1(f + "var x = 5; x ??= f(); return [x, n]").equals("[5, 0]");
 		code_v1(f + "global g = 5; g ??= f(); return [g, n]").equals("[5, 0]");
 		code(f + "var m = [1: 5]; var y = null; m[1] ??= (y ??= f()); return [m, y, n]").equals("[[1 : 5], null, 0]");
-		// The container and the key are read again to know it: an impure key is not, it is
-		// evaluated once and the value along with it, as before
-		code(f + "global k = 0; function key() { k++; return 1 } var m = [1: 5]; m[key()] ??= f(); return [m, k, n]").equals("[[1 : 5], 1, 1]");
 		// A value without side effect keeps its Java
 		code("var m = [1: null]; m[1] ??= []; m[2] ??= []; return m").equals("[1 : [], 2 : []]");
 	}
@@ -118,6 +115,78 @@ public class TestEdgeCases extends TestCommon {
 		code("var x = null; var g = function() { return x }; var r = (x ??= 7); return [r, g()]").equals("[7, 7]");
 		code(f + "function h(a) { a ??= f(); return a } return [h(null), h(3), n]").equals("[1, 3, 1]");
 		code(f + "function h(a) { var g = function() { return a }; a ??= f(); return [a, g()] } return [h(null), h(3), n]").equals("[[1, 1], [3, 3], 1]");
+	}
+
+	@Test
+	public void testCoalesceAssign_impure_container_or_key() throws Exception {
+		section("Coalesce-assign on an impure container or key: evaluated once, value only if needed (#5300)");
+		// They are kept in Java locals (switch expression) to test the target before the value
+		var f = "global n = 0; function f() { n++; return n } global k = 0; function key() { k++; return 1 } ";
+		code(f + "var m = [1: 5]; m[key()] ??= f(); return [m, k, n]").equals("[[1 : 5], 1, 0]");
+		code(f + "var m = [1: null]; m[key()] ??= f(); return [m, k, n]").equals("[[1 : 1], 1, 1]");
+		code(f + "var m = [1: 5]; var r = (m[key()] ??= f()); return [r, k, n]").equals("[5, 1, 0]");
+		code(f + "var mm = [[5, null]]; mm[0][0] ??= f(); mm[0][1] ??= f(); return [mm, n]").equals("[[[5, 1]], 1]");
+		code(f + "var m = [1: 5]; var y = null; m[key()] ??= (y ??= f()); return [m, y, k, n]").equals("[[1 : 5], null, 1, 0]");
+		code_v2_(f + "class A { public x = 5 public y } global a = new A(); function getA() { k++; return a } getA().x ??= f(); getA().y ??= f(); return [a.x, a.y, k, n]").equals("[5, 1, 2, 1]");
+		code_v2_(f + "class A { public static S = 5 public static T } function getC() { k++; return A } getC().S ??= f(); getC().T ??= f(); return [A.S, A.T, k, n]").equals("[5, 1, 2, 1]");
+	}
+
+	@Test
+	public void testCoalesceAssign_primitive_variable() throws Exception {
+		section("Coalesce-assign on a variable of primitive type, never null (#5300)");
+		// `x != null` on a long did not compile (COMPILE_JAVA); the value is not evaluated
+		var f = "global n = 0; function f() { n++; return n } ";
+		code_strict(f + "var x = 5; x ??= f(); return [x, n]").equals("[5, 0]");
+		code_strict(f + "var x = 5; var r = (x ??= f()); return [r, x, n]").equals("[5, 5, 0]");
+		code_strict(f + "global g = 5; g ??= f(); return [g, n]").equals("[5, 0]");
+		code_v2_(f + "integer x = 5; x ??= f(); return [x, n]").equals("[5, 0]");
+		code_v2_(f + "real x = 5.5; x ??= f(); return [x, n]").equals("[5.5, 0]");
+		code_v2_(f + "boolean x = false; x ??= true; return [x, n]").equals("[false, 0]");
+		code_v2_(f + "class A { integer x = 5 m() { x ??= f(); return [x, n] } } return new A().m()").equals("[5, 0]");
+		// A nullable variable is still assigned
+		code(f + "integer? x = null; x ??= f(); return [x, n]").equals("[1, 1]");
+	}
+
+	@Test
+	public void testCompoundAssign_variable_in_a_box_as_value() throws Exception {
+		section("Compound assignment on a variable in a Box or Wrapper, used as a value (#5300)");
+		// Box.add_eq, set, increment… return an Object while the variable is typed: a typed use
+		// did not compile (COMPILE_JAVA), and `==` compared two Long by reference
+		var cap = "integer x = 20; var g = function() { return x }; ";
+		code(cap + "integer y = (x += 2); return [y, g()]").equals("[22, 22]");
+		code(cap + "integer y = (x++); return [y, g()]").equals("[20, 21]");
+		code(cap + "integer y = (++x); return [y, g()]").equals("[21, 21]");
+		code(cap + "integer y = (x = 5); return [y, g()]").equals("[5, 5]");
+		code(cap + "return (x += 2) + 1").equals("23");
+		code(cap + "if (x -= 20) { return 1 } return 0").equals("0");
+		code("boolean b = false; var g = function() { return b }; if (b = true) { return 1 } return 0").equals("1");
+		code("function w(integer a) { var g = function() { return a }; integer y = (a += 2); return [y, g()] } return w(20)").equals("[22, 22]");
+		code("integer x = 998; integer z = 998; var g = function() { return x + z }; return (x += 1) == (z += 1)").equals("true");
+		// `\=` on a Wrapper: the method was missing
+		code(cap + "x \\= 3; return g()").equals("6");
+		code(cap + "integer y = (x \\= 3); return [y, g()]").equals("[6, 6]");
+	}
+
+	@Test
+	public void testWrapper_has_every_box_operation() throws Exception {
+		// Une variable capturée vit dans un Wrapper, à qui le code généré demande les mêmes
+		// opérations qu'à un Box : il en manquait (coalesce_eq, intdiv_eq), d'où COMPILE_JAVA (#5300)
+		for (var method : leekscript.runner.values.Box.class.getDeclaredMethods()) {
+			var name = method.getName();
+			if (!java.lang.reflect.Modifier.isPublic(method.getModifiers())) continue;
+			if (name.endsWith("_eq") || name.endsWith("increment") || name.endsWith("decrement")) {
+				leekscript.runner.Wrapper.class.getMethod(name, method.getParameterTypes());
+			}
+		}
+	}
+
+	@Test
+	public void testEquals_two_variables_in_a_box() throws Exception {
+		section("== between two variables in a Box or Wrapper (#5300)");
+		// Their Java is a Long: in v4, `==` compared the two references, false above 127
+		code("integer x = 1000; integer z = 1000; var g = function() { return x + z }; return [x == z, (x++) == (z++), (++x) == (++z)]").equals("[true, true, true]");
+		code("function f(integer a, integer b) { var g = function() { return a + b }; return [a == b, (a++) == (b++), (++a) == (++b)] } return f(1000, 1000)").equals("[true, true, true]");
+		code_v2_("var w = function(integer a, integer b) { var g = function() { return a + b }; return a == b }; return w(1000, 1000)").equals("true");
 	}
 
 	@Test

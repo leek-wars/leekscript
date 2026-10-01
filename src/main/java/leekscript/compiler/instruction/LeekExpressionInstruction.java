@@ -38,6 +38,14 @@ public class LeekExpressionInstruction extends LeekInstruction {
 		return mExpression.toString() + ";";
 	}
 
+	/**
+	 * Expression que Java n'accepte pas seule comme instruction : elle passe par ops(...) ou
+	 * nothing(...), ici comme dans l'incrément d'un for (cf ForBlock).
+	 */
+	public static boolean needsStatementWrapper(Expression trimmed) {
+		return trimmed instanceof LeekTernaire || trimmed instanceof LeekFunctionCall || (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).needsWrapper());
+	}
+
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 
@@ -61,7 +69,7 @@ public class LeekExpressionInstruction extends LeekInstruction {
 		}
 
 		// Wrap an expression with a function call to avoid 'error: not a statement' error
-		if (trimmed instanceof LeekTernaire || trimmed instanceof LeekFunctionCall || (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).needsWrapper())) {
+		if (needsStatementWrapper(trimmed)) {
 			if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) writer.addCode("ops(");
 			else if (!writer.lastInstruction) writer.addCode("nothing(");
 			var last = writer.lastInstruction;

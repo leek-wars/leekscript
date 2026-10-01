@@ -111,15 +111,21 @@ public class ForBlock extends AbstractLeekBlock {
 			writer.addCode(", " + mCondition.getOperations() + ")");
 		}
 		writer.addCode("; ");
+		var incrementation = mIncrementation.trim();
 		if (writer.isOperationsEnabled()) {
 			writer.addCode("ops(");
 			mIncrementation.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", " + mIncrementation.getOperations() + ")");
-		} else if (!(mIncrementation.trim() instanceof LeekFunctionCall call && call.isEliminable(mainblock))) {
+		} else if (!(incrementation instanceof LeekFunctionCall call && call.isEliminable(mainblock))) {
 			// Ops désactivées (CLI) : un appel éliminé se substituerait par sa valeur
 			// (« null »), qui n'est pas une statement expression valide en position
-			// d'incrément — on émet un update vide, valide en Java.
+			// d'incrément — on émet un update vide, valide en Java. Le reste est enveloppé dans
+			// nothing(...) comme une instruction (cf LeekExpressionInstruction.needsStatementWrapper :
+			// appel, ternaire, opérateurs, `??=` en expression switch).
+			boolean wrap = LeekExpressionInstruction.needsStatementWrapper(incrementation);
+			if (wrap) writer.addCode("nothing(");
 			mIncrementation.writeJavaCode(mainblock, writer, false);
+			if (wrap) writer.addCode(")");
 		}
 		writer.addLine(") {", getLocation());
 		writer.addCounter(1);

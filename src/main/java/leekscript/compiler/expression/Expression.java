@@ -141,6 +141,15 @@ public abstract class Expression {
 		return false;
 	}
 
+	/**
+	 * Le Java est un nombre boxé (Long, Double) alors que getType() annonce un primitif : lecture
+	 * ou incrément d'une variable en Box. Seul `==` s'en soucie : entre deux Long, il comparerait
+	 * les références (cf LeekExpression).
+	 */
+	public boolean hasBoxedJavaResult() {
+		return false;
+	}
+
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {}
 
 	public abstract void analyze(WordCompiler compiler) throws LeekCompilerException;

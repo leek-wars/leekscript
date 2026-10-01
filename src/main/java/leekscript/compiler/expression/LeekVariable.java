@@ -7,6 +7,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.bloc.AnonymousFunctionBlock;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
@@ -335,6 +336,44 @@ public class LeekVariable extends Expression {
 	/** Nom Java de la variable locale : `rfunction_x` si fonction redéfinie, `u_x` sinon. */
 	private String localName(MainLeekBlock mainblock) {
 		return (isRedefinedFunction(mainblock) ? "rfunction_" : "u_") + token.getWord();
+	}
+
+	/** La variable vit dans un Box ou un Wrapper, champs exclus : lue par `.get()`, écrite par ses méthodes. */
+	boolean isBoxSlot() {
+		return isBox() && type != VariableType.FIELD && type != VariableType.STATIC_FIELD;
+	}
+
+	/**
+	 * Lue par `u_x.get()` d'un Box ou d'un Wrapper (cf writeJavaCode) : un Long pour un integer.
+	 * Sauf narrowing, que writeNarrowed convertit (#5300).
+	 */
+	@Override
+	public boolean hasBoxedJavaResult() {
+		return isBoxSlot() && (this.variable == null || this.variable.getType() == this.variableType);
+	}
+
+	/**
+	 * `x <op>= v`, `x = v` ou `x++` sur une variable en Box passe par une méthode du Box (ou du
+	 * Wrapper d'une variable capturée) qui renvoie un Object, quel que soit le type de la variable :
+	 * add_eq, set, coalesce_eq… Sauf `/=` hors v1 (div_eq rend un double) et les incréments d'un
+	 * Box<T>, qui rendent T (#5300).
+	 */
+	public boolean writesObjectThroughBox(int operator, int version) {
+		if (!isBoxSlot()) return false;
+		if (operator == Operators.DIVIDEASSIGN) return version == 1;
+		if (Operators.isIncrement(operator)) return inUntypedBox(version);
+		return true;
+	}
+
+	/**
+	 * La variable vit dans un Wrapper ou un Box brut, dont les incréments rendent un Object (un
+	 * Box<T> les rend en T) : locale capturée, argument capturé en v1, argument d'une fonction
+	 * anonyme (en Box, il est capturé ou en v1) (cf FunctionBlock, AnonymousFunctionBlock).
+	 */
+	private boolean inUntypedBox(int version) {
+		if (declaration == null) return false;
+		if (type == VariableType.ARGUMENT && declaration.getFunction() instanceof AnonymousFunctionBlock) return true;
+		return declaration.isCaptured() && (type == VariableType.LOCAL || version == 1);
 	}
 
 	// Émet le mot-clé `class`. Dans une méthode d'instance (ou un constructeur), il
@@ -1539,7 +1578,7 @@ public class LeekVariable extends Expression {
 		// `+=` (#5300) : Box.coalesce_eq. Fonction système redéfinie : Box `rfunction_<nom>`,
 		// quel que soit le VariableType (cf. isRedefinedFunction).
 		var box = isRedefinedFunction(mainblock) ? localName(mainblock)
-			: isBox() && type != VariableType.FIELD && type != VariableType.STATIC_FIELD ? (type == VariableType.GLOBAL ? "g_" : "u_") + token.getWord()
+			: isBoxSlot() ? (type == VariableType.GLOBAL ? "g_" : "u_") + token.getWord()
 			: null;
 		if (box != null) {
 			// `b` n'est évaluée que si la variable est null (#5300)
@@ -1583,13 +1622,19 @@ public class LeekVariable extends Expression {
 		}
 
 		if (parenthesis) writer.addCode("(");
-		writer.addCode(varName + " = ");
-		if (this.variableType != Type.ANY) {
-			writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+		if (javaSlotType().isPrimitive()) {
+			// Emplacement Java primitif (integer, real, boolean) : jamais null, `b` n'est pas
+			// évaluée. `x != null` n'y compilerait pas (#5300) : on garde l'affectation, à l'identique.
+			writer.addCode(varName + " = " + varName);
+		} else {
+			writer.addCode(varName + " = ");
+			if (this.variableType != Type.ANY) {
+				writer.addCode("(" + this.variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+			}
+			writer.addCode("(" + varName + " != null ? " + varName + " : ");
+			expr.writeJavaCode(mainblock, writer, false);
+			writer.addCode(")");
 		}
-		writer.addCode("(" + varName + " != null ? " + varName + " : ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(")");
 		if (parenthesis) writer.addCode(")");
 	}
 

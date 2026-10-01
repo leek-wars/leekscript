@@ -605,28 +605,39 @@ public class LeekObjectAccess extends Expression {
 	@Override
 	public void compileCoalesceEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		var fromClass = mainblock.getWordCompiler().getCurrentClass();
-		// `b` n'est évaluée que si le champ est null (#5300), quand l'objet se relit pour le savoir
-		boolean lazy = !ConstantFolder.isHarmlessValue(expr, fromClass) && ConstantFolder.isSilentRead(object, fromClass);
-		compileFieldOperation(mainblock, writer, "field_coalesce_eq", expr, lazy);
+		// `b` n'est évaluée que si le champ est null (#5300), sauf si l'évaluer ne se voit pas. Le test
+		// relit l'objet ; s'il ne se relit pas sans effet, sa valeur est gardée dans une locale Java,
+		// celle d'une expression switch
+		boolean lazy = !ConstantFolder.isHarmlessValue(expr, fromClass);
+		if (!lazy || ConstantFolder.isSilentRead(object, fromClass)) {
+			compileFieldOperation(mainblock, writer, "field_coalesce_eq", expr, lazy, () -> writeReceiver(mainblock, writer));
+		} else {
+			var receiver = "$r" + mainblock.getCount();
+			writer.addCode("(switch (0) { default -> { Object " + receiver + " = ");
+			writeReceiver(mainblock, writer);
+			writer.addCode("; yield ");
+			compileFieldOperation(mainblock, writer, "field_coalesce_eq", expr, true, () -> writer.addCode(receiver));
+			writer.addCode("; } })");
+		}
 	}
 
 	private void compileFieldOperation(MainLeekBlock mainblock, JavaWriter writer, String helper, Expression expr) {
-		compileFieldOperation(mainblock, writer, helper, expr, false);
+		compileFieldOperation(mainblock, writer, helper, expr, false, () -> writeReceiver(mainblock, writer));
 	}
 
 	/**
 	 * Écriture composée `objet.champ <op>= valeur` : tous les opérateurs passent par le
 	 * même helper de runtime, au nom près. `coalesceNeeded` : la valeur n'est évaluée que
-	 * si le champ est null (`??=`).
+	 * si le champ est null (`??=`), et `receiver` écrit alors l'objet deux fois.
 	 */
-	private void compileFieldOperation(MainLeekBlock mainblock, JavaWriter writer, String helper, Expression expr, boolean coalesceNeeded) {
+	private void compileFieldOperation(MainLeekBlock mainblock, JavaWriter writer, String helper, Expression expr, boolean coalesceNeeded, Runnable receiver) {
 		var close = writer.openFieldResultConversion(this.type);
 		writer.addCode(helper + "(");
-		writeReceiver(mainblock, writer);
+		receiver.run();
 		writer.addCode(", \"" + field.getWord() + "\", ");
 		if (coalesceNeeded) {
 			writer.addCode("field_coalesce_needed(");
-			writeReceiver(mainblock, writer);
+			receiver.run();
 			writer.addCode(", \"" + field.getWord() + "\") ? ");
 		}
 		expr.writeJavaCode(mainblock, writer, false);

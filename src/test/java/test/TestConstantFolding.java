@@ -364,6 +364,9 @@ public class TestConstantFolding extends TestCommon {
 		assertOpsDisabled("function no() -> boolean { return false } while (no()) { return 1 } return 2", "2");
 		assertOpsDisabled("function foo() {} foo() return 4", "4");
 		assertOpsDisabled("for (var i = 0; false; i++) { return 1 } return 2", "2");
+		// Un incrément que Java n'accepte pas seul (`??=` lié en expression switch, `?.` lié) passe par nothing()
+		assertOpsDisabled("global n = 0 function f() { n++ return n } function key() { return 1 } var m = [1: null] for (var i = 0; i < 3; m[key()] ??= f()) { i++ } return [m, n]", "[[1 : 1], 1]");
+		assertOpsDisabled("class A { m(p) { return p } } global n = 0 function f() { n++ return n } var o = null for (var i = 0; i < 2; o?.m(f())) { i++ } return n", "0");
 	}
 
 	private void assertOpsDisabled(String snippet, String expected) throws Exception {
