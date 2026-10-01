@@ -604,20 +604,33 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public void compileCoalesceEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_coalesce_eq", expr);
+		var fromClass = mainblock.getWordCompiler().getCurrentClass();
+		// `b` n'est évaluée que si le champ est null (#5300), quand l'objet se relit pour le savoir
+		boolean lazy = !ConstantFolder.isHarmlessValue(expr, fromClass) && ConstantFolder.isSilentRead(object, fromClass);
+		compileFieldOperation(mainblock, writer, "field_coalesce_eq", expr, lazy);
+	}
+
+	private void compileFieldOperation(MainLeekBlock mainblock, JavaWriter writer, String helper, Expression expr) {
+		compileFieldOperation(mainblock, writer, helper, expr, false);
 	}
 
 	/**
 	 * Écriture composée `objet.champ <op>= valeur` : tous les opérateurs passent par le
-	 * même helper de runtime, au nom près.
+	 * même helper de runtime, au nom près. `coalesceNeeded` : la valeur n'est évaluée que
+	 * si le champ est null (`??=`).
 	 */
-	private void compileFieldOperation(MainLeekBlock mainblock, JavaWriter writer, String helper, Expression expr) {
+	private void compileFieldOperation(MainLeekBlock mainblock, JavaWriter writer, String helper, Expression expr, boolean coalesceNeeded) {
 		var close = writer.openFieldResultConversion(this.type);
 		writer.addCode(helper + "(");
 		writeReceiver(mainblock, writer);
 		writer.addCode(", \"" + field.getWord() + "\", ");
+		if (coalesceNeeded) {
+			writer.addCode("field_coalesce_needed(");
+			writeReceiver(mainblock, writer);
+			writer.addCode(", \"" + field.getWord() + "\") ? ");
+		}
 		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
+		writer.addCode((coalesceNeeded ? " : null" : "") + ", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")" + close);
 	}
 
 	@Override

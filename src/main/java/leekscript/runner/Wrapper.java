@@ -117,6 +117,10 @@ public class Wrapper<T> {
 		return variable.ushr_eq(x);
 	}
 
+	public Object coalesce_eq(Object x) throws LeekRunException {
+		return variable.coalesce_eq(x);
+	}
+
 	@Override
 	public String toString() {
 		return "Wrapper(" + variable.get() + ")";

@@ -1535,28 +1535,19 @@ public class LeekVariable extends Expression {
 	@Override
 	public void compileCoalesceEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		// a ??= b  =>  a = (a != null) ? a : b
-		// Fonction système redéfinie : Box `rfunction_<nom>`, quel que soit le VariableType
-		// (elles ne sont ni GLOBAL ni LOCAL, cf. isRedefinedFunction).
-		if (isRedefinedFunction(mainblock)) {
-			writer.addCode(localName(mainblock) + ".coalesce_eq(");
+		// Variable dans un Box (Wrapper si une closure la capture), argument compris comme pour
+		// `+=` (#5300) : Box.coalesce_eq. Fonction système redéfinie : Box `rfunction_<nom>`,
+		// quel que soit le VariableType (cf. isRedefinedFunction).
+		var box = isRedefinedFunction(mainblock) ? localName(mainblock)
+			: isBox() && type != VariableType.FIELD && type != VariableType.STATIC_FIELD ? (type == VariableType.GLOBAL ? "g_" : "u_") + token.getWord()
+			: null;
+		if (box != null) {
+			// `b` n'est évaluée que si la variable est null (#5300)
+			boolean lazy = !ConstantFolder.isHarmlessValue(expr, mainblock.getWordCompiler().getCurrentClass());
+			writer.addCode(box + ".coalesce_eq(" + (lazy ? box + ".get() == null ? " : ""));
 			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
+			writer.addCode((lazy ? " : null" : "") + ")");
 			return;
-		}
-		if (type == VariableType.GLOBAL || type == VariableType.LOCAL) {
-			if (isBox()) {
-				// Box-based variable: use Box.coalesce_eq
-				if (type == VariableType.GLOBAL) {
-					writer.addCode("g_" + token.getWord() + ".coalesce_eq(");
-					expr.writeJavaCode(mainblock, writer, false);
-					writer.addCode(")");
-				} else {
-					writer.addCode("u_" + token.getWord() + ".coalesce_eq(");
-					expr.writeJavaCode(mainblock, writer, false);
-					writer.addCode(")");
-				}
-				return;
-			}
 		}
 
 		// Un champ statique n'est pas un champ Java de la ClassLeekValue : il faut

@@ -677,8 +677,19 @@ public class LeekArrayAccess extends Expression {
 		writer.addCode(", ");
 		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
+		var fromClass = mainblock.getWordCompiler().getCurrentClass();
+		// `b` n'est évaluée que si l'élément est null (#5300), quand le tableau et l'index se
+		// relisent pour le savoir
+		boolean lazy = !ConstantFolder.isHarmlessValue(expr, fromClass) && ConstantFolder.isSilentRead(mTabular, fromClass) && ConstantFolder.isSilentRead(mCase, fromClass);
+		if (lazy) {
+			writer.addCode("put_coalesce_needed(");
+			mTabular.writeJavaCode(mainblock, writer, false);
+			writer.addCode(", ");
+			mCase.writeJavaCode(mainblock, writer, false);
+			writer.addCode(") ? ");
+		}
 		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		writer.addCode((lazy ? " : null" : "") + ", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	public void setLeftValue(boolean b) {

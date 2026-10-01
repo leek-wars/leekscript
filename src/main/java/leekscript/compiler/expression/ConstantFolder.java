@@ -187,6 +187,40 @@ public final class ConstantFolder {
 	}
 
 	/**
+	 * La relire ne se voit pas : argument pur (cf isPureSimpleArgument), `this`, une classe ou
+	 * un champ déclaré de l'objet courant (`x`, `this.x`). `t[k] ??= v` et `o.f ??= v`
+	 * relisent ainsi leur cible pour n'évaluer `v` qu'au besoin (#5300).
+	 */
+	public static boolean isSilentRead(Expression expression, ClassDeclarationInstruction fromClass) {
+		var expr = expression.trim();
+		if (isPureSimpleArgument(expr, fromClass)) return true;
+		if (expr instanceof LeekVariable v) {
+			return switch (v.getVariableType()) {
+				case THIS, CLASS, FIELD -> true;
+				default -> false;
+			};
+		}
+		return expr instanceof LeekObjectAccess oa && !oa.isOptional()
+			&& oa.getObject().trim() instanceof LeekVariable v && v.getVariableType() == VariableType.THIS
+			&& oa.getVariable() != null && oa.getVariable().getVariableType() == VariableType.FIELD;
+	}
+
+	/**
+	 * L'évaluer pour rien ne se voit pas : lecture silencieuse (cf isSilentRead) ou tableau,
+	 * map, set, objet littéral vide. `t[k] ??= v` et `o?.m(v)` n'évaluent `v` qu'au besoin
+	 * (#5300), sauf une telle valeur : leur Java ne change pas.
+	 */
+	public static boolean isHarmlessValue(Expression expression, ClassDeclarationInstruction fromClass) {
+		var expr = expression.trim();
+		return isSilentRead(expr, fromClass)
+			|| expr instanceof LeekArray array && array.isEmpty()
+			|| expr instanceof LegacyLeekArray legacy && legacy.isEmpty()
+			|| expr instanceof LeekMap map && map.isEmpty()
+			|| expr instanceof LeekSet set && set.isEmpty()
+			|| expr instanceof LeekObject object && object.isEmpty();
+	}
+
+	/**
 	 * Condition de boucle qui peut s'émettre en CONSTANTE Java : condition pliée
 	 * (truthiness) OU appel substitué par son littéral (fonction CONSTANTE, dont
 	 * l'émission `(false)` typée bool serait une constante javac). Les boucles

@@ -227,6 +227,22 @@ public class TestClass extends TestCommon {
 	}
 
 	@Test
+	public void testOptional_call_arguments_short_circuit() throws Exception {
+		section("Optional call: arguments not evaluated when the object is null (#5300)");
+		var a = "global n = 0; function f() { n++; return n } class A { m(p) { return p } } ";
+		code_v2_(a + "var o = null; var r = o?.m(f()); return [r, n]").equals("[null, 0]");
+		code_v2_(a + "var o = new A(); var r = o?.m(f()); return [r, n]").equals("[1, 1]");
+		code_strict_v4_(a + "A? o = null; var r = o?.m(f()); return [r, n]").equals("[null, 0]");
+		// An argument can itself be an optional call
+		code_v2_(a + "var o = new A(); var p = null; var r = o?.m(p?.m(f())); return [r, n]").equals("[null, 0]");
+		code_v2_(a + "var o = null; var p = new A(); var r = o?.m(p?.m(f())); return [r, n]").equals("[null, 0]");
+		code_v2_(a + "var o = new A(); var p = new A(); var r = o?.m(p?.m(f())); return [r, n]").equals("[1, 1]");
+		// The object is still evaluated once
+		code_v2_(a + "function get(o) { n += 10; return o } var r = get(null)?.m(f()); return [r, n]").equals("[null, 10]");
+		code_v2_(a + "function get(o) { n += 10; return o } var r = get(new A())?.m(f()); return [r, n]").equals("[11, 11]");
+	}
+
+	@Test
 	public void testClass_clone_error_routing() throws Exception {
 		section("Class clone() error routing (no stdout swallow)");
 		// Deep-clone d'une instance de classe imbriquée : copies indépendantes

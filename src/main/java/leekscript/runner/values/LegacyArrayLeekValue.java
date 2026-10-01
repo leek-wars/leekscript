@@ -650,6 +650,12 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		return e == null ? null : e.value.get();
 	}
 
+	/** Valeur à une clé déjà normalisée (Long ou String), sans coût (cf AI.put_coalesce_needed). */
+	public Object getWithoutOperations(Object key) {
+		Element e = findElement(key);
+		return e == null ? null : e.value.get();
+	}
+
 	public Box getBox(AI ai, Object keyValue) throws LeekRunException {
 		var key = transformKey(ai, keyValue);
 		Element e = getElement(ai, key);
@@ -1617,6 +1623,10 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		int operations = LegacyArrayLeekValue.ARRAY_CELL_ACCESS_OPERATIONS;
 		ai.opsNoCheck(operations);
 
+		return findElement(key);
+	}
+
+	private Element findElement(Object key) {
 		if (mTable == null) {
 			return null; // empty array
 		}

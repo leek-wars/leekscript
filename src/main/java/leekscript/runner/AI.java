@@ -3144,6 +3144,47 @@ public abstract class AI {
 		return null;
 	}
 
+	/**
+	 * `t[k] ??= v` (#5300) : faux si l'élément que put_coalesce_eq va lire est déjà non null.
+	 * `v` n'est alors pas évaluée, le Java passe null à sa place. Vrai dans le doute. Ni coût
+	 * ni erreur : put_coalesce_eq, appelé dans tous les cas, garde les siens.
+	 */
+	public boolean put_coalesce_needed(Object array, Object key) throws LeekRunException {
+		if (array instanceof LegacyArrayLeekValue legacy) {
+			return !(key instanceof Long || key instanceof String) || legacy.getWithoutOperations(key) == null;
+		}
+		if (array instanceof ArrayLeekValue list) {
+			return !(key instanceof Long index) || list.arrayGet(this, index) == null;
+		}
+		if (array instanceof MapLeekValue map) {
+			return map.getOrDefault(key, null) == null;
+		}
+		return !(key instanceof String field) || field_coalesce_needed(array, field);
+	}
+
+	/** `o.f ??= v` (#5300) : idem pour field_coalesce_eq. */
+	public boolean field_coalesce_needed(Object object, String field) {
+		if (object instanceof ObjectLeekValue o) {
+			var box = o.fields.get(field);
+			return box == null || box.get() == null;
+		}
+		if (object instanceof ClassLeekValue clazz) {
+			for (var c = clazz; c != null; c = c.parent) {
+				var box = c.staticFields.get(field);
+				if (box != null) return box.get() == null;
+			}
+			return true;
+		}
+		if (object instanceof NativeObjectLeekValue) {
+			try {
+				return getFieldCached(object.getClass(), field).get(object) == null;
+			} catch (NoSuchFieldException | IllegalAccessException e) {
+				return true;
+			}
+		}
+		return true;
+	}
+
 	public Object set(Object variable, Object value) throws LeekRunException {
 		if (variable instanceof Box) {
 			return ((Box) variable).set(value);

@@ -83,6 +83,44 @@ public class TestEdgeCases extends TestCommon {
 	}
 
 	@Test
+	public void testCoalesceAssign_value_evaluated_only_if_null() throws Exception {
+		section("Coalesce-assign evaluates its value only if the target is null (#5300)");
+		// `t[k] ??= v`, `o.f ??= v`, `A.S ??= v` and the variables in a Box (v1) evaluated `v`
+		// even when the target was already set: a call in `v` ran for nothing.
+		var f = "global n = 0; function f() { n++; return n } ";
+		code(f + "var m = [1: 5]; var r = (m[1] ??= f()); return [r, m, n]").equals("[5, [1 : 5], 0]");
+		code(f + "var m = [1: null]; var r = (m[1] ??= f()); return [r, m, n]").equals("[1, [1 : 1], 1]");
+		code(f + "var m = [1: 5]; m[2] ??= f(); return [m, n]").equals("[[1 : 5, 2 : 1], 1]");
+		code(f + "var t = [0, null]; t[0] ??= f(); t[1] ??= f(); return [t, n]").equals("[[0, 1], 1]");
+		code_v4_(f + "Map<integer, integer> m = [1: 5]; m[1] ??= f(); m[2] ??= f(); return [m, n]").equals("[[1 : 5, 2 : 1], 1]");
+		code_v2_(f + "var o = {x: 5}; o.x ??= f(); return [o.x, n]").equals("[5, 0]");
+		code_v2_(f + "class A { public x = 5 public static S = 6 } var a = new A(); a.x ??= f(); A.S ??= f(); return [a.x, A.S, n]").equals("[5, 6, 0]");
+		code_v2_(f + "class A { public x public static S } var a = new A(); a.x ??= f(); A.S ??= f(); return [a.x, A.S, n]").equals("[1, 2, 2]");
+		code_v2_(f + "class A { x = 5 cache = [1: 5] m() { this.x ??= f(); this.cache[1] ??= f(); cache[1] ??= f(); return n } } return new A().m()").equals("0");
+		code_v1(f + "var x = 5; x ??= f(); return [x, n]").equals("[5, 0]");
+		code_v1(f + "global g = 5; g ??= f(); return [g, n]").equals("[5, 0]");
+		code(f + "var m = [1: 5]; var y = null; m[1] ??= (y ??= f()); return [m, y, n]").equals("[[1 : 5], null, 0]");
+		// The container and the key are read again to know it: an impure key is not, it is
+		// evaluated once and the value along with it, as before
+		code(f + "global k = 0; function key() { k++; return 1 } var m = [1: 5]; m[key()] ??= f(); return [m, k, n]").equals("[[1 : 5], 1, 1]");
+		// A value without side effect keeps its Java
+		code("var m = [1: null]; m[1] ??= []; m[2] ??= []; return m").equals("[1 : [], 2 : []]");
+	}
+
+	@Test
+	public void testCoalesceAssign_variable_in_a_box() throws Exception {
+		section("Coalesce-assign on a variable captured by a closure, or an argument in a Box (#5300)");
+		// A captured local lives in a Wrapper, which had no coalesce_eq; an argument captured or
+		// in v1 lives in a Box, and was assigned an Object: COMPILE_JAVA in both cases.
+		var f = "global n = 0; function f() { n++; return n } ";
+		code(f + "var x = null; var g = function() { return x }; x ??= f(); return [x, g(), n]").equals("[1, 1, 1]");
+		code(f + "var x = 5; var g = function() { return x }; x ??= f(); return [x, g(), n]").equals("[5, 5, 0]");
+		code("var x = null; var g = function() { return x }; var r = (x ??= 7); return [r, g()]").equals("[7, 7]");
+		code(f + "function h(a) { a ??= f(); return a } return [h(null), h(3), n]").equals("[1, 3, 1]");
+		code(f + "function h(a) { var g = function() { return a }; a ??= f(); return [a, g()] } return [h(null), h(3), n]").equals("[[1, 1], [3, 3], 1]");
+	}
+
+	@Test
 	public void testAssignRealIntoIntMap() throws Exception {
 		section("Assigning a real expression into an integer map (operations enabled)");
 		// Production error #11227756: `gain[puce] = effet[2] * (1 + getWisdom() / 100)`

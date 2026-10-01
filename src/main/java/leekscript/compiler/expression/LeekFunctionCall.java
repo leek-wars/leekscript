@@ -191,6 +191,15 @@ public class LeekFunctionCall extends Expression {
 		return true;
 	}
 
+	/** Aucun argument dont l'évaluation se voit (cf ConstantFolder.isHarmlessValue). */
+	private boolean hasHarmlessArguments(MainLeekBlock mainblock) {
+		var fromClass = mainblock.getWordCompiler().getCurrentClass();
+		for (var parameter : mParameters) {
+			if (!ConstantFolder.isHarmlessValue(parameter, fromClass)) return false;
+		}
+		return true;
+	}
+
 	/**
 	 * Valeur émise à la place d'un appel éliminé dont le résultat est utilisé :
 	 * le littéral du `return` (converti vers le type de retour déclaré) pour une
@@ -228,6 +237,8 @@ public class LeekFunctionCall extends Expression {
 		boolean castParenthesis = false;
 		// Appel Java direct d'une fonction ou méthode utilisateur : ses paramètres ont le type déclaré
 		boolean typedArguments = false;
+		// Appel optionnel `obj?.m(...)` émis en `(obj instanceof Object $o ? callObjectAccess($o, ...)`, à refermer
+		boolean closeOptionalCall = false;
 
 		if (mExpression instanceof LeekObjectAccess) {
 			// Object access : object.field()
@@ -237,8 +248,20 @@ public class LeekFunctionCall extends Expression {
 			if (((LeekObjectAccess) mExpression).isOptional()) {
 				// Appel de méthode optionnel `obj?.method()` : null si l'objet est null,
 				// sinon appel dynamique. L'objet n'est évalué qu'une fois (en argument).
-				writer.addCode("callObjectAccessNullSafe(");
-				object.writeJavaCode(mainblock, writer, false);
+				// Un objet de type primitif n'est jamais null : rien à court-circuiter, Java inchangé.
+				if (object.getType().isPrimitive() || hasHarmlessArguments(mainblock)) {
+					writer.addCode("callObjectAccessNullSafe(");
+					object.writeJavaCode(mainblock, writer, false);
+				} else {
+					// Les arguments ne sont évalués que si l'objet n'est pas null (#5300). L'objet est
+					// lié par le motif, sous un nom unique : un argument peut contenir un autre `?.`,
+					// et `$` n'entre dans aucun nom LeekScript, donc dans aucun champ qu'il masquerait.
+					var receiver = "$o" + mainblock.getCount();
+					writer.addCode("(");
+					object.writeJavaCode(mainblock, writer, true);
+					writer.addCode(" instanceof Object " + receiver + " ? callObjectAccess(" + receiver);
+					closeOptionalCall = true;
+				}
 				writer.addCode(", \"" + field + "\", \"u_" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 
 			} else if (object instanceof LeekVariable && ((LeekVariable) object).getVariableType() == VariableType.SUPER) {
@@ -501,6 +524,9 @@ public class LeekFunctionCall extends Expression {
 		}
 		if (addFinalParenthesis) {
 			writer.addCode(")");
+		}
+		if (closeOptionalCall) {
+			writer.addCode(" : null)");
 		}
 		if (convertPrimitive) {
 			// Ferme le cast ouvert par writeConvertPrimitiveCast() : ((Number) X.run(...)).doubleValue()

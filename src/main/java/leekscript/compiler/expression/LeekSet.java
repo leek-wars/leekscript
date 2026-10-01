@@ -45,6 +45,10 @@ public class LeekSet extends Expression {
 		mElements.add(new SetElement(param, null));
 	}
 
+	public boolean isEmpty() {
+		return mElements.isEmpty();
+	}
+
 	public void addRange(Expression start, Expression end) {
 		mElements.add(new SetElement(start, end));
 	}

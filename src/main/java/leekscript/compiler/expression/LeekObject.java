@@ -26,6 +26,10 @@ public class LeekObject extends Expression {
 		mValues.put(key, value);
 	}
 
+	public boolean isEmpty() {
+		return mValues.isEmpty();
+	}
+
 	public void setClosingBrace(Token closingBrace) {
 		this.closingBrace = closingBrace;
 		this.closingBrace.setExpression(this);

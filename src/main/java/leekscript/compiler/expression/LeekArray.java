@@ -29,6 +29,10 @@ public class LeekArray extends Expression {
 		mValues.add(param);
 	}
 
+	public boolean isEmpty() {
+		return mValues.isEmpty();
+	}
+
 	public void setClosingBracket(Token closingBracket) {
 		this.closingBracket = closingBracket;
 		closingBracket.setExpression(this);

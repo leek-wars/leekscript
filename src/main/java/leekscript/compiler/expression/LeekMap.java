@@ -56,6 +56,10 @@ public class LeekMap extends Expression {
 		mEntries.add(new Entry(key, value));
 	}
 
+	public boolean isEmpty() {
+		return mEntries.isEmpty();
+	}
+
 	@Override
 	public int getNature() {
 		return ARRAY;
