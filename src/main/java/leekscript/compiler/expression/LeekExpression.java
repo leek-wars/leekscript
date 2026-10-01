@@ -949,13 +949,20 @@ public class LeekExpression extends Expression {
 			}
 			if (parenthesis) writer.addCode("(");
 			writer.compileLoad(mainblock, mExpression1, true);
-			writer.addCode(" != null ? ");
+			var left = coalesceLeft();
+			if (left instanceof CoalesceValue) {
+				// `a` peut avoir un effet de bord : évalué une seule fois, sa valeur est liée par le
+				// motif (faux sur null) puis reprise dans la branche (#5300)
+				writer.addCode(" instanceof Object " + CoalesceValue.NAME + " ? ");
+			} else {
+				writer.addCode(" != null ? ");
+			}
 			// Comme le ternaire (LeekTernaire), on convertit les deux branches vers le
 			// type résultant. Sinon une branche typée Object (ex. accès optionnel `?.`
 			// -> callObjectAccessNullSafe / getFieldNullSafe, émis sans cast) casse le
 			// javac quand le `??` doit produire un primitif : `... ? Object : 0l`
 			// -> « Object cannot be converted to long » (#11231144).
-			writer.compileConvert(mainblock, ARRAY, mExpression1, type, true);
+			writer.compileConvert(mainblock, ARRAY, left, type, true);
 			writer.addCode(" : ");
 			writer.compileConvert(mainblock, ARRAY, mExpression2, type, true);
 			if (parenthesis) writer.addCode(")");
@@ -1521,6 +1528,78 @@ public class LeekExpression extends Expression {
 	}
 
 	/**
+	 * Ce que `a ?? b` rend quand `a` n'est pas null : `a` lui-même quand le relire ne change rien
+	 * (cf isPureRead), sinon sa valeur liée au test, pour ne l'évaluer qu'une fois.
+	 */
+	private Expression coalesceLeft() {
+		return isPureRead(mExpression1) ? mExpression1 : new CoalesceValue(mExpression1);
+	}
+
+	/**
+	 * Relire l'expression rend la même valeur sans effet de bord : variable, littéral, champ ou
+	 * élément d'une expression elle-même pure (la lecture d'un élément est alors facturée deux
+	 * fois). Un appel, une écriture ou un incrément, non.
+	 */
+	private static boolean isPureRead(Expression expression) {
+		var e = expression.trim();
+		if (e instanceof LeekVariable || e instanceof LeekNumber || e instanceof LeekBigInteger || e instanceof LeekString || e instanceof LeekBoolean || e instanceof LeekNull) {
+			return true;
+		}
+		if (e instanceof LeekObjectAccess access) {
+			return isPureRead(access.getObject());
+		}
+		return e instanceof LeekArrayAccess access && !access.isSlice() && isPureRead(access.getTabular()) && isPureRead(access.getCase());
+	}
+
+	/**
+	 * La valeur de `a` liée par `a ?? b` (`load(a) instanceof Object __coalesce`) : un Object en
+	 * Java, sous le type de `a`. Un seul nom suffit : chaque liaison ne vit que dans sa branche.
+	 */
+	private static final class CoalesceValue extends Expression {
+
+		static final String NAME = "__coalesce";
+
+		private final Expression operand;
+
+		CoalesceValue(Expression operand) {
+			this.operand = operand;
+		}
+
+		@Override
+		public int getNature() {
+			return operand.getNature();
+		}
+
+		@Override
+		public Type getType() {
+			return operand.getType();
+		}
+
+		@Override
+		public boolean hasObjectJavaResult() {
+			return true;
+		}
+
+		@Override
+		public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
+			writer.addCode(NAME);
+		}
+
+		@Override
+		public boolean validExpression(WordCompiler compiler, MainLeekBlock mainblock) {
+			return true;
+		}
+
+		@Override
+		public void analyze(WordCompiler compiler) {}
+
+		@Override
+		public Location getLocation() {
+			return operand.getLocation();
+		}
+	}
+
+	/**
 	 * `x as T` vers un type non classe passe par compileConvert (cf writeJavaCode).
 	 */
 	private boolean asConverts() {
@@ -1551,7 +1630,7 @@ public class LeekExpression extends Expression {
 		}
 		if (mOperator == Operators.COALESCE) {
 			return mExpression1.getType().canBeNull()
-				? JavaWriter.keepsObject(mExpression1, type) || JavaWriter.keepsObject(mExpression2, type)
+				? JavaWriter.keepsObject(coalesceLeft(), type) || JavaWriter.keepsObject(mExpression2, type)
 				: mExpression1.hasObjectJavaResult();
 		}
 		if (mOperator == Operators.AS) {

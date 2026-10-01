@@ -57,6 +57,32 @@ public class TestEdgeCases extends TestCommon {
 	}
 
 	@Test
+	public void testCoalesce_left_evaluated_once() throws Exception {
+		section("Coalesce evaluates its left operand once (#5300)");
+		// `a ?? b` wrote `a` twice (null test, then value): a call or a write in `a` ran twice,
+		// and so did its side effects and its operations.
+		var call = "global n = 0; function f() { n++; return n } var r = f() ?? 0; return [r, n]";
+		code(call).equals("[1, 1]");
+		code_strict(call).equals("[1, 1]");
+		code("global n = 0; function f() { n++; return null } function g() { n += 10; return 5 } var r = f() ?? g() ?? 0; return [r, n]").equals("[5, 11]");
+		code("var a = [1]; var r = (a[0] += 1) ?? 0; return [r, a]").equals("[2, [2]]");
+		code("global n = 0; function f() { n++; return n } if (f() ?? 0) { return n } return -1").equals("1");
+		code("global n = 0; var f = function() { n++; return n }; var g = function() { return f() ?? 0 }; return [g(), n]").equals("[1, 1]");
+		code("global n = 0; function f() => string? { n++; return 'a' } string s = f() ?? 'b'; return [s, n]").equals("[\"a\", 1]");
+		// Typed results: the value kept for the branch is converted like any other Object
+		var typed = "global n = 0; function f() => integer? { n++; return n } integer r = f() ?? 0; return [r, n, (f() ?? 0) + 10 + n]";
+		code_v2_(typed).equals("[1, 1, 14]");
+		code_strict_v2_(typed).equals("[1, 1, 14]");
+		code("global n = 0; function f() => integer? { n++; return null } function g() => integer? { return 4 } integer? r = f() ?? g(); return [r, n]").equals("[4, 1]");
+		code_v2_("class A { integer k = 0 integer? m() { this.k++ return this.k } } var a = new A(); var r = a.m() ?? 0; return [r, a.k]").equals("[1, 1]");
+		code_v2_("class B { static integer c = 0 static f() { B.c++ return B.c } static g() { return B.f() ?? 0 } } return [B.g(), B.c]").equals("[1, 1]");
+		// The value is bound to a Java local: a user class field with the same name is unaffected
+		code_v2_("global n = 0; function f() { n++; return n } class A { __coalesce = 42 m() { var r = f() ?? 0; return [r, __coalesce] } } return new A().m()").equals("[1, 42]");
+		// A left operand without side effect is still read correctly
+		code("var x = null; var m = [1: 5]; return [x ?? 3, m[1] ?? 0, m[2] ?? 7]").equals("[3, 5, 7]");
+	}
+
+	@Test
 	public void testAssignRealIntoIntMap() throws Exception {
 		section("Assigning a real expression into an integer map (operations enabled)");
 		// Production error #11227756: `gain[puce] = effet[2] * (1 + getWisdom() / 100)`
