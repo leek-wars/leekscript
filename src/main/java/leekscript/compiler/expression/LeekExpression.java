@@ -1211,20 +1211,12 @@ public class LeekExpression extends Expression {
 		// Properties too: this.x != null && f(this.x), A.X != null && f(A.X) (#5303)
 		if (mExpression2 != null) {
 			if (mOperator == Operators.AND && mExpression1 != null) {
-				var narrowing = NarrowingInfo.extract(mExpression1);
-				var saved = narrowing.applyTrue();
-				var block = compiler.getCurrentBlock();
-				var savedProperties = block.narrowPropertyTypes(narrowing.getTruePropertyNarrowings());
+				var saved = NarrowingInfo.extract(mExpression1).applyTrue(compiler.getCurrentBlock());
 				mExpression2.analyze(compiler);
-				block.restoreNarrowedPropertyTypes(savedProperties);
 				NarrowingInfo.restore(saved);
 			} else if (mOperator == Operators.OR && mExpression1 != null) {
-				var narrowing = NarrowingInfo.extract(mExpression1);
-				var saved = narrowing.applyFalse();
-				var block = compiler.getCurrentBlock();
-				var savedProperties = block.narrowPropertyTypes(narrowing.getFalsePropertyNarrowings());
+				var saved = NarrowingInfo.extract(mExpression1).applyFalse(compiler.getCurrentBlock());
 				mExpression2.analyze(compiler);
-				block.restoreNarrowedPropertyTypes(savedProperties);
 				NarrowingInfo.restore(saved);
 			} else {
 				mExpression2.analyze(compiler);

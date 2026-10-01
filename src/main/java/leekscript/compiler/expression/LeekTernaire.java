@@ -285,16 +285,12 @@ public class LeekTernaire extends LeekExpression {
 
 			var block = compiler.getCurrentBlock();
 
-			var savedTrue = narrowingInfo.applyTrue();
-			var savedProperties = block.narrowPropertyTypes(narrowingInfo.getTruePropertyNarrowings());
+			var savedTrue = narrowingInfo.applyTrue(block);
 			mExpression1.analyze(compiler);
-			block.restoreNarrowedPropertyTypes(savedProperties);
 			NarrowingInfo.restore(savedTrue);
 
-			var savedFalse = narrowingInfo.applyFalse();
-			savedProperties = block.narrowPropertyTypes(narrowingInfo.getFalsePropertyNarrowings());
+			var savedFalse = narrowingInfo.applyFalse(block);
 			mExpression2.analyze(compiler);
-			block.restoreNarrowedPropertyTypes(savedProperties);
 			NarrowingInfo.restore(savedFalse);
 		} else {
 			mExpression1.analyze(compiler);

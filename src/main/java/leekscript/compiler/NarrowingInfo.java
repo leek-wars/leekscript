@@ -5,6 +5,7 @@ import java.util.Map;
 
 import leekscript.common.CompoundType;
 import leekscript.common.Type;
+import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekNull;
@@ -106,6 +107,34 @@ public class NarrowingInfo {
 			entry.getKey().setType(entry.getValue());
 		}
 		return saved;
+	}
+
+	/**
+	 * Narrowings de variables ET de propriétés (`this.x`, `A.X`), le temps d'analyser une
+	 * sous-expression (opérande droit d'un && / ||, branche d'un ternaire) : à rendre par
+	 * restore(Saved). null quand il n'y a rien à appliquer (cas dominant).
+	 */
+	public record Saved(Map<LeekVariable, Type> variables, AbstractLeekBlock block, Map<String, Type> properties) {}
+
+	public Saved applyTrue(AbstractLeekBlock block) {
+		return apply(trueNarrowings, truePropertyNarrowings, block);
+	}
+
+	public Saved applyFalse(AbstractLeekBlock block) {
+		return apply(falseNarrowings, falsePropertyNarrowings, block);
+	}
+
+	private static Saved apply(Map<LeekVariable, Type> narrowings, Map<String, Type> propertyNarrowings, AbstractLeekBlock block) {
+		boolean hasProperties = propertyNarrowings != null && !propertyNarrowings.isEmpty();
+		if (!hasProperties && (narrowings == null || narrowings.isEmpty())) return null;
+		var properties = hasProperties ? block.narrowPropertyTypes(propertyNarrowings) : null;
+		return new Saved(apply(narrowings), hasProperties ? block : null, properties);
+	}
+
+	public static void restore(Saved saved) {
+		if (saved == null) return;
+		if (saved.block() != null) saved.block().restoreNarrowedPropertyTypes(saved.properties());
+		restore(saved.variables());
 	}
 
 	public static void restore(Map<LeekVariable, Type> saved) {
