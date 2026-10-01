@@ -133,9 +133,9 @@ public abstract class Expression {
 	}
 
 	/**
-	 * Le Java écrit est un Object alors que getType() annonce un type primitif : le
-	 * consommateur doit passer par la conversion runtime (bool()…), pas par son chemin
-	 * primitif. Faux par défaut, seules les expressions qui le savent le signalent.
+	 * Le Java écrit est un Object alors que getType() annonce un type précis (integer, real,
+	 * boolean, string…) : le consommateur doit passer par la conversion runtime (bool()…), pas
+	 * par son chemin typé. Faux par défaut, seules les expressions qui le savent le signalent.
 	 */
 	public boolean hasObjectJavaResult() {
 		return false;

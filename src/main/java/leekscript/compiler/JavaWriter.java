@@ -141,9 +141,16 @@ public class JavaWriter {
 		return className;
 	}
 
+	/**
+	 * Le type qui décide du chemin Java d'une expression : le sien, sauf quand son Java est un
+	 * Object (cf hasObjectJavaResult), qui se traite alors comme une valeur any (#5300).
+	 */
+	private static Type codegenType(Expression expression) {
+		return expression.hasObjectJavaResult() ? Type.ANY : expression.getType();
+	}
+
 	public void getBoolean(MainLeekBlock mainblock, Expression expression, boolean parenthesis) {
-		// Un Object sous un type integer ou boolean ne se convertit que par bool() (#5300).
-		var type = expression.trim().hasObjectJavaResult() ? Type.ANY : expression.getType();
+		var type = codegenType(expression);
 		if (type == Type.BOOL) {
 			expression.writeJavaCode(mainblock, this, parenthesis);
 		} else if (type == Type.INT) {
@@ -163,7 +170,7 @@ public class JavaWriter {
 	}
 
 	public void getString(MainLeekBlock mainblock, Expression expression, boolean parenthesis) {
-		if (expression.getType() == Type.STRING) {
+		if (codegenType(expression) == Type.STRING) {
 			expression.writeJavaCode(mainblock, this, parenthesis);
 		} else {
 			addCode("string(");
@@ -173,12 +180,33 @@ public class JavaWriter {
 	}
 
 	public void getInt(MainLeekBlock mainblock, Expression expression, boolean parenthesis) {
-		if (expression.getType() == Type.INT) {
+		if (codegenType(expression) == Type.INT) {
 			expression.writeJavaCode(mainblock, this, parenthesis);
 		} else {
 			addCode("longint(");
 			expression.writeJavaCode(mainblock, this, false);
 			addCode(")");
+		}
+	}
+
+	/**
+	 * Écrit `expression` là où le Java attend la valeur de son propre type : opérande d'un
+	 * opérateur natif (`+`, `<`…) ou d'une affectation composée native.
+	 */
+	public void compileTyped(MainLeekBlock mainblock, Expression expression, boolean parenthesis) {
+		compileTyped(mainblock, expression, expression.getType(), parenthesis);
+	}
+
+	/**
+	 * Écrit `expression` là où le Java attend `type`. Un résultat Java en Object y est converti
+	 * comme une valeur any ; toute autre expression s'écrit telle quelle, big_integer compris
+	 * (que compileConvert casterait).
+	 */
+	public void compileTyped(MainLeekBlock mainblock, Expression expression, Type type, boolean parenthesis) {
+		if (expression.hasObjectJavaResult()) {
+			compileConvertTyped(mainblock, 0, expression, type, parenthesis);
+		} else {
+			expression.writeJavaCode(mainblock, this, parenthesis);
 		}
 	}
 
@@ -291,10 +319,43 @@ public class JavaWriter {
 			value.writeJavaCode(mainblock, this, true);
 			return;
 		}
-		compileConvert(mainblock, index, value, type, true);
+		compileConvertTyped(mainblock, index, value, type, true);
 	}
 
+	/**
+	 * Convertit `value` vers `type`. Quand les types coïncident, la valeur s'écrit telle quelle,
+	 * même si son Java est un Object (cf hasObjectJavaResult) : la destination l'accepte (put,
+	 * setField, Box, valeur castée par l'appelant) ou le passe-plat le signale (keepsObject).
+	 */
 	public void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type, boolean parenthesis) {
+		compileConvert(mainblock, index, value, type, parenthesis, false);
+	}
+
+	/**
+	 * Comme compileConvert, pour une destination dont le Java a le type de `type` (variable,
+	 * paramètre, retour ou champ typés) : un résultat Java en Object y est converti comme une
+	 * valeur any, là où javac le refuserait (#5300).
+	 */
+	public void compileConvertTyped(MainLeekBlock mainblock, int index, Expression value, Type type, boolean parenthesis) {
+		compileConvert(mainblock, index, value, type, parenthesis, true);
+	}
+
+	/**
+	 * compileConvert laisse-t-il `value` en Object vers `type` ?
+	 */
+	public static boolean keepsObject(Expression value, Type type) {
+		return convertsAsIs(value.getType(), type) && value.hasObjectJavaResult();
+	}
+
+	/**
+	 * compileConvert écrit-il une valeur de type `valueType` telle quelle vers `type` ? Oui quand
+	 * les types coïncident, sauf vers big_integer, qui reçoit toujours un cast.
+	 */
+	private static boolean convertsAsIs(Type valueType, Type type) {
+		return type != Type.BIG_INT && type.accepts(valueType) == CastType.EQUALS;
+	}
+
+	private void compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type, boolean parenthesis, boolean typed) {
 
 		// System.out.println("convert " + value.getType() + " to " + type);
 		// Conversions impliquant big_integer (#bigint)
@@ -334,9 +395,9 @@ public class JavaWriter {
 			addCode(").longValue()");
 			return;
 		}
-		var cast = type.accepts(value.getType());
-		// System.out.println("cast = " + cast);
-		if (cast.ordinal() <= CastType.EQUALS.ordinal()) {
+		// Types identiques : la valeur s'écrit telle quelle, sauf un résultat Java en Object vers
+		// une destination typée, converti plus bas comme une valeur any (#5300).
+		if (convertsAsIs(value.getType(), type) && !(typed && value.hasObjectJavaResult())) {
 			value.writeJavaCode(mainblock, this, parenthesis);
 			return;
 		}

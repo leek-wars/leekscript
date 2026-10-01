@@ -166,16 +166,20 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 			} else {
 				writer.addCode(this.type.getJavaPrimitiveName(mainblock.getVersion()));
 				writer.addCode(" u_" + token.getWord() + " = ");
+				// Sous ops(), un type référence est casté ici : la valeur peut rester un Object
+				var castHere = writer.isOperationsEnabled() && this.type != Type.ANY && !this.type.isPrimitive();
 				if (writer.isOperationsEnabled()) {
-					if (this.type != Type.ANY && !this.type.isPrimitive()) {
+					if (castHere) {
 						writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 					}
 					writer.addCode("ops(");
 				}
-				if (mValue != null) {
+				if (mValue == null) {
+					writer.addCode(this.type.getDefaultValue(writer, mainblock.getVersion()));
+				} else if (castHere) {
 					writer.compileConvert(mainblock, 0, mValue, this.type, false);
 				} else {
-					writer.addCode(this.type.getDefaultValue(writer, mainblock.getVersion()));
+					writer.compileConvertTyped(mainblock, 0, mValue, this.type, false);
 				}
 				if (writer.isOperationsEnabled()) {
 					writer.addCode(", " + (1 + (mValue == null ? 0 : mValue.getOperations())) + ")");

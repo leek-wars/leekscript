@@ -1218,4 +1218,54 @@ public class TestArray extends TestCommon {
 		code_strict("Array<boolean> a = [false]; if (a[0] ??= true) { return 1 } return a").equals("[false]");
 	}
 
+	/**
+	 * La même écriture composée, utilisée comme valeur : opérande d'un opérateur natif, valeur
+	 * d'une variable, d'un paramètre, d'un retour ou d'un champ typés, argument d'une native,
+	 * sous un `?:`, `??`, `as` ou `!`. L'Object du helper runtime y était écrit tel quel et
+	 * javac le refusait (#5300). `==` (v4) comparait même deux Long par référence, sans
+	 * erreur : vrai jusqu'à 127, faux au-delà.
+	 */
+	@Test
+	public void testArray_element_update_as_value() throws Exception {
+		section("Écriture composée dans un élément, utilisée comme valeur");
+		var arithmetic = "Array<integer> a = [10, 20]; return [(a[1] += 2) + 1, 1 + (a[1] += 2), (a[1] -= 2) * 2, (a[1] *= 2) % 7, -(a[1] -= 50)]";
+		code(arithmetic).equals("[23, 25, 44, 2, 6]");
+		code_strict(arithmetic).equals("[23, 25, 44, 2, 6]");
+		code("Array<integer> a = [10, 20]; return [(a[1] += 2) > 21, (a[1] += 2) < 21, (a[1] -= 2) >= 22, (a[1]++) <= 22]").equals("[true, false, true, true]");
+		code("Array<integer> a = [10, 20]; return [(a[1] += 2) & 3, (a[1] += 2) << 1, (a[1] += 2) \\ 3]").equals("[2, 48, 8]");
+		var equality = "Array<integer> a = [998, 998]; return (a[0] += 1) == (a[1] += 1)";
+		code(equality).equals("true");
+		code_strict(equality).equals("true");
+		code("Array<integer> a = [998, 998]; integer x = 999; return [x == (a[1] += 1), (a[0] += 1) == 999]").equals("[true, true]");
+		// Variables, paramètres, retours, méthodes et champs typés
+		var typed = "Array<integer> a = [10, 20]; integer x = (a[1] += 2); var y = (a[1] ??= 5); integer? z = (a[1] -= 4); return [x, y, z]";
+		code(typed).equals("[22, 22, 18]");
+		code_strict(typed).equals("[22, 22, 18]");
+		code_strict_v2_("Array<real> r = [1.5, 2.5]; real x = (r[1] += 2); return x").equals("4.5");
+		code_strict("Array<integer> a = [10, 20]; integer x = 0; x = (a[1] += 2); integer y = 1; y += (a[1] += 2); return [x, y]").equals("[22, 25]");
+		var calls = "global Array<integer> a = [10, 20]; function g(integer v) { return v + 1 } function h() => integer { return a[1] += 2 } return [g(a[1] += 2), h()]";
+		code_v2_(calls).equals("[23, 24]");
+		code_strict_v2_(calls).equals("[23, 24]");
+		code_strict_v2_("class Mt { integer m(integer v) { return v + 1 } static integer s(integer v) { return v + 2 } } Array<integer> a = [10, 20]; Mt o = new Mt(); return [o.m(a[1] += 2), Mt.s(a[1] += 2)]").equals("[23, 26]");
+		code_strict_v2_("class Cf { integer f = 0 } Array<integer> a = [10, 20]; Cf o = new Cf(); o.f = (a[1] += 2); return o.f").equals("22");
+		// Affectations composées natives : %= d'une variable typée, opérations de bits d'une globale
+		code("Array<integer> a = [10, 20]; integer x = 100; x %= (a[1] += 2); return x").equals("12");
+		var globalBits = "global integer g = 7; Array<integer> a = [10, 20]; g |= (a[1] += 2); g &= (a[1]++); g ^= (a[0] -= 9); return g";
+		code_v2_(globalBits).equals("23");
+		code_strict_v2_(globalBits).equals("23");
+		// Sous un ternaire, ??, as ou !
+		var wrappers = "boolean c = true; Array<integer> a = [10, 20]; integer y = c ? (a[1] += 2) : 0; return [(c ? (a[1] += 2) : 0) + 1, y, ((a[1] += 2) ?? 0) + 1, ((a[1] += 2) as integer) + 1, ((a[1] += 2))! + 1]";
+		code(wrappers).equals("[25, 22, 27, 29, 31]");
+		code_strict(wrappers).equals("[25, 22, 27, 29, 31]");
+		// Natives, chaînes, booléens, switch, map et tableau imbriqué
+		code_strict("Array<integer> a = [10, 20]; Array<real> r = [1.5, 2.5]; Array<string> s = ['a']; return [abs(a[1] -= 30), max(a[1] += 2, 1), floor(r[1] += 2), length(s[0] += 'b')]").equals("[10, 1, 4, 2]");
+		code("Array<string> s = ['a']; function g(string v) { return v + '!' } return g(s[0] += 'b')").equals("\"ab!\"");
+		code_strict("Array<boolean> b = [false]; boolean x = (b[0] ??= true); return x").equals("false");
+		code_v3_("Array<integer> a = [10, 20]; switch (a[1] += 2) { case 22: return 'ok' } return 'ko'").equals("\"ok\"");
+		code_strict_v4_("Map<integer, integer> m = [1: 20]; Array<Array<integer>> n = [[0, 20]]; return [(m[1] += 2) + 1, (n[0][1] += 2) > 21]").equals("[23, true]");
+		code_strict_v4_("Array<integer|real> a = [10, 20.5]; Interval i = [1..100]; return intervalContains(i, a[1] += 2)").equals("true");
+		// Non-régression : une destination qui accepte un Object garde l'écriture telle quelle
+		code_strict("Array<integer> a = [10, 20]; Array<integer> b = [0]; b[0] = (a[1] += 2); debug(a[1] += 2); return [b, 'x' + (a[1] += 2), [a[1]++]]").equals("[[22], \"x26\", [26]]");
+	}
+
 }

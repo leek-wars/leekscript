@@ -639,7 +639,7 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				writer.addCode(field.getKey());
 				writer.addCode(" = ");
 				if (field.getValue().getType() != Type.ANY) {
-					writer.compileConvert(mainblock, 0, expr, field.getValue().getType(), false);
+					writer.compileConvertTyped(mainblock, 0, expr, field.getValue().getType(), false);
 				} else {
 					expr.writeJavaCode(mainblock, writer, false);
 				}

@@ -119,7 +119,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 					finalExpression.writeJavaCode(mainblock, writer, false);
 					writer.addCode(")");
 				} else {
-					writer.compileConvert(mainblock, 0, finalExpression, returnType, false);
+					writer.compileConvertTyped(mainblock, 0, finalExpression, returnType, false);
 				}
 				writer.addLine("; if (bool(" + r + ")) return " + r + ";", getLocation());
 			} else {
@@ -127,7 +127,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 				if (mainblock.getWordCompiler().getVersion() == 1) {
 					finalExpression.compileL(mainblock, writer, false);
 				} else {
-					writer.compileConvert(mainblock, 0, finalExpression, returnType, false);
+					writer.compileConvertTyped(mainblock, 0, finalExpression, returnType, false);
 				}
 				writer.addLine(";", getLocation());
 			}

@@ -226,6 +226,8 @@ public class LeekFunctionCall extends Expression {
 		// sinon Java lit `(u_Entity) (execute(...).u_method())` et le receveur reste
 		// Object → « cannot find symbol » à la compilation Java.
 		boolean castParenthesis = false;
+		// Appel Java direct d'une fonction ou méthode utilisateur : ses paramètres ont le type déclaré
+		boolean typedArguments = false;
 
 		if (mExpression instanceof LeekObjectAccess) {
 			// Object access : object.field()
@@ -247,6 +249,7 @@ public class LeekFunctionCall extends Expression {
 				// utilisateur (issue #4070).
 				writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".super.u_" + field + "(");
 				addComma = false;
+				typedArguments = true;
 
 			} else if (object instanceof LeekVariable v && v.getVariableType() == VariableType.CLASS) {
 				// Class.method() : Méthode statique connue
@@ -256,6 +259,7 @@ public class LeekFunctionCall extends Expression {
 					String methodName = "u_" + v.getClassDeclaration().getStaticMethodName(field, mParameters.size());
 					writer.addCode(methodName + "(");
 					addComma = false;
+					typedArguments = true;
 				} else {
 					// Champ statique
 					// writer.addCode("execute(" + v.getClassDeclaration().getName() + "." + field);
@@ -272,6 +276,7 @@ public class LeekFunctionCall extends Expression {
 					// writer.addCode("callObjectAccess(u_this, \"" + field + "\", \"" + field + "_" + mParameters.size() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 					writer.addCode("u_" + field + "(");
 					addComma = false;
+					typedArguments = true;
 				} else if (this.functionType instanceof FunctionType ft) {
 					// run() retourne Object : on caste vers le wrapper avant .doubleValue()/etc.
 					writeConvertPrimitiveCast(writer);
@@ -290,10 +295,12 @@ public class LeekFunctionCall extends Expression {
 			} else if (is_static_method) {
 				writer.addCode("u_" + method.block.getClassDeclaration().getName() + "_" + field + "_" + mParameters.size() + "(");
 				addComma = false;
+				typedArguments = true;
 			} else if (is_method) {
 				object.writeJavaCode(mainblock, writer, true);
 				writer.addCode(".u_" + field + "(");
 				addComma = false;
+				typedArguments = true;
 			} else {
 				// object.field() : Méthode ou bien appel d'un champ
 				if (type != Type.ANY) {
@@ -328,12 +335,14 @@ public class LeekFunctionCall extends Expression {
 			// une fonction anonyme (classe interne Java) du constructeur (issue #4070).
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".super.init(");
 			addComma = false;
+			typedArguments = true;
 
 		} else if (mExpression instanceof LeekVariable v && v.getVariableType() == VariableType.METHOD) {
 			// Méthode connue
 			// String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getMethodName(((LeekVariable) mExpression).getName(), mParameters.size());
 			// writer.addCode(methodName + "(u_this");
 			writer.addCode("u_" + v.getName() + "(");
+			typedArguments = true;
 			// writer.addCode("callMethod(this, \"" + ((LeekVariable) mExpression).getName() + "_" + mParameters.size() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 			addComma = false;
 
@@ -345,6 +354,7 @@ public class LeekFunctionCall extends Expression {
 			String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getStaticMethodName(((LeekVariable) mExpression).getName(), mParameters.size());
 			writer.addCode(methodName + "(");
 			addComma = false;
+			typedArguments = true;
 		} else if (mExpression instanceof LeekVariable && mainblock.isRedefinedFunction(((LeekVariable) mExpression).getName())) {
 			writer.addCode("rfunction_" + ((LeekVariable) mExpression).getName());
 			writer.addCode(".execute(");
@@ -382,6 +392,7 @@ public class LeekFunctionCall extends Expression {
 			writer.addCode("(");
 			addComma = false;
 			user_function = mainblock.getUserFunction(((LeekVariable) mExpression).getName());
+			typedArguments = true;
 		} else if (mExpression.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null) {
 			writer.addCode("new_");
 			mExpression.writeJavaCode(mainblock, writer, false);
@@ -449,6 +460,8 @@ public class LeekFunctionCall extends Expression {
 				if (mainblock.getVersion() >= 2) {
 					if (system_function != null) {
 						parameter.writeJavaCode(mainblock, writer, false);
+					} else if (typedArguments) {
+						writer.compileConvertTyped(mainblock, i, parameter, functionType.getArgument(mParameters.size(), i), false);
 					} else {
 						writer.compileConvert(mainblock, i, parameter, functionType.getArgument(mParameters.size(), i), false);
 					}
@@ -460,7 +473,7 @@ public class LeekFunctionCall extends Expression {
 						// Java (#2743). Les paramètres non typés gardent le chargement L-value.
 						var argType = functionType.getArgument(mParameters.size(), i);
 						if (argType != Type.ANY) {
-							writer.compileConvert(mainblock, i, parameter, argType, false);
+							writer.compileConvertTyped(mainblock, i, parameter, argType, false);
 						} else {
 							parameter.compileL(mainblock, writer, false);
 						}
@@ -924,6 +937,11 @@ public class LeekFunctionCall extends Expression {
 					version_unsafe = true;
 				// } else if (cast_type.ordinal() > CastType.SAFE_DOWNCAST.ordinal()) {
 				} else if (cast_type != CastType.EQUALS) {
+					version_unsafe = true;
+				} else if (compiler.getVersion() >= 4 && !f_type.getJavaPrimitiveName(compiler.getVersion()).equals("Object") && mParameters.get(i).hasObjectJavaResult()) {
+					// Un Object vers un paramètre Java typé (long, Number, String…) : l'appel direct
+					// d'une native (v4+) ne trouverait pas sa surcharge, l'appel générique le reçoit
+					// comme un any (#5300).
 					version_unsafe = true;
 				}
 				// System.out.println("cast " + f_type + " accepts " + a_type + " = " + cast_type);

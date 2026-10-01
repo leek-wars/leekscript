@@ -70,6 +70,22 @@ public class LeekTernaire extends LeekExpression {
 		return type;
 	}
 
+	/**
+	 * Sous un type référence précis, chaque branche reçoit un cast vers ce type (cf writeJavaCode).
+	 */
+	private boolean castsBranches() {
+		return type != Type.ANY && !type.isPrimitive();
+	}
+
+	/**
+	 * Une branche gardée en Object (cf JavaWriter.keepsObject) fait du ternaire entier un Object
+	 * en Java, sauf si elle reçoit un cast.
+	 */
+	@Override
+	public boolean hasObjectJavaResult() {
+		return complete() && !castsBranches() && (JavaWriter.keepsObject(mExpression1, type) || JavaWriter.keepsObject(mExpression2, type));
+	}
+
 	@Override
 	public String toString() {
 		String retour = "";
@@ -94,7 +110,7 @@ public class LeekTernaire extends LeekExpression {
 			var branch_ops = mExpression1.operations != mExpression2.operations;
 			writer.getBoolean(mainblock, mCondition, true);
 			writer.addCode(" ? ");
-			if (this.type != Type.ANY && !this.type.isPrimitive()) {
+			if (castsBranches()) {
 				writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
 			}
 			if (mExpression1.getOperations() > 0 && branch_ops) {
@@ -105,7 +121,7 @@ public class LeekTernaire extends LeekExpression {
 				writer.addCode(", " + mExpression1.getOperations() + ")");
 			}
 			writer.addCode(" : ");
-			if (this.type != Type.ANY && !this.type.isPrimitive()) {
+			if (castsBranches()) {
 				writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			if (mExpression2.getOperations() > 0 && branch_ops) {

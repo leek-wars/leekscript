@@ -442,13 +442,13 @@ public class LeekObjectAccess extends Expression {
 		if (isThisLikeReceiver(writer) && this.variable != null) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(field.getWord() + " = ");
-			writer.compileConvert(mainblock, 0, expr, fieldType, false);
+			writer.compileConvertTyped(mainblock, 0, expr, fieldType, false);
 			if (parenthesis) writer.addCode(")");
 		} else if (object.getType() instanceof ClassType && this.variable != null) {
 			if (parenthesis) writer.addCode("(");
 			writeObjectWithNarrowingCast(mainblock, writer);
 			writer.addCode("." + field.getWord() + " = ");
-			writer.compileConvert(mainblock, 0, expr, fieldType, false);
+			writer.compileConvertTyped(mainblock, 0, expr, fieldType, false);
 			if (parenthesis) writer.addCode(")");
 		} else {
 			var close = writer.openFieldResultConversion(this.type);

@@ -42,6 +42,11 @@ public class LeekParenthesis extends Expression {
 	}
 
 	@Override
+	public boolean hasObjectJavaResult() {
+		return mExpression.hasObjectJavaResult();
+	}
+
+	@Override
 	public String toString() {
 		return "(" + mExpression.toString() + ")";
 	}
