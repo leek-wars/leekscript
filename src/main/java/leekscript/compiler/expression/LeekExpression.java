@@ -1208,16 +1208,23 @@ public class LeekExpression extends Expression {
 
 		// Short-circuit narrowing: for &&, apply true narrowings from e1 when analyzing e2
 		// e.g., x != null && x.toto() → x is non-null when evaluating x.toto()
+		// Properties too: this.x != null && f(this.x), A.X != null && f(A.X) (#5303)
 		if (mExpression2 != null) {
 			if (mOperator == Operators.AND && mExpression1 != null) {
 				var narrowing = NarrowingInfo.extract(mExpression1);
 				var saved = narrowing.applyTrue();
+				var block = compiler.getCurrentBlock();
+				var savedProperties = block.narrowPropertyTypes(narrowing.getTruePropertyNarrowings());
 				mExpression2.analyze(compiler);
+				block.restoreNarrowedPropertyTypes(savedProperties);
 				NarrowingInfo.restore(saved);
 			} else if (mOperator == Operators.OR && mExpression1 != null) {
 				var narrowing = NarrowingInfo.extract(mExpression1);
 				var saved = narrowing.applyFalse();
+				var block = compiler.getCurrentBlock();
+				var savedProperties = block.narrowPropertyTypes(narrowing.getFalsePropertyNarrowings());
 				mExpression2.analyze(compiler);
+				block.restoreNarrowedPropertyTypes(savedProperties);
 				NarrowingInfo.restore(saved);
 			} else {
 				mExpression2.analyze(compiler);

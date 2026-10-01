@@ -519,4 +519,30 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("integer | null x = null; if (x == null) { x = 42 } return abs(x)").noWarning().equals("42");
 	}
 
+
+	/**
+	 * Narrowing d'une propriété à droite d'un && / || et dans un ternaire, quand l'objet
+	 * est précisé (`this.x`, `A.X`, `class.X`, `a.x`) (#5303). Le narrowing des propriétés
+	 * ne passait que par les blocs (`if (this.x != null) { ... }`).
+	 */
+	@Test
+	public void testProperty_narrowing_in_expressions() throws Exception {
+		section("Property narrowing in && / || / ternary");
+		code_strict_v4_("class A { string? str = \"ab\"; boolean m() { return this.str != null && startsWith(this.str, \"a\") } } return new A().m()").noWarning();
+		code_v4_("class A { string? str = \"ab\"; boolean m() { return this.str != null && startsWith(this.str, \"a\") } } return new A().m()").equals("true");
+		code_strict_v4_("class A { static string? STR = \"ab\"; static boolean m() { return A.STR != null && startsWith(A.STR, \"a\") } } return A.m()").noWarning();
+		code_v4_("class A { static string? STR = \"ab\"; static boolean m() { return A.STR != null && startsWith(A.STR, \"a\") } } return A.m()").equals("true");
+		code_strict_v4_("class A { static string? STR = \"ab\"; static boolean m() { return class.STR != null && startsWith(class.STR, \"a\") } } return A.m()").noWarning();
+		code_v4_("class A { static string? STR = \"ab\"; static boolean m() { return class.STR != null && startsWith(class.STR, \"a\") } } return A.m()").equals("true");
+		code_strict_v4_("class A { string? str = \"ab\" } var a = new A(); return a.str != null && startsWith(a.str, \"a\")").noWarning();
+		code_v4_("class A { string? str = \"ab\" } var a = new A(); return a.str != null && startsWith(a.str, \"a\")").equals("true");
+		code_strict_v4_("class A { string? str = \"ab\"; boolean m() { return this.str == null || startsWith(this.str, \"a\") } } return new A().m()").noWarning();
+		code_v4_("class A { string? str = \"ab\"; boolean m() { return this.str == null || startsWith(this.str, \"a\") } } return new A().m()").equals("true");
+		code_strict_v4_("class A { string? str = \"ab\"; integer m() { return this.str != null ? length(this.str) : 0 } } return new A().m()").noWarning();
+		code_v4_("class A { string? str = \"ab\"; integer m() { return this.str != null ? length(this.str) : 0 } } return new A().m()").equals("2");
+		code_strict_v4_("class A { static string? STR = null; static integer m() { return A.STR == null ? 0 : length(A.STR) } } return A.m()").noWarning();
+		code_v4_("class A { static string? STR = null; static integer m() { return A.STR == null ? 0 : length(A.STR) } } return A.m()").equals("0");
+		// Le narrowing ne fuit pas après l'expression
+		code_strict_v4_("class A { string? str = null; void m() { var b = this.str != null && startsWith(this.str, \"a\"); startsWith(this.str, \"a\") } }").warning(Error.DANGEROUS_CONVERSION);
+	}
 }

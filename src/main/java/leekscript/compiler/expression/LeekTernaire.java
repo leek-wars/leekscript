@@ -283,12 +283,18 @@ public class LeekTernaire extends LeekExpression {
 			// Apply narrowing from the condition to each branch
 			var narrowingInfo = NarrowingInfo.extract(mCondition);
 
+			var block = compiler.getCurrentBlock();
+
 			var savedTrue = narrowingInfo.applyTrue();
+			var savedProperties = block.narrowPropertyTypes(narrowingInfo.getTruePropertyNarrowings());
 			mExpression1.analyze(compiler);
+			block.restoreNarrowedPropertyTypes(savedProperties);
 			NarrowingInfo.restore(savedTrue);
 
 			var savedFalse = narrowingInfo.applyFalse();
+			savedProperties = block.narrowPropertyTypes(narrowingInfo.getFalsePropertyNarrowings());
 			mExpression2.analyze(compiler);
+			block.restoreNarrowedPropertyTypes(savedProperties);
 			NarrowingInfo.restore(savedFalse);
 		} else {
 			mExpression1.analyze(compiler);

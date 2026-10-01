@@ -141,6 +141,25 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		return null;
 	}
 
+	/**
+	 * Applique des narrowings de propriétés le temps d'analyser une sous-expression
+	 * (`this.x != null && f(this.x)`, branches d'un ternaire) ; renvoie l'état à rendre
+	 * ensuite à restoreNarrowedPropertyTypes. La map en place n'est jamais modifiée.
+	 */
+	public Map<String, Type> narrowPropertyTypes(Map<String, Type> narrowings) {
+		var saved = mNarrowedPropertyTypes;
+		if (!narrowings.isEmpty()) {
+			var merged = saved == null ? new HashMap<String, Type>() : new HashMap<>(saved);
+			merged.putAll(narrowings);
+			mNarrowedPropertyTypes = merged;
+		}
+		return saved;
+	}
+
+	public void restoreNarrowedPropertyTypes(Map<String, Type> saved) {
+		mNarrowedPropertyTypes = saved;
+	}
+
 	public LeekInstruction lastInstruction() {
 		return mInstructions.size() == 0 ? null : mInstructions.get(mInstructions.size() - 1);
 	}
