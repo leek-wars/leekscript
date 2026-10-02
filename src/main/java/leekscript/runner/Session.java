@@ -1,5 +1,7 @@
 package leekscript.runner;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.TreeMap;
 
 import leekscript.common.Type;
@@ -15,12 +17,39 @@ public class Session {
 	private TreeMap<String, Type> types = new TreeMap<>();
 	private int version;
 	private boolean strict;
+	// IA des lignes déjà jouées. Une fonction définie sur une ligne garde son code, et donc son
+	// compteur d'opérations, dans l'IA de cette ligne : l'appeler plus tard n'est pas compté sur
+	// la ligne courante. Références faibles : une ligne dont plus rien n'est appelable s'en va.
+	private final ArrayList<WeakReference<AI>> previous = new ArrayList<>();
+	private AI current;
 
 	public void rebindAll(AI ai) {
 		var visited = LeekOperations.newVisitedSet();
 		for (var box : variables.values()) {
 			box.rebind(ai, visited);
 		}
+		if (current != null && current != ai) {
+			previous.add(new WeakReference<>(current));
+		}
+		current = ai;
+		previous.removeIf(ref -> ref.get() == null);
+		for (var ref : previous) {
+			var line = ref.get();
+			if (line != null) line.resetCounter();
+		}
+	}
+
+	/**
+	 * Opérations consommées dans les IA des lignes passées depuis le début de la ligne
+	 * courante (appels de leurs fonctions), à ajouter à celles de la ligne elle-même.
+	 */
+	public long previousOperations() {
+		long ops = 0;
+		for (var ref : previous) {
+			var line = ref.get();
+			if (line != null) ops += line.operations();
+		}
+		return ops;
 	}
 
 	public Session() {
