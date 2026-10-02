@@ -1719,6 +1719,7 @@ public class WordCompiler {
 				//  || (t1 == TokenType.PAR_LEFT && t2 == TokenType.STRING && t3 == TokenType.VIRG) // (x,
 				|| (t1 == TokenType.STRING && t2 == TokenType.ARROW) // x =>
 				|| (parenthesis && t1 == TokenType.STRING && t2 == TokenType.PAR_RIGHT && t3 == TokenType.ARROW) // (x) =>
+				|| (parenthesis && type1 == null && t1 == TokenType.PAR_RIGHT && t2 == TokenType.ARROW) // () =>
 		//  || (t1 == TokenType.PAR_LEFT && t2 == TokenType.STRING && t3 == TokenType.PAR_RIGHT && t4 == TokenType.ARROW) // (x) =>
 		) {
 			if (!parenthesis) {

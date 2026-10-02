@@ -101,6 +101,11 @@ public class TestFunction extends TestCommon {
 		// 2. arrow sans parens (param unique sans parens)
 		code("var f = x => x * 3 return f(4)").equals("12");
 		code("var f = -> 42 return f()").equals("42");
+		// sans paramètre, parenthèses vides
+		code("var f = () => 42 return f()").equals("42");
+		code("var f = () -> 42 return f()").equals("42");
+		code("var f = () => { return 3 } return f()").equals("3");
+		code("function callIt(f) { return f() } return callIt(() => 7)").equals("7");
 		// 3. parens sans arrow : pas une arrow function
 		code("var x = (1 + 2) * 3 return x").equals("9");
 		code("var x = (5) return x").equals("5");
