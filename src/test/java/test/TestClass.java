@@ -184,6 +184,18 @@ public class TestClass extends TestCommon {
 	}
 
 	/**
+	 * Champ d'un objet de classe resté null : lire comme écrire signale le champ, pas une
+	 * conversion impossible « null → ? » (forum, sujet 11203).
+	 */
+	@Test
+	public void testClass_null_field_access() throws Exception {
+		section("Class null field access");
+		code_v4("class Test { testA; } Test t; t.testA = 1; return t").error(Error.UNKNOWN_FIELD);
+		code_strict_v4_("class Test { testA; } Test t; t.testA = 1; return t").error(Error.UNKNOWN_FIELD);
+		code_v4("class Test { testA; } Test t; return t.testA").error(Error.UNKNOWN_FIELD);
+	}
+
+	/**
 	 * Optional chaining `obj?.field` / `obj?.method()` (#2272) : court-circuite à null
 	 * si l'objet est null, sinon accès/appel normal.
 	 */

@@ -681,7 +681,9 @@ public abstract class AI {
 				if (m2.find()) {
 					error.parameters = new Object[] { "null", javaTypeToLS(methodOwner(m2.group(1))) };
 				} else {
-					Pattern r3 = Pattern.compile("Cannot read field \"(.*)\" because \".*\" is null");
+					// Lire ou écrire un champ d'un objet null (`Test t; t.x = 1`) : même erreur
+					// que le chemin dynamique, plutôt qu'une conversion impossible illisible.
+					Pattern r3 = Pattern.compile("Cannot (?:read|assign) field \"(.*)\" because \".*\" is null");
 					Matcher m3 = r3.matcher(throwable.getMessage() != null ? throwable.getMessage() : "");
 					if (m3.find()) {
 						error.type = Error.UNKNOWN_FIELD;
