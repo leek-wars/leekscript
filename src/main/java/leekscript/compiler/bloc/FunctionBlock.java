@@ -5,6 +5,7 @@ import java.util.EnumSet;
 
 import leekscript.common.Annotation;
 import leekscript.common.Type;
+import leekscript.common.Type.CastType;
 import leekscript.compiler.Annotatable;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
@@ -142,6 +143,26 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 		return declared;
 	}
 
+	/**
+	 * Avertit quand une valeur par défaut est d'un type incompatible avec son paramètre
+	 * (`A a = []`) : sans cela, rien ne l'annonce dans l'éditeur, alors que l'appel qui
+	 * utilise le défaut échoue au runtime. Toujours un warning, même en mode strict : les
+	 * défauts n'ont jamais été type-checkés, une erreur ferait échouer à la compilation des
+	 * IA existantes. `null` est exclu comme dans parameterType(). Partagé avec les méthodes
+	 * de classe (ClassMethodBlock).
+	 */
+	public static void checkDefaultValueType(WordCompiler compiler, String parameter, Type type, Expression defaultValue) throws LeekCompilerException {
+		if (defaultValue.trim() instanceof LeekNull) return;
+		if (type.accepts(defaultValue.getType()) == CastType.INCOMPATIBLE) {
+			compiler.addError(new AnalyzeError(defaultValue.getLocation(), AnalyzeErrorLevel.WARNING, Error.ASSIGNMENT_INCOMPATIBLE_TYPE, new String[] {
+				defaultValue.toString(),
+				defaultValue.getType().toString(),
+				parameter,
+				type.toString(),
+			}));
+		}
+	}
+
 	public void setReturnType(Type type) {
 		this.type.setReturnType(type);
 	}
@@ -197,9 +218,11 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		var initialFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(this);
-		for (var value : defaultValues) {
+		for (int i = 0; i < defaultValues.size(); ++i) {
+			var value = defaultValues.get(i);
 			if (value != null) {
 				value.analyze(compiler);
+				checkDefaultValueType(compiler, mParameters.get(i), mTypes.get(i), value);
 			}
 		}
 		super.analyze(compiler);

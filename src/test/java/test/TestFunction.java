@@ -664,6 +664,28 @@ public class TestFunction extends TestCommon {
 	}
 
 	@Test
+	public void testDefault_parameter_incompatible_type_warning() throws Exception {
+		section("Default parameter of incompatible type: warning");
+		// Rien ne signalait le défaut incompatible dans l'éditeur, alors que l'appel qui
+		// l'utilise échoue au runtime. Warning seulement, y compris en strict : une erreur
+		// ferait échouer des IA qui compilent aujourd'hui.
+		code_v4_("class B {} class A { B b constructor(B b = []) { this.b = b } } return 1").warning(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v4_("class B {} class A { B b constructor(B b = []) { this.b = b } } return 1").warning(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_v4_("class B {} function f(B b = []) { return b } return 1").warning(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_v4_("class A { static m(Set<integer> s = [1, 2]) { return s } } return 1").warning(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		// L'IA compile toujours, le défaut évalué lève la même erreur qu'avant
+		code_v4_("class B {} function f(B b = []) { return b } return f()").error(Error.IMPOSSIBLE_CAST);
+		// Défauts compatibles : aucun avertissement
+		code_v4_("class A {} function f(A a = null) { return a } return f()").noWarning();
+		code_v4_("function f(Array a = null, string s = null, Map m = null, integer i = null) { return [a, s, m, i] } return f()").noWarning();
+		code_v4_("function f(real x = 12) { return x } return f()").noWarning();
+		code_v4_("function f(Array<integer> a = [], Map<string, integer> m = [:], Set<integer> s = <>) { return [a, m, s] } return f()").noWarning();
+		code_v4_("class A {} class B extends A {} function f(A a = new B()) { return a } return f()").noWarning();
+		code_v4_("class A { constructor(A other = null) {} static m(A x = new A()) { return x } } return A.m()").noWarning();
+		code_v4_("function g() => any { return [1, 2] } function f(Array<integer> t = g()) { return t } return f()").noWarning();
+	}
+
+	@Test
 	public void testConversion_to_boolean() throws Exception {
 		section("Conversion vers boolean (#5053)");
 		// Un cast Java nu `(boolean) <ArrayLeekValue>` est rejeté par javac : la
