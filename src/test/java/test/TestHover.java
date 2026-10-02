@@ -20,17 +20,6 @@ import leekscript.compiler.exceptions.LeekCompilerException;
  */
 public class TestHover {
 
-	private static int id = 990000;
-
-	private static AIFile file(String name, String code) {
-		var ai = ++id;
-		var file = new AIFile(name, code, System.currentTimeMillis(), 4, ai, false);
-		file.setJavaClass("AI_" + ai);
-		file.setRootClass("AI");
-		file.setId(ai);
-		return file;
-	}
-
 	private static void hoverEverywhere(String name, String code, AIFile file) {
 		var lines = code.split("\n", -1);
 		for (int l = 1; l <= lines.length; l++) {
@@ -48,7 +37,7 @@ public class TestHover {
 	 * peu long lèverait AI_TIMEOUT — puis appelle `readCode()` sans `analyze()`.
 	 */
 	private static void hoverUnanalyzed(String name, String code) throws Exception {
-		var file = file(name, code);
+		var file = TestCommon.aiFile(name, code);
 		new IACompiler().merge(file);
 		hoverEverywhere(name, code, file);
 	}
@@ -59,7 +48,7 @@ public class TestHover {
 	 * de production, où l'analyse échoue et laisse l'arbre à moitié renseigné.
 	 */
 	private static void hoverAnalyzed(String name, String code) throws Exception {
-		var file = file(name, code);
+		var file = TestCommon.aiFile(name, code);
 		try {
 			file.compile(new Options());
 		} catch (LeekCompilerException e) {

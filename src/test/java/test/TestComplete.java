@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Test;
 
-import leekscript.compiler.AIFile;
 import leekscript.compiler.Complete;
 import leekscript.compiler.Options;
 
@@ -14,14 +13,8 @@ import leekscript.compiler.Options;
  */
 public class TestComplete {
 
-	private static int id = 980000;
-
 	private static Complete completeAt(String code, int line, int column) throws Exception {
-		var ai = ++id;
-		var file = new AIFile("complete_" + ai, code, System.currentTimeMillis(), 4, ai, false);
-		file.setJavaClass("AI_" + ai);
-		file.setRootClass("AI");
-		file.setId(ai);
+		var file = TestCommon.aiFile("complete", code);
 		file.compile(new Options());
 		return file.complete(line, column);
 	}
@@ -83,5 +76,23 @@ public class TestComplete {
 		var complete = completeAt(code, 8, 1);
 		assertNotNull(complete);
 		assertEquals(1, count(complete, "x"), "un champ redéclaré ne sort qu'une fois");
+	}
+
+	@Test
+	public void unionMemberSharedMethodIsProposedOnce() throws Exception {
+		var code = """
+			class A {
+				public m() {}
+			}
+			class B extends A {}
+			class C extends A {}
+			function f(B | C x) {
+				x.m();
+			}
+			""";
+		var complete = completeAt(code, 7, 2);
+		assertNotNull(complete);
+		assertEquals("B | C", complete.type.toString(), "le receveur est bien une union");
+		assertEquals(1, count(complete, "m"), "une méthode commune aux membres d'une union ne sort qu'une fois");
 	}
 }

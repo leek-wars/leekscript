@@ -2,6 +2,9 @@ package test;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Arrays;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
@@ -73,6 +76,22 @@ public class TestOperations extends TestCommon {
 	}
 
 	/**
+	 * https://leekwars.com/forum/category-3/topic-11187 — une fonction définie sur une ligne
+	 * passée tourne dans l'IA de cette ligne : ses appels doivent compter sur la ligne courante.
+	 */
+	@Test
+	public void testSessionReplCallsPreviousFunction() throws Exception {
+		section("Console session (REPL) : fonction d'une ligne passée");
+		var separate = replCosts("var f = x => x ** 2", "f(42)");
+		var together = replCosts("var f = x => x ** 2 f(42)");
+		assertTrue(separate[1] > 0, "appeler une fonction d'une ligne passée a un coût");
+		assertEquals(together[0] - separate[0], separate[1], "même coût que sur la même ligne");
+		var c = replCosts("var f = x => x ** 2", "f(42)", "f(42)", "var y = 1");
+		assertEquals(c[1], c[2], "le compteur d'une ligne passée repart de zéro à chaque ligne");
+		assertEquals(replCosts("var y = 1")[0], c[3], "une ligne qui n'appelle rien ne paie pas les appels d'avant");
+	}
+
+	/**
 	 * #5226 : une variable de session garde son type déclaré d'une ligne à l'autre. Relue en `any`,
 	 * `BigInteger a = 1` puis `a << 64` décalait un long 64 bits et rendait 1.
 	 */
@@ -111,22 +130,29 @@ public class TestOperations extends TestCommon {
 	}
 
 	private void runRepl(ReplStep... steps) throws Exception {
+		var costs = replCosts(Arrays.stream(steps).map(step -> step.code).toArray(String[]::new));
+		for (int i = 0; i < steps.length; i++) {
+			System.out.println("[REPL] " + steps[i].code + " → " + costs[i] + " ops (attendu " + steps[i].expectedOps + ")");
+			assertEquals(steps[i].expectedOps, costs[i], "ops pour: " + steps[i].code);
+		}
+	}
+
+	/** Coût de chaque ligne jouée dans une même session, tel que la console l'affiche. */
+	private static long[] replCosts(String... lines) throws Exception {
 		var session = new Session(LeekScript.LATEST_VERSION, false);
-		// Les constructeurs générés chargent des champs statiques système qui
-		// facturent ~4 ops de baseline ; on la mesure une fois et on la soustrait.
-		var baselineAI = LeekScript.compileSnippet("", "AI", new Options(session));
-		long baseline = baselineAI.operations();
-		for (var step : steps) {
-			var ai = LeekScript.compileSnippet(step.code, "AI", new Options(session));
+		var costs = new long[lines.length];
+		for (int i = 0; i < lines.length; i++) {
+			var ai = LeekScript.compileSnippet(lines[i], "AI", new Options(session));
 			ai.maxOperations = 1_000_000;
 			ai.maxRAM = 1_000_000;
+			// Départ pris après la construction de l'IA, qui facture déjà quelques ops.
+			long before = ai.operations();
 			ai.init();
 			ai.staticInit();
 			ai.runIA(session);
-			long ops = ai.operations() - baseline;
-			System.out.println("[REPL] " + step.code + " → " + ops + " ops (attendu " + step.expectedOps + ")");
-			assertEquals(step.expectedOps, ops, "ops pour: " + step.code);
+			costs[i] = session.lineOperations(ai, before);
 		}
+		return costs;
 	}
 
 }

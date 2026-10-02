@@ -1,7 +1,5 @@
 package leekscript.common;
 
-import java.util.HashSet;
-
 import leekscript.compiler.Complete;
 import leekscript.compiler.Complete.CompleteCategory;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
@@ -77,25 +75,19 @@ public class ClassType extends Type {
 	public Complete complete() {
 		// System.out.println("ClassType " + clazz.getName() + " complete");
 		var complete = new Complete(this);
-		// Un nom par catégorie : une méthode redéfinie à chaque niveau d'héritage, ou
-		// surchargée, ne fait qu'une proposition. La classe la plus dérivée passe en premier.
-		var fields = new HashSet<String>();
 		var current = this.clazz;
 		while (current != null) {
 			for (var field : current.getFields().entrySet()) {
-				if (fields.add(field.getKey())) {
-					complete.add(CompleteCategory.FIELD, field.getKey(), field.getValue().getType());
-				}
+				complete.add(CompleteCategory.FIELD, field.getKey(), field.getValue().getType());
 			}
 			current = current.getParent();
 		}
-		var methods = new HashSet<String>();
 		current = this.clazz;
 		while (current != null) {
 			for (var method : current.getMethods().entrySet()) {
-				if (!methods.add(method.getKey())) continue;
-				method.getValue().values().stream().findFirst()
-					.ifPresent(version -> complete.add(CompleteCategory.METHOD, method.getKey(), version.block.getType()));
+				for (var version : method.getValue().entrySet()) {
+					complete.add(CompleteCategory.METHOD, method.getKey(), version.getValue().block.getType());
+				}
 			}
 			current = current.getParent();
 		}

@@ -40,6 +40,14 @@ public class Session {
 	}
 
 	/**
+	 * Coût d'une ligne : ses propres opérations depuis `before` (lu après la construction de
+	 * l'IA), plus les appels qu'elle a faits aux fonctions des lignes passées.
+	 */
+	public long lineOperations(AI ai, long before) {
+		return ai.operations() - before + previousOperations();
+	}
+
+	/**
 	 * Opérations consommées dans les IA des lignes passées depuis le début de la ligne
 	 * courante (appels de leurs fonctions), à ajouter à celles de la ligne elle-même.
 	 */

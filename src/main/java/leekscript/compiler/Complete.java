@@ -1,6 +1,7 @@
 package leekscript.compiler;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import leekscript.util.Json;
 import tools.jackson.databind.node.ArrayNode;
@@ -12,6 +13,10 @@ public class Complete {
 
 	public Type type;
 	public ArrayList<CompleteItem> completions = new ArrayList<>();
+	// Un nom par catégorie : une méthode redéfinie à chaque niveau d'héritage, surchargée, ou
+	// partagée par les membres d'une union n'est proposée qu'une fois. La première l'emporte
+	// (la classe la plus dérivée, cf ClassType.complete).
+	private final HashSet<String> names = new HashSet<>();
 
 	public enum CompleteCategory {
 		METHOD,
@@ -43,11 +48,15 @@ public class Complete {
 	}
 
 	public void add(CompleteCategory category, String x, Type type) {
-		completions.add(new CompleteItem(category, x, type));
+		if (names.add(category + ":" + x)) {
+			completions.add(new CompleteItem(category, x, type));
+		}
 	}
 
 	public void addAll(Complete complete) {
-		completions.addAll(complete.completions);
+		for (var item : complete.completions) {
+			add(item.category, item.name, item.type);
+		}
 	}
 
 	public Object toJSON() {

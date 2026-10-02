@@ -17,6 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.Options;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
@@ -28,6 +29,18 @@ import leekscript.common.Error;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestCommon {
+
+	private static final AtomicInteger aiFileId = new AtomicInteger(990000);
+
+	/** Une IA prête à compiler, pour les tests de l'éditeur (survol, complétion). */
+	static AIFile aiFile(String name, String code) {
+		var ai = aiFileId.incrementAndGet();
+		var file = new AIFile(name, code, System.currentTimeMillis(), 4, ai, false);
+		file.setJavaClass("AI_" + ai);
+		file.setRootClass("AI");
+		file.setId(ai);
+		return file;
+	}
 
 	private static String GREEN_BOLD = "\033[1;32m";
 	private static String C_RED = "\033[1;31m";
