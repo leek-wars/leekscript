@@ -33,6 +33,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 	private boolean captured = false;
 	private AbstractLeekBlock function;
 	private boolean box = false;
+	private boolean iterator = false;
 	private LeekVariable variable;
 	private Type type;
 	private LeekType leekType;
@@ -77,6 +78,24 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 
 	public boolean isWrapper() {
 		return this.box && this.captured;
+	}
+
+	public void setIterator() {
+		this.iterator = true;
+	}
+
+	/**
+	 * Type Java de l'emplacement d'un itérateur de foreach hors Box/Wrapper (cf ForeachBlock,
+	 * ForeachKeyBlock) : celui de la variable (en strict, l'élément du conteneur), par
+	 * getJavaName, donc boxé pour un primitif (`Long u_x`, cf hasBoxedSlot).
+	 */
+	public String getIteratorJavaName(int version) {
+		return variable.getType().getJavaName(version);
+	}
+
+	/** Itérateur de foreach dont l'emplacement Java est la boîte d'un primitif (cf getIteratorJavaName). */
+	public boolean hasBoxedSlot() {
+		return iterator && variable.getType().isPrimitive();
 	}
 
 	@Override

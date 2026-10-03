@@ -345,14 +345,17 @@ public class LeekVariable extends Expression {
 
 	/**
 	 * Lue par `u_x.get()` d'un Box ou d'un Wrapper (cf writeJavaCode) : un Long pour un integer.
-	 * Sauf narrowing, que writeNarrowed convertit (#5300). Narrowée depuis `T?`, la lecture reste
-	 * boxée quand rien ne la convertit : une globale (lue sans writeNarrowed) ou un boolean
-	 * (writeNarrowed ne convertit qu'integer et real, un champ statique est casté). Pas de
-	 * conversion à la lecture : elle rendrait false ou 0 au lieu de null.
+	 * Idem pour un itérateur de foreach, déclaré boxé (cf hasBoxedSlot). Sauf narrowing, que
+	 * writeNarrowed convertit (#5300). Narrowée depuis `T?`, la lecture reste boxée quand rien
+	 * ne la convertit : une globale (lue sans writeNarrowed) ou un boolean (writeNarrowed ne
+	 * convertit qu'integer et real, un champ statique est casté). Pas de conversion à la
+	 * lecture : elle rendrait false ou 0 au lieu de null.
 	 */
 	@Override
 	public boolean hasBoxedJavaResult() {
-		if (this.variable == null || this.variable.getType() == this.variableType) return isBoxSlot();
+		if (this.variable == null || this.variable.getType() == this.variableType) {
+			return isBoxSlot() || declaration != null && declaration.hasBoxedSlot();
+		}
 		return this.variableType.isPrimitive() && this.variable.getType().assertNotNull() == this.variableType
 			&& (type == VariableType.GLOBAL || this.variableType == Type.BOOL && type != VariableType.STATIC_FIELD);
 	}

@@ -40,6 +40,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	public void setValueIterator(WordCompiler compiler, Token iterator, boolean declaration, LeekType type) {
 		if (declaration) {
 			iteratorDeclaration = new LeekVariableDeclarationInstruction(compiler, iterator, compiler.getCurrentFunction(), type);
+			iteratorDeclaration.setIterator();
 			// addVariable(new LeekVariable(iterator, VariableType.ITERATOR, iteratorDeclaration));
 		}
 		mIterator = iterator;
@@ -48,6 +49,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	public void setKeyIterator(WordCompiler compiler, Token iterator, boolean declaration, LeekType type) {
 		if (declaration) {
 			iteratorKeyDeclaration = new LeekVariableDeclarationInstruction(compiler, iterator, compiler.getCurrentFunction(), type);
+			iteratorKeyDeclaration.setIterator();
 			// addVariable(new LeekVariable(iterator, VariableType.ITERATOR, iteratorKeyDeclaration));
 		}
 		mKeyIterator = iterator;
@@ -196,7 +198,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			} else if (mainblock.getVersion() <= 1) {
 				sb.append("var " + key_iterator + " = new Box(" + writer.getAIThis() + ", null);");
 			} else {
-				sb.append(iteratorKeyDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + " ").append(key_iterator).append(" = null; ops(1); ");
+				sb.append(iteratorKeyDeclaration.getIteratorJavaName(mainblock.getVersion()) + " ").append(key_iterator).append(" = null; ops(1); ");
 			}
 		}
 		// Valeur
@@ -204,7 +206,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
 				sb.append("final Wrapper<" + iteratorDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + "> " + val_iterator + " = new Wrapper<" + iteratorDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + ">(new Box(" + writer.getAIThis() + ", null));");
 			} else if (mainblock.getVersion() >= 2) {
-				sb.append(iteratorDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + " " + val_iterator + " = null; ops(1);");
+				sb.append(iteratorDeclaration.getIteratorJavaName(mainblock.getVersion()) + " " + val_iterator + " = null; ops(1);");
 			} else {
 				sb.append("var " + val_iterator + " = new Box(" + writer.getAIThis() + ", null);");
 			}

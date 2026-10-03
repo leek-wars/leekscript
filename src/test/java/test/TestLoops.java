@@ -331,6 +331,23 @@ public class TestLoops extends TestCommon {
 		code("function f(@cell, mp) { for (cell in [7, 8]) {} return cell; } return f(0, 1);").equals("8");
 	}
 
+	/**
+	 * Un itérateur typé est déclaré boxé (`Long u_x`) : `==` entre deux itérateurs comparait deux
+	 * Long par référence (faux au-delà de 127), et un ternaire imbriqué sur l'itérateur ne
+	 * compilait pas (« reference to ops is ambiguous »).
+	 */
+	@Test
+	public void testForeach_Minus_typed_iterator_is_boxed() throws Exception {
+		section("Foreach - typed iterator is boxed");
+		code_v4_("for (integer a in [1000]) { for (integer b in [999 + 1]) { return a == b } } return null").equals("true");
+		code_v4_("for (integer a in [1000]) { for (integer b in [1001]) { return a == b } } return null").equals("false");
+		code_v4_("for (integer k : var x in [1000: 5]) { for (integer k2 : var y in [1000: 6]) { return k == k2 } } return null").equals("true");
+		code_strict_v4_("Array<integer> t = [1000]; Array<integer> u = [1000]; for (var a in t) { for (var b in u) { return a == b } } return null").equals("true");
+		code_v4_("for (integer x in [1000]) { boolean c = true; integer r = c ? (c ? x : x) : 0; return r } return null").equals("1000");
+		code_v4_("for (var k : real x in [5: 2.5]) { boolean c = true; real r = c ? (c ? x : x) : 0.0; return r } return null").equals("2.5");
+		code_v4_("for (boolean x in [true]) { boolean c = true; boolean r = c ? (c ? x : x) : false; return r } return null").equals("true");
+	}
+
 	@Test
 	public void testForeach_Minus_variable_used_in_container() throws Exception {
 		section("Foreach - variable used in container");

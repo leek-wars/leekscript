@@ -143,7 +143,8 @@ public abstract class Expression {
 
 	/**
 	 * Le Java est un primitif boxé (Long, Double, Boolean) alors que getType() annonce un
-	 * primitif : lecture ou incrément d'une variable en Box, champ `T?` narrowé. `==` s'en soucie
+	 * primitif : lecture ou incrément d'une variable en Box, itérateur de foreach typé, variable
+	 * ou champ `T?` narrowé. `==` s'en soucie
 	 * (entre deux Long, il comparerait les références, cf LeekExpression), et le ternaire (cf
 	 * LeekTernaire.writeBranch).
 	 */
