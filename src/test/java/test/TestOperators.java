@@ -272,11 +272,13 @@ public class TestOperators extends TestCommon {
 		code("'salut' - 2").warning(Error.UNKNOWN_OPERATOR);
 		code("2 / [1, 2, 3]").warning(Error.UNKNOWN_OPERATOR);
 		code_v3_("{} % 5").warning(Error.UNKNOWN_OPERATOR);
-		// Un booléen vaut 0 ou 1 pour ces opérateurs, comme à l'exécution : pas d'avertissement
-		code_v4_("return [1 * true, 1 / true, 1 - true, 2 ** true, 5 % true, true * false]").noWarning();
-		code_v4_("return [1 * true, 1 / true, 1 - true, 2 ** true, 5 % true, true * false]").equals("[1, 1.0, 0, 2, 0, 0]");
-		code_v4_("return [true < 2, true >= 2, true & 3, 2 | true, true << 2, 8 >> true]").noWarning();
-		code_v4_("return [true < 2, true >= 2, true & 3, 2 | true, true << 2, 8 >> true]").equals("[true, false, 1, 3, 4, 4]");
+		// Un booléen vaut 0 ou 1, comme à l'exécution
+		var arithmetic = code_v4_("return [1 * true, 1 / true, 1 - true, 2 ** true, 5 % true, true * false]");
+		arithmetic.noWarning();
+		arithmetic.equals("[1, 1.0, 0, 2, 0, 0]");
+		var bitsAndComparisons = code_v4_("return [true < 2, true >= 2, true & 3, 2 | true, true << 2, 8 >> true]");
+		bitsAndComparisons.noWarning();
+		bitsAndComparisons.equals("[true, false, 1, 3, 4, 4]");
 		code_v4_("boolean? b = true; return 2 * b").noWarning();
 		code_strict_v4_("integer x = 3 * true; return x").noWarning();
 		code_v4_("'salut' * true").warning(Error.UNKNOWN_OPERATOR);

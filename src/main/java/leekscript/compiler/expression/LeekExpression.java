@@ -1151,7 +1151,7 @@ public class LeekExpression extends Expression {
 
 	/** Opérande d'un opérateur numérique : un nombre, ou un booléen (0 ou 1). */
 	private static boolean isNumericOperand(Type type) {
-		return Type.REAL.accepts(type) != CastType.INCOMPATIBLE || Type.BOOL.accepts(type) != CastType.INCOMPATIBLE;
+		return Type.REAL.castableFrom(type) || Type.BOOL.castableFrom(type);
 	}
 
 	private static Expression withoutNonNullAssertion(Expression target) {
@@ -1395,8 +1395,7 @@ public class LeekExpression extends Expression {
 			}
 		}
 
-		// Opérateurs inconnus (mathématiques avec un string par exemple). Un booléen vaut 0 ou 1
-		// pour tous ces opérateurs, comme à l'exécution : pas d'avertissement.
+		// Opérateurs inconnus (mathématiques avec un string par exemple)
 		if (mOperator == Operators.MINUS || mOperator == Operators.MULTIPLIE || mOperator == Operators.DIVIDE || mOperator == Operators.POWER || mOperator == Operators.MODULUS || mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT || mOperator == Operators.MORE || mOperator == Operators.LESS || mOperator == Operators.MOREEQUALS || mOperator == Operators.LESSEQUALS) {
 			if (!isNumericOperand(mExpression1.getType()) || !isNumericOperand(mExpression2.getType())) {
 				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.WARNING, Error.UNKNOWN_OPERATOR, new String[] { mOperatorToken.getWord(), mExpression1.getType().toString(), mExpression2.getType().toString() }));
