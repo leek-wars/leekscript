@@ -29,7 +29,6 @@ public class LeekObjectAccess extends Expression {
 	private LeekVariable variable;
 	private ClassType resolvedOnClassType; // ClassType used for field resolution during analysis
 	private boolean calledAsMethod = false; // cet accès est la cible d'un appel `obj.field(...)` (#2861)
-	private int version; // cf hasBoxedJavaResult
 
 	// Signalé par LeekFunctionCall avant l'analyse : quand l'accès est appelé, un nom
 	// partagé entre un champ et une méthode doit se résoudre sur la méthode.
@@ -112,7 +111,6 @@ public class LeekObjectAccess extends Expression {
 		// System.out.println("oa " + getString());
 		object.analyze(compiler);
 		operations = 1 + object.operations;
-		version = compiler.getVersion();
 
 		// Expression incomplète
 		if (field == null) return;
@@ -322,7 +320,7 @@ public class LeekObjectAccess extends Expression {
 	@Override
 	public boolean hasBoxedJavaResult() {
 		return variable != null && variable.getVariableType() == VariableType.FIELD && type.isPrimitive()
-			&& variable.getType().getJavaPrimitiveName(version).equals(type.getJavaName(version));
+			&& variable.getType() != type && variable.getType().assertNotNull() == type;
 	}
 
 	// Émission du receveur pour les chemins dynamiques (getField/setField/field_*) :

@@ -597,6 +597,29 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("class A { integer? n = 1000; boolean same(A o) { return this.n != null && o.n != null && this.n == o.n } } return new A().same(new A())").equals("true");
 		code_v4_("class A { integer? n } A a = new A(); a.n = 1000; A b = new A(); b.n = 1001; if (a.n != null && b.n != null) { return a.n == b.n } return null").equals("false");
 		code_v4_("class A { integer? n = 1000 } A a = new A(); A b = new A(); boolean c = true; if (a.n != null && b.n != null) { return (c ? a.n : b.n) == (c ? b.n : a.n) } return null").equals("true");
+		code_v4_("global integer? G = 1000; global integer? H = 1000; if (G != null && H != null) { return G == H } return null").equals("true");
+	}
+
+	/**
+	 * Même cas qu'un champ `real?` pour une variable `boolean?` (writeNarrowed ne convertit
+	 * qu'integer et real) et pour une globale `T?` (lue sans writeNarrowed) : lue telle quelle,
+	 * donc boxée, dans une branche de ternaire comptée.
+	 */
+	@Test
+	public void testNarrowed_nullable_variable_in_ternary_branch() throws Exception {
+		section("Narrowed nullable boolean variable or global in a ternary branch");
+		code_v4_("boolean? b = true; boolean r = b != null ? b! : false; return r").equals("true");
+		code_v4_("boolean? b = null; boolean r = b != null ? b! : false; return r").equals("false");
+		code_strict_v4_("boolean? b = true; boolean r = b != null ? b! : false; return r").equals("true");
+		code_v4_("boolean? b = true; var f = function() { b = true }; boolean r = b != null ? b! : false; return r").equals("true");
+		code_v4_("function g(boolean? b) { boolean r = b != null ? b! : false; return r } return g(true)").equals("true");
+		code_v4_("class A { boolean? f = true; m() { boolean r = f != null ? f! : false; return r } } return new A().m()").equals("true");
+		code_v4_("global boolean? G = true; boolean r = G != null ? G! : false; return r").equals("true");
+		code_v4_("global real? G = 2.5; real r = G != null ? G! : 0.0; return r").equals("2.5");
+		code_v4_("global integer? G = 1000; integer r = G == null ? 0 : G!; return r").equals("1000");
+		code_v4_("boolean? b = true; boolean c = true; if (b != null) { boolean r = c ? (c ? b : b) : false; return r } return null").equals("true");
+		// Hors ternaire, la lecture garde null si la variable est remise à null sous le narrowing
+		code_v4_("global real? G = 2.5; function z() { G = null } if (G != null) { z(); return [G] } return null").equals("[null]");
 	}
 
 	/**
