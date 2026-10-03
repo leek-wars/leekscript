@@ -1150,7 +1150,8 @@ public class LeekExpression extends Expression {
 	}
 
 	private static Expression withoutNonNullAssertion(Expression target) {
-		if (target instanceof LeekExpression e && e.mOperator == Operators.NON_NULL_ASSERTION && e.mExpression2.isLeftValue()) {
+		// isLeftValue() d'une LeekExpression : un `!` sur une l-value, rien d'autre
+		if (target instanceof LeekExpression e && e.isLeftValue()) {
 			return withoutNonNullAssertion(e.mExpression2);
 		}
 		return target;
