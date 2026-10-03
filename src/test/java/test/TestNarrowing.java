@@ -592,5 +592,9 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("integer x = 5; x! += 3; return x").warning(Error.USELESS_NON_NULL_ASSERTION);
 		code_v4_("function f() { return 1 } f()! += 1; return 0").compileError(Error.CANT_ASSIGN_VALUE);
 		code_v4_("function f() { return 1 } f()! = 1; return 0").compileError(Error.CANT_ASSIGN_VALUE);
+		code_v4_("function f() { return 1 } f! += 1; return 0").compileError(Error.CANNOT_REDEFINE_FUNCTION);
+		code_v4_("function f() { return 1 } f! = 1; return 0").compileError(Error.CANNOT_REDEFINE_FUNCTION);
+		code_v4_("abs! = 1; return 0").compileError(Error.CANNOT_REDEFINE_FUNCTION);
+		code_v4_("function f() { return 1 } f!++; return 0").compileError(Error.CANNOT_REDEFINE_FUNCTION);
 	}
 }

@@ -1612,9 +1612,10 @@ public class LeekExpression extends Expression {
 	 * L'opérande écrit par une affectation (`x = v`, `x += v`…) ou un incrément (`x++`,
 	 * `--x`…), null pour les autres opérateurs.
 	 */
+	/** Sans le `!` : preAnalyze s'en sert avant qu'analyze ne le retire (`f! += 1`). */
 	private Expression assignTarget() {
-		return Operators.isAssign(mOperator) ? mExpression1
-			: Operators.isIncrement(mOperator) ? mExpression2
+		return Operators.isAssign(mOperator) ? withoutNonNullAssertion(mExpression1)
+			: Operators.isIncrement(mOperator) ? withoutNonNullAssertion(mExpression2)
 			: null;
 	}
 
