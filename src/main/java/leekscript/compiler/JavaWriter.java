@@ -348,6 +348,14 @@ public class JavaWriter {
 	}
 
 	/**
+	 * compileConvert laisse-t-il `value` boxée (cf Expression.hasBoxedJavaResult) vers le
+	 * primitif `type` ?
+	 */
+	public static boolean keepsBoxed(Expression value, Type type) {
+		return type.isPrimitive() && convertsAsIs(value.getType(), type) && value.hasBoxedJavaResult();
+	}
+
+	/**
 	 * compileConvert écrit-il une valeur de type `valueType` telle quelle vers `type` ? Oui quand
 	 * les types coïncident, sauf vers big_integer, qui reçoit toujours un cast.
 	 */

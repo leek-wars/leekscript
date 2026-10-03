@@ -107,32 +107,48 @@ public class LeekTernaire extends LeekExpression {
 		}
 		if (!complete()) writer.addCode("/* " + toString() + " */");
 		else {
-			var branch_ops = mExpression1.operations != mExpression2.operations;
 			writer.getBoolean(mainblock, mCondition, true);
 			writer.addCode(" ? ");
 			if (castsBranches()) {
 				writer.addCode("(" + this.type.getJavaName(mainblock.getVersion()) + ") ");
 			}
-			if (mExpression1.getOperations() > 0 && branch_ops) {
-				writer.addCode("ops(");
-			}
-			writer.compileConvert(mainblock, ARRAY, mExpression1, type, true);
-			if (mExpression1.getOperations() > 0 && branch_ops) {
-				writer.addCode(", " + mExpression1.getOperations() + ")");
-			}
+			writeBranch(mainblock, writer, mExpression1);
 			writer.addCode(" : ");
 			if (castsBranches()) {
 				writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
-			if (mExpression2.getOperations() > 0 && branch_ops) {
-				writer.addCode("ops(");
-			}
-			writer.compileConvert(mainblock, ARRAY, mExpression2, type, true);
-			if (mExpression2.getOperations() > 0 && branch_ops) writer.addCode(", " + mExpression2.getOperations() + ")");
+			writeBranch(mainblock, writer, mExpression2);
 		}
 		if (parenthesis) {
 			writer.addCode(")");
 		}
+	}
+
+	/**
+	 * Une branche aux ops différents de l'autre est comptée par le ops(T, int) générique. Si son
+	 * Java est boxé (champ `real?` narrowé, cf hasBoxedJavaResult), ce ops rend un Double et le
+	 * ternaire devient une expression de type référence : le ops qui l'enveloppe est alors
+	 * ambigu pour javac. On la déboxe comme Java le fait d'une branche non comptée.
+	 */
+	private void writeBranch(MainLeekBlock mainblock, JavaWriter writer, Expression branch) {
+		boolean counted = mExpression1.operations != mExpression2.operations && branch.operations > 0;
+		if (counted) {
+			writer.addCode("ops(");
+			if (JavaWriter.keepsBoxed(branch, type)) {
+				writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+			}
+		}
+		writer.compileConvert(mainblock, ARRAY, branch, type, true);
+		if (counted) {
+			writer.addCode(", " + branch.operations + ")");
+		}
+	}
+
+	/** Ops égaux, aucune branche comptée : Java garde le type boxé commun des deux branches. */
+	@Override
+	public boolean hasBoxedJavaResult() {
+		return complete() && mExpression1.operations == mExpression2.operations
+			&& JavaWriter.keepsBoxed(mExpression1, type) && JavaWriter.keepsBoxed(mExpression2, type);
 	}
 
 	@Override

@@ -561,6 +561,45 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	/**
+	 * Un champ `real?` narrowé (`a.x != null`) reste un Double dans le Java. Lu dans une branche
+	 * de ternaire enveloppée par le ops(T, int) générique, il rendait ambigu le ops du ternaire
+	 * entier : l'IA ne compilait plus (« reference to ops is ambiguous »). Idem pour un champ
+	 * integer ou boolean.
+	 */
+	@Test
+	public void testNarrowed_nullable_field_in_ternary_branch() throws Exception {
+		section("Narrowed nullable field in a ternary branch");
+		code_v4_("class A { real? s = 2.5; real m() { real r = this.s != null ? this.s! : 0.0; return r } } return new A().m()").equals("2.5");
+		code_v4_("class A { real? s = 2.5; real m() { real r = this.s == null ? 0.0 : this.s!; return r } } return new A().m()").equals("2.5");
+		code_v4_("class A { real? s = 2.5 } A a = new A(); real r = a.s != null ? a.s! : 0.0; return r").equals("2.5");
+		code_v4_("class A { real? s = null } A a = new A(); real r = a.s != null ? a.s! : 0.0; return r").equals("0.0");
+		code_v4_("class A { real? s = 2.5 } A a = new A(); real r = a.s != null ? a.s : 0.0; return r").equals("2.5");
+		code_v4_("class A { real? s = 2.5 } A a = new A(); var r = a.s == null ? 0.0 : a.s!; return r").equals("2.5");
+		code_v4_("class A { real? s = 2.5 } A a = new A(); real r = (a.s != null ? a.s! : 0.0) + 1; return r").equals("3.5");
+		code_v4_("class A { integer? n = 3 } A a = new A(); integer r = a.n != null ? a.n! : 0; return r").equals("3");
+		code_v4_("class A { boolean? b = true } A a = new A(); boolean r = a.b != null ? a.b! : false; return r").equals("true");
+		code_strict_v4_("class A { real? s = 2.5 } A a = new A(); real r = a.s != null ? a.s! : 0.0; return r").equals("2.5");
+		// Ternaire imbriqué dont les deux branches sont boxées : lui-même boxé
+		code_v4_("class A { real? s = 2.5 } A a = new A(); boolean c = true; if (a.s != null) { real r = c ? (c ? a.s : a.s) : 1.0; return r } return 0").equals("2.5");
+		code_v4_("class A { real? s = 2.5 } A a = new A(); A b = new A(); boolean c = false; real r = (a.s != null && b.s != null) ? (c ? a.s! : b.s!) : 1.0 + 2; return r").equals("2.5");
+		// Hors ternaire, la lecture garde null si le champ est remis à null sous le narrowing
+		code_v4_("class A { real? s = 2.5 } A a = new A(); if (a.s != null) { a.s = null; return a.s } return -1").equals("null");
+	}
+
+	/**
+	 * Deux champs `integer?` narrowés sont deux Long en Java : `==` comparait leurs références,
+	 * donc faux au-delà du cache des Long (127).
+	 */
+	@Test
+	public void testNarrowed_nullable_fields_equality() throws Exception {
+		section("Equality of two narrowed nullable fields");
+		code_v4_("class A { integer? n = 1000 } A a = new A(); A b = new A(); if (a.n != null && b.n != null) { return a.n == b.n } return null").equals("true");
+		code_v4_("class A { integer? n = 1000; boolean same(A o) { return this.n != null && o.n != null && this.n == o.n } } return new A().same(new A())").equals("true");
+		code_v4_("class A { integer? n } A a = new A(); a.n = 1000; A b = new A(); b.n = 1001; if (a.n != null && b.n != null) { return a.n == b.n } return null").equals("false");
+		code_v4_("class A { integer? n = 1000 } A a = new A(); A b = new A(); boolean c = true; if (a.n != null && b.n != null) { return (c ? a.n : b.n) == (c ? b.n : a.n) } return null").equals("true");
+	}
+
+	/**
 	 * Une écriture à travers `!` (`x! += 1`, `t[k]! -= 1`, `++o.f!`) écrit dans la cible :
 	 * seul `=` compilait, les assignations composées et `++x!` faisaient échouer la
 	 * compilation de l'IA en combat (« Abstract method »).
