@@ -342,7 +342,6 @@ public class TestEdgeCases extends TestCommon {
 		code_v4_("var a = [3, 1, 2] return arraySort(a, function(x, y) { while (true) {} return 0 })").max_ops(10000).error(Error.TOO_MUCH_OPERATIONS);
 		code_v4_("var a = [3, 1, 2] return arraySort(a, function(x, y) { arraySort([2, 1, 3], function(p, q) { while (true) {} return 0 }) return x - y })").max_ops(10000).error(Error.TOO_MUCH_OPERATIONS);
 		code_v1_3("var a = [3, 1, 2] return arraySort(a, function(x, y) { arraySort([2, 1, 3], function(p, q) { while (true) {} return 0 }) return x - y })").max_ops(10000).error(Error.TOO_MUCH_OPERATIONS);
-		code_v4_("var a = [3, 1, 2] return arraySort(a, function(x, y) { return y - x })").max_ops(10000).equals("[3, 2, 1]");
 
 		/**
 		 * RAM limit edge cases

@@ -610,21 +610,16 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		ai.ops(1 + (int) (5 * size() * Math.log(size())));
 		var result = new ArrayLeekValue(ai, this, 1);
 		try {
-			Collections.sort(result, new Comparator<Object>() {
-				@Override
-				public int compare(Object o1, Object o2) {
-					try {
-						return ai.signum(function.run(ai, null, o1, o2));
-					} catch (Exception e) {
-						throw new RuntimeException(e);
-					}
+			Collections.sort(result, (o1, o2) -> {
+				try {
+					return ai.signum(function.run(ai, null, o1, o2));
+				} catch (Exception e) {
+					throw new RuntimeException(e);
 				}
 			});
 		} catch (RuntimeException e) {
-			// Le comparateur emballe l'erreur du joueur (opérations, mémoire…) : on la rend
-			// telle quelle, comme arraySort_v1_3. Sinon un arraySort imbriqué dans le
-			// comparateur d'un autre l'emballait deux fois, et elle remontait en
-			// « Erreur inconnue : leekscript.runner.LeekRunException ».
+			// Le comparateur emballe l'erreur du joueur (opérations, mémoire…) : elle sort
+			// telle quelle d'arraySort, comme d'arraySort_v1_3, même imbriqué.
 			if (e.getCause() instanceof LeekRunException lre) throw lre;
 			throw e;
 		}

@@ -130,8 +130,8 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 	/**
 	 * Type effectif d'un paramètre déclaré `declared` avec la valeur par défaut `defaultValue`.
 	 *
-	 * Les valeurs par défaut ne sont pas type-checkées (cf. #4703, elles ne doivent pas l'être) ;
-	 * un défaut `null` sur un type primitif (`integer to = null`) donnait `long u_to = null`, qui
+	 * Une valeur par défaut n'est jamais rejetée pour son type (cf. #4703 ; un défaut incompatible
+	 * n'est qu'un warning, cf. checkDefaultValueType) ; un défaut `null` sur un type primitif (`integer to = null`) donnait `long u_to = null`, qui
 	 * ne compile pas en Java : l'IA plantait à chaque combat (erreur prod #11872155). Le paramètre
 	 * devient non typé, `null` garde sa sémantique dynamique ; les types référence (`A a = null`)
 	 * sont inchangés. Partagé avec les méthodes de classe (ClassMethodBlock).
