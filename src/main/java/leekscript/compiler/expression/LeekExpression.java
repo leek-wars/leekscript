@@ -1221,18 +1221,13 @@ public class LeekExpression extends Expression {
 			}
 		}
 
+		// Si on a affaire à une assignation, incrémentation ou autre du genre
+		// on doit vérifier qu'on a bien une variable (l-value).
 		// `x! = v`, `t[k]! += v`, `++o.f!` : l'assertion ne porte que sur la valeur lue,
 		// l'écriture va à `x`. Sans le `!`, la cible passe par les mêmes contrôles et
 		// le même code Java que `x += v` (aucune méthode compileXxxEq sur `!`).
 		if (Operators.isAssign(mOperator)) {
 			mExpression1 = withoutNonNullAssertion(mExpression1);
-		} else if (Operators.isIncrement(mOperator)) {
-			mExpression2 = withoutNonNullAssertion(mExpression2);
-		}
-
-		// Si on a affaire à une assignation, incrémentation ou autre du genre
-		// on doit vérifier qu'on a bien une variable (l-value)
-		if (Operators.isAssign(mOperator)) {
 			if (mExpression1.isFinal()) {
 				if (mExpression1 instanceof LeekObjectAccess) {
 					if (isStaticFieldTarget(mExpression1) || !compiler.isInConstructor()) {
@@ -1263,6 +1258,7 @@ public class LeekExpression extends Expression {
 		}
 
 		if (Operators.isIncrement(mOperator)) {
+			mExpression2 = withoutNonNullAssertion(mExpression2);
 			if (mExpression2.isFinal()) {
 				// `S++` sur un champ statique final était déjà refusé, mais sous le
 				// libellé « valeur finale » : c'est bien un CHAMP (#5176).
@@ -1610,9 +1606,9 @@ public class LeekExpression extends Expression {
 
 	/**
 	 * L'opérande écrit par une affectation (`x = v`, `x += v`…) ou un incrément (`x++`,
-	 * `--x`…), null pour les autres opérateurs.
+	 * `--x`…), null pour les autres opérateurs. Sans le `!` : preAnalyze s'en sert avant
+	 * qu'analyze ne le retire (`f! += 1`).
 	 */
-	/** Sans le `!` : preAnalyze s'en sert avant qu'analyze ne le retire (`f! += 1`). */
 	private Expression assignTarget() {
 		return Operators.isAssign(mOperator) ? withoutNonNullAssertion(mExpression1)
 			: Operators.isIncrement(mOperator) ? withoutNonNullAssertion(mExpression2)
