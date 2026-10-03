@@ -559,4 +559,38 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("class A { integer | boolean | null on = 42; m() { return this.on ? this.on! : 0 } } return new A().m()").equals("42");
 		code_v4_("integer | boolean x = 42; return [x! : true]").equals("[42 : true]");
 	}
+
+	/**
+	 * Une écriture à travers `!` (`x! += 1`, `t[k]! -= 1`, `++o.f!`) écrit dans la cible :
+	 * seul `=` compilait, les assignations composées et `++x!` faisaient échouer la
+	 * compilation de l'IA en combat (« Abstract method »).
+	 */
+	@Test
+	public void testNon_null_assertion_as_assignment_target() throws Exception {
+		section("Non-null assertion as assignment target");
+		code_strict_v4_("Map<integer, integer> m = new Map() as Map<integer, integer>; integer key = 666; m[key]! = 1; return m").equals("[666 : 1]");
+		code_v4_("Map<integer, Array<integer>> m = new Map() as Map<integer, Array<integer>>; m[666]! = arraySort([3, 1, 2], function (integer a, integer b) => integer { return a - b }) as Array<integer>; return m").equals("[666 : [1, 2, 3]]");
+		code_v4_("integer | null x = 5; x! += 1; return x").equals("6");
+		code_v4_("integer | null x = 5; x! -= 1; return x").equals("4");
+		code_v4_("integer | null x = 5; x! *= 2; return x").equals("10");
+		code_v4_("integer | null x = 5; x! ??= 2; return x").equals("5");
+		code_v4_("integer | null x = 5; integer y = (x! += 1); return y").equals("6");
+		code_v4_("integer | null x = 5; integer y = (x! = 3); return y").equals("3");
+		code_v4_("integer | null x = 5; ++x!; return x").equals("6");
+		code_v4_("integer | null x = 5; --x!; x!--; return x").equals("3");
+		code_v4_("integer | null x = 5; return x!++").equals("5");
+		code_v4_("Map<integer, integer> m = [1: 2]; m[1]! += 1; return m").equals("[1 : 3]");
+		code_v4_("Map<integer, integer> m = [1: 2]; integer y = (m[1]! += 1); return y").equals("3");
+		code_v4_("Array<integer> a = [1, 2]; a[0]! += 5; return a").equals("[6, 2]");
+		code_v4_("var a = [1, 2]; a[0]! += 5; return a").equals("[6, 2]");
+		code_v4_("class A { integer | null x = 1 } A a = new A(); a.x! += 3; return a.x").equals("4");
+		code_v4_("class A { integer | null x = 1 } var a = new A(); a.x! += 3; return a.x").equals("4");
+		code_strict_v4_("integer | null x = 5; x! += 1; return x").equals("6");
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; m[1]! += 1; return m").equals("[1 : 3]");
+		// Mêmes avertissements et erreurs qu'avant
+		code_v4_("integer | null x = 5; x! += 1; return x").noWarning();
+		code_v4_("integer x = 5; x! += 3; return x").warning(Error.USELESS_NON_NULL_ASSERTION);
+		code_v4_("function f() { return 1 } f()! += 1; return 0").compileError(Error.CANT_ASSIGN_VALUE);
+		code_v4_("function f() { return 1 } f()! = 1; return 0").compileError(Error.CANT_ASSIGN_VALUE);
+	}
 }

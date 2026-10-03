@@ -1149,22 +1149,11 @@ public class LeekExpression extends Expression {
 		return mOperator == Operators.NON_NULL_ASSERTION && mExpression2.isLeftValue();
 	}
 
-	@Override
-	public void compileSet(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		if (mOperator == Operators.NON_NULL_ASSERTION) {
-			mExpression2.compileSet(mainblock, writer, expr, parenthesis);
-		} else {
-			super.compileSet(mainblock, writer, expr, parenthesis);
+	private static Expression withoutNonNullAssertion(Expression target) {
+		if (target instanceof LeekExpression e && e.mOperator == Operators.NON_NULL_ASSERTION && e.mExpression2.isLeftValue()) {
+			return withoutNonNullAssertion(e.mExpression2);
 		}
-	}
-
-	@Override
-	public void compileSetCopy(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		if (mOperator == Operators.NON_NULL_ASSERTION) {
-			mExpression2.compileSetCopy(mainblock, writer, expr, parenthesis);
-		} else {
-			super.compileSetCopy(mainblock, writer, expr, parenthesis);
-		}
+		return target;
 	}
 
 	@Override
@@ -1230,6 +1219,15 @@ public class LeekExpression extends Expression {
 			} else {
 				mExpression2.analyze(compiler);
 			}
+		}
+
+		// `x! = v`, `t[k]! += v`, `++o.f!` : l'assertion ne porte que sur la valeur lue,
+		// l'écriture va à `x`. Sans le `!`, la cible passe par les mêmes contrôles et
+		// le même code Java que `x += v` (aucune méthode compileXxxEq sur `!`).
+		if (Operators.isAssign(mOperator)) {
+			mExpression1 = withoutNonNullAssertion(mExpression1);
+		} else if (Operators.isIncrement(mOperator)) {
+			mExpression2 = withoutNonNullAssertion(mExpression2);
 		}
 
 		// Si on a affaire à une assignation, incrémentation ou autre du genre
