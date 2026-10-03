@@ -32,6 +32,10 @@ public class TestOperations extends TestCommon {
 		code("2 / 2").ops(5);
 		code("2 \\ 2").ops(5);
 		code("2 % 2").ops(5);
+		code("2 ** 2").ops(7);
+		code("0.5 ** 1.5").ops(7);
+		code("var x = 3 x **= 2").ops(8);
+		code("pow(0.5, 1.5)").ops(7);
 	}
 
 	@Test

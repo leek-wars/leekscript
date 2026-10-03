@@ -31,7 +31,8 @@ public class LeekValueType {
 	public final static int MUL_COST = 2;
 	public final static int DIV_COST = 5;
 	public final static int MOD_COST = 5;
-	public final static int POW_COST = 40;
+	// Même calcul (Math.pow) que la fonction pow() : même coût que dans LeekFunctions.
+	public final static int POW_COST = 7;
 
 	public static String getParamString(Object[] parameters) {
 		String ret = "";
