@@ -742,6 +742,15 @@ public class LeekFunctionCall extends Expression {
 
 				var clazz = v.getClassDeclaration().getParent();
 				if (clazz != null) {
+					// super(...) appelle le constructeur parent. Dans une méthode statique il n'y a
+					// pas d'objet (le Java généré ne compilait pas) ; dans une méthode d'instance il
+					// relance le constructeur parent sur un objet déjà construit : un avertissement,
+					// pour ne pas refuser les IA qui le font déjà.
+					if (compiler.getCurrentBlock().isInStaticMethod()) {
+						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.SUPER_NOT_AVAILABLE_PARENT));
+					} else if (!compiler.isInConstructor()) {
+						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.SUPER_NOT_AVAILABLE_PARENT));
+					}
 					var constructor = clazz.getConstructor(mParameters.size());
 					operations += 1;
 					if (constructor == null) {

@@ -519,6 +519,16 @@ public class TestObject extends TestCommon {
 		code_v2_("class A { foo() { return 'ok' } } class B extends A { m() { var f = function() { return super.foo() } return f() } } return new B().m()").equals("\"ok\"");
 		code_v2_("class A { foo() { return 7 } } class B extends A { m() { var f = function() { var g = function() { return super.foo() } return g() } return f() } } return new B().m()").equals("7");
 		code_v2_("class A { x constructor() { x = 1 } } class B extends A { constructor() { var f = function() { super() } f() } } return new B().x").equals("1");
+		code_v2_("class A { x constructor() { x = 1 } } class B extends A { constructor() { var f = function() { super() } f() } } return new B().x").noWarning();
+
+		// super(...) hors d'un constructeur : avertissement dans une méthode d'instance (qui
+		// relance toujours le constructeur parent), erreur dans une méthode statique (le Java
+		// généré ne compilait pas).
+		code_v2_("class A { x = 0 constructor() { x++ } } class B extends A { m() { super() return x } } return new B().m()").warning(Error.SUPER_NOT_AVAILABLE_PARENT);
+		code_v2_("class A { x = 0 constructor() { x++ } } class B extends A { m() { super() return x } } return new B().m()").equals("2");
+		code_v2_("class A {} class B extends A { m() { var f = function() { super() } } } return 1").warning(Error.SUPER_NOT_AVAILABLE_PARENT);
+		code_v2_("class A {} class B extends A { static s() { super() } } return 1").compileError(Error.SUPER_NOT_AVAILABLE_PARENT);
+		code_v2_("class A {} class B extends A { static s() { var f = function() { super() } } } return 1").compileError(Error.SUPER_NOT_AVAILABLE_PARENT);
 
 		// Issue #3159: StackOverflowError quand parent et fille ont une valeur
 		// par défaut sur leur constructeur. Le `return init(...)` du fall-through
