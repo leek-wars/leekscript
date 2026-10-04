@@ -90,6 +90,11 @@ public class TestInterval extends TestCommon {
 		code("return intervalIsEmpty([1..0])").equals("true");
 		code("return intervalIsEmpty([1..[)").equals("false");
 		code("return intervalIsEmpty(]..[)").equals("false");
+		code("return intervalIsEmpty(]1..1])").equals("true");
+		code("return intervalIsEmpty([1..1[)").equals("true");
+		code("return intervalIsEmpty(]1..1[)").equals("true");
+		code("return intervalIsEmpty(]1.5..1.5])").equals("true");
+		code("return intervalIsEmpty([1.5..1.5])").equals("false");
 		code("intervalIsEmpty([1..2])").ops(3);
 	}
 

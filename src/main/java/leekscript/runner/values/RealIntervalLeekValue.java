@@ -119,7 +119,7 @@ public class RealIntervalLeekValue extends IntervalLeekValue {
 	}
 
 	public boolean intervalIsEmpty(AI ai) {
-		return to < from || (from == to && !maxClosed && !maxClosed);
+		return to < from || (from == to && (!minClosed || !maxClosed));
 	}
 
 	public boolean intervalIsBounded(AI ai) {
