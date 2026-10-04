@@ -86,6 +86,10 @@ public class TestLoops extends TestCommon {
 		code("var n = 0 do do n++; while (n < 2); while (n < 5); return n").equals("5");
 		code("var n = 0 if (true) do n++; while (n < 2); else n = 10; return n").equals("2");
 		code("function f() { var n = 0; do if (true) n++; while (n < 3); return n } return f()").equals("3");
+		// Même chose dans le corps d'un case, qui ferme ses blocs sans accolades par sa propre boucle
+		code_v3_("var a = 0; switch (1) { case 1: do if (a < 9) a++; while (a < 3); break; } return a").equals("3");
+		code_v3_("var a = 0; switch (1) { case 1: do a++; while (a < 3); } return a").equals("3");
+		code_v3_("var a = 0; switch (1) { case 1: do if (a > 100) a = 0; else a++; while (a < 3); case 2: a += 10 } return a").equals("13");
 	}
 
 	@Test

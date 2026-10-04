@@ -1184,11 +1184,9 @@ public class WordCompiler {
 					}
 				}
 				compileWord();
-				// Close inner blocks
-				while (mCurentBlock != caseBody && mCurentBlock.isFull() && !mCurentBlock.hasAccolade()) {
-					mCurentBlock.checkEndBlock();
-					mCurentBlock = mCurentBlock.getParent();
-				}
+				// Ferme les blocs sans accolades finis, en lisant le `while (…)` d'un do (`case 1: do a++; while (…)`).
+				// La remontée s'arrête au corps du case, qui a ses accolades.
+				endCurrentInstruction();
 			}
 
 			mCurentBlock = savedBlock;
