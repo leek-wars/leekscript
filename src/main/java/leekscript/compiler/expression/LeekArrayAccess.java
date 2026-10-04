@@ -637,6 +637,15 @@ public class LeekArrayAccess extends Expression {
 		return !optional;
 	}
 
+	/**
+	 * Le Java de `t[k] = v` hors strict, où compileSet ne caste pas le résultat : put / putv4
+	 * (tableau typé ou non) rendent un Object, seul MapLeekValue.set, générique, rend le type
+	 * de la valeur écrite.
+	 */
+	public boolean setReturnsObject() {
+		return !(mTabular.getType() instanceof MapType);
+	}
+
 	@Override
 	public boolean nullable() {
 		return true;

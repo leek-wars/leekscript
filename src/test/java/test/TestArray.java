@@ -274,6 +274,22 @@ public class TestArray extends TestCommon {
 	}
 
 	@Test
+	public void testTyped_array_assign_value_into_nullable() throws Exception {
+		section("Typed array assignment value into a nullable destination");
+		// Hors strict, `t[k] = v` vaut `T | null` mais son Java (putv4) est un Object : une
+		// destination `T?` le recevait tel quel et javac refusait (COMPILE_JAVA)
+		code_v4_("Array<Array> D = [null] Array? e = null e = D[0] = [1] return e").equals("[1]");
+		code_v4_("global Array<Array> D = [null] class C { static m() { Array? e = D[0] if (e == null) { e = D[0] = [] } return e } } return C.m()").equals("[]");
+		code_v4_("Array<Map> D = [null] Map? m = null m = D[0] = [1: 2] return m").equals("[1 : 2]");
+		code_v4_("Array<integer> D = [0] integer? i = null i = D[0] = 5 return i").equals("5");
+		code_v4_("Array<real> D = [0.0] real? r = null r = D[0] = 2 return r").equals("2.0");
+		code_v4_("Array<string> D = [''] string? s = null s = D[0] = 'a' return s").equals("\"a\"");
+		code_v4_("Array<Array> D = [] Array? e = [] e = D[3] = [1] return e").equals("null");
+		code_v4_("function g(Array? p) { return p } Array<Array> D = [null] return g(D[0] = [1])").equals("[1]");
+		code_v4_("function f() => Array? { Array<Array> D = [null] return D[0] = [1] } return f()").equals("[1]");
+	}
+
+	@Test
 	public void testOperator_on_unknown_arrays() throws Exception {
 		section("[] operator on unknown arrays");
 		code("var v = [['a', 'b'], 12] return v[0][0]").equals("\"a\"");
