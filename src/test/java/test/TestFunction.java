@@ -803,4 +803,19 @@ public class TestFunction extends TestCommon {
 		code_v1("function h() => Array { return null } return h()").equals("null");
 		code_v1("var h = function(a) => integer { return a }; return h(5)").equals("5");
 	}
+
+	@Test
+	public void testV1_untypedBoxVariables() throws Exception {
+		// #5325 : en v1, un itérateur de foreach et un paramètre à valeur par défaut vivent dans un
+		// Box brut, dont increment() rend un Object : `if (i++)`, `a++ + 1` ne compilaient pas.
+		// Capturé, le paramètre par défaut était un Box là où le corps attend un Wrapper.
+		section("v1 variables in an untyped Box (#5325)");
+		code_v1("for (integer i in [5]) { if (i++) { return 1 } } return 0").equals("1");
+		code_v1("var r = 0; for (var k : var v in [5]) { r = (k++) + (v++) * 2 } return r").equals("10");
+		code_v1("function f(integer a = 5) { return a++ + 1 } return [f(), f(7)]").equals("[6, 8]");
+		code_v1("function f(a = 5) { return [++a, a--] } return f()").equals("[6, 6]");
+		code_v1("function f(a = 5) { var g = function() { return a }; return g() } return [f(), f(7)]").equals("[5, 7]");
+		code_v1("function f(a = 5) { var g = function() { a = 9 }; g(); return a } return [f(), f(7)]").equals("[9, 9]");
+		code_v1("function f(@a) { return a++ * 2 } var y = 5; var z = f(y); return [z, y]").equals("[10, 6]");
+	}
 }

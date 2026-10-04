@@ -34,6 +34,9 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 	private AbstractLeekBlock function;
 	private boolean box = false;
 	private boolean iterator = false;
+	// Rangée dans un Box brut (`new Box(…)`, sans paramètre de type) par l'une au moins de ses
+	// émissions, dont les méthodes rendent donc un Object (cf LeekVariable.inUntypedBox)
+	private boolean untypedBox = false;
 	private LeekVariable variable;
 	private Type type;
 	private LeekType leekType;
@@ -82,6 +85,14 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 
 	public void setIterator() {
 		this.iterator = true;
+	}
+
+	public void setUntypedBox() {
+		this.untypedBox = true;
+	}
+
+	public boolean isUntypedBox() {
+		return untypedBox;
 	}
 
 	/**

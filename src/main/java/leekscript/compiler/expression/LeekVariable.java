@@ -431,11 +431,14 @@ public class LeekVariable extends Expression {
 	/**
 	 * La variable vit dans un Wrapper ou un Box brut, dont les incréments rendent un Object (un
 	 * Box<T> les rend en T) : locale capturée, argument capturé en v1, argument d'une fonction
-	 * anonyme (en Box, il est capturé ou en v1) (cf FunctionBlock, AnonymousFunctionBlock).
+	 * anonyme (en Box, il est capturé ou en v1) (cf FunctionBlock, AnonymousFunctionBlock),
+	 * paramètre par référence ou à valeur par défaut en v1 (cf isUntypedBox) et itérateur de
+	 * foreach en v1 (cf ForeachBlock, ForeachKeyBlock) (#5325).
 	 */
 	private boolean inUntypedBox(int version) {
 		if (declaration == null) return false;
 		if (type == VariableType.ARGUMENT && declaration.getFunction() instanceof AnonymousFunctionBlock) return true;
+		if (declaration.isUntypedBox() || version == 1 && declaration.isIterator()) return true;
 		return declaration.isCaptured() && (type == VariableType.LOCAL || version == 1);
 	}
 

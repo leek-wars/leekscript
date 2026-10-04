@@ -118,6 +118,11 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 		if (is_reference) {
 			declaration.setBox();
 		}
+		// Box brut : paramètre par référence, et en v1 l'arité qui prend la valeur par défaut
+		// (cf writeJavaCodeForArity)
+		if (is_reference || defaultValue != null && compiler.getVersion() == 1) {
+			declaration.setUntypedBox();
+		}
 		mParameterDeclarations.add(declaration);
 		addVariable(new LeekVariable(token, VariableType.ARGUMENT, type, declaration));
 		maxParameters++;
@@ -299,9 +304,12 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable {
 			var defaultValue = defaultValues.get(i);
 			var parameter = mParameters.get(i);
 			if (declaration.isCaptured()) {
-				writer.addCode("final var u_" + parameter + " = new Box<" + declaration.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
+				// v1 : un Wrapper, comme l'arité qui reçoit l'argument : le corps, commun aux arités,
+				// y passe par getVariable() (cf LeekVariable.isWrapper) (#5325)
+				var javaType = declaration.getType().getJavaName(mainblock.getVersion());
+				writer.addCode("final var u_" + parameter + " = " + (v1 ? "new Wrapper<" + javaType + ">(new Box(" : "new Box<" + javaType + ">(") + writer.getAIThis() + ", ");
 				writer.compileDefaultValue(mainblock, i, defaultValue, declaration.getType());
-				writer.addLine(");");
+				writer.addLine(v1 ? "));" : ");");
 				writer.addCounter(defaultValue.operations);
 			} else {
 				if (v1) {
