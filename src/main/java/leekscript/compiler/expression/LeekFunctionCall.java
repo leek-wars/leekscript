@@ -218,6 +218,17 @@ public class LeekFunctionCall extends Expression {
 	}
 
 	/**
+	 * La classe appelée (`new A()`) est-elle nommée, donc son constructeur Java `new_<classe>`
+	 * connu à la compilation ? `class` aussi dans une méthode statique, écrit comme la classe
+	 * englobante (cf LeekVariable.writeThisClass).
+	 */
+	private boolean isStaticClassReference(JavaWriter writer) {
+		if (!(mExpression.trim() instanceof LeekVariable v)) return false;
+		if (v.getVariableType() == VariableType.CLASS) return true;
+		return v.getVariableType() == VariableType.THIS_CLASS && (writer.currentBlock == null || writer.currentBlock.isInStaticMethod());
+	}
+
+	/**
 	 * Type du Java émis pour cet appel : celui du littéral substitué à un appel éliminé vers une
 	 * fonction sans type de retour (cf writeSubstitutedValue), que getType() annonce any.
 	 */
@@ -426,11 +437,22 @@ public class LeekFunctionCall extends Expression {
 			addComma = false;
 			user_function = mainblock.getUserFunction(((LeekVariable) mExpression).getName());
 			typedArguments = true;
-		} else if (mExpression.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null) {
+		} else if (mExpression.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null && isStaticClassReference(writer)) {
 			writer.addCode("new_");
-			mExpression.writeJavaCode(mainblock, writer, false);
+			mExpression.trim().writeJavaCode(mainblock, writer, false);
 			writer.addCode("(");
 			addComma = false;
+		} else if (mExpression.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null) {
+			// Classe portée par une valeur (variable, élément, `class` d'une méthode d'instance) :
+			// construite au runtime comme hors strict, `new_u_x()` n'existant pas
+			writeConvertPrimitiveCast(writer);
+			convertPrimitive = true;
+			if (this.type != Type.ANY && this.type != Type.VOID && !this.type.isPrimitive()) {
+				if (parenthesis) { writer.addCode("("); castParenthesis = true; }
+				writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+			}
+			writer.addCode("execute(");
+			mExpression.writeJavaCode(mainblock, writer, false);
 		} else if (mExpression instanceof LeekVariable v && v.getType() instanceof ClassValueType cvt) {
 			if (cvt.getClassDeclaration() != null) {
 				if (cvt.getClassDeclaration().getName() == "Integer") {
@@ -734,7 +756,7 @@ public class LeekFunctionCall extends Expression {
 			} else if (v.getVariableType() == VariableType.CLASS) {
 
 				var clazz = v.getClassDeclaration();
-				var constructor = clazz.getConstructor(mParameters.size());
+				var constructor = clazz.isInstantiable() ? clazz.getConstructor(mParameters.size()) : null;
 				if (constructor == null) {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.UNKNOWN_CONSTRUCTOR, new String[] { clazz.getName() }));
 				} else if (constructor.level == AccessLevel.PRIVATE && compiler.getCurrentClass() != clazz) {

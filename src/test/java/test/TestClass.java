@@ -427,4 +427,28 @@ public class TestClass extends TestCommon {
 		// Types référence : inchangés (#4703)
 		code_v4_("class A {} class M { public f(A a = null) { return a } } return new M().f()").equals("null");
 	}
+
+	@Test
+	public void testNew_builtin_and_class_value() throws Exception {
+		// #5041 : `new Function()` émettait new_functionClass(), absent du runtime (idem Class, Value,
+		// JSON, System, String) : COMPILE_JAVA. Ces classes n'ont pas de constructeur au runtime
+		// (UNKNOWN_CONSTRUCTOR), String rend "". Et une classe portée par une valeur (`var x = A`
+		// en strict, `class` dans une méthode d'instance, `(A)`) émettait new_u_x() ou new_(u_A).
+		section("new on a built-in class without constructor (#5041)");
+		code_v3_("Function f = new Function(); return f").compileError(Error.UNKNOWN_CONSTRUCTOR);
+		code_v3_("return new Class()").compileError(Error.UNKNOWN_CONSTRUCTOR);
+		code_v3_("return new JSON()").compileError(Error.UNKNOWN_CONSTRUCTOR);
+		code_v3_("return new System()").compileError(Error.UNKNOWN_CONSTRUCTOR);
+		code_v3_("return new Value()").compileError(Error.UNKNOWN_CONSTRUCTOR);
+		code_v3_("return new String()").equals("\"\"");
+		section("new on a class value (#5041)");
+		code_strict_v4_("class A {} var x = A; return new x()").equals("A {}");
+		code_strict_v4_("class A { constructor(a) {} } var x = A; return new x(1)").equals("A {}");
+		code_strict_v4_("var x = Array; return new x()").equals("[]");
+		code_strict_v4_("var x = Integer; return new x()").equals("0");
+		code_strict_v4_("class A {} var xs = [A]; return new (xs[0])()").equals("A {}");
+		code_v3_("class A {} return new (A)()").equals("A {}");
+		code_v2_("class A { m() { return new class() } } class B extends A {} return [new A().m(), new B().m()]").equals("[A {}, B {}]");
+		code_v2_("class A { static m() { return new class() } } return A.m()").equals("A {}");
+	}
 }

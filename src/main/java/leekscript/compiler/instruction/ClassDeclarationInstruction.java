@@ -80,6 +80,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 	private ClassDeclarationInstruction parent;
 	private MainLeekBlock mainBlock;
 	public boolean internal;
+	// Classe interne sans constructeur au runtime (Function, Class, Value, JSON, System) : pas de
+	// new_<classe>() dans AI, `new X()` y est une erreur comme au runtime (UNKNOWN_CONSTRUCTOR)
+	private boolean instantiable = true;
 	private LinkedHashMap<String, ClassDeclarationField> fields = new LinkedHashMap<>();
 	private LinkedHashMap<String, ClassDeclarationField> staticFields = new LinkedHashMap<>();
 	private HashMap<String, LeekVariable> fieldVariables = new HashMap<>();
@@ -112,6 +115,15 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		this.staticInitBlock = new ClassMethodBlock(this, false, true, block, block, null, Type.ANY);
 		this.classType = type;
 		this.emptyType = emptyType;
+	}
+
+	public ClassDeclarationInstruction notInstantiable() {
+		this.instantiable = false;
+		return this;
+	}
+
+	public boolean isInstantiable() {
+		return instantiable;
 	}
 
 	public HashMap<String, ClassDeclarationField> getFields() {

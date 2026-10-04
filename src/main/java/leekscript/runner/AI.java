@@ -3977,6 +3977,10 @@ public abstract class AI {
 		return 0.0;
 	}
 
+	public String new_stringClass() {
+		return "";
+	}
+
 	public ArrayLeekValue new_arrayClass() {
 		return new ArrayLeekValue(this);
 	}

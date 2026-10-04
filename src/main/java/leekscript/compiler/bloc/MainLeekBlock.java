@@ -78,7 +78,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mCompiler.setCurrentAI(ai);
 
 		if (ai.getVersion() >= 2) {
-			var classClass = new ClassDeclarationInstruction(new Token("Class"), 0, ai, true, this, Type.CLASS);
+			var classClass = new ClassDeclarationInstruction(new Token("Class"), 0, ai, true, this, Type.CLASS).notInstantiable();
 			classClass.addField(wordCompiler, new Token("name"), Type.STRING, null, AccessLevel.PUBLIC, true);
 			classClass.addField(wordCompiler, new Token("super"), Type.CLASS, null, AccessLevel.PUBLIC, true);
 			classClass.addField(wordCompiler, new Token("fields"), Type.ARRAY_STRING, null, AccessLevel.PUBLIC, true);
@@ -90,7 +90,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 		if (ai.getVersion() >= 3) {
 
-			var valueClass = new ClassDeclarationInstruction(new Token("Value"), 0, ai, true, this, Type.ANY);
+			var valueClass = new ClassDeclarationInstruction(new Token("Value"), 0, ai, true, this, Type.ANY).notInstantiable();
 			valueClass.addField(wordCompiler, new Token("class"), Type.CLASS, null, AccessLevel.PUBLIC, true);
 			addClass(valueClass);
 
@@ -120,9 +120,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			var objectClass = new ClassDeclarationInstruction(new Token("Object"), 0, ai, true, this, Type.OBJECT);
 			objectClass.addMethod(wordCompiler, new Token("keys"), new ClassMethodBlock(objectClass, false, false, wordCompiler.getCurrentBlock(), this, new Token("keys"), Type.ARRAY), AccessLevel.PUBLIC);
 			addClass(objectClass);
-			addClass(new ClassDeclarationInstruction(new Token("Function"), 0, ai, true, this, Type.FUNCTION));
-			addClass(new ClassDeclarationInstruction(new Token("JSON"), 0, ai, true, this));
-			addClass(new ClassDeclarationInstruction(new Token("System"), 0, ai, true, this));
+			addClass(new ClassDeclarationInstruction(new Token("Function"), 0, ai, true, this, Type.FUNCTION).notInstantiable());
+			addClass(new ClassDeclarationInstruction(new Token("JSON"), 0, ai, true, this).notInstantiable());
+			addClass(new ClassDeclarationInstruction(new Token("System"), 0, ai, true, this).notInstantiable());
 		}
 	}
 
