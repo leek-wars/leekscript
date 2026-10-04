@@ -27,6 +27,22 @@ public class DoWhileBlock extends AbstractLeekBlock {
 		mCondition = condition;
 	}
 
+	/**
+	 * Sans accolades, le corps fini ne ferme pas le bloc : il reste à lire son `while (…)`
+	 * (cf WordCompiler.endCurrentInstruction), même quand c'est la fin d'une instruction
+	 * imbriquée (`do if (c) x; while (…)`) qui remonte jusqu'ici.
+	 */
+	@Override
+	public AbstractLeekBlock endInstruction() {
+		return this;
+	}
+
+	/** Le `while (…)` lu : l'instruction do-while est finie dans son bloc parent. */
+	public AbstractLeekBlock endDoWhile() {
+		checkEndBlock();
+		return getParent().endInstruction();
+	}
+
 	public Expression getCondition() {
 		return mCondition;
 	}

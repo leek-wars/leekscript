@@ -75,6 +75,17 @@ public class TestLoops extends TestCommon {
 		code("var t = 0; do { t++; return t; } while (t < 5);").equals("1");
 		// Le corps s'exécute au moins une fois et retourne : la suite est du code mort
 		code("var t = 0; do { t++; return t;} while (t < 5); return 2;").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		// #2891 : un corps sans accolades qui est lui-même un bloc sans accolades (`if`, `while`,
+		// `for`…) fermait le do avant son `while (…)`, lu ensuite comme une nouvelle boucle
+		code("do if (true) debug('test'); while (false); return 1").equals("1");
+		code("var n = 0 do if (true) n++; while (n < 3); return n").equals("3");
+		code("var n = 0 do\n\tif (true) n++\nwhile (n < 3)\nreturn n").equals("3");
+		code("var n = 0 do if (n > 100) n = 0; else n++; while (n < 3); return n").equals("3");
+		code("var n = 0 do if (n > 100) n = 0; else if (n > 50) n = 1; else n++; while (n < 3) return n").equals("3");
+		code("var n = 0 do for (var i = 0; i < 2; i++) n++; while (n < 5); return n").equals("6");
+		code("var n = 0 do do n++; while (n < 2); while (n < 5); return n").equals("5");
+		code("var n = 0 if (true) do n++; while (n < 2); else n = 10; return n").equals("2");
+		code("function f() { var n = 0; do if (true) n++; while (n < 3); return n } return f()").equals("3");
 	}
 
 	@Test

@@ -436,8 +436,8 @@ public class WordCompiler {
 
 			if (mCurentBlock instanceof DoWhileBlock) {
 				DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
-				mCurentBlock = mCurentBlock.endInstruction();
 				dowhileendBlock(do_block);
+				mCurentBlock = do_block.endDoWhile();
 			} else {
 				if (mCurentBlock.endInstruction() == mCurentBlock) {
 					throw new LeekCompilerException(mTokens.get(), Error.NO_BLOC_TO_CLOSE);
@@ -1233,16 +1233,16 @@ public class WordCompiler {
 	}
 
 	/**
-	 * Termine l'instruction courante. Si le bloc courant est un DoWhileBlock
-	 * sans accolades et plein, parse également la condition while.
+	 * Termine l'instruction courante. Si elle remonte jusqu'à un DoWhileBlock sans accolades,
+	 * son corps est fini : parse également la condition while, y compris quand ce corps est
+	 * lui-même une instruction de bloc sans accolades (`do if (c) x; while (…)`).
 	 */
 	private void endCurrentInstruction() throws LeekCompilerException {
-		if (mCurentBlock instanceof DoWhileBlock && !((DoWhileBlock) mCurentBlock).hasAccolade() && mCurentBlock.isFull()) {
-			DoWhileBlock do_block = (DoWhileBlock) mCurentBlock;
-			mCurentBlock = mCurentBlock.endInstruction();
+		mCurentBlock = mCurentBlock.endInstruction();
+		// Un `else` peut encore suivre le `if` qui forme le corps (`do if (c) a; else b; while (…)`)
+		while (mCurentBlock instanceof DoWhileBlock do_block && !do_block.hasAccolade() && do_block.isFull() && mTokens.get().getType() != TokenType.ELSE) {
 			dowhileendBlock(do_block);
-		} else {
-			mCurentBlock = mCurentBlock.endInstruction();
+			mCurentBlock = do_block.endDoWhile();
 		}
 	}
 
