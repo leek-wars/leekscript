@@ -128,6 +128,19 @@ public class JavaWriter {
 		return "(" + javaType + ") " + expression;
 	}
 
+	/**
+	 * {@link #castObject} d'une expression que l'appelant écrit ensuite dans le writer : écrit le
+	 * début de la conversion et renvoie le suffixe qui la referme.
+	 */
+	public String openCastObject(String javaType) {
+		if (javaType.equals("Double")) {
+			addCode("realBox(");
+			return ")";
+		}
+		addCode("(" + javaType + ") ");
+		return "";
+	}
+
 	public void addCounter(int count) {
 		if (operationsEnabled) {
 			addCode("ops(" + count + ");");
