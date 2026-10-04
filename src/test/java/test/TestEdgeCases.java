@@ -1,6 +1,6 @@
 package test;
 
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -339,13 +339,7 @@ public class TestEdgeCases extends TestCommon {
 		var ai = LeekScript.compileSnippet("class P { integer x constructor(x) { this.x = x } } function cmp(P a, P b) { return a.x - b.x } return arraySort([new P(2), null, new P(1)], cmp)", "AI", new Options(4, false, false, true, null, true));
 		ai.init();
 		ai.staticInit();
-		Throwable thrown = null;
-		try {
-			ai.runIA();
-		} catch (Throwable t) {
-			thrown = t;
-		}
-		assertInstanceOf(NullPointerException.class, thrown);
+		var thrown = assertThrows(NullPointerException.class, ai::runIA);
 		assertTrue(Arrays.stream(thrown.getStackTrace()).anyMatch(f -> f.getClassName().startsWith("AI_") && f.getMethodName().equals("f_cmp")));
 	}
 
