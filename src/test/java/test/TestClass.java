@@ -282,6 +282,14 @@ public class TestClass extends TestCommon {
 		code_strict_v4_(c + "public string s constructor(integer p = 0) { s = clone('a' + p) as string } } return new T(2).s").noWarning();
 		code_strict_v4_("class T { static integer abs() { return 7 } static integer f(integer p = 0) { return abs(p - 5) } } return [T.f(), T.f(2), T.abs()]").equals("[5, 3, 7]");
 		code_strict_v4_("class T { static integer abs() { return 7 } static integer f(integer p = 0) { return abs(p - 5) } } return T.f()").noWarning();
+		// Les avertissements du corps sortent une fois, pas une fois par arité.
+		code_strict_v4_("class T { m(integer p = 0, integer q = 0) { var unused = 1 return p + q } } return new T().m()").warnings(Error.UNUSED_VARIABLE, 1);
+		code_strict_v4_("class T { constructor(integer p = 0, integer q = 0) { var unused = p + q } } return new T()").warnings(Error.UNUSED_VARIABLE, 1);
+		// Le coût d'un `if` ne dépend pas du nombre de paramètres optionnels de la méthode.
+		code_v4_("class T { f(p) { if (p) { return 1 } return 0 } } return new T().f(1)").ops(3);
+		code_v4_("class T { f(p, q = 0, r = 0, s = 0) { if (p) { return 1 } return 0 } } return new T().f(1)").ops(3);
+		code_v4_("class T { static f(p, q = 0, r = 0, s = 0) { if (p) { return 1 } return 0 } } return T.f(1)").ops(2);
+		code_v4_("class T { x = 0 constructor(p, q = 0, r = 0) { if (p) { x = 1 } } } return new T(1).x").ops(5);
 	}
 
 	/**

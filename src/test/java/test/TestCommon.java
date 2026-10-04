@@ -174,6 +174,21 @@ public class TestCommon {
 			});
 		}
 
+		/** Exactement `count` diagnostics, tous des avertissements `type`. */
+		public String warnings(Error type, int count) {
+			return run(new Checker() {
+				public boolean check(Result result) {
+					return result.ai != null && result.ai.getFile().getErrors().size() == count
+						&& result.ai.getFile().getErrors().stream().allMatch(e -> e.level == AnalyzeErrorLevel.WARNING && e.error == type);
+				}
+				public String getExpected() { return count + " × warning " + type.name(); }
+				public String getResult(Result result) {
+					if (result.ai == null) return result.error.name();
+					return result.ai.getFile().getErrors().stream().map(e -> e.level + " " + e.error.name()).toList().toString();
+				}
+			});
+		}
+
 		public String noWarning() {
 			return run(new Checker() {
 				public boolean check(Result result) {
