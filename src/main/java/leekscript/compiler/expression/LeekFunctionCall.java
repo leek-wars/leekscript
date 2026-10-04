@@ -247,7 +247,6 @@ public class LeekFunctionCall extends Expression {
 		boolean addComma = true;
 		boolean addBrace = false;
 		boolean skipFirstArg = false;
-		boolean addFinalParenthesis = true;
 		FunctionBlock user_function = null;
 		boolean convertPrimitive = false;
 		// Un cast en préfixe (`(u_Entity) execute(...)`) a une priorité plus faible que
@@ -437,32 +436,22 @@ public class LeekFunctionCall extends Expression {
 			addComma = false;
 			user_function = mainblock.getUserFunction(((LeekVariable) mExpression).getName());
 			typedArguments = true;
-		} else if (mExpression.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null && isStaticClassReference(writer)) {
-			writer.addCode("new_");
-			mExpression.trim().writeJavaCode(mainblock, writer, false);
-			writer.addCode("(");
-			addComma = false;
 		} else if (mExpression.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null) {
-			// Classe portée par une valeur (variable, élément, `class` d'une méthode d'instance) :
-			// construite au runtime comme hors strict, `new_u_x()` n'existant pas
-			writeConvertPrimitiveCast(writer);
-			convertPrimitive = true;
-			castParenthesis = writeDynamicExecute(mainblock, writer, parenthesis);
-		} else if (mExpression instanceof LeekVariable v && v.getType() instanceof ClassValueType cvt) {
-			if (cvt.getClassDeclaration() != null) {
-				if (cvt.getClassDeclaration().getName() == "Integer") {
-					writer.addCode("0l");
-					addFinalParenthesis = false;
-				} else if (cvt.getClassDeclaration().getName() == "Real" || cvt.getClassDeclaration().getName() == "Number") {
-					writer.addCode("0.0");
-					addFinalParenthesis = false;
-				} else if (cvt.getClassDeclaration().getName() == "Boolean") {
-					writer.addCode("false");
-					addFinalParenthesis = false;
-				}
+			if (isStaticClassReference(writer)) {
+				writer.addCode("new_");
+				mExpression.trim().writeJavaCode(mainblock, writer, false);
+				writer.addCode("(");
+				addComma = false;
 			} else {
+				// Classe portée par une valeur (variable, élément, `class` d'une méthode d'instance) :
+				// construite au runtime comme hors strict, `new_u_x()` n'existant pas
+				writeConvertPrimitiveCast(writer);
+				convertPrimitive = true;
 				castParenthesis = writeDynamicExecute(mainblock, writer, parenthesis);
 			}
+		} else if (mExpression instanceof LeekVariable v && v.getType() instanceof ClassValueType) {
+			// Variable de type `Class`, classe inconnue à la compilation
+			castParenthesis = writeDynamicExecute(mainblock, writer, parenthesis);
 		} else if (this.functionType instanceof FunctionType) {
 			// run() retourne Object : on caste vers le wrapper avant .doubleValue()/etc.
 			writeConvertPrimitiveCast(writer);
@@ -535,9 +524,7 @@ public class LeekFunctionCall extends Expression {
 		if (addBrace) {
 			writer.addCode("}");
 		}
-		if (addFinalParenthesis) {
-			writer.addCode(")");
-		}
+		writer.addCode(")");
 		if (closeOptionalCall) {
 			writer.addCode(" : null)");
 		}
