@@ -238,10 +238,11 @@ public class JavaWriter {
 	 * Pour integer/real on passe par longint()/real() et non par un cast Java :
 	 * celui-ci déboxe au type exact et crashe (ClassCastException Double → Long)
 	 * quand l'opération a renvoyé l'autre type numérique, ex.
-	 * `integer a; a *= (b ? 1 : 0.5)` (#2744).
+	 * `integer a; a *= (b ? 1 : 0.5)` (#2744). Un `big_integer?` aussi, le résultat d'une
+	 * opération n'étant jamais null : `h = null; h += 5` rend un Long, que le cast refuse.
 	 */
 	public String openResultConversion(int version, Type castType) {
-		var call = openCallConversion(castType);
+		var call = openCallConversion(castType.assertNotNull() == Type.BIG_INT ? Type.BIG_INT : castType);
 		if (call != null) {
 			return call;
 		}

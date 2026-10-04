@@ -412,4 +412,43 @@ public class TestOperators extends TestCommon {
 		code_v4_("class A { public Map | string v = [1: 2]; public m() { if (v instanceof Map) { return ++v } return 0 } } return (new A()).m();").equals("2");
 	}
 
+	@Test
+	public void testBitAssign_slotTypes() throws Exception {
+		section("Bitwise compound operators on a real, a boolean or a narrowed location");
+		// real : `double |= long` ne compilait pas
+		code_v4_("real r = 12; r |= 1; return r;").equals("13.0");
+		code_v4_("real r = 12.7; r <<= 1; return r;").equals("24.0");
+		code_v4_("real? r = 12; r |= 1; return r;").equals("13.0");
+		code_v4_("global real g = 12; g |= 1; return g;").equals("13.0");
+		// boolean : garde la vérité du résultat, comme `this.f |= v`
+		code_v4_("boolean b = false; b |= true; return b;").equals("true");
+		code_v4_("boolean? b = true; b &= false; return b;").equals("false");
+		code_v4_("boolean b = true; b \\= 1; return b;").equals("true");
+		code_v4_("class A { boolean? f = true; m() { f |= 1; return f; } } return new A().m();").equals("true");
+		code_v4_("global boolean? g = false; g ^= 1; return g;").equals("true");
+		code_strict_v4_("var b = true; b |= false; return b;").equals("true");
+		// Narrowé vers integer sur un emplacement Object ou Number : pas d'opérateur natif
+		code_v4_("integer | real x = 12; if (x instanceof Integer) { x |= 1 } return x;").equals("13");
+		code_v4_("integer | real x = 12; if (x instanceof Integer) { x <<= 2 } return x;").equals("48");
+		code_v4_("any x = 12; if (x instanceof Integer) { x |= 1 } return x;").equals("13");
+		code_v4_("integer | string x = 12; if (x instanceof Integer) { x |= 1 } return x;").equals("13");
+		code_v4_("global integer | real g = 12; if (g instanceof Integer) { g |= 1 } return g;").equals("13");
+		code_v4_("function f(integer | real x) { if (x instanceof Integer) { x &= 4 } return x; } return f(12);").equals("4");
+		code_v4_("integer | real x = 12; if (x instanceof Integer) { x %= 5 } return x;").equals("2");
+		code_v4_("any x = 12; if (x instanceof Integer) { x %= 5 } return x;").equals("2");
+		// Non-régression : integer natif, integer? narrowé
+		code_v4_("integer x = 12; x |= 1; return x;").equals("13");
+		code_v4_("integer? x = 12; if (x != null) { x |= 1 } return x;").equals("13");
+	}
+
+	@Test
+	public void testDivAssign_nullableInteger() throws Exception {
+		section("Operator /= on a nullable integer: `(Long) div(...)` did not compile");
+		code_v4_("integer? h = 12; h /= 2; return h;").equals("6");
+		code_v4_("integer? h = null; h /= 2; return h;").equals("0");
+		code_v4_("class A { integer? f = 12; m() { f /= 2; return f; } } return new A().m();").equals("6");
+		code_v4_("global integer? g = 12; g /= 2; return g;").equals("6");
+		code_v4_("real? r = 3; r /= 2; return r;").equals("1.5");
+	}
+
 }

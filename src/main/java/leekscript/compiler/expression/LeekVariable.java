@@ -847,9 +847,9 @@ public class LeekVariable extends Expression {
 
 	/**
 	 * Nom de la méthode runtime pour une assignation composée de bits
-	 * (|=, &=, ^=, <<=, >>=, >>>=). Sur une variable big_integer il faut la
-	 * variante bigOr/bigAnd/bigXor/bigShl/bigShr qui renvoie un BigIntegerValue :
-	 * les variantes long (bor/band/bxor/shl/shr/ushr) renvoient un long et
+	 * (|=, &=, ^=, <<=, >>=, >>>=, \=). Sur une variable big_integer il faut la
+	 * variante bigOr/bigAnd/bigXor/bigShl/bigShr/bigIntdiv qui renvoie un BigIntegerValue :
+	 * les variantes long (bor/band/bxor/shl/shr/ushr/intdiv) renvoient un long et
 	 * casseraient la réaffectation (« long cannot be converted to
 	 * BigIntegerValue »). (#bigint #4477)
 	 *
@@ -869,6 +869,7 @@ public class LeekVariable extends Expression {
 			case "bxor": return "bigXor";
 			case "shl": return "bigShl";
 			case "shr": case "ushr": return "bigShr";
+			case "intdiv": return "bigIntdiv";
 			default: return longMethod;
 		}
 	}
@@ -1181,12 +1182,20 @@ public class LeekVariable extends Expression {
 		}
 	}
 
+	/**
+	 * Cible de la conversion du résultat de `/=`, toujours un réel : sur un `integer?`, le cast
+	 * `(Long)` ne compile pas, et le résultat n'étant jamais null, il se convertit en integer.
+	 */
+	private static Type divTarget(Type slot) {
+		return slot.boxedPrimitive() == Type.INT ? Type.INT : slot;
+	}
+
 	@Override
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = writer.openResultConversion(mainblock.getVersion(), variableType);
+			var close = writer.openResultConversion(mainblock.getVersion(), divTarget(variableType));
 			writer.addCode("div(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -1207,7 +1216,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = writer.openResultConversion(mainblock.getVersion(), globalCastType());
+				var close = writer.openResultConversion(mainblock.getVersion(), divTarget(globalCastType()));
 				if (mainblock.getVersion() == 1) {
 					writer.addCode("div_v1(g_" + token.getWord() + ", ");
 				} else {
@@ -1234,7 +1243,7 @@ public class LeekVariable extends Expression {
 					writer.addCode(")");
 				} else {
 					writer.addCode("u_" + token.getWord() + " = ");
-					var close = writer.openResultConversion(mainblock.getVersion(), this.variableType);
+					var close = writer.openResultConversion(mainblock.getVersion(), divTarget(this.variableType));
 					writer.addCode("div(u_" + token.getWord() + ", ");
 					expr.writeJavaCode(mainblock, writer, false);
 					writer.addCode(")" + close);
@@ -1246,43 +1255,7 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		if (type == VariableType.FIELD) {
-			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = ");
-			writer.addCode("intdiv(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-			if (parenthesis) writer.addCode(")");
-		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_intdiv_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-		} else if (type == VariableType.GLOBAL) {
-			if (isBox()) {
-				writer.addCode("g_" + token.getWord() + ".intdiv_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = intdiv(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
-			}
-		} else {
-			if (isBoxLike(mainblock)) {
-				writer.addCode(localName(mainblock) + ".intdiv_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = intdiv(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
-			}
-		}
+		compileBitAssign(mainblock, writer, expr, parenthesis, "intdiv", "field_intdiv_eq", "intdiv_eq", null);
 	}
 
 	@Override
@@ -1304,7 +1277,7 @@ public class LeekVariable extends Expression {
 				writer.addCode("g_" + token.getWord() + ".mod_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber()) {
+			} else if (hasPrimitiveJavaSlot(mainblock.getVersion()) && expr.getType().isPrimitiveNumber()) {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " %= ");
 				writer.compileTyped(mainblock, expr, false);
@@ -1323,7 +1296,7 @@ public class LeekVariable extends Expression {
 				writer.addCode(localName(mainblock) + ".mod_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber()) {
+			} else if (hasPrimitiveJavaSlot(mainblock.getVersion()) && expr.getType().isPrimitiveNumber()) {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " %= ");
 				writer.compileTyped(mainblock, expr, false);
@@ -1342,303 +1315,96 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		if (type == VariableType.FIELD) {
-			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = ");
-			// Narrowé vers null, variableType donnerait `(Object)`, qui ne rentre pas dans un `T?`
-			var castType = variableType == Type.NULL ? javaSlotType() : variableType;
-			if (castType != Type.ANY) {
-				writer.addCode("(" + castType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-			}
-			writer.addCode(bitOpMethod("bor") + "(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-			if (parenthesis) writer.addCode(")");
-		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_bor_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-		} else if (type == VariableType.GLOBAL) {
-			if (isBox()) {
-				writer.addCode("g_" + token.getWord() + ".bor_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " |= ");
-				writer.compileTyped(mainblock, expr, Type.INT, false);
-				if (parenthesis) writer.addCode(")");
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = " + bitOpMethod("bor") + "(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
-			}
-		} else {
-			if (isBoxLike(mainblock)) {
-				writer.addCode(localName(mainblock) + ".bor_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
-				if (parenthesis) writer.addCode("(");
- 				writer.addCode("u_" + token.getWord() + " |= ");
-				writer.getInt(mainblock, expr, false);
-				if (parenthesis) writer.addCode(")");
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = " + bitOpMethod("bor") + "(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
-			}
-		}
+		compileBitAssign(mainblock, writer, expr, parenthesis, "bor", "field_bor_eq", "bor_eq", "|");
 	}
-
 
 	@Override
 	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		if (type == VariableType.FIELD) {
-			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = " + bitOpMethod("band") + "(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-			if (parenthesis) writer.addCode(")");
-		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_band_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-		} else if (type == VariableType.GLOBAL) {
-			if (isBox()) {
-				writer.addCode("g_" + token.getWord() + ".band_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " &= ");
-				writer.compileTyped(mainblock, expr, Type.INT, false);
-				if (parenthesis) writer.addCode(")");
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = " + bitOpMethod("band") + "(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
-			}
-		} else {
-			if (isBoxLike(mainblock)) {
-				writer.addCode(localName(mainblock) + ".band_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " &= ");
-				writer.getInt(mainblock, expr, false);
-				if (parenthesis) writer.addCode(")");
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = " + bitOpMethod("band") + "(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
-			}
-		}
+		compileBitAssign(mainblock, writer, expr, parenthesis, "band", "field_band_eq", "band_eq", "&");
 	}
 
 	@Override
 	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		if (type == VariableType.FIELD) {
-			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = " + bitOpMethod("bxor") + "(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-			if (parenthesis) writer.addCode(")");
-		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_bxor_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-		} else if (type == VariableType.GLOBAL) {
-			if (isBox()) {
-				writer.addCode("g_" + token.getWord() + ".bxor_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " ^= ");
-				writer.compileTyped(mainblock, expr, Type.INT, false);
-				if (parenthesis) writer.addCode(")");
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = " + bitOpMethod("bxor") + "(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
-			}
-		} else {
-			if (isBoxLike(mainblock)) {
-				writer.addCode(localName(mainblock) + ".bxor_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " ^= ");
-				writer.getInt(mainblock, expr, false);
-				if (parenthesis) writer.addCode(")");
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = " + bitOpMethod("bxor") + "(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
-			}
-		}
+		compileBitAssign(mainblock, writer, expr, parenthesis, "bxor", "field_bxor_eq", "bxor_eq", "^");
 	}
 
 	@Override
 	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		if (type == VariableType.FIELD) {
-			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = " + bitOpMethod("shl") + "(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-			if (parenthesis) writer.addCode(")");
-		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_shl_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-		} else if (type == VariableType.GLOBAL) {
-			if (isBox()) {
-				writer.addCode("g_" + token.getWord() + ".shl_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " <<= ");
-				writer.compileTyped(mainblock, expr, Type.INT, false);
-				if (parenthesis) writer.addCode(")");
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = " + bitOpMethod("shl") + "(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
-			}
-		} else {
-			if (isBoxLike(mainblock)) {
-				writer.addCode(localName(mainblock) + ".shl_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " <<= ");
-				writer.getInt(mainblock, expr, false);
-				if (parenthesis) writer.addCode(")");
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = " + bitOpMethod("shl") + "(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
-			}
-		}
+		compileBitAssign(mainblock, writer, expr, parenthesis, "shl", "field_shl_eq", "shl_eq", "<<");
 	}
 
 	@Override
 	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		if (type == VariableType.FIELD) {
-			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = " + bitOpMethod("shr") + "(" + token.getWord() + ", ");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-			if (parenthesis) writer.addCode(")");
-		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_shr_eq(\"" + token.getWord() + "\", ");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-		} else if (type == VariableType.GLOBAL) {
-			if (isBox()) {
-				writer.addCode("g_" + token.getWord() + ".shr_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " >>= ");
-				writer.compileTyped(mainblock, expr, Type.INT, false);
-				if (parenthesis) writer.addCode(")");
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = " + bitOpMethod("shr") + "(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
-			}
-		} else {
-			if (isBoxLike(mainblock)) {
-				writer.addCode(localName(mainblock) + ".shr_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " >>= ");
-				writer.getInt(mainblock, expr, false);
-				if (parenthesis) writer.addCode(")");
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = " + bitOpMethod("shr") + "(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
-			}
-		}
+		compileBitAssign(mainblock, writer, expr, parenthesis, "shr", "field_shr_eq", "shr_eq", ">>");
 	}
 
 	@Override
 	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		if (type == VariableType.FIELD) {
-			if (parenthesis) writer.addCode("(");
-			writer.addCode(token.getWord() + " = " + bitOpMethod("ushr") + "(" + token.getWord() + ", ");
+		compileBitAssign(mainblock, writer, expr, parenthesis, "ushr", "field_ushr_eq", "ushr_eq", ">>>");
+	}
+
+	/**
+	 * `x <op>= v` pour les six opérateurs de bits et `\=` : `method` est la méthode runtime
+	 * long (bor, band, bxor, shl, shr, ushr, intdiv), `fieldHelper` et `boxMethod` celles d'un
+	 * champ statique et d'un Box, `operator` l'opérateur Java natif, null s'il n'y en a pas.
+	 */
+	private void compileBitAssign(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis, String method, String fieldHelper, String boxMethod, String operator) {
+		String name = token.getWord();
+		if (type == VariableType.STATIC_FIELD) {
+			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + "." + fieldHelper + "(\"" + name + "\", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
-			if (parenthesis) writer.addCode(")");
-		} else if (type == VariableType.STATIC_FIELD) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".field_ushr_eq(\"" + token.getWord() + "\", ");
+			return;
+		}
+		if (type == VariableType.GLOBAL && isBox()) {
+			writer.addCode("g_" + name + "." + boxMethod + "(");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
-		} else if (type == VariableType.GLOBAL) {
-			if (isBox()) {
-				writer.addCode("g_" + token.getWord() + ".ushr_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " >>>= ");
+			return;
+		}
+		if (type != VariableType.GLOBAL && type != VariableType.FIELD && isBoxLike(mainblock)) {
+			writer.addCode(localName(mainblock) + "." + boxMethod + "(");
+			expr.writeJavaCode(mainblock, writer, false);
+			writer.addCode(")");
+			return;
+		}
+		String slot = type == VariableType.FIELD ? name : (type == VariableType.GLOBAL ? "g_" : "u_") + name;
+		if (parenthesis) writer.addCode("(");
+		if (operator != null && type != VariableType.FIELD && hasNativeBitSlot(mainblock.getVersion())) {
+			writer.addCode(slot + " " + operator + "= ");
+			if (type == VariableType.GLOBAL) {
 				writer.compileTyped(mainblock, expr, Type.INT, false);
-				if (parenthesis) writer.addCode(")");
 			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("g_" + token.getWord() + " = " + bitOpMethod("ushr") + "(g_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
+				writer.getInt(mainblock, expr, false);
 			}
 		} else {
-			if (isBoxLike(mainblock)) {
-				writer.addCode(localName(mainblock) + ".ushr_eq(");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-			} else if (this.variableType.isPrimitiveNumber()) {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " >>>= ");
-				writer.getInt(mainblock, expr, false);
-				if (parenthesis) writer.addCode(")");
-			} else {
-				if (parenthesis) writer.addCode("(");
-				writer.addCode("u_" + token.getWord() + " = " + bitOpMethod("ushr") + "(u_" + token.getWord() + ", ");
-				expr.writeJavaCode(mainblock, writer, false);
-				writer.addCode(")");
-				if (parenthesis) writer.addCode(")");
+			writer.addCode(slot + " = ");
+			if (type == VariableType.FIELD && method.equals("bor")) {
+				// Cast historique du seul `|=` sur un champ. Narrowé vers null, variableType
+				// donnerait `(Object)`, qui ne rentre pas dans un `T?`.
+				var castType = variableType == Type.NULL ? javaSlotType() : variableType;
+				if (castType != Type.ANY) {
+					writer.addCode("(" + castType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+				}
 			}
+			// Le résultat est un long, un BigIntegerValue ou un Object : un booléen ou une boîte
+			// Double ne le reçoit pas tel quel. Un booléen garde la vérité du résultat, comme
+			// `this.f |= v` (setField).
+			var converted = javaSlotType().assertNotNull() == Type.BOOL ? Type.BOOL : boxedSlotType() == Type.REAL ? Type.REAL : null;
+			var close = converted != null ? writer.openFieldResultConversion(converted) : "";
+			writer.addCode(bitOpMethod(method) + "(" + slot + ", ");
+			expr.writeJavaCode(mainblock, writer, false);
+			writer.addCode(")" + close);
 		}
+		if (parenthesis) writer.addCode(")");
+	}
+
+	/**
+	 * L'emplacement accepte-t-il l'opérateur de bits natif (`u_x |= v`) ? Il y faut un integer
+	 * déclaré `long` ou `Long` : sur un `double`, un `Number` ou un `Object`, javac refuse.
+	 */
+	private boolean hasNativeBitSlot(int version) {
+		return this.variableType == Type.INT && hasPrimitiveJavaSlot(version);
 	}
 
 	@Override

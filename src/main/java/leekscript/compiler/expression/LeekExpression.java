@@ -558,6 +558,15 @@ public class LeekExpression extends Expression {
 		if (parenthesis) writer.addCode(")");
 	}
 
+	/**
+	 * Opérande big_integer, nullable compris (`m[k] | 1` sur une `Map<integer, big_integer>`).
+	 * Pas une union qui en contient un (`any`, retour d'abs()…) : la promouvoir ferait passer
+	 * par le runtime la plupart des opérations de bits des IA.
+	 */
+	private static boolean isBigIntOperand(Type type) {
+		return type.assertNotNull() == Type.BIG_INT;
+	}
+
 	/** Émet un appel runtime bigint unaire `(BigIntegerValue) method(e2)` (#bigint). */
 	private void writeBigIntUnary(MainLeekBlock mainblock, JavaWriter writer, String method, boolean parenthesis) {
 		if (parenthesis) writer.addCode("(");
@@ -1437,15 +1446,14 @@ public class LeekExpression extends Expression {
 			type = Type.BOOL;
 		}
 		else if (mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR || mOperator == Operators.INTEGER_DIVISION) {
-			// big_integer si l'un des deux opérandes est big_integer (#bigint)
-			type = ((mExpression1 != null && mExpression1.getType() == Type.BIG_INT) || mExpression2.getType() == Type.BIG_INT) ? Type.BIG_INT : Type.INT;
+			type = (mExpression1 != null && isBigIntOperand(mExpression1.getType())) || isBigIntOperand(mExpression2.getType()) ? Type.BIG_INT : Type.INT;
 		}
 		else if (mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT) {
 			// le décalage suit le type de l'opérande gauche (le nombre décalé)
-			type = (mExpression1 != null && mExpression1.getType() == Type.BIG_INT) ? Type.BIG_INT : Type.INT;
+			type = mExpression1 != null && isBigIntOperand(mExpression1.getType()) ? Type.BIG_INT : Type.INT;
 		}
 		else if (mOperator == Operators.BITNOT) {
-			type = mExpression2.getType() == Type.BIG_INT ? Type.BIG_INT : Type.INT;
+			type = isBigIntOperand(mExpression2.getType()) ? Type.BIG_INT : Type.INT;
 		}
 		else if (mOperator == Operators.COALESCE) {
 			var leftType = mExpression1.getType();

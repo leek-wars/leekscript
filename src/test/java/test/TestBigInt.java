@@ -483,6 +483,58 @@ public class TestBigInt extends TestCommon {
 		code_v4_("class A { integer? f = 12; m() { f |= 1; return f; } } return new A().m();").equals("13");
 	}
 
+	/** Un opérande `big_integer?` fait un big_integer : `m[k] | 1` sur une `Map<integer, big_integer>`. */
+	@Test
+	public void testBitOpsOnNullableBigInt() throws Exception {
+		section("Opérateurs de bits sur big_integer?");
+		code_v4_("big_integer? h = 1L << 100; return (h | 1) == (1L << 100) + 1;").equals("true");
+		code_v4_("big_integer? h = 1L << 100; return (1 | h) == (1L << 100) + 1;").equals("true");
+		code_v4_("big_integer? h = 1L << 100; return (h ^ 1) == (1L << 100) + 1;").equals("true");
+		code_v4_("big_integer? h = 1L; return (h << 100) == 1L << 100;").equals("true");
+		code_v4_("big_integer? h = 1L << 100; return h >> 99;").equals("2");
+		code_v4_("big_integer? h = 1L << 100; return h >>> 99;").equals("2");
+		code_v4_("big_integer? h = 1L << 100; return (h \\ 2) == 1L << 99;").equals("true");
+		code_v4_("big_integer? h = 1L << 100; return ~h == -(1L << 100) - 1;").equals("true");
+		code_strict_v4_("function f(big_integer? h) { return h | 1; } return f(1L << 100) == (1L << 100) + 1;").equals("true");
+		code_v4_("Map<integer, big_integer> m = [1: 1L << 100]; return (m[1] | 1) == (1L << 100) + 1;").equals("true");
+		// null vaut 0, sans erreur
+		code_v4_("big_integer? h = null; return h | 5;").equals("5");
+		code_v4_("big_integer? h = null; h |= 5; return h;").equals("5");
+		// Le résultat reste utilisable comme un integer
+		code_v4_("Array<integer> a = [10, 20, 30, 40]; big_integer? b = 7L; return a[b & 3];").equals("40");
+		code_v4_("big_integer? b = 6L; if (b & 2) { return 1 } return 0;").equals("1");
+		code_v4_("Map<integer, big_integer> m = [1: 6L]; integer x = m[1] & 3; return x;").equals("2");
+	}
+
+	/** `\=` passait par la variante long : refusée par javac sur un big_integer, tronquée sur any. */
+	@Test
+	public void testIntDivAssign() throws Exception {
+		section("Division entière composée sur big_integer");
+		code_v4_("big_integer h = 1L << 100; h \\= 3; return h == (1L << 100) \\ 3;").equals("true");
+		code_v4_("big_integer? h = 10L; h \\= 3; return h;").equals("3");
+		code_v4_("class A { big_integer f = 10L; m() { f \\= 3; return f; } } return new A().m();").equals("3");
+		code_v4_("global big_integer? g = 10L; g \\= 3; return g;").equals("3");
+		code_v4_("integer | big_integer h = 1L << 100; h \\= 2; return h == 1L << 99;").equals("true");
+		code_v4_("any h = 1L << 100; h \\= 2; return h == 1L << 99;").equals("true");
+		code_v4_("integer h = 10; h \\= 3; return h;").equals("3");
+	}
+
+	/** Le résultat d'une opération sur un `big_integer?` n'est jamais null : il se convertit en big_integer. */
+	@Test
+	public void testArithmeticAssignOnNullableBigInt() throws Exception {
+		section("Opérations composées arithmétiques sur big_integer? null");
+		code_v4_("big_integer? h = null; h += 5; return h;").equals("5");
+		code_v4_("big_integer? h = null; h -= 5; return h;").equals("-5");
+		code_v4_("big_integer? h = null; h *= 5; return h;").equals("0");
+		code_v4_("big_integer? h = null; h++; return h;").equals("1");
+		code_v4_("big_integer? h = 3L; h /= 2; return h;").equals("1");
+		code_v4_("class A { big_integer? f = null; m() { f += 5; return f; } } return new A().m();").equals("5");
+		code_v4_("class A { big_integer? f = null; m() { f++; return f; } } return new A().m();").equals("1");
+		code_v4_("global big_integer? g = null; g += 5; return g;").equals("5");
+		code_v4_("function f(big_integer? h) { h += 5; return h; } return f(null);").equals("5");
+		code_v4_("big_integer? h = 1L << 100; h += 1; return h == (1L << 100) + 1;").equals("true");
+	}
+
 	/** #4908 : affectations dans un champ statique big_integer (stocké en Object). */
 	@Test
 	public void testStaticFieldAssign() throws Exception {
