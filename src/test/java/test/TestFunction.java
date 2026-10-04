@@ -669,10 +669,11 @@ public class TestFunction extends TestCommon {
 		// Rien ne signalait le défaut incompatible dans l'éditeur, alors que l'appel qui
 		// l'utilise échoue au runtime. Warning seulement, y compris en strict : une erreur
 		// ferait échouer des IA qui compilent aujourd'hui.
-		code_v4_("class B {} class A { B b constructor(B b = []) { this.b = b } } return 1").warning(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		// Une fois, pas une fois par arité du constructeur
+		code_v4_("class B {} class A { B b constructor(B b = []) { this.b = b } } return 1").warnings(Error.ASSIGNMENT_INCOMPATIBLE_TYPE, 1);
 		code_strict_v4_("class B {} class A { B b constructor(B b = []) { this.b = b } } return 1").warning(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
 		code_v4_("class B {} function f(B b = []) { return b } return 1").warning(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
-		code_v4_("class A { static m(Set<integer> s = [1, 2]) { return s } } return 1").warning(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_v4_("class A { static m(Set<integer> s = [1, 2]) { return s } } return 1").warnings(Error.ASSIGNMENT_INCOMPATIBLE_TYPE, 1);
 		// L'IA compile toujours, le défaut évalué lève la même erreur qu'avant
 		code_v4_("class B {} function f(B b = []) { return b } return f()").error(Error.IMPOSSIBLE_CAST);
 		// Défauts compatibles : aucun avertissement

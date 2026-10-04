@@ -475,11 +475,9 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			}
 		}
 
-		// Une méthode à paramètres optionnels est enregistrée sous chacune de ses arités, avec
-		// le même bloc : il n'est analysé qu'une fois. Une seconde analyse repartait de l'état
-		// laissé par la première — un appel `clone(x)` déjà résolu vers la native y était
-		// recomparé à la méthode `clone()` de la classe (erreur en strict), et l'opération
-		// ajoutée à la condition de chaque `if` était comptée une fois par arité.
+		// Une méthode à paramètres optionnels est enregistrée sous chacune de ses arités avec
+		// le même bloc. L'analyse n'est pas idempotente (appels déjà résolus, coût des `if`) :
+		// chaque bloc n'est analysé qu'une fois.
 		var analyzed = new HashSet<ClassMethodBlock>();
 		for (var constructor : constructors.values()) {
 			if (constructor.block != null && analyzed.add(constructor.block)) {

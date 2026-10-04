@@ -269,19 +269,20 @@ public class TestClass extends TestCommon {
 	@Test
 	public void testClass_native_call_in_method_with_optional_parameters() throws Exception {
 		section("Native named like a method, called from a method with optional parameters (forum 10994)");
-		// `clone(x)` vise la native (la méthode `clone()` n'a pas d'argument), que la méthode
-		// appelante ait des paramètres optionnels ou non : son bloc, enregistré sous chaque
-		// arité, n'est analysé qu'une fois.
+		// `clone(x)` vise la native : la méthode `clone()` n'a pas d'argument.
 		var c = "class T { public T clone() { return this } ";
 		code_strict_v4_(c + "public string f(integer p) { return clone('a' + p) as string } } return new T().f(1)").equals("\"a1\"");
-		code_strict_v4_(c + "public string f(integer p = 0) { return clone('a' + p) as string } } return new T().f(1)").equals("\"a1\"");
-		code_strict_v4_(c + "public string f(integer p = 0) { return clone('a' + p) as string } } return new T().f(1)").noWarning();
+		var m = c + "public string f(integer p = 0) { return clone('a' + p) as string } } return new T().";
+		code_strict_v4_(m + "f(1)").equals("\"a1\"");
+		code_strict_v4_(m + "f(1)").noWarning();
+		code_v4_(m + "f()").noWarning();
 		code_strict_v4_(c + "public string f(integer p = 0, integer q = 0) { return clone('a' + p + q) as string } } return new T().f()").noWarning();
-		code_v4_(c + "public string f(integer p = 0) { return clone('a' + p) as string } } return new T().f()").noWarning();
-		code_strict_v4_(c + "public string s constructor(integer p = 0) { s = clone('a' + p) as string } } return new T(2).s").equals("\"a2\"");
-		code_strict_v4_(c + "public string s constructor(integer p = 0) { s = clone('a' + p) as string } } return new T(2).s").noWarning();
-		code_strict_v4_("class T { static integer abs() { return 7 } static integer f(integer p = 0) { return abs(p - 5) } } return [T.f(), T.f(2), T.abs()]").equals("[5, 3, 7]");
-		code_strict_v4_("class T { static integer abs() { return 7 } static integer f(integer p = 0) { return abs(p - 5) } } return T.f()").noWarning();
+		var k = c + "public string s constructor(integer p = 0) { s = clone('a' + p) as string } } return new T(2).s";
+		code_strict_v4_(k).equals("\"a2\"");
+		code_strict_v4_(k).noWarning();
+		var s = "class T { static integer abs() { return 7 } static integer f(integer p = 0) { return abs(p - 5) } } return ";
+		code_strict_v4_(s + "[T.f(), T.f(2), T.abs()]").equals("[5, 3, 7]");
+		code_strict_v4_(s + "T.f()").noWarning();
 		// Les avertissements du corps sortent une fois, pas une fois par arité.
 		code_strict_v4_("class T { m(integer p = 0, integer q = 0) { var unused = 1 return p + q } } return new T().m()").warnings(Error.UNUSED_VARIABLE, 1);
 		code_strict_v4_("class T { constructor(integer p = 0, integer q = 0) { var unused = p + q } } return new T()").warnings(Error.UNUSED_VARIABLE, 1);

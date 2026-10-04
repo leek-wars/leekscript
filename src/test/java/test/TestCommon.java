@@ -178,8 +178,9 @@ public class TestCommon {
 		public String warnings(Error type, int count) {
 			return run(new Checker() {
 				public boolean check(Result result) {
-					return result.ai != null && result.ai.getFile().getErrors().size() == count
-						&& result.ai.getFile().getErrors().stream().allMatch(e -> e.level == AnalyzeErrorLevel.WARNING && e.error == type);
+					if (result.ai == null) return false;
+					var errors = result.ai.getFile().getErrors();
+					return errors.size() == count && errors.stream().allMatch(e -> e.level == AnalyzeErrorLevel.WARNING && e.error == type);
 				}
 				public String getExpected() { return count + " × warning " + type.name(); }
 				public String getResult(Result result) {
