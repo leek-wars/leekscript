@@ -2159,7 +2159,7 @@ public class WordCompiler {
 						var keyToken = mTokens.get();
 						boolean validKey = keyToken.getType() == TokenType.STRING;
 						if (!validKey) {
-							var error = keyToken.getType().ordinal() >= TokenType.VAR.ordinal() ? Error.KEYWORD_UNEXPECTED : Error.VARIABLE_NAME_EXPECTED;
+							var error = isKeyword(keyToken) ? Error.KEYWORD_UNEXPECTED : Error.VARIABLE_NAME_EXPECTED;
 							addError(new AnalyzeError(keyToken, AnalyzeErrorLevel.ERROR, error));
 						}
 						String key = keyToken.getWord();
