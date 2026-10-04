@@ -818,4 +818,13 @@ public class TestFunction extends TestCommon {
 		code_v1("function f(a = 5) { var g = function() { a = 9 }; g(); return a } return [f(), f(7)]").equals("[9, 9]");
 		code_v1("function f(@a) { return a++ * 2 } var y = 5; var z = f(y); return [z, y]").equals("[10, 6]");
 	}
+
+	@Test
+	public void testCall_with_cast_as_method_receiver() throws Exception {
+		// #4839 (corrigé par 9178c69) : un appel dynamique casté vers une classe et utilisé comme
+		// receveur de méthode s'écrivait `(u_Entity) execute(u_g).u_get_tp()`, que Java lit
+		// `(u_Entity) (execute(u_g).u_get_tp())` : « cannot find symbol ».
+		section("Cast call used as a method receiver (#4839)");
+		code_strict_v4_("class Entity { get_tp() { return 10 } } function f1() => Entity { return new Entity() } function f2() => Entity { return new Entity() } var c = true; var g = c ? f1 : f2; return 'x' + g().get_tp()").equals("\"x10\"");
+	}
 }
