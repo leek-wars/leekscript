@@ -1560,6 +1560,11 @@ public class TestNumber extends TestCommon {
 		code_v4_("return isPermutation(12345678, 51762384)").equals("true");
 		code_v4_("return isPermutation(11112222, 22221111)").equals("true");
 		code_v4_("return isPermutation(123456, 12345678)").equals("false");
+		// Le signe est ignoré (plantait sur un indice négatif)
+		code_v4_("return isPermutation(-123, 321)").equals("true");
+		code_v4_("return isPermutation(123, -312)").equals("true");
+		code_v4_("return isPermutation(-123, -124)").equals("false");
+		code_v4_("return isPermutation(-9223372036854775807 - 1, -8085774586302733229)").equals("true");
 	}
 
 	@Test

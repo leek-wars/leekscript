@@ -334,8 +334,10 @@ public class NumberClass {
 
 	public static boolean isPermutation(AI ai, long x, long y) {
 		var c = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-		while (x != 0) { c[(int) (x % 10)]++; x /= 10; }
-		while (y != 0) { c[(int) (y % 10)]--; y /= 10; }
+		// Le reste d'un négatif est négatif : on compte les chiffres sans le signe
+		// (Math.abs sur le reste, pas sur x, qui déborderait pour Long.MIN_VALUE)
+		while (x != 0) { c[(int) Math.abs(x % 10)]++; x /= 10; }
+		while (y != 0) { c[(int) Math.abs(y % 10)]--; y /= 10; }
 		int res = 1;
 		for (int i = 0; i < 10; i++) res &= (c[i] == 0 ? 1 : 0);
 		return res != 0;
