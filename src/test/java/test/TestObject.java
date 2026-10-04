@@ -898,6 +898,9 @@ public class TestObject extends TestCommon {
 		section("Class.super");
 		code_v2_("class A { super }").error(Error.VARIABLE_NAME_EXPECTED);
 		code_v2_("class A { super() {} }").error(Error.VARIABLE_NAME_EXPECTED);
+		// Le mot-clé function n'introduit pas une méthode
+		code_v2_("class A { function fct() {} } return 1").compileError(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("class A { function fct() {} } function blabla() {} return 1").compileError(Error.VARIABLE_NAME_EXPECTED);
 		code_v2_("class A { } class B extends A {} return B.super").equals("<class A>");
 		code_v2_("class A { } class B extends A {} return B.super.name").equals("\"A\"");
 		code_v2_("class A { } class B extends A {} return new B().class.super.name").equals("\"A\"");
