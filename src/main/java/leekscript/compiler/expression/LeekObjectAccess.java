@@ -567,31 +567,31 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_add_eq", expr);
+		compileFieldArithmeticOperation(mainblock, writer, expr, "field_add_eq", AI.ArithmeticOperation.ADD);
 	}
 
 	@Override
 
 	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_sub_eq", expr);
+		compileFieldArithmeticOperation(mainblock, writer, expr, "field_sub_eq", AI.ArithmeticOperation.SUB);
 	}
 
 	@Override
 
 	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_mul_eq", expr);
+		compileFieldArithmeticOperation(mainblock, writer, expr, "field_mul_eq", AI.ArithmeticOperation.MUL);
 	}
 
 	@Override
 
 	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_pow_eq", expr);
+		compileFieldArithmeticOperation(mainblock, writer, expr, "field_pow_eq", AI.ArithmeticOperation.POW);
 	}
 
 	@Override
 
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_div_eq", expr);
+		compileFieldArithmeticOperation(mainblock, writer, expr, "field_div_eq", AI.ArithmeticOperation.DIV);
 	}
 
 	@Override
@@ -603,7 +603,7 @@ public class LeekObjectAccess extends Expression {
 	@Override
 
 	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_mod_eq", expr);
+		compileFieldArithmeticOperation(mainblock, writer, expr, "field_mod_eq", AI.ArithmeticOperation.MOD);
 	}
 
 	@Override
@@ -672,17 +672,33 @@ public class LeekObjectAccess extends Expression {
 	 * d'instance est converti par setFieldConverted.
 	 */
 	private void compileFieldBitOperation(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String helper, AI.BitOperation operation) {
-		var target = this.variable != null && this.variable.getVariableType() == VariableType.STATIC_FIELD
+		var declared = staticFieldType();
+		compileStaticFieldOperation(mainblock, writer, expr, helper, "field_bit_eq", operation, declared == null ? null : JavaWriter.containerBitConversion(declared));
+	}
+
+	/** Comme compileFieldBitOperation pour `+=`…, par field_arithmetic_eq (cf JavaWriter.staticFieldArithmeticConversion). */
+	private void compileFieldArithmeticOperation(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String helper, AI.ArithmeticOperation operation) {
+		var declared = staticFieldType();
+		compileStaticFieldOperation(mainblock, writer, expr, helper, "field_arithmetic_eq", operation, declared == null ? null : JavaWriter.staticFieldArithmeticConversion(declared, expr.getType(), operation));
+	}
+
+	/** Type déclaré du champ statique `A.champ` (receveur classe), null pour un autre accès. */
+	private Type staticFieldType() {
+		return this.variable != null && this.variable.getVariableType() == VariableType.STATIC_FIELD
 			&& object instanceof LeekVariable v && (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS)
-			? JavaWriter.containerBitConversion(this.variable.getDeclaredType()) : null;
+			? this.variable.getDeclaredType() : null;
+	}
+
+	/** `converted` (field_bit_eq…) vers `target` sur le champ statique, ou `helper` par compileFieldOperation sans cible. */
+	private void compileStaticFieldOperation(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String helper, String converted, Enum<?> operation, Type target) {
 		if (target == null) {
 			compileFieldOperation(mainblock, writer, helper, expr);
 			return;
 		}
 		writeReceiver(mainblock, writer);
-		writer.addCode(".field_bit_eq(\"" + field.getWord() + "\", ");
+		writer.addCode("." + converted + "(\"" + field.getWord() + "\", ");
 		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(JavaWriter.bitOperationArguments(operation, target) + ")");
+		writer.addCode(JavaWriter.operationArguments(operation, target) + ")");
 	}
 
 	/**

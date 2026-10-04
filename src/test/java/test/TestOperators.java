@@ -511,4 +511,40 @@ public class TestOperators extends TestCommon {
 		code_v4_("class A { boolean f = false; m() { this.f |= true; return this.f; } } return new A().m();").equals("true");
 	}
 
+	@Test
+	public void testCompoundAssign_untypedContainers() throws Exception {
+		section("Arithmetic compound operators on a typed array cell, map value, static field or captured variable");
+		// Booléen (hors strict) : la vérité du résultat, comme `b += 1`
+		code_v4("Array<boolean> a = [true]; a[0] += 1; return a[0];").equals("true");
+		code_v4("Map<string, boolean> m = ['k': true]; m['k'] += 1; return m['k'];").equals("true");
+		code_v4("class A { static boolean S = true; static m() { S += 1; return S; } } return A.m();").equals("true");
+		code_v4("class A { static boolean S = true; } A.S += 1; return A.S;").equals("true");
+		code_v4("boolean b = true; var g = function() { b += 1; }; g(); return b;").equals("true");
+		// Integer face à un réel ou à `/=` : converti en integer
+		code_v4_("Array<integer> a = [10]; a[0] *= 1.5; return a[0];").equals("15");
+		code_v4_("Map<string, integer> m = ['k': 3]; m['k'] += 1.5; return m['k'];").equals("4");
+		code_v4_("integer h = 3; var g = function() { h += 1.5; }; g(); return h;").equals("4");
+		code_v4_("class A { static integer? f = 3; static m() { f += 1.5; return f; } } return A.m();").equals("4");
+		// Réel nullable : null + 5 rend un integer, converti en réel
+		code_v4_("class A { static real? f = null; static m() { f += 5; return f; } } return A.m();").equals("5.0");
+		code_v4_("real? r = null; var g = function() { r += 5; }; g(); return r;").equals("5.0");
+		code_v4_("Array<integer> a = [10]; a[5] /= 4; return a;").equals("[10]");
+		// La valeur de l'expression reste le résultat brut, celui que prévoit son type : seule la
+		// valeur rangée est convertie
+		code_v4_("function f(real x) { return x; } Array<integer> a = [3]; return [f(a[0] += 1.5), a[0]];").equals("[4.5, 4]");
+		code_v4_("function f(real x) { return x; } Array<integer> a = [10]; return [f(a[0] /= 4), a[0]];").equals("[2.5, 2]");
+		code_v4("function f(integer x) { return x; } Array<boolean> a = [true]; return [f(a[0] += 1), a[0]];").equals("[2, true]");
+		code_v4_("function f(real x) { return x; } integer h = 10; var g = function() { return f(h /= 4); }; return [g(), h];").equals("[2.5, 2]");
+		// Opération de bits : le résultat converti, comme sur une variable
+		code_v4_("Array<boolean> a = [false]; var r = (a[0] |= true); return [r, a[0]];").equals("[true, true]");
+		code_v4_("function f(integer x) { return x; } boolean b = false; var g = function() { return f(b |= true); }; return [g(), b];").equals("[1, true]");
+		// Non-régression : les cas déjà justes gardent les helpers du runtime
+		code_v4_("Array<integer> a = [3]; a[0] += 2; return a[0];").equals("5");
+		code_v4_("Array<real> a = [1.5]; a[0] += 1; return a[0];").equals("2.5");
+		code_v4_("Map<integer, real> m = [1: 1.5]; m[1] += 1; return m[1];").equals("2.5");
+		code_v4_("Map<integer, integer> m = [:]; m[1] += 1; return m[1];").equals("1");
+		code_v4_("class A { static integer S = 10; static m() { S /= 4; return S; } } return A.m();").equals("2");
+		code_v4_("var a = [1, 2]; a[0] += 1.5; return a[0];").equals("2.5");
+	}
+
 }

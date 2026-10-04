@@ -222,10 +222,18 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		return v;
 	}
 
-	/** Comme put_bor_eq, résultat converti vers `target` (cf AI.bitConverted). */
+	/** Comme put_add_eq & co, la valeur rangée étant convertie vers `target` (cf AI.ArithmeticOperation). */
+	public Object put_arithmetic_eq(AI ai, Object key, Object value, AI.ArithmeticOperation operation, Type target) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var result = ai.arithmetic(operation, get(key), value);
+		put(key, ai.convertTo(result, target));
+		return result;
+	}
+
+	/** Comme put_bor_eq & co, résultat converti vers `target` (cf AI.BitOperation). */
 	public Object put_bit_eq(AI ai, Object key, Object value, AI.BitOperation operation, Type target) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.bitConverted(operation, get(key), value, target);
+		var v = ai.convertTo(ai.bitAny(operation, get(key), value), target);
 		put(key, v);
 		return v;
 	}

@@ -563,6 +563,20 @@ public class TestBigInt extends TestCommon {
 		code_v4_("big_integer h = 1L << 100; var g = function() { h |= 1; }; g(); return h == (1L << 100) + 1;").equals("true");
 	}
 
+	/** Une clé absente de map ou un null rangé dans un Box se convertit en big_integer. */
+	@Test
+	public void testCompoundAssignOnBigIntContainers() throws Exception {
+		section("Opérations composées sur une map, un tableau, un champ statique ou une variable capturée big_integer");
+		code_v4_("Map<integer, big_integer> m = [:]; m[1] |= 1; big_integer x = m[1]; return x;").equals("1");
+		code_v4_("Map<integer, big_integer> m = [:]; m[1] += 1; return m[1] instanceof BigInteger;").equals("true");
+		code_v4_("Map<integer, big_integer> m = [1: 1L << 100]; m[1] |= 1; return m[1] == (1L << 100) + 1;").equals("true");
+		code_v4_("big_integer h = 10L; var g = function() { h /= 4; }; g(); return h;").equals("2");
+		code_v4_("big_integer? h = null; var g = function() { h += 5; }; g(); return h instanceof BigInteger;").equals("true");
+		code_v4_("class A { static big_integer? f = null; static m() { f += 5; return f; } } return A.m();").equals("5");
+		code_v4_("Map<integer, big_integer> m = [:]; var r = (m[1] |= 1); return [r, m[1] instanceof BigInteger];").equals("[1, true]");
+		code_v4_("function f(real x) { return x; } Array<big_integer> a = [10L]; return [f(a[0] /= 4), a[0]];").equals("[2.5, 2]");
+	}
+
 	/** #4908 : affectations dans un champ statique big_integer (stocké en Object). */
 	@Test
 	public void testStaticFieldAssign() throws Exception {

@@ -469,6 +469,10 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		return result.bor_eq(value);
 	}
 
+	public Object field_arithmetic_eq(String field, Object value, AI.ArithmeticOperation operation, Type target) throws LeekRunException {
+		return getFieldL(field).arithmetic_eq(value, operation, target);
+	}
+
 	public Object field_bit_eq(String field, Object value, AI.BitOperation operation, Type target) throws LeekRunException {
 		return getFieldL(field).bit_eq(value, operation, target);
 	}

@@ -496,67 +496,27 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
-
-		writer.addCode("put_add_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		compilePutArithmeticOperation(mainblock, writer, expr, "put_add_eq", AI.ArithmeticOperation.ADD);
 	}
 
 	@Override
 	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
-
-		writer.addCode("put_sub_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		compilePutArithmeticOperation(mainblock, writer, expr, "put_sub_eq", AI.ArithmeticOperation.SUB);
 	}
 
 	@Override
 	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type type, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
-
-		writer.addCode("put_mul_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		compilePutArithmeticOperation(mainblock, writer, expr, "put_mul_eq", AI.ArithmeticOperation.MUL);
 	}
 
 	@Override
 	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
-
-		writer.addCode("put_mod_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		compilePutArithmeticOperation(mainblock, writer, expr, "put_mod_eq", AI.ArithmeticOperation.MOD);
 	}
 
 	@Override
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
-
-		writer.addCode("put_div_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		compilePutArithmeticOperation(mainblock, writer, expr, "put_div_eq", AI.ArithmeticOperation.DIV);
 	}
 
 	@Override
@@ -566,15 +526,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
-
-		writer.addCode("put_pow_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		compilePutArithmeticOperation(mainblock, writer, expr, "put_pow_eq", AI.ArithmeticOperation.POW);
 	}
 
 	@Override
@@ -608,23 +560,47 @@ public class LeekArrayAccess extends Expression {
 	}
 
 	/**
-	 * `a[k] <op>= v` par le helper `helper` du runtime (put_bor_eq…). Sur une case booléenne ou
-	 * réelle, que le tableau ne connaît pas (cf JavaWriter.containerBitConversion), par
-	 * put_bit_eq qui convertit le résultat. Pas une case big_integer : hors strict, toute case
-	 * d'un `Array<big_integer>` est `big_integer?`, et la convertir changerait le Java de ces
-	 * IA ; seule une case absente ou null y reçoit encore un integer (`m[k] |= 1`).
+	 * `a[k] <op>= v` par le helper `helper` du runtime (put_bor_eq…). Sur une case que le
+	 * contenant ne connaît pas (cf JavaWriter.containerBitConversion), par put_bit_eq qui
+	 * convertit le résultat : booléenne ou réelle, ou big_integer d'une map (clé absente) face à
+	 * un opérande integer. Pas une case big_integer de tableau : hors strict, toute case d'un
+	 * `Array<big_integer>` est `big_integer?`, et la convertir changerait le Java de ces IA.
 	 */
 	private void compilePutBitOperation(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String helper, AI.BitOperation operation) {
 		var element = getType().assertNotNull();
-		boolean converted = element == Type.BOOL || element == Type.REAL;
-		writer.addCode((converted ? "put_bit_eq" : helper) + "(");
+		boolean converted = element == Type.BOOL || element == Type.REAL
+			|| element == Type.BIG_INT && isMapCell() && expr.getType().assertNotNull() == Type.INT;
+		compilePutOperation(mainblock, writer, expr, helper, "put_bit_eq", operation, converted ? element : null);
+	}
+
+	/**
+	 * `a[k] <op>= v` (+=…) par le helper `helper` du runtime (put_add_eq…), ou par
+	 * put_arithmetic_eq quand add() & co rendraient un autre type que celui de la case (cf
+	 * JavaWriter.arithmeticConversion). Une case est prise non nullable, sauf la case
+	 * big_integer d'une map (clé absente) : hors strict, toute case d'un `Array<real>` est
+	 * `real?`, et `scores[k] += 10` sur une `Map<integer, real>` doit garder put_add_eq.
+	 */
+	private void compilePutArithmeticOperation(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String helper, AI.ArithmeticOperation operation) {
+		var element = getType().assertNotNull();
+		var cell = element == Type.BIG_INT && isMapCell() ? getType() : element;
+		compilePutOperation(mainblock, writer, expr, helper, "put_arithmetic_eq", operation, JavaWriter.arithmeticConversion(cell, expr.getType(), operation));
+	}
+
+	/** `helper(tableau, clé, valeur, classe)`, ou `converted(tableau, clé, valeur, opération, cible, classe)` vers `target`. */
+	private void compilePutOperation(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String helper, String converted, Enum<?> operation, Type target) {
+		writer.addCode((target != null ? converted : helper) + "(");
 		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
 		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer, false);
-		if (converted) writer.addCode(JavaWriter.bitOperationArguments(operation, element));
+		if (target != null) writer.addCode(JavaWriter.operationArguments(operation, target));
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+	}
+
+	private boolean isMapCell() {
+		var tabular = mTabular.getType();
+		return tabular.isMap() || tabular.isMapOrNull();
 	}
 
 	@Override

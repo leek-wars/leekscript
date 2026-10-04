@@ -206,9 +206,16 @@ public class Box<T> {
 		return mValue = mUAI.borAny(mValue, val);
 	}
 
-	/** Comme bor_eq & co, résultat converti vers `target` (cf AI.bitConverted). */
+	/** Comme add_eq & co, la valeur rangée étant convertie vers `target` (cf AI.ArithmeticOperation). */
+	public Object arithmetic_eq(Object val, AI.ArithmeticOperation operation, Type target) throws LeekRunException {
+		var result = mUAI.arithmetic(operation, mValue, val);
+		mValue = mUAI.convertTo(result, target);
+		return result;
+	}
+
+	/** Comme bor_eq & co, résultat converti vers `target` (cf AI.BitOperation). */
 	public Object bit_eq(Object val, AI.BitOperation operation, Type target) throws LeekRunException {
-		return mValue = mUAI.bitConverted(operation, mValue, val, target);
+		return mValue = mUAI.convertTo(mUAI.bitAny(operation, mValue, val), target);
 	}
 
 	public Object bxor_eq(Object val) throws LeekRunException {

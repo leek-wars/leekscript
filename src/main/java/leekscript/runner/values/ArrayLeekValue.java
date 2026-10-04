@@ -336,12 +336,22 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return new_value;
 	}
 
-	/** Comme put_bor_eq, résultat converti vers `target` (cf AI.bitConverted). */
+	/** Comme put_add_eq & co, la valeur rangée étant convertie vers `target` (cf AI.ArithmeticOperation). */
+	public Object put_arithmetic_eq(AI ai, Object key, Object value, AI.ArithmeticOperation operation, Type target) throws LeekRunException {
+		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
+		int i = boundedIndex(ai, key);
+		if (i < 0) return null;
+		var result = ai.arithmetic(operation, get(i), value);
+		set(i, ai.convertTo(result, target));
+		return result;
+	}
+
+	/** Comme put_bor_eq & co, résultat converti vers `target` (cf AI.BitOperation). */
 	public Object put_bit_eq(AI ai, Object key, Object value, AI.BitOperation operation, Type target) throws LeekRunException {
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = boundedIndex(ai, key);
 		if (i < 0) return 0l;
-		var new_value = ai.bitConverted(operation, get(i), value, target);
+		var new_value = ai.convertTo(ai.bitAny(operation, get(i), value), target);
 		set(i, new_value);
 		return new_value;
 	}

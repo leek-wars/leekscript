@@ -417,12 +417,12 @@ public class LeekVariable extends Expression {
 	/**
 	 * `x <op>= v`, `x = v` ou `x++` sur une variable en Box passe par une méthode du Box (ou du
 	 * Wrapper d'une variable capturée) qui renvoie un Object, quel que soit le type de la variable :
-	 * add_eq, set, coalesce_eq… Sauf `/=` hors v1 (div_eq rend un double) et les incréments d'un
-	 * Box<T>, qui rendent T (#5300).
+	 * add_eq, set, coalesce_eq… Sauf `/=` hors v1 (div_eq rend un double, mais pas arithmetic_eq,
+	 * cf compileConvertedArithmetic) et les incréments d'un Box<T>, qui rendent T (#5300).
 	 */
 	public boolean writesObjectThroughBox(int operator, int version) {
 		if (!isBoxSlot()) return false;
-		if (operator == Operators.DIVIDEASSIGN) return version == 1;
+		if (operator == Operators.DIVIDEASSIGN) return version == 1 || JavaWriter.arithmeticConversion(javaSlotType(), Type.REAL, AI.ArithmeticOperation.DIV) != null;
 		if (Operators.isIncrement(operator)) return inUntypedBox(version);
 		return true;
 	}
@@ -975,6 +975,7 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
+		if (compileConvertedArithmetic(mainblock, writer, expr, AI.ArithmeticOperation.ADD)) return;
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
@@ -1031,6 +1032,7 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public void compileSubEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
+		if (compileConvertedArithmetic(mainblock, writer, expr, AI.ArithmeticOperation.SUB)) return;
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
@@ -1087,6 +1089,7 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public void compileMulEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type resultType, boolean parenthesis) {
+		if (compileConvertedArithmetic(mainblock, writer, expr, AI.ArithmeticOperation.MUL)) return;
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
@@ -1144,6 +1147,7 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public void compilePowEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type resultType, boolean parenthesis) {
+		if (compileConvertedArithmetic(mainblock, writer, expr, AI.ArithmeticOperation.POW)) return;
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
@@ -1219,6 +1223,7 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
+		if (compileConvertedArithmetic(mainblock, writer, expr, AI.ArithmeticOperation.DIV)) return;
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
@@ -1287,6 +1292,7 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public void compileModEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
+		if (compileConvertedArithmetic(mainblock, writer, expr, AI.ArithmeticOperation.MOD)) return;
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
@@ -1378,17 +1384,10 @@ public class LeekVariable extends Expression {
 	 */
 	private void compileBitAssign(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis, AI.BitOperation operation, String fieldHelper, String boxMethod, String operator) {
 		String name = token.getWord();
-		String box = type == VariableType.GLOBAL ? (isBox() ? "g_" + name : null)
-			: type != VariableType.FIELD && type != VariableType.STATIC_FIELD && isBoxLike(mainblock) ? localName(mainblock) : null;
+		String box = boxName(mainblock);
 		if (type == VariableType.STATIC_FIELD || box != null) {
 			var target = JavaWriter.containerBitConversion(javaSlotType());
-			if (type == VariableType.STATIC_FIELD) {
-				writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + "." + (target != null ? "field_bit_eq" : fieldHelper) + "(\"" + name + "\", ");
-			} else {
-				writer.addCode(box + "." + (target != null ? "bit_eq" : boxMethod) + "(");
-			}
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode((target != null ? JavaWriter.bitOperationArguments(operation, target) : "") + ")");
+			writeContainerOperation(mainblock, writer, expr, box, target != null ? "field_bit_eq" : fieldHelper, target != null ? "bit_eq" : boxMethod, operation, target);
 			return;
 		}
 		String slot = type == VariableType.FIELD ? name : (type == VariableType.GLOBAL ? "g_" : "u_") + name;
@@ -1428,6 +1427,43 @@ public class LeekVariable extends Expression {
 	 */
 	private boolean hasNativeBitSlot(int version) {
 		return this.variableType == Type.INT && hasPrimitiveJavaSlot(version);
+	}
+
+	/** Nom Java du Box de la variable (globale en Box, variable capturée, fonction redéfinie), null sans Box. */
+	private String boxName(MainLeekBlock mainblock) {
+		if (type == VariableType.GLOBAL) return isBox() ? "g_" + token.getWord() : null;
+		return type != VariableType.FIELD && type != VariableType.STATIC_FIELD && isBoxLike(mainblock) ? localName(mainblock) : null;
+	}
+
+	/**
+	 * `x <op>= v` (+=…) sur un champ statique ou un Box dont add() & co rangeraient un autre type
+	 * que celui déclaré (cf JavaWriter.staticFieldArithmeticConversion / arithmeticConversion) :
+	 * par field_arithmetic_eq / arithmetic_eq, qui rangent le résultat converti. Rend false, sans
+	 * rien écrire, sinon.
+	 */
+	private boolean compileConvertedArithmetic(MainLeekBlock mainblock, JavaWriter writer, Expression expr, AI.ArithmeticOperation operation) {
+		String box = boxName(mainblock);
+		if (type != VariableType.STATIC_FIELD && box == null) return false;
+		var target = type == VariableType.STATIC_FIELD
+			? JavaWriter.staticFieldArithmeticConversion(javaSlotType(), expr.getType(), operation)
+			: JavaWriter.arithmeticConversion(javaSlotType(), expr.getType(), operation);
+		if (target == null) return false;
+		writeContainerOperation(mainblock, writer, expr, box, "field_arithmetic_eq", "arithmetic_eq", operation, target);
+		return true;
+	}
+
+	/**
+	 * `Classe.fieldMethod("x", v[, opération, cible])` sur un champ statique, `box.boxMethod(v[,
+	 * opération, cible])` sinon ; sans cible, les helpers du runtime qui rangent le résultat brut.
+	 */
+	private void writeContainerOperation(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String box, String fieldMethod, String boxMethod, Enum<?> operation, Type target) {
+		if (type == VariableType.STATIC_FIELD) {
+			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + "." + fieldMethod + "(\"" + token.getWord() + "\", ");
+		} else {
+			writer.addCode(box + "." + boxMethod + "(");
+		}
+		expr.writeJavaCode(mainblock, writer, false);
+		writer.addCode((target != null ? JavaWriter.operationArguments(operation, target) : "") + ")");
 	}
 
 	@Override

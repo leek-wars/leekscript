@@ -285,9 +285,36 @@ public class JavaWriter {
 		return type == Type.BIG_INT && declared.canBeNull() ? Type.BIG_INT : null;
 	}
 
-	/** Arguments `, BitOperation.X, Type.Y` des helpers *_bit_eq du runtime (cf AI.bitConverted). */
-	public static String bitOperationArguments(AI.BitOperation operation, Type target) {
-		return ", BitOperation." + operation.name() + ", Type." + (target == Type.BOOL ? "BOOL" : target == Type.REAL ? "REAL" : "BIG_INT");
+	/**
+	 * Type vers lequel convertir le résultat d'une opération arithmétique composée (`+=`…)
+	 * rangé dans un contenant qui ne connaît pas le type déclaré de sa valeur (cf
+	 * containerBitConversion), quand add() & co peuvent y rendre un autre type. Jamais face à
+	 * un opérande any, comme ailleurs : le Java de ces IA ne change pas.
+	 */
+	public static Type arithmeticConversion(Type declared, Type operand, AI.ArithmeticOperation operation) {
+		var type = declared.assertNotNull();
+		var value = operand.assertNotNull();
+		if (type == Type.BOOL) return type;
+		if (operation == AI.ArithmeticOperation.DIV) return type == Type.INT || type == Type.BIG_INT ? type : null;
+		if (type == Type.INT) return mayNotBeInteger(value) ? type : null;
+		// Depuis null, add() & co rendent le type de l'opérande
+		return (type == Type.REAL || type == Type.BIG_INT) && declared.canBeNull() && value != type && value != Type.ANY ? type : null;
+	}
+
+	/** arithmeticConversion d'un champ statique : integer, real et big_integer y sont convertis à la lecture. */
+	public static Type staticFieldArithmeticConversion(Type declared, Type operand, AI.ArithmeticOperation operation) {
+		return declared.isNumber() ? null : arithmeticConversion(declared, operand, operation);
+	}
+
+	private static boolean mayNotBeInteger(Type type) {
+		if (type == Type.REAL || type == Type.BIG_INT) return true;
+		return type instanceof CompoundType ct && (ct.getTypes().contains(Type.REAL) || ct.getTypes().contains(Type.BIG_INT));
+	}
+
+	/** Arguments `, BitOperation.BOR, Type.BOOL` (ou ArithmeticOperation…) des helpers *_bit_eq / *_arithmetic_eq. */
+	public static String operationArguments(Enum<?> operation, Type target) {
+		String type = target == Type.BOOL ? "BOOL" : target == Type.INT ? "INT" : target == Type.REAL ? "REAL" : "BIG_INT";
+		return ", " + operation.getDeclaringClass().getSimpleName() + "." + operation.name() + ", Type." + type;
 	}
 
 	/**

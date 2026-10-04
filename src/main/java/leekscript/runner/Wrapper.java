@@ -102,6 +102,10 @@ public class Wrapper<T> {
 		return variable.bor_eq(x);
 	}
 
+	public Object arithmetic_eq(Object x, AI.ArithmeticOperation operation, Type target) throws LeekRunException {
+		return variable.arithmetic_eq(x, operation, target);
+	}
+
 	public Object bit_eq(Object x, AI.BitOperation operation, Type target) throws LeekRunException {
 		return variable.bit_eq(x, operation, target);
 	}

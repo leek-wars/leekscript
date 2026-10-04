@@ -2918,13 +2918,21 @@ public abstract class AI {
 
 	/**
 	 * Opération de bits d'une affectation composée sur un contenant qui ne connaît pas le type
-	 * déclaré de sa valeur (cf JavaWriter.containerBitConversion).
+	 * déclaré de sa valeur (cf JavaWriter.containerBitConversion) : les helpers *_bit_eq rangent
+	 * et rendent le résultat converti (convertTo), comme `b |= v` sur une variable.
 	 */
 	public enum BitOperation { BOR, BAND, BXOR, SHL, SHR, USHR, INTDIV }
 
-	/** `operation` dans sa variante any, résultat converti vers `target` (booléen, réel ou big_integer). */
-	public Object bitConverted(BitOperation operation, Object x, Object y, Type target) throws LeekRunException {
-		var result = switch (operation) {
+	/**
+	 * Opération arithmétique, cf JavaWriter.arithmeticConversion. Les helpers *_arithmetic_eq
+	 * rangent le résultat converti mais rendent le résultat brut : `x += 1.5` est typé real, et
+	 * la valeur de l'expression doit le rester.
+	 */
+	public enum ArithmeticOperation { ADD, SUB, MUL, DIV, MOD, POW }
+
+	/** `operation` dans sa variante any (borAny…). */
+	public Object bitAny(BitOperation operation, Object x, Object y) throws LeekRunException {
+		return switch (operation) {
 			case BOR -> borAny(x, y);
 			case BAND -> bandAny(x, y);
 			case BXOR -> bxorAny(x, y);
@@ -2933,12 +2941,29 @@ public abstract class AI {
 			case USHR -> ushrAny(x, y);
 			case INTDIV -> intdivAny(x, y);
 		};
-		if (target == Type.BOOL) return bool(result);
-		if (target == Type.REAL) return real(result);
-		return BigIntegerValue.valueOf(this, result);
 	}
 
-	/** `a[k] <op>= v` converti vers `target` : comme put_bor_eq & co, la clé n'étant évaluée qu'une fois. */
+	/** `operation` comme add() & co. */
+	public Object arithmetic(ArithmeticOperation operation, Object x, Object y) throws LeekRunException {
+		return switch (operation) {
+			case ADD -> add(x, y);
+			case SUB -> sub(x, y);
+			case MUL -> mul(x, y);
+			case DIV -> div(x, y);
+			case MOD -> mod(x, y);
+			case POW -> pow(x, y);
+		};
+	}
+
+	/** Valeur rangée par les helpers *_bit_eq / *_arithmetic_eq : convertie vers `target`. */
+	public Object convertTo(Object value, Type target) throws LeekRunException {
+		if (target == Type.REAL) return value instanceof Double ? value : (Object) real(value);
+		if (target == Type.INT) return value instanceof Long ? value : (Object) longint(value);
+		if (target == Type.BOOL) return value instanceof Boolean ? value : (Object) bool(value);
+		return BigIntegerValue.valueOf(this, value);
+	}
+
+	/** `a[k] <op>= v` converti vers `target` (cf BitOperation) : la clé n'est évaluée qu'une fois. */
 	public Object put_bit_eq(Object array, Object key, Object value, BitOperation operation, Type target, ClassLeekValue fromClass) throws LeekRunException {
 		if (array instanceof ArrayLeekValue a) {
 			return a.put_bit_eq(this, key, value, operation, target);
@@ -2946,7 +2971,19 @@ public abstract class AI {
 		if (array instanceof MapLeekValue m) {
 			return m.put_bit_eq(this, key, value, operation, target);
 		}
-		return put(array, key, bitConverted(operation, get(array, key, fromClass), value, target), fromClass);
+		return put(array, key, convertTo(bitAny(operation, get(array, key, fromClass), value), target), fromClass);
+	}
+
+	public Object put_arithmetic_eq(Object array, Object key, Object value, ArithmeticOperation operation, Type target, ClassLeekValue fromClass) throws LeekRunException {
+		if (array instanceof ArrayLeekValue a) {
+			return a.put_arithmetic_eq(this, key, value, operation, target);
+		}
+		if (array instanceof MapLeekValue m) {
+			return m.put_arithmetic_eq(this, key, value, operation, target);
+		}
+		var result = arithmetic(operation, get(array, key, fromClass), value);
+		put(array, key, convertTo(result, target), fromClass);
+		return result;
 	}
 
 	public Object put_bor_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {
