@@ -91,11 +91,6 @@ public class ForeachBlock extends AbstractLeekBlock {
 			declaration.setFunction(compiler.getCurrentFunction());
 			declaration.preAnalyze(compiler);
 		} else {
-			// includeClassMembers = false : un membre de classe (champ/méthode) n'est
-			// PAS une cible valide pour un foreach sans `var` (le code généré utilise un
-			// local u_<nom>, jamais un accès au champ). On doit donc résoudre comme dans
-			// analyze() (false) sinon un foreach `for (champ in ...)` passe le check ici
-			// (champ trouvé) mais laisse iteratorVariable=null en analyze → NPE writeJavaCode (#4268).
 			checkIterator(compiler, mIterator);
 		}
 		compiler.setCurrentBlock(initialBlock);
@@ -108,9 +103,10 @@ public class ForeachBlock extends AbstractLeekBlock {
 	 * Un champ (statique ou d'instance) n'est pas une cible valide, comme `for (T.champ in …)` :
 	 * erreur claire plutôt qu'une variable inconnue (#3101) ; le contournement reste
 	 * `for (var x in …) { champ = x }`.
+	 * Résolue sans les membres de classe (hasVariable), comme dans analyze() : sinon le codegen resterait sans variable.
 	 */
 	static void checkIterator(WordCompiler compiler, Token iterator) throws LeekCompilerException {
-		if (compiler.getCurrentBlock().getVariable(iterator.getWord(), false) != null) return;
+		if (compiler.getCurrentBlock().hasVariable(iterator.getWord())) return;
 		if (compiler.getCurrentBlock().getVariable(iterator.getWord(), true) != null) {
 			compiler.addError(new AnalyzeError(iterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_EXPECTED));
 		} else {

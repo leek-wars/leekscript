@@ -80,7 +80,6 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			}
 			iteratorKeyDeclaration.preAnalyze(compiler);
 		} else {
-			// Un champ y laissait le codegen sans variable (NullPointerException, « raison inconnue »)
 			ForeachBlock.checkIterator(compiler, mKeyIterator);
 		}
 		// Si c'est une déclaration on vérifie que le nom est disponnible
