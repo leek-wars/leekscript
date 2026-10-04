@@ -2,6 +2,7 @@ package leekscript.compiler.instruction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
@@ -474,8 +475,14 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 			}
 		}
 
+		// Une méthode à paramètres optionnels est enregistrée sous chacune de ses arités, avec
+		// le même bloc : il n'est analysé qu'une fois. Une seconde analyse repartait de l'état
+		// laissé par la première — un appel `clone(x)` déjà résolu vers la native y était
+		// recomparé à la méthode `clone()` de la classe (erreur en strict), et l'opération
+		// ajoutée à la condition de chaque `if` était comptée une fois par arité.
+		var analyzed = new HashSet<ClassMethodBlock>();
 		for (var constructor : constructors.values()) {
-			if (constructor.block != null) {
+			if (constructor.block != null && analyzed.add(constructor.block)) {
 				constructor.block.analyze(compiler);
 			}
 		}
@@ -505,8 +512,10 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		for (var method : methods.entrySet()) {
 			for (var version : method.getValue().entrySet()) {
 				var block = version.getValue().block;
-				emitMethodAnnotationWarnings(block, method.getKey(), compiler);
-				block.analyze(compiler);
+				if (analyzed.add(block)) {
+					emitMethodAnnotationWarnings(block, method.getKey(), compiler);
+					block.analyze(compiler);
+				}
 
 				// Méthode surchargée ?
 				var current = parent;
@@ -584,8 +593,10 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		}
 		for (var staticMethod : staticMethods.entrySet()) {
 			for (var version : staticMethod.getValue().values()) {
-				emitMethodAnnotationWarnings(version.block, staticMethod.getKey(), compiler);
-				version.block.analyze(compiler);
+				if (analyzed.add(version.block)) {
+					emitMethodAnnotationWarnings(version.block, staticMethod.getKey(), compiler);
+					version.block.analyze(compiler);
+				}
 			}
 		}
 		compiler.setCurrentClass(null);

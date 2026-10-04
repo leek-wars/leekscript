@@ -36,9 +36,6 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 	private final boolean isConstructor;
 	private int minParameters = 0;
 	private int maxParameters = 0;
-	// Une méthode à paramètres par défaut est enregistrée pour chacune de ses arités, et
-	// son bloc analysé autant de fois : le type des défauts n'est vérifié qu'à la première.
-	private boolean defaultValuesChecked = false;
 	private final FunctionType type;
 	// Lazy : la grande majorité des méthodes n'ont aucune annotation.
 	private EnumSet<Annotation> annotations = null;
@@ -181,12 +178,9 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 			var value = defaultValues.get(i);
 			if (value != null) {
 				value.analyze(compiler);
-				if (!defaultValuesChecked) {
-					FunctionBlock.checkDefaultValueType(compiler, mParameters.get(i).getWord(), this.type.getArgument(i), value);
-				}
+				FunctionBlock.checkDefaultValueType(compiler, mParameters.get(i).getWord(), this.type.getArgument(i), value);
 			}
 		}
-		defaultValuesChecked = true;
 		super.analyze(compiler);
 		compiler.setCurrentFunction(initialFunction);
 	}

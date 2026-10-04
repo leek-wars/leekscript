@@ -266,6 +266,24 @@ public class TestClass extends TestCommon {
 		code_v4("class A { public data = [] public fill() { for (var i = 0; i < 8000; ++i) push(data, i) } } var a = new A() a.fill() return clone(a, 2)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 	}
 
+	@Test
+	public void testClass_native_call_in_method_with_optional_parameters() throws Exception {
+		section("Native named like a method, called from a method with optional parameters (forum 10994)");
+		// `clone(x)` vise la native (la méthode `clone()` n'a pas d'argument), que la méthode
+		// appelante ait des paramètres optionnels ou non : son bloc, enregistré sous chaque
+		// arité, n'est analysé qu'une fois.
+		var c = "class T { public T clone() { return this } ";
+		code_strict_v4_(c + "public string f(integer p) { return clone('a' + p) as string } } return new T().f(1)").equals("\"a1\"");
+		code_strict_v4_(c + "public string f(integer p = 0) { return clone('a' + p) as string } } return new T().f(1)").equals("\"a1\"");
+		code_strict_v4_(c + "public string f(integer p = 0) { return clone('a' + p) as string } } return new T().f(1)").noWarning();
+		code_strict_v4_(c + "public string f(integer p = 0, integer q = 0) { return clone('a' + p + q) as string } } return new T().f()").noWarning();
+		code_v4_(c + "public string f(integer p = 0) { return clone('a' + p) as string } } return new T().f()").noWarning();
+		code_strict_v4_(c + "public string s constructor(integer p = 0) { s = clone('a' + p) as string } } return new T(2).s").equals("\"a2\"");
+		code_strict_v4_(c + "public string s constructor(integer p = 0) { s = clone('a' + p) as string } } return new T(2).s").noWarning();
+		code_strict_v4_("class T { static integer abs() { return 7 } static integer f(integer p = 0) { return abs(p - 5) } } return [T.f(), T.f(2), T.abs()]").equals("[5, 3, 7]");
+		code_strict_v4_("class T { static integer abs() { return 7 } static integer f(integer p = 0) { return abs(p - 5) } } return T.f()").noWarning();
+	}
+
 	/**
 	 * Champ statique typé sans initialiseur : vaut null pour les types qui acceptent
 	 * null (Set, Array, string, classes…), comme un champ d'instance du même type.
