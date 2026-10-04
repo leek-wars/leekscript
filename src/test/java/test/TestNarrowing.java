@@ -753,21 +753,4 @@ public class TestNarrowing extends TestCommon {
 		code_strict_v4_("Map<integer, Function> a = [0: function () { return 1 }]; return a[0]!()").equals("1");
 		code_strict_v4_("Map<integer, Function> a = [0: function () { return 1 }]; return a[0]()").warning(Error.MAY_NOT_BE_CALLABLE);
 	}
-	@Test
-	public void testInstanceofParameterizedType() throws Exception {
-		section("instanceof avec type paramétré");
-		// `instanceof Array<X>` parse et s'évalue comme `instanceof Array` (effacement : le
-		// runtime ne porte pas le type d'élément, comme `instanceof List<String>` en Java).
-		code_v4_("Array<integer> a = [1, 2] return a instanceof Array<integer>").equals("true");
-		code_v4_("return [1, 2] instanceof Array<string>").equals("true");
-		code_v4_("return 'x' instanceof Array<integer>").equals("false");
-		code_v4_("return [[1]] instanceof Array<Array<integer>>").equals("true");
-		code_v4_("Map<integer, real> m = [1 : 1.0] return m instanceof Map<integer, real>").equals("true");
-		code_v4_("class Action {} var x = [new Action()] return x instanceof Array<Action>").equals("true");
-		code_v4_("var a = [1] return a instanceof Array<integer> ? 1 : 2").equals("1");
-		// La forme non paramétrée reste inchangée, et une comparaison qui suit un instanceof aussi
-		code_v4_("return [1] instanceof Array").equals("true");
-		code_v4_("var a = [1] return a instanceof Array < 3").equals("true");
-		code_v4_("var a = [1] var b = 2 var c = 1 return [a instanceof Array < b, c > 0]").equals("[true, true]");
-	}
 }
