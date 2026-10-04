@@ -217,6 +217,16 @@ public class LeekFunctionCall extends Expression {
 		}
 	}
 
+	/**
+	 * Type du Java émis pour cet appel : celui du littéral substitué à un appel éliminé vers une
+	 * fonction sans type de retour (cf writeSubstitutedValue), que getType() annonce any.
+	 */
+	public Type getWrittenType(MainLeekBlock mainblock) {
+		if (this.type != Type.ANY || !isEliminable(mainblock)) return this.type;
+		var classification = resolvedFunction.getBodyClassification(mainblock);
+		return classification.kind() == ConstantFolder.BodyKind.CONSTANT ? classification.literal().getType() : Type.NULL;
+	}
+
 	@Override
 	public void compileL(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (isEliminable(mainblock)) {

@@ -25,6 +25,7 @@ import leekscript.common.Type;
 
 import java.util.EnumSet;
 import java.util.Locale;
+import java.util.Set;
 
 public class LeekVariable extends Expression {
 
@@ -713,7 +714,7 @@ public class LeekVariable extends Expression {
 			if (mainblock.getWordCompiler().getVersion() >= 2) {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				writer.compileConvertTyped(mainblock, 0, expr, this.variable.getType(), false);
+				writer.compileConvertTyped(mainblock, 0, expr, globalAssignType(mainblock, expr), false);
 			if (parenthesis) writer.addCode(")");
 			} else {
 				writer.addCode("g_" + token.getWord() + ".set(");
@@ -895,6 +896,46 @@ public class LeekVariable extends Expression {
 	 */
 	private Type globalCastType() {
 		return this.variable != null ? this.variable.getType() : this.variableType;
+	}
+
+	/**
+	 * Cible de la conversion de `g = v` (v2+) : le type de la variable de la globale. En strict,
+	 * une globale non typée prend le type de sa valeur, avec lequel son champ Java est déclaré
+	 * (cf slotType), mais une affectation remet sa variable à any (LeekExpression, ASSIGN) : `v`
+	 * s'écrivait alors tel quel, et `g = f()` rangeait un Object dans un `long` (#5322). Le type
+	 * du champ devient la cible quand javac n'y accepterait pas `v` : un Object, un autre
+	 * primitif. Une valeur que le champ reçoit déjà s'écrit comme avant.
+	 */
+	private Type globalAssignType(MainLeekBlock mainblock, Expression expr) {
+		var type = this.variable.getType();
+		if (type != Type.ANY) return type;
+		var slot = slotType();
+		var slotJava = slot.getJavaPrimitiveName(mainblock.getVersion());
+		if (slotJava.equals("Object")) return type;
+		var value = writtenType(mainblock, expr);
+		if (value == Type.NULL) return slot.isPrimitive() ? slot : type;
+		var valueJava = expr.hasObjectJavaResult() ? "Object" : value.getJavaPrimitiveName(mainblock.getVersion());
+		var fits = switch (slotJava) {
+			case "long", "Long" -> valueJava.equals("long") || valueJava.equals("Long");
+			case "double" -> valueJava.equals("double") || valueJava.equals("Double") || valueJava.equals("long") || valueJava.equals("Long");
+			case "Double" -> valueJava.equals("double") || valueJava.equals("Double");
+			case "boolean", "Boolean" -> valueJava.equals("boolean") || valueJava.equals("Boolean");
+			case "Number" -> Set.of("long", "Long", "double", "Double", "Number").contains(valueJava);
+			// Autre type référence : un Object, un nombre ou un booléen n'y entrent pas
+			default -> valueJava.equals(slotJava) || !Set.of("Object", "Number", "long", "Long", "double", "Double", "boolean", "Boolean").contains(valueJava);
+		};
+		return fits ? type : slot;
+	}
+
+	/**
+	 * Type du Java que `expr` émet (v2+) : le sien, sauf un appel remplacé par le littéral rendu
+	 * par la fonction (cf LeekFunctionCall.getWrittenType) et une globale, lue dans son champ.
+	 */
+	private static Type writtenType(MainLeekBlock mainblock, Expression expr) {
+		var trimmed = expr.trim();
+		if (trimmed instanceof LeekFunctionCall call) return call.getWrittenType(mainblock);
+		if (trimmed instanceof LeekVariable v && v.type == VariableType.GLOBAL && v.variable != null && v.variable.globalDeclaration != null) return v.slotType();
+		return expr.getType();
 	}
 
 	/**

@@ -76,7 +76,9 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 				writer.addCode(this.variable.getType().getDefaultValue(writer, mainblock.getVersion()));
 			}
 		} else {
-			writer.addCode("g_" + variableToken.getWord() + " = new Box<" + variable.getType().getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
+			// Même type que la déclaration du champ (MainLeekBlock) : en strict, celui inféré de la
+			// valeur, que la variable perd à sa première affectation (#5324)
+			writer.addCode("g_" + variableToken.getWord() + " = new Box<" + type.getJavaName(mainblock.getVersion()) + ">(" + writer.getAIThis() + ", ");
 			if (mValue != null) mValue.compileL(mainblock, writer, false);
 			else writer.addCode("null");
 			writer.addCode(", " + (mValue != null ? mValue.getOperations() : 0) + ")");

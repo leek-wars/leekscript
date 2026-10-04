@@ -132,6 +132,24 @@ public class TestGlobals extends TestCommon {
 	}
 
 	@Test
+	public void testGlobals_strictInferredAssignment() throws Exception {
+		// #5322 : en strict, `global g = 9` déclare un champ `long`, mais `g = f()` le traitait
+		// comme any (la variable revient à any à la première affectation) : `g_g = f_f()` rangeait
+		// un Object dans un long, COMPILE_JAVA. #5324 : en v1, l'initialisation construisait un
+		// `Box<Object>` pour un champ `Box<Long>`.
+		section("Strict inferred global reassigned (#5322, #5324)");
+		code_strict("global n = 0; function f() { n++; return n } global g = 9; g = f(); return g").equals("1");
+		code_strict_v2_("global n = 0; function f() { n++; return n } global g = 9; var r = (g = f()); return [g, r]").equals("[1, 1]");
+		code_strict_v2_("global n = 0; function f() { n++; return n } global g = 9; integer r = (g = f()); return r").equals("1");
+		code_strict_v2_("function f() { return 2.5 } global g = 0.5; g = 1; g = f(); return g").equals("2.5");
+		code_strict_v2_("function f() { return [1] } global g = [0]; g = f(); return g").equals("[1]");
+		code_strict_v2_("global g = 9; g = 1; g = g; return g").equals("1");
+		code_strict("global x = 20; x = 5; return x").equals("5");
+		code_strict("global x = 20; x = 5; x += 2; return x").equals("7");
+		code_strict("global x = 'a'; x = 'b'; return x").equals("\"b\"");
+	}
+
+	@Test
 	public void testTypes() throws Exception {
 		section("Types");
 		code("global boolean? x = null; return x").equals("null");
