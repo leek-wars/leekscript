@@ -634,7 +634,10 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 			Collections.sort(result, (o1, o2) -> {
 				try {
 					return ai.signum(function.run(ai, null, o1, o2));
-				} catch (Exception e) {
+				} catch (LeekRunException e) {
+					// Seule l'exception vérifiée est emballée : une autre erreur du comparateur
+					// (NullPointerException…) sort avec sa propre pile, qui contient les lignes
+					// du comparateur ; emballée, la trace s'arrêtait à l'appel d'arraySort.
 					throw new RuntimeException(e);
 				}
 			});

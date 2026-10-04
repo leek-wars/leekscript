@@ -1,9 +1,16 @@
 package test;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Arrays;
+
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 
 import leekscript.common.Error;
+import leekscript.compiler.LeekScript;
+import leekscript.compiler.Options;
 
 /**
  * Tests for edge cases that could cause bugs, based on recent commits:
@@ -325,6 +332,24 @@ public class TestEdgeCases extends TestCommon {
 	}
 
 	@Test
+	public void testArraySortComparatorErrorKeepsItsStack() throws Exception {
+		// Une erreur Java levée dans le comparateur sort d'arraySort telle quelle : sa pile
+		// contient le comparateur, donc la trace d'erreur du joueur montre ses lignes. Emballée
+		// dans une RuntimeException créée par arraySort, la trace s'arrêtait à l'appel.
+		var ai = LeekScript.compileSnippet("class P { integer x constructor(x) { this.x = x } } function cmp(P a, P b) { return a.x - b.x } return arraySort([new P(2), null, new P(1)], cmp)", "AI", new Options(4, false, false, true, null, true));
+		ai.init();
+		ai.staticInit();
+		Throwable thrown = null;
+		try {
+			ai.runIA();
+		} catch (Throwable t) {
+			thrown = t;
+		}
+		assertInstanceOf(NullPointerException.class, thrown);
+		assertTrue(Arrays.stream(thrown.getStackTrace()).anyMatch(f -> f.getClassName().startsWith("AI_") && f.getMethodName().equals("f_cmp")));
+	}
+
+	@Test
 	public void testOperations_limit_edge_cases() throws Exception {
 		section("Operations limit edge cases");
 		// Just under the limit
@@ -342,6 +367,7 @@ public class TestEdgeCases extends TestCommon {
 		code_v4_("var a = [3, 1, 2] return arraySort(a, function(x, y) { while (true) {} return 0 })").max_ops(10000).error(Error.TOO_MUCH_OPERATIONS);
 		code_v4_("var a = [3, 1, 2] return arraySort(a, function(x, y) { arraySort([2, 1, 3], function(p, q) { while (true) {} return 0 }) return x - y })").max_ops(10000).error(Error.TOO_MUCH_OPERATIONS);
 		code_v1_3("var a = [3, 1, 2] return arraySort(a, function(x, y) { arraySort([2, 1, 3], function(p, q) { while (true) {} return 0 }) return x - y })").max_ops(10000).error(Error.TOO_MUCH_OPERATIONS);
+		code_v4_("class P { integer x constructor(x) { this.x = x } } function cmp(P a, P b) { return a.x - b.x } return arraySort([new P(2), null, new P(1)], cmp)").error(Error.UNKNOWN_FIELD);
 
 		/**
 		 * RAM limit edge cases
