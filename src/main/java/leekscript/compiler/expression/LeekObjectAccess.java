@@ -16,6 +16,7 @@ import leekscript.common.ClassValueType;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
 import leekscript.common.Type;
+import leekscript.runner.AI;
 
 public class LeekObjectAccess extends Expression {
 
@@ -596,7 +597,7 @@ public class LeekObjectAccess extends Expression {
 	@Override
 
 	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_intdiv_eq", expr);
+		compileFieldBitOperation(mainblock, writer, expr, "field_intdiv_eq", AI.BitOperation.INTDIV);
 	}
 
 	@Override
@@ -608,37 +609,37 @@ public class LeekObjectAccess extends Expression {
 	@Override
 
 	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_bor_eq", expr);
+		compileFieldBitOperation(mainblock, writer, expr, "field_bor_eq", AI.BitOperation.BOR);
 	}
 
 	@Override
 
 	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_band_eq", expr);
+		compileFieldBitOperation(mainblock, writer, expr, "field_band_eq", AI.BitOperation.BAND);
 	}
 
 	@Override
 
 	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_bxor_eq", expr);
+		compileFieldBitOperation(mainblock, writer, expr, "field_bxor_eq", AI.BitOperation.BXOR);
 	}
 
 	@Override
 
 	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_shl_eq", expr);
+		compileFieldBitOperation(mainblock, writer, expr, "field_shl_eq", AI.BitOperation.SHL);
 	}
 
 	@Override
 
 	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_shr_eq", expr);
+		compileFieldBitOperation(mainblock, writer, expr, "field_shr_eq", AI.BitOperation.SHR);
 	}
 
 	@Override
 
 	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileFieldOperation(mainblock, writer, "field_ushr_eq", expr);
+		compileFieldBitOperation(mainblock, writer, expr, "field_ushr_eq", AI.BitOperation.USHR);
 	}
 
 	@Override
@@ -662,6 +663,26 @@ public class LeekObjectAccess extends Expression {
 
 	private void compileFieldOperation(MainLeekBlock mainblock, JavaWriter writer, String helper, Expression expr) {
 		compileFieldOperation(mainblock, writer, helper, expr, false, () -> writeReceiver(mainblock, writer));
+	}
+
+	/**
+	 * `objet.champ <op>= v` par le helper `helper` du runtime (field_bor_eq…). Sur un champ
+	 * statique (`A.champ`) booléen, réel ou `big_integer?`, que sa Box ne connaît pas (cf
+	 * JavaWriter.containerBitConversion), par field_bit_eq qui convertit le résultat. Un champ
+	 * d'instance est converti par setFieldConverted.
+	 */
+	private void compileFieldBitOperation(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String helper, AI.BitOperation operation) {
+		var target = this.variable != null && this.variable.getVariableType() == VariableType.STATIC_FIELD
+			&& object instanceof LeekVariable v && (v.getVariableType() == VariableType.CLASS || v.getVariableType() == VariableType.THIS_CLASS)
+			? JavaWriter.containerBitConversion(this.variable.getDeclaredType()) : null;
+		if (target == null) {
+			compileFieldOperation(mainblock, writer, helper, expr);
+			return;
+		}
+		writeReceiver(mainblock, writer);
+		writer.addCode(".field_bit_eq(\"" + field.getWord() + "\", ");
+		expr.writeJavaCode(mainblock, writer, false);
+		writer.addCode(JavaWriter.bitOperationArguments(operation, target) + ")");
 	}
 
 	/**

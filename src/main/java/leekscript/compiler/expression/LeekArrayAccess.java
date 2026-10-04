@@ -12,6 +12,7 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.runner.AI;
 import leekscript.common.ArrayType;
 import leekscript.common.Error;
 import leekscript.common.LegacyArrayType;
@@ -560,15 +561,7 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
-
-		writer.addCode("put_intdiv_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		compilePutBitOperation(mainblock, writer, expr, "put_intdiv_eq", AI.BitOperation.INTDIV);
 	}
 
 	@Override
@@ -586,79 +579,51 @@ public class LeekArrayAccess extends Expression {
 
 	@Override
 	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
-
-		writer.addCode("put_bor_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		compilePutBitOperation(mainblock, writer, expr, "put_bor_eq", AI.BitOperation.BOR);
 	}
 
 	@Override
 	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
-
-		writer.addCode("put_band_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		compilePutBitOperation(mainblock, writer, expr, "put_band_eq", AI.BitOperation.BAND);
 	}
 
 	@Override
 	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
-
-		writer.addCode("put_bxor_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		compilePutBitOperation(mainblock, writer, expr, "put_bxor_eq", AI.BitOperation.BXOR);
 	}
 
 	@Override
 	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
-
-		writer.addCode("put_shl_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		compilePutBitOperation(mainblock, writer, expr, "put_shl_eq", AI.BitOperation.SHL);
 	}
 
 	@Override
 	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
-
-		writer.addCode("put_shr_eq(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		compilePutBitOperation(mainblock, writer, expr, "put_shr_eq", AI.BitOperation.SHR);
 	}
 
 	@Override
 	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		// assert(mLeftValue && !mTabular.nullable());
+		compilePutBitOperation(mainblock, writer, expr, "put_ushr_eq", AI.BitOperation.USHR);
+	}
 
-		writer.addCode("put_ushr_eq(");
+	/**
+	 * `a[k] <op>= v` par le helper `helper` du runtime (put_bor_eq…). Sur une case booléenne ou
+	 * réelle, que le tableau ne connaît pas (cf JavaWriter.containerBitConversion), par
+	 * put_bit_eq qui convertit le résultat. Pas une case big_integer : hors strict, toute case
+	 * d'un `Array<big_integer>` est `big_integer?`, et la convertir changerait le Java de ces
+	 * IA ; seule une case absente ou null y reçoit encore un integer (`m[k] |= 1`).
+	 */
+	private void compilePutBitOperation(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String helper, AI.BitOperation operation) {
+		var element = getType().assertNotNull();
+		boolean converted = element == Type.BOOL || element == Type.REAL;
+		writer.addCode((converted ? "put_bit_eq" : helper) + "(");
 		mTabular.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
 		mCase.writeJavaCode(mainblock, writer, false);
 		writer.addCode(", ");
 		expr.writeJavaCode(mainblock, writer, false);
+		if (converted) writer.addCode(JavaWriter.bitOperationArguments(operation, element));
 		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 

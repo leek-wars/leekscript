@@ -16,6 +16,7 @@ import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.Expression;
+import leekscript.runner.AI;
 import leekscript.runner.CallableVersion;
 import leekscript.runner.LeekFunctions;
 
@@ -268,6 +269,25 @@ public class JavaWriter {
 		}
 		var call = openCallConversion(castType);
 		return call != null ? call : "";
+	}
+
+	/**
+	 * Type vers lequel convertir le résultat d'une opération de bits rangé dans un contenant
+	 * qui ne connaît pas le type déclaré de sa valeur (case de tableau ou de map, champ
+	 * statique, Box d'une variable capturée) : la variante any rend un integer, qu'une lecture
+	 * booléenne, réelle ou big_integer (depuis null) refuserait. Null si rien à convertir. Un
+	 * champ statique integer, real ou big_integer est aussi converti à la lecture (cf
+	 * LeekVariable.writeJavaCode).
+	 */
+	public static Type containerBitConversion(Type declared) {
+		var type = declared.assertNotNull();
+		if (type == Type.BOOL || type == Type.REAL) return type;
+		return type == Type.BIG_INT && declared.canBeNull() ? Type.BIG_INT : null;
+	}
+
+	/** Arguments `, BitOperation.X, Type.Y` des helpers *_bit_eq du runtime (cf AI.bitConverted). */
+	public static String bitOperationArguments(AI.BitOperation operation, Type target) {
+		return ", BitOperation." + operation.name() + ", Type." + (target == Type.BOOL ? "BOOL" : target == Type.REAL ? "REAL" : "BIG_INT");
 	}
 
 	/**

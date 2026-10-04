@@ -8,6 +8,7 @@ import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
 import leekscript.common.Error;
+import leekscript.common.Type;
 
 public class Box<T> {
 
@@ -203,6 +204,11 @@ public class Box<T> {
 
 	public Object bor_eq(Object val) throws LeekRunException {
 		return mValue = mUAI.borAny(mValue, val);
+	}
+
+	/** Comme bor_eq & co, résultat converti vers `target` (cf AI.bitConverted). */
+	public Object bit_eq(Object val, AI.BitOperation operation, Type target) throws LeekRunException {
+		return mValue = mUAI.bitConverted(operation, mValue, val, target);
 	}
 
 	public Object bxor_eq(Object val) throws LeekRunException {

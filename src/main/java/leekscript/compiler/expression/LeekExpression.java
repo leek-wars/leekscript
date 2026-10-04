@@ -550,21 +550,40 @@ public class LeekExpression extends Expression {
 	/** Émet un appel runtime bigint binaire `(BigIntegerValue) method(e1, e2)` (#bigint). */
 	private void writeBigIntBinary(MainLeekBlock mainblock, JavaWriter writer, String method, boolean parenthesis) {
 		if (parenthesis) writer.addCode("(");
-		writer.addCode("(BigIntegerValue) " + method + "(");
-		mExpression1.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mExpression2.writeJavaCode(mainblock, writer, false);
-		writer.addCode(")");
+		writer.addCode("(BigIntegerValue) ");
+		writeAnyBinary(mainblock, writer, method);
 		if (parenthesis) writer.addCode(")");
 	}
 
 	/**
-	 * Opérande big_integer, nullable compris (`m[k] | 1` sur une `Map<integer, big_integer>`).
-	 * Pas une union qui en contient un (`any`, retour d'abs()…) : la promouvoir ferait passer
-	 * par le runtime la plupart des opérations de bits des IA.
+	 * Type d'une opération de bits ou d'une division entière (#bigint) : big_integer si un
+	 * opérande l'est, nullable compris (`m[k] | 1` sur une `Map<integer, big_integer>`) ;
+	 * `integer | big_integer` si un opérande est une union d'entiers qui en contient un, la
+	 * promotion se décidant au runtime ; integer sinon. Pas `any` ni `integer | real |
+	 * big_integer` (retour d'abs()…) : les promouvoir ferait passer par le runtime la plupart
+	 * des opérations de bits des IA (cf LeekVariable.mayBeBigInt, plus large pour `|=`).
 	 */
-	private static boolean isBigIntOperand(Type type) {
-		return type.assertNotNull() == Type.BIG_INT;
+	private static Type bitResultType(Type a, Type b) {
+		if (a.assertNotNull() == Type.BIG_INT || b.assertNotNull() == Type.BIG_INT) return Type.BIG_INT;
+		if (isIntegerUnionWithBigInt(a) || isIntegerUnionWithBigInt(b)) return Type.INT_OR_BIG_INT;
+		return Type.INT;
+	}
+
+	private static boolean isIntegerUnionWithBigInt(Type type) {
+		if (!(type instanceof CompoundType ct) || !ct.getTypes().contains(Type.BIG_INT)) return false;
+		for (var t : ct.getTypes()) {
+			if (t != Type.INT && t != Type.BIG_INT && t != Type.NULL) return false;
+		}
+		return true;
+	}
+
+	/** Émet `method(e1, e2)`, la variante runtime qui promeut en big_integer au besoin. */
+	private void writeAnyBinary(MainLeekBlock mainblock, JavaWriter writer, String method) {
+		writer.addCode(method + "(");
+		mExpression1.writeJavaCode(mainblock, writer, false);
+		writer.addCode(", ");
+		mExpression2.writeJavaCode(mainblock, writer, false);
+		writer.addCode(")");
 	}
 
 	/** Émet un appel runtime bigint unaire `(BigIntegerValue) method(e2)` (#bigint). */
@@ -699,6 +718,7 @@ public class LeekExpression extends Expression {
 			return;
 		case Operators.INTEGER_DIVISION: // Division entière
 			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigIntdiv", parenthesis); return; }
+			if (type instanceof CompoundType) { writeAnyBinary(mainblock, writer, "intdivAny"); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" / ");
@@ -725,6 +745,7 @@ public class LeekExpression extends Expression {
 			// Les binaires
 		case Operators.BITAND:
 			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigAnd", parenthesis); return; }
+			if (type instanceof CompoundType) { writeAnyBinary(mainblock, writer, "bandAny"); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" & ");
@@ -733,6 +754,7 @@ public class LeekExpression extends Expression {
 			return;
 		case Operators.BITOR:
 			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigOr", parenthesis); return; }
+			if (type instanceof CompoundType) { writeAnyBinary(mainblock, writer, "borAny"); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" | ");
@@ -741,6 +763,7 @@ public class LeekExpression extends Expression {
 			return;
 		case Operators.BITXOR:
 			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigXor", parenthesis); return; }
+			if (type instanceof CompoundType) { writeAnyBinary(mainblock, writer, "bxorAny"); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" ^ ");
@@ -749,6 +772,7 @@ public class LeekExpression extends Expression {
 			return;
 		case Operators.SHIFT_LEFT:
 			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigShl", parenthesis); return; }
+			if (type instanceof CompoundType) { writeAnyBinary(mainblock, writer, "shlAny"); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" << ");
@@ -757,6 +781,7 @@ public class LeekExpression extends Expression {
 			return;
 		case Operators.SHIFT_RIGHT:
 			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigShr", parenthesis); return; }
+			if (type instanceof CompoundType) { writeAnyBinary(mainblock, writer, "shrAny"); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" >> ");
@@ -765,6 +790,7 @@ public class LeekExpression extends Expression {
 			return;
 		case Operators.SHIFT_UNSIGNED_RIGHT:
 			if (type == Type.BIG_INT) { writeBigIntBinary(mainblock, writer, "bigShr", parenthesis); return; }
+			if (type instanceof CompoundType) { writeAnyBinary(mainblock, writer, "ushrAny"); return; }
 			if (parenthesis) writer.addCode("(");
 			writer.getInt(mainblock, mExpression1, !(mExpression1 instanceof LeekExpression));
 			writer.addCode(" >>> ");
@@ -994,7 +1020,7 @@ public class LeekExpression extends Expression {
 			return;
 		case Operators.BITNOT:
 			if (type == Type.BIG_INT) { writeBigIntUnary(mainblock, writer, "bigNot", parenthesis); return; }
-			writer.addCode("bnot(");
+			writer.addCode(type instanceof CompoundType ? "bnotAny(" : "bnot(");
 			mExpression2.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 			return;
@@ -1446,14 +1472,14 @@ public class LeekExpression extends Expression {
 			type = Type.BOOL;
 		}
 		else if (mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR || mOperator == Operators.INTEGER_DIVISION) {
-			type = (mExpression1 != null && isBigIntOperand(mExpression1.getType())) || isBigIntOperand(mExpression2.getType()) ? Type.BIG_INT : Type.INT;
+			type = bitResultType(mExpression1 != null ? mExpression1.getType() : Type.INT, mExpression2.getType());
 		}
 		else if (mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.SHIFT_UNSIGNED_RIGHT) {
 			// le décalage suit le type de l'opérande gauche (le nombre décalé)
-			type = mExpression1 != null && isBigIntOperand(mExpression1.getType()) ? Type.BIG_INT : Type.INT;
+			type = bitResultType(mExpression1 != null ? mExpression1.getType() : Type.INT, Type.INT);
 		}
 		else if (mOperator == Operators.BITNOT) {
-			type = isBigIntOperand(mExpression2.getType()) ? Type.BIG_INT : Type.INT;
+			type = bitResultType(mExpression2.getType(), Type.INT);
 		}
 		else if (mOperator == Operators.COALESCE) {
 			var leftType = mExpression1.getType();

@@ -21,6 +21,7 @@ import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
 import leekscript.util.Json;
 import leekscript.common.Error;
+import leekscript.common.Type;
 
 public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLeekValue {
 
@@ -331,6 +332,16 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		int i = boundedIndex(ai, key);
 		if (i < 0) return 0l;
 		var new_value = ai.borAny(get(i), value);
+		set(i, new_value);
+		return new_value;
+	}
+
+	/** Comme put_bor_eq, résultat converti vers `target` (cf AI.bitConverted). */
+	public Object put_bit_eq(AI ai, Object key, Object value, AI.BitOperation operation, Type target) throws LeekRunException {
+		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
+		int i = boundedIndex(ai, key);
+		if (i < 0) return 0l;
+		var new_value = ai.bitConverted(operation, get(i), value, target);
 		set(i, new_value);
 		return new_value;
 	}

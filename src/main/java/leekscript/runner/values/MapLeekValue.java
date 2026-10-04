@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import leekscript.common.Type;
 import leekscript.runner.AI;
 import leekscript.runner.AI.RamUsage;
 import leekscript.runner.LeekOperations;
@@ -217,6 +218,14 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	public Object put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.borAny(get(key), value);
+		put(key, v);
+		return v;
+	}
+
+	/** Comme put_bor_eq, résultat converti vers `target` (cf AI.bitConverted). */
+	public Object put_bit_eq(AI ai, Object key, Object value, AI.BitOperation operation, Type target) throws LeekRunException {
+		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
+		var v = ai.bitConverted(operation, get(key), value, target);
 		put(key, v);
 		return v;
 	}

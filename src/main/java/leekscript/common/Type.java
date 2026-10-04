@@ -48,6 +48,7 @@ public class Type {
 	public static final Type ARRAY_REAL = array(Type.REAL);
 	public static final Type ARRAY_STRING = array(Type.STRING);
 	public static final Type INT_OR_NULL = compound(Type.INT, Type.NULL);
+	public static final Type INT_OR_BIG_INT = compound(Type.INT, Type.BIG_INT);
 	public static final Type BOOL_OR_NULL = compound(Type.BOOL, Type.NULL);
 	public static final Type INT_OR_BOOL = compound(Type.INT, Type.BOOL);
 	public static final Type ARRAY_OR_NULL = compound(Type.ARRAY, Type.NULL);

@@ -533,6 +533,34 @@ public class TestBigInt extends TestCommon {
 		code_v4_("global big_integer? g = null; g += 5; return g;").equals("5");
 		code_v4_("function f(big_integer? h) { h += 5; return h; } return f(null);").equals("5");
 		code_v4_("big_integer? h = 1L << 100; h += 1; return h == (1L << 100) + 1;").equals("true");
+		// null vaut 0, sans erreur journalisée, aussi face à un grand nombre
+		code_v4_("big_integer? h = null; h += 1L << 100; return h == 1L << 100;").equals("true");
+	}
+
+	/** Une union d'entiers déclarée (`integer | big_integer`) promeut au runtime, sans troncature. */
+	@Test
+	public void testBitOpsOnIntegerUnion() throws Exception {
+		section("Opérateurs de bits sur une union integer | big_integer");
+		code_v4_("integer | big_integer h = 1L << 100; return (h | 1) == (1L << 100) + 1;").equals("true");
+		code_v4_("integer | big_integer h = 1L; return (h << 100) == 1L << 100;").equals("true");
+		code_v4_("integer | big_integer h = 1L << 100; return h >> 99;").equals("2");
+		code_v4_("integer | big_integer h = 1L << 100; return (h \\ 2) == 1L << 99;").equals("true");
+		code_v4_("integer | big_integer h = 1L << 100; return ~h == -(1L << 100) - 1;").equals("true");
+		code_v4_("integer | big_integer | null h = 1L << 100; return (h | 1) == (1L << 100) + 1;").equals("true");
+		code_v4_("integer | big_integer h = 12; return h | 1;").equals("13");
+		code_v4_("integer | big_integer h = 5; return ~h;").equals("-6");
+		// Un retour de native surchargée (integer | real | big_integer) reste un integer
+		code_v4_("var x = abs(-5); return x | 1;").equals("5");
+	}
+
+	/** Le champ statique et la variable capturée `big_integer?` ne connaissent pas leur type. */
+	@Test
+	public void testBitAssignOnNullableBigIntBox() throws Exception {
+		section("Opérations composées de bits sur un champ statique ou une variable capturée big_integer?");
+		code_v4_("class A { static big_integer? f = null; static m() { f |= 5; return f; } } return A.m();").equals("5");
+		code_v4_("class A { static big_integer? f = 1L << 100; static m() { f |= 1; return f == (1L << 100) + 1; } } return A.m();").equals("true");
+		code_v4_("big_integer? h = null; var g = function() { h |= 5; }; g(); return h;").equals("5");
+		code_v4_("big_integer h = 1L << 100; var g = function() { h |= 1; }; g(); return h == (1L << 100) + 1;").equals("true");
 	}
 
 	/** #4908 : affectations dans un champ statique big_integer (stocké en Object). */

@@ -451,4 +451,64 @@ public class TestOperators extends TestCommon {
 		code_v4_("real? r = 3; r /= 2; return r;").equals("1.5");
 	}
 
+	@Test
+	public void testCompoundAssign_nullableNumber() throws Exception {
+		section("Compound operators on a nullable number: the result is never null");
+		code_v4_("real? r = null; r += 5; return r;").equals("5.0");
+		code_v4_("real? r = null; r -= 5; return r;").equals("-5.0");
+		code_v4_("real? r = null; r++; return r;").equals("1.0");
+		code_v4_("real? r = 1.5; r += 1; return r;").equals("2.5");
+		code_v4_("integer? h = 3; h += 1.5; return h;").equals("4");
+		code_v4_("integer? h = 3; h *= 1.5; return h;").equals("4");
+		code_v4_("class A { real? f = null; m() { f += 5; return f; } } return new A().m();").equals("5.0");
+		code_v4_("global real? g = null; g += 5; return g;").equals("5.0");
+		code_strict_v4_("class A { integer? f = 3; m() { f += 1.5; return f; } } return new A().m();").equals("4");
+		// Non-régression : opérande du même type, cast inchangé
+		code_v4_("integer? h = 3; h += 2; return h;").equals("5");
+		code_v4_("integer? h = null; h++; return h;").equals("1");
+	}
+
+	@Test
+	public void testCompoundAssign_boolean() throws Exception {
+		section("Arithmetic compound operators on a boolean (non strict): the truth of the result");
+		code_v4("boolean b = true; b += 1; return b;").equals("true");
+		code_v4("boolean b = true; b -= 1; return b;").equals("false");
+		code_v4("boolean b = true; b *= 0; return b;").equals("false");
+		code_v4("boolean b = true; b++; return b;").equals("true");
+		code_v4("boolean? b = true; b += 1; return b;").equals("true");
+		code_v4("class A { boolean f = true; m() { f += 1; return f; } } return new A().m();").equals("true");
+		code_v4("global boolean g = true; g += 1; return g;").equals("true");
+		// Narrowé vers boolean sur un emplacement any : le nombre y est rangé tel quel
+		code_v4_("any x = true; if (x instanceof Boolean) { x += 1 } return x;").equals("2");
+		// Refusé à l'analyse en strict
+		code_strict_v4_("boolean b = true; b += 1; return b;").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+	}
+
+	@Test
+	public void testBitAssign_untypedContainers() throws Exception {
+		section("Bitwise compound operators on a typed array cell, static field or captured variable");
+		code_v4_("Array<boolean> a = [false]; a[0] |= true; return a[0];").equals("true");
+		code_v4_("Array<boolean> a = [true]; a[0] &= false; return a[0];").equals("false");
+		code_v4_("Array<boolean> a = [false, false]; var i = 0; a[i++] |= true; return [a, i];").equals("[[true, false], 1]");
+		// Hors bornes : erreur journalisée sans interrompre l'IA, comme une case integer
+		code_v4_("Array<boolean> a = [false]; a[5] |= true; return a;").equals("[false]");
+		code_v4_("Array<integer> a = [1]; a[5] |= 1; return a;").equals("[1]");
+		code_v4_("Map<string, boolean> m = ['k': false]; m['k'] |= true; return m['k'];").equals("true");
+		code_v4_("Array<real> a = [1.5]; a[0] |= 1; return a[0];").equals("1.0");
+		code_v4_("class A { static boolean S = false; static m() { S |= true; return S; } } return A.m();").equals("true");
+		code_v4_("class A { static boolean? S = false; static m() { S ^= true; return S; } } return A.m();").equals("true");
+		code_v4_("class A { static real? f = 1.5; static m() { f |= 1; return f; } } return A.m();").equals("1.0");
+		code_v4_("class A { static boolean S = false; } A.S |= true; return A.S;").equals("true");
+		code_v4_("class A { static boolean S = false; } class B extends A {} B.S |= true; return A.S;").equals("true");
+		code_v4_("class A { static boolean S = false; } class B extends A { static m() { S |= true; return S; } } return B.m();").equals("true");
+		code_v4_("class A { static boolean S = false; static m() { class.S |= true; return class.S; } } return A.m();").equals("true");
+		code_v4_("boolean b = false; var g = function() { b |= true; }; g(); return b;").equals("true");
+		code_v4_("real r = 1.5; var g = function() { r |= 1; }; g(); return r;").equals("1.0");
+		// Non-régression : integer et big_integer gardent les helpers du runtime
+		code_v4_("Array<integer> a = [12]; a[0] |= 1; return a[0];").equals("13");
+		code_v4_("class A { static integer f = 12; static m() { f |= 1; return f; } } return A.m();").equals("13");
+		code_v4_("integer h = 12; var g = function() { h |= 1; }; g(); return h;").equals("13");
+		code_v4_("class A { boolean f = false; m() { this.f |= true; return this.f; } } return new A().m();").equals("true");
+	}
+
 }

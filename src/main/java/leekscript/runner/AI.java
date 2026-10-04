@@ -1006,7 +1006,7 @@ public abstract class AI {
 
 	/** Compare deux entiers exacts via BigInteger (sans perte au-delà de 2^53). */
 	private int bigCompare(Object x, Object y) throws LeekRunException {
-		return BigIntegerValue.valueOf(this, x).compareTo(BigIntegerValue.valueOf(this, y));
+		return bigOperand(x).compareTo(bigOperand(y));
 	}
 
 	public boolean lessequals(Object x, Object y) throws LeekRunException {
@@ -1390,6 +1390,10 @@ public abstract class AI {
 		return anyBig(x, y) ? bigIntdiv(x, y) : intdiv(x, y);
 	}
 
+	public Object bnotAny(Object x) throws LeekRunException {
+		return x instanceof BigIntegerValue ? bigNot(x) : bnot(x);
+	}
+
 	public long add(long x, long y) throws LeekRunException {
 		return x + y;
 	}
@@ -1462,7 +1466,7 @@ public abstract class AI {
 		}
 
 		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
-			return BigIntegerValue.valueOf(this, x).add(BigIntegerValue.valueOf(this, y));
+			return bigOperand(x).add(bigOperand(y));
 		}
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) + real(y);
@@ -1496,7 +1500,7 @@ public abstract class AI {
 
 	public Object sub(Object x, Object y) throws LeekRunException {
 		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
-			return BigIntegerValue.valueOf(this, x).subtract(BigIntegerValue.valueOf(this, y));
+			return bigOperand(x).subtract(bigOperand(y));
 		}
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) - real(y);
@@ -1506,7 +1510,7 @@ public abstract class AI {
 
 	public Object mul(Object x, Object y) throws LeekRunException {
 		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
-			return BigIntegerValue.valueOf(this, x).multiply(BigIntegerValue.valueOf(this, y));
+			return bigOperand(x).multiply(bigOperand(y));
 		}
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) * real(y);
@@ -1535,7 +1539,7 @@ public abstract class AI {
 	public Object mod(Object x, Object y) throws LeekRunException {
 		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
 			// `%` = reste (signe du dividende), comme l'opérateur entier
-			return BigIntegerValue.valueOf(this, x).remainder(BigIntegerValue.valueOf(this, y));
+			return bigOperand(x).remainder(bigOperand(y));
 		}
 		if (x instanceof Double || y instanceof Double) {
 			return real(x) % real(y);
@@ -1567,7 +1571,7 @@ public abstract class AI {
 
 	public Number pow(Object x, Object y) throws LeekRunException {
 		if (x instanceof BigIntegerValue || y instanceof BigIntegerValue) {
-			var base = BigIntegerValue.valueOf(this, x);
+			var base = bigOperand(x);
 			long exp = longint(y);
 			// Exposant négatif : résultat fractionnaire tronqué à 0 (comme la
 			// puissance entière `Math.pow` castée en long).
@@ -2910,6 +2914,39 @@ public abstract class AI {
 		if (version >= 3)
 			addSystemLog(AILog.ERROR, Error.VALUE_IS_NOT_AN_ARRAY, new Object[] { array });
 		return 0l;
+	}
+
+	/**
+	 * Opération de bits d'une affectation composée sur un contenant qui ne connaît pas le type
+	 * déclaré de sa valeur (cf JavaWriter.containerBitConversion).
+	 */
+	public enum BitOperation { BOR, BAND, BXOR, SHL, SHR, USHR, INTDIV }
+
+	/** `operation` dans sa variante any, résultat converti vers `target` (booléen, réel ou big_integer). */
+	public Object bitConverted(BitOperation operation, Object x, Object y, Type target) throws LeekRunException {
+		var result = switch (operation) {
+			case BOR -> borAny(x, y);
+			case BAND -> bandAny(x, y);
+			case BXOR -> bxorAny(x, y);
+			case SHL -> shlAny(x, y);
+			case SHR -> shrAny(x, y);
+			case USHR -> ushrAny(x, y);
+			case INTDIV -> intdivAny(x, y);
+		};
+		if (target == Type.BOOL) return bool(result);
+		if (target == Type.REAL) return real(result);
+		return BigIntegerValue.valueOf(this, result);
+	}
+
+	/** `a[k] <op>= v` converti vers `target` : comme put_bor_eq & co, la clé n'étant évaluée qu'une fois. */
+	public Object put_bit_eq(Object array, Object key, Object value, BitOperation operation, Type target, ClassLeekValue fromClass) throws LeekRunException {
+		if (array instanceof ArrayLeekValue a) {
+			return a.put_bit_eq(this, key, value, operation, target);
+		}
+		if (array instanceof MapLeekValue m) {
+			return m.put_bit_eq(this, key, value, operation, target);
+		}
+		return put(array, key, bitConverted(operation, get(array, key, fromClass), value, target), fromClass);
 	}
 
 	public Object put_bor_eq(Object array, Object key, Object value, ClassLeekValue fromClass) throws LeekRunException {

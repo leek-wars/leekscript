@@ -14,6 +14,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
+import leekscript.runner.AI;
 import leekscript.runner.LeekConstants;
 import leekscript.runner.LeekFunctions;
 
@@ -23,6 +24,7 @@ import leekscript.common.Error;
 import leekscript.common.Type;
 
 import java.util.EnumSet;
+import java.util.Locale;
 
 public class LeekVariable extends Expression {
 
@@ -836,7 +838,7 @@ public class LeekVariable extends Expression {
 		// le résultat pour le repasser à longint() (+12 % mesuré sur un champ `integer`).
 		// `real` en a besoin, lui : il n'existe pas de surcharge add(double, ...), le résultat
 		// arriverait en Object.
-		var close = slotType == Type.INT ? "" : writer.openResultConversion(mainblock.getVersion(), slotType);
+		var close = slotType == Type.INT ? "" : openOperationResult(mainblock, writer, slotType, Type.INT);
 		writer.addCode((increment ? "add(" : "sub(") + name + ", 1l)" + close);
 		if (suffix) {
 			writer.addCode(", 1l)");
@@ -874,6 +876,10 @@ public class LeekVariable extends Expression {
 		}
 	}
 
+	/**
+	 * Plus large que la règle des opérateurs simples (LeekExpression.bitResultType) : `x |= v`
+	 * sur un any passe par la variante any depuis #4908, `x | v` reste sur 64 bits.
+	 */
 	private static boolean mayBeBigInt(Type type) {
 		return type == Type.ANY || type instanceof CompoundType ct && ct.getTypes().contains(Type.BIG_INT);
 	}
@@ -972,7 +978,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = writer.openResultConversion(mainblock.getVersion(), variableType);
+			var close = openOperationResult(mainblock, writer, variableType, expr.getType());
 			writer.addCode("add(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -995,7 +1001,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = writer.openResultConversion(mainblock.getVersion(), globalCastType());
+				var close = openOperationResult(mainblock, writer, globalCastType(), expr.getType());
 				writer.addCode("add(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1014,7 +1020,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				var close = writer.openResultConversion(mainblock.getVersion(), this.variableType);
+				var close = openOperationResult(mainblock, writer, this.variableType, expr.getType());
 				writer.addCode("add_eq(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1028,7 +1034,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = writer.openResultConversion(mainblock.getVersion(), variableType);
+			var close = openOperationResult(mainblock, writer, variableType, expr.getType());
 			writer.addCode("sub(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -1051,7 +1057,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = writer.openResultConversion(mainblock.getVersion(), globalCastType());
+				var close = openOperationResult(mainblock, writer, globalCastType(), expr.getType());
 				writer.addCode("sub(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1070,7 +1076,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				var close = writer.openResultConversion(mainblock.getVersion(), this.variableType);
+				var close = openOperationResult(mainblock, writer, this.variableType, expr.getType());
 				writer.addCode("sub(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1084,7 +1090,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = writer.openResultConversion(mainblock.getVersion(), variableType);
+			var close = openOperationResult(mainblock, writer, variableType, expr.getType());
 			writer.addCode("mul(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -1107,7 +1113,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = writer.openResultConversion(mainblock.getVersion(), globalCastType());
+				var close = openOperationResult(mainblock, writer, globalCastType(), expr.getType());
 				writer.addCode("mul(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1126,7 +1132,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				var close = writer.openResultConversion(mainblock.getVersion(), this.variableType);
+				var close = openOperationResult(mainblock, writer, this.variableType, expr.getType());
 				writer.addCode("mul(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1141,7 +1147,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = writer.openResultConversion(mainblock.getVersion(), variableType);
+			var close = openOperationResult(mainblock, writer, variableType, expr.getType());
 			writer.addCode("pow(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -1159,7 +1165,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = writer.openResultConversion(mainblock.getVersion(), globalCastType());
+				var close = openOperationResult(mainblock, writer, globalCastType(), expr.getType());
 				writer.addCode("pow(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1173,7 +1179,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				var close = writer.openResultConversion(mainblock.getVersion(), this.variableType);
+				var close = openOperationResult(mainblock, writer, this.variableType, expr.getType());
 				writer.addCode("pow(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1190,12 +1196,33 @@ public class LeekVariable extends Expression {
 		return slot.boxedPrimitive() == Type.INT ? Type.INT : slot;
 	}
 
+	/**
+	 * Ouvre la conversion du résultat d'une opération composée (add, sub, mul, pow, div, mod)
+	 * vers l'emplacement, `castType` étant le type visé, `operand` celui de l'opérande :
+	 * - un emplacement booléen (non strict : refusé à l'analyse en strict) reçoit la vérité du
+	 *   nombre, comme `b = 1` ; narrowé vers boolean sur un autre emplacement, le nombre y est
+	 *   rangé tel quel ;
+	 * - sur un `integer?` / `real?`, le cast vers la boîte ne tient que si l'opération rend ce
+	 *   type, ce que garantit un opérande du même type. Sinon on convertit : `real? r = null;
+	 *   r += 5` rend un Long, `integer? h; h += 1.5` un Double.
+	 */
+	private String openOperationResult(MainLeekBlock mainblock, JavaWriter writer, Type castType, Type operand) {
+		if (castType.assertNotNull() == Type.BOOL) {
+			var slot = javaSlotType();
+			if (slot.assertNotNull() == Type.BOOL) return writer.openFieldResultConversion(Type.BOOL);
+			castType = slot;
+		}
+		var boxed = castType.boxedPrimitive();
+		if ((boxed == Type.INT || boxed == Type.REAL) && operand.assertNotNull() != boxed) castType = boxed;
+		return writer.openResultConversion(mainblock.getVersion(), castType);
+	}
+
 	@Override
 	public void compileDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = writer.openResultConversion(mainblock.getVersion(), divTarget(variableType));
+			var close = openOperationResult(mainblock, writer, divTarget(variableType), expr.getType());
 			writer.addCode("div(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -1216,7 +1243,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = writer.openResultConversion(mainblock.getVersion(), divTarget(globalCastType()));
+				var close = openOperationResult(mainblock, writer, divTarget(globalCastType()), expr.getType());
 				if (mainblock.getVersion() == 1) {
 					writer.addCode("div_v1(g_" + token.getWord() + ", ");
 				} else {
@@ -1243,7 +1270,7 @@ public class LeekVariable extends Expression {
 					writer.addCode(")");
 				} else {
 					writer.addCode("u_" + token.getWord() + " = ");
-					var close = writer.openResultConversion(mainblock.getVersion(), divTarget(this.variableType));
+					var close = openOperationResult(mainblock, writer, divTarget(this.variableType), expr.getType());
 					writer.addCode("div(u_" + token.getWord() + ", ");
 					expr.writeJavaCode(mainblock, writer, false);
 					writer.addCode(")" + close);
@@ -1255,7 +1282,7 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public void compileIntDivEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileBitAssign(mainblock, writer, expr, parenthesis, "intdiv", "field_intdiv_eq", "intdiv_eq", null);
+		compileBitAssign(mainblock, writer, expr, parenthesis, AI.BitOperation.INTDIV, "field_intdiv_eq", "intdiv_eq", null);
 	}
 
 	@Override
@@ -1263,7 +1290,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			var close = writer.openResultConversion(mainblock.getVersion(), variableType);
+			var close = openOperationResult(mainblock, writer, variableType, expr.getType());
 			writer.addCode("mod(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
@@ -1285,7 +1312,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("g_" + token.getWord() + " = ");
-				var close = writer.openResultConversion(mainblock.getVersion(), globalCastType());
+				var close = openOperationResult(mainblock, writer, globalCastType(), expr.getType());
 				writer.addCode("mod(g_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1304,7 +1331,7 @@ public class LeekVariable extends Expression {
 			} else {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode("u_" + token.getWord() + " = ");
-				var close = writer.openResultConversion(mainblock.getVersion(), this.variableType);
+				var close = openOperationResult(mainblock, writer, this.variableType, expr.getType());
 				writer.addCode("mod(u_" + token.getWord() + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1315,57 +1342,53 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public void compileBitOrEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileBitAssign(mainblock, writer, expr, parenthesis, "bor", "field_bor_eq", "bor_eq", "|");
+		compileBitAssign(mainblock, writer, expr, parenthesis, AI.BitOperation.BOR, "field_bor_eq", "bor_eq", "|");
 	}
 
 	@Override
 	public void compileBitAndEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileBitAssign(mainblock, writer, expr, parenthesis, "band", "field_band_eq", "band_eq", "&");
+		compileBitAssign(mainblock, writer, expr, parenthesis, AI.BitOperation.BAND, "field_band_eq", "band_eq", "&");
 	}
 
 	@Override
 	public void compileBitXorEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileBitAssign(mainblock, writer, expr, parenthesis, "bxor", "field_bxor_eq", "bxor_eq", "^");
+		compileBitAssign(mainblock, writer, expr, parenthesis, AI.BitOperation.BXOR, "field_bxor_eq", "bxor_eq", "^");
 	}
 
 	@Override
 	public void compileShiftLeftEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileBitAssign(mainblock, writer, expr, parenthesis, "shl", "field_shl_eq", "shl_eq", "<<");
+		compileBitAssign(mainblock, writer, expr, parenthesis, AI.BitOperation.SHL, "field_shl_eq", "shl_eq", "<<");
 	}
 
 	@Override
 	public void compileShiftRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileBitAssign(mainblock, writer, expr, parenthesis, "shr", "field_shr_eq", "shr_eq", ">>");
+		compileBitAssign(mainblock, writer, expr, parenthesis, AI.BitOperation.SHR, "field_shr_eq", "shr_eq", ">>");
 	}
 
 	@Override
 	public void compileShiftUnsignedRightEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis) {
-		compileBitAssign(mainblock, writer, expr, parenthesis, "ushr", "field_ushr_eq", "ushr_eq", ">>>");
+		compileBitAssign(mainblock, writer, expr, parenthesis, AI.BitOperation.USHR, "field_ushr_eq", "ushr_eq", ">>>");
 	}
 
 	/**
-	 * `x <op>= v` pour les six opérateurs de bits et `\=` : `method` est la méthode runtime
-	 * long (bor, band, bxor, shl, shr, ushr, intdiv), `fieldHelper` et `boxMethod` celles d'un
-	 * champ statique et d'un Box, `operator` l'opérateur Java natif, null s'il n'y en a pas.
+	 * `x <op>= v` pour les six opérateurs de bits et `\=` : `fieldHelper` et `boxMethod` sont
+	 * les méthodes runtime d'un champ statique et d'un Box, `operator` l'opérateur Java natif,
+	 * null s'il n'y en a pas. Un champ statique ou un Box booléen, réel ou `big_integer?` passe
+	 * par field_bit_eq / bit_eq, qui convertissent le résultat (cf JavaWriter.containerBitConversion).
 	 */
-	private void compileBitAssign(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis, String method, String fieldHelper, String boxMethod, String operator) {
+	private void compileBitAssign(MainLeekBlock mainblock, JavaWriter writer, Expression expr, boolean parenthesis, AI.BitOperation operation, String fieldHelper, String boxMethod, String operator) {
 		String name = token.getWord();
-		if (type == VariableType.STATIC_FIELD) {
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + "." + fieldHelper + "(\"" + name + "\", ");
+		String box = type == VariableType.GLOBAL ? (isBox() ? "g_" + name : null)
+			: type != VariableType.FIELD && type != VariableType.STATIC_FIELD && isBoxLike(mainblock) ? localName(mainblock) : null;
+		if (type == VariableType.STATIC_FIELD || box != null) {
+			var target = JavaWriter.containerBitConversion(javaSlotType());
+			if (type == VariableType.STATIC_FIELD) {
+				writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + "." + (target != null ? "field_bit_eq" : fieldHelper) + "(\"" + name + "\", ");
+			} else {
+				writer.addCode(box + "." + (target != null ? "bit_eq" : boxMethod) + "(");
+			}
 			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-			return;
-		}
-		if (type == VariableType.GLOBAL && isBox()) {
-			writer.addCode("g_" + name + "." + boxMethod + "(");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
-			return;
-		}
-		if (type != VariableType.GLOBAL && type != VariableType.FIELD && isBoxLike(mainblock)) {
-			writer.addCode(localName(mainblock) + "." + boxMethod + "(");
-			expr.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
+			writer.addCode((target != null ? JavaWriter.bitOperationArguments(operation, target) : "") + ")");
 			return;
 		}
 		String slot = type == VariableType.FIELD ? name : (type == VariableType.GLOBAL ? "g_" : "u_") + name;
@@ -1379,7 +1402,7 @@ public class LeekVariable extends Expression {
 			}
 		} else {
 			writer.addCode(slot + " = ");
-			if (type == VariableType.FIELD && method.equals("bor")) {
+			if (type == VariableType.FIELD && operation == AI.BitOperation.BOR) {
 				// Cast historique du seul `|=` sur un champ. Narrowé vers null, variableType
 				// donnerait `(Object)`, qui ne rentre pas dans un `T?`.
 				var castType = variableType == Type.NULL ? javaSlotType() : variableType;
@@ -1392,7 +1415,7 @@ public class LeekVariable extends Expression {
 			// `this.f |= v` (setField).
 			var converted = javaSlotType().assertNotNull() == Type.BOOL ? Type.BOOL : boxedSlotType() == Type.REAL ? Type.REAL : null;
 			var close = converted != null ? writer.openFieldResultConversion(converted) : "";
-			writer.addCode(bitOpMethod(method) + "(" + slot + ", ");
+			writer.addCode(bitOpMethod(operation.name().toLowerCase(Locale.ROOT)) + "(" + slot + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
 		}

@@ -2,6 +2,7 @@
 package leekscript.runner;
 
 import leekscript.runner.values.Box;
+import leekscript.common.Type;
 
 public class Wrapper<T> {
 
@@ -99,6 +100,10 @@ public class Wrapper<T> {
 
 	public Object bor_eq(Object x) throws LeekRunException {
 		return variable.bor_eq(x);
+	}
+
+	public Object bit_eq(Object x, AI.BitOperation operation, Type target) throws LeekRunException {
+		return variable.bit_eq(x, operation, target);
 	}
 
 	public Object bxor_eq(Object x) throws LeekRunException {
