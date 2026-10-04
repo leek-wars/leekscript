@@ -730,5 +730,11 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("function f() { return 1 } f! = 1; return 0").compileError(Error.CANNOT_REDEFINE_FUNCTION);
 		code_v4_("abs! = 1; return 0").compileError(Error.CANNOT_REDEFINE_FUNCTION);
 		code_v4_("function f() { return 1 } f!++; return 0").compileError(Error.CANNOT_REDEFINE_FUNCTION);
+
+		// `f!()` appelle la valeur assertée non-null : plus d'avertissement « peut ne pas être appelable »
+		code_strict_v4_("function g() { return 1 } Function | null renamed = g; return renamed!()").noWarning();
+		code_strict_v4_("Map<integer, Function> a = [0: function () { return 1 }]; return a[0]!()").noWarning();
+		code_strict_v4_("Map<integer, Function> a = [0: function () { return 1 }]; return a[0]!()").equals("1");
+		code_strict_v4_("Map<integer, Function> a = [0: function () { return 1 }]; return a[0]()").warning(Error.MAY_NOT_BE_CALLABLE);
 	}
 }
