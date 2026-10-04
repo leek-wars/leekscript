@@ -80,12 +80,8 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			}
 			iteratorKeyDeclaration.preAnalyze(compiler);
 		} else {
-			var v = compiler.getCurrentBlock().getVariable(mKeyIterator.getWord(), true);
-			if (v == null) {
-				compiler.addError(new AnalyzeError(mKeyIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
-					mKeyIterator.getWord()
-				}));
-			}
+			// Un champ y laissait le codegen sans variable (NullPointerException, « raison inconnue »)
+			ForeachBlock.checkIterator(compiler, mKeyIterator);
 		}
 		// Si c'est une déclaration on vérifie que le nom est disponnible
 		if (mIsDeclaration) {
@@ -96,12 +92,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			}
 			iteratorDeclaration.preAnalyze(compiler);
 		} else {
-			var v = compiler.getCurrentBlock().getVariable(mIterator.getWord(), true);
-			if (v == null) {
-				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
-					mIterator.getWord()
-				}));
-			}
+			ForeachBlock.checkIterator(compiler, mIterator);
 		}
 		if (iteratorDeclaration != null)
 			iteratorDeclaration.setFunction(compiler.getCurrentFunction());

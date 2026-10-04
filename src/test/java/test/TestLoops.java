@@ -89,6 +89,29 @@ public class TestLoops extends TestCommon {
 	}
 
 	@Test
+	public void testForeachIteratorMustBeLocal() throws Exception {
+		section("foreach : variable de boucle non-locale → erreur claire, pas un crash (#3101)");
+		// Un champ statique ou d'instance comme variable de boucle (sans `var`) : erreur claire,
+		// comme `for (T.champ in …)`. Avec une clé, il faisait planter le compilateur (NPE).
+		code_v4_("class T { static s = 0 static go() { for (s in [1, 2, 3]) {} return s } } return T.go()").compileError(Error.VARIABLE_NAME_EXPECTED);
+		code_v4_("global maMap = ['index': 'value'] class toto { static maVar; static init() { for (maVar in maMap) {} } } toto.init() return 1").compileError(Error.VARIABLE_NAME_EXPECTED);
+		code_v4_("class T { static k static go() { for (k : var v in [1, 2, 3]) {} return k } } return T.go()").compileError(Error.VARIABLE_NAME_EXPECTED);
+		code_v4_("class T { static v static go() { for (var k : v in [1, 2, 3]) {} return v } } return T.go()").compileError(Error.VARIABLE_NAME_EXPECTED);
+		code_v4_("class T { f m() { for (f in [1, 2, 3]) {} return f } } return new T().m()").compileError(Error.VARIABLE_NAME_EXPECTED);
+		code("for (zz in [1]) {} return 1").compileError(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code("for (zz : var v in [1]) {} return 1").compileError(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		// Les formes valides restent valides : local pré-déclaré, paramètre et global.
+		code("var v = 0 for (v in [1, 2, 3]) {} return v").equals("3");
+		code("global g = 0 for (g in [1, 2, 3]) {} return g").equals("3");
+		code("var k var v for (k : v in [5, 6]) {} return [k, v]").equals("[1, 6]");
+		code("global k global v for (k : v in [5, 6]) {} return [k, v]").equals("[1, 6]");
+		code("function f(k, v) { for (k : v in [5, 6]) {} return [k, v] } return f(0, 0)").equals("[1, 6]");
+		code("for (var x in [1, 2, 3]) {} return 0").equals("0");
+		// Le contournement recommandé fonctionne.
+		code_v4_("class T { static s = 0 static go() { for (var x in [1, 2, 3]) { s = x } return s } } return T.go()").equals("3");
+	}
+
+	@Test
 	public void testDo_while_abrupt_exit_completes_normally() throws Exception {
 		section("Do while : un break/continue le rend terminable normalement");
 		// `do { ... return }` ne retourne plus toujours dès qu'un break ou un
