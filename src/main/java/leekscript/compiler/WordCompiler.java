@@ -1872,6 +1872,23 @@ public class WordCompiler {
 			if (retour.needOperator()) {
 				// Si on attend un opérateur mais qu'il vient pas
 
+				// `x instanceof Array<integer>` : le runtime ne porte pas le type des éléments,
+				// les paramètres de type sont lus comme un type puis ignorés (`instanceof Array`).
+				// Si ce n'est pas un type paramétré complet (`x instanceof A < y`), on revient à
+				// la comparaison, sans garder les erreurs de la tentative.
+				if (word.getType() == TokenType.OPERATOR && word.getWord().equals("<")
+						&& (mTokens.get(-1).getType() == TokenType.STRING || mTokens.get(-1).getType() == TokenType.FUNCTION)
+						&& mTokens.get(-2).getType() == TokenType.OPERATOR && mTokens.get(-2).getWord().equals("instanceof")) {
+					var save = mTokens.getPosition();
+					var errors = mAI.getErrors().size();
+					mTokens.unskip();
+					if (eatPrimaryType(false, false) instanceof LeekParameterType && mAI.getErrors().size() == errors) {
+						continue;
+					}
+					mAI.getErrors().subList(errors, mAI.getErrors().size()).clear();
+					mTokens.setPosition(save);
+				}
+
 				// Accès indexé optionnel `a?[b]` : court-circuite à null si `a` est null.
 				// Le `?` doit être collé au `[` pour lever l'ambiguïté avec le ternaire
 				// `cond ? [1, 2] : [3, 4]` (dont les branches sont des littéraux tableau).
