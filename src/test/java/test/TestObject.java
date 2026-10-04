@@ -24,6 +24,13 @@ public class TestObject extends TestCommon {
 		code_v2_("return {a: {}, b: []}").equals("{a: {}, b: []}");
 		code_v2_("var a = {} return a").equals("{}");
 		code_v2_("var a = {b: 12, c: 5} return a").equals("{b: 12, c: 5}");
+		// Erreurs de syntaxe d'un objet littéral (un bloc `{ … }` seul en est un) : plus de
+		// « parenthèse fermante attendue après les paramètres d'une fonction »
+		code_v2_("{ var a; }").compileError(Error.KEYWORD_UNEXPECTED);
+		code_v2_("{ x = 1 }").compileError(Error.UNCOMPLETE_EXPRESSION);
+		code_v2_("return {'a': 1}").compileError(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("return {a 1}").compileError(Error.UNCOMPLETE_EXPRESSION);
+		code_v2_("return {a: 1").compileError(Error.END_OF_SCRIPT_UNEXPECTED);
 
 		section("Objects with functions");
 		code_v2_("var f = function(obj) { return obj.a } return f({a: 'foo'})").equals("\"foo\"");

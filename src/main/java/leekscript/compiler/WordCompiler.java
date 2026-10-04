@@ -2143,14 +2143,20 @@ public class WordCompiler {
 
 					while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
 						if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
-						if (mTokens.get().getType() != TokenType.STRING) {
-							addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS));
+						// Une clé est un nom. Un bloc `{ var a }` (qui n'existe pas en LeekScript)
+						// arrive aussi ici : « mot-clé inattendu » sur le `var`, sans erreur en cascade.
+						var keyToken = mTokens.get();
+						boolean validKey = keyToken.getType() == TokenType.STRING;
+						if (!validKey) {
+							var error = keyToken.getType().ordinal() >= TokenType.VAR.ordinal() ? Error.KEYWORD_UNEXPECTED : Error.VARIABLE_NAME_EXPECTED;
+							addError(new AnalyzeError(keyToken, AnalyzeErrorLevel.ERROR, error));
 						}
-						String key = mTokens.get().getWord();
+						String key = keyToken.getWord();
 						mTokens.skip();
 
-						if (!mTokens.get().getWord().equals(":")) {
-							addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS));
+						if (!mTokens.get().getWord().equals(":") && validKey) {
+							// Même erreur qu'un ternaire sans `:`
+							addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.UNCOMPLETE_EXPRESSION));
 						}
 						mTokens.skip();
 
@@ -2162,7 +2168,8 @@ public class WordCompiler {
 						}
 					}
 					if (mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
-						addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.CLOSING_PARENTHESIS_EXPECTED));
+						// La boucle ne s'arrête sans `}` qu'en fin de fichier
+						addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.END_OF_SCRIPT_UNEXPECTED));
 					}
 					object.setClosingBrace(mTokens.get());
 					retour.addExpression(object);
