@@ -203,8 +203,6 @@ public class ForeachBlock extends AbstractLeekBlock {
 			// passer par .set() sinon on génère `u_x = (Object) ...` sur une Box (#11229404).
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isBox()) {
 				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
-			} else if (mIsDeclaration) {
-				writer.addCode(iterator_name + " = " + JavaWriter.castObject(iterJavaType, var + ".getValue()") + ";");
 			} else {
 				writer.addCode(iterator_name + " = " + JavaWriter.castObject(iterJavaType, var + ".getValue()") + ";");
 			}
