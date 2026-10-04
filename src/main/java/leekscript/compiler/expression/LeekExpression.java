@@ -1655,12 +1655,18 @@ public class LeekExpression extends Expression {
 	/**
 	 * `x++` sur une variable en Box<T> : T, boxé (un Wrapper rend un Object, cf hasObjectJavaResult).
 	 * Une affectation native rend le type de son emplacement (cf boxedSlotType, boxedWriteType).
-	 * `!` le transmet quand il garde son opérande tel quel (cf writeJavaCode).
+	 * `??`, `as` et `!` le transmettent quand ils gardent leur opérande tel quel (cf writeJavaCode).
 	 */
 	@Override
 	public boolean hasBoxedJavaResult() {
 		if (mExpression2 == null) {
 			return mExpression1 != null && mExpression1.hasBoxedJavaResult(); // simple enveloppe, cf trim()
+		}
+		if (mOperator == Operators.COALESCE) {
+			return !mExpression1.getType().canBeNull() && mExpression1.hasBoxedJavaResult();
+		}
+		if (mOperator == Operators.AS) {
+			return asConverts() && JavaWriter.keepsBoxed(mExpression1, type);
 		}
 		if (mOperator == Operators.NON_NULL_ASSERTION) {
 			return JavaWriter.keepsBoxed(mExpression2, type);

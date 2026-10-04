@@ -587,6 +587,23 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	/**
+	 * `as` vers le type déjà narrowé, ou `??` après un narrowing non null, ne convertit rien : la
+	 * branche reste boxée, comme avec `!` (cf testNarrowed_nullable_field_in_ternary_branch).
+	 */
+	@Test
+	public void testNarrowed_nullable_field_as_or_coalesce_in_ternary_branch() throws Exception {
+		section("Narrowed nullable field through `as` or `??` in a ternary branch");
+		code_v4_("class A { integer? n = 3; integer c = 7; integer m(A o) { integer r = (this.n == null) ? o.c : this.n as integer; return r } } return new A().m(new A())").equals("3");
+		code_v4_("class A { integer? n = 3 } A a = new A(); A b = new A(); integer r = (a.n == null) ? b.n! + 1 : a.n as integer; return r").equals("3");
+		code_v4_("class A { real? s = 2.5 } A a = new A(); real r = a.s != null ? a.s as real : 0.0; return r").equals("2.5");
+		code_v4_("class A { boolean? b = true } A a = new A(); boolean r = a.b != null ? a.b as boolean : false; return r").equals("true");
+		code_strict_v4_("class A { integer? n = 3 } A a = new A(); A b = new A(); integer r = (a.n == null) ? b.n! + 1 : a.n as integer; return r").equals("3");
+		// Deux branches boxées aux ops égaux : le ternaire est lui-même boxé
+		code_v4_("class A { real? s = 2.5 } A a = new A(); boolean c = true; if (a.s != null) { real r = c ? (c ? a.s as real : a.s as real) : 1.0; return r } return 0").equals("2.5");
+		code_v4_("class A { integer? n = 3 } A a = new A(); A b = new A(); integer r = (a.n == null) ? b.n! + 1 : (a.n ?? 0); return r").equals("3");
+	}
+
+	/**
 	 * Deux champs `integer?` narrowés sont deux Long en Java : `==` comparait leurs références,
 	 * donc faux au-delà du cache des Long (127).
 	 */
@@ -598,6 +615,8 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("class A { integer? n } A a = new A(); a.n = 1000; A b = new A(); b.n = 1001; if (a.n != null && b.n != null) { return a.n == b.n } return null").equals("false");
 		code_v4_("class A { integer? n = 1000 } A a = new A(); A b = new A(); boolean c = true; if (a.n != null && b.n != null) { return (c ? a.n : b.n) == (c ? b.n : a.n) } return null").equals("true");
 		code_v4_("global integer? G = 1000; global integer? H = 1000; if (G != null && H != null) { return G == H } return null").equals("true");
+		code_v4_("class A { integer? n = 1000 } A a = new A(); A b = new A(); if (a.n != null && b.n != null) { return (a.n as integer) == (b.n as integer) } return null").equals("true");
+		code_v4_("class A { integer? n = 1000 } A a = new A(); A b = new A(); if (a.n != null && b.n != null) { return (a.n ?? 0) == (b.n ?? 0) } return null").equals("true");
 	}
 
 	/**
