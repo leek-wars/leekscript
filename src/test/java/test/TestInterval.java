@@ -274,6 +274,10 @@ public class TestInterval extends TestCommon {
 		code("return intervalToArray([1..1], 7);").equals("[1]");
 		code("return intervalToArray([1..0], 2);").equals("[]");
 		code("return intervalToArray([1..[, 2);").equals("null");
+		// Un pas nul vaut 1 (comme range()) au lieu de remplir la RAM
+		code("return intervalToArray([1..3], 0);").equals("[1, 2, 3]");
+		code_v2_("return intervalToArray([1..3], 0.0);").equals("[1.0, 2.0, 3.0]");
+		code_v2_("return intervalToArray([1.0..3.0], 0);").equals("[1.0, 2.0, 3.0]");
 	}
 
 	@Test
@@ -332,6 +336,12 @@ public class TestInterval extends TestCommon {
 		code_v4_("return intervalToSet([1..1], 7);").equals("<1>");
 		code_v4_("return intervalToSet([1..0], 2);").equals("<>");
 		code_v4_("return intervalToSet([1..[, 2);").equals("null");
+		// Un pas nul ou absorbé par l'arrondi ne boucle plus sans fin
+		code_v4_("return intervalToSet([1..3], 0);").equals("<1, 2, 3>");
+		code_v4_("return intervalToSet([1..3], 0.0);").equals("<1.0, 2.0, 3.0>");
+		code_v4_("return intervalToSet([1.0..3.0], 0);").equals("<1.0, 2.0, 3.0>");
+		code_v4_("return intervalToSet([1.0..2.0], 1e-20);").equals("<1.0>");
+		code_v4_("return intervalToSet([1..2], -1e-20);").equals("<2.0>");
 	}
 
 	@Test

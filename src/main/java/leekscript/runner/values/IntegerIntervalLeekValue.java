@@ -274,6 +274,8 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			return null;
 		}
 
+		if (step == 0) step = 1; // un pas nul ne progresserait pas (même règle que range())
+
 		var array = new ArrayLeekValue(ai);
 
 		if (step >= 0) {
@@ -305,6 +307,8 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			return null;
 		}
 
+		if (step == 0) step = 1; // un pas nul ne progresserait pas (même règle que range())
+
 		var array = new LegacyArrayLeekValue(ai);
 
 		if (step >= 0) {
@@ -331,6 +335,8 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			ai.addSystemLog(AILog.ERROR, Error.CANNOT_ITERATE_UNBOUNDED_INTERVAL, new Object[] { this });
 			return null;
 		}
+
+		if (step == 0) step = 1; // un pas nul ne progresserait pas (même règle que range())
 
 		var array = new ArrayLeekValue(ai);
 
@@ -359,6 +365,8 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			return null;
 		}
 
+		if (step == 0) step = 1; // un pas nul ne progresserait pas (même règle que range())
+
 		var array = new LegacyArrayLeekValue(ai);
 
 		if (step >= 0) {
@@ -385,6 +393,8 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			ai.addSystemLog(AILog.ERROR, Error.CANNOT_ITERATE_UNBOUNDED_INTERVAL, new Object[] { this });
 			return null;
 		}
+
+		if (step == 0) step = 1; // un pas nul ne progresserait pas (même règle que range())
 
 		var set = new SetLeekValue(ai);
 
@@ -413,6 +423,10 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			return null;
 		}
 
+		if (step == 0) step = 1; // un pas nul ne progresserait pas (même règle que range())
+
+		// Un ensemble ne grandit pas sur une valeur répétée : un pas absorbé par
+		// l'arrondi (1e-20 devant 1) bouclerait sans fin sans jamais toucher la limite de RAM
 		var set = new SetLeekValue(ai);
 
 		if (step >= 0) {
@@ -420,12 +434,14 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			var end = maxClosed ? to : to - 1;
 			for (double i = start; i <= end; i += step) {
 				set.setPut(ai, i);
+				if (i + step == i) break;
 			}
 		} else {
 			var start = maxClosed ? to : to - 1;
 			var end = minClosed ? from : from + 1;
 			for (double i = start; i >= end; i += step) {
 				set.setPut(ai, i);
+				if (i + step == i) break;
 			}
 		}
 
