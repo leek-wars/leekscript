@@ -29,7 +29,6 @@ public class LeekExpression extends Expression {
 	protected LeekExpression mParent = null;
 	protected Type type = Type.ANY;
 	private int version; // cf hasObjectJavaResult : sur un Box, `/=` et les incréments en dépendent
-	private boolean strict; // cf hasObjectJavaResult : `t[k] = v` n'est casté qu'en strict
 
 	public LeekExpression() {}
 
@@ -1234,7 +1233,6 @@ public class LeekExpression extends Expression {
 
 		compiler.checkInterrupted();
 		version = compiler.getVersion();
-		strict = compiler.getMainBlock().isStrict();
 
 		// Opérateur @ déprécié en LS 2+
 		if (mOperator == Operators.REFERENCE && compiler.getVersion() >= 2) {
@@ -1671,10 +1669,8 @@ public class LeekExpression extends Expression {
 	/**
 	 * Écriture composée dans un élément de tableau ou de map (`t[k] += v`, `t[k]++`,
 	 * `t[k] ??= v`…) : le helper runtime (put_add_eq, put_inc…) renvoie un Object, quel
-	 * que soit le type calculé à l'analyse. `=` aussi hors strict, sauf sur une map (cf
-	 * LeekArrayAccess.setReturnsObject) : son type `T | null` ne suffit pas à le faire
-	 * convertir vers une destination `T?`, que javac refuse alors (`Array? e; e = t[0] = []`).
-	 * En strict, compileSet caste. Idem pour une variable en Box, `=` compris (cf
+	 * que soit le type calculé à l'analyse. `=` aussi hors strict, où compileSet ne caste
+	 * pas (cf LeekArrayAccess.setReturnsObject). Idem pour une variable en Box, `=` compris (cf
 	 * LeekVariable.writesObjectThroughBox). `??`, `as` et `!` le transmettent quand ils
 	 * gardent leur opérande tel quel (cf writeJavaCode).
 	 */
@@ -1700,7 +1696,7 @@ public class LeekExpression extends Expression {
 		}
 		if (target instanceof LeekArrayAccess access) {
 			return mOperator != Operators.ASSIGN
-				|| !strict && access.setReturnsObject() && !type.getJavaPrimitiveName(version).equals("Object");
+				|| access.setReturnsObject() && !type.getJavaPrimitiveName(version).equals("Object");
 		}
 		return false;
 	}

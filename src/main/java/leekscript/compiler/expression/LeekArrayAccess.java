@@ -34,6 +34,7 @@ public class LeekArrayAccess extends Expression {
 	// partent déjà de ANY.
 	private Type type = Type.ANY;
 	private boolean optional = false; // accès indexé optionnel `a?[b]`
+	private boolean strict; // cf setReturnsObject
 
 	public LeekArrayAccess(Token openingBracket) {
 		openingBracket.setExpression(this);
@@ -150,6 +151,7 @@ public class LeekArrayAccess extends Expression {
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 
+		strict = compiler.getMainBlock().isStrict();
 		mTabular.analyze(compiler);
 		operations = mTabular.getOperations();
 
@@ -638,12 +640,12 @@ public class LeekArrayAccess extends Expression {
 	}
 
 	/**
-	 * Le Java de `t[k] = v` hors strict, où compileSet ne caste pas le résultat : put / putv4
-	 * (tableau typé ou non) rendent un Object, seul MapLeekValue.set, générique, rend le type
-	 * de la valeur écrite.
+	 * Le Java de `t[k] = v` est-il un Object ? Hors strict seulement, où compileSet ne caste
+	 * pas le résultat : put / putv4 (tableau typé ou non) rendent un Object, seul
+	 * MapLeekValue.set, générique, rend le type de la valeur écrite.
 	 */
 	public boolean setReturnsObject() {
-		return !(mTabular.getType() instanceof MapType);
+		return !strict && !(mTabular.getType() instanceof MapType);
 	}
 
 	@Override
