@@ -946,7 +946,7 @@ public class LeekVariable extends Expression {
 	private static Type writtenType(MainLeekBlock mainblock, Expression expr) {
 		var trimmed = expr.trim();
 		if (trimmed instanceof LeekFunctionCall call) return call.getWrittenType(mainblock);
-		if (trimmed instanceof LeekVariable v && v.type == VariableType.GLOBAL && v.variable != null && v.variable.globalDeclaration != null) return v.slotType();
+		if (trimmed instanceof LeekVariable v && v.type == VariableType.GLOBAL && v.variable != null && v.variable.globalDeclaration != null) return v.variable.globalDeclaration.getType();
 		return expr.getType();
 	}
 
