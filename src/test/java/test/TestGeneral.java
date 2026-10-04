@@ -259,6 +259,16 @@ public class TestGeneral extends TestCommon {
 		code_v2_("real a = 1.9 integer b = a return b").equals("1");
 		DISABLED_code_v1("integer|real a = 1.999; integer b = a; return b").equals("1");
 		code_v2_("integer|real a = 1.999; integer b = a; return b").equals("1");
+		// Un type composé peut commencer par null, y compris en tête d'instruction
+		code("null | integer x = 5; return x").equals("5");
+		code("null | integer x = 5; x = null; return x").equals("null");
+		code_v4_("null | integer x; return x").equals("null");
+		code_v4_("null | Function<null | integer => null | integer> | Function< => integer> getter = null; return getter").equals("null");
+		code_v4_("class A {} null | A x = new A(); return x").equals("A {}");
+		// … sans changer une expression qui commence par null
+		code("var a = 3; null | a; return a").equals("3");
+		code("var a = 3\nnull | a\nreturn a").equals("3");
+		code("null | 2; return 1").equals("1");
 	}
 
 	@Test

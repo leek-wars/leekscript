@@ -614,6 +614,19 @@ public class WordCompiler {
 
 		var save = mTokens.getPosition();
 		var type = eatType(true, false);
+		if (type == null && mTokens.get().getType() == TokenType.NULL && mTokens.get(1).getWord().equals("|")) {
+			// `null | T x = …` : en tête de type, eatType refuse null, qui peut commencer une
+			// expression. On tente la déclaration ; si ce n'en est pas une (`null | x`), on
+			// revient en arrière sans garder les erreurs de la tentative.
+			var errors = mAI.getErrors().size();
+			var nullFirst = eatType(false, false);
+			if (nullFirst != null && mTokens.get().getType() == TokenType.STRING && mAI.getErrors().size() == errors) {
+				type = nullFirst;
+			} else {
+				mAI.getErrors().subList(errors, mAI.getErrors().size()).clear();
+				mTokens.setPosition(save);
+			}
+		}
 		if (type != null) {
 			// Déclaration de variable ou expression ?
 			if (mTokens.get().getType() == TokenType.STRING) {
