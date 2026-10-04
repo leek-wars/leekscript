@@ -447,12 +447,7 @@ public class LeekFunctionCall extends Expression {
 			// construite au runtime comme hors strict, `new_u_x()` n'existant pas
 			writeConvertPrimitiveCast(writer);
 			convertPrimitive = true;
-			if (this.type != Type.ANY && this.type != Type.VOID && !this.type.isPrimitive()) {
-				if (parenthesis) { writer.addCode("("); castParenthesis = true; }
-				writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-			}
-			writer.addCode("execute(");
-			mExpression.writeJavaCode(mainblock, writer, false);
+			castParenthesis = writeDynamicExecute(mainblock, writer, parenthesis);
 		} else if (mExpression instanceof LeekVariable v && v.getType() instanceof ClassValueType cvt) {
 			if (cvt.getClassDeclaration() != null) {
 				if (cvt.getClassDeclaration().getName() == "Integer") {
@@ -466,15 +461,7 @@ public class LeekFunctionCall extends Expression {
 					addFinalParenthesis = false;
 				}
 			} else {
-				// Appel dynamique (execute → Object) : on caste vers le type de retour
-				// concret pour que le Java généré respecte le type annoncé par getType()
-				// (sinon `Object cannot be converted to SetLeekValue` côté worker).
-				if (this.type != Type.ANY && this.type != Type.VOID && !this.type.isPrimitive()) {
-					if (parenthesis) { writer.addCode("("); castParenthesis = true; }
-					writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-				}
-				writer.addCode("execute(");
-				mExpression.writeJavaCode(mainblock, writer, false);
+				castParenthesis = writeDynamicExecute(mainblock, writer, parenthesis);
 			}
 		} else if (this.functionType instanceof FunctionType) {
 			// run() retourne Object : on caste vers le wrapper avant .doubleValue()/etc.
@@ -485,16 +472,10 @@ public class LeekFunctionCall extends Expression {
 			writer.addCode(", null");
 			convertPrimitive = true;
 		} else {
-			// Idem : appel dynamique via execute (retourne Object), on caste vers le
-			// type de retour concret quand il est connu (ex. ternaire de références de
-			// fonctions `cond ? f1 : f2`, dont le type est un CompoundType non géré par
-			// la branche FunctionType ci-dessus).
-			if (this.type != Type.ANY && this.type != Type.VOID && !this.type.isPrimitive()) {
-				if (parenthesis) { writer.addCode("("); castParenthesis = true; }
-				writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
-			}
-			writer.addCode("execute(");
-			mExpression.writeJavaCode(mainblock, writer, false);
+			// Appel dynamique aussi, par exemple un ternaire de références de fonctions
+			// `cond ? f1 : f2`, dont le type est un CompoundType non géré par la branche
+			// FunctionType ci-dessus.
+			castParenthesis = writeDynamicExecute(mainblock, writer, parenthesis);
 		}
 
 		int argCount = mParameters.size();
@@ -574,6 +555,23 @@ public class LeekFunctionCall extends Expression {
 			writer.addCode(")");
 		}
 		writer.addPosition(openParenthesis);
+	}
+
+	/**
+	 * Appel dynamique `execute(f, …)`, qui rend un Object : casté vers le type de retour concret
+	 * quand il est connu, pour que le Java respecte le type annoncé par getType() (sinon
+	 * `Object cannot be converted to SetLeekValue`). Ouvre `execute(` et écrit la fonction
+	 * appelée ; rend true si une parenthèse englobant le cast est à refermer (cf castParenthesis).
+	 */
+	private boolean writeDynamicExecute(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
+		boolean castParenthesis = false;
+		if (this.type != Type.ANY && this.type != Type.VOID && !this.type.isPrimitive()) {
+			if (parenthesis) { writer.addCode("("); castParenthesis = true; }
+			writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+		}
+		writer.addCode("execute(");
+		mExpression.writeJavaCode(mainblock, writer, false);
+		return castParenthesis;
 	}
 
 	/**
