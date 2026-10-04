@@ -51,4 +51,13 @@ public abstract class IntervalLeekValue implements LeekValue {
 
 	public abstract ArrayLeekValue range(AI ai, Object start, Object object, Object stride) throws LeekRunException;
 
+	/** Pas d'itération (intervalToArray, intervalToSet) : un pas nul ne progresserait pas, il vaut 1 comme dans range(). */
+	protected static long nonZeroStep(long step) {
+		return step == 0 ? 1 : step;
+	}
+
+	protected static double nonZeroStep(double step) {
+		return step == 0 ? 1 : step;
+	}
+
 }

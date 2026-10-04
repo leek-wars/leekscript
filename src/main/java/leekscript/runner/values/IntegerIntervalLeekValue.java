@@ -274,7 +274,7 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			return null;
 		}
 
-		if (step == 0) step = 1; // un pas nul ne progresserait pas (même règle que range())
+		step = nonZeroStep(step);
 
 		var array = new ArrayLeekValue(ai);
 
@@ -307,7 +307,7 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			return null;
 		}
 
-		if (step == 0) step = 1; // un pas nul ne progresserait pas (même règle que range())
+		step = nonZeroStep(step);
 
 		var array = new LegacyArrayLeekValue(ai);
 
@@ -336,7 +336,7 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			return null;
 		}
 
-		if (step == 0) step = 1; // un pas nul ne progresserait pas (même règle que range())
+		step = nonZeroStep(step);
 
 		var array = new ArrayLeekValue(ai);
 
@@ -365,7 +365,7 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			return null;
 		}
 
-		if (step == 0) step = 1; // un pas nul ne progresserait pas (même règle que range())
+		step = nonZeroStep(step);
 
 		var array = new LegacyArrayLeekValue(ai);
 
@@ -394,7 +394,7 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			return null;
 		}
 
-		if (step == 0) step = 1; // un pas nul ne progresserait pas (même règle que range())
+		step = nonZeroStep(step);
 
 		var set = new SetLeekValue(ai);
 
@@ -423,7 +423,7 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 			return null;
 		}
 
-		if (step == 0) step = 1; // un pas nul ne progresserait pas (même règle que range())
+		step = nonZeroStep(step);
 
 		// Un ensemble ne grandit pas sur une valeur répétée : un pas absorbé par
 		// l'arrondi (1e-20 devant 1) bouclerait sans fin sans jamais toucher la limite de RAM
