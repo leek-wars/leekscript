@@ -666,6 +666,22 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	/**
+	 * Deux variables integer capturées (Wrapper, lues en Long) passées par `?:`, `as`, `!` ou `??`
+	 * restent des Long : `==` comparait leurs références (faux au-delà de 127). Et l'incrément d'un
+	 * champ (`(Long) field_inc`) dans une branche de ternaire comptée rendait le ops englobant
+	 * ambigu en strict. Corrigés par 36f6179, 9b37e5f et 5a6395a (#5326, #5327).
+	 */
+	@Test
+	public void testCaptured_equality_through_wrappers_and_field_increment_in_ternary() throws Exception {
+		section("Captured integers compared through ?:, as, !, ?? (#5326)");
+		code_v4_("integer x = 1000; integer z = 1000; var g = function() { return x + z }; var c = true; return [(c ? x : x) == (c ? z : z), (x as integer) == (z as integer), x! == z!, (x ?? 0) == (z ?? 0)]").equals("[true, true, true, true]");
+		code_v4_("integer x = 1000; integer z = 1001; var g = function() { return x + z }; var c = true; return [(c ? x : x) == (c ? z : z), (x as integer) == (z as integer), x! == z!, (x ?? 0) == (z ?? 0)]").equals("[false, false, false, false]");
+		section("Field increment in a counted ternary branch, strict (#5327)");
+		code_strict_v2_("class A { public integer f = 0 } var k = new A(); var c = true; integer y = c ? k.f++ : 0; return y").equals("0");
+		code_strict_v2_("class A { public integer f = 0 } var k = new A(); var c = true; c ? k.f++ : 0; return k.f").equals("1");
+	}
+
+	/**
 	 * Une variable ou un champ any (ou union) narrowé vers un primitif par `instanceof` est lu tel
 	 * quel, en Object : un boolean (writeNarrowed ne convertit qu'integer et real), une globale ou
 	 * un champ. Tout consommateur primitif (`if (x)`, `!x`, `boolean b = x`, `a.f + 1`) ne
