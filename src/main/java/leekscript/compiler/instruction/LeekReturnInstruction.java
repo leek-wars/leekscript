@@ -9,6 +9,7 @@ import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
+import leekscript.compiler.bloc.AnonymousFunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
@@ -21,6 +22,8 @@ public class LeekReturnInstruction extends LeekInstruction {
 	private final Expression expression;
 	private final boolean optional;
 	private Type returnType;
+	// Le Java de la fonction renvoie son type de retour déclaré (une fonction anonyme rend un Object)
+	private boolean typedJavaReturn = false;
 
 	public LeekReturnInstruction(Token token, Expression exp, boolean optional) {
 		this.token = token;
@@ -61,6 +64,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 		if (functionType != null) {
 			this.returnType = functionType.returnType();
 		}
+		this.typedJavaReturn = !(compiler.getCurrentFunction() instanceof AnonymousFunctionBlock);
 
 		var actualType = expression == null ? Type.VOID : expression.getType();
 
@@ -124,7 +128,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 				writer.addLine("; if (bool(" + r + ")) return " + r + ";", getLocation());
 			} else {
 				writer.addCode("return ");
-				if (mainblock.getWordCompiler().getVersion() == 1) {
+				if (mainblock.getWordCompiler().getVersion() == 1 && !convertsV1Return(finalExpression)) {
 					finalExpression.compileL(mainblock, writer, false);
 				} else {
 					writer.compileConvertTyped(mainblock, 0, finalExpression, returnType, false);
@@ -132,6 +136,17 @@ public class LeekReturnInstruction extends LeekInstruction {
 				writer.addLine(";", getLocation());
 			}
 		}
+	}
+
+	/**
+	 * v1 : une variable se renvoie par son Box (compileL), une opération sur Box rend un Object.
+	 * Une fonction au type de retour déclaré le déclare aussi en Java, qui n'y accepte ni l'un ni
+	 * l'autre (#5323) : ceux-là sont convertis, toute autre valeur s'écrit comme avant.
+	 */
+	private boolean convertsV1Return(Expression expression) {
+		if (!typedJavaReturn || returnType.getJavaPrimitiveName(1).equals("Object")) return false;
+		var type = expression.getType();
+		return expression.isLeftValue() || expression.hasObjectJavaResult() || type != Type.NULL && type.getJavaPrimitiveName(1).equals("Object");
 	}
 
 	/**

@@ -786,4 +786,21 @@ public class TestFunction extends TestCommon {
 		// Un défaut non nul garde le type primitif
 		code_v4_("function f(integer to = 3) { return to } return f()").equals("3");
 	}
+
+	@Test
+	public void testV1_typedReturn() throws Exception {
+		// #5323 : en v1, `return a` renvoyait le Box de la variable (et `x += 2` sur une globale
+		// l'Object de Box.add_eq) là où Java déclare le type de retour : COMPILE_JAVA.
+		section("v1 typed return of a boxed variable (#5323)");
+		code_v1("function h(a) => integer { return a } return h(5)").equals("5");
+		code_v1("global integer x = 20; function h() => integer { return x += 2 } return h()").equals("22");
+		code_v1("function h(a) => integer { return a++ } return h(5)").equals("5");
+		code_v1("function h(a) => real { return a + 1 } return h(5)").equals("6");
+		code_v1("function h(a) => Array { return a } return h([1, 2])").equals("[1, 2]");
+		code_v1("function h(a) => integer? { return a } return [h(5), h(null)]").equals("[5, null]");
+		// Inchangés : valeur déjà du type Java du retour, null, fonction anonyme (qui rend un Object)
+		code_v1("function h() => real { return 5 } return h()").equals("5");
+		code_v1("function h() => Array { return null } return h()").equals("null");
+		code_v1("var h = function(a) => integer { return a }; return h(5)").equals("5");
+	}
 }
