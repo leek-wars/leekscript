@@ -478,6 +478,8 @@ public class TestObject extends TestCommon {
 		// générait du Java invalide (super.u_method) qui plantait à la compilation Java
 		// côté worker. On doit lever une erreur d'analyse propre.
 		code_v2_("class A {} class B extends A { m() { return super.foo() } } return new B().m()").error(Error.UNKNOWN_METHOD);
+		// Le message nomme la classe parente, où la méthode est cherchée, pas la classe courante
+		code_v2_("class Tool { constructor() {} } class Chip extends Tool { constructor() {} update() { super.update() } } var obj = new Chip() obj.update()").errorWith(Error.UNKNOWN_METHOD, "Tool", "update");
 		code_v2_("class A { foo() { return 1 } } class B extends A { foo() { return super.bar() } } return new B().foo()").error(Error.UNKNOWN_METHOD);
 		// La méthode existe sur l'ancêtre mais avec un autre nombre d'arguments
 		code_v2_("class A { foo(x) { return x } } class B extends A { foo() { return super.foo() } } return new B().foo()").error(Error.INVALID_PARAMETER_COUNT);
