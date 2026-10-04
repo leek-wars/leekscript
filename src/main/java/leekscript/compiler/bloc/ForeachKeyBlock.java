@@ -41,6 +41,8 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		if (declaration) {
 			iteratorDeclaration = new LeekVariableDeclarationInstruction(compiler, iterator, compiler.getCurrentFunction(), type);
 			iteratorDeclaration.setIterator();
+			// En v1, rangé dans un Box brut (cf writeJavaCode)
+			if (compiler.getVersion() == 1) iteratorDeclaration.setUntypedBox();
 			// addVariable(new LeekVariable(iterator, VariableType.ITERATOR, iteratorDeclaration));
 		}
 		mIterator = iterator;
@@ -50,6 +52,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		if (declaration) {
 			iteratorKeyDeclaration = new LeekVariableDeclarationInstruction(compiler, iterator, compiler.getCurrentFunction(), type);
 			iteratorKeyDeclaration.setIterator();
+			if (compiler.getVersion() == 1) iteratorKeyDeclaration.setUntypedBox();
 			// addVariable(new LeekVariable(iterator, VariableType.ITERATOR, iteratorKeyDeclaration));
 		}
 		mKeyIterator = iterator;

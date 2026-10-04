@@ -37,6 +37,8 @@ public class ForeachBlock extends AbstractLeekBlock {
 		if (mIsDeclaration) {
 			declaration = new LeekVariableDeclarationInstruction(compiler, iterator, compiler.getCurrentFunction(), type);
 			declaration.setIterator();
+			// En v1, rangé dans un Box brut (cf writeJavaCode)
+			if (compiler.getVersion() == 1) declaration.setUntypedBox();
 		}
 	}
 
