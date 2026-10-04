@@ -374,6 +374,14 @@ public class TestConstantFolding extends TestCommon {
 		assertOpsDisabled("var j = 5 j \\ 2 return 1", "1");
 		assertOpsDisabled("var j = 5 j >>> 1 return 1", "1");
 		assertOpsDisabled("var j = 5 for (var i = 0; i < 2; j!) { i++ } return j ?? 3", "5");
+		// `!operatorIn(…)` et `-x` (natif, ou casté pour un big_integer) non plus ; `minus(x)` seul passait déjà
+		assertOpsDisabled("var j = 5; j not in [1]; return 1", "1");
+		assertOpsDisabled("integer j = 5; -j; return 1", "1");
+		assertOpsDisabled("real j = 5.5; -j; return 1", "1");
+		assertOpsDisabled("big_integer j = 5; -j; return 1", "1");
+		assertOpsDisabled("var j = 5; -j; return 1", "1");
+		assertOpsDisabled("integer j = 5; for (var i = 0; i < 2; -j) { i++ } return j", "5");
+		assertOpsDisabled("var j = 5; for (var i = 0; i < 2; j not in [1]) { i++ } return j", "5");
 	}
 
 	private void assertOpsDisabled(String snippet, String expected) throws Exception {

@@ -1570,9 +1570,11 @@ public class LeekExpression extends Expression {
 			// `t[k] ??= v` et `o.f ??= v` peuvent s'écrire en expression switch, qui n'est pas une
 			// instruction Java (cf LeekArrayAccess.compileCoalesceEq)
 			case Operators.COALESCE_ASSIGN -> mExpression1 instanceof LeekArrayAccess || mExpression1 instanceof LeekObjectAccess;
-			// Écrits en opérateur Java ou tels quels (`!bool(x)`, `a / b`, `a >>> b`, `x != null ? … : …`,
-			// `x`) : sans opérations (CLI), rien d'autre ne les enveloppe
-			case Operators.NOT, Operators.INTEGER_DIVISION, Operators.SHIFT_UNSIGNED_RIGHT, Operators.COALESCE, Operators.NON_NULL_ASSERTION -> true;
+			// Écrits en opérateur Java ou tels quels (`!bool(x)`, `!operatorIn(…)`, `a / b`, `a >>> b`,
+			// `x != null ? … : …`, `x`) : sans opérations (CLI), rien d'autre ne les enveloppe
+			case Operators.NOT, Operators.NOT_IN, Operators.INTEGER_DIVISION, Operators.SHIFT_UNSIGNED_RIGHT, Operators.COALESCE, Operators.NON_NULL_ASSERTION -> true;
+			// `-x` natif, ou casté pour un big_integer (cf writeJavaCode) ; `minus(x)` seul est une instruction
+			case Operators.UNARY_MINUS -> mExpression2.getType().isPrimitiveNumber() || type == Type.BIG_INT;
 			default -> false;
 		};
 	}
