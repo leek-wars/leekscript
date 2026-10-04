@@ -1654,6 +1654,7 @@ public class LeekExpression extends Expression {
 
 	/**
 	 * `x++` sur une variable en Box<T> : T, boxé (un Wrapper rend un Object, cf hasObjectJavaResult).
+	 * Une affectation native rend le type de son emplacement (cf boxedSlotType, boxedWriteType).
 	 * `!` le transmet quand il garde son opérande tel quel (cf writeJavaCode).
 	 */
 	@Override
@@ -1664,6 +1665,11 @@ public class LeekExpression extends Expression {
 		if (mOperator == Operators.NON_NULL_ASSERTION) {
 			return JavaWriter.keepsBoxed(mExpression2, type);
 		}
+		var target = assignTarget();
+		var slot = target instanceof LeekVariable variable ? variable.boxedSlotType()
+			: target instanceof LeekObjectAccess access ? access.boxedWriteType(mOperator)
+			: null;
+		if (slot != null && slot == type) return true;
 		return Operators.isIncrement(mOperator) && mExpression2 instanceof LeekVariable variable && variable.isBoxSlot() && !hasObjectJavaResult();
 	}
 

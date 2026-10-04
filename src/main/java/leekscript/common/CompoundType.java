@@ -264,6 +264,15 @@ public class CompoundType extends Type {
 		return Type.compound(remaining);
 	}
 
+	@Override
+	public Type boxedPrimitive() {
+		if (types.size() != 2 || !containsNull()) return null;
+		for (var t : types) {
+			if (t != Type.NULL) return t.isPrimitive() ? t : null;
+		}
+		return null;
+	}
+
 	public Type assertNotNull() {
 		// Rien à retirer : une union sans null reste elle-même. Le chemin rapide
 		// ci-dessous rendait le PREMIER des deux types de `boolean | integer` : un champ

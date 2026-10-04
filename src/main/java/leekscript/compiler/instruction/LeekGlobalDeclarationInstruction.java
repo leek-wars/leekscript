@@ -99,6 +99,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 	public void declare(WordCompiler compiler) {
 		// On ajoute la variable
 		this.variable = new LeekVariable(compiler, variableToken, VariableType.GLOBAL, leekType == null ? Type.ANY : leekType.getType());
+		this.variable.setGlobalDeclaration(this);
 		this.type = this.variable.getType();
 		if (annotations != null) {
 			for (var a : annotations) this.variable.addAnnotation(a);

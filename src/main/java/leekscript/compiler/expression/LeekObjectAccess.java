@@ -319,8 +319,35 @@ public class LeekObjectAccess extends Expression {
 	 */
 	@Override
 	public boolean hasBoxedJavaResult() {
+		var slot = boxedSlotType();
+		return slot != null && slot == type;
+	}
+
+	/**
+	 * Comme LeekVariable.hasObjectJavaResult, pour un champ any (ou union) narrowé vers un
+	 * primitif par `instanceof` et lu tel quel (accès direct au champ Java).
+	 */
+	@Override
+	public boolean hasObjectJavaResult() {
 		return variable != null && variable.getVariableType() == VariableType.FIELD && type.isPrimitive()
-			&& variable.getType() != type && variable.getType().assertNotNull() == type;
+			&& !variable.getDeclaredType().assertNotNull().isPrimitive();
+	}
+
+	/**
+	 * Primitif dont le champ Java est la boîte (champ `T?`, rangé en Long, Double ou Boolean) :
+	 * sa lecture directe, comme son affectation par compileSet, rend ce type boxé.
+	 */
+	public Type boxedSlotType() {
+		return variable != null && variable.getVariableType() == VariableType.FIELD ? variable.getDeclaredType().boxedPrimitive() : null;
+	}
+
+	/**
+	 * Primitif dont une écriture sur ce champ rend la boîte : `=` direct sur un champ `T?` (cf
+	 * compileSet), incrément par field_inc casté vers le type boîte de l'accès (cf compileIncrement).
+	 */
+	public Type boxedWriteType(int operator) {
+		if (Operators.isIncrement(operator)) return type.isPrimitive() ? type : type.boxedPrimitive();
+		return operator == Operators.ASSIGN ? boxedSlotType() : null;
 	}
 
 	// Émission du receveur pour les chemins dynamiques (getField/setField/field_*) :

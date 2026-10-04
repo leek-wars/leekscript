@@ -467,6 +467,14 @@ public class Type {
 		return this;
 	}
 
+	/**
+	 * `T | null` avec T primitif, rangé en Java dans la boîte de T (Long, Double, Boolean, cf
+	 * getJavaPrimitiveName) : rend T. Null pour tout autre type (cf CompoundType).
+	 */
+	public Type boxedPrimitive() {
+		return null;
+	}
+
 	public Type add(Type type) {
 		// Distribution sur les compound types — boucle au lieu de stream+collect
 		// pour éviter Stream/lambda/HashSet sur chaque opération arithmétique.

@@ -12,6 +12,7 @@ import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
+import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.LeekConstants;
 import leekscript.runner.LeekFunctions;
@@ -40,6 +41,7 @@ public class LeekVariable extends Expression {
 	private Type declaredType = null;
 	private Type lastAssignedType = null;
 	private int usageCount = 0;
+	private LeekGlobalDeclarationInstruction globalDeclaration = null; // cf slotType
 	// Lazy : la grande majorité des LeekVariable n'ont aucune annotation. Une
 	// EnumSet.noneOf alloue un RegularEnumSet pour chaque variable construite,
 	// ce qui se voit dans le profile sur Quantum (~milliers de LeekVariable).
@@ -346,18 +348,67 @@ public class LeekVariable extends Expression {
 	/**
 	 * Lue par `u_x.get()` d'un Box ou d'un Wrapper (cf writeJavaCode) : un Long pour un integer.
 	 * Idem pour un itérateur de foreach, déclaré boxé (cf hasBoxedSlot). Sauf narrowing, que
-	 * writeNarrowed convertit (#5300). Narrowée depuis `T?`, la lecture reste boxée quand rien
-	 * ne la convertit : une globale (lue sans writeNarrowed) ou un boolean (writeNarrowed ne
-	 * convertit qu'integer et real, un champ statique est casté). Pas de conversion à la
-	 * lecture : elle rendrait false ou 0 au lieu de null.
+	 * writeNarrowed convertit (#5300) ; narrowée depuis `T?` et lue telle quelle (cf
+	 * readsNarrowedRaw), la lecture reste boxée.
 	 */
 	@Override
 	public boolean hasBoxedJavaResult() {
-		if (this.variable == null || this.variable.getType() == this.variableType) {
-			return isBoxSlot() || declaration != null && declaration.hasBoxedSlot();
+		if (this.variable != null) {
+			var slot = slotType();
+			if (slot != this.variableType) return readsNarrowedRaw() && slot.boxedPrimitive() == this.variableType;
 		}
-		return this.variableType.isPrimitive() && this.variable.getType().assertNotNull() == this.variableType
-			&& (type == VariableType.GLOBAL || this.variableType == Type.BOOL && type != VariableType.STATIC_FIELD);
+		return isBoxSlot() || declaration != null && declaration.hasBoxedSlot();
+	}
+
+	/**
+	 * Lecture narrowée laissée telle quelle (cf readsNarrowedRaw) sur un emplacement Object (any,
+	 * union) narrowé par `instanceof` : le consommateur la convertit comme une valeur any (cf
+	 * JavaWriter.codegenType).
+	 */
+	@Override
+	public boolean hasObjectJavaResult() {
+		return this.variable != null && readsNarrowedRaw() && !slotType().assertNotNull().isPrimitive();
+	}
+
+	/**
+	 * Lecture narrowée vers un primitif que rien ne convertit : une globale (lue sans
+	 * writeNarrowed) ou un boolean (writeNarrowed ne convertit qu'integer et real, un champ
+	 * statique est casté). Pas de conversion à la lecture : null s'y lirait false ou 0 si la
+	 * variable est remise à null sous le narrowing.
+	 */
+	private boolean readsNarrowedRaw() {
+		return this.variableType.isPrimitive() && (type == VariableType.GLOBAL || this.variableType == Type.BOOL && type != VariableType.STATIC_FIELD);
+	}
+
+	/**
+	 * Type avec lequel l'emplacement Java est déclaré. Il doit rester stable pendant l'analyse,
+	 * où le narrowing réécrit en place le type de la variable et où LeekFunctionCall consulte
+	 * hasObjectJavaResult : pour une globale, celui de sa déclaration (inféré de sa valeur en
+	 * strict, cf MainLeekBlock) ; sinon le type déclaré. Exception : un itérateur, dont
+	 * l'emplacement suit le type de sa variable (cf getIteratorJavaName), narrowé pendant
+	 * l'analyse. À distinguer de javaSlotType, qui lit pour une globale le type courant de sa
+	 * variable (codegen des écritures).
+	 */
+	private Type slotType() {
+		if (this.variable.globalDeclaration != null) return this.variable.globalDeclaration.getType();
+		if (declaration != null && declaration.isIterator()) return this.variable.getType();
+		return getJavaDeclarationType();
+	}
+
+	public void setGlobalDeclaration(LeekGlobalDeclarationInstruction globalDeclaration) {
+		this.globalDeclaration = globalDeclaration;
+	}
+
+	/**
+	 * Primitif dont l'emplacement Java de la variable est la boîte : déclaration `T?` (locale,
+	 * paramètre, globale, champ) ou itérateur de foreach typé. Une affectation native
+	 * (`u_x = v`, `u_x += v`, `++u_x`) y rend ce type boxé. Null pour un emplacement primitif ou
+	 * Object, pour une variable en Box (écrite par ses méthodes) et pour un champ statique.
+	 */
+	public Type boxedSlotType() {
+		if (this.variable == null || isBox() || type == VariableType.STATIC_FIELD) return null;
+		var slot = slotType();
+		return declaration != null && declaration.hasBoxedSlot() ? slot : slot.boxedPrimitive();
 	}
 
 	/**

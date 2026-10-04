@@ -93,6 +93,10 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 		return variable.getType().getJavaName(version);
 	}
 
+	public boolean isIterator() {
+		return iterator;
+	}
+
 	/** Itérateur de foreach dont l'emplacement Java est la boîte d'un primitif (cf getIteratorJavaName). */
 	public boolean hasBoxedSlot() {
 		return iterator && variable.getType().isPrimitive();

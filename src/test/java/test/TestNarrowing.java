@@ -623,6 +623,59 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	/**
+	 * Une affectation ou un incrément natif rend le type Java de son emplacement : un Long pour une
+	 * variable ou un champ `integer?`, ou pour un itérateur typé. `==` y comparait deux Long par
+	 * référence (faux au-delà de 127), et un ternaire comptant la branche ne compilait pas.
+	 */
+	@Test
+	public void testAssignment_value_on_boxed_slot() throws Exception {
+		section("Assignment value on a boxed slot");
+		code_v4_("integer? x = 0; integer? y = 0; return (x = 1000) == (y = 1000)").equals("true");
+		code_v4_("integer? x = 0; integer? y = 0; return (x = 1000) == (y = 1001)").equals("false");
+		code_v4_("function f(integer? x, integer? y) { return (x = 1000) == (y = 1000) } return f(0, 0)").equals("true");
+		code_v4_("global integer? G = 0; global integer? H = 0; return (G = 1000) == (H = 1000)").equals("true");
+		code_v4_("class A { integer? f = 0; m(A o) { return (this.f = 1000) == (o.f = 1000) } } return new A().m(new A())").equals("true");
+		code_v4_("class A { integer? f = 0; m() { return (f = 1000) == (f = 1000) } } return new A().m()").equals("true");
+		code_v4_("integer? x = 999; integer? y = 999; if (x != null && y != null) { return ++x == ++y } return null").equals("true");
+		code_v4_("integer? x = 999; integer? y = 999; if (x != null && y != null) { return (x += 1) == (y += 1) } return null").equals("true");
+		code_v4_("for (integer a in [1000]) { for (integer b in [1000]) { return a++ == b++ } } return null").equals("true");
+		// Incrément d'un champ : field_inc casté vers le type boîte
+		code_v4_("class A { integer f = 1000 } A a = new A(); A b = new A(); return a.f++ == b.f++").equals("true");
+		code_v4_("class A { integer f = 999; m(A o) { return ++this.f == ++o.f } } return new A().m(new A())").equals("true");
+		code_v4_("boolean c = true; integer? x = 0; integer r = c ? (c ? (x = 5) : 1) : 0; return r").equals("5");
+		code_v4_("boolean c = true; for (integer a in [1000]) { integer r = c ? (c ? a++ : a) : 0; return r } return null").equals("1000");
+	}
+
+	/**
+	 * Une variable ou un champ any (ou union) narrowé vers un primitif par `instanceof` est lu tel
+	 * quel, en Object : un boolean (writeNarrowed ne convertit qu'integer et real), une globale ou
+	 * un champ. Tout consommateur primitif (`if (x)`, `!x`, `boolean b = x`, `a.f + 1`) ne
+	 * compilait pas ; il le convertit désormais comme une valeur any.
+	 */
+	@Test
+	public void testInstanceof_narrowing_on_object_slot() throws Exception {
+		section("Instanceof narrowing on an Object slot");
+		code_v4_("var x = true; if (x instanceof Boolean) { if (x) { return 1 } } return 0").equals("1");
+		code_v4_("var x = true; if (x instanceof Boolean) { return !x } return 0").equals("false");
+		code_v4_("integer | boolean x = true; if (x instanceof Boolean) { boolean b = x; return b } return 0").equals("true");
+		code_v4_("var x = true; boolean r = x instanceof Boolean ? x : false; return r").equals("true");
+		code_v4_("function g(x) { if (x instanceof Boolean) { return !x } return 0 } return g(true)").equals("false");
+		code_v4_("var x = true; var f = function() { return x }; if (x instanceof Boolean) { return !x } return 0").equals("false");
+		code_v4_("class A { any f = 5 } A a = new A(); if (a.f instanceof Integer) { return a.f + 1 } return null").equals("6");
+		code_v4_("class A { any f = true; m() { if (this.f instanceof Boolean) { return !this.f } return 0 } } return new A().m()").equals("false");
+		code_v4_("class A { any f = true; m() { if (f instanceof Boolean) { return !f } return 0 } } return new A().m()").equals("false");
+		code_v4_("global G = 5; if (G instanceof Integer) { integer b = G; return b + 1 } return 0").equals("6");
+		code_v4_("global G = 1000; global H = 1000; if (G instanceof Integer && H instanceof Integer) { return G == H } return 0").equals("true");
+		// Argument d'une native : le choix de la surcharge se fait pendant l'analyse, sous narrowing
+		code_v4_("class A { any f = -5 } A a = new A(); if (a.f instanceof Integer) { return abs(a.f) } return null").equals("5");
+		code_v4_("var b = true; if (b instanceof Boolean) { return setBit(0, 1, b) } return null").equals("2");
+		code_v4_("class A { any b = true; m() { if (b instanceof Boolean) { return setBit(0, 1, b) } return null } } return new A().m()").equals("2");
+		// La lecture n'est pas convertie : null reste null si la valeur est remise à null sous le narrowing
+		code_v4_("class A { any f = 5 } A a = new A(); if (a.f instanceof Integer) { a.f = null; return a.f } return -1").equals("null");
+		code_v4_("global G = 5; function z() { G = null } if (G instanceof Integer) { z(); return [G] } return -1").equals("[null]");
+	}
+
+	/**
 	 * Une écriture à travers `!` (`x! += 1`, `t[k]! -= 1`, `++o.f!`) écrit dans la cible :
 	 * seul `=` compilait, les assignations composées et `++x!` faisaient échouer la
 	 * compilation de l'IA en combat (« Abstract method »).
