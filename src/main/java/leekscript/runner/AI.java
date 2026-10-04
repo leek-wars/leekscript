@@ -833,6 +833,7 @@ public abstract class AI {
 	 * ClassCastException. null et les Double passent tels quels.
 	 */
 	public static Double realBox(Object value) {
+		if (value instanceof Double d) return d;
 		if (value instanceof Long l) return (double) l;
 		return (Double) value;
 	}
