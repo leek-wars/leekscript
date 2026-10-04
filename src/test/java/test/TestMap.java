@@ -166,6 +166,10 @@ public class TestMap extends TestCommon {
 		// issue #2872: storing an int into a Map<_, real> must coerce to real
 		code_v4_("Map<integer, real> m = new Map() m[1] = round(1.5) return m[1]").equals("2.0");
 		code_v4_("Map<integer, real> m = new Map() m[1] = 5 return m[1]").equals("5.0");
+		// Un entier d'un littéral rangé tel quel dans une Map<K, real> se lit en real
+		code_v4_("Map<integer, real> a = [1: 0] Map<integer, real> b = [1: 1] real r = 0.5 return r >= a[1] * b[1]").equals("true");
+		code_strict_v4_("Map<integer, real> a = [1: 0] Map<integer, real> b = [1: 1] real r = 0.5 return r >= a[1]! * b[1]!").equals("true");
+		code_v4_("Map<real, real> m = [1: 2, 1.5: 3] var s = 0.0 for (real k : real v in m) { s += k + v } return s").equals("7.5");
 		code_v4_("Map<integer, real> m = new Map() m[1] = round(1.5) m[2] = round(2.5) return arraySort(mapKeys(m), (a, b) -> m[b] - m[a])").equals("[2, 1]");
 		// reverse direction: real into Map<_, integer>
 		code_v4_("Map<integer, integer> m = new Map() m[1] = 5.7 return m[1]").equals("5");

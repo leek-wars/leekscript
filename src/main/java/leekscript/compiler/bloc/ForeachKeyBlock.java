@@ -220,15 +220,15 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			if (iteratorKeyVariable != null && iteratorKeyVariable.getDeclaration() != null && iteratorKeyVariable.getDeclaration().isCaptured()) {
 				sb.append(key_iterator).append(".set(").append(var).append(".getKey()); ");
 			} else if (mIsKeyDeclaration) {
-				sb.append(key_iterator).append(" = (" + iteratorKeyVariable.getType().getJavaName(mainblock.getVersion()) + ") ").append(var).append(".getKey(); ");
+				sb.append(key_iterator).append(" = ").append(JavaWriter.castObject(iteratorKeyVariable.getType().getJavaName(mainblock.getVersion()), var + ".getKey()")).append("; ");
 			} else {
-				sb.append(key_iterator).append(" = (" + iteratorKeyVariable.getType().getJavaName(mainblock.getVersion()) + ") ").append(var).append(".getKey(); ");
+				sb.append(key_iterator).append(" = ").append(JavaWriter.castObject(iteratorKeyVariable.getType().getJavaName(mainblock.getVersion()), var + ".getKey()")).append("; ");
 			}
 		} else if (mainblock.getVersion() >= 2) {
 			if (iteratorKeyVariable != null && iteratorKeyVariable.getDeclaration() != null && iteratorKeyVariable.getDeclaration().isCaptured()) {
 				sb.append(key_iterator).append(".set(").append(var).append(".getKey()); ");
 			} else if (mIsKeyDeclaration) {
-				sb.append(key_iterator).append(" = (" + iteratorKeyDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()) + ") ").append(var).append(".getKey(); ");
+				sb.append(key_iterator).append(" = ").append(JavaWriter.castObject(iteratorKeyDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()), var + ".getKey()")).append("; ");
 			} else {
 				sb.append(key_iterator).append(" = ").append(var).append(".getKey(); ");
 			}
@@ -246,17 +246,17 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
 				sb.append(val_iterator).append(".set(").append(var).append(".getValue());");
 			} else if (mIsDeclaration) {
-				sb.append(val_iterator).append(" = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") ").append(var).append(".getValue();");
+				sb.append(val_iterator).append(" = ").append(JavaWriter.castObject(iteratorVariable.getType().getJavaName(mainblock.getVersion()), var + ".getValue()")).append(";");
 			} else {
-				sb.append(val_iterator).append(" = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") ").append(var).append(".getValue();");
+				sb.append(val_iterator).append(" = ").append(JavaWriter.castObject(iteratorVariable.getType().getJavaName(mainblock.getVersion()), var + ".getValue()")).append(";");
 			}
 		} else if (mainblock.getVersion() >= 2) {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
 				sb.append(val_iterator).append(".set(").append(var).append(".getValue());");
 			} else if (mIsDeclaration) {
-				sb.append(val_iterator).append(" = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") ").append(var).append(".getValue();");
+				sb.append(val_iterator).append(" = ").append(JavaWriter.castObject(iteratorVariable.getType().getJavaName(mainblock.getVersion()), var + ".getValue()")).append(";");
 			} else {
-				sb.append(val_iterator).append(" = (" + iteratorVariable.getType().getJavaName(mainblock.getVersion()) + ") ").append(var).append(".getValue();");
+				sb.append(val_iterator).append(" = ").append(JavaWriter.castObject(iteratorVariable.getType().getJavaName(mainblock.getVersion()), var + ".getValue()")).append(";");
 			}
 		} else {
 			if (mValueReference) {

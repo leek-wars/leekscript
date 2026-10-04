@@ -119,6 +119,15 @@ public class JavaWriter {
 		mCode.append("};}\n\n");
 	}
 
+	/**
+	 * Conversion d'une valeur Object (élément de collection, variable de foreach) vers le type
+	 * Java d'un emplacement typé : un `real` passe par AI.realBox, qui accepte aussi un entier.
+	 */
+	public static String castObject(String javaType, String expression) {
+		if (javaType.equals("Double")) return "realBox(" + expression + ")";
+		return "(" + javaType + ") " + expression;
+	}
+
 	public void addCounter(int count) {
 		if (operationsEnabled) {
 			addCode("ops(" + count + ");");

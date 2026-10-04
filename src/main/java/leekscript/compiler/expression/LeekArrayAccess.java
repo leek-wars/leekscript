@@ -285,32 +285,36 @@ public class LeekArrayAccess extends Expression {
 			mCase.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")");
 		} else if (mTabular.getType() instanceof ArrayType) {
+			// Élément `real` : un entier peut y être rangé tel quel (cf. AI.realBox)
+			boolean realBox = type != Type.ANY && type.getJavaName(mainblock.getVersion()).equals("Double");
 			if (type != Type.ANY) {
 				if (parenthesis) writer.addCode("(");
 				if (type.isPrimitive()) {
 					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 				}
-				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") ");
+				writer.addCode(realBox ? "realBox(" : "(" + type.getJavaName(mainblock.getVersion()) + ") ");
 			}
 			mTabular.writeJavaCode(mainblock, writer, true);
 			writer.addCode(".get(");
 			mCase.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
+			writer.addCode(realBox ? "))" : ")");
 			if (type != Type.ANY) {
 				if (parenthesis) writer.addCode(")");
 			}
 		} else if (mTabular.getType() instanceof MapType) {
+			// Élément `real` : un entier peut y être rangé tel quel (cf. AI.realBox)
+			boolean realBox = type != Type.ANY && type.getJavaName(mainblock.getVersion()).equals("Double");
 			if (type != Type.ANY) {
 				if (parenthesis) writer.addCode("(");
 				if (type.isPrimitive()) {
 					writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 				}
-				writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") ");
+				writer.addCode(realBox ? "realBox(" : "(" + type.getJavaName(mainblock.getVersion()) + ") ");
 			}
 			mTabular.writeJavaCode(mainblock, writer, true);
 			writer.addCode(".get(");
 			mCase.writeJavaCode(mainblock, writer, false);
-			writer.addCode(")");
+			writer.addCode(realBox ? "))" : ")");
 			if (type != Type.ANY) {
 				if (parenthesis) writer.addCode(")");
 			}

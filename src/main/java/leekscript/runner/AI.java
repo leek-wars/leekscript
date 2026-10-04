@@ -825,6 +825,18 @@ public abstract class AI {
 		return value;
 	}
 
+	/**
+	 * Lecture d'une valeur rangée sans type Java dans un emplacement typé `real` (élément
+	 * d'un Array<real> ou d'une Map<K, real>, variable typée d'un foreach). integer -> real
+	 * est un élargissement accepté par le typage, sans conversion des éléments : `[1]` affecté
+	 * à un Array<real> garde un Long, sur lequel un simple (Double) levait une
+	 * ClassCastException. null et les Double passent tels quels.
+	 */
+	public static Double realBox(Object value) {
+		if (value instanceof Long l) return (double) l;
+		return (Double) value;
+	}
+
 	public boolean eq(Object x, Object y) throws LeekRunException {
 		// ops(1);
 		// Fast path : Long == Long (cas dominant — comparaisons d'IDs cellules,

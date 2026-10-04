@@ -260,6 +260,15 @@ public class TestArray extends TestCommon {
 		code_v4_("Array<real> a = [0.0] a[0] = round(1.5) return a[0]").equals("2.0");
 		code_v4_("Array<real> a = [0.0] a[0] = 5 return a[0]").equals("5.0");
 		code_v4_("Array<real> a = [0.0, 0.0] a[0] = round(1.5) a[1] = round(2.5) return a").equals("[2.0, 3.0]");
+		// Un entier rangé tel quel dans un Array<real> (littéral, push) se lit en real
+		// (ClassCastException Long -> Double auparavant)
+		code_v4_("Array<real> tab = [1] real value = tab[0] return value").equals("1.0");
+		code_strict_v4_("Array<real> tab = [1, 2.5] return tab[0] * 2").equals("2.0");
+		code_v4_("Array<real> tab = [1.5] push(tab, 2) real r = tab[1] return r").equals("2.0");
+		code_v4_("Array<real?> tab = [1, null] return [tab[0], tab[1]]").equals("[1.0, null]");
+		code_v4_("Array<real> tab = [1, 2.5] var s = 0.0 for (real x in tab) { s += x } return s").equals("3.5");
+		code_v4_("Array<real> tab = [1, 2.5] var s = 0.0 for (var k : real x in tab) { s += x } return s").equals("3.5");
+		code_v4_("var s = 0.0 for (real x in [1, 2]) { s += x } return s").equals("3.0");
 		// reverse direction: real into Array<integer>
 		code_v4_("Array<integer> a = [0] a[0] = 5.7 return a[0]").equals("5");
 	}

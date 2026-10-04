@@ -194,15 +194,15 @@ public class ForeachBlock extends AbstractLeekBlock {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isBox()) {
 				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
 			} else if (mIsDeclaration) {
-				writer.addCode(iterator_name + " = (" + iterJavaType + ") " + var + ".getValue();");
+				writer.addCode(iterator_name + " = " + JavaWriter.castObject(iterJavaType, var + ".getValue()") + ";");
 			} else {
-				writer.addCode(iterator_name + " = (" + iterJavaType + ") " + var + ".getValue();");
+				writer.addCode(iterator_name + " = " + JavaWriter.castObject(iterJavaType, var + ".getValue()") + ";");
 			}
 		} else if (mainblock.getVersion() >= 2) {
 			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isBox()) {
 				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
 			} else {
-				writer.addCode(iterator_name + " = (" + iterJavaType + ") " + var + ".getValue();");
+				writer.addCode(iterator_name + " = " + JavaWriter.castObject(iterJavaType, var + ".getValue()") + ";");
 			}
 		} else {
 			if (mReference) {
