@@ -225,7 +225,7 @@ public class LeekFunctionCall extends Expression {
 	private boolean isStaticClassReference(JavaWriter writer) {
 		if (!(mExpression.trim() instanceof LeekVariable v)) return false;
 		if (v.getVariableType() == VariableType.CLASS) return true;
-		return v.getVariableType() == VariableType.THIS_CLASS && (writer.currentBlock == null || writer.currentBlock.isInStaticMethod());
+		return v.getVariableType() == VariableType.THIS_CLASS && !writer.inInstanceContext();
 	}
 
 	/**

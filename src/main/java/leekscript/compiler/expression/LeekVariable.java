@@ -450,7 +450,7 @@ public class LeekVariable extends Expression {
 	// classe englobante (compile-time).
 	private void writeThisClass(MainLeekBlock mainblock, JavaWriter writer) {
 		var classVariable = mainblock.getWordCompiler().getCurrentClassVariable();
-		if (writer.currentBlock != null && !writer.currentBlock.isInStaticMethod()) {
+		if (writer.inInstanceContext()) {
 			writer.addCode("classOf(" + classVariable + ".this)");
 		} else {
 			writer.addCode(classVariable);

@@ -826,6 +826,11 @@ public class JavaWriter {
 		return currentBlock != null && currentBlock.isInConstructor();
 	}
 
+	/** Ni hors de tout bloc, ni dans une méthode statique : dans une classe, `this` y existe. */
+	public boolean inInstanceContext() {
+		return currentBlock != null && !currentBlock.isInStaticMethod();
+	}
+
 	public boolean isOperationsEnabled() {
 		return operationsEnabled;
 	}

@@ -291,7 +291,7 @@ public class LeekObjectAccess extends Expression {
 	private boolean isSuperInstanceReceiver(JavaWriter writer) {
 		return object instanceof LeekVariable v && v.getVariableType() == VariableType.SUPER
 			&& this.variable != null && this.variable.getVariableType() == VariableType.FIELD
-			&& writer.currentBlock != null && !writer.currentBlock.isInStaticMethod();
+			&& writer.inInstanceContext();
 	}
 
 	private boolean isThisLikeReceiver(JavaWriter writer) {
