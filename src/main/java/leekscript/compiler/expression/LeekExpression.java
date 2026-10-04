@@ -1565,7 +1565,11 @@ public class LeekExpression extends Expression {
 		return mOperator == Operators.OR || mOperator == Operators.AND || mOperator == Operators.XOR || mOperator == Operators.ADD || mOperator == Operators.MINUS || mOperator == Operators.MULTIPLIE || mOperator == Operators.DIVIDE || mOperator == Operators.MODULUS || mOperator == Operators.POWER || mOperator == Operators.SHIFT_LEFT || mOperator == Operators.SHIFT_RIGHT || mOperator == Operators.BITAND || mOperator == Operators.BITOR || mOperator == Operators.BITXOR || mOperator == Operators.LESS || mOperator == Operators.MORE || mOperator == Operators.LESSEQUALS || mOperator == Operators.MOREEQUALS || mOperator == Operators.EQUALS || mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.NOTEQUALS || mOperator == Operators.NOT_EQUALS_EQUALS
 			// `t[k] ??= v` et `o.f ??= v` peuvent s'écrire en expression switch, qui n'est pas une
 			// instruction Java (cf LeekArrayAccess.compileCoalesceEq)
-			|| mOperator == Operators.COALESCE_ASSIGN && (mExpression1 instanceof LeekArrayAccess || mExpression1 instanceof LeekObjectAccess);
+			|| mOperator == Operators.COALESCE_ASSIGN && (mExpression1 instanceof LeekArrayAccess || mExpression1 instanceof LeekObjectAccess)
+			// Écrits en opérateur Java ou tels quels (`!bool(x)`, `a / b`, `a >>> b`, `x != null ? … : …`,
+			// `x`) : sans opérations (CLI), rien d'autre ne les enveloppe
+			|| mOperator == Operators.NOT || mOperator == Operators.INTEGER_DIVISION || mOperator == Operators.SHIFT_UNSIGNED_RIGHT
+			|| mOperator == Operators.COALESCE || mOperator == Operators.NON_NULL_ASSERTION;
 	}
 
 	/**
