@@ -904,13 +904,19 @@ public class LeekVariable extends Expression {
 		return this.variable != null ? this.variable.getType() : this.variableType;
 	}
 
+	/** Types Java d'une valeur que reçoit un champ `Number` (cf globalAssignType). */
+	private static final Set<String> NUMBER_JAVA_TYPES = Set.of("long", "Long", "double", "Double", "Number");
+	/** Types Java qu'un champ d'un autre type référence ne reçoit pas : un Object, un nombre ou un booléen. */
+	private static final Set<String> NON_REFERENCE_JAVA_TYPES = Set.of("Object", "Number", "long", "Long", "double", "Double", "boolean", "Boolean");
+
 	/**
 	 * Cible de la conversion de `g = v` (v2+) : le type de la variable de la globale. En strict,
 	 * une globale non typée prend le type de sa valeur, avec lequel son champ Java est déclaré
 	 * (cf slotType), mais une affectation remet sa variable à any (LeekExpression, ASSIGN) : `v`
 	 * s'écrivait alors tel quel, et `g = f()` rangeait un Object dans un `long` (#5322). Le type
 	 * du champ devient la cible quand javac n'y accepterait pas `v` : un Object, un autre
-	 * primitif. Une valeur que le champ reçoit déjà s'écrit comme avant.
+	 * primitif. Une valeur que le champ reçoit déjà s'écrit comme avant. C'est la règle de javac
+	 * et non celle de JavaWriter (types égaux) : un `long` entre tel quel dans un champ `double`.
 	 */
 	private Type globalAssignType(MainLeekBlock mainblock, Expression expr) {
 		var type = this.variable.getType();
@@ -926,9 +932,9 @@ public class LeekVariable extends Expression {
 			case "double" -> valueJava.equals("double") || valueJava.equals("Double") || valueJava.equals("long") || valueJava.equals("Long");
 			case "Double" -> valueJava.equals("double") || valueJava.equals("Double");
 			case "boolean", "Boolean" -> valueJava.equals("boolean") || valueJava.equals("Boolean");
-			case "Number" -> Set.of("long", "Long", "double", "Double", "Number").contains(valueJava);
-			// Autre type référence : un Object, un nombre ou un booléen n'y entrent pas
-			default -> valueJava.equals(slotJava) || !Set.of("Object", "Number", "long", "Long", "double", "Double", "boolean", "Boolean").contains(valueJava);
+			case "Number" -> NUMBER_JAVA_TYPES.contains(valueJava);
+			// Autre type référence
+			default -> valueJava.equals(slotJava) || !NON_REFERENCE_JAVA_TYPES.contains(valueJava);
 		};
 		return fits ? type : slot;
 	}
