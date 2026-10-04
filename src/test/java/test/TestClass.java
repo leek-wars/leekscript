@@ -452,4 +452,32 @@ public class TestClass extends TestCommon {
 		code_v2_("class A { m() { return new class() } } class B extends A {} return [new A().m(), new B().m()]").equals("[A {}, B {}]");
 		code_v2_("class A { static m() { return new class() } } return A.m()").equals("A {}");
 	}
+
+	/**
+	 * Rapports anciens (forum, 2014-2023) qui faisaient échouer la compilation (« raison inconnue »
+	 * ou erreur Java) et qui sont refusés proprement à l'analyse, ou qui compilent, aujourd'hui.
+	 */
+	@Test
+	public void testOld_reports_now_handled() throws Exception {
+		section("Old reports (#1452, #2934, #2932, #2937, #2920, #2011, #1323, #1986, #2756)");
+		// #1452 : affecter une classe
+		code_v2_("class A {} A = 12").compileError(Error.CANT_ASSIGN_VALUE);
+		// #2934 : paramètre optionnel suivi d'un obligatoire dans une méthode
+		code_v2_("class A { test(a = null, b, c) {} }").compileError(Error.DEFAULT_ARGUMENT_NOT_END);
+		// #2932 : surcharges d'une méthode, une seule typée
+		code_v2_("class A { public a(b) { return this.a(b, 1) } public a(integer b, integer c) { return b + c } } return new A().a(5)").equals("6");
+		// #2937 : appel non qualifié d'une méthode statique typée depuis une méthode statique
+		code_v2_("class A { static test() { integer dummy = getInt(); return dummy } static integer getInt() { return 7 } } return A.test()").equals("7");
+		// #2920 : champ statique privé écrit depuis une fonction anonyme définie dans la classe
+		code_v2_("class C { static call(callback) { return id => callback(id) } } class A { public static a = C.call(id => { A.b = id }) private static b; static getB() { return A.b } } A.a(1) return A.getB()").equals("1");
+		// #2011 : `this` comme nom de paramètre
+		code_v2_("class A { m(this) { return 1 } } return new A().m(5)").compileError(Error.PARAMETER_NAME_EXPECTED);
+		// #1323 : `new Effect()` dans une méthode statique de la classe Effect
+		code_v2_("class Effect { static make() { return new Effect() } } return Effect.make()").equals("Effect {}");
+		// #1986 : `or` est un mot réservé (opérateur), pas un nom de méthode
+		code_v2_("class A { or(x) { return x } } return new A().or(5)").compileError(Error.VARIABLE_NAME_EXPECTED);
+		// #2756 (2014) : un ternaire entre parenthèses en instruction plantait le poireau
+		code("(true ? 2 + 2 : 2 + 2); return 1").equals("1");
+		code("var a = 0; (a == 0 ? a++ : a--); return a").equals("1");
+	}
 }
