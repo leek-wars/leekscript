@@ -145,6 +145,42 @@ public class WordCompiler {
 		}
 	}
 
+	// Dans la borne de fin d'un intervalle, le `[` courant ferme d'ordinaire l'intervalle
+	// (`[1..x[`). C'est un accès indexé (`[t[0]..t[1]]`, `[0..t[i][j]]`) quand il est collé à
+	// son index et que son `]` apparié enclôt un index non vide, sans `,` ni `;` à son niveau,
+	// suivi de `]` ou `[` : lu comme une fermeture, ce code aurait été une erreur. Seule
+	// exception, un tableau sans virgules (`[[0..n[ t][0]`), que le crochet collé laisse intact.
+	// On ne fait que regarder les tokens (pas de parsing à l'essai, qui laisserait ses erreurs
+	// derrière lui). Un crochet d'intervalle plus loin (`]1..5]`) casse l'appariement : on garde
+	// alors la fermeture. Un mot-clé d'instruction à son niveau arrête aussi le scan, qui sinon
+	// courrait jusqu'à la fin du fichier après un `[1..x[` au niveau global.
+	private boolean bracketIsIndexInInterval() {
+		if (!adjacent(mTokens.get(), mTokens.get(1))) return false;
+		var open = new ArrayList<TokenType>();
+		for (int i = 0; ; i++) {
+			var type = mTokens.get(i).getType();
+			if (type == TokenType.BRACKET_LEFT || type == TokenType.PAR_LEFT || type == TokenType.ACCOLADE_LEFT) {
+				open.add(type);
+			} else if (type == TokenType.BRACKET_RIGHT || type == TokenType.PAR_RIGHT || type == TokenType.ACCOLADE_RIGHT) {
+				var opener = open.remove(open.size() - 1);
+				var expected = type == TokenType.BRACKET_RIGHT ? TokenType.BRACKET_LEFT : type == TokenType.PAR_RIGHT ? TokenType.PAR_LEFT : TokenType.ACCOLADE_LEFT;
+				if (opener != expected) return false;
+				if (open.isEmpty()) {
+					if (i == 1) return false; // `x[]`
+					var next = mTokens.get(i + 1).getType();
+					return next == TokenType.BRACKET_RIGHT || next == TokenType.BRACKET_LEFT;
+				}
+			} else if (type == TokenType.END_OF_FILE) {
+				return false;
+			} else if (open.size() == 1) {
+				switch (type) {
+					case END_INSTRUCTION, VIRG, VAR, GLOBAL, RETURN, IF, FOR, WHILE, DO, BREAK, CONTINUE, INCLUDE: return false;
+					default: break;
+				}
+			}
+		}
+	}
+
 	public void readCode() throws LeekCompilerException {
 
 		firstPass();
@@ -1842,7 +1878,7 @@ public class WordCompiler {
 					optionalBracket = true;
 				}
 
-				if (word.getType() == TokenType.BRACKET_LEFT && !inInterval) {
+				if (word.getType() == TokenType.BRACKET_LEFT && (!inInterval || bracketIsIndexInInterval())) {
 
 					var save = mTokens.getPosition();
 

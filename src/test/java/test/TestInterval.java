@@ -35,6 +35,23 @@ public class TestInterval extends TestCommon {
 	}
 
 	@Test
+	public void testInterval_indexInBounds() throws Exception {
+		section("Interval with an index access in its end bound");
+		code("var t = [1, 5, 9] return [t[0]..t[2]]").equals("[1..9]");
+		code("var t = [[1, 5]] return [0..t[0][1]]").equals("[0..5]");
+		code("var t = [1, 5] return [t[0]..t[1][").equals("[1..5[");
+		code("var t = [2, 4] return 4 in [t[0]..t[1][").equals("false");
+		code_v3_("class E { public final integer type public final Interval power public constructor(Array<real> e) { this.type = e[0] this.power = [e[1]..e[2]] } } var x = new E([1.7, 2.5, 3.0]) return [x.type, x.power]").equals("[1, [2.5..3.0]]");
+		// The `[` still closes a right-open interval
+		code("var i = [1..5[ var t = [7] return t[0]").equals("7");
+		code("var n = 3 var a = [[0..n[] return a").equals("[[0..3[]");
+		code("var n = 3 return [[0..n[][0]").equals("[0..3[");
+		code("var n = 3 var a = [[0..n[, [1]] return a").equals("[[0..3[, [1]]");
+		code("var n = 3 var i = [0..n[ var j = ]-1..5] return j").equals("]-1..5]");
+		code("var n = 3 var t = 7 return [[0..n[ t][0]").equals("[0..3[");
+	}
+
+	@Test
 	public void testInterval_intervalMin() throws Exception {
 		section("Interval.intervalMin");
 		code("return intervalMin([1..2])").equals("1");
