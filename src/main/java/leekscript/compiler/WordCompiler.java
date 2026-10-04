@@ -145,38 +145,34 @@ public class WordCompiler {
 		}
 	}
 
-	// Dans la borne de fin d'un intervalle, le `[` courant ferme d'ordinaire l'intervalle
-	// (`[1..x[`). C'est un accès indexé (`[t[0]..t[1]]`, `[0..t[i][j]]`) quand il est collé à
-	// son index et que son `]` apparié enclôt un index non vide, sans `,` ni `;` à son niveau,
-	// suivi de `]` ou `[` : lu comme une fermeture, ce code aurait été une erreur. Seule
-	// exception, un tableau sans virgules (`[[0..n[ t][0]`), que le crochet collé laisse intact.
-	// On ne fait que regarder les tokens (pas de parsing à l'essai, qui laisserait ses erreurs
-	// derrière lui). Un crochet d'intervalle plus loin (`]1..5]`) casse l'appariement : on garde
-	// alors la fermeture. Un mot-clé d'instruction à son niveau arrête aussi le scan, qui sinon
-	// courrait jusqu'à la fin du fichier après un `[1..x[` au niveau global.
-	private boolean bracketIsIndexInInterval() {
-		if (!adjacent(mTokens.get(), mTokens.get(1))) return false;
+	// Dans la borne de fin d'un intervalle, le `[` à `offset` ferme d'ordinaire l'intervalle
+	// (`[1..x[`). C'est un accès indexé (`[t[0]..t[1]]`, `[0..t[i][`) quand il est collé à un index
+	// non vide (comme `a?[i]`), sans `,`, `;` ni mot-clé d'instruction à son niveau, et que son `]`
+	// est suivi de `]` ou `[` : lu comme une fermeture, ce code était une erreur. On ne fait que
+	// regarder les tokens. Une seule pile pour les trois sortes de crochets : un crochet
+	// d'intervalle plus loin (`]1..5]`) casse l'appariement, ce que la table du lexer, une pile
+	// par sorte, ne verrait pas.
+	private boolean bracketIsIndexInInterval(int offset) {
+		var first = mTokens.get(offset + 1);
+		if (!adjacent(mTokens.get(offset), first) || first.getType() == TokenType.BRACKET_RIGHT) return false;
 		var open = new ArrayList<TokenType>();
-		for (int i = 0; ; i++) {
+		for (int i = offset; ; i++) {
 			var type = mTokens.get(i).getType();
-			if (type == TokenType.BRACKET_LEFT || type == TokenType.PAR_LEFT || type == TokenType.ACCOLADE_LEFT) {
-				open.add(type);
-			} else if (type == TokenType.BRACKET_RIGHT || type == TokenType.PAR_RIGHT || type == TokenType.ACCOLADE_RIGHT) {
-				var opener = open.remove(open.size() - 1);
-				var expected = type == TokenType.BRACKET_RIGHT ? TokenType.BRACKET_LEFT : type == TokenType.PAR_RIGHT ? TokenType.PAR_LEFT : TokenType.ACCOLADE_LEFT;
-				if (opener != expected) return false;
-				if (open.isEmpty()) {
-					if (i == 1) return false; // `x[]`
-					var next = mTokens.get(i + 1).getType();
-					return next == TokenType.BRACKET_RIGHT || next == TokenType.BRACKET_LEFT;
+			switch (type) {
+				case BRACKET_LEFT, PAR_LEFT, ACCOLADE_LEFT -> open.add(type);
+				case BRACKET_RIGHT, PAR_RIGHT, ACCOLADE_RIGHT -> {
+					var expected = type == TokenType.BRACKET_RIGHT ? TokenType.BRACKET_LEFT : type == TokenType.PAR_RIGHT ? TokenType.PAR_LEFT : TokenType.ACCOLADE_LEFT;
+					if (open.remove(open.size() - 1) != expected) return false;
+					if (open.isEmpty()) {
+						var next = mTokens.get(i + 1).getType();
+						return next == TokenType.BRACKET_RIGHT || next == TokenType.BRACKET_LEFT;
+					}
 				}
-			} else if (type == TokenType.END_OF_FILE) {
-				return false;
-			} else if (open.size() == 1) {
-				switch (type) {
-					case END_INSTRUCTION, VIRG, VAR, GLOBAL, RETURN, IF, FOR, WHILE, DO, BREAK, CONTINUE, INCLUDE: return false;
-					default: break;
+				case END_OF_FILE -> { return false; }
+				case END_INSTRUCTION, VIRG, VAR, GLOBAL, RETURN, IF, FOR, WHILE, DO, BREAK, CONTINUE, INCLUDE -> {
+					if (open.size() == 1) return false;
 				}
+				default -> {}
 			}
 		}
 	}
@@ -1679,12 +1675,12 @@ public class WordCompiler {
 		var next = mTokens.get(2);
 		var type = next.getType();
 		if (type == TokenType.DOT || type == TokenType.PAR_LEFT) return true;
-		if (type == TokenType.BRACKET_LEFT) return !inInterval; // `[1..-5[` : le crochet ferme l'intervalle
+		if (type == TokenType.BRACKET_LEFT) return !inInterval || bracketIsIndexInInterval(2); // `[1..-5[` : le crochet ferme l'intervalle, `[1..-5[0]]` y indexe
 		if (type != TokenType.OPERATOR) return false;
 		if (Operators.isUnarySuffix(Operators.getOperator(next.getWord(), getVersion()))) return true;
 		if (!next.getWord().equals("?")) return false;
 		var after = mTokens.get(3);
-		return after.getType() == TokenType.DOT || (after.getType() == TokenType.BRACKET_LEFT && !inInterval && adjacent(next, after));
+		return after.getType() == TokenType.DOT || (after.getType() == TokenType.BRACKET_LEFT && (!inInterval || bracketIsIndexInInterval(3)) && adjacent(next, after));
 	}
 
 	public Expression readExpression() throws LeekCompilerException {
@@ -1871,14 +1867,14 @@ public class WordCompiler {
 				// `?[` que pour des séquences qui auraient autrement été des erreurs.
 				boolean optionalBracket = false;
 				if (word.getType() == TokenType.OPERATOR && word.getWord().equals("?")
-						&& mTokens.get(1).getType() == TokenType.BRACKET_LEFT && !inInterval
+						&& mTokens.get(1).getType() == TokenType.BRACKET_LEFT && (!inInterval || bracketIsIndexInInterval(1))
 						&& adjacent(word, mTokens.get(1)) && !ternaryColonAhead()) {
 					mTokens.skip(); // ?
 					word = mTokens.get(); // [
 					optionalBracket = true;
 				}
 
-				if (word.getType() == TokenType.BRACKET_LEFT && (!inInterval || bracketIsIndexInInterval())) {
+				if (word.getType() == TokenType.BRACKET_LEFT && (!inInterval || bracketIsIndexInInterval(0))) {
 
 					var save = mTokens.getPosition();
 
