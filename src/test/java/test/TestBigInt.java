@@ -436,6 +436,53 @@ public class TestBigInt extends TestCommon {
 		code_v4_("class Z { public static integer b = 12; public static void t() { b |= 1; } } Z.t(); return Z.b;").equals("13");
 	}
 
+	/** `big_integer?` ne compilait pas (COMPILE_JAVA), une union tronquait à 64 bits. */
+	@Test
+	public void testCompoundBitAssignOnNullableAndUnion() throws Exception {
+		section("Opérations composées de bits sur big_integer? et sur une union");
+
+		// Le motif de l'IA en prod
+		var prod = "function f(Array<integer> blockers, integer tb) { Map<integer, big_integer> shadows = [1: 5L]; big_integer? hidden = 2L; for (var b in blockers) { var sh = shadows[b - tb]; (sh != null) && (hidden |= sh!); } return hidden; } return f([1, 2], 0);";
+		code_v4_(prod).equals("7");
+		code_strict_v4_(prod).equals("7");
+
+		// Locale, les six opérateurs
+		code_v4_("big_integer? h = 1L << 100; h |= 1; return h == (1L << 100) + 1;").equals("true");
+		code_v4_("big_integer? h = 12L; h &= 10L; return h;").equals("8");
+		code_v4_("big_integer? h = 12L; h ^= 10L; return h;").equals("6");
+		code_v4_("big_integer? h = 1L; h <<= 100; return h == 1L << 100;").equals("true");
+		code_v4_("big_integer? h = 1L << 100; h >>= 99; return h;").equals("2");
+		code_v4_("big_integer? h = 1L << 100; h >>>= 99; return h;").equals("2");
+		code_strict_v4_("big_integer? h = 1L << 100; h |= 1; return h == (1L << 100) + 1;").equals("true");
+		// Valeur de l'affectation, narrowing vers null
+		code_v4_("big_integer? h = 3L; var r = (h |= 4); return r;").equals("7");
+		code_v4_("big_integer? h = 3L; if (h == null) { h |= 5 } return h;").equals("3");
+
+		// Paramètre, champ sans `this`, globale
+		code_v4_("function f(big_integer? h) { h <<= 100; return h == 1L << 100; } return f(1L);").equals("true");
+		code_v4_("class A { big_integer? f = 1L << 100; m() { f |= 1; return f == (1L << 100) + 1; } } return new A().m();").equals("true");
+		// Champ narrowé vers null : le résultat est casté vers son type déclaré
+		code_v4_("class A { big_integer? f = null; m() { if (f == null) { f |= 5 } return f; } } return new A().m();").equals("5");
+		code_v4_("class A { integer? f = null; m() { if (f == null) { f |= 5 } return f; } } return new A().m();").equals("5");
+		code_v4_("global big_integer? g = 1L; function f() { g <<= 100; } f(); return g == 1L << 100;").equals("true");
+		code_strict_v4_("global big_integer? g = 1L << 100; g |= 1; return g == (1L << 100) + 1;").equals("true");
+
+		// Union contenant big_integer : promotion au runtime, sans troncature
+		code_v4_("integer | big_integer h = 1L << 100; h |= 1; return h == (1L << 100) + 1;").equals("true");
+		code_v4_("integer | big_integer h = 1L << 100; h >>= 99; return h;").equals("2");
+		code_v4_("integer | big_integer h = 5L; h <<= 100; return h == 5L << 100;").equals("true");
+		code_v4_("big_integer | string h = 1L << 100; h |= 1; return h == (1L << 100) + 1;").equals("true");
+		code_v4_("global integer | big_integer g = 1L << 100; g |= 1; return g == (1L << 100) + 1;").equals("true");
+		code_v4_("class A { integer | big_integer f = 1L << 100; m() { f |= 1; return f == (1L << 100) + 1; } } return new A().m();").equals("true");
+		code_v4_("integer | big_integer h = 12; h |= 1; return h;").equals("13");
+
+		// Non-régression : sans big_integer possible, la variante long reste
+		code_v4_("integer? h = 12; h |= 1; return h;").equals("13");
+		code_v4_("integer | real h = 12; h |= 1; return h;").equals("13");
+		code_v4_("global integer? g = 12; g |= 1; return g;").equals("13");
+		code_v4_("class A { integer? f = 12; m() { f |= 1; return f; } } return new A().m();").equals("13");
+	}
+
 	/** #4908 : affectations dans un champ statique big_integer (stocké en Object). */
 	@Test
 	public void testStaticFieldAssign() throws Exception {

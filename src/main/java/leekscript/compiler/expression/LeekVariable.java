@@ -18,6 +18,7 @@ import leekscript.runner.LeekConstants;
 import leekscript.runner.LeekFunctions;
 
 import leekscript.common.Annotation;
+import leekscript.common.CompoundType;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
@@ -851,13 +852,17 @@ public class LeekVariable extends Expression {
 	 * les variantes long (bor/band/bxor/shl/shr/ushr) renvoient un long et
 	 * casseraient la réaffectation (« long cannot be converted to
 	 * BigIntegerValue »). (#bigint #4477)
+	 *
+	 * L'emplacement compte autant que la valeur : `big_integer?` est déclaré
+	 * BigIntegerValue en Java (cf CompoundType.getJavaName), sans être BIG_INT.
 	 */
 	private String bitOpMethod(String longMethod) {
-		// Emplacement non typé (Object en Java) : la promotion se décide au runtime,
-		// sinon un big_integer rangé dans une globale ou un champ `any` est tronqué
-		// à 64 bits par longint(). (#bigint #4908)
-		if (this.variableType == Type.ANY) return longMethod + "Any";
-		if (this.variableType != Type.BIG_INT) return longMethod;
+		if (this.variableType != Type.BIG_INT && javaSlotType().assertNotNull() != Type.BIG_INT) {
+			// Peut-être un big_integer (any, union) : la promotion se décide au runtime,
+			// sinon un big_integer rangé dans une globale ou un champ `any` est tronqué
+			// à 64 bits par longint(). (#bigint #4908)
+			return mayBeBigInt(this.variableType) ? longMethod + "Any" : longMethod;
+		}
 		switch (longMethod) {
 			case "bor": return "bigOr";
 			case "band": return "bigAnd";
@@ -866,6 +871,10 @@ public class LeekVariable extends Expression {
 			case "shr": case "ushr": return "bigShr";
 			default: return longMethod;
 		}
+	}
+
+	private static boolean mayBeBigInt(Type type) {
+		return type == Type.ANY || type instanceof CompoundType ct && ct.getTypes().contains(Type.BIG_INT);
 	}
 
 	/**
@@ -1336,8 +1345,10 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
-			if (variableType != Type.ANY) {
-				writer.addCode("(" + variableType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
+			// Narrowé vers null, variableType donnerait `(Object)`, qui ne rentre pas dans un `T?`
+			var castType = variableType == Type.NULL ? javaSlotType() : variableType;
+			if (castType != Type.ANY) {
+				writer.addCode("(" + castType.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			writer.addCode(bitOpMethod("bor") + "(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
