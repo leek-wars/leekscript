@@ -132,6 +132,29 @@ public class TestGlobals extends TestCommon {
 	}
 
 	@Test
+	public void testGlobals_bitAssignNonIntegerOperand() throws Exception {
+		// #5321 : `g |= v` sur une globale integer émettait l'opérateur Java natif sans convertir
+		// un opérande any ou real (« bad operand types for binary operator '|' ») : COMPILE_JAVA.
+		section("Bit compound assignment on an integer global with an any or real operand (#5321)");
+		code_v2_("global integer gb = 7; var r = 3; gb |= r; return gb").equals("7");
+		code_v2_("global integer gb = 12; var r = 10; gb &= r; return gb").equals("8");
+		code_v2_("global integer gb = 12; var r = 10; gb ^= r; return gb").equals("6");
+		code_v2_("global integer gb = 1; var r = 4; gb <<= r; return gb").equals("16");
+		code_v2_("global integer gb = 64; var r = 2; gb >>= r; return gb").equals("16");
+		code_v2_("global integer gb = 64; var r = 2; gb >>>= r; return gb").equals("16");
+		code_v2_("global integer gb = 7; var r = 2.5; gb |= r; return gb").equals("7");
+		code_v2_("global integer gb = 12; real r = 10.5; gb &= r; return gb").equals("8");
+		code_v2_("global integer gb = 7; var r = 3; var w = (gb |= r * 8); return [gb, w]").equals("[31, 31]");
+		code_strict_v2_("global integer gb = 7; any r = 3; gb |= r; return gb").equals("7");
+		code_strict_v2_("global gb = 1; any r = 4; gb <<= r; return gb").equals("16");
+		// Strict, dans une fonction : la référence à la globale inférée y est encore any
+		code_strict_v2_("global gb = 7; function f() { any r = 8; gb |= r; return gb } return f()").equals("15");
+		code_strict_v2_("global gb = 7; function f() { any r = 8; gb |= r; return gb } gb = 1; return f()").equals("9");
+		// Opérande integer : Java inchangé
+		code_v2_("global integer gb = 7; integer? r = 8; gb |= r; return gb").equals("15");
+	}
+
+	@Test
 	public void testGlobals_strictInferredAssignment() throws Exception {
 		// #5322 : en strict, `global g = 9` déclare un champ `long`, mais `g = f()` le traitait
 		// comme any (la variable revient à any à la première affectation) : `g_g = f_f()` rangeait

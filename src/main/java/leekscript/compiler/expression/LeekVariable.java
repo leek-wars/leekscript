@@ -863,8 +863,11 @@ public class LeekVariable extends Expression {
 		if (this.variableType != Type.BIG_INT && javaSlotType().assertNotNull() != Type.BIG_INT) {
 			// Peut-être un big_integer (any, union) : la promotion se décide au runtime,
 			// sinon un big_integer rangé dans une globale ou un champ `any` est tronqué
-			// à 64 bits par longint(). (#bigint #4908)
-			return mayBeBigInt(this.variableType) ? longMethod + "Any" : longMethod;
+			// à 64 bits par longint(). (#bigint #4908) Pas sur un champ Java integer ou real,
+			// qui ne recevrait pas l'Object rendu : en strict, la référence à une globale non
+			// typée analysée avant l'inférence de son type, ou après une affectation, est any (#5321).
+			var slot = type == VariableType.GLOBAL && this.variable != null ? slotType() : javaSlotType();
+			return mayBeBigInt(this.variableType) && !slot.isPrimitiveNumber() ? longMethod + "Any" : longMethod;
 		}
 		switch (longMethod) {
 			case "bor": return "bigOr";
@@ -1435,7 +1438,9 @@ public class LeekVariable extends Expression {
 		if (parenthesis) writer.addCode("(");
 		if (operator != null && type != VariableType.FIELD && hasNativeBitSlot(mainblock.getVersion())) {
 			writer.addCode(slot + " " + operator + "= ");
-			if (type == VariableType.GLOBAL) {
+			// Opérande entier (Long compris, que javac déboxe) ou Object converti : Java inchangé.
+			// Un any, un real… passent par longint() comme sur une locale (#5321).
+			if (type == VariableType.GLOBAL && (expr.hasObjectJavaResult() || writtenType(mainblock, expr).assertNotNull() == Type.INT)) {
 				writer.compileTyped(mainblock, expr, Type.INT, false);
 			} else {
 				writer.getInt(mainblock, expr, false);
