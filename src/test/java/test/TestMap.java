@@ -543,6 +543,10 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = [1 : 2, 3 : 4, 5 : 6] return mapEvery(a, function(v, k) { return k > 2 })").equals("false");
 		code_v4_("var a = [1 : 2, 3 : 4, 5 : 6] return mapEvery(a, function(v, k) { return v * k == 30 })").equals("false");
 		code_v4_("var a = [2 : 24, 4 : 12, 12 : 4] return mapEvery(a, function(v, k) { return v * k == 48 })").equals("true");
+		// Troisième argument : la map, comme mapSome (il valait null)
+		code_v4_("var a = [1 : 2, 3 : 4] return mapEvery(a, function(v, k, m) { return mapContainsKey(m, 3) })").equals("true");
+		code_v4_("var a = [1 : 2, 3 : 4] return mapSome(a, function(v, k, m) { return mapContainsKey(m, 3) })").equals("true");
+		code_v4_("var a = [1 : -2, 3 : 4] return [mapEvery(a, abs), mapSome(a, abs)]").equals("[true, true]");
 	}
 
 	@Test

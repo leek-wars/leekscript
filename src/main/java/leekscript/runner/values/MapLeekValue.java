@@ -422,7 +422,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		ai.opsNoCheck(1);
 		int i = 0;
 		for (var entry : entrySet()) {
-			if (!ai.bool(function.run(ai, null, entry.getValue(), entry.getKey()))) {
+			if (!ai.bool(function.run(ai, null, entry.getValue(), entry.getKey(), this))) {
 				ai.ops(2 * i);
 				return false;
 			}
