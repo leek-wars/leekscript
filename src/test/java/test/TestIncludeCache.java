@@ -933,8 +933,13 @@ public class TestIncludeCache {
 		assertTrue(result.merged.success, "" + result.merged.informations);
 
 		// Une vraie IA qui inclut Lib reste, elle, sa racine.
-		write("User_" + uniqueId + ".leek", "include(\"" + lib + "\");\nreturn lib();");
-		assertEquals(List.of("User_" + uniqueId), fs.getIncluders(file).stream().map(AIFile::getPath).toList());
+		String user = "User_" + uniqueId;
+		write(user + ".leek", "include(\"" + lib + "\");\nreturn lib();");
+		assertEquals(List.of(user), fs.getIncluders(file).stream().map(AIFile::getPath).toList());
+
+		// Même quand une doc la cite à son tour : la doc n'en devient pas l'includer.
+		write("Guide_" + uniqueId + ".md.leek", "## Guide\n\nPoint de départ : include(\"" + user + "\");\n");
+		assertEquals(List.of(user), fs.getIncluders(file).stream().map(AIFile::getPath).toList());
 	}
 
 	@Test

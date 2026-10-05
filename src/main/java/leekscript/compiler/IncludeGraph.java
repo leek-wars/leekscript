@@ -61,24 +61,33 @@ public class IncludeGraph {
 
 	private void collectRoots(String path, Set<String> roots, Set<String> visited) {
 		if (!visited.add(path)) return;
-		var direct = reverse.get(path);
-		if (direct == null || direct.isEmpty()) {
-			// path itself has no includer. It's a root only if it was reached from a
-			// different starting point (via at least one step). The initial caller
-			// distinguishes the two cases via visited size.
-			if (visited.size() > 1 && isLeekScriptPath(path)) roots.add(path);
-			return;
-		}
-		for (var includer : direct) {
+		boolean included = false;
+		for (var includer : reverse.getOrDefault(path, Set.of())) {
+			if (!isRealIncluder(includer)) continue;
+			included = true;
 			collectRoots(includer, roots, visited);
 		}
+		// path itself has no includer. It's a root only if it was reached from a
+		// different starting point (via at least one step). The initial caller
+		// distinguishes the two cases via visited size.
+		if (!included && visited.size() > 1 && isLeekScriptPath(path)) roots.add(path);
+	}
+
+	/**
+	 * Une doc qui cite `include("…")` en exemple n'inclut rien pour de vrai : un fichier
+	 * qui n'est pas du LeekScript ne compte comme includer que s'il est lui-même inclus.
+	 * Sinon la doc deviendrait la racine des analyses du fichier cité, et tout son texte
+	 * serait compilé comme du LeekScript à chacune.
+	 */
+	private boolean isRealIncluder(String includer) {
+		if (isLeekScriptPath(includer)) return true;
+		var includers = reverse.get(includer);
+		return includers != null && !includers.isEmpty();
 	}
 
 	/**
 	 * Fichiers rangés avec les IA sans être du LeekScript : docs, données, IA JavaScript,
-	 * TypeScript ou Python. Un tel fichier peut citer `include("…")` (un exemple dans une
-	 * doc) mais n'est jamais compilé seul : il ne doit pas devenir la racine d'une analyse,
-	 * sinon tout son texte est compilé comme du LeekScript à chaque analyse du fichier cité.
+	 * TypeScript ou Python. Jamais compilés seuls, ils ne sont jamais la racine d'une analyse.
 	 */
 	private static final Set<String> NON_LEEKSCRIPT_EXTENSIONS = Set.of("md", "txt", "json", "yml", "yaml", "js", "mjs", "ts", "mts", "py");
 
