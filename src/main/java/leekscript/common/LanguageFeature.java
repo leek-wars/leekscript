@@ -40,7 +40,10 @@ public enum LanguageFeature {
 	MATCH(5),
 
 	/** Surcharge de fonctions utilisateur par signature : dispatch statique au site d'appel (#4243). */
-	FUNCTION_OVERLOADING(5);
+	FUNCTION_OVERLOADING(5),
+
+	/** Bloc nu {@code { ... }} comme instruction, avec sa propre portée. */
+	SCOPE_BLOCK(5);
 
 	public final int since;
 

@@ -205,6 +205,25 @@ public class WordCompiler {
 		}
 	}
 
+	// Le `{` courant (début d'instruction) ouvre-t-il un littéral objet plutôt qu'un bloc ?
+	// Oui pour `{}` suivi de ce qui prolonge une expression (opérateur, `in`, `not in`,
+	// `as`, `is`, `.`, `[`, `(`) et pour `{ clé :` (clé = nom, chaîne ou nombre) ; sinon bloc.
+	private boolean objectLiteralAhead() {
+		var first = mTokens.get(1);
+		var second = mTokens.get(2);
+		if (first.getType() == TokenType.ACCOLADE_RIGHT) {
+			return switch (second.getType()) {
+				case OPERATOR, DOT, BRACKET_LEFT, PAR_LEFT, IN, AS -> true;
+				case NOT -> mTokens.get(3).getType() == TokenType.IN;
+				case STRING -> second.getWord().equals("is");
+				default -> false;
+			};
+		}
+		var key = first.getType();
+		return (key == TokenType.STRING || key == TokenType.VAR_STRING || key == TokenType.NUMBER)
+				&& second.getType() == TokenType.OPERATOR && second.getWord().equals(":");
+	}
+
 	public void readCode() throws LeekCompilerException {
 
 		firstPass();
@@ -621,7 +640,7 @@ public class WordCompiler {
 				}
 				return;
 			case ACCOLADE_LEFT:
-				if (version >= 4) {
+				if (LanguageFeature.SCOPE_BLOCK.enabledIn(version) && !objectLiteralAhead()) {
 					var token = mTokens.eat();
 					var bloc = new ScopeBlock(mCurentBlock, mMain, token);
 					mCurentBlock.addInstruction(this, bloc);
