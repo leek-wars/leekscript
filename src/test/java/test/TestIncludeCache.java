@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -926,8 +927,9 @@ public class TestIncludeCache {
 		write(lib + ".leek", "function lib() { return 1; }\nreturn lib();\n");
 		write("Doc_" + uniqueId + ".md.leek", "# Doc\n\nExemple : include(\"" + lib + "\");\n\nDu texte libre, pas du code.\n");
 		var file = fs.getRoot(0).resolve(lib);
+		Supplier<List<String>> roots = () -> fs.getIncluders(file).stream().map(AIFile::getPath).toList();
 
-		assertTrue(fs.getIncluders(file).isEmpty(), "la doc n'est pas une racine : " + fs.getIncluders(file));
+		assertEquals(List.of(), roots.get(), "la doc n'est pas une racine");
 		var result = IACompiler.analyzeWithIncludes(file);
 		assertEquals(List.of(file), new ArrayList<>(result.perEntrypoint.keySet()), "Lib est sa propre racine");
 		assertTrue(result.merged.success, "" + result.merged.informations);
@@ -935,11 +937,11 @@ public class TestIncludeCache {
 		// Une vraie IA qui inclut Lib reste, elle, sa racine.
 		String user = "User_" + uniqueId;
 		write(user + ".leek", "include(\"" + lib + "\");\nreturn lib();");
-		assertEquals(List.of(user), fs.getIncluders(file).stream().map(AIFile::getPath).toList());
+		assertEquals(List.of(user), roots.get());
 
 		// Même quand une doc la cite à son tour : la doc n'en devient pas l'includer.
 		write("Guide_" + uniqueId + ".md.leek", "## Guide\n\nPoint de départ : include(\"" + user + "\");\n");
-		assertEquals(List.of(user), fs.getIncluders(file).stream().map(AIFile::getPath).toList());
+		assertEquals(List.of(user), roots.get());
 	}
 
 	@Test

@@ -67,9 +67,8 @@ public class IncludeGraph {
 			included = true;
 			collectRoots(includer, roots, visited);
 		}
-		// path itself has no includer. It's a root only if it was reached from a
-		// different starting point (via at least one step). The initial caller
-		// distinguishes the two cases via visited size.
+		// path itself has no real includer. It's a root only if it was reached from a
+		// different starting point (via at least one step), and if it's LeekScript.
 		if (!included && visited.size() > 1 && isLeekScriptPath(path)) roots.add(path);
 	}
 
@@ -77,21 +76,20 @@ public class IncludeGraph {
 	 * Une doc qui cite `include("…")` en exemple n'inclut rien pour de vrai : un fichier
 	 * qui n'est pas du LeekScript ne compte comme includer que s'il est lui-même inclus.
 	 * Sinon la doc deviendrait la racine des analyses du fichier cité, et tout son texte
-	 * serait compilé comme du LeekScript à chacune.
+	 * serait compilé comme du LeekScript à chacune. (`reverse` ne garde aucun ensemble vide.)
 	 */
 	private boolean isRealIncluder(String includer) {
-		if (isLeekScriptPath(includer)) return true;
-		var includers = reverse.get(includer);
-		return includers != null && !includers.isEmpty();
+		return isLeekScriptPath(includer) || reverse.containsKey(includer);
 	}
 
 	/**
 	 * Fichiers rangés avec les IA sans être du LeekScript : docs, données, IA JavaScript,
 	 * TypeScript ou Python. Jamais compilés seuls, ils ne sont jamais la racine d'une analyse.
+	 * Même liste que l'API et l'éditeur, qui ne les compilent pas non plus : les garder en phase.
 	 */
 	private static final Set<String> NON_LEEKSCRIPT_EXTENSIONS = Set.of("md", "txt", "json", "yml", "yaml", "js", "mjs", "ts", "mts", "py");
 
-	static boolean isLeekScriptPath(String path) {
+	private static boolean isLeekScriptPath(String path) {
 		int dot = path.lastIndexOf('.');
 		if (dot <= path.lastIndexOf('/')) return true; // sans extension : LeekScript
 		return !NON_LEEKSCRIPT_EXTENSIONS.contains(path.substring(dot + 1).toLowerCase(Locale.ROOT));

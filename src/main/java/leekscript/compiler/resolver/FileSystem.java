@@ -38,9 +38,10 @@ public abstract class FileSystem {
 	public abstract long getFolderTimestamp(Folder folder);
 
 	/**
-	 * Enumerates all .leek files belonging to an owner. Required for the in-memory
-	 * include graph. Default returns an empty list — FS implementations that want
-	 * include-graph support must override.
+	 * Enumerates all files belonging to an owner: LeekScript, but also polyglot AIs and
+	 * docs (callers filter what they need). Required for the in-memory include graph.
+	 * Default returns an empty list — FS implementations that want include-graph
+	 * support must override.
 	 */
 	public Iterable<AIFile> listAllFiles(int owner) {
 		return List.of();
