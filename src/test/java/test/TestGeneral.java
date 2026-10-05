@@ -212,6 +212,93 @@ public class TestGeneral extends TestCommon {
 		code_v5_("{ integer i = 1 } { integer i = 2 } return 0").equals("0");
 		code_v5_("var r = 0 { var a = 5 r = a } { var a = 10 r += a } return r").equals("15");
 		code_v5_("{ } return 1").equals("1");
+
+		// Portée : une variable du bloc n'existe plus après lui
+		code_v5_("{ var a = 1 } return a").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code_v5_("{ var a = 1 } { var b = a } return 0").error(Error.UNKNOWN_VARIABLE_OR_FUNCTION);
+		code_v5_("var x = 1 { x++ } return x").equals("2");
+		code_v5_("var r = 0 if (true) { var a = 1 { var b = a + 1 r = b } } return r").equals("2");
+		code_v5_("class A { m() { var r = 0 { var a = 2 r = a } { var a = 3 r += a } return r } } return new A().m()").equals("5");
+
+		// Masquage : mêmes règles que dans un if
+		code_v5_("var a = 1 { var a = 2 } return a").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v5_("var a = 1 if (true) { var a = 2 } return a").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v5_("{ var a = 1 { var a = 2 } } return 0").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v5_("global g = 1 { var g = 2 return g }").equals("2");
+		code_v5_("function foo() { return 1 } { var foo = 2 return foo }").equals("2");
+
+		// Fermeture dans une boucle : une variable fraîche par tour
+		code_v5_("var fs = [] for (var i = 0; i < 3; i++) { { var j = i * 10 fs.push(function() { return j }) } } return [fs[0](), fs[1](), fs[2]()]").equals("[0, 10, 20]");
+
+		// break / continue / return dans un bloc nu
+		code_v5_("var s = 0 for (var i = 0; i < 5; i++) { { if (i == 2) continue } s += i } return s").equals("8");
+		code_v5_("var s = 0 for (var i = 0; i < 5; i++) { s += i { if (i == 2) break } } return s").equals("3");
+		code_v5_("var s = 0 for (var i = 0; i < 5; i++) { s += i { continue } } return s").equals("10");
+		code_v5_("var s = 0 for (var i = 0; i < 5; i++) { s += i { break } } return s").equals("0");
+		code_v5_("var s = 0 for (var i = 0; i < 5; i++) { s += i { if (i == 2) { break } else { continue } } } return s").equals("3");
+		code_v5_("var s = 0 while (s < 10) { s++ { if (s == 4) break } } return s").equals("4");
+		code_v5_("var s = 0 do { s++ { if (s == 4) break } } while (s < 10) return s").equals("4");
+		code_v5_("var s = 0 for (var x in [1, 2, 3]) { { if (x == 2) continue } s += x } return s").equals("4");
+		code_v5_("var s = 0 for (var i = 0; i < 5; i++) { switch (i) { case 1: { continue } default: { s += i } } } return s").equals("9");
+		code_v5_("var x = 2 switch (x) { case 2: { var y = 5 return y } default: return 0 }").equals("5");
+		code_v5_("function f() { { return 1 } } return f()").equals("1");
+		code_v5_("function f(x) { { if (x) return 1 else return 2 } } return [f(true), f(false)]").equals("[1, 2]");
+		code_v5_("var f = x => { { return x * 2 } } return f(4)").equals("8");
+		code_v5_("{ return 7 }").equals("7");
+		code_v5_("{ return }").equals("null");
+		code_strict_v5_("integer s = 0 for (integer? x in [1, null, 3]) { if (x == null) { { continue } } integer y = x s += y } return s").noWarning();
+		code_v5_("{ break }").error(Error.BREAK_OUT_OF_LOOP);
+		code_v5_("{ continue }").error(Error.CONTINUE_OUT_OF_LOOP);
+
+		// Code mort après une sortie dans un bloc nu : refusé comme ailleurs
+		code_v5_("var s = 0 for (var i = 0; i < 5; i++) { continue s += i } return s").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v5_("var s = 0 for (var i = 0; i < 5; i++) { { continue } s += i } return s").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v5_("var s = 0 for (var i = 0; i < 5; i++) { { break } s += i } return s").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v5_("var s = 0 for (var i = 0; i < 5; i++) { { { continue } } s += i } return s").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v5_("var s = 0 for (var i = 0; i < 5; i++) { { if (i == 2) { break } else { continue } } s++ } return s").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v5_("var s = 0 for (var i = 0; i < 5; i++) { switch (i) { case 1: { break } s++ default: { s += i } } } return s").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v5_("{ return 1 } return 2").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v5_("{ { return 1 } } return 2").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v5_("function f() { { return 1 } return 2 } return f()").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+
+		// Blocs vides et imbriqués
+		code_v5_("{ { } { { } } } return 3").equals("3");
+		code_v5_("{ var x = 1 { var y = x + 1 { return y + 1 } } }").equals("3");
+		code_v5_("var a = 1 {} a += 1 return a").equals("2");
+		code_v5_("{}").equals("null");
+		code_v5_("{ }").equals("null");
+
+		// Bloc mal formé
+		code_v5_("{ var a = 1").error(Error.OPEN_BLOC_REMAINING);
+		code_v5_("{ { var a = 1 }").error(Error.OPEN_BLOC_REMAINING);
+		code_v5_("{ } }").error(Error.NO_BLOC_TO_CLOSE);
+		code_v5_("if (true) {} {} else {} return 0").error(Error.NO_IF_BLOCK);
+
+		// Un `{` en début d'instruction reste un littéral objet, en v4 comme en v5, s'il est
+		// suivi de `}` puis d'un opérateur, `.`, `[` ou `(`, ou de `clé :`
+		code_v2_("{} % 5").equals("0");
+		code_v2_("{a: 1}.a").equals("1");
+		code_v2_("{a: 1, b: 2}.b").equals("2");
+		code_v2_("var o = 1 {a: 1} return o").equals("1");
+		code_v2_("var x = 1;{a: 1}.a").equals("1");
+		code_v2_("{a: 1}").equals("{a: 1}");
+		code_v2_("{} == {}").equals("false");
+		code_v2_("{}['a']").equals("null");
+		code_v2_("{}.a").equals("null");
+		code_v2_("{} + 1").equals("1");
+		code_v4_("{} instanceof Object").equals("true");
+		code_v2_("{} in [1]").equals("false");
+		code_v2_("{ 'a': 1 }").error(Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+		code_v2_("{ 1: 2 }").error(Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+		code_v2_("return {}").equals("{}");
+
+		// v1-v4 : pas de bloc nu, rien ne change
+		code_v2_4("{}").equals("{}");
+		code_v2_4("var x = 1;{}").equals("{}");
+		code_v1("var b = 0 { b = 12 } return b").error(Error.VALUE_EXPECTED);
+		code_v2_4("var b = 0 { b = 12 } return b").error(Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+		code_v2_4("{ var a = 1 } return 0").error(Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+		code_v2_4("{ } return 1").equals("1");
 	}
 
 	@Test
