@@ -59,7 +59,7 @@ public class LeekString extends Expression {
 		int len = mString.length() - 1;
 		boolean v2plus = mainblock.getCompiler().getCurrentAI().getVersion() >= 2;
 		// `\$` n'échappe qu'entre guillemets doubles, les seuls interpolés.
-		boolean dollarEscape = doubleQuoted && mainblock.getCompiler().getCurrentAI().getVersion() >= 4;
+		boolean dollarEscape = doubleQuoted && mainblock.getCompiler().getCurrentAI().getVersion() >= 5;
 		for (int i = 0; i < mString.length(); i++) {
 			if (mString.charAt(i) == '\n') str += "\\n";
 			else if (mString.charAt(i) == '"') str += "\\\"";
@@ -74,7 +74,7 @@ public class LeekString extends Expression {
 					str += "\\\"";
 					i++;
 				}
-				// v4+ : `\$` échappe l'interpolation — on émet un `$` littéral.
+				// v5+ : `\$` échappe l'interpolation — on émet un `$` littéral.
 				else if (dollarEscape && len > i && mString.charAt(i + 1) == '$') {
 					str += "$";
 					i++;

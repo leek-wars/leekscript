@@ -555,8 +555,8 @@ public class LexicalParser {
 		if (start >= len) return false;
 		char openQuote = content.charAt(start);
 		if (openQuote != '"' && openQuote != '\'') return false;
-		// Interpolation `${expr}` : v4+ et guillemets doubles seulement.
-		boolean interpolable = version >= 4 && openQuote == '"';
+		// Interpolation `${expr}` : v5+ et guillemets doubles seulement (en v1-4, `${` reste du texte).
+		boolean interpolable = version >= 5 && openQuote == '"';
 
 		// Scan direct ; chaque \n rencontré incrémente lineCounter (les strings
 		// peuvent contenir des newlines). À la fin : bump charCounter selon la

@@ -32,99 +32,103 @@ public class TestString extends TestCommon {
 
 	@Test
 	public void testString_interpolation() throws Exception {
-		// String interpolation (v4+) : sucre syntaxique au-dessus de la concaténation.
+		// String interpolation (v5+) : sucre syntaxique au-dessus de la concaténation.
 		// "a${expr}b" est desugaré en ("a" + (expr) + "b") au niveau du lexer, donc
 		// le code Java généré (et le coût en opérations) est identique à une
 		// concaténation écrite à la main.
 		section("String interpolation");
-		code_v4_("var name = \"Bob\" return \"Hello ${name}!\"").equals("\"Hello Bob!\"");
-		code_v4_("return \"${1 + 2}\"").equals("\"3\"");
-		code_v4_("return \"${42}\"").equals("\"42\""); // un entier interpolé devient une chaîne
-		code_v4_("var a = 2 var b = 3 return \"${a}+${b}=${a + b}\"").equals("\"2+3=5\"");
-		code_v4_("var x = 5 return \"x=${x}.\"").equals("\"x=5.\"");
-		code_v4_("var arr = [1, 2, 3] return \"arr=${arr}, len=${count(arr)}\"").equals("\"arr=[1, 2, 3], len=3\"");
+		code_v5_("var name = \"Bob\" return \"Hello ${name}!\"").equals("\"Hello Bob!\"");
+		code_v5_("return \"${1 + 2}\"").equals("\"3\"");
+		code_v5_("return \"${42}\"").equals("\"42\""); // un entier interpolé devient une chaîne
+		code_v5_("var a = 2 var b = 3 return \"${a}+${b}=${a + b}\"").equals("\"2+3=5\"");
+		code_v5_("var x = 5 return \"x=${x}.\"").equals("\"x=5.\"");
+		code_v5_("var arr = [1, 2, 3] return \"arr=${arr}, len=${arr.count()}\"").equals("\"arr=[1, 2, 3], len=3\"");
 		// Interpolation imbriquée
-		code_v4_("return \"out ${ \"in ${1 + 1}\" }!\"").equals("\"out in 2!\"");
+		code_v5_("return \"out ${ \"in ${1 + 1}\" }!\"").equals("\"out in 2!\"");
 		// Une chaîne sans ${ reste un littéral simple
-		code_v4_("return \"no interpolation\"").equals("\"no interpolation\"");
+		code_v5_("return \"no interpolation\"").equals("\"no interpolation\"");
 		// Coût identique à la concaténation manuelle
-		code_v4_("var n = \"Bob\" return \"Hi ${n}!\" == \"Hi \" + n + \"!\"").equals("true");
+		code_v5_("var n = \"Bob\" return \"Hi ${n}!\" == \"Hi \" + n + \"!\"").equals("true");
 	}
 
 	@Test
 	public void testString_interpolation_escaping() throws Exception {
 		section("String interpolation escaping");
 		// \$ échappe l'interpolation et produit un $ littéral
-		code_v4_("var n = 1 return \"\\${n}=${n}\"").equals("\"${n}=1\"");
-		code_v4_("return \"cost \\$5\"").equals("\"cost $5\"");
+		code_v5_("var n = 1 return \"\\${n}=${n}\"").equals("\"${n}=1\"");
+		code_v5_("return \"cost \\$5\"").equals("\"cost $5\"");
 		// Un $ seul (non suivi de {) reste littéral
-		code_v4_("return \"price: 5$\"").equals("\"price: 5$\"");
+		code_v5_("return \"price: 5$\"").equals("\"price: 5$\"");
 		// Les chaînes à guillemets simples ne sont jamais interpolées
-		code_v4_("return '${1 + 1}'").equals("\"${1 + 1}\"");
-		// Avant la v4, ${ } est un littéral (pas d'interpolation)
-		code_v1_3("return \"a${1}b\"").equals("\"a${1}b\"");
-		code_v1_3("return \"${\"").equals("\"${\"");
-		// \$ n'échappe qu'en v4+ et entre guillemets doubles : ailleurs le backslash reste
-		code_v4_("return length(\"\\$\")").equals("1");
-		code_v4_("return length('\\$')").equals("2");
-		code_v4_("return length('\\${1}')").equals("5");
-		code_v1_3("return length(\"\\$\")").equals("2");
+		code_v5_("return '${1 + 1}'").equals("\"${1 + 1}\"");
+		// Avant la v5, ${ } est du texte (pas d'interpolation), v4 comprise
+		code_v1_4("return \"a${1}b\"").equals("\"a${1}b\"");
+		code_v1_4("var x = 5 return \"${x}\"").equals("\"${x}\"");
+		code_v1_4("return \"${\"").equals("\"${\"");
+		code_v1_4("return \"${}\"").equals("\"${}\"");
+		code_v1_4("return \"${ inconnu + }\"").equals("\"${ inconnu + }\"");
+		code_v4("var x = 5 return \"${x}\" == \"$\" + \"{x}\"").equals("true");
+		// \$ n'échappe qu'en v5+ et entre guillemets doubles : ailleurs le backslash reste
+		code_v5_("return \"\\$\".length()").equals("1");
+		code_v5_("return '\\$'.length()").equals("2");
+		code_v5_("return '\\${1}'.length()").equals("5");
+		code_v1_4("return length(\"\\$\")").equals("2");
+		code_v1_4("return length(\"\\${x}\")").equals("5");
 		// \\ puis ${ : le backslash est échappé, l'interpolation a lieu
-		code_v4_("return length(\"\\\\${1}\")").equals("2");
+		code_v5_("return \"\\\\${1}\".length()").equals("2");
 	}
 
 	@Test
 	public void testString_interpolation_lexer() throws Exception {
 		section("String interpolation lexer");
 		// Une } dans une chaîne imbriquée ne ferme pas l'interpolation
-		code_v4_("return \"${'}'}\"").equals("\"}\"");
-		code_v4_("return \"${\"}\"}\"").equals("\"}\"");
-		code_v4_("return \"${\"{\"}\"").equals("\"{\"");
+		code_v5_("return \"${'}'}\"").equals("\"}\"");
+		code_v5_("return \"${\"}\"}\"").equals("\"}\"");
+		code_v5_("return \"${\"{\"}\"").equals("\"{\"");
 		// Les accolades d'un objet ou d'un bloc s'équilibrent
-		code_v4_("return \"${ {a: 1}.a }\"").equals("\"1\"");
-		code_v4_("return \"${ [1: 2][1] }\"").equals("\"2\"");
-		code_v4_("return \"${ function() { return 1 }() }\"").equals("\"1\"");
+		code_v5_("return \"${ {a: 1}.a }\"").equals("\"1\"");
+		code_v5_("return \"${ [1: 2][1] }\"").equals("\"2\"");
+		code_v5_("return \"${ function() { return 1 }() }\"").equals("\"1\"");
 		// Commentaires dans l'expression
-		code_v4_("return \"${ 1 /* } */ + 2 }\"").equals("\"3\"");
+		code_v5_("return \"${ 1 /* } */ + 2 }\"").equals("\"3\"");
 		// Accolades et $ hors interpolation : texte
-		code_v4_("return \"}${1}{\"").equals("\"}1{\"");
-		code_v4_("return \"${1}}\"").equals("\"1}\"");
-		code_v4_("return \"$\"").equals("\"$\"");
-		code_v4_("return \"$ {1}\"").equals("\"$ {1}\"");
-		code_v4_("return \"$${1}\"").equals("\"$1\"");
-		code_v4_("return \"\"").equals("\"\"");
-		code_v4_("return \"${1}${2}\"").equals("\"12\"");
-		code_v4_("return \"${null}\"").equals("\"null\"");
-		code_v4_("return \"${true ? \"y\" : \"n\"}\"").equals("\"y\"");
+		code_v5_("return \"}${1}{\"").equals("\"}1{\"");
+		code_v5_("return \"${1}}\"").equals("\"1}\"");
+		code_v5_("return \"$\"").equals("\"$\"");
+		code_v5_("return \"$ {1}\"").equals("\"$ {1}\"");
+		code_v5_("return \"$${1}\"").equals("\"$1\"");
+		code_v5_("return \"\"").equals("\"\"");
+		code_v5_("return \"${1}${2}\"").equals("\"12\"");
+		code_v5_("return \"${null}\"").equals("\"null\"");
+		code_v5_("return \"${true ? \"y\" : \"n\"}\"").equals("\"y\"");
 		// Sur plusieurs lignes
-		code_v4_("return length(\"l1\n${1 + 1}\nl3\")").equals("7");
+		code_v5_("return \"l1\n${1 + 1}\nl3\".length()").equals("7");
 		// Le résultat reste une expression comme une autre
-		code_v4_("var x = 5 return \"${x}\"[0]").equals("\"5\"");
-		code_v4_("return \"${1}\" + \"${2}\" + 3").equals("\"123\"");
-		code_v4_("var m = [\"${1}\": 3] return m[\"1\"]").equals("3");
+		code_v5_("var x = 5 return \"${x}\"[0]").equals("\"5\"");
+		code_v5_("return \"${1}\" + \"${2}\" + 3").equals("\"123\"");
+		code_v5_("var m = [\"${1}\": 3] return m[\"1\"]").equals("3");
 	}
 
 	@Test
 	public void testString_interpolation_errors() throws Exception {
 		section("String interpolation errors");
-		code_v4_("return \"${}\"").error(Error.VALUE_EXPECTED);
-		code_v4_("return \"a${ }b\"").error(Error.VALUE_EXPECTED);
-		code_v4_("return \"${ /* rien */ }\"").error(Error.VALUE_EXPECTED);
-		code_v4_("return \"abc ${1 + 2\"").error(Error.STRING_NOT_CLOSED);
-		code_v4_("return \"abc ${1 + 2").error(Error.STRING_NOT_CLOSED);
-		code_v4_("return \"${\"").error(Error.STRING_NOT_CLOSED);
-		code_v4_("return \"${ 1 // }\"").error(Error.STRING_NOT_CLOSED);
-		code_v4_("return \"a${1}b").error(Error.STRING_NOT_CLOSED);
-		code_v4_("var x = 1 return \"${x +}\"").error(Error.UNCOMPLETE_EXPRESSION);
-		code_v4_("return \"${#}\"").error(Error.INVALID_CHAR);
-		code_v4_("include(\"${1}\")").error(Error.AI_NAME_EXPECTED);
+		code_v5_("return \"${}\"").error(Error.VALUE_EXPECTED);
+		code_v5_("return \"a${ }b\"").error(Error.VALUE_EXPECTED);
+		code_v5_("return \"${ /* rien */ }\"").error(Error.VALUE_EXPECTED);
+		code_v5_("return \"abc ${1 + 2\"").error(Error.STRING_NOT_CLOSED);
+		code_v5_("return \"abc ${1 + 2").error(Error.STRING_NOT_CLOSED);
+		code_v5_("return \"${\"").error(Error.STRING_NOT_CLOSED);
+		code_v5_("return \"${ 1 // }\"").error(Error.STRING_NOT_CLOSED);
+		code_v5_("return \"a${1}b").error(Error.STRING_NOT_CLOSED);
+		code_v5_("var x = 1 return \"${x +}\"").error(Error.UNCOMPLETE_EXPRESSION);
+		code_v5_("return \"${#}\"").error(Error.INVALID_CHAR);
 	}
 
 	private static final AtomicInteger interpolationFiles = new AtomicInteger(1_000_000);
 
 	private static AIFile interpolationFile(String code) {
 		int id = interpolationFiles.incrementAndGet();
-		var file = new AIFile("interpolation", code, System.currentTimeMillis(), 4, id, false);
+		var file = new AIFile("interpolation", code, System.currentTimeMillis(), 5, id, false);
 		file.setJavaClass("AI_" + id);
 		file.setRootClass("AI");
 		file.setId(id);
@@ -214,7 +218,7 @@ public class TestString extends TestCommon {
 	}
 
 	private static long operations(String code) throws Exception {
-		var ai = LeekScript.compileSnippet(code, "AI", new Options(4, false, false, true, null, true));
+		var ai = LeekScript.compileSnippet(code, "AI", new Options(5, false, false, true, null, true));
 		ai.init();
 		ai.staticInit();
 		ai.resetCounter();
