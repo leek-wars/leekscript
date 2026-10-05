@@ -28,6 +28,14 @@ public class ScopeBlock extends AbstractLeekBlock {
 		writer.addLine("}");
 	}
 
+	// Un bloc nu se termine comme sa dernière instruction : return (1), break/continue (2)
+	// ou un mélange (3) remontent tels quels au parent, qui refuse alors le code qui suit,
+	// comme javac (« unreachable statement »). Le défaut d'AbstractLeekBlock ne garde que 1.
+	@Override
+	public int getEndBlock() {
+		return mEndInstruction;
+	}
+
 	@Override
 	public Location getLocation() {
 		return token.getLocation();
@@ -45,7 +53,7 @@ public class ScopeBlock extends AbstractLeekBlock {
 
 	@Override
 	public String toString() {
-		return null;
+		return getCode();
 	}
 
 	@Override
