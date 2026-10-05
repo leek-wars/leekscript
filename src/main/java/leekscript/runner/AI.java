@@ -38,6 +38,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -94,8 +95,11 @@ public abstract class AI {
 	public long maxRAM = MAX_RAM;
 
 	private ReferenceQueue<Object> ramQueue = new ReferenceQueue<>();
-	private Set<RamUsage> ramUsages = new HashSet<>(); // Set est plus efficace quand la limite de RAM est souvent atteinte (List est plus efficace quand la limite n'est pas atteinte souvent)
-	// private List<RamUsage> ramUsages = new ArrayList<>();
+	// Les RamUsage vivants, gardés joignables jusqu'à leur libération. Tableau compact : chaque
+	// RamUsage connaît sa case, le retrait y déplace le dernier (ajout et retrait en O(1), sans
+	// hachage). Un HashSet coûtait ~10 % du temps d'une IA qui crée beaucoup d'objets.
+	private RamUsage[] ramUsages = new RamUsage[1024];
+	private int ramUsagesCount = 0;
 
 	// ClassValue ties cached metadata to the Class lifetime so a recompiled AI's
 	// orphan Class can be GC'd. A plain Map<Class<?>, ...> would leak via the
@@ -152,6 +156,7 @@ public abstract class AI {
 
 	public static class RamUsage extends WeakReference<Object> {
 		private int value;
+		private int slot = -1;
 
 		public RamUsage(int value, Object referent, ReferenceQueue<Object> ramQueue) {
 			super(referent, ramQueue);
@@ -172,7 +177,7 @@ public abstract class AI {
 
 		public void free(AI ai) {
 			ai.mRAM -= value;
-			ai.ramUsages.remove(this);
+			ai.untrackRAM(this);
 		}
 	}
 
@@ -481,15 +486,33 @@ public abstract class AI {
 		mRAM += ram;
 	}
 
+	private void trackRAM(RamUsage usage) {
+		if (ramUsagesCount == ramUsages.length) {
+			ramUsages = Arrays.copyOf(ramUsages, ramUsagesCount * 2);
+		}
+		usage.slot = ramUsagesCount;
+		ramUsages[ramUsagesCount++] = usage;
+	}
+
+	private void untrackRAM(RamUsage usage) {
+		int slot = usage.slot;
+		if (slot < 0) return;
+		var last = ramUsages[--ramUsagesCount];
+		ramUsages[slot] = last;
+		last.slot = slot;
+		ramUsages[ramUsagesCount] = null;
+		usage.slot = -1;
+	}
+
 	public RamUsage allocateRAM(Object obj) {
 		var usage = new RamUsage(0, obj, ramQueue);
-		ramUsages.add(usage);
+		trackRAM(usage);
 		return usage;
 	}
 
 	public RamUsage allocateRAM(Object obj, int ram) throws LeekRunException {
 		var usage = new RamUsage(ram, obj, ramQueue);
-		ramUsages.add(usage);
+		trackRAM(usage);
 		mRAM += ram;
 		checkRamOverflow();
 		return usage;
