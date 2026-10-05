@@ -1,8 +1,21 @@
 package test;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
+
+import leekscript.common.Error;
+import leekscript.compiler.AIFile;
+import leekscript.compiler.LeekScript;
+import leekscript.compiler.Location;
+import leekscript.compiler.Options;
+import leekscript.compiler.exceptions.LeekCompilerException;
 
 @ExtendWith(SummaryExtension.class)
 public class TestString extends TestCommon {
@@ -50,6 +63,169 @@ public class TestString extends TestCommon {
 		code_v4_("return '${1 + 1}'").equals("\"${1 + 1}\"");
 		// Avant la v4, ${ } est un littéral (pas d'interpolation)
 		code_v1_3("return \"a${1}b\"").equals("\"a${1}b\"");
+		code_v1_3("return \"${\"").equals("\"${\"");
+		// \$ n'échappe qu'en v4+ et entre guillemets doubles : ailleurs le backslash reste
+		code_v4_("return length(\"\\$\")").equals("1");
+		code_v4_("return length('\\$')").equals("2");
+		code_v4_("return length('\\${1}')").equals("5");
+		code_v1_3("return length(\"\\$\")").equals("2");
+		// \\ puis ${ : le backslash est échappé, l'interpolation a lieu
+		code_v4_("return length(\"\\\\${1}\")").equals("2");
+	}
+
+	@Test
+	public void testString_interpolation_lexer() throws Exception {
+		section("String interpolation lexer");
+		// Une } dans une chaîne imbriquée ne ferme pas l'interpolation
+		code_v4_("return \"${'}'}\"").equals("\"}\"");
+		code_v4_("return \"${\"}\"}\"").equals("\"}\"");
+		code_v4_("return \"${\"{\"}\"").equals("\"{\"");
+		// Les accolades d'un objet ou d'un bloc s'équilibrent
+		code_v4_("return \"${ {a: 1}.a }\"").equals("\"1\"");
+		code_v4_("return \"${ [1: 2][1] }\"").equals("\"2\"");
+		code_v4_("return \"${ function() { return 1 }() }\"").equals("\"1\"");
+		// Commentaires dans l'expression
+		code_v4_("return \"${ 1 /* } */ + 2 }\"").equals("\"3\"");
+		// Accolades et $ hors interpolation : texte
+		code_v4_("return \"}${1}{\"").equals("\"}1{\"");
+		code_v4_("return \"${1}}\"").equals("\"1}\"");
+		code_v4_("return \"$\"").equals("\"$\"");
+		code_v4_("return \"$ {1}\"").equals("\"$ {1}\"");
+		code_v4_("return \"$${1}\"").equals("\"$1\"");
+		code_v4_("return \"\"").equals("\"\"");
+		code_v4_("return \"${1}${2}\"").equals("\"12\"");
+		code_v4_("return \"${null}\"").equals("\"null\"");
+		code_v4_("return \"${true ? \"y\" : \"n\"}\"").equals("\"y\"");
+		// Sur plusieurs lignes
+		code_v4_("return length(\"l1\n${1 + 1}\nl3\")").equals("7");
+		// Le résultat reste une expression comme une autre
+		code_v4_("var x = 5 return \"${x}\"[0]").equals("\"5\"");
+		code_v4_("return \"${1}\" + \"${2}\" + 3").equals("\"123\"");
+		code_v4_("var m = [\"${1}\": 3] return m[\"1\"]").equals("3");
+	}
+
+	@Test
+	public void testString_interpolation_errors() throws Exception {
+		section("String interpolation errors");
+		code_v4_("return \"${}\"").error(Error.VALUE_EXPECTED);
+		code_v4_("return \"a${ }b\"").error(Error.VALUE_EXPECTED);
+		code_v4_("return \"${ /* rien */ }\"").error(Error.VALUE_EXPECTED);
+		code_v4_("return \"abc ${1 + 2\"").error(Error.STRING_NOT_CLOSED);
+		code_v4_("return \"abc ${1 + 2").error(Error.STRING_NOT_CLOSED);
+		code_v4_("return \"${\"").error(Error.STRING_NOT_CLOSED);
+		code_v4_("return \"${ 1 // }\"").error(Error.STRING_NOT_CLOSED);
+		code_v4_("return \"a${1}b").error(Error.STRING_NOT_CLOSED);
+		code_v4_("var x = 1 return \"${x +}\"").error(Error.UNCOMPLETE_EXPRESSION);
+		code_v4_("return \"${#}\"").error(Error.INVALID_CHAR);
+		code_v4_("include(\"${1}\")").error(Error.AI_NAME_EXPECTED);
+	}
+
+	private static final AtomicInteger interpolationFiles = new AtomicInteger(1_000_000);
+
+	private static AIFile interpolationFile(String code) {
+		int id = interpolationFiles.incrementAndGet();
+		var file = new AIFile("interpolation", code, System.currentTimeMillis(), 4, id, false);
+		file.setJavaClass("AI_" + id);
+		file.setRootClass("AI");
+		file.setId(id);
+		return file;
+	}
+
+	private static Location compileErrorLocation(String code) {
+		var file = interpolationFile(code);
+		return assertThrows(LeekCompilerException.class, () -> file.compile(new Options())).getLocation();
+	}
+
+	private static String position(Location location) {
+		return location.getStartLine() + ":" + location.getStartColumn() + "-" + location.getEndLine() + ":" + location.getEndColumn();
+	}
+
+	/**
+	 * L'éditeur souligne l'erreur à sa position : un `${` jamais fermé avale la fin du
+	 * fichier, l'erreur doit pointer le `${` et pas la fin.
+	 */
+	@Test
+	public void testString_interpolation_errorLocations() throws Exception {
+		assertEquals("2:12-2:13", position(compileErrorLocation("var x = 1\nreturn \"abc ${x\"\nvar y = 2\n")));
+		assertEquals("1:8-1:9", position(compileErrorLocation("return \"${\"")));
+		// `${}` : le `${` et le `}`
+		assertEquals("1:8-1:10", position(compileErrorLocation("return \"${}\"")));
+		// Erreur dans l'expression : sur le `}` qui la termine trop tôt (le parser ajoute
+		// ensuite CLOSING_PARENTHESIS_EXPECTED, comme pour `("line " + (x +) + " end")`)
+		var file = interpolationFile("var x = 1\nvar s = \"line ${x +} end\"\nreturn s");
+		assertThrows(LeekCompilerException.class, () -> file.compile(new Options()));
+		var incomplete = file.getErrors().stream().filter(e -> e.error == Error.UNCOMPLETE_EXPRESSION).findFirst().orElseThrow();
+		assertEquals("2:19-2:19", position(incomplete.location));
+		// Une chaîne de plusieurs lignes ne décale pas les erreurs suivantes
+		assertEquals("5:7-5:17", position(compileErrorLocation("var x = 1\nvar s = \"a\n${x}\nb\"\nreturn zzz_inconnu\n")));
+	}
+
+	/**
+	 * Une chaîne interpolée est découpée en tokens synthétiques (`"a${x}b"` devient
+	 * `( "a" + ( x ) + "b" )`). `atLocation` cherche par dichotomie : si leurs positions
+	 * ne sont pas triées, le survol d'un caractère tombe sur un autre token, ou sur rien.
+	 */
+	@Test
+	public void testString_interpolation_hover() throws Exception {
+		var code = "var abc = 5 var y = 2 return \"${abc}longtail ${y}\" + abc";
+		var file = interpolationFile(code);
+		file.compile(new Options());
+		var tokens = file.getTokenStream();
+		int quote = code.indexOf('"');
+		var expected = new String[] { "(", "+", "(", "abc", "abc", "abc", ")",
+			"\"longtail \"", "\"longtail \"", "\"longtail \"", "\"longtail \"", "\"longtail \"", "\"longtail \"", "\"longtail \"", "\"longtail \"", "\"longtail \"",
+			"+", "(", "y", ")", ")" };
+		for (int i = 0; i < expected.length; i++) {
+			var token = tokens.atLocation(1, quote + i);
+			assertNotNull(token, "colonne " + (quote + i));
+			assertEquals(expected[i], token.getWord(), "colonne " + (quote + i));
+		}
+		// La variable interpolée est bien analysée : son survol donne sa définition
+		var hover = file.hover(1, code.indexOf("abc}"));
+		assertNotNull(hover);
+		assertNotNull(hover.defined);
+		assertEquals(1, hover.defined.getStartLine());
+		assertEquals(code.indexOf("abc"), hover.defined.getStartColumn());
+	}
+
+	/** Le survol tient partout sur une interpolation cassée (le code ne compile pas). */
+	@Test
+	public void testString_interpolation_hoverOnBrokenCode() throws Exception {
+		for (var code : new String[] {
+			"var x = 1\nreturn \"abc ${x\"\nvar y = 2\n",
+			"return \"a${}b\"\n",
+			"var x = 1\nreturn \"a${x +}b\"\n",
+			"var x = 1\nreturn \"a\n${x}\nb${x}\"\n",
+		}) {
+			var file = interpolationFile(code);
+			try {
+				file.compile(new Options());
+			} catch (LeekCompilerException e) {
+				// Attendu pour les trois premiers
+			}
+			var lines = code.split("\n", -1);
+			for (int l = 1; l <= lines.length; l++) {
+				for (int c = 0; c <= lines[l - 1].length(); c++) {
+					final int line = l, column = c;
+					assertDoesNotThrow(() -> file.hover(line, column), code + " ligne " + line + " colonne " + column);
+				}
+			}
+		}
+	}
+
+	private static long operations(String code) throws Exception {
+		var ai = LeekScript.compileSnippet(code, "AI", new Options(4, false, false, true, null, true));
+		ai.init();
+		ai.staticInit();
+		ai.resetCounter();
+		ai.runIA();
+		return ai.operations();
+	}
+
+	@Test
+	public void testString_interpolation_operations() throws Exception {
+		assertEquals(operations("var n = 'Bob' return 'Hi ' + n + '!'"), operations("var n = 'Bob' return \"Hi ${n}!\""));
+		assertEquals(operations("var a = 2 var b = 3 return '' + a + '+' + b + '=' + (a + b)"), operations("var a = 2 var b = 3 return \"${a}+${b}=${a + b}\""));
 	}
 
 	@Test

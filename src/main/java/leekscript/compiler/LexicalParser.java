@@ -165,9 +165,7 @@ public class LexicalParser {
 	public LexicalParserTokenStream parse(ErrorReporter error) {
 		long t0 = IACompiler.PHASE_TIMINGS_ENABLED ? System.nanoTime() : 0L;
 		stream = new CharStream(aiFile.getCode());
-		while (stream.index < stream.content.length()) {
-			step(error);
-		}
+		lex(error, false);
 		var result = new LexicalParserTokenStream(tokens, new Token(TokenType.END_OF_FILE, "", new Location(aiFile, stream.getLineCounter(), stream.getCharCounter())), computeMatchingBrackets(tokens));
 		if (IACompiler.PHASE_TIMINGS_ENABLED) {
 			IACompiler.LEX_NANOS.addAndGet(System.nanoTime() - t0);
@@ -176,69 +174,80 @@ public class LexicalParser {
 	}
 
 	/**
-	 * Tokenise un seul élément à la position courante du stream (whitespace, mot,
-	 * nombre, string, opérateur, bracket…). Extrait de la boucle principale pour
-	 * pouvoir être réutilisé par l'interpolation de chaînes ({@link #lexInterpolationExpression}),
-	 * qui doit lexer une expression LeekScript arbitraire à l'intérieur d'un {@code ${ … }}.
+	 * Boucle de dispatch du lexer. Avec {@code untilClosingBrace}, elle lexe l'expression
+	 * d'un {@code ${ … }} (interpolation de chaîne) et s'arrête, sans la consommer, sur
+	 * l'accolade fermante de même profondeur : les accolades d'un littéral objet ou d'un
+	 * bloc s'équilibrent, celles d'une chaîne imbriquée sont dans un token VAR_STRING.
+	 * Rend true si cette accolade a été trouvée, false à la fin du fichier.
+	 *
+	 * Une seule boucle pour les deux usages : appeler une méthode par token coûtait
+	 * ~5 % du temps de lex.
 	 */
-	private void step(ErrorReporter error) {
-		if (stream.index >= stream.content.length()) return;
-		char c = stream.c;
+	private boolean lex(ErrorReporter error, boolean untilClosingBrace) {
+		int braceDepth = 0;
+		while (stream.index < stream.content.length()) {
+			char c = stream.c;
 
-		// Fast paths sur les chars dominants (whitespace + lettres ascii). Le
-		// dispatch séquentiel d'avant essayait chaque tryParseXxx en série :
-		// 9 méthodes par token au pire, alors qu'une seule peut réussir.
-		if (c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == 160) {
-			stream.next();
-			return;
-		}
-		if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
-			if (tryParseIdentifier()) return;
-		}
-		if (c >= '0' && c <= '9') {
-			if (tryParseNumber(error)) return;
-		}
-		if (c == '"' || c == '\'') {
-			if (tryParseString(error)) return;
-		}
-		if (c == '/') {
-			// peek(1) pour distinguer commentaire de division
-			char c2 = stream.index + 1 < stream.content.length() ? stream.content.charAt(stream.index + 1) : 0;
-			if (c2 == '/' || c2 == '*') {
-				if (tryParseComments()) return;
+			// Fast paths sur les chars dominants (whitespace + lettres ascii). Le
+			// dispatch séquentiel d'avant essayait chaque tryParseXxx en série :
+			// 9 méthodes par token au pire, alors qu'une seule peut réussir.
+			if (c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == 160) {
+				stream.next();
+				continue;
 			}
-			if (tryParseOperator()) return;
-		}
-		// Opérateurs (premiers chars)
-		if (isOperatorStart(c)) {
-			if (tryParseOperator()) return;
-		}
-		// Brackets / accolades / parenthèses : dispatch direct par char.
-		// Évite les ~6 tryParseExact séquentiels de tryParseBracketLike, chacun
-		// avec un charEquals + une string "" + char allocation.
-		TokenType bracketType = null;
-		switch (c) {
-			case '(': bracketType = TokenType.PAR_LEFT; break;
-			case ')': bracketType = TokenType.PAR_RIGHT; break;
-			case '[': bracketType = TokenType.BRACKET_LEFT; break;
-			case ']': bracketType = TokenType.BRACKET_RIGHT; break;
-			case '{': bracketType = TokenType.ACCOLADE_LEFT; break;
-			case '}': bracketType = TokenType.ACCOLADE_RIGHT; break;
-			case ',': bracketType = TokenType.VIRG; break;
-			case ';': bracketType = TokenType.END_INSTRUCTION; break;
-			default: break;
-		}
-		if (bracketType != null) {
-			stream.next();
-			addToken(SINGLE_CHAR_WORDS[c], bracketType);
-			return;
-		}
-		// Identifiants étendus (lettres accentuées) + lemniscate / pi
-		if (tryParseSpecialIdentifier()) return;
-		if (tryParseIdentifier()) return;
+			if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
+				if (tryParseIdentifier()) continue;
+			}
+			if (c >= '0' && c <= '9') {
+				if (tryParseNumber(error)) continue;
+			}
+			if (c == '"' || c == '\'') {
+				if (tryParseString(error)) continue;
+			}
+			if (c == '/') {
+				// peek(1) pour distinguer commentaire de division
+				char c2 = stream.index + 1 < stream.content.length() ? stream.content.charAt(stream.index + 1) : 0;
+				if (c2 == '/' || c2 == '*') {
+					if (tryParseComments()) continue;
+				}
+				if (tryParseOperator()) continue;
+			}
+			// Opérateurs (premiers chars)
+			if (isOperatorStart(c)) {
+				if (tryParseOperator()) continue;
+			}
+			// Brackets / accolades / parenthèses : dispatch direct par char.
+			// Évite les ~6 tryParseExact séquentiels de tryParseBracketLike, chacun
+			// avec un charEquals + une string "" + char allocation.
+			TokenType bracketType = null;
+			switch (c) {
+				case '(': bracketType = TokenType.PAR_LEFT; break;
+				case ')': bracketType = TokenType.PAR_RIGHT; break;
+				case '[': bracketType = TokenType.BRACKET_LEFT; break;
+				case ']': bracketType = TokenType.BRACKET_RIGHT; break;
+				case '{': bracketType = TokenType.ACCOLADE_LEFT; break;
+				case '}': bracketType = TokenType.ACCOLADE_RIGHT; break;
+				case ',': bracketType = TokenType.VIRG; break;
+				case ';': bracketType = TokenType.END_INSTRUCTION; break;
+				default: break;
+			}
+			if (bracketType != null) {
+				if (untilClosingBrace) {
+					if (c == '{') braceDepth++;
+					else if (c == '}' && braceDepth-- == 0) return true;
+				}
+				stream.next();
+				addToken(SINGLE_CHAR_WORDS[c], bracketType);
+				continue;
+			}
+			// Identifiants étendus (lettres accentuées) + lemniscate / pi
+			if (tryParseSpecialIdentifier()) continue;
+			if (tryParseIdentifier()) continue;
 
-		error.report(new AnalyzeError(new Location(aiFile, stream.getLineCounter(), stream.getCharCounter()), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
-		stream.next();
+			error.report(new AnalyzeError(new Location(aiFile, stream.getLineCounter(), stream.getCharCounter()), AnalyzeErrorLevel.ERROR, Error.INVALID_CHAR));
+			stream.next();
+		}
+		return false;
 	}
 
 	/**
@@ -546,15 +555,8 @@ public class LexicalParser {
 		if (start >= len) return false;
 		char openQuote = content.charAt(start);
 		if (openQuote != '"' && openQuote != '\'') return false;
-
-		// Interpolation de chaînes (sucre syntaxique au-dessus de la concaténation) :
-		// uniquement en v4+ et pour les chaînes à guillemets doubles. On ne bascule
-		// sur le chemin desugaré que si un `${` non échappé est réellement présent,
-		// sinon on garde le chemin rapide (un seul token VAR_STRING) — comportement
-		// inchangé pour les chaînes ordinaires.
-		if (version >= 4 && openQuote == '"' && hasInterpolation(content, start, len)) {
-			return parseInterpolatedString(error, start);
-		}
+		// Interpolation `${expr}` : v4+ et guillemets doubles seulement.
+		boolean interpolable = version >= 4 && openQuote == '"';
 
 		// Scan direct ; chaque \n rencontré incrémente lineCounter (les strings
 		// peuvent contenir des newlines). À la fin : bump charCounter selon la
@@ -575,6 +577,12 @@ public class LexicalParser {
 				closed = true;
 				i++;
 				break;
+			}
+			// Détecté pendant ce scan plutôt qu'avant (un 2e scan de chaque chaîne coûtait
+			// ~4 % du lex). Le stream n'a pas encore bougé : le chemin interpolé repart du guillemet.
+			if (c == '$' && interpolable && !escaped && i + 1 < len && content.charAt(i + 1) == '{') {
+				parseInterpolatedString(error);
+				return true;
 			}
 			if (c == '\n') { lineInc++; lastNewlineAt = i; }
 			escaped = false;
@@ -599,23 +607,6 @@ public class LexicalParser {
 	}
 
 	/**
-	 * Détecte la présence d'un `${` non échappé dans la chaîne démarrant à `start`
-	 * (guillemet ouvrant inclus). Ne modifie pas le stream — simple lookahead pour
-	 * décider entre le chemin rapide et le chemin interpolé.
-	 */
-	private static boolean hasInterpolation(String content, int start, int len) {
-		boolean escaped = false;
-		for (int i = start + 1; i < len; i++) {
-			char c = content.charAt(i);
-			if (c == '\\') { escaped = !escaped; continue; }
-			if (c == '"' && !escaped) return false; // guillemet fermant, rien trouvé
-			if (!escaped && c == '$' && i + 1 < len && content.charAt(i + 1) == '{') return true;
-			escaped = false;
-		}
-		return false; // chaîne non fermée : on laisse le chemin normal reporter l'erreur
-	}
-
-	/**
 	 * Desugare une chaîne interpolée en la suite de tokens d'une concaténation :
 	 * {@code "a${x}b"} devient {@code ( "a" + ( x ) + "b" )}. Le parser et le
 	 * générateur de code restent inchangés ; le Java produit est strictement
@@ -625,100 +616,85 @@ public class LexicalParser {
 	 * Le premier littéral est toujours émis (même vide) pour ancrer le type String,
 	 * de sorte que {@code "${x}"} avec x entier produise bien une chaîne. Les
 	 * littéraux vides suivants sont omis pour ne pas ajouter de concaténation inutile.
+	 *
+	 * Chaque token synthétique reçoit une position dans la source, triée et sans
+	 * chevauchement, car {@link LexicalParserTokenStream#atLocation} (survol,
+	 * complétion) cherche par dichotomie : les parenthèses externes sur les
+	 * guillemets, le `+` et la `(` d'une interpolation sur `$` et `{`, sa `)` sur `}`,
+	 * un littéral sur ses caractères ; un littéral vide et le `+` qui précède un
+	 * littéral n'ont pas de largeur.
 	 */
-	private boolean parseInterpolatedString(ErrorReporter error, int start) {
+	private void parseInterpolatedString(ErrorReporter error) {
 		String content = stream.content;
 		int len = content.length();
-		stream.next(); // consomme le guillemet ouvrant
-		addToken("(", TokenType.PAR_LEFT);
-		boolean needPlus = false;    // émettre un `+` avant le prochain élément
-		boolean firstLiteral = true; // le premier littéral est toujours émis (ancre le type String)
+		addTokenAt("(", TokenType.PAR_LEFT, stream.getLineCounter(), stream.getCharCounter(), stream.getLineCounter(), stream.getCharCounter());
+		stream.next(); // guillemet ouvrant
+		boolean first = true;
 		int chunkStart = stream.index;
+		int chunkLine = stream.getLineCounter(), chunkColumn = stream.getCharCounter();
+		int lastLine = chunkLine, lastColumn = chunkColumn - 1; // dernier caractère du littéral courant
 
 		while (stream.index < len) {
 			char c = stream.c;
-			if (c == '\\') {
+			int line = stream.getLineCounter(), column = stream.getCharCounter();
+			if (c == '"' || (c == '$' && stream.peek(1) == '{')) {
+				// Littéral [chunkStart, index)
+				if (first || stream.index > chunkStart) {
+					if (!first) addTokenAt("+", TokenType.OPERATOR, chunkLine, chunkColumn, chunkLine, chunkColumn - 1);
+					addTokenAt("\"" + content.substring(chunkStart, stream.index) + "\"", TokenType.VAR_STRING, chunkLine, chunkColumn, lastLine, lastColumn);
+					first = false;
+				}
+				stream.next();
+				if (c == '"') {
+					addTokenAt(")", TokenType.PAR_RIGHT, line, column, line, column);
+					return;
+				}
+				// `${ expr }`
+				int interpolationStart = tokens.size();
+				addTokenAt("+", TokenType.OPERATOR, line, column, line, column);
+				addTokenAt("(", TokenType.PAR_LEFT, line, column + 1, line, column + 1);
+				stream.next(); // `{`
+				// Erreurs de l'expression mises de côté : si le `${` n'est jamais fermé,
+				// l'erreur qui le pointe passe devant (la compilation ne garde que la première).
+				var expressionErrors = new ArrayList<AnalyzeError>();
+				if (!lex(expressionErrors::add, true)) {
+					// L'expression a avalé la fin du fichier : on pointe le `${`, pas la fin.
+					error.report(new AnalyzeError(new Location(aiFile, line, column, line, column + 1), AnalyzeErrorLevel.ERROR, Error.STRING_NOT_CLOSED));
+					expressionErrors.forEach(error::report);
+					addToken(")", TokenType.PAR_RIGHT);
+					addToken(")", TokenType.PAR_RIGHT);
+					return;
+				}
+				expressionErrors.forEach(error::report);
+				int braceLine = stream.getLineCounter(), braceColumn = stream.getCharCounter();
+				if (tokens.size() == interpolationStart + 2) {
+					// `${}` vide : sans `+ (`, le parser n'ajoute pas d'erreurs en cascade.
+					error.report(new AnalyzeError(new Location(aiFile, line, column, braceLine, braceColumn), AnalyzeErrorLevel.ERROR, Error.VALUE_EXPECTED));
+					tokens.subList(interpolationStart, tokens.size()).clear();
+				} else {
+					addTokenAt(")", TokenType.PAR_RIGHT, braceLine, braceColumn, braceLine, braceColumn);
+				}
+				stream.next(); // `}`
+				chunkStart = stream.index;
+				chunkLine = stream.getLineCounter();
+				chunkColumn = stream.getCharCounter();
+				lastLine = chunkLine;
+				lastColumn = chunkColumn - 1;
+				continue;
+			}
+			if (c == '\\' && stream.index + 1 < len) {
 				// Échappement : le backslash et le char suivant restent dans le littéral
 				stream.next();
-				if (stream.index < len) stream.next();
-				continue;
+				line = stream.getLineCounter();
+				column = stream.getCharCounter();
 			}
-			if (c == '"' || (c == '$' && stream.peek(1) == '{')) {
-				// Flush du littéral courant [chunkStart, index)
-				int chunkEnd = stream.index;
-				boolean empty = chunkEnd == chunkStart;
-				if (!empty || firstLiteral) {
-					if (needPlus) addToken("+", TokenType.OPERATOR);
-					addToken("\"" + content.substring(chunkStart, chunkEnd) + "\"", TokenType.VAR_STRING);
-					needPlus = true;
-				}
-				firstLiteral = false;
-
-				if (c == '"') {
-					stream.next(); // consomme le guillemet fermant
-					addToken(")", TokenType.PAR_RIGHT);
-					return true;
-				}
-				// Interpolation ${ … }
-				stream.next(); // '$'
-				stream.next(); // '{'
-				if (needPlus) addToken("+", TokenType.OPERATOR);
-				addToken("(", TokenType.PAR_LEFT);
-				lexInterpolationExpression(error);
-				addToken(")", TokenType.PAR_RIGHT);
-				needPlus = true;
-				chunkStart = stream.index;
-				continue;
-			}
+			lastLine = line;
+			lastColumn = column;
 			stream.next(); // CharStream.next() gère le compteur de lignes pour les \n
 		}
 		// Chaîne non fermée
 		error.report(new AnalyzeError(new Location(aiFile, stream.getLineCounter(), stream.getCharCounter()), AnalyzeErrorLevel.ERROR, Error.STRING_NOT_CLOSED));
 		addToken(")", TokenType.PAR_RIGHT);
-		return true;
-	}
-
-	/**
-	 * Lexe l'expression LeekScript à l'intérieur d'un `${ … }`, jusqu'à l'accolade
-	 * fermante correspondante (exclue de l'émission). Réutilise {@link #step} pour
-	 * tokeniser n'importe quelle expression ; la profondeur d'accolades est suivie
-	 * via les tokens émis, de sorte que les `}` à l'intérieur d'une chaîne imbriquée
-	 * ou d'un littéral map ne ferment pas l'interpolation.
-	 */
-	private void lexInterpolationExpression(ErrorReporter error) {
-		int len = stream.content.length();
-		int depth = 0;
-		boolean emittedExpr = false;
-		while (stream.index < len) {
-			int before = tokens.size();
-			int idxBefore = stream.index;
-			step(error);
-			if (tokens.size() > before) {
-				Token last = tokens.get(tokens.size() - 1);
-				TokenType t = last.getType();
-				if (t == TokenType.ACCOLADE_LEFT) {
-					depth++;
-					emittedExpr = true;
-				} else if (t == TokenType.ACCOLADE_RIGHT) {
-					if (depth == 0) {
-						// Accolade fermante de l'interpolation : c'est un délimiteur,
-						// pas du code → on la retire des tokens.
-						tokens.remove(tokens.size() - 1);
-						if (!emittedExpr) {
-							error.report(new AnalyzeError(new Location(aiFile, stream.getLineCounter(), stream.getCharCounter()), AnalyzeErrorLevel.ERROR, Error.STRING_NOT_CLOSED));
-						}
-						return;
-					}
-					depth--;
-				} else {
-					emittedExpr = true;
-				}
-			} else if (stream.index == idxBefore) {
-				break; // aucun progrès (EOF / char invalide) : éviter une boucle infinie
-			}
-		}
-		// `${` non fermé avant la fin du fichier
-		error.report(new AnalyzeError(new Location(aiFile, stream.getLineCounter(), stream.getCharCounter()), AnalyzeErrorLevel.ERROR, Error.STRING_NOT_CLOSED));
 	}
 
 	private boolean tryParseComments() {
@@ -748,6 +724,10 @@ public class LexicalParser {
 
 	private void addToken(String word, TokenType type) {
 		tokens.add(new Token(type, word, aiFile, stream.getLineCounter(), stream.getCharCounter()));
+	}
+
+	private void addTokenAt(String word, TokenType type, int startLine, int startColumn, int endLine, int endColumn) {
+		tokens.add(new Token(type, word, new Location(aiFile, startLine, startColumn, endLine, endColumn)));
 	}
 
 	private class CharStream {
