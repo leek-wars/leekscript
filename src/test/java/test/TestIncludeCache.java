@@ -919,6 +919,25 @@ public class TestIncludeCache {
 	}
 
 	@Test
+	public void nonLeekScriptFile_isNeverTheRootOfAnAnalysis() throws Exception {
+		// Une doc Markdown cite `include("Lib")` dans un exemple : elle n'est jamais compilée
+		// seule, analyser Lib ne doit donc pas compiler toute la doc comme du LeekScript.
+		String lib = "Lib_" + uniqueId;
+		write(lib + ".leek", "function lib() { return 1; }\nreturn lib();\n");
+		write("Doc_" + uniqueId + ".md.leek", "# Doc\n\nExemple : include(\"" + lib + "\");\n\nDu texte libre, pas du code.\n");
+		var file = fs.getRoot(0).resolve(lib);
+
+		assertTrue(fs.getIncluders(file).isEmpty(), "la doc n'est pas une racine : " + fs.getIncluders(file));
+		var result = IACompiler.analyzeWithIncludes(file);
+		assertEquals(List.of(file), new ArrayList<>(result.perEntrypoint.keySet()), "Lib est sa propre racine");
+		assertTrue(result.merged.success, "" + result.merged.informations);
+
+		// Une vraie IA qui inclut Lib reste, elle, sa racine.
+		write("User_" + uniqueId + ".leek", "include(\"" + lib + "\");\nreturn lib();");
+		assertEquals(List.of("User_" + uniqueId), fs.getIncluders(file).stream().map(AIFile::getPath).toList());
+	}
+
+	@Test
 	public void sharedInclude_mergedKeepsIncludedAIs_forTransitiveStats() throws Exception {
 		// Régression total_lines : deux entrypoints partagent un include. Analyser l'un
 		// d'eux passe par mergeResults() (perEntrypoint.size() > 1), qui ne propageait pas

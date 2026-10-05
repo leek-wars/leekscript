@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -65,12 +66,26 @@ public class IncludeGraph {
 			// path itself has no includer. It's a root only if it was reached from a
 			// different starting point (via at least one step). The initial caller
 			// distinguishes the two cases via visited size.
-			if (visited.size() > 1) roots.add(path);
+			if (visited.size() > 1 && isLeekScriptPath(path)) roots.add(path);
 			return;
 		}
 		for (var includer : direct) {
 			collectRoots(includer, roots, visited);
 		}
+	}
+
+	/**
+	 * Fichiers rangés avec les IA sans être du LeekScript : docs, données, IA JavaScript,
+	 * TypeScript ou Python. Un tel fichier peut citer `include("…")` (un exemple dans une
+	 * doc) mais n'est jamais compilé seul : il ne doit pas devenir la racine d'une analyse,
+	 * sinon tout son texte est compilé comme du LeekScript à chaque analyse du fichier cité.
+	 */
+	private static final Set<String> NON_LEEKSCRIPT_EXTENSIONS = Set.of("md", "txt", "json", "yml", "yaml", "js", "mjs", "ts", "mts", "py");
+
+	static boolean isLeekScriptPath(String path) {
+		int dot = path.lastIndexOf('.');
+		if (dot <= path.lastIndexOf('/')) return true; // sans extension : LeekScript
+		return !NON_LEEKSCRIPT_EXTENSIONS.contains(path.substring(dot + 1).toLowerCase(Locale.ROOT));
 	}
 
 	public synchronized Set<String> getIncluded(String path) {
