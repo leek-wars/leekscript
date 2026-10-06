@@ -36,9 +36,9 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -98,7 +98,7 @@ public abstract class AI {
 	// Les RamUsage vivants, gardés joignables jusqu'à leur libération. Tableau compact : chaque
 	// RamUsage connaît sa case, le retrait y déplace le dernier (ajout et retrait en O(1), sans
 	// hachage). Un HashSet coûtait ~10 % du temps d'une IA qui crée beaucoup d'objets.
-	private RamUsage[] ramUsages = new RamUsage[16];
+	private RamUsage[] ramUsages = new RamUsage[256];
 	private int ramUsagesCount = 0;
 
 	// ClassValue ties cached metadata to the Class lifetime so a recompiled AI's
@@ -496,8 +496,9 @@ public abstract class AI {
 			// jusqu'au premier dépassement. Invisible pour l'IA : getUsedRAM() et le contrôle du
 			// dépassement vident la même file avant de lire mRAM.
 			pollFreedRAM();
-			if (ramUsagesCount == ramUsages.length) {
-				ramUsages = Arrays.copyOf(ramUsages, ramUsagesCount * 2);
+			// Encore aux trois quarts plein : on agrandit quand même, plutôt que revider à chaque ajout
+			if (ramUsagesCount > ramUsages.length * 3 / 4) {
+				ramUsages = Arrays.copyOf(ramUsages, ramUsages.length * 2);
 			}
 		}
 		usage.slot = ramUsagesCount;
@@ -541,9 +542,7 @@ public abstract class AI {
 	private void checkRamOverflow() throws LeekRunException {
 		if (mRAM > maxRAM) {
 
-			long ramBefore = mRAM;
-
-			// update memory usage if garbage collector has already passed (call to gc is very expensive)
+			// Avant d'appeler le GC (très coûteux), ce qu'il a déjà ramassé
 			pollFreedRAM();
 
 			if (mRAM > maxRAM) {

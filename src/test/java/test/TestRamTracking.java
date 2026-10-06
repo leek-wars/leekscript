@@ -9,9 +9,8 @@ import java.util.Random;
 
 import org.junit.jupiter.api.Test;
 
-import leekscript.compiler.LeekScript;
-import leekscript.compiler.Options;
 import leekscript.runner.AI;
+import leekscript.runner.Session;
 
 /**
  * RAM suivie par AI.allocateRAM / RamUsage.free : libérations dans le désordre (le dernier du
@@ -23,7 +22,12 @@ public class TestRamTracking {
 
 	@Test
 	public void freeInAnyOrder() throws Exception {
-		AI ai = LeekScript.compileSnippet("return 1", "AI", new Options(4, false, false, true, null, true));
+		var ai = new AI(0, 4) {
+			@Override
+			public Object runIA(Session session) {
+				return null;
+			}
+		};
 		long ram = ai.getUsedRAM();
 		var referents = new ArrayList<Object>();
 		var usages = new ArrayList<AI.RamUsage>();
