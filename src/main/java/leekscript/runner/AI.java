@@ -98,7 +98,7 @@ public abstract class AI {
 	// Les RamUsage vivants, gardés joignables jusqu'à leur libération. Tableau compact : chaque
 	// RamUsage connaît sa case, le retrait y déplace le dernier (ajout et retrait en O(1), sans
 	// hachage). Un HashSet coûtait ~10 % du temps d'une IA qui crée beaucoup d'objets.
-	private RamUsage[] ramUsages = new RamUsage[1024];
+	private RamUsage[] ramUsages = new RamUsage[16];
 	private int ramUsagesCount = 0;
 
 	// ClassValue ties cached metadata to the Class lifetime so a recompiled AI's
@@ -176,6 +176,7 @@ public abstract class AI {
 		}
 
 		public void free(AI ai) {
+			if (slot < 0) return; // déjà libéré
 			ai.mRAM -= value;
 			ai.untrackRAM(this);
 		}
@@ -408,15 +409,17 @@ public abstract class AI {
 	}
 
 	public long getUsedRAM() {
+		pollFreedRAM();
+		return mRAM;
+	}
 
-		// Too expensive
+	/** Rend la RAM des objets que le GC a déjà ramassés. */
+	private void pollFreedRAM() {
 		Reference<?> ref;
 		while ((ref = ramQueue.poll()) != null) {
 			((RamUsage) ref).free(this);
 			ref.clear();
 		}
-
-		return mRAM;
 	}
 
 	public long getMaxRAM() {
@@ -488,7 +491,14 @@ public abstract class AI {
 
 	private void trackRAM(RamUsage usage) {
 		if (ramUsagesCount == ramUsages.length) {
-			ramUsages = Arrays.copyOf(ramUsages, ramUsagesCount * 2);
+			// Avant d'agrandir, rendre la place des objets déjà ramassés par le GC : sans ça, une IA
+			// qui crée beaucoup d'objets temporaires sous sa limite de RAM garde tous leurs RamUsage
+			// jusqu'au premier dépassement. Invisible pour l'IA : getUsedRAM() et le contrôle du
+			// dépassement vident la même file avant de lire mRAM.
+			pollFreedRAM();
+			if (ramUsagesCount == ramUsages.length) {
+				ramUsages = Arrays.copyOf(ramUsages, ramUsagesCount * 2);
+			}
 		}
 		usage.slot = ramUsagesCount;
 		ramUsages[ramUsagesCount++] = usage;
@@ -496,7 +506,6 @@ public abstract class AI {
 
 	private void untrackRAM(RamUsage usage) {
 		int slot = usage.slot;
-		if (slot < 0) return;
 		var last = ramUsages[--ramUsagesCount];
 		ramUsages[slot] = last;
 		last.slot = slot;
@@ -535,11 +544,7 @@ public abstract class AI {
 			long ramBefore = mRAM;
 
 			// update memory usage if garbage collector has already passed (call to gc is very expensive)
-			Reference<?> ref;
-			while ((ref = ramQueue.poll()) != null) {
-				((RamUsage) ref).free(this);
-				ref.clear();
-			}
+			pollFreedRAM();
 
 			if (mRAM > maxRAM) {
 				System.gc();
@@ -551,10 +556,7 @@ public abstract class AI {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					while ((ref = ramQueue.poll()) != null) {
-						((RamUsage) ref).free(this);
-						ref.clear();
-					}
+					pollFreedRAM();
 				}
 
 				if (mRAM > maxRAM) {
