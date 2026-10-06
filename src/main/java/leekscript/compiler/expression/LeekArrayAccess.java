@@ -281,7 +281,7 @@ public class LeekArrayAccess extends Expression {
 			}
 			writer.addCode(")");
 		} else if (mTabular instanceof LeekVariable v && v.getVariableType() == VariableType.THIS && mCase instanceof LeekString ls
-				&& mTabular.getType() instanceof ClassType ct && ct.getClassDeclaration().hasField(ls.getText())) {
+				&& v.getType() instanceof ClassType ct && ct.getClassDeclaration().hasField(ls.getText())) {
 			// Champ d'instance déclaré : même code que `this.champ`. Tout autre nom passe par
 			// l'accès dynamique, sinon javac le résoudrait dans la portée Java de la classe générée.
 			writer.addCode(ls.getText());
