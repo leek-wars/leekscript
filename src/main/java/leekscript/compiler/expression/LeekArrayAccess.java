@@ -14,6 +14,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.runner.AI;
 import leekscript.common.ArrayType;
+import leekscript.common.ClassType;
 import leekscript.common.Error;
 import leekscript.common.LegacyArrayType;
 
@@ -279,8 +280,11 @@ public class LeekArrayAccess extends Expression {
 				stride.writeJavaCode(mainblock, writer, false);
 			}
 			writer.addCode(")");
-		} else if (mTabular instanceof LeekVariable v && v.getVariableType() == VariableType.THIS && mCase instanceof LeekString ls && ls.getText().matches("[\\p{L}_$][\\p{L}\\p{N}_$]*")) {
-			writer.addCode(ls.getText()); // clé restreinte à un identifiant (cf. condition) : pas de texte arbitraire émis dans le code généré
+		} else if (mTabular instanceof LeekVariable v && v.getVariableType() == VariableType.THIS && mCase instanceof LeekString ls
+				&& mTabular.getType() instanceof ClassType ct && ct.getClassDeclaration().hasField(ls.getText())) {
+			// Champ d'instance déclaré : même code que `this.champ`. Tout autre nom passe par
+			// l'accès dynamique, sinon javac le résoudrait dans la portée Java de la classe générée.
+			writer.addCode(ls.getText());
 		} else if (mTabular.getType() instanceof LegacyArrayType) {
 			mTabular.writeJavaCode(mainblock, writer, true);
 			writer.addCode(".get(");

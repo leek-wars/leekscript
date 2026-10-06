@@ -413,6 +413,16 @@ public class TestObject extends TestCommon {
 		// au lieu d'être émise telle quelle dans le code généré.
 		code_v2_("class A { a = 6 m() { return this['a + 1'] } } return new A().m()").equals("null");
 		code_v2_("class A { a = 6 m() { return this['a; b'] } } return new A().m()").equals("null");
+		// Seul un champ d'instance déclaré est lu directement ; tout autre nom passe par l'accès
+		// dynamique, qui ne connaît que les champs des classes LeekScript.
+		code_v2_("class A { a = 6 } class B extends A { m() { return this['a'] } } return new B().m()").equals("6");
+		code_v2_("class A { m() { return this['b'] } } class B extends A { b = 3 } return new B().m()").equals("3");
+		code_v2_("class A { maxOperations = 4 m() { return this['maxOperations'] } } return new A().m()").equals("4");
+		code_v2_("class A { a = 6 m() { return this['b'] } } return new A().m()").equals("null");
+		code_v2_("class A { a = 6 m() { return this['maxOperations'] } } return new A().m()").equals("null");
+		code_v2_("class A { a = 6 m() { return this['mOperations'] } } return new A().m()").equals("null");
+		code_v2_("class A { m() { var x = 3 return this['u_x'] } } return new A().m()").equals("null");
+		code_v2_("class A { static s = 5 m() { return this['s'] } } return new A().m()").equals("null");
 
 		section("Operators on field by array access");
 		code_v2_("class A { a = 10 } var a = new A(); return --a['a']").equals("9");
