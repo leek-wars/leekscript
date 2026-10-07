@@ -693,7 +693,7 @@ public class JavaWriter {
 
 			int a = 0;
 			for (var argument : first_version.arguments) {
-				if (argument != Type.ANY) {
+				if (argument != Type.ANY && !first_version.keepsNull(a)) {
 					addLine(argument.getJavaPrimitiveName(block.getVersion()) + " x" + a + "; try { x" + a + " = " + convert(a + 1, "a" + a, argument, block.getVersion()) + "; } catch (ClassCastException e) { return " + first_version.return_type.getDefaultValue(this, block.getVersion()) + "; }");
 				}
 				a++;
@@ -720,7 +720,7 @@ public class JavaWriter {
 		for (int a = start_index; a < version.arguments.length; ++a) {
 			if (cast) {
 				args.add("(" + version.arguments[a].getJavaName(block.getVersion()) + ") a" + a);
-			} else if (version.arguments[a] != Type.ANY) {
+			} else if (version.arguments[a] != Type.ANY && !version.keepsNull(a)) {
 				args.add("x" + a);
 			} else {
 				args.add("a" + a);

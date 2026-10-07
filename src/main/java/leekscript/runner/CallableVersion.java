@@ -10,6 +10,7 @@ public class CallableVersion {
 	public Type[] arguments;
 	public LeekFunctions function;
 	public Type type;
+	private final boolean[] nullKept;
 
 	public CallableVersion(Type return_type) {
 		this(return_type, new Type[0]);
@@ -19,6 +20,21 @@ public class CallableVersion {
 		this.return_type = return_type;
 		this.arguments = arguments;
 		this.type = Type.function(return_type, arguments);
+		this.nullKept = new boolean[arguments.length];
+	}
+
+	/**
+	 * L'argument garde son type pour l'analyse, mais le wrapper générique (argument any, LS1-3,
+	 * fonction en valeur) passe la valeur brute, null compris, au lieu de la convertir (null vaudrait
+	 * 0 pour un integer) : la méthode Java doit avoir une surcharge Object à cette position.
+	 */
+	public CallableVersion keepNull(int argument) {
+		nullKept[argument] = true;
+		return this;
+	}
+
+	public boolean keepsNull(int argument) {
+		return nullKept[argument];
 	}
 
 	public String getParametersSignature() {
