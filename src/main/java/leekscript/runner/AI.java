@@ -1728,6 +1728,17 @@ public abstract class AI {
 		return real(value);
 	}
 
+	/**
+	 * Argument integer|null d'une fonction système : un réel ou un big_integer est tronqué,
+	 * null reste null. Tout autre type lève ClassCastException, et l'appel rend sa valeur par
+	 * défaut, comme le cast (Long) seul.
+	 */
+	public static Long toLongOrNull(Object value) {
+		if (value instanceof Double d) return (long) (double) d;
+		if (value instanceof BigIntegerValue big) return big.longValue();
+		return (Long) value;
+	}
+
 	public Object copy(Object value) throws LeekRunException {
 		return LeekOperations.clone(this, value);
 	}

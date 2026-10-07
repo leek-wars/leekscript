@@ -1,10 +1,15 @@
 package test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 
 import leekscript.common.Error;
+import leekscript.runner.AI;
+import leekscript.runner.values.BigIntegerValue;
 
 @ExtendWith(SummaryExtension.class)
 public class TestNumber extends TestCommon {
@@ -1620,5 +1625,15 @@ public class TestNumber extends TestCommon {
 		code("function toFixed(x) { return 'mine' } return toFixed(1.5)").equals("\"mine\"");
 		code("var toFixed = function(x, d) { return 'mine' } return toFixed(1.5, 2)").equals("\"mine\"");
 		code("global toFixed = 12 return toFixed").equals("12");
+	}
+
+	@Test
+	public void testToLongOrNull() throws Exception {
+		assertNull(AI.toLongOrNull(null));
+		assertEquals(12L, AI.toLongOrNull(12L));
+		assertEquals(12L, AI.toLongOrNull(12.9));
+		assertEquals(12L, AI.toLongOrNull(BigIntegerValue.valueOf(new TestAI(), 12L)));
+		assertThrows(ClassCastException.class, () -> AI.toLongOrNull("12"));
+		assertThrows(ClassCastException.class, () -> AI.toLongOrNull(true));
 	}
 }

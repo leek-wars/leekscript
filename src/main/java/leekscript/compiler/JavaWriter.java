@@ -811,8 +811,7 @@ public class JavaWriter {
 			if (ct.getTypes().size() == 2 && ct.containsNull()) {
 				for (var t : ct.getTypes()) {
 					if (t != Type.NULL) {
-						if (t == Type.INT) return "(Long) (" + v + ")";
-						if (t == Type.REAL) return "(Double) (" + v + ")";
+						if (t == Type.INT) return "toLongOrNull(" + v + ")";
 						if (t == Type.BOOL) return "(Boolean) (" + v + ")";
 						if (t == Type.STRING) return "(String) (" + v + ")";
 					}
