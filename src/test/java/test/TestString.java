@@ -128,6 +128,21 @@ public class TestString extends TestCommon {
 		code("return codePointAt('🐨🐨', 2)").equals("128040");
 	}
 
+	@Test
+	public void testString_fromCodePoint() throws Exception {
+		section("String fromCodePoint()");
+		code("return fromCodePoint(65)").equals("\"A\"");
+		code("return fromCodePoint(233)").equals("\"é\"");
+		code("return fromCodePoint(9835)").equals("\"♫\"");
+		code("return fromCodePoint(128040)").equals("\"🐨\"");
+		code("return fromCodePoint(codePointAt('🐨'))").equals("\"🐨\"");
+		code("return length(fromCodePoint(128040))").equals("2");
+		code("return fromCodePoint(-1)").equals("null");
+		code("return fromCodePoint(0x110000)").equals("null");
+		code("return fromCodePoint(0xD800)").equals("null");
+		code("var fromCodePoint = 1 return fromCodePoint").equals("1");
+	}
+
 	/**
 	 * Edge cases du lexer tryParseString — la refonte fait un scan direct sur
 	 * `content` et track manuellement lineCounter pour les newlines internes.

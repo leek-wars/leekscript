@@ -162,6 +162,7 @@ public class LeekFunctions {
 			new CallableVersion(Type.INT, new Type[] { Type.STRING, Type.INT }),
 			new CallableVersion(Type.INT, new Type[] { Type.STRING }),
 		});
+		method("fromCodePoint", "String", 6, true, Type.STRING, new Type[] { Type.INT });
 
 		/**
 		 * Fonctions array

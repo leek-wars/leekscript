@@ -27,6 +27,12 @@ public class StringClass {
 		return string.codePointAt((int) index);
 	}
 
+	public static String fromCodePoint(AI ai, long codePoint) {
+		if (codePoint < 0 || codePoint > Character.MAX_CODE_POINT || (codePoint >= Character.MIN_SURROGATE && codePoint <= Character.MAX_SURROGATE))
+			return null;
+		return new String(Character.toChars((int) codePoint));
+	}
+
 	public static long length(AI ai, String string) throws LeekRunException {
 		ai.ops(1);
 		return string.length();
