@@ -1,7 +1,14 @@
 package test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.HashSet;
+
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
+
+import leekscript.compiler.Options;
+import leekscript.compiler.LeekScript;
 
 @ExtendWith(SummaryExtension.class)
 public class TestElvis extends TestCommon {
@@ -53,6 +60,26 @@ public class TestElvis extends TestCommon {
 		// ?. et ?[ ne sont pas touchés
 		code_v4("var o = null return o?.x ?: 3").equals("3");
 		code_v4("var a = null return a?[0] ?: 4").equals("4");
+		// Opérande gauche dont le Java est un Object malgré son type (assignation, incrément, tableau typé)
+		code_v4("integer a = 0 return (a = 5) ?: 1").equals("5");
+		code_v4("integer a = 0 return (a += 5) ?: 1").equals("5");
+		code_v4("integer a = 0 return a++ ?: 1").equals("1");
+		code_v4("integer a = 1 return a++ ?: 9").equals("1");
+		code_v4("integer a = 0 var f = function() { a++ } f() return a ?: 8").equals("1");
+		code_v4("Array<integer> t = [0] return (t[0] = 4) ?: 1").equals("4");
+		code_v4("Array<integer> t = [0] return (t[0] += 4) ?: 1").equals("4");
+		code_v4("Array<integer> t = [0] return t[0] ?: 6").equals("6");
+		code_v4("real r = 0.0 return r ?: 2.5").equals("2.5");
+		code_v4("boolean b = false return b ?: true").equals("true");
+		// Mélangé avec || : même priorité, lecture de gauche à droite
+		code_v4("return false || 0 ?: 5").equals("5");
+		code_v4("return 0 ?: 1 || 2").equals("true");
+		// Instruction seule et incrément de boucle
+		code_v4("global n = 0 function f() { n++ return 0 } f() ?: f(); return n").equals("2");
+		code_v4("global n = 0 function f() { n++ return 0 } for (var i = 0; i < 2; f() ?: f()) { i++ } return n").equals("4");
+		// Dans une classe : champ et méthode
+		code_v4("class A { integer x = 0 m() { return x ?: 7 } } return new A().m()").equals("7");
+		code_v4("class A { x = 0 static s(v) { return v ?: 3 } } return A.s(0)").equals("3");
 		// Avant la v4, `?:` n'existe pas ; le ternaire normal est inchangé
 		code_v3("return 1 ? 2 : 3").equals("2");
 		code_v3("return true?1:2").equals("1");
@@ -63,5 +90,21 @@ public class TestElvis extends TestCommon {
 		code_v4("return false ? 1 : true ? 3 : 4").equals("3");
 		code_v4("var a = [1, 2] return true?a[0]:a[1]").equals("1");
 		code_v4("var a = [1, 2] return false?[1]:[3]").equals("[3]");
+	}
+
+	@Test
+	public void testElvisOperationsDisabled() throws Exception {
+		// Sans comptage d'opérations (CLI), `a ?: b;` en instruction doit rester du Java valide
+		assertOps("global n = 0 function f() { n++ return 0 } f() ?: f(); return n", "2");
+		assertOps("var x = 0 x ?: 3; return x", "0");
+		assertOps("var a = 0 var b = 5 for (var i = 0; i < 2; a ?: b) { i++ } return b", "5");
+	}
+
+	private void assertOps(String snippet, String expected) throws Exception {
+		var ai = LeekScript.compileSnippet(snippet, "AI", new Options(false));
+		ai.init();
+		ai.staticInit();
+		var v = ai.runIA();
+		assertEquals(expected, ai.export(v, new HashSet<>()), snippet);
 	}
 }

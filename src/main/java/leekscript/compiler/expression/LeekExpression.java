@@ -411,7 +411,7 @@ public class LeekExpression extends Expression {
 		else {
 			int cur_p = Operators.getPriority(mOperator);
 			int p = Operators.getPriority(operator);
-			boolean higher_priority = mOperator == Operators.ASSIGN && operator == Operators.ASSIGN ? false : (mOperator == Operators.OR || mOperator == Operators.AND ? cur_p > p : cur_p >= p);
+			boolean higher_priority = mOperator == Operators.ASSIGN && operator == Operators.ASSIGN ? false : ((mOperator == Operators.OR || mOperator == Operators.AND) && operator != Operators.ELVIS ? cur_p > p : cur_p >= p);
 			if (higher_priority) {
 				// On doit englober l'expression actuelle
 				LeekExpression new_e = new LeekExpression();
@@ -1498,15 +1498,7 @@ public class LeekExpression extends Expression {
 		} else if (mOperator == Operators.COALESCE_ASSIGN) {
 			type = mExpression1.getType();
 		} else if (mOperator == Operators.ELVIS) {
-			// `a ?: b` : a (vraie, donc jamais null) ou b
-			var leftType = mExpression1.getType();
-			if (leftType == Type.NULL) {
-				type = mExpression2.getType();
-			} else if (leftType instanceof CompoundType ct) {
-				type = Type.compound(ct.assertNotNull(), mExpression2.getType());
-			} else {
-				type = Type.compound(leftType, mExpression2.getType());
-			}
+			type = Type.ANY; // a (vraie) ou b, cf writeElvis
 		}
 		else if (mOperator == Operators.ADD) {
 			type = mExpression1.getType().add(mExpression2.getType());
@@ -1578,53 +1570,22 @@ public class LeekExpression extends Expression {
 	}
 
 	/**
-	 * {@code a ?: b} == {@code a ? a : b} avec {@code a} évaluée une seule fois : elle est assignée à
-	 * un champ temporaire de la classe dans la condition, la branche vraie relit ce champ (même
-	 * principe que le sujet d'un match). Le champ est lu juste après l'assignation, sans appel entre
-	 * les deux : aucun risque en cas de récursion.
+	 * {@code a ?: b} == {@code a ? a : b} avec {@code a} évaluée une seule fois : sa valeur est liée
+	 * par un motif Java (faux sur null, qui est faux au sens de `?:` et tombe donc côté `b`), comme
+	 * pour `??`. Tout passe par Object (résultat de type any) : le Java de l'opérande gauche peut
+	 * être un primitif, un boxé ou un Object quel que soit son type (d'où le cast avant le motif,
+	 * invalide sur un primitif). Un seul nom suffit : la liaison ne vit que dans sa branche vraie.
 	 */
 	private void writeElvis(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
-		var leftType = mExpression1.getType();
-		var version = mainblock.getVersion();
-		var javaType = leftType == Type.NULL || leftType == Type.VOID ? "Object" : leftType.getJavaName(version);
-		var tmp = writer.newElvisTemp(javaType);
-		var left = mExpression1;
-
-		var assigned = new Expression() {
-			public int getNature() { return EXPRESSION; }
-			public Type getType() { return leftType; }
-			public void writeJavaCode(MainLeekBlock mb, JavaWriter w, boolean par) {
-				w.addCode("(" + tmp + " = ");
-				left.writeJavaCode(mb, w, false);
-				w.addCode(")");
-			}
-			public boolean validExpression(WordCompiler compiler, MainLeekBlock mb) { return true; }
-			public void analyze(WordCompiler compiler) {}
-			public Location getLocation() { return left.getLocation(); }
-		};
-		var reread = new Expression() {
-			public int getNature() { return EXPRESSION; }
-			public Type getType() { return leftType; }
-			public void writeJavaCode(MainLeekBlock mb, JavaWriter w, boolean par) { w.addCode(tmp); }
-			public boolean validExpression(WordCompiler compiler, MainLeekBlock mb) { return true; }
-			public void analyze(WordCompiler compiler) {}
-			public Location getLocation() { return left.getLocation(); }
-		};
-
 		if (parenthesis) writer.addCode("(");
-		writer.getBoolean(mainblock, assigned, true);
-		writer.addCode(" ? ");
-		if (type != Type.ANY && !type.isPrimitive()) {
-			writer.addCode("(" + type.getJavaName(version) + ") ");
-		}
-		writer.compileConvert(mainblock, ARRAY, reread, type, true);
-		writer.addCode(" : ");
-		if (type != Type.ANY && !type.isPrimitive()) {
-			writer.addCode("(" + type.getJavaPrimitiveName(version) + ") ");
-		}
+		writer.addCode("((Object) ");
+		writer.compileLoad(mainblock, mExpression1, true);
+		writer.addCode(") instanceof Object __elvis && bool(__elvis) ? __elvis : ");
 		boolean countOps = writer.isOperationsEnabled() && mExpression2.getOperations() > 0;
 		if (countOps) writer.addCode("ops(");
-		writer.compileConvert(mainblock, ARRAY, mExpression2, type, true);
+		writer.addCode("(Object) (");
+		mExpression2.writeJavaCode(mainblock, writer, false);
+		writer.addCode(")");
 		if (countOps) writer.addCode(", " + mExpression2.getOperations() + ")");
 		if (parenthesis) writer.addCode(")");
 	}
@@ -1640,7 +1601,7 @@ public class LeekExpression extends Expression {
 			case Operators.COALESCE_ASSIGN -> mExpression1 instanceof LeekArrayAccess || mExpression1 instanceof LeekObjectAccess;
 			// Écrits en opérateur Java ou tels quels (`!bool(x)`, `!operatorIn(…)`, `a / b`, `a >>> b`,
 			// `x != null ? … : …`, `x`) : sans opérations (CLI), rien d'autre ne les enveloppe
-			case Operators.NOT, Operators.NOT_IN, Operators.INTEGER_DIVISION, Operators.SHIFT_UNSIGNED_RIGHT, Operators.COALESCE, Operators.NON_NULL_ASSERTION -> true;
+			case Operators.NOT, Operators.NOT_IN, Operators.INTEGER_DIVISION, Operators.SHIFT_UNSIGNED_RIGHT, Operators.COALESCE, Operators.ELVIS, Operators.NON_NULL_ASSERTION -> true;
 			// `-x` natif, ou casté pour un big_integer (cf writeJavaCode) ; `minus(x)` seul est une instruction
 			case Operators.UNARY_MINUS -> mExpression2.getType().isPrimitiveNumber() || type == Type.BIG_INT;
 			default -> false;
