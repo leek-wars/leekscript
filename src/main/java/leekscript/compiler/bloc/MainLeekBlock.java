@@ -432,6 +432,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.writeGenericFunctions(this);
 		writer.writeAnonymousSystemFunctions(this);
 		writer.writeAnonymousUserFunctions(this);
+		writer.writeElvisTempFields();
 
 		writer.addLine("}");
 	}

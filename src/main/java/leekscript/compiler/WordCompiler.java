@@ -108,6 +108,17 @@ public class WordCompiler {
 		return la.getEndLine() == lb.getStartLine() && lb.getStartColumn() == la.getEndColumn() + 1;
 	}
 
+	// Le token `i` (relatif au curseur) est-il le `?` d'un opérateur `a ?: b` (LS4+) ?
+	// Le `:` doit être collé au `?` : `a ? : b` reste un ternaire incomplet.
+	private boolean isElvis(int i) {
+		if (getVersion() < 4) return false;
+		var question = mTokens.get(i);
+		var colon = mTokens.get(i + 1);
+		return question.getType() == TokenType.OPERATOR && question.getWord().equals("?")
+				&& colon.getType() == TokenType.OPERATOR && colon.getWord().equals(":")
+				&& adjacent(question, colon);
+	}
+
 	// Le `?` à la position courante possède-t-il un `:` de ternaire ? On scanne en
 	// avant à profondeur de parenthésage 0 : le premier `:` non apparié à un `?`
 	// imbriqué appartient à ce `?`, c'est donc un ternaire et pas un accès `a?[b]`.
@@ -129,7 +140,9 @@ public class WordCompiler {
 				depth--;
 			} else if (depth == 0) {
 				if (type == TokenType.END_INSTRUCTION || type == TokenType.VIRG) return false;
-				if (type == TokenType.OPERATOR && token.getWord().equals("?")) {
+				if (isElvis(i)) {
+					i++; // `?:` n'ouvre ni ne ferme de ternaire
+				} else if (type == TokenType.OPERATOR && token.getWord().equals("?")) {
 					// Seul un vrai `?` de ternaire ouvre un niveau. `?.` (chaînage
 					// optionnel) et `?[` (accès optionnel collé) n'en sont pas : les
 					// compter ferait consommer à tort le `:` du ternaire englobant.
@@ -2002,6 +2015,13 @@ public class WordCompiler {
 						retour.addOperator(Operators.AS, word);
 						retour.addExpression(type);
 					}
+					continue;
+
+				} else if (isElvis(0)) {
+
+					// Opérateur `a ?: b` : les deux tokens sont consommés ensemble.
+					mTokens.skip(); // ?
+					retour.addOperator(Operators.ELVIS, mTokens.eat()); // :
 					continue;
 
 				} else if (word.getType() == TokenType.OPERATOR && (!word.getWord().equals(">") || !inSet)) {

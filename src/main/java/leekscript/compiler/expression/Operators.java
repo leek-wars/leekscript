@@ -63,6 +63,7 @@ public class Operators {
 	public final static int NOT_IN = 57;
 	public final static int COALESCE = 58;
 	public final static int COALESCE_ASSIGN = 59;
+	public final static int ELVIS = 60;
 
 	// Lookup HashMap pour getOperator au lieu de ~50 String.equals séquentiels.
 	// Cas spécial : "^=" est version-dépendant (BITXOR_ASSIGN en v≥2, POWERASSIGN
@@ -193,6 +194,7 @@ public class Operators {
 		case OR:
 			return 2;
 		case COALESCE:
+		case ELVIS:
 			return 2;
 		case TERNAIRE:
 		case DOUBLE_POINT:
@@ -381,6 +383,8 @@ public class Operators {
 			return "xor";
 		case COALESCE:
 			return "??";
+		case ELVIS:
+			return "?:";
 		case COALESCE_ASSIGN:
 			return "??=";
 		}

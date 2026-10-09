@@ -3,6 +3,7 @@ package leekscript.compiler;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,8 @@ public class JavaWriter {
 	public HashMap<String, ArrayList<CallableVersion>> genericFunctions = new HashMap<>();
 	public HashSet<LeekFunctions> anonymousSystemFunctions = new HashSet<>();
 	public HashSet<FunctionBlock> anonymousUserFunctions = new HashSet<>();
+	// Champs temporaires des opérateurs `a ?: b` (nom -> type Java), déclarés au niveau de la classe générée.
+	private final LinkedHashMap<String, String> elvisTemps = new LinkedHashMap<>();
 	private boolean operationsEnabled = true;
 	public boolean lastInstruction = false;
 	public Options options;
@@ -636,6 +639,21 @@ public class JavaWriter {
 		for (var version : versions) key += "_" + version.getParametersSignature();
 		genericFunctions.put(key, versions);
 		return key;
+	}
+
+	/** Réserve un champ temporaire de type Java {@code javaType} pour un opérateur `a ?: b`
+	 * (assigné dans la condition, relu dans la branche vraie) et retourne son nom. */
+	public String newElvisTemp(String javaType) {
+		String name = "__elvis_" + elvisTemps.size();
+		elvisTemps.put(name, javaType);
+		return name;
+	}
+
+	/** Déclare les champs temporaires des opérateurs `a ?: b` au niveau de la classe AI générée. */
+	public void writeElvisTempFields() {
+		for (var temp : elvisTemps.entrySet()) {
+			addLine("private " + temp.getValue() + " " + temp.getKey() + ";");
+		}
 	}
 
 	public void generateAnonymousUserFunction(FunctionBlock function) {

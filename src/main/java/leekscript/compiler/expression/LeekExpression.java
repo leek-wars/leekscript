@@ -1005,6 +1005,9 @@ public class LeekExpression extends Expression {
 			writer.compileConvert(mainblock, ARRAY, mExpression2, type, true);
 			if (parenthesis) writer.addCode(")");
 			return;
+		case Operators.ELVIS:
+			writeElvis(mainblock, writer, parenthesis);
+			return;
 		case Operators.XOR:
 			writer.addCode("xor(");
 			writer.getBoolean(mainblock, mExpression1, false);
@@ -1494,6 +1497,16 @@ public class LeekExpression extends Expression {
 			}
 		} else if (mOperator == Operators.COALESCE_ASSIGN) {
 			type = mExpression1.getType();
+		} else if (mOperator == Operators.ELVIS) {
+			// `a ?: b` : a (vraie, donc jamais null) ou b
+			var leftType = mExpression1.getType();
+			if (leftType == Type.NULL) {
+				type = mExpression2.getType();
+			} else if (leftType instanceof CompoundType ct) {
+				type = Type.compound(ct.assertNotNull(), mExpression2.getType());
+			} else {
+				type = Type.compound(leftType, mExpression2.getType());
+			}
 		}
 		else if (mOperator == Operators.ADD) {
 			type = mExpression1.getType().add(mExpression2.getType());
@@ -1556,9 +1569,64 @@ public class LeekExpression extends Expression {
 			// 0
 		} else if (mOperator == Operators.AND || mOperator == Operators.OR) {
 			operations = 0; // 1 op will be added to the first expression
+		} else if (mOperator == Operators.ELVIS) {
+			// Comme le ternaire : l'opérande de droite n'est facturé que s'il est évalué (cf writeElvis)
+			operations = (mExpression1 != null ? mExpression1.getOperations() : 0) + 1;
 		} else {
 			operations += 1;
 		}
+	}
+
+	/**
+	 * {@code a ?: b} == {@code a ? a : b} avec {@code a} évaluée une seule fois : elle est assignée à
+	 * un champ temporaire de la classe dans la condition, la branche vraie relit ce champ (même
+	 * principe que le sujet d'un match). Le champ est lu juste après l'assignation, sans appel entre
+	 * les deux : aucun risque en cas de récursion.
+	 */
+	private void writeElvis(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
+		var leftType = mExpression1.getType();
+		var version = mainblock.getVersion();
+		var javaType = leftType == Type.NULL || leftType == Type.VOID ? "Object" : leftType.getJavaName(version);
+		var tmp = writer.newElvisTemp(javaType);
+		var left = mExpression1;
+
+		var assigned = new Expression() {
+			public int getNature() { return EXPRESSION; }
+			public Type getType() { return leftType; }
+			public void writeJavaCode(MainLeekBlock mb, JavaWriter w, boolean par) {
+				w.addCode("(" + tmp + " = ");
+				left.writeJavaCode(mb, w, false);
+				w.addCode(")");
+			}
+			public boolean validExpression(WordCompiler compiler, MainLeekBlock mb) { return true; }
+			public void analyze(WordCompiler compiler) {}
+			public Location getLocation() { return left.getLocation(); }
+		};
+		var reread = new Expression() {
+			public int getNature() { return EXPRESSION; }
+			public Type getType() { return leftType; }
+			public void writeJavaCode(MainLeekBlock mb, JavaWriter w, boolean par) { w.addCode(tmp); }
+			public boolean validExpression(WordCompiler compiler, MainLeekBlock mb) { return true; }
+			public void analyze(WordCompiler compiler) {}
+			public Location getLocation() { return left.getLocation(); }
+		};
+
+		if (parenthesis) writer.addCode("(");
+		writer.getBoolean(mainblock, assigned, true);
+		writer.addCode(" ? ");
+		if (type != Type.ANY && !type.isPrimitive()) {
+			writer.addCode("(" + type.getJavaName(version) + ") ");
+		}
+		writer.compileConvert(mainblock, ARRAY, reread, type, true);
+		writer.addCode(" : ");
+		if (type != Type.ANY && !type.isPrimitive()) {
+			writer.addCode("(" + type.getJavaPrimitiveName(version) + ") ");
+		}
+		boolean countOps = writer.isOperationsEnabled() && mExpression2.getOperations() > 0;
+		if (countOps) writer.addCode("ops(");
+		writer.compileConvert(mainblock, ARRAY, mExpression2, type, true);
+		if (countOps) writer.addCode(", " + mExpression2.getOperations() + ")");
+		if (parenthesis) writer.addCode(")");
 	}
 
 	public boolean needsWrapper() {
