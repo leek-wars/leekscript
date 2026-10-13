@@ -4,6 +4,8 @@ package test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 
+import leekscript.common.Error;
+
 @ExtendWith(SummaryExtension.class)
 public class TestInterval extends TestCommon {
 
@@ -230,6 +232,23 @@ public class TestInterval extends TestCommon {
 		code("return intervalCombine([1..2], ]..[)").equals("]-∞..∞[");
 		code("return intervalCombine(]..2], [1..[)").equals("]-∞..∞[");
 		code("intervalCombine([1..2], [1..2])").ops(7);
+	}
+
+	@Test
+	public void testInterval_strictGenericInterval() throws Exception {
+		section("Interval : fonctions sur un Interval générique en strict");
+		// Un Interval est entier ou réel : les versions entière et réelle le couvrent à elles deux
+		code_strict_v4_("Interval i = [1..10]; return intervalMin(i)").noWarning();
+		code_strict_v4_("Interval i = [1..10]; return intervalMax(i)").noWarning();
+		code_strict_v4_("Interval i = [1..10]; return intervalSize(i)").noWarning();
+		code_strict_v4_("Interval i = [1..10]; return intervalToArray(i, 0.5)").noWarning();
+		code_strict_v4_("Interval i = [1..10]; return intervalToSet(i)").noWarning();
+		code_strict_v4_("Interval i = [1..10]; return intervalIntersection(i, i)").noWarning();
+		code_strict_v4_("Interval i = [1..10]; return intervalMin(i)").equals("1");
+		code_strict_v4_("Interval i = [1.5..10]; return intervalMax(i)").equals("10.0");
+		code_strict_v4_("Interval i = [1..3]; return intervalToArray(i)").equals("[1, 2, 3]");
+		code_strict_v4_("Interval i = [1..10]; Interval j = [5.5..20]; return intervalIntersection(i, j)").equals("[5.5..10.0]");
+		code_strict_v4_("any x = [1..2]; return intervalMin(x)").warning(Error.DANGEROUS_CONVERSION);
 	}
 
 	@Test
