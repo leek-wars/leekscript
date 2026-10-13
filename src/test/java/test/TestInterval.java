@@ -95,6 +95,7 @@ public class TestInterval extends TestCommon {
 		code_v2_("return intervalSize([..])").equals("0.0");
 		code("return intervalSize(]..[)").equals("∞");
 		code("return intervalSize(]..1.5])").equals("∞");
+		code("return intervalSize([-5000000000000000000..5000000000000000000])").equals("9223372036854775807");
 		code_strict_v4_("Interval i = [1.5..10]; return intervalSize(i)").almost(8.5);
 		code("intervalSize([1..2])").ops(3);
 		// Un intervalle converti en nombre vaut sa taille
