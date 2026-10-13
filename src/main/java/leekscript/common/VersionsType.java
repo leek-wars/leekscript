@@ -23,18 +23,19 @@ public class VersionsType extends CompoundType {
 			if (r.ordinal() < best.ordinal()) best = r;
 		}
 		if (best != CastType.SAFE_DOWNCAST && best != CastType.UNSAFE_DOWNCAST) return best;
-		// Un Interval sans type d'élément est entier ou réel : les versions entière et réelle
-		// (intervalMin, intervalToArray…) le couvrent à elles deux, l'appel n'est pas dangereux.
+		// Aucune version ne couvre seule un argument (un Interval sans type d'élément pour
+		// intervalMin, intervalToArray…) : l'appel est jugé sur le pire de ses cas concrets.
 		for (int i = 0; i < types.size(); i++) {
-			if (types.get(i) instanceof IntervalType it && it.element() == Type.ANY) {
-				var cases = new ArrayList<>(types);
-				cases.set(i, Type.INTEGER_INTERVAL);
-				var integer = acceptsArguments(cases);
-				cases.set(i, Type.REAL_INTERVAL);
-				var real = acceptsArguments(cases);
-				var worst = integer.ordinal() > real.ordinal() ? integer : real;
-				return worst.ordinal() < best.ordinal() ? worst : best;
+			var cases = types.get(i).cases();
+			if (cases.size() < 2) continue;
+			var split = new ArrayList<>(types);
+			var worst = CastType.EQUALS;
+			for (var c : cases) {
+				split.set(i, c);
+				var r = acceptsArguments(split);
+				if (r.ordinal() > worst.ordinal()) worst = r;
 			}
+			return worst.ordinal() < best.ordinal() ? worst : best;
 		}
 		return best;
 	}

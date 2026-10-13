@@ -1,5 +1,7 @@
 package leekscript.common;
 
+import java.util.List;
+
 import leekscript.compiler.JavaWriter;
 
 public class IntervalType extends Type {
@@ -23,6 +25,12 @@ public class IntervalType extends Type {
 			return cast;
 		}
 		return super.accepts(type);
+	}
+
+	@Override
+	public List<Type> cases() {
+		// Un Interval sans type d'élément est entier ou réel
+		return type == Type.ANY ? List.of(Type.INTEGER_INTERVAL, Type.REAL_INTERVAL) : List.of(this);
 	}
 
 	@Override

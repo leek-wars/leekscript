@@ -88,6 +88,14 @@ public class Type {
 		return accepts(type) != CastType.INCOMPATIBLE;
 	}
 
+	/**
+	 * Les types concrets que peut prendre une valeur de ce type, quand aucun ne le couvre
+	 * seul : un appel à plusieurs versions est sûr si elles couvrent chacun de ces cas.
+	 */
+	public List<Type> cases() {
+		return List.of(this);
+	}
+
 	public CastType accepts(Type type) {
 		if (type == this) return CastType.EQUALS;
 		if (this == ANY) return CastType.UPCAST;
