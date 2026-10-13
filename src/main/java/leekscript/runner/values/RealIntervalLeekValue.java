@@ -113,9 +113,7 @@ public class RealIntervalLeekValue extends IntervalLeekValue {
 
 	public double intervalSize(AI ai) {
 		if (intervalIsEmpty(ai)) return 0;
-		if (from == Double.NEGATIVE_INFINITY || to == Double.POSITIVE_INFINITY) {
-			return Double.POSITIVE_INFINITY;
-		}
+		if (!intervalIsBounded(ai)) return Double.POSITIVE_INFINITY;
 		return to - from;
 	}
 

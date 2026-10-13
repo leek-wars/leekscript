@@ -128,9 +128,7 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 
 	public long intervalSize(AI ai) {
 		if (intervalIsEmpty(ai)) return 0;
-		if (from == Long.MIN_VALUE || to == Long.MAX_VALUE) {
-			return Long.MAX_VALUE;
-		}
+		if (!intervalIsBounded(ai)) return Long.MAX_VALUE;
 		long size = to - from;
 		return size < 0 ? Long.MAX_VALUE : size; // Débordement : plus grand qu'un long
 	}
