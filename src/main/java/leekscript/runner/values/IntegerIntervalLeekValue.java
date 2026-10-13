@@ -127,10 +127,11 @@ public class IntegerIntervalLeekValue extends IntervalLeekValue {
 	}
 
 	public long intervalSize(AI ai) {
+		if (intervalIsEmpty(ai)) return 0;
 		if (from == Long.MIN_VALUE || to == Long.MAX_VALUE) {
 			return Long.MAX_VALUE;
 		}
-		return from - to;
+		return to - from;
 	}
 
 	public boolean intervalIsEmpty(AI ai) {

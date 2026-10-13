@@ -83,6 +83,27 @@ public class TestInterval extends TestCommon {
 	}
 
 	@Test
+	public void testInterval_intervalSize() throws Exception {
+		section("Interval.intervalSize");
+		code("return intervalSize([1..10])").equals("9");
+		code_v2_("return intervalSize([1.5 .. 10.0])").almost(8.5);
+		code("return intervalSize([-10..-2])").equals("8");
+		code("return intervalSize(]1..5[)").equals("4");
+		code("return intervalSize([1..1])").equals("0");
+		code("return intervalSize([1..0])").equals("0");
+		code_v1("return intervalSize([..])").equals("0");
+		code_v2_("return intervalSize([..])").equals("0.0");
+		code("return intervalSize(]..[)").equals("∞");
+		code("return intervalSize(]..1.5])").equals("∞");
+		code_strict_v4_("Interval i = [1.5..10]; return intervalSize(i)").almost(8.5);
+		code("intervalSize([1..2])").ops(3);
+		// Un intervalle converti en nombre vaut sa taille
+		code("var i = [1..10]; return i * 2").equals("18");
+		code("var i = [1..10]; return -i").equals("-9");
+		code_v4_("any i = [1..10]; integer x = i; return x").equals("9");
+	}
+
+	@Test
 	public void testInterval_intervalIsEmpty() throws Exception {
 		section("Interval.intervalIsEmpty");
 		code("return intervalIsEmpty([..])").equals("true");
