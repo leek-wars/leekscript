@@ -266,9 +266,10 @@ public class JavaCompiler {
 			long compile_time = System.nanoTime() - t;
 
 			if (!result) {
+				var errors = output.toString();
 				int javaLine = -1;
 				Pattern r = Pattern.compile("AI_" + file.getId() + ".java:(.*?):");
-				Matcher m = r.matcher(output.toString());
+				Matcher m = r.matcher(errors);
 				if (m.find()) {
 					javaLine = Integer.parseInt(m.group(1));
 				}
@@ -281,10 +282,10 @@ public class JavaCompiler {
 				// Limites de la JVM atteintes par le code du joueur : méthode de plus de 64 Ko,
 				// fonction de plus de 255 emplacements de paramètres (un integer ou un real en
 				// prend deux). Une erreur de l'IA, pas du serveur.
-				if (output.toString().contains("code too large") || output.toString().contains("too many parameters")) {
-					throw new LeekScriptException(Error.CODE_TOO_LARGE, output.toString(), location);
+				if (errors.contains("code too large") || errors.contains("too many parameters")) {
+					throw new LeekScriptException(Error.CODE_TOO_LARGE, errors, location);
 				} else {
-					throw new LeekScriptException(Error.COMPILE_JAVA, output.toString(), location)
+					throw new LeekScriptException(Error.COMPILE_JAVA, errors, location)
 						.details(javaExcerpt(file.getCompiledCode().getJavaCode(), javaLine));
 				}
 			}
