@@ -152,6 +152,15 @@ public abstract class Expression {
 		return false;
 	}
 
+	/**
+	 * Type pour un avertissement « peut être null » : getType, sauf là où le contexte exclut
+	 * null sans que le type le dise (LeekArrayAccess.getWarningType). Ne sert qu'à taire un
+	 * avertissement, jamais pour le Java, une erreur ou un autre diagnostic (NarrowingInfo.warningCast).
+	 */
+	public Type getWarningType() {
+		return getType();
+	}
+
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {}
 
 	public abstract void analyze(WordCompiler compiler) throws LeekCompilerException;

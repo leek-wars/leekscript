@@ -10,6 +10,7 @@ import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.ClassMethodBlock;
@@ -60,6 +61,10 @@ public class LeekFunctionCall extends Expression {
 		return set;
 	}
 
+	// Natifs qui ne font que lire la map passée en premier argument (cf preAnalyze)
+	private static final java.util.Set<String> MAP_READERS = java.util.Set.of("mapContainsKey", "mapContains", "mapGet",
+		"mapSize", "mapIsEmpty", "mapKeys", "mapValues", "mapSearch", "mapMin", "mapMax", "mapSum", "mapAverage", "count");
+
 	public LeekFunctionCall(Token openParenthesis) {
 		this.openParenthesis = openParenthesis;
 		this.openParenthesis.setExpression(this);
@@ -108,8 +113,17 @@ public class LeekFunctionCall extends Expression {
 		return mParameters.size();
 	}
 
+	public Expression getParameter(int index) {
+		return mParameters.get(index);
+	}
+
 	public Expression getCallExpression() {
 		return mExpression;
+	}
+
+	/** Nom de la fonction native appelée (connu dès le preAnalyze), ou null. */
+	public String systemFunctionName() {
+		return mExpression instanceof LeekVariable function && function.getVariableType() == VariableType.SYSTEM_FUNCTION ? function.getName() : null;
 	}
 
 	@Override
@@ -588,6 +602,10 @@ public class LeekFunctionCall extends Expression {
 		for (Expression parameter : mParameters) {
 			parameter.preAnalyze(compiler);
 		}
+		if (!mParameters.isEmpty()) {
+			var name = systemFunctionName();
+			if (name != null && MAP_READERS.contains(name)) LeekVariable.addEntryPreservingUse(mParameters.get(0));
+		}
 	}
 
 	@Override
@@ -615,10 +633,12 @@ public class LeekFunctionCall extends Expression {
 		boolean optionalAccess = mExpression instanceof LeekObjectAccess oa && oa.isOptional();
 		if (!optionalAccess) {
 			if (strict && !exprType.isCallable()) {
-				compiler.addError(new AnalyzeError(mExpression.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAY_NOT_BE_CALLABLE, new String[] {
-					mExpression.toString(),
-					exprType.toString()
-				} ));
+				if (!mExpression.getWarningType().isCallable()) {
+					compiler.addError(new AnalyzeError(mExpression.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAY_NOT_BE_CALLABLE, new String[] {
+						mExpression.toString(),
+						exprType.toString()
+					} ));
+				}
 			}
 			else if (!exprType.canBeCallable()) {
 				var level = strict ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
@@ -898,7 +918,7 @@ public class LeekFunctionCall extends Expression {
 		// Boucle au lieu de stream+collect — appelé pour chaque function call analyzed.
 		var types = new ArrayList<Type>(mParameters.size());
 		for (var p : mParameters) types.add(p.getType());
-		var cast = functionType.acceptsArguments(types);
+		var cast = NarrowingInfo.warningArgumentsCast(functionType, mParameters, types, functionType.acceptsArguments(types));
 		if (cast.ordinal() > CastType.UPCAST.ordinal()) {
 
 			if (cast == CastType.INCOMPATIBLE || compiler.getMainBlock().isStrict()) {

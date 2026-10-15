@@ -6,6 +6,7 @@ import leekscript.common.Type.CastType;
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
@@ -35,6 +36,7 @@ public class LeekArrayAccess extends Expression {
 	// partent déjà de ANY.
 	private Type type = Type.ANY;
 	private boolean optional = false; // accès indexé optionnel `a?[b]`
+	private Type warningType = null; // cf getWarningType
 	private boolean strict; // cf setReturnsObject
 
 	public LeekArrayAccess(Token openingBracket) {
@@ -92,6 +94,16 @@ public class LeekArrayAccess extends Expression {
 		return mCase;
 	}
 
+	/**
+	 * Lecture `m[k]` sous `mapContainsKey(m, k)` (strict, LS4+), ou case d'une telle lecture
+	 * (`m[k][j]`) : type des valeurs sans le null d'une clé absente. Pour les avertissements
+	 * seulement : getType et le Java n'en tiennent pas compte (cf TestNarrowing, `x = m[j]`).
+	 */
+	@Override
+	public Type getWarningType() {
+		return warningType != null ? warningType : type;
+	}
+
 	@Override
 	public int getNature() {
 		return TABULAR_VALUE;
@@ -138,6 +150,7 @@ public class LeekArrayAccess extends Expression {
 	@Override
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
 		mTabular.preAnalyze(compiler);
+		LeekVariable.addEntryPreservingUse(mTabular); // lire ou écrire une case ne retire aucune clé
 		if (mCase != null) {
 			mCase.preAnalyze(compiler);
 		}
@@ -153,15 +166,18 @@ public class LeekArrayAccess extends Expression {
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 
 		strict = compiler.getMainBlock().isStrict();
+		warningType = null;
 		mTabular.analyze(compiler);
 		operations = mTabular.getOperations();
 
 		// Vérification du type du tableau
 		if (compiler.getMainBlock().isStrict() && !mTabular.getType().isIndexable()) {
-			compiler.addError(new AnalyzeError(mTabular.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAY_NOT_BE_INDEXABLE, new String[] {
-				mTabular.toString(),
-				mTabular.getType().toString()
-			}));
+			if (!mTabular.getWarningType().isIndexable()) {
+				compiler.addError(new AnalyzeError(mTabular.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAY_NOT_BE_INDEXABLE, new String[] {
+					mTabular.toString(),
+					mTabular.getType().toString()
+				}));
+			}
 		} else if (!mTabular.getType().canBeIndexable()) {
 			var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 			compiler.addError(new AnalyzeError(mTabular.getLocation(), level, Error.NOT_INDEXABLE, new String[] {
@@ -185,16 +201,17 @@ public class LeekArrayAccess extends Expression {
 
 		// Vérification du type de clé
 		if (mCase != null) {
-			var cast = mTabular.getType().key().accepts(mCase.getType());
+			var keyType = mTabular.getType().key();
+			var cast = NarrowingInfo.warningCast(keyType, mCase);
 			if (cast == CastType.INCOMPATIBLE) {
 				compiler.addError(new AnalyzeError(mCase.getLocation(), AnalyzeErrorLevel.WARNING, Error.INCOMPATIBLE_TYPE, new String[] {
 					mCase.getType().toString(),
-					mTabular.getType().key().toString(),
+					keyType.toString(),
 				}));
 			} else if (compiler.getMainBlock().isStrict() && cast.ordinal() >= CastType.UNSAFE_DOWNCAST.ordinal()) {
 				compiler.addError(new AnalyzeError(mCase.getLocation(), AnalyzeErrorLevel.WARNING, Error.DANGEROUS_CONVERSION, new String[] {
 					mCase.getType().toString(),
-					mTabular.getType().key().toString(),
+					keyType.toString(),
 				}));
 			}
 		}
@@ -202,8 +219,17 @@ public class LeekArrayAccess extends Expression {
 		if (colon != null) {
 			this.type = mTabular.getType();
 		} else {
+			var version = compiler.getMainBlock().getVersion();
 			var key = mCase instanceof LeekString ls ? ls.getText() : null;
-			this.type = mTabular.getType().elementAccess(compiler.getMainBlock().getVersion(), compiler.getMainBlock().isStrict(), key);
+			this.type = mTabular.getType().elementAccess(version, strict, key);
+			// LS4+ : avant, un paramètre `@` réécrit la variable passée, mapContainsKey peut être redéfinie
+			if (strict && version >= 4 && mCase != null && !optional) {
+				warningType = NarrowingInfo.presentEntryType(compiler.getCurrentBlock(), mTabular, mCase);
+				if (warningType == null) {
+					var tabular = mTabular.getWarningType();
+					if (tabular != mTabular.getType()) warningType = tabular.elementAccess(version, strict, key);
+				}
+			}
 		}
 
 		// Accès indexé optionnel `a?[b]` : identique à `a[b]` au runtime (l'indexation

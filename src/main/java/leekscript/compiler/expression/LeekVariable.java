@@ -44,6 +44,9 @@ public class LeekVariable extends Expression {
 	private LeekVariable variable;
 	private Type declaredType = null;
 	private Type lastAssignedType = null;
+	// Suivi d'une variable pour NarrowingInfo.mapEntry, posé au preAnalyze
+	private boolean reassigned = false; // cf setReassigned
+	private int entryPreservingUses = 0; // cf mayLoseEntries
 	private int usageCount = 0;
 	private LeekGlobalDeclarationInstruction globalDeclaration = null; // cf slotType
 	// Lazy : la grande majorité des LeekVariable n'ont aucune annotation. Une
@@ -168,6 +171,7 @@ public class LeekVariable extends Expression {
 		return token.getWord();
 	}
 
+	// Une fois par référence résolue : mayLoseEntries en dépend
 	public void addUsage() {
 		usageCount++;
 	}
@@ -305,6 +309,30 @@ public class LeekVariable extends Expression {
 	public Type getLastAssignedType() { return lastAssignedType; }
 	public void setLastAssignedType(Type type) { this.lastAssignedType = type; }
 	public void clearLastAssignedType() { this.lastAssignedType = null; }
+
+	/**
+	 * Variable déclarée, réécrite quelque part après sa déclaration (affectation, incrément,
+	 * itérateur d'un foreach sans `var`). Posé au preAnalyze, donc connu de toute l'analyse.
+	 */
+	public void setReassigned() { reassigned = true; }
+	public boolean isReassigned() { return reassigned; }
+
+	/**
+	 * `expression` utilise la map d'une variable sans pouvoir lui retirer de clé : case lue ou
+	 * écrite (`m[k]`), natif qui ne fait que lire, foreach. Cf mayLoseEntries.
+	 */
+	public static void addEntryPreservingUse(Expression expression) {
+		if (expression.trim() instanceof LeekVariable reference && reference.variable != null) {
+			reference.variable.entryPreservingUses++;
+		}
+	}
+
+	/**
+	 * La map de cette variable peut-elle perdre une clé par elle ? Oui dès qu'une utilisation
+	 * n'est pas comptée par addEntryPreservingUse : mapRemove, mapClear, passage à une fonction,
+	 * alias `var b = m`, `return m`…
+	 */
+	public boolean mayLoseEntries() { return usageCount > entryPreservingUses; }
 
 	public FunctionBlock getFunctionDeclaration() {
 		return functionDeclaration;

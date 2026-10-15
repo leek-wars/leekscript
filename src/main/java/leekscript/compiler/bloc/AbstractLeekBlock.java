@@ -2,8 +2,10 @@ package leekscript.compiler.bloc;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import leekscript.compiler.Token;
 import leekscript.compiler.AnalyzeError;
@@ -37,6 +39,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	protected int mEndInstruction = 0;
 	protected boolean full = false;
 	protected Map<String, Type> mNarrowedPropertyTypes = null;
+	protected Set<NarrowingInfo.MapEntry> mPresentEntries = null; // cf isPresentEntry
 	// Mis à true dans le constructeur des sous-classes qui override getVariable
 	// (ClassMethodBlock). Plus rapide qu'un appel virtuel à overridesGetVariable()
 	// dans la boucle de getVariable.
@@ -148,6 +151,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	 */
 	public Map<String, Type> narrowPropertyTypes(Map<String, Type> narrowings) {
 		var saved = mNarrowedPropertyTypes;
+		if (narrowings == null || narrowings.isEmpty()) return saved;
 		var merged = saved == null ? new HashMap<String, Type>() : new HashMap<>(saved);
 		merged.putAll(narrowings);
 		mNarrowedPropertyTypes = merged;
@@ -156,6 +160,47 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 
 	public void restoreNarrowedPropertyTypes(Map<String, Type> saved) {
 		mNarrowedPropertyTypes = saved;
+	}
+
+	/**
+	 * Case de map présente ici (`mapContainsKey(m, k)` vrai dans ce bloc ou un bloc parent),
+	 * cf LeekArrayAccess.
+	 */
+	public boolean isPresentEntry(NarrowingInfo.MapEntry entry) {
+		for (var block = this; block != null; block = block.mParent) {
+			if (block.mPresentEntries != null && block.mPresentEntries.contains(entry)) return true;
+		}
+		return false;
+	}
+
+	/** Une case de map présente ici, n'importe laquelle ? Sans allocation, avant isPresentEntry. */
+	public boolean hasPresentEntries() {
+		for (var block = this; block != null; block = block.mParent) {
+			if (block.mPresentEntries != null) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Comme narrowPropertyTypes, pour des cases de map : renvoie l'état à rendre à
+	 * restorePresentEntries. Les ensembles ne sont jamais modifiés en place : `entries` peut
+	 * être gardé tel quel.
+	 */
+	public Set<NarrowingInfo.MapEntry> addPresentEntries(Set<NarrowingInfo.MapEntry> entries) {
+		var saved = mPresentEntries;
+		if (entries == null || entries.isEmpty()) return saved;
+		if (saved == null) {
+			mPresentEntries = entries;
+		} else {
+			var merged = new HashSet<>(saved);
+			merged.addAll(entries);
+			mPresentEntries = merged;
+		}
+		return saved;
+	}
+
+	public void restorePresentEntries(Set<NarrowingInfo.MapEntry> saved) {
+		mPresentEntries = saved;
 	}
 
 	public LeekInstruction lastInstruction() {
@@ -337,6 +382,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		// Lazy : la grande majorité des blocs n'ont aucun if avec narrowing → on
 		// évite l'alloc de l'ArrayList pour rien sur chaque block.analyze().
 		ArrayList<Map<LeekVariable, Type>> pendingRestores = null;
+		var presentEntries = mPresentEntries;
 
 		for (var instruction : mInstructions) {
 			instruction.analyze(compiler);
@@ -360,9 +406,18 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 					}
 				}
 			}
+			// Case 2 for map entries (`if (!mapContainsKey(m, k)) return`). Not case 7: an
+			// assignment in the body does not create the entry.
+			if (instruction instanceof ConditionalBloc cb
+				&& cb.getParentCondition() == null
+				&& cb.mEndInstruction != 0
+				&& cb.getNarrowingInfo() != null) {
+				addPresentEntries(cb.getNarrowingInfo().getFalseEntries());
+			}
 		}
 
 		// Restore all narrowings applied during this block
+		mPresentEntries = presentEntries;
 		if (pendingRestores != null) for (var saved : pendingRestores) {
 			NarrowingInfo.restore(saved);
 		}

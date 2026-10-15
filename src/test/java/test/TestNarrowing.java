@@ -753,4 +753,77 @@ public class TestNarrowing extends TestCommon {
 		code_strict_v4_("Map<integer, Function> a = [0: function () { return 1 }]; return a[0]!()").equals("1");
 		code_strict_v4_("Map<integer, Function> a = [0: function () { return 1 }]; return a[0]()").warning(Error.MAY_NOT_BE_CALLABLE);
 	}
+
+	@Test
+	public void testMapContainsKey_silences_null_warnings() throws Exception {
+		section("mapContainsKey(m, k): no « may be null » warning on m[k] (strict)");
+		// La case existe : plus d'avertissement sur la lecture utilisée directement
+		code_strict_v4_("Map<integer, integer> a = [1 : -2]; if (mapContainsKey(a, 1)) { return abs(a[1]) } return 0").noWarning();
+		code_strict_v4_("Map<integer, integer> a = [1 : -2]; if (mapContainsKey(a, 1)) { return abs(a[1]) } return 0").equals("2");
+		code_strict_v4_("Map<integer, integer> a = [1 : 2]; if (mapContainsKey(a, 1)) { integer x = a[1]; return x } return 0").noWarning();
+		code_strict_v4_("Map<integer, integer> a = [1 : 2]; integer x = 0; if (mapContainsKey(a, 1)) { x = a[1] } return x").noWarning();
+		code_strict_v4_("Map<integer, integer> a = [1 : 2]; integer x = 0; if (mapContainsKey(a, 1)) { x = a[1] } return x").equals("2");
+		code_strict_v4_("function f(Map<integer, integer> m) => integer { if (mapContainsKey(m, 1)) { return m[1] } return 0 } return f([1: 5])").noWarning();
+		code_strict_v4_("Map<string, Array<integer>> a = ['x' : [1, 2]]; if (mapContainsKey(a, 'x')) { return count(a['x']) + a['x'][1] } return 0").noWarning();
+		code_strict_v4_("Map<string, Array<integer>> a = ['x' : [1, 2]]; if (mapContainsKey(a, 'x')) { return count(a['x']) + a['x'][1] } return 0").equals("4");
+		code_strict_v4_("Map<string, Array<integer>> a = ['x' : [1, 2]]; var s = 0; if (mapContainsKey(a, 'x')) { for (var v in a['x']) { s += v } } return s").noWarning();
+		code_strict_v4_("class A { integer n = 3 } Map<integer, A> a = [1 : new A()]; if (mapContainsKey(a, 1)) { return a[1].n } return 0").noWarning();
+		code_strict_v4_("class A { integer n = 3 } Map<integer, A> a = [1 : new A()]; if (mapContainsKey(a, 1)) { return a[1].n } return 0").equals("3");
+		// Ternaire, champ ou case de la valeur, globale
+		code_strict_v4_("function f(Map<integer, integer> m) => integer { return mapContainsKey(m, 1) ? m[1] : 0 } return f([1: 5])").noWarning();
+		code_strict_v4_("Map<integer, integer> m = [1: 5]; integer x = mapContainsKey(m, 1) ? m[1] : 0; return x").noWarning();
+		code_strict_v4_("class A { integer n = 3 } Map<integer, A> a = [1 : new A()]; if (mapContainsKey(a, 1)) { integer n = a[1].n; return n } return 0").noWarning();
+		code_strict_v4_("Map<string, Array<integer>> a = ['x' : [1, 2]]; if (mapContainsKey(a, 'x')) { integer y = a['x'][1]; return y } return 0").noWarning();
+		code_strict_v4_("Map<integer, integer> m = [1: 5]; if (!mapContainsKey(m, 1)) return 0; global integer g = m[1]; return g").noWarning();
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { return m[] } return 0").compileError(Error.VALUE_EXPECTED);
+		// Cas inversé : else, sortie anticipée, ternaire, &&
+		code_strict_v4_("Map<integer, integer> a = [1 : 2]; if (!mapContainsKey(a, 1)) { return 0 } else { return abs(a[1]) }").noWarning();
+		code_strict_v4_("Map<integer, integer> a = [1 : -2]; if (!mapContainsKey(a, 1)) return 0; return abs(a[1])").noWarning();
+		code_strict_v4_("Map<integer, integer> a = [1 : -2]; if (!mapContainsKey(a, 1)) return 0; return abs(a[1])").equals("2");
+		code_strict_v4_("Map<integer, integer> a = [:]; if (!mapContainsKey(a, 1)) return 0; return abs(a[1])").equals("0");
+		code_strict_v4_("Map<integer, integer> a = [1 : 2]; return mapContainsKey(a, 1) ? abs(a[1]) : 0").noWarning();
+		code_strict_v4_("Map<integer, integer> a = [1 : 2]; return mapContainsKey(a, 1) && abs(a[1]) > 0").noWarning();
+		// Clé variable : paramètre, itérateur ; map paramètre, globale lue dans une fonction
+		code_strict_v4_("function f(Map<integer, integer> m, integer k) { if (mapContainsKey(m, k)) { return abs(m[k]) } return 0 } return f([3: -4], 3)").noWarning();
+		code_strict_v4_("function f(Map<integer, integer> m, integer k) { if (mapContainsKey(m, k)) { return abs(m[k]) } return 0 } return f([3: -4], 3)").equals("4");
+		code_strict_v4_("Map<integer, integer> m = [3: -4]; var r = 0; for (var k in [3, 5]) { if (mapContainsKey(m, k)) { r += abs(m[k]) } } return r").equals("4");
+		code_strict_v4_("global Map<integer, integer> G = [:]; function f(integer k) { G[k] = -5; if (mapContainsKey(G, k)) { return abs(G[k]) } return 0 } return f(3)").noWarning();
+		code_strict_v4_("class A { public static final K = 1 } Map<integer, integer> m = [1: -2]; if (mapContainsKey(m, 1)) { return abs(m[A.K]) } return 0").equals("2");
+	}
+
+	@Test
+	public void testMapContainsKey_keeps_types_and_other_warnings() throws Exception {
+		section("mapContainsKey(m, k): m[k] keeps its type, other warnings stay");
+		// Le type de la lecture ne change pas : rien de ce qui en découle non plus
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var x = m[1]; x = m[9]; return x } return -1").equals("null");
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var t = [m[1]]; t[0] = m[9]; return t } return -1").equals("[null]");
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var x = m[1]; x = null; return x } return 0").equals("null");
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 9)) { string? s = m[9]; return s } return 'ok'").equals("\"ok\"");
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { return m[1]! } return 0").noWarning();
+		// Autre case, valeurs nullables, hors strict
+		code_strict_v4_("Map<integer, integer> a = [1 : 2]; if (mapContainsKey(a, 1)) { return abs(a[2]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4_("Map<integer, integer?> a = [1 : null]; if (mapContainsKey(a, 1)) { return abs(a[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_v4_("Map<integer, integer> a = [1 : 2]; if (mapContainsKey(a, 1)) { return a[1] + 1 } return 0").equals("3");
+		// Map ou clé réécrite : dans le corps, avant le if, dans une boucle, une fonction, une closure, un foreach sans var
+		code_strict_v4_("Map<integer, integer> a = [1: 2]; if (mapContainsKey(a, 1)) { a = [5: 6]; return abs(a[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4_("Map<integer, integer> a = [1: 2]; var k = 0; k = 1; if (mapContainsKey(a, k)) { return abs(a[k]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4_("Map<integer, integer> parent = [3: 2, 2: 1]; integer cell = 3; var path = []; if (mapContainsKey(parent, cell)) { while (cell != 1) { push(path, cell); cell = parent[cell] } } return path").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+		code_strict_v4_("global Map<integer, integer> g = [1: 2]; if (mapContainsKey(g, 1)) { f(); return abs(g[1]) } function f() { g = [5: 6] } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4_("Map<integer, integer> a = [1: 2]; var k = 1; var f = function() { k = 7 }; if (mapContainsKey(a, k)) { f(); return abs(a[k]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4_("Map<integer, integer> a = [1: 2]; var k = 1; if (mapContainsKey(a, k)) { for (k in [7]) {} return abs(a[k]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		// Clé tableau : elle change sans affectation
+		code_strict_v4_("Array<integer> k = [1, 2]; Map<Array<integer>, integer> m = [[1, 2]: 5]; if (mapContainsKey(m, k)) { push(k, 3); return abs(m[k]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		// Paramètre de closure homonyme : une autre variable
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var f = function(Map<integer, integer> m) { return abs(m[1]) }; return f([5: 6]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		// La map peut perdre une clé : mapRemove, mapClear, alias, passage à une fonction
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (!mapContainsKey(m, 1)) return 0; mapClear(m); return abs(m[1])").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { mapRemove(m, 1); return abs(m[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; var b = m; if (mapContainsKey(m, 1)) { mapRemove(b, 1); return abs(m[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		// Une affectation dans le corps ne crée pas la case pour la suite, mais garde le narrowing de x
+		code_strict_v4_("Map<integer, integer> a = [:]; if (!mapContainsKey(a, 1)) { a[1] = 3 } return abs(a[1])").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4_("Map<integer, integer> a = [1: 2]; integer? x = null; if (x == null || !mapContainsKey(a, 1)) { x = 5 } return abs(x)").noWarning();
+		// Une case écrite garde son type nullable
+		code_strict_v4_("Map<integer, integer?> a = [1: 2]; if (mapContainsKey(a, 1)) { a[1] = null } return a").equals("[1 : null]");
+		code_strict_v4_("Map<integer, integer> a = [1: 2]; if (mapContainsKey(a, 1)) { a[1] += 5; a[1]++ } return a").equals("[1 : 8]");
+	}
 }

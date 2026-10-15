@@ -7,6 +7,7 @@ import leekscript.compiler.Token;
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.AnonymousFunctionBlock;
@@ -82,6 +83,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 				cast = nonNullCast;
 			}
 		}
+		if (expression != null) cast = NarrowingInfo.warningCast(returnType, expression, cast);
 		if (cast.ordinal() > CastType.UPCAST.ordinal()) {
 
 			if (cast == CastType.INCOMPATIBLE || compiler.getMainBlock().isStrict()) {

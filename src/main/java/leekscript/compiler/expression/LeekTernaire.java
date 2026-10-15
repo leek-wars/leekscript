@@ -70,6 +70,20 @@ public class LeekTernaire extends LeekExpression {
 		return type;
 	}
 
+	/** Branches lues pour un avertissement (`mapContainsKey(m, k) ? m[k] : 0`, cf Expression.getWarningType). */
+	@Override
+	public Type getWarningType() {
+		if (mExpression1 == null || mExpression2 == null) return type;
+		var type1 = mExpression1.getWarningType();
+		var type2 = mExpression2.getWarningType();
+		if (type1 == mExpression1.getType() && type2 == mExpression2.getType()) return type;
+		return branchesType(type1, type2);
+	}
+
+	private static Type branchesType(Type type1, Type type2) {
+		return Type.compound(type1 == Type.VOID ? Type.NULL : type1, type2 == Type.VOID ? Type.NULL : type2);
+	}
+
 	/**
 	 * Sous un type référence précis, chaque branche reçoit un cast vers ce type (cf writeJavaCode).
 	 */
@@ -334,11 +348,7 @@ public class LeekTernaire extends LeekExpression {
 		}
 
 		if (mExpression1 != null && mExpression2 != null) {
-			var type1 = mExpression1.getType();
-			var type2 = mExpression2.getType();
-			if (type1 == Type.VOID) type1 = Type.NULL;
-			if (type2 == Type.VOID) type2 = Type.NULL;
-			type = Type.compound(type1, type2);
+			type = branchesType(mExpression1.getType(), mExpression2.getType());
 		}
 	}
 

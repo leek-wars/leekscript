@@ -105,8 +105,9 @@ public class ConditionalBloc extends AbstractLeekBlock {
 				}
 			}
 
-			// Step 4: Apply property narrowings to the block
+			// Step 4: Apply property narrowings and present map entries to the block
 			applyPropertyNarrowings(narrowingInfo.getTruePropertyNarrowings());
+			addPresentEntries(narrowingInfo.getTrueEntries());
 
 			super.analyze(compiler);
 
@@ -117,18 +118,19 @@ public class ConditionalBloc extends AbstractLeekBlock {
 			}
 
 			// Step 5: Restore narrowings
-			clearPropertyNarrowings();
+			clearBlockNarrowings();
 			NarrowingInfo.restore(saved);
 		} else {
 			// This is an 'else' block - parent false narrowings are already applied
 			// Also apply property narrowings from parent false branch
 			if (mParentCondition != null && mParentCondition.narrowingInfo != null) {
 				applyPropertyNarrowings(mParentCondition.narrowingInfo.getFalsePropertyNarrowings());
+				addPresentEntries(mParentCondition.narrowingInfo.getFalseEntries());
 			}
 
 			super.analyze(compiler);
 
-			clearPropertyNarrowings();
+			clearBlockNarrowings();
 		}
 
 		// Step 6: Restore parent false narrowings
@@ -208,8 +210,9 @@ public class ConditionalBloc extends AbstractLeekBlock {
 		return true;
 	}
 
-	private void clearPropertyNarrowings() {
+	private void clearBlockNarrowings() {
 		mNarrowedPropertyTypes = null;
+		mPresentEntries = null;
 	}
 
 	@Override

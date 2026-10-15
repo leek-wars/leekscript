@@ -10,6 +10,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekType;
+import leekscript.compiler.expression.LeekVariable;
 import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
@@ -73,6 +74,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 		// On analyse d'abord le container puis la variable
 		mArray.preAnalyze(compiler);
+		LeekVariable.addEntryPreservingUse(mArray); // parcourir une map ne lui retire aucune clé
 
 		// Si c'est une déclaration on vérifie que le nom est disponible
 		if (mIsKeyDeclaration) {
@@ -114,7 +116,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 			compiler.addError(new AnalyzeError(mArray.getLocation(), level, Error.NOT_ITERABLE, new String[] { mArray.getType().toString() } ));
 		}
-		if (compiler.getMainBlock().isStrict() && !mArray.getType().isIterable()) {
+		if (compiler.getMainBlock().isStrict() && !mArray.getType().isIterable() && !mArray.getWarningType().isIterable()) {
 			compiler.addError(new AnalyzeError(mArray.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAY_NOT_BE_ITERABLE, new String[] {
 				mArray.toString(),
 				mArray.getType().toString()

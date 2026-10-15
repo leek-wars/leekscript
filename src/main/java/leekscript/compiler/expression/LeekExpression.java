@@ -1208,7 +1208,12 @@ public class LeekExpression extends Expression {
 		if (mExpression1 != null) mExpression1.preAnalyze(compiler);
 		if (mExpression2 != null) mExpression2.preAnalyze(compiler);
 
-		if (assignTarget() instanceof LeekVariable v
+		var target = assignTarget();
+		if (target instanceof LeekVariable v && v.getVariable() != null) {
+			v.getVariable().setReassigned();
+		}
+
+		if (target instanceof LeekVariable v
 			&& (v.getVariableType() == VariableType.SYSTEM_FUNCTION || v.getVariableType() == VariableType.FUNCTION)) {
 			// V<=3 allows redefining a function via plain `=` (legacy). Every other form
 			// (compound assign, ++, --) is undefined — reject in all versions.
@@ -1379,6 +1384,7 @@ public class LeekExpression extends Expression {
 			if (mOperator == Operators.COALESCE_ASSIGN) expressionType = Type.compound(mExpression1.getType(), mExpression2.getType());
 
 			var cast = targetType.accepts(expressionType);
+			if (mOperator == Operators.ASSIGN) cast = NarrowingInfo.warningCast(targetType, mExpression2, cast);
 			if (cast == CastType.INCOMPATIBLE) {
 				var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 				compiler.addError(new AnalyzeError(getLocation(), level, Error.ASSIGNMENT_INCOMPATIBLE_TYPE, new String[] {

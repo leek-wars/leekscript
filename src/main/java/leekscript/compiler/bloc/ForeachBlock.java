@@ -82,6 +82,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 
 		// On analyse d'abord le container puis la variable
 		mArray.preAnalyze(compiler);
+		LeekVariable.addEntryPreservingUse(mArray); // parcourir une map ne lui retire aucune clé
 
 		// Si c'est une déclaration on vérifie que le nom est disponible
 		if (mIsDeclaration) {
@@ -105,10 +106,15 @@ public class ForeachBlock extends AbstractLeekBlock {
 	 * Un champ (statique ou d'instance) n'est pas une cible valide, comme `for (T.champ in …)` :
 	 * erreur claire plutôt qu'une variable inconnue (#3101) ; le contournement reste
 	 * `for (var x in …) { champ = x }`.
-	 * Résolue sans les membres de classe (hasVariable), comme dans analyze() : sinon le codegen resterait sans variable.
+	 * Résolue sans les membres de classe (getVariable(…, false)), comme dans analyze() : sinon le codegen resterait sans variable.
+	 * La variable est alors réécrite à chaque tour (LeekVariable.setReassigned).
 	 */
 	static void checkIterator(WordCompiler compiler, Token iterator) throws LeekCompilerException {
-		if (compiler.getCurrentBlock().hasVariable(iterator.getWord())) return;
+		var variable = compiler.getCurrentBlock().getVariable(iterator.getWord(), false);
+		if (variable != null) {
+			variable.setReassigned(); // `for (x in t)` sans `var` réécrit x à chaque tour
+			return;
+		}
 		if (compiler.getCurrentBlock().getVariable(iterator.getWord(), true) != null) {
 			compiler.addError(new AnalyzeError(iterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_EXPECTED));
 		} else {
@@ -123,10 +129,12 @@ public class ForeachBlock extends AbstractLeekBlock {
 		this.iteratorVariable = compiler.getCurrentBlock().getVariable(mIterator.getWord(), false);
 
 		if (compiler.getMainBlock().isStrict() && !mArray.getType().isIterable()) {
-			compiler.addError(new AnalyzeError(mArray.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAY_NOT_BE_ITERABLE, new String[] {
-				mArray.toString(),
-				mArray.getType().toString()
-			} ));
+			if (!mArray.getWarningType().isIterable()) {
+				compiler.addError(new AnalyzeError(mArray.getLocation(), AnalyzeErrorLevel.WARNING, Error.MAY_NOT_BE_ITERABLE, new String[] {
+					mArray.toString(),
+					mArray.getType().toString()
+				} ));
+			}
 		} else if (!mArray.getType().canBeIterable()) {
 			var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 			compiler.addError(new AnalyzeError(mArray.getLocation(), level, Error.NOT_ITERABLE, new String[] { mArray.getType().toString() } ));

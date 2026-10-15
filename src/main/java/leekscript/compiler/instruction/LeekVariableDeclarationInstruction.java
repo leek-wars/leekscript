@@ -4,6 +4,7 @@ import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.AbstractLeekBlock;
@@ -261,7 +262,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 
 			// Vérification du type de l'expression
 			if (this.leekType != null) {
-				var cast = this.leekType.getType().accepts(mValue.getType());
+				var cast = NarrowingInfo.warningCast(this.leekType.getType(), mValue);
 				if (cast.ordinal() > CastType.UPCAST.ordinal()) {
 
 					if (cast == CastType.INCOMPATIBLE || compiler.getMainBlock().isStrict()) {

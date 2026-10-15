@@ -6,6 +6,7 @@ import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
@@ -24,6 +25,7 @@ public class LeekObjectAccess extends Expression {
 	private Token dot;
 	private Token field;
 	private Type type = Type.ANY;
+	private Type warningType = null; // cf getWarningType
 	private boolean isFinal = false;
 	private boolean isLeftValue = true;
 	private boolean optional = false; // accès optionnel `obj?.field` (#2272)
@@ -64,6 +66,12 @@ public class LeekObjectAccess extends Expression {
 	@Override
 	public Type getType() {
 		return type;
+	}
+
+	/** Champ d'une lecture `m[k]` sous mapContainsKey (cf LeekArrayAccess.getWarningType) : son type sur la valeur sans null. */
+	@Override
+	public Type getWarningType() {
+		return warningType != null && !optional ? warningType : type;
 	}
 
 	@Override
@@ -110,6 +118,7 @@ public class LeekObjectAccess extends Expression {
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 
 		// System.out.println("oa " + getString());
+		warningType = null;
 		object.analyze(compiler);
 		operations = 1 + object.operations;
 
@@ -232,7 +241,11 @@ public class LeekObjectAccess extends Expression {
 			var memberType = superClassDecl != null ? superClassDecl.getType().member(fieldWord) : objectType.member(fieldWord);
 			if (memberType.isWarning()) {
 
-				if (memberType == Type.ERROR || compiler.getMainBlock().isStrict()) {
+				// Champ d'une lecture `m[k]` sous mapContainsKey : avertissement selon la valeur sans null
+				var warningObjectType = object.getWarningType();
+				var warningMemberType = warningObjectType == objectType ? memberType : warningObjectType.member(fieldWord);
+				if (memberType != Type.ERROR && !warningMemberType.isWarning()) warningType = warningMemberType;
+				if (memberType == Type.ERROR || compiler.getMainBlock().isStrict() && warningMemberType.isWarning()) {
 					var level = memberType == Type.ERROR && compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 					var error = memberType == Type.ERROR ? Error.CLASS_MEMBER_DOES_NOT_EXIST : Error.FIELD_MAY_NOT_EXIST;
 

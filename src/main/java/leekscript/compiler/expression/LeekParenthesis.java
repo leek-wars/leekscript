@@ -52,6 +52,11 @@ public class LeekParenthesis extends Expression {
 	}
 
 	@Override
+	public Type getWarningType() {
+		return mExpression.getWarningType();
+	}
+
+	@Override
 	public String toString() {
 		return "(" + mExpression.toString() + ")";
 	}
