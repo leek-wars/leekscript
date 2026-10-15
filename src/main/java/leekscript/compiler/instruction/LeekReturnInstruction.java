@@ -163,7 +163,9 @@ public class LeekReturnInstruction extends LeekInstruction {
 
 	@Override
 	public int getEndBlock() {
-		return optional ? 0 : 1;
+		// Sans valeur, `return?` s'émet en `return null;` inconditionnel (cf writeJavaCode) : il
+		// termine le bloc, sinon javac rejette le return implicite qui suit (« unreachable statement »).
+		return optional && expression != null ? 0 : 1;
 	}
 
 	@Override

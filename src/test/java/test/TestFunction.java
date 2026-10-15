@@ -532,6 +532,11 @@ public class TestFunction extends TestCommon {
 		code("return? 'test'").equals("\"test\"");
 		code("return? null 5").equals("5");
 		code("return? null return? null 5").equals("5");
+		// Sans valeur, `return?` renvoie null comme un `return` nu, et termine donc le bloc
+		code("function f() { return? } return f()").equals("null");
+		code("function f(x) { if (x) { return 1 } else { return? } } return [f(1), f(0)]").equals("[1, null]");
+		code("function f(x) { if (x) return?; return 2 } return [f(1), f(0)]").equals("[null, 2]");
+		code("var a = 1 return?;").equals("null");
 	}
 
 	@Test
