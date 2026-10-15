@@ -278,7 +278,10 @@ public class JavaCompiler {
 					location = file.getCompiledCode().getFiles().get(mapping.getAI()) + ":" + mapping.getLeekScriptLine();
 				}
 
-				if (output.toString().contains("code too large")) {
+				// Limites de la JVM atteintes par le code du joueur : méthode de plus de 64 Ko,
+				// fonction de plus de 255 emplacements de paramètres (un integer ou un real en
+				// prend deux). Une erreur de l'IA, pas du serveur.
+				if (output.toString().contains("code too large") || output.toString().contains("too many parameters")) {
 					throw new LeekScriptException(Error.CODE_TOO_LARGE, output.toString(), location);
 				} else {
 					throw new LeekScriptException(Error.COMPILE_JAVA, output.toString(), location)
