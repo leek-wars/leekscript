@@ -22,12 +22,7 @@ public class TestRamTracking {
 
 	@Test
 	public void freeInAnyOrder() throws Exception {
-		var ai = new AI(0, 4) {
-			@Override
-			public Object runIA(Session session) {
-				return null;
-			}
-		};
+		var ai = newAI();
 		long ram = ai.getUsedRAM();
 		var referents = new ArrayList<Object>();
 		var usages = new ArrayList<AI.RamUsage>();
@@ -50,6 +45,56 @@ public class TestRamTracking {
 		for (int i = 2500; i < 5000; i++) usages.get(i).free(ai);
 		assertEquals(ram, ai.getUsedRAM());
 		checkSlots(ai);
+	}
+
+	@Test
+	public void shadowPeaksCountLiveContainers() throws Exception {
+		var ai = newAI();
+		// Au-dessus de la RAM réelle (3 000), mais la mesure ne commence qu'à la moitié de la
+		// limite : sous le double du pic à 8 (~19 000)
+		ai.setMaxRAM(20000);
+		var countField = AI.class.getDeclaredField("ramUsagesCount");
+		countField.setAccessible(true);
+		long ram = ai.getUsedRAM();
+		var referents = new ArrayList<Object>();
+		for (int i = 0; i < 1000; i++) {
+			var empty = new Object();
+			var full = new Object();
+			referents.add(empty);
+			referents.add(full);
+			ai.allocateRAM(empty);
+			ai.allocateRAM(full, 3);
+		}
+		// La mesure ne change pas la RAM du jeu
+		assertEquals(ram + 3 * 1000, ai.getUsedRAM());
+		// Rien n'est libéré : le pic est l'état final, conteneurs vides compris
+		long count = countField.getInt(ai);
+		var peaks = ai.getShadowRAMPeaks();
+		for (int i = 0; i < AI.SHADOW_RAM_BASES.length; i++) {
+			assertEquals(ai.getUsedRAM() + AI.SHADOW_RAM_BASES[i] * count, peaks[i], "base " + AI.SHADOW_RAM_BASES[i]);
+		}
+	}
+
+	@Test
+	public void shadowPeaksIgnoredFarFromTheLimit() throws Exception {
+		var ai = newAI();
+		ai.setMaxRAM(Integer.MAX_VALUE);
+		var referents = new ArrayList<Object>();
+		for (int i = 0; i < 1000; i++) {
+			var o = new Object();
+			referents.add(o);
+			ai.allocateRAM(o, 3);
+		}
+		for (long peak : ai.getShadowRAMPeaks()) assertEquals(0, peak);
+	}
+
+	private static AI newAI() throws Exception {
+		return new AI(0, 4) {
+			@Override
+			public Object runIA(Session session) {
+				return null;
+			}
+		};
 	}
 
 	private static void checkSlots(AI ai) throws Exception {

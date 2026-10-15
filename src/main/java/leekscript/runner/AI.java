@@ -101,6 +101,13 @@ public abstract class AI {
 	private RamUsage[] ramUsages = new RamUsage[256];
 	private int ramUsagesCount = 0;
 
+	// Mesure seule, hors de tout calcul du jeu : pic de mRAM + B × conteneurs suivis (tableau,
+	// map, set, objet, instance), pour B = SHADOW_RAM_BASES[i], au-delà de la moitié de maxRAM.
+	// Un conteneur pas encore ramassé par le GC compte aussi : c'est un majorant.
+	public static final int[] SHADOW_RAM_BASES = { 1, 2, 4, 8 };
+	private static final int SHADOW_RAM_MAX_BASE = SHADOW_RAM_BASES[SHADOW_RAM_BASES.length - 1];
+	private final long[] shadowRAMPeaks = new long[SHADOW_RAM_BASES.length];
+
 	// ClassValue ties cached metadata to the Class lifetime so a recompiled AI's
 	// orphan Class can be GC'd. A plain Map<Class<?>, ...> would leak via the
 	// strong refs from cached Method/Field back to their declaring Class.
@@ -517,6 +524,7 @@ public abstract class AI {
 	public RamUsage allocateRAM(Object obj) {
 		var usage = new RamUsage(0, obj, ramQueue);
 		trackRAM(usage);
+		noteShadowRAM();
 		return usage;
 	}
 
@@ -525,6 +533,7 @@ public abstract class AI {
 		trackRAM(usage);
 		mRAM += ram;
 		checkRamOverflow();
+		noteShadowRAM();
 		return usage;
 	}
 
@@ -532,6 +541,27 @@ public abstract class AI {
 		ram.add(value);
 		mRAM += value;
 		checkRamOverflow();
+		noteShadowRAM();
+	}
+
+	// Chemin de chaque allocation : une comparaison tant que l'IA reste loin de sa limite
+	private void noteShadowRAM() {
+		long count = ramUsagesCount;
+		if (mRAM + SHADOW_RAM_MAX_BASE * count < maxRAM / 2) return;
+		// Les conteneurs déjà ramassés par le GC ne comptent plus, comme au contrôle de dépassement
+		if (mRAM + SHADOW_RAM_MAX_BASE * count > maxRAM) {
+			pollFreedRAM();
+			count = ramUsagesCount;
+		}
+		for (int i = 0; i < SHADOW_RAM_BASES.length; i++) {
+			long ram = mRAM + SHADOW_RAM_BASES[i] * count;
+			if (ram > shadowRAMPeaks[i]) shadowRAMPeaks[i] = ram;
+		}
+	}
+
+	/** Pics mesurés par noteShadowRAM, dans l'ordre de SHADOW_RAM_BASES. */
+	public long[] getShadowRAMPeaks() {
+		return shadowRAMPeaks.clone();
 	}
 
 	public void decreaseRAM(RamUsage tracker, int value) {
