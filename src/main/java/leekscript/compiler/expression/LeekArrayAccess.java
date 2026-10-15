@@ -96,8 +96,9 @@ public class LeekArrayAccess extends Expression {
 
 	/**
 	 * Lecture `m[k]` sous `mapContainsKey(m, k)` (strict, LS4+), ou case d'une telle lecture
-	 * (`m[k][j]`) : type des valeurs sans le null d'une clé absente. Pour les avertissements
-	 * seulement : getType et le Java n'en tiennent pas compte (cf TestNarrowing, `x = m[j]`).
+	 * (`m[k][j]`) : type des valeurs sans le null d'une clé absente. Il devient le type de la
+	 * lecture quand la map ne peut pas contenir null (NarrowingInfo.narrowsEntryType) ; sinon il
+	 * ne sert qu'à taire les avertissements, getType et le Java n'en tenant pas compte.
 	 */
 	@Override
 	public Type getWarningType() {
@@ -228,6 +229,8 @@ public class LeekArrayAccess extends Expression {
 				if (warningType == null) {
 					var tabular = mTabular.getWarningType();
 					if (tabular != mTabular.getType()) warningType = tabular.elementAccess(version, strict, key);
+				} else if (!mLeftValue && NarrowingInfo.narrowsEntryType(mTabular)) {
+					this.type = warningType; // une case lue ne vaut jamais null ; une case écrite garde son type
 				}
 			}
 		}

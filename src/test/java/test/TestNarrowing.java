@@ -792,14 +792,46 @@ public class TestNarrowing extends TestCommon {
 	}
 
 	@Test
-	public void testMapContainsKey_keeps_types_and_other_warnings() throws Exception {
-		section("mapContainsKey(m, k): m[k] keeps its type, other warnings stay");
-		// Le type de la lecture ne change pas : rien de ce qui en découle non plus
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var x = m[1]; x = m[9]; return x } return -1").equals("null");
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var t = [m[1]]; t[0] = m[9]; return t } return -1").equals("[null]");
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var x = m[1]; x = null; return x } return 0").equals("null");
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 9)) { string? s = m[9]; return s } return 'ok'").equals("\"ok\"");
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { return m[1]! } return 0").noWarning();
+	public void testMapContainsKey_narrows_fresh_map_entry() throws Exception {
+		section("mapContainsKey(m, k): m[k] takes the value type when m cannot hold null");
+		// Map initialisée par un littéral, sans null rangé : la lecture est typée comme une case de tableau en strict
+		code_strict_v4_("Map<integer, integer> m = [1: -2]; if (mapContainsKey(m, 1)) { var x = m[1]; return abs(x) } return 0").noWarning();
+		code_strict_v4_("Map<integer, integer> m = [1: -2]; if (mapContainsKey(m, 1)) { integer r = abs(m[1]); return r } return 0").noWarning();
+		code_strict_v4_("Map<integer, integer> m = [1: -2]; if (mapContainsKey(m, 1)) { integer r = abs(m[1]); return r } return 0").equals("2");
+		code_strict_v4_("Map<integer, integer> m = [1: 200, 2: 200]; if (mapContainsKey(m, 1) && mapContainsKey(m, 2)) { return m[1] == m[2] } return false").equals("true");
+		code_strict_v4_("Map<integer, integer> m = [:]; m[1] = 5; m[1] += 1; m[1]++; if (mapContainsKey(m, 1)) { var x = m[1]; return abs(x) } return 0").equals("7");
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { return m[1]! } return 0").warning(Error.USELESS_NON_NULL_ASSERTION);
+		code_strict_v4_("Map<integer, big_integer> m = [1: 2L]; if (mapContainsKey(m, 1)) { return m[1]! } return 0").warning(Error.USELESS_NON_NULL_ASSERTION);
+		code_strict_v4_("Map<integer, integer> m = [1: 7]; m[1] %= 4; m[2] = 9 \\ 2; if (mapContainsKey(m, 2)) { return m[2]! } return 0").warning(Error.USELESS_NON_NULL_ASSERTION);
+		code_strict_v4_("Map<integer, integer> m = [1: 7]; m[1] %= 4; m[2] = 9 \\ 2; if (mapContainsKey(m, 1) && mapContainsKey(m, 2)) { return m[1] + m[2] } return 0").equals("7");
+		code_strict_v4_("Map<integer, real> m = [1: 6.0]; m[2] = 3 / 2; if (mapContainsKey(m, 2)) { return m[2]! } return 0").warning(Error.USELESS_NON_NULL_ASSERTION);
+		// Comme le narrowing de `x != null` : la variable inférée n'est plus nullable
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var x = m[1]; x = m[9]; return x } return -1").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var t = [m[1]]; t[0] = m[9]; return t } return -1").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var x = m[1]; x = null; return x } return 0").compileError(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 9)) { string? s = m[9]; return s } return 'ok'").compileError(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		// Map qui peut contenir null, ou vue par une autre variable : avertissements tus, type inchangé
+		code_strict_v4_("function f(Map<integer, integer> m) { if (mapContainsKey(m, 1)) { var x = m[1]; x = null; return x } return 0 } return f([1: 2])").equals("null");
+		code_strict_v4_("Map<integer, integer> src = [1: 2]; Map<integer, integer> m = src; if (mapContainsKey(m, 1)) { mapRemove(src, 1); return m[1] ?? -1 } return 0").equals("-1");
+		code_strict_v4_("Map<integer, Array<integer>> m = [1: [2]]; m[1] = null; if (mapContainsKey(m, 1)) { return count(m[1]) } return -1").equals("0");
+		code_strict_v4_("Map<integer, integer> m = [:]; m[1] ??= null; if (mapContainsKey(m, 1)) { return m[1] ?? -1 } return 0").equals("-1");
+		code_strict_v4_("Map<integer, integer> m = [1: null]; if (mapContainsKey(m, 1)) { return m[1] ?? -1 } return 0").equals("-1");
+		// Typées non nullables mais null à l'exécution : champ non initialisé, case hors bornes
+		code_strict_v4_("class B { integer v = 3 } class A { B b } var a = new A(); Map<integer, B> m = [1: a.b]; if (mapContainsKey(m, 1)) { var b = m[1] ?? new B(); return b.v } return 0").equals("3");
+		code_strict_v4_("Array<string> t = []; Map<integer, string> m = [1: t[0]]; if (mapContainsKey(m, 1)) { return m[1] ?? 'z' } return 0").equals("\"z\"");
+		code_strict_v4_("class A { B b } class B { integer v = 3 } var a = new A(); Map<integer, B> m = [:]; m[1] = a.b; if (mapContainsKey(m, 1)) { var b = m[1] ?? new B(); return b.v } return 0").equals("3");
+		// `new` d'une fonction rend son résultat ; celui d'une classe n'est jamais null
+		code_strict_v4_("class B { integer v = 3 } function f() { return null } Map<integer, B> m = [1: new B()]; m[1] = new f(); if (mapContainsKey(m, 1)) { var b = m[1] ?? new B(); return b.v } return -1").equals("3");
+		code_strict_v4_("class B { integer v = 3 } Map<integer, B> m = [1: new B()]; m[2] = new B(); if (mapContainsKey(m, 2)) { var b = m[2]; return b.v } return -1").noWarning();
+		code_strict_v4_("Map<integer, Object> m = [1: new Null()]; if (mapContainsKey(m, 1)) { return m[1] ?? 'D' } return 0").equals("\"D\"");
+		code_strict_v4_("class B { integer v = 3 } Map<integer, B> m = [1: new B()]; m[1] = new Null; if (mapContainsKey(m, 1)) { var b = m[1] ?? new B(); return b.v } return -1").equals("3");
+		code_strict_v4_("global g = [1: 2]; function f() { g[1] = null } f(); if (mapContainsKey(g, 1)) { integer x = g[1]; return x + 1 } return 0").equals("1");
+		code_strict_v4_("global g = [1: 2]; class A { static m() { g[1] = null } } A.m(); if (mapContainsKey(g, 1)) { integer x = g[1]; return x + 1 } return 0").equals("1");
+	}
+
+	@Test
+	public void testMapContainsKey_keeps_other_warnings() throws Exception {
+		section("mapContainsKey(m, k): other warnings stay");
 		// Autre case, valeurs nullables, hors strict
 		code_strict_v4_("Map<integer, integer> a = [1 : 2]; if (mapContainsKey(a, 1)) { return abs(a[2]) } return 0").warning(Error.DANGEROUS_CONVERSION);
 		code_strict_v4_("Map<integer, integer?> a = [1 : null]; if (mapContainsKey(a, 1)) { return abs(a[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);

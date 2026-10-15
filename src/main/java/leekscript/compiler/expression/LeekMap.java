@@ -10,6 +10,7 @@ import leekscript.common.Error;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
+import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
@@ -54,6 +55,14 @@ public class LeekMap extends Expression {
 			}
 		}
 		mEntries.add(new Entry(key, value));
+	}
+
+	/** Aucune valeur ne vaut null (NarrowingInfo.isNullFree). */
+	public boolean valuesAreNullFree() {
+		for (var entry : mEntries) {
+			if (!NarrowingInfo.isNullFree(entry.value)) return false;
+		}
+		return true;
 	}
 
 	public boolean isEmpty() {

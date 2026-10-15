@@ -253,6 +253,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 			if (mValue != null) mValue.preAnalyze(compiler);
 			registerVariable(compiler, this.type);
 		}
+		if (variable != null) variable.initializedBy(mValue);
 	}
 
 	@Override

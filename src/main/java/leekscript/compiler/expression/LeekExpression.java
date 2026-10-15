@@ -1211,6 +1211,8 @@ public class LeekExpression extends Expression {
 		var target = assignTarget();
 		if (target instanceof LeekVariable v && v.getVariable() != null) {
 			v.getVariable().setReassigned();
+		} else if (target instanceof LeekArrayAccess cell && !NarrowingInfo.writesNullFree(mOperator, mExpression2)) {
+			LeekVariable.setCellsMayBeNull(cell.getTabular());
 		}
 
 		if (target instanceof LeekVariable v
@@ -1249,6 +1251,11 @@ public class LeekExpression extends Expression {
 		// Opérateurs === et !== déprécié en LS 4+
 		if ((mOperator == Operators.EQUALS_EQUALS || mOperator == Operators.NOT_EQUALS_EQUALS) && compiler.getVersion() >= 4) {
 			compiler.addError(new AnalyzeError(mOperatorToken, AnalyzeErrorLevel.WARNING, Error.TRIPLE_EQUALS_DEPRECATED));
+		}
+
+		// Avant son analyse : une case écrite (`t[k] = v`, `t[k] += v`, `t[k]++`) garde son type
+		if (assignTarget() instanceof LeekArrayAccess target) {
+			target.setLeftValue(true);
 		}
 
 		if (mExpression1 != null) mExpression1.analyze(compiler);
@@ -1301,9 +1308,6 @@ public class LeekExpression extends Expression {
 			}
 			if (!mExpression1.isLeftValue())
 				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANT_ASSIGN_VALUE));
-
-			if (mExpression1 instanceof LeekArrayAccess)
-				((LeekArrayAccess) mExpression1).setLeftValue(true);
 		}
 
 		if (Operators.isIncrement(mOperator)) {
@@ -1319,9 +1323,6 @@ public class LeekExpression extends Expression {
 			}
 			if (!mExpression2.isLeftValue()) {
 				compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CANT_ASSIGN_VALUE));
-			}
-			if (mExpression2 instanceof LeekArrayAccess) {
-				((LeekArrayAccess) mExpression2).setLeftValue(true);
 			}
 			if (Type.INT_OR_REAL.accepts(mExpression2.getType()) == CastType.INCOMPATIBLE) {
 				var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;

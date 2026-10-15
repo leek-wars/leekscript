@@ -44,8 +44,12 @@ public class LeekVariable extends Expression {
 	private LeekVariable variable;
 	private Type declaredType = null;
 	private Type lastAssignedType = null;
-	// Suivi d'une variable pour NarrowingInfo.mapEntry, posé au preAnalyze
-	private boolean reassigned = false; // cf setReassigned
+	// Suivi d'une variable pour NarrowingInfo (cases de map), posé au preAnalyze. Drapeaux dans un
+	// octet : LeekVariable est instanciée des milliers de fois (références comprises).
+	private static final byte REASSIGNED = 1; // cf setReassigned
+	private static final byte NULL_FREE_LITERAL = 2; // cf initializedBy
+	private static final byte CELLS_MAY_BE_NULL = 4; // cf setCellsMayBeNull
+	private byte flags = 0;
 	private int entryPreservingUses = 0; // cf mayLoseEntries
 	private int usageCount = 0;
 	private LeekGlobalDeclarationInstruction globalDeclaration = null; // cf slotType
@@ -314,8 +318,8 @@ public class LeekVariable extends Expression {
 	 * Variable déclarée, réécrite quelque part après sa déclaration (affectation, incrément,
 	 * itérateur d'un foreach sans `var`). Posé au preAnalyze, donc connu de toute l'analyse.
 	 */
-	public void setReassigned() { reassigned = true; }
-	public boolean isReassigned() { return reassigned; }
+	public void setReassigned() { flags |= REASSIGNED; }
+	public boolean isReassigned() { return (flags & REASSIGNED) != 0; }
 
 	/**
 	 * `expression` utilise la map d'une variable sans pouvoir lui retirer de clé : case lue ou
@@ -333,6 +337,27 @@ public class LeekVariable extends Expression {
 	 * alias `var b = m`, `return m`…
 	 */
 	public boolean mayLoseEntries() { return usageCount > entryPreservingUses; }
+
+	/** Déclaration de cette variable, initialisée par `value` : un littéral de map sans null ? */
+	public void initializedBy(Expression value) {
+		if (value != null && value.trim() instanceof LeekMap literal && literal.valuesAreNullFree()) flags |= NULL_FREE_LITERAL;
+	}
+
+	/** Écriture d'une case de la map de `tabular` qui peut y ranger null (NarrowingInfo.writesNullFree). */
+	public static void setCellsMayBeNull(Expression tabular) {
+		if (tabular.trim() instanceof LeekVariable reference && reference.variable != null) {
+			reference.variable.flags |= CELLS_MAY_BE_NULL;
+		}
+	}
+
+	/**
+	 * Une case de la map de cette variable peut-elle valoir null ? Oui sauf si elle est initialisée
+	 * par un littéral et que ses valeurs, comme toutes celles qu'on y écrit, ne valent jamais null
+	 * par construction : un type non nullable ne suffit pas (NarrowingInfo.isNullFree).
+	 */
+	public boolean cellsMayBeNull() {
+		return (flags & NULL_FREE_LITERAL) == 0 || (flags & CELLS_MAY_BE_NULL) != 0;
+	}
 
 	public FunctionBlock getFunctionDeclaration() {
 		return functionDeclaration;

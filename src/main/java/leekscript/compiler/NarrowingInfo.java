@@ -14,10 +14,17 @@ import leekscript.common.Type.CastType;
 import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.compiler.expression.ConstantFolder;
 import leekscript.compiler.expression.Expression;
+import leekscript.compiler.expression.LeekArray;
+import leekscript.compiler.expression.LeekBigInteger;
+import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekExpression;
 import leekscript.compiler.expression.LeekFunctionCall;
+import leekscript.compiler.expression.LeekInterval;
+import leekscript.compiler.expression.LeekMap;
 import leekscript.compiler.expression.LeekNull;
 import leekscript.compiler.expression.LeekNumber;
+import leekscript.compiler.expression.LeekObject;
+import leekscript.compiler.expression.LeekSet;
 import leekscript.compiler.expression.LeekObjectAccess;
 import leekscript.compiler.expression.LeekParenthesis;
 import leekscript.compiler.expression.LeekString;
@@ -423,13 +430,61 @@ public class NarrowingInfo {
 
 	/**
 	 * Type des valeurs de la map pour la lecture `map[key]` quand mapContainsKey garantit ici la
-	 * présence de la case (AbstractLeekBlock.isPresentEntry), null sinon. Pour les avertissements
-	 * seulement (LeekArrayAccess.getWarningType) : le type de la lecture et le Java ne changent pas.
+	 * présence de la case (AbstractLeekBlock.isPresentEntry), null sinon. Il tait les avertissements
+	 * de la lecture (LeekArrayAccess.getWarningType), et devient son type si narrowsEntryType.
 	 */
 	public static Type presentEntryType(AbstractLeekBlock block, Expression map, Expression key) {
 		if (!(map.getType() instanceof MapType type) || type.element() == Type.VOID || !block.hasPresentEntries()) return null;
 		var entry = mapEntry(map, key);
 		return entry != null && block.isPresentEntry(entry) ? type.element() : null;
+	}
+
+	/**
+	 * Une case présente de `map` (cf presentEntryType) prend-elle le type des valeurs, comme le
+	 * narrowing de `x != null` ? Si elle ne peut pas valoir null (LeekVariable.cellsMayBeNull) :
+	 * sinon, une map reçue en paramètre par exemple, seuls les avertissements se taisent.
+	 */
+	public static boolean narrowsEntryType(Expression map) {
+		var variable = unmodifiedVariable(map);
+		return variable != null && !variable.cellsMayBeNull();
+	}
+
+	/** L'écriture `m[k] <operator> value` ne range jamais null : `=` d'une valeur isNullFree, ou un calcul (`+=`, `++`…), pas `??=`. */
+	public static boolean writesNullFree(int operator, Expression value) {
+		return operator == Operators.ASSIGN ? isNullFree(value) : operator != Operators.COALESCE_ASSIGN;
+	}
+
+	/**
+	 * `value` ne vaut jamais null, quoi qu'en dise son type : en strict, un champ non initialisé,
+	 * une case de tableau hors bornes ou un `x!` sont typés non nullables mais peuvent valoir null.
+	 * Un littéral, `new` d'une classe dont les instances ne sont pas null, ou un calcul où null
+	 * compte pour 0 ou faux (LS4+ : en v1, `/` et `%` par zéro valent null). Sur la forme de
+	 * l'expression, ses variables résolues (preAnalyze).
+	 */
+	public static boolean isNullFree(Expression value) {
+		value = value.trim();
+		if (value instanceof LeekNumber || value instanceof LeekBigInteger || value instanceof LeekString || value instanceof LeekBoolean
+			|| value instanceof LeekArray || value instanceof LeekMap || value instanceof LeekSet || value instanceof LeekInterval || value instanceof LeekObject) {
+			return true;
+		}
+		if (!(value instanceof LeekExpression expression)) return false;
+		return switch (expression.getOperator()) {
+			case Operators.NEW -> constructsNonNull(expression.getExpression2());
+			case Operators.ADD, Operators.MINUS, Operators.MULTIPLIE, Operators.DIVIDE, Operators.INTEGER_DIVISION, Operators.MODULUS, Operators.POWER, Operators.UNARY_MINUS, Operators.NOT,
+				Operators.LESS, Operators.LESSEQUALS, Operators.MORE, Operators.MOREEQUALS, Operators.EQUALS, Operators.NOTEQUALS,
+				Operators.EQUALS_EQUALS, Operators.NOT_EQUALS_EQUALS, Operators.INSTANCEOF, Operators.IN, Operators.NOT_IN,
+				Operators.AND, Operators.OR, Operators.XOR, Operators.BITAND, Operators.BITOR, Operators.BITXOR, Operators.BITNOT,
+				Operators.SHIFT_LEFT, Operators.SHIFT_RIGHT, Operators.SHIFT_UNSIGNED_RIGHT -> true;
+			default -> false;
+		};
+	}
+
+	/** `new constructed` crée une instance non null : pas `new f()` d'une fonction, qui rend son résultat, ni `new Null()`. */
+	private static boolean constructsNonNull(Expression constructed) {
+		var callee = constructed instanceof LeekFunctionCall call ? call.getCallExpression() : constructed;
+		if (!(callee.trim() instanceof LeekVariable variable) || variable.getVariableType() != LeekVariable.VariableType.CLASS) return false;
+		var clazz = variable.getClassDeclaration();
+		return clazz != null && !clazz.getEmptyType().canBeNull();
 	}
 
 	/**

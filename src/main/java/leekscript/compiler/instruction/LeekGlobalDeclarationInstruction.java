@@ -120,6 +120,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 		if (mValue != null) {
 			mValue.preAnalyze(compiler);
 		}
+		if (variable != null) variable.initializedBy(mValue);
 	}
 
 	@Override
