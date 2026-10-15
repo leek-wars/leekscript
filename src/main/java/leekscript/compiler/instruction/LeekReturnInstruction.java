@@ -103,9 +103,8 @@ public class LeekReturnInstruction extends LeekInstruction {
 		}
 		if (expression == null) {
 			writer.addPosition(token);
-			// `return?` sans valeur renvoie null comme un `return` nu, mais l'analyse le compte comme
-			// conditionnel (getEndBlock) : `if (true)` le laisse franchissable pour javac,
-			// sans quoi le return implicite qui le suit serait « unreachable statement ».
+			// `return?` nu reste conditionnel pour l'analyse (getEndBlock) : `if (true)`, comme le bouclier
+			// de SwitchBlock, évite que javac rejette le code émis après (« unreachable statement »).
 			writer.addCode(optional ? "if (true) return null;" : "return null;");
 		} else {
 			var finalExpression = expression.trim();
