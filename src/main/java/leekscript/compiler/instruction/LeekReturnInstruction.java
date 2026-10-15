@@ -103,7 +103,10 @@ public class LeekReturnInstruction extends LeekInstruction {
 		}
 		if (expression == null) {
 			writer.addPosition(token);
-			writer.addCode("return null;");
+			// `return?` sans valeur renvoie null comme un `return` nu, mais l'analyse le compte comme
+			// conditionnel (getEndBlock) : `if (true)` le laisse franchissable pour javac,
+			// sans quoi le return implicite qui le suit serait « unreachable statement ».
+			writer.addCode(optional ? "if (true) return null;" : "return null;");
 		} else {
 			var finalExpression = expression.trim();
 			if (finalExpression.getOperations() > 0) {
@@ -163,9 +166,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 
 	@Override
 	public int getEndBlock() {
-		// Sans valeur, `return?` s'émet en `return null;` inconditionnel (cf writeJavaCode) : il
-		// termine le bloc, sinon javac rejette le return implicite qui suit (« unreachable statement »).
-		return optional && expression != null ? 0 : 1;
+		return optional ? 0 : 1;
 	}
 
 	@Override
