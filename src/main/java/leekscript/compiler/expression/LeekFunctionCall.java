@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import leekscript.compiler.AIFile;
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.Hover;
 import leekscript.compiler.Token;
@@ -947,21 +948,23 @@ public class LeekFunctionCall extends Expression {
 			return;
 		}
 		// Le fichier du jeton, pas celui du compilateur : une fonction incluse s'analyse avec le
-		// compilateur du fichier racine.
+		// compilateur du fichier racine. Pas de dossier : code compilé seul (extrait).
 		var folder = path.getLocation().getFile().getFolder();
+		AIFile file = null;
 		try {
-			if (folder == null) throw new FileNotFoundException(); // code compilé hors d'un dossier (extrait)
-			var file = folder.resolve(path.getText());
-			// Le contenu est compilé dans l'IA : bornes par fichier et sur le total des fichiers lus.
-			var key = file.getCode().length() > MainLeekBlock.MAX_FILE_CONTENT ? null : compiler.getMainBlock().addFileContent(file);
-			if (key == null) {
-				compiler.addError(new AnalyzeError(path.getLocation(), AnalyzeErrorLevel.ERROR, Error.FILE_TOO_LARGE, new String[] { path.getText() }));
-				return;
-			}
-			mParameters.set(0, new LeekFileContent(path, key));
-		} catch (FileNotFoundException e) {
+			if (folder != null) file = folder.resolve(path.getText());
+		} catch (FileNotFoundException e) {}
+		if (file == null) {
 			compiler.addError(new AnalyzeError(path.getLocation(), AnalyzeErrorLevel.ERROR, Error.FILE_NOT_FOUND, new String[] { path.getText() }));
+			return;
 		}
+		// Le contenu est compilé dans l'IA, porté par un champ statique par fichier.
+		var field = compiler.getMainBlock().addFileContent(file);
+		if (field == null) {
+			compiler.addError(new AnalyzeError(path.getLocation(), AnalyzeErrorLevel.ERROR, Error.FILE_TOO_LARGE, new String[] { path.getText() }));
+			return;
+		}
+		mParameters.set(0, new LeekFileContent(path, field));
 	}
 
 	private void verifySystemFunction(WordCompiler compiler, LeekVariable v, LeekFunctions f) throws LeekCompilerException {

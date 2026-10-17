@@ -16,14 +16,15 @@ public class LeekFileContent extends Expression {
 
 	// Au-delà, la chaîne est découpée : une constante Java ne dépasse pas 65 535 octets.
 	private static final int CHUNK = 8000;
+	private static final char[] HEX = "0123456789abcdef".toCharArray();
 
 	private final LeekString path;
-	private final String key;
+	private final String field;
 
-	/** `key` : clé sous laquelle le bloc principal retient le contenu du fichier. */
-	public LeekFileContent(LeekString path, String key) {
+	/** `field` : champ statique de l'IA qui porte le contenu (MainLeekBlock.addFileContent). */
+	public LeekFileContent(LeekString path, String field) {
 		this.path = path;
-		this.key = key;
+		this.field = field;
 	}
 
 	@Override
@@ -48,7 +49,7 @@ public class LeekFileContent extends Expression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
-		writer.addCode(mainblock.getFileContentField(key));
+		writer.addCode(field);
 	}
 
 	/** Expression Java d'une chaîne quelconque, découpée si elle dépasse la taille d'une constante. */
@@ -74,8 +75,11 @@ public class LeekFileContent extends Expression {
 				case '\t' -> sb.append("\\t");
 				default -> {
 					// Jamais de fin de ligne en échappement unicode (javac le décode avant de lire la chaîne) : traitées plus haut.
-					if (c < 0x20 || c > 0x7e) sb.append(String.format("\\u%04x", (int) c));
-					else sb.append(c);
+					if (c < 0x20 || c > 0x7e) {
+						sb.append("\\u").append(HEX[c >> 12]).append(HEX[(c >> 8) & 0xF]).append(HEX[(c >> 4) & 0xF]).append(HEX[c & 0xF]);
+					} else {
+						sb.append(c);
+					}
 				}
 			}
 		}

@@ -48,9 +48,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final Map<String, Integer> mUserFunctions = new HashMap<>();
 	// Fichiers lus par les fonctions à argument fichier, par chemin : émis une fois chacun en champ
 	// statique, quel que soit le nombre d'appels.
-	private final Map<String, String> mFileContents = new LinkedHashMap<>();
+	private final Map<String, String> mFileFields = new HashMap<>();
+	private final List<String> mFileContents = new ArrayList<>();
 	private int mFileContentsLength = 0;
-	public static final int MAX_FILE_CONTENT = 64 * 1024;
+	private static final int MAX_FILE_CONTENT = 64 * 1024;
 	private static final int MAX_FILE_CONTENTS = 256 * 1024;
 	private final Map<String, ClassDeclarationInstruction> mDefinedClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final Map<String, ClassDeclarationInstruction> mUserClasses = new TreeMap<String, ClassDeclarationInstruction>();
@@ -314,27 +315,20 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	/**
 	 * Retient le contenu d'un fichier lu par une fonction à argument fichier, sous la même clé
-	 * qu'un include (le chemin seul ne distingue pas deux fichiers homonymes partout). Rend la clé,
-	 * ou null si le total des fichiers lus dépasse la limite (le fichier n'est alors pas retenu).
+	 * qu'un include (le chemin seul ne distingue pas deux fichiers homonymes partout). Rend le nom
+	 * du champ statique qui le porte, ou null si le fichier, ou le total des fichiers lus, est trop gros.
 	 */
 	public String addFileContent(AIFile file) {
 		var key = includeKey(file);
-		if (mFileContents.containsKey(key)) return key;
+		var field = mFileFields.get(key);
+		if (field != null) return field;
 		var content = file.getCode();
-		if (mFileContentsLength + content.length() > MAX_FILE_CONTENTS) return null;
-		mFileContents.put(key, content);
+		if (content.length() > MAX_FILE_CONTENT || mFileContentsLength + content.length() > MAX_FILE_CONTENTS) return null;
+		field = "file_" + mFileContents.size();
+		mFileFields.put(key, field);
+		mFileContents.add(content);
 		mFileContentsLength += content.length();
-		return key;
-	}
-
-	/** Nom du champ statique qui porte le contenu du fichier retenu sous `key`. */
-	public String getFileContentField(String key) {
-		int index = 0;
-		for (var k : mFileContents.keySet()) {
-			if (k.equals(key)) return "file_" + index;
-			index++;
-		}
-		throw new IllegalStateException("Fichier non retenu : " + key);
+		return field;
 	}
 
 	public void writeJavaCode(JavaWriter writer, String className, String AIClass, Options options) {
@@ -356,9 +350,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			clazz.declareJava(this, writer);
 		}
 
-		int fileIndex = 0;
-		for (var content : mFileContents.values()) {
-			writer.addLine("private static final String file_" + fileIndex++ + " = " + LeekFileContent.javaString(content) + ";");
+		for (int i = 0; i < mFileContents.size(); i++) {
+			writer.addLine("private static final String file_" + i + " = " + LeekFileContent.javaString(mFileContents.get(i)) + ";");
 		}
 
 		// Constructor

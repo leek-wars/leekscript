@@ -28,6 +28,9 @@ public class IncludeGraph {
 	private final Map<String, Set<String>> forward = new HashMap<>();
 	// included path -> set of includer paths
 	private final Map<String, Set<String>> reverse = new HashMap<>();
+	// reader path -> files read by its file-argument calls (`getLoadout("x.json")`). Hors de
+	// forward/reverse : ce ne sont que des dépendances de compilation, jamais des racines d'analyse.
+	private final Map<String, Set<String>> fileDeps = new HashMap<>();
 	// path -> last seen mtime (used to detect adds/removes/modifies)
 	private final Map<String, Long> seenMtimes = new HashMap<>();
 	// includer paths whose last scan failed to resolve at least one include name.
@@ -116,7 +119,9 @@ public class IncludeGraph {
 		var queue = new java.util.ArrayDeque<String>();
 		queue.add(path);
 		while (!queue.isEmpty()) {
-			var direct = forward.get(queue.poll());
+			var current = queue.poll();
+			result.addAll(fileDeps.getOrDefault(current, Set.of()));
+			var direct = forward.get(current);
 			if (direct == null) continue;
 			for (var inc : direct) {
 				if (result.add(inc)) queue.add(inc);
@@ -156,6 +161,7 @@ public class IncludeGraph {
 	}
 
 	private void dropFile(String path) {
+		fileDeps.remove(path);
 		var oldForward = forward.remove(path);
 		if (oldForward != null) {
 			for (var inc : oldForward) {
@@ -172,16 +178,11 @@ public class IncludeGraph {
 
 	private void rescanFile(AIFile file) {
 		dropFile(file.getPath());
-		var includeSet = new HashSet<String>();
-		boolean hasUnresolved = false;
-		for (var name : extractIncludes(file)) {
-			try {
-				var resolved = file.getFolder().resolve(name);
-				includeSet.add(resolved.getPath());
-			} catch (Exception e) {
-				hasUnresolved = true;
-			}
-		}
+		var refs = extractReferences(file);
+		var includeSet = resolveAll(file, refs.includes());
+		var fileSet = resolveAll(file, refs.files());
+		boolean hasUnresolved = includeSet.size() < refs.includes().size() || fileSet.size() < refs.files().size();
+		if (!fileSet.isEmpty()) fileDeps.put(file.getPath(), fileSet);
 		forward.put(file.getPath(), includeSet);
 		for (var inc : includeSet) {
 			reverse.computeIfAbsent(inc, k -> new HashSet<>()).add(file.getPath());
@@ -189,8 +190,22 @@ public class IncludeGraph {
 		if (hasUnresolved) pathsWithUnresolved.add(file.getPath());
 	}
 
+	private record References(List<String> includes, List<String> files) {}
+
+	private static Set<String> resolveAll(AIFile file, List<String> names) {
+		var paths = new HashSet<String>();
+		for (var name : names) {
+			try {
+				paths.add(file.getFolder().resolve(name).getPath());
+			} catch (Exception e) {
+				// non résolu : compté par l'appelant
+			}
+		}
+		return paths;
+	}
+
 	/**
-	 * Returns the raw include names (unresolved paths) found in the file's source.
+	 * Returns the raw include names and file-argument paths (unresolved) found in the file's source.
 	 * Uses the cached token stream when available, otherwise runs the lexer once
 	 * and stores the tokens on the AIFile so a subsequent analyze pass can reuse them.
 	 *
@@ -199,13 +214,8 @@ public class IncludeGraph {
 	 * correspond pas à `// @version:N`. IACompiler.compile réutiliserait ces tokens
 	 * stale et planterait sur les keywords version-dependent (ex. AND en v2).
 	 */
-	private static boolean isFileArgumentFunction(String name) {
-		var f = LeekFunctions.getValue(name, true);
-		return f != null && f.hasFileArgument();
-	}
-
-	private List<String> extractIncludes(AIFile file) {
-		var result = new ArrayList<String>();
+	private References extractReferences(AIFile file) {
+		var result = new References(new ArrayList<>(), new ArrayList<>());
 		LexicalParserTokenStream stream;
 		if (file.hasBeenParsed()) {
 			stream = file.getTokenStream();
@@ -227,12 +237,11 @@ public class IncludeGraph {
 			stream.reset();
 			while (stream.hasMoreTokens()) {
 				var tok = stream.get();
-				// Le fichier lu par une fonction à argument fichier (`getLoadout("x.json")`) est une
-				// dépendance comme un include : le modifier doit invalider l'IA compilée. Le jeton
-				// seul ne dit pas si le nom désigne la fonction système (méthode ou fonction du joueur
-				// homonymes) : on ne retient qu'un fichier non LeekScript, qui ne peut pas faire d'un
-				// appelant la racine d'analyse d'une vraie IA.
-				boolean fileArgument = tok.getType() == TokenType.STRING && isFileArgumentFunction(tok.getWord());
+				// Le fichier lu par une fonction à argument fichier (`getLoadout("x.json")`) : le modifier
+				// doit invalider l'IA compilée. Le jeton seul ne distingue pas une méthode ou une fonction
+				// homonyme du joueur : sans effet, la dépendance ne sert qu'au cache.
+				var function = tok.getType() == TokenType.STRING ? LeekFunctions.getValue(tok.getWord(), true) : null;
+				boolean fileArgument = function != null && function.hasFileArgument();
 				if (tok.getType() == TokenType.INCLUDE || fileArgument) {
 					stream.eat();
 					if (!stream.hasMoreTokens()) break;
@@ -242,9 +251,8 @@ public class IncludeGraph {
 					var arg = stream.eat();
 					if (arg.getType() == TokenType.VAR_STRING) {
 						var word = arg.getWord();
-						var name = word.length() >= 2 ? word.substring(1, word.length() - 1) : null;
-						if (name != null && !(fileArgument && isLeekScriptPath(name))) {
-							result.add(name);
+						if (word.length() >= 2) {
+							(fileArgument ? result.files() : result.includes()).add(word.substring(1, word.length() - 1));
 						}
 					}
 				} else {
