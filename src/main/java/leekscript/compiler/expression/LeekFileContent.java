@@ -18,12 +18,12 @@ public class LeekFileContent extends Expression {
 	private static final int CHUNK = 8000;
 
 	private final LeekString path;
-	private final String file;
+	private final String key;
 
-	/** `file` : chemin résolu du fichier, sous lequel son contenu est retenu par le bloc principal. */
-	public LeekFileContent(LeekString path, String file) {
+	/** `key` : clé sous laquelle le bloc principal retient le contenu du fichier. */
+	public LeekFileContent(LeekString path, String key) {
 		this.path = path;
-		this.file = file;
+		this.key = key;
 	}
 
 	@Override
@@ -48,7 +48,7 @@ public class LeekFileContent extends Expression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
-		writer.addCode(mainblock.getFileContentField(file));
+		writer.addCode(mainblock.getFileContentField(key));
 	}
 
 	/** Expression Java d'une chaîne quelconque, découpée si elle dépasse la taille d'une constante. */

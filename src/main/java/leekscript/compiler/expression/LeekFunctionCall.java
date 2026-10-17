@@ -952,13 +952,13 @@ public class LeekFunctionCall extends Expression {
 		try {
 			if (folder == null) throw new FileNotFoundException(); // code compilé hors d'un dossier (extrait)
 			var file = folder.resolve(path.getText());
-			var code = file.getCode();
 			// Le contenu est compilé dans l'IA : bornes par fichier et sur le total des fichiers lus.
-			if (code.length() > MainLeekBlock.MAX_FILE_CONTENT || !compiler.getMainBlock().addFileContent(file.getPath(), code)) {
+			var key = file.getCode().length() > MainLeekBlock.MAX_FILE_CONTENT ? null : compiler.getMainBlock().addFileContent(file);
+			if (key == null) {
 				compiler.addError(new AnalyzeError(path.getLocation(), AnalyzeErrorLevel.ERROR, Error.FILE_TOO_LARGE, new String[] { path.getText() }));
 				return;
 			}
-			mParameters.set(0, new LeekFileContent(path, file.getPath()));
+			mParameters.set(0, new LeekFileContent(path, key));
 		} catch (FileNotFoundException e) {
 			compiler.addError(new AnalyzeError(path.getLocation(), AnalyzeErrorLevel.ERROR, Error.FILE_NOT_FOUND, new String[] { path.getText() }));
 		}

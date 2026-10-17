@@ -313,25 +313,28 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	/**
-	 * Retient le contenu d'un fichier lu par une fonction à argument fichier. Faux si le total
-	 * des fichiers lus dépasse la limite (le fichier n'est alors pas retenu).
+	 * Retient le contenu d'un fichier lu par une fonction à argument fichier, sous la même clé
+	 * qu'un include (le chemin seul ne distingue pas deux fichiers homonymes partout). Rend la clé,
+	 * ou null si le total des fichiers lus dépasse la limite (le fichier n'est alors pas retenu).
 	 */
-	public boolean addFileContent(String path, String content) {
-		if (mFileContents.containsKey(path)) return true;
-		if (mFileContentsLength + content.length() > MAX_FILE_CONTENTS) return false;
-		mFileContents.put(path, content);
+	public String addFileContent(AIFile file) {
+		var key = includeKey(file);
+		if (mFileContents.containsKey(key)) return key;
+		var content = file.getCode();
+		if (mFileContentsLength + content.length() > MAX_FILE_CONTENTS) return null;
+		mFileContents.put(key, content);
 		mFileContentsLength += content.length();
-		return true;
+		return key;
 	}
 
-	/** Nom du champ statique qui porte le contenu du fichier. */
-	public String getFileContentField(String path) {
+	/** Nom du champ statique qui porte le contenu du fichier retenu sous `key`. */
+	public String getFileContentField(String key) {
 		int index = 0;
-		for (var p : mFileContents.keySet()) {
-			if (p.equals(path)) return "file_" + index;
+		for (var k : mFileContents.keySet()) {
+			if (k.equals(key)) return "file_" + index;
 			index++;
 		}
-		throw new IllegalStateException("Fichier non retenu : " + path);
+		throw new IllegalStateException("Fichier non retenu : " + key);
 	}
 
 	public void writeJavaCode(JavaWriter writer, String className, String AIClass, Options options) {
