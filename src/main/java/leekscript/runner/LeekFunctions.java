@@ -437,6 +437,7 @@ public class LeekFunctions {
 	private int minVersion = 1;
 	private int maxVersion = LeekScript.LATEST_VERSION;
 	private String replacement = null;
+	private boolean fileArgument = false;
 
 	public LeekFunctions(String standardClass, String name, int operations, boolean isStatic, Type return_type, Type[] arguments) {
 		this(standardClass, name, operations, isStatic, new CallableVersion[] { new CallableVersion(return_type, arguments) });
@@ -566,6 +567,19 @@ public class LeekFunctions {
 
 	public boolean isStatic() {
 		return isStatic;
+	}
+
+	/**
+	 * Le 1er argument est le chemin d'un fichier du joueur, écrit en littéral : le compilateur
+	 * le résout comme un include (relatif au fichier appelant) et passe son CONTENU à la fonction.
+	 */
+	public LeekFunctions setFileArgument() {
+		this.fileArgument = true;
+		return this;
+	}
+
+	public boolean hasFileArgument() {
+		return fileArgument;
 	}
 	public String getName() {
 		return name;

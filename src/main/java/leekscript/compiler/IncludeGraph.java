@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import leekscript.compiler.resolver.FileSystem;
+import leekscript.runner.LeekFunctions;
 
 /**
  * In-memory include graph for a single owner.
@@ -198,6 +199,11 @@ public class IncludeGraph {
 	 * correspond pas à `// @version:N`. IACompiler.compile réutiliserait ces tokens
 	 * stale et planterait sur les keywords version-dependent (ex. AND en v2).
 	 */
+	private static boolean isFileArgumentFunction(String name) {
+		var f = LeekFunctions.getValue(name, true);
+		return f != null && f.hasFileArgument();
+	}
+
 	private List<String> extractIncludes(AIFile file) {
 		var result = new ArrayList<String>();
 		LexicalParserTokenStream stream;
@@ -221,7 +227,13 @@ public class IncludeGraph {
 			stream.reset();
 			while (stream.hasMoreTokens()) {
 				var tok = stream.get();
-				if (tok.getType() == TokenType.INCLUDE) {
+				// Le fichier lu par une fonction à argument fichier (`getLoadout("x.json")`) est une
+				// dépendance comme un include : le modifier doit invalider l'IA compilée. Le jeton
+				// seul ne dit pas si le nom désigne la fonction système (méthode ou fonction du joueur
+				// homonymes) : on ne retient qu'un fichier non LeekScript, qui ne peut pas faire d'un
+				// appelant la racine d'analyse d'une vraie IA.
+				boolean fileArgument = tok.getType() == TokenType.STRING && isFileArgumentFunction(tok.getWord());
+				if (tok.getType() == TokenType.INCLUDE || fileArgument) {
 					stream.eat();
 					if (!stream.hasMoreTokens()) break;
 					var lparen = stream.eat();
@@ -230,8 +242,9 @@ public class IncludeGraph {
 					var arg = stream.eat();
 					if (arg.getType() == TokenType.VAR_STRING) {
 						var word = arg.getWord();
-						if (word.length() >= 2) {
-							result.add(word.substring(1, word.length() - 1));
+						var name = word.length() >= 2 ? word.substring(1, word.length() - 1) : null;
+						if (name != null && !(fileArgument && isLeekScriptPath(name))) {
+							result.add(name);
 						}
 					}
 				} else {

@@ -1,5 +1,6 @@
 package leekscript.compiler.expression;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -598,6 +599,7 @@ public class LeekFunctionCall extends Expression {
 		if (mExpression instanceof LeekObjectAccess oa) {
 			oa.setCalledAsMethod(true);
 		}
+		if (mExpression instanceof LeekVariable v) v.setCalled();
 		mExpression.preAnalyze(compiler);
 		for (Expression parameter : mParameters) {
 			parameter.preAnalyze(compiler);
@@ -934,6 +936,34 @@ public class LeekFunctionCall extends Expression {
 		}
 	}
 
+	/**
+	 * Fonction à argument fichier : le chemin, un littéral, est résolu comme un include
+	 * (relatif au fichier appelant) et remplacé par le contenu du fichier.
+	 */
+	private void inlineFileArgument(WordCompiler compiler) throws LeekCompilerException {
+		if (mParameters.isEmpty() || mParameters.get(0) instanceof LeekFileContent) return;
+		if (!(mParameters.get(0) instanceof LeekString path)) {
+			compiler.addError(new AnalyzeError(mParameters.get(0).getLocation(), AnalyzeErrorLevel.ERROR, Error.FILE_PATH_EXPECTED));
+			return;
+		}
+		// Le fichier du jeton, pas celui du compilateur : une fonction incluse s'analyse avec le
+		// compilateur du fichier racine.
+		var folder = path.getLocation().getFile().getFolder();
+		try {
+			if (folder == null) throw new FileNotFoundException(); // code compilé hors d'un dossier (extrait)
+			var file = folder.resolve(path.getText());
+			var code = file.getCode();
+			// Le contenu est compilé dans l'IA : bornes par fichier et sur le total des fichiers lus.
+			if (code.length() > MainLeekBlock.MAX_FILE_CONTENT || !compiler.getMainBlock().addFileContent(file.getPath(), code)) {
+				compiler.addError(new AnalyzeError(path.getLocation(), AnalyzeErrorLevel.ERROR, Error.FILE_TOO_LARGE, new String[] { path.getText() }));
+				return;
+			}
+			mParameters.set(0, new LeekFileContent(path, file.getPath()));
+		} catch (FileNotFoundException e) {
+			compiler.addError(new AnalyzeError(path.getLocation(), AnalyzeErrorLevel.ERROR, Error.FILE_NOT_FOUND, new String[] { path.getText() }));
+		}
+	}
+
 	private void verifySystemFunction(WordCompiler compiler, LeekVariable v, LeekFunctions f) throws LeekCompilerException {
 
 		if (f.getOperations() > 0) {
@@ -972,6 +1002,8 @@ public class LeekFunctionCall extends Expression {
 				compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.ERROR, Error.INVALID_PARAMETER_COUNT));
 			}
 		}
+
+		if (f.hasFileArgument()) inlineFileArgument(compiler);
 
 		// Verify argument types
 		if (f.getVersions() != null) {

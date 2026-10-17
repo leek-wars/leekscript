@@ -24,6 +24,7 @@ import leekscript.compiler.Options;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekExpressionException;
+import leekscript.compiler.expression.LeekFileContent;
 import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
@@ -45,6 +46,12 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	// HashMap : mUserFunctions n'est jamais itéré, seulement containsKey/put. Pas
 	// besoin de l'ordre TreeMap. Quantum déclare ~100+ fonctions utilisateur.
 	private final Map<String, Integer> mUserFunctions = new HashMap<>();
+	// Fichiers lus par les fonctions à argument fichier, par chemin : émis une fois chacun en champ
+	// statique, quel que soit le nombre d'appels.
+	private final Map<String, String> mFileContents = new LinkedHashMap<>();
+	private int mFileContentsLength = 0;
+	public static final int MAX_FILE_CONTENT = 64 * 1024;
+	private static final int MAX_FILE_CONTENTS = 256 * 1024;
 	private final Map<String, ClassDeclarationInstruction> mDefinedClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final Map<String, ClassDeclarationInstruction> mUserClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final List<ClassDeclarationInstruction> mUserClassesList = new ArrayList<>();
@@ -305,6 +312,28 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return str + super.getCode();
 	}
 
+	/**
+	 * Retient le contenu d'un fichier lu par une fonction à argument fichier. Faux si le total
+	 * des fichiers lus dépasse la limite (le fichier n'est alors pas retenu).
+	 */
+	public boolean addFileContent(String path, String content) {
+		if (mFileContents.containsKey(path)) return true;
+		if (mFileContentsLength + content.length() > MAX_FILE_CONTENTS) return false;
+		mFileContents.put(path, content);
+		mFileContentsLength += content.length();
+		return true;
+	}
+
+	/** Nom du champ statique qui porte le contenu du fichier. */
+	public String getFileContentField(String path) {
+		int index = 0;
+		for (var p : mFileContents.keySet()) {
+			if (p.equals(path)) return "file_" + index;
+			index++;
+		}
+		throw new IllegalStateException("Fichier non retenu : " + path);
+	}
+
 	public void writeJavaCode(JavaWriter writer, String className, String AIClass, Options options) {
 		this.className = className;
 
@@ -322,6 +351,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var clazz : mUserClassesList) {
 			if (clazz.internal) continue;
 			clazz.declareJava(this, writer);
+		}
+
+		int fileIndex = 0;
+		for (var content : mFileContents.values()) {
+			writer.addLine("private static final String file_" + fileIndex++ + " = " + LeekFileContent.javaString(content) + ";");
 		}
 
 		// Constructor

@@ -39,6 +39,8 @@ public class LeekVariable extends Expression {
 	private LeekVariableDeclarationInstruction declaration = null;
 	private ClassDeclarationInstruction classDeclaration = null;
 	private FunctionBlock functionDeclaration = null;
+	// Variable en position d'appel, `f(...)` : une fonction à argument fichier n'est valable que là.
+	private boolean called = false;
 	private boolean box = false;
 	private boolean isFinal = false;
 	private LeekVariable variable;
@@ -163,6 +165,10 @@ public class LeekVariable extends Expression {
 		return false;
 	}
 
+	public void setCalled() {
+		called = true;
+	}
+
 	public VariableType getVariableType() {
 		return type;
 	}
@@ -251,6 +257,11 @@ public class LeekVariable extends Expression {
 		// LS functions
 		var lf = LeekFunctions.getValue(name, compiler.getOptions().useExtra());
 		if (lf != null) {
+			// Son fichier est lu à la compilation, d'après le littéral de l'appel : prise comme
+			// valeur, elle recevrait au combat un chemin au lieu du contenu.
+			if (lf.hasFileArgument() && !called) {
+				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.FILE_PATH_EXPECTED));
+			}
 			this.type = VariableType.SYSTEM_FUNCTION;
 			this.variableType = lf.getVersions()[0].getType();
 			for (int i = 1; i < lf.getVersions().length; ++i) {
