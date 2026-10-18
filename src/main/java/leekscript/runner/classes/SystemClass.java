@@ -71,7 +71,7 @@ public class SystemClass {
 		return (ai.getDate().getTime() / 1000);
 	}
 
-	/** `readFile('x.json')` : reçoit le contenu du fichier, lu à la compilation (argument fichier). */
+	/** Identité : le compilateur passe déjà le contenu du fichier (cf. LeekFunctions.setFileArgument). */
 	public static String readFile(AI ai, String content) {
 		return content;
 	}

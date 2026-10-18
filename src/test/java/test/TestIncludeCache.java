@@ -77,36 +77,35 @@ public class TestIncludeCache {
 	@Test
 	public void readFileModified() throws Exception {
 		// Fichier lu à la compilation par une fonction à argument fichier : une dépendance du cache.
-		// (Ce système de fichiers range tout en .leek ; readFile ne regarde pas l'extension.)
-		write("cfg.leek", "{\"n\": 1}");
-		String main = writeMain("return jsonDecode(readFile('cfg')).n;");
+		write("data/cfg.json", "{\"n\": 1}");
+		String main = writeMain("return jsonDecode(readFile('data/cfg.json')).n;");
 		assertEquals("1", run(main));
 
-		write("cfg.leek", "{\"n\": 2}");
-		bumpMtime("cfg.leek", 1000);
+		write("data/cfg.json", "{\"n\": 2}");
+		bumpMtime("data/cfg.json", 1000);
 
 		assertEquals("2", run(main), "modif d'un fichier lu par readFile doit invalider le cache de Main");
 	}
 
 	@Test
 	public void readFileFromIncludedFile() throws Exception {
-		write("conf.leek", "function conf() { return jsonDecode(readFile('conf_data')); }");
-		write("conf_data.leek", "{\"name\": \"a\\\"b\", \"list\": [1, 2.5], \"deep\": {\"x\": true}}");
+		write("conf.leek", "function conf() { return jsonDecode(readFile('conf.json')); }");
+		write("conf.json", "{\"name\": \"a\\\"b\", \"list\": [1, 2.5], \"deep\": {\"x\": true}}");
 		String main = writeMain("include('conf');\nvar c = conf();\npush(c.list, 3);\nreturn [c.name, c.list, c.deep.x, conf().list];");
 		assertEquals("[\"a\"b\", [1, 2.5, 3], true, [1, 2.5]]", run(main));
 	}
 
 	@Test
 	public void readFileRawText() throws Exception {
-		write("notes.leek", "ligne 1\n\tligne \"2\" \\ é 🔥");
-		String main = writeMain("return readFile('notes') == 'ligne 1\\n\\tligne \"2\" \\\\ é 🔥';");
+		write("notes.txt", "ligne 1\n\tligne \"2\" \\ é 🔥");
+		String main = writeMain("return readFile('notes.txt') == 'ligne 1\\n\\tligne \"2\" \\\\ é 🔥';");
 		assertEquals("true", run(main));
 	}
 
 	@Test
-	public void readFileErrors() throws Exception {
-		write("big.leek", "x".repeat(70_000));
-		assertTrue(compileAndCollectErrors(writeMain("return readFile('big');")).contains(Error.FILE_TOO_LARGE));
+	public void readFileTooLarge() throws Exception {
+		write("big.json", "x".repeat(70_000));
+		assertTrue(compileAndCollectErrors(writeMain("return readFile('big.json');")).contains(Error.FILE_TOO_LARGE));
 	}
 
 	@Test
@@ -1116,7 +1115,7 @@ public class TestIncludeCache {
 			var key = owner + ":" + filePath;
 			var cached = filesByPath.get(key);
 			if (cached != null && getAITimestamp(cached) == cached.getTimestamp()) return cached;
-			var fsPath = root.resolve(filePath + ".leek");
+			var fsPath = diskPath(filePath);
 			try {
 				var code = Files.readString(fsPath);
 				long mtime = Files.getLastModifiedTime(fsPath).toMillis();
@@ -1172,7 +1171,7 @@ public class TestIncludeCache {
 			var key = folder.getOwner() + ":" + filePath;
 			var cached = filesByPath.get(key);
 			if (cached != null && getAITimestamp(cached) == cached.getTimestamp()) return cached;
-			var fsPath = root.resolve(filePath + ".leek");
+			var fsPath = diskPath(filePath);
 			try {
 				var code = Files.readString(fsPath);
 				long mtime = Files.getLastModifiedTime(fsPath).toMillis();
@@ -1183,6 +1182,12 @@ public class TestIncludeCache {
 			} catch (IOException e) {
 				throw new FileNotFoundException(filePath);
 			}
+		}
+
+		/** Une IA s'écrit sans extension et se range en .leek ; un fichier de données garde la sienne. */
+		private Path diskPath(String filePath) {
+			var name = filePath.substring(filePath.lastIndexOf('/') + 1);
+			return root.resolve(name.contains(".") ? filePath : filePath + ".leek");
 		}
 
 		private String buildChild(Folder folder, String name) {
@@ -1202,7 +1207,7 @@ public class TestIncludeCache {
 		@Override
 		public long getAITimestamp(AIFile ai) {
 			try {
-				return Files.getLastModifiedTime(root.resolve(ai.getPath() + ".leek")).toMillis();
+				return Files.getLastModifiedTime(diskPath(ai.getPath())).toMillis();
 			} catch (Exception e) {
 				return Long.MAX_VALUE;
 			}

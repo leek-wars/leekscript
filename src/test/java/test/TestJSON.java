@@ -2,7 +2,6 @@ package test;
 
 import leekscript.common.Error;
 
-
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 
