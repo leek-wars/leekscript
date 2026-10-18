@@ -132,7 +132,7 @@ public class TestJSON extends TestCommon {
 	}
 
 	@Test
-	public void testReadFile() throws Exception {
+	public void testFileRead() throws Exception {
 		section("fileRead()");
 		// Lecture réelle et cache : TestIncludeCache (le système de fichiers des ressources n'a pas de dossiers).
 		code_v4_("return fileRead('nope.json')").error(Error.FILE_NOT_FOUND);
