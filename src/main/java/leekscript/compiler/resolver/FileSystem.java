@@ -55,23 +55,10 @@ public abstract class FileSystem {
 	 * Retourne null si pas de source persistante (mode embedded / tests).
 	 */
 	public Set<AIFile> loadIncludedAIs(AIFile file) {
-		var graph = graphs.computeIfAbsent(file.getOwner(), o -> new IncludeGraph(this, o));
 		// Transitive : include chain Main → A → B → C must all contribute their mtime
 		// to effectiveTimestamp(Main), otherwise modifying C alone never invalidates
 		// Main's compiled cache.
-		var paths = graph.getTransitivelyIncluded(file.getPath());
-		var root = getRoot(file.getOwner());
-		if (root == null) return Collections.emptySet();
-		var result = new HashSet<AIFile>();
-		for (var path : paths) {
-			try {
-				var inc = root.resolve(path);
-				if (inc != null) result.add(inc);
-			} catch (Exception e) {
-				// skip
-			}
-		}
-		return result;
+		return resolveAll(file.getOwner(), graph(file.getOwner()).getTransitivelyIncluded(file.getPath()));
 	}
 
 	/**
@@ -79,20 +66,7 @@ public abstract class FileSystem {
 	 * argument fichier. Par chemin : le fichier lu peut avoir été supprimé ou renommé.
 	 */
 	public Set<AIFile> getFileReaders(int owner, String path) {
-		var graph = graphs.computeIfAbsent(owner, o -> new IncludeGraph(this, o));
-		var paths = graph.getFileReaders(path);
-		var result = new HashSet<AIFile>();
-		var root = getRoot(owner);
-		if (root == null) return result;
-		for (var reader : paths) {
-			try {
-				var file = root.resolve(reader);
-				if (file != null) result.add(file);
-			} catch (Exception e) {
-				// disparu entre le parcours et la résolution
-			}
-		}
-		return result;
+		return resolveAll(owner, graph(owner).getFileReaders(path));
 	}
 
 	/**
@@ -102,18 +76,25 @@ public abstract class FileSystem {
 	 * the version/pragma of the top-of-the-chain entrypoint, not an intermediate.
 	 */
 	public Set<AIFile> getIncluders(AIFile file) {
-		var graph = graphs.computeIfAbsent(file.getOwner(), o -> new IncludeGraph(this, o));
-		var paths = graph.getRootEntrypoints(file.getPath());
+		return resolveAll(file.getOwner(), graph(file.getOwner()).getRootEntrypoints(file.getPath()));
+	}
+
+	private IncludeGraph graph(int owner) {
+		return graphs.computeIfAbsent(owner, o -> new IncludeGraph(this, o));
+	}
+
+	/** Chemins du graphe → fichiers ; un fichier disparu entre-temps est sauté. */
+	private Set<AIFile> resolveAll(int owner, Set<String> paths) {
 		if (paths.isEmpty()) return Collections.emptySet();
+		var root = getRoot(owner);
+		if (root == null) return Collections.emptySet();
 		var result = new HashSet<AIFile>();
-		var root = getRoot(file.getOwner());
-		if (root == null) return result;
 		for (var path : paths) {
 			try {
-				var inc = root.resolve(path);
-				if (inc != null) result.add(inc);
+				var file = root.resolve(path);
+				if (file != null) result.add(file);
 			} catch (Exception e) {
-				// file disappeared between graph build and resolve — skip
+				// disparu entre le parcours du graphe et la résolution
 			}
 		}
 		return result;

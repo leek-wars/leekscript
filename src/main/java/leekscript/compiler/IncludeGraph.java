@@ -95,7 +95,7 @@ public class IncludeGraph {
 	 */
 	private static final Set<String> NON_LEEKSCRIPT_EXTENSIONS = Set.of("md", "txt", "json", "yml", "yaml", "js", "mjs", "ts", "mts", "py");
 
-	public static boolean isLeekScriptPath(String path) {
+	private static boolean isLeekScriptPath(String path) {
 		int dot = path.lastIndexOf('.');
 		if (dot <= path.lastIndexOf('/')) return true; // sans extension : LeekScript
 		return !NON_LEEKSCRIPT_EXTENSIONS.contains(path.substring(dot + 1).toLowerCase(Locale.ROOT));
