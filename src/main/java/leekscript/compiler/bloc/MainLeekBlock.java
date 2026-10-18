@@ -51,8 +51,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final Map<String, String> mFileFields = new HashMap<>();
 	private final List<String> mFileContents = new ArrayList<>();
 	private int mFileContentsLength = 0;
-	private static final int MAX_FILE_CONTENT = 64 * 1024;
-	private static final int MAX_FILE_CONTENTS = 256 * 1024;
+	public static final int MAX_FILE_CONTENT = 64 * 1024;
+	public static final int MAX_FILE_CONTENTS = 256 * 1024;
 	private final Map<String, ClassDeclarationInstruction> mDefinedClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final Map<String, ClassDeclarationInstruction> mUserClasses = new TreeMap<String, ClassDeclarationInstruction>();
 	private final List<ClassDeclarationInstruction> mUserClassesList = new ArrayList<>();
