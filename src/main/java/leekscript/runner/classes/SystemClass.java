@@ -70,4 +70,9 @@ public class SystemClass {
 	public static long getTimestamp(AI ai) {
 		return (ai.getDate().getTime() / 1000);
 	}
+
+	/** `readFile('x.json')` : reçoit le contenu du fichier, lu à la compilation (argument fichier). */
+	public static String readFile(AI ai, String content) {
+		return content;
+	}
 }

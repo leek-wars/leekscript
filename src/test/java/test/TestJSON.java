@@ -1,5 +1,7 @@
 package test;
 
+import leekscript.common.Error;
+
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
@@ -128,6 +130,15 @@ public class TestJSON extends TestCommon {
 		code_v4_("return jsonDecode('{}')").equals("{}");
 		code_v4_("return jsonDecode('{\"a\":1,\"b\":2,\"c\":3}')").equals("{a: 1, b: 2, c: 3}");
 		code_v4_("return jsonDecode('{\"b\":{\"d\":12},\"ccccc\":[1,2,[],4],\"hello\":[]}')").equals("{b: {d: 12}, ccccc: [1, 2, [], 4], hello: []}");
+	}
+
+	@Test
+	public void testReadFile() throws Exception {
+		section("readFile()");
+		// Lecture réelle et cache : TestIncludeCache (le système de fichiers des ressources n'a pas de dossiers).
+		code_v4_("return readFile('nope.json')").error(Error.FILE_NOT_FOUND);
+		code_v4_("var p = 'a.json' return readFile(p)").error(Error.FILE_PATH_EXPECTED);
+		code_v4_("var f = readFile return f").error(Error.FILE_PATH_EXPECTED);
 	}
 
 	@Test

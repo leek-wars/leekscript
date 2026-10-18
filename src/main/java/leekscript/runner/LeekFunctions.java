@@ -384,6 +384,8 @@ public class LeekFunctions {
 		method("getDate", "System", 50, true, Type.STRING, new Type[0]);
 		method("getTime", "System", 50, true, Type.STRING, new Type[0]);
 		method("getTimestamp", "System", 5, true, Type.INT, new Type[0]);
+		// Le chemin, littéral, est remplacé à la compilation par le contenu du fichier.
+		method("readFile", "System", 1, true, Type.STRING, new Type[] { Type.STRING }).setFileArgument();
 	}
 
 	private static LeekFunctions method(String name, String clazz, Type return_type, Type[] arguments) {
