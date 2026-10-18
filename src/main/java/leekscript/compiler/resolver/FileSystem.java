@@ -75,6 +75,27 @@ public abstract class FileSystem {
 	}
 
 	/**
+	 * Fichiers LeekScript qui lisent le fichier {@code path} de {@code owner} par une fonction à
+	 * argument fichier. Par chemin : le fichier lu peut avoir été supprimé ou renommé.
+	 */
+	public Set<AIFile> getFileReaders(int owner, String path) {
+		var graph = graphs.computeIfAbsent(owner, o -> new IncludeGraph(this, o));
+		var paths = graph.getFileReaders(path);
+		var result = new HashSet<AIFile>();
+		var root = getRoot(owner);
+		if (root == null) return result;
+		for (var reader : paths) {
+			try {
+				var file = root.resolve(reader);
+				if (file != null) result.add(file);
+			} catch (Exception e) {
+				// disparu entre le parcours et la résolution
+			}
+		}
+		return result;
+	}
+
+	/**
 	 * Returns the root entrypoints that transitively include the given file.
 	 * A root entrypoint is a file that has no includers of its own.
 	 * Used to decide which entrypoint governs the analysis of a file — we want

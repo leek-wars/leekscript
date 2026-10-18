@@ -88,6 +88,31 @@ public class TestIncludeCache {
 	}
 
 	@Test
+	public void fileReadersOfADataFile() throws Exception {
+		// Les IA à ré-analyser quand un fichier de données change : ses lecteurs LeekScript.
+		write("data/cfg.json", "{}");
+		String main = writeMain("return fileRead('data/cfg.json');");
+		write("lib.leek", "function f() { return fileRead('data/cfg.json'); }");
+		write("other.leek", "return 1;");
+		write("notes.md", "Exemple : fileRead('data/cfg.json')");
+		var readers = fs.getFileReaders(0, "data/cfg.json").stream().map(f -> f.getPath()).sorted().toList();
+		assertEquals(java.util.List.of(main, "lib"), readers);
+	}
+
+	@Test
+	public void fileReadersOfAMissingFileOnceCreatedOrRenamed() throws Exception {
+		String main = writeMain("return fileRead('cfg.json');");
+		assertTrue(compileAndCollectErrors(main).contains(Error.FILE_NOT_FOUND));
+		assertTrue(fs.getFileReaders(0, "cfg.json").isEmpty());
+
+		// Renommage vers le nom attendu : autant de fichiers qu'avant, le lecteur doit être revu.
+		write("tmp.json", "{}");
+		assertTrue(fs.getFileReaders(0, "cfg.json").isEmpty());
+		Files.move(tmpRoot.resolve("tmp.json"), tmpRoot.resolve("cfg.json"));
+		assertEquals(java.util.List.of(main), fs.getFileReaders(0, "cfg.json").stream().map(f -> f.getPath()).toList());
+	}
+
+	@Test
 	public void fileReadFromIncludedFile() throws Exception {
 		write("conf.leek", "function conf() { return jsonDecode(fileRead('conf.json')); }");
 		write("conf.json", "{\"name\": \"a\\\"b\", \"list\": [1, 2.5], \"deep\": {\"x\": true}}");
@@ -1099,9 +1124,10 @@ public class TestIncludeCache {
 			var list = new ArrayList<AIFile>();
 			if (!Files.exists(root)) return list;
 			try (var walk = Files.walk(root)) {
-				walk.filter(p -> p.toString().endsWith(".leek") && Files.isRegularFile(p)).forEach(p -> {
+				walk.filter(Files::isRegularFile).forEach(p -> {
 					var rel = root.relativize(p).toString().replace(java.io.File.separatorChar, '/');
-					rel = rel.substring(0, rel.length() - ".leek".length());
+					// Une IA est rangée en .leek et nommée sans extension ; un fichier de données garde la sienne.
+					if (rel.endsWith(".leek")) rel = rel.substring(0, rel.length() - ".leek".length());
 					var f = getFileByPath(rel, owner);
 					if (f != null) list.add(f);
 				});

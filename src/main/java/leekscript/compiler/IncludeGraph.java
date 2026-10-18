@@ -31,6 +31,8 @@ public class IncludeGraph {
 	// reader path -> files read by its file-argument calls (`getLoadout("x.json")`). Hors de
 	// forward/reverse : ce ne sont que des dépendances de compilation, jamais des racines d'analyse.
 	private final Map<String, Set<String>> fileDeps = new HashMap<>();
+	// file read -> reader paths (reverse of fileDeps)
+	private final Map<String, Set<String>> fileReaders = new HashMap<>();
 	// path -> last seen mtime (used to detect adds/removes/modifies)
 	private final Map<String, Long> seenMtimes = new HashMap<>();
 	// includer paths whose last scan failed to resolve at least one include name.
@@ -99,6 +101,20 @@ public class IncludeGraph {
 		return !NON_LEEKSCRIPT_EXTENSIONS.contains(path.substring(dot + 1).toLowerCase(Locale.ROOT));
 	}
 
+	/**
+	 * Fichiers qui lisent {@code path} par une fonction à argument fichier (`fileRead("x.json")`) :
+	 * à ré-analyser quand il change. Seulement ceux qui sont du code LeekScript (une doc qui cite
+	 * l'appel en exemple ne lit rien).
+	 */
+	public synchronized Set<String> getFileReaders(String path) {
+		refresh();
+		var result = new HashSet<String>();
+		for (var reader : fileReaders.getOrDefault(path, Set.of())) {
+			if (isRealIncluder(reader)) result.add(reader);
+		}
+		return result;
+	}
+
 	public synchronized Set<String> getIncluded(String path) {
 		refresh();
 		var s = forward.get(path);
@@ -144,7 +160,9 @@ public class IncludeGraph {
 		// New files since last scan: rescan only files that had unresolved includes,
 		// since their unresolved names might now resolve to a newly-added file. Drop
 		// their seenMtimes so the loop below picks them up regardless of mtime.
-		if (current.size() > seenMtimes.size() && !pathsWithUnresolved.isEmpty()) {
+		// (Un nouveau chemin, pas seulement un compte en hausse : un renommage vers le nom
+		// attendu ne change pas le nombre de fichiers.)
+		if (!pathsWithUnresolved.isEmpty() && !seenMtimes.keySet().containsAll(current.keySet())) {
 			pathsWithUnresolved.forEach(seenMtimes::remove);
 		}
 
@@ -161,7 +179,16 @@ public class IncludeGraph {
 	}
 
 	private void dropFile(String path) {
-		fileDeps.remove(path);
+		var oldFiles = fileDeps.remove(path);
+		if (oldFiles != null) {
+			for (var read : oldFiles) {
+				var readers = fileReaders.get(read);
+				if (readers != null) {
+					readers.remove(path);
+					if (readers.isEmpty()) fileReaders.remove(read);
+				}
+			}
+		}
 		var oldForward = forward.remove(path);
 		if (oldForward != null) {
 			for (var inc : oldForward) {
@@ -183,6 +210,9 @@ public class IncludeGraph {
 		var fileSet = resolveAll(file, refs.files());
 		boolean hasUnresolved = includeSet.size() < refs.includes().size() || fileSet.size() < refs.files().size();
 		if (!fileSet.isEmpty()) fileDeps.put(file.getPath(), fileSet);
+		for (var read : fileSet) {
+			fileReaders.computeIfAbsent(read, k -> new HashSet<>()).add(file.getPath());
+		}
 		forward.put(file.getPath(), includeSet);
 		for (var inc : includeSet) {
 			reverse.computeIfAbsent(inc, k -> new HashSet<>()).add(file.getPath());
