@@ -977,6 +977,16 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 		return "u_" + token.getWord();
 	}
 
+	public void defineClass(MainLeekBlock mainblock, JavaWriter writer) {
+		writer.addLine("defineClass_" + token.getWord() + "();");
+	}
+
+	public void writeDefineClass(MainLeekBlock mainblock, JavaWriter writer) {
+		writer.addLine("private void defineClass_" + token.getWord() + "() throws LeekRunException {");
+		createJava(mainblock, writer);
+		writer.addLine("}");
+	}
+
 	public void createJava(MainLeekBlock mainblock, JavaWriter writer) {
 
 		mainblock.getWordCompiler().setCurrentClass(this);

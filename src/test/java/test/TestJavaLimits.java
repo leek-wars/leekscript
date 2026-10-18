@@ -36,6 +36,27 @@ public class TestJavaLimits {
 		assertEquals(Error.CODE_TOO_LARGE, e.getType());
 	}
 
+	/**
+	 * Beaucoup de classes et de méthodes : leur enregistrement tenait dans le seul constructeur de l'IA,
+	 * qui dépassait les 64 Ko d'une méthode Java vers 3 000 méthodes. Une méthode par classe.
+	 */
+	@Test
+	public void milliersDeMethodes() throws Exception {
+		var code = new StringBuilder();
+		for (int c = 0; c < 150; c++) {
+			code.append("class C").append(c).append(" {");
+			for (int m = 0; m < 20; m++) {
+				code.append(" public static m").append(m).append("(x) { return x + ").append(m).append(" }");
+			}
+			code.append(" } ");
+		}
+		code.append("return C149.m19(1)");
+		var ai = LeekScript.compileSnippet(code.toString(), "AI", new Options(4, false, false, true, null, true));
+		ai.init();
+		ai.staticInit();
+		assertEquals("20", ai.string(ai.runIA()));
+	}
+
 	@Test
 	public void parametresALaLimite() throws Exception {
 		var ai = compileFunctionWithParameters(127);

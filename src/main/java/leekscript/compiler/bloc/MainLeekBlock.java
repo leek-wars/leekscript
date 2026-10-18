@@ -358,15 +358,18 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("public " + className + "() throws LeekRunException {");
 		writer.addLine("super(" + mInstructions.size() + ", " + mCompiler.getCurrentAI().getVersion() + ");");
 
+		// Une méthode par classe : le constructeur seul dépassait les 64 Ko de bytecode d'une méthode
+		// Java (CODE_TOO_LARGE) sur une IA à plusieurs centaines de classes et quelques milliers de méthodes.
 		for (var clazz : mUserClassesList) {
 			if (clazz.internal) continue;
-			clazz.createJava(this, writer);
+			clazz.defineClass(this, writer);
 		}
 		writer.addLine("}");
 
 		// Classes initialize functions
 		for (var clazz : mUserClassesList) {
 			if (clazz.internal) continue;
+			clazz.writeDefineClass(this, writer);
 			clazz.writeCreateStaticFields(this, writer);
 			clazz.writeInitializeStaticFields(this, writer);
 		}
