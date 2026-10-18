@@ -75,37 +75,37 @@ public class TestIncludeCache {
 	// =========================================================================
 
 	@Test
-	public void readFileModified() throws Exception {
+	public void fileReadModified() throws Exception {
 		// Fichier lu à la compilation par une fonction à argument fichier : une dépendance du cache.
 		write("data/cfg.json", "{\"n\": 1}");
-		String main = writeMain("return jsonDecode(readFile('data/cfg.json')).n;");
+		String main = writeMain("return jsonDecode(fileRead('data/cfg.json')).n;");
 		assertEquals("1", run(main));
 
 		write("data/cfg.json", "{\"n\": 2}");
 		bumpMtime("data/cfg.json", 1000);
 
-		assertEquals("2", run(main), "modif d'un fichier lu par readFile doit invalider le cache de Main");
+		assertEquals("2", run(main), "modif d'un fichier lu par fileRead doit invalider le cache de Main");
 	}
 
 	@Test
-	public void readFileFromIncludedFile() throws Exception {
-		write("conf.leek", "function conf() { return jsonDecode(readFile('conf.json')); }");
+	public void fileReadFromIncludedFile() throws Exception {
+		write("conf.leek", "function conf() { return jsonDecode(fileRead('conf.json')); }");
 		write("conf.json", "{\"name\": \"a\\\"b\", \"list\": [1, 2.5], \"deep\": {\"x\": true}}");
 		String main = writeMain("include('conf');\nvar c = conf();\npush(c.list, 3);\nreturn [c.name, c.list, c.deep.x, conf().list];");
 		assertEquals("[\"a\"b\", [1, 2.5, 3], true, [1, 2.5]]", run(main));
 	}
 
 	@Test
-	public void readFileRawText() throws Exception {
+	public void fileReadRawText() throws Exception {
 		write("notes.txt", "ligne 1\n\tligne \"2\" \\ é 🔥");
-		String main = writeMain("return readFile('notes.txt') == 'ligne 1\\n\\tligne \"2\" \\\\ é 🔥';");
+		String main = writeMain("return fileRead('notes.txt') == 'ligne 1\\n\\tligne \"2\" \\\\ é 🔥';");
 		assertEquals("true", run(main));
 	}
 
 	@Test
-	public void readFileTooLarge() throws Exception {
+	public void fileReadTooLarge() throws Exception {
 		write("big.json", "x".repeat(70_000));
-		assertTrue(compileAndCollectErrors(writeMain("return readFile('big.json');")).contains(Error.FILE_TOO_LARGE));
+		assertTrue(compileAndCollectErrors(writeMain("return fileRead('big.json');")).contains(Error.FILE_TOO_LARGE));
 	}
 
 	@Test

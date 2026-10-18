@@ -133,11 +133,11 @@ public class TestJSON extends TestCommon {
 
 	@Test
 	public void testReadFile() throws Exception {
-		section("readFile()");
+		section("fileRead()");
 		// Lecture réelle et cache : TestIncludeCache (le système de fichiers des ressources n'a pas de dossiers).
-		code_v4_("return readFile('nope.json')").error(Error.FILE_NOT_FOUND);
-		code_v4_("var p = 'a.json' return readFile(p)").error(Error.FILE_PATH_EXPECTED);
-		code_v4_("var f = readFile return f").error(Error.FILE_PATH_EXPECTED);
+		code_v4_("return fileRead('nope.json')").error(Error.FILE_NOT_FOUND);
+		code_v4_("var p = 'a.json' return fileRead(p)").error(Error.FILE_PATH_EXPECTED);
+		code_v4_("var f = fileRead return f").error(Error.FILE_PATH_EXPECTED);
 	}
 
 	@Test

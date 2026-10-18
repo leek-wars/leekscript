@@ -72,7 +72,7 @@ public class SystemClass {
 	}
 
 	/** Identité : le compilateur passe déjà le contenu du fichier (cf. LeekFunctions.setFileArgument). */
-	public static String readFile(AI ai, String content) {
+	public static String fileRead(AI ai, String content) {
 		return content;
 	}
 }
