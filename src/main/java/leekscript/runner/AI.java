@@ -64,8 +64,6 @@ public abstract class AI {
 	public static final int NUMBER = 7;
 	public static final int FUNCTION = 8;
 	public static final int ARRAY = 9;
-	/** Index de conversion de l'opérateur `as` (cf logWrongType). */
-	public static final int CAST_INDEX = -1;
 	public static final int MAP = 10;
 	public static final int INTERVAL = 11;
 	public static final int SET = 12;
@@ -3807,16 +3805,19 @@ public abstract class AI {
 		return new RealIntervalLeekValue(this, minClosed, min, maxClosed, max);
 	}
 
+	/** Index de conversion de l'opérateur `as` (cf logWrongType). */
+	public static final int CAST_INDEX = -1;
+
 	/**
 	 * Une valeur du mauvais type : argument n°index d'un appel, ou, pour un index négatif
 	 * (CAST_INDEX, l'opérateur `as`), conversion explicite de la valeur.
 	 */
-	private void logWrongType(int index, Object value, String expected, String castTarget) throws LeekRunException {
+	private void logWrongType(int index, Object value, Type target, String versionNote) throws LeekRunException {
 		var type = StandardClass.getType(this, value).toString();
 		if (index == CAST_INDEX) {
-			addSystemLog(AILog.ERROR, Error.IMPOSSIBLE_CAST_VALUES, new Object[] { value, type, castTarget });
+			addSystemLog(AILog.ERROR, Error.IMPOSSIBLE_CAST_VALUES, new Object[] { value, type, target.toString() });
 		} else {
-			addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new Object[] { String.valueOf(index), value, type, expected });
+			addSystemLog(AILog.ERROR, Error.WRONG_ARGUMENT_TYPE, new Object[] { String.valueOf(index), value, type, target + versionNote });
 		}
 	}
 
@@ -3824,7 +3825,7 @@ public abstract class AI {
 		if (value instanceof ArrayLeekValue) {
 			return (ArrayLeekValue) value;
 		}
-		logWrongType(index, value, Type.ARRAY.toString() + " (V4+)", Type.ARRAY.toString());
+		logWrongType(index, value, Type.ARRAY, " (V4+)");
 		throw new ClassCastException();
 	}
 
@@ -3837,7 +3838,7 @@ public abstract class AI {
 		if (value instanceof MapLeekValue map) {
 			return map;
 		}
-		logWrongType(index, value, Type.MAP.toString(), Type.MAP.toString());
+		logWrongType(index, value, Type.MAP, "");
 		throw new ClassCastException();
 	}
 
@@ -3850,7 +3851,7 @@ public abstract class AI {
 		if (value instanceof SetLeekValue) {
 			return (SetLeekValue) value;
 		}
-		logWrongType(index, value, Type.SET.toString(), Type.SET.toString());
+		logWrongType(index, value, Type.SET, "");
 		throw new ClassCastException();
 	}
 
@@ -3863,7 +3864,7 @@ public abstract class AI {
 		if (value instanceof FunctionLeekValue) {
 			return (FunctionLeekValue) value;
 		}
-		logWrongType(index, value, Type.FUNCTION.toString(), Type.FUNCTION.toString());
+		logWrongType(index, value, Type.FUNCTION, "");
 		throw new ClassCastException();
 	}
 
@@ -3871,7 +3872,7 @@ public abstract class AI {
 		if (value instanceof LegacyArrayLeekValue) {
 			return (LegacyArrayLeekValue) value;
 		}
-		logWrongType(index, value, Type.ARRAY.toString() + " (V1-3)", Type.ARRAY.toString());
+		logWrongType(index, value, Type.ARRAY, " (V1-3)");
 		return new LegacyArrayLeekValue(this);
 	}
 
