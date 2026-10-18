@@ -10,6 +10,7 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.runner.AI;
 import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.LeekValueType;
 import leekscript.common.ArrayType;
@@ -1149,7 +1150,7 @@ public class LeekExpression extends Expression {
 			if (asConverts()) {
 				// For primitive types, use compileConvert which handles
 				// boxed-to-primitive conversions (e.g., Double → long)
-				writer.compileConvert(mainblock, 0, mExpression1, type, parenthesis);
+				writer.compileConvert(mainblock, AI.CAST_INDEX, mExpression1, type, parenthesis);
 			} else if (mExpression2 instanceof LeekType) {
 				// For class types, always emit explicit cast — narrowing can make
 				// compileConvert think the cast is unnecessary when it's not
