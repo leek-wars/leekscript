@@ -93,7 +93,7 @@ public class LeekOperations {
 			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | NoSuchMethodException | SecurityException e1) {
 				ai.addSystemLog(AILog.ERROR, e1);
 			}
-			ai.allocateRAM(object, 2 * o.size());
+			ai.allocateRAM(object, AI.INSTANCE_BASE_RAM + 2 * o.size());
 			return object;
 		}
 		return value;

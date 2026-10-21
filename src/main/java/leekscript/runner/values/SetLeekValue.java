@@ -60,6 +60,9 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		}
 	}
 
+	// Coût d'un set vide, en cases de RAM (8 octets) : l'objet, sa table et son RamUsage
+	private static final int BASE_RAM = 18;
+
 	private AI ai;
 	public final int id;
 	private RamUsage ram;
@@ -73,7 +76,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		super((int) (expectedSize / 0.75f) + 1);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		this.ram = ai.allocateRAM(this);
+		this.ram = ai.allocateRAM(this, BASE_RAM);
 	}
 
 	public SetLeekValue(AI ai, Object[] values) throws LeekRunException {
@@ -84,7 +87,8 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		for (Object value : values) {
 			this.add(value);
 		}
-		this.ram = ai.allocateRAM(this, values.length);
+		// Les doublons ne comptent qu'une fois
+		this.ram = ai.allocateRAM(this, BASE_RAM + size());
 	}
 
 	public void rebind(AI ai, Set<Object> visited) {
@@ -99,7 +103,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		super((int) (set.size() / 0.75f) + 1);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		this.ram = ai.allocateRAM(this, set.size());
+		this.ram = ai.allocateRAM(this, BASE_RAM + set.size());
 		for (var value : set) {
 			if (level == 1) {
 				this.add(value);

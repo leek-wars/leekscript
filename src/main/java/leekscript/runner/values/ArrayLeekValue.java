@@ -133,14 +133,17 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
+	// Coût d'un tableau vide, en cases de RAM (8 octets) : l'objet, sa liste et son RamUsage
+	private static final int BASE_RAM = 11;
+
 	private AI ai;
 	public final int id;
 	private final RamUsage ram;
 
-	public ArrayLeekValue(AI ai) {
+	public ArrayLeekValue(AI ai) throws LeekRunException {
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		this.ram = ai.allocateRAM(this);
+		this.ram = ai.allocateRAM(this, BASE_RAM);
 	}
 
 	public void rebind(AI ai, Set<Object> visited) {
@@ -151,11 +154,11 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		}
 	}
 
-	public ArrayLeekValue(AI ai, int capacity) {
+	public ArrayLeekValue(AI ai, int capacity) throws LeekRunException {
 		super(Math.min(MAX_SIZE, capacity));
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		this.ram = ai.allocateRAM(this);
+		this.ram = ai.allocateRAM(this, BASE_RAM);
 	}
 
 	public ArrayLeekValue(AI ai, Object values[]) throws LeekRunException {
@@ -165,14 +168,14 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		for (var value : values) {
 			add(value);
 		}
-		this.ram = ai.allocateRAM(this, values.length);
+		this.ram = ai.allocateRAM(this, BASE_RAM + values.length);
 	}
 
 	public ArrayLeekValue(AI ai, List<Object> values) throws LeekRunException {
 		super(values);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		this.ram = ai.allocateRAM(this, values.size());
+		this.ram = ai.allocateRAM(this, BASE_RAM + values.size());
 	}
 
 	public ArrayLeekValue(AI ai, ArrayLeekValue array) throws LeekRunException {
@@ -182,7 +185,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	public ArrayLeekValue(AI ai, ArrayLeekValue array, int level) throws LeekRunException {
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		this.ram = ai.allocateRAM(this, array.size());
+		this.ram = ai.allocateRAM(this, BASE_RAM + array.size());
 		for (var value : array) {
 			if (level == 1) {
 				add(value);

@@ -93,6 +93,9 @@ public abstract class AI {
 
 	public final static int MAX_RAM = 12_500_000; // in 64 bits "quads" = 100 Mo
 	public long maxRAM = MAX_RAM;
+	// Coût d'une instance de classe sans champ, en cases : l'objet et son RamUsage. Hors de
+	// NativeObjectLeekValue, dont les champs publics sont ceux de l'objet (keys, fields)
+	public static final int INSTANCE_BASE_RAM = 9;
 
 	private ReferenceQueue<Object> ramQueue = new ReferenceQueue<>();
 	// Les RamUsage vivants, gardés joignables jusqu'à leur libération. Tableau compact : chaque
@@ -100,13 +103,6 @@ public abstract class AI {
 	// hachage). Un HashSet coûtait ~10 % du temps d'une IA qui crée beaucoup d'objets.
 	private RamUsage[] ramUsages = new RamUsage[256];
 	private int ramUsagesCount = 0;
-
-	// Mesure seule, hors de tout calcul du jeu : pic de mRAM + B × conteneurs suivis (tableau,
-	// map, set, objet, instance), pour B = SHADOW_RAM_BASES[i], au-delà de la moitié de maxRAM.
-	// Un conteneur pas encore ramassé par le GC compte aussi : c'est un majorant.
-	public static final int[] SHADOW_RAM_BASES = { 1, 2, 4, 8 };
-	private static final int SHADOW_RAM_MAX_BASE = SHADOW_RAM_BASES[SHADOW_RAM_BASES.length - 1];
-	private final long[] shadowRAMPeaks = new long[SHADOW_RAM_BASES.length];
 
 	// ClassValue ties cached metadata to the Class lifetime so a recompiled AI's
 	// orphan Class can be GC'd. A plain Map<Class<?>, ...> would leak via the
@@ -521,19 +517,11 @@ public abstract class AI {
 		usage.slot = -1;
 	}
 
-	public RamUsage allocateRAM(Object obj) {
-		var usage = new RamUsage(0, obj, ramQueue);
-		trackRAM(usage);
-		noteShadowRAM();
-		return usage;
-	}
-
 	public RamUsage allocateRAM(Object obj, int ram) throws LeekRunException {
 		var usage = new RamUsage(ram, obj, ramQueue);
 		trackRAM(usage);
 		mRAM += ram;
 		checkRamOverflow();
-		noteShadowRAM();
 		return usage;
 	}
 
@@ -541,27 +529,6 @@ public abstract class AI {
 		ram.add(value);
 		mRAM += value;
 		checkRamOverflow();
-		noteShadowRAM();
-	}
-
-	// Chemin de chaque allocation : une comparaison tant que l'IA reste loin de sa limite
-	private void noteShadowRAM() {
-		long count = ramUsagesCount;
-		if (mRAM + SHADOW_RAM_MAX_BASE * count < maxRAM / 2) return;
-		// Les conteneurs déjà ramassés par le GC ne comptent plus, comme au contrôle de dépassement
-		if (mRAM + SHADOW_RAM_MAX_BASE * count > maxRAM) {
-			pollFreedRAM();
-			count = ramUsagesCount;
-		}
-		for (int i = 0; i < SHADOW_RAM_BASES.length; i++) {
-			long ram = mRAM + SHADOW_RAM_BASES[i] * count;
-			if (ram > shadowRAMPeaks[i]) shadowRAMPeaks[i] = ram;
-		}
-	}
-
-	/** Pics mesurés par noteShadowRAM, dans l'ordre de SHADOW_RAM_BASES. */
-	public long[] getShadowRAMPeaks() {
-		return shadowRAMPeaks.clone();
 	}
 
 	public void decreaseRAM(RamUsage tracker, int value) {
@@ -600,7 +567,7 @@ public abstract class AI {
 
 	}
 
-	public GenericArrayLeekValue newArray() {
+	public GenericArrayLeekValue newArray() throws LeekRunException {
 		if (version >= 4) {
 			return new ArrayLeekValue(this);
 		} else {
@@ -608,7 +575,7 @@ public abstract class AI {
 		}
 	}
 
-	public GenericArrayLeekValue newArray(int capacity) {
+	public GenericArrayLeekValue newArray(int capacity) throws LeekRunException {
 		if (version >= 4) {
 			return new ArrayLeekValue(this, capacity);
 		} else {
@@ -616,7 +583,7 @@ public abstract class AI {
 		}
 	}
 
-	public GenericMapLeekValue newMap(AI ai) {
+	public GenericMapLeekValue newMap(AI ai) throws LeekRunException {
 		if (version >= 4) {
 			return new MapLeekValue(ai);
 		} else {
@@ -4038,15 +4005,15 @@ public abstract class AI {
 		return "";
 	}
 
-	public ArrayLeekValue new_arrayClass() {
+	public ArrayLeekValue new_arrayClass() throws LeekRunException {
 		return new ArrayLeekValue(this);
 	}
 
-	public LegacyArrayLeekValue new_legacyArrayClass() {
+	public LegacyArrayLeekValue new_legacyArrayClass() throws LeekRunException {
 		return new LegacyArrayLeekValue(this);
 	}
 
-	public MapLeekValue new_mapClass() {
+	public MapLeekValue new_mapClass() throws LeekRunException {
 		return new MapLeekValue(this);
 	}
 

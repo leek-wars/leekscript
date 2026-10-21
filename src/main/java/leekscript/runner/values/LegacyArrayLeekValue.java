@@ -16,6 +16,7 @@ import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
 import leekscript.runner.AI.NativeObjectLeekValue;
+import leekscript.runner.AI.RamUsage;
 
 import leekscript.util.Json;
 import tools.jackson.databind.node.ObjectNode;
@@ -24,6 +25,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public final static int ARRAY_CELL_ACCESS_OPERATIONS = 2;
 	public final static int ARRAY_CELL_CREATE_OPERATIONS = 2; // + sqrt(size) / 5
+
+	// Coûts en cases de RAM (8 octets) : le tableau vide (l'objet et son RamUsage), puis chaque
+	// élément (Element, Box, valeur, place dans la table de hachage)
+	private final static int BASE_RAM = 6;
+	public final static int ELEMENT_RAM = 12;
 
 	private final static int START_CAPACITY = 8;
 	private final static int MAX_CAPACITY = 32000;
@@ -298,9 +304,11 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	private int mSize = 0;
 	private int capacity = 0;
 	private Element[] mTable = null;
+	private final RamUsage ram;
 
-	public LegacyArrayLeekValue(AI ai) {
+	public LegacyArrayLeekValue(AI ai) throws LeekRunException {
 		this.ai = ai;
+		this.ram = ai.allocateRAM(this, BASE_RAM);
 	}
 
 	public void rebind(AI ai, Set<Object> visited) {
@@ -318,6 +326,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public LegacyArrayLeekValue(AI ai, Object values[], boolean isKeyValue) throws LeekRunException {
 		this.ai = ai;
+		this.ram = ai.allocateRAM(this, BASE_RAM);
 		// 'if (capacity > 0)' était toujours faux (capacity = 0 par défaut) —
 		// le check voulu était la taille des values. Pré-dimensionne la hash
 		// table pour éviter plusieurs growCapacity (O(log N) re-hashings) lors
@@ -340,6 +349,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	public LegacyArrayLeekValue(AI ai, LegacyArrayLeekValue array, int level) throws LeekRunException {
 		this.ai = ai;
+		this.ram = ai.allocateRAM(this, BASE_RAM);
 		if (array.size() > 0) {
 			initTable(ai, array.size());
 			// Hoist le test de version (invariant) + split en 3 boucles
@@ -1069,10 +1079,6 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	}
 
 	public Object pushNoClone(AI ai, Object value) throws LeekRunException {
-		if (mSize >= capacity) {
-			growCapacity(ai);
-		}
-		mSize++;
 		var key = Long.valueOf(mIndex);
 		Element e = createElement(ai, key, value);
 		pushElement(e);
@@ -1106,10 +1112,6 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		if (ai.getVersion() == 1) {
 			value = LeekOperations.clone(ai, value);
 		}
-		if (mSize >= capacity) {
-			growCapacity(ai);
-		}
-		mSize++;
 		var key = 0l;
 		Element e = createElement(ai, key, value);
 		unshiftElement(e);
@@ -1130,10 +1132,6 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		Element e = getElement(ai, key);
 		// Si l'élément n'existe pas on le crée
 		if (e == null) {
-			if (mSize >= capacity) {
-				growCapacity(ai);
-			}
-			mSize++;
 			e = createElement(ai, key, value);
 			pushElement(e);
 		} else {
@@ -1145,10 +1143,6 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		var key = transformKey(ai, keyValue);
 		Element e = getElement(ai, key);
 		if (e == null) {
-			if (mSize >= capacity) {
-				growCapacity(ai);
-			}
-			mSize++;
 			e = createElement(ai, key, null);
 			pushElement(e);
 		}
@@ -1171,20 +1165,12 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 		} else if (position >= mSize) {
 			push(ai, value);
 		} else if (position == 0) {
-			if (mSize >= capacity) {
-				growCapacity(ai);
-			}
-			mSize++;
 			var key = 0l;
 			Element e = createElement(ai, key, value);
 			unshiftElement(e);
 			reindex(ai);
 			return null;
 		} else {
-			if (mSize >= capacity) {
-				growCapacity(ai);
-			}
-			mSize++;
 			// On crée notre nouvel élément
 			Element e = createElement(ai, mIndex, value);
 			// On va rechercher l'élément avant lequel insérer
@@ -1548,6 +1534,17 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 	}
 
 	private Element createElement(AI ai, Object key, Object value) throws LeekRunException {
+		// La RAM d'abord : un dépassement laisse le tableau intact
+		ai.increaseRAM(ram, ELEMENT_RAM);
+		return newElement(ai, key, value);
+	}
+
+	private Element newElement(AI ai, Object key, Object value) throws LeekRunException {
+		if (mSize >= capacity) {
+			growCapacity(ai);
+		}
+		mSize++;
+
 		// On crée l'élément
 		Element e = new Element();
 		e.hash = key.hashCode();
@@ -1615,6 +1612,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 
 	private void destroyElement(Element e) throws LeekRunException {
 		mSize--;
+		ai.decreaseRAM(ram, ELEMENT_RAM);
 	}
 
 	private Element getElement(AI ai, Object key) throws LeekRunException {

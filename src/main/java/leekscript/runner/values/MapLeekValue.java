@@ -28,14 +28,17 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 
 	private static final int READ_OPERATIONS = 2;
 	private static final int WRITE_OPERATIONS = 3;
+	// Coût d'une map vide, en cases de RAM (8 octets) : l'objet, sa table et son RamUsage
+	private static final int BASE_RAM = 15;
+
 	private AI ai;
 	public final int id;
 	private RamUsage ram;
 
-	public MapLeekValue(AI ai) {
+	public MapLeekValue(AI ai) throws LeekRunException {
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		this.ram = ai.allocateRAM(this);
+		this.ram = ai.allocateRAM(this, BASE_RAM);
 	}
 
 	public void rebind(AI ai, Set<Object> visited) {
@@ -47,12 +50,12 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		}
 	}
 
-	public MapLeekValue(AI ai, int expectedSize) {
+	public MapLeekValue(AI ai, int expectedSize) throws LeekRunException {
 		// Capacity = N / loadFactor (+1) pour éviter le resize quand on ajoute N entrées.
 		super((int) (expectedSize / 0.75f) + 1);
 		this.ai = ai;
 		this.id = ai.getNextObjectID();
-		this.ram = ai.allocateRAM(this);
+		this.ram = ai.allocateRAM(this, BASE_RAM);
 	}
 
 	public MapLeekValue(AI ai, Object values[]) throws LeekRunException {
@@ -63,7 +66,8 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		for (int i = 0; i < values.length; i += 2) {
 			put(values[i], values[i + 1]);
 		}
-		this.ram = ai.allocateRAM(this, 2 * values.length);
+		// 2 cases par entrée, comme set() (une clé répétée ne compte qu'une fois)
+		this.ram = ai.allocateRAM(this, BASE_RAM + 2 * size());
 	}
 
 	public MapLeekValue(AI ai, MapLeekValue map) throws LeekRunException {
@@ -81,7 +85,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 				put(entry.getKey(), LeekOperations.clone(ai, entry.getValue(), level - 1));
 			}
 		}
-		this.ram = ai.allocateRAM(this, 2 * size());
+		this.ram = ai.allocateRAM(this, BASE_RAM + 2 * size());
 	}
 
 	@Override

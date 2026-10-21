@@ -30,6 +30,7 @@ import leekscript.common.ClassValueType;
 import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
+import leekscript.runner.AI;
 
 public class ClassDeclarationInstruction extends LeekInstruction {
 
@@ -653,7 +654,12 @@ public class ClassDeclarationInstruction extends LeekInstruction {
 				writer.addLine("super(" + writer.getAIThis() + ");");
 			}
 		}
-		writer.addLine("allocateRAM(this, " + (2 * fieldVariables.size()) + ");");
+		// Le coût de base de l'instance une seule fois, par la classe racine (une classe interne
+		// parente, comme Array, compte le sien dans son constructeur)
+		int ram = (parent == null ? AI.INSTANCE_BASE_RAM : 0) + 2 * fieldVariables.size();
+		if (ram > 0) {
+			writer.addLine("allocateRAM(this, " + ram + ");");
+		}
 		for (var field : fields.entrySet()) {
 			Expression expr = field.getValue().expression;
 			if (expr != null) {

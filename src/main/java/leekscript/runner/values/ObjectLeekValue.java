@@ -21,10 +21,13 @@ public class ObjectLeekValue implements LeekValue {
 	public final LinkedHashMap<String, ObjectVariableValue> fields = new LinkedHashMap<>();
 	private final RamUsage ram;
 
-	public ObjectLeekValue(AI ai, ClassLeekValue clazz) {
+	// Coût d'un objet vide, en cases de RAM (8 octets) : l'objet, sa table de champs et son RamUsage
+	private static final int BASE_RAM = 18;
+
+	public ObjectLeekValue(AI ai, ClassLeekValue clazz) throws LeekRunException {
 		this.clazz = clazz;
 		this.id = ai.getNextObjectID();
-		this.ram = ai.allocateRAM(this);
+		this.ram = ai.allocateRAM(this, BASE_RAM);
 	}
 
 	public void rebind(AI ai, Set<Object> visited) {

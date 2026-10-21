@@ -2,6 +2,7 @@ package test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,20 +10,24 @@ import java.util.Random;
 
 import org.junit.jupiter.api.Test;
 
+import leekscript.common.Error;
 import leekscript.runner.AI;
+import leekscript.runner.LeekRunException;
 import leekscript.runner.Session;
+import leekscript.runner.values.LegacyArrayLeekValue;
 
 /**
  * RAM suivie par AI.allocateRAM / RamUsage.free : libérations dans le désordre (le dernier du
  * tableau vient boucher le trou) et au-delà de la capacité initiale du tableau, sans perte ni
  * double comptage. Le tableau est privé : son invariant (case i ↔ slot i, rien au-delà du
  * compte) est relu par réflexion, un emplacement mal recalé ne se voyant pas dans le compte.
+ * Un tableau v1-v3 refusé faute de RAM reste intact.
  */
 public class TestRamTracking {
 
 	@Test
 	public void freeInAnyOrder() throws Exception {
-		var ai = newAI();
+		var ai = newAI(4);
 		long ram = ai.getUsedRAM();
 		var referents = new ArrayList<Object>();
 		var usages = new ArrayList<AI.RamUsage>();
@@ -48,48 +53,24 @@ public class TestRamTracking {
 	}
 
 	@Test
-	public void shadowPeaksCountLiveContainers() throws Exception {
-		var ai = newAI();
-		// Au-dessus de la RAM réelle (3 000), mais la mesure ne commence qu'à la moitié de la
-		// limite : sous le double du pic à 8 (~19 000)
-		ai.setMaxRAM(20000);
-		var countField = AI.class.getDeclaredField("ramUsagesCount");
-		countField.setAccessible(true);
+	public void legacyArrayIntactWhenOutOfMemory() throws Exception {
+		var ai = newAI(3);
+		var array = new LegacyArrayLeekValue(ai);
+		// La limite tombe au milieu du 6e élément
+		ai.setMaxRAM((int) ai.getUsedRAM() + 5 * LegacyArrayLeekValue.ELEMENT_RAM + 1);
+		for (int i = 0; i < 5; i++) array.push(ai, (long) i);
+		var e = assertThrows(LeekRunException.class, () -> array.push(ai, 5l));
+		assertEquals(Error.OUT_OF_MEMORY, e.getError());
+		// Le refus n'a pas ajouté d'élément (sa RAM reste comptée, comme en v4), le tableau reste utilisable
+		assertEquals(5, array.size());
 		long ram = ai.getUsedRAM();
-		var referents = new ArrayList<Object>();
-		for (int i = 0; i < 1000; i++) {
-			var empty = new Object();
-			var full = new Object();
-			referents.add(empty);
-			referents.add(full);
-			ai.allocateRAM(empty);
-			ai.allocateRAM(full, 3);
-		}
-		// La mesure ne change pas la RAM du jeu
-		assertEquals(ram + 3 * 1000, ai.getUsedRAM());
-		// Rien n'est libéré : le pic est l'état final, conteneurs vides compris
-		long count = countField.getInt(ai);
-		var peaks = ai.getShadowRAMPeaks();
-		for (int i = 0; i < AI.SHADOW_RAM_BASES.length; i++) {
-			assertEquals(ai.getUsedRAM() + AI.SHADOW_RAM_BASES[i] * count, peaks[i], "base " + AI.SHADOW_RAM_BASES[i]);
-		}
+		array.removeIndex(ai, 0);
+		assertEquals(4, array.size());
+		assertEquals(ram - LegacyArrayLeekValue.ELEMENT_RAM, ai.getUsedRAM());
 	}
 
-	@Test
-	public void shadowPeaksIgnoredFarFromTheLimit() throws Exception {
-		var ai = newAI();
-		ai.setMaxRAM(Integer.MAX_VALUE);
-		var referents = new ArrayList<Object>();
-		for (int i = 0; i < 1000; i++) {
-			var o = new Object();
-			referents.add(o);
-			ai.allocateRAM(o, 3);
-		}
-		for (long peak : ai.getShadowRAMPeaks()) assertEquals(0, peak);
-	}
-
-	private static AI newAI() throws Exception {
-		return new AI(0, 4) {
+	private static AI newAI(int version) throws Exception {
+		return new AI(0, version) {
 			@Override
 			public Object runIA(Session session) {
 				return null;
