@@ -3,7 +3,11 @@ package test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import leekscript.common.Error;
+import leekscript.compiler.LeekScript;
+import leekscript.compiler.Options;
 
 /**
  * Coût en RAM des conteneurs : un coût de base par conteneur, même vide, plus ses éléments.
@@ -45,10 +49,7 @@ public class TestRamCost extends TestCommon {
 		code_v1_3("var a = ['x': 1] var r = getUsedRAM() a['y'] = 2 a['x'] = 3 return getUsedRAM() - r").equals("96");
 
 		section("Tables de méthodes des classes");
-		// Rien n'est compté à la déclaration des classes, A.methods l'est à sa lecture, comme A.fields
-		code_v2_3("return getUsedRAM()").equals("0");
-		code_v2_3("class A { a() {} b() {} } class B extends A { c() {} } return getUsedRAM()").equals("0");
-		code_v4_("class A { a() {} b() {} } class B extends A { c() {} } return getUsedRAM()").equals("0");
+		// A.methods est compté à sa lecture, comme A.fields (rien à la déclaration : cf. classesDeclaredForFree)
 		code_v4_("class A { a() {} b() {} } var r = getUsedRAM() var m = A.methods return getUsedRAM() - r").equals("88");
 		code_v2_3("class A { a() {} b() {} } var r = getUsedRAM() var m = A.methods return getUsedRAM() - r").equals("240");
 		code_v2_3("class A { a() {} } var m = A.methods var r = getUsedRAM() push(m, 1) return getUsedRAM() - r").equals("96");
@@ -60,5 +61,20 @@ public class TestRamCost extends TestCommon {
 		code_v4_("var a = [] for (var i = 0; i < 1000000; ++i) push(a, {})").max_ram(1_000_000).error(Error.OUT_OF_MEMORY);
 		code_v4_("class A {} var a = [] for (var i = 0; i < 1000000; ++i) push(a, new A())").max_ram(1_000_000).error(Error.OUT_OF_MEMORY);
 		code_v1_3("var a = [] for (var i = 0; i < 1000000; ++i) push(a, i)").max_ram(1_000_000).error(Error.OUT_OF_MEMORY);
+	}
+
+	/**
+	 * Déclarer des classes ne compte rien : la RAM de l'IA est la même après sa compilation (qui
+	 * compte déjà la taille du code généré) et au début de son code, une fois les classes définies.
+	 */
+	@Test
+	public void classesDeclaredForFree() throws Exception {
+		for (int version : new int[] { 3, 4 }) {
+			var ai = LeekScript.compileSnippet("class A { a() {} b() {} } class B extends A { c() {} } return 1", "AI", new Options(version, false, false, true, null, true));
+			long compiled = ai.getUsedRAM();
+			ai.init();
+			ai.staticInit();
+			assertEquals(compiled, ai.getUsedRAM(), "v" + version);
+		}
 	}
 }
