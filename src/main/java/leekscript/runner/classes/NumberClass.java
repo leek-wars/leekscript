@@ -223,16 +223,15 @@ public class NumberClass {
 	}
 
 	public static BigIntegerValue setBit(AI ai, BigIntegerValue x, long pos, boolean val) throws LeekRunException {
-		ai.ops(1 + x.bitLength() / 128); // reconstruit le tableau de mots, comme and
-		return x.setBit((int) pos, val);
+		return x.setBit(pos, val);
 	}
 
 	public static BigIntegerValue setBit(AI ai, BigIntegerValue x, long pos, long val) throws LeekRunException {
-		return x.setBit((int) pos, val != 0);
+		return setBit(ai, x, pos, val != 0);
 	}
 
 	public static BigIntegerValue setBit(AI ai, BigIntegerValue x, long pos) throws LeekRunException {
-		return x.setBit((int) pos, true);
+		return setBit(ai, x, pos, true);
 	}
 
 	public static boolean testBit(AI ai, long x, long pos) {
@@ -240,7 +239,7 @@ public class NumberClass {
 	}
 
 	public static boolean testBit(AI ai, BigIntegerValue x, long pos) {
-		return x.testBit((int) pos);
+		return x.testBit(pos);
 	}
 
 	public static long leadingZeros(AI ai, long x) {

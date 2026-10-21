@@ -3,6 +3,8 @@ package test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 
+import leekscript.common.Error;
+
 /**
  * Tests des entiers de taille arbitraire `big_integer` (#bigint).
  * Conçu initialement par Batary (bat_jarry@hotmail.fr).
@@ -242,6 +244,19 @@ public class TestBigInt extends TestCommon {
 		code_v4_("return testBit(5L, 1)").equals("false");
 		code_v4_("return testBit(1L << 100, 100)").equals("true");
 		code_v4_("return testBit(1L << 100, 99)").equals("false");
+		// Positions négatives ou au-delà de 2^31 ; résultat trop grand refusé avant le calcul
+		code_v4_("return testBit(1L, -1)").equals("false");
+		code_v4_("return testBit(-1L, 5000000000)").equals("true");
+		code_v4_("return testBit(5L, 5000000000)").equals("false");
+		code_v4_("return setBit(5L, -1)").equals("5");
+		code_v4_("return setBit(5L, 3000000000, false)").equals("5");
+		code_v4_("return setBit(-1L, 4294967296)").equals("-1");
+		code_v4_("return setBit(0L, 100, 1) == 1L << 100").equals("true");
+		code_v4_("return setBit(0L, 2000000)").error(Error.OUT_OF_MEMORY);
+		code_v4_("return setBit(1L, 4294967296)").error(Error.OUT_OF_MEMORY);
+		code_v4_("return setBit(-1L, 3000000, false)").error(Error.OUT_OF_MEMORY);
+		code_v4_("return setBit(0L, 9223372036854775807)").error(Error.OUT_OF_MEMORY);
+		code_v4_("return setBit(-1L, 9223372036854775807, false)").error(Error.OUT_OF_MEMORY);
 		// versions integer (LS4) — nouvellement disponibles, comportement standard
 		code_v4_("return bitLength(255)").equals("8");
 		code_v4_("return bitCount(7)").equals("3");

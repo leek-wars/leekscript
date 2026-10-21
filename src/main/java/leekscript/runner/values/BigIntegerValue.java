@@ -181,16 +181,24 @@ public class BigIntegerValue extends Number implements LeekValue {
 		return new BigIntegerValue(ai, value.not());
 	}
 
-	public BigIntegerValue setBit(int n, boolean val) throws LeekRunException {
-		if (val) {
-			return new BigIntegerValue(ai, value.setBit(n));
-		} else {
-			return new BigIntegerValue(ai, value.clearBit(n));
-		}
+	/** Bit n en complément à deux : au-delà de la longueur, le bit de signe ; une position négative n'a pas de bit. */
+	public boolean testBit(long n) {
+		if (n < 0) return false;
+		if (n >= value.bitLength()) return value.signum() < 0;
+		return value.testBit((int) n);
 	}
 
-	public boolean testBit(int n) {
-		return value.testBit(n);
+	public BigIntegerValue setBit(long n, boolean val) throws LeekRunException {
+		// Rien à changer : pas de nouveau nombre (BigInteger alloue n bits même pour effacer un bit déjà nul)
+		if (n < 0 || testBit(n) == val) {
+			ai.ops(1);
+			return this;
+		}
+		// min : n + 1 déborderait pour n = Long.MAX_VALUE
+		long bits = Math.max(value.bitLength(), Math.min(n, MAX_BITLENGTH) + 1);
+		checkResultSize(bits);
+		ai.ops(1 + (int) (bits / 128)); // reconstruit le tableau de mots du résultat, comme and
+		return new BigIntegerValue(ai, val ? value.setBit((int) n) : value.clearBit((int) n));
 	}
 
 	public BigIntegerValue min(BigIntegerValue val) throws LeekRunException {
