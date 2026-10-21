@@ -543,6 +543,8 @@ public abstract class AI {
 			pollFreedRAM();
 
 			if (mRAM > maxRAM) {
+				// Avec G1 et -XX:+ExplicitGCInvokesConcurrent, un cycle concurrent où seul ce fil attend ;
+				// sans cette option, un GC complet qui arrête tous les fils de la JVM
 				System.gc();
 
 				for (int i = 100; i > 0 && mRAM > maxRAM; i--) {
