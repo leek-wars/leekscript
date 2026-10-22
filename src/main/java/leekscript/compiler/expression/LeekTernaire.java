@@ -7,6 +7,8 @@ import leekscript.compiler.NarrowingInfo;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
@@ -16,6 +18,12 @@ public class LeekTernaire extends LeekExpression {
 
 	private int mOp = 0;
 	private Type type = Type.ANY;
+	// Branche comptée d'un autre ternaire, donc argument d'ops() : casté même booléen (posé à l'analyse)
+	private boolean opsArgument = false;
+	// Ternaires imbriqués directement les uns dans les branches des autres, celui-ci compris
+	private int depth = 1;
+	// Marge sous la pile de javac, qui déborde vers 75 niveaux avec 768 Ko de pile, 120 avec 1 Mo
+	public static final int MAX_DEPTH = 64;
 
 	public LeekTernaire(Token questionMark) {
 		mCondition = null;
@@ -100,6 +108,18 @@ public class LeekTernaire extends LeekExpression {
 		return complete() && !castsBranches() && (JavaWriter.keepsObject(mExpression1, type) || JavaWriter.keepsObject(mExpression2, type));
 	}
 
+	/**
+	 * Type Java statique du ternaire écrit (cf writeJavaCode) : celui de ses branches castées, le
+	 * type boxé si les deux le restent, sinon le primitif. null si une branche reste en Object :
+	 * javac lui donne alors le plus petit type commun (Number…), qu'un cast élargirait.
+	 */
+	private String javaType(int version) {
+		if (castsBranches()) return type.getJavaName(version);
+		if (hasObjectJavaResult()) return null;
+		if (hasBoxedJavaResult()) return type.getJavaName(version);
+		return type.getJavaPrimitiveName(version);
+	}
+
 	@Override
 	public String toString() {
 		String retour = "";
@@ -121,6 +141,14 @@ public class LeekTernaire extends LeekExpression {
 		}
 		if (!complete()) writer.addCode("/* " + toString() + " */");
 		else {
+			// Cast vers son propre type Java : une expression autonome, que javac n'évalue qu'une fois.
+			// En argument d'une méthode surchargée (ops, abs…), javac réévalue sinon le ternaire pour
+			// chaque surcharge candidate, à chaque niveau d'imbrication. Un ternaire booléen garde ses
+			// sauts quand il sert de condition.
+			var cast = opsArgument || type != Type.BOOL ? javaType(mainblock.getVersion()) : null;
+			if (cast != null) {
+				writer.addCode("((" + cast + ") (");
+			}
 			writer.getBoolean(mainblock, mCondition, true);
 			writer.addCode(" ? ");
 			if (castsBranches()) {
@@ -132,6 +160,9 @@ public class LeekTernaire extends LeekExpression {
 				writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
 			writeBranch(mainblock, writer, mExpression2);
+			if (cast != null) {
+				writer.addCode("))");
+			}
 		}
 		if (parenthesis) {
 			writer.addCode(")");
@@ -145,9 +176,10 @@ public class LeekTernaire extends LeekExpression {
 	 * ambigu pour javac. On la déboxe comme Java le fait d'une branche non comptée.
 	 */
 	private void writeBranch(MainLeekBlock mainblock, JavaWriter writer, Expression branch) {
-		boolean counted = mExpression1.operations != mExpression2.operations && branch.operations > 0;
+		boolean counted = counted(branch);
 		if (counted) {
-			writer.addCode("ops(");
+			// Un ternaire gardé en Object n'a pas de cast (cf javaType) : un ops() sans surcharge
+			writer.addCode(branch.trim() instanceof LeekTernaire nested && nested.hasObjectJavaResult() ? "opsAny(" : "ops(");
 			if (JavaWriter.keepsBoxed(branch, type)) {
 				writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
@@ -238,15 +270,11 @@ public class LeekTernaire extends LeekExpression {
 
 	@Override
 	public boolean complete() {
+		// Branches vérifiées par super.complete()
 		if(!super.complete()) return false;
 		if(mCondition == null) return false;
 		if(mCondition.getNature() == EXPRESSION && !((LeekExpression) mCondition).complete()) return false;
-		if(mOp != 2) return false; // Both ? and : must be present
-		if(mExpression1 == null) return false;
-		if(mExpression1.getNature() == EXPRESSION && !((LeekExpression) mExpression1).complete()) return false;
-		if(mExpression2 == null) return false;
-		if(mExpression2.getNature() == EXPRESSION && !((LeekExpression) mExpression2).complete()) return false;
-		return true;
+		return mOp == 2; // Both ? and : must be present
 	}
 
 	@Override
@@ -350,6 +378,26 @@ public class LeekTernaire extends LeekExpression {
 		if (mExpression1 != null && mExpression2 != null) {
 			type = branchesType(mExpression1.getType(), mExpression2.getType());
 		}
+
+		for (var branch : new Expression[] { mExpression1, mExpression2 }) {
+			if (counted(branch) && branch.trim() instanceof LeekTernaire nested) nested.opsArgument = true;
+		}
+
+		// Par les branches seulement : une condition imbriquée n'est jamais écrite en argument d'ops()
+		depth = 1 + Math.max(depth(mExpression1), depth(mExpression2));
+		// Signalé par le ternaire qui franchit la limite, pas par ceux qui l'englobent
+		if (depth == MAX_DEPTH + 1) {
+			compiler.addError(new AnalyzeError(getLocation(), AnalyzeErrorLevel.ERROR, Error.CODE_TOO_LARGE, new String[] { "" }));
+		}
+	}
+
+	/** Une branche aux ops différents de l'autre les compte elle-même : ops(branche, n). */
+	private boolean counted(Expression branch) {
+		return mExpression1.operations != mExpression2.operations && branch.operations > 0;
+	}
+
+	private static int depth(Expression expression) {
+		return expression != null && expression.trim() instanceof LeekTernaire t ? t.depth : 0;
 	}
 
 	@Override

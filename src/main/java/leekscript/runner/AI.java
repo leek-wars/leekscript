@@ -465,6 +465,15 @@ public abstract class AI {
 		return x;
 	}
 
+	/**
+	 * ops(T, int) sans surcharge, pour un argument dont javac déduit le type : il n'a aucune
+	 * candidate à départager (cf LeekTernaire.writeBranch).
+	 */
+	public <T> T opsAny(T x, int nb) throws LeekRunException {
+		ops(nb);
+		return x;
+	}
+
 	public long ops(long x, int nb) throws LeekRunException {
 		ops(nb);
 		return x;
