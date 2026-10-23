@@ -15,6 +15,7 @@ import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.Session;
 import leekscript.runner.values.LegacyArrayLeekValue;
+import leekscript.runner.values.SetLeekValue;
 
 /**
  * RAM suivie par AI.allocateRAM / RamUsage.free : libérations dans le désordre (le dernier du
@@ -67,6 +68,20 @@ public class TestRamTracking {
 		array.removeIndex(ai, 0);
 		assertEquals(4, array.size());
 		assertEquals(ram - LegacyArrayLeekValue.ELEMENT_RAM, ai.getUsedRAM());
+	}
+
+	@Test
+	public void setOperationsChargeTheirResult() throws Exception {
+		var ai = newAI(4);
+		var ramField = SetLeekValue.class.getDeclaredField("ram");
+		ramField.setAccessible(true);
+		var a = new SetLeekValue(ai, new Object[] { 1l, 2l, 3l });
+		var b = new SetLeekValue(ai, new Object[] { 3l, 4l });
+		long ram = ai.getUsedRAM();
+		var results = new SetLeekValue[] { a.setUnion(ai, b), a.setIntersection(ai, b), a.setDifference(ai, b), a.setDisjunction(ai, b) };
+		// Libérer les résultats rend toute leur RAM : rien n'est resté compté sur `a`
+		for (var result : results) ((AI.RamUsage) ramField.get(result)).free(ai);
+		assertEquals(ram, ai.getUsedRAM());
 	}
 
 	private static AI newAI(int version) throws Exception {

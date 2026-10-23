@@ -511,6 +511,14 @@ public class Type {
 			return Type.array(Type.compound(a1.element(), type));
 		}
 
+		if (this instanceof SetType s1 && type instanceof SetType s2) {
+			return Type.set(Type.compound(s1.element(), s2.element()));
+		}
+		// Avec une valeur qui peut être une chaîne, `+` concatène : le résultat n'est pas forcément un ensemble
+		if (this instanceof SetType s1 && !Type.STRING.castableFrom(type)) {
+			return Type.set(Type.compound(s1.element(), type));
+		}
+
 		if (this instanceof MapType m1 && type instanceof MapType m2) {
 			return Type.map(Type.compound(m1.key(), m2.key()), Type.compound(m1.element(), m2.element()));
 		}

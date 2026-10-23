@@ -4,6 +4,8 @@ package test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 
+import leekscript.common.Error;
+
 
 @ExtendWith(SummaryExtension.class)
 public class TestSet extends TestCommon {
@@ -72,6 +74,34 @@ public class TestSet extends TestCommon {
 		section("Set operator !");
 		code("var i = <> return !i").equals("true");
 		code("var i = <1> return !i").equals("false");
+	}
+
+	@Test
+	public void testSet_operator_Add() throws Exception {
+		section("Set operator +");
+		// Comme un tableau : union avec un ensemble, copie augmentée d'une valeur
+		code("var s = <1, 2> return s + 3").equals("<1, 2, 3>");
+		code("var s = <1, 2> return s + <2, 3>").equals("<1, 2, 3>");
+		code("var s = <1, 2> var t = s + 3 return s").equals("<1, 2>");
+		code("var s = <1, 2> s += 3 return s").equals("<1, 2, 3>");
+		code("var s = <1, 2> s += <5> return s").equals("<1, 2, 5>");
+		// `+=` ajoute en place, comme sur un tableau : les autres références voient l'ajout
+		code_v2_("var s = <1> var a = s s += 2 return a").equals("<1, 2>");
+		code("global s = <1> s += 2 return s").equals("<1, 2>");
+		code("var s = <1, 2> return s + 'a'").equals("\"<1, 2>a\"");
+		code_v4_("function g(Set s, y) { return s + y } return [g(<1>, 'a'), g(<1>, 2)]").equals("[\"<1>a\", <1, 2>]");
+		code_strict_v4_("Set<integer> s = <1> Set<integer> t = s + 2 return t").equals("<1, 2>");
+		code_strict_v4_("Set<integer> s = <1> Set<integer> t = s + 2 return t").noWarning();
+		code_v4_("var s = <> for (var i = 0; i < 1000000; ++i) s += i").max_ram(10_000).error(Error.OUT_OF_MEMORY);
+	}
+
+	@Test
+	public void testSet_numeric_value() throws Exception {
+		section("Set as a number");
+		// Hors de `+`, un ensemble vaut sa taille, comme les autres conteneurs
+		code("var s = <1, 2> return 1 + s").equals("3");
+		code("var s = <1, 2> return s * 2").equals("4");
+		code("var s = <1, 2> return s > 1").equals("true");
 	}
 
 	@Test

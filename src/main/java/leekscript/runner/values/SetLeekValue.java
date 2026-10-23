@@ -217,12 +217,23 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		return new SetIterator(this);
 	}
 
+	/** `s += x` : ajout en place, comme `a += x` sur un tableau (un ensemble ajoute tous ses éléments). */
+	public Object add_eq(AI ai, Object value) throws LeekRunException {
+		if (value instanceof SetLeekValue set) {
+			ai.ops(1 + set.size());
+			for (var v : set) setPut(ai, v);
+		} else {
+			setPut(ai, value);
+		}
+		return this;
+	}
+
 	public SetLeekValue setUnion(AI ai, SetLeekValue set) throws LeekRunException {
 		ai.ops((this.size() + set.size()) * 2);
 		var r = new SetLeekValue(ai, this.size() + set.size());
 		r.addAll(this);
 		r.addAll(set);
-		ai.increaseRAM(ram, r.size());
+		ai.increaseRAM(r.ram, r.size());
 		return r;
 	}
 
@@ -231,7 +242,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		var r = new SetLeekValue(ai, this.size());
 		r.addAll(this);
 		r.retainAll(set);
-		ai.increaseRAM(ram, r.size());
+		ai.increaseRAM(r.ram, r.size());
 		return r;
 	}
 
@@ -240,7 +251,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		var r = new SetLeekValue(ai, this.size());
 		r.addAll(this);
 		r.removeAll(set);
-		ai.increaseRAM(ram, r.size());
+		ai.increaseRAM(r.ram, r.size());
 		return r;
 	}
 
@@ -253,7 +264,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		for (var e : set) {
 			if (!this.contains(e)) r.add(e);
 		}
-		ai.increaseRAM(ram, r.size());
+		ai.increaseRAM(r.ram, r.size());
 		return r;
 	}
 
@@ -265,7 +276,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 				r.add(v);
 			}
 		}
-		ai.increaseRAM(ram, r.size());
+		ai.increaseRAM(r.ram, r.size());
 		return r;
 	}
 

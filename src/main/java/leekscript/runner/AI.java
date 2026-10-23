@@ -1115,6 +1115,21 @@ public abstract class AI {
 		return false;
 	}
 
+	/**
+	 * Taille d'un conteneur (objet, tableau, map, ensemble), sa valeur numérique, ou -1 pour une
+	 * autre valeur. À part des conversions (integer, number, longint, real) : appelées à chaque
+	 * opération non typée, elles doivent rester sous le seuil d'inlining de C2 (325 octets).
+	 */
+	private static int containerSize(Object value) {
+		if (value instanceof ArrayLeekValue array) return array.size();
+		if (value instanceof MapLeekValue map) return map.size();
+		if (value instanceof SetLeekValue set) return set.size();
+		if (value instanceof ObjectLeekValue object) return object.size();
+		if (value instanceof NativeObjectLeekValue object) return object.size();
+		if (value instanceof LegacyArrayLeekValue array) return array.size();
+		return -1;
+	}
+
 	public int integer(Object value) throws LeekRunException {
 		if (value instanceof Double) {
 			return (int) (double) value;
@@ -1122,17 +1137,10 @@ public abstract class AI {
 			return (int) (long) value;
 		} else if (value instanceof Boolean) {
 			return ((Boolean) value) ? 1 : 0;
-		} else if (value instanceof ObjectLeekValue) {
-			return ((ObjectLeekValue) value).size();
-		} else if (value instanceof NativeObjectLeekValue o) {
-			return o.size();
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).size();
-		} else if (value instanceof ArrayLeekValue) {
-			return ((ArrayLeekValue) value).size();
-		} else if (value instanceof MapLeekValue) {
-			return ((MapLeekValue) value).size();
-		} else if (value instanceof IntegerIntervalLeekValue interval) {
+		}
+		int size = containerSize(value);
+		if (size >= 0) return size;
+		if (value instanceof IntegerIntervalLeekValue interval) {
 			return (int) interval.intervalSize(this);
 		} else if (value instanceof RealIntervalLeekValue interval) {
 			return (int) interval.intervalSize(this);
@@ -1163,17 +1171,10 @@ public abstract class AI {
 			return (Number) value;
 		} else if (value instanceof Boolean) {
 			return ((Boolean) value) ? 1l : 0l;
-		} else if (value instanceof ObjectLeekValue) {
-			return (long) ((ObjectLeekValue) value).size();
-		} else if (value instanceof NativeObjectLeekValue o) {
-			return (long) o.size();
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return (long) ((LegacyArrayLeekValue) value).size();
-		} else if (value instanceof ArrayLeekValue) {
-			return (long) ((ArrayLeekValue) value).size();
-		} else if (value instanceof MapLeekValue) {
-			return (long) ((MapLeekValue) value).size();
-		} else if (value instanceof IntegerIntervalLeekValue interval) {
+		}
+		int size = containerSize(value);
+		if (size >= 0) return (long) size;
+		if (value instanceof IntegerIntervalLeekValue interval) {
 			return interval.intervalSize(this);
 		} else if (value instanceof RealIntervalLeekValue interval) {
 			return interval.intervalSize(this);
@@ -1207,17 +1208,10 @@ public abstract class AI {
 			return big.longValue();
 		} else if (value instanceof Boolean) {
 			return ((Boolean) value) ? 1 : 0;
-		} else if (value instanceof ObjectLeekValue) {
-			return ((ObjectLeekValue) value).size();
-		} else if (value instanceof NativeObjectLeekValue o) {
-			return o.size();
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).size();
-		} else if (value instanceof ArrayLeekValue) {
-			return ((ArrayLeekValue) value).size();
-		} else if (value instanceof MapLeekValue) {
-			return ((MapLeekValue) value).size();
-		} else if (value instanceof IntegerIntervalLeekValue interval) {
+		}
+		int size = containerSize(value);
+		if (size >= 0) return size;
+		if (value instanceof IntegerIntervalLeekValue interval) {
 			return interval.intervalSize(this);
 		} else if (value instanceof RealIntervalLeekValue interval) {
 			return (long) interval.intervalSize(this);
@@ -1251,17 +1245,10 @@ public abstract class AI {
 			return big.doubleValue();
 		} else if (value instanceof Boolean) {
 			return ((Boolean) value) ? 1 : 0;
-		} else if (value instanceof ObjectLeekValue) {
-			return ((ObjectLeekValue) value).size();
-		} else if (value instanceof NativeObjectLeekValue o) {
-			return o.size();
-		} else if (value instanceof LegacyArrayLeekValue) {
-			return ((LegacyArrayLeekValue) value).size();
-		} else if (value instanceof ArrayLeekValue) {
-			return ((ArrayLeekValue) value).size();
-		} else if (value instanceof MapLeekValue) {
-			return ((MapLeekValue) value).size();
-		} else if (value instanceof IntegerIntervalLeekValue interval) {
+		}
+		int size = containerSize(value);
+		if (size >= 0) return size;
+		if (value instanceof IntegerIntervalLeekValue interval) {
 			return (double) interval.intervalSize(this);
 		} else if (value instanceof RealIntervalLeekValue interval) {
 			return interval.intervalSize(this);
@@ -1477,6 +1464,17 @@ public abstract class AI {
 			return result;
 		}
 
+		// Comme un tableau : union avec un ensemble, copie augmentée sinon
+		if (x instanceof SetLeekValue set1) {
+			if (y instanceof SetLeekValue set2) {
+				return set1.setUnion(this, set2);
+			}
+			ops(set1.size() * 2);
+			var result = new SetLeekValue(this, set1, 1);
+			result.setPut(this, y);
+			return result;
+		}
+
 		if (x instanceof MapLeekValue) {
 			var map1 = (MapLeekValue) x;
 			if (y instanceof MapLeekValue) {
@@ -1638,6 +1636,9 @@ public abstract class AI {
 		}
 		if (x instanceof MapLeekValue) {
 			return ((MapLeekValue) x).add_eq(this, y);
+		}
+		if (x instanceof SetLeekValue set) {
+			return set.add_eq(this, y);
 		}
 		return add(x, y);
 	}
