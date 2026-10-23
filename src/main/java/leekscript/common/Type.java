@@ -515,7 +515,7 @@ public class Type {
 			return Type.set(Type.compound(s1.element(), s2.element()));
 		}
 		// Avec une valeur qui peut être une chaîne, `+` concatène : le résultat n'est pas forcément un
-		// ensemble. Un tableau non plus : en v1-v3, il concatène comme avant (cf. AI.add).
+		// ensemble. Avec un tableau non plus : en v1-v3, il concatène (cf. AI.add).
 		if (this instanceof SetType s1 && !(type instanceof ArrayType) && !Type.STRING.castableFrom(type)) {
 			return Type.set(Type.compound(s1.element(), type));
 		}

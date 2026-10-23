@@ -221,7 +221,9 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 	public Object add_eq(AI ai, Object value) throws LeekRunException {
 		if (value instanceof SetLeekValue set) {
 			ai.ops(1 + set.size());
-			for (var v : set) setPut(ai, v);
+			int sizeBefore = size();
+			addAll(set);
+			ai.increaseRAM(ram, size() - sizeBefore);
 		} else {
 			setPut(ai, value);
 		}

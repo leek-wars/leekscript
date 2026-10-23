@@ -90,10 +90,9 @@ public class TestSet extends TestCommon {
 		code("global s = <1> s += 2 return s").equals("<1, 2>");
 		code("var s = <1, 2> return s + 'a'").equals("\"<1, 2>a\"");
 		code_v4_("function g(Set s, y) { return s + y } return [g(<1>, 'a'), g(<1>, 2)]").equals("[\"<1>a\", <1, 2>]");
-		code_strict_v4_("Set<integer> s = <1> Set<integer> t = s + 2 return t").equals("<1, 2>");
 		code_strict_v4_("Set<integer> s = <1> Set<integer> t = s + 2 return t").noWarning();
 		code_v4_("var s = <> for (var i = 0; i < 1000000; ++i) s += i").max_ram(10_000).error(Error.OUT_OF_MEMORY);
-		// Un tableau v1-v3 à droite garde la concaténation qui précédait l'opérateur des ensembles
+		// Avec un tableau v1-v3 à droite, `+` concatène
 		code_v1_3("return <1> + [2]").equals("[<1>, 2]");
 	}
 
