@@ -1464,8 +1464,9 @@ public abstract class AI {
 			return result;
 		}
 
-		// Comme un tableau : union avec un ensemble, copie augmentée sinon
-		if (x instanceof SetLeekValue set1) {
+		// Comme un tableau : union avec un ensemble, copie augmentée sinon. Un tableau v1-v3 à
+		// droite garde sa concaténation (plus bas), qui le précédait : `<1> + [2]` vaut `[<1>, 2]`.
+		if (x instanceof SetLeekValue set1 && !(y instanceof LegacyArrayLeekValue)) {
 			if (y instanceof SetLeekValue set2) {
 				return set1.setUnion(this, set2);
 			}

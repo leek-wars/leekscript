@@ -93,6 +93,8 @@ public class TestSet extends TestCommon {
 		code_strict_v4_("Set<integer> s = <1> Set<integer> t = s + 2 return t").equals("<1, 2>");
 		code_strict_v4_("Set<integer> s = <1> Set<integer> t = s + 2 return t").noWarning();
 		code_v4_("var s = <> for (var i = 0; i < 1000000; ++i) s += i").max_ram(10_000).error(Error.OUT_OF_MEMORY);
+		// Un tableau v1-v3 à droite garde la concaténation qui précédait l'opérateur des ensembles
+		code_v1_3("return <1> + [2]").equals("[<1>, 2]");
 	}
 
 	@Test
