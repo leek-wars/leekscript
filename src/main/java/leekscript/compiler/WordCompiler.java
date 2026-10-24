@@ -233,8 +233,10 @@ public class WordCompiler {
 					var token = mTokens.eat();
 					// On vérifie qu'on est dans le bloc principal
 					if (!mCurentBlock.equals(mMain)) throw new LeekCompilerException(mTokens.get(), Error.INCLUDE_ONLY_IN_MAIN_BLOCK);
-					// On récupere l'ia
-					if (mTokens.eat().getType() != TokenType.PAR_LEFT) throw new LeekCompilerException(mTokens.get(), Error.OPENING_PARENTHESIS_EXPECTED);
+					// Sans parenthèse, la seconde passe dit ce qui ne va pas, à sa place dans le
+					// fichier : le mot-clé pris pour un nom (`var include = 1`) ou la parenthèse
+					if (mTokens.get().getType() != TokenType.PAR_LEFT) continue;
+					mTokens.skip();
 
 					if (mTokens.get().getType() != TokenType.VAR_STRING) throw new LeekCompilerException(mTokens.get(), Error.AI_NAME_EXPECTED);
 
@@ -1319,7 +1321,7 @@ public class WordCompiler {
 			throw new LeekCompilerException(word, Error.GLOBAL_ONLY_IN_MAIN_BLOCK);
 		}
 		if (word.getType() != TokenType.STRING) {
-			throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
+			throw variableNameError(word, Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
 		}
 		var variable = new LeekGlobalDeclarationInstruction(token, word, type);
 		applyAnnotations(variable, annotations);
@@ -1339,7 +1341,7 @@ public class WordCompiler {
 			// On regarde si y'en a d'autres
 			mTokens.skip();// On passe la virgule
 			word = mTokens.eat();
-			if (word.getType() != TokenType.STRING) throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED);
+			if (word.getType() != TokenType.STRING) throw variableNameError(word, Error.VAR_NAME_EXPECTED);
 			variable = new LeekGlobalDeclarationInstruction(token, word, type);
 			applyAnnotations(variable, annotations);
 			// On regarde si une valeur est assignée
@@ -1395,15 +1397,20 @@ public class WordCompiler {
 		}
 	}
 
+	// Un mot-clé à la place du nom (`var include = 1`) : on dit que ce nom est pris, plutôt
+	// qu'« un nom de variable est attendu », qui faisait chercher l'erreur ailleurs.
+	private LeekCompilerException variableNameError(Token word, Error error) {
+		if (LexicalParser.isLexerKeyword(word.getWord())) {
+			return new LeekCompilerException(word, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() });
+		}
+		return new LeekCompilerException(word, error);
+	}
+
 	private void variableDeclaration(LeekType type, List<Token> annotations) throws LeekCompilerException {
 		// Il y a au moins une premiere variable
 		Token word = mTokens.eat();
 		if (word.getType() != TokenType.STRING) {
-			throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED);
-		}
-
-		if (getVersion() >= 3 && isKeyword(word)) {
-			addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() }));
+			throw variableNameError(word, Error.VAR_NAME_EXPECTED);
 		}
 		LeekVariableDeclarationInstruction variable = new LeekVariableDeclarationInstruction(this, word, getCurrentFunction(), type);
 		applyAnnotations(variable, annotations);
@@ -1426,10 +1433,7 @@ public class WordCompiler {
 			// On regarde si y'en a d'autres
 			mTokens.skip();// On passe la virgule
 			word = mTokens.eat();
-			if (word.getType() != TokenType.STRING) throw new LeekCompilerException(word, Error.VAR_NAME_EXPECTED);
-			if (getVersion() >= 3 && isKeyword(word)) {
-				addError(new AnalyzeError(word, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { word.getWord() }));
-			}
+			if (word.getType() != TokenType.STRING) throw variableNameError(word, Error.VAR_NAME_EXPECTED);
 			variable = new LeekVariableDeclarationInstruction(this, word, getCurrentFunction(), type);
 			applyAnnotations(variable, annotations);
 			// On regarde si une valeur est assignée

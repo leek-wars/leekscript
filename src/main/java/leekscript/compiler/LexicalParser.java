@@ -59,6 +59,14 @@ public class LexicalParser {
 		return bs;
 	}
 
+	/**
+	 * Mot tel que l'émet un mot-clé (« include », « for »…), insensible à la casse comme en v1-2.
+	 * `reservedWords` n'a pas `include`, et `and` / `or` sortent en `&&` / `||`.
+	 */
+	public static boolean isLexerKeyword(String word) {
+		return KEYWORDS.containsKey(word.toLowerCase());
+	}
+
 	private static Map<String, KeywordInfo> buildKeywords() {
 		var m = new HashMap<String, KeywordInfo>(128);
 		m.put("and",         new KeywordInfo(1, "&&", TokenType.OPERATOR));

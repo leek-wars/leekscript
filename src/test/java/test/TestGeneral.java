@@ -99,25 +99,43 @@ public class TestGeneral extends TestCommon {
 		String[] reservedWordsV2 = new String[] { "class", "constructor", "extends", "instanceof", "new", "private", "protected", "public", "static", "super", "this" };
 		String[] reservedWordsV3 = new String[] { "abstract", "await", "byte", "case", "catch", "char", "const", "default", "double", "enum", "eval", "export", "final", "finally", "float", "goto", "implements", "import", "int", "interface", "let", "long", "native", "package", "short", "switch", "synchronized", "throw", "throws", "transient", "try", "typeof", "void", "volatile", "with", "yield" };
 		for (var word : reservedWordsV1) {
-			code("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
+			// and et or arrivent déjà traduits en && et || : pas de nom à citer
+			if (word.equals("and") || word.equals("or")) {
+				code("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
+			} else {
+				code("var " + word + " = 2;").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, word);
+			}
 		}
 		for (var word : reservedWordsV2) {
 			code_v1("var " + word + " = 2;").error(Error.NONE);
-			code_v2_("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
+			code_v2_("var " + word + " = 2;").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, word);
 		}
 		for (var word : reservedWordsV3) {
 			code_v1_2("var " + word + " = 2;").error(Error.NONE);
-			code_v3_("var " + word + " = 2;").error(Error.VAR_NAME_EXPECTED);
+			code_v3_("var " + word + " = 2;").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, word);
 		}
+		// Forum 11969 : include aussi, que la première passe prenait pour une inclusion
+		code("var include = 2;").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, "include");
+		code("var a = 1, include = 2;").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, "include");
+		code_v1_2("var Include = 2;").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, "Include");
+		code("var 12 = 2;").error(Error.VAR_NAME_EXPECTED);
+		code("include 'a'").error(Error.OPENING_PARENTHESIS_EXPECTED);
 	}
 
 	@Test
 	public void testGlobals_with_keywords() throws Exception {
 		section("Globals with keywords");
-		code_v1_2("global break = 2").error(Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
+		code_v1_2("global break = 2").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, "break");
 		for (var word : LexicalParser.reservedWords) {
-			code_v3_("global " + word + " = 2;").error(Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
+			// void est lu comme le type de la globale
+			if (word.equals("and") || word.equals("or") || word.equals("void")) {
+				code_v3_("global " + word + " = 2;").error(Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
+			} else {
+				code_v3_("global " + word + " = 2;").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, word);
+			}
 		}
+		code("global a = 1, include = 2").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, "include");
+		code("global 12 = 2").error(Error.VAR_NAME_EXPECTED_AFTER_GLOBAL);
 
 		code_v1("var new = 12 var b = @new return b").equals("12");
 		code_v1("global final = 2").error(Error.NONE);
