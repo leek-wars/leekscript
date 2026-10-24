@@ -230,13 +230,18 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		return this;
 	}
 
+	// Résultat rempli par des ajouts bruts : sa RAM recalée sur sa taille, sur son propre compteur
+	private SetLeekValue counted(AI ai) throws LeekRunException {
+		ai.increaseRAM(ram, BASE_RAM + size() - ram.getValue());
+		return this;
+	}
+
 	public SetLeekValue setUnion(AI ai, SetLeekValue set) throws LeekRunException {
 		ai.ops((this.size() + set.size()) * 2);
 		var r = new SetLeekValue(ai, this.size() + set.size());
 		r.addAll(this);
 		r.addAll(set);
-		ai.increaseRAM(r.ram, r.size());
-		return r;
+		return r.counted(ai);
 	}
 
 	public SetLeekValue setIntersection(AI ai, SetLeekValue set) throws LeekRunException {
@@ -244,8 +249,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		var r = new SetLeekValue(ai, this.size());
 		r.addAll(this);
 		r.retainAll(set);
-		ai.increaseRAM(r.ram, r.size());
-		return r;
+		return r.counted(ai);
 	}
 
 	public SetLeekValue setDifference(AI ai, SetLeekValue set) throws LeekRunException {
@@ -253,8 +257,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		var r = new SetLeekValue(ai, this.size());
 		r.addAll(this);
 		r.removeAll(set);
-		ai.increaseRAM(r.ram, r.size());
-		return r;
+		return r.counted(ai);
 	}
 
 	public SetLeekValue setDisjunction(AI ai, SetLeekValue set) throws LeekRunException {
@@ -266,8 +269,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		for (var e : set) {
 			if (!this.contains(e)) r.add(e);
 		}
-		ai.increaseRAM(r.ram, r.size());
-		return r;
+		return r.counted(ai);
 	}
 
 	public SetLeekValue setFilter(AI ai, FunctionLeekValue function) throws LeekRunException {
@@ -278,8 +280,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 				r.add(v);
 			}
 		}
-		ai.increaseRAM(r.ram, r.size());
-		return r;
+		return r.counted(ai);
 	}
 
 	public ArrayLeekValue setToArray(AI ai) throws LeekRunException {

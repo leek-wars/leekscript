@@ -792,14 +792,19 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return max_value;
 	}
 
+	// Résultat rempli par des ajouts bruts : sa RAM recalée sur sa taille, sur son propre compteur
+	private ArrayLeekValue counted(AI ai) throws LeekRunException {
+		ai.increaseRAM(ram, BASE_RAM + size() - ram.getValue());
+		return this;
+	}
+
 	public ArrayLeekValue arrayMap(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		var result = new ArrayLeekValue(ai, size());
 		for (int i = 0; i < size(); ++i) {
 			result.add(function.run(ai, null, get(i), (long) i, this));
 		}
-		ai.increaseRAM(ram, size());
-		return result;
+		return result.counted(ai);
 	}
 
 	public ArrayLeekValue arraySlice(AI ai, Object start) throws LeekRunException {
@@ -849,9 +854,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 				result.add(get(i));
 			}
 		}
-		ai.increaseRAM(ram, size);
-		// assert(size == result.size());
-		return result;
+		return result.counted(ai);
 	}
 
 	public boolean isEmpty(AI ai) {
@@ -897,8 +900,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 				r2.add(v);
 			}
 		}
-		ai.increaseRAM(ram, size());
-		return new ArrayLeekValue(ai, new Object[] { r1, r2 });
+		return new ArrayLeekValue(ai, new Object[] { r1.counted(ai), r2.counted(ai) });
 	}
 
 	public ArrayLeekValue arrayFlatten(AI ai) throws LeekRunException {
@@ -931,8 +933,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 				result.add(v);
 			}
 		}
-		ai.increaseRAM(ram, result.size());
-		return result;
+		return result.counted(ai);
 	}
 
 	public Object arrayFind(AI ai, FunctionLeekValue function) throws LeekRunException {
@@ -984,12 +985,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 
 	public MapLeekValue arrayFrequencies(AI ai) throws LeekRunException {
 		ai.ops(size() * 3);
-		var frequencies = new MapLeekValue(ai);
-		for (var value : this) {
-			frequencies.merge(value, 1l, (x, y) -> (Long) x + (Long) y);
-		}
-		ai.increaseRAM(ram, frequencies.size());
-		return frequencies;
+		return MapLeekValue.frequencies(ai, this);
 	}
 
 	public ArrayLeekValue arrayChunk(AI ai, long size) throws LeekRunException {
@@ -1024,8 +1020,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		result.shuffle(ai);
 		var finalCount = Math.max(0, Math.min((int) count, size()));
 		result.removeRange(finalCount, size());
-		ai.decreaseRAM(ram, size() - finalCount);
-		return result;
+		return result.counted(ai);
 	}
 
 	public boolean inArray(AI ai, Object value) throws LeekRunException {

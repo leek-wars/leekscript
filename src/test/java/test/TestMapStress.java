@@ -38,8 +38,15 @@ public class TestMapStress extends TestCommon {
 		code_v4_("any a = [:] for (var i = 0; i < 1000000; ++i) a[i] = 1").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("any a = [:] for (var i = 0; i < 1000000; ++i) mapPut(a, i, 1)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("any a = [:] for (var i = 0; i < 1000000; ++i) mapPutAll(a, [i : 1, i + 1 : 2, i + 2 : 3])").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
+		code_v4_("any a = [:] for (var i = 0; i < 1000000; ++i) a += [i : 1]").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
+		code_v4_("any a = [:] for (var i = 0; i < 1000000; ++i) a[i] ??= 1").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
+		code_v4_("any a = [:] for (var i = 0; i < 1000000; ++i) a[i]++").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
+		code_v4_("any a = [:] for (var i = 0; i < 1000000; ++i) a[i] += 1").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("any a = [:] for (var i = 0; i < 8000; ++i) a[i] = 1 mapMap(a, function(x) { return x })").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("any a = [:] for (var i = 0; i < 8000; ++i) a[i] = 1 mapFilter(a, function(x) { return x % 2 })").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
+		// Le résultat n'est compté qu'une fois : 2 × 2 000 entrées tiennent sous la limite
+		code_v4_("any a = [:] for (var i = 0; i < 2000; ++i) a[i] = 1 var r = mapFilter(a, function(x) { return true }) return mapSize(r)").max_ram(low_ram).equals("2000");
+		code_v4_("any a = [:] for (var i = 0; i < 2000; ++i) a[i] = 1 var r = mapMap(a, function(x) { return x }) return mapSize(r)").max_ram(low_ram).equals("2000");
 		code_v4_("any a = [:] for (var i = 0; i < 8000; ++i) a[i] = 1 mapMerge(a, a)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 		code_v4_("any a = [:] for (var i = 0; i < 8000; ++i) a[i] = 1 var b = clone(a)").max_ram(low_ram).error(Error.OUT_OF_MEMORY);
 

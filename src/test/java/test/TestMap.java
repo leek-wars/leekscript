@@ -218,6 +218,8 @@ public class TestMap extends TestCommon {
 		code_v4_("var a = [:] a += [1 : 2, 3 : 4] return a").equals("[1 : 2, 3 : 4]");
 		code_strict_v4_("any a = [:] a += [1 : 2, 3 : 4] return a").equals("[1 : 2, 3 : 4]");
 		code_v4_("var a = [1 : 2, 3 : 4] a += [:] return a").equals("[1 : 2, 3 : 4]");
+		// 15 = 8 (littéraux, variable, retour) + 1 + 3 par entrée de droite, comme mapPutAll
+		code_v4_("var a = [1 : 2] a += [3 : 4, 5 : 6] return a").ops(15);
 
 		// section("Map.operator [] on unknown maps");
 		// code("var m = ptr(['a': '2']) m['c'] = '6' return m").equals("['a': '2', 'c': '6']");

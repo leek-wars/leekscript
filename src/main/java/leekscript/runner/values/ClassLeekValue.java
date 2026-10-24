@@ -1,5 +1,6 @@
 package leekscript.runner.values;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -7,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
 
 import leekscript.AILog;
@@ -600,31 +602,7 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 	}
 
 	private Object getFieldsArray() throws LeekRunException {
-		if (fieldsArray == null) {
-			if (clazz == null) {
-				if (ai.getVersion() >= 4) {
-					fieldsArray = new ArrayLeekValue(ai);
-				} else {
-					fieldsArray = new LegacyArrayLeekValue(ai);
-				}
-			} else {
-				var fields = AI.getFieldsCached(clazz);
-				if (ai.getVersion() >= 4) {
-					var r = new ArrayLeekValue(ai, fields.length);
-					for (var f : fields) {
-						r.add(f.getName());
-					}
-					fieldsArray = r;
-				} else {
-					Object[] values = new Object[fields.length];
-					int i = 0;
-					for (var f : fields) {
-						values[i++] = f.getName();
-					}
-					fieldsArray = new LegacyArrayLeekValue(ai, values);
-				}
-			}
-		}
+		if (fieldsArray == null) fieldsArray = namesArray(clazz == null ? List.of() : Arrays.stream(AI.getFieldsCached(clazz)).map(Field::getName).toList());
 		return fieldsArray;
 	}
 
@@ -646,9 +624,7 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 	/** Tableau LeekScript des noms, dans l'ordre, compté dans la RAM de l'IA. */
 	private Object namesArray(Collection<String> names) throws LeekRunException {
 		if (ai.getVersion() >= 4) {
-			var r = new ArrayLeekValue(ai, names.size());
-			r.addAll(names);
-			return r;
+			return new ArrayLeekValue(ai, names.toArray());
 		}
 		return new LegacyArrayLeekValue(ai, names.toArray());
 	}

@@ -95,12 +95,23 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 
 	public <V> V set(Object key, V value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		int sizeBefore = size();
-		put(key, value);
-		if (size() > sizeBefore) {
-			ai.increaseRAM(ram, 2);
-		}
+		store(key, value);
 		return value;
+	}
+
+	// Écriture de set() et des put_* : une clé neuve coûte sa RAM, les opérations restant à l'appelant
+	private Object store(Object key, Object value) throws LeekRunException {
+		var sizeBefore = size();
+		var previous = put(key, value);
+		if (size() > sizeBefore) ai.increaseRAM(ram, 2);
+		return previous;
+	}
+
+	private Object delete(Object key) {
+		var sizeBefore = size();
+		var previous = remove(key);
+		if (size() < sizeBefore) ai.decreaseRAM(ram, 2);
+		return previous;
 	}
 
 	public Object mapPut(AI ai, Object key, Object value) throws LeekRunException {
@@ -128,101 +139,125 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		return getOrDefault(key, defaultValue);
 	}
 
-	public Object add_eq(AI ai, Object y) {
-		if (y instanceof MapLeekValue) {
-			for (var entry : ((MapLeekValue) y).entrySet()) {
-				putIfAbsent(entry.getKey(), entry.getValue());
-			}
+	// `m += m2` : compté comme mapPutAll
+	public Object add_eq(AI ai, Object y) throws LeekRunException {
+		if (y instanceof MapLeekValue map) {
+			ai.ops(1 + 3 * map.size());
+			putAllAbsent(map);
 		}
+		return this;
+	}
+
+	// Clés absentes de `map` ajoutées (`+` et `+=` gardent la valeur de gauche), RAM comptée sur cette map
+	private void putAllAbsent(MapLeekValue map) throws LeekRunException {
+		var sizeBefore = size();
+		for (var entry : map.entrySet()) {
+			putIfAbsent(entry.getKey(), entry.getValue());
+		}
+		ai.increaseRAM(ram, 2 * (size() - sizeBefore));
+	}
+
+	/** Nombre d'occurrences de chaque valeur (arrayFrequencies), RAM des entrées comptée sur la map. */
+	static MapLeekValue frequencies(AI ai, Iterable<Object> values) throws LeekRunException {
+		var result = new MapLeekValue(ai);
+		for (var value : values) {
+			result.merge(value, 1l, (x, y) -> (Long) x + (Long) y);
+		}
+		return result.counted(ai);
+	}
+
+	// Résultat rempli par des ajouts bruts : sa RAM recalée sur sa taille, sur son propre compteur
+	private MapLeekValue counted(AI ai) throws LeekRunException {
+		ai.increaseRAM(ram, BASE_RAM + 2 * size() - ram.getValue());
 		return this;
 	}
 
 	public Object put_inc(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = get(key);
-		put(key, ai.add(v, 1l));
+		store(key, ai.add(v, 1l));
 		return v;
 	}
 
 	public Object put_pre_inc(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.add(get(key), 1l);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_dec(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		return put(key, ai.sub(get(key), 1l));
+		return store(key, ai.sub(get(key), 1l));
 	}
 
 	public Object put_pre_dec(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.sub(get(key), 1l);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_add_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.add(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_sub_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.sub(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_mul_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.mul(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_div_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.div(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.intdivAny(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_mod_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.mod(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_pow_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.pow(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.bandAny(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.borAny(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
@@ -230,7 +265,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	public Object put_arithmetic_eq(AI ai, Object key, Object value, AI.ArithmeticOperation operation, Type target) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var result = ai.arithmetic(operation, get(key), value);
-		put(key, ai.convertTo(result, target));
+		store(key, ai.convertTo(result, target));
 		return result;
 	}
 
@@ -238,14 +273,14 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	public Object put_bit_eq(AI ai, Object key, Object value, AI.BitOperation operation, Type target) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.convertTo(ai.bitAny(operation, get(key), value), target);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.bxorAny(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
@@ -253,28 +288,28 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var current = get(key);
 		var v = current != null ? current : value;
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.shrAny(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.ushrAny(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
 	public Object put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		var v = ai.shlAny(get(key), value);
-		put(key, v);
+		store(key, v);
 		return v;
 	}
 
@@ -301,7 +336,6 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 			var key = entry.getKey();
 			result.set(key, function.run(ai, null, entry.getValue(), key, this));
 		}
-		ai.increaseRAM(ram, 2 * size());
 		return result;
 	}
 
@@ -378,7 +412,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	}
 
 	public Object mapRemove(AI ai, Object key) throws LeekRunException {
-		return remove(key);
+		return delete(key);
 	}
 
 	public ArrayLeekValue mapGetValues(AI ai) throws LeekRunException {
@@ -469,17 +503,13 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 				result.set(key, value);
 			}
 		}
-		ai.increaseRAM(ram, 2 * result.size());
 		return result;
 	}
 
 	public MapLeekValue mapMerge(AI ai, MapLeekValue map) throws LeekRunException {
 		ai.ops((size() + map.size()) * 3);
 		var result = new MapLeekValue(ai, this);
-		for (var entry : map.entrySet()) {
-			result.putIfAbsent(entry.getKey(), entry.getValue());
-		}
-		ai.increaseRAM(ram, 2 * (result.size() - size()));
+		result.putAllAbsent(map);
 		return result;
 	}
 
@@ -499,7 +529,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	}
 
 	public Object mapRemoveKey(AI ai, Object key) {
-		return remove(key);
+		return delete(key);
 	}
 
 	public String string(AI ai, Set<Object> visited) throws LeekRunException {

@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.ref.Reference;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
@@ -273,6 +274,7 @@ public class TestCommon {
 			long compile_time = 0;
 			long ops = 0;
 			AI ai = null;
+			List<String> ramErrors = List.of();
 			var options = new Options(version, strict, this.debug, true, null, true);
 			long t = System.nanoTime();
 			try {
@@ -301,6 +303,9 @@ public class TestCommon {
 
 				var vs = ai.export(v, new HashSet<>());
 				result = new Result(vs, ai, Error.NONE, new String[0], ops, exec_time);
+				// RAM de chaque conteneur v4 vivant = son coût réel (cf. RamInvariant), `v` gardé vivant jusque-là
+				ramErrors = RamInvariant.violations(ai);
+				Reference.reachabilityFence(v);
 
 			} catch (LeekCompilerException e) {
 				// e.printStackTrace();
@@ -319,13 +324,14 @@ public class TestCommon {
 				}
 			}
 
-			if (checker.check(result)) {
+			if (checker.check(result) && ramErrors.isEmpty()) {
 				int ops_per_ms = (int) Math.round(1000 * (double) result.operations / result.exec_time);
 				System.out.println(GREEN_BOLD + " [OK]  " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " === " + checker.getResult(result) + "	" + C_GREY + compile_time + "ms + " + fn(result.exec_time) + "µs" + ", " + fn(result.operations) + " ops, " + ops_per_ms + " ops/ms" + END_COLOR);
 				success.incrementAndGet();
 				// assertTrue(true, "Test");
 			} else {
-				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " =/= " + checker.getExpected() + " got " + checker.getResult(result) + "\n" +
+				var got = ramErrors.isEmpty() ? checker.getResult(result) : "RAM " + ramErrors.size() + " " + ramErrors.subList(0, Math.min(3, ramErrors.size()));
+				var err = C_RED + "[FAIL] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " =/= " + checker.getExpected() + " got " + got + "\n" +
 				"/home/pierre/dev/leek-wars/generator/leekscript/ai/AI_" + aiID + ".java";
 				System.out.println(err);
 				failedTests.add(err);

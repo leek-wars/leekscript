@@ -49,8 +49,9 @@ public class TestRamCost extends TestCommon {
 		code_v1_3("var a = ['x': 1] var r = getUsedRAM() a['y'] = 2 a['x'] = 3 return getUsedRAM() - r").equals("96");
 
 		section("Tables de méthodes des classes");
-		// A.methods est compté à sa lecture, comme A.fields (rien à la déclaration : cf. classesDeclaredForFree)
-		code_v4_("class A { a() {} b() {} } var r = getUsedRAM() var m = A.methods return getUsedRAM() - r").equals("88");
+		// A.methods est compté à sa lecture, comme A.fields (rien à la déclaration : cf. classesDeclaredForFree) :
+		// le prix d'un tableau de ses noms, comme [1, 2]
+		code_v4_("class A { a() {} b() {} } var r = getUsedRAM() var m = A.methods return getUsedRAM() - r").equals("104");
 		code_v2_3("class A { a() {} b() {} } var r = getUsedRAM() var m = A.methods return getUsedRAM() - r").equals("240");
 		code_v2_3("class A { a() {} } var m = A.methods var r = getUsedRAM() push(m, 1) return getUsedRAM() - r").equals("96");
 		code_v2_4("class A { a() {} b() {} } class B extends A { c() {} } return B.methods").equals("[\"a\", \"b\", \"c\"]");
