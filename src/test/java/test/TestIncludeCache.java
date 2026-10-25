@@ -95,6 +95,7 @@ public class TestIncludeCache {
 		write("lib.leek", "function f() { return fileRead('data/cfg.json'); }");
 		write("other.leek", "return 1;");
 		write("notes.md", "Exemple : fileRead('data/cfg.json')");
+		write("lib.leek.spec", "Exemple : fileRead('data/cfg.json')");
 		var readers = fs.getFileReaders(0, "data/cfg.json").stream().map(f -> f.getPath()).sorted().toList();
 		assertEquals(java.util.List.of(main, "lib"), readers);
 	}

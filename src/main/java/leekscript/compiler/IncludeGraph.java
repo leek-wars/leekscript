@@ -89,11 +89,11 @@ public class IncludeGraph {
 	}
 
 	/**
-	 * Fichiers rangés avec les IA sans être du LeekScript : docs, données, IA JavaScript,
-	 * TypeScript ou Python. Jamais compilés seuls, ils ne sont jamais la racine d'une analyse.
-	 * Même liste que l'API et l'éditeur, qui ne les compilent pas non plus : les garder en phase.
+	 * Fichiers rangés avec les IA sans être du LeekScript : docs, specs (`main.leek.spec`), données,
+	 * IA JavaScript, TypeScript ou Python. Jamais compilés seuls, ils ne sont jamais la racine d'une
+	 * analyse. Même liste que l'API et l'éditeur, qui ne les compilent pas non plus : les garder en phase.
 	 */
-	private static final Set<String> NON_LEEKSCRIPT_EXTENSIONS = Set.of("md", "txt", "json", "yml", "yaml", "js", "mjs", "ts", "mts", "py");
+	private static final Set<String> NON_LEEKSCRIPT_EXTENSIONS = Set.of("md", "txt", "json", "yml", "yaml", "spec", "js", "mjs", "ts", "mts", "py");
 
 	private static boolean isLeekScriptPath(String path) {
 		int dot = path.lastIndexOf('.');
