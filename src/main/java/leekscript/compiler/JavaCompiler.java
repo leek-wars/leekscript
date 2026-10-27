@@ -30,9 +30,11 @@ public class JavaCompiler {
 	private static class AIClassEntry {
 		Class<?> clazz;
 		long signature;
-		public AIClassEntry(Class<?> clazz, long signature) {
+		long bytecodeSize;
+		public AIClassEntry(Class<?> clazz, long signature, long bytecodeSize) {
 			this.clazz = clazz;
 			this.signature = signature;
+			this.bytecodeSize = bytecodeSize;
 		}
 	}
 
@@ -94,18 +96,23 @@ public class JavaCompiler {
 	 * AIFile.includedAIs : that field can be stale (set to {} when an include was
 	 * unresolvable, then never refreshed) which silently wedges cache invalidation.
 	 */
-	private static long readSignatureFile(File f) {
-		if (!f.exists()) return 0;
+	/** Signature du cache disque (0 si absente) et taille du bytecode notée sur la 2e ligne (-1 si absente). */
+	private record CachedSignature(long signature, long bytecodeSize) {}
+
+	private static CachedSignature readSignatureFile(File f) {
+		if (!f.exists()) return new CachedSignature(0, -1);
 		try {
-			return Long.parseLong(java.nio.file.Files.readString(f.toPath()).trim());
+			var lines = java.nio.file.Files.readString(f.toPath()).trim().split("\n");
+			return new CachedSignature(Long.parseLong(lines[0].trim()), lines.length > 1 ? Long.parseLong(lines[1].trim()) : -1);
 		} catch (Exception e) {
-			return 0;
+			// Fichier illisible : le cache disque ne sert pas
+			return new CachedSignature(0, -1);
 		}
 	}
 
-	private static void writeSignatureFile(File f, long sig) {
+	private static void writeSignatureFile(File f, long sig, long bytecodeSize) {
 		try {
-			java.nio.file.Files.writeString(f.toPath(), Long.toString(sig));
+			java.nio.file.Files.writeString(f.toPath(), sig + "\n" + bytecodeSize);
 		} catch (Exception e) {
 			// best effort : disk cache won't validate next run, but RAM cache still works
 		}
@@ -141,7 +148,7 @@ public class JavaCompiler {
 			var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
 			ai.setId(file.getId());
 			ai.setLinesFile(lines);
-			ai.increaseRAMDirect((int) (java.length() * 10));
+			ai.chargeCodeRAM((int) (java.length() * 10), entry.bytecodeSize);
 			return ai;
 		} catch (Exception e) {
 			throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
@@ -198,20 +205,21 @@ public class JavaCompiler {
 			if (cached != null) return cached;
 
 			long sig = signature(file);
-			if (options.useCache() && file.getTimestamp() > 0 && compiled.exists() && compiled.length() != 0 && readSignatureFile(sigFile) == sig) {
+			var onDisk = options.useCache() && file.getTimestamp() > 0 && compiled.exists() && compiled.length() != 0 ? readSignatureFile(sigFile) : null;
+			if (onDisk != null && onDisk.signature() == sig) {
 				try {
 					// ClassLoader éphémère par AI pour permettre le GC des classes ;
 					// ne pas le close, ça invaliderait la classe chargée.
 					@SuppressWarnings("resource")
 					var classLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, JavaCompiler.class.getClassLoader());
 					var clazz = classLoader.loadClass(file.getJavaClass());
-					var entry = new AIClassEntry(clazz, sig);
+					var entry = new AIClassEntry(clazz, sig, onDisk.bytecodeSize());
 					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), entry, refQueue));
 					var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
 					ai.setId(file.getId());
 					ai.setFile(file);
 					ai.setLinesFile(lines);
-					ai.increaseRAMDirect((int) (java.length() * 10));
+					ai.chargeCodeRAM((int) (java.length() * 10), entry.bytecodeSize);
 					return ai;
 				} catch (Exception e) {
 					throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
@@ -299,12 +307,15 @@ public class JavaCompiler {
 				}
 			};
 
+			long bytecodeSize = 0;
 			for (var compiledClass : fileManager.getCompiled().values()) {
 
+				var bytes = compiledClass.getCompiledBinaries();
+				bytecodeSize += bytes.length;
 				if (options.useCache()) {
 					try {
 						var classFile = new FileOutputStream(Paths.get(IA_PATH, compiledClass.getName() + ".class").toFile());
-						classFile.write(compiledClass.getCompiledBinaries());
+						classFile.write(bytes);
 						classFile.close();
 					} catch (IOException e) {
 						throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
@@ -330,12 +341,12 @@ public class JavaCompiler {
 				ai.setCompileTime(compile_time);
 				ai.setLoadTime(load_time);
 				ai.setLinesFile(lines);
-				ai.increaseRAMDirect((int) (java.length() * 10));
+				ai.chargeCodeRAM((int) (java.length() * 10), bytecodeSize);
 
 				if (options.useCache()) {
 					long currentSig = signature(file);
-					writeSignatureFile(sigFile, currentSig);
-					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), new AIClassEntry(clazz, currentSig), refQueue));
+					writeSignatureFile(sigFile, currentSig, bytecodeSize);
+					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), new AIClassEntry(clazz, currentSig, bytecodeSize), refQueue));
 				}
 				return ai;
 			} catch (Exception e) {

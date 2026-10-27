@@ -3,6 +3,7 @@ package test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,7 +23,7 @@ import leekscript.runner.values.SetLeekValue;
  * tableau vient boucher le trou) et au-delà de la capacité initiale du tableau, sans perte ni
  * double comptage. Le tableau est privé : son invariant (case i ↔ slot i, rien au-delà du
  * compte) est relu par réflexion, un emplacement mal recalé ne se voyant pas dans le compte.
- * Un tableau v1-v3 refusé faute de RAM reste intact.
+ * Un tableau v1-v3 refusé faute de RAM reste intact. Le pic de RAM relevé reste acquis, les plafonds surveillés notent ce qu'en aurait conclu le contrôle.
  */
 public class TestRamTracking {
 
@@ -82,6 +83,53 @@ public class TestRamTracking {
 		// Libérer les résultats rend toute leur RAM : rien n'est resté compté sur `a`
 		for (var result : results) ((AI.RamUsage) ramField.get(result)).free(ai);
 		assertEquals(ram, ai.getUsedRAM());
+	}
+
+	@Test
+	public void peakRAMKeepsTheHighestLevel() throws Exception {
+		var ai = newAI(4);
+		long base = ai.getUsedRAM();
+		var referents = new ArrayList<Object>();
+		var usages = new ArrayList<AI.RamUsage>();
+		int ram = (int) (AI.PEAK_RAM_STEP / 10);
+		for (int i = 0; i < 30; i++) {
+			var o = new Object();
+			referents.add(o);
+			usages.add(ai.allocateRAM(o, ram));
+		}
+		long high = base + 30L * ram;
+		for (var usage : usages) usage.free(ai);
+		assertEquals(base, ai.getUsedRAM());
+		// Relevé à un pas près, et gardé après les libérations
+		assertTrue(ai.getPeakRAM() >= high - AI.PEAK_RAM_STEP && ai.getPeakRAM() <= high, "pic " + ai.getPeakRAM() + " pour " + high);
+	}
+
+	@Test
+	public void watchedRAMLimits() throws Exception {
+		AI.setWatchGCInterval(0);
+		try {
+			var ai = newAI(4);
+			long base = ai.getUsedRAM();
+			ai.watchRAM(new long[] { base + 1000, base + 2000, base + 3000 }, 1);
+			var referents = new ArrayList<Object>();
+			// Objets gardés vivants : le 1er plafond est dépassé malgré le GC, le 2e n'a plus de GC pour trancher
+			for (int i = 0; i < 25; i++) {
+				var o = new Object();
+				referents.add(o);
+				ai.allocateRAM(o, 100);
+			}
+			assertEquals(base + 2500, ai.getUsedRAM());
+			var states = ai.getWatchedRAMStates();
+			assertEquals(AI.WATCH_EXCEEDED, states[0]);
+			assertEquals(AI.WATCH_UNDECIDED, states[1]);
+			assertEquals(AI.WATCH_NOT_REACHED, states[2]);
+
+			// Plafond déjà dépassé quand la surveillance commence : relevé sans attendre une allocation
+			ai.watchRAM(new long[] { base + 2000 }, 0);
+			assertEquals(AI.WATCH_UNDECIDED, ai.getWatchedRAMStates()[0]);
+		} finally {
+			AI.setWatchGCInterval(30_000_000_000L);
+		}
 	}
 
 	private static AI newAI(int version) throws Exception {

@@ -1,11 +1,16 @@
 package test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import leekscript.common.Error;
+import leekscript.compiler.JavaCompiler;
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.Options;
 
@@ -77,5 +82,16 @@ public class TestRamCost extends TestCommon {
 			ai.staticInit();
 			assertEquals(compiled, ai.getUsedRAM(), "v" + version);
 		}
+	}
+
+	/** Le code compilé compte 10 cases par caractère de Java ; la taille du bytecode est notée, avec la signature du cache. */
+	@Test
+	public void compiledCodeCharged() throws Exception {
+		var ai = LeekScript.compileSnippet("var a = [1, 2, 3] return a", "AI", new Options(4, false, true, true, null, true));
+		var source = Path.of(JavaCompiler.IA_PATH, "AI_" + ai.getId() + ".java");
+		var signature = Path.of(JavaCompiler.IA_PATH, "AI_" + ai.getId() + ".sig");
+		assertEquals(10 * Files.size(source), ai.getCodeRAM());
+		assertTrue(ai.getBytecodeSize() > 0);
+		assertEquals(String.valueOf(ai.getBytecodeSize()), Files.readString(signature).split("\n")[1]);
 	}
 }
