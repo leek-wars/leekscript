@@ -237,6 +237,15 @@ public class TestSet extends TestCommon {
 	}
 
 	@Test
+	public void testSet_unclosed() throws Exception {
+		section("Unclosed set");
+		// Un `)` ou un `;` après le dernier élément : c'est la fermeture du set qui manque
+		code_v4_("var a = 1 if (a in <1, 2, 3) return [] return [a]").compileError(Error.CLOSING_CHEVRON_EXPECTED);
+		code_v4_("var s = <1, 2; return s").compileError(Error.CLOSING_CHEVRON_EXPECTED);
+		code_v4_("var a = 1 if (a in <1, 2, 3>) return [] return [a]").equals("[]");
+	}
+
+	@Test
 	public void testSet_toArray() throws Exception {
 		section("Set.toArray()");
 		code("var s = <1, 2, 3> return setToArray(s)").equals("[1, 2, 3]");

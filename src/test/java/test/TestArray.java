@@ -362,6 +362,18 @@ public class TestArray extends TestCommon {
 	}
 
 	@Test
+	public void testUnclosedArray() throws Exception {
+		section("Unclosed array");
+		// Un `)`, `;` ou `}` après le dernier élément : c'est la fermeture du tableau qui manque
+		code_v4_("var a = 1 if (a in [1, 2, 3) return [] return [a]").compileError(Error.CLOSING_SQUARE_BRACKET_EXPECTED);
+		code_v4_("var t = [1, 2; return t").compileError(Error.CLOSING_SQUARE_BRACKET_EXPECTED);
+		code_v4_("function f() { return [1, 2 } return f()").compileError(Error.CLOSING_SQUARE_BRACKET_EXPECTED);
+		code_v4_("var a = 1 if (a in [1: 2, 3: 4) return [] return [a]").compileError(Error.CLOSING_SQUARE_BRACKET_EXPECTED);
+		code_v1_3("var a = 1 if (a in [1, 2, 3) return [] return [a]").compileError(Error.CLOSING_SQUARE_BRACKET_EXPECTED);
+		code_v4_("var a = 1 if (a in [1, 2, 3]) return [] return [a]").equals("[]");
+	}
+
+	@Test
 	public void testRange_access() throws Exception {
 		section("Range access");
 		code_v1_3("return [1, 2, 3, 4, 5, 6, 7, 8][0:5]").error(Error.CLOSING_SQUARE_BRACKET_EXPECTED);

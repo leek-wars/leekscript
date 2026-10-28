@@ -1881,7 +1881,7 @@ public class WordCompiler {
 		while (mTokens.hasMoreTokens()) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
 			Token word = mTokens.get();
-			if (word.getType() == TokenType.PAR_RIGHT || word.getType() == TokenType.ACCOLADE_RIGHT || word.getType() == TokenType.END_INSTRUCTION) {
+			if (isExpressionEnd(word)) {
 				break;
 			}
 			if (retour.needOperator()) {
@@ -2298,11 +2298,25 @@ public class WordCompiler {
 		return result;
 	}
 
+	/** `)`, `}` ou `;` : termine une expression, n'en commence jamais une. */
+	private static boolean isExpressionEnd(Token token) {
+		var type = token.getType();
+		return type == TokenType.PAR_RIGHT || type == TokenType.ACCOLADE_RIGHT || type == TokenType.END_INSTRUCTION;
+	}
+
+	/** Un élément de `[…]` ou de `<…>` ne peut pas commencer par une fin d'expression : la fermeture manque. */
+	private void checkElementStart(Error missingClosing) throws LeekCompilerException {
+		if (isExpressionEnd(mTokens.get())) {
+			throw new LeekCompilerException(mTokens.get(), missingClosing);
+		}
+	}
+
 	private Expression readSet(Token openingToken) throws LeekCompilerException {
 		var set = new LeekSet(openingToken);
 
 		while (mTokens.hasMoreTokens() && (mTokens.get().getType() != TokenType.OPERATOR || !mTokens.get().getWord().equals(">"))) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+			checkElementStart(Error.CLOSING_CHEVRON_EXPECTED);
 
 			var value = readExpression(true, true);
 
@@ -2402,6 +2416,7 @@ public class WordCompiler {
 
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+			checkElementStart(Error.CLOSING_SQUARE_BRACKET_EXPECTED);
 			var key = readExpression(true);
 
 			if (!mTokens.get().getWord().equals(":")) {
@@ -2432,6 +2447,7 @@ public class WordCompiler {
 
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+			checkElementStart(Error.CLOSING_SQUARE_BRACKET_EXPECTED);
 			var value = readExpression(true);
 			container.addValue(value);
 
@@ -2485,6 +2501,7 @@ public class WordCompiler {
 
 		while (mTokens.hasMoreTokens() && mTokens.get().getType() != TokenType.BRACKET_RIGHT) {
 			if (isInterrupted()) throw new LeekCompilerException(mTokens.get(), Error.AI_TIMEOUT);
+			checkElementStart(Error.CLOSING_SQUARE_BRACKET_EXPECTED);
 			if (isKeyVal) {
 				var key = readExpression(true);
 				if (!mTokens.get().getWord().equals(":")) {
