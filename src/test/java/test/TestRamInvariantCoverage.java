@@ -44,7 +44,7 @@ public class TestRamInvariantCoverage extends TestCommon {
 		"mapMax(m)", "mapMerge(m, [3: 4, 5: 6])", "mapMin(m)", "mapPut(m, 7, 8)", "mapPutAll(m, [3: 4, 9: 9])",
 		"mapRemove(m, 1)", "mapRemove(m, 42)", "mapRemoveAll(m, 2)", "mapReplace(m, 1, 5)",
 		"mapReplaceAll(m, [1: 5, 42: 0])", "mapSearch(m, 2)", "mapSize(m)", "mapSome(m, " + F + ")", "mapSum(m)",
-		"mapValues(m)", "m[7] = 8", "m[1] ??= 9", "m += [7: 8]", "m + [7: 8]", "clone(m)", "clone([1: m], 2)",
+		"mapValues(m)", "mapKeysToSet(m)", "m[7] = 8", "m[1] ??= 9", "m += [7: 8]", "m + [7: 8]", "clone(m)", "clone([1: m], 2)",
 	};
 
 	// Écritures composées sur une clé neuve (put_*), en dynamique puis typées (put_arithmetic_eq, put_bit_eq)
@@ -58,13 +58,16 @@ public class TestRamInvariantCoverage extends TestCommon {
 		"setClear(s)", "setContains(s, 2)", "setDifference(s, <2, 4>)", "setDisjunction(s, <2, 4>)",
 		"setFilter(s, " + F + ")", "setIntersection(s, <2, 4>)", "setIsEmpty(s)", "setIsSubsetOf(s, <1, 2, 3, 4>)",
 		"setPut(s, 4)", "setPutAll(s, <2, 4>)", "setRemove(s, 1)", "setSize(s)", "setToArray(s)", "setUnion(s, <2, 4>)",
+		"setAverage(s)", "setEvery(s, " + F + ")", "setFold(s, " + F2 + ", 0)", "setIter(s, function(v) {})",
+		"setMax(s)", "setMin(s)", "setSome(s, " + F + ")", "setSum(s)", "setToMap(s)",
 		"s += 4", "s += <4, 5>", "s + 4", "s + <4>", "clone(s)", "clone(<s>, 2)",
 	};
 
 	/** `decl` déclare `name`, le cas rend [name, r] : l'entrée et le résultat de chaque appel restent vivants. */
 	private void each(String decl, String name, String[] calls) {
 		for (var call : calls) {
-			code_v4_(decl + " var r = " + call + " return [" + name + ", r]").error(Error.NONE);
+			// Formes libres : retirées en v5 (forme méthode), le runtime mesuré est le même
+			code_v4(decl + " var r = " + call + " return [" + name + ", r]").error(Error.NONE);
 		}
 	}
 
@@ -97,7 +100,7 @@ public class TestRamInvariantCoverage extends TestCommon {
 			code_v4_("class A { x static y m() {} static n() {} } return A." + member).error(Error.NONE);
 		}
 		// Une classe qui étend un conteneur garde le compteur du conteneur et un second pour ses champs
-		code_v4_("class A extends Array { x } var a = new A() push(a, 1) return a").error(Error.NONE);
+		code_v4("class A extends Array { x } var a = new A() push(a, 1) return a").error(Error.NONE);
 		code_v4_("class A extends Map { x } var a = new A() a[1] = 2 return a").error(Error.NONE);
 	}
 

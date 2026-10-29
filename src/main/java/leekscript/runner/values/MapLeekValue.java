@@ -355,8 +355,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		for (var key : keySet()) {
 			r.add(key);
 		}
-		ai.increaseRAM(ram, r.size());
-		return r;
+		return r.counted(ai);
 	}
 
 	public MapLeekValue mapMap(AI ai, FunctionLeekValue function) throws LeekRunException {

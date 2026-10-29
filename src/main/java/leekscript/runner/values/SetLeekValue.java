@@ -398,10 +398,9 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 		var r = new MapLeekValue(ai);
 		long i = 0;
 		for (var v : this) {
-			r.set(i, v);
+			r.set(i, v); // compte la RAM de chaque entrée dans r (cf MapLeekValue.store)
 			i++;
 		}
-		ai.increaseRAM(ram, 2 * r.size());
 		return r;
 	}
 }
