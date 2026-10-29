@@ -293,7 +293,7 @@ public class TestSet extends TestCommon {
 		section("Set helpers (#24)");
 		// Réductions — forme méthode (v5) et forme libre (v4), gated v4
 		code_v5("return <1, 2, 3>.sum()").equals("6.0");
-		code_v4("return setSum(<1, 2, 3>)").equals("6.0");
+		code_v1_4("return setSum(<1, 2, 3>)").error(Error.FUNCTION_NOT_AVAILABLE); // v5 seulement, en forme méthode
 		code_v5("return <1, 2, 3, 4>.average()").equals("2.5");
 		code_v5("return <>.average()").equals("0.0");
 		code_v5("var s = <3, 1, 2> return s.min()").equals("1");
@@ -305,14 +305,14 @@ public class TestSet extends TestCommon {
 		code_v5("return <1, 2, 3>.some(x -> x > 2)").equals("true");
 		code_v5("return <1, 2, 3>.some(x -> x > 5)").equals("false");
 		code_v5("return <1, 2, 3>.fold((r, v) -> r + v, 10)").equals("16");
-		code_v4("return setFold(<1, 2, 3>, function(r, v) { return r + v }, 0)").equals("6");
+		code_v1_4("return setFold(<1, 2, 3>, function(r, v) { return r + v }, 0)").error(Error.FUNCTION_NOT_AVAILABLE);
 		// iter (effet de bord via une globale capturée ; set dans une var pour éviter l'ambiguïté 0 < 1)
 		code_v5("global total = 0 var s = <1, 2, 3> s.iter(function(v) { total += v }) return total").equals("6");
 		// Conversions
 		code_v5("return <10, 20, 30>.toMap()").equals("[0 : 10, 1 : 20, 2 : 30]");
 		code_v5("return [1 : 10, 2 : 20].keySet()").equals("<1, 2>");
 		// Gating : indisponibles en v1-3 (forme libre)
-		code_v1_3("return setSum(<1, 2, 3>)").error(Error.FUNCTION_NOT_AVAILABLE);
+
 	}
 
 }

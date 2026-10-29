@@ -58,9 +58,13 @@ public class TestRamInvariantCoverage extends TestCommon {
 		"setClear(s)", "setContains(s, 2)", "setDifference(s, <2, 4>)", "setDisjunction(s, <2, 4>)",
 		"setFilter(s, " + F + ")", "setIntersection(s, <2, 4>)", "setIsEmpty(s)", "setIsSubsetOf(s, <1, 2, 3, 4>)",
 		"setPut(s, 4)", "setPutAll(s, <2, 4>)", "setRemove(s, 1)", "setSize(s)", "setToArray(s)", "setUnion(s, <2, 4>)",
-		"setAverage(s)", "setEvery(s, " + F + ")", "setFold(s, " + F2 + ", 0)", "setIter(s, function(v) {})",
-		"setMax(s)", "setMin(s)", "setSome(s, " + F + ")", "setSum(s)", "setToMap(s)",
 		"s += 4", "s += <4, 5>", "s + 4", "s + <4>", "clone(s)", "clone(<s>, 2)",
+	};
+
+	// Helpers d'ensembles de la v5 seulement (pas de forme libre) : mesurés en forme méthode
+	private static final String[] SET_METHODS_V5 = {
+		"s.average()", "s.every(" + F + ")", "s.fold(" + F2 + ", 0)", "s.iter(function(v) {})",
+		"s.max()", "s.min()", "s.some(" + F + ")", "s.sum()", "s.toMap()",
 	};
 
 	/** `decl` déclare `name`, le cas rend [name, r] : l'entrée et le résultat de chaque appel restent vivants. */
@@ -68,6 +72,14 @@ public class TestRamInvariantCoverage extends TestCommon {
 		for (var call : calls) {
 			// Formes libres : retirées en v5 (forme méthode), le runtime mesuré est le même
 			code_v4(decl + " var r = " + call + " return [" + name + ", r]").error(Error.NONE);
+		}
+	}
+
+	@Test
+	public void setMethodsV5() throws Exception {
+		section("RAM des helpers d'ensembles de la v5");
+		for (var call : SET_METHODS_V5) {
+			code_v5("var s = <1, 2, 3> var r = " + call + " return [s, r]").error(Error.NONE);
 		}
 	}
 
