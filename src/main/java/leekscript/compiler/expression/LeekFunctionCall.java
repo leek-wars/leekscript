@@ -482,7 +482,7 @@ public class LeekFunctionCall extends Expression {
 				// Le receveur est l'objet ; les arguments restent dans mParameters.
 				// Retour effacé d'une méthode générique (ex. array.max() -> Object) :
 				// caste vers le type inféré.
-				if (systemReturnContainsTypeVariable() && this.type != Type.ANY && this.type != Type.VOID) {
+				if (systemReturnContainsTypeVariable(mainblock) && this.type != Type.ANY && this.type != Type.VOID) {
 					openGenericReturnCast(mainblock, writer);
 				}
 				if (system_function.isStatic()) {
@@ -742,7 +742,7 @@ public class LeekFunctionCall extends Expression {
 		boolean skipFirstArg = false;
 		// Fonction système générique dont le retour a été inféré vers un type concret :
 		// la méthode Java est effacée (Object), on caste vers le type inféré.
-		if (systemReturnContainsTypeVariable() && this.type != Type.ANY && this.type != Type.VOID) {
+		if (systemReturnContainsTypeVariable(mainblock) && this.type != Type.ANY && this.type != Type.VOID) {
 			openGenericReturnCast(mainblock, writer);
 		}
 		if (unsafe || mainblock.getVersion() <= 3) {
@@ -1536,8 +1536,9 @@ public class LeekFunctionCall extends Expression {
 	 * True if the selected system-function version(s) declare a generic return type
 	 * (the Java method is erased, so the call result needs a cast to the inferred type).
 	 */
-	private boolean systemReturnContainsTypeVariable() {
-		if (callable_versions == null) return false;
+	private boolean systemReturnContainsTypeVariable(MainLeekBlock mainblock) {
+		// v1-4 : les variables de type sont effacées, la signature est l'ancienne non générique
+		if (callable_versions == null || !LanguageFeature.GENERICS.enabledIn(mainblock.getVersion())) return false;
 		for (var version : callable_versions) {
 			if (version.return_type.containsTypeVariable()) return true;
 		}
@@ -1653,19 +1654,7 @@ public class LeekFunctionCall extends Expression {
 
 	/** Collects every {@link TypeVariable} occurring in a (possibly nested) type. */
 	private void collectTypeVariables(Type type, java.util.Set<TypeVariable> out) {
-		if (type instanceof TypeVariable variable) {
-			out.add(variable);
-		} else if (type instanceof ArrayType || type instanceof SetType || type instanceof IntervalType) {
-			collectTypeVariables(type.element(), out);
-		} else if (type instanceof MapType) {
-			collectTypeVariables(type.key(), out);
-			collectTypeVariables(type.element(), out);
-		} else if (type instanceof FunctionType function) {
-			collectTypeVariables(function.returnType(), out);
-			for (var a : function.getArguments()) collectTypeVariables(a, out);
-		} else if (type instanceof CompoundType compound) {
-			for (var t : compound.getTypes()) collectTypeVariables(t, out);
-		}
+		CallableVersion.collectTypeVariables(type, out);
 	}
 
 	@Override

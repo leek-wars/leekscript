@@ -891,7 +891,7 @@ public class WordCompiler {
 	private void importStatement(boolean firstPass, boolean reexport) throws LeekCompilerException {
 		var importToken = reexport ? mTokens.get() : mTokens.eat(); // `import`
 		boolean enabled = LanguageFeature.MODULES.enabledIn(getVersion());
-		if (!enabled) {
+		if (!enabled && firstPass) { // une seule fois, pas à chaque passe
 			addError(new AnalyzeError(importToken, AnalyzeErrorLevel.ERROR, Error.KEYWORD_UNEXPECTED));
 		}
 		// import * as Ns  (import namespace) ; `as` est un soft keyword

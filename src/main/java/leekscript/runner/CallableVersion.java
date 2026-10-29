@@ -65,4 +65,34 @@ public class CallableVersion {
 	public boolean isGeneric() {
 		return generic;
 	}
+
+	/**
+	 * Type de la signature, variables de type effacées vers leur borne (any) : celui que voit un
+	 * programme sans génériques (v1-4), identique à l'ancienne signature non générique.
+	 */
+	public Type getErasedType() {
+		if (!generic) return type;
+		var variables = new java.util.HashSet<leekscript.common.TypeVariable>();
+		collectTypeVariables(type, variables);
+		var bindings = new java.util.HashMap<leekscript.common.TypeVariable, Type>();
+		for (var variable : variables) bindings.put(variable, Type.ANY);
+		return type.substitute(bindings);
+	}
+
+	/** Variables de type mentionnées dans `type` (éléments, clés, signatures, unions). */
+	public static void collectTypeVariables(Type type, java.util.Set<leekscript.common.TypeVariable> out) {
+		if (type instanceof leekscript.common.TypeVariable variable) {
+			out.add(variable);
+		} else if (type instanceof leekscript.common.ArrayType || type instanceof leekscript.common.SetType || type instanceof leekscript.common.IntervalType) {
+			collectTypeVariables(type.element(), out);
+		} else if (type instanceof leekscript.common.MapType) {
+			collectTypeVariables(type.key(), out);
+			collectTypeVariables(type.element(), out);
+		} else if (type instanceof leekscript.common.FunctionType function) {
+			collectTypeVariables(function.returnType(), out);
+			for (var a : function.getArguments()) collectTypeVariables(a, out);
+		} else if (type instanceof leekscript.common.CompoundType compound) {
+			for (var t : compound.getTypes()) collectTypeVariables(t, out);
+		}
+	}
 }

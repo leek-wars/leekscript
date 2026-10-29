@@ -334,9 +334,11 @@ public class LeekVariable extends Expression {
 				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.FILE_PATH_EXPECTED));
 			}
 			this.type = VariableType.SYSTEM_FUNCTION;
-			this.variableType = lf.getVersions()[0].getType();
+			// v1-4 : signature sans génériques, comme avant qu'elles le deviennent
+			boolean generics = leekscript.common.LanguageFeature.GENERICS.enabledIn(compiler.getVersion());
+			this.variableType = generics ? lf.getVersions()[0].getType() : lf.getVersions()[0].getErasedType();
 			for (int i = 1; i < lf.getVersions().length; ++i) {
-				this.variableType = Type.versions(this.variableType, lf.getVersions()[i].getType());
+				this.variableType = Type.versions(this.variableType, generics ? lf.getVersions()[i].getType() : lf.getVersions()[i].getErasedType());
 			}
 			return;
 		}
