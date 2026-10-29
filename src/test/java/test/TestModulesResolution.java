@@ -390,6 +390,22 @@ public class TestModulesResolution {
 	}
 
 	// =========================================================================
+	// Coût : découper en modules ne change pas les opérations
+	// =========================================================================
+
+	@Test
+	public void modulesCostTheSameOperationsAsOneFile() throws Exception {
+		String lib = "class Vec { x = 0; y = 0; constructor(x, y) { this.x = x; this.y = y } len2() { return this.x * this.x + this.y * this.y } }\n"
+			+ "function sum(n) { var s = 0; for (var i = 0; i < n; i++) { s += new Vec(i, 1).len2() } return s }\n";
+		String usage = "var total = 0\nfor (var k = 0; k < 20; k++) { total += sum(k) }\nreturn total";
+		long oneFile = operations(writeMain(lib + usage));
+		write("vecmod.leek", lib.replace("class Vec", "export class Vec").replace("function sum", "export function sum"));
+		uniqueId += "_m";
+		long modules = operations(writeMain("import { sum } from \"vecmod\"\n" + usage));
+		assertEquals(oneFile, modules);
+	}
+
+	// =========================================================================
 	// Helpers
 	// =========================================================================
 
@@ -416,6 +432,19 @@ public class TestModulesResolution {
 		ai.staticInit();
 		ai.resetCounter();
 		return ai.string(ai.runIA());
+	}
+
+	/** Opérations consommées par un tour de l'IA. */
+	private long operations(String name) throws Exception {
+		var file = fs.getRoot(0).resolve(name);
+		file.setJavaClass("AI_" + file.getId());
+		file.setRootClass("AI");
+		AI ai = JavaCompiler.compile(file, new Options(LeekScript.LATEST_VERSION, false, true, true, null, true));
+		ai.init();
+		ai.staticInit();
+		ai.resetCounter();
+		ai.runIA();
+		return ai.getOperations();
 	}
 
 	private List<Error> compileAndCollectErrors(String name) throws Exception {
