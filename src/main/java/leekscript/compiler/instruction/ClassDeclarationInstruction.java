@@ -1038,11 +1038,11 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	}
 
 	public void defineClass(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addLine("defineClass_" + token.getWord() + "();");
+		writer.addLine("defineClass_" + getInternalName() + "();");
 	}
 
 	public void writeDefineClass(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addLine("private void defineClass_" + token.getWord() + "() throws LeekRunException {");
+		writer.addLine("private void defineClass_" + getInternalName() + "() throws LeekRunException {");
 		createJava(mainblock, writer);
 		writer.addLine("}");
 	}
