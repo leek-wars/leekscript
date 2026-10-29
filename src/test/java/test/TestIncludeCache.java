@@ -204,6 +204,32 @@ public class TestIncludeCache {
 	// =========================================================================
 
 	@Test
+	public void importedModuleModified() throws Exception {
+		// v5 : un module importé est une dépendance du cache, comme un include
+		write("mod.leek", "// @version:5\nexport function f() { return 1; }");
+		String main = writeMain("// @version:5\nimport { f } from \"mod\";\nreturn f();");
+		assertEquals("1", run(main, 5));
+
+		write("mod.leek", "// @version:5\nexport function f() { return 2; }");
+		bumpMtime("mod.leek", 1000);
+
+		assertEquals("2", run(main, 5), "modif d'un module importé doit invalider le cache de Main");
+	}
+
+	@Test
+	public void transitiveImportedModuleModified() throws Exception {
+		write("MB.leek", "// @version:5\nexport function g() { return 7; }");
+		write("MA.leek", "// @version:5\nimport { g } from \"MB\";\nexport function f() { return g(); }");
+		String main = writeMain("// @version:5\nimport { f } from \"MA\";\nreturn f();");
+		assertEquals("7", run(main, 5));
+
+		write("MB.leek", "// @version:5\nexport function g() { return 9; }");
+		bumpMtime("MB.leek", 1000);
+
+		assertEquals("9", run(main, 5), "modif d'un module importé transitivement non propagée");
+	}
+
+	@Test
 	public void transitiveIncludeModified() throws Exception {
 		write("B.leek", "function g() { return 7; }");
 		write("A.leek", "include(\"B\");\nfunction f() { return g(); }");
@@ -1083,10 +1109,14 @@ public class TestIncludeCache {
 	}
 
 	private String run(String name) throws Exception {
+		return run(name, INCLUDE_VERSION);
+	}
+
+	private String run(String name, int version) throws Exception {
 		var file = fs.getRoot(0).resolve(name);
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass("AI");
-		var options = new Options(INCLUDE_VERSION, false, true, true, null, true);
+		var options = new Options(version, false, true, true, null, true);
 		AI ai = JavaCompiler.compile(file, options);
 		ai.init();
 		ai.staticInit();

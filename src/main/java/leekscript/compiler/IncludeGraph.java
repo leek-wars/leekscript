@@ -272,7 +272,20 @@ public class IncludeGraph {
 				// homonyme du joueur : sans effet, la dépendance ne sert qu'au cache.
 				var function = tok.getType() == TokenType.STRING ? LeekFunctions.getValue(tok.getWord(), true) : null;
 				boolean fileArgument = function != null && function.hasFileArgument();
-				if (tok.getType() == TokenType.INCLUDE || fileArgument) {
+				if (tok.getType() == TokenType.IMPORT) {
+					// v5 : `import … from "chemin"`, une dépendance comme un include
+					stream.eat();
+					while (stream.hasMoreTokens() && stream.get().getType() != TokenType.END_INSTRUCTION
+							&& stream.get().getType() != TokenType.IMPORT && !stream.get().getWord().equals("from")) {
+						stream.eat();
+					}
+					if (!stream.hasMoreTokens() || !stream.get().getWord().equals("from")) continue;
+					stream.eat();
+					if (stream.hasMoreTokens() && stream.get().getType() == TokenType.VAR_STRING) {
+						var word = stream.eat().getWord();
+						if (word.length() >= 2) result.includes().add(word.substring(1, word.length() - 1));
+					}
+				} else if (tok.getType() == TokenType.INCLUDE || fileArgument) {
 					stream.eat();
 					if (!stream.hasMoreTokens()) break;
 					var lparen = stream.eat();
