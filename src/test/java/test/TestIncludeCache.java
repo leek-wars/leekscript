@@ -50,6 +50,11 @@ import leekscript.runner.AI;
 @Isolated
 public class TestIncludeCache {
 
+	static {
+		TestCommon.openUnreleasedVersions();
+	}
+
+
 	@TempDir Path tmpRoot;
 	private TmpFileSystem fs;
 	// Nom d'entrypoint unique par test : aiCache RAM et le .class disque sont
@@ -961,10 +966,10 @@ public class TestIncludeCache {
 
 	@Test
 	public void declaredVersion_followsApplyRules_withoutSideEffects() {
-		var file = new AIFile("p", "// @version:abc\n// @version:2\nreturn 1;", 0, LeekScript.LATEST_VERSION, 0, false);
+		var file = new AIFile("p", "// @version:abc\n// @version:2\nreturn 1;", 0, LeekScript.MAX_VERSION, 0, false);
 		assertEquals(2, leekscript.compiler.PragmaParser.declaredVersion(file), "valeur invalide ignorée, le pragma valide suivant compte");
 		assertEquals(0, file.getErrors().size(), "aucune erreur ajoutée");
-		assertEquals(LeekScript.LATEST_VERSION, file.getVersion(), "version du fichier inchangée");
+		assertEquals(LeekScript.MAX_VERSION, file.getVersion(), "version du fichier inchangée");
 		assertEquals(null, leekscript.compiler.PragmaParser.declaredVersion(new AIFile("p", "return 1;", 0, 4, 0, false)));
 		assertEquals(null, leekscript.compiler.PragmaParser.declaredVersion(new AIFile("p", "// @version:99\nreturn 1;", 0, 4, 0, false)));
 	}

@@ -31,6 +31,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestCommon {
 
+	// Les tests couvrent aussi les versions pas encore publiques (`// @version:5`), sauf pour un
+	// propriétaire réservé qui sert à tester le refus (réglage global : tests en parallèle)
+	public static final int NO_UNRELEASED_ACCESS = 424242;
+
+	static {
+		openUnreleasedVersions();
+	}
+
+	public static void openUnreleasedVersions() {
+		LeekScript.setUnreleasedAccess(owner -> owner != NO_UNRELEASED_ACCESS);
+	}
+
 	private static final AtomicInteger aiFileId = new AtomicInteger(990000);
 
 	/** Une IA prête à compiler, pour les tests de l'éditeur (survol, complétion). */
@@ -66,7 +78,7 @@ public class TestCommon {
 		String code;
 		boolean enabled = true;
 		int version_min = 1;
-		int version_max = LeekScript.LATEST_VERSION;
+		int version_max = LeekScript.MAX_VERSION;
 		long maxOperations = Long.MAX_VALUE;
 		long maxRAM = AI.MAX_RAM;
 		boolean debug = false;
@@ -487,7 +499,7 @@ public class TestCommon {
 		return new Case(code, true);
 	}
 	public Case code_strict(String code) {
-		return new Case(code, true, 1, LeekScript.LATEST_VERSION, true);
+		return new Case(code, true, 1, LeekScript.MAX_VERSION, true);
 	}
 	// Variantes capées à v4 (formes libres stdlib supprimées en v5).
 	public Case code_strict_v1_4(String code) {
@@ -515,19 +527,19 @@ public class TestCommon {
 		return new Case(code, true, 1, 1);
 	}
 	public Case file_v2_(String code) {
-		return new Case(code, true, 2, LeekScript.LATEST_VERSION);
+		return new Case(code, true, 2, LeekScript.MAX_VERSION);
 	}
 	public Case file_v3(String code) {
 		return new Case(code, true, 3, 3);
 	}
 	public Case file_v4_(String code) {
-		return new Case(code, true, 4, LeekScript.LATEST_VERSION);
+		return new Case(code, true, 4, LeekScript.MAX_VERSION);
 	}
 	public Case DISABLED_file(String code) {
 		return new Case(code, false);
 	}
 	public Case DISABLED_file_v2_(String code) {
-		return new Case(code, false, 2, LeekScript.LATEST_VERSION);
+		return new Case(code, false, 2, LeekScript.MAX_VERSION);
 	}
 	public Case code_v1(String code) {
 		return new Case(code, true, 1, 1);
@@ -545,10 +557,10 @@ public class TestCommon {
 		return new Case(code, true, 2, 2);
 	}
 	public Case code_v2_(String code) {
-		return new Case(code, true, 2, LeekScript.LATEST_VERSION);
+		return new Case(code, true, 2, LeekScript.MAX_VERSION);
 	}
 	public Case code_strict_v2_(String code) {
-		return new Case(code, true, 2, LeekScript.LATEST_VERSION, true);
+		return new Case(code, true, 2, LeekScript.MAX_VERSION, true);
 	}
 	public Case code_v2_3(String code) {
 		return new Case(code, true, 2, 3);
@@ -560,7 +572,7 @@ public class TestCommon {
 		return new Case(code, true, 3, 3);
 	}
 	public Case code_v3_(String code) {
-		return new Case(code, true, 3, LeekScript.LATEST_VERSION);
+		return new Case(code, true, 3, LeekScript.MAX_VERSION);
 	}
 	public Case code_v1_4(String code) {
 		return new Case(code, true, 1, 4);
@@ -569,10 +581,10 @@ public class TestCommon {
 		return new Case(code, true, 4, 4);
 	}
 	public Case code_v4_(String code) {
-		return new Case(code, true, 4, LeekScript.LATEST_VERSION);
+		return new Case(code, true, 4, LeekScript.MAX_VERSION);
 	}
 	public Case code_strict_v4_(String code) {
-		return new Case(code, true, 4, LeekScript.LATEST_VERSION, true);
+		return new Case(code, true, 4, LeekScript.MAX_VERSION, true);
 	}
 	public Case code_strict_v4(String code) {
 		return new Case(code, true, 4, 4, true);
@@ -581,13 +593,13 @@ public class TestCommon {
 		return new Case(code, true, 5, 5);
 	}
 	public Case code_v5_(String code) {
-		return new Case(code, true, 5, LeekScript.LATEST_VERSION);
+		return new Case(code, true, 5, LeekScript.MAX_VERSION);
 	}
 	public Case code_strict_v5_(String code) {
-		return new Case(code, true, 5, LeekScript.LATEST_VERSION, true);
+		return new Case(code, true, 5, LeekScript.MAX_VERSION, true);
 	}
 	public Case DISABLED_code_v4_(String code) {
-		return new Case(code, false, 4, LeekScript.LATEST_VERSION);
+		return new Case(code, false, 4, LeekScript.MAX_VERSION);
 	}
 	public Case DISABLED_code(String code) {
 		return new Case(code, false);
@@ -596,7 +608,7 @@ public class TestCommon {
 		return new Case(code, false, 1, 1);
 	}
 	public Case DISABLED_code_v2_(String code) {
-		return new Case(code, false, 2, LeekScript.LATEST_VERSION);
+		return new Case(code, false, 2, LeekScript.MAX_VERSION);
 	}
 
 	public void section(String title) {

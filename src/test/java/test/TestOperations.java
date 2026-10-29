@@ -73,7 +73,7 @@ public class TestOperations extends TestCommon {
 			new ReplStep("m['a'] = 1", 4),
 			new ReplStep("var a = m['a']", 3),
 			new ReplStep("Array t = []", 1),
-			new ReplStep("t.push(2)", 2), // comme push(t, 2) en v4
+			new ReplStep("push(t, 2)", 2), // la console compile à la version par défaut (LS4)
 			new ReplStep("t[0] = 1", 3),
 			new ReplStep("var b = t[0]", 2)
 		);
@@ -119,7 +119,7 @@ public class TestOperations extends TestCommon {
 	}
 
 	private void runReplResults(String[]... steps) throws Exception {
-		var session = new Session(LeekScript.LATEST_VERSION, false);
+		var session = new Session(LeekScript.MAX_VERSION, false);
 		for (var step : steps) {
 			var ai = LeekScript.compileSnippet(step[0], "AI", new Options(session));
 			ai.maxOperations = 1_000_000;
@@ -143,7 +143,7 @@ public class TestOperations extends TestCommon {
 
 	/** Coût de chaque ligne jouée dans une même session, tel que la console l'affiche. */
 	private static long[] replCosts(String... lines) throws Exception {
-		var session = new Session(LeekScript.LATEST_VERSION, false);
+		var session = new Session(LeekScript.MAX_VERSION, false);
 		var costs = new long[lines.length];
 		for (int i = 0; i < lines.length; i++) {
 			var ai = LeekScript.compileSnippet(lines[i], "AI", new Options(session));

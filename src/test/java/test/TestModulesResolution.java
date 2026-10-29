@@ -41,7 +41,7 @@ public class TestModulesResolution {
 	@BeforeEach
 	void setUp() {
 		uniqueId = Long.toHexString(System.nanoTime()) + "_" + UNIQUE.incrementAndGet();
-		fs = new RamFileSystem(tmpRoot, LeekScript.LATEST_VERSION);
+		fs = new RamFileSystem(tmpRoot, LeekScript.MAX_VERSION);
 		LeekScript.setFileSystem(fs);
 	}
 
@@ -459,7 +459,7 @@ public class TestModulesResolution {
 		var file = fs.getRoot(0).resolve(name);
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass("AI");
-		var options = new Options(LeekScript.LATEST_VERSION, false, true, true, null, true);
+		var options = new Options(LeekScript.MAX_VERSION, false, true, true, null, true);
 		AI ai = JavaCompiler.compile(file, options);
 		ai.init();
 		ai.staticInit();
@@ -472,7 +472,7 @@ public class TestModulesResolution {
 		var file = fs.getRoot(0).resolve(name);
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass("AI");
-		AI ai = JavaCompiler.compile(file, new Options(LeekScript.LATEST_VERSION, false, true, true, null, true));
+		AI ai = JavaCompiler.compile(file, new Options(LeekScript.MAX_VERSION, false, true, true, null, true));
 		ai.init();
 		ai.staticInit();
 		ai.resetCounter();
@@ -484,7 +484,7 @@ public class TestModulesResolution {
 		var file = fs.getRoot(0).resolve(name);
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass("AI");
-		var options = new Options(LeekScript.LATEST_VERSION, false, true, true, null, true);
+		var options = new Options(LeekScript.MAX_VERSION, false, true, true, null, true);
 		var errors = new ArrayList<Error>();
 		try {
 			JavaCompiler.compile(file, options);

@@ -13,7 +13,21 @@ import leekscript.common.Error;
 
 public class LeekScript {
 
-	public final static int LATEST_VERSION = 5;
+	/** Version par défaut (fichier sans pragma) et la plus haute ouverte à tous. */
+	public final static int LATEST_VERSION = 4;
+	/** Plus haute version connue du compilateur ; au-delà de LATEST_VERSION, réservée (cf setUnreleasedAccess). */
+	public final static int MAX_VERSION = 5;
+	// Propriétaires (éleveurs) autorisés à demander une version pas encore publique par `// @version:N`
+	private static volatile java.util.function.IntPredicate unreleasedAccess = owner -> false;
+
+	public static void setUnreleasedAccess(java.util.function.IntPredicate access) {
+		unreleasedAccess = access;
+	}
+
+	/** Le propriétaire `owner` peut-il compiler en `version` ? */
+	public static boolean canUseVersion(int version, int owner) {
+		return version >= 1 && (version <= LATEST_VERSION || version <= MAX_VERSION && unreleasedAccess.test(owner));
+	}
 	private static AtomicLong id = new AtomicLong(1);
 
 	private static ResourceFileSystem defaultFileSystem = new ResourceFileSystem();

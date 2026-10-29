@@ -20,6 +20,12 @@ import leekscript.compiler.resolver.FileSystem;
  * LeekScript des AIFile produits est passée au constructeur (include = v≤4, modules = v5).
  */
 class RamFileSystem extends FileSystem {
+
+	// Les tests de modules et de packages compilent en `// @version:5`
+	static {
+		TestCommon.openUnreleasedVersions();
+	}
+
 	private final Path root;
 	private final int version;
 	private final Map<Integer, Folder> rootFolders = new HashMap<>();

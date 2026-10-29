@@ -559,7 +559,7 @@ public class LeekFunctions {
 	private String standardClass = null;
 	private boolean isStatic = false;
 	private int minVersion = 1;
-	private int maxVersion = LeekScript.LATEST_VERSION;
+	private int maxVersion = LeekScript.MAX_VERSION;
 	private String replacement = null;
 	private boolean fileArgument = false;
 	private CallSite callSite = null;

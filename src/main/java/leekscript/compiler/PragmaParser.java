@@ -40,12 +40,15 @@ public class PragmaParser {
 		return pragmas;
 	}
 
-	/** Valeur d'un <code>@version:N</code> si elle est un entier de 1 à LATEST_VERSION, sinon null. */
-	private static Integer parseVersion(String value) {
+	/**
+	 * Valeur d'un <code>@version:N</code> si elle est un entier de 1 à LATEST_VERSION, ou jusqu'à
+	 * MAX_VERSION pour un propriétaire qui y a accès (cf LeekScript.canUseVersion), sinon null.
+	 */
+	private static Integer parseVersion(String value, AIFile file) {
 		if (value == null) return null;
 		try {
 			int v = Integer.parseInt(value);
-			return v >= 1 && v <= LeekScript.LATEST_VERSION ? v : null;
+			return LeekScript.canUseVersion(v, file.getOwner()) ? v : null;
 		} catch (NumberFormatException e) {
 			return null;
 		}
@@ -60,7 +63,7 @@ public class PragmaParser {
 	public static Integer declaredVersion(AIFile file) {
 		for (var pragma : scan(file.getCode())) {
 			if (!pragma.name().equals("version")) continue;
-			Integer v = parseVersion(pragma.value());
+			Integer v = parseVersion(pragma.value(), file);
 			if (v != null) return v;
 		}
 		return null;
@@ -84,7 +87,7 @@ public class PragmaParser {
 						file.getErrors().add(new AnalyzeError(loc, AnalyzeErrorLevel.ERROR, Error.PRAGMA_DUPLICATE, new String[]{"version"}));
 						break;
 					}
-					Integer v = parseVersion(value);
+					Integer v = parseVersion(value, file);
 					if (v == null) {
 						file.getErrors().add(new AnalyzeError(loc, AnalyzeErrorLevel.ERROR, Error.PRAGMA_INVALID_VALUE, new String[]{"version", value == null ? "" : value}));
 						break;

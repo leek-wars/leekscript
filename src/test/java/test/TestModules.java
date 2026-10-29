@@ -1,6 +1,11 @@
 package test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Test;
+
+import leekscript.compiler.LeekScript;
 
 import leekscript.common.Error;
 
@@ -45,5 +50,18 @@ public class TestModules extends TestCommon {
 		section("Modules (v5) - include() supprimé au profit de import/export");
 		// include() est une feature v≤4 ; en v5 c'est une erreur dure.
 		code_v5("include(\"utils\") return 1").error(Error.INCLUDE_REMOVED_IN_V5);
+	}
+
+	@Test
+	public void unreleasedVersionNeedsAccess() throws Exception {
+		// `// @version:5` : accepté pour un propriétaire qui y a accès, sinon pragma invalide et
+		// version par défaut (LS4), comme une version inconnue
+		var open = new leekscript.compiler.AIFile("open", "// @version:5\nreturn 1", 0, LeekScript.LATEST_VERSION, 1, false);
+		leekscript.compiler.PragmaParser.apply(open);
+		assertEquals(5, open.getVersion());
+		var closed = new leekscript.compiler.AIFile("closed", "// @version:5\nreturn 1", 0, LeekScript.LATEST_VERSION, NO_UNRELEASED_ACCESS, false);
+		leekscript.compiler.PragmaParser.apply(closed);
+		assertEquals(LeekScript.LATEST_VERSION, closed.getVersion());
+		assertTrue(closed.getErrors().stream().anyMatch(e -> e.error == leekscript.common.Error.PRAGMA_INVALID_VALUE));
 	}
 }
