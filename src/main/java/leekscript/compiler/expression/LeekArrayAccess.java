@@ -258,7 +258,7 @@ public class LeekArrayAccess extends Expression {
 				} else {
 					writer.addCode("rangeString_all(");
 				}
-				writer.getString(mainblock, mTabular, false); // champ affiné en string : lu en Object
+				writer.getString(mainblock, mTabular, false); // un champ affiné en string est lu en Object
 				if (mCase != null) {
 					writer.addCode(", ");
 					mCase.writeJavaCode(mainblock, writer, false);
@@ -274,7 +274,7 @@ public class LeekArrayAccess extends Expression {
 				writer.addCode(")");
 			} else {
 				writer.addCode("getString(");
-				writer.getString(mainblock, mTabular, false); // champ affiné en string : lu en Object
+				writer.getString(mainblock, mTabular, false);
 				writer.addCode(", ");
 				mCase.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");

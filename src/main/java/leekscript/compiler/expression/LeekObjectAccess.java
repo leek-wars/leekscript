@@ -347,8 +347,8 @@ public class LeekObjectAccess extends Expression {
 	@Override
 	public boolean hasObjectJavaResult() {
 		if (variable == null || variable.getVariableType() != VariableType.FIELD) return false;
-		var declared = variable.getDeclaredType().assertNotNull();
-		return type.isPrimitive() && !declared.isPrimitive() || type == Type.STRING && declared != Type.STRING;
+		if (type.isPrimitive()) return !variable.getDeclaredType().assertNotNull().isPrimitive();
+		return type == Type.STRING && variable.getDeclaredType().assertNotNull() != Type.STRING;
 	}
 
 	/**
