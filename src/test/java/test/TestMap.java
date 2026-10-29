@@ -346,18 +346,23 @@ public class TestMap extends TestCommon {
 	@Test
 	public void testMap_keySet() throws Exception {
 		section("Map.keySet");
-		code_v4_("return mapKeySet([1: 2, 3: 4, 5: 6])").equals("<1, 3, 5>");
-		code_v4_("return mapKeySet(['a': 1, 'b': 2])").equals("<\"a\", \"b\">");
-		code_v4_("return mapKeySet([:])").equals("<>");
-		code_v4_("return mapKeySet([1: 2, 3: 4]) == arrayToSet(mapKeys([1: 2, 3: 4]))").equals("true");
+		code_v4("return mapKeySet([1: 2, 3: 4, 5: 6])").equals("<1, 3, 5>");
+		code_v4("return mapKeySet(['a': 1, 'b': 2])").equals("<\"a\", \"b\">");
+		code_v4("return mapKeySet([:])").equals("<>");
+		code_v4("return mapKeySet([1: 2, 3: 4]) == arrayToSet(mapKeys([1: 2, 3: 4]))").equals("true");
 		// Un nouvel ensemble, détaché de la map
-		code_v4_("var m = [1: 2] var s = mapKeySet(m) m[3] = 4 setPut(s, 5) return [m, s]").equals("[[1 : 2, 3 : 4], <1, 5>]");
-		code_strict_v4_("Map<integer, string> m = [1: 'a', 2: 'b'] Set<integer> s = mapKeySet(m) return s").equals("<1, 2>");
-		code_v4_("function f(x) { return mapKeySet(x) } return f([1: 2])").equals("<1>");
+		code_v4("var m = [1: 2] var s = mapKeySet(m) m[3] = 4 setPut(s, 5) return [m, s]").equals("[[1 : 2, 3 : 4], <1, 5>]");
+		code_strict_v4("Map<integer, string> m = [1: 'a', 2: 'b'] Set<integer> s = mapKeySet(m) return s").equals("<1, 2>");
+		code_v4("function f(x) { return mapKeySet(x) } return f([1: 2])").equals("<1>");
 		// Autant que arrayToSet(mapKeys(m)), sans le tableau intermédiaire
-		code_v4_("var m = [1: 2, 3: 4, 5: 6] mapKeySet(m)").ops(14);
-		code_v4_("var m = [1: 2, 3: 4, 5: 6] arrayToSet(mapKeys(m))").ops(14);
+		code_v4("var m = [1: 2, 3: 4, 5: 6] mapKeySet(m)").ops(14);
+		code_v4("var m = [1: 2, 3: 4, 5: 6] arrayToSet(mapKeys(m))").ops(14);
 		code_v1_3("return mapKeySet([1: 2])").error(Error.FUNCTION_NOT_AVAILABLE);
+		// v5 : forme méthode ; même résultat que keysToSet() (helper v5 #24, doublon fonctionnel)
+		code_v5("return [1: 2, 3: 4, 5: 6].keySet()").equals("<1, 3, 5>");
+		code_v5("var m = [1: 2, 3: 4] return m.keySet() == m.keysToSet()").equals("true");
+		code_v5("var m = [1: 2, 3: 4, 5: 6] m.keySet()").ops(15); // +1 : l'appel de méthode
+		code_v5("return mapKeySet([1: 2])").error(Error.REMOVED_FUNCTION_REPLACEMENT);
 		// Une fonction ou une variable du joueur du même nom reste prioritaire
 		code("function mapKeySet(m) { return 'mine' } return mapKeySet([1: 2])").equals("\"mine\"");
 		code_strict("function mapKeySet(m) { return 'mine' } return mapKeySet([1: 2])").equals("\"mine\"");

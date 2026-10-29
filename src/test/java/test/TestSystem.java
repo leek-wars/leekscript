@@ -22,7 +22,7 @@ public class TestSystem extends TestCommon {
 	public void testSourcePosition() throws Exception {
 		section("getSourceFile()");
 		// Un extrait compilé seul porte un nom à numéro (« <snippet N> ») : seul le « / » de tête est stable
-		code("return substring(getSourceFile(), 0, 1)").equals("\"/\"");
+		code_v1_4("return substring(getSourceFile(), 0, 1)").equals("\"/\"");
 		code("return getSourceFile()").ops(1);
 		code("function getSourceFile() { return 'mine' } return getSourceFile()").equals("\"mine\"");
 		code("var getSourceFile = 12 return getSourceFile").equals("12");
@@ -42,7 +42,7 @@ public class TestSystem extends TestCommon {
 		code_v2_("class A {\n\tm() {\n\t\treturn getSourceLine()\n\t}\n\tstatic s() { return getSourceLine() }\n}\nreturn [new A().m(), A.s()]").equals("[3, 5]");
 		code_strict_v2_("integer l = getSourceLine() return l").equals("1");
 		code_strict_v2_("real r = getSourceLine() return r").equals("1.0");
-		code_v2_("return sqrt(getSourceLine() + 3)").equals("2.0");
+		code_v2_4("return sqrt(getSourceLine() + 3)").equals("2.0");
 		code_v2_("function f(integer x) { return x * 10 } return f(getSourceLine())").equals("10");
 		code("return getSourceLine()").ops(1);
 		code_v3_("getSourceLine(1)").error(Error.INVALID_PARAMETER_COUNT);
