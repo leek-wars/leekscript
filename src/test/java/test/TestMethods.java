@@ -244,4 +244,22 @@ public class TestMethods extends TestCommon {
 		code_v5("return randFloat(0, 1)")
 			.error(leekscript.common.Error.REMOVED_FUNCTION_REPLACEMENT, "Math.randReal");
 	}
+
+	@Test
+	public void testMethodCostsLikeFreeForm() throws Exception {
+		section("v5 : une méthode standard coûte autant que sa forme libre");
+		// Receveur typé (résolu à la compilation), receveur `var` (résolu à l'exécution),
+		// namespace : même nombre d'ops que la forme libre en v4.
+		code_v4("var m = [1: 2, 3: 4, 5: 6] mapKeySet(m)").ops(14);
+		code_v5("Map<integer, integer> m = [1: 2, 3: 4, 5: 6] m.keySet()").ops(14);
+		code_v5("var m = [1: 2, 3: 4, 5: 6] m.keySet()").ops(14);
+		code_v4("var a = [3, 1, 2] push(a, 4)").ops(9);
+		code_v5("Array<integer> a = [3, 1, 2] a.push(4)").ops(9);
+		code_v5("var a = [3, 1, 2] a.push(4)").ops(9);
+		code_v4("var s = 'abc' length(s)").ops(3);
+		code_v5("string s = 'abc' s.length()").ops(3);
+		code_v5("var s = 'abc' s.length()").ops(3);
+		code_v4("sqrt(16)").ops(3);
+		code_v5("Math.sqrt(16)").ops(3);
+	}
 }

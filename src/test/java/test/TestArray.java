@@ -1224,7 +1224,7 @@ public class TestArray extends TestCommon {
 		code_v5("return [0, 1, 2, 3].rotate(1)").equals("[3, 0, 1, 2]");
 		code_v5("var a = [0, 1, 2, 3] return a.rotate(-5)").equals("[1, 2, 3, 0]");
 		code_strict_v5_("Array<integer> a = [1, 2, 3] Array<integer> b = a.rotate(2) return b").equals("[2, 3, 1]");
-		code_v5("var a = [1, 2, 3, 4] a.rotate(1)").ops(15); // +1 : l'appel de méthode, comme a.reverse()
+		code_v5("var a = [1, 2, 3, 4] a.rotate(1)").ops(14); // comme la forme libre
 		code_v5("return arrayRotate([1, 2], 1)").error(Error.REMOVED_FUNCTION_REPLACEMENT);
 		// Une fonction ou une variable du joueur du même nom reste prioritaire
 		code("function arrayRotate(a, n) { return 'mine' } return arrayRotate([1, 2], 1)").equals("\"mine\"");

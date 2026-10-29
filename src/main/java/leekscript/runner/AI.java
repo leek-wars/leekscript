@@ -3811,6 +3811,9 @@ public abstract class AI {
 				builtin = null;
 			}
 			if (builtin != null) try {
+				// Même coût que la forme libre : le site d'appel a déjà compté 1 op pour
+				// l'accès `x.name`, on complète jusqu'au coût déclaré de la fonction.
+				ops(builtin.getOperations() - 1);
 				// getJavaName() : le nom leekscript (ex. `map`) peut différer de la méthode Java (`arrayMap`).
 				if (builtin.isStatic()) {
 					// Méthode statique d'un helper : StringClass.length(ai, value, args...).

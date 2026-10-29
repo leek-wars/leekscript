@@ -1114,6 +1114,9 @@ public class LeekFunctionCall extends Expression {
 				if (builtinClass != null) {
 					var builtinMethod = LeekFunctions.getMethod(builtinClass, oa.getField());
 					if (builtinMethod != null && resolveBuiltinMethod(compiler, oa.getFieldToken(), o.getType(), builtinMethod)) {
+						// Même coût que la forme libre `name(receiver, ...)` : le coût déclaré de
+						// la fonction, à la place de l'op de l'accès `receiver.name`.
+						operations += builtinMethod.getOperations() - 1;
 						return;
 					}
 				}
@@ -1128,6 +1131,8 @@ public class LeekFunctionCall extends Expression {
 						this.system_function = nsFunction;
 						this.is_namespace_function = true;
 						verifySystemFunction(compiler, oa.getFieldToken(), nsFunction);
+						// `Math.sqrt(x)` coûte autant que `sqrt(x)` : l'accès au namespace est gratuit.
+						operations -= 1;
 						return;
 					}
 				}

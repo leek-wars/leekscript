@@ -360,7 +360,7 @@ public class TestMap extends TestCommon {
 		code_v1_3("return mapKeySet([1: 2])").error(Error.FUNCTION_NOT_AVAILABLE);
 		// v5 : forme méthode
 		code_v5("return [1: 2, 3: 4, 5: 6].keySet()").equals("<1, 3, 5>");
-		code_v5("var m = [1: 2, 3: 4, 5: 6] m.keySet()").ops(15); // +1 : l'appel de méthode
+		code_v5("var m = [1: 2, 3: 4, 5: 6] m.keySet()").ops(14); // comme la forme libre
 		code_v5("return mapKeySet([1: 2])").error(Error.REMOVED_FUNCTION_REPLACEMENT);
 		// Une fonction ou une variable du joueur du même nom reste prioritaire
 		code("function mapKeySet(m) { return 'mine' } return mapKeySet([1: 2])").equals("\"mine\"");

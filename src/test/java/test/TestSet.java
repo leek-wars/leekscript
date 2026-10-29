@@ -140,7 +140,7 @@ public class TestSet extends TestCommon {
 		// v5 : forme méthode
 		code_v5("var s = <1, 2> s.putAll(<2, 3>) return s").equals("<1, 2, 3>");
 		code_v5("var s = <1> var a = s s.putAll(<2, 3>) return a").equals("<1, 2, 3>");
-		code_v5("var s = <1, 2> var t = <3, 4, 5> s.putAll(t)").ops(17); // +1 : l'appel de méthode
+		code_v5("var s = <1, 2> var t = <3, 4, 5> s.putAll(t)").ops(16); // comme la forme libre
 		code_v5("return setPutAll(<1>, <2>)").error(Error.REMOVED_FUNCTION_REPLACEMENT);
 		// Une fonction ou une variable du joueur du même nom reste prioritaire
 		code("function setPutAll(a, b) { return 12 } return setPutAll(<1>, <2>)").equals("12");
