@@ -71,6 +71,18 @@ public class Module {
 		return prefix;
 	}
 
+	public Set<String> getExportedFunctions() {
+		return exportedFunctions;
+	}
+
+	public Set<String> getExportedVars() {
+		return exportedVars;
+	}
+
+	public Set<String> getExportedClasses() {
+		return exportedClasses;
+	}
+
 	public void addExportedFunction(String name) {
 		exportedFunctions.add(name);
 	}

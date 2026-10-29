@@ -467,6 +467,26 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		this.returnTypeExplicit = true;
 	}
 
+	// Type de retour écrit devant une méthode (`integer go()`) : sans effet sur l'inférence,
+	// sert à l'API typée d'un package (cf MainLeekBlock.checkPackageApis)
+	private boolean returnTypeWritten = false;
+
+	public void markReturnTypeWritten() {
+		returnTypeWritten = true;
+	}
+
+	public boolean isReturnTypeWritten() {
+		return returnTypeExplicit || returnTypeWritten;
+	}
+
+	public boolean isParameterTyped(int index) {
+		return mParametersTypes.get(index) != null;
+	}
+
+	public String getParameterName(int index) {
+		return mParameters.get(index);
+	}
+
 	public void addTypeParameter(leekscript.common.TypeVariable variable) {
 		if (typeParameters == null) typeParameters = new ArrayList<>();
 		typeParameters.add(variable);

@@ -135,6 +135,51 @@ public class TestPackages {
 		assertEquals("3", run(writeMain("var depends = 3\nreturn depends")));
 	}
 
+	@Test
+	public void untypedParameterInApi() throws Exception {
+		write("los/package.leek", "package los\nexport function v(n) -> integer { return n }");
+		assertTrue(errors(writeMain("depends los from \"los\"\nimport { v } from \"@los\"\nreturn v(1)")).contains(Error.PACKAGE_EXPORT_UNTYPED));
+	}
+
+	@Test
+	public void missingReturnTypeInApi() throws Exception {
+		write("los/package.leek", "package los\nexport function v(integer n) { return n }");
+		assertTrue(errors(writeMain("depends los from \"los\"\nimport { v } from \"@los\"\nreturn v(1)")).contains(Error.PACKAGE_EXPORT_UNTYPED));
+	}
+
+	@Test
+	public void untypedReexportedFunction() throws Exception {
+		write("los/package.leek", "package los\nexport { v } from \"./core\"");
+		write("los/core.leek", "export function v(n) { return n }");
+		assertTrue(errors(writeMain("depends los from \"los\"\nimport { v } from \"@los\"\nreturn v(1)")).contains(Error.PACKAGE_EXPORT_UNTYPED));
+	}
+
+	@Test
+	public void untypedClassMembersInApi() throws Exception {
+		write("geo/package.leek", "package geo\nexport class Cell { public x = 0\n integer get() { return 1 } }");
+		assertTrue(errors(writeMain("depends geo from \"geo\"\nimport { Cell } from \"@geo\"\nreturn new Cell().get()")).contains(Error.PACKAGE_EXPORT_UNTYPED));
+	}
+
+	@Test
+	public void untypedExportedVarInApi() throws Exception {
+		write("geo/package.leek", "package geo\nexport var size = 3");
+		assertTrue(errors(writeMain("depends geo from \"geo\"\nimport { size } from \"@geo\"\nreturn size")).contains(Error.PACKAGE_EXPORT_UNTYPED));
+	}
+
+	@Test
+	public void fullyTypedApiAndUntypedInternals() throws Exception {
+		// Seule l'API est contrainte : les modules internes et les membres privés restent libres
+		write("geo/package.leek", "package geo\nexport { Cell, dist } from \"./cell\"\nexport integer size = 3");
+		write("geo/cell.leek", "export class Cell { public integer x = 0\n private y = 1\n constructor(integer x) { this.x = x }\n integer get() { return this.x + helper(this.y) } }\nfunction helper(n) { return n }\nexport function dist(Cell a, Cell b) -> integer { return b.x - a.x }");
+		assertEquals("[4, 3]", run(writeMain("depends geo from \"geo\"\nimport { Cell, dist, size } from \"@geo\"\nreturn [dist(new Cell(1), new Cell(5)), size]")));
+	}
+
+	@Test
+	public void genericApiIsTyped() throws Exception {
+		write("box/package.leek", "package box\nexport function first<T>(Array<T> a) -> T { return a[0] }");
+		assertEquals("7", run(writeMain("depends box from \"box\"\nimport { first } from \"@box\"\nreturn first([7, 8])")));
+	}
+
 	private List<Error> errors(String main) throws Exception {
 		return compileAndCollectErrors(main);
 	}

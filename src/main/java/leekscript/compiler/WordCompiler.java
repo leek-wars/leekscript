@@ -236,6 +236,8 @@ public class WordCompiler {
 		// System.out.println(mMain.getDefinedClasses());
 
 		secondPass();
+		// API des packages : entièrement typée
+		if (LanguageFeature.MODULES.enabledIn(version)) mMain.checkPackageApis(this);
 	}
 
 	// En-tête de package (v5) : avant toute autre instruction du fichier, cf Package
@@ -481,12 +483,12 @@ public class WordCompiler {
 					}
 				} else if (tt == TokenType.IMPORT) {
 					importStatement(true, false);
-				} else if (tt == TokenType.VAR && mPendingExport) {
-					// `export var x [= e] [, y ...]` : on enregistre les noms exportés du
-					// module (pour le binding d'import) ; le champ lui-même est créé au
+				} else if (mPendingExport && (tt == TokenType.VAR || eatType(false, false) != null && mTokens.get().getType() == TokenType.STRING)) {
+					// `export var x [= e] [, y ...]` ou `export integer x …` : on enregistre les noms
+					// exportés du module (pour le binding d'import) ; le champ lui-même est créé au
 					// secondPass. firstPass ne suit les var QUE quand elles sont exportées.
 					mPendingExport = false;
-					mTokens.skip(); // var
+					if (tt == TokenType.VAR) mTokens.skip(); // var (le type, lui, est déjà consommé)
 					while (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.STRING) {
 						mModule.addExportedVar(mTokens.get().getWord());
 						mTokens.skip();
@@ -2041,6 +2043,7 @@ public class WordCompiler {
 		} else if (mTokens.get().getType() == TokenType.PAR_LEFT) {
 			// Méthode
 			ClassMethodBlock method = classMethod(classDeclaration, name, false, isStatic, typeExpression == null ? Type.ANY : typeExpression.getType());
+			if (typeExpression != null) method.markReturnTypeWritten();
 			applyAnnotations(method, annotations);
 			if (isStatic) {
 				classDeclaration.addStaticMethod(this, name, method, accessLevel);
@@ -2054,8 +2057,12 @@ public class WordCompiler {
 		if (isStatic) {
 			assert classDeclaration != null;
 			classDeclaration.addStaticField(this, name, expr, accessLevel, isFinal, typeExpression != null ? typeExpression.getType() : Type.ANY);
+			var field = classDeclaration.getStaticFields().get(name.getWord());
+			if (field != null) field.typed = typeExpression != null;
 		} else {
 			classDeclaration.addField(this, name, expr, accessLevel, isFinal, typeExpression != null ? typeExpression.getType() : Type.ANY);
+			var field = classDeclaration.getFields().get(name.getWord());
+			if (field != null) field.typed = typeExpression != null;
 		}
 
 		if (mTokens.get().getType() == TokenType.END_INSTRUCTION) mTokens.skip();
@@ -2098,6 +2105,7 @@ public class WordCompiler {
 			}
 
 			method.addParameter(this, param, equal, type == null ? Type.ANY : type.getType(), defaultValue);
+			method.markLastParameterTyped(type != null);
 			param_count++;
 
 			if (mTokens.get().getType() == TokenType.VIRG) {

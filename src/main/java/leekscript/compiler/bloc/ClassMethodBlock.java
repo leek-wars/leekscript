@@ -93,6 +93,35 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 		this.typeGuardParam = paramIndex;
 		this.typeGuardType = type;
 		this.type.setReturnType(Type.BOOL);
+		this.returnTypeWritten = true;
+	}
+
+	// Types écrits dans la signature, pour l'API typée d'un package (cf MainLeekBlock.checkPackageApis)
+	private final ArrayList<Boolean> parametersTyped = new ArrayList<>();
+	private boolean returnTypeWritten = false;
+
+	public void markLastParameterTyped(boolean typed) {
+		parametersTyped.add(typed);
+	}
+
+	public boolean isParameterTyped(int index) {
+		return index < parametersTyped.size() && parametersTyped.get(index);
+	}
+
+	public String getParameterName(int index) {
+		return mParameters.get(index).getWord();
+	}
+
+	public void markReturnTypeWritten() {
+		returnTypeWritten = true;
+	}
+
+	public boolean isReturnTypeWritten() {
+		return returnTypeWritten;
+	}
+
+	public boolean isConstructor() {
+		return isConstructor;
 	}
 
 	@Override

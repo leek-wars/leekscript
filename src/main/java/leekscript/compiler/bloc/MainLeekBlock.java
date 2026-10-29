@@ -437,6 +437,72 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		path.remove(path.size() - 1);
 	}
 
+	/**
+	 * L'API d'un package (ce qu'exporte son package.leek, ré-exports compris) est entièrement
+	 * typée : on compile un appelant sans lire les corps. Paramètres et retours des fonctions et
+	 * méthodes publiques, champs publics, variables exportées.
+	 */
+	public void checkPackageApis(WordCompiler compiler) throws LeekCompilerException {
+		for (var module : mModules.values()) {
+			if (!Package.isRootFile(module.getFile())) continue;
+			for (var name : module.getExportedFunctions()) {
+				var function = getUserFunction(name, module);
+				if (function != null) checkTypedSignature(compiler, name, function, true);
+			}
+			for (var name : module.getExportedClasses()) {
+				var clazz = getDefinedClass(name, module);
+				if (clazz != null) checkTypedClass(compiler, clazz);
+			}
+			for (var name : module.getExportedVars()) {
+				var origin = module.varOrigin(name);
+				for (var declaration : mGlobalesDeclarations) {
+					if (declaration.getModule() == origin && declaration.getName().equals(name) && !declaration.isTyped()) {
+						untyped(compiler, declaration.getNameToken().getLocation(), name, "type");
+					}
+				}
+			}
+		}
+	}
+
+	private void checkTypedClass(WordCompiler compiler, ClassDeclarationInstruction clazz) throws LeekCompilerException {
+		var name = clazz.getName();
+		for (var fields : List.of(clazz.getFields(), clazz.getStaticFields())) {
+			for (var field : fields.entrySet()) {
+				if (field.getValue().level == AccessLevel.PUBLIC && !field.getValue().typed) {
+					untyped(compiler, clazz.getLocation(), name + "." + field.getKey(), "type");
+				}
+			}
+		}
+		for (var constructor : clazz.getConstructors().values()) {
+			if (constructor.level == AccessLevel.PUBLIC && constructor.block != null) checkTypedMethod(compiler, name, constructor.block);
+		}
+		for (var methods : List.of(clazz.getMethods(), clazz.getStaticMethods())) {
+			for (var overloads : methods.entrySet()) {
+				for (var method : overloads.getValue().values()) {
+					if (method.level == AccessLevel.PUBLIC) checkTypedMethod(compiler, name + "." + overloads.getKey(), method.block);
+				}
+			}
+		}
+	}
+
+	private void checkTypedMethod(WordCompiler compiler, String name, ClassMethodBlock method) throws LeekCompilerException {
+		for (int i = 0; i < method.countParameters(); i++) {
+			if (!method.isParameterTyped(i)) untyped(compiler, method.getLocation(), name, method.getParameterName(i));
+		}
+		if (!method.isConstructor() && !method.isReturnTypeWritten()) untyped(compiler, method.getLocation(), name, "->");
+	}
+
+	private void checkTypedSignature(WordCompiler compiler, String name, FunctionBlock function, boolean withReturn) throws LeekCompilerException {
+		for (int i = 0; i < function.countParameters(); i++) {
+			if (!function.isParameterTyped(i)) untyped(compiler, function.getLocation(), name, function.getParameterName(i));
+		}
+		if (withReturn && !function.isReturnTypeWritten()) untyped(compiler, function.getLocation(), name, "->");
+	}
+
+	private void untyped(WordCompiler compiler, Location location, String name, String part) throws LeekCompilerException {
+		compiler.addError(new AnalyzeError(location, AnalyzeErrorLevel.ERROR, Error.PACKAGE_EXPORT_UNTYPED, new String[] { name, part }));
+	}
+
 	public boolean includeAIFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {
 		return compileChild(compiler, path, mIncludedFirstPass, null, true) != null;
 	}

@@ -51,6 +51,19 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 		return persistent;
 	}
 
+	public leekscript.compiler.bloc.Module getModule() {
+		return module;
+	}
+
+	/** Type écrit dans la déclaration (`export var integer x`). */
+	public boolean isTyped() {
+		return leekType != null;
+	}
+
+	public Token getNameToken() {
+		return variableToken;
+	}
+
 	public void setModule(leekscript.compiler.bloc.Module module) {
 		this.module = module;
 	}

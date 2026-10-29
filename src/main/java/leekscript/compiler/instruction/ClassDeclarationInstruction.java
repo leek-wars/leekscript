@@ -41,6 +41,8 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		Expression expression;
 		public AccessLevel level;
 		boolean isFinal;
+		// Type écrit dans la déclaration (`integer x`), cf MainLeekBlock.checkPackageApis
+		public boolean typed = true;
 
 		public ClassDeclarationField(String name, Expression expr, AccessLevel level, boolean isFinal, Type type) {
 			this.name = name;
@@ -134,6 +136,10 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	public HashMap<String, ClassDeclarationField> getStaticFields() {
 		return staticFields;
 	}
+	public HashMap<String, HashMap<Integer, ClassDeclarationMethod>> getStaticMethods() {
+		return staticMethods;
+	}
+
 	public HashMap<String, HashMap<Integer, ClassDeclarationMethod>> getMethods() {
 		return methods;
 	}
