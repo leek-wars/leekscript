@@ -281,7 +281,11 @@ public class LeekVariable extends Expression {
 		}
 		// Variables de niveau module importées (et champs propres d'un module importé,
 		// hors bloc partagé) — résolution module-aware via le registre des champs.
-		var gv = mainBlock.getGlobal(name, compiler.getModule());
+		// Gardé v5 (modules) : en v1-4, une classe/globale du bloc principal non trouvée
+		// ci-dessus (ex. classe d'un include lu en LS1, sans valeur de classe) doit rester
+		// une variable inconnue, comme avant les modules.
+		final boolean modules = leekscript.common.LanguageFeature.MODULES.enabledIn(compiler.getVersion());
+		var gv = modules ? mainBlock.getGlobal(name, compiler.getModule()) : null;
 		if (gv != null) {
 			this.type = VariableType.GLOBAL;
 			this.variableType = gv.getType();
@@ -291,7 +295,7 @@ public class LeekVariable extends Expression {
 			return;
 		}
 		// Classes importées (et classes propres d'un module importé, hors bloc partagé).
-		var clazz = mainBlock.getDefinedClass(name, compiler.getModule());
+		var clazz = modules ? mainBlock.getDefinedClass(name, compiler.getModule()) : null;
 		if (clazz != null) {
 			this.type = VariableType.CLASS;
 			this.classDeclaration = clazz;
