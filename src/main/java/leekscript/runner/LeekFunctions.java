@@ -167,7 +167,9 @@ public class LeekFunctions {
 			new CallableVersion(Type.INT, new Type[] { Type.STRING, Type.INT }),
 			new CallableVersion(Type.INT, new Type[] { Type.STRING }),
 		});
-		method("fromCodePoint", "String", 6, true, Type.STRING, new Type[] { Type.INT });
+		// Sans receveur (elle fabrique une chaîne) : en v5, la forme qui la remplace est
+		// `String.fromCodePoint(x)`, pas une méthode `s.fromCodePoint()`.
+		method("fromCodePoint", "String", 6, true, Type.STRING, new Type[] { Type.INT }).setReplacement("String.fromCodePoint");
 
 		/**
 		 * Fonctions array
@@ -686,6 +688,11 @@ public class LeekFunctions {
 
 	public void setMaxVersion(int max_version) {
 		this.maxVersion = max_version;
+	}
+
+	public LeekFunctions setReplacement(String replacement) {
+		this.replacement = replacement;
+		return this;
 	}
 
 	public void setMaxVersion(int max_version, String replacement) {

@@ -356,6 +356,9 @@ public class TestString extends TestCommon {
 		code_v1_4("return fromCodePoint(0x110000)").equals("null");
 		code_v1_4("return fromCodePoint(0xD800)").equals("null");
 		code("var fromCodePoint = 1 return fromCodePoint").equals("1");
+		// v5 : pas de receveur, la forme qui remplace est String.fromCodePoint(x)
+		code_v5("return String.fromCodePoint(65)").equals("\"A\"");
+		code_v5("return fromCodePoint(65)").error(Error.REMOVED_FUNCTION_REPLACEMENT, "String.fromCodePoint");
 	}
 
 	/**
