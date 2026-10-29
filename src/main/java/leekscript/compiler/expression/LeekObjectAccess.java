@@ -339,12 +339,15 @@ public class LeekObjectAccess extends Expression {
 
 	/**
 	 * Comme LeekVariable.hasObjectJavaResult, pour un champ any (ou union) narrowé vers un
-	 * primitif par `instanceof` et lu tel quel (accès direct au champ Java).
+	 * primitif ou une string par `instanceof` et lu tel quel (accès direct au champ Java) :
+	 * seule une destination qui exige le type (`length(this.f)`, paramètre ou retour string)
+	 * le convertit. Pas de cast à la lecture, qui planterait si un appel a réassigné le champ.
 	 */
 	@Override
 	public boolean hasObjectJavaResult() {
-		return variable != null && variable.getVariableType() == VariableType.FIELD && type.isPrimitive()
-			&& !variable.getDeclaredType().assertNotNull().isPrimitive();
+		if (variable == null || variable.getVariableType() != VariableType.FIELD) return false;
+		var declared = variable.getDeclaredType().assertNotNull();
+		return type.isPrimitive() && !declared.isPrimitive() || type == Type.STRING && declared != Type.STRING;
 	}
 
 	/**
