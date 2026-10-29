@@ -310,8 +310,7 @@ public class TestSet extends TestCommon {
 		code_v5("global total = 0 var s = <1, 2, 3> s.iter(function(v) { total += v }) return total").equals("6");
 		// Conversions
 		code_v5("return <10, 20, 30>.toMap()").equals("[0 : 10, 1 : 20, 2 : 30]");
-		code_v5("return [1 : 10, 2 : 20].keysToSet()").equals("<1, 2>");
-		code_v4("return mapKeysToSet([1 : 10, 2 : 20])").equals("<1, 2>");
+		code_v5("return [1 : 10, 2 : 20].keySet()").equals("<1, 2>");
 		// Gating : indisponibles en v1-3 (forme libre)
 		code_v1_3("return setSum(<1, 2, 3>)").error(Error.FUNCTION_NOT_AVAILABLE);
 	}

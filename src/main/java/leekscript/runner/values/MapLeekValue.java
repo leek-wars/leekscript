@@ -348,16 +348,6 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		return new ArrayLeekValue(ai, values().toArray());
 	}
 
-	// Ensemble des clés de la map (#24).
-	public SetLeekValue mapKeysToSet(AI ai) throws LeekRunException {
-		ai.ops(1 + 2 * size());
-		var r = new SetLeekValue(ai, size());
-		for (var key : keySet()) {
-			r.add(key);
-		}
-		return r.counted(ai);
-	}
-
 	public MapLeekValue mapMap(AI ai, FunctionLeekValue function) throws LeekRunException {
 		ai.ops(1 + 3 * size());
 		var result = new MapLeekValue(ai, size());

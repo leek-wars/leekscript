@@ -44,7 +44,7 @@ public class TestRamInvariantCoverage extends TestCommon {
 		"mapMax(m)", "mapMerge(m, [3: 4, 5: 6])", "mapMin(m)", "mapPut(m, 7, 8)", "mapPutAll(m, [3: 4, 9: 9])",
 		"mapRemove(m, 1)", "mapRemove(m, 42)", "mapRemoveAll(m, 2)", "mapReplace(m, 1, 5)",
 		"mapReplaceAll(m, [1: 5, 42: 0])", "mapSearch(m, 2)", "mapSize(m)", "mapSome(m, " + F + ")", "mapSum(m)",
-		"mapValues(m)", "mapKeysToSet(m)", "m[7] = 8", "m[1] ??= 9", "m += [7: 8]", "m + [7: 8]", "clone(m)", "clone([1: m], 2)",
+		"mapValues(m)", "m[7] = 8", "m[1] ??= 9", "m += [7: 8]", "m + [7: 8]", "clone(m)", "clone([1: m], 2)",
 	};
 
 	// Écritures composées sur une clé neuve (put_*), en dynamique puis typées (put_arithmetic_eq, put_bit_eq)

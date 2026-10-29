@@ -326,7 +326,6 @@ public class LeekFunctions {
 		method("setFold", "Set", Type.ANY, new Type[] { Type.SET, new FunctionType(Type.ANY, 0, Type.ANY, Type.ANY, Type.SET), Type.ANY }).alias("fold").setMinVersion(4);
 		method("setIter", "Set", Type.VOID, new Type[] { Type.SET, new FunctionType(Type.ANY, 0, Type.ANY, Type.SET) }).alias("iter").setMinVersion(4);
 		method("setToMap", "Set", Type.MAP, new Type[] { Type.SET }).alias("toMap").setMinVersion(4);
-		method("mapKeysToSet", "Map", Type.SET, new Type[] { Type.MAP }).alias("keysToSet").setMinVersion(4);
 
 		/**
 		 * Interval functions
