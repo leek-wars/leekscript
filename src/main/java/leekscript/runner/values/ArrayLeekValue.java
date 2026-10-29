@@ -1010,6 +1010,18 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		return new ArrayLeekValue(ai, set.toArray());
 	}
 
+	/** Copie décalée de `n` cases vers la droite (vers la gauche si `n` est négatif), les éléments sortis revenant de l'autre côté. */
+	public ArrayLeekValue arrayRotate(AI ai, long n) throws LeekRunException {
+		ai.ops(1 + size());
+		var result = new ArrayLeekValue(ai, size());
+		if (size() > 0) {
+			int split = size() - (int) Math.floorMod(n, (long) size());
+			for (int i = split; i < size(); i++) result.add(get(i));
+			for (int i = 0; i < split; i++) result.add(get(i));
+		}
+		return result.counted(ai);
+	}
+
 	public ArrayLeekValue arrayRandom(AI ai) throws LeekRunException {
 		return arrayRandom(ai, 1);
 	}

@@ -23,6 +23,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction.ClassDeclarationMethod;
 import leekscript.runner.CallableVersion;
 import leekscript.runner.LeekFunctions;
+import leekscript.runner.classes.SystemClass;
 import leekscript.common.AccessLevel;
 import leekscript.common.ClassType;
 import leekscript.common.ClassValueType;
@@ -65,7 +66,7 @@ public class LeekFunctionCall extends Expression {
 
 	// Natifs qui ne font que lire la map passée en premier argument (cf preAnalyze)
 	private static final java.util.Set<String> MAP_READERS = java.util.Set.of("mapContainsKey", "mapContains", "mapGet",
-		"mapSize", "mapIsEmpty", "mapKeys", "mapValues", "mapSearch", "mapMin", "mapMax", "mapSum", "mapAverage", "count");
+		"mapSize", "mapIsEmpty", "mapKeys", "mapKeySet", "mapValues", "mapSearch", "mapMin", "mapMax", "mapSum", "mapAverage", "count");
 
 	public LeekFunctionCall(Token openParenthesis) {
 		this.openParenthesis = openParenthesis;
@@ -207,6 +208,18 @@ public class LeekFunctionCall extends Expression {
 		return true;
 	}
 
+	/**
+	 * Appel direct de getSourceLine / getSourceFile (cf LeekFunctions.setCallSite) : il s'écrit comme un
+	 * littéral. Null pour tout autre appel.
+	 */
+	private LeekFunctions.CallSite callSite(MainLeekBlock mainblock) {
+		// Le cas courant d'abord : la recherche des redéfinitions ne coûte que pour getSource*
+		if (system_function == null || system_function.getCallSite() == null) return null;
+		var name = systemFunctionName();
+		if (name == null || mainblock.isRedefinedFunction(name)) return null;
+		return system_function.getCallSite();
+	}
+
 	/** Aucun argument dont l'évaluation se voit (cf ConstantFolder.isHarmlessValue). */
 	private boolean hasHarmlessArguments(MainLeekBlock mainblock) {
 		var fromClass = mainblock.getWordCompiler().getCurrentClass();
@@ -258,6 +271,18 @@ public class LeekFunctionCall extends Expression {
 	public void compileL(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		if (isEliminable(mainblock)) {
 			writeSubstitutedValue(mainblock, writer);
+			return;
+		}
+		var callSite = callSite(mainblock);
+		if (callSite != null) {
+			// Ligne ou chemin du fichier qui contient l'appel, include compris
+			var location = ((LeekVariable) mExpression).getToken().getLocation();
+			if (callSite == LeekFunctions.CallSite.LINE) {
+				writer.addCode(location.getStartLine() + "l");
+			} else {
+				var path = SystemClass.sourcePath(location.getFile().getPath());
+				writer.addCode(LeekFileContent.javaString(path));
+			}
 			return;
 		}
 		boolean addComma = true;

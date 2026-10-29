@@ -28,7 +28,7 @@ public class TestRamInvariantCoverage extends TestCommon {
 		"arrayFilter(a, " + F + ")", "arrayFind(a, " + F + ")", "arrayFlatten([a, [a]])", "arrayFlatten([a, [a]], 2)",
 		"arrayFoldLeft(a, " + F2 + ", 0)", "arrayFoldRight(a, " + F2 + ", 0)", "arrayFrequencies([1, 1, 2])",
 		"arrayGet(a, 0)", "arrayIter(a, function(v) {})", "arrayMap(a, " + F + ")", "arrayMax(a)", "arrayMin(a)",
-		"arrayPartition(a, " + F + ")", "arrayRandom(a)", "arrayRandom(a, 2)", "arrayRemoveAll(a, 2)",
+		"arrayPartition(a, " + F + ")", "arrayRandom(a)", "arrayRandom(a, 2)", "arrayRemoveAll(a, 2)", "arrayRotate(a, 1)",
 		"arraySlice(a, 1)", "arraySlice(a, 0, 2)", "arraySlice(a, 2, 0, -1)", "a[1:]", "a[::2]", "arraySome(a, " + F + ")",
 		"arraySort(a)", "arraySort(a, function(x, y) { return y - x })", "arrayToSet(a)", "arrayUnique([1, 1, 2])",
 		"average(a)", "count(a)", "fill(a, 0)", "fill(a, 0, 6)", "inArray(a, 2)", "insert(a, 9, 1)", "isEmpty(a)",
@@ -40,7 +40,7 @@ public class TestRamInvariantCoverage extends TestCommon {
 	private static final String[] MAP_CALLS = {
 		"mapAverage(m)", "mapClear(m)", "mapContains(m, 2)", "mapContainsKey(m, 1)",
 		"mapEvery(m, " + F + ")", "mapFill(m, 0)", "mapFilter(m, " + F + ")", "mapFold(m, " + F2 + ", 0)",
-		"mapGet(m, 1)", "mapIsEmpty(m)", "mapIter(m, function(v) {})", "mapKeys(m)", "mapMap(m, " + F + ")",
+		"mapGet(m, 1)", "mapIsEmpty(m)", "mapIter(m, function(v) {})", "mapKeys(m)", "mapKeySet(m)", "mapMap(m, " + F + ")",
 		"mapMax(m)", "mapMerge(m, [3: 4, 5: 6])", "mapMin(m)", "mapPut(m, 7, 8)", "mapPutAll(m, [3: 4, 9: 9])",
 		"mapRemove(m, 1)", "mapRemove(m, 42)", "mapRemoveAll(m, 2)", "mapReplace(m, 1, 5)",
 		"mapReplaceAll(m, [1: 5, 42: 0])", "mapSearch(m, 2)", "mapSize(m)", "mapSome(m, " + F + ")", "mapSum(m)",
@@ -57,7 +57,7 @@ public class TestRamInvariantCoverage extends TestCommon {
 	private static final String[] SET_CALLS = {
 		"setClear(s)", "setContains(s, 2)", "setDifference(s, <2, 4>)", "setDisjunction(s, <2, 4>)",
 		"setFilter(s, " + F + ")", "setIntersection(s, <2, 4>)", "setIsEmpty(s)", "setIsSubsetOf(s, <1, 2, 3, 4>)",
-		"setPut(s, 4)", "setRemove(s, 1)", "setSize(s)", "setToArray(s)", "setUnion(s, <2, 4>)",
+		"setPut(s, 4)", "setPutAll(s, <2, 4>)", "setRemove(s, 1)", "setSize(s)", "setToArray(s)", "setUnion(s, <2, 4>)",
 		"s += 4", "s += <4, 5>", "s + 4", "s + <4>", "clone(s)", "clone(<s>, 2)",
 	};
 

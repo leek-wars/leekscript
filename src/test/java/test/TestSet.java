@@ -120,6 +120,31 @@ public class TestSet extends TestCommon {
 	}
 
 	@Test
+	public void testSet_setPutAll() throws Exception {
+		section("Set.setPutAll()");
+		code("var s = <1, 2> setPutAll(s, <2, 3>) return s").equals("<1, 2, 3>");
+		code("var s = <> setPutAll(s, <'a', 1>) return s").equals("<\"a\", 1>");
+		code("var s = <1> setPutAll(s, <>) return s").equals("<1>");
+		code("var s = <> setPutAll(s, <>) return s").equals("<>");
+		code("var s = <1, 2> setPutAll(s, s) return s").equals("<1, 2>");
+		code("var s = <1> var t = <2> setPutAll(s, t) return t").equals("<2>");
+		code("var s = <1> return setPutAll(s, <2>)").equals("null");
+		// En place : les autres références voient l'ajout
+		code_v2_("var s = <1> var a = s setPutAll(s, <2, 3>) return a").equals("<1, 2, 3>");
+		code_v4_("function f(x, y) { setPutAll(x, y) return x } return f(<1>, <2>)").equals("<1, 2>");
+		// 1 + 1 par élément de droite, comme `s += t` (qui compte en plus l'opérateur)
+		code("var s = <1, 2> var t = <3, 4, 5> setPutAll(s, t)").ops(16);
+		code_v2_("var s = <1, 2> var t = <3, 4, 5> s += t").ops(17);
+		code("var s = <1, 2> var t = <3, 4, 5, 6, 7, 8> setPutAll(s, t)").ops(25);
+		code_v4_("var s = <> for (var i = 0; i < 1000000; ++i) setPutAll(s, <i>)").max_ram(10_000).error(Error.OUT_OF_MEMORY);
+		// Une fonction ou une variable du joueur du même nom reste prioritaire
+		code("function setPutAll(a, b) { return 12 } return setPutAll(<1>, <2>)").equals("12");
+		code_strict("function setPutAll(a, b) { return 12 } return setPutAll(<1>, <2>)").equals("12");
+		code("var setPutAll = 3 return setPutAll").equals("3");
+		code("global setPutAll = 5 return setPutAll").equals("5");
+	}
+
+	@Test
 	public void testSet_setRemove() throws Exception {
 		section("Set.setRemove()");
 		code("var i = <1, 2> setRemove(i, 1) return i").equals("<2>");

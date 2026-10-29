@@ -9,6 +9,9 @@ import leekscript.runner.LeekRunException;
 
 public class SystemClass {
 
+	// Parcours de la pile Java (~1 µs), au tarif des autres natives en temps par opération
+	private static final int LINE_LOOKUP_OPERATIONS = 100;
+
 	public static long getOperations(AI ai) {
 		return (long) ai.getOperations();
 	}
@@ -69,6 +72,33 @@ public class SystemClass {
 
 	public static long getTimestamp(AI ai) {
 		return (ai.getDate().getTime() / 1000);
+	}
+
+	/**
+	 * getSourceLine / getSourceFile prises comme valeurs (`var f = getSourceLine`) : la position de
+	 * l'instruction qui les appelle, cherchée dans la pile. Appelées directement, elles sont remplacées
+	 * à la compilation par leur valeur (cf. LeekFunctions.setCallSite).
+	 */
+	public static long getSourceLine(AI ai) throws LeekRunException {
+		ai.ops(LINE_LOOKUP_OPERATIONS);
+		var position = ai.getCurrentLeekScriptPosition();
+		return position == null ? 0 : position.line();
+	}
+
+	public static String getSourceFile(AI ai) throws LeekRunException {
+		ai.ops(LINE_LOOKUP_OPERATIONS);
+		var position = ai.getCurrentLeekScriptPosition();
+		return position == null ? "" : sourcePath(position.file());
+	}
+
+	/**
+	 * Chemin absolu d'un fichier d'IA, tel que include() et fileRead() le comprennent. Même forme que
+	 * les chemins des erreurs (cf. JavaWriter.getErrorFiles), pour que l'appel direct et l'appel à
+	 * travers une variable rendent le même chemin.
+	 */
+	public static String sourcePath(String path) {
+		path = path.replace("\\/", "/");
+		return path.startsWith("/") ? path : "/" + path;
 	}
 
 	/** Identité : le compilateur passe déjà le contenu du fichier (cf. LeekFunctions.setFileArgument). */

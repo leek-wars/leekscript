@@ -122,6 +122,23 @@ public class TestIncludeCache {
 	}
 
 	@Test
+	public void getSourceLineInIncludedFile() throws Exception {
+		write("sub.leek", "\n\nfunction f() {\n\treturn getSourceLine();\n}\nfunction g() { return getSourceLine; }");
+		// Prise comme valeur : la ligne de l'instruction qui l'appelle
+		String main = writeMain("include('sub');\nvar h = g();\nvar m = arrayMap([1, 2], getSourceLine);\nreturn [getSourceLine(), f(), h(), m];");
+		assertEquals("[4, 4, 4, [3, 3]]", run(main));
+	}
+
+	@Test
+	public void getSourceFileInIncludedFile() throws Exception {
+		write("lib/sub.leek", "function f() { return getSourceFile(); }\nfunction g() { return getSourceFile; }");
+		// Prise comme valeur : le fichier de l'instruction qui l'appelle
+		String main = writeMain("include('lib/sub');\nvar h = g();\nreturn [getSourceFile(), f(), h()];");
+		String self = "\"/" + main + "\"";
+		assertEquals("[" + self + ", \"/lib/sub\", " + self + "]", run(main));
+	}
+
+	@Test
 	public void fileReadRawText() throws Exception {
 		write("notes.txt", "ligne 1\n\tligne \"2\" \\ é 🔥");
 		String main = writeMain("return fileRead('notes.txt') == 'ligne 1\\n\\tligne \"2\" \\\\ é 🔥';");

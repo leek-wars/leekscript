@@ -220,18 +220,23 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 	/** `s += x` : ajout en place, comme `a += x` sur un tableau (un ensemble ajoute tous ses éléments). */
 	public Object add_eq(AI ai, Object value) throws LeekRunException {
 		if (value instanceof SetLeekValue set) {
-			ai.ops(1 + set.size());
-			int sizeBefore = size();
-			addAll(set);
-			ai.increaseRAM(ram, size() - sizeBefore);
+			setPutAll(ai, set);
 		} else {
 			setPut(ai, value);
 		}
 		return this;
 	}
 
+	public Object setPutAll(AI ai, SetLeekValue set) throws LeekRunException {
+		ai.ops(1 + set.size());
+		int sizeBefore = size();
+		addAll(set);
+		ai.increaseRAM(ram, size() - sizeBefore);
+		return null;
+	}
+
 	// Résultat rempli par des ajouts bruts : sa RAM recalée sur sa taille, sur son propre compteur
-	private SetLeekValue counted(AI ai) throws LeekRunException {
+	SetLeekValue counted(AI ai) throws LeekRunException {
 		ai.increaseRAM(ram, BASE_RAM + size() - ram.getValue());
 		return this;
 	}

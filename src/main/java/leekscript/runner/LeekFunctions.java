@@ -234,6 +234,7 @@ public class LeekFunctions {
 		method("arrayFrequencies", "Array", Type.MAP, new Type[] { Type.ARRAY }).setMinVersion(4);
 		method("arrayChunk", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.INT }).setMinVersion(4);
 		method("arrayUnique", "Array", Type.ARRAY, new Type[] { Type.ARRAY }).setMinVersion(4);
+		method("arrayRotate", "Array", Type.ARRAY, new Type[] { Type.ARRAY, Type.INT }).setMinVersion(4);
 		method("arrayClear", "Array", 1, Type.ARRAY, new Type[] { Type.ARRAY }).setMinVersion(4);
 		method("arrayToSet", "Array", Type.SET, new Type[] { Type.ARRAY });
 
@@ -249,6 +250,7 @@ public class LeekFunctions {
 		}).setMinVersion(4);
 		method("mapValues", "Map", Type.ARRAY, new Type[] { Type.MAP }).setMinVersion(4);
 		method("mapKeys", "Map", Type.ARRAY, new Type[] { Type.MAP }).setMinVersion(4);
+		method("mapKeySet", "Map", Type.SET, new Type[] { Type.MAP }).setMinVersion(4);
 		method("mapIter", "Map", Type.VOID, new Type[] { Type.MAP, new FunctionType(Type.ANY, 0, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
 		method("mapMap", "Map", Type.MAP, new Type[] { Type.MAP, new FunctionType(Type.ANY, 0, Type.ANY, Type.ANY, Type.MAP) }).setMinVersion(4);
 		method("mapSum", "Map", Type.REAL, new Type[] { Type.MAP }).setMinVersion(4);
@@ -284,6 +286,7 @@ public class LeekFunctions {
 		 * Set functions
 		 */
 		method("setPut", "Set", 3, Type.BOOL, new Type[] { Type.SET, Type.ANY });
+		method("setPutAll", "Set", Type.VOID, new Type[] { Type.SET, Type.SET });
 		method("setRemove", "Set", 2, Type.BOOL, new Type[] { Type.SET, Type.ANY });
 		method("setClear", "Set", 1, Type.SET, new Type[] { Type.SET });
 		// 1 op comme l'opérateur `in`, qui fait exactement la même recherche par hachage (#2613)
@@ -385,6 +388,8 @@ public class LeekFunctions {
 		method("getTime", "System", 50, true, Type.STRING, new Type[0]);
 		method("getTimestamp", "System", 5, true, Type.INT, new Type[0]);
 		method("fileRead", "System", 1, true, Type.STRING, new Type[] { Type.STRING }).setFileArgument();
+		method("getSourceLine", "System", 1, true, Type.INT, new Type[0]).setCallSite(CallSite.LINE);
+		method("getSourceFile", "System", 1, true, Type.STRING, new Type[0]).setCallSite(CallSite.FILE);
 	}
 
 	private static LeekFunctions method(String name, String clazz, Type return_type, Type[] arguments) {
@@ -439,6 +444,7 @@ public class LeekFunctions {
 	private int maxVersion = LeekScript.LATEST_VERSION;
 	private String replacement = null;
 	private boolean fileArgument = false;
+	private CallSite callSite = null;
 
 	public LeekFunctions(String standardClass, String name, int operations, boolean isStatic, Type return_type, Type[] arguments) {
 		this(standardClass, name, operations, isStatic, new CallableVersion[] { new CallableVersion(return_type, arguments) });
@@ -581,6 +587,18 @@ public class LeekFunctions {
 
 	public boolean hasFileArgument() {
 		return fileArgument;
+	}
+
+	/** Ce que vaut l'appel, connu à la compilation à l'endroit où il est écrit : sa ligne ou son fichier. */
+	public enum CallSite { LINE, FILE }
+
+	public LeekFunctions setCallSite(CallSite callSite) {
+		this.callSite = callSite;
+		return this;
+	}
+
+	public CallSite getCallSite() {
+		return callSite;
 	}
 	public String getName() {
 		return name;

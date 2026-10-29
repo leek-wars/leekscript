@@ -1183,6 +1183,37 @@ public class TestArray extends TestCommon {
 	}
 
 	@Test
+	public void testArray_rotate() throws Exception {
+		section("Array.rotate");
+		code_v4_("return arrayRotate([0, 1, 2, 3], 1)").equals("[3, 0, 1, 2]");
+		code_v4_("return arrayRotate([0, 1, 2, 3], -1)").equals("[1, 2, 3, 0]");
+		code_v4_("return arrayRotate([0, 1, 2, 3], 0)").equals("[0, 1, 2, 3]");
+		code_v4_("return arrayRotate([0, 1, 2, 3], 4)").equals("[0, 1, 2, 3]");
+		code_v4_("return arrayRotate([0, 1, 2, 3], 6)").equals("[2, 3, 0, 1]");
+		code_v4_("return arrayRotate([0, 1, 2, 3], -5)").equals("[1, 2, 3, 0]");
+		code_v4_("return arrayRotate([0, 1, 2], 9223372036854775807)").equals("[2, 0, 1]");
+		code_v4_("return arrayRotate([0, 1, 2], -9223372036854775807 - 1)").equals("[2, 0, 1]");
+		code_v4_("return arrayRotate([], 3)").equals("[]");
+		code_v4_("return arrayRotate([], -3)").equals("[]");
+		code_v4_("return arrayRotate(['a'], -7)").equals("[\"a\"]");
+		code_v4_("return arrayRotate(['a', [2], <3>], 1)").equals("[<3>, \"a\", [2]]");
+		// Un nouveau tableau : l'original ne bouge pas
+		code_v4_("var a = [1, 2, 3] var b = arrayRotate(a, 1) push(b, 4) return [a, b]").equals("[[1, 2, 3], [3, 1, 2, 4]]");
+		code_v4_("function f(x, n) { return arrayRotate(x, n) } return f([1, 2, 3], -1)").equals("[2, 3, 1]");
+		code_strict_v4_("Array<integer> a = [1, 2, 3] integer n = 2 return arrayRotate(a, n)").equals("[2, 3, 1]");
+		// 1 + 1 par élément, comme reverse
+		code_v4_("var a = [1, 2, 3, 4] arrayRotate(a, 1)").ops(14);
+		code_v4_("var a = [1, 2, 3, 4] reverse(a)").ops(14);
+		code_v4_("var a = [1, 2, 3, 4, 5, 6, 7, 8] arrayRotate(a, -3)").ops(26);
+		code_v4_("var a = [] for (var i = 0; i < 100000; ++i) push(a, arrayRotate([1, 2, 3, 4, 5, 6, 7, 8], i))").max_ram(10_000).error(Error.OUT_OF_MEMORY);
+		code_v1_3("return arrayRotate([1, 2], 1)").error(Error.FUNCTION_NOT_AVAILABLE);
+		// Une fonction ou une variable du joueur du même nom reste prioritaire
+		code("function arrayRotate(a, n) { return 'mine' } return arrayRotate([1, 2], 1)").equals("\"mine\"");
+		code_strict("function arrayRotate(a, n) { return 'mine' } return arrayRotate([1, 2], 1)").equals("\"mine\"");
+		code("var arrayRotate = 2 return arrayRotate").equals("2");
+	}
+
+	@Test
 	public void testArray_types() throws Exception {
 		section("Array types");
 		code_v3_("Array a = [] return a").equals("[]");
