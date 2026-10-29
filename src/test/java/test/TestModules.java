@@ -63,5 +63,9 @@ public class TestModules extends TestCommon {
 		leekscript.compiler.PragmaParser.apply(closed);
 		assertEquals(LeekScript.LATEST_VERSION, closed.getVersion());
 		assertTrue(closed.getErrors().stream().anyMatch(e -> e.error == leekscript.common.Error.PRAGMA_INVALID_VALUE));
+		// Version 5 venue d'ailleurs (base, création) sans accès : version par défaut
+		var stored = new leekscript.compiler.AIFile("stored", "return 1", 0, 5, NO_UNRELEASED_ACCESS, false);
+		leekscript.compiler.PragmaParser.apply(stored);
+		assertEquals(LeekScript.LATEST_VERSION, stored.getVersion());
 	}
 }

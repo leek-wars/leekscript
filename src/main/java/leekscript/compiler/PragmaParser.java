@@ -119,5 +119,10 @@ public class PragmaParser {
 			boolean finalStrict = strictLine != -1 ? strict : file.isStrict();
 			file.setVersion(finalVersion, finalStrict);
 		}
+		// Version reçue d'ailleurs que du pragma (base, options) : une version pas encore publique
+		// sans accès retombe sur la version par défaut
+		if (!LeekScript.canUseVersion(file.getVersion(), file.getOwner())) {
+			file.setVersion(LeekScript.LATEST_VERSION, file.isStrict());
+		}
 	}
 }
