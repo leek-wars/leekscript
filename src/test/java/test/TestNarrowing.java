@@ -260,9 +260,9 @@ public class TestNarrowing extends TestCommon {
 
 	/**
 	 * Champ `B | string` affiné en string : le champ Java est un Object. `length(this.f)`, une
-	 * fonction `g(string s)` ou un `return` d'une méthode `-> string` ne compilaient pas. Le
-	 * champ est lu tel quel, et seule la destination qui exige un String le convertit : pas de
-	 * cast à la lecture, qui planterait si un appel avait réassigné le champ entre-temps.
+	 * fonction `g(string s)`, un `return` d'une méthode `-> string`, un `switch` ou un accès
+	 * indexé ne compilaient pas. Le champ est lu tel quel, et seule la destination qui exige un
+	 * String le convertit, comme une valeur any.
 	 */
 	@Test
 	public void testInstanceof_narrowing_field_to_string() throws Exception {
@@ -272,7 +272,10 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("function g(string s) { return length(s) } " + classes + "class C { B | string f = 'hi'; run() { if (this.f instanceof B) { return 0 } return g(this.f) } } return new C().run()").equals("2");
 		code_v4_(classes + "class C { B | string f = 'hi'; string run() { if (this.f instanceof B) { return '' } return this.f } } return new C().run()").equals("\"hi\"");
 		code_v4_(classes + "class C { B | string f = 'hi' } C c = new C() if (c.f instanceof B) { return 0 } return length(c.f)").equals("2");
-		// Réassigné par un appel : la valeur passe telle quelle, sans planter
+		code_v4_(classes + "class C { B | string f = 'hi'; run() { if (this.f instanceof B) { return 0 } switch (this.f) { case 'hi': return 1 case 'ho': return 2 } return 3 } } return new C().run()").equals("1");
+		code_v4_(classes + "class C { B | string f = 'hello'; run() { if (this.f instanceof B) { return 0 } return [this.f[0], this.f[1:3]] } } return new C().run()").equals("[\"h\", \"el\"]");
+		// Réassigné par un appel : une destination non typée reçoit la valeur telle quelle, et
+		// length() la traite comme une valeur any (la chaîne « B {} »)
 		code_v4_(classes + "class C { B | string f = 'hi'; reset() { this.f = new B() } run() { if (this.f instanceof B) { return 'b' } this.reset() return [this.f] } } return new C().run()").equals("[B {}]");
 		code_v4_(classes + "class C { B | string f = 'hi'; reset() { this.f = new B() } run() { if (this.f instanceof B) { return 0 } this.reset() return length(this.f) } } return new C().run()").equals("4");
 	}

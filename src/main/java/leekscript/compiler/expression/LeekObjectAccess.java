@@ -341,7 +341,8 @@ public class LeekObjectAccess extends Expression {
 	 * Comme LeekVariable.hasObjectJavaResult, pour un champ any (ou union) narrowé vers un
 	 * primitif ou une string par `instanceof` et lu tel quel (accès direct au champ Java) :
 	 * seule une destination qui exige le type (`length(this.f)`, paramètre ou retour string)
-	 * le convertit. Pas de cast à la lecture, qui planterait si un appel a réassigné le champ.
+	 * le convertit, comme une valeur any. Une destination non typée (`var x = this.f`) le
+	 * reçoit tel quel, même si un appel a réassigné le champ entre-temps.
 	 */
 	@Override
 	public boolean hasObjectJavaResult() {

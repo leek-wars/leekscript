@@ -196,7 +196,9 @@ public class JavaWriter {
 		if (codegenType(expression) == Type.STRING) {
 			expression.writeJavaCode(mainblock, this, parenthesis);
 		} else {
-			addCode("string(");
+			// Dans une méthode de classe, `string(` nu viserait la méthode string de la classe
+			// Java englobante (NativeObjectLeekValue), pas celle de l'IA : javac refuse.
+			addCode(mainblock.getWordCompiler().getCurrentClass() != null ? getAIThis() + ".string(" : "string(");
 			expression.writeJavaCode(mainblock, this, false);
 			addCode(")");
 		}
