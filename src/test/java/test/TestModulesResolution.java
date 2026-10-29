@@ -390,6 +390,33 @@ public class TestModulesResolution {
 	}
 
 	// =========================================================================
+	// Ré-export : `export { a } from "x"`
+	// =========================================================================
+
+	@Test
+	public void reexportFunctionClassAndVar() throws Exception {
+		write("rx.leek", "export function f() { return 1 }\nexport class C { v() { return 2 } }\nexport var n = 3");
+		write("rm.leek", "export { f, C, n } from \"rx\"");
+		assertEquals("[1, 2, 3]", run(writeMain("import { f, C, n } from \"rm\"\nreturn [f(), new C().v(), n]")));
+	}
+
+	@Test
+	public void reexportChainAndNamespace() throws Exception {
+		write("ry.leek", "export function g() { return 5 }");
+		write("rz.leek", "export { g } from \"ry\"");
+		write("rw.leek", "export { g } from \"rz\"");
+		assertEquals("[5, 5]", run(writeMain("import { g } from \"rw\"\nimport * as W from \"rw\"\nreturn [g(), W.g()]")));
+	}
+
+	@Test
+	public void reexportKeepsOtherNamesPrivate() throws Exception {
+		write("rp.leek", "export function pub() { return 1 }\nexport function other() { return 2 }");
+		write("rq.leek", "export { pub } from \"rp\"");
+		var errors = compileAndCollectErrors(writeMain("import { other } from \"rq\"\nreturn other()"));
+		assertTrue(errors.contains(Error.SYMBOL_NOT_EXPORTED), errors.toString());
+	}
+
+	// =========================================================================
 	// Coût : découper en modules ne change pas les opérations
 	// =========================================================================
 

@@ -254,11 +254,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return ai;
 	}
 
-	private record PendingImport(WordCompiler compiler, Module importer, Module source, Token name) {}
+	private record PendingImport(WordCompiler compiler, Module importer, Module source, Token name, boolean reexport) {}
 	private final List<PendingImport> mPendingImports = new ArrayList<>();
 
-	public void addPendingImport(WordCompiler compiler, Module importer, Module source, Token name) {
-		mPendingImports.add(new PendingImport(compiler, importer, source, name));
+	public void addPendingImport(WordCompiler compiler, Module importer, Module source, Token name, boolean reexport) {
+		mPendingImports.add(new PendingImport(compiler, importer, source, name, reexport));
 	}
 
 	/**
@@ -266,9 +266,21 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * toutes les premières passes faites : tous les exports sont alors connus.
 	 */
 	public void resolvePendingImports() throws LeekCompilerException {
+		// Un ré-export lié ici peut en débloquer un autre (chaîne dans un cycle) : on recommence
+		// tant qu'une liaison progresse.
+		boolean progress = true;
+		while (progress) {
+			progress = false;
+			for (var iterator = mPendingImports.iterator(); iterator.hasNext();) {
+				var pending = iterator.next();
+				if (pending.importer().bindImport(pending.name().getWord(), pending.source(), pending.reexport())) {
+					iterator.remove();
+					progress = true;
+				}
+			}
+		}
 		for (var pending : mPendingImports) {
 			var name = pending.name().getWord();
-			if (pending.importer().bindImport(name, pending.source())) continue;
 			var error = new AnalyzeError(pending.name(), AnalyzeErrorLevel.ERROR, Error.SYMBOL_NOT_EXPORTED, new String[] { name });
 			pending.compiler().addError(error);
 			// Les erreurs d'un module sont recopiées sur l'entrée à la fin de sa passe : déjà fait
@@ -385,7 +397,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public FunctionBlock getUserFunction(String name, Module module) {
 		if (module != null) {
 			var src = module.getImportedFunctionSource(name);
-			if (src != null) return mFunctions.get(src.prefix() + name);
+			if (src != null) return mFunctions.get(src.functionOrigin(name).prefix() + name);
 			var own = mFunctions.get(module.prefix() + name);
 			if (own != null) return own;
 			// Un module importé n'a PAS de fallback vers le namespace global (privacy).
@@ -404,7 +416,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public leekscript.compiler.expression.LeekVariable getGlobal(String name, Module module) {
 		if (module != null) {
 			var src = module.getImportedVarSource(name);
-			if (src != null) return mGlobalVars.get(src.prefix() + name);
+			if (src != null) return mGlobalVars.get(src.varOrigin(name).prefix() + name);
 			var own = mGlobalVars.get(module.prefix() + name);
 			if (own != null) return own;
 			if (!module.isMain()) return null;
@@ -668,7 +680,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public ClassDeclarationInstruction getDefinedClass(String name, leekscript.compiler.bloc.Module module) {
 		if (module != null) {
 			var src = module.getImportedClassSource(name);
-			if (src != null) return mDefinedClasses.get(src.prefix() + name);
+			if (src != null) return mDefinedClasses.get(src.classOrigin(name).prefix() + name);
 			var own = mDefinedClasses.get(module.prefix() + name);
 			if (own != null) return own;
 		}

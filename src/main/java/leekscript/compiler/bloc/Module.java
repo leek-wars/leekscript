@@ -122,18 +122,61 @@ public class Module {
 		return importedClasses.get(name);
 	}
 
-	/** Lie `name` à l'export de `source` du même nom ; false si `source` ne l'exporte pas (encore). */
-	public boolean bindImport(String name, Module source) {
+	/**
+	 * Lie `name` à l'export de `source` du même nom ; false si `source` ne l'exporte pas (encore).
+	 * `reexport` (`export { name } from "…"`) : le nom devient aussi un export de ce module.
+	 */
+	public boolean bindImport(String name, Module source, boolean reexport) {
 		if (source.isExportedFunction(name)) {
 			addImportedFunction(name, source);
+			if (reexport) addExportedFunction(name);
 		} else if (source.isExportedVar(name)) {
 			addImportedVar(name, source);
+			if (reexport) addExportedVar(name);
 		} else if (source.isExportedClass(name)) {
 			addImportedClass(name, source);
+			if (reexport) addExportedClass(name);
 		} else {
 			return false;
 		}
 		return true;
+	}
+
+	// Un module qui ré-exporte un nom l'importe lui-même : on suit les imports jusqu'au module
+	// qui le déclare. Borné : deux modules qui se ré-exportent l'un l'autre ne bouclent pas.
+	private static final int MAX_REEXPORTS = 64;
+
+	/** Module qui déclare la fonction `name` importée ici, en suivant les ré-exports. */
+	public Module functionOrigin(String name) {
+		var module = this;
+		for (int i = 0; i < MAX_REEXPORTS; i++) {
+			var source = module.importedFunctions.get(name);
+			if (source == null) return module;
+			module = source;
+		}
+		return module;
+	}
+
+	/** Module qui déclare la variable `name` importée ici, en suivant les ré-exports. */
+	public Module varOrigin(String name) {
+		var module = this;
+		for (int i = 0; i < MAX_REEXPORTS; i++) {
+			var source = module.importedVars.get(name);
+			if (source == null) return module;
+			module = source;
+		}
+		return module;
+	}
+
+	/** Module qui déclare la classe `name` importée ici, en suivant les ré-exports. */
+	public Module classOrigin(String name) {
+		var module = this;
+		for (int i = 0; i < MAX_REEXPORTS; i++) {
+			var source = module.importedClasses.get(name);
+			if (source == null) return module;
+			module = source;
+		}
+		return module;
 	}
 
 	public void addNamespaceImport(String alias, Module source) {

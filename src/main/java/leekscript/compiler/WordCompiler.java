@@ -441,10 +441,14 @@ public class WordCompiler {
 					if (!LanguageFeature.MODULES.enabledIn(getVersion())) {
 						addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.KEYWORD_UNEXPECTED));
 					}
-					mPendingExport = true;
 					mTokens.skip();
+					if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.ACCOLADE_LEFT) {
+						importStatement(true, true); // `export { a } from "x"`
+					} else {
+						mPendingExport = true;
+					}
 				} else if (tt == TokenType.IMPORT) {
-					importStatement(true);
+					importStatement(true, false);
 				} else if (tt == TokenType.VAR && mPendingExport) {
 					// `export var x [= e] [, y ...]` : on enregistre les noms exportés du
 					// module (pour le binding d'import) ; le champ lui-même est créé au
@@ -742,12 +746,16 @@ public class WordCompiler {
 					return;
 				}
 				mTokens.skip();
+				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.ACCOLADE_LEFT) {
+					importStatement(false, true); // `export { a } from "x"`
+					return;
+				}
 				mExporting = true;
 				compileWord();
 				mExporting = false;
 				return;
 			case IMPORT:
-				importStatement(false);
+				importStatement(false, false);
 				return;
 			case INCLUDE: {
 				var token = mTokens.eat();
@@ -840,8 +848,12 @@ public class WordCompiler {
 	 * pas exporté. Au secondPass : déclenche le secondPass du module cible (génération
 	 * du code). Le binding lui-même n'est fait qu'une fois, au firstPass.
 	 */
-	private void importStatement(boolean firstPass) throws LeekCompilerException {
-		var importToken = mTokens.eat(); // `import`
+	/**
+	 * `import { a } from "x"`, `import * as Ns from "x"`, et le ré-export `export { a } from "x"`
+	 * (reexport : `export` déjà consommé par l'appelant, les noms deviennent des exports du module).
+	 */
+	private void importStatement(boolean firstPass, boolean reexport) throws LeekCompilerException {
+		var importToken = reexport ? mTokens.get() : mTokens.eat(); // `import`
 		boolean enabled = LanguageFeature.MODULES.enabledIn(getVersion());
 		if (!enabled) {
 			addError(new AnalyzeError(importToken, AnalyzeErrorLevel.ERROR, Error.KEYWORD_UNEXPECTED));
@@ -906,8 +918,8 @@ public class WordCompiler {
 			for (var nameToken : names) {
 				// Un module d'un cycle n'a pas fini sa première passe : ses exports ne sont pas
 				// encore tous connus, le nom est lié à la fin (cf MainLeekBlock.resolvePendingImports)
-				if (!mModule.bindImport(nameToken.getWord(), module)) {
-					mMain.addPendingImport(this, mModule, module, nameToken);
+				if (!mModule.bindImport(nameToken.getWord(), module, reexport)) {
+					mMain.addPendingImport(this, mModule, module, nameToken, reexport);
 				}
 			}
 		} else {
