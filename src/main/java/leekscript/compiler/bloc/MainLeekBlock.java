@@ -75,7 +75,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final Map<String, AIFile> mIncludedFirstPass = new HashMap<>();
 	// Modules v5 (import/export). mMainModule = l'entrypoint + ses include() (préfixe
 	// vide → byte-identique v1-4). mModules = les fichiers importés (un Module chacun,
-	// préfixe collision-proof). Dédoublonnage d'import par includeKey (comme les
+	// préfixe collision-proof). Dédoublonnage d'import par AIFile.getKey() (comme les
 	// includes) : le cache du FileSystem peut recréer l'AIFile d'un même fichier.
 	private final Module mMainModule;
 	private final Map<String, Module> mModules = new HashMap<>();
@@ -94,13 +94,13 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMain = this;
 
 		// On ajoute l'IA pour pas pouvoir l'include
-		mIncluded.put(includeKey(ai), ai);
-		mIncludedFirstPass.put(includeKey(ai), ai);
+		mIncluded.put(ai.getKey(), ai);
+		mIncludedFirstPass.put(ai.getKey(), ai);
 		mAIName = ai.getPath();
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
 		mMainModule = new Module(ai, 0, true);
-		mModules.put(includeKey(ai), mMainModule);
+		mModules.put(ai.getKey(), mMainModule);
 
 		if (ai.getVersion() >= 2) {
 			var classClass = new ClassDeclarationInstruction(new Token("Class"), 0, ai, true, this, Type.CLASS).notInstantiable();
@@ -208,23 +208,12 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMinLevel = min_level;
 	}
 
-	/** Identité d'un fichier inclus, stable d'une instance d'AIFile à l'autre (le
-	 *  cache du FileSystem peut en recréer une pour le même fichier).
-	 *  L'id sert de discriminant et non le seul chemin : sous NativeFileSystem
-	 *  (CLI, combats locaux) AIFile.path ne vaut que le nom de feuille et le
-	 *  propriétaire est toujours 0, donc `a/utils` et `b/utils` se confondraient
-	 *  et le second include serait avalé. L'id, lui, est dérivé du chemin complet
-	 *  dans toutes les implémentations. */
-	private static String includeKey(AIFile ai) {
-		return ai.getKey();
-	}
-
 	/**
 	 * Cœur partagé d'include() (v≤4) et import (v5) : résout le fichier, déduplique,
 	 * compile le child avec son propre WordCompiler, propage les erreurs sur l'AIFile
 	 * appelant. Retourne l'AIFile résolu (même déjà dédupliqué) ou null si introuvable.
 	 *
-	 * @param dedup déduplication propre à la passe/au mode, par includeKey (le cache du
+	 * @param dedup déduplication propre à la passe/au mode, par AIFile.getKey() (le cache du
 	 *        FileSystem peut recréer l'AIFile d'un même fichier)
 	 * @param moduleProvider fournit/crée le Module v5 posé sur le child (null pour
 	 *        include = fusion à plat dans le module principal)
@@ -238,7 +227,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		} catch (FileNotFoundException e) {
 			return null;
 		}
-		var key = includeKey(ai);
+		var key = ai.getKey();
 		if (dedup.containsKey(key)) return ai;
 		// Hack dégueu à retirer, crash du daemon dans un cas précis d'include/import infini
 		if (dedup.size() > 500) {
@@ -319,15 +308,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public Module getModule(AIFile file) {
-		return mModules.get(includeKey(file));
+		return mModules.get(file.getKey());
 	}
 
 	/** Crée (ou retourne) le Module associé à un fichier importé. */
 	public Module getOrCreateModule(AIFile file) {
-		var existing = mModules.get(includeKey(file));
+		var existing = mModules.get(file.getKey());
 		if (existing != null) return existing;
 		var module = new Module(file, mModuleId++, false);
-		mModules.put(includeKey(file), module);
+		mModules.put(file.getKey(), module);
 		return module;
 	}
 
@@ -443,7 +432,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * du champ statique qui le porte, ou null si le fichier, ou le total des fichiers lus, est trop gros.
 	 */
 	public String addFileContent(AIFile file) {
-		var key = includeKey(file);
+		var key = file.getKey();
 		var field = mFileFields.get(key);
 		if (field != null) return field;
 		var content = file.getCode();
