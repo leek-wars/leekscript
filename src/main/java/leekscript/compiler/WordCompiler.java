@@ -893,6 +893,12 @@ public class WordCompiler {
 				addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.AI_NOT_EXISTING, new String[] { path }));
 				return;
 			}
+			// Un module est compilé à la version de l'entrée : un `// @version:4` y changerait le
+			// sens du code sans rien dire (seul le pragma compte, pas la version par défaut du fichier)
+			var declared = PragmaParser.declaredVersion(module.getFile());
+			if (declared != null && !LanguageFeature.MODULES.enabledIn(declared)) {
+				addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.MODULE_VERSION_MISMATCH, new String[] { path, String.valueOf(declared), String.valueOf(getVersion()) }));
+			}
 			if (namespaceAlias != null) {
 				// import * as Ns : alias du module entier ; `Ns.membre` résout les exports.
 				mModule.addNamespaceImport(namespaceAlias.getWord(), module);

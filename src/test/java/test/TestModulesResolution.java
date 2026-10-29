@@ -376,6 +376,19 @@ public class TestModulesResolution {
 		assertEquals("[\"e\", \"f\"]", run(writeMain("import { f } from \"vf\"\nimport { t } from \"ve\"\nreturn t()")));
 	}
 
+	@Test
+	public void moduleWithOlderVersionPragmaIsAnError() throws Exception {
+		write("ov.leek", "// @version:4\nexport function f() { return 1 }");
+		var errors = compileAndCollectErrors(writeMain("import { f } from \"ov\"\nreturn f()"));
+		assertTrue(errors.contains(Error.MODULE_VERSION_MISMATCH), errors.toString());
+	}
+
+	@Test
+	public void moduleWithCurrentVersionPragmaIsAccepted() throws Exception {
+		write("ow.leek", "// @version:5\nexport function g() { return 2 }");
+		assertEquals("2", run(writeMain("import { g } from \"ow\"\nreturn g()")));
+	}
+
 	// =========================================================================
 	// Helpers
 	// =========================================================================
