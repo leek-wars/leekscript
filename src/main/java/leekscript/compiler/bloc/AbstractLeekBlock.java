@@ -88,6 +88,15 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		return 1;
 	}
 
+	/** Variables déclarées dans ce bloc (null si aucune), cf ModuleScopeInstruction. */
+	public HashMap<String, LeekVariable> getVariables() {
+		return mVariables;
+	}
+
+	public void setVariables(HashMap<String, LeekVariable> variables) {
+		mVariables = variables;
+	}
+
 	public void addInstruction(WordCompiler compiler, LeekInstruction instruction) throws LeekCompilerException {
 		if (mEndInstruction != 0) {
 			compiler.addError(new AnalyzeError(instruction.getLocation(), AnalyzeErrorLevel.ERROR, Error.CANT_ADD_INSTRUCTION_AFTER_BREAK));

@@ -345,6 +345,38 @@ public class TestModulesResolution {
 	}
 
 	// =========================================================================
+	// Code de haut niveau d'un module : analysé dans son module, locales à lui
+	// =========================================================================
+
+	@Test
+	public void moduleLocalsDoNotCollide() throws Exception {
+		write("va.leek", "var x = 1\nexport function a() { return 1 }");
+		write("vb.leek", "var x = 2\nexport function b() { return 2 }");
+		assertEquals("[1, 2, 3]", run(writeMain("import { a } from \"va\"\nimport { b } from \"vb\"\nvar x = 3\nreturn [a(), b(), x]")));
+	}
+
+	@Test
+	public void moduleLocalNotVisibleFromImporter() throws Exception {
+		write("vc.leek", "var secret = 1\nexport function c() { return 1 }");
+		var errors = compileAndCollectErrors(writeMain("import { c } from \"vc\"\nreturn secret"));
+		assertTrue(errors.contains(Error.UNKNOWN_VARIABLE_OR_FUNCTION), errors.toString());
+	}
+
+	@Test
+	public void moduleTopLevelSeesItsExportVar() throws Exception {
+		write("vd.leek", "export var c = 1\nc = c + 1\nexport function gc() { return c }");
+		assertEquals("2", run(writeMain("import { gc } from \"vd\"\nreturn gc()")));
+	}
+
+	@Test
+	public void moduleTopLevelSeesItsImports() throws Exception {
+		write("ve.leek", "export var trace = []\ntrace.push('e')\nexport function t() { return trace }");
+		write("vf.leek", "import { trace } from \"ve\"\ntrace.push('f')\nexport function f() { return 0 }");
+		// Ordre d'initialisation : dépendances d'abord, chaque module une seule fois
+		assertEquals("[\"e\", \"f\"]", run(writeMain("import { f } from \"vf\"\nimport { t } from \"ve\"\nreturn t()")));
+	}
+
+	// =========================================================================
 	// Helpers
 	// =========================================================================
 

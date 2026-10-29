@@ -28,6 +28,7 @@ import leekscript.compiler.expression.LeekFileContent;
 import leekscript.compiler.expression.LeekNumber;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
+import leekscript.compiler.instruction.ModuleScopeInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.runner.LeekFunctions;
 import leekscript.common.Error;
@@ -308,8 +309,21 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	/** secondPass d'un module importé. Miroir de {@link #includeAI}. */
 	public Module importModule(WordCompiler compiler, String path) throws LeekCompilerException {
-		var ai = compileChild(compiler, path, mImported, this::getOrCreateModule, false);
-		return ai == null ? null : getOrCreateModule(ai);
+		AIFile file;
+		try {
+			file = mCompiler.getCurrentAI().getFolder().resolve(path);
+		} catch (FileNotFoundException e) {
+			return null;
+		}
+		var module = getOrCreateModule(file);
+		if (mImported.containsKey(file.getKey())) return module;
+		// Le code de haut niveau du module s'ajoute aux instructions du bloc principal :
+		// ces marqueurs l'analysent dans son module, avec ses propres locales
+		var opening = ModuleScopeInstruction.open(module, compiler.getTokenStream().get().getLocation());
+		addInstruction(compiler, opening);
+		compileChild(compiler, path, mImported, this::getOrCreateModule, false);
+		addInstruction(compiler, opening.close());
+		return module;
 	}
 
 	public boolean hasUserFunction(String name, boolean use_declarations) {
