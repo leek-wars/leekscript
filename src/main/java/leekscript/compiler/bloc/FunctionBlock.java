@@ -702,8 +702,13 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 
 	public ConstantFolder.ClassifiedBody getBodyClassification(MainLeekBlock mainblock) {
 		if (bodyClassification == null) {
+			// v5 (#43) : un type de retour INFÉRÉ (pas d'annotation) vaut `any` pour la
+			// classification : le `return` nu d'une fonction inférée `null` est bien le
+			// retour par défaut, et un littéral retourné est accepté par construction.
+			var returnType = !returnTypeExplicit && leekscript.common.LanguageFeature.RETURN_TYPE_INFERENCE.enabledIn(mainblock.getVersion())
+				? Type.ANY : type.returnType();
 			bodyClassification = mainblock.getVersion() < 2 ? ConstantFolder.ClassifiedBody.NONE
-				: ConstantFolder.classifyBody(mInstructions, defaultValues, type.returnType(), null);
+				: ConstantFolder.classifyBody(mInstructions, defaultValues, returnType, null);
 		}
 		return bodyClassification;
 	}
