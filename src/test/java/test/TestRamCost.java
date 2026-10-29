@@ -32,7 +32,7 @@ public class TestRamCost extends TestCommon {
 
 		section("Conteneurs remplis (v4)");
 		code_v4_("var r = getUsedRAM() var a = [1, 2, 3] return getUsedRAM() - r").equals("112");
-		code_v4_("var a = [] var r = getUsedRAM() push(a, 1) return getUsedRAM() - r").equals("8");
+		code_v4("var a = [] var r = getUsedRAM() push(a, 1) return getUsedRAM() - r").equals("8");
 		code_v4_("var r = getUsedRAM() var a = [1: 2] return getUsedRAM() - r").equals("136");
 		// Une clé ou une valeur répétée ne compte qu'une fois
 		code_v4_("var k = 1 var r = getUsedRAM() var a = [k: 2, k: 3] return getUsedRAM() - r").equals("136");
@@ -63,9 +63,9 @@ public class TestRamCost extends TestCommon {
 
 		section("Limite de RAM");
 		// Des conteneurs vides atteignent la limite, ils ne passent plus gratuitement
-		code_v4_("var a = [] for (var i = 0; i < 1000000; ++i) push(a, [])").max_ram(1_000_000).error(Error.OUT_OF_MEMORY);
-		code_v4_("var a = [] for (var i = 0; i < 1000000; ++i) push(a, {})").max_ram(1_000_000).error(Error.OUT_OF_MEMORY);
-		code_v4_("class A {} var a = [] for (var i = 0; i < 1000000; ++i) push(a, new A())").max_ram(1_000_000).error(Error.OUT_OF_MEMORY);
+		code_v4("var a = [] for (var i = 0; i < 1000000; ++i) push(a, [])").max_ram(1_000_000).error(Error.OUT_OF_MEMORY);
+		code_v4("var a = [] for (var i = 0; i < 1000000; ++i) push(a, {})").max_ram(1_000_000).error(Error.OUT_OF_MEMORY);
+		code_v4("class A {} var a = [] for (var i = 0; i < 1000000; ++i) push(a, new A())").max_ram(1_000_000).error(Error.OUT_OF_MEMORY);
 		code_v1_3("var a = [] for (var i = 0; i < 1000000; ++i) push(a, i)").max_ram(1_000_000).error(Error.OUT_OF_MEMORY);
 	}
 

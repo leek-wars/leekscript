@@ -844,8 +844,8 @@ public class TestIncludeCache {
 		write("sharedUtil.leek", "function su() { return 1; }\n");
 		// LibB n'appartient qu'à EntryB et contient une vraie erreur.
 		write("LibB_" + uniqueId + ".leek", "function libB() { return variableQuiNexistePas_" + uniqueId + "; }\n");
-		write("EntryA_" + uniqueId + ".leek", "include(\"sharedUtil\");\nreturn su();");
-		write("EntryB_" + uniqueId + ".leek", "include(\"sharedUtil\");\ninclude(\"LibB_" + uniqueId + "\");\nreturn su() + libB();");
+		write("EntryA_" + uniqueId + ".leek", "// @version:4\ninclude(\"sharedUtil\");\nreturn su();");
+		write("EntryB_" + uniqueId + ".leek", "// @version:4\ninclude(\"sharedUtil\");\ninclude(\"LibB_" + uniqueId + "\");\nreturn su() + libB();");
 
 		var entryA = fs.getRoot(0).resolve("EntryA_" + uniqueId);
 		var result = IACompiler.analyzeWithIncludes(entryA);
@@ -867,7 +867,7 @@ public class TestIncludeCache {
 		// Ces erreurs sont les siennes ; elles ne doivent pas s'afficher sur le fichier inclus,
 		// dont la vue fusionnait jusqu'ici tous les includers.
 		write("Lib_" + uniqueId + ".leek", "// @version:4\nclass Foo { x = 1; }\nfunction lib() { return new Foo(); }\n");
-		write("Modern_" + uniqueId + ".leek", "include(\"Lib_" + uniqueId + "\");\nreturn lib();");
+		write("Modern_" + uniqueId + ".leek", "// @version:4\ninclude(\"Lib_" + uniqueId + "\");\nreturn lib();");
 		write("Legacy_" + uniqueId + ".leek", "// @version:1\ninclude(\"Lib_" + uniqueId + "\");\nreturn lib();");
 
 		var lib = fs.getRoot(0).resolve("Lib_" + uniqueId);
@@ -904,7 +904,7 @@ public class TestIncludeCache {
 		// lecture est légitime, elle compte pour l'intersection des UNUSED_* (helper() n'est
 		// utilisé QUE par l'IA v3 : pas de faux avertissement) et ses problèmes remontent.
 		write("Lib_" + uniqueId + ".leek", "// @version:4\nfunction helper() { return 1; }\nfunction other() { return 2; }\n");
-		write("Modern_" + uniqueId + ".leek", "// @strict\ninclude(\"Lib_" + uniqueId + "\");\nreturn other();");
+		write("Modern_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"Lib_" + uniqueId + "\");\nreturn other();");
 		write("Older_" + uniqueId + ".leek", "// @version:3\n// @strict\ninclude(\"Lib_" + uniqueId + "\");\nreturn helper() + other();");
 
 		var lib = fs.getRoot(0).resolve("Lib_" + uniqueId);
@@ -923,7 +923,7 @@ public class TestIncludeCache {
 		// qui échoue : aucun includer n'a exactement la version déclarée, mais le bruit LS1
 		// doit quand même disparaître de la vue de la lib.
 		write("Lib_" + uniqueId + ".leek", "// @version:3\nclass Foo { x = 1; }\nfunction lib() { return new Foo(); }\n");
-		write("Main_" + uniqueId + ".leek", "include(\"Lib_" + uniqueId + "\");\nreturn lib();");
+		write("Main_" + uniqueId + ".leek", "// @version:4\ninclude(\"Lib_" + uniqueId + "\");\nreturn lib();");
 		write("Legacy_" + uniqueId + ".leek", "// @version:1\ninclude(\"Lib_" + uniqueId + "\");\nreturn lib();");
 
 		var lib = fs.getRoot(0).resolve("Lib_" + uniqueId);
@@ -948,7 +948,7 @@ public class TestIncludeCache {
 		// Sans pragma, le fichier n'a pas de version propre : chaque includer est une lecture
 		// légitime et l'union des problèmes est conservée (comportement historique).
 		write("Lib_" + uniqueId + ".leek", "class Foo { x = 1; }\nfunction lib() { return new Foo(); }\n");
-		write("Modern_" + uniqueId + ".leek", "include(\"Lib_" + uniqueId + "\");\nreturn lib();");
+		write("Modern_" + uniqueId + ".leek", "// @version:4\ninclude(\"Lib_" + uniqueId + "\");\nreturn lib();");
 		write("Legacy_" + uniqueId + ".leek", "// @version:1\ninclude(\"Lib_" + uniqueId + "\");\nreturn lib();");
 
 		var lib = fs.getRoot(0).resolve("Lib_" + uniqueId);
@@ -1031,8 +1031,8 @@ public class TestIncludeCache {
 		// includedAIs → GeneratorAPI.addStats comptait total_lines = lignes du fichier seul,
 		// ignorant les include(). merged doit conserver les includes du fichier analysé.
 		write("shared.leek", "function s() { return 1; }\n");
-		write("Main1_" + uniqueId + ".leek", "include(\"shared\");\nreturn s();");
-		write("Main2_" + uniqueId + ".leek", "include(\"shared\");\nreturn s() + 10;");
+		write("Main1_" + uniqueId + ".leek", "// @version:4\ninclude(\"shared\");\nreturn s();");
+		write("Main2_" + uniqueId + ".leek", "// @version:4\ninclude(\"shared\");\nreturn s() + 10;");
 
 		var main1 = fs.getRoot(0).resolve("Main1_" + uniqueId);
 		var result = IACompiler.analyzeWithIncludes(main1);

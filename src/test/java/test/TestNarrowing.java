@@ -79,10 +79,10 @@ public class TestNarrowing extends TestCommon {
 	public void testCase_3b_For_loop_narrowing() throws Exception {
 		section("Case 3b: For loop narrowing");
 		// for (...; a != null; ...) → a is non-null inside loop (issue #5050)
-		code_v4_("integer | null a = 4; var r = 0; for (integer i = 0; i < 10 && a != null; i++) { r = abs(a); a = null } return r").max_ops(1000).noWarning();
-		code_v4_("integer | null a = 4; var r = 0; for (integer i = 0; i < 10 && a != null; i++) { r = abs(a); a = null } return r").max_ops(1000).equals("4");
+		code_v4("integer | null a = 4; var r = 0; for (integer i = 0; i < 10 && a != null; i++) { r = abs(a); a = null } return r").max_ops(1000).noWarning();
+		code_v4("integer | null a = 4; var r = 0; for (integer i = 0; i < 10 && a != null; i++) { r = abs(a); a = null } return r").max_ops(1000).equals("4");
 		// Condition seule, sans opérande supplémentaire
-		code_v4_("integer | null b = 7; var r = 0; for (var i = 0; b != null; i++) { r = abs(b); b = null } return r").max_ops(1000).noWarning();
+		code_v4("integer | null b = 7; var r = 0; for (var i = 0; b != null; i++) { r = abs(b); b = null } return r").max_ops(1000).noWarning();
 		// Le narrowing ne fuit pas après la boucle
 		code_v4_("integer | null c = 4; for (var i = 0; i < 1 && c != null; i++) {} return c == null ? 0 : 1").max_ops(1000).equals("1");
 	}
@@ -91,12 +91,12 @@ public class TestNarrowing extends TestCommon {
 	public void testCase_3c_Ternary_narrowing() throws Exception {
 		section("Case 3c: Ternary narrowing");
 		// a != null ? abs(a) : 0 → a is non-null in the true branch (issue #5050)
-		code_v4_("integer | null a = 4; return a != null ? abs(a) : 0").noWarning();
-		code_v4_("integer | null a = 4; return a != null ? abs(a) : 0").equals("4");
-		code_v4_("integer | null a = null; return a != null ? abs(a) : 0").equals("0");
+		code_v4("integer | null a = 4; return a != null ? abs(a) : 0").noWarning();
+		code_v4("integer | null a = 4; return a != null ? abs(a) : 0").equals("4");
+		code_v4("integer | null a = null; return a != null ? abs(a) : 0").equals("0");
 		// Branche fausse : a == null ? 0 : abs(a)
-		code_v4_("integer | null a = -3; return a == null ? 0 : abs(a)").noWarning();
-		code_v4_("integer | null a = -3; return a == null ? 0 : abs(a)").equals("3");
+		code_v4("integer | null a = -3; return a == null ? 0 : abs(a)").noWarning();
+		code_v4("integer | null a = -3; return a == null ? 0 : abs(a)").equals("3");
 		// Le narrowing ne fuit pas hors du ternaire
 		code_v4_("integer | null a = 4; var r = a != null ? 1 : 0; return a == null ? 0 : r").equals("1");
 	}
@@ -559,22 +559,22 @@ public class TestNarrowing extends TestCommon {
 	@Test
 	public void testProperty_narrowing_in_expressions() throws Exception {
 		section("Property narrowing in && / || / ternary");
-		code_strict_v4_("class A { string? str = \"ab\"; boolean m() { return this.str != null && startsWith(this.str, \"a\") } } return new A().m()").noWarning();
-		code_v4_("class A { string? str = \"ab\"; boolean m() { return this.str != null && startsWith(this.str, \"a\") } } return new A().m()").equals("true");
-		code_strict_v4_("class A { static string? STR = \"ab\"; static boolean m() { return A.STR != null && startsWith(A.STR, \"a\") } } return A.m()").noWarning();
-		code_v4_("class A { static string? STR = \"ab\"; static boolean m() { return A.STR != null && startsWith(A.STR, \"a\") } } return A.m()").equals("true");
-		code_strict_v4_("class A { static string? STR = \"ab\"; static boolean m() { return class.STR != null && startsWith(class.STR, \"a\") } } return A.m()").noWarning();
-		code_v4_("class A { static string? STR = \"ab\"; static boolean m() { return class.STR != null && startsWith(class.STR, \"a\") } } return A.m()").equals("true");
-		code_strict_v4_("class A { string? str = \"ab\" } var a = new A(); return a.str != null && startsWith(a.str, \"a\")").noWarning();
-		code_v4_("class A { string? str = \"ab\" } var a = new A(); return a.str != null && startsWith(a.str, \"a\")").equals("true");
-		code_strict_v4_("class A { string? str = \"ab\"; boolean m() { return this.str == null || startsWith(this.str, \"a\") } } return new A().m()").noWarning();
-		code_v4_("class A { string? str = \"ab\"; boolean m() { return this.str == null || startsWith(this.str, \"a\") } } return new A().m()").equals("true");
-		code_strict_v4_("class A { string? str = \"ab\"; integer m() { return this.str != null ? length(this.str) : 0 } } return new A().m()").noWarning();
-		code_v4_("class A { string? str = \"ab\"; integer m() { return this.str != null ? length(this.str) : 0 } } return new A().m()").equals("2");
-		code_strict_v4_("class A { static string? STR = null; static integer m() { return A.STR == null ? 0 : length(A.STR) } } return A.m()").noWarning();
-		code_v4_("class A { static string? STR = null; static integer m() { return A.STR == null ? 0 : length(A.STR) } } return A.m()").equals("0");
+		code_strict_v4("class A { string? str = \"ab\"; boolean m() { return this.str != null && startsWith(this.str, \"a\") } } return new A().m()").noWarning();
+		code_v4("class A { string? str = \"ab\"; boolean m() { return this.str != null && startsWith(this.str, \"a\") } } return new A().m()").equals("true");
+		code_strict_v4("class A { static string? STR = \"ab\"; static boolean m() { return A.STR != null && startsWith(A.STR, \"a\") } } return A.m()").noWarning();
+		code_v4("class A { static string? STR = \"ab\"; static boolean m() { return A.STR != null && startsWith(A.STR, \"a\") } } return A.m()").equals("true");
+		code_strict_v4("class A { static string? STR = \"ab\"; static boolean m() { return class.STR != null && startsWith(class.STR, \"a\") } } return A.m()").noWarning();
+		code_v4("class A { static string? STR = \"ab\"; static boolean m() { return class.STR != null && startsWith(class.STR, \"a\") } } return A.m()").equals("true");
+		code_strict_v4("class A { string? str = \"ab\" } var a = new A(); return a.str != null && startsWith(a.str, \"a\")").noWarning();
+		code_v4("class A { string? str = \"ab\" } var a = new A(); return a.str != null && startsWith(a.str, \"a\")").equals("true");
+		code_strict_v4("class A { string? str = \"ab\"; boolean m() { return this.str == null || startsWith(this.str, \"a\") } } return new A().m()").noWarning();
+		code_v4("class A { string? str = \"ab\"; boolean m() { return this.str == null || startsWith(this.str, \"a\") } } return new A().m()").equals("true");
+		code_strict_v4("class A { string? str = \"ab\"; integer m() { return this.str != null ? length(this.str) : 0 } } return new A().m()").noWarning();
+		code_v4("class A { string? str = \"ab\"; integer m() { return this.str != null ? length(this.str) : 0 } } return new A().m()").equals("2");
+		code_strict_v4("class A { static string? STR = null; static integer m() { return A.STR == null ? 0 : length(A.STR) } } return A.m()").noWarning();
+		code_v4("class A { static string? STR = null; static integer m() { return A.STR == null ? 0 : length(A.STR) } } return A.m()").equals("0");
 		// Le narrowing ne fuit pas après l'expression
-		code_strict_v4_("class A { string? str = null; void m() { var b = this.str != null && startsWith(this.str, \"a\"); startsWith(this.str, \"a\") } }").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("class A { string? str = null; void m() { var b = this.str != null && startsWith(this.str, \"a\"); startsWith(this.str, \"a\") } }").warning(Error.DANGEROUS_CONVERSION);
 	}
 
 	/**
@@ -733,7 +733,7 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("global G = 5; if (G instanceof Integer) { integer b = G; return b + 1 } return 0").equals("6");
 		code_v4_("global G = 1000; global H = 1000; if (G instanceof Integer && H instanceof Integer) { return G == H } return 0").equals("true");
 		// Argument d'une native : le choix de la surcharge se fait pendant l'analyse, sous narrowing
-		code_v4_("class A { any f = -5 } A a = new A(); if (a.f instanceof Integer) { return abs(a.f) } return null").equals("5");
+		code_v4("class A { any f = -5 } A a = new A(); if (a.f instanceof Integer) { return abs(a.f) } return null").equals("5");
 		code_v4_("var b = true; if (b instanceof Boolean) { return setBit(0, 1, b) } return null").equals("2");
 		code_v4_("class A { any b = true; m() { if (b instanceof Boolean) { return setBit(0, 1, b) } return null } } return new A().m()").equals("2");
 		// La lecture n'est pas convertie : null reste null si la valeur est remise à null sous le narrowing
@@ -750,7 +750,7 @@ public class TestNarrowing extends TestCommon {
 	public void testNon_null_assertion_as_assignment_target() throws Exception {
 		section("Non-null assertion as assignment target");
 		code_strict_v4_("Map<integer, integer> m = new Map() as Map<integer, integer>; integer key = 666; m[key]! = 1; return m").equals("[666 : 1]");
-		code_v4_("Map<integer, Array<integer>> m = new Map() as Map<integer, Array<integer>>; m[666]! = arraySort([3, 1, 2], function (integer a, integer b) => integer { return a - b }) as Array<integer>; return m").equals("[666 : [1, 2, 3]]");
+		code_v4("Map<integer, Array<integer>> m = new Map() as Map<integer, Array<integer>>; m[666]! = arraySort([3, 1, 2], function (integer a, integer b) => integer { return a - b }) as Array<integer>; return m").equals("[666 : [1, 2, 3]]");
 		code_v4_("integer | null x = 5; x! += 1; return x").equals("6");
 		code_v4_("integer | null x = 5; x! -= 1; return x").equals("4");
 		code_v4_("integer | null x = 5; x! *= 2; return x").equals("10");
@@ -789,105 +789,105 @@ public class TestNarrowing extends TestCommon {
 	public void testMapContainsKey_silences_null_warnings() throws Exception {
 		section("mapContainsKey(m, k): no « may be null » warning on m[k] (strict)");
 		// La case existe : plus d'avertissement sur la lecture utilisée directement
-		code_strict_v4_("Map<integer, integer> a = [1 : -2]; if (mapContainsKey(a, 1)) { return abs(a[1]) } return 0").noWarning();
-		code_strict_v4_("Map<integer, integer> a = [1 : -2]; if (mapContainsKey(a, 1)) { return abs(a[1]) } return 0").equals("2");
-		code_strict_v4_("Map<integer, integer> a = [1 : 2]; if (mapContainsKey(a, 1)) { integer x = a[1]; return x } return 0").noWarning();
-		code_strict_v4_("Map<integer, integer> a = [1 : 2]; integer x = 0; if (mapContainsKey(a, 1)) { x = a[1] } return x").noWarning();
-		code_strict_v4_("Map<integer, integer> a = [1 : 2]; integer x = 0; if (mapContainsKey(a, 1)) { x = a[1] } return x").equals("2");
-		code_strict_v4_("function f(Map<integer, integer> m) => integer { if (mapContainsKey(m, 1)) { return m[1] } return 0 } return f([1: 5])").noWarning();
-		code_strict_v4_("Map<string, Array<integer>> a = ['x' : [1, 2]]; if (mapContainsKey(a, 'x')) { return count(a['x']) + a['x'][1] } return 0").noWarning();
-		code_strict_v4_("Map<string, Array<integer>> a = ['x' : [1, 2]]; if (mapContainsKey(a, 'x')) { return count(a['x']) + a['x'][1] } return 0").equals("4");
-		code_strict_v4_("Map<string, Array<integer>> a = ['x' : [1, 2]]; var s = 0; if (mapContainsKey(a, 'x')) { for (var v in a['x']) { s += v } } return s").noWarning();
-		code_strict_v4_("class A { integer n = 3 } Map<integer, A> a = [1 : new A()]; if (mapContainsKey(a, 1)) { return a[1].n } return 0").noWarning();
-		code_strict_v4_("class A { integer n = 3 } Map<integer, A> a = [1 : new A()]; if (mapContainsKey(a, 1)) { return a[1].n } return 0").equals("3");
+		code_strict_v4("Map<integer, integer> a = [1 : -2]; if (mapContainsKey(a, 1)) { return abs(a[1]) } return 0").noWarning();
+		code_strict_v4("Map<integer, integer> a = [1 : -2]; if (mapContainsKey(a, 1)) { return abs(a[1]) } return 0").equals("2");
+		code_strict_v4("Map<integer, integer> a = [1 : 2]; if (mapContainsKey(a, 1)) { integer x = a[1]; return x } return 0").noWarning();
+		code_strict_v4("Map<integer, integer> a = [1 : 2]; integer x = 0; if (mapContainsKey(a, 1)) { x = a[1] } return x").noWarning();
+		code_strict_v4("Map<integer, integer> a = [1 : 2]; integer x = 0; if (mapContainsKey(a, 1)) { x = a[1] } return x").equals("2");
+		code_strict_v4("function f(Map<integer, integer> m) => integer { if (mapContainsKey(m, 1)) { return m[1] } return 0 } return f([1: 5])").noWarning();
+		code_strict_v4("Map<string, Array<integer>> a = ['x' : [1, 2]]; if (mapContainsKey(a, 'x')) { return count(a['x']) + a['x'][1] } return 0").noWarning();
+		code_strict_v4("Map<string, Array<integer>> a = ['x' : [1, 2]]; if (mapContainsKey(a, 'x')) { return count(a['x']) + a['x'][1] } return 0").equals("4");
+		code_strict_v4("Map<string, Array<integer>> a = ['x' : [1, 2]]; var s = 0; if (mapContainsKey(a, 'x')) { for (var v in a['x']) { s += v } } return s").noWarning();
+		code_strict_v4("class A { integer n = 3 } Map<integer, A> a = [1 : new A()]; if (mapContainsKey(a, 1)) { return a[1].n } return 0").noWarning();
+		code_strict_v4("class A { integer n = 3 } Map<integer, A> a = [1 : new A()]; if (mapContainsKey(a, 1)) { return a[1].n } return 0").equals("3");
 		// Ternaire, champ ou case de la valeur, globale
-		code_strict_v4_("function f(Map<integer, integer> m) => integer { return mapContainsKey(m, 1) ? m[1] : 0 } return f([1: 5])").noWarning();
-		code_strict_v4_("Map<integer, integer> m = [1: 5]; integer x = mapContainsKey(m, 1) ? m[1] : 0; return x").noWarning();
-		code_strict_v4_("class A { integer n = 3 } Map<integer, A> a = [1 : new A()]; if (mapContainsKey(a, 1)) { integer n = a[1].n; return n } return 0").noWarning();
-		code_strict_v4_("Map<string, Array<integer>> a = ['x' : [1, 2]]; if (mapContainsKey(a, 'x')) { integer y = a['x'][1]; return y } return 0").noWarning();
-		code_strict_v4_("Map<integer, integer> m = [1: 5]; if (!mapContainsKey(m, 1)) return 0; global integer g = m[1]; return g").noWarning();
+		code_strict_v4("function f(Map<integer, integer> m) => integer { return mapContainsKey(m, 1) ? m[1] : 0 } return f([1: 5])").noWarning();
+		code_strict_v4("Map<integer, integer> m = [1: 5]; integer x = mapContainsKey(m, 1) ? m[1] : 0; return x").noWarning();
+		code_strict_v4("class A { integer n = 3 } Map<integer, A> a = [1 : new A()]; if (mapContainsKey(a, 1)) { integer n = a[1].n; return n } return 0").noWarning();
+		code_strict_v4("Map<string, Array<integer>> a = ['x' : [1, 2]]; if (mapContainsKey(a, 'x')) { integer y = a['x'][1]; return y } return 0").noWarning();
+		code_strict_v4("Map<integer, integer> m = [1: 5]; if (!mapContainsKey(m, 1)) return 0; global integer g = m[1]; return g").noWarning();
 		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { return m[] } return 0").compileError(Error.VALUE_EXPECTED);
 		// Cas inversé : else, sortie anticipée, ternaire, &&
-		code_strict_v4_("Map<integer, integer> a = [1 : 2]; if (!mapContainsKey(a, 1)) { return 0 } else { return abs(a[1]) }").noWarning();
-		code_strict_v4_("Map<integer, integer> a = [1 : -2]; if (!mapContainsKey(a, 1)) return 0; return abs(a[1])").noWarning();
-		code_strict_v4_("Map<integer, integer> a = [1 : -2]; if (!mapContainsKey(a, 1)) return 0; return abs(a[1])").equals("2");
-		code_strict_v4_("Map<integer, integer> a = [:]; if (!mapContainsKey(a, 1)) return 0; return abs(a[1])").equals("0");
-		code_strict_v4_("Map<integer, integer> a = [1 : 2]; return mapContainsKey(a, 1) ? abs(a[1]) : 0").noWarning();
-		code_strict_v4_("Map<integer, integer> a = [1 : 2]; return mapContainsKey(a, 1) && abs(a[1]) > 0").noWarning();
+		code_strict_v4("Map<integer, integer> a = [1 : 2]; if (!mapContainsKey(a, 1)) { return 0 } else { return abs(a[1]) }").noWarning();
+		code_strict_v4("Map<integer, integer> a = [1 : -2]; if (!mapContainsKey(a, 1)) return 0; return abs(a[1])").noWarning();
+		code_strict_v4("Map<integer, integer> a = [1 : -2]; if (!mapContainsKey(a, 1)) return 0; return abs(a[1])").equals("2");
+		code_strict_v4("Map<integer, integer> a = [:]; if (!mapContainsKey(a, 1)) return 0; return abs(a[1])").equals("0");
+		code_strict_v4("Map<integer, integer> a = [1 : 2]; return mapContainsKey(a, 1) ? abs(a[1]) : 0").noWarning();
+		code_strict_v4("Map<integer, integer> a = [1 : 2]; return mapContainsKey(a, 1) && abs(a[1]) > 0").noWarning();
 		// Clé variable : paramètre, itérateur ; map paramètre, globale lue dans une fonction
-		code_strict_v4_("function f(Map<integer, integer> m, integer k) { if (mapContainsKey(m, k)) { return abs(m[k]) } return 0 } return f([3: -4], 3)").noWarning();
-		code_strict_v4_("function f(Map<integer, integer> m, integer k) { if (mapContainsKey(m, k)) { return abs(m[k]) } return 0 } return f([3: -4], 3)").equals("4");
-		code_strict_v4_("Map<integer, integer> m = [3: -4]; var r = 0; for (var k in [3, 5]) { if (mapContainsKey(m, k)) { r += abs(m[k]) } } return r").equals("4");
-		code_strict_v4_("global Map<integer, integer> G = [:]; function f(integer k) { G[k] = -5; if (mapContainsKey(G, k)) { return abs(G[k]) } return 0 } return f(3)").noWarning();
-		code_strict_v4_("class A { public static final K = 1 } Map<integer, integer> m = [1: -2]; if (mapContainsKey(m, 1)) { return abs(m[A.K]) } return 0").equals("2");
+		code_strict_v4("function f(Map<integer, integer> m, integer k) { if (mapContainsKey(m, k)) { return abs(m[k]) } return 0 } return f([3: -4], 3)").noWarning();
+		code_strict_v4("function f(Map<integer, integer> m, integer k) { if (mapContainsKey(m, k)) { return abs(m[k]) } return 0 } return f([3: -4], 3)").equals("4");
+		code_strict_v4("Map<integer, integer> m = [3: -4]; var r = 0; for (var k in [3, 5]) { if (mapContainsKey(m, k)) { r += abs(m[k]) } } return r").equals("4");
+		code_strict_v4("global Map<integer, integer> G = [:]; function f(integer k) { G[k] = -5; if (mapContainsKey(G, k)) { return abs(G[k]) } return 0 } return f(3)").noWarning();
+		code_strict_v4("class A { public static final K = 1 } Map<integer, integer> m = [1: -2]; if (mapContainsKey(m, 1)) { return abs(m[A.K]) } return 0").equals("2");
 	}
 
 	@Test
 	public void testMapContainsKey_narrows_fresh_map_entry() throws Exception {
 		section("mapContainsKey(m, k): m[k] takes the value type when m cannot hold null");
 		// Map initialisée par un littéral, sans null rangé : la lecture est typée comme une case de tableau en strict
-		code_strict_v4_("Map<integer, integer> m = [1: -2]; if (mapContainsKey(m, 1)) { var x = m[1]; return abs(x) } return 0").noWarning();
-		code_strict_v4_("Map<integer, integer> m = [1: -2]; if (mapContainsKey(m, 1)) { integer r = abs(m[1]); return r } return 0").noWarning();
-		code_strict_v4_("Map<integer, integer> m = [1: -2]; if (mapContainsKey(m, 1)) { integer r = abs(m[1]); return r } return 0").equals("2");
-		code_strict_v4_("Map<integer, integer> m = [1: 200, 2: 200]; if (mapContainsKey(m, 1) && mapContainsKey(m, 2)) { return m[1] == m[2] } return false").equals("true");
-		code_strict_v4_("Map<integer, integer> m = [:]; m[1] = 5; m[1] += 1; m[1]++; if (mapContainsKey(m, 1)) { var x = m[1]; return abs(x) } return 0").equals("7");
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { return m[1]! } return 0").warning(Error.USELESS_NON_NULL_ASSERTION);
-		code_strict_v4_("Map<integer, big_integer> m = [1: 2L]; if (mapContainsKey(m, 1)) { return m[1]! } return 0").warning(Error.USELESS_NON_NULL_ASSERTION);
-		code_strict_v4_("Map<integer, integer> m = [1: 7]; m[1] %= 4; m[2] = 9 \\ 2; if (mapContainsKey(m, 2)) { return m[2]! } return 0").warning(Error.USELESS_NON_NULL_ASSERTION);
-		code_strict_v4_("Map<integer, integer> m = [1: 7]; m[1] %= 4; m[2] = 9 \\ 2; if (mapContainsKey(m, 1) && mapContainsKey(m, 2)) { return m[1] + m[2] } return 0").equals("7");
-		code_strict_v4_("Map<integer, real> m = [1: 6.0]; m[2] = 3 / 2; if (mapContainsKey(m, 2)) { return m[2]! } return 0").warning(Error.USELESS_NON_NULL_ASSERTION);
+		code_strict_v4("Map<integer, integer> m = [1: -2]; if (mapContainsKey(m, 1)) { var x = m[1]; return abs(x) } return 0").noWarning();
+		code_strict_v4("Map<integer, integer> m = [1: -2]; if (mapContainsKey(m, 1)) { integer r = abs(m[1]); return r } return 0").noWarning();
+		code_strict_v4("Map<integer, integer> m = [1: -2]; if (mapContainsKey(m, 1)) { integer r = abs(m[1]); return r } return 0").equals("2");
+		code_strict_v4("Map<integer, integer> m = [1: 200, 2: 200]; if (mapContainsKey(m, 1) && mapContainsKey(m, 2)) { return m[1] == m[2] } return false").equals("true");
+		code_strict_v4("Map<integer, integer> m = [:]; m[1] = 5; m[1] += 1; m[1]++; if (mapContainsKey(m, 1)) { var x = m[1]; return abs(x) } return 0").equals("7");
+		code_strict_v4("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { return m[1]! } return 0").warning(Error.USELESS_NON_NULL_ASSERTION);
+		code_strict_v4("Map<integer, big_integer> m = [1: 2L]; if (mapContainsKey(m, 1)) { return m[1]! } return 0").warning(Error.USELESS_NON_NULL_ASSERTION);
+		code_strict_v4("Map<integer, integer> m = [1: 7]; m[1] %= 4; m[2] = 9 \\ 2; if (mapContainsKey(m, 2)) { return m[2]! } return 0").warning(Error.USELESS_NON_NULL_ASSERTION);
+		code_strict_v4("Map<integer, integer> m = [1: 7]; m[1] %= 4; m[2] = 9 \\ 2; if (mapContainsKey(m, 1) && mapContainsKey(m, 2)) { return m[1] + m[2] } return 0").equals("7");
+		code_strict_v4("Map<integer, real> m = [1: 6.0]; m[2] = 3 / 2; if (mapContainsKey(m, 2)) { return m[2]! } return 0").warning(Error.USELESS_NON_NULL_ASSERTION);
 		// Comme le narrowing de `x != null` : la variable inférée n'est plus nullable
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var x = m[1]; x = m[9]; return x } return -1").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var t = [m[1]]; t[0] = m[9]; return t } return -1").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var x = m[1]; x = null; return x } return 0").compileError(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 9)) { string? s = m[9]; return s } return 'ok'").compileError(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v4("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var x = m[1]; x = m[9]; return x } return -1").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+		code_strict_v4("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var t = [m[1]]; t[0] = m[9]; return t } return -1").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+		code_strict_v4("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var x = m[1]; x = null; return x } return 0").compileError(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v4("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 9)) { string? s = m[9]; return s } return 'ok'").compileError(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
 		// Map qui peut contenir null, ou vue par une autre variable : avertissements tus, type inchangé
-		code_strict_v4_("function f(Map<integer, integer> m) { if (mapContainsKey(m, 1)) { var x = m[1]; x = null; return x } return 0 } return f([1: 2])").equals("null");
-		code_strict_v4_("Map<integer, integer> src = [1: 2]; Map<integer, integer> m = src; if (mapContainsKey(m, 1)) { mapRemove(src, 1); return m[1] ?? -1 } return 0").equals("-1");
-		code_strict_v4_("Map<integer, Array<integer>> m = [1: [2]]; m[1] = null; if (mapContainsKey(m, 1)) { return count(m[1]) } return -1").equals("0");
-		code_strict_v4_("Map<integer, integer> m = [:]; m[1] ??= null; if (mapContainsKey(m, 1)) { return m[1] ?? -1 } return 0").equals("-1");
-		code_strict_v4_("Map<integer, integer> m = [1: null]; if (mapContainsKey(m, 1)) { return m[1] ?? -1 } return 0").equals("-1");
+		code_strict_v4("function f(Map<integer, integer> m) { if (mapContainsKey(m, 1)) { var x = m[1]; x = null; return x } return 0 } return f([1: 2])").equals("null");
+		code_strict_v4("Map<integer, integer> src = [1: 2]; Map<integer, integer> m = src; if (mapContainsKey(m, 1)) { mapRemove(src, 1); return m[1] ?? -1 } return 0").equals("-1");
+		code_strict_v4("Map<integer, Array<integer>> m = [1: [2]]; m[1] = null; if (mapContainsKey(m, 1)) { return count(m[1]) } return -1").equals("0");
+		code_strict_v4("Map<integer, integer> m = [:]; m[1] ??= null; if (mapContainsKey(m, 1)) { return m[1] ?? -1 } return 0").equals("-1");
+		code_strict_v4("Map<integer, integer> m = [1: null]; if (mapContainsKey(m, 1)) { return m[1] ?? -1 } return 0").equals("-1");
 		// Typées non nullables mais null à l'exécution : champ non initialisé, case hors bornes
-		code_strict_v4_("class B { integer v = 3 } class A { B b } var a = new A(); Map<integer, B> m = [1: a.b]; if (mapContainsKey(m, 1)) { var b = m[1] ?? new B(); return b.v } return 0").equals("3");
-		code_strict_v4_("Array<string> t = []; Map<integer, string> m = [1: t[0]]; if (mapContainsKey(m, 1)) { return m[1] ?? 'z' } return 0").equals("\"z\"");
-		code_strict_v4_("class A { B b } class B { integer v = 3 } var a = new A(); Map<integer, B> m = [:]; m[1] = a.b; if (mapContainsKey(m, 1)) { var b = m[1] ?? new B(); return b.v } return 0").equals("3");
+		code_strict_v4("class B { integer v = 3 } class A { B b } var a = new A(); Map<integer, B> m = [1: a.b]; if (mapContainsKey(m, 1)) { var b = m[1] ?? new B(); return b.v } return 0").equals("3");
+		code_strict_v4("Array<string> t = []; Map<integer, string> m = [1: t[0]]; if (mapContainsKey(m, 1)) { return m[1] ?? 'z' } return 0").equals("\"z\"");
+		code_strict_v4("class A { B b } class B { integer v = 3 } var a = new A(); Map<integer, B> m = [:]; m[1] = a.b; if (mapContainsKey(m, 1)) { var b = m[1] ?? new B(); return b.v } return 0").equals("3");
 		// `new` d'une fonction rend son résultat ; celui d'une classe n'est jamais null
-		code_strict_v4_("class B { integer v = 3 } function f() { return null } Map<integer, B> m = [1: new B()]; m[1] = new f(); if (mapContainsKey(m, 1)) { var b = m[1] ?? new B(); return b.v } return -1").equals("3");
-		code_strict_v4_("class B { integer v = 3 } Map<integer, B> m = [1: new B()]; m[2] = new B(); if (mapContainsKey(m, 2)) { var b = m[2]; return b.v } return -1").noWarning();
-		code_strict_v4_("Map<integer, Object> m = [1: new Null()]; if (mapContainsKey(m, 1)) { return m[1] ?? 'D' } return 0").equals("\"D\"");
-		code_strict_v4_("class B { integer v = 3 } Map<integer, B> m = [1: new B()]; m[1] = new Null; if (mapContainsKey(m, 1)) { var b = m[1] ?? new B(); return b.v } return -1").equals("3");
-		code_strict_v4_("global g = [1: 2]; function f() { g[1] = null } f(); if (mapContainsKey(g, 1)) { integer x = g[1]; return x + 1 } return 0").equals("1");
-		code_strict_v4_("global g = [1: 2]; class A { static m() { g[1] = null } } A.m(); if (mapContainsKey(g, 1)) { integer x = g[1]; return x + 1 } return 0").equals("1");
+		code_strict_v4("class B { integer v = 3 } function f() { return null } Map<integer, B> m = [1: new B()]; m[1] = new f(); if (mapContainsKey(m, 1)) { var b = m[1] ?? new B(); return b.v } return -1").equals("3");
+		code_strict_v4("class B { integer v = 3 } Map<integer, B> m = [1: new B()]; m[2] = new B(); if (mapContainsKey(m, 2)) { var b = m[2]; return b.v } return -1").noWarning();
+		code_strict_v4("Map<integer, Object> m = [1: new Null()]; if (mapContainsKey(m, 1)) { return m[1] ?? 'D' } return 0").equals("\"D\"");
+		code_strict_v4("class B { integer v = 3 } Map<integer, B> m = [1: new B()]; m[1] = new Null; if (mapContainsKey(m, 1)) { var b = m[1] ?? new B(); return b.v } return -1").equals("3");
+		code_strict_v4("global g = [1: 2]; function f() { g[1] = null } f(); if (mapContainsKey(g, 1)) { integer x = g[1]; return x + 1 } return 0").equals("1");
+		code_strict_v4("global g = [1: 2]; class A { static m() { g[1] = null } } A.m(); if (mapContainsKey(g, 1)) { integer x = g[1]; return x + 1 } return 0").equals("1");
 	}
 
 	@Test
 	public void testMapContainsKey_keeps_other_warnings() throws Exception {
 		section("mapContainsKey(m, k): other warnings stay");
 		// Autre case, valeurs nullables, hors strict
-		code_strict_v4_("Map<integer, integer> a = [1 : 2]; if (mapContainsKey(a, 1)) { return abs(a[2]) } return 0").warning(Error.DANGEROUS_CONVERSION);
-		code_strict_v4_("Map<integer, integer?> a = [1 : null]; if (mapContainsKey(a, 1)) { return abs(a[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);
-		code_v4_("Map<integer, integer> a = [1 : 2]; if (mapContainsKey(a, 1)) { return a[1] + 1 } return 0").equals("3");
+		code_strict_v4("Map<integer, integer> a = [1 : 2]; if (mapContainsKey(a, 1)) { return abs(a[2]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("Map<integer, integer?> a = [1 : null]; if (mapContainsKey(a, 1)) { return abs(a[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_v4("Map<integer, integer> a = [1 : 2]; if (mapContainsKey(a, 1)) { return a[1] + 1 } return 0").equals("3");
 		// Map ou clé réécrite : dans le corps, avant le if, dans une boucle, une fonction, une closure, un foreach sans var
-		code_strict_v4_("Map<integer, integer> a = [1: 2]; if (mapContainsKey(a, 1)) { a = [5: 6]; return abs(a[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);
-		code_strict_v4_("Map<integer, integer> a = [1: 2]; var k = 0; k = 1; if (mapContainsKey(a, k)) { return abs(a[k]) } return 0").warning(Error.DANGEROUS_CONVERSION);
-		code_strict_v4_("Map<integer, integer> parent = [3: 2, 2: 1]; integer cell = 3; var path = []; if (mapContainsKey(parent, cell)) { while (cell != 1) { push(path, cell); cell = parent[cell] } } return path").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
-		code_strict_v4_("global Map<integer, integer> g = [1: 2]; if (mapContainsKey(g, 1)) { f(); return abs(g[1]) } function f() { g = [5: 6] } return 0").warning(Error.DANGEROUS_CONVERSION);
-		code_strict_v4_("Map<integer, integer> a = [1: 2]; var k = 1; var f = function() { k = 7 }; if (mapContainsKey(a, k)) { f(); return abs(a[k]) } return 0").warning(Error.DANGEROUS_CONVERSION);
-		code_strict_v4_("Map<integer, integer> a = [1: 2]; var k = 1; if (mapContainsKey(a, k)) { for (k in [7]) {} return abs(a[k]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("Map<integer, integer> a = [1: 2]; if (mapContainsKey(a, 1)) { a = [5: 6]; return abs(a[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("Map<integer, integer> a = [1: 2]; var k = 0; k = 1; if (mapContainsKey(a, k)) { return abs(a[k]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("Map<integer, integer> parent = [3: 2, 2: 1]; integer cell = 3; var path = []; if (mapContainsKey(parent, cell)) { while (cell != 1) { push(path, cell); cell = parent[cell] } } return path").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+		code_strict_v4("global Map<integer, integer> g = [1: 2]; if (mapContainsKey(g, 1)) { f(); return abs(g[1]) } function f() { g = [5: 6] } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("Map<integer, integer> a = [1: 2]; var k = 1; var f = function() { k = 7 }; if (mapContainsKey(a, k)) { f(); return abs(a[k]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("Map<integer, integer> a = [1: 2]; var k = 1; if (mapContainsKey(a, k)) { for (k in [7]) {} return abs(a[k]) } return 0").warning(Error.DANGEROUS_CONVERSION);
 		// Clé tableau : elle change sans affectation
-		code_strict_v4_("Array<integer> k = [1, 2]; Map<Array<integer>, integer> m = [[1, 2]: 5]; if (mapContainsKey(m, k)) { push(k, 3); return abs(m[k]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("Array<integer> k = [1, 2]; Map<Array<integer>, integer> m = [[1, 2]: 5]; if (mapContainsKey(m, k)) { push(k, 3); return abs(m[k]) } return 0").warning(Error.DANGEROUS_CONVERSION);
 		// Paramètre de closure homonyme : une autre variable
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var f = function(Map<integer, integer> m) { return abs(m[1]) }; return f([5: 6]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { var f = function(Map<integer, integer> m) { return abs(m[1]) }; return f([5: 6]) } return 0").warning(Error.DANGEROUS_CONVERSION);
 		// La map peut perdre une clé : mapRemove, mapClear, alias, passage à une fonction
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (!mapContainsKey(m, 1)) return 0; mapClear(m); return abs(m[1])").warning(Error.DANGEROUS_CONVERSION);
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { mapRemove(m, 1); return abs(m[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);
-		code_strict_v4_("Map<integer, integer> m = [1: 2]; var b = m; if (mapContainsKey(m, 1)) { mapRemove(b, 1); return abs(m[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("Map<integer, integer> m = [1: 2]; if (!mapContainsKey(m, 1)) return 0; mapClear(m); return abs(m[1])").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("Map<integer, integer> m = [1: 2]; if (mapContainsKey(m, 1)) { mapRemove(m, 1); return abs(m[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("Map<integer, integer> m = [1: 2]; var b = m; if (mapContainsKey(m, 1)) { mapRemove(b, 1); return abs(m[1]) } return 0").warning(Error.DANGEROUS_CONVERSION);
 		// Une affectation dans le corps ne crée pas la case pour la suite, mais garde le narrowing de x
-		code_strict_v4_("Map<integer, integer> a = [:]; if (!mapContainsKey(a, 1)) { a[1] = 3 } return abs(a[1])").warning(Error.DANGEROUS_CONVERSION);
-		code_strict_v4_("Map<integer, integer> a = [1: 2]; integer? x = null; if (x == null || !mapContainsKey(a, 1)) { x = 5 } return abs(x)").noWarning();
+		code_strict_v4("Map<integer, integer> a = [:]; if (!mapContainsKey(a, 1)) { a[1] = 3 } return abs(a[1])").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("Map<integer, integer> a = [1: 2]; integer? x = null; if (x == null || !mapContainsKey(a, 1)) { x = 5 } return abs(x)").noWarning();
 		// Une case écrite garde son type nullable
-		code_strict_v4_("Map<integer, integer?> a = [1: 2]; if (mapContainsKey(a, 1)) { a[1] = null } return a").equals("[1 : null]");
-		code_strict_v4_("Map<integer, integer> a = [1: 2]; if (mapContainsKey(a, 1)) { a[1] += 5; a[1]++ } return a").equals("[1 : 8]");
+		code_strict_v4("Map<integer, integer?> a = [1: 2]; if (mapContainsKey(a, 1)) { a[1] = null } return a").equals("[1 : null]");
+		code_strict_v4("Map<integer, integer> a = [1: 2]; if (mapContainsKey(a, 1)) { a[1] += 5; a[1]++ } return a").equals("[1 : 8]");
 	}
 	@Test
 	public void testCase_6_type_guard() throws Exception {

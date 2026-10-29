@@ -26,8 +26,8 @@ public class TestObject extends TestCommon {
 		code_v2_("var a = {b: 12, c: 5} return a").equals("{b: 12, c: 5}");
 		// Erreurs de syntaxe d'un objet littéral (un bloc `{ … }` seul en est un) : plus de
 		// « parenthèse fermante attendue après les paramètres d'une fonction »
-		code_v2_("{ var a; }").compileError(Error.KEYWORD_UNEXPECTED);
-		code_v2_("{ x = 1 }").compileError(Error.UNCOMPLETE_EXPRESSION);
+		code_v2_4("{ var a; }").compileError(Error.KEYWORD_UNEXPECTED);
+		code_v2_4("{ x = 1 }").compileError(Error.UNCOMPLETE_EXPRESSION);
 		code_v2_("return {'a': 1}").compileError(Error.VARIABLE_NAME_EXPECTED);
 		code_v2_("return {a 1}").compileError(Error.UNCOMPLETE_EXPRESSION);
 		code_v2_("return {a: 1").compileError(Error.END_OF_SCRIPT_UNEXPECTED);
@@ -744,7 +744,7 @@ public class TestObject extends TestCommon {
 		// `this.m` est lié à `this`
 		code_v2_("class A { x = 7 m() { return x } run() { var f = this.m return f() } } return new A().run()").equals("7");
 		// Passage à une fonction d'ordre supérieur, et à un paramètre de type Function
-		code_v2_("class A { twice(x) { return x * 2 } } var o = new A() return arrayMap([1, 2, 3], o.twice)").equals("[2, 4, 6]");
+		code_v2_4("class A { twice(x) { return x * 2 } } var o = new A() return arrayMap([1, 2, 3], o.twice)").equals("[2, 4, 6]");
 		code_v2_("class A { boolean los(integer a, integer b) { return a < b } } function test(Function<integer, integer => boolean> f) { return f(5, 6) } return test(new A().los)").equals("true");
 		code_strict_v2_("class A { boolean los(integer a, integer b) { return a < b } } function test(Function<integer, integer => boolean> f) { return f(5, 6) } return test(new A().los)").equals("true");
 		// Une méthode liée reste nommée comme la méthode
@@ -757,17 +757,17 @@ public class TestObject extends TestCommon {
 
 		// Chaque accès `o.m` crée une nouvelle méthode liée, mais c'est la même VALEUR : même
 		// méthode sur le même objet. Un Set, une Map ou `==` doivent la retrouver (#5242).
-		code_v4_("class A { m() {} } Set<Function> set; A a = new A(); setPut(set, a.m); setPut(set, a.m); var n = setSize(set); setRemove(set, a.m); return [n, setSize(set)]").equals("[1, 0]");
-		code_strict_v4_("class A { m() {} } Set<Function> set; A a = new A(); setPut(set, a.m); setPut(set, a.m); var n = setSize(set); setRemove(set, a.m); return [n, setSize(set)]").equals("[1, 0]");
-		code_v4_("class A { m() {} } var a = new A() var m = [:] m[a.m] = 1 m[a.m] = 2 return [mapSize(m), m[a.m]]").equals("[1, 2]");
+		code_v4("class A { m() {} } Set<Function> set; A a = new A(); setPut(set, a.m); setPut(set, a.m); var n = setSize(set); setRemove(set, a.m); return [n, setSize(set)]").equals("[1, 0]");
+		code_strict_v4("class A { m() {} } Set<Function> set; A a = new A(); setPut(set, a.m); setPut(set, a.m); var n = setSize(set); setRemove(set, a.m); return [n, setSize(set)]").equals("[1, 0]");
+		code_v4("class A { m() {} } var a = new A() var m = [:] m[a.m] = 1 m[a.m] = 2 return [mapSize(m), m[a.m]]").equals("[1, 2]");
 		code_v2_("class A { m() {} } var a = new A() return [a.m == a.m, a.m != a.m, a.m == a['m']]").equals("[true, false, true]");
-		code_v2_("class A { m() {} } var a = new A() return [inArray([a.m], a.m), search([12, a.m], a.m)]").equals("[true, 1]");
+		code_v2_4("class A { m() {} } var a = new A() return [inArray([a.m], a.m), search([12, a.m], a.m)]").equals("[true, 1]");
 		code_v2_("class A { m() {} run() { return this.m == this.m } } return new A().run()").equals("true");
 		code_v2_("class A { m() {} } class B extends A {} var b = new B() return b.m == b.m").equals("true");
 		code_strict_v4_("class A { m() {} } A a = new A() Function f = a.m Function g = a.m return f == g").equals("true");
 		// Un autre objet, une autre méthode ou la forme non liée restent des valeurs différentes
 		code_v2_("class A { m() {} n() {} } var a = new A() var b = new A() return [a.m == b.m, a.m == a.n, a.m == A.m]").equals("[false, false, false]");
-		code_v4_("class A { m() {} } var s = <> setPut(s, new A().m) setPut(s, new A().m) return setSize(s)").equals("2");
+		code_v4("class A { m() {} } var s = <> setPut(s, new A().m) setPut(s, new A().m) return setSize(s)").equals("2");
 
 		section("Assign to method");
 		code_v2_("class A { m() {} } A.m = 12").error(Error.CANT_ASSIGN_VALUE);

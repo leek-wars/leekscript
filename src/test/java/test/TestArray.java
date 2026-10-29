@@ -264,7 +264,7 @@ public class TestArray extends TestCommon {
 		// (ClassCastException Long -> Double auparavant)
 		code_v4_("Array<real> tab = [1] real value = tab[0] return value").equals("1.0");
 		code_strict_v4_("Array<real> tab = [1, 2.5] return tab[0] * 2").equals("2.0");
-		code_v4_("Array<real> tab = [1.5] push(tab, 2) real r = tab[1] return r").equals("2.0");
+		code_v4("Array<real> tab = [1.5] push(tab, 2) real r = tab[1] return r").equals("2.0");
 		code_v4_("Array<real?> tab = [1, null] return [tab[0], tab[1]]").equals("[1.0, null]");
 		code_v4_("Array<real> tab = [1, 2.5] var s = 0.0 for (real x in tab) { s += x } return s").equals("3.5");
 		code_v4_("Array<real> tab = [1, 2.5] var s = 0.0 for (var k : real x in tab) { s += x } return s").equals("3.5");
@@ -902,9 +902,9 @@ public class TestArray extends TestCommon {
 		// #2743: passing a variable (typed or var) to an explicitly typed Array
 		// parameter must not break Java compilation, in every version.
 		section("#2743: typed Array parameter, variable argument");
-		code("function doSomeThing(Array someData) { return count(someData); } return doSomeThing([5, 45]);").equals("2");
-		code("function doSomeThing(Array someData) { return count(someData); } Array test = [5, 45]; return doSomeThing(test);").equals("2");
-		code("function doSomeThing(Array someData) { return count(someData); } var testbis = [5, 45]; return doSomeThing(testbis);").equals("2");
+		code_v1_4("function doSomeThing(Array someData) { return count(someData); } return doSomeThing([5, 45]);").equals("2");
+		code_v1_4("function doSomeThing(Array someData) { return count(someData); } Array test = [5, 45]; return doSomeThing(test);").equals("2");
+		code_v1_4("function doSomeThing(Array someData) { return count(someData); } var testbis = [5, 45]; return doSomeThing(testbis);").equals("2");
 	}
 
 	@Test
@@ -1341,7 +1341,7 @@ public class TestArray extends TestCommon {
 		code(wrappers).equals("[25, 22, 27, 29, 31]");
 		code_strict(wrappers).equals("[25, 22, 27, 29, 31]");
 		// Natives, chaînes, booléens, switch, map et tableau imbriqué
-		code_strict("Array<integer> a = [10, 20]; Array<real> r = [1.5, 2.5]; Array<string> s = ['a']; return [abs(a[1] -= 30), max(a[1] += 2, 1), floor(r[1] += 2), length(s[0] += 'b')]").equals("[10, 1, 4, 2]");
+		code_strict_v1_4("Array<integer> a = [10, 20]; Array<real> r = [1.5, 2.5]; Array<string> s = ['a']; return [abs(a[1] -= 30), max(a[1] += 2, 1), floor(r[1] += 2), length(s[0] += 'b')]").equals("[10, 1, 4, 2]");
 		code("Array<string> s = ['a']; function g(string v) { return v + '!' } return g(s[0] += 'b')").equals("\"ab!\"");
 		code_strict("Array<boolean> b = [false]; boolean x = (b[0] ??= true); return x").equals("false");
 		code_v3_("Array<integer> a = [10, 20]; switch (a[1] += 2) { case 22: return 'ok' } return 'ko'").equals("\"ok\"");

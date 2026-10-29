@@ -119,7 +119,7 @@ public class TestGeneral extends TestCommon {
 		code("var a = 1, include = 2;").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, "include");
 		code_v1_2("var Include = 2;").errorWith(Error.VARIABLE_NAME_UNAVAILABLE, "Include");
 		code("var 12 = 2;").error(Error.VAR_NAME_EXPECTED);
-		code("include 'a'").error(Error.OPENING_PARENTHESIS_EXPECTED);
+		code_v1_4("include 'a'").error(Error.OPENING_PARENTHESIS_EXPECTED);
 	}
 
 	@Test
@@ -288,16 +288,16 @@ public class TestGeneral extends TestCommon {
 		code_v2_("{} + 1").equals("1");
 		code_v4_("{} instanceof Object").equals("true");
 		code_v2_("{} in [1]").equals("false");
-		code_v2_("{ 'a': 1 }").error(Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
-		code_v2_("{ 1: 2 }").error(Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+		code_v2_("{ 'a': 1 }").error(Error.VARIABLE_NAME_EXPECTED);
+		code_v2_("{ 1: 2 }").error(Error.VARIABLE_NAME_EXPECTED);
 		code_v2_("return {}").equals("{}");
 
 		// v1-v4 : pas de bloc nu, rien ne change
 		code_v2_4("{}").equals("{}");
 		code_v2_4("var x = 1;{}").equals("{}");
 		code_v1("var b = 0 { b = 12 } return b").error(Error.VALUE_EXPECTED);
-		code_v2_4("var b = 0 { b = 12 } return b").error(Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
-		code_v2_4("{ var a = 1 } return 0").error(Error.PARENTHESIS_EXPECTED_AFTER_PARAMETERS);
+		code_v2_4("var b = 0 { b = 12 } return b").error(Error.UNCOMPLETE_EXPRESSION);
+		code_v2_4("{ var a = 1 } return 0").error(Error.KEYWORD_UNEXPECTED);
 		code_v2_4("{ } return 1").equals("1");
 	}
 

@@ -269,7 +269,7 @@ public class TestConstantFolding extends TestCommon {
 	@Test
 	public void testNested_and_multi_arity_elimination() throws Exception {
 		section("Appels imbriqués et multi-arités");
-		code_v2_("function two() { return 2 } return abs(two())").equals("2");
+		code_v2_4("function two() { return 2 } return abs(two())").equals("2");
 		code_v2_("function two() { return 2 } function inc(x) { return x + 1 } return inc(two())").equals("3");
 		code_v2_("function f(x, y = 2) {} f(1) f(1, 3) return 9").equals("9");
 		code_v2_("function f(x, y = 2) {} f(1) f(1, 3) return 9").ops(0);

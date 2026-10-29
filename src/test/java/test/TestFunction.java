@@ -563,7 +563,7 @@ public class TestFunction extends TestCommon {
 		// … et sur les expressions émises en Object (`?.`, `??=`), que javac refuse d'écrire telles quelles
 		code_v4_("class A { Array<integer> x = [1] } function f(A? a) => Array<integer> { return? a?.x return [3] } return [f(new A()), f(null)]").equals("[[1], [3]]");
 		code_v4_("class A { public Map<integer, integer> m() { return [1: 1] } } function f(A? a) => Map<integer, integer> { return? a?.m() return [3: 3] } return [f(new A()), f(null)]").equals("[[1 : 1], [3 : 3]]");
-		code_v4_("global Map<integer, Array<integer>> M = [:] function f(integer k) => Array<integer> { return? (M[k] ??= [k]) return [3] } return [f(1), f(2), count(f(1))]").equals("[[1], [2], 1]");
+		code_v4("global Map<integer, Array<integer>> M = [:] function f(integer k) => Array<integer> { return? (M[k] ??= [k]) return [3] } return [f(1), f(2), count(f(1))]").equals("[[1], [2], 1]");
 		// Le reste du type est toujours vérifié
 		code_strict_v4_("function f(string? s) => integer { return? s return 12 } return f('a')").compileError(Error.INCOMPATIBLE_TYPE);
 		// … sans jamais aggraver un diagnostic : ce warning ne devient pas une erreur
@@ -659,11 +659,11 @@ public class TestFunction extends TestCommon {
 		code_v4_("class A { public integer v; public constructor(integer a, Set<integer> s = [1, 2]) { this.v = a } } return new A(1, <3>).v").equals("1");
 		// Défaut de type `any` sur un paramètre typé : le cast manquait dans les fonctions
 		// globales, présent depuis toujours dans les méthodes de classe
-		code_v4_("function g() => any { return [1, 2] } function f(integer a, Array<integer> t = g()) { return count(t) } return f(1)").equals("2");
+		code_v4("function g() => any { return [1, 2] } function f(integer a, Array<integer> t = g()) { return count(t) } return f(1)").equals("2");
 		// Défaut qui émet du Java infixe : la conversion doit envelopper l'expression
 		// entière, sinon elle ne porte que sur la condition
-		code_v4_("function f(Array<integer> t = true ? [1, 2] : [3]) { return count(t) } return f()").equals("2");
-		code_v4_("function g() => Array<integer>? { return null } function f(Array<integer> t = g() ?? [1, 2]) { return count(t) } return f()").equals("2");
+		code_v4("function f(Array<integer> t = true ? [1, 2] : [3]) { return count(t) } return f()").equals("2");
+		code_v4("function g() => Array<integer>? { return null } function f(Array<integer> t = g() ?? [1, 2]) { return count(t) } return f()").equals("2");
 		// Cibles primitives : `long u_x = 12.5` / `boolean u_b = <ArrayLeekValue>` ne
 		// compilaient pas non plus
 		code_v4_("function f(integer x = 12.5) { return x } return f()").equals("12");

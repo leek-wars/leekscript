@@ -565,7 +565,7 @@ public class TestBigInt extends TestCommon {
 		code_v4_("integer | big_integer h = 12; return h | 1;").equals("13");
 		code_v4_("integer | big_integer h = 5; return ~h;").equals("-6");
 		// Un retour de native surchargée (integer | real | big_integer) reste un integer
-		code_v4_("var x = abs(-5); return x | 1;").equals("5");
+		code_v4("var x = abs(-5); return x | 1;").equals("5");
 	}
 
 	/** Le champ statique et la variable capturée `big_integer?` ne connaissent pas leur type. */

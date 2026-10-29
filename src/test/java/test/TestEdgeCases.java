@@ -358,10 +358,10 @@ public class TestEdgeCases extends TestCommon {
 
 		// Limite atteinte dans le comparateur d'arraySort, y compris imbriqué : l'erreur
 		// remontait en « Erreur inconnue : leekscript.runner.LeekRunException »
-		code_v4_("var a = [3, 1, 2] return arraySort(a, function(x, y) { while (true) {} return 0 })").max_ops(10000).error(Error.TOO_MUCH_OPERATIONS);
-		code_v4_("var a = [3, 1, 2] return arraySort(a, function(x, y) { arraySort([2, 1, 3], function(p, q) { while (true) {} return 0 }) return x - y })").max_ops(10000).error(Error.TOO_MUCH_OPERATIONS);
+		code_v4("var a = [3, 1, 2] return arraySort(a, function(x, y) { while (true) {} return 0 })").max_ops(10000).error(Error.TOO_MUCH_OPERATIONS);
+		code_v4("var a = [3, 1, 2] return arraySort(a, function(x, y) { arraySort([2, 1, 3], function(p, q) { while (true) {} return 0 }) return x - y })").max_ops(10000).error(Error.TOO_MUCH_OPERATIONS);
 		code_v1_3("var a = [3, 1, 2] return arraySort(a, function(x, y) { arraySort([2, 1, 3], function(p, q) { while (true) {} return 0 }) return x - y })").max_ops(10000).error(Error.TOO_MUCH_OPERATIONS);
-		code_v4_("class P { integer x constructor(x) { this.x = x } } function cmp(P a, P b) { return a.x - b.x } return arraySort([new P(2), null, new P(1)], cmp)").error(Error.UNKNOWN_FIELD);
+		code_v4("class P { integer x constructor(x) { this.x = x } } function cmp(P a, P b) { return a.x - b.x } return arraySort([new P(2), null, new P(1)], cmp)").error(Error.UNKNOWN_FIELD);
 
 		/**
 		 * RAM limit edge cases

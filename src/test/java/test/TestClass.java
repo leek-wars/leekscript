@@ -78,17 +78,17 @@ public class TestClass extends TestCommon {
 		// arrayMap appelle le callback avec (élément, index, tableau) : comme une fonction
 		// classique ou un built-in (cos, atan2), une référence de méthode statique doit
 		// ignorer les arguments en trop et retomber sur la surcharge de plus grande arité.
-		code_v2_("class A { public static addOne(n) { return n + 1 } } return arrayMap([1, 2, 3], A.addOne)").equals("[2, 3, 4]");
+		code_v2_4("class A { public static addOne(n) { return n + 1 } } return arrayMap([1, 2, 3], A.addOne)").equals("[2, 3, 4]");
 		// Appel direct avec l'arité exacte inchangé
 		code_v2_("class A { public static addOne(n) { return n + 1 } } return A.addOne(5)").equals("6");
 		// Méthode 2 params : la référence rapporte sa vraie arité, donc les HOF legacy (v1-3)
 		// lui passent (clé, valeur) au lieu d'1 seul argument. v4 passe (élément, index).
 		code_v2_3("class A { public static m2(a, b) { return a * 10 + b } } return arrayMap([1, 2, 3], A.m2)").equals("[1, 12, 23]");
-		code_v4_("class A { public static m2(a, b) { return a * 10 + b } } return arrayMap([1, 2, 3], A.m2)").equals("[10, 21, 32]");
+		code_v4("class A { public static m2(a, b) { return a * 10 + b } } return arrayMap([1, 2, 3], A.m2)").equals("[10, 21, 32]");
 		// Méthode avec plus de params que fournis : les manquants sont paddés à null (comme une
 		// fonction classique), m4 renvoie son 1er argument donc on retrouve clé (v1-3) / élément (v4).
 		code_v2_3("class A { public static m4(a, b, c, d) { return a } } return arrayMap([1, 2, 3], A.m4)").equals("[0, 1, 2]");
-		code_v4_("class A { public static m4(a, b, c, d) { return a } } return arrayMap([1, 2, 3], A.m4)").equals("[1, 2, 3]");
+		code_v4("class A { public static m4(a, b, c, d) { return a } } return arrayMap([1, 2, 3], A.m4)").equals("[1, 2, 3]");
 	}
 
 	@Test
@@ -301,8 +301,8 @@ public class TestClass extends TestCommon {
 		code_strict_v4_(k).equals("\"a2\"");
 		code_strict_v4_(k).noWarning();
 		var s = "class T { static integer abs() { return 7 } static integer f(integer p = 0) { return abs(p - 5) } } return ";
-		code_strict_v4_(s + "[T.f(), T.f(2), T.abs()]").equals("[5, 3, 7]");
-		code_strict_v4_(s + "T.f()").noWarning();
+		code_strict_v4(s + "[T.f(), T.f(2), T.abs()]").equals("[5, 3, 7]");
+		code_strict_v4(s + "T.f()").noWarning();
 		// Les avertissements du corps sortent une fois, pas une fois par arité.
 		code_strict_v4_("class T { m(integer p = 0, integer q = 0) { var unused = 1 return p + q } } return new T().m()").warnings(Error.UNUSED_VARIABLE, 1);
 		code_strict_v4_("class T { constructor(integer p = 0, integer q = 0) { var unused = p + q } } return new T()").warnings(Error.UNUSED_VARIABLE, 1);
@@ -325,14 +325,14 @@ public class TestClass extends TestCommon {
 	public void testClass_static_field_uninitialized_errors() throws Exception {
 		section("Static field uninitialized error messages (forum 11320)");
 		// Message propre : null vers Set (avant : "leekscript.runner.values.SetLeekValue.setPut(leekscript.runner")
-		code_v4_("class A { public static Set<integer> aSet; } setPut(A.aSet, 1); return A.aSet").errorWith(Error.IMPOSSIBLE_CAST, "null", "Set");
+		code_v4("class A { public static Set<integer> aSet; } setPut(A.aSet, 1); return A.aSet").errorWith(Error.IMPOSSIBLE_CAST, "null", "Set");
 		// Même chose via un appel de méthode statique typé
-		code_v4_("A.aMap[0] = new A(); A a = A.aMap[0]; a.update(); class A { public static Map<integer, A> aMap = new Map(); public static Set<A> aSet; public void update() { setPut(A.aSet, this); } } return 1").errorWith(Error.IMPOSSIBLE_CAST, "null", "Set");
+		code_v4("A.aMap[0] = new A(); A a = A.aMap[0]; a.update(); class A { public static Map<integer, A> aMap = new Map(); public static Set<A> aSet; public void update() { setPut(A.aSet, this); } } return 1").errorWith(Error.IMPOSSIBLE_CAST, "null", "Set");
 		// Appel dynamique (méthode trouvée, erreur DANS son corps) : l'erreur est loggée
 		// mais ne doit plus être suivie du parasite UNKNOWN_FIELD "update" ; l'exécution continue
-		code_v4_("A.aMap[0] = new A(); A.aMap[0].update(); class A { public static Map<integer, A> aMap = new Map(); public static Set<A> aSet; public void update() { setPut(A.aSet, this); } } return 1").equals("1");
+		code_v4("A.aMap[0] = new A(); A.aMap[0].update(); class A { public static Map<integer, A> aMap = new Map(); public static Set<A> aSet; public void update() { setPut(A.aSet, this); } } return 1").equals("1");
 		// Une variable locale typée est initialisée à la valeur par défaut du type, elle
-		code_v4_("Set<integer> s; setPut(s, 1); return s").equals("<1>");
+		code_v4("Set<integer> s; setPut(s, 1); return s").equals("<1>");
 	}
 
 	/**

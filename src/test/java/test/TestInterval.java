@@ -49,7 +49,7 @@ public class TestInterval extends TestCommon {
 		code("var n = 3 var a = [[0..n[] return a").equals("[[0..3[]");
 		code("var n = 3 var a = [[0..n[, [1]] return a").equals("[[0..3[, [1]]");
 		code("function f(x) { return x } var n = 3 return f([0..n[)").equals("[0..3[");
-		code("var n = 3 var x = 2 return count([[0..n[x])").equals("2");
+		code_v1_4("var n = 3 var x = 2 return count([[0..n[x])").equals("2");
 		code("var n = 3 var t = 7 return [[0..n[ t][0]").equals("[0..3[");
 	}
 
