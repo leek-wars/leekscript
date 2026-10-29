@@ -96,17 +96,17 @@ public class JavaCompiler {
 	 * AIFile.includedAIs : that field can be stale (set to {} when an include was
 	 * unresolvable, then never refreshed) which silently wedges cache invalidation.
 	 */
-	/** Signature du cache disque (0 si absente) et taille du bytecode notée sur la 2e ligne (-1 si absente). */
+	/** Signature du cache disque et taille du bytecode, notée sur la 2e ligne. */
 	private record CachedSignature(long signature, long bytecodeSize) {}
 
+	/** Null si le fichier manque, est illisible ou n'a pas la taille du bytecode : le cache disque ne sert pas. */
 	private static CachedSignature readSignatureFile(File f) {
-		if (!f.exists()) return new CachedSignature(0, -1);
+		if (!f.exists()) return null;
 		try {
 			var lines = java.nio.file.Files.readString(f.toPath()).trim().split("\n");
-			return new CachedSignature(Long.parseLong(lines[0].trim()), lines.length > 1 ? Long.parseLong(lines[1].trim()) : -1);
+			return lines.length > 1 ? new CachedSignature(Long.parseLong(lines[0].trim()), Long.parseLong(lines[1].trim())) : null;
 		} catch (Exception e) {
-			// Fichier illisible : le cache disque ne sert pas
-			return new CachedSignature(0, -1);
+			return null;
 		}
 	}
 
@@ -135,7 +135,7 @@ public class JavaCompiler {
 		return sig;
 	}
 
-	private static AI loadFromRamCache(AIFile file, File java, File lines) throws LeekScriptException {
+	private static AI loadFromRamCache(AIFile file, File lines) throws LeekScriptException {
 		var ref = aiCache.get(file.getJavaClass());
 		var entry = ref != null ? ref.get() : null;
 		if (ref != null && entry == null) {
@@ -148,7 +148,7 @@ public class JavaCompiler {
 			var ai = (AI) entry.clazz.getDeclaredConstructor().newInstance();
 			ai.setId(file.getId());
 			ai.setLinesFile(lines);
-			ai.chargeCodeRAM((int) (java.length() * 10), entry.bytecodeSize);
+			ai.chargeCodeRAM(entry.bytecodeSize);
 			return ai;
 		} catch (Exception e) {
 			throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
@@ -195,13 +195,13 @@ public class JavaCompiler {
 		// hash, can't be compared via lastModified).
 		File sigFile = Paths.get(IA_PATH, file.getJavaClass() + ".sig").toFile();
 
-		AI cached = loadFromRamCache(file, java, lines);
+		AI cached = loadFromRamCache(file, lines);
 		if (cached != null) return cached;
 
 		Object lock = compilationLocks.computeIfAbsent(file.getJavaClass(), k -> new Object());
 		synchronized (lock) {
 
-			cached = loadFromRamCache(file, java, lines);
+			cached = loadFromRamCache(file, lines);
 			if (cached != null) return cached;
 
 			long sig = signature(file);
@@ -219,7 +219,7 @@ public class JavaCompiler {
 					ai.setId(file.getId());
 					ai.setFile(file);
 					ai.setLinesFile(lines);
-					ai.chargeCodeRAM((int) (java.length() * 10), entry.bytecodeSize);
+					ai.chargeCodeRAM(entry.bytecodeSize);
 					return ai;
 				} catch (Exception e) {
 					throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
@@ -341,7 +341,7 @@ public class JavaCompiler {
 				ai.setCompileTime(compile_time);
 				ai.setLoadTime(load_time);
 				ai.setLinesFile(lines);
-				ai.chargeCodeRAM((int) (java.length() * 10), bytecodeSize);
+				ai.chargeCodeRAM(bytecodeSize);
 
 				if (options.useCache()) {
 					long currentSig = signature(file);

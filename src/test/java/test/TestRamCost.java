@@ -84,14 +84,13 @@ public class TestRamCost extends TestCommon {
 		}
 	}
 
-	/** Le code compilé compte 10 cases par caractère de Java ; la taille du bytecode est notée, avec la signature du cache. */
+	/** Le code compilé compte deux octets par octet de bytecode ; sa taille est notée avec la signature du cache. */
 	@Test
 	public void compiledCodeCharged() throws Exception {
 		var ai = LeekScript.compileSnippet("var a = [1, 2, 3] return a", "AI", new Options(4, false, true, true, null, true));
-		var source = Path.of(JavaCompiler.IA_PATH, "AI_" + ai.getId() + ".java");
 		var signature = Path.of(JavaCompiler.IA_PATH, "AI_" + ai.getId() + ".sig");
-		assertEquals(10 * Files.size(source), ai.getCodeRAM());
 		assertTrue(ai.getBytecodeSize() > 0);
+		assertEquals(ai.getBytecodeSize() * 2 / 8, ai.getCodeRAM());
 		assertEquals(String.valueOf(ai.getBytecodeSize()), Files.readString(signature).split("\n")[1]);
 	}
 }

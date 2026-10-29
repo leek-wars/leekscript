@@ -93,23 +93,13 @@ public abstract class AI {
 
 	public final static int MAX_RAM = 12_500_000; // in 64 bits "quads" = 100 Mo
 	public long maxRAM = MAX_RAM;
-	// Mesures de la RAM, sans effet sur l'exécution : la part du code compilé, la taille de son bytecode,
-	// le plus haut niveau atteint et les plafonds surveillés (cf watchRAM), relevés quand mRAM dépasse nextRAMCheck
+	/** Taille d'une case de RAM, en octets : une valeur de 64 bits. */
+	public static final long BYTES_PER_RAM_UNIT = 8;
+	/** Mémoire que la JVM garde par octet de bytecode chargé (métadonnées de la classe, code compilé à la volée), en octets. */
+	public static final long CODE_BYTES_PER_BYTECODE_BYTE = 2;
+	// Part du code compilé dans mRAM, et taille de son bytecode
 	private long codeRAM = 0;
-	private long bytecodeSize = -1;
-	private long peakRAM = 0;
-	private long nextRAMCheck = 0;
-	private long[] watchedRAM = new long[0];
-	private int[] watchedRAMStates = new int[0];
-	private int watchedRAMIndex = 0;
-	private int watchGCs = 0;
-	/** Précision du pic de RAM relevé, en unités (1 Mo). */
-	public static final long PEAK_RAM_STEP = 125_000;
-	/** États d'un plafond surveillé (cf watchRAM), du moins grave au plus grave. */
-	public static final int WATCH_NOT_REACHED = 0, WATCH_FREED = 1, WATCH_FREED_BY_GC = 2, WATCH_UNDECIDED = 3, WATCH_EXCEEDED = 4;
-	/** Écart minimal entre deux GC forcés par la surveillance, toutes IA du processus confondues (30 s). */
-	private static volatile long watchGCIntervalNanos = 30_000_000_000L;
-	private static final java.util.concurrent.atomic.AtomicLong nextWatchGC = new java.util.concurrent.atomic.AtomicLong(System.nanoTime());
+	private long bytecodeSize = 0;
 	// Coût d'une instance de classe sans champ, en cases : l'objet et son RamUsage. Hors de
 	// NativeObjectLeekValue, dont les champs publics sont ceux de l'objet (keys, fields)
 	public static final int INSTANCE_BASE_RAM = 9;
@@ -518,11 +508,11 @@ public abstract class AI {
 		mRAM += ram;
 	}
 
-	/** Le code compilé de l'IA, compté dans sa RAM ({@code bytecodeSize} : taille du bytecode, -1 si inconnue). */
-	public void chargeCodeRAM(int ram, long bytecodeSize) {
-		codeRAM = ram;
+	/** Le code compilé de l'IA, compté dans sa RAM d'après la taille de son bytecode. */
+	public void chargeCodeRAM(long bytecodeSize) {
 		this.bytecodeSize = bytecodeSize;
-		mRAM += ram;
+		codeRAM = bytecodeSize * CODE_BYTES_PER_BYTECODE_BYTE / BYTES_PER_RAM_UNIT;
+		mRAM += codeRAM;
 	}
 
 	/** RAM comptée pour le code compilé de l'IA. */
@@ -530,43 +520,16 @@ public abstract class AI {
 		return codeRAM;
 	}
 
-	/** Taille du bytecode de l'IA en octets, -1 si inconnue. */
+	/** Code chargé une fois et exécuté par {@code count} entités : chacune n'en compte qu'une part. */
+	public void shareCodeRAM(int count) {
+		long share = codeRAM / count;
+		mRAM -= codeRAM - share;
+		codeRAM = share;
+	}
+
+	/** Taille du bytecode de l'IA, en octets. */
 	public long getBytecodeSize() {
 		return bytecodeSize;
-	}
-
-	/**
-	 * Plus haut niveau de RAM atteint, à {@link #PEAK_RAM_STEP} près, sans les objets que le GC avait
-	 * déjà ramassés : ce que voit le contrôle de dépassement. Code compilé compris.
-	 */
-	public long getPeakRAM() {
-		return Math.max(peakRAM, codeRAM);
-	}
-
-	/**
-	 * Surveille des plafonds de mRAM croissants, sans effet sur l'IA : quand mRAM en dépasse un, le
-	 * relevé refait ce que ferait le contrôle de dépassement avec ce plafond (objets déjà ramassés
-	 * retirés, puis GC forcé, au plus {@code gcs} fois pour cette IA et un par intervalle de
-	 * setWatchGCInterval pour le processus) et note dans getWatchedRAMStates() ce qu'il aurait
-	 * conclu : WATCH_FREED, WATCH_FREED_BY_GC, WATCH_UNDECIDED sans GC disponible pour trancher, ou
-	 * WATCH_EXCEEDED (l'IA aurait manqué de RAM ; alors aussi pour les plafonds plus bas). Un
-	 * plafond déjà dépassé est relevé tout de suite.
-	 */
-	public void watchRAM(long[] limits, int gcs) {
-		watchedRAM = limits.clone();
-		watchedRAMStates = new int[limits.length];
-		watchedRAMIndex = 0;
-		watchGCs = gcs;
-		noteRAM();
-	}
-
-	public int[] getWatchedRAMStates() {
-		return watchedRAMStates.clone();
-	}
-
-	/** Écart minimal entre deux GC forcés par la surveillance, pour tout le processus. */
-	public static void setWatchGCInterval(long nanos) {
-		watchGCIntervalNanos = nanos;
 	}
 
 	private void trackRAM(RamUsage usage) {
@@ -614,7 +577,6 @@ public abstract class AI {
 	}
 
 	private void checkRamOverflow() throws LeekRunException {
-		if (mRAM > nextRAMCheck) noteRAM();
 		if (mRAM > maxRAM) {
 
 			// Avant d'appeler le GC (très coûteux), ce qu'il a déjà ramassé
@@ -641,64 +603,6 @@ public abstract class AI {
 				}
 			}
 		}
-	}
-
-	/** Relève le pic de RAM et les plafonds surveillés, comme les verrait le contrôle de dépassement ; sans effet sur l'IA. */
-	private void noteRAM() {
-		boolean reached = watchedRAMIndex < watchedRAM.length && mRAM > watchedRAM[watchedRAMIndex];
-		pollFreedRAM();
-		if (mRAM > peakRAM) peakRAM = mRAM;
-		if (reached && mRAM <= watchedRAM[watchedRAMIndex]) noteWatchedRAM(WATCH_FREED);
-		while (watchedRAMIndex < watchedRAM.length && mRAM > watchedRAM[watchedRAMIndex]) {
-			boolean gc = takeWatchGC();
-			int state = gc ? collectDownTo(watchedRAM[watchedRAMIndex]) : WATCH_UNDECIDED;
-			if (state == WATCH_FREED_BY_GC) {
-				noteWatchedRAM(state);
-				break;
-			}
-			if (state == WATCH_EXCEEDED) {
-				// Au-dessus de ce plafond après le GC, donc aussi des plus bas, même restés indécis
-				for (int i = 0; i <= watchedRAMIndex; i++) watchedRAMStates[i] = WATCH_EXCEEDED;
-			} else {
-				noteWatchedRAM(state);
-			}
-			// GC interrompu sans avoir tranché : plus rien n'est surveillé
-			watchedRAMIndex = gc && state == WATCH_UNDECIDED ? watchedRAM.length : watchedRAMIndex + 1;
-		}
-		nextRAMCheck = peakRAM + PEAK_RAM_STEP;
-		if (watchedRAMIndex < watchedRAM.length) nextRAMCheck = Math.min(nextRAMCheck, watchedRAM[watchedRAMIndex]);
-	}
-
-	/**
-	 * L'attente de checkRamOverflow, pour un plafond surveillé : GC forcé, puis objets ramassés retirés
-	 * jusqu'à repasser sous {@code limit}. Une interruption arrête l'attente (WATCH_UNDECIDED) et le
-	 * fil reste interrompu.
-	 */
-	private int collectDownTo(long limit) {
-		System.gc();
-		for (int i = 100; i > 0 && mRAM > limit; i--) {
-			try {
-				Thread.sleep(0, 10);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				return WATCH_UNDECIDED;
-			}
-			pollFreedRAM();
-		}
-		return mRAM <= limit ? WATCH_FREED_BY_GC : WATCH_EXCEEDED;
-	}
-
-	/** Un GC forcé de la surveillance, si cette IA et le processus en ont encore un. */
-	private boolean takeWatchGC() {
-		if (watchGCs == 0) return false;
-		long now = System.nanoTime(), next = nextWatchGC.get();
-		if (now - next < 0 || !nextWatchGC.compareAndSet(next, now + watchGCIntervalNanos)) return false;
-		watchGCs--;
-		return true;
-	}
-
-	private void noteWatchedRAM(int state) {
-		watchedRAMStates[watchedRAMIndex] = Math.max(watchedRAMStates[watchedRAMIndex], state);
 	}
 
 	protected void nothing(Object obj) {
