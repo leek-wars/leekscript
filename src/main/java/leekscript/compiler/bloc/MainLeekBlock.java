@@ -79,8 +79,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMain = this;
 
 		// On ajoute l'IA pour pas pouvoir l'include
-		mIncluded.put(includeKey(ai), ai);
-		mIncludedFirstPass.add(includeKey(ai));
+		mIncluded.put(ai.getKey(), ai);
+		mIncludedFirstPass.add(ai.getKey());
 		mAIName = ai.getPath();
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
@@ -171,21 +171,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		this.mMinLevel = min_level;
 	}
 
-	/** Identité d'un fichier inclus, stable d'une instance d'AIFile à l'autre (le
-	 *  cache du FileSystem peut en recréer une pour le même fichier).
-	 *  L'id sert de discriminant et non le seul chemin : sous NativeFileSystem
-	 *  (CLI, combats locaux) AIFile.path ne vaut que le nom de feuille et le
-	 *  propriétaire est toujours 0, donc `a/utils` et `b/utils` se confondraient
-	 *  et le second include serait avalé. L'id, lui, est dérivé du chemin complet
-	 *  dans toutes les implémentations. */
-	private static String includeKey(AIFile ai) {
-		return ai.getId() + ":" + ai.getOwner() + ":" + ai.getPath();
-	}
-
 	public boolean includeAIFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {
 		try {
 			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
-			var key = includeKey(ai);
+			var key = ai.getKey();
 			if (mIncludedFirstPass.contains(key)) {
 				return true;
 			}
@@ -224,7 +213,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public boolean includeAI(WordCompiler compiler, String path) throws LeekCompilerException {
 		try {
 			var ai = mCompiler.getCurrentAI().getFolder().resolve(path);
-			var key = includeKey(ai);
+			var key = ai.getKey();
 			if (mIncluded.containsKey(key)) {
 				return true;
 			}
@@ -319,7 +308,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * du champ statique qui le porte, ou null si le fichier, ou le total des fichiers lus, est trop gros.
 	 */
 	public String addFileContent(AIFile file) {
-		var key = includeKey(file);
+		var key = file.getKey();
 		var field = mFileFields.get(key);
 		if (field != null) return field;
 		var content = file.getCode();

@@ -1,6 +1,8 @@
 package test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.stream.Collectors;
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.Timeout.ThreadMode;
 
 import leekscript.common.Error;
+import leekscript.compiler.AIFile;
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.LeekScriptException;
 import leekscript.compiler.Options;
@@ -25,12 +28,15 @@ import leekscript.runner.AI;
  */
 public class TestJavaLimits {
 
-	/** Compile `function f(integer p0, …) { return p0 } return f(0, …)` en LeekScript 4. */
-	private static AI compileFunctionWithParameters(int count) throws Exception {
+	/** `function f(integer p0, …) { return p0 } return f(0, …)` en LeekScript 4. */
+	private static String functionWithParameters(int count) {
 		var parameters = IntStream.range(0, count).mapToObj(i -> "integer p" + i).collect(Collectors.joining(", "));
 		var arguments = IntStream.range(0, count).mapToObj(String::valueOf).collect(Collectors.joining(", "));
-		var code = "function f(" + parameters + ") { return p0 } return f(" + arguments + ")";
-		return LeekScript.compileSnippet(code, "AI", new Options(4, false, false, true, null, true));
+		return "function f(" + parameters + ") { return p0 } return f(" + arguments + ")";
+	}
+
+	private static AI compileFunctionWithParameters(int count) throws Exception {
+		return LeekScript.compileSnippet(functionWithParameters(count), "AI", new Options(4, false, false, true, null, true));
 	}
 
 	@Test
@@ -38,6 +44,17 @@ public class TestJavaLimits {
 		// 128 integer = 256 emplacements, plus `this` : au-delà des 255 de la JVM
 		var e = assertThrows(LeekScriptException.class, () -> compileFunctionWithParameters(128));
 		assertEquals(Error.CODE_TOO_LARGE, e.getType());
+	}
+
+	/** La classe compilée ne s'appelle plus AI_<id> : l'erreur de javac reste située dans le code du joueur. */
+	@Test
+	public void erreurDeJavacSitueeAvecLeNomDeClasseParDefaut() {
+		var file = new AIFile("<limites>", functionWithParameters(128), System.currentTimeMillis(), 4, 7, false);
+		file.setRootClass("AI");
+		assertNotEquals("AI_" + file.getId(), file.getJavaClass());
+		var e = assertThrows(LeekScriptException.class, () -> file.compile(new Options(4, false, false, true, null, true)));
+		assertEquals(Error.CODE_TOO_LARGE, e.getType());
+		assertNotNull(e.getLocation());
 	}
 
 	/**

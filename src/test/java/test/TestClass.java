@@ -1,10 +1,16 @@
 package test;
 
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 
 import leekscript.common.Error;
+import leekscript.compiler.AIFile;
+import leekscript.compiler.Options;
 
 @ExtendWith(SummaryExtension.class)
 public class TestClass extends TestCommon {
@@ -15,6 +21,19 @@ public class TestClass extends TestCommon {
 		section("Class toBoolean");
 		code_v2_("class A {} return !!A").equals("true");
 		code_v2_("class A {} if (A) { return 12 } return null").equals("12");
+	}
+
+	/** La classe compilée ne s'appelle plus AI_<id> : une erreur de cast nomme quand même les classes du joueur. */
+	@Test
+	public void castErrorNamesUserClassesWithTheDefaultClassName() throws Exception {
+		var file = new AIFile("<cast>", "class A {} class B {} var l = [new A()] B b = l[0] return 1", System.currentTimeMillis(), 4, 7, false);
+		file.setRootClass("AI");
+		var ai = file.compile(new Options(4, false, false, true, null, true));
+		ai.init();
+		ai.staticInit();
+		var error = ai.throwableToError(assertThrows(Throwable.class, ai::runIA));
+		assertEquals(Error.IMPOSSIBLE_CAST, error.type);
+		assertArrayEquals(new Object[] { "A", "B" }, error.parameters);
 	}
 
 	@Test

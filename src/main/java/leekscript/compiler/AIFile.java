@@ -1,6 +1,10 @@
 package leekscript.compiler;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -120,8 +124,30 @@ public class AIFile {
 	public void setJavaClass(String clazz) {
 		this.clazz = clazz;
 	}
+	/**
+	 * Identité du fichier, stable d'une instance d'AIFile à l'autre (le cache du FileSystem peut en
+	 * recréer une pour le même fichier). L'id ne suffit pas, il n'est que sur 28 bits ; le chemin non
+	 * plus : sous NativeFileSystem (CLI, combats locaux), il ne vaut que le nom de feuille et le
+	 * propriétaire est toujours 0, alors que l'id est dérivé du chemin complet.
+	 */
+	public String getKey() {
+		return id + ":" + owner + ":" + path;
+	}
+
+	/**
+	 * Nom de la classe Java compilée, par défaut tiré de l'identité du fichier : les 64 premiers bits de
+	 * son SHA-256. Fixé au premier appel, pour que la compilation, le cache et le chargement s'accordent.
+	 */
 	public String getJavaClass() {
-		return this.clazz;
+		if (clazz == null) {
+			try {
+				var digest = MessageDigest.getInstance("SHA-256").digest(getKey().getBytes(StandardCharsets.UTF_8));
+				clazz = "AI_" + Long.toUnsignedString(ByteBuffer.wrap(digest).getLong(), 36);
+			} catch (NoSuchAlgorithmException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+		return clazz;
 	}
 
 	public void setRootClass(String clazz) {

@@ -930,8 +930,8 @@ public abstract class AI {
 			case "leekscript.runner.values.ObjectLeekValue": return "Object";
 			case "leekscript.runner.values.FunctionLeekValue": return "Function";
 		}
-		// AI_331043$u_Strategy
-		var prefix = "AI_" + this.id + "$u_";
+		// Classe du joueur, imbriquée dans celle de l'IA : <classe de l'IA>$u_Strategy
+		var prefix = getClass().getName() + "$u_";
 		if (type.startsWith(prefix)) return type.substring(prefix.length());
 
 		return type;

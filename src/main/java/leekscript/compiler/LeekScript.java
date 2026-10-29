@@ -52,7 +52,6 @@ public class LeekScript {
 	public static AI compileFile(String filepath, String AIClass, Options options) throws LeekScriptException, LeekCompilerException, IOException {
 		var file = getFileSystem().getRoot().resolve(filepath);
 		file.setVersion(options.version(), options.strict());
-		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass(AIClass);
 		return file.compile(options);
 	}

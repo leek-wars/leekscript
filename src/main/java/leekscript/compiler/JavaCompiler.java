@@ -276,7 +276,7 @@ public class JavaCompiler {
 			if (!result) {
 				var errors = output.toString();
 				int javaLine = -1;
-				Pattern r = Pattern.compile("AI_" + file.getId() + ".java:(.*?):");
+				Pattern r = Pattern.compile(Pattern.quote(fileName) + ":(\\d+):");
 				Matcher m = r.matcher(errors);
 				if (m.find()) {
 					javaLine = Integer.parseInt(m.group(1));
