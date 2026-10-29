@@ -122,6 +122,20 @@ public class Module {
 		return importedClasses.get(name);
 	}
 
+	/** Lie `name` à l'export de `source` du même nom ; false si `source` ne l'exporte pas (encore). */
+	public boolean bindImport(String name, Module source) {
+		if (source.isExportedFunction(name)) {
+			addImportedFunction(name, source);
+		} else if (source.isExportedVar(name)) {
+			addImportedVar(name, source);
+		} else if (source.isExportedClass(name)) {
+			addImportedClass(name, source);
+		} else {
+			return false;
+		}
+		return true;
+	}
+
 	public void addNamespaceImport(String alias, Module source) {
 		namespaceImports.put(alias, source);
 	}

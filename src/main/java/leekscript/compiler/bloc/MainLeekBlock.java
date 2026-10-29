@@ -101,6 +101,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mCompiler.setCurrentAI(ai);
 		mMainModule = new Module(ai, 0, true);
 		mModules.put(ai.getKey(), mMainModule);
+		// Un module importé peut importer l'entrée (cycle) : elle est déjà compilée
+		mImportedFirstPass.put(ai.getKey(), ai);
+		mImported.put(ai.getKey(), ai);
 
 		if (ai.getVersion() >= 2) {
 			var classClass = new ClassDeclarationInstruction(new Token("Class"), 0, ai, true, this, Type.CLASS).notInstantiable();
@@ -248,6 +251,30 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		compiler.getAI().getErrors().addAll(ai.getErrors());
 		mCompiler.setCurrentAI(previousAI);
 		return ai;
+	}
+
+	private record PendingImport(WordCompiler compiler, Module importer, Module source, Token name) {}
+	private final List<PendingImport> mPendingImports = new ArrayList<>();
+
+	public void addPendingImport(WordCompiler compiler, Module importer, Module source, Token name) {
+		mPendingImports.add(new PendingImport(compiler, importer, source, name));
+	}
+
+	/**
+	 * Lie les noms importés d'un module qui n'avait pas fini sa première passe (cycle), une fois
+	 * toutes les premières passes faites : tous les exports sont alors connus.
+	 */
+	public void resolvePendingImports() throws LeekCompilerException {
+		for (var pending : mPendingImports) {
+			var name = pending.name().getWord();
+			if (pending.importer().bindImport(name, pending.source())) continue;
+			var error = new AnalyzeError(pending.name(), AnalyzeErrorLevel.ERROR, Error.SYMBOL_NOT_EXPORTED, new String[] { name });
+			pending.compiler().addError(error);
+			// Les erreurs d'un module sont recopiées sur l'entrée à la fin de sa passe : déjà fait
+			var entry = mMainModule.getFile();
+			if (pending.compiler().getAI() != entry) entry.getErrors().add(error);
+		}
+		mPendingImports.clear();
 	}
 
 	public boolean includeAIFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {

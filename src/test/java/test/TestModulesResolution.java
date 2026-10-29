@@ -286,6 +286,65 @@ public class TestModulesResolution {
 	}
 
 	// =========================================================================
+	// Cycles entre modules (permis, cf docs/ls5-modules.md §1.2)
+	// =========================================================================
+
+	@Test
+	public void cycleBetweenFunctions() throws Exception {
+		write("ca.leek", "import { fb } from \"cb\"\nexport function fa(n) { return n <= 0 ? 0 : 1 + fb(n - 1) }");
+		write("cb.leek", "import { fa } from \"ca\"\nexport function fb(n) { return n <= 0 ? 0 : 1 + fa(n - 1) }");
+		assertEquals("5", run(writeMain("import { fa } from \"ca\"\nreturn fa(5)")));
+	}
+
+	@Test
+	public void cycleBackToEntry() throws Exception {
+		String main = "Main_" + uniqueId + "_cycle";
+		write("cc.leek", "import { fm } from \"" + main + "\"\nexport function fc() { return fm() + 1 }");
+		write(main + ".leek", "import { fc } from \"cc\"\nexport function fm() { return 10 }\nreturn fc()");
+		assertEquals("11", run(main));
+	}
+
+	@Test
+	public void cycleBetweenClasses() throws Exception {
+		write("cs.leek", "import { Action } from \"ct\"\nexport class State { Action a = null\n static make() { var s = new State(); s.a = new Action(); return s } }");
+		write("ct.leek", "import { State } from \"cs\"\nexport class Action { apply(State s) { return 7 } }");
+		assertEquals("7", run(writeMain("import { State } from \"cs\"\nvar s = State.make()\nreturn s.a.apply(s)")));
+	}
+
+	@Test
+	public void cycleMissingExportStillReported() throws Exception {
+		write("cd.leek", "import { nope } from \"ce\"\nexport function fd() { return 1 }");
+		write("ce.leek", "import { fd } from \"cd\"\nexport function fe() { return fd() }");
+		var errors = compileAndCollectErrors(writeMain("import { fe } from \"ce\"\nreturn fe()"));
+		assertTrue(errors.contains(Error.SYMBOL_NOT_EXPORTED), errors.toString());
+	}
+
+	// =========================================================================
+	// Classes d'un module : résolues dans leur module
+	// =========================================================================
+
+	@Test
+	public void classMethodSeesModuleImports() throws Exception {
+		write("ka.leek", "export class Tool { v() { return 3 } }\nexport function helper() { return 4 }");
+		write("kb.leek", "import { Tool, helper } from \"ka\"\nexport class User { static make() { return new Tool().v() } m() { return helper() } }");
+		assertEquals("[3, 4]", run(writeMain("import { User } from \"kb\"\nreturn [User.make(), new User().m()]")));
+	}
+
+	@Test
+	public void fieldTypedByImportedClass() throws Exception {
+		write("kc.leek", "export class Gear { v() { return 6 } }");
+		write("kd.leek", "import { Gear } from \"kc\"\nexport class Robot { Gear g = new Gear() }");
+		assertEquals("6", run(writeMain("import { Robot } from \"kd\"\nreturn new Robot().g.v()")));
+	}
+
+	@Test
+	public void classExtendsImportedClass() throws Exception {
+		write("ke.leek", "export class Base { v() { return 2 } }");
+		write("kf.leek", "import { Base } from \"ke\"\nexport class Child extends Base { w() { return this.v() + 1 } }");
+		assertEquals("3", run(writeMain("import { Child } from \"kf\"\nreturn new Child().w()")));
+	}
+
+	// =========================================================================
 	// Helpers
 	// =========================================================================
 

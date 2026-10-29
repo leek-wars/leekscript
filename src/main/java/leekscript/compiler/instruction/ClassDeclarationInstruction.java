@@ -428,21 +428,36 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		}
 	}
 
+	// Comme le corps d'une fonction (cf FunctionBlock.preAnalyze), une classe se résout dans
+	// le module qui la déclare : ses imports et ses déclarations privées.
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
+		var initialModule = compiler.getModule();
+		if (module != null) compiler.setModule(module);
+		try {
+			preAnalyzeInModule(compiler);
+		} finally {
+			compiler.setModule(initialModule);
+		}
+	}
+
+	private void preAnalyzeInModule(WordCompiler compiler) throws LeekCompilerException {
 		compiler.setCurrentClass(this);
 		// Parent
 		if (parentToken != null) {
 			var parentVar = compiler.getCurrentBlock().getVariable(this.parentToken.getWord(), true);
-			if (parentVar == null) {
+			// Classe d'un module (importée ou privée) : absente des variables du bloc principal
+			var parentDeclaration = parentVar == null ? compiler.getMainBlock().getDefinedClass(parentToken.getWord(), compiler.getModule()) : null;
+			if (parentVar == null && parentDeclaration == null) {
 				compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
 					parentToken.getWord()
 				}));
-			} else if (parentVar.getVariableType() != VariableType.CLASS) {
+			} else if (parentVar != null && parentVar.getVariableType() != VariableType.CLASS) {
 				compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
 					parentToken.getWord()
 				}));
 			} else {
-				var current = parentVar.getClassDeclaration();
+				if (parentDeclaration == null) parentDeclaration = parentVar.getClassDeclaration();
+				var current = parentDeclaration;
 				boolean ok = true;
 				while (current != null) {
 					if (current == this) {
@@ -453,7 +468,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 					current = current.getParent();
 				}
 				if (ok) {
-					this.parent = parentVar.getClassDeclaration();
+					this.parent = parentDeclaration;
 				}
 			}
 		}
@@ -496,6 +511,16 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	}
 
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
+		var initialModule = compiler.getModule();
+		if (module != null) compiler.setModule(module);
+		try {
+			analyzeInModule(compiler);
+		} finally {
+			compiler.setModule(initialModule);
+		}
+	}
+
+	private void analyzeInModule(WordCompiler compiler) throws LeekCompilerException {
 		compiler.setCurrentClass(this);
 
 		// Fields

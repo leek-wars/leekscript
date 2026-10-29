@@ -227,6 +227,8 @@ public class WordCompiler {
 	public void readCode() throws LeekCompilerException {
 
 		firstPass();
+		// Imports d'un cycle : liés une fois toutes les premières passes faites
+		mMain.resolvePendingImports();
 
 		// Classes pré-définies :
 		// System.out.println(mMain.getDefinedClasses());
@@ -896,15 +898,10 @@ public class WordCompiler {
 				mModule.addNamespaceImport(namespaceAlias.getWord(), module);
 			}
 			for (var nameToken : names) {
-				var name = nameToken.getWord();
-				if (module.isExportedFunction(name)) {
-					mModule.addImportedFunction(name, module);
-				} else if (module.isExportedVar(name)) {
-					mModule.addImportedVar(name, module);
-				} else if (module.isExportedClass(name)) {
-					mModule.addImportedClass(name, module);
-				} else {
-					addError(new AnalyzeError(nameToken, AnalyzeErrorLevel.ERROR, Error.SYMBOL_NOT_EXPORTED, new String[] { name }));
+				// Un module d'un cycle n'a pas fini sa première passe : ses exports ne sont pas
+				// encore tous connus, le nom est lié à la fin (cf MainLeekBlock.resolvePendingImports)
+				if (!mModule.bindImport(nameToken.getWord(), module)) {
+					mMain.addPendingImport(this, mModule, module, nameToken);
 				}
 			}
 		} else {
@@ -3339,7 +3336,7 @@ public class WordCompiler {
 
 	public String getCurrentClassVariable() {
 		if (mCurrentClass != null) {
-			return "u_" + mCurrentClass.getName();
+			return "u_" + mCurrentClass.getInternalName(); // préfixée par son module v5
 		}
 		return null;
 	}

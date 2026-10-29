@@ -13,6 +13,18 @@ public class ClassType extends Type {
 		this.clazz = clazz;
 	}
 
+	// Le module de la classe est posé après sa construction : son nom Java (`u_<préfixe><Nom>`)
+	// se lit donc au moment de l'émission, pas dans le constructeur.
+	@Override
+	public String getJavaPrimitiveName(int version) {
+		return "u_" + clazz.getInternalName();
+	}
+
+	@Override
+	public String getJavaName(int version) {
+		return "u_" + clazz.getInternalName();
+	}
+
 	public Type member(String member) {
 		var m = clazz.getMember(member);
 		if (m != null) {
