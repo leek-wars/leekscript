@@ -14,6 +14,8 @@ import java.util.TreeMap;
 import leekscript.common.AccessLevel;
 import leekscript.common.Type;
 import leekscript.compiler.AIFile;
+import leekscript.compiler.Folder;
+import leekscript.compiler.Package;
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.IACompiler;
@@ -231,6 +233,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		} catch (FileNotFoundException e) {
 			return null;
 		}
+		return compileChild(compiler, ai, dedup, moduleProvider, firstPass);
+	}
+
+	private AIFile compileChild(WordCompiler compiler, AIFile ai, Map<String, AIFile> dedup,
+			java.util.function.Function<AIFile, Module> moduleProvider, boolean firstPass) throws LeekCompilerException {
 		var key = ai.getKey();
 		if (dedup.containsKey(key)) return ai;
 		// Hack dégueu à retirer, crash du daemon dans un cas précis d'include/import infini
@@ -290,6 +297,146 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mPendingImports.clear();
 	}
 
+	// Packages v5 (cf Package), par dossier : lus une fois par compilation. Un dossier sans
+	// `package.leek` prend le package de son parent, le programme au bout.
+	private final Map<String, Package> mPackages = new HashMap<>();
+
+	/** Clé d'un dossier, stable d'une instance de Folder à l'autre : propriétaire et chemin. */
+	private static String folderKey(Folder folder) {
+		var key = new StringBuilder(folder.getOwner() + ":");
+		for (var f = folder; f != null && f.getParent() != f; f = f.getParent()) key.insert(key.indexOf(":") + 1, "/" + f.getName());
+		return key.toString();
+	}
+	private Package mProgramPackage;
+
+	public Package programPackage() {
+		if (mProgramPackage == null) mProgramPackage = Package.read(null, mMainModule.getFile());
+		return mProgramPackage;
+	}
+
+	public Package packageOf(AIFile file) {
+		var visited = new ArrayList<String>();
+		Package found = null;
+		for (var folder = file.getFolder(); folder != null; folder = folder.getParent()) {
+			var key = folderKey(folder);
+			found = mPackages.get(key);
+			if (found != null) break;
+			visited.add(key);
+			try {
+				found = Package.read(folder, folder.resolve(Package.ROOT_FILE));
+				break;
+			} catch (FileNotFoundException e) {
+				// pas de racine ici : on remonte
+			}
+			if (folder.getParent() == folder) break;
+		}
+		if (found == null) found = programPackage();
+		for (var key : visited) mPackages.put(key, found);
+		return found;
+	}
+
+	/** Racine (`package.leek`) de la dépendance `dependency` de `from`, null si absente. */
+	private AIFile dependencyRoot(Package from, Package.Dependency dependency) {
+		var base = from.isProgram() ? mMainModule.getFile().getFolder() : from.getFolder();
+		try {
+			return base.resolve(dependency.path() + "/" + Package.ROOT_FILE);
+		} catch (FileNotFoundException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Fichier visé par `import … from "path"` depuis le module en cours : `"@nom"` désigne la racine
+	 * d'un package déclaré par `depends`, un chemin relatif ne sort pas du package de l'importeur.
+	 * Null (erreur signalée) si l'import est refusé ou introuvable.
+	 */
+	public AIFile resolveImport(WordCompiler compiler, Token pathToken, String path) throws LeekCompilerException {
+		var file = resolveImportUncached(compiler, pathToken, path);
+		if (file != null) mResolvedImports.put(compiler.getAI().getKey() + "\n" + path, file);
+		return file;
+	}
+
+	/** Fichier résolu au firstPass pour cet import, null s'il a été refusé. */
+	public AIFile resolvedImport(WordCompiler compiler, String path) {
+		return mResolvedImports.get(compiler.getAI().getKey() + "\n" + path);
+	}
+
+	private final Map<String, AIFile> mResolvedImports = new HashMap<>();
+
+	private AIFile resolveImportUncached(WordCompiler compiler, Token pathToken, String path) throws LeekCompilerException {
+		var from = packageOf(compiler.getAI());
+		if (path.startsWith("@")) {
+			var alias = path.substring(1);
+			// Seule l'API d'un package (sa racine) s'importe : pas de `"@nom/fichier"`
+			if (alias.contains("/")) {
+				compiler.addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.PACKAGE_PATH_CROSSES_BOUNDARY, new String[] { path }));
+				return null;
+			}
+			var dependency = from.getDepends().get(alias);
+			if (dependency == null) {
+				compiler.addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.PACKAGE_NOT_DECLARED, new String[] { alias }));
+				return null;
+			}
+			var root = dependencyRoot(from, dependency);
+			if (root == null) {
+				compiler.addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.PACKAGE_NOT_FOUND, new String[] { alias, dependency.path() }));
+			}
+			return root;
+		}
+		AIFile target;
+		try {
+			target = compiler.getAI().getFolder().resolve(path);
+		} catch (FileNotFoundException e) {
+			compiler.addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.AI_NOT_EXISTING, new String[] { path }));
+			return null;
+		}
+		var to = packageOf(target);
+		if (!to.equals(from)) {
+			var name = to.getName() != null ? to.getName().getWord() : path;
+			compiler.addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.PACKAGE_PATH_CROSSES_BOUNDARY, new String[] { path, name }));
+			return null;
+		}
+		return target;
+	}
+
+	/**
+	 * Graphe des `depends` depuis le package de l'entrée, avant toute compilation : dépendance
+	 * introuvable, nom qui ne correspond pas, cycle (interdit entre packages).
+	 */
+	public void checkPackages(WordCompiler compiler) throws LeekCompilerException {
+		var start = packageOf(mMainModule.getFile());
+		var done = new java.util.HashSet<Package>();
+		done.add(start);
+		checkPackage(compiler, start, new ArrayList<>(), done);
+	}
+
+	private void checkPackage(WordCompiler compiler, Package current, List<Package> path, java.util.Set<Package> done) throws LeekCompilerException {
+		path.add(current);
+		for (var dependency : current.getDepends().values()) {
+			var root = dependencyRoot(current, dependency);
+			if (root == null) {
+				compiler.addError(new AnalyzeError(dependency.alias().getLocation(), AnalyzeErrorLevel.ERROR, Error.PACKAGE_NOT_FOUND, new String[] { dependency.alias().getWord(), dependency.path() }));
+				continue;
+			}
+			var target = packageOf(root);
+			var name = target.getName();
+			if (name == null || !name.getWord().equals(dependency.alias().getWord())) {
+				compiler.addError(new AnalyzeError(dependency.alias().getLocation(), AnalyzeErrorLevel.ERROR, Error.PACKAGE_NAME_MISMATCH, new String[] { dependency.alias().getWord(), name == null ? "" : name.getWord() }));
+				continue;
+			}
+			int index = path.indexOf(target);
+			if (index >= 0) {
+				var chain = new StringBuilder();
+				for (var p : path.subList(index, path.size())) chain.append(p.getName().getWord()).append(" → ");
+				chain.append(name.getWord());
+				compiler.addError(new AnalyzeError(dependency.alias().getLocation(), AnalyzeErrorLevel.ERROR, Error.PACKAGE_CYCLE, new String[] { chain.toString() }));
+				continue;
+			}
+			if (done.add(target)) checkPackage(compiler, target, path, done);
+		}
+		path.remove(path.size() - 1);
+	}
+
 	public boolean includeAIFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {
 		return compileChild(compiler, path, mIncludedFirstPass, null, true) != null;
 	}
@@ -314,26 +461,20 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * lieu de fusionner à plat dans le module principal. Retourne null si le fichier
 	 * est introuvable. v5 modules, phase 3b.
 	 */
-	public Module importModuleFirstPass(WordCompiler compiler, String path) throws LeekCompilerException {
-		var ai = compileChild(compiler, path, mImportedFirstPass, this::getOrCreateModule, true);
-		return ai == null ? null : getOrCreateModule(ai);
+	public Module importModuleFirstPass(WordCompiler compiler, AIFile file) throws LeekCompilerException {
+		compileChild(compiler, file, mImportedFirstPass, this::getOrCreateModule, true);
+		return getOrCreateModule(file);
 	}
 
 	/** secondPass d'un module importé. Miroir de {@link #includeAI}. */
-	public Module importModule(WordCompiler compiler, String path) throws LeekCompilerException {
-		AIFile file;
-		try {
-			file = mCompiler.getCurrentAI().getFolder().resolve(path);
-		} catch (FileNotFoundException e) {
-			return null;
-		}
+	public Module importModule(WordCompiler compiler, AIFile file) throws LeekCompilerException {
 		var module = getOrCreateModule(file);
 		if (mImported.containsKey(file.getKey())) return module;
 		// Le code de haut niveau du module s'ajoute aux instructions du bloc principal :
 		// ces marqueurs l'analysent dans son module, avec ses propres locales
 		var opening = ModuleScopeInstruction.open(module, compiler.getTokenStream().get().getLocation());
 		addInstruction(compiler, opening);
-		compileChild(compiler, path, mImported, this::getOrCreateModule, false);
+		compileChild(compiler, file, mImported, this::getOrCreateModule, false);
 		addInstruction(compiler, opening.close());
 		return module;
 	}

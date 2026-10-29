@@ -226,6 +226,8 @@ public class WordCompiler {
 
 	public void readCode() throws LeekCompilerException {
 
+		// Packages : graphe des `depends` vérifié avant toute compilation
+		if (LanguageFeature.MODULES.enabledIn(version)) mMain.checkPackages(this);
 		firstPass();
 		// Imports d'un cycle : liés une fois toutes les premières passes faites
 		mMain.resolvePendingImports();
@@ -234,6 +236,36 @@ public class WordCompiler {
 		// System.out.println(mMain.getDefinedClasses());
 
 		secondPass();
+	}
+
+	// En-tête de package (v5) : avant toute autre instruction du fichier, cf Package
+	private boolean mHeaderClosed = false;
+
+	/**
+	 * Consomme une ligne d'en-tête `package <nom>` ou `depends <alias> from "<dossier>"` au niveau
+	 * principal (déjà lue par Package.read) et signale une ligne mal placée. Faux pour toute autre
+	 * instruction, qui ferme l'en-tête.
+	 */
+	private boolean packageHeader() throws LeekCompilerException {
+		if (mCurentBlock != mMain || !LanguageFeature.MODULES.enabledIn(version)) return false;
+		var token = mTokens.get();
+		boolean isPackage = token.getType() == TokenType.PACKAGE && mTokens.get(1).getType() == TokenType.STRING;
+		boolean isDepends = token.getType() == TokenType.STRING && token.getWord().equals("depends")
+			&& mTokens.get(1).getType() == TokenType.STRING && mTokens.get(2).getWord().equals("from")
+			&& mTokens.get(3).getType() == TokenType.VAR_STRING;
+		if (!isPackage && !isDepends) {
+			mHeaderClosed = true;
+			return false;
+		}
+		// `package` : seulement en tête d'un package.leek ; `depends` : en tête d'un package.leek ou
+		// du fichier d'entrée d'un programme (hors de tout package)
+		boolean root = Package.isRootFile(mAI);
+		boolean programEntry = mAI == mMain.getMainModule().getFile() && mMain.packageOf(mAI).isProgram();
+		boolean allowed = !mHeaderClosed && (isPackage ? root : root || programEntry);
+		if (!allowed) addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.PACKAGE_HEADER_MISPLACED, new String[] { token.getWord() }));
+		for (int i = isPackage ? 2 : 4; i > 0; i--) mTokens.skip();
+		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) mTokens.skip();
+		return true;
 	}
 
 	/**
@@ -537,6 +569,8 @@ public class WordCompiler {
 			// On vérifie les instructions en cours
 			endCurrentInstruction();
 			if (!mTokens.hasMoreTokens()) break;
+
+			if (packageHeader()) continue;
 
 			// Puis on lit l'instruction
 			compileWord();
@@ -900,11 +934,9 @@ public class WordCompiler {
 		if (path == null) return; // import malformé : tokens consommés, on n'analyse pas plus
 
 		if (firstPass) {
-			var module = mMain.importModuleFirstPass(this, path);
-			if (module == null) {
-				addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.AI_NOT_EXISTING, new String[] { path }));
-				return;
-			}
+			var file = mMain.resolveImport(this, pathToken, path); // erreur déjà signalée si null
+			if (file == null) return;
+			var module = mMain.importModuleFirstPass(this, file);
 			// Un module est compilé à la version de l'entrée : un `// @version:4` y changerait le
 			// sens du code sans rien dire (seul le pragma compte, pas la version par défaut du fichier)
 			var declared = PragmaParser.declaredVersion(module.getFile());
@@ -923,7 +955,8 @@ public class WordCompiler {
 				}
 			}
 		} else {
-			mMain.importModule(this, path); // secondPass du module cible (codegen)
+			var file = mMain.resolvedImport(this, path); // résolu (et vérifié) au firstPass
+			if (file != null) mMain.importModule(this, file); // secondPass du module cible (codegen)
 		}
 	}
 

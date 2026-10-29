@@ -416,6 +416,12 @@ public class TestModulesResolution {
 		assertTrue(errors.contains(Error.SYMBOL_NOT_EXPORTED), errors.toString());
 	}
 
+	@Test
+	public void namespaceCallToTypedFunction() throws Exception {
+		write("nt.leek", "export function dist(integer a, integer b) -> integer { return b - a }");
+		assertEquals("5", run(writeMain("import * as G from \"nt\"\nreturn G.dist(2, 7)")));
+	}
+
 	// =========================================================================
 	// Coût : découper en modules ne change pas les opérations
 	// =========================================================================

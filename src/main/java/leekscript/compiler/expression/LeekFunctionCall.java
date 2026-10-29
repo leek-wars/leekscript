@@ -377,6 +377,7 @@ public class LeekFunctionCall extends Expression {
 			}
 			writer.addCode("f_" + namespaceUserFunction.getInternalName() + "(");
 			addComma = false;
+			typedArguments = true;
 		} else if (mExpression instanceof LeekObjectAccess) {
 			// Object access : object.field()
 			var object = ((LeekObjectAccess) mExpression).getObject();
@@ -1078,6 +1079,8 @@ public class LeekFunctionCall extends Expression {
 					if (fb != null) {
 						this.namespaceUserFunction = fb;
 						this.resolvedFunction = fb;
+						// Arguments convertis vers les types des paramètres, comme un appel direct
+						this.functionType = fb.getType();
 						// #43 T2 : analyse à la demande aussi pour la forme namespace `Ns.func()`,
 						// pour que l'inférence du type de retour s'y propage comme pour un appel direct.
 						if (leekscript.common.LanguageFeature.RETURN_TYPE_INFERENCE.enabledIn(compiler.getVersion())) {
