@@ -480,13 +480,7 @@ public class LeekObjectAccess extends Expression {
 				// Accès direct au champ Java, qui garde son type déclaré : si l'analyse a narrowé
 				// le type (instanceof), il faut caster le résultat. Vaut pour `this.champ` comme
 				// pour `obj.champ` (#4933) — seul le receveur diffère.
-				boolean needResultCast = needsNarrowedResultCast()
-					// v5 : `this.champ` affiné vers une STRING (branche fausse d'un guard /
-					// instanceof sur `B | string`) appelé en méthode string (`this.champ.length()`,
-					// résolu en StringClass.length(ai, receveur) statique) : le receveur doit être
-					// casté en String, sinon `Object cannot be converted to String` (#42).
-					|| mainblock.getVersion() >= 5 && type == Type.STRING && isThisLikeReceiver(writer)
-						&& variable.getType() != type && variable.getType().castableFrom(type);
+				boolean needResultCast = needsNarrowedResultCast();
 				// Champ d'une classe générique instanciée (receveur `Box<integer>`, champ
 				// déclaré `T` -> effacé `Object` en Java) : on caste vers le type concret
 				// inféré, sinon affecter le champ `Object` à un primitif casse au javac.

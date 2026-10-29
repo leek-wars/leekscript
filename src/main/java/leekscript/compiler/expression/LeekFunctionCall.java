@@ -488,7 +488,8 @@ public class LeekFunctionCall extends Expression {
 					// "hello".length() -> StringClass.length(ai, "hello", ...) : méthode
 					// statique du helper, le receveur est le premier argument après l'AI.
 					writer.addCode(system_function.getStandardClass() + "Class." + system_function.getJavaName() + "(" + writer.getAIThis() + ", ");
-					object.writeJavaCode(mainblock, writer, false);
+					// Un champ affiné en string reste un Object en Java : converti comme un argument
+					writer.compileTyped(mainblock, object, false);
 					addComma = true;
 				} else {
 					// array.sort() -> ((ArrayLeekValue) array).sort(ai, ...). getJavaName() :

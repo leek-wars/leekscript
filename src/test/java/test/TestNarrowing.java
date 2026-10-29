@@ -268,16 +268,20 @@ public class TestNarrowing extends TestCommon {
 	public void testInstanceof_narrowing_field_to_string() throws Exception {
 		section("Instanceof narrowing: champ affiné en string");
 		var classes = "class B { m() { return 9 } } ";
-		code_v4_(classes + "class C { B | string f = 'hi'; run() { if (this.f instanceof B) { return this.f.m() } return length(this.f) } } return new C().run()").equals("2");
-		code_v4_("function g(string s) { return length(s) } " + classes + "class C { B | string f = 'hi'; run() { if (this.f instanceof B) { return 0 } return g(this.f) } } return new C().run()").equals("2");
+		code_v4(classes + "class C { B | string f = 'hi'; run() { if (this.f instanceof B) { return this.f.m() } return length(this.f) } } return new C().run()").equals("2");
+		code_v5(classes + "class C { B | string f = 'hi'; run() { if (this.f instanceof B) { return this.f.m() } return this.f.length() } } return new C().run()").equals("2");
+		code_v4("function g(string s) { return length(s) } " + classes + "class C { B | string f = 'hi'; run() { if (this.f instanceof B) { return 0 } return g(this.f) } } return new C().run()").equals("2");
+		code_v5("function g(string s) { return s.length() } " + classes + "class C { B | string f = 'hi'; run() { if (this.f instanceof B) { return 0 } return g(this.f) } } return new C().run()").equals("2");
 		code_v4_(classes + "class C { B | string f = 'hi'; string run() { if (this.f instanceof B) { return '' } return this.f } } return new C().run()").equals("\"hi\"");
-		code_v4_(classes + "class C { B | string f = 'hi' } C c = new C() if (c.f instanceof B) { return 0 } return length(c.f)").equals("2");
+		code_v4(classes + "class C { B | string f = 'hi' } C c = new C() if (c.f instanceof B) { return 0 } return length(c.f)").equals("2");
+		code_v5(classes + "class C { B | string f = 'hi' } C c = new C() if (c.f instanceof B) { return 0 } return c.f.length()").equals("2");
 		code_v4_(classes + "class C { B | string f = 'hi'; run() { if (this.f instanceof B) { return 0 } switch (this.f) { case 'hi': return 1 case 'ho': return 2 } return 3 } } return new C().run()").equals("1");
 		code_v4_(classes + "class C { B | string f = 'hello'; run() { if (this.f instanceof B) { return 0 } return [this.f[0], this.f[1:3]] } } return new C().run()").equals("[\"h\", \"el\"]");
 		// Réassigné par un appel : une destination non typée reçoit la valeur telle quelle, et
 		// length() la traite comme une valeur any (la chaîne « B {} »)
 		code_v4_(classes + "class C { B | string f = 'hi'; reset() { this.f = new B() } run() { if (this.f instanceof B) { return 'b' } this.reset() return [this.f] } } return new C().run()").equals("[B {}]");
-		code_v4_(classes + "class C { B | string f = 'hi'; reset() { this.f = new B() } run() { if (this.f instanceof B) { return 0 } this.reset() return length(this.f) } } return new C().run()").equals("4");
+		code_v4(classes + "class C { B | string f = 'hi'; reset() { this.f = new B() } run() { if (this.f instanceof B) { return 0 } this.reset() return length(this.f) } } return new C().run()").equals("4");
+		// v5 : `this.f.length()` sur un champ réassigné échoue (IMPOSSIBLE_CAST), à régler par l'affinage sûr des champs
 	}
 
 	/**
