@@ -158,37 +158,29 @@ public class Module {
 	// qui le déclare. Borné : deux modules qui se ré-exportent l'un l'autre ne bouclent pas.
 	private static final int MAX_REEXPORTS = 64;
 
-	/** Module qui déclare la fonction `name` importée ici, en suivant les ré-exports. */
-	public Module functionOrigin(String name) {
+	private Module origin(String name, java.util.function.Function<Module, Map<String, Module>> imports) {
 		var module = this;
 		for (int i = 0; i < MAX_REEXPORTS; i++) {
-			var source = module.importedFunctions.get(name);
+			var source = imports.apply(module).get(name);
 			if (source == null) return module;
 			module = source;
 		}
 		return module;
+	}
+
+	/** Module qui déclare la fonction `name` importée ici, en suivant les ré-exports. */
+	public Module functionOrigin(String name) {
+		return origin(name, m -> m.importedFunctions);
 	}
 
 	/** Module qui déclare la variable `name` importée ici, en suivant les ré-exports. */
 	public Module varOrigin(String name) {
-		var module = this;
-		for (int i = 0; i < MAX_REEXPORTS; i++) {
-			var source = module.importedVars.get(name);
-			if (source == null) return module;
-			module = source;
-		}
-		return module;
+		return origin(name, m -> m.importedVars);
 	}
 
 	/** Module qui déclare la classe `name` importée ici, en suivant les ré-exports. */
 	public Module classOrigin(String name) {
-		var module = this;
-		for (int i = 0; i < MAX_REEXPORTS; i++) {
-			var source = module.importedClasses.get(name);
-			if (source == null) return module;
-			module = source;
-		}
-		return module;
+		return origin(name, m -> m.importedClasses);
 	}
 
 	public void addNamespaceImport(String alias, Module source) {

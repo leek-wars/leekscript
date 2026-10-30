@@ -251,10 +251,9 @@ public class WordCompiler {
 	private boolean packageHeader() throws LeekCompilerException {
 		if (mCurentBlock != mMain || !LanguageFeature.MODULES.enabledIn(version)) return false;
 		var token = mTokens.get();
-		boolean isPackage = token.getType() == TokenType.PACKAGE && mTokens.get(1).getType() == TokenType.STRING;
-		boolean isDepends = token.getType() == TokenType.STRING && token.getWord().equals("depends")
-			&& mTokens.get(1).getType() == TokenType.STRING && mTokens.get(2).getWord().equals("from")
-			&& mTokens.get(3).getType() == TokenType.VAR_STRING;
+		java.util.function.IntFunction<Token> at = mTokens::get;
+		boolean isPackage = Package.isPackageLine(at, 0);
+		boolean isDepends = Package.isDependsLine(at, 0);
 		if (!isPackage && !isDepends) {
 			mHeaderClosed = true;
 			return false;
@@ -880,17 +879,13 @@ public class WordCompiler {
 	}
 
 	/**
-	 * Parse et traite `import { a, b } from "file"` (v5 modules, phase 3b). `from` est
-	 * un soft keyword (identifiant, pas dans KEYWORDS).
-	 *
-	 * <p>Au firstPass : compile le module cible (firstPass) puis lie chaque nom importé
-	 * dans le module courant — erreur si le fichier est introuvable ou si le nom n'est
-	 * pas exporté. Au secondPass : déclenche le secondPass du module cible (génération
-	 * du code). Le binding lui-même n'est fait qu'une fois, au firstPass.
-	 */
-	/**
 	 * `import { a } from "x"`, `import * as Ns from "x"`, et le ré-export `export { a } from "x"`
 	 * (reexport : `export` déjà consommé par l'appelant, les noms deviennent des exports du module).
+	 * `from` est un soft keyword (identifiant, pas dans KEYWORDS).
+	 *
+	 * <p>Au firstPass : compile le module cible (firstPass) puis lie chaque nom importé dans le
+	 * module courant (liaison différée dans un cycle). Au secondPass : déclenche le secondPass du
+	 * module cible (génération du code).
 	 */
 	private void importStatement(boolean firstPass, boolean reexport) throws LeekCompilerException {
 		var importToken = reexport ? mTokens.get() : mTokens.eat(); // `import`

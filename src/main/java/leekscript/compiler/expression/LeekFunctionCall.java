@@ -1435,8 +1435,8 @@ public class LeekFunctionCall extends Expression {
 				// le type résultat (il casserait l'assignabilité). Ainsi v1-4 voit la
 				// signature exactement comme l'ancienne version non générique.
 				var vars = new java.util.HashSet<TypeVariable>();
-				for (var arg : version.arguments) collectTypeVariables(arg, vars);
-				collectTypeVariables(version.return_type, vars);
+				for (var arg : version.arguments) CallableVersion.collectTypeVariables(arg, vars);
+				CallableVersion.collectTypeVariables(version.return_type, vars);
 				for (var v : vars) bindings.putIfAbsent(v, Type.ANY);
 			}
 			int distance = 0;
@@ -1618,8 +1618,8 @@ public class LeekFunctionCall extends Expression {
 					for (int i = 0; i < arity; ++i) inferTypeVariables(version.arguments[i], argTypes.get(i), bindings);
 				}
 				var vars = new java.util.HashSet<TypeVariable>();
-				for (var arg : version.arguments) collectTypeVariables(arg, vars);
-				collectTypeVariables(version.return_type, vars);
+				for (var arg : version.arguments) CallableVersion.collectTypeVariables(arg, vars);
+				CallableVersion.collectTypeVariables(version.return_type, vars);
 				for (var v : vars) bindings.putIfAbsent(v, Type.ANY);
 			}
 			int distance = 0;
@@ -1653,9 +1653,6 @@ public class LeekFunctionCall extends Expression {
 	}
 
 	/** Collects every {@link TypeVariable} occurring in a (possibly nested) type. */
-	private void collectTypeVariables(Type type, java.util.Set<TypeVariable> out) {
-		CallableVersion.collectTypeVariables(type, out);
-	}
 
 	@Override
 	public Location getLocation() {

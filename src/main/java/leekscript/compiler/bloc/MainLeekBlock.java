@@ -286,12 +286,12 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				}
 			}
 		}
+		// Les erreurs d'un module sont recopiées sur l'entrée à la fin de sa passe : déjà fait
+		var entry = mMainModule.getFile();
 		for (var pending : mPendingImports) {
 			var name = pending.name().getWord();
 			var error = new AnalyzeError(pending.name(), AnalyzeErrorLevel.ERROR, Error.SYMBOL_NOT_EXPORTED, new String[] { name });
 			pending.compiler().addError(error);
-			// Les erreurs d'un module sont recopiées sur l'entrée à la fin de sa passe : déjà fait
-			var entry = mMainModule.getFile();
 			if (pending.compiler().getAI() != entry) entry.getErrors().add(error);
 		}
 		mPendingImports.clear();
@@ -301,12 +301,6 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	// `package.leek` prend le package de son parent, le programme au bout.
 	private final Map<String, Package> mPackages = new HashMap<>();
 
-	/** Clé d'un dossier, stable d'une instance de Folder à l'autre : propriétaire et chemin. */
-	private static String folderKey(Folder folder) {
-		var key = new StringBuilder(folder.getOwner() + ":");
-		for (var f = folder; f != null && f.getParent() != f; f = f.getParent()) key.insert(key.indexOf(":") + 1, "/" + f.getName());
-		return key.toString();
-	}
 	private Package mProgramPackage;
 
 	public Package programPackage() {
@@ -315,30 +309,16 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	public Package packageOf(AIFile file) {
-		var visited = new ArrayList<String>();
-		Package found = null;
-		for (var folder = file.getFolder(); folder != null; folder = folder.getParent()) {
-			var key = folderKey(folder);
-			found = mPackages.get(key);
-			if (found != null) break;
-			visited.add(key);
-			var root = Package.findRoot(folder, "");
-			if (root != null) {
-				found = Package.read(folder, root);
-				break;
-			}
-			if (folder.getParent() == folder) break;
-		}
-		if (found == null) found = programPackage();
-		for (var key : visited) mPackages.put(key, found);
-		return found;
+		var found = Package.nearest(file.getFolder(), mPackages);
+		return found != null ? found : programPackage();
 	}
+
 
 	/** Racine (`package.leek`) de la dépendance `dependency` de `from`, null si absente. */
 	private AIFile dependencyRoot(Package from, Package.Dependency dependency) {
-		var base = from.isProgram() ? mMainModule.getFile().getFolder() : from.getFolder();
-		return Package.findRoot(base, dependency.path());
+		return from.dependencyRoot(dependency, mMainModule.getFile().getFolder());
 	}
+
 
 	/**
 	 * Fichier visé par `import … from "path"` depuis le module en cours : `"@nom"` désigne la racine
@@ -347,13 +327,17 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 */
 	public AIFile resolveImport(WordCompiler compiler, Token pathToken, String path) throws LeekCompilerException {
 		var file = resolveImportUncached(compiler, pathToken, path);
-		if (file != null) mResolvedImports.put(compiler.getAI().getKey() + "\n" + path, file);
+		if (file != null) mResolvedImports.put(importKey(compiler, path), file);
 		return file;
 	}
 
 	/** Fichier résolu au firstPass pour cet import, null s'il a été refusé. */
 	public AIFile resolvedImport(WordCompiler compiler, String path) {
-		return mResolvedImports.get(compiler.getAI().getKey() + "\n" + path);
+		return mResolvedImports.get(importKey(compiler, path));
+	}
+
+	private static String importKey(WordCompiler compiler, String path) {
+		return compiler.getAI().getKey() + "\n" + path;
 	}
 
 	private final Map<String, AIFile> mResolvedImports = new HashMap<>();
@@ -444,10 +428,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				// Toutes les surcharges : getUserFunction ne rend que la première
 				var overloads = getOverloads(module.functionOrigin(name).prefix() + name);
 				if (overloads != null) {
-					for (var function : overloads) checkTypedSignature(compiler, name, function, true);
+					for (var function : overloads) checkTypedSignature(compiler, name, function);
 				} else {
 					var function = getUserFunction(name, module);
-					if (function != null) checkTypedSignature(compiler, name, function, true);
+					if (function != null) checkTypedSignature(compiler, name, function);
 				}
 			}
 			for (var name : module.getExportedClasses()) {
@@ -493,11 +477,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		if (!method.isConstructor() && !method.isReturnTypeWritten()) untyped(compiler, method.getLocation(), name, "->");
 	}
 
-	private void checkTypedSignature(WordCompiler compiler, String name, FunctionBlock function, boolean withReturn) throws LeekCompilerException {
+	private void checkTypedSignature(WordCompiler compiler, String name, FunctionBlock function) throws LeekCompilerException {
 		for (int i = 0; i < function.countParameters(); i++) {
 			if (!function.isParameterTyped(i)) untyped(compiler, function.getLocation(), name, function.getParameterName(i));
 		}
-		if (withReturn && !function.isReturnTypeWritten()) untyped(compiler, function.getLocation(), name, "->");
+		if (!function.isReturnTypeWritten()) untyped(compiler, function.getLocation(), name, "->");
 	}
 
 	private void untyped(WordCompiler compiler, Location location, String name, String part) throws LeekCompilerException {

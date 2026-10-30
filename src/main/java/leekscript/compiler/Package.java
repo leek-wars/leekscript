@@ -64,24 +64,53 @@ public class Package {
 	}
 
 	/**
+	 * Package le plus proche en remontant de `folder` (dossier qui contient une racine), null s'il n'y
+	 * en a pas (le fichier est alors dans le package du programme). `cache` (facultatif) garde le
+	 * résultat de chaque dossier visité, par folderKey.
+	 */
+	public static Package nearest(Folder folder, Map<String, Package> cache) {
+		var visited = new java.util.ArrayList<String>();
+		Package found = null;
+		for (var current = folder; current != null; current = current.getParent()) {
+			var key = folderKey(current);
+			if (cache != null && cache.containsKey(key)) {
+				found = cache.get(key);
+				break;
+			}
+			visited.add(key);
+			var root = findRoot(current, "");
+			if (root != null) {
+				found = read(current, root);
+				break;
+			}
+			if (current.getParent() == current) break;
+		}
+		if (cache != null) for (var key : visited) cache.put(key, found);
+		return found;
+	}
+
+	/** Clé d'un dossier, stable d'une instance de Folder à l'autre : propriétaire et chemin. */
+	private static String folderKey(Folder folder) {
+		var names = new java.util.ArrayDeque<String>();
+		for (var f = folder; f != null && f.getParent() != f; f = f.getParent()) names.addFirst(f.getName());
+		return folder.getOwner() + ":/" + String.join("/", names);
+	}
+
+	/** Racine de la dépendance `dependency` de ce package, null si absente ; `programFolder` : dossier de l'entrée. */
+	public AIFile dependencyRoot(Dependency dependency, Folder programFolder) {
+		return findRoot(isProgram() ? programFolder : folder, dependency.path());
+	}
+
+	/**
 	 * Racine du package `alias` déclaré par un `depends` du package de `file`, null sinon. Hors
 	 * compilation (graphe des dépendances du cache des IA) : un fichier hors de tout package lit
 	 * l'en-tête de son propre fichier, comme le fichier d'entrée d'un programme.
 	 */
 	public static AIFile resolveDependency(AIFile file, String alias) {
-		Package owner = null;
-		for (var folder = file.getFolder(); folder != null; folder = folder.getParent()) {
-			var root = findRoot(folder, "");
-			if (root != null) {
-				owner = read(folder, root);
-				break;
-			}
-			if (folder.getParent() == folder) break;
-		}
+		var owner = nearest(file.getFolder(), null);
 		if (owner == null) owner = read(null, file);
 		var dependency = owner.getDepends().get(alias);
-		if (dependency == null) return null;
-		return findRoot(owner.isProgram() ? file.getFolder() : owner.getFolder(), dependency.path());
+		return dependency == null ? null : owner.dependencyRoot(dependency, file.getFolder());
 	}
 
 	/** `package.leek` (avec ou sans extension) : la racine d'un package. */
@@ -104,46 +133,50 @@ public class Package {
 
 	/** Lit l'en-tête de `root` : `package <nom>` (racine de package) puis les `depends`. */
 	public static Package read(Folder folder, AIFile root) {
-		// Cas courant : aucun en-tête, inutile de relire tout le fichier en jetons
+		// Cas courant : aucun en-tête, inutile de relire le fichier en jetons
 		var code = root.getCode();
 		if (code == null || !code.contains("package") && !code.contains("depends")) return new Package(folder, root, null);
 		var stream = tokens(root);
-		Token name = null;
-		var tokens = new java.util.ArrayList<Token>();
-		if (stream != null) {
-			// Le fichier peut être en cours de compilation : on rend le curseur tel quel
-			var position = stream.getPosition();
-			try {
-				stream.reset();
-				while (stream.hasMoreTokens()) tokens.add(stream.eat());
-			} finally {
-				stream.setPosition(position);
-			}
-		}
+		var tokens = stream == null ? java.util.List.<Token>of() : stream.getTokens();
+		java.util.function.IntFunction<Token> at = i -> i < tokens.size() ? tokens.get(i) : null;
 		int i = 0;
-		if (i + 1 < tokens.size() && tokens.get(i).getType() == TokenType.PACKAGE && tokens.get(i + 1).getType() == TokenType.STRING) {
-			name = tokens.get(i + 1);
-			i += 2;
-			if (i < tokens.size() && tokens.get(i).getType() == TokenType.END_INSTRUCTION) i++;
+		Token name = null;
+		if (isPackageLine(at, i)) {
+			name = at.apply(i + 1);
+			i = skipEnd(at, i + 2);
 		}
 		var result = new Package(folder, root, name);
-		while (isDepends(tokens, i)) {
-			var alias = tokens.get(i + 1);
-			var path = tokens.get(i + 3).getWord();
+		while (isDependsLine(at, i)) {
+			var alias = at.apply(i + 1);
+			var path = at.apply(i + 3).getWord();
 			result.depends.putIfAbsent(alias.getWord(), new Dependency(alias, path.substring(1, path.length() - 1)));
-			i += 4;
-			if (i < tokens.size() && tokens.get(i).getType() == TokenType.END_INSTRUCTION) i++;
+			i = skipEnd(at, i + 4);
 		}
 		return result;
 	}
 
+	private static int skipEnd(java.util.function.IntFunction<Token> at, int i) {
+		var token = at.apply(i);
+		return token != null && token.getType() == TokenType.END_INSTRUCTION ? i + 1 : i;
+	}
+
+	/** `package <nom>` à partir du jeton `i` (`at` : null ou jeton de fin au-delà du fichier). */
+	public static boolean isPackageLine(java.util.function.IntFunction<Token> at, int i) {
+		return is(at.apply(i), TokenType.PACKAGE) && is(at.apply(i + 1), TokenType.STRING);
+	}
+
 	/** `depends <alias> from "<chemin>"` à partir du jeton `i`. */
-	static boolean isDepends(java.util.List<Token> tokens, int i) {
-		return i + 3 < tokens.size()
-			&& tokens.get(i).getType() == TokenType.STRING && tokens.get(i).getWord().equals("depends")
-			&& tokens.get(i + 1).getType() == TokenType.STRING
-			&& tokens.get(i + 2).getWord().equals("from")
-			&& tokens.get(i + 3).getType() == TokenType.VAR_STRING;
+	public static boolean isDependsLine(java.util.function.IntFunction<Token> at, int i) {
+		var keyword = at.apply(i);
+		var from = at.apply(i + 2);
+		return is(keyword, TokenType.STRING) && keyword.getWord().equals("depends")
+			&& is(at.apply(i + 1), TokenType.STRING)
+			&& from != null && from.getWord().equals("from")
+			&& is(at.apply(i + 3), TokenType.VAR_STRING);
+	}
+
+	private static boolean is(Token token, TokenType type) {
+		return token != null && token.getType() == type;
 	}
 
 	// Jetons lus pour l'en-tête seulement : ni gardés sur le fichier ni ses erreurs de lexique

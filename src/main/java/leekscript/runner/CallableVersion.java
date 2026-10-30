@@ -72,12 +72,18 @@ public class CallableVersion {
 	 */
 	public Type getErasedType() {
 		if (!generic) return type;
-		var variables = new java.util.HashSet<leekscript.common.TypeVariable>();
-		collectTypeVariables(type, variables);
-		var bindings = new java.util.HashMap<leekscript.common.TypeVariable, Type>();
-		for (var variable : variables) bindings.put(variable, Type.ANY);
-		return type.substitute(bindings);
+		// Signature immuable : effacée une fois (lue à chaque référence d'une fonction système en v1-4)
+		if (erasedType == null) {
+			var variables = new java.util.HashSet<leekscript.common.TypeVariable>();
+			collectTypeVariables(type, variables);
+			var bindings = new java.util.HashMap<leekscript.common.TypeVariable, Type>();
+			for (var variable : variables) bindings.put(variable, Type.ANY);
+			erasedType = type.substitute(bindings);
+		}
+		return erasedType;
 	}
+
+	private Type erasedType = null;
 
 	/** Variables de type mentionnées dans `type` (éléments, clés, signatures, unions). */
 	public static void collectTypeVariables(Type type, java.util.Set<leekscript.common.TypeVariable> out) {
