@@ -322,11 +322,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			found = mPackages.get(key);
 			if (found != null) break;
 			visited.add(key);
-			try {
-				found = Package.read(folder, folder.resolve(Package.ROOT_FILE));
+			var root = Package.findRoot(folder, "");
+			if (root != null) {
+				found = Package.read(folder, root);
 				break;
-			} catch (FileNotFoundException e) {
-				// pas de racine ici : on remonte
 			}
 			if (folder.getParent() == folder) break;
 		}
@@ -338,11 +337,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	/** Racine (`package.leek`) de la dépendance `dependency` de `from`, null si absente. */
 	private AIFile dependencyRoot(Package from, Package.Dependency dependency) {
 		var base = from.isProgram() ? mMainModule.getFile().getFolder() : from.getFolder();
-		try {
-			return base.resolve(dependency.path() + "/" + Package.ROOT_FILE);
-		} catch (FileNotFoundException e) {
-			return null;
-		}
+		return Package.findRoot(base, dependency.path());
 	}
 
 	/**

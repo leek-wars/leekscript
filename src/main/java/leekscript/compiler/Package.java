@@ -47,6 +47,22 @@ public class Package {
 		return depends;
 	}
 
+	/**
+	 * Racine du package du dossier `folder` + `path` (`path` vide : `folder` lui-même), null s'il n'y
+	 * en a pas. Les fichiers d'IA portent en général leur extension : `package.leek` d'abord.
+	 */
+	public static AIFile findRoot(Folder folder, String path) {
+		var prefix = path.isEmpty() ? "" : path + "/";
+		for (var name : new String[] { ROOT_FILE + ".leek", ROOT_FILE }) {
+			try {
+				return folder.resolve(prefix + name);
+			} catch (java.io.FileNotFoundException e) {
+				// nom suivant
+			}
+		}
+		return null;
+	}
+
 	/** `package.leek` (avec ou sans extension) : la racine d'un package. */
 	public static boolean isRootFile(AIFile file) {
 		var name = file.getName();
