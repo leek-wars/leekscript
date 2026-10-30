@@ -235,6 +235,32 @@ public class TestIncludeCache {
 	}
 
 	@Test
+	public void packageModified() throws Exception {
+		// `import … from "@lib"` : la racine du package déclaré par `depends` est une dépendance
+		write("lib/package.leek", "// @version:5\npackage lib\nexport function f() -> integer { return 1; }");
+		String main = writeMain("// @version:5\ndepends lib from \"lib\"\nimport { f } from \"@lib\";\nreturn f();");
+		assertEquals("1", run(main, 5));
+
+		write("lib/package.leek", "// @version:5\npackage lib\nexport function f() -> integer { return 2; }");
+		bumpMtime("lib/package.leek", 1000);
+
+		assertEquals("2", run(main, 5), "modif d'un package importé par @lib doit invalider le cache de Main");
+	}
+
+	@Test
+	public void reexportedModuleModified() throws Exception {
+		write("RB.leek", "// @version:5\nexport function g() { return 7; }");
+		write("RA.leek", "// @version:5\nexport { g } from \"RB\";");
+		String main = writeMain("// @version:5\nimport { g } from \"RA\";\nreturn g();");
+		assertEquals("7", run(main, 5));
+
+		write("RB.leek", "// @version:5\nexport function g() { return 9; }");
+		bumpMtime("RB.leek", 1000);
+
+		assertEquals("9", run(main, 5), "modif d'un module ré-exporté non propagée");
+	}
+
+	@Test
 	public void transitiveIncludeModified() throws Exception {
 		write("B.leek", "function g() { return 7; }");
 		write("A.leek", "include(\"B\");\nfunction f() { return g(); }");

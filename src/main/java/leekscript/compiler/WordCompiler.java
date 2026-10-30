@@ -626,7 +626,10 @@ public class WordCompiler {
 		var saveFunction = mCurrentFunction;
 		var saveClass = mCurrentClass;
 		var saveLine = mLine;
+		var saveModule = mModule;
 		try {
+			// Les noms lus au parse (types, classes) se résolvent dans le module de la fonction
+			if (fresh.getModule() != null) mModule = fresh.getModule();
 			// Le corps vit dans le flux de tokens du FICHIER qui a parsé la fonction (le module
 			// importé pour une fonction importée ; le fichier principal sinon). On bascule mTokens
 			// sur ce flux le temps du re-parse. Pour le module principal c'est le même objet.
@@ -648,6 +651,7 @@ public class WordCompiler {
 			setCurrentFunction(saveFunction);
 			mCurrentClass = saveClass;
 			mLine = saveLine;
+			mModule = saveModule;
 		}
 	}
 
@@ -2552,7 +2556,8 @@ public class WordCompiler {
 					// éventuel `<...>` qui suit est un effacement de type, pas une comparaison.
 					mTokens.skip();
 					retour.addOperator(Operators.INSTANCEOF, word);
-					instanceofPendingParams = true;
+					// v1-4 : `a instanceof B < c` reste une comparaison
+					instanceofPendingParams = LanguageFeature.GENERICS.enabledIn(version);
 					continue;
 
 				} else if (word.getType() == TokenType.OPERATOR && (!word.getWord().equals(">") || !inSet)) {

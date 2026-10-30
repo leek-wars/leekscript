@@ -260,7 +260,7 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 		// @tailrec : après l'analyse du corps, tout appel récursif collecté doit être
 		// en position terminale, sinon erreur dure pointant l'appel fautif (mirror
 		// FunctionBlock.analyze). Inactif sans l'annotation.
-		if (recursiveCalls != null && hasAnnotation(Annotation.TAILREC)) {
+		if (recursiveCalls != null && hasAnnotation(Annotation.TAILREC) && leekscript.common.LanguageFeature.TAILREC_CHECK.enabledIn(compiler.getVersion())) {
 			for (var call : recursiveCalls) {
 				if (!call.isTailPosition()) {
 					compiler.addError(new AnalyzeError(call.getLocation(), AnalyzeErrorLevel.ERROR, Error.ANNOTATION_TAILREC_NOT_TAIL, new String[] { getName() }));

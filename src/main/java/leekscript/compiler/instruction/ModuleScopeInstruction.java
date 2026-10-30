@@ -16,7 +16,8 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
  * Borne le code de haut niveau d'un module importé (v5) dans les instructions du bloc principal :
  * le marqueur d'ouverture analyse la suite dans le module (ses imports, ses déclarations privées)
  * avec ses propres variables locales, celui de fermeture rétablit l'appelant. En Java, la paire
- * émet un bloc `{ … }` : deux modules peuvent déclarer chacun un `var x`.
+ * émet la méthode d'une classe anonyme, appelée sur place : une portée à part, où un `var x` du
+ * module ne heurte pas un `var x` de l'appelant (un simple bloc `{ … }` ne peut pas en redéclarer).
  */
 public class ModuleScopeInstruction extends LeekInstruction {
 
@@ -74,7 +75,7 @@ public class ModuleScopeInstruction extends LeekInstruction {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
-		writer.addLine(opening == null ? "{" : "}");
+		writer.addLine(opening == null ? "new Object() { void run() throws LeekRunException {" : "}}.run();");
 	}
 
 	@Override

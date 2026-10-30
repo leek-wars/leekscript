@@ -226,7 +226,9 @@ public class IncludeGraph {
 		var paths = new HashSet<String>();
 		for (var name : names) {
 			try {
-				paths.add(file.getFolder().resolve(name).getPath());
+				// `import … from "@nom"` : la racine du package déclaré par `depends`
+				var target = name.startsWith("@") ? Package.resolveDependency(file, name.substring(1)) : file.getFolder().resolve(name);
+				if (target != null) paths.add(target.getPath());
 			} catch (Exception e) {
 				// non résolu : compté par l'appelant
 			}
@@ -272,8 +274,9 @@ public class IncludeGraph {
 				// homonyme du joueur : sans effet, la dépendance ne sert qu'au cache.
 				var function = tok.getType() == TokenType.STRING ? LeekFunctions.getValue(tok.getWord(), true) : null;
 				boolean fileArgument = function != null && function.hasFileArgument();
-				if (tok.getType() == TokenType.IMPORT) {
-					// v5 : `import … from "chemin"`, une dépendance comme un include
+				if (tok.getType() == TokenType.IMPORT || tok.getType() == TokenType.EXPORT && stream.get(1).getType() == TokenType.ACCOLADE_LEFT) {
+					// v5 : `import … from "chemin"` et le ré-export `export { … } from "chemin"`,
+					// des dépendances comme un include
 					stream.eat();
 					while (stream.hasMoreTokens() && stream.get().getType() != TokenType.END_INSTRUCTION
 							&& stream.get().getType() != TokenType.IMPORT && !stream.get().getWord().equals("from")) {

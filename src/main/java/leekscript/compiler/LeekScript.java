@@ -20,6 +20,9 @@ public class LeekScript {
 	// Propriétaires (éleveurs) autorisés à demander une version pas encore publique par `// @version:N`
 	private static volatile java.util.function.IntPredicate unreleasedAccess = owner -> false;
 
+	/** Propriétaire des extraits compilés hors d'un fichier (console, `exec` du chat). */
+	public static final int SNIPPET_OWNER = -1;
+
 	public static void setUnreleasedAccess(java.util.function.IntPredicate access) {
 		unreleasedAccess = access;
 	}
@@ -72,7 +75,9 @@ public class LeekScript {
 
 	public static AI compileSnippet(String snippet, String AIClass, Options options) throws LeekScriptException, LeekCompilerException, IOException {
 		long ai_id = id.getAndIncrement();
-		var file = new AIFile("<snippet " + ai_id + ">", snippet, System.currentTimeMillis(), options.version(), (int) ai_id, options.strict());
+		// Pas de propriétaire (-1) : le compteur d'extraits n'est pas un éleveur, il ne doit pas
+		// ouvrir une version réservée (cf canUseVersion)
+		var file = new AIFile("<snippet " + ai_id + ">", snippet, System.currentTimeMillis(), options.version(), SNIPPET_OWNER, options.strict());
 		file.setJavaClass("AI_" + ai_id);
 		file.setRootClass(AIClass);
 		file.setId((int) ai_id);

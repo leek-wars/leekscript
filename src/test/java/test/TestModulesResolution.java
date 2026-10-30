@@ -356,6 +356,13 @@ public class TestModulesResolution {
 	}
 
 	@Test
+	public void moduleLocalSameNameAsImporterLocal() throws Exception {
+		// `var x` de l'importeur déclaré avant l'import, `var x` du module : deux portées Java
+		write("vg.leek", "var x = 2\nexport function g() { return 3 }");
+		assertEquals("[1, 3]", run(writeMain("var x = 1\nimport { g } from \"vg\"\nreturn [x, g()]")));
+	}
+
+	@Test
 	public void moduleLocalNotVisibleFromImporter() throws Exception {
 		write("vc.leek", "var secret = 1\nexport function c() { return 1 }");
 		var errors = compileAndCollectErrors(writeMain("import { c } from \"vc\"\nreturn secret"));

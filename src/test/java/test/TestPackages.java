@@ -161,6 +161,12 @@ public class TestPackages {
 	}
 
 	@Test
+	public void untypedOverloadInApi() throws Exception {
+		write("geo/package.leek", "package geo\nexport function area(integer a) -> integer { return a }\nexport function area(a, b) { return a * b }");
+		assertTrue(errors(writeMain("depends geo from \"geo\"\nimport { area } from \"@geo\"\nreturn area(2)")).contains(Error.PACKAGE_EXPORT_UNTYPED));
+	}
+
+	@Test
 	public void untypedExportedVarInApi() throws Exception {
 		write("geo/package.leek", "package geo\nexport var size = 3");
 		assertTrue(errors(writeMain("depends geo from \"geo\"\nimport { size } from \"@geo\"\nreturn size")).contains(Error.PACKAGE_EXPORT_UNTYPED));

@@ -11,6 +11,9 @@ public enum LanguageFeature {
 	/** Generic user functions and type variables: {@code function name<T>(...)}. */
 	GENERICS(5),
 
+	/** {@code @tailrec} vérifié : un appel récursif hors position terminale est une erreur (v1-4 : annotation sans effet). */
+	TAILREC_CHECK(5),
+
 	/** Object-oriented standard library: methods on built-in values, {@code array.map(f)}. */
 	OO_STDLIB(5),
 

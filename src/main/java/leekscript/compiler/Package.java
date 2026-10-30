@@ -63,6 +63,27 @@ public class Package {
 		return null;
 	}
 
+	/**
+	 * Racine du package `alias` déclaré par un `depends` du package de `file`, null sinon. Hors
+	 * compilation (graphe des dépendances du cache des IA) : un fichier hors de tout package lit
+	 * l'en-tête de son propre fichier, comme le fichier d'entrée d'un programme.
+	 */
+	public static AIFile resolveDependency(AIFile file, String alias) {
+		Package owner = null;
+		for (var folder = file.getFolder(); folder != null; folder = folder.getParent()) {
+			var root = findRoot(folder, "");
+			if (root != null) {
+				owner = read(folder, root);
+				break;
+			}
+			if (folder.getParent() == folder) break;
+		}
+		if (owner == null) owner = read(null, file);
+		var dependency = owner.getDepends().get(alias);
+		if (dependency == null) return null;
+		return findRoot(owner.isProgram() ? file.getFolder() : owner.getFolder(), dependency.path());
+	}
+
 	/** `package.leek` (avec ou sans extension) : la racine d'un package. */
 	public static boolean isRootFile(AIFile file) {
 		var name = file.getName();

@@ -441,8 +441,14 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var module : mModules.values()) {
 			if (!Package.isRootFile(module.getFile())) continue;
 			for (var name : module.getExportedFunctions()) {
-				var function = getUserFunction(name, module);
-				if (function != null) checkTypedSignature(compiler, name, function, true);
+				// Toutes les surcharges : getUserFunction ne rend que la première
+				var overloads = getOverloads(module.functionOrigin(name).prefix() + name);
+				if (overloads != null) {
+					for (var function : overloads) checkTypedSignature(compiler, name, function, true);
+				} else {
+					var function = getUserFunction(name, module);
+					if (function != null) checkTypedSignature(compiler, name, function, true);
+				}
 			}
 			for (var name : module.getExportedClasses()) {
 				var clazz = getDefinedClass(name, module);

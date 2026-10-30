@@ -452,7 +452,8 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		if (parentToken != null) {
 			var parentVar = compiler.getCurrentBlock().getVariable(this.parentToken.getWord(), true);
 			// Classe d'un module (importée ou privée) : absente des variables du bloc principal
-			var parentDeclaration = parentVar == null ? compiler.getMainBlock().getDefinedClass(parentToken.getWord(), compiler.getModule()) : null;
+			var parentDeclaration = parentVar == null && leekscript.common.LanguageFeature.MODULES.enabledIn(compiler.getVersion())
+				? compiler.getMainBlock().getDefinedClass(parentToken.getWord(), compiler.getModule()) : null;
 			if (parentVar == null && parentDeclaration == null) {
 				compiler.addError(new AnalyzeError(parentToken, AnalyzeErrorLevel.ERROR, Error.UNKNOWN_VARIABLE_OR_FUNCTION, new String[] {
 					parentToken.getWord()

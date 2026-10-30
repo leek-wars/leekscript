@@ -119,20 +119,26 @@ public class TestAnnotations extends TestCommon {
 		code_v4_("@tailrec function f(n) { if (n <= 0) return 0; return n % 2 == 0 ? f(n - 1) : f(n - 2); } return f(4)").equals("0");
 
 		// Appel récursif non terminal (imbriqué dans un opérateur binaire) : erreur.
-		code_v4_("@tailrec function bad(n) { if (n == 0) return 0; return bad(n - 1) + 1; } return bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("@tailrec function bad(n) { if (n == 0) return 0; return bad(n - 1) + 1; } return bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v4("@tailrec function bad(n) { if (n == 0) return 0; return bad(n - 1) + 1; } return bad(3)").error(Error.NONE);
 		// Appel récursif en instruction (résultat ignoré) : erreur.
-		code_v4_("@tailrec function bad(n) { if (n > 0) { bad(n - 1); } return 0; } return bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("@tailrec function bad(n) { if (n > 0) { bad(n - 1); } return 0; } return bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v4("@tailrec function bad(n) { if (n > 0) { bad(n - 1); } return 0; } return bad(3)").error(Error.NONE);
 		// Appel récursif dans une déclaration de variable : erreur.
-		code_v4_("@tailrec function bad(n) { if (n == 0) return 0; var x = bad(n - 1); return x; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("@tailrec function bad(n) { if (n == 0) return 0; var x = bad(n - 1); return x; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v4("@tailrec function bad(n) { if (n == 0) return 0; var x = bad(n - 1); return x; } return bad(2)").error(Error.NONE);
 		// Appel récursif imbriqué comme argument de lui-même : l'appel interne n'est pas terminal.
-		code_v4_("@tailrec function bad(n) { if (n <= 0) return 0; return bad(bad(n - 1)); } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("@tailrec function bad(n) { if (n <= 0) return 0; return bad(bad(n - 1)); } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v4("@tailrec function bad(n) { if (n <= 0) return 0; return bad(bad(n - 1)); } return bad(2)").error(Error.NONE);
 		// `return?` peut poursuivre l'exécution : l'appel n'est pas terminal.
-		code_v4_("@tailrec function bad(n) { if (n == 0) return 0; return? bad(n - 1); return 0; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("@tailrec function bad(n) { if (n == 0) return 0; return? bad(n - 1); return 0; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
 		// Appel récursif dans la CONDITION d'un ternaire : la fonction poursuit avec une
 		// branche après, donc non terminal.
-		code_v4_("@tailrec function bad(n) { if (n <= 0) return 1; return bad(n - 1) > 0 ? 1 : 0; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("@tailrec function bad(n) { if (n <= 0) return 1; return bad(n - 1) > 0 ? 1 : 0; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v4("@tailrec function bad(n) { if (n <= 0) return 1; return bad(n - 1) > 0 ? 1 : 0; } return bad(2)").error(Error.NONE);
 		// Branche de ternaire non terminale (appel imbriqué dans un opérateur) : erreur.
-		code_v4_("@tailrec function bad(n) { return n <= 0 ? 0 : bad(n - 1) + 1; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("@tailrec function bad(n) { return n <= 0 ? 0 : bad(n - 1) + 1; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v4("@tailrec function bad(n) { return n <= 0 ? 0 : bad(n - 1) + 1; } return bad(2)").error(Error.NONE);
 
 		// Opérande DROIT d'un `||` en position retour : terminal (la valeur coercée en
 		// booléen de l'appel est retournée quand le court-circuit gauche ne se déclenche pas).
@@ -142,9 +148,9 @@ public class TestAnnotations extends TestCommon {
 		// Opérande droit d'un `||` à travers des parenthèses.
 		code_v4_("@tailrec function f(n) { return (n <= 0) || (f(n - 1)); } return f(3)").equals("true");
 		// Opérande GAUCHE d'un `||` : NON terminal (sa valeur est combinée avec la droite).
-		code_v4_("@tailrec function bad(n) { return bad(n - 1) || n <= 0; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("@tailrec function bad(n) { return bad(n - 1) || n <= 0; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
 		// Opérande gauche d'un `&&` : NON terminal.
-		code_v4_("@tailrec function bad(n) { return bad(n - 1) && n > 0; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("@tailrec function bad(n) { return bad(n - 1) && n > 0; } return bad(2)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
 
 		// Non-régression : récursion non terminale SANS @tailrec = aucune erreur (opt-in).
 		code_v4_("function rec(n) { if (n == 0) return 0; return rec(n - 1) + 1; } return rec(3)").equals("3");
@@ -171,13 +177,13 @@ public class TestAnnotations extends TestCommon {
 		code_v4_("class A { @tailrec public m(n) { return n + 1; } } return new A().m(5)").equals("6");
 
 		// Auto-appel imbriqué dans un opérateur binaire : erreur.
-		code_v4_("class A { @tailrec public bad(n) { if (n == 0) return 0; return bad(n - 1) + 1; } } return new A().bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("class A { @tailrec public bad(n) { if (n == 0) return 0; return bad(n - 1) + 1; } } return new A().bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
 		// Auto-appel qualifié this.bad() non terminal : erreur.
-		code_v4_("class A { @tailrec public bad(n) { if (n == 0) return 0; return this.bad(n - 1) + 1; } } return new A().bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("class A { @tailrec public bad(n) { if (n == 0) return 0; return this.bad(n - 1) + 1; } } return new A().bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
 		// Auto-appel en instruction (résultat ignoré) : erreur.
-		code_v4_("class A { @tailrec public bad(n) { if (n > 0) { bad(n - 1); } return 0; } } return new A().bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("class A { @tailrec public bad(n) { if (n > 0) { bad(n - 1); } return 0; } } return new A().bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
 		// Méthode statique récursive non terminale : erreur.
-		code_v4_("class A { @tailrec public static bad(n) { if (n == 0) return 0; return bad(n - 1) + 1; } } return A.bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
+		code_v5("class A { @tailrec public static bad(n) { if (n == 0) return 0; return bad(n - 1) + 1; } } return A.bad(3)").error(Error.ANNOTATION_TAILREC_NOT_TAIL);
 
 		// Non-régression : récursion non terminale SANS @tailrec = aucune erreur (opt-in).
 		code_v4_("class A { public rec(n) { if (n == 0) return 0; return rec(n - 1) + 1; } } return new A().rec(3)").equals("3");

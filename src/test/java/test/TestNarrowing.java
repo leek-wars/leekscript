@@ -969,11 +969,11 @@ public class TestNarrowing extends TestCommon {
 		section("instanceof avec type paramétré (#3175)");
 		// `instanceof Array<X>` parse et s'évalue comme `instanceof Array` (effacement : le
 		// runtime ne porte pas le type d'élément, comme `instanceof List<String>` en Java).
-		code_v4_("Array<integer> a = [1, 2] return a instanceof Array<integer>").equals("true");
-		code_v4_("return [1, 2] instanceof Array<string>").equals("true");
-		code_v4_("return 'x' instanceof Array<integer>").equals("false");
-		code_v4_("return [[1]] instanceof Array<Array<integer>>").equals("true");
-		code_v4_("Map<integer, real> m = [1 : 1.0] return m instanceof Map<integer, real>").equals("true");
+		code_v5("Array<integer> a = [1, 2] return a instanceof Array<integer>").equals("true");
+		code_v5("return [1, 2] instanceof Array<string>").equals("true");
+		code_v5("return 'x' instanceof Array<integer>").equals("false");
+		code_v5("return [[1]] instanceof Array<Array<integer>>").equals("true");
+		code_v5("Map<integer, real> m = [1 : 1.0] return m instanceof Map<integer, real>").equals("true");
 		// La forme non paramétrée reste inchangée.
 		code_v4_("return [1] instanceof Array").equals("true");
 	}
