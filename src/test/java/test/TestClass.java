@@ -46,6 +46,16 @@ public class TestClass extends TestCommon {
 		code_v2_("class A {} A = 12").error(Error.CANT_ASSIGN_VALUE);
 	}
 
+	/** Un champ s'écrit sans préfixe en Java : il ne croise pas les temporaires numérotés du compilateur (`for … in`, `return?`, switch, match). */
+	@Test
+	public void fieldNamedLikeCompilerTemporary() throws Exception {
+		code_strict_v4_("class A { i0 = false i1 = false i2 = false m(x) { for (var k : var v in x) { i0 = true i1 = true i2 = true } return [i0, i1, i2] } } return new A().m([1, 2])").equals("[true, true, true]");
+		code_v4_("class A { v0 = 1 v1 = 2 v2 = 4 ar0 = 8 ar1 = 16 ar2 = 32 m(x) { var s = 0 for (var e in x) { s += v0 + v1 + v2 + ar0 + ar1 + ar2 } return s } } return new A().m([1, 2])").equals("126");
+		code_v4_("class A { r0 = 7 r1 = 7 r2 = 7 m() { return? r0 return 0 } } return new A().m()").equals("7");
+		code_v4_("class A { __sw_0 = 7 __sw_1 = 7 __si_0 = 7 __si_1 = 7 m(x) { switch (x) { case 1: return __sw_0 + __sw_1 + __si_0 + __si_1 } return 0 } } return new A().m(1)").equals("28");
+		code_v5("class A { __match_0 = 7 __match_1 = 7 m(x) { return match (x) { 1 -> __match_0 + __match_1, _ -> 0 } } } return new A().m(1)").equals("14");
+	}
+
 	@Test
 	public void testClass_typed_global_defined_after() throws Exception {
 		section("Class - typed global with class defined after (#2853)");

@@ -655,7 +655,7 @@ public class JavaWriter {
 	/** Déclare les champs temporaires des expressions match au niveau de la classe AI générée. */
 	public void writeMatchTempFields() {
 		for (var id : matchTemps) {
-			addLine("private Object __match_" + id + ";");
+			addLine("private Object $match" + id + ";");
 		}
 	}
 

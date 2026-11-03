@@ -163,11 +163,12 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		AbstractLeekBlock initialBlock = mainblock.getWordCompiler().getCurrentBlock();
 		mainblock.getWordCompiler().setCurrentBlock(this);
 
-		// On prend un nombre unique pour les noms de variables temporaires
+		// On prend un nombre unique pour les noms de variables temporaires, préfixés par `$` pour ne
+		// masquer aucun champ (cf. LeekFunctionCall)
 		int block_count = getCount();
-		String var = "v" + block_count;
-		String it = "i" + block_count;
-		String ar = "ar" + block_count;
+		String var = "$v" + block_count;
+		String it = "$i" + block_count;
+		String ar = "$ar" + block_count;
 
 		String key_iterator = mainblock.hasGlobal(mKeyIterator.getWord()) ? ("g_" + mKeyIterator) : ("u_" + mKeyIterator);
 		String val_iterator = mainblock.hasGlobal(mIterator.getWord()) ? ("g_" + mIterator) : ("u_" + mIterator);

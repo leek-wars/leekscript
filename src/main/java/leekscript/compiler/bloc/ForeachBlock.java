@@ -166,11 +166,12 @@ public class ForeachBlock extends AbstractLeekBlock {
 		AbstractLeekBlock initialBlock = mainblock.getWordCompiler().getCurrentBlock();
 		mainblock.getWordCompiler().setCurrentBlock(this);
 
-		// On prend un nombre unique pour les noms de variables temporaires
+		// On prend un nombre unique pour les noms de variables temporaires, préfixés par `$` pour ne
+		// masquer aucun champ (cf. LeekFunctionCall)
 		int block_count = getCount();
-		String var = "v" + block_count;
-		String it = "i" + block_count;
-		String ar = "ar" + block_count;
+		String var = "$v" + block_count;
+		String it = "$i" + block_count;
+		String ar = "$ar" + block_count;
 		String iterator_name = mainblock.hasGlobal(mIterator.getWord()) ? ("g_" + mIterator) : "u_" + mIterator;
 		// Filet defensif : depuis #4268 iteratorVariable ne devrait plus etre null ici
 		// (preAnalyze emet une erreur d'analyse propre), mais on degrade en cast Object

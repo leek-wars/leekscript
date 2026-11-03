@@ -317,7 +317,7 @@ public class SwitchBlock extends AbstractLeekBlock {
 	 * d'index intermédiaire et sans boxing du sujet.
 	 */
 	private void writeDirectDispatch(MainLeekBlock mainblock, JavaWriter writer, ConstantDispatch dispatch) {
-		String swVar = "__sw_" + mId;
+		String swVar = "$sw" + mId;
 
 		if (dispatch.string) {
 			writer.addCode("String " + swVar + " = ");
@@ -339,7 +339,7 @@ public class SwitchBlock extends AbstractLeekBlock {
 			// ferait lever une NPE au switch Java : on le renvoie sur la sentinelle.
 			writer.addLine("switch (" + swVar + " == null ? " + dispatch.sentinel + " : " + swVar + ") {");
 		} else {
-			String skVar = "__swk_" + mId;
+			String skVar = "$swk" + mId;
 			// Hors plage int la troncature pourrait faire matcher un label par
 			// accident : on détecte la perte et on renvoie sur la sentinelle.
 			writer.addLine("int " + skVar + " = (int) " + swVar + ";");
@@ -371,9 +371,9 @@ public class SwitchBlock extends AbstractLeekBlock {
 	 * l'égalité lâche entre types différents. Les corps ne sont émis qu'une fois.
 	 */
 	private void writeGuardedDispatch(MainLeekBlock mainblock, JavaWriter writer, ConstantDispatch dispatch) {
-		String swVar = "__sw_" + mId;
-		String siVar = "__si_" + mId;
-		String svVar = "__swv_" + mId;
+		String swVar = "$sw" + mId;
+		String siVar = "$si" + mId;
+		String svVar = "$swv" + mId;
 
 		writer.addCode("Object " + swVar + " = ");
 		mExpression.writeJavaCode(mainblock, writer, false);
@@ -391,7 +391,7 @@ public class SwitchBlock extends AbstractLeekBlock {
 		if (dispatch.string) {
 			selector = svVar;
 		} else {
-			String skVar = "__swk_" + mId;
+			String skVar = "$swk" + mId;
 			// Hors plage int, aucun label entier ne peut correspondre : on laisse
 			// l'index à -1 plutôt que de risquer un match par troncature.
 			writer.addLine("int " + skVar + " = (int) (long) " + svVar + ";");
@@ -420,8 +420,8 @@ public class SwitchBlock extends AbstractLeekBlock {
 
 	/** Chemin général : labels non constants ou sujet de type incompatible, `eq()` obligatoire. */
 	private void writeComparisonChain(MainLeekBlock mainblock, JavaWriter writer) {
-		String swVar = "__sw_" + mId;
-		String siVar = "__si_" + mId;
+		String swVar = "$sw" + mId;
+		String siVar = "$si" + mId;
 
 		// Store the switch expression in a temp variable
 		writer.addCode("Object " + swVar + " = ");

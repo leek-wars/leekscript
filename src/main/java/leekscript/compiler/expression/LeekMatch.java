@@ -23,7 +23,7 @@ import leekscript.compiler.exceptions.LeekCompilerException;
  * </pre>
  *
  * Désugaré en chaîne de ternaires Java. Le sujet est évalué UNE SEULE FOIS : il est
- * assigné à un champ de classe {@code __match_<id>} dans la première comparaison
+ * assigné à un champ de classe {@code $match<id>} dans la première comparaison
  * (l'assignation est une expression Java), les comparaisons suivantes relisent le champ.
  * Un champ par match (et non un champ partagé) pour rester correct quand une valeur de
  * cas contient elle-même un match imbriqué, ou lors d'appels récursifs.
@@ -106,7 +106,7 @@ public class LeekMatch extends Expression {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		writer.registerMatchTemp(id);
-		String tmp = "__match_" + id;
+		String tmp = "$match" + id;
 
 		if (parenthesis) writer.addCode("(");
 
