@@ -155,6 +155,15 @@ public class JavaCompiler {
 		}
 	}
 
+	/**
+	 * Limites de la JVM atteintes par le code du joueur, dans les messages de javac : méthode de plus de
+	 * 64 Ko, fonction de plus de 255 emplacements de paramètres (un integer ou un real en prend deux),
+	 * classe de plus de 65 535 constantes, chaîne littérale de plus de 65 535 caractères ou octets en
+	 * UTF-8. Une erreur de l'IA (CODE_TOO_LARGE), pas du serveur.
+	 */
+	private static final List<String> JVM_LIMIT_ERRORS = List.of("code too large", "too many parameters",
+			"too many constants", "constant string too long", "too long for the constant pool");
+
 	/** Nombre de lignes de Java généré conservées de part et d'autre de la ligne fautive. */
 	private static final int EXCERPT_CONTEXT = 12;
 	private static final int EXCERPT_MAX_LINE = 4000;
@@ -287,10 +296,7 @@ public class JavaCompiler {
 					location = file.getCompiledCode().getFiles().get(mapping.getAI()) + ":" + mapping.getLeekScriptLine();
 				}
 
-				// Limites de la JVM atteintes par le code du joueur : méthode de plus de 64 Ko,
-				// fonction de plus de 255 emplacements de paramètres (un integer ou un real en
-				// prend deux). Une erreur de l'IA, pas du serveur.
-				if (errors.contains("code too large") || errors.contains("too many parameters")) {
+				if (JVM_LIMIT_ERRORS.stream().anyMatch(errors::contains)) {
 					throw new LeekScriptException(Error.CODE_TOO_LARGE, errors, location);
 				} else {
 					throw new LeekScriptException(Error.COMPILE_JAVA, errors, location)

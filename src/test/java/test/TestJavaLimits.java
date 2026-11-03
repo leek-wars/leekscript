@@ -46,6 +46,28 @@ public class TestJavaLimits {
 		assertEquals(Error.CODE_TOO_LARGE, e.getType());
 	}
 
+	/** 34 000 réels distincts (deux emplacements chacun) : au-delà des 65 535 constantes d'une classe. */
+	@Test
+	public void tropDeConstantes() {
+		var code = new StringBuilder();
+		for (int f = 0; f < 340; f++) {
+			var reals = IntStream.range(f * 100, f * 100 + 100).mapToObj(k -> k + ".5").collect(Collectors.joining(", "));
+			code.append("function f").append(f).append("() { return [").append(reals).append("] }\n");
+		}
+		code.append("return f0()");
+		var e = assertThrows(LeekScriptException.class, () -> run(code.toString(), false));
+		assertEquals(Error.CODE_TOO_LARGE, e.getType());
+	}
+
+	/** Plus de 65 535 caractères, puis moins de caractères mais plus de 65 535 octets en UTF-8 (€ en prend trois). */
+	@Test
+	public void chaineTropLongue() {
+		for (var text : new String[] { "x".repeat(70_000), String.valueOf((char) 0x20AC).repeat(25_000) }) {
+			var e = assertThrows(LeekScriptException.class, () -> run("var s = '" + text + "' return length(s)", false));
+			assertEquals(Error.CODE_TOO_LARGE, e.getType());
+		}
+	}
+
 	/** La classe compilée ne s'appelle plus AI_<id> : l'erreur de javac reste située dans le code du joueur. */
 	@Test
 	public void erreurDeJavacSitueeAvecLeNomDeClasseParDefaut() {
