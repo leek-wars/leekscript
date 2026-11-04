@@ -73,6 +73,13 @@ public class TestBigInt extends TestCommon {
 		// big_integer -> string
 		code_v4_("return string(5L)").equals("\"5\"");
 		code_v4_("big_integer a = 42L return string(a)").equals("\"42\"");
+		// string -> big_integer (opérande d'une opération binaire big_integer)
+		code_v4_("var s = \"12\" return 1L | s").equals("13");
+		code_v4_("var s = \"-12\" return 0L | s").equals("-12");
+		// Chaîne trop longue : refusée avant l'analyse (quadratique), comme le résultat le serait
+		code_v4_("var s = \"1\" for (var i = 0; i < 19; i++) s += s return 1L | s").error(Error.OUT_OF_MEMORY);
+		// Un grand nombre sous MAX_BITLENGTH reste accepté
+		code_v4_("var s = \"9\" for (var i = 0; i < 14; i++) s += s return (0L | s) > 0").equals("true");
 	}
 
 	@Test

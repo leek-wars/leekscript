@@ -42,14 +42,13 @@ public class BigIntegerValue extends Number implements LeekValue {
 
 	public BigIntegerValue(AI ai, String val, int radix) throws LeekRunException {
 		this.ai = ai;
+		checkDigits(val, radix);
 		this.value = new BigInteger(val, radix);
 		register();
 	}
 
 	public BigIntegerValue(AI ai, String val) throws LeekRunException {
-		this.ai = ai;
-		this.value = new BigInteger(val);
-		register();
+		this(ai, val, 10);
 	}
 
 	public BigIntegerValue(AI ai, double val) throws LeekRunException {
@@ -391,6 +390,12 @@ public class BigIntegerValue extends Number implements LeekValue {
 			ai.getLogs().addLog(AILog.WARNING, "[BigInteger] résultat trop grand : " + resultBits + " bits (max " + MAX_BITLENGTH + ")");
 			throw new LeekRunException(Error.OUT_OF_MEMORY);
 		}
+	}
+
+	/** Refuse avant l'analyse (quadratique) une chaîne trop longue : n chiffres en base b valent plus de (n - 1) × log2(b) bits. */
+	private void checkDigits(String val, int radix) throws LeekRunException {
+		// longueur - 2 : un signe éventuel ; floor(log2(b)) sans flottant, les littéraux passent ici à chaque évaluation
+		checkResultSize((long) (val.length() - 2) * (31 - Integer.numberOfLeadingZeros(radix)));
 	}
 
 	/** Enregistre un nouveau big_integer : vérifie la taille puis facture ops + RAM. */
