@@ -55,6 +55,37 @@ public class Json {
     }
 
     /**
+     * Convert object to JSON string, or null if it would exceed maxLength characters
+     * (stopped while writing, before the whole string exists).
+     */
+    public static String toJson(Object obj, int maxLength) {
+        var writer = new java.io.StringWriter() {
+            private void reserve(int len) {
+                if (getBuffer().length() + len > maxLength) throw new TooLong();
+            }
+            @Override
+            public void write(String str, int off, int len) { reserve(len); super.write(str, off, len); }
+            @Override
+            public void write(char[] cbuf, int off, int len) { reserve(len); super.write(cbuf, off, len); }
+            @Override
+            public void write(int c) { reserve(1); super.write(c); }
+        };
+        try {
+            mapper.writeValue(writer, obj);
+            return writer.toString();
+        } catch (TooLong e) {
+            return null;
+        } catch (JacksonException e) {
+            if (e.getCause() instanceof TooLong) return null;
+            throw new RuntimeException("JSON serialization error", e);
+        }
+    }
+
+    private static class TooLong extends RuntimeException {
+        TooLong() { super(null, null, false, false); }
+    }
+
+    /**
      * Parse JSON string to JsonNode
      */
     public static JsonNode parse(String json) {

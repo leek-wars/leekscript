@@ -170,6 +170,7 @@ public class SetLeekValue extends LinkedHashSet<Object> implements LeekValue {
 				}
 				sb.append(ai.export(value, visited));
 			}
+			ai.checkStringLength(sb.length());
 		}
 
 		return sb.append(">").toString();

@@ -92,6 +92,8 @@ public abstract class AI {
 	protected volatile long mRAM = 0;
 
 	public final static int MAX_RAM = 12_500_000; // in 64 bits "quads" = 100 Mo
+	// Borne des chaînes fabriquées par join, string, jsonEncode, facturés au nombre d'éléments et non à la longueur
+	public final static int MAX_STRING_LENGTH = 1 << 25;
 	public long maxRAM = MAX_RAM;
 	/** Taille d'une case de RAM, en octets : une valeur de 64 bits. */
 	public static final long BYTES_PER_RAM_UNIT = 8;
@@ -286,6 +288,7 @@ public abstract class AI {
 						sb.append(AI.this.string(v, visited));
 					}
 				}
+				AI.this.checkStringLength(sb.length());
 			}
 			sb.append("}");
 			return sb.toString();
@@ -566,6 +569,13 @@ public abstract class AI {
 		last.slot = slot;
 		ramUsages[ramUsagesCount] = null;
 		usage.slot = -1;
+	}
+
+	public final void checkStringLength(int length) throws LeekRunException {
+		if (length > MAX_STRING_LENGTH) {
+			getLogs().addLog(AILog.WARNING, "Chaîne trop longue : plus de " + MAX_STRING_LENGTH + " caractères");
+			throw new LeekRunException(Error.OUT_OF_MEMORY);
+		}
 	}
 
 	public RamUsage allocateRAM(Object obj, int ram) throws LeekRunException {

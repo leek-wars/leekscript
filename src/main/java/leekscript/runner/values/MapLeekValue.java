@@ -589,6 +589,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 				}
 				sb.append(ai.export(v, visited));
 			}
+			ai.checkStringLength(sb.length());
 		}
 		sb.append("]");
 		return sb.toString();

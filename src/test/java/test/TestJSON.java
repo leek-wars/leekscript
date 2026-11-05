@@ -158,4 +158,18 @@ public class TestJSON extends TestCommon {
 		code("var s = '' for (var i = 0; i < 5000; i++) s = '[' + s + ']' return jsonDecode(s)").equals("null");
 	}
 
+	@Test
+	public void testBuiltStringLength() throws Exception {
+		section("Longueur des chaînes fabriquées (MAX_STRING_LENGTH)");
+		var big = "var s = 'x' for (var i = 0; i < 19; i++) s += s var a = [] for (var i = 0; i < 100; i++) push(a, s) ";
+		code_v4(big + "return join(a, '')").error(Error.OUT_OF_MEMORY);
+		code_v4(big + "return string(a)").error(Error.OUT_OF_MEMORY);
+		code_v4(big + "var m = [:] for (var i = 0; i < 100; i++) m[i] = s return string(m)").error(Error.OUT_OF_MEMORY);
+		code_v4(big + "return jsonEncode(a)").equals("\"\"");
+		code_v1_3(big + "return join(a, '')").error(Error.OUT_OF_MEMORY);
+		var underLimit = big.replace("i < 100", "i < 10"); // 10 × 524 288 caractères
+		code_v4(underLimit + "return length(join(a, ''))").equals("5242880");
+		code_v4(underLimit + "return length(jsonEncode(a))").equals("5242911");
+	}
+
 }

@@ -526,6 +526,7 @@ public class ObjectLeekValue implements LeekValue {
 					sb.append(ai.string(v, visited));
 				}
 			}
+			ai.checkStringLength(sb.length());
 		}
 		sb.append("}");
 		return sb.toString();

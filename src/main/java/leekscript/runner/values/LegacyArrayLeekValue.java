@@ -491,6 +491,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 			else
 				first = false;
 			sb.append(ai.string(val.getValue()));
+			ai.checkStringLength(sb.length());
 		}
 		return sb.toString();
 	}
@@ -1710,6 +1711,7 @@ public class LegacyArrayLeekValue implements Iterable<Entry<Object, Object>>, Ge
 					sb.append(ai.string(v, visited));
 				}
 			}
+			ai.checkStringLength(sb.length());
 			e = e.next;
 		}
 		sb.append("]");
