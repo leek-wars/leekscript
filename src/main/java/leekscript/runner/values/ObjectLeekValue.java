@@ -1,5 +1,6 @@
 package leekscript.runner.values;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -371,32 +372,23 @@ public class ObjectLeekValue implements LeekValue {
 		return getFieldL(ai.string(value));
 	}
 
-	// keys() / values() copient les champs. Jusqu'à la v3, le tableau legacy facture déjà chaque case créée.
-	private void chargeCopy() throws LeekRunException {
+	// keys() / values() : copie dans un nouveau tableau. Jusqu'à la v3, le tableau legacy facture déjà chaque case créée.
+	private Object copyToArray(Collection<?> values) throws LeekRunException {
 		if (clazz.ai.getVersion() >= 4) {
-			clazz.ai.ops(1 + fields.size());
+			clazz.ai.ops(1 + values.size());
 		}
+		var result = clazz.ai.newArray(values.size());
+		for (var value : values) {
+			result.pushNoClone(clazz.ai, value);
+		}
+		return result;
 	}
 
 	public Object callAccess(String field, String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
 		var resultM = clazz.getMethod(clazz.ai, method, fromClass);
 		if (resultM == null) {
-			if (method.equals("u_keys")) {
-				chargeCopy();
-				var result = clazz.ai.newArray(fields.size());
-				for (var key : fields.keySet()) {
-					result.pushNoClone(clazz.ai, key);
-				}
-				return result;
-			}
-			if (method.equals("u_values")) {
-				chargeCopy();
-				var result = clazz.ai.newArray(fields.size());
-				for (var key : fields.values()) {
-					result.pushNoClone(clazz.ai, key);
-				}
-				return result;
-			}
+			if (method.equals("u_keys")) return copyToArray(fields.keySet());
+			if (method.equals("u_values")) return copyToArray(fields.values());
 		}
 		if (resultM == null) {
 			var result = fields.get(field);

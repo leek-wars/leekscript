@@ -236,13 +236,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 			}
 		}
 		// Maj de la valeur
-		if (mainblock.getVersion() >= 4) {
-			if (iteratorVariable != null && iteratorVariable.isBox()) {
-				sb.append(val_iterator).append(".set(").append(var).append(".getValue());");
-			} else {
-				sb.append(val_iterator).append(" = ").append(JavaWriter.castObject(iteratorVariable.getType().getJavaName(mainblock.getVersion()), var + ".getValue()")).append(";");
-			}
-		} else if (mainblock.getVersion() >= 2) {
+		if (mainblock.getVersion() >= 2) {
 			if (iteratorVariable != null && iteratorVariable.isBox()) {
 				sb.append(val_iterator).append(".set(").append(var).append(".getValue());");
 			} else {

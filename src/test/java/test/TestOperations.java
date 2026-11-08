@@ -106,7 +106,7 @@ public class TestOperations extends TestCommon {
 		var object = "var o = {} for (var i = 0; i < 100; i++) o[i] = i var a = getOperations() ";
 		code_v4_(object + "var k = o.keys() return getOperations() - a").equals("107");
 		code_v4_(object + "var v = o.values() return getOperations() - a").equals("107");
-		// Instance de classe : son tableau ne facturait rien, même avant la v4
+		// Instance de classe : une opération par champ dans toutes les versions
 		code_v2_("class A { x y z } var o = new A() var a = getOperations() var k = o.keys() return getOperations() - a").equals("10");
 		code_v2_("class A { a b c d e f g h i j } var o = new A() var a = getOperations() var k = o.keys() return getOperations() - a").equals("17");
 	}
