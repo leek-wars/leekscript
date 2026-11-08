@@ -388,6 +388,8 @@ public class TestLoops extends TestCommon {
 		// #11229404 : un paramètre par référence (@) est une Box ; le réutiliser comme
 		// itérateur de foreach non-déclaratif générait `u_x = (Object) ...` sur une Box.
 		code("function f(@cell, mp) { for (cell in [7, 8]) {} return cell; } return f(0, 1);").equals("8");
+		// Pareil pour la boucle clé : valeur
+		code("function f(@k, @v) { for (k : v in [7, 8]) {} return [k, v]; } return f(0, 0);").equals("[1, 8]");
 	}
 
 	/**

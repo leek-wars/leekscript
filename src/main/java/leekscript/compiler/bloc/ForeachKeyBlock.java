@@ -213,13 +213,13 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 		// Maj de la clé
 		if (mainblock.getVersion() >= 4) {
-			if (iteratorKeyVariable != null && iteratorKeyVariable.getDeclaration() != null && iteratorKeyVariable.getDeclaration().isCaptured()) {
+			if (iteratorKeyVariable != null && iteratorKeyVariable.getDeclaration() != null && iteratorKeyVariable.getDeclaration().isBox()) {
 				sb.append(key_iterator).append(".set(").append(var).append(".getKey()); ");
 			} else {
 				sb.append(key_iterator).append(" = ").append(JavaWriter.castObject(iteratorKeyVariable.getType().getJavaName(mainblock.getVersion()), var + ".getKey()")).append("; ");
 			}
 		} else if (mainblock.getVersion() >= 2) {
-			if (iteratorKeyVariable != null && iteratorKeyVariable.getDeclaration() != null && iteratorKeyVariable.getDeclaration().isCaptured()) {
+			if (iteratorKeyVariable != null && iteratorKeyVariable.getDeclaration() != null && iteratorKeyVariable.getDeclaration().isBox()) {
 				sb.append(key_iterator).append(".set(").append(var).append(".getKey()); ");
 			} else if (mIsKeyDeclaration) {
 				sb.append(key_iterator).append(" = ").append(JavaWriter.castObject(iteratorKeyDeclaration.getVariable().getType().getJavaName(mainblock.getVersion()), var + ".getKey()")).append("; ");
@@ -237,13 +237,13 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		}
 		// Maj de la valeur
 		if (mainblock.getVersion() >= 4) {
-			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
+			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isBox()) {
 				sb.append(val_iterator).append(".set(").append(var).append(".getValue());");
 			} else {
 				sb.append(val_iterator).append(" = ").append(JavaWriter.castObject(iteratorVariable.getType().getJavaName(mainblock.getVersion()), var + ".getValue()")).append(";");
 			}
 		} else if (mainblock.getVersion() >= 2) {
-			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isCaptured()) {
+			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isBox()) {
 				sb.append(val_iterator).append(".set(").append(var).append(".getValue());");
 			} else {
 				sb.append(val_iterator).append(" = ").append(JavaWriter.castObject(iteratorVariable.getType().getJavaName(mainblock.getVersion()), var + ".getValue()")).append(";");
