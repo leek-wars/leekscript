@@ -106,6 +106,9 @@ public class TestOperations extends TestCommon {
 		var object = "var o = {} for (var i = 0; i < 100; i++) o[i] = i var a = getOperations() ";
 		code_v4_(object + "var k = o.keys() return getOperations() - a").equals("107");
 		code_v4_(object + "var v = o.values() return getOperations() - a").equals("107");
+		// Instance de classe : son tableau ne facturait rien, même avant la v4
+		code_v2_("class A { x y z } var o = new A() var a = getOperations() var k = o.keys() return getOperations() - a").equals("10");
+		code_v2_("class A { a b c d e f g h i j } var o = new A() var a = getOperations() var k = o.keys() return getOperations() - a").equals("17");
 	}
 
 	record ReplStep(String code, long expectedOps) {}
@@ -189,6 +192,14 @@ public class TestOperations extends TestCommon {
 			System.out.println("[REPL] " + steps[i].code + " → " + costs[i] + " ops (attendu " + steps[i].expectedOps + ")");
 			assertEquals(steps[i].expectedOps, costs[i], "ops pour: " + steps[i].code);
 		}
+	}
+
+	/** Une variable de session (une Box) sert d'itérateur à une boucle clé : valeur. */
+	@Test
+	public void testSessionForeachKeyValue() throws Exception {
+		section("Console session foreach key : value");
+		var costs = replCosts("var k = 0 var v = 0", "for (k : v in [7, 8]) {}", "for (v in [9]) {}");
+		assertEquals(3, costs.length);
 	}
 
 	/** Coût de chaque ligne jouée dans une même session, tel que la console l'affiche. */

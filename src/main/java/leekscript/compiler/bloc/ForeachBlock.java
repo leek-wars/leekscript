@@ -208,13 +208,14 @@ public class ForeachBlock extends AbstractLeekBlock {
 			// isBox() (box || captured) et non isCaptured() : un paramètre passé par
 			// référence (@) est une Box sans être « capturé », il faut quand même
 			// passer par .set() sinon on génère `u_x = (Object) ...` sur une Box (#11229404).
-			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isBox()) {
+			// Une variable de session de la console est aussi une Box, sans déclaration.
+			if (iteratorVariable != null && iteratorVariable.isBox()) {
 				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
 			} else {
 				writer.addCode(iterator_name + " = " + JavaWriter.castObject(iterJavaType, var + ".getValue()") + ";");
 			}
 		} else if (mainblock.getVersion() >= 2) {
-			if (iteratorVariable != null && iteratorVariable.getDeclaration() != null && iteratorVariable.getDeclaration().isBox()) {
+			if (iteratorVariable != null && iteratorVariable.isBox()) {
 				writer.addCode(iterator_name + ".set(" + var + ".getValue());");
 			} else {
 				writer.addCode(iterator_name + " = " + JavaWriter.castObject(iterJavaType, var + ".getValue()") + ";");

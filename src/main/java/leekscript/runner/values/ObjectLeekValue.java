@@ -371,14 +371,18 @@ public class ObjectLeekValue implements LeekValue {
 		return getFieldL(ai.string(value));
 	}
 
+	// keys() / values() copient les champs. Jusqu'à la v3, le tableau legacy facture déjà chaque case créée.
+	private void chargeCopy() throws LeekRunException {
+		if (clazz.ai.getVersion() >= 4) {
+			clazz.ai.ops(1 + fields.size());
+		}
+	}
+
 	public Object callAccess(String field, String method, ClassLeekValue fromClass, Object... arguments) throws LeekRunException {
 		var resultM = clazz.getMethod(clazz.ai, method, fromClass);
 		if (resultM == null) {
-			// Jusqu'à la v3, le tableau legacy facture déjà chaque case créée
-			if ((method.equals("u_keys") || method.equals("u_values")) && clazz.ai.getVersion() >= 4) {
-				clazz.ai.ops(1 + fields.size());
-			}
 			if (method.equals("u_keys")) {
+				chargeCopy();
 				var result = clazz.ai.newArray(fields.size());
 				for (var key : fields.keySet()) {
 					result.pushNoClone(clazz.ai, key);
@@ -386,6 +390,7 @@ public class ObjectLeekValue implements LeekValue {
 				return result;
 			}
 			if (method.equals("u_values")) {
+				chargeCopy();
 				var result = clazz.ai.newArray(fields.size());
 				for (var key : fields.values()) {
 					result.pushNoClone(clazz.ai, key);
