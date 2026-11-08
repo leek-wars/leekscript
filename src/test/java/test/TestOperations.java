@@ -82,6 +82,20 @@ public class TestOperations extends TestCommon {
 		code_v2_4("var s = <> for (var i = 0; i < 100; i++) setPut(s, i) var a = getOperations() var s2 = clone(s) return getOperations() - a").equals("106");
 	}
 
+	/**
+	 * https://leekwars.com/forum/category-3/topic-12403 — mapKeys et mapValues copient la map
+	 * dans un nouveau tableau : une opération par élément, comme un clone.
+	 */
+	@Test
+	public void testMapKeysValues() throws Exception {
+		section("mapKeys / mapValues");
+		var map = "var m = [:] for (var i = 0; i < 100; i++) m[i] = i var a = getOperations() ";
+		code_v4(map + "var k = mapKeys(m) return getOperations() - a").equals("106");
+		code_v4(map + "var v = mapValues(m) return getOperations() - a").equals("106");
+		code_v5_(map + "var k = m.keys() return getOperations() - a").equals("106");
+		code_v5_(map + "var v = m.values() return getOperations() - a").equals("106");
+	}
+
 	record ReplStep(String code, long expectedOps) {}
 
 	/**

@@ -354,9 +354,9 @@ public class TestMap extends TestCommon {
 		code_v4("var m = [1: 2] var s = mapKeySet(m) m[3] = 4 setPut(s, 5) return [m, s]").equals("[[1 : 2, 3 : 4], <1, 5>]");
 		code_strict_v4("Map<integer, string> m = [1: 'a', 2: 'b'] Set<integer> s = mapKeySet(m) return s").equals("<1, 2>");
 		code_v4("function f(x) { return mapKeySet(x) } return f([1: 2])").equals("<1>");
-		// Autant que arrayToSet(mapKeys(m)), sans le tableau intermédiaire
+		// Moins cher que arrayToSet(mapKeys(m)), qui paie aussi le tableau intermédiaire
 		code_v4("var m = [1: 2, 3: 4, 5: 6] mapKeySet(m)").ops(14);
-		code_v4("var m = [1: 2, 3: 4, 5: 6] arrayToSet(mapKeys(m))").ops(14);
+		code_v4("var m = [1: 2, 3: 4, 5: 6] arrayToSet(mapKeys(m))").ops(18);
 		code_v1_3("return mapKeySet([1: 2])").error(Error.FUNCTION_NOT_AVAILABLE);
 		// v5 : forme méthode
 		code_v5("return [1: 2, 3: 4, 5: 6].keySet()").equals("<1, 3, 5>");

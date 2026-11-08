@@ -333,6 +333,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	}
 
 	public ArrayLeekValue mapKeys(AI ai) throws LeekRunException {
+		ai.ops(1 + size());
 		return new ArrayLeekValue(ai, keySet().toArray());
 	}
 
@@ -345,6 +346,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	}
 
 	public ArrayLeekValue mapValues(AI ai) throws LeekRunException {
+		ai.ops(1 + size());
 		return new ArrayLeekValue(ai, values().toArray());
 	}
 
