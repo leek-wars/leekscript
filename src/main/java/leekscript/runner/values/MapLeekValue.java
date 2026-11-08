@@ -436,16 +436,6 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		return delete(key);
 	}
 
-	public ArrayLeekValue mapGetValues(AI ai) throws LeekRunException {
-		ai.ops(1 + 2 * size());
-		return new ArrayLeekValue(ai, values().toArray());
-	}
-
-	public ArrayLeekValue mapGetKeys(AI ai) throws LeekRunException {
-		ai.ops(1 + 2 * size());
-		return new ArrayLeekValue(ai, keySet().toArray());
-	}
-
 	public Object mapRemoveAll(AI ai, Object value) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		var sizeBefore = size();
