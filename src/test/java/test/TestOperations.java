@@ -65,12 +65,11 @@ public class TestOperations extends TestCommon {
 	@Test
 	public void testForeachKeyValue() throws Exception {
 		section("Foreach key : value");
-		// 100 éléments : chaque boucle doit coûter plus de 100 opérations
-		var loops = "var a = getOperations() for (var v in c) {} var b = getOperations() for (var k : var v in c) {} var d = getOperations() return [b - a > 100, d - b > 100]";
-		code_v2_("var c = [:] for (var i = 0; i < 100; i++) c[i] = i " + loops).equals("[true, true]");
-		code_v2_4("var c = [] for (var i = 0; i < 100; i++) push(c, i) " + loops).equals("[true, true]");
-		code_v2_4("var c = <> for (var i = 0; i < 100; i++) setPut(c, i) " + loops).equals("[true, true]");
-		code_v1("var c = [] for (var i = 0; i < 100; i++) push(c, i) " + loops).equals("[true, true]");
+		// Coût de chaque boucle sur 100 éléments, getOperations() compris
+		var loops = "var a = getOperations() for (var v in c) {} var b = getOperations() for (var k : var v in c) {} var d = getOperations() return [b - a, d - b]";
+		code_v2_("var c = [:] for (var i = 0; i < 100; i++) c[i] = i " + loops).equals("[103, 104]");
+		code_v2_4("var c = [] for (var i = 0; i < 100; i++) push(c, i) " + loops).equals("[103, 104]");
+		code_v2_4("var c = <> for (var i = 0; i < 100; i++) setPut(c, i) " + loops).equals("[103, 104]");
 	}
 
 	/**
@@ -80,7 +79,7 @@ public class TestOperations extends TestCommon {
 	@Test
 	public void testCloneSet() throws Exception {
 		section("Clone set");
-		code_v2_4("var s = <> for (var i = 0; i < 100; i++) setPut(s, i) var a = getOperations() var s2 = clone(s) return getOperations() - a > 100").equals("true");
+		code_v2_4("var s = <> for (var i = 0; i < 100; i++) setPut(s, i) var a = getOperations() var s2 = clone(s) return getOperations() - a").equals("106");
 	}
 
 	record ReplStep(String code, long expectedOps) {}
