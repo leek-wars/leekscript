@@ -337,7 +337,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		return new ArrayLeekValue(ai, keySet().toArray());
 	}
 
-	// Comme arrayToSet(mapKeys(m)), sans le tableau intermédiaire
+	// Comme arrayToSet(mapKeys(m)), en moins cher : pas de tableau intermédiaire
 	public SetLeekValue mapKeySet(AI ai) throws LeekRunException {
 		ai.ops(1 + 2 * size());
 		var set = new SetLeekValue(ai, size());
