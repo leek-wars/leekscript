@@ -72,7 +72,7 @@ public class LeekOperations {
 			return new ObjectLeekValue(ai, (ObjectLeekValue) value, level);
 		} else if (value instanceof SetLeekValue set) {
 			if (level == 0) return value;
-			ai.ops(1);
+			ai.ops(1 + set.size());
 			return new SetLeekValue(ai, set, level);
 		} else if (value instanceof NativeObjectLeekValue o) {
 			if (level == 0) return value;

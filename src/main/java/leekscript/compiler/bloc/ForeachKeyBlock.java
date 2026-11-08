@@ -260,8 +260,10 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 		mainblock.getWordCompiler().setCurrentBlock(initialBlock);
 
+		// Le compteur va dans le corps de la boucle (une opération par tour), comme ForeachBlock
+		writer.addCode(sb.toString());
 		writer.addCounter(1);
-		writer.addLine(sb.toString(), getLocation());
+		writer.addLine("", getLocation());
 		
 		// Instructions
 		super.writeJavaCode(mainblock, writer, false);
