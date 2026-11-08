@@ -209,8 +209,10 @@ public abstract class AI {
 		}
 
 		public Object u_keys() throws LeekRunException {
+			var fields = getFieldsCached(this.getClass());
+			ops(1 + fields.length);
 			var result = new ArrayLeekValue(AI.this);
-			for (var field : getFieldsCached(this.getClass())) {
+			for (var field : fields) {
 				result.push(AI.this, field.getName());
 			}
 			return result;

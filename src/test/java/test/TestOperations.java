@@ -96,6 +96,18 @@ public class TestOperations extends TestCommon {
 		code_v5_(map + "var v = m.values() return getOperations() - a").equals("106");
 	}
 
+	/**
+	 * Comme mapKeys / mapValues, en v4+ : keys() et values() d'un objet copient ses champs dans un
+	 * nouveau tableau, une opération par champ.
+	 */
+	@Test
+	public void testObjectKeysValues() throws Exception {
+		section("Object keys / values");
+		var object = "var o = {} for (var i = 0; i < 100; i++) o[i] = i var a = getOperations() ";
+		code_v4_(object + "var k = o.keys() return getOperations() - a").equals("107");
+		code_v4_(object + "var v = o.values() return getOperations() - a").equals("107");
+	}
+
 	record ReplStep(String code, long expectedOps) {}
 
 	/**
