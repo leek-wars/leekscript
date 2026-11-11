@@ -28,6 +28,10 @@ public class TestSyntaxRecovery {
 		assertEquals(List.of(Error.UNCOMPLETE_EXPRESSION), errors("if (true) {\n\tvar a = \n}\nvar c = 3\nreturn c"));
 		assertEquals(List.of(Error.UNCOMPLETE_EXPRESSION), errors("if (true) {\n\tvar a = 1 +\n}\nreturn 1"));
 		assertEquals(List.of(Error.UNCOMPLETE_EXPRESSION), errors("while (true) {\n\tvar a = 1 + }\nreturn 2"));
+		assertEquals(List.of(Error.UNCOMPLETE_EXPRESSION), errors("var b = 1\nif (true) {\n\tb = \n}\nreturn b"));
+		// Corps d'une fonction anonyme : `a` reste locale au corps, le `return a` d'après ne la voit pas
+		assertEquals(List.of(Error.UNCOMPLETE_EXPRESSION, Error.UNKNOWN_VARIABLE_OR_FUNCTION), errors("var f = function() {\n\tvar a = \n}\nreturn a"));
+		assertEquals(List.of(Error.UNCOMPLETE_EXPRESSION, Error.UNKNOWN_VARIABLE_OR_FUNCTION), errors("var f = (x) => {\n\tvar a = \n}\nreturn a"));
 	}
 
 	@Test

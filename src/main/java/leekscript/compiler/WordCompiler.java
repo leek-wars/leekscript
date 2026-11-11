@@ -78,8 +78,8 @@ public class WordCompiler {
 	// `ident -> expr` doit se lire comme un motif, pas comme la lambda `ident => expr`). Consommé
 	// (remis à false) dès l'entrée de readExpression → n'affecte que l'appel de tête, pas les imbriqués.
 	private boolean mSuppressLambda = false;
-	/** Profondeur de readExpression : 1 = expression d'une instruction, plus = imbriquée (arguments, tableau…). */
-	private int mExpressionDepth = 0;
+	/** Posé par readStatementExpression, consommé dès l'entrée de readExpression comme mSuppressLambda. */
+	private boolean mStatementExpression = false;
 	private AbstractLeekBlock mCurentBlock;
 	private AbstractLeekBlock mCurrentFunction;
 	private ClassDeclarationInstruction mCurrentClass;
@@ -860,7 +860,7 @@ public class WordCompiler {
 			} else {
 				// Class.toto, on revient d'un token et on parse une expression
 				mTokens.setPosition(save);
-				var exp = readExpression();
+				var exp = readStatementExpression(false);
 				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
 					mTokens.skip();
 				}
@@ -868,7 +868,7 @@ public class WordCompiler {
 			}
 			return;
 		} else {
-			var exp = readExpression();
+			var exp = readStatementExpression(false);
 			if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
 				mTokens.skip();
 			}
@@ -1757,7 +1757,7 @@ public class WordCompiler {
 		if (mTokens.get().getWord().equals("=")) {
 			mTokens.skip();
 			// Si oui on récupère la valeur en question
-			variable.setValue(readExpression(true));
+			variable.setValue(readStatementExpression(true));
 		}
 		// On ajoute la variable
 		mMain.addGlobalDeclaration(variable);
@@ -1777,7 +1777,7 @@ public class WordCompiler {
 			if (mTokens.get().getWord().equals("=")) {
 				mTokens.skip();
 				// Si oui on récupère la valeur en question
-				variable.setValue(readExpression(true));
+				variable.setValue(readStatementExpression(true));
 			}
 			// On ajoute la variable
 			mMain.addGlobalDeclaration(variable);
@@ -1851,7 +1851,7 @@ public class WordCompiler {
 		if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals("=")) {
 			mTokens.skip();
 			boolean isArrowFunction = mTokens.isArrowFunctionAhead();
-			value = readExpression(!isArrowFunction);
+			value = readStatementExpression(!isArrowFunction);
 		}
 		registerVariableDeclaration(word, type, annotations, fieldMode, value);
 
@@ -1866,7 +1866,7 @@ public class WordCompiler {
 			value = null;
 			if (mTokens.get().getWord().equals("=")) {
 				mTokens.skip();
-				value = readExpression(true);
+				value = readStatementExpression(true);
 			}
 			registerVariableDeclaration(word, type, annotations, fieldMode, value);
 		}
@@ -2212,21 +2212,20 @@ public class WordCompiler {
 		return readExpression(inList, inSet, false);
 	}
 
-	public Expression readExpression(boolean inList, boolean inSet, boolean inInterval) throws LeekCompilerException {
-		mExpressionDepth++;
-		try {
-			return readExpressionAtDepth(inList, inSet, inInterval);
-		} finally {
-			mExpressionDepth--;
-		}
+	/** Expression d'une instruction (`var`, `global`, expression seule) : voir incompleteExpression. */
+	private Expression readStatementExpression(boolean inList) throws LeekCompilerException {
+		mStatementExpression = true;
+		return readExpression(inList);
 	}
 
-	private Expression readExpressionAtDepth(boolean inList, boolean inSet, boolean inInterval) throws LeekCompilerException {
+	public Expression readExpression(boolean inList, boolean inSet, boolean inInterval) throws LeekCompilerException {
 
 		// #2404 : on capture+réarme le drapeau de suppression de lambda pour qu'il ne s'applique
 		// qu'à CET appel (les sous-expressions imbriquées retrouvent la détection de lambda normale).
 		boolean suppressLambda = mSuppressLambda;
 		mSuppressLambda = false;
+		boolean statement = mStatementExpression;
+		mStatementExpression = false;
 
 		var retour = new LeekExpression();
 
@@ -2827,26 +2826,26 @@ public class WordCompiler {
 		}
 		if (result == null) {
 			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.UNCOMPLETE_EXPRESSION));
-			return incompleteExpression();
+			return incompleteExpression(statement);
 		}
 		try {
 			result.validExpression(this, mMain);
 		} catch (LeekExpressionException e) {
 			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, e.getError(), new String[] { e.getExpression() }));
-			return incompleteExpression();
+			return incompleteExpression(statement);
 		}
 		return result;
 	}
 
 	/**
-	 * Expression invalide : `var a = }` ou `var a = 1 + }`. Au niveau d'une instruction, l'accolade
-	 * reste au bloc qu'elle ferme, sinon tout ce qui suit est décalé d'une accolade et les erreurs
-	 * s'enchaînent jusqu'à la fin du fichier. Partout ailleurs le token est consommé : un `)` en
-	 * trop ou un `}` dans des arguments (`f(1, }`) n'est repris par personne, le laisser ferait
-	 * tourner l'analyse sur place.
+	 * Expression invalide : `var a = }` ou `var a = 1 + }`. Pour l'expression d'une instruction,
+	 * l'accolade reste au bloc qu'elle ferme, sinon tout ce qui suit est décalé d'une accolade et
+	 * les erreurs s'enchaînent jusqu'à la fin du fichier. Partout ailleurs le token est consommé :
+	 * un `)` en trop ou un `}` dans des arguments (`f(1, }`) n'est repris par personne, le laisser
+	 * ferait tourner l'analyse sur place.
 	 */
-	private LeekNull incompleteExpression() {
-		boolean closesBlock = mExpressionDepth == 1 && mTokens.get().getType() == TokenType.ACCOLADE_RIGHT;
+	private LeekNull incompleteExpression(boolean statement) {
+		boolean closesBlock = statement && mTokens.get().getType() == TokenType.ACCOLADE_RIGHT;
 		return new LeekNull(closesBlock ? mTokens.get() : mTokens.eat());
 	}
 
