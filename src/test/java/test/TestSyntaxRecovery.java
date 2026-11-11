@@ -32,6 +32,13 @@ public class TestSyntaxRecovery {
 		// Corps d'une fonction anonyme : `a` reste locale au corps, le `return a` d'après ne la voit pas
 		assertEquals(List.of(Error.UNCOMPLETE_EXPRESSION, Error.UNKNOWN_VARIABLE_OR_FUNCTION), errors("var f = function() {\n\tvar a = \n}\nreturn a"));
 		assertEquals(List.of(Error.UNCOMPLETE_EXPRESSION, Error.UNKNOWN_VARIABLE_OR_FUNCTION), errors("var f = (x) => {\n\tvar a = \n}\nreturn a"));
+		assertEquals(List.of(Error.UNCOMPLETE_EXPRESSION), errors("if (true) {\n\treturn 1 +\n}\nvar c = 3\nreturn c"));
+		assertEquals(List.of(Error.UNCOMPLETE_EXPRESSION), errors("class A {\n\tx = 1 +\n}\nfunction g() { return 1 }\nreturn g()"));
+	}
+
+	@Test
+	public void strayBraceAtMainLevelStaysOneError() {
+		assertEquals(List.of(Error.UNCOMPLETE_EXPRESSION), errors("var a = }\nreturn 1"));
 	}
 
 	@Test

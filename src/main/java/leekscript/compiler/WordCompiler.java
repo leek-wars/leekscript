@@ -711,7 +711,7 @@ public class WordCompiler {
 				}
 				Expression exp = null;
 				if (mTokens.get().getType() != TokenType.END_INSTRUCTION && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
-					exp = readExpression();
+					exp = readStatementExpression(false);
 				}
 				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
 					mTokens.skip();
@@ -1757,7 +1757,7 @@ public class WordCompiler {
 		if (mTokens.get().getWord().equals("=")) {
 			mTokens.skip();
 			// Si oui on récupère la valeur en question
-			variable.setValue(readStatementExpression(true));
+			variable.setValue(readExpression(true));
 		}
 		// On ajoute la variable
 		mMain.addGlobalDeclaration(variable);
@@ -1777,7 +1777,7 @@ public class WordCompiler {
 			if (mTokens.get().getWord().equals("=")) {
 				mTokens.skip();
 				// Si oui on récupère la valeur en question
-				variable.setValue(readStatementExpression(true));
+				variable.setValue(readExpression(true));
 			}
 			// On ajoute la variable
 			mMain.addGlobalDeclaration(variable);
@@ -2040,7 +2040,7 @@ public class WordCompiler {
 		Expression expr = null;
 		if (mTokens.get().getType() == TokenType.OPERATOR && mTokens.get().getWord().equals("=")) {
 			mTokens.skip();
-			expr = readExpression();
+			expr = readStatementExpression(false);
 		} else if (mTokens.get().getType() == TokenType.PAR_LEFT) {
 			// Méthode
 			ClassMethodBlock method = classMethod(classDeclaration, name, false, isStatic, typeExpression == null ? Type.ANY : typeExpression.getType());
@@ -2212,7 +2212,7 @@ public class WordCompiler {
 		return readExpression(inList, inSet, false);
 	}
 
-	/** Expression d'une instruction (`var`, `global`, expression seule) : voir incompleteExpression. */
+	/** Expression d'une instruction (`var`, `return`, champ de classe, expression seule) : voir incompleteExpression. */
 	private Expression readStatementExpression(boolean inList) throws LeekCompilerException {
 		mStatementExpression = true;
 		return readExpression(inList);
@@ -2845,7 +2845,10 @@ public class WordCompiler {
 	 * ferait tourner l'analyse sur place.
 	 */
 	private LeekNull incompleteExpression(boolean statement) {
-		boolean closesBlock = statement && mTokens.get().getType() == TokenType.ACCOLADE_RIGHT;
+		// Au niveau principal hors classe, aucun bloc à fermer : consommée comme avant, sinon
+		// NO_BLOC_TO_CLOSE s'ajouterait sur la même accolade
+		boolean closesBlock = statement && mTokens.get().getType() == TokenType.ACCOLADE_RIGHT
+			&& (mCurentBlock != mMain || mCurrentClass != null);
 		return new LeekNull(closesBlock ? mTokens.get() : mTokens.eat());
 	}
 
