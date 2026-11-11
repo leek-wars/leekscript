@@ -2816,15 +2816,24 @@ public class WordCompiler {
 		}
 		if (result == null) {
 			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.UNCOMPLETE_EXPRESSION));
-			return new LeekNull(mTokens.eat());
+			return incompleteExpression();
 		}
 		try {
 			result.validExpression(this, mMain);
 		} catch (LeekExpressionException e) {
 			addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, e.getError(), new String[] { e.getExpression() }));
-			return new LeekNull(mTokens.eat());
+			return incompleteExpression();
 		}
 		return result;
+	}
+
+	/**
+	 * Expression invalide : `var a = }` ou `var a = 1 + }`. La fin d'expression reste au bloc
+	 * qu'elle ferme, sinon tout ce qui suit est décalé d'une accolade et les erreurs s'enchaînent
+	 * jusqu'à la fin du fichier.
+	 */
+	private LeekNull incompleteExpression() {
+		return new LeekNull(isExpressionEnd(mTokens.get()) ? mTokens.get() : mTokens.eat());
 	}
 
 	/** `)`, `}` ou `;` : termine une expression, n'en commence jamais une. */
