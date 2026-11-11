@@ -78,6 +78,8 @@ public class WordCompiler {
 	// `ident -> expr` doit se lire comme un motif, pas comme la lambda `ident => expr`). Consommé
 	// (remis à false) dès l'entrée de readExpression → n'affecte que l'appel de tête, pas les imbriqués.
 	private boolean mSuppressLambda = false;
+	/** Profondeur de readExpression : 1 = expression d'une instruction, plus = imbriquée (arguments, tableau…). */
+	private int mExpressionDepth = 0;
 	private AbstractLeekBlock mCurentBlock;
 	private AbstractLeekBlock mCurrentFunction;
 	private ClassDeclarationInstruction mCurrentClass;
@@ -2211,6 +2213,15 @@ public class WordCompiler {
 	}
 
 	public Expression readExpression(boolean inList, boolean inSet, boolean inInterval) throws LeekCompilerException {
+		mExpressionDepth++;
+		try {
+			return readExpressionAtDepth(inList, inSet, inInterval);
+		} finally {
+			mExpressionDepth--;
+		}
+	}
+
+	private Expression readExpressionAtDepth(boolean inList, boolean inSet, boolean inInterval) throws LeekCompilerException {
 
 		// #2404 : on capture+réarme le drapeau de suppression de lambda pour qu'il ne s'applique
 		// qu'à CET appel (les sous-expressions imbriquées retrouvent la détection de lambda normale).
@@ -2828,12 +2839,15 @@ public class WordCompiler {
 	}
 
 	/**
-	 * Expression invalide : `var a = }` ou `var a = 1 + }`. La fin d'expression reste au bloc
-	 * qu'elle ferme, sinon tout ce qui suit est décalé d'une accolade et les erreurs s'enchaînent
-	 * jusqu'à la fin du fichier.
+	 * Expression invalide : `var a = }` ou `var a = 1 + }`. Au niveau d'une instruction, l'accolade
+	 * reste au bloc qu'elle ferme, sinon tout ce qui suit est décalé d'une accolade et les erreurs
+	 * s'enchaînent jusqu'à la fin du fichier. Partout ailleurs le token est consommé : un `)` en
+	 * trop ou un `}` dans des arguments (`f(1, }`) n'est repris par personne, le laisser ferait
+	 * tourner l'analyse sur place.
 	 */
 	private LeekNull incompleteExpression() {
-		return new LeekNull(isExpressionEnd(mTokens.get()) ? mTokens.get() : mTokens.eat());
+		boolean closesBlock = mExpressionDepth == 1 && mTokens.get().getType() == TokenType.ACCOLADE_RIGHT;
+		return new LeekNull(closesBlock ? mTokens.get() : mTokens.eat());
 	}
 
 	/** `)`, `}` ou `;` : termine une expression, n'en commence jamais une. */
