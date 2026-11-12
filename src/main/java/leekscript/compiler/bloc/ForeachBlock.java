@@ -77,7 +77,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 	}
 
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
-		int calls = startCountingCalls(compiler);
+		int calls = beginLoopEffects(compiler);
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 
@@ -100,7 +100,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		compiler.setCurrentBlock(initialBlock);
 
 		super.preAnalyze(compiler);
-		endCountingCalls(compiler, calls);
+		endLoopEffects(compiler, calls);
 	}
 
 	/**
@@ -125,7 +125,8 @@ public class ForeachBlock extends AbstractLeekBlock {
 	}
 
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
-		invalidateIfLoopMayCall(compiler);
+		invalidateLoopEffects(compiler);
+		compiler.getMainBlock().invalidateNarrowingsThrough(mIterator.getWord()); // l'itérateur est réécrit à chaque tour
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		mArray.analyze(compiler);

@@ -1085,4 +1085,34 @@ public class TestNarrowing extends TestCommon {
 		safe("", "function f(A a) { if (!(a.m instanceof B)) return 0 a.reset() return a.m.v } return f(new A())").equals("null");
 		safe("", "function f(Array<A> list) { var r = 0 for (var a in list) { if (!(a.m instanceof B)) continue r += a.m.v } return r } return f([new A(), new A()])").equals("2");
 	}
+
+	@Test
+	public void testSafeNarrowing_loops_and_names() throws Exception {
+		section("Affinage sûr (v5) : boucles, itérateurs, noms masqués");
+		var hierarchy = "class P { integer p = 1 } class C extends P { integer c = 2 } ";
+		// Une boucle ne périme que ce que son corps peut réassigner : ni `i++`, ni un autre champ,
+		// ni une case d'un tableau
+		code_strict_v5_(hierarchy + "class A { P m = new C() test() { var r = 0 if (this.m instanceof C) { for (var i = 0; i < 3; i++) { r += this.m.c } } return r } } return new A().test()").equals("6");
+		code_strict_v5_(hierarchy + "class A { P m = new C() integer n = 0 Array<integer> t = [0, 0, 0] test() { var r = 0 if (this.m instanceof C) { for (var i = 0; i < 3; i++) { this.n++ this.t[i] = i r += this.m.c } } return r } } return new A().test()").equals("6");
+		// Ce que le tour précédent a réécrit : le receveur, le champ par un autre nom, par une clé
+		safe("", "function f(A a, A b) { b.m = 's' var r = 0 if (a.m instanceof B) { for (var i = 0; i < 2; i++) { r += a.m.v a = b } } return r } return f(new A(), new A())").equals("1");
+		safe("test() { var r = 0 if (this.m instanceof B) { for (var i = 0; i < 2; i++) { r += this.m.v var o = this o.m = 's' } } return r }", "return new A().test()").equals("1");
+		safe("test() { var r = 0 if (this.m instanceof B) { for (var i = 0; i < 2; i++) { r += this.m.v any o = this o['m'] = 's' } } return r }", "return new A().test()").equals("1");
+		safe("test() { var r = 0 any k = 'm' if (this.m instanceof B) { for (var i = 0; i < 2; i++) { r += this.m.v any o = this o[k] = 's' } } return r }", "return new A().test()").equals("1");
+		// Un foreach sans `var` réécrit son itérateur
+		safe("", "function f(A a, Array<A> others) { if (a.m instanceof B) { for (a in others) { return a.m.v } } return 0 } var o = new A() o.m = 's' return f(new A(), [o])").equals("null");
+		// Une locale qui masque un champ n'hérite pas de l'affinage de `champ.f`
+		safe("", "class K { A obj = new A() test(A autre) { autre.m = 's' if (obj.m instanceof B) { var obj = autre return obj.m.v } return 0 } } return new K().test(new A())").equals("null");
+		// Une locale du nom du champ n'est pas le champ : `var m = a.m` garde l'affinage de a.m
+		code_strict_v5_(hierarchy + "class A { P m = new C() } function f(A a) { if (!(a.m instanceof C)) return 0 var m = a.m return m.c } return f(new A())").equals("2");
+		code_strict_v5_(hierarchy + "class A { P m = new C() } function f(A a) { var m = 0 if (a.m instanceof C) { m = 5 return a.m.c + m } return 0 } return f(new A())").equals("7");
+		// Dans la classe, `m = …` écrit bien le champ
+		safe("test() { if (this.m instanceof B) { m = 's' return this.m.v } return 0 }", "return new A().test()").equals("null");
+		// `o.m = …` écrit le champ d'un autre objet : il ne garantit rien sur `m` ni `this.m`
+		code_v5_(SAFE_B + "class A { B? m = null test(A o) { if (m == null) { o.m = new B() } return m.v } } return new A().test(new A())").equals("null");
+		code_v5_(SAFE_B + "class A { B? m = null test(A o) { if (this.m == null) { o.m = new B() } return this.m.v } } return new A().test(new A())").equals("null");
+		// Globale et champ de module : lus en dynamique après l'appel
+		code_v5_(SAFE_B + "global B? g = new B() function reset() { g = null } function test() { if (g != null) { reset() return g.v } return 0 } return test()").equals("null");
+		code_v5_(SAFE_B + "export B|string x = new B() function reset() { x = 's' } function test() { if (x instanceof B) { reset() return x.v } return 0 } return test()").equals("null");
+	}
 }

@@ -259,6 +259,9 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
+		// v5 : une nouvelle variable de ce nom n'hérite pas des affinages `nom.f` d'un champ ou
+		// d'une globale homonyme qu'elle masque
+		compiler.getMainBlock().invalidateNarrowingsThrough(token.getWord());
 		if (mValue != null) {
 			mValue.analyze(compiler);
 

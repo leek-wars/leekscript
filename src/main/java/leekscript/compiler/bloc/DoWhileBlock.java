@@ -111,7 +111,7 @@ public class DoWhileBlock extends AbstractLeekBlock {
 	}
 
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
-		int calls = startCountingCalls(compiler);
+		int calls = beginLoopEffects(compiler);
 		if (mCondition != null) {
 			mCondition.preAnalyze(compiler);
 		} else {
@@ -122,11 +122,11 @@ public class DoWhileBlock extends AbstractLeekBlock {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.WHILE_EXPECTED_AFTER_DO));
 		}
 		super.preAnalyze(compiler);
-		endCountingCalls(compiler, calls);
+		endLoopEffects(compiler, calls);
 	}
 
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
-		invalidateIfLoopMayCall(compiler);
+		invalidateLoopEffects(compiler);
 		if (mCondition != null) {
 			mCondition.analyze(compiler);
 		}

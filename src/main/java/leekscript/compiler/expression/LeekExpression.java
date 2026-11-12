@@ -1210,8 +1210,8 @@ public class LeekExpression extends Expression {
 		if (mExpression2 != null) mExpression2.preAnalyze(compiler);
 
 		var target = assignTarget();
-		// Une écriture dans une boucle périme les affinages dès l'entrée (cf AbstractLeekBlock.invalidateIfLoopMayCall)
-		if (target != null) compiler.getMainBlock().countPreAnalyzedCall();
+		// Une écriture dans une boucle périme ses affinages dès l'entrée (cf AbstractLeekBlock.invalidateLoopEffects)
+		if (target != null) compiler.getMainBlock().addPreAnalyzedWrite(target);
 		if (target instanceof LeekVariable v && v.getVariable() != null) {
 			v.getVariable().setReassigned();
 			var declaration = v.getVariable().getDeclaration();
@@ -1339,7 +1339,7 @@ public class LeekExpression extends Expression {
 			}
 		}
 
-		invalidateWrittenNarrowings(compiler);
+		compiler.getMainBlock().invalidateWrittenNarrowings(assignTarget(), true);
 
 		if (mOperator == Operators.ASSIGN) {
 			var variable1 = mExpression1.getVariable();
@@ -1359,7 +1359,8 @@ public class LeekExpression extends Expression {
 			}
 			// Track assigned expression type for assignment narrowing detection
 			// (used by ConditionalBloc to detect patterns like: if (x == null) { x = nonNull })
-			if (variable1 != null) {
+			// v5 : pas par `x.f = …`, qui écrit le champ d'un autre objet (cf sharesFieldNarrowing)
+			if (variable1 != null && !(mExpression1 instanceof LeekObjectAccess access && !access.sharesFieldNarrowing())) {
 				variable1.setLastAssignedType(mExpression2.getType());
 				variable1.markNarrowed();
 			}
@@ -1705,6 +1706,12 @@ public class LeekExpression extends Expression {
 	 * `--x`…), null pour les autres opérateurs. Sans le `!` : preAnalyze s'en sert avant
 	 * qu'analyze ne le retire (`f! += 1`).
 	 */
+	private Expression assignTarget() {
+		return Operators.isAssign(mOperator) ? withoutNonNullAssertion(mExpression1)
+			: Operators.isIncrement(mOperator) ? withoutNonNullAssertion(mExpression2)
+			: null;
+	}
+
 	// v5 : l'opérande droit d'un `&&` / `||` a pu réassigner ce que le gauche vient de tester
 	// (`this.m instanceof B && this.reset()`), cf NarrowingInfo.extract
 	private boolean rightOperandMayReassign = false;
@@ -1717,37 +1724,6 @@ public class LeekExpression extends Expression {
 		int tick = compiler.getMainBlock().getNarrowingTick();
 		mExpression2.analyze(compiler);
 		rightOperandMayReassign = compiler.getMainBlock().getNarrowingTick() != tick;
-	}
-
-	/**
-	 * v5 : une écriture périme les affinages qui portent le nom écrit (cf
-	 * MainLeekBlock.invalidateNarrowingsOf) : `x.f = …` ceux du champ f quel que soit le receveur,
-	 * `x = …` ceux de `x.f`. `o[k] = …` écrit un champ si o est un objet : celui du nom littéral,
-	 * sinon n'importe lequel.
-	 */
-	private void invalidateWrittenNarrowings(WordCompiler compiler) {
-		var main = compiler.getMainBlock();
-		if (!main.hasSafeFieldNarrowing()) return;
-		var target = assignTarget();
-		if (target instanceof LeekVariable variable) {
-			main.invalidateNarrowingsOf(variable.getName());
-		} else if (target instanceof LeekObjectAccess access) {
-			main.invalidateNarrowingsOf(access.getField());
-		} else if (target instanceof LeekArrayAccess cell) {
-			var container = cell.getTabular().getType();
-			if (container.isArray() || container.isMap() || container == Type.STRING) return;
-			if (cell.getCase() instanceof LeekString key) {
-				main.invalidateNarrowingsOf(key.getText());
-			} else {
-				main.invalidateFieldNarrowings();
-			}
-		}
-	}
-
-	private Expression assignTarget() {
-		return Operators.isAssign(mOperator) ? withoutNonNullAssertion(mExpression1)
-			: Operators.isIncrement(mOperator) ? withoutNonNullAssertion(mExpression2)
-			: null;
 	}
 
 	/**

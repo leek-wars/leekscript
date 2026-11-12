@@ -155,20 +155,29 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	 * Look up a narrowed property type (e.g. "x.field") in this block or parent blocks.
 	 * Used by LeekObjectAccess during type narrowing.
 	 */
-	// Boucle contenant un appel (cf MainLeekBlock.invalidateFieldNarrowings) : un tour peut
-	// relire un champ réassigné par un appel du tour précédent.
+	// Boucle (v5) : son corps contient-il un appel, et quelles écritures (cf
+	// MainLeekBlock.invalidateWrittenNarrowings) ? Un tour peut relire ce que le précédent a réassigné.
 	private boolean mLoopMayCall = false;
+	private int mLoopWritesFrom = 0;
+	private int mLoopWritesTo = 0;
 
-	protected int startCountingCalls(WordCompiler compiler) {
+	protected int beginLoopEffects(WordCompiler compiler) {
+		mLoopWritesFrom = compiler.getMainBlock().getPreAnalyzedWrites();
 		return compiler.getMainBlock().getPreAnalyzedCalls();
 	}
 
-	protected void endCountingCalls(WordCompiler compiler, int before) {
-		mLoopMayCall = compiler.getMainBlock().getPreAnalyzedCalls() > before;
+	protected void endLoopEffects(WordCompiler compiler, int callsBefore) {
+		mLoopMayCall = compiler.getMainBlock().getPreAnalyzedCalls() > callsBefore;
+		mLoopWritesTo = compiler.getMainBlock().getPreAnalyzedWrites();
 	}
 
-	protected void invalidateIfLoopMayCall(WordCompiler compiler) {
-		if (mLoopMayCall) compiler.getMainBlock().invalidateFieldNarrowings();
+	/** À l'entrée de la boucle : ce que son corps peut réassigner l'est peut-être déjà. */
+	protected void invalidateLoopEffects(WordCompiler compiler) {
+		if (mLoopMayCall) {
+			compiler.getMainBlock().invalidateFieldNarrowings();
+		} else {
+			compiler.getMainBlock().invalidateWrittenNarrowings(mLoopWritesFrom, mLoopWritesTo);
+		}
 	}
 
 	/**
@@ -192,7 +201,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 			var tick = ticks.get(key);
 			if (tick == null) return false;
 			int dot = key.indexOf('.');
-			return main.isNarrowingStale(tick, key.substring(dot + 1)) || main.isNarrowingStale(tick, key.substring(0, dot));
+			return main.isNarrowingStale(tick, key.substring(0, dot), key.substring(dot + 1));
 		}
 	}
 

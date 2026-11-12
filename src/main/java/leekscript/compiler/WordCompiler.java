@@ -818,6 +818,14 @@ public class WordCompiler {
 					if (word.getType() == TokenType.EXPORT) {
 						// `@annotation export function f` : même déclaration que `export @annotation function f`
 						mTokens.skip();
+						if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.ACCOLADE_LEFT) {
+							// `@annotation export { a } from "x"` : rien à annoter dans un ré-export
+							for (var ann : annotations) {
+								addError(new AnalyzeError(ann, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_INVALID_CONTEXT, new String[] { ann.getWord() }));
+							}
+							importStatement(false, true);
+							return;
+						}
 						mExporting = true;
 						try {
 							// Rien de consommé (`export integer x`, que les annotations ne visent pas) : la

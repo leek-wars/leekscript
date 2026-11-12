@@ -466,6 +466,16 @@ public class TestModulesResolution {
 	}
 
 	@Test
+	public void annotationBeforeReexportIsOnlyAWarning() throws Exception {
+		write("aq.leek", "export function f() { return 9 }");
+		write("ar.leek", "@deprecated export { f } from \"aq\"");
+		String main = writeMain("import { f } from \"ar\"\nreturn f()");
+		assertEquals("9", run(main));
+		var errors = compileAndCollectErrors(main);
+		assertTrue(errors.contains(Error.ANNOTATION_INVALID_CONTEXT), errors.toString());
+	}
+
+	@Test
 	public void annotationBeforeTypedExportKeepsTheExport() throws Exception {
 		// Une annotation ne vise pas une déclaration typée (avertissement), l'export reste
 		write("ap.leek", "@unused export integer n = 3");

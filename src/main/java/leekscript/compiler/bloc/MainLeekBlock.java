@@ -25,9 +25,14 @@ import leekscript.compiler.Location;
 import leekscript.compiler.Options;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.expression.Expression;
+import leekscript.compiler.expression.LeekArrayAccess;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekFileContent;
 import leekscript.compiler.expression.LeekNumber;
+import leekscript.compiler.expression.LeekObjectAccess;
+import leekscript.compiler.expression.LeekString;
+import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.ModuleScopeInstruction;
@@ -993,15 +998,17 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	// B)`) ne vaut que tant que rien n'a pu le réassigner, sinon le Java émis pour ce type plante
 	// (cast, accès direct sur null). Chaque événement qui peut réécrire un champ fait avancer une
 	// horloge : un appel (il peut exécuter du code du joueur) périme tous les affinages posés
-	// avant lui ; une écriture `x.f = …` ou `x = …` périme ceux qui portent ce nom (le champ écrit,
-	// par n'importe quel receveur, ou le receveur réaffecté). Suivis : les champs, et les locales
+	// avant lui ; une écriture `x.f = …` ceux du champ f, par n'importe quel receveur ; une
+	// variable `x` réaffectée ou redéclarée ceux de `x.f`. Suivis : les champs, et les locales
 	// réaffectées qu'une closure capture (cf LeekVariable.getType, AbstractLeekBlock.NarrowedProperties).
 	private int narrowingClock = 0;
 	private int lastCallTick = 0;
-	private Map<String, Integer> lastWriteTicks = null;
-	// Appels et écritures vus au preAnalyze : une boucle qui en contient périme tout dès son
-	// entrée, le tour suivant pouvant relire un champ réassigné au tour précédent.
+	private Map<String, Integer> lastFieldWriteTicks = null;
+	private Map<String, Integer> lastVariableWriteTicks = null;
+	// Appels et cibles d'écriture vus au preAnalyze, dans l'ordre du source : une boucle rejoue à
+	// son entrée ceux de son corps, le tour suivant pouvant relire un champ réassigné au tour précédent.
 	private int preAnalyzedCalls = 0;
+	private final ArrayList<Expression> preAnalyzedWrites = new ArrayList<>();
 
 	/** La règle s'applique-t-elle à ce programme ? Faux aussi pour les classes internes, déclarées avant le compilateur. */
 	public boolean hasSafeFieldNarrowing() {
@@ -1018,18 +1025,33 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		if (hasSafeFieldNarrowing()) lastCallTick = ++narrowingClock;
 	}
 
-	/** Écriture dans le champ ou la variable `name` : les affinages qui portent ce nom sont périmés. */
-	public void invalidateNarrowingsOf(String name) {
+	/** Écriture dans un champ `field`, par n'importe quel receveur : ses affinages sont périmés. */
+	public void invalidateFieldNarrowingsOf(String field) {
 		if (!hasSafeFieldNarrowing()) return;
-		if (lastWriteTicks == null) lastWriteTicks = new HashMap<>();
-		lastWriteTicks.put(name, ++narrowingClock);
+		if (lastFieldWriteTicks == null) lastFieldWriteTicks = new HashMap<>();
+		lastFieldWriteTicks.put(field, ++narrowingClock);
 	}
 
-	/** L'affinage posé à `tick` sur le nom `name` est-il périmé ? */
-	public boolean isNarrowingStale(int tick, String name) {
-		if (tick < lastCallTick) return true;
-		if (lastWriteTicks == null) return false;
-		var written = lastWriteTicks.get(name);
+	/** Variable `variable` réaffectée ou redéclarée : les affinages de `variable.f` sont périmés. */
+	public void invalidateNarrowingsThrough(String variable) {
+		if (!hasSafeFieldNarrowing()) return;
+		if (lastVariableWriteTicks == null) lastVariableWriteTicks = new HashMap<>();
+		lastVariableWriteTicks.put(variable, ++narrowingClock);
+	}
+
+	/** L'affinage posé à `tick` sur le champ (ou la variable suivie) `field` est-il périmé ? */
+	public boolean isNarrowingStale(int tick, String field) {
+		return tick < lastCallTick || writtenSince(lastFieldWriteTicks, field, tick);
+	}
+
+	/** Idem pour `receiver.field` : le receveur est une variable, ou lui-même un champ. */
+	public boolean isNarrowingStale(int tick, String receiver, String field) {
+		return isNarrowingStale(tick, field) || writtenSince(lastFieldWriteTicks, receiver, tick) || writtenSince(lastVariableWriteTicks, receiver, tick);
+	}
+
+	private static boolean writtenSince(Map<String, Integer> ticks, String name, int tick) {
+		if (ticks == null) return false;
+		var written = ticks.get(name);
 		return written != null && tick < written;
 	}
 
@@ -1039,5 +1061,57 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public void countPreAnalyzedCall() {
 		preAnalyzedCalls++;
+	}
+
+	public int getPreAnalyzedWrites() {
+		return preAnalyzedWrites.size();
+	}
+
+	public void addPreAnalyzedWrite(Expression target) {
+		if (hasSafeFieldNarrowing()) preAnalyzedWrites.add(target);
+	}
+
+	/** Entrée d'une boucle dont le corps contient les écritures [from, to[ : leurs affinages sont périmés. */
+	public void invalidateWrittenNarrowings(int from, int to) {
+		for (int i = from; i < to; i++) invalidateWrittenNarrowings(preAnalyzedWrites.get(i), false);
+	}
+
+	/** Type du conteneur d'une case pas encore analysée : celui de sa variable ou du champ `this.f`, sinon any. */
+	private Type declaredContainerType(Expression tabular) {
+		if (tabular instanceof LeekVariable variable && variable.getVariable() != null) return variable.getVariable().getType();
+		if (tabular instanceof LeekObjectAccess access && access.getObject() instanceof LeekVariable receiver
+				&& receiver.getVariableType() == VariableType.THIS && wordCompiler.getCurrentClass() != null) {
+			var member = wordCompiler.getCurrentClass().getMember(access.getField());
+			if (member != null) return member.getDeclaredType();
+		}
+		return Type.ANY;
+	}
+
+	/**
+	 * v5 : une écriture périme les affinages de sa cible : `x.f = …` ceux du champ f quel que
+	 * soit le receveur, `x = …` ceux de `x.f`. `o[k] = …` écrit un champ si o est un objet :
+	 * celui du nom littéral, sinon n'importe lequel. `analyzed` : la cible a son type ; sinon (cible
+	 * d'une boucle, rejouée avant l'analyse du corps) le conteneur n'a que celui de sa variable.
+	 */
+	public void invalidateWrittenNarrowings(Expression target, boolean analyzed) {
+		if (!hasSafeFieldNarrowing()) return;
+		if (target instanceof LeekVariable variable) {
+			// `f = …` dans sa classe écrit le champ, comme `this.f = …`
+			if (variable.getVariableType() == VariableType.FIELD || variable.getVariableType() == VariableType.STATIC_FIELD) {
+				invalidateFieldNarrowingsOf(variable.getName());
+			} else {
+				invalidateNarrowingsThrough(variable.getName());
+			}
+		} else if (target instanceof LeekObjectAccess access) {
+			invalidateFieldNarrowingsOf(access.getField());
+		} else if (target instanceof LeekArrayAccess cell) {
+			var container = analyzed ? cell.getTabular().getType() : declaredContainerType(cell.getTabular());
+			if (container.isArray() || container.isArrayOrNull() || container.isMap() || container.isMapOrNull() || container == Type.STRING) return;
+			if (cell.getCase() instanceof LeekString key) {
+				invalidateFieldNarrowingsOf(key.getText());
+			} else {
+				invalidateFieldNarrowings();
+			}
+		}
 	}
 }
