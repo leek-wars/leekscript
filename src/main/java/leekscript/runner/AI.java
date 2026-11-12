@@ -237,7 +237,7 @@ public abstract class AI {
 				var string_method = getClass().getMethod("u_string");
 				var result = string_method.invoke(this);
 				if (!(result instanceof String)) {
-					AI.this.addSystemLog(AILog.ERROR, Error.STRING_METHOD_MUST_RETURN_STRING, new String[] { getClass().getSimpleName() });
+					AI.this.addSystemLog(AILog.ERROR, Error.STRING_METHOD_MUST_RETURN_STRING, new String[] { userClassName(getClass()) });
 				} else {
 					return AI.this.string(result, visited);
 				}
@@ -910,12 +910,7 @@ public abstract class AI {
 	 * détail du code généré, il ne doit paraître ni dans `string(objet)` ni dans une erreur.
 	 */
 	public static String userClassName(Class<?> clazz) {
-		var name = clazz.getSimpleName().substring(2);
-		if (name.startsWith("$m")) {
-			int end = name.indexOf('$', 2);
-			if (end > 0) return name.substring(end + 1);
-		}
-		return name;
+		return leekscript.compiler.bloc.Module.stripPrefix(clazz.getSimpleName().substring(2));
 	}
 
 	public static Object load(Object value) {

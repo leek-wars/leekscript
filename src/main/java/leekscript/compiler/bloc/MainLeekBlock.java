@@ -91,6 +91,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final Map<String, Module> mModules = new HashMap<>();
 	private final Map<String, AIFile> mImportedFirstPass = new HashMap<>();
 	private final Map<String, AIFile> mImported = new HashMap<>();
+	private boolean mHasModules = false;
 	private int mModuleId = 1;
 	private int mCounter = 0;
 	private int mCountInstruction = 0;
@@ -531,34 +532,46 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		// Le code de haut niveau du module s'ajoute aux instructions du bloc principal :
 		// ces marqueurs l'analysent dans son module, avec ses propres locales
 		var opening = ModuleScopeInstruction.open(module, compiler.getTokenStream().get().getLocation());
+		mHasModules = true;
 		addInstruction(compiler, opening);
 		compileChild(compiler, file, mImported, this::getOrCreateModule, false);
 		addInstruction(compiler, opening.close());
 		return module;
 	}
 
+	// Écriture du Java : instructions du fichier d'entrée, et corps de chaque module importé
+	// (cf splitModules). Null tant que rien n'est écrit, ou sans module importé.
+	private List<LeekInstruction> mEntryInstructions;
+	private Map<ModuleScopeInstruction, List<LeekInstruction>> mModuleBodies;
+
 	/**
-	 * Instructions de [from, to) hors des modules importés : d'un module on ne garde que le
-	 * marqueur d'ouverture, qui s'écrit comme l'appel de sa méthode.
+	 * Sépare le code de haut niveau des modules importés de celui du fichier d'entrée. Les
+	 * marqueurs s'emboîtent comme les imports : chaque module reçoit les instructions posées
+	 * entre les siens, et là où il était importé ne reste que son marqueur d'ouverture, qui
+	 * s'écrit comme l'appel de sa méthode.
 	 */
-	private List<LeekInstruction> outsideModules(int from, int to) {
-		var result = new ArrayList<LeekInstruction>();
-		ModuleScopeInstruction inside = null;
-		for (int i = from; i < to; i++) {
-			var instruction = mInstructions.get(i);
-			if (inside != null) {
-				if (instruction instanceof ModuleScopeInstruction scope && scope.closes(inside)) inside = null;
-				continue;
+	private void splitModules() {
+		mEntryInstructions = new ArrayList<>();
+		mModuleBodies = new LinkedHashMap<>();
+		var enclosing = new ArrayList<List<LeekInstruction>>();
+		var current = mEntryInstructions;
+		for (var instruction : mInstructions) {
+			if (!(instruction instanceof ModuleScopeInstruction scope)) {
+				current.add(instruction);
+			} else if (scope.isOpening()) {
+				current.add(scope);
+				enclosing.add(current);
+				current = new ArrayList<>();
+				mModuleBodies.put(scope, current);
+			} else if (!enclosing.isEmpty()) {
+				current = enclosing.remove(enclosing.size() - 1);
 			}
-			result.add(instruction);
-			if (instruction instanceof ModuleScopeInstruction scope && scope.isOpening()) inside = scope;
 		}
-		return result;
 	}
 
 	@Override
 	protected List<LeekInstruction> getWrittenInstructions() {
-		return outsideModules(0, mInstructions.size());
+		return mEntryInstructions != null ? mEntryInstructions : mInstructions;
 	}
 
 	/**
@@ -567,12 +580,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * les 64 Ko d'une seule méthode Java.
 	 */
 	private void writeModuleMethods(JavaWriter writer) {
-		for (int i = 0; i < mInstructions.size(); i++) {
-			if (!(mInstructions.get(i) instanceof ModuleScopeInstruction opening) || !opening.isOpening()) continue;
-			int end = i + 1;
-			while (!(mInstructions.get(end) instanceof ModuleScopeInstruction scope && scope.closes(opening))) end++;
-			writer.addLine("private void " + opening.getMethodName() + "() throws LeekRunException {");
-			for (var instruction : outsideModules(i + 1, end)) {
+		if (!mHasModules) return;
+		splitModules();
+		for (var module : mModuleBodies.entrySet()) {
+			writer.addLine("private void " + module.getKey().getMethodName() + "() throws LeekRunException {");
+			for (var instruction : module.getValue()) {
 				instruction.writeJavaCode(this, writer, false);
 			}
 			writer.addLine("}");

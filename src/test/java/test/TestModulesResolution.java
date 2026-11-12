@@ -22,6 +22,7 @@ import leekscript.compiler.LeekScript;
 import leekscript.compiler.Options;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.runner.AI;
+import leekscript.runner.LeekRunException;
 
 /**
  * Modules v5 (pilier 3, phase 3b) — résolution multi-fichiers : import effectif,
@@ -545,10 +546,6 @@ public class TestModulesResolution {
 	}
 
 	// =========================================================================
-	// Helpers
-	// =========================================================================
-
-	// =========================================================================
 	// Code de haut niveau d'un module : une méthode Java par module
 	// =========================================================================
 
@@ -580,6 +577,23 @@ public class TestModulesResolution {
 		assertEquals("1105", run(main));
 	}
 
+	// Une erreur dans le code de haut niveau d'un module se lit à sa ligne, dans son fichier :
+	// les imports qui y ont mené ne sont pas des étapes de la trace.
+	@Test
+	public void errorTraceOfModuleTopLevelSkipsImports() throws Exception {
+		write("tb.leek", "export global done = 0\nvar i = 0\nwhile (true) { i++ }");
+		write("ta.leek", "import { done } from \"tb\"\nexport global other = 0\nother = done");
+		String main = writeMain("import { other } from \"ta\"\nreturn other");
+		AI ai = load(main);
+		String trace = null;
+		try {
+			ai.runIA();
+		} catch (LeekRunException e) {
+			trace = ai.getErrorMessage(e);
+		}
+		assertEquals("\t▶ AI tb, line 3\n", trace);
+	}
+
 	// Le préfixe de module du code généré ne paraît pas dans le nom d'une classe importée.
 	@Test
 	public void importedClassNameHasNoModulePrefix() throws Exception {
@@ -587,6 +601,10 @@ public class TestModulesResolution {
 		String main = writeMain("import { Vec } from \"geo\"\nreturn string(new Vec())");
 		assertEquals("Vec {x: 1}", run(main));
 	}
+
+	// =========================================================================
+	// Helpers
+	// =========================================================================
 
 	private Path write(String relative, String content) throws IOException {
 		var p = tmpRoot.resolve(relative);
@@ -601,20 +619,8 @@ public class TestModulesResolution {
 		return name;
 	}
 
-	private String run(String name) throws Exception {
-		var file = fs.getRoot(0).resolve(name);
-		file.setJavaClass("AI_" + file.getId());
-		file.setRootClass("AI");
-		var options = new Options(LeekScript.MAX_VERSION, false, true, true, null, true);
-		AI ai = JavaCompiler.compile(file, options);
-		ai.init();
-		ai.staticInit();
-		ai.resetCounter();
-		return ai.string(ai.runIA());
-	}
-
-	/** Opérations consommées par un tour de l'IA. */
-	private long operations(String name) throws Exception {
+	/** L'IA compilée, prête à jouer un tour. */
+	private AI load(String name) throws Exception {
 		var file = fs.getRoot(0).resolve(name);
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass("AI");
@@ -622,6 +628,17 @@ public class TestModulesResolution {
 		ai.init();
 		ai.staticInit();
 		ai.resetCounter();
+		return ai;
+	}
+
+	private String run(String name) throws Exception {
+		AI ai = load(name);
+		return ai.string(ai.runIA());
+	}
+
+	/** Opérations consommées par un tour de l'IA. */
+	private long operations(String name) throws Exception {
+		AI ai = load(name);
 		ai.runIA();
 		return ai.getOperations();
 	}

@@ -50,7 +50,18 @@ public class Module {
 		this.file = file;
 		this.id = id;
 		this.main = main;
-		this.prefix = main ? "" : "$m" + id + "$";
+		this.prefix = main ? "" : PREFIX_START + id + PREFIX_END;
+	}
+
+	// Le préfixe ne peut pas heurter un nom LeekScript : `$` n'y est pas un caractère d'identifiant
+	private static final String PREFIX_START = "$m";
+	private static final char PREFIX_END = '$';
+
+	/** Retire le préfixe de module d'un nom du code généré (`$m31$HitMap` -> `HitMap`). */
+	public static String stripPrefix(String name) {
+		if (!name.startsWith(PREFIX_START)) return name;
+		int end = name.indexOf(PREFIX_END, PREFIX_START.length());
+		return end < 0 ? name : name.substring(end + 1);
 	}
 
 	public AIFile getFile() {
