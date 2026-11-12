@@ -15,9 +15,10 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 /**
  * Borne le code de haut niveau d'un module importé (v5) dans les instructions du bloc principal :
  * le marqueur d'ouverture analyse la suite dans le module (ses imports, ses déclarations privées)
- * avec ses propres variables locales, celui de fermeture rétablit l'appelant. En Java, la paire
- * émet la méthode d'une classe anonyme, appelée sur place : une portée à part, où un `var x` du
- * module ne heurte pas un `var x` de l'appelant (un simple bloc `{ … }` ne peut pas en redéclarer).
+ * avec ses propres variables locales, celui de fermeture rétablit l'appelant. En Java, le code
+ * entre les deux marqueurs devient une méthode de l'IA, appelée à la place de l'import (cf
+ * MainLeekBlock.writeModuleMethods) : une portée à part, où un `var x` du module ne heurte pas un
+ * `var x` de l'appelant, et un budget de 64 Ko par module au lieu d'un seul pour tout le programme.
  */
 public class ModuleScopeInstruction extends LeekInstruction {
 
@@ -73,9 +74,24 @@ public class ModuleScopeInstruction extends LeekInstruction {
 		enterOrExit(compiler);
 	}
 
+	public boolean isOpening() {
+		return opening == null;
+	}
+
+	public boolean closes(ModuleScopeInstruction other) {
+		return opening == other;
+	}
+
+	/** Nom Java de la méthode qui porte le code de haut niveau du module. */
+	public String getMethodName() {
+		return module.prefix() + "run";
+	}
+
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
-		writer.addLine(opening == null ? "new Object() { void run() throws LeekRunException {" : "}}.run();");
+		// Le marqueur d'ouverture appelle la méthode du module ; son contenu et le marqueur de
+		// fermeture sont écrits à part par MainLeekBlock.writeModuleMethods.
+		if (opening == null) writer.addLine(getMethodName() + "();", location);
 	}
 
 	@Override

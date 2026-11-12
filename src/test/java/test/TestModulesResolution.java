@@ -548,6 +548,38 @@ public class TestModulesResolution {
 	// Helpers
 	// =========================================================================
 
+	// =========================================================================
+	// Code de haut niveau d'un module : une méthode Java par module
+	// =========================================================================
+
+	// Le code de haut niveau d'un module s'écrivait dans celui de son importateur, emboîté à la
+	// profondeur des imports : chaque accès à une globale coûtait alors un saut par niveau, et
+	// un module riche en globales, importé en profondeur, dépassait les 64 Ko d'une méthode Java
+	// (CODE_TOO_LARGE). Chaque module a maintenant sa méthode.
+	@Test
+	public void manyGlobalsDeepInImportChain() throws Exception {
+		var globals = new StringBuilder("export global integer G0 = 0");
+		for (int i = 1; i < 600; i++) globals.append(", G").append(i).append(" = ").append(i);
+		int depth = 12;
+		write("deep" + depth + ".leek", globals + "\nexport function f" + depth + "() { return G0 + G599 }");
+		for (int i = depth - 1; i >= 0; i--) {
+			write("deep" + i + ".leek", "import { f" + (i + 1) + " } from \"deep" + (i + 1) + "\"\n" +
+				"export function f" + i + "() { return f" + (i + 1) + "() + 1 }");
+		}
+		String main = writeMain("import { f0 } from \"deep0\"\nreturn f0()");
+		assertEquals(String.valueOf(599 + depth), run(main));
+	}
+
+	// Une locale du module posée avant un import reste lisible après lui, et ne heurte pas la
+	// locale de même nom du module importé.
+	@Test
+	public void moduleLocalSurvivesItsImports() throws Exception {
+		write("inner.leek", "var k = 100\nexport global base = 0\nbase = k");
+		write("outer.leek", "var k = 5\nimport { base } from \"inner\"\nexport global total = 0\ntotal = k + base");
+		String main = writeMain("var k = 1000\nimport { total } from \"outer\"\nreturn total + k");
+		assertEquals("1105", run(main));
+	}
+
 	private Path write(String relative, String content) throws IOException {
 		var p = tmpRoot.resolve(relative);
 		Files.createDirectories(p.getParent());

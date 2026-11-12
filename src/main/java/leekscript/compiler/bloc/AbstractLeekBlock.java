@@ -336,13 +336,19 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		return retour;
 	}
 
+	/** Instructions que writeJavaCode écrit dans le corps du bloc : toutes, sauf pour le bloc principal. */
+	protected List<LeekInstruction> getWrittenInstructions() {
+		return mInstructions;
+	}
+
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		int i = 0;
 		writer.lastInstruction = false;
-		for (LeekInstruction instruction : mInstructions) {
+		var instructions = getWrittenInstructions();
+		for (LeekInstruction instruction : instructions) {
 			i++;
-			var last = i == mInstructions.size();
+			var last = i == instructions.size();
 			if (last && this instanceof MainLeekBlock) {
 				if (instruction instanceof LeekExpressionInstruction) {
 					mainblock.writeBeforeReturn(writer);

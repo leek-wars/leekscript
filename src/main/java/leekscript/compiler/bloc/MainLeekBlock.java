@@ -35,6 +35,7 @@ import leekscript.compiler.expression.LeekString;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
+import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.compiler.instruction.ModuleScopeInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.runner.LeekFunctions;
@@ -536,6 +537,48 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return module;
 	}
 
+	/**
+	 * Instructions de [from, to) hors des modules importés : d'un module on ne garde que le
+	 * marqueur d'ouverture, qui s'écrit comme l'appel de sa méthode.
+	 */
+	private List<LeekInstruction> outsideModules(int from, int to) {
+		var result = new ArrayList<LeekInstruction>();
+		ModuleScopeInstruction inside = null;
+		for (int i = from; i < to; i++) {
+			var instruction = mInstructions.get(i);
+			if (inside != null) {
+				if (instruction instanceof ModuleScopeInstruction scope && scope.closes(inside)) inside = null;
+				continue;
+			}
+			result.add(instruction);
+			if (instruction instanceof ModuleScopeInstruction scope && scope.isOpening()) inside = scope;
+		}
+		return result;
+	}
+
+	@Override
+	protected List<LeekInstruction> getWrittenInstructions() {
+		return outsideModules(0, mInstructions.size());
+	}
+
+	/**
+	 * Une méthode par module importé, pour son code de haut niveau. Écrit dans runIA à la place
+	 * de l'import, ce code s'emboîtait à la profondeur des imports et tout le programme partageait
+	 * les 64 Ko d'une seule méthode Java.
+	 */
+	private void writeModuleMethods(JavaWriter writer) {
+		for (int i = 0; i < mInstructions.size(); i++) {
+			if (!(mInstructions.get(i) instanceof ModuleScopeInstruction opening) || !opening.isOpening()) continue;
+			int end = i + 1;
+			while (!(mInstructions.get(end) instanceof ModuleScopeInstruction scope && scope.closes(opening))) end++;
+			writer.addLine("private void " + opening.getMethodName() + "() throws LeekRunException {");
+			for (var instruction : outsideModules(i + 1, end)) {
+				instruction.writeJavaCode(this, writer, false);
+			}
+			writer.addLine("}");
+		}
+	}
+
 	public boolean hasUserFunction(String name, boolean use_declarations) {
 		return hasUserFunction(name, use_declarations, mMainModule);
 	}
@@ -779,6 +822,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var instruction : mFunctions.values()) {
 			instruction.writeJavaCode(this, writer, false);
 		}
+
+		writeModuleMethods(writer);
 
 		writer.addLine("public Object runIA(Session session) throws LeekRunException {");
 
