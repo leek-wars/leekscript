@@ -709,8 +709,12 @@ public abstract class AI {
 	// v5 : lignes des classes de module du programme, par nom de classe Java
 	private HashMap<String, TreeMap<Integer, LineMapping>> mModuleLines = null;
 
+	// (lu une fois : la classe d'une IA dont tout le code est dans ses modules n'a aucune ligne à elle)
+	private boolean linesLoaded = false;
+
 	private void loadLineMappings() {
-		if (mLinesMapping.isEmpty() && this.filesLines != null && this.filesLines.exists()) {
+		if (mLinesMapping.isEmpty() && !linesLoaded && this.filesLines != null && this.filesLines.exists()) {
+			linesLoaded = true;
 			try (Stream<String> stream = Files.lines(this.filesLines.toPath())) {
 				var lines = mLinesMapping;
 				for (var l : (Iterable<String>) stream::iterator) {
@@ -978,13 +982,9 @@ public abstract class AI {
 
 	public int getVersion() { return this.version; }
 
-	/**
-	 * Nom LeekScript d'une classe utilisateur depuis sa classe Java `u_<Nom>`, ou
-	 * `u_$m<module>$<Nom>` quand elle vient d'un module importé (v5) : le préfixe de module est un
-	 * détail du code généré, il ne doit paraître ni dans `string(objet)` ni dans une erreur.
-	 */
+	/** Nom LeekScript d'une classe utilisateur, depuis sa classe Java `u_<Nom>`. */
 	public static String userClassName(Class<?> clazz) {
-		return leekscript.compiler.bloc.Module.stripPrefix(clazz.getSimpleName().substring(2));
+		return clazz.getSimpleName().substring(2);
 	}
 
 	public static Object load(Object value) {

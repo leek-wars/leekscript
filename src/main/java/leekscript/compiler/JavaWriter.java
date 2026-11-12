@@ -815,6 +815,18 @@ public class JavaWriter {
 		of(function.getModule()).anonymousUserFunctions.add(function);
 	}
 
+	/**
+	 * L'ordre d'écriture d'un ensemble de membres générés. La classe unique d'une IA garde celui de
+	 * l'ensemble, comme avant ; une classe de module les trie par nom : son Java, qui est la clé du
+	 * cache des packages, ne doit pas changer d'une compilation à l'autre.
+	 */
+	public <T> java.util.Collection<T> stableOrder(java.util.Collection<T> members, java.util.function.Function<T, String> name) {
+		if (entry.moduleWriters == null) return members;
+		var sorted = new ArrayList<>(members);
+		sorted.sort(java.util.Comparator.comparing(name));
+		return sorted;
+	}
+
 	/** Enregistre le champ temporaire d'une expression match (déclaré par {@link #writeMatchTempFields}). */
 	public void registerMatchTemp(int id) {
 		matchTemps.add(id);
@@ -822,7 +834,7 @@ public class JavaWriter {
 
 	/** Déclare les champs temporaires des expressions match au niveau de la classe AI générée. */
 	public void writeMatchTempFields() {
-		for (var id : matchTemps) {
+		for (var id : stableOrder(matchTemps, i -> String.format("%09d", i))) {
 			addLine("private Object $match" + id + ";");
 		}
 	}
@@ -844,7 +856,7 @@ public class JavaWriter {
 	 */
 	public void writeGenericFunctions(MainLeekBlock block) {
 
-		for (var entry : genericFunctions.entrySet()) {
+		for (var entry : stableOrder(genericFunctions.entrySet(), e -> e.getKey())) {
 
 			var signature = entry.getKey();
 			var versions = entry.getValue();
@@ -922,7 +934,7 @@ public class JavaWriter {
 	 */
 	public void writeAnonymousSystemFunctions(MainLeekBlock block) {
 
-		for (var function : anonymousSystemFunctions) {
+		for (var function : stableOrder(anonymousSystemFunctions, f -> f.getStandardClass() + "_" + f.getName())) {
 			addLine("private FunctionLeekValue " + function.getStandardClass() + "_" + function.getName() + " = new FunctionLeekValue(" + function.getVersions()[0].arguments.length + ", \"#Function " + function.getName() + "\") { public Object run(AI ai, Object thiz, Object... values) throws LeekRunException {");
 			if (operationsEnabled && function.getOperations() >= 0) {
 				addLine("ops(" + function.getOperations() + ");");
@@ -958,7 +970,7 @@ public class JavaWriter {
 	}
 
 	public void writeAnonymousUserFunctions(MainLeekBlock block) {
-		for (var function : anonymousUserFunctions) {
+		for (var function : stableOrder(anonymousUserFunctions, FunctionBlock::getInternalName)) {
 			addCode(privateMember() + "FunctionLeekValue ufunction_" + function.getInternalName() + " = ");
 			function.compileAnonymousFunction(block, this);
 			addLine(";");

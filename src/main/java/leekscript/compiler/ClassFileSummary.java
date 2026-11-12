@@ -23,6 +23,8 @@ public class ClassFileSummary {
 	public final Set<String> referencedClasses = new TreeSet<>();
 	/** Une ligne par élément de l'interface binaire, dans l'ordre du fichier. */
 	public final List<String> api = new ArrayList<>();
+	/** La classe parente (nom interne), null pour Object. */
+	public final String superClass;
 
 	public ClassFileSummary(byte[] bytes) throws IOException {
 		var in = new DataInputStream(new ByteArrayInputStream(bytes));
@@ -54,7 +56,8 @@ public class ClassFileSummary {
 		int access = in.readUnsignedShort();
 		var self = utf8[classIndex[in.readUnsignedShort()]];
 		int parent = in.readUnsignedShort();
-		var header = new StringBuilder("class " + access + " " + self + " : " + (parent == 0 ? "" : utf8[classIndex[parent]]));
+		superClass = parent == 0 ? null : utf8[classIndex[parent]];
+		var header = new StringBuilder("class " + access + " " + self + " : " + (superClass == null ? "" : superClass));
 		int interfaces = in.readUnsignedShort();
 		for (int i = 0; i < interfaces; i++) header.append(' ').append(utf8[classIndex[in.readUnsignedShort()]]);
 		api.add(header.toString());

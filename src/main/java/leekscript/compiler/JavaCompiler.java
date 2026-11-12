@@ -12,7 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -139,34 +138,54 @@ public class JavaCompiler {
 	/** Sous-dossier d'IA_PATH où se rangent les groupes compilés des programmes à packages. */
 	private static final String PACKAGES_PATH = "p";
 
-	/** Les dossiers de cache d'un programme à packages ; null sans manifeste, ou si l'un d'eux manque. */
-	private static List<File> readManifest(File manifest) {
-		if (!manifest.exists()) return null;
+	/**
+	 * Les classes d'un programme à packages, lues des dossiers de cache que liste son manifeste ;
+	 * null si l'un d'eux manque (ménage du cache) : le programme se recompile. Elles sont lues
+	 * d'un coup : le ménage peut ensuite supprimer ces dossiers sans rien retirer à une IA chargée.
+	 */
+	private static Map<String, byte[]> readPackagedClasses(File manifest) {
 		try {
-			var directories = new ArrayList<File>();
+			var classes = new java.util.HashMap<String, byte[]>();
 			for (var line : java.nio.file.Files.readAllLines(manifest.toPath())) {
-				if (line.isEmpty()) continue;
-				var directory = new File(line);
-				if (!directory.isDirectory()) return null;
-				directories.add(directory);
+				if (!line.isEmpty()) classes.putAll(PackageCache.load(new File(line)));
 			}
-			return directories;
+			return classes;
 		} catch (IOException e) {
 			return null;
 		}
 	}
 
-	/** `directories` null : le programme n'a pas de package, ses classes sont à plat dans IA_PATH. */
-	private static void writeManifest(File manifest, List<File> directories) throws LeekScriptException {
+	/**
+	 * Note où sont les classes du programme sur le disque : dans les dossiers `packages` (programme
+	 * à packages), sinon à plat dans IA_PATH. Un programme qui change de sorte ne doit pas retrouver
+	 * ses classes de l'autre sorte, périmées : `packages` vide les retire toutes (rien n'est en cache).
+	 */
+	private static void writeManifest(File manifest, File flatClass, boolean hasPackages, List<File> packages) throws LeekScriptException {
 		try {
-			if (directories == null) {
+			if (!hasPackages) {
+				manifest.delete();
+				return;
+			}
+			flatClass.delete();
+			if (packages == null) {
 				manifest.delete();
 			} else {
-				java.nio.file.Files.writeString(manifest.toPath(), directories.stream().map(File::getPath).collect(java.util.stream.Collectors.joining("\n")));
+				java.nio.file.Files.writeString(manifest.toPath(), packages.stream().map(File::getPath).collect(java.util.stream.Collectors.joining("\n")));
 			}
 		} catch (IOException e) {
 			throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
 		}
+	}
+
+	private static ClassLoader inMemoryLoader(Map<String, byte[]> classes) {
+		return new ClassLoader() {
+			@Override
+			protected Class<?> findClass(String name) throws ClassNotFoundException {
+				var bytes = classes.get(name);
+				if (bytes == null) throw new ClassNotFoundException(name);
+				return defineClass(name, bytes, 0, bytes.length);
+			}
+		};
 	}
 
 	/**
@@ -299,7 +318,6 @@ public class JavaCompiler {
 		var root = new File(IA_PATH);
 		if (!root.exists()) root.mkdir();
 
-		String fileName = file.getJavaClass() + ".java";
 		File compiled = Paths.get(IA_PATH, file.getJavaClass() + ".class").toFile();
 		File java = Paths.get(IA_PATH, file.getJavaClass() + ".java").toFile();
 		File lines = Paths.get(IA_PATH, file.getJavaClass() + ".lines").toFile();
@@ -320,18 +338,18 @@ public class JavaCompiler {
 			if (cached != null) return cached;
 
 			long sig = signature(file);
-			// Programme v5 à packages : ses classes sont dans les dossiers de ses groupes
-			var packages = options.useCache() ? readManifest(manifest) : null;
-			var onDisk = options.useCache() && file.getTimestamp() > 0 && (packages != null || compiled.exists() && compiled.length() != 0) ? readSignatureFile(sigFile) : null;
-			if (onDisk != null && onDisk.signature() == sig) {
+			// Programme v5 à packages (il a un manifeste) : ses classes sont dans les dossiers de ses
+			// groupes, jamais à plat dans IA_PATH
+			boolean packaged = options.useCache() && manifest.exists();
+			var onDisk = options.useCache() && file.getTimestamp() > 0 && (packaged || compiled.exists() && compiled.length() != 0) ? readSignatureFile(sigFile) : null;
+			var packagedClasses = packaged && onDisk != null && onDisk.signature() == sig ? readPackagedClasses(manifest) : null;
+			if (onDisk != null && onDisk.signature() == sig && (!packaged || packagedClasses != null)) {
 				try {
-					var urls = new ArrayList<URL>();
-					if (packages == null) urls.add(new File(IA_PATH).toURI().toURL());
-					else for (var directory : packages) urls.add(directory.toURI().toURL());
 					// ClassLoader éphémère par AI pour permettre le GC des classes ;
 					// ne pas le close, ça invaliderait la classe chargée.
 					@SuppressWarnings("resource")
-					var classLoader = new URLClassLoader(urls.toArray(new URL[0]), JavaCompiler.class.getClassLoader());
+					var classLoader = packaged ? inMemoryLoader(packagedClasses)
+						: new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, JavaCompiler.class.getClassLoader());
 					var clazz = classLoader.loadClass(file.getJavaClass());
 					var entry = new AIClassEntry(clazz, sig, onDisk.bytecodeSize());
 					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), entry, refQueue));
@@ -404,15 +422,7 @@ public class JavaCompiler {
 			long compile_time = System.nanoTime() - t;
 
 			t = System.nanoTime();
-			var loaded = classes;
-			ClassLoader classLoader = new ClassLoader() {
-				@Override
-				protected Class<?> findClass(String name) throws ClassNotFoundException {
-					var bytes = loaded.get(name);
-					if (bytes == null) throw new ClassNotFoundException(name);
-					return defineClass(name, bytes, 0, bytes.length);
-				}
-			};
+			ClassLoader classLoader = inMemoryLoader(classes);
 
 			long bytecodeSize = 0;
 			for (var compiledClass : classes.entrySet()) {
@@ -437,7 +447,7 @@ public class JavaCompiler {
 					throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
 				}
 			}
-			if (options.useCache()) writeManifest(manifest, code.hasPackages() ? packageDirectories : null);
+			if (options.useCache()) writeManifest(manifest, compiled, code.hasPackages(), packageDirectories);
 
 			try {
 				var clazz = classLoader.loadClass(file.getJavaClass());

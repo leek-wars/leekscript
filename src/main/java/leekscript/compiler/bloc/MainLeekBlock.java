@@ -895,7 +895,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			writer.addLine(";");
 		}
 		// Fonctions
-		for (var instruction : mFunctions.values()) {
+		for (var instruction : writer.stableOrder(mFunctions.values(), FunctionBlock::getInternalName)) {
 			instruction.writeJavaCode(this, writer.of(instruction.getModule()), false);
 		}
 

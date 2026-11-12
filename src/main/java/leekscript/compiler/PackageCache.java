@@ -46,27 +46,35 @@ public class PackageCache {
 	public static class Result {
 		/** Toutes les classes du programme : nom -> bytecode. */
 		public final Map<String, byte[]> classes = new HashMap<>();
-		/** Les dossiers de cache des groupes du programme (vide sans cache disque). */
-		public final List<File> directories = new ArrayList<>();
+		/** Les dossiers de cache des groupes du programme ; null si l'un d'eux n'est pas en cache. */
+		public List<File> directories = new ArrayList<>();
 		/** Les classes de premier niveau passées à javac cette fois-ci. */
 		public final List<String> compiled = new ArrayList<>();
 	}
+
+	/** Une entrée de cache lisible : son dossier, et les interfaces lues par son bytecode. */
+	private record Candidate(File directory, Map<String, String> reads) {}
 
 	private static class Group {
 		final List<Unit> units = new ArrayList<>();
 		String sourceHash;
 		// Entrées de cache de ce Java, une par jeu d'interfaces lues
-		List<File> candidates = List.of();
+		List<Candidate> candidates = List.of();
 		Map<String, byte[]> classes;
-		// Interface binaire de chaque classe de premier niveau du groupe
+		// Par classe de premier niveau du groupe : l'empreinte de ce qu'elle déclare, et les classes
+		// d'autres groupes dont elle hérite (ses lecteurs lisent aussi leurs membres à travers elle)
 		Map<String, String> api;
+		Map<String, String> parents;
 		File directory;
 	}
 
 	private static final String API_FILE = "api";
+	private static final String PARENTS_FILE = "parents";
 	private static final String READS_FILE = "reads";
 	private static final String DONE_FILE = "ok";
 	private static final String SOURCES_DIRECTORY = "java";
+	// Dossier d'une entrée en cours d'écriture, renommé une fois complet
+	private static final String TEMPORARY_PREFIX = "tmp";
 
 	/** Une entrée qui n'a servi à aucune compilation depuis ce nombre de jours est supprimée. */
 	public static final int UNUSED_DAYS = 30;
@@ -107,12 +115,7 @@ public class PackageCache {
 				}
 				group.sourceHash = hex(digest);
 				group.candidates = candidates(group);
-				if (group.candidates.isEmpty()) {
-					stale.add(group);
-				} else {
-					// L'interface d'une classe ne tient qu'à son Java : toutes les entrées ont la même
-					group.api = readMap(new File(group.candidates.get(0), API_FILE));
-				}
+				if (group.candidates.isEmpty()) stale.add(group);
 			}
 			compile(javac, stale, result);
 			// Ceux dont le Java n'a pas changé, mais qui lisent une interface qui a changé
@@ -120,8 +123,8 @@ public class PackageCache {
 			for (var group : groups.values()) {
 				if (group.classes != null) continue;
 				for (var candidate : group.candidates) {
-					if (readMap(new File(candidate, READS_FILE)).equals(reads(candidate))) {
-						group.directory = candidate;
+					if (candidate.reads().equals(interfaces(candidate.reads().keySet()))) {
+						group.directory = candidate.directory();
 						break;
 					}
 				}
@@ -134,8 +137,7 @@ public class PackageCache {
 			for (var group : groups.values()) {
 				if (group.classes != null) continue;
 				try {
-					group.classes = readClasses(group.directory);
-					markUsed(group.directory);
+					group.classes = load(group.directory);
 				} catch (IOException e) {
 					group.directory = null;
 					lost.add(group);
@@ -144,7 +146,8 @@ public class PackageCache {
 			compile(javac, lost, result);
 			for (var group : groups.values()) {
 				result.classes.putAll(group.classes);
-				if (group.directory != null) result.directories.add(group.directory);
+				if (group.directory == null) result.directories = null;
+				else if (result.directories != null) result.directories.add(group.directory);
 			}
 			if (useDisk && !result.compiled.isEmpty()) sweepSometimes();
 		} catch (IOException e) {
@@ -162,13 +165,30 @@ public class PackageCache {
 		var classpath = new ArrayList<File>();
 		for (var group : groups.values()) {
 			if (stale.contains(group)) continue;
-			classpath.add(group.directory != null ? group.directory : group.candidates.get(0));
+			classpath.add(group.directory != null ? group.directory : group.candidates.get(0).directory());
 		}
-		var compiled = javac.compile(units, classpath);
-		for (var unit : units) result.compiled.add(unit.className());
+		Map<String, byte[]> compiled;
+		try {
+			compiled = javac.compile(units, classpath);
+		} catch (LeekScriptException e) {
+			// Une entrée lue par javac a pu disparaître sous lui (ménage d'un autre fil) : sans elle,
+			// l'erreur n'est pas celle du programme. On recompile tout, sans rien lire du cache.
+			if (classpath.stream().allMatch(directory -> new File(directory, DONE_FILE).exists())) throw e;
+			stale = new ArrayList<>(groups.values());
+			units = new ArrayList<>();
+			for (var group : stale) {
+				units.addAll(group.units);
+				group.directory = null;
+			}
+			compiled = javac.compile(units, List.of());
+		}
+		for (var unit : units) {
+			if (!result.compiled.contains(unit.className())) result.compiled.add(unit.className());
+		}
 		for (var group : stale) {
 			group.classes = new HashMap<>();
 			group.api = new TreeMap<>();
+			group.parents = new TreeMap<>();
 		}
 		var summaries = new HashMap<String, ClassFileSummary>();
 		for (var entry : compiled.entrySet()) {
@@ -180,51 +200,90 @@ public class PackageCache {
 				var digest = digest();
 				var names = new ArrayList<>(group.classes.keySet());
 				java.util.Collections.sort(names);
+				var parents = new java.util.TreeSet<String>();
 				for (var name : names) {
 					if (!topLevel(name).equals(unit.className()) || isAnonymous(name)) continue;
-					for (var line : summaries.get(name).api) update(digest, line);
+					var summary = summaries.get(name);
+					for (var line : summary.api) update(digest, line);
+					var parent = summary.superClass == null ? null : owners.get(topLevel(summary.superClass));
+					if (parent != null && parent != group) parents.add(topLevel(summary.superClass));
 				}
 				group.api.put(unit.className(), hex(digest));
+				if (!parents.isEmpty()) group.parents.put(unit.className(), String.join(" ", parents));
 			}
 		}
 		if (!useDisk) return;
 		for (var group : stale) {
-			var reads = new TreeMap<String, String>();
+			var read = new java.util.TreeSet<String>();
 			for (var name : group.classes.keySet()) {
 				for (var referenced : summaries.get(name).referencedClasses) {
 					var owner = owners.get(topLevel(referenced));
-					if (owner != null && owner != group) reads.put(topLevel(referenced), owner.api.get(topLevel(referenced)));
+					if (owner != null && owner != group) read.add(topLevel(referenced));
 				}
 			}
-			group.directory = store(group, reads);
+			group.directory = store(group, interfaces(read));
 		}
 	}
 
-	/** Les interfaces que lit l'entrée `candidate`, telles qu'elles sont dans ce programme. */
-	private Map<String, String> reads(File candidate) throws IOException {
+	/** L'interface, dans ce programme, de chacune des classes `names` (vide : classe inconnue ici). */
+	private Map<String, String> interfaces(java.util.Collection<String> names) {
 		var now = new TreeMap<String, String>();
-		for (var name : readMap(new File(candidate, READS_FILE)).keySet()) {
-			var owner = owners.get(name);
-			now.put(name, owner == null ? "" : owner.api.get(name));
-		}
+		for (var name : names) now.put(name, interfaceOf(name, 0));
 		return now;
 	}
 
-	private List<File> candidates(Group group) {
-		var found = new ArrayList<File>();
+	// Ce qu'une autre classe peut lire de `name` : ce qu'elle déclare, et ce qu'elle hérite d'une
+	// classe d'un autre groupe. `depth` borne une chaîne d'héritage que des entrées de cache de
+	// programmes différents rendraient circulaire.
+	private String interfaceOf(String name, int depth) {
+		var owner = owners.get(name);
+		if (owner == null || owner.api == null || !owner.api.containsKey(name)) return "";
+		var own = owner.api.get(name);
+		var parents = owner.parents.get(name);
+		if (parents == null || depth > 64) return own;
+		var sb = new StringBuilder(own);
+		for (var parent : parents.split(" ")) sb.append('+').append(interfaceOf(parent, depth + 1));
+		return sb.toString();
+	}
+
+	// Les entrées déjà compilées de ce Java. Ce que déclare une classe ne tient qu'à son Java :
+	// toutes ses entrées en disent la même chose, la première lisible renseigne le groupe.
+	private List<Candidate> candidates(Group group) {
+		var found = new ArrayList<Candidate>();
 		if (!useDisk) return found;
 		var entries = new File(root, group.sourceHash).listFiles();
 		if (entries == null) return found;
 		java.util.Arrays.sort(entries);
 		for (var entry : entries) {
-			// Une entrée illisible ne sert pas : le groupe se recompilera
-			if (new File(entry, DONE_FILE).exists() && new File(entry, API_FILE).canRead() && new File(entry, READS_FILE).canRead()) found.add(entry);
+			if (entry.getName().startsWith(TEMPORARY_PREFIX) || !new File(entry, DONE_FILE).exists()) continue;
+			try {
+				var reads = readMap(new File(entry, READS_FILE));
+				if (found.isEmpty()) {
+					group.api = readMap(new File(entry, API_FILE));
+					group.parents = readMap(new File(entry, PARENTS_FILE));
+				}
+				found.add(new Candidate(entry, reads));
+			} catch (IOException e) {
+				// Entrée illisible (un ménage la supprime) : elle ne sert pas
+			}
 		}
 		return found;
 	}
 
-	/** Écrit l'entrée de cache du groupe ; déjà là (un autre fil l'a écrite) : la même, on la garde. */
-	private File store(Group group, Map<String, String> reads) throws IOException {
+	/**
+	 * Écrit l'entrée de cache du groupe et rend son dossier. Déjà là (un autre fil l'a écrite) : la
+	 * même, on la garde. Null si elle n'a pas pu s'écrire : le programme se charge de ses classes en
+	 * mémoire, seul le cache est perdu.
+	 */
+	private File store(Group group, Map<String, String> reads) {
+		try {
+			return write(group, reads);
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	private File write(Group group, Map<String, String> reads) throws IOException {
 		var digest = digest();
 		for (var read : reads.entrySet()) update(digest, read.getKey() + " " + read.getValue());
 		var directory = new File(new File(root, group.sourceHash), hex(digest));
@@ -233,7 +292,7 @@ public class PackageCache {
 			return directory;
 		}
 		Files.createDirectories(directory.getParentFile().toPath());
-		var temporary = Files.createTempDirectory(directory.getParentFile().toPath(), "tmp");
+		var temporary = Files.createTempDirectory(directory.getParentFile().toPath(), TEMPORARY_PREFIX);
 		for (var clazz : group.classes.entrySet()) {
 			Files.write(temporary.resolve(clazz.getKey() + ".class"), clazz.getValue());
 		}
@@ -243,13 +302,16 @@ public class PackageCache {
 			Files.writeString(sources.resolve(unit.className() + ".java"), unit.javaCode());
 		}
 		writeMap(temporary.resolve(API_FILE), group.api);
+		writeMap(temporary.resolve(PARENTS_FILE), group.parents);
 		writeMap(temporary.resolve(READS_FILE), reads);
 		Files.writeString(temporary.resolve(DONE_FILE), "");
+		// Les restes d'une entrée que le ménage n'a pas fini de supprimer gêneraient le renommage
+		if (directory.exists() && !new File(directory, DONE_FILE).exists()) deleteDirectory(directory.toPath());
 		try {
 			Files.move(temporary, directory.toPath(), StandardCopyOption.ATOMIC_MOVE);
 		} catch (IOException e) {
-			if (!new File(directory, DONE_FILE).exists()) throw e;
 			deleteDirectory(temporary);
+			if (!new File(directory, DONE_FILE).exists()) throw e;
 		}
 		return directory;
 	}
@@ -306,6 +368,14 @@ public class PackageCache {
 			}
 		}
 		directory.toFile().delete();
+	}
+
+	/** Les classes d'une entrée de cache, qui compte alors comme utilisée : nom -> bytecode. */
+	public static Map<String, byte[]> load(File directory) throws IOException {
+		if (!new File(directory, DONE_FILE).exists()) throw new IOException("entrée de cache absente : " + directory);
+		var classes = readClasses(directory);
+		markUsed(directory);
+		return classes;
 	}
 
 	private static Map<String, byte[]> readClasses(File directory) throws IOException {

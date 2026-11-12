@@ -143,6 +143,31 @@ public class TestPackageCache {
 		assertTrue(!Files.exists(tmpRoot.resolve("cache")));
 	}
 
+	// C lit un membre de A à travers B, qui en hérite : l'interface de B, pour ses lecteurs,
+	// comprend ce qu'elle hérite d'un autre groupe.
+	@Test
+	public void inheritedSignatureChangeRecompilesReadersOfTheSubclass() throws Exception {
+		var b = "public class B extends A { }";
+		var c = "public class C { public static long g() { return new B().f(); } }";
+		for (var type : new String[] { "int", "long" }) {
+			var cache = new PackageCache(tmpRoot.resolve("cache").toFile(), true);
+			cache.add("a", "A", "public class A { public " + type + " f() { return 7; } }");
+			cache.add("b", "B", b);
+			cache.add("c", "C", c);
+			var result = cache.compile(TestPackageCache::javac);
+			assertTrue(result.compiled.contains("C"), result.compiled.toString());
+			var loader = new ClassLoader() {
+				@Override
+				protected Class<?> findClass(String name) throws ClassNotFoundException {
+					var bytes = result.classes.get(name);
+					if (bytes == null) throw new ClassNotFoundException(name);
+					return defineClass(name, bytes, 0, bytes.length);
+				}
+			};
+			assertEquals(7L, loader.loadClass("C").getMethod("g").invoke(null));
+		}
+	}
+
 	// Ménage : une entrée qui n'a servi à aucune compilation depuis UNUSED_DAYS jours disparaît,
 	// celles qui servent restent, et un groupe dont l'entrée a disparu se recompile.
 	@Test
@@ -266,13 +291,60 @@ public class TestPackageCache {
 		String main = writeMain(PROGRAM);
 		assertEquals("7", run(main));
 		var file = fs.getRoot(0).resolve(main);
-		var cache = JavaCompiler.class.getDeclaredField("aiCache");
-		cache.setAccessible(true);
-		((java.util.Map<?, ?>) cache.get(null)).remove(file.getJavaClass());
-		file.setCompiledCode(null);
+		forgetInMemory(main);
 		assertEquals("7", run(main));
 		// Pas d'analyse ni de javac : les classes viennent des dossiers des packages
 		assertEquals(null, file.getCompiledCode());
+	}
+
+	// Une IA qui passe aux packages a encore sa classe d'avant, à plat : elle ne doit plus servir,
+	// même quand les entrées de ses packages ont disparu.
+	@Test
+	public void flatClassFromBeforePackagesIsNeverReloaded() throws Exception {
+		String main = writeMain("return \"sans package " + uniqueId + "\"");
+		assertEquals("sans package " + uniqueId, run(main));
+		writePackages("2");
+		write(main + ".leek", PROGRAM);
+		touch(main + ".leek");
+		assertEquals("7", run(main));
+		forgetInMemory(main);
+		PackageCache.sweep(new File(JavaCompiler.IA_PATH, "p"), System.currentTimeMillis() + 1000L * 24 * 3600 * 1000);
+		assertEquals("7", run(main));
+	}
+
+	// Chargée du disque, une IA ne lit plus rien du cache : le ménage ne lui retire aucune classe.
+	@Test
+	public void sweepDoesNotBreakALoadedProgram() throws Exception {
+		write("geo/package.leek", "package geo\nexport class Pt { public integer x = 3; Array<integer> twice() { return [1, 2].map(v => v * x) } }\nexport function make() -> Pt { tag() return new Pt() }\nfunction tag() { return \"" + uniqueId + "\" }");
+		String main = writeMain("depends geo from \"geo\"\nimport { make } from \"@geo\"\nreturn make().twice()");
+		assertEquals("[3, 6]", run(main));
+		forgetInMemory(main);
+		AI ai = load(main);
+		PackageCache.sweep(new File(JavaCompiler.IA_PATH, "p"), System.currentTimeMillis() + 1000L * 24 * 3600 * 1000);
+		assertEquals("[3, 6]", ai.string(ai.runIA()));
+	}
+
+	// L'ordre des membres générés d'un package ne tient ni au hasard ni au reste du programme :
+	// un point d'entrée qui déclare lui-même des fonctions partage quand même le package.
+	@Test
+	public void packageJavaDoesNotDependOnTheRestOfTheProgram() throws Exception {
+		var sb = new StringBuilder("package lib\n");
+		var values = new StringBuilder();
+		for (int i = 0; i < 12; i++) {
+			sb.append("export function f").append(i).append("(integer n) -> integer { return n + ").append(i).append(" }\n");
+			values.append(i > 0 ? ", " : "").append("f").append(i);
+		}
+		sb.append("export function all() -> Array<any> { tag() return [").append(values).append("] }\nfunction tag() { return \"").append(uniqueId).append("\" }");
+		write("lib/package.leek", sb.toString());
+		String first = writeMain("depends lib from \"lib\"\nimport { all } from \"@lib\"\nreturn Array.count(all())");
+		assertEquals("12", run(first));
+		uniqueId += "_b";
+		var second = new StringBuilder("depends lib from \"lib\"\nimport { all, f3 } from \"@lib\"\n");
+		for (int i = 0; i < 40; i++) second.append("function own").append(i).append("() { return ").append(i).append(" }\n");
+		second.append("return Array.count(all()) + f3(1) + own7()");
+		String other = writeMain(second.toString());
+		assertEquals("23", run(other));
+		assertEquals(1, javacUnits(other).size(), javacUnits(other).toString());
 	}
 
 	// Les entrées d'un programme ont été supprimées par le ménage : il se recompile en entier.
@@ -281,12 +353,8 @@ public class TestPackageCache {
 		writePackages("2");
 		String main = writeMain(PROGRAM);
 		assertEquals("7", run(main));
-		var file = fs.getRoot(0).resolve(main);
 		PackageCache.sweep(new File(JavaCompiler.IA_PATH, "p"), System.currentTimeMillis() + 1000L * 24 * 3600 * 1000);
-		var cache = JavaCompiler.class.getDeclaredField("aiCache");
-		cache.setAccessible(true);
-		((java.util.Map<?, ?>) cache.get(null)).remove(file.getJavaClass());
-		file.setCompiledCode(null);
+		forgetInMemory(main);
 		assertEquals("7", run(main));
 		assertEquals(4, javacUnits(main).size(), javacUnits(main).toString());
 	}
@@ -316,7 +384,16 @@ public class TestPackageCache {
 		return fs.getRoot(0).resolve(name).getCompiledCode().getJavacUnits();
 	}
 
-	private String run(String name) throws Exception {
+	/** Comme un autre processus : ni classe en mémoire, ni code compilé gardé sur le fichier. */
+	private void forgetInMemory(String name) throws Exception {
+		var file = fs.getRoot(0).resolve(name);
+		var cache = JavaCompiler.class.getDeclaredField("aiCache");
+		cache.setAccessible(true);
+		((java.util.Map<?, ?>) cache.get(null)).remove(file.getJavaClass());
+		file.setCompiledCode(null);
+	}
+
+	private AI load(String name) throws Exception {
 		var file = fs.getRoot(0).resolve(name);
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass("AI");
@@ -324,6 +401,11 @@ public class TestPackageCache {
 		ai.init();
 		ai.staticInit();
 		ai.resetCounter();
+		return ai;
+	}
+
+	private String run(String name) throws Exception {
+		AI ai = load(name);
 		return ai.string(ai.runIA());
 	}
 }

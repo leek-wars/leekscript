@@ -80,13 +80,6 @@ public class Module {
 	private static final String PREFIX_START = "$m";
 	private static final char PREFIX_END = '$';
 
-	/** Retire le préfixe de module d'un nom du code généré (`$mhitmap_1x2y3z$HitMap` -> `HitMap`). */
-	public static String stripPrefix(String name) {
-		if (!name.startsWith(PREFIX_START)) return name;
-		int end = name.indexOf(PREFIX_END, PREFIX_START.length());
-		return end < 0 ? name : name.substring(end + 1);
-	}
-
 	public AIFile getFile() {
 		return file;
 	}
