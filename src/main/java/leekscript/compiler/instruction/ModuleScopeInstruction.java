@@ -16,7 +16,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
  * Borne le code de haut niveau d'un module importé (v5) dans les instructions du bloc principal :
  * le marqueur d'ouverture analyse la suite dans le module (ses imports, ses déclarations privées)
  * avec ses propres variables locales, celui de fermeture rétablit l'appelant. En Java, le code
- * entre les deux marqueurs devient une méthode de l'IA, appelée à la place de l'import (cf
+ * entre les deux marqueurs devient une méthode de la classe du module, appelée à la place de l'import (cf
  * MainLeekBlock.splitModules) : une portée à part, où un `var x` du module ne heurte pas un
  * `var x` de l'appelant, et un budget de 64 Ko par module au lieu d'un seul pour tout le programme.
  */
@@ -84,7 +84,7 @@ public class ModuleScopeInstruction extends LeekInstruction {
 
 	/** Nom Java de la méthode qui porte le code de haut niveau du module. */
 	public String getMethodName() {
-		return module.javaPrefix() + "$run";
+		return "$run";
 	}
 
 	@Override

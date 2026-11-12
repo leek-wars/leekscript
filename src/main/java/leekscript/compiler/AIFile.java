@@ -61,6 +61,7 @@ public class AIFile {
 	}
 	public void setId(int id) {
 		this.id = id;
+		this.keyHash = null;
 	}
 	public String getCode() {
 		return code;
@@ -95,6 +96,7 @@ public class AIFile {
 	}
 	public void setPath(String path) {
 		this.path = path;
+		this.keyHash = null;
 	}
 	public long getTimestamp() {
 		return this.timestamp;
@@ -147,13 +149,18 @@ public class AIFile {
 
 	/** Les 64 premiers bits du SHA-256 de l'identité du fichier ({@link #getKey}), en base 36. */
 	public String getKeyHash() {
-		try {
-			var digest = MessageDigest.getInstance("SHA-256").digest(getKey().getBytes(StandardCharsets.UTF_8));
-			return Long.toUnsignedString(ByteBuffer.wrap(digest).getLong(), 36);
-		} catch (NoSuchAlgorithmException e) {
-			throw new IllegalStateException(e);
+		if (keyHash == null) {
+			try {
+				var digest = MessageDigest.getInstance("SHA-256").digest(getKey().getBytes(StandardCharsets.UTF_8));
+				keyHash = Long.toUnsignedString(ByteBuffer.wrap(digest).getLong(), 36);
+			} catch (NoSuchAlgorithmException e) {
+				throw new IllegalStateException(e);
+			}
 		}
+		return keyHash;
 	}
+
+	private String keyHash;
 
 	public void setRootClass(String clazz) {
 		this.rootClazz = clazz;

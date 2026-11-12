@@ -196,13 +196,15 @@ public class PackageCache {
 			summaries.put(entry.getKey(), new ClassFileSummary(entry.getValue()));
 		}
 		for (var group : stale) {
+			// Les classes de chaque unité, la sienne et ses classes internes, par ordre de nom
+			var members = new TreeMap<String, List<String>>();
+			for (var name : new java.util.TreeSet<>(group.classes.keySet())) {
+				if (!isAnonymous(name)) members.computeIfAbsent(topLevel(name), k -> new ArrayList<>()).add(name);
+			}
 			for (var unit : group.units) {
 				var digest = digest();
-				var names = new ArrayList<>(group.classes.keySet());
-				java.util.Collections.sort(names);
 				var parents = new java.util.TreeSet<String>();
-				for (var name : names) {
-					if (!topLevel(name).equals(unit.className()) || isAnonymous(name)) continue;
+				for (var name : members.getOrDefault(unit.className(), List.of())) {
 					var summary = summaries.get(name);
 					for (var line : summary.api) update(digest, line);
 					var parent = summary.superClass == null ? null : owners.get(topLevel(summary.superClass));
@@ -330,7 +332,10 @@ public class PackageCache {
 			lastSweeps.put(root.getPath(), last);
 			return;
 		}
-		sweep(root, now);
+		// À part : le parcours de tout le cache ne retarde pas la compilation en cours
+		var sweeper = new Thread(() -> sweep(root, now), "PackageCache-sweep");
+		sweeper.setDaemon(true);
+		sweeper.start();
 	}
 
 	/**
@@ -430,9 +435,6 @@ public class PackageCache {
 	}
 
 	private static String hex(MessageDigest digest) {
-		var bytes = digest.digest();
-		var sb = new StringBuilder();
-		for (int i = 0; i < 12; i++) sb.append(String.format("%02x", bytes[i]));
-		return sb.toString();
+		return java.util.HexFormat.of().formatHex(digest.digest(), 0, 12);
 	}
 }

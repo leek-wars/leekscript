@@ -66,6 +66,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	// statique, quel que soit le nombre d'appels.
 	private final Map<String, String> mFileFields = new HashMap<>();
 	private final List<String> mFileContents = new ArrayList<>();
+	private final Map<String, Integer> mFileIndexes = new HashMap<>(); // champ -> rang dans mFileContents
 	private int mFileContentsLength = 0;
 	public static final int MAX_FILE_CONTENT = 64 * 1024;
 	public static final int MAX_FILE_CONTENTS = 256 * 1024;
@@ -625,7 +626,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		// L'empreinte fait 64 bits : deux modules d'un même programme ne se heurtent pas en pratique,
 		// mais un heurt donnerait deux déclarations Java du même nom, alors on le départage.
 		var tag = Module.tagOf(file);
-		for (int n = 2; !mModuleTags.add(tag); n++) tag = Module.tagOf(file) + "_" + n;
+		var base = tag;
+		for (int n = 2; !mModuleTags.add(tag); n++) tag = base + "_" + n;
 		var module = new Module(file, tag, false);
 		var owner = packageOf(file);
 		if (!owner.isProgram()) module.setPackage(owner.getRoot().getKeyHash());
@@ -712,7 +714,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			block.setOverloadSuffix("$ov" + set.size());
 		}
 		set.add(block);
-		mFunctions.put(block.getInternalName(), block);
+		mFunctions.put(block.getKey(), block);
 	}
 
 	/** Surcharges déclarées sous ce nom interne public (préfixe module + nom brut), ou null. */
@@ -744,11 +746,6 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * qu'un include (le chemin seul ne distingue pas deux fichiers homonymes partout). Rend le nom
 	 * du champ statique qui le porte, ou null si le fichier, ou le total des fichiers lus, est trop gros.
 	 */
-	/** Le contenu embarqué sous le champ `field` de la classe de l'IA (cf addFileContent). */
-	public String getFileContent(String field) {
-		return mFileContents.get(Integer.parseInt(field.substring("file_".length())));
-	}
-
 	public String addFileContent(AIFile file) {
 		var key = file.getKey();
 		var field = mFileFields.get(key);
@@ -757,9 +754,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		if (content.length() > MAX_FILE_CONTENT || mFileContentsLength + content.length() > MAX_FILE_CONTENTS) return null;
 		field = "file_" + mFileContents.size();
 		mFileFields.put(key, field);
+		mFileIndexes.put(field, mFileContents.size());
 		mFileContents.add(content);
 		mFileContentsLength += content.length();
 		return field;
+	}
+
+	/** Le contenu embarqué sous le champ `field` de la classe de l'IA (cf addFileContent). */
+	public String getFileContent(String field) {
+		return mFileContents.get(mFileIndexes.get(field));
 	}
 
 	private static void writeImports(JavaWriter writer) {
@@ -792,7 +795,6 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			clazz.setJavaOwner(owner == null || owner.isMain() ? className : JavaWriter.moduleClassName(className, owner));
 		}
 		for (var module : modules) {
-			module.setOwnJavaClass();
 			var moduleWriter = writer.addModule(module);
 			writeImports(moduleWriter);
 			// Les types internes d'AI (NativeObjectLeekValue…), hérités dans la classe d'une IA
@@ -895,7 +897,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			writer.addLine(";");
 		}
 		// Fonctions
-		for (var instruction : writer.stableOrder(mFunctions.values(), FunctionBlock::getInternalName)) {
+		for (var instruction : writer.stableOrder(mFunctions.values(), FunctionBlock::getKey)) {
 			instruction.writeJavaCode(this, writer.of(instruction.getModule()), false);
 		}
 
@@ -994,8 +996,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public void defineClass(ClassDeclarationInstruction classDeclaration) {
 		// Clé = nom interne préfixé par module (byte-identique pour le principal).
-		mUserClasses.put(classDeclaration.getInternalName(), classDeclaration);
-		mDefinedClasses.put(classDeclaration.getInternalName(), classDeclaration);
+		mUserClasses.put(classDeclaration.getKey(), classDeclaration);
+		mDefinedClasses.put(classDeclaration.getKey(), classDeclaration);
 	}
 
 	/** Résolution module-aware d'une classe : imports d'abord, puis classes propres du

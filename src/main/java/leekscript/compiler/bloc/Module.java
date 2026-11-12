@@ -14,24 +14,20 @@ import leekscript.compiler.AIFile;
  * {@code import { ... } from "..."}.
  *
  * <p>Le module principal (l'entrypoint et tout ce qu'il {@code include()}) a
- * {@link #isMain} = true et un préfixe de codegen vide : les noms émis restent
- * identiques au bit près à v1–v4. Les modules importés reçoivent un préfixe
- * {@code $m<nom>_<empreinte>$} tiré du fichier, pas de l'ordre des imports : ajouter
- * ou retirer un import ne renomme rien dans le Java des autres modules, et un module
- * porte le même nom quel que soit le point d'entrée qui l'importe. Le {@code $} n'est
- * pas un caractère d'identifiant LeekScript, donc aucun nom utilisateur ne peut entrer
- * en collision avec un nom qualifié.
- *
- * <p>Pilier 3 (modules), phase 3b. Slice 1 : fonctions uniquement. Les classes,
- * les globales et {@code import * as Ns} viennent ensuite.
+ * {@link #isMain} = true. Un module importé a un nom stable ({@link #tag}), tiré de son fichier
+ * et pas de l'ordre des imports : ajouter ou retirer un import ne renomme rien ailleurs, et un
+ * module porte le même nom quel que soit le point d'entrée qui l'importe. Ce nom sert deux fois :
+ * dans le nom de la classe Java du module, où ses symboles s'écrivent sans préfixe ({@code f_area},
+ * {@code u_Vec}), et dans le préfixe {@code $m<tag>$} qui départage les symboles des modules dans
+ * les tables du compilateur, communes à tout le programme ({@link #prefix}). Le {@code $} n'est
+ * pas un caractère d'identifiant LeekScript : aucun nom utilisateur ne heurte une clé préfixée.
  */
 public class Module {
 
 	private final AIFile file;
 	private final boolean main;
 	private final String tag;
-	// Préfixe de codegen précalculé (immuable) : prefix() est appelé sur chaque
-	// résolution de nom, autant ne pas réallouer la chaîne à chaque fois.
+	// Précalculé : prefix() est appelé à chaque résolution de nom
 	private final String prefix;
 
 	// Noms de fonctions exportées par ce module (sous-ensemble de ses fonctions).
@@ -99,14 +95,6 @@ public class Module {
 		return prefix;
 	}
 
-	// Dans le Java généré, le préfixe ne sert que tant que les modules partagent une classe Java :
-	// un module qui a la sienne y nomme ses symboles sans préfixe (`f_area`, `u_Vec`).
-	private boolean ownJavaClass = false;
-
-	public void setOwnJavaClass() {
-		ownJavaClass = true;
-	}
-
 	// Module d'un vrai package (dossier à `package.leek`), pas du package du programme
 	// (son identité : l'empreinte de sa racine ; null dans le package du programme)
 	private String packageId = null;
@@ -121,11 +109,6 @@ public class Module {
 
 	public boolean isInPackage() {
 		return packageId != null;
-	}
-
-	/** Préfixe des symboles du module dans le Java généré (`f_`, `g_`, `u_`, `ufunction_`…). */
-	public String javaPrefix() {
-		return ownJavaClass ? "" : prefix;
 	}
 
 	public Set<String> getExportedFunctions() {

@@ -136,7 +136,7 @@ public class JavaCompiler {
 	}
 
 	/** Sous-dossier d'IA_PATH où se rangent les groupes compilés des programmes à packages. */
-	private static final String PACKAGES_PATH = "p";
+	public static final String PACKAGES_PATH = "p";
 
 	/**
 	 * Les classes d'un programme à packages, lues des dossiers de cache que liste son manifeste ;
@@ -158,30 +158,29 @@ public class JavaCompiler {
 	/**
 	 * Note où sont les classes du programme sur le disque : dans les dossiers `packages` (programme
 	 * à packages), sinon à plat dans IA_PATH. Un programme qui change de sorte ne doit pas retrouver
-	 * ses classes de l'autre sorte, périmées : `packages` vide les retire toutes (rien n'est en cache).
+	 * ses classes de l'autre sorte, périmées. `packages` null : un de ses groupes n'est pas en cache.
 	 */
 	private static void writeManifest(File manifest, File flatClass, boolean hasPackages, List<File> packages) throws LeekScriptException {
 		try {
-			if (!hasPackages) {
-				manifest.delete();
-				return;
-			}
-			flatClass.delete();
-			if (packages == null) {
-				manifest.delete();
-			} else {
+			if (hasPackages) flatClass.delete();
+			if (hasPackages && packages != null) {
 				java.nio.file.Files.writeString(manifest.toPath(), packages.stream().map(File::getPath).collect(java.util.stream.Collectors.joining("\n")));
+			} else {
+				manifest.delete();
 			}
 		} catch (IOException e) {
 			throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
 		}
 	}
 
-	private static ClassLoader inMemoryLoader(Map<String, byte[]> classes) {
+	/** Un chargeur de classes à lui pour chaque IA, qui lit leur bytecode en mémoire. */
+	public static ClassLoader inMemoryLoader(Map<String, byte[]> classes) {
+		// Le bytecode d'une classe ne sert qu'à la définir : il n'est pas gardé avec elle
+		var pending = new java.util.concurrent.ConcurrentHashMap<>(classes);
 		return new ClassLoader() {
 			@Override
 			protected Class<?> findClass(String name) throws ClassNotFoundException {
-				var bytes = classes.get(name);
+				var bytes = pending.remove(name);
 				if (bytes == null) throw new ClassNotFoundException(name);
 				return defineClass(name, bytes, 0, bytes.length);
 			}
@@ -209,7 +208,8 @@ public class JavaCompiler {
 				if (!classpath.isEmpty()) {
 					var path = new StringBuilder(JavaCompiler.classpath);
 					for (var directory : classpath) path.append(File.pathSeparator).append(directory.getPath());
-					options = Arrays.asList("-classpath", path.toString(), "-nowarn");
+					options = new ArrayList<>(arguments);
+					options.set(arguments.indexOf("-classpath") + 1, path.toString());
 				}
 				var task = compiler.getTask(output, fileManager, null, options, null, compilationUnits);
 				result = task.call();
@@ -379,6 +379,8 @@ public class JavaCompiler {
 					javaOutput.write(file.getCompiledCode().getJavaCode().getBytes(StandardCharsets.UTF_8));
 					javaOutput.close();
 					for (var module : file.getCompiledCode().getModules()) {
+						// (le Java d'un module de package s'écrit avec ses classes, dans le cache des packages)
+						if (!module.group().equals(PackageCache.PROGRAM_GROUP)) continue;
 						try (var moduleOutput = new FileOutputStream(Paths.get(IA_PATH, module.className() + ".java").toFile())) { moduleOutput.write(module.javaCode().getBytes(StandardCharsets.UTF_8)); }
 					}
 				} catch (IOException e) {
@@ -396,9 +398,10 @@ public class JavaCompiler {
 
 			t = System.nanoTime();
 			var code = file.getCompiledCode();
+			boolean hasPackages = code.hasPackages();
 			Map<String, byte[]> classes;
-			List<File> packageDirectories = List.of();
-			if (code.hasPackages()) {
+			List<File> packageDirectories = null;
+			if (hasPackages) {
 				// v5 : chaque package se compile et se cache à part (cf PackageCache)
 				var cache = new PackageCache(new File(IA_PATH, PACKAGES_PATH), options.useCache());
 				cache.add(PackageCache.PROGRAM_GROUP, file.getJavaClass(), code.getJavaCode());
@@ -430,7 +433,7 @@ public class JavaCompiler {
 				var bytes = compiledClass.getValue();
 				bytecodeSize += bytes.length;
 				// (les classes d'un programme à packages sont déjà dans les dossiers de ses groupes)
-				if (options.useCache() && !code.hasPackages()) {
+				if (options.useCache() && !hasPackages) {
 					try {
 						var classFile = new FileOutputStream(Paths.get(IA_PATH, compiledClass.getKey() + ".class").toFile());
 						classFile.write(bytes);
@@ -447,7 +450,7 @@ public class JavaCompiler {
 					throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
 				}
 			}
-			if (options.useCache()) writeManifest(manifest, compiled, code.hasPackages(), packageDirectories);
+			if (options.useCache()) writeManifest(manifest, compiled, hasPackages, packageDirectories);
 
 			try {
 				var clazz = classLoader.loadClass(file.getJavaClass());

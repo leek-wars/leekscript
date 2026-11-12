@@ -713,7 +713,7 @@ public abstract class AI {
 	private boolean linesLoaded = false;
 
 	private void loadLineMappings() {
-		if (mLinesMapping.isEmpty() && !linesLoaded && this.filesLines != null && this.filesLines.exists()) {
+		if (!linesLoaded && this.filesLines != null && this.filesLines.exists()) {
 			linesLoaded = true;
 			try (Stream<String> stream = Files.lines(this.filesLines.toPath())) {
 				var lines = mLinesMapping;

@@ -114,12 +114,15 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		return module;
 	}
 
-	/** Nom utilisé dans le code Java généré (`f_`, `ufunction_`). Préfixé par le
-	 * module pour éviter les collisions entre modules ; vide pour le module
-	 * principal → v1-4 byte-identique. Suffixé par le profil pour une variante
-	 * monomorphisée (#43 T3 ; vide pour la générique → inchangé). */
+	/** Nom utilisé dans le code Java généré (`f_`, `ufunction_`), dans la classe de son module.
+	 * Suffixé par le profil pour une variante monomorphisée (#43 T3 ; vide pour la générique). */
 	public String getInternalName() {
-		return (module == null ? "" : module.javaPrefix()) + token.getWord() + overloadSuffix + variantSuffix;
+		return token.getWord() + overloadSuffix + variantSuffix;
+	}
+
+	/** Clé de la fonction dans la table du programme, qui tient celles de tous les modules. */
+	public String getKey() {
+		return (module == null ? "" : module.prefix()) + getInternalName();
 	}
 
 	/** Nom interne SANS suffixe (préfixe module + nom brut) : clé de regroupement des surcharges (#4243). */

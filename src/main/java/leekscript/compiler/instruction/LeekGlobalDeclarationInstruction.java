@@ -68,10 +68,9 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 		this.module = module;
 	}
 
-	/** Nom du champ Java (`g_<internalName>`), préfixé par le module pour éviter les
-	 * collisions entre modules ; vide pour le module principal → byte-identique. */
+	/** Nom du champ Java (`g_<internalName>`), dans la classe de son module. */
 	public String getInternalName() {
-		return (module == null ? "" : module.javaPrefix()) + variableToken.getWord();
+		return variableToken.getWord();
 	}
 
 	@Override
@@ -149,7 +148,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 			for (var a : annotations) this.variable.addAnnotation(a);
 		}
 		// Registre module-aware (clé = nom interne préfixé), pour résoudre les imports.
-		compiler.getMainBlock().addGlobalVar(getInternalName(), this.variable);
+		compiler.getMainBlock().addGlobalVar((module == null ? "" : module.prefix()) + getInternalName(), this.variable);
 		// Le module principal garde ses globales dans le bloc partagé (résolution par
 		// chaîne de blocs, byte-identique) ; un module importé NON (anti-fuite + collision).
 		if (module == null || module.isMain()) {

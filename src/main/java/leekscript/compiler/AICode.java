@@ -32,7 +32,7 @@ public class AICode {
 	}
 
 	// Les classes de premier niveau passées à javac à la dernière compilation (les autres
-	// viennent du cache des packages)
+	// viennent du cache des packages). Point d'observation des tests : rien d'autre ne le lit.
 	private java.util.List<String> javacUnits = java.util.List.of();
 
 	public void setJavacUnits(java.util.List<String> javacUnits) {

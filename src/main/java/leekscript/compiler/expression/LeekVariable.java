@@ -46,7 +46,6 @@ public class LeekVariable extends Expression {
 	private LeekVariable variable;
 	// Préfixe module du champ pour le codegen GLOBAL (`g_<prefix><name>`). "" = module
 	// principal (byte-identique). Renseigné depuis la backing var en preAnalyze.
-	private String globalPrefix = "";
 	// Module aliasé quand cette variable est un namespace `import * as Ns`.
 	private leekscript.compiler.bloc.Module namespaceModule = null;
 	private Type declaredType = null;
@@ -234,17 +233,9 @@ public class LeekVariable extends Expression {
 		return token.getWord();
 	}
 
-	public void setGlobalPrefix(String prefix) {
-		this.globalPrefix = prefix;
-	}
-
-	public String getGlobalPrefix() {
-		return globalPrefix;
-	}
-
 	/** Nom du champ Java émis pour une variable GLOBAL (préfixé par module). */
 	public String globalName() {
-		return "g_" + (globalModule != null ? globalModule.javaPrefix() : globalPrefix) + token.getWord();
+		return "g_" + token.getWord();
 	}
 
 	/** Le champ de la globale tel qu'il se lit depuis la classe en cours d'écriture. */
@@ -256,7 +247,6 @@ public class LeekVariable extends Expression {
 
 	public void setGlobalModule(leekscript.compiler.bloc.Module module) {
 		this.globalModule = module;
-		this.globalPrefix = module == null ? "" : module.prefix();
 	}
 
 	// Une fois par référence résolue : mayLoseEntries en dépend
@@ -305,7 +295,6 @@ public class LeekVariable extends Expression {
 		if (v != null) {
 			this.type = v.getVariableType();
 			this.variableType = v.getType();
-			this.globalPrefix = v.getGlobalPrefix();
 			this.globalModule = v.globalModule;
 			this.declaration = v.getDeclaration();
 			this.classDeclaration = v.getClassDeclaration();
@@ -351,7 +340,6 @@ public class LeekVariable extends Expression {
 		if (gv != null) {
 			this.type = VariableType.GLOBAL;
 			this.variableType = gv.getType();
-			this.globalPrefix = gv.getGlobalPrefix();
 			this.globalModule = gv.globalModule;
 			this.variable = gv;
 			gv.addUsage();

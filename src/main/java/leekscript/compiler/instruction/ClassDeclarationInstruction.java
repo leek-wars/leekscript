@@ -184,11 +184,14 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		return (javaOwner == null ? "" : javaOwner + ".") + "u_" + getInternalName();
 	}
 
-	/** Nom de codegen de la classe (`u_<internalName>`), préfixé par module pour éviter
-	 * les collisions ; vide pour le principal → byte-identique. getName() reste le nom
-	 * source (affichage/résolution). */
+	/** Nom de codegen de la classe (`u_<internalName>`), dans la classe Java de son module. */
 	public String getInternalName() {
-		return (module == null ? "" : module.javaPrefix()) + token.getWord();
+		return token.getWord();
+	}
+
+	/** Clé de la classe dans les tables du programme, qui tiennent celles de tous les modules. */
+	public String getKey() {
+		return (module == null ? "" : module.prefix()) + token.getWord();
 	}
 
 	// Paramètres de type génériques (`class Box<T> { ... }`, version >= 5). Lazy :
@@ -729,8 +732,8 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	 */
 	private String superOuterInstance(JavaWriter writer) {
 		if (parent == null) return writer.getModule() == null ? null : writer.getAIThis();
-		var ref = writer.ref(parent.getModule());
-		return ref.isEmpty() ? null : writer.getClassName() + ".this." + ref.substring(0, ref.length() - 1);
+		var field = writer.ownerField(parent.getModule());
+		return field == null ? null : writer.getClassName() + ".this." + field;
 	}
 
 	public void declareJava(MainLeekBlock mainblock, JavaWriter writer) {
@@ -764,9 +767,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		// Constructeur par défaut
 		writer.addLine("public " + className + "() throws LeekRunException {");
 		if (parent != null && parent.internal) {
-			if (parent.internal) {
-				writer.addLine("super(" + writer.getAIThis() + ");");
-			}
+			writer.addLine("super(" + writer.getAIThis() + ");");
 		} else {
 			var outer = superOuterInstance(writer);
 			if (outer != null) writer.addLine(outer + ".super();");

@@ -75,14 +75,7 @@ public class TestPackageCache {
 		cache.add("a", "A", a);
 		cache.add("b", "B", B);
 		var result = cache.compile(TestPackageCache::javac);
-		var loader = new ClassLoader() {
-			@Override
-			protected Class<?> findClass(String name) throws ClassNotFoundException {
-				var bytes = result.classes.get(name);
-				if (bytes == null) throw new ClassNotFoundException(name);
-				return defineClass(name, bytes, 0, bytes.length);
-			}
-		};
+		var loader = JavaCompiler.inMemoryLoader(result.classes);
 		var compiled = new ArrayList<>(result.compiled);
 		java.util.Collections.sort(compiled);
 		return compiled + " " + loader.loadClass("B").getMethod("g").invoke(null);
@@ -156,14 +149,7 @@ public class TestPackageCache {
 			cache.add("c", "C", c);
 			var result = cache.compile(TestPackageCache::javac);
 			assertTrue(result.compiled.contains("C"), result.compiled.toString());
-			var loader = new ClassLoader() {
-				@Override
-				protected Class<?> findClass(String name) throws ClassNotFoundException {
-					var bytes = result.classes.get(name);
-					if (bytes == null) throw new ClassNotFoundException(name);
-					return defineClass(name, bytes, 0, bytes.length);
-				}
-			};
+			var loader = JavaCompiler.inMemoryLoader(result.classes);
 			assertEquals(7L, loader.loadClass("C").getMethod("g").invoke(null));
 		}
 	}
@@ -308,7 +294,7 @@ public class TestPackageCache {
 		touch(main + ".leek");
 		assertEquals("7", run(main));
 		forgetInMemory(main);
-		PackageCache.sweep(new File(JavaCompiler.IA_PATH, "p"), System.currentTimeMillis() + 1000L * 24 * 3600 * 1000);
+		PackageCache.sweep(new File(JavaCompiler.IA_PATH, JavaCompiler.PACKAGES_PATH), System.currentTimeMillis() + 1000L * 24 * 3600 * 1000);
 		assertEquals("7", run(main));
 	}
 
@@ -320,7 +306,7 @@ public class TestPackageCache {
 		assertEquals("[3, 6]", run(main));
 		forgetInMemory(main);
 		AI ai = load(main);
-		PackageCache.sweep(new File(JavaCompiler.IA_PATH, "p"), System.currentTimeMillis() + 1000L * 24 * 3600 * 1000);
+		PackageCache.sweep(new File(JavaCompiler.IA_PATH, JavaCompiler.PACKAGES_PATH), System.currentTimeMillis() + 1000L * 24 * 3600 * 1000);
 		assertEquals("[3, 6]", ai.string(ai.runIA()));
 	}
 
@@ -353,7 +339,7 @@ public class TestPackageCache {
 		writePackages("2");
 		String main = writeMain(PROGRAM);
 		assertEquals("7", run(main));
-		PackageCache.sweep(new File(JavaCompiler.IA_PATH, "p"), System.currentTimeMillis() + 1000L * 24 * 3600 * 1000);
+		PackageCache.sweep(new File(JavaCompiler.IA_PATH, JavaCompiler.PACKAGES_PATH), System.currentTimeMillis() + 1000L * 24 * 3600 * 1000);
 		forgetInMemory(main);
 		assertEquals("7", run(main));
 		assertEquals(4, javacUnits(main).size(), javacUnits(main).toString());

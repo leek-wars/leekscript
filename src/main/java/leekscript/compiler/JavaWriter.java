@@ -66,7 +66,7 @@ public class JavaWriter {
 
 	private JavaWriter(JavaWriter entry, Module module) {
 		mCode = new StringBuilder();
-		mLinesFile = new StringBuilder();
+		mLinesFile = entry.mLinesFile; // jamais écrit : les lignes d'un module vont dans le fichier de l'IA
 		mLine = 1;
 		mWithDebug = entry.mWithDebug;
 		this.className = moduleClassName(entry.className, module);
@@ -88,6 +88,11 @@ public class JavaWriter {
 	/** Les classes d'IA s'appellent `AI_<empreinte en base 36>` : pas de majuscule, pas de heurt. */
 	public static final String PACKAGE_CLASS_PREFIX = "AI_P_";
 
+	/** Vrai tant que le programme s'écrit en une seule classe Java (v1-4, ou v5 sans import). */
+	private boolean singleClass() {
+		return entry.moduleWriters == null;
+	}
+
 	/** Passe en mode « une classe par module » et rend l'écrivain de la classe de `module`. */
 	public JavaWriter addModule(Module module) {
 		if (moduleWriters == null) moduleWriters = new LinkedHashMap<>();
@@ -96,7 +101,7 @@ public class JavaWriter {
 
 	/** L'écrivain de la classe qui porte les symboles de `owner` : celui-ci hors mode module. */
 	public JavaWriter of(Module owner) {
-		if (entry.moduleWriters == null || owner == null || owner.isMain()) return entry;
+		if (singleClass() || owner == null || owner.isMain()) return entry;
 		return entry.moduleWriters.get(owner);
 	}
 
@@ -112,12 +117,12 @@ public class JavaWriter {
 
 	/** Un numéro neuf pour un nom temporaire de la classe en cours d'écriture. */
 	public int nextId(MainLeekBlock mainblock) {
-		return entry.moduleWriters == null ? mainblock.getCount() : nextId++;
+		return singleClass() ? mainblock.getCount() : nextId++;
 	}
 
 	/** Le numéro, dans cette classe, d'un nom temporaire numéroté à la lecture du source. */
 	public int localId(int id) {
-		if (entry.moduleWriters == null) return id;
+		if (singleClass()) return id;
 		if (localIds == null) localIds = new HashMap<>();
 		return localIds.computeIfAbsent(id, k -> nextId++);
 	}
@@ -127,7 +132,7 @@ public class JavaWriter {
 	 * privé dans la classe unique d'une IA, visible des autres classes du programme sinon.
 	 */
 	public String privateMember() {
-		return entry.moduleWriters == null ? "private " : "";
+		return singleClass() ? "private " : "";
 	}
 
 	public Module getModule() {
@@ -141,15 +146,21 @@ public class JavaWriter {
 	 * module, voient ses champs comme elle.
 	 */
 	public String ref(Module owner) {
-		if (entry.moduleWriters == null) return "";
+		var field = ownerField(owner);
+		return field == null ? "" : field + ".";
+	}
+
+	/** Le champ de cette classe qui tient l'instance de la classe de `owner` ; null si c'est elle. */
+	public String ownerField(Module owner) {
+		if (singleClass()) return null;
 		if (owner != null && owner.isMain()) owner = null;
-		if (owner == module) return "";
+		if (owner == module) return null;
 		if (owner == null) {
 			referencesEntry = true;
-			return ENTRY_FIELD + ".";
+			return ENTRY_FIELD;
 		}
 		referencedModules.add(owner);
-		return moduleField(owner) + ".";
+		return moduleField(owner);
 	}
 
 	private static final String ENTRY_FIELD = "$main";
@@ -310,6 +321,7 @@ public class JavaWriter {
 
 	// Contenus de fichiers lus par cette classe de module (champ de l'IA -> champ de cette classe)
 	private final LinkedHashMap<String, String> fileFields = new LinkedHashMap<>();
+	private static final String FILE_FIELD = "file_";
 
 	/**
 	 * Le champ qui porte un contenu de fichier embarqué (`field` : celui de la classe de l'IA). Une
@@ -317,7 +329,7 @@ public class JavaWriter {
 	 */
 	public String fileField(String field) {
 		if (module == null) return field;
-		return fileFields.computeIfAbsent(field, f -> "file_" + fileFields.size());
+		return fileFields.computeIfAbsent(field, f -> FILE_FIELD + fileFields.size());
 	}
 
 	private void writeFileFields(MainLeekBlock mainblock) {
@@ -821,7 +833,7 @@ public class JavaWriter {
 	 * cache des packages, ne doit pas changer d'une compilation à l'autre.
 	 */
 	public <T> java.util.Collection<T> stableOrder(java.util.Collection<T> members, java.util.function.Function<T, String> name) {
-		if (entry.moduleWriters == null) return members;
+		if (singleClass()) return members;
 		var sorted = new ArrayList<>(members);
 		sorted.sort(java.util.Comparator.comparing(name));
 		return sorted;
