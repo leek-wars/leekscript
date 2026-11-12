@@ -281,6 +281,29 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * Lie les noms importés d'un module qui n'avait pas fini sa première passe (cycle), une fois
 	 * toutes les premières passes faites : tous les exports sont alors connus.
 	 */
+	// Les noms écrits dans les `import { … }` du programme, avec le module qui les importe
+	private record ImportName(Module importer, Token name) {}
+	private final List<ImportName> mImportNames = new ArrayList<>();
+
+	public void addImportName(Module importer, Token name) {
+		mImportNames.add(new ImportName(importer, name));
+	}
+
+	/** Lie chaque nom d'import à ce qu'il importe, une fois tout le programme déclaré (cf LeekVariable.importName). */
+	public void linkImportNames() {
+		for (var imported : mImportNames) {
+			var name = imported.name().getWord();
+			LeekVariable target = null;
+			var function = getUserFunction(name, imported.importer());
+			var clazz = getDefinedClass(name, imported.importer());
+			if (function != null) target = function.getVariable();
+			else if (clazz != null) target = clazz.getDeclarationVariable();
+			else target = getGlobal(name, imported.importer());
+			if (target != null) LeekVariable.importName(imported.name(), target);
+		}
+		mImportNames.clear();
+	}
+
 	public void resolvePendingImports() throws LeekCompilerException {
 		// Un ré-export lié ici peut en débloquer un autre (chaîne dans un cycle) : on recommence
 		// tant qu'une liaison progresse.
@@ -982,8 +1005,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	}
 
+	/** Les fichiers du programme : l'entrée, ses includes et, en v5, les modules qu'il importe. */
 	public Set<AIFile> getIncludedAIs() {
-		return new LinkedHashSet<>(mIncluded.values());
+		var files = new LinkedHashSet<>(mIncluded.values());
+		files.addAll(mImported.values());
+		return files;
 	}
 
 	public List<ClassDeclarationInstruction> getUserClasses() {

@@ -614,6 +614,7 @@ public class WordCompiler {
 		setCurrentFunction(mMain);
 		mMain.preAnalyze(this);
 		mMain.analyze(this);
+		mMain.linkImportNames();
 	}
 
 	/**
@@ -947,6 +948,7 @@ public class WordCompiler {
 		} else {
 			var file = mMain.resolvedImport(this, path); // résolu (et vérifié) au firstPass
 			if (file != null) mMain.importModule(this, file); // secondPass du module cible (codegen)
+			for (var nameToken : names) mMain.addImportName(mModule, nameToken);
 		}
 	}
 

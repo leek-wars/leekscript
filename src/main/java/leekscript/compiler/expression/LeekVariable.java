@@ -74,6 +74,21 @@ public class LeekVariable extends Expression {
 		this.type = type;
 	}
 
+	/**
+	 * Le nom d'un `import { nom }`, lié à ce qu'il importe : l'éditeur y trouve le survol, la
+	 * définition et une référence de plus, comme sur un usage du nom.
+	 */
+	public static LeekVariable importName(Token token, LeekVariable target) {
+		var name = new LeekVariable(token, target.type);
+		name.variableType = target.variableType;
+		name.declaredType = target.declaredType;
+		name.declaration = target.declaration;
+		name.classDeclaration = target.classDeclaration;
+		name.functionDeclaration = target.functionDeclaration;
+		name.variable = target;
+		return name;
+	}
+
 	public LeekVariable(Token token, VariableType variableType, Type type, boolean isFinal) {
 		this(token, variableType);
 		this.variableType = type;

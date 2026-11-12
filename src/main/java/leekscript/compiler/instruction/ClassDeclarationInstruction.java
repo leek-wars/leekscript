@@ -449,9 +449,18 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		// Le principal (et les classes internes) déclarent la CLASS-var dans le bloc
 		// partagé (résolution par chaîne de blocs, byte-identique) ; une classe d'un
 		// module importé NON (anti-fuite/collision) → résolue via getDefinedClass(module).
+		// Dans les deux cas la variable lie le nom de la classe à sa déclaration : l'éditeur part de
+		// ce jeton pour le survol et les références.
+		declarationVariable = new LeekVariable(token, VariableType.CLASS, this.classValueType, this);
 		if (module == null || module.isMain()) {
-			compiler.getCurrentBlock().addVariable(new LeekVariable(token, VariableType.CLASS, this.classValueType, this));
+			compiler.getCurrentBlock().addVariable(declarationVariable);
 		}
+	}
+
+	private LeekVariable declarationVariable;
+
+	public LeekVariable getDeclarationVariable() {
+		return declarationVariable;
 	}
 
 	// Comme le corps d'une fonction (cf FunctionBlock.preAnalyze), une classe se résout dans

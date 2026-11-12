@@ -629,6 +629,54 @@ public class TestModulesResolution {
 	}
 
 	// =========================================================================
+	// Éditeur : survol, définition et références à travers les modules
+	// =========================================================================
+
+	private void writeEditorProgram() throws IOException {
+		write("ops.leek", "// @version:5\nexport class Operations {\n\tstatic integer n = 0\n}");
+		write("user.leek", "// @version:5\nimport { Operations } from \"ops\"\nexport global total = 0\nexport function use() { total++ return new Operations() }");
+		write("entry.leek", "// @version:5\nimport { use, total } from \"user\"\nimport { Operations } from \"ops\"\nuse()\nreturn Operations.n + total");
+	}
+
+	// Les modules importés sont des fichiers du programme, comme les includes : l'éditeur y cherche
+	// les références et compte leurs lignes.
+	@Test
+	public void importedModulesAreProgramFiles() throws Exception {
+		writeEditorProgram();
+		var result = new leekscript.compiler.IACompiler().analyze(fs.getRoot(0).resolve("entry"));
+		assertTrue(result.success);
+		var paths = new java.util.TreeSet<String>();
+		for (var file : result.includedAIs) paths.add(file.getPath());
+		assertEquals("[entry, ops, user]", paths.toString());
+	}
+
+	// Depuis la déclaration d'une classe exportée : ses usages dans les autres modules, lignes
+	// d'import comprises.
+	@Test
+	public void referencesOfAnExportedClass() throws Exception {
+		writeEditorProgram();
+		var entry = fs.getRoot(0).resolve("entry");
+		var result = new leekscript.compiler.IACompiler().analyze(entry);
+		var ops = fs.getRoot(0).resolve("ops");
+		var found = new java.util.TreeSet<String>();
+		for (var location : ops.references(2, 14, result.includedAIs)) {
+			found.add(location.getFile().getPath() + ":" + location.getStartLine());
+		}
+		assertEquals("[entry:3, entry:5, user:2, user:4]", found.toString());
+	}
+
+	// Le nom écrit dans un `import { … }` mène à sa déclaration, classe, fonction ou globale.
+	@Test
+	public void importNamesLeadToTheirDeclaration() throws Exception {
+		writeEditorProgram();
+		var entry = fs.getRoot(0).resolve("entry");
+		new leekscript.compiler.IACompiler().analyze(entry);
+		assertEquals("[\"user\",4,16,4,18]", entry.hover(2, 9).defined.toJSON().toString());
+		assertEquals("[\"user\",3,14,3,18]", entry.hover(2, 14).defined.toJSON().toString());
+		assertEquals("[\"ops\",2,13,2,22]", entry.hover(3, 9).defined.toJSON().toString());
+	}
+
+	// =========================================================================
 	// Helpers
 	// =========================================================================
 
