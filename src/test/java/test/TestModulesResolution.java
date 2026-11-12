@@ -676,6 +676,18 @@ public class TestModulesResolution {
 		assertEquals("[\"ops\",2,13,2,22]", entry.hover(3, 9).defined.toJSON().toString());
 	}
 
+	// Un nom que le module n'exporte pas reste sans lien, même s'il porte le nom d'une classe du langage.
+	@Test
+	public void failedImportNameIsNotLinked() throws Exception {
+		write("lib.leek", "// @version:5\nexport function f() { return 1 }");
+		write("bad.leek", "// @version:5\nimport { Map } from \"lib\"\nreturn 1");
+		var bad = fs.getRoot(0).resolve("bad");
+		var result = new leekscript.compiler.IACompiler().analyze(bad);
+		assertTrue(!result.success);
+		var hover = bad.hover(2, 9);
+		assertTrue(hover == null || hover.defined == null);
+	}
+
 	// =========================================================================
 	// Helpers
 	// =========================================================================

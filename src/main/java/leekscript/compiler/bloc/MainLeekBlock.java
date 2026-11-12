@@ -277,10 +277,6 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mPendingImports.add(new PendingImport(compiler, importer, source, name, reexport));
 	}
 
-	/**
-	 * Lie les noms importés d'un module qui n'avait pas fini sa première passe (cycle), une fois
-	 * toutes les premières passes faites : tous les exports sont alors connus.
-	 */
 	// Les noms écrits dans les `import { … }` du programme, avec le module qui les importe
 	private record ImportName(Module importer, Token name) {}
 	private final List<ImportName> mImportNames = new ArrayList<>();
@@ -289,21 +285,33 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mImportNames.add(new ImportName(importer, name));
 	}
 
-	/** Lie chaque nom d'import à ce qu'il importe, une fois tout le programme déclaré (cf LeekVariable.importName). */
+	/**
+	 * Lie chaque nom d'import à ce qu'il importe, une fois tout le programme déclaré (cf
+	 * LeekVariable.importName). Un nom que son module n'a pas pu importer reste sans lien.
+	 */
 	public void linkImportNames() {
 		for (var imported : mImportNames) {
 			var name = imported.name().getWord();
+			var importer = imported.importer();
 			LeekVariable target = null;
-			var function = getUserFunction(name, imported.importer());
-			var clazz = getDefinedClass(name, imported.importer());
-			if (function != null) target = function.getVariable();
-			else if (clazz != null) target = clazz.getDeclarationVariable();
-			else target = getGlobal(name, imported.importer());
+			if (importer.getImportedFunctionSource(name) != null) {
+				var function = getUserFunction(name, importer);
+				if (function != null) target = function.getVariable();
+			} else if (importer.getImportedClassSource(name) != null) {
+				var clazz = getDefinedClass(name, importer);
+				if (clazz != null) target = clazz.getDeclarationVariable();
+			} else if (importer.getImportedVarSource(name) != null) {
+				target = getGlobal(name, importer);
+			}
 			if (target != null) LeekVariable.importName(imported.name(), target);
 		}
 		mImportNames.clear();
 	}
 
+	/**
+	 * Lie les noms importés d'un module qui n'avait pas fini sa première passe (cycle), une fois
+	 * toutes les premières passes faites : tous les exports sont alors connus.
+	 */
 	public void resolvePendingImports() throws LeekCompilerException {
 		// Un ré-export lié ici peut en débloquer un autre (chaîne dans un cycle) : on recommence
 		// tant qu'une liaison progresse.
