@@ -627,6 +627,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		var tag = Module.tagOf(file);
 		for (int n = 2; !mModuleTags.add(tag); n++) tag = Module.tagOf(file) + "_" + n;
 		var module = new Module(file, tag, false);
+		var owner = packageOf(file);
+		if (!owner.isProgram()) module.setPackage(owner.getRoot().getKeyHash());
 		mModules.put(file.getKey(), module);
 		return module;
 	}
@@ -742,6 +744,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * qu'un include (le chemin seul ne distingue pas deux fichiers homonymes partout). Rend le nom
 	 * du champ statique qui le porte, ou null si le fichier, ou le total des fichiers lus, est trop gros.
 	 */
+	/** Le contenu embarqué sous le champ `field` de la classe de l'IA (cf addFileContent). */
+	public String getFileContent(String field) {
+		return mFileContents.get(Integer.parseInt(field.substring("file_".length())));
+	}
+
 	public String addFileContent(AIFile file) {
 		var key = file.getKey();
 		var field = mFileFields.get(key);
@@ -796,7 +803,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			// L'IA sous son type d'exécution, celui qu'attendent les fonctions de combat
 			// (premier champ : les initialiseurs des suivants le lisent)
 			moduleWriter.addLine("final " + AIClass + " ai = (" + AIClass + ") super.ai;");
-			moduleWriter.addLine("public " + name + "(AI ai) throws LeekRunException { super(ai); }");
+			moduleWriter.addLine("public " + name + "(AI ai) throws LeekRunException { super(ai, \"" + module.tag() + "\"); }");
 		}
 	}
 
@@ -821,14 +828,14 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 
 		for (int i = 0; i < mFileContents.size(); i++) {
-			writer.addLine(writer.privateMember() + "static final String file_" + i + " = " + LeekFileContent.javaString(mFileContents.get(i)) + ";");
+			writer.addLine("private static final String file_" + i + " = " + LeekFileContent.javaString(mFileContents.get(i)) + ";");
 		}
 
 		// Constructor
 		writer.addLine("public " + className + "() throws LeekRunException {");
 		writer.addLine("super(" + mInstructions.size() + ", " + mCompiler.getCurrentAI().getVersion() + ");");
 		for (var moduleWriter : moduleWriters) {
-			writer.addLine(JavaWriter.moduleField(moduleWriter.getModule()) + ".$link(this);");
+			writer.addLine(JavaWriter.moduleField(moduleWriter.getModule()) + ".$link();");
 		}
 
 		// Une méthode par classe : le constructeur seul dépassait les 64 Ko de bytecode d'une méthode
@@ -953,7 +960,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.writeAnonymousSystemFunctions(this);
 		writer.writeAnonymousUserFunctions(this);
 		writer.writeMatchTempFields();
-		writer.writeModuleLinks();
+		writer.writeModuleEnd(this);
 		writer.addLine("}");
 	}
 

@@ -46,7 +46,8 @@ public class GenerateAIModule {
 			.filter(f -> f.getType() == ClassLeekValue.class && Modifier.isFinal(f.getModifiers()) && Modifier.isPublic(f.getModifiers()) && !Modifier.isStatic(f.getModifiers()))
 			.map(f -> f.getName()).sorted().collect(Collectors.toList());
 		for (var f : fields) sb.append("\tpublic final leekscript.runner.values.ClassLeekValue ").append(f).append(";\n");
-		sb.append("\n\tprotected AIModule(AI ai) {\n\t\tthis.ai = ai;\n");
+		sb.append("\n\t/** `name` : le nom du module, sous lequel les autres modules du programme le retrouvent. */\n");
+		sb.append("\tprotected AIModule(AI ai, String name) {\n\t\tthis.ai = ai;\n\t\tai.registerModule(name, this);\n");
 		for (var f : fields) sb.append("\t\tthis.").append(f).append(" = ai.").append(f).append(";\n");
 		sb.append("\t}\n");
 

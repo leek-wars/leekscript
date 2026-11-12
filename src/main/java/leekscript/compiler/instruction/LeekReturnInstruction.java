@@ -172,7 +172,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 				// null, reçoit l'expression telle quelle : pas d'écriture brute, que javac refuse pour les
 				// expressions émises en Object (`a?.x`, `m[k] ??= v`…).
 				// `$` : ne masque aucun champ (cf. LeekFunctionCall)
-				String r = "$ret" + mainblock.getCount();
+				String r = "$ret" + writer.nextId(mainblock);
 				writer.addCode(returnType.getJavaName(mainblock.getVersion()) + " " + r + " = ");
 				var converter = orNullConverter(mainblock, finalExpression.getType());
 				if (converter != null) {

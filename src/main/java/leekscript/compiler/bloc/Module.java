@@ -114,6 +114,22 @@ public class Module {
 		ownJavaClass = true;
 	}
 
+	// Module d'un vrai package (dossier à `package.leek`), pas du package du programme
+	// (son identité : l'empreinte de sa racine ; null dans le package du programme)
+	private String packageId = null;
+
+	public void setPackage(String packageId) {
+		this.packageId = packageId;
+	}
+
+	public String getPackage() {
+		return packageId;
+	}
+
+	public boolean isInPackage() {
+		return packageId != null;
+	}
+
 	/** Préfixe des symboles du module dans le Java généré (`f_`, `g_`, `u_`, `ufunction_`…). */
 	public String javaPrefix() {
 		return ownJavaClass ? "" : prefix;

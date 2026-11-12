@@ -76,10 +76,17 @@ public class JavaWriter {
 		this.module = module;
 	}
 
-	/** Nom de la classe Java du module `module` dans le programme de classe `entryClass`. */
+	/**
+	 * Nom de la classe Java du module `module` dans le programme de classe `entryClass`. Celle d'un
+	 * module de package ne porte pas le nom du programme : son Java est le même pour tous les
+	 * programmes qui importent le package.
+	 */
 	public static String moduleClassName(String entryClass, Module module) {
-		return entryClass + "_" + module.tag();
+		return (module.isInPackage() ? PACKAGE_CLASS_PREFIX : entryClass + "_") + module.tag();
 	}
+
+	/** Les classes d'IA s'appellent `AI_<empreinte en base 36>` : pas de majuscule, pas de heurt. */
+	public static final String PACKAGE_CLASS_PREFIX = "AI_P_";
 
 	/** Passe en mode « une classe par module » et rend l'écrivain de la classe de `module`. */
 	public JavaWriter addModule(Module module) {
@@ -95,6 +102,24 @@ public class JavaWriter {
 
 	public java.util.Collection<JavaWriter> getModuleWriters() {
 		return moduleWriters == null ? java.util.List.of() : moduleWriters.values();
+	}
+
+	// Numéros des noms temporaires du Java (`$arN`, `$matchN`…). Le compteur du programme sert tant
+	// qu'il n'a qu'une classe ; une classe de module compte les siens, pour que son Java ne dépende
+	// ni des autres modules ni de l'ordre des imports.
+	private int nextId = 0;
+	private HashMap<Integer, Integer> localIds = null;
+
+	/** Un numéro neuf pour un nom temporaire de la classe en cours d'écriture. */
+	public int nextId(MainLeekBlock mainblock) {
+		return entry.moduleWriters == null ? mainblock.getCount() : nextId++;
+	}
+
+	/** Le numéro, dans cette classe, d'un nom temporaire numéroté à la lecture du source. */
+	public int localId(int id) {
+		if (entry.moduleWriters == null) return id;
+		if (localIds == null) localIds = new HashMap<>();
+		return localIds.computeIfAbsent(id, k -> nextId++);
 	}
 
 	/**
@@ -134,17 +159,23 @@ public class JavaWriter {
 		return "$" + module.tag();
 	}
 
-	/** Champs des modules lus par cette classe de module, et la méthode par laquelle l'IA les câble. */
-	public void writeModuleLinks() {
+	/**
+	 * Fin d'une classe de module : ses contenus de fichiers, les champs des modules qu'elle lit et
+	 * la méthode qui les câble, appelée par l'IA une fois tous ses modules créés. Un module se
+	 * retrouve par son nom dans le registre de l'IA (AI.getModule), pas par un champ de la classe du
+	 * programme : la classe d'un module de package ne connaît pas le programme.
+	 */
+	public void writeModuleEnd(MainLeekBlock mainblock) {
 		if (module == null) return;
+		writeFileFields(mainblock);
 		if (referencesEntry) addLine(entry.className + " " + ENTRY_FIELD + ";");
 		for (var other : referencedModules) {
 			addLine(moduleClassName(entry.className, other) + " " + moduleField(other) + ";");
 		}
-		addLine("void $link(" + entry.className + " main) {");
-		if (referencesEntry) addLine(ENTRY_FIELD + " = main;");
+		addLine("public void $link() {");
+		if (referencesEntry) addLine(ENTRY_FIELD + " = (" + entry.className + ") (AI) ai;");
 		for (var other : referencedModules) {
-			addLine(moduleField(other) + " = main." + moduleField(other) + ";");
+			addLine(moduleField(other) + " = (" + moduleClassName(entry.className, other) + ") ai.getModule(\"" + other.tag() + "\");");
 		}
 		addLine("}");
 	}
@@ -195,7 +226,7 @@ public class JavaWriter {
 	public AICode getCode() {
 		var code = new AICode(mCode.toString(), mLinesFile.toString(), mLines, mFilesList);
 		for (var writer : getModuleWriters()) {
-			code.addModule(writer.className, writer.mCode.toString(), writer.mLines);
+			code.addModule(writer.className, writer.mCode.toString(), writer.mLines, writer.module.isInPackage() ? writer.module.getPackage() : PackageCache.PROGRAM_GROUP);
 		}
 		return code;
 	}
@@ -277,9 +308,22 @@ public class JavaWriter {
 		return module == null ? className + ".this" : className + ".this.ai";
 	}
 
-	/** Un champ statique de la classe de l'IA, lu de la classe en cours d'écriture. */
-	public String entryStatic(String field) {
-		return module == null ? field : entry.className + "." + field;
+	// Contenus de fichiers lus par cette classe de module (champ de l'IA -> champ de cette classe)
+	private final LinkedHashMap<String, String> fileFields = new LinkedHashMap<>();
+
+	/**
+	 * Le champ qui porte un contenu de fichier embarqué (`field` : celui de la classe de l'IA). Une
+	 * classe de module en garde sa copie, pour ne rien lire de la classe de l'IA qui l'importe.
+	 */
+	public String fileField(String field) {
+		if (module == null) return field;
+		return fileFields.computeIfAbsent(field, f -> "file_" + fileFields.size());
+	}
+
+	private void writeFileFields(MainLeekBlock mainblock) {
+		for (var field : fileFields.entrySet()) {
+			addLine("static final String " + field.getValue() + " = " + leekscript.compiler.expression.LeekFileContent.javaString(mainblock.getFileContent(field.getKey())) + ";");
+		}
 	}
 
 	/** L'IA, là où la classe de l'IA écrit `this` : hors de toute classe interne. */

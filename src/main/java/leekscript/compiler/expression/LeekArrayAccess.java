@@ -636,7 +636,7 @@ public class LeekArrayAccess extends Expression {
 		Runnable tabular = () -> mTabular.writeJavaCode(mainblock, writer, false);
 		Runnable key = () -> mCase.writeJavaCode(mainblock, writer, false);
 		if (bind) {
-			var id = mainblock.getCount();
+			var id = writer.nextId(mainblock);
 			writer.addCode("(switch (0) { default -> { Object $t" + id + " = ");
 			tabular.run();
 			writer.addCode("; Object $k" + id + " = ");

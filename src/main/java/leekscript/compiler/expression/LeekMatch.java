@@ -105,6 +105,7 @@ public class LeekMatch extends Expression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
+		int id = writer.localId(this.id);
 		writer.registerMatchTemp(id);
 		String tmp = "$match" + id;
 

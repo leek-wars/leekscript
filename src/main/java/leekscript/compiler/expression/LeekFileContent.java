@@ -49,7 +49,7 @@ public class LeekFileContent extends Expression {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
-		writer.addCode(writer.entryStatic(field));
+		writer.addCode(writer.fileField(field));
 	}
 
 	/** Expression Java d'une chaîne quelconque, découpée si elle dépasse la taille d'une constante. */

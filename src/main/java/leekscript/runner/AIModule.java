@@ -30,8 +30,10 @@ public abstract class AIModule {
 	public final leekscript.runner.values.ClassLeekValue systemClass;
 	public final leekscript.runner.values.ClassLeekValue valueClass;
 
-	protected AIModule(AI ai) {
+	/** `name` : le nom du module, sous lequel les autres modules du programme le retrouvent. */
+	protected AIModule(AI ai, String name) {
 		this.ai = ai;
+		ai.registerModule(name, this);
 		this.arrayClass = ai.arrayClass;
 		this.bigintegerClass = ai.bigintegerClass;
 		this.booleanClass = ai.booleanClass;
@@ -467,6 +469,10 @@ public abstract class AIModule {
 
 	public final long getMaxRAM() {
 		return ai.getMaxRAM();
+	}
+
+	public final leekscript.runner.AIModule getModule(java.lang.String a0) {
+		return ai.getModule(a0);
 	}
 
 	public final int getNextObjectID() {
@@ -955,6 +961,10 @@ public abstract class AIModule {
 
 	public final java.lang.Double realOrNull(java.lang.Object a0) throws leekscript.runner.LeekRunException {
 		return ai.realOrNull(a0);
+	}
+
+	public final void registerModule(java.lang.String a0, leekscript.runner.AIModule a1) {
+		ai.registerModule(a0, a1);
 	}
 
 	public final void registerModuleClass(leekscript.runner.values.ClassLeekValue a0) {

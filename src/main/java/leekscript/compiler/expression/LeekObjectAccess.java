@@ -759,7 +759,7 @@ public class LeekObjectAccess extends Expression {
 		if (!lazy || ConstantFolder.isSilentRead(object, fromClass)) {
 			compileFieldOperation(mainblock, writer, "field_coalesce_eq", expr, lazy, () -> writeReceiver(mainblock, writer));
 		} else {
-			var receiver = "$r" + mainblock.getCount();
+			var receiver = "$r" + writer.nextId(mainblock);
 			writer.addCode("(switch (0) { default -> { Object " + receiver + " = ");
 			writeReceiver(mainblock, writer);
 			writer.addCode("; yield ");

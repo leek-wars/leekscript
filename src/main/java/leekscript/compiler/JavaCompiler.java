@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.regex.Matcher;
@@ -135,6 +136,109 @@ public class JavaCompiler {
 		return sig;
 	}
 
+	/** Sous-dossier d'IA_PATH où se rangent les groupes compilés des programmes à packages. */
+	private static final String PACKAGES_PATH = "p";
+
+	/** Les dossiers de cache d'un programme à packages ; null sans manifeste, ou si l'un d'eux manque. */
+	private static List<File> readManifest(File manifest) {
+		if (!manifest.exists()) return null;
+		try {
+			var directories = new ArrayList<File>();
+			for (var line : java.nio.file.Files.readAllLines(manifest.toPath())) {
+				if (line.isEmpty()) continue;
+				var directory = new File(line);
+				if (!directory.isDirectory()) return null;
+				directories.add(directory);
+			}
+			return directories;
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	/** `directories` null : le programme n'a pas de package, ses classes sont à plat dans IA_PATH. */
+	private static void writeManifest(File manifest, List<File> directories) throws LeekScriptException {
+		try {
+			if (directories == null) {
+				manifest.delete();
+			} else {
+				java.nio.file.Files.writeString(manifest.toPath(), directories.stream().map(File::getPath).collect(java.util.stream.Collectors.joining("\n")));
+			}
+		} catch (IOException e) {
+			throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
+		}
+	}
+
+	/**
+	 * Compile des sources Java en mémoire, les dossiers de `classpath` en plus du classpath du
+	 * compilateur : nom de classe -> bytecode. Une erreur de javac est rapportée sur la ligne
+	 * LeekScript de la première classe fautive, qu'elle soit celle de l'IA ou celle d'un module.
+	 */
+	private static Map<String, byte[]> javac(AIFile file, List<PackageCache.Unit> units, List<File> classpath) throws LeekScriptException {
+		SimpleFileManager fileManager;
+		var output = new StringWriter();
+		boolean result;
+		try {
+			compileSemaphore.acquire();
+			try {
+				fileManager = new SimpleFileManager(compiler.getStandardFileManager(null, null, null));
+				var compilationUnits = new ArrayList<SimpleSourceFile>();
+				for (var unit : units) {
+					compilationUnits.add(new SimpleSourceFile(unit.className() + ".java", unit.javaCode()));
+				}
+				var options = arguments;
+				if (!classpath.isEmpty()) {
+					var path = new StringBuilder(JavaCompiler.classpath);
+					for (var directory : classpath) path.append(File.pathSeparator).append(directory.getPath());
+					options = Arrays.asList("-classpath", path.toString(), "-nowarn");
+				}
+				var task = compiler.getTask(output, fileManager, null, options, null, compilationUnits);
+				result = task.call();
+			} finally {
+				compileSemaphore.release();
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new LeekScriptException(Error.COMPILE_JAVA, "Compilation interrupted");
+		}
+
+		if (!result) {
+			var errors = output.toString();
+			int javaLine = -1;
+			// La première erreur, dans la classe de l'IA ou dans celle d'un de ses modules
+			var javaCode = file.getCompiledCode().getJavaCode();
+			var linesMap = file.getCompiledCode().getLinesMap();
+			Pattern r = Pattern.compile("(AI_\\w+)\\.java:(\\d+):");
+			Matcher m = r.matcher(errors);
+			if (m.find()) {
+				javaLine = Integer.parseInt(m.group(2));
+				for (var module : file.getCompiledCode().getModules()) {
+					if (module.className().equals(m.group(1))) {
+						javaCode = module.javaCode();
+						linesMap = module.lines();
+					}
+				}
+			}
+			var mapping = linesMap.get(javaLine);
+			String location = null;
+			if (mapping != null) {
+				location = file.getCompiledCode().getFiles().get(mapping.getAI()) + ":" + mapping.getLeekScriptLine();
+			}
+
+			if (JVM_LIMIT_ERRORS.stream().anyMatch(errors::contains)) {
+				throw new LeekScriptException(Error.CODE_TOO_LARGE, errors, location);
+			} else {
+				throw new LeekScriptException(Error.COMPILE_JAVA, errors, location)
+					.details(javaExcerpt(javaCode, javaLine));
+			}
+		}
+		var classes = new java.util.HashMap<String, byte[]>();
+		for (var compiledClass : fileManager.getCompiled().values()) {
+			classes.put(compiledClass.getName(), compiledClass.getCompiledBinaries());
+		}
+		return classes;
+	}
+
 	private static AI loadFromRamCache(AIFile file, File lines) throws LeekScriptException {
 		var ref = aiCache.get(file.getJavaClass());
 		var entry = ref != null ? ref.get() : null;
@@ -203,6 +307,8 @@ public class JavaCompiler {
 		// Disk cache validity = byte-equal sig file (signature is a non-monotonic
 		// hash, can't be compared via lastModified).
 		File sigFile = Paths.get(IA_PATH, file.getJavaClass() + ".sig").toFile();
+		// Programme v5 à packages : les dossiers de cache de ses groupes, un par ligne
+		File manifest = Paths.get(IA_PATH, file.getJavaClass() + ".pkgs").toFile();
 
 		AI cached = loadFromRamCache(file, lines);
 		if (cached != null) return cached;
@@ -214,13 +320,18 @@ public class JavaCompiler {
 			if (cached != null) return cached;
 
 			long sig = signature(file);
-			var onDisk = options.useCache() && file.getTimestamp() > 0 && compiled.exists() && compiled.length() != 0 ? readSignatureFile(sigFile) : null;
+			// Programme v5 à packages : ses classes sont dans les dossiers de ses groupes
+			var packages = options.useCache() ? readManifest(manifest) : null;
+			var onDisk = options.useCache() && file.getTimestamp() > 0 && (packages != null || compiled.exists() && compiled.length() != 0) ? readSignatureFile(sigFile) : null;
 			if (onDisk != null && onDisk.signature() == sig) {
 				try {
+					var urls = new ArrayList<URL>();
+					if (packages == null) urls.add(new File(IA_PATH).toURI().toURL());
+					else for (var directory : packages) urls.add(directory.toURI().toURL());
 					// ClassLoader éphémère par AI pour permettre le GC des classes ;
 					// ne pas le close, ça invaliderait la classe chargée.
 					@SuppressWarnings("resource")
-					var classLoader = new URLClassLoader(new URL[] { new File(IA_PATH).toURI().toURL() }, JavaCompiler.class.getClassLoader());
+					var classLoader = new URLClassLoader(urls.toArray(new URL[0]), JavaCompiler.class.getClassLoader());
 					var clazz = classLoader.loadClass(file.getJavaClass());
 					var entry = new AIClassEntry(clazz, sig, onDisk.bytecodeSize());
 					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), entry, refQueue));
@@ -266,78 +377,52 @@ public class JavaCompiler {
 			}
 
 			t = System.nanoTime();
-			SimpleFileManager fileManager;
-			var output = new StringWriter();
-			boolean result;
-			try {
-				compileSemaphore.acquire();
-				try {
-					fileManager = new SimpleFileManager(compiler.getStandardFileManager(null, null, null));
-					var compilationUnits = new ArrayList<SimpleSourceFile>();
-					compilationUnits.add(new SimpleSourceFile(fileName, file.getCompiledCode().getJavaCode()));
-					// v5 : une unité par classe de module, compilées ensemble (elles se lisent l'une l'autre)
-					for (var module : file.getCompiledCode().getModules()) {
-						compilationUnits.add(new SimpleSourceFile(module.className() + ".java", module.javaCode()));
-					}
-					var task = compiler.getTask(output, fileManager, null, arguments, null, compilationUnits);
-					result = task.call();
-				} finally {
-					compileSemaphore.release();
+			var code = file.getCompiledCode();
+			Map<String, byte[]> classes;
+			List<File> packageDirectories = List.of();
+			if (code.hasPackages()) {
+				// v5 : chaque package se compile et se cache à part (cf PackageCache)
+				var cache = new PackageCache(new File(IA_PATH, PACKAGES_PATH), options.useCache());
+				cache.add(PackageCache.PROGRAM_GROUP, file.getJavaClass(), code.getJavaCode());
+				for (var module : code.getModules()) {
+					cache.add(module.group(), module.className(), module.javaCode());
 				}
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw new LeekScriptException(Error.COMPILE_JAVA, "Compilation interrupted");
+				var result = cache.compile((units, classpath) -> javac(file, units, classpath));
+				classes = result.classes;
+				packageDirectories = result.directories;
+				code.setJavacUnits(result.compiled);
+			} else {
+				var units = new ArrayList<PackageCache.Unit>();
+				units.add(new PackageCache.Unit(file.getJavaClass(), code.getJavaCode()));
+				// v5 : une unité par classe de module, compilées ensemble (elles se lisent l'une l'autre)
+				for (var module : code.getModules()) {
+					units.add(new PackageCache.Unit(module.className(), module.javaCode()));
+				}
+				classes = javac(file, units, List.of());
+				code.setJavacUnits(units.stream().map(PackageCache.Unit::className).toList());
 			}
 			long compile_time = System.nanoTime() - t;
 
-			if (!result) {
-				var errors = output.toString();
-				int javaLine = -1;
-				// La première erreur, dans la classe de l'IA ou dans celle d'un de ses modules
-				var javaCode = file.getCompiledCode().getJavaCode();
-				var linesMap = file.getCompiledCode().getLinesMap();
-				Pattern r = Pattern.compile("(" + Pattern.quote(file.getJavaClass()) + "\\w*)\\.java:(\\d+):");
-				Matcher m = r.matcher(errors);
-				if (m.find()) {
-					javaLine = Integer.parseInt(m.group(2));
-					for (var module : file.getCompiledCode().getModules()) {
-						if (module.className().equals(m.group(1))) {
-							javaCode = module.javaCode();
-							linesMap = module.lines();
-						}
-					}
-				}
-				var mapping = linesMap.get(javaLine);
-				String location = null;
-				if (mapping != null) {
-					location = file.getCompiledCode().getFiles().get(mapping.getAI()) + ":" + mapping.getLeekScriptLine();
-				}
-
-				if (JVM_LIMIT_ERRORS.stream().anyMatch(errors::contains)) {
-					throw new LeekScriptException(Error.CODE_TOO_LARGE, errors, location);
-				} else {
-					throw new LeekScriptException(Error.COMPILE_JAVA, errors, location)
-						.details(javaExcerpt(javaCode, javaLine));
-				}
-			}
-
 			t = System.nanoTime();
+			var loaded = classes;
 			ClassLoader classLoader = new ClassLoader() {
 				@Override
 				protected Class<?> findClass(String name) throws ClassNotFoundException {
-					var bytes = fileManager.get(name).getCompiledBinaries();
+					var bytes = loaded.get(name);
+					if (bytes == null) throw new ClassNotFoundException(name);
 					return defineClass(name, bytes, 0, bytes.length);
 				}
 			};
 
 			long bytecodeSize = 0;
-			for (var compiledClass : fileManager.getCompiled().values()) {
+			for (var compiledClass : classes.entrySet()) {
 
-				var bytes = compiledClass.getCompiledBinaries();
+				var bytes = compiledClass.getValue();
 				bytecodeSize += bytes.length;
-				if (options.useCache()) {
+				// (les classes d'un programme à packages sont déjà dans les dossiers de ses groupes)
+				if (options.useCache() && !code.hasPackages()) {
 					try {
-						var classFile = new FileOutputStream(Paths.get(IA_PATH, compiledClass.getName() + ".class").toFile());
+						var classFile = new FileOutputStream(Paths.get(IA_PATH, compiledClass.getKey() + ".class").toFile());
 						classFile.write(bytes);
 						classFile.close();
 					} catch (IOException e) {
@@ -345,13 +430,14 @@ public class JavaCompiler {
 					}
 				}
 
-				if (compiledClass.getName().equals(file.getJavaClass())) continue;
+				if (compiledClass.getKey().equals(file.getJavaClass())) continue;
 				try {
-					classLoader.loadClass(compiledClass.getName());
+					classLoader.loadClass(compiledClass.getKey());
 				} catch (Exception e) {
 					throw new LeekScriptException(Error.CANNOT_LOAD_AI, e.getMessage());
 				}
 			}
+			if (options.useCache()) writeManifest(manifest, code.hasPackages() ? packageDirectories : null);
 
 			try {
 				var clazz = classLoader.loadClass(file.getJavaClass());

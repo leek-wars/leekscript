@@ -772,6 +772,18 @@ public abstract class AI {
 		moduleClasses.put(clazz.clazz, clazz);
 	}
 
+	// v5 : les instances des classes de module du programme, par nom de module
+	private HashMap<String, AIModule> modules = null;
+
+	public void registerModule(String name, AIModule module) {
+		if (modules == null) modules = new HashMap<>();
+		modules.put(name, module);
+	}
+
+	public AIModule getModule(String name) {
+		return modules.get(name);
+	}
+
 	/** La valeur de classe d'une classe utilisateur compilée. */
 	private ClassLeekValue userClass(Class<?> javaClass) throws IllegalAccessException, NoSuchFieldException {
 		if (moduleClasses != null) {

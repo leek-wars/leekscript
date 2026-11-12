@@ -171,7 +171,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 		// On prend un nombre unique pour les noms de variables temporaires, préfixés par `$` pour ne
 		// masquer aucun champ (cf. LeekFunctionCall)
-		int block_count = getCount();
+		int block_count = writer.nextId(mainblock);
 		String var = "$v" + block_count;
 		String it = "$i" + block_count;
 		String ar = "$ar" + block_count;

@@ -394,7 +394,7 @@ public class LeekFunctionCall extends Expression {
 					// Les arguments ne sont évalués que si l'objet n'est pas null (#5300). L'objet est
 					// lié par le motif, sous un nom unique : un argument peut contenir un autre `?.`,
 					// et `$` n'entre dans aucun nom LeekScript, donc dans aucun champ qu'il masquerait.
-					var receiver = "$o" + mainblock.getCount();
+					var receiver = "$o" + writer.nextId(mainblock);
 					writer.addCode("(");
 					object.writeJavaCode(mainblock, writer, true);
 					writer.addCode(" instanceof Object " + receiver + " ? callObjectAccess(" + receiver);
