@@ -38,6 +38,21 @@ public class TestModules extends TestCommon {
 	}
 
 	@Test
+	public void annotationsAroundExport() throws Exception {
+		section("Modules (v5) - annotation avant ou après export");
+		code_v5_("export @deprecated function f() { return 1 } return f()").warning(Error.ANNOTATION_DEPRECATED_CALL);
+		code_v5_("@deprecated export function f() { return 1 } return f()").warning(Error.ANNOTATION_DEPRECATED_CALL);
+		code_v5_("@deprecated export function f() { return 1 } return f()").equals("1");
+		code_v5_("@deprecated export global g = 3 return g").warning(Error.ANNOTATION_DEPRECATED_CALL);
+		code_v5_("@deprecated @unused export class C { integer v = 1 } return new C().v").equals("1");
+		// `@unused export var` reste un champ du module, visible des fonctions
+		code_v5_("@unused export var x = 5 function f() { return x } return f()").equals("5");
+		code_strict_v5_("@unused export function f() { return 1 } return 0").noWarning();
+		// Avant la v5, `export` reste un mot-clé inattendu, annoté ou non
+		code_v4("@deprecated export function f() { return 1 } return f()").error(Error.KEYWORD_UNEXPECTED);
+	}
+
+	@Test
 	public void versionGate() throws Exception {
 		section("Modules (v5) - export/import réservés avant v5");
 		// export/import sont des features v5 : erreur dure avant v5 (mots-clés réservés depuis v3).

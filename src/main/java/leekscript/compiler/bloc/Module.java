@@ -183,8 +183,30 @@ public class Module {
 		return origin(name, m -> m.importedClasses);
 	}
 
-	public void addNamespaceImport(String alias, Module source) {
-		namespaceImports.put(alias, source);
+	// Noms de premier niveau du module : un nom n'a qu'une liaison, soit déclaré ici, soit importé
+	// d'un seul module (`import { f }` et `export { f }` du même module désignent la même liaison).
+	private final Set<String> declaredNames = new HashSet<>();
+	private final Map<String, Module> importedNames = new HashMap<>();
+
+	/** Déclare `name` dans ce module ; false si le nom est déjà importé. */
+	public boolean declare(String name) {
+		declaredNames.add(name);
+		return !importedNames.containsKey(name) && !namespaceImports.containsKey(name);
+	}
+
+	/** Réserve `name` pour un import nommé depuis `source` ; false si le nom est déjà pris. */
+	public boolean reserveImport(String name, Module source) {
+		return !declaredNames.contains(name) && !namespaceImports.containsKey(name) && reserve(importedNames, name, source);
+	}
+
+	/** `import * as alias` de `source` ; false, sans rien lier, si le nom est déjà pris. */
+	public boolean addNamespaceImport(String alias, Module source) {
+		return !declaredNames.contains(alias) && !importedNames.containsKey(alias) && reserve(namespaceImports, alias, source);
+	}
+
+	private static boolean reserve(Map<String, Module> reserved, String name, Module source) {
+		var previous = reserved.putIfAbsent(name, source);
+		return previous == null || previous == source;
 	}
 
 	/** Module aliasé par {@code alias} via `import * as alias`, sinon null. */

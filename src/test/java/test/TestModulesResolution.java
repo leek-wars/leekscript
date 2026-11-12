@@ -446,6 +446,95 @@ public class TestModulesResolution {
 	}
 
 	// =========================================================================
+	// Annotations et export : les deux ordres
+	// =========================================================================
+
+	@Test
+	public void annotatedExportsAreImportable() throws Exception {
+		write("an.leek", "export @deprecated function a() { return 1 }\n@deprecated export function b() { return 2 }\n"
+			+ "@deprecated export class C { integer v = 4 }\n@deprecated export global g = 8\n@unused export var w = 16");
+		assertEquals("31", run(writeMain("import { a, b, C, g, w } from \"an\"\nreturn a() + b() + new C().v + g + w")));
+	}
+
+	@Test
+	public void annotationBeforeExportApplies() throws Exception {
+		write("ao.leek", "@deprecated export function old() { return 1 }");
+		String main = writeMain("import { old } from \"ao\"\nreturn old()");
+		compileAndCollectErrors(main);
+		var file = fs.getRoot(0).resolve(main);
+		assertTrue(file.getErrors().stream().anyMatch(e -> e.error == Error.ANNOTATION_DEPRECATED_CALL), file.getErrors().toString());
+	}
+
+	@Test
+	public void annotationBeforeTypedExportKeepsTheExport() throws Exception {
+		// Une annotation ne vise pas une déclaration typée (avertissement), l'export reste
+		write("ap.leek", "@unused export integer n = 3");
+		assertEquals("3", run(writeMain("import { n } from \"ap\"\nreturn n")));
+	}
+
+	// =========================================================================
+	// Un nom n'a qu'une liaison par module : importé OU déclaré
+	// =========================================================================
+
+	private void writeNames() throws IOException {
+		write("na.leek", "export function f() { return 1 }\nexport var v = 10\nexport global g = 20\nexport class C { integer x = 30 }");
+		write("nb.leek", "export function f() { return 100 }\nexport class C { integer x = 300 }");
+	}
+
+	private void assertNameTaken(String code) throws Exception {
+		var errors = compileAndCollectErrors(writeMain(code));
+		assertTrue(errors.contains(Error.VARIABLE_NAME_UNAVAILABLE) || errors.contains(Error.FUNCTION_NAME_UNAVAILABLE), code + " -> " + errors);
+		uniqueId += "_x";
+	}
+
+	@Test
+	public void importedNameCannotBeDeclared() throws Exception {
+		writeNames();
+		// Dans les deux ordres : la déclaration avant ou après l'import
+		assertNameTaken("import { f } from \"na\"\nfunction f() { return 2 }\nreturn f()");
+		assertNameTaken("function f() { return 2 }\nimport { f } from \"na\"\nreturn f()");
+		assertNameTaken("import { C } from \"na\"\nclass C { integer x = 2 }\nreturn new C().x");
+		assertNameTaken("class C { integer x = 2 }\nimport { C } from \"na\"\nreturn new C().x");
+		assertNameTaken("import { g } from \"na\"\nglobal g = 2\nreturn g");
+		assertNameTaken("global g = 2\nimport { g } from \"na\"\nreturn g");
+		assertNameTaken("import { v } from \"na\"\nexport var v = 2\nreturn v");
+		assertNameTaken("export var v = 2\nimport { v } from \"na\"\nreturn v");
+		assertNameTaken("export { f } from \"na\"\nfunction f() { return 2 }\nreturn f()");
+	}
+
+	@Test
+	public void sameNameFromTwoModulesIsAnError() throws Exception {
+		writeNames();
+		assertNameTaken("import { f } from \"na\"\nimport { f } from \"nb\"\nreturn f()");
+		assertNameTaken("import { C } from \"na\"\nimport { C } from \"nb\"\nreturn new C().x");
+		assertNameTaken("import * as N from \"na\"\nimport * as N from \"nb\"\nreturn N.f()");
+		assertNameTaken("import * as f from \"nb\"\nimport { f } from \"na\"\nreturn f()");
+	}
+
+	@Test
+	public void namespaceAliasCannotBeDeclared() throws Exception {
+		writeNames();
+		assertNameTaken("import * as N from \"na\"\nclass N { static integer v = 2 }\nreturn N.v");
+		assertNameTaken("function N() { return 2 }\nimport * as N from \"na\"\nreturn N()");
+		assertNameTaken("import * as N from \"na\"\nglobal N = 2\nreturn N");
+	}
+
+	@Test
+	public void sameImportTwiceAndShadowingStayAllowed() throws Exception {
+		writeNames();
+		// Même liaison nommée deux fois (import + ré-export du même module)
+		assertEquals("1", run(writeMain("import { f } from \"na\"\nimport { f } from \"na\"\nexport { f } from \"na\"\nreturn f()")));
+		uniqueId += "_x";
+		// Une locale masque un nom importé, comme elle masque une fonction ou une globale en v5
+		assertEquals("7", run(writeMain("import { f } from \"na\"\nfunction h() { var f = 7 return f }\nreturn h()")));
+		uniqueId += "_x";
+		assertEquals("5", run(writeMain("import { f } from \"na\"\nfunction h(f) { return f }\nreturn h(5)")));
+		uniqueId += "_x";
+		// Surcharges d'une fonction du module : un seul nom, plusieurs déclarations
+		assertEquals("3", run(writeMain("function z(a) { return 1 }\nfunction z(a, b) { return 2 }\nreturn z(1) + z(1, 2)")));
+	}
+
+	// =========================================================================
 	// Helpers
 	// =========================================================================
 

@@ -339,7 +339,7 @@ public class WordCompiler {
 					}
 					var global = mTokens.eat();
 					// System.out.println("global = " + global.getWord() + " " + global.getLine());
-					if (!isGlobalAvailable(global) || mMain.hasDeclaredGlobal(global.getWord())) {
+					if (!isGlobalAvailable(global) || mMain.hasDeclaredGlobal(global.getWord()) || !declareTopLevel(global)) {
 						addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { global.getWord() }));
 					} else {
 						if (mModule.isMain()) mMain.addGlobal(global.getWord());
@@ -352,7 +352,7 @@ public class WordCompiler {
 					while (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.VIRG) {
 						mTokens.skip();
 						global = mTokens.eat();
-						if (!isGlobalAvailable(global) || mMain.hasDeclaredGlobal(global.getWord())) {
+						if (!isGlobalAvailable(global) || mMain.hasDeclaredGlobal(global.getWord()) || !declareTopLevel(global)) {
 							addError(new AnalyzeError(global, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { global.getWord() }));
 						} else {
 							if (mModule.isMain()) mMain.addGlobal(global.getWord());
@@ -369,7 +369,7 @@ public class WordCompiler {
 					if (funcName.getWord().equals("(") || funcName.getWord().equals("<")) {
 						continue;
 					}
-					if (!isAvailable(funcName, false)) {
+					if (!isAvailable(funcName, false) || !declareTopLevel(funcName)) {
 						throw new LeekCompilerException(mTokens.get(), Error.FUNCTION_NAME_UNAVAILABLE);
 					}
 					// Sauter les paramètres de type génériques `name<T, U>` (version >= 5) :
@@ -457,7 +457,7 @@ public class WordCompiler {
 
 						if (className.getType() == TokenType.STRING) {
 
-							if (mMain.getDefinedClass(className.getWord(), mModule) != null) {
+							if (mMain.getDefinedClass(className.getWord(), mModule) != null || !declareTopLevel(className)) {
 								throw new LeekCompilerException(className, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { className.getWord() });
 							}
 
@@ -484,6 +484,10 @@ public class WordCompiler {
 					}
 				} else if (tt == TokenType.IMPORT) {
 					importStatement(true, false);
+				} else if (mPendingExport && tt == TokenType.OPERATOR && mTokens.get().getWord().equals("@") && mTokens.get(1).getType() == TokenType.STRING) {
+					// `export @annotation function f` : l'annotation ne consomme pas l'export en attente
+					mTokens.skip();
+					mTokens.skip();
 				} else if (mPendingExport && (tt == TokenType.VAR || eatType(false, false) != null && mTokens.get().getType() == TokenType.STRING)) {
 					// `export var x [= e] [, y ...]` ou `export integer x …` : on enregistre les noms
 					// exportés du module (pour le binding d'import) ; le champ lui-même est créé au
@@ -491,6 +495,9 @@ public class WordCompiler {
 					mPendingExport = false;
 					if (tt == TokenType.VAR) mTokens.skip(); // var (le type, lui, est déjà consommé)
 					while (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.STRING) {
+						if (!declareTopLevel(mTokens.get())) {
+							addError(new AnalyzeError(mTokens.get(), AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { mTokens.get().getWord() }));
+						}
 						mModule.addExportedVar(mTokens.get().getWord());
 						mTokens.skip();
 						if (mTokens.hasMoreTokens() && mTokens.get().getWord().equals("=")) {
@@ -808,31 +815,22 @@ public class WordCompiler {
 				if (isAnnotationStart()) {
 					var annotations = collectAnnotations();
 					word = mTokens.get();
-					if (word.getType() == TokenType.VAR) {
+					if (word.getType() == TokenType.EXPORT) {
+						// `@annotation export function f` : même déclaration que `export @annotation function f`
 						mTokens.skip();
-						variableDeclaration(null, annotations);
-						return;
-					} else if (word.getType() == TokenType.FUNCTION) {
-						var functionToken = mTokens.eat();
-						if (!mTokens.get().getWord().equals("<")) {
-							functionBlock(functionToken, annotations);
-							return;
-						}
-						mTokens.unskip(); // type Function<...>, on continue en expression
-						break;
-					} else if (word.getType() == TokenType.GLOBAL) {
-						globalDeclaration(annotations);
-						return;
-					} else if (version >= 2 && getCurrentBlock() instanceof MainLeekBlock && word.getType() == TokenType.CLASS) {
-						mTokens.skip();
-						classDeclaration(annotations);
-						return;
-					} else {
-						for (var ann : annotations) {
-							addError(new AnalyzeError(ann, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_INVALID_CONTEXT, new String[] { ann.getWord() }));
+						mExporting = true;
+						try {
+							// Rien de consommé (`export integer x`, que les annotations ne visent pas) : la
+							// déclaration reste exportée
+							var next = mTokens.get();
+							if (!annotatedDeclaration(annotations) || mTokens.get() == next) compileWord();
+						} finally {
+							mExporting = false;
 						}
 						return;
 					}
+					if (annotatedDeclaration(annotations)) return;
+					break;
 				}
 				break;
 		}
@@ -948,9 +946,15 @@ public class WordCompiler {
 			}
 			if (namespaceAlias != null) {
 				// import * as Ns : alias du module entier ; `Ns.membre` résout les exports.
-				mModule.addNamespaceImport(namespaceAlias.getWord(), module);
+				if (!mModule.addNamespaceImport(namespaceAlias.getWord(), module)) {
+					addError(new AnalyzeError(namespaceAlias, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { namespaceAlias.getWord() }));
+				}
 			}
 			for (var nameToken : names) {
+				if (!mModule.reserveImport(nameToken.getWord(), module)) {
+					addError(new AnalyzeError(nameToken, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { nameToken.getWord() }));
+					continue;
+				}
 				// Un module d'un cycle n'a pas fini sa première passe : ses exports ne sont pas
 				// encore tous connus, le nom est lié à la fin (cf MainLeekBlock.resolvePendingImports)
 				if (!mModule.bindImport(nameToken.getWord(), module, reexport)) {
@@ -1789,6 +1793,39 @@ public class WordCompiler {
 		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) mTokens.skip();
 	}
 
+	/**
+	 * Déclaration qui suit des annotations (`@a var`, `@a function`, `@a global`, `@a class`) ; les
+	 * annotations placées devant autre chose sont signalées, sans rien consommer. Rend false pour
+	 * `@a function<…>`, un type et non une déclaration de fonction : l'appelant poursuit en expression.
+	 */
+	private boolean annotatedDeclaration(List<Token> annotations) throws LeekCompilerException {
+		var word = mTokens.get();
+		if (word.getType() == TokenType.VAR) {
+			mTokens.skip();
+			variableDeclaration(null, annotations);
+			return true;
+		} else if (word.getType() == TokenType.FUNCTION) {
+			var functionToken = mTokens.eat();
+			if (!mTokens.get().getWord().equals("<")) {
+				functionBlock(functionToken, annotations);
+				return true;
+			}
+			mTokens.unskip(); // type Function<...>, on continue en expression
+			return false;
+		} else if (word.getType() == TokenType.GLOBAL) {
+			globalDeclaration(annotations);
+			return true;
+		} else if (version >= 2 && getCurrentBlock() instanceof MainLeekBlock && word.getType() == TokenType.CLASS) {
+			mTokens.skip();
+			classDeclaration(annotations);
+			return true;
+		}
+		for (var ann : annotations) {
+			addError(new AnalyzeError(ann, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_INVALID_CONTEXT, new String[] { ann.getWord() }));
+		}
+		return true;
+	}
+
 	private boolean isAnnotationStart() {
 		if (version < 4) return false;
 		if (mTokens.get().getType() != TokenType.OPERATOR || !mTokens.get().getWord().equals("@")) return false;
@@ -1800,6 +1837,7 @@ public class WordCompiler {
 			|| after.getType() == TokenType.FUNCTION
 			|| after.getType() == TokenType.GLOBAL
 			|| after.getType() == TokenType.CLASS
+			|| after.getType() == TokenType.EXPORT && LanguageFeature.MODULES.enabledIn(version)
 			|| (after.getType() == TokenType.OPERATOR && after.getWord().equals("@"));
 	}
 
@@ -3278,6 +3316,14 @@ public class WordCompiler {
 		}
 		// v1-2 : matching insensible à la casse, lowercase puis lookup.
 		return LexicalParser.reservedWordsSet.contains(word.getWord().toLowerCase());
+	}
+
+	/**
+	 * v5 : déclare `name` au premier niveau du module (fonction, classe, globale, `export var`).
+	 * False si le module importe déjà ce nom : un nom n'a qu'une liaison par module.
+	 */
+	private boolean declareTopLevel(Token name) {
+		return !LanguageFeature.MODULES.enabledIn(getVersion()) || mModule.declare(name.getWord());
 	}
 
 	public boolean isAvailable(Token word, boolean allFunctions) {
