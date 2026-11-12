@@ -405,6 +405,10 @@ public abstract class AIModule {
 		return ai.getErrorLocalisation(a0);
 	}
 
+	protected final java.lang.String getErrorLocalisation(java.lang.String a0, int a1) {
+		return ai.getErrorLocalisation(a0, a1);
+	}
+
 	public final java.lang.String getErrorMessage(java.lang.StackTraceElement[] a0) {
 		return ai.getErrorMessage(a0);
 	}
@@ -443,6 +447,10 @@ public abstract class AIModule {
 
 	protected final leekscript.compiler.LineMapping getLineMapping(int a0) {
 		return ai.getLineMapping(a0);
+	}
+
+	protected final leekscript.compiler.LineMapping getLineMapping(java.lang.String a0, int a1) {
+		return ai.getLineMapping(a0, a1);
 	}
 
 	public final long getLoadTime() {
@@ -949,6 +957,10 @@ public abstract class AIModule {
 		return ai.realOrNull(a0);
 	}
 
+	public final void registerModuleClass(leekscript.runner.values.ClassLeekValue a0) {
+		ai.registerModuleClass(a0);
+	}
+
 	public final void resetCounter() {
 		ai.resetCounter();
 	}
@@ -1115,6 +1127,10 @@ public abstract class AIModule {
 
 	public static java.lang.String userClassName(java.lang.Class<?> a0) {
 		return AI.userClassName(a0);
+	}
+
+	public final java.lang.Object userClassOwner(java.lang.Class<?> a0) {
+		return ai.userClassOwner(a0);
 	}
 
 	public final long ushr(java.lang.Object a0, java.lang.Object a1) throws leekscript.runner.LeekRunException {
