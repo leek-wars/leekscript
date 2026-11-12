@@ -186,6 +186,16 @@ public class TestModuleClasses {
 		assertEquals("[[8, 2, \"deux\", \"autre\", 9, 10, \"un\", #Function twice], 2]", run(main));
 	}
 
+	// Le contenu d'un fichier lu à la compilation est un champ de la classe de l'IA, lu d'un module.
+	@Test
+	public void moduleReadsAFileEmbeddedAtCompileTime() throws Exception {
+		// (RamFileSystem sert tout fichier sous le suffixe .leek)
+		write("data/cfg.json.leek", "bonjour");
+		write("reader.leek", "export function text() { return System.fileRead('data/cfg.json') }");
+		String main = writeMain("import { text } from \"reader\"\nreturn text()");
+		assertEquals("bonjour", run(main));
+	}
+
 	// Les globales d'un module vivent d'un tour à l'autre, dans la classe du module.
 	@Test
 	public void moduleGlobalsPersistAcrossTurns() throws Exception {

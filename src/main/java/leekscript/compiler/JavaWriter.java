@@ -277,6 +277,11 @@ public class JavaWriter {
 		return module == null ? className + ".this" : className + ".this.ai";
 	}
 
+	/** Un champ statique de la classe de l'IA, lu de la classe en cours d'écriture. */
+	public String entryStatic(String field) {
+		return module == null ? field : entry.className + "." + field;
+	}
+
 	/** L'IA, là où la classe de l'IA écrit `this` : hors de toute classe interne. */
 	public String getAI() {
 		return module == null ? "this" : "ai";
