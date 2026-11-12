@@ -151,38 +151,27 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		mVariables.put(variable.getName(), variable);
 	}
 
-	/**
-	 * Look up a narrowed property type (e.g. "x.field") in this block or parent blocks.
-	 * Used by LeekObjectAccess during type narrowing.
-	 */
-	// Boucle (v5) : son corps contient-il un appel, et quelles écritures (cf
-	// MainLeekBlock.invalidateWrittenNarrowings) ? Un tour peut relire ce que le précédent a réassigné.
-	private boolean mLoopMayCall = false;
-	private int mLoopWritesFrom = 0;
-	private int mLoopWritesTo = 0;
+	// Boucle (v5) : effets de son corps, [from, to[ dans MainLeekBlock.preAnalyzedEffects. Un tour
+	// peut relire ce que le précédent a réassigné.
+	private int mLoopEffectsFrom = 0;
+	private int mLoopEffectsTo = 0;
 
-	protected int beginLoopEffects(WordCompiler compiler) {
-		mLoopWritesFrom = compiler.getMainBlock().getPreAnalyzedWrites();
-		return compiler.getMainBlock().getPreAnalyzedCalls();
+	protected void beginLoopEffects(WordCompiler compiler) {
+		mLoopEffectsFrom = compiler.getMainBlock().getPreAnalyzedEffects();
 	}
 
-	protected void endLoopEffects(WordCompiler compiler, int callsBefore) {
-		mLoopMayCall = compiler.getMainBlock().getPreAnalyzedCalls() > callsBefore;
-		mLoopWritesTo = compiler.getMainBlock().getPreAnalyzedWrites();
+	protected void endLoopEffects(WordCompiler compiler) {
+		mLoopEffectsTo = compiler.getMainBlock().getPreAnalyzedEffects();
 	}
 
 	/** À l'entrée de la boucle : ce que son corps peut réassigner l'est peut-être déjà. */
 	protected void invalidateLoopEffects(WordCompiler compiler) {
-		if (mLoopMayCall) {
-			compiler.getMainBlock().invalidateFieldNarrowings();
-		} else {
-			compiler.getMainBlock().invalidateWrittenNarrowings(mLoopWritesFrom, mLoopWritesTo);
-		}
+		compiler.getMainBlock().invalidatePreAnalyzedEffects(mLoopEffectsFrom, mLoopEffectsTo);
 	}
 
 	/**
-	 * Affinages de propriétés d'un bloc (`receveur.champ`), avec l'instant où chacun a été posé :
-	 * un appel, ou une écriture du champ ou du receveur, le périme (cf MainLeekBlock.isNarrowingStale).
+	 * Affinages de propriétés d'un bloc (`receveur.champ`) en v5, avec l'instant où chacun a été
+	 * posé : un appel, ou une écriture du champ ou du receveur, le périme (cf MainLeekBlock.isNarrowingStale).
 	 */
 	protected static class NarrowedProperties extends HashMap<String, Type> {
 		private final HashMap<String, Integer> ticks;
@@ -200,30 +189,35 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		boolean isStale(String key, MainLeekBlock main) {
 			var tick = ticks.get(key);
 			if (tick == null) return false;
+			if (main.isNarrowingStale(tick)) return true;
 			int dot = key.indexOf('.');
 			return main.isNarrowingStale(tick, key.substring(0, dot), key.substring(dot + 1));
 		}
 	}
 
-	protected NarrowedProperties narrowedProperties(Map<String, Type> base, Map<String, Type> narrowings) {
+	/** `base` complété de `narrowings`, sans modifier `base`. */
+	protected Map<String, Type> narrowedProperties(Map<String, Type> base, Map<String, Type> narrowings) {
+		if (!mMain.hasSafeFieldNarrowing()) {
+			var merged = base == null ? new HashMap<String, Type>() : new HashMap<>(base);
+			merged.putAll(narrowings);
+			return merged;
+		}
 		var properties = new NarrowedProperties(base);
 		properties.narrow(narrowings, mMain.getNarrowingTick());
 		return properties;
 	}
 
-	/** L'affinage de `key` a-t-il été périmé depuis qu'il est posé ? (cf NarrowedProperties) */
-	public boolean isNarrowedPropertyStale(String key) {
-		if (mNarrowedPropertyTypes != null && mNarrowedPropertyTypes.containsKey(key)) {
-			// Un affinage plus ancien d'un bloc parent l'est aussi
-			return mNarrowedPropertyTypes instanceof NarrowedProperties properties && properties.isStale(key, mMain);
-		}
-		return mParent != null && mParent.isNarrowedPropertyStale(key);
-	}
-
+	/**
+	 * Look up a narrowed property type (e.g. "x.field") in this block or parent blocks.
+	 * Used by LeekObjectAccess during type narrowing. v5 : null aussi si l'affinage a été périmé
+	 * depuis (cf NarrowedProperties) ; celui d'un bloc parent, plus ancien, l'est alors aussi.
+	 */
 	public Type getNarrowedPropertyType(String key) {
 		if (mNarrowedPropertyTypes != null) {
 			var type = mNarrowedPropertyTypes.get(key);
-			if (type != null) return type;
+			if (type != null) {
+				return mNarrowedPropertyTypes instanceof NarrowedProperties properties && properties.isStale(key, mMain) ? null : type;
+			}
 		}
 		if (mParent != null) return mParent.getNarrowedPropertyType(key);
 		return null;

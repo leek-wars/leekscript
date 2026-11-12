@@ -222,7 +222,7 @@ public class LeekObjectAccess extends Expression {
 					}
 					this.isFinal = this.variable.isFinal();
 					this.isLeftValue = this.variable.isLeftValue();
-					this.type = sharesFieldNarrowing() ? this.variable.getType() : this.variable.getDeclaredType();
+					this.type = this.variable.getType();
 				}
 			}
 		} else if (objectType instanceof ClassValueType cvt) {
@@ -319,8 +319,7 @@ public class LeekObjectAccess extends Expression {
 			if (declVar != null && field != null) {
 				String key = declVar.getName() + "." + field.getWord();
 				var narrowedType = compiler.getCurrentBlock().getNarrowedPropertyType(key);
-				// v5 : sauf s'il a été périmé depuis par un appel ou une écriture (cf LeekVariable.getType)
-				if (narrowedType != null && !compiler.getCurrentBlock().isNarrowedPropertyStale(key)) {
+				if (narrowedType != null) {
 					this.type = narrowedType;
 				}
 			}
@@ -374,7 +373,11 @@ public class LeekObjectAccess extends Expression {
 	 * au champ partage son affinage.
 	 */
 	public boolean sharesFieldNarrowing() {
-		if (variable == null || !variable.isNarrowingTracked() || variable.getVariableType() != VariableType.FIELD) return true;
+		return variable == null || !variable.isNarrowingTracked() || variable.getVariableType() != VariableType.FIELD || hasThisReceiver();
+	}
+
+	/** `this.f` ou `super.f` : le champ de l'objet courant. */
+	public boolean hasThisReceiver() {
 		return object instanceof LeekVariable receiver
 			&& (receiver.getVariableType() == VariableType.THIS || receiver.getVariableType() == VariableType.SUPER);
 	}

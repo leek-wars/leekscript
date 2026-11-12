@@ -178,8 +178,7 @@ public class NarrowingInfo {
 		var saved = new HashMap<LeekVariable, Type>();
 		for (var entry : narrowings.entrySet()) {
 			saved.put(entry.getKey(), entry.getKey().getType());
-			entry.getKey().setType(entry.getValue());
-			entry.getKey().markNarrowed();
+			entry.getKey().narrow(entry.getValue());
 		}
 		return saved;
 	}

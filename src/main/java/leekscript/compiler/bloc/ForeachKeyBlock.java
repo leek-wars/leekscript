@@ -69,7 +69,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	}
 
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
-		int calls = beginLoopEffects(compiler);
+		beginLoopEffects(compiler);
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 
@@ -106,7 +106,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 		compiler.setCurrentBlock(initialBlock);
 		super.preAnalyze(compiler);
-		endLoopEffects(compiler, calls);
+		endLoopEffects(compiler);
 	}
 
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {

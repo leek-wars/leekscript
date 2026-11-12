@@ -803,7 +803,7 @@ public class LeekFunctionCall extends Expression {
 		}
 		if (compiler.getMainBlock().hasSafeFieldNarrowing()
 				&& mayRunUserCode(systemFunctionName() != null ? LeekFunctions.getValue(systemFunctionName(), compiler.getOptions().useExtra()) : null)) {
-			compiler.getMainBlock().countPreAnalyzedCall();
+			compiler.getMainBlock().addPreAnalyzedCall();
 		}
 		if (!mParameters.isEmpty()) {
 			var name = systemFunctionName();

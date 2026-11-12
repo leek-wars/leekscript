@@ -81,12 +81,12 @@ public class WhileBlock extends AbstractLeekBlock {
 	}
 
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
-		int calls = beginLoopEffects(compiler);
+		beginLoopEffects(compiler);
 		if (mCondition != null) {
 			mCondition.preAnalyze(compiler);
 		}
 		super.preAnalyze(compiler);
-		endLoopEffects(compiler, calls);
+		endLoopEffects(compiler);
 	}
 
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {

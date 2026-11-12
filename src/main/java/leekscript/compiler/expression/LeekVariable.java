@@ -51,7 +51,8 @@ public class LeekVariable extends Expression {
 	private leekscript.compiler.bloc.Module namespaceModule = null;
 	private Type declaredType = null;
 	private Type lastAssignedType = null;
-	// Variable suivie (cf trackNarrowing) : instant de son dernier affinage
+	// Variable suivie (cf trackNarrowing) : instant de son dernier affinage, ou de sa dernière
+	// affectation (cf getLastAssignedType) ; -1 tant qu'il n'y en a pas eu
 	private MainLeekBlock narrowingMain = null;
 	private int narrowingTick = -1;
 	// Suivi d'une variable pour NarrowingInfo (cases de map), posé au preAnalyze. Drapeaux dans un
@@ -137,9 +138,9 @@ public class LeekVariable extends Expression {
 	public Type getType() {
 		// v5 : affinage périmé par un appel ou une écriture (cf MainLeekBlock.isNarrowingStale), on
 		// revient au type déclaré
-		if (narrowingMain != null && narrowingTick >= 0) {
+		if (narrowingMain != null) {
 			var declared = getDeclaredType();
-			if (variableType != declared && narrowingMain.isNarrowingStale(narrowingTick, getName())) return declared;
+			if (variableType != declared && isNarrowingStale()) return declared;
 		}
 		return variableType;
 	}
@@ -167,9 +168,19 @@ public class LeekVariable extends Expression {
 		}
 	}
 
-	/** Le type affiné qu'on vient de poser vaut à partir de maintenant. */
+	/** Affine la variable en `type`, qui vaut à partir de maintenant. */
+	public void narrow(Type type) {
+		setType(type);
+		markNarrowed();
+	}
+
+	/** Le type (affiné, ou affecté) qu'on vient de poser vaut à partir de maintenant. */
 	public void markNarrowed() {
 		if (narrowingMain != null) narrowingTick = narrowingMain.getNarrowingTick();
+	}
+
+	private boolean isNarrowingStale() {
+		return narrowingMain != null && narrowingTick >= 0 && narrowingMain.isNarrowingStale(narrowingTick, getName());
 	}
 
 	/**
@@ -434,7 +445,7 @@ public class LeekVariable extends Expression {
 
 	public Type getLastAssignedType() {
 		// v5 : une affectation suivie d'un appel ne dit plus rien du type (cf markNarrowed)
-		if (lastAssignedType != null && narrowingMain != null && narrowingTick >= 0 && narrowingMain.isNarrowingStale(narrowingTick, getName())) return null;
+		if (lastAssignedType != null && isNarrowingStale()) return null;
 		return lastAssignedType;
 	}
 	public void setLastAssignedType(Type type) { this.lastAssignedType = type; }

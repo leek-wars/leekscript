@@ -1003,12 +1003,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	// réaffectées qu'une closure capture (cf LeekVariable.getType, AbstractLeekBlock.NarrowedProperties).
 	private int narrowingClock = 0;
 	private int lastCallTick = 0;
-	private Map<String, Integer> lastFieldWriteTicks = null;
-	private Map<String, Integer> lastVariableWriteTicks = null;
-	// Appels et cibles d'écriture vus au preAnalyze, dans l'ordre du source : une boucle rejoue à
-	// son entrée ceux de son corps, le tour suivant pouvant relire un champ réassigné au tour précédent.
-	private int preAnalyzedCalls = 0;
-	private final ArrayList<Expression> preAnalyzedWrites = new ArrayList<>();
+	private final Map<String, Integer> lastFieldWriteTicks = new HashMap<>();
+	private final Map<String, Integer> lastVariableWriteTicks = new HashMap<>();
+	// Effets vus au preAnalyze, dans l'ordre du source : la cible d'une écriture, ou null pour un
+	// appel. Une boucle rejoue à son entrée ceux de son corps (cf AbstractLeekBlock.invalidateLoopEffects).
+	private final ArrayList<Expression> preAnalyzedEffects = new ArrayList<>();
 
 	/** La règle s'applique-t-elle à ce programme ? Faux aussi pour les classes internes, déclarées avant le compilateur. */
 	public boolean hasSafeFieldNarrowing() {
@@ -1027,62 +1026,59 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	/** Écriture dans un champ `field`, par n'importe quel receveur : ses affinages sont périmés. */
 	public void invalidateFieldNarrowingsOf(String field) {
-		if (!hasSafeFieldNarrowing()) return;
-		if (lastFieldWriteTicks == null) lastFieldWriteTicks = new HashMap<>();
-		lastFieldWriteTicks.put(field, ++narrowingClock);
+		if (hasSafeFieldNarrowing()) lastFieldWriteTicks.put(field, ++narrowingClock);
 	}
 
 	/** Variable `variable` réaffectée ou redéclarée : les affinages de `variable.f` sont périmés. */
 	public void invalidateNarrowingsThrough(String variable) {
-		if (!hasSafeFieldNarrowing()) return;
-		if (lastVariableWriteTicks == null) lastVariableWriteTicks = new HashMap<>();
-		lastVariableWriteTicks.put(variable, ++narrowingClock);
+		if (hasSafeFieldNarrowing()) lastVariableWriteTicks.put(variable, ++narrowingClock);
+	}
+
+	/** Un appel a-t-il périmé tout affinage posé à `tick` ? */
+	public boolean isNarrowingStale(int tick) {
+		return tick < lastCallTick;
 	}
 
 	/** L'affinage posé à `tick` sur le champ (ou la variable suivie) `field` est-il périmé ? */
 	public boolean isNarrowingStale(int tick, String field) {
-		return tick < lastCallTick || writtenSince(lastFieldWriteTicks, field, tick);
+		return tick < lastCallTick || tick < lastFieldWriteTicks.getOrDefault(field, 0);
 	}
 
 	/** Idem pour `receiver.field` : le receveur est une variable, ou lui-même un champ. */
 	public boolean isNarrowingStale(int tick, String receiver, String field) {
-		return isNarrowingStale(tick, field) || writtenSince(lastFieldWriteTicks, receiver, tick) || writtenSince(lastVariableWriteTicks, receiver, tick);
+		return isNarrowingStale(tick, field) || tick < lastFieldWriteTicks.getOrDefault(receiver, 0) || tick < lastVariableWriteTicks.getOrDefault(receiver, 0);
 	}
 
-	private static boolean writtenSince(Map<String, Integer> ticks, String name, int tick) {
-		if (ticks == null) return false;
-		var written = ticks.get(name);
-		return written != null && tick < written;
+	public int getPreAnalyzedEffects() {
+		return preAnalyzedEffects.size();
 	}
 
-	public int getPreAnalyzedCalls() {
-		return preAnalyzedCalls;
+	/** preAnalyze : un appel qui peut exécuter du code du joueur. */
+	public void addPreAnalyzedCall() {
+		if (hasSafeFieldNarrowing()) preAnalyzedEffects.add(null);
 	}
 
-	public void countPreAnalyzedCall() {
-		preAnalyzedCalls++;
-	}
-
-	public int getPreAnalyzedWrites() {
-		return preAnalyzedWrites.size();
-	}
-
+	/** preAnalyze : une écriture dans `target`. */
 	public void addPreAnalyzedWrite(Expression target) {
-		if (hasSafeFieldNarrowing()) preAnalyzedWrites.add(target);
+		if (hasSafeFieldNarrowing()) preAnalyzedEffects.add(target);
 	}
 
-	/** Entrée d'une boucle dont le corps contient les écritures [from, to[ : leurs affinages sont périmés. */
-	public void invalidateWrittenNarrowings(int from, int to) {
-		for (int i = from; i < to; i++) invalidateWrittenNarrowings(preAnalyzedWrites.get(i), false);
+	/** Entrée d'une boucle dont le corps a les effets [from, to[ : un appel périme tout, sinon chaque écriture sa cible. */
+	public void invalidatePreAnalyzedEffects(int from, int to) {
+		var effects = preAnalyzedEffects.subList(from, to);
+		if (effects.contains(null)) {
+			invalidateFieldNarrowings();
+		} else {
+			for (var target : effects) invalidateWrittenNarrowings(target, false);
+		}
 	}
 
 	/** Type du conteneur d'une case pas encore analysée : celui de sa variable ou du champ `this.f`, sinon any. */
 	private Type declaredContainerType(Expression tabular) {
 		if (tabular instanceof LeekVariable variable && variable.getVariable() != null) return variable.getVariable().getType();
-		if (tabular instanceof LeekObjectAccess access && access.getObject() instanceof LeekVariable receiver
-				&& receiver.getVariableType() == VariableType.THIS && wordCompiler.getCurrentClass() != null) {
-			var member = wordCompiler.getCurrentClass().getMember(access.getField());
-			if (member != null) return member.getDeclaredType();
+		if (tabular instanceof LeekObjectAccess access && access.hasThisReceiver() && wordCompiler.getCurrentClass() != null) {
+			var field = wordCompiler.getCurrentClass().getField(access.getField());
+			if (field != null) return field.getDeclaredType();
 		}
 		return Type.ANY;
 	}

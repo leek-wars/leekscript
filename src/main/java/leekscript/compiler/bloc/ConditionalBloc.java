@@ -163,8 +163,7 @@ public class ConditionalBloc extends AbstractLeekBlock {
 					if (!saved.containsKey(entry.getKey())) {
 						saved.put(entry.getKey(), entry.getKey().getType());
 					}
-					entry.getKey().setType(entry.getValue());
-					entry.getKey().markNarrowed();
+					entry.getKey().narrow(entry.getValue());
 				}
 			}
 		}

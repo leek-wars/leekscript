@@ -140,8 +140,7 @@ public class SwitchBlock extends AbstractLeekBlock {
 
 				if (narrowedType != null) {
 					var savedType = switchVar.getType();
-					switchVar.setType(narrowedType);
-					switchVar.markNarrowed();
+					switchVar.narrow(narrowedType);
 					c.body.analyze(compiler);
 					switchVar.setType(savedType);
 				} else {

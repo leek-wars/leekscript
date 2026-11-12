@@ -793,14 +793,7 @@ public class WordCompiler {
 					mTokens.skip();
 					return;
 				}
-				mTokens.skip();
-				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.ACCOLADE_LEFT) {
-					importStatement(false, true); // `export { a } from "x"`
-					return;
-				}
-				mExporting = true;
-				compileWord();
-				mExporting = false;
+				exportStatement(NO_ANNOTATIONS);
 				return;
 			case IMPORT:
 				importStatement(false, false);
@@ -816,25 +809,7 @@ public class WordCompiler {
 					var annotations = collectAnnotations();
 					word = mTokens.get();
 					if (word.getType() == TokenType.EXPORT) {
-						// `@annotation export function f` : même déclaration que `export @annotation function f`
-						mTokens.skip();
-						if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.ACCOLADE_LEFT) {
-							// `@annotation export { a } from "x"` : rien à annoter dans un ré-export
-							for (var ann : annotations) {
-								addError(new AnalyzeError(ann, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_INVALID_CONTEXT, new String[] { ann.getWord() }));
-							}
-							importStatement(false, true);
-							return;
-						}
-						mExporting = true;
-						try {
-							// Rien de consommé (`export integer x`, que les annotations ne visent pas) : la
-							// déclaration reste exportée
-							var next = mTokens.get();
-							if (!annotatedDeclaration(annotations) || mTokens.get() == next) compileWord();
-						} finally {
-							mExporting = false;
-						}
+						exportStatement(annotations);
 						return;
 					}
 					if (annotatedDeclaration(annotations)) return;
@@ -1828,10 +1803,37 @@ public class WordCompiler {
 			classDeclaration(annotations);
 			return true;
 		}
+		warnInvalidContext(annotations);
+		return true;
+	}
+
+	private void warnInvalidContext(List<Token> annotations) throws LeekCompilerException {
 		for (var ann : annotations) {
 			addError(new AnalyzeError(ann, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_INVALID_CONTEXT, new String[] { ann.getWord() }));
 		}
-		return true;
+	}
+
+	/**
+	 * `export …`, le mot-clé étant le jeton courant : un ré-export `export { a } from "x"`, ou la
+	 * déclaration qui suit, exportée (visibilité enregistrée à la première passe). `annotations` :
+	 * celles de `@a export function f`, qui valent comme dans `export @a function f`.
+	 */
+	private void exportStatement(List<Token> annotations) throws LeekCompilerException {
+		mTokens.skip();
+		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.ACCOLADE_LEFT) {
+			warnInvalidContext(annotations); // rien à annoter dans un ré-export
+			importStatement(false, true);
+			return;
+		}
+		mExporting = true;
+		try {
+			// Annotations devant autre chose qu'une déclaration annotable (`export integer x`) :
+			// signalées, rien de consommé, et la déclaration reste exportée
+			var next = mTokens.get();
+			if (annotations.isEmpty() || !annotatedDeclaration(annotations) || mTokens.get() == next) compileWord();
+		} finally {
+			mExporting = false;
+		}
 	}
 
 	private boolean isAnnotationStart() {

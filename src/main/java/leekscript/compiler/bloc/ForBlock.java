@@ -60,7 +60,7 @@ public class ForBlock extends AbstractLeekBlock {
 
 	@Override
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
-		int calls = beginLoopEffects(compiler);
+		beginLoopEffects(compiler);
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		if (mInitialisation != null) mInitialisation.preAnalyze(compiler);
@@ -68,7 +68,7 @@ public class ForBlock extends AbstractLeekBlock {
 		if (mIncrementation != null) mIncrementation.preAnalyze(compiler);
 		compiler.setCurrentBlock(initialBlock);
 		super.preAnalyze(compiler);
-		endLoopEffects(compiler, calls);
+		endLoopEffects(compiler);
 	}
 
 	@Override
