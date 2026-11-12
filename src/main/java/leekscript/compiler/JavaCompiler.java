@@ -208,7 +208,7 @@ public class JavaCompiler {
 			// La première erreur, dans la classe de l'IA ou dans celle d'un de ses modules
 			var javaCode = file.getCompiledCode().getJavaCode();
 			var linesMap = file.getCompiledCode().getLinesMap();
-			Pattern r = Pattern.compile("(AI_\\w+)\\.java:(\\d+):");
+			Pattern r = Pattern.compile("(" + Pattern.quote(file.getJavaClass()) + "\\w*|" + JavaWriter.PACKAGE_CLASS_PREFIX + "\\w+)\\.java:(\\d+):");
 			Matcher m = r.matcher(errors);
 			if (m.find()) {
 				javaLine = Integer.parseInt(m.group(2));

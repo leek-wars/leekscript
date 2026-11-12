@@ -186,6 +186,19 @@ public class TestPackageCache {
 		assertEquals(1, javacUnits(second).size(), javacUnits(second).toString());
 	}
 
+	// Le Java d'un package ne dépend pas de ceux qui l'appellent : deux programmes qui lui passent
+	// des valeurs de types différents partagent quand même ses classes.
+	@Test
+	public void callersDoNotShapeAPackage() throws Exception {
+		write("box/package.leek", "package box\nexport function wrap(any x) -> Array<any> { tag() return [x, x] }\nexport function size(Array<any> xs) -> integer { return Array.count(xs) }\nfunction tag() { return \"" + uniqueId + "\" }");
+		String first = writeMain("depends box from \"box\"\nimport { wrap, size } from \"@box\"\nreturn size(wrap(12))");
+		assertEquals("2", run(first));
+		uniqueId += "_b";
+		String second = writeMain("depends box from \"box\"\nimport { wrap, size } from \"@box\"\nvar w = wrap(\"a\")\nreturn string(w) + size(w) + size([1.5])");
+		assertEquals("[\"a\", \"a\"]21", run(second));
+		assertEquals(1, javacUnits(second).size(), javacUnits(second).toString());
+	}
+
 	// Rechargé du disque (autre processus), le programme retrouve les classes de ses packages.
 	@Test
 	public void packagesReloadFromDiskCache() throws Exception {

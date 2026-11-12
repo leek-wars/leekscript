@@ -192,7 +192,8 @@ public class PackageCache {
 		if (entries == null) return found;
 		java.util.Arrays.sort(entries);
 		for (var entry : entries) {
-			if (new File(entry, DONE_FILE).exists()) found.add(entry);
+			// Une entrée illisible ne sert pas : le groupe se recompilera
+			if (new File(entry, DONE_FILE).exists() && new File(entry, API_FILE).canRead() && new File(entry, READS_FILE).canRead()) found.add(entry);
 		}
 		return found;
 	}
