@@ -193,7 +193,7 @@ public class LeekValueManager {
 				if (hasField(array.getClass(), methodName)) {
 					return ai.callObjectAccess(array, methodName, javaName, fromClass, arguments);
 				}
-				ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { array.getClass().getSimpleName().substring(2), ClassLeekValue.createMethodError(methodName + "_" + arguments.length) });
+				ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { AI.userClassName(array.getClass()), ClassLeekValue.createMethodError(methodName + "_" + arguments.length) });
 				return null;
 			}
 			try {

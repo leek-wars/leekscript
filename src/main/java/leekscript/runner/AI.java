@@ -265,7 +265,7 @@ public abstract class AI {
 
 			var sb = new StringBuilder();
 			if (!getClass().getSimpleName().equals("Object")) {
-				sb.append(getClass().getSimpleName().substring(2)).append(" ");
+				sb.append(userClassName(getClass())).append(" ");
 			}
 			sb.append("{");
 			boolean first = true;
@@ -903,6 +903,20 @@ public abstract class AI {
 	}
 
 	public int getVersion() { return this.version; }
+
+	/**
+	 * Nom LeekScript d'une classe utilisateur depuis sa classe Java `u_<Nom>`, ou
+	 * `u_$m<id>$<Nom>` quand elle vient d'un module importé (v5) : le préfixe de module est un
+	 * détail du code généré, il ne doit paraître ni dans `string(objet)` ni dans une erreur.
+	 */
+	public static String userClassName(Class<?> clazz) {
+		var name = clazz.getSimpleName().substring(2);
+		if (name.startsWith("$m")) {
+			int end = name.indexOf('$', 2);
+			if (end > 0) return name.substring(end + 1);
+		}
+		return name;
+	}
 
 	public static Object load(Object value) {
 		if (value instanceof Box) {
@@ -2065,7 +2079,7 @@ public abstract class AI {
 			return null;
 		}
 		if (f.isAnnotationPresent(Final.class)) {
-			this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getSimpleName().substring(2), field });
+			this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { userClassName(object.getClass()), field });
 			return null;
 		}
 		return f;
@@ -2133,12 +2147,12 @@ public abstract class AI {
 		var declaring = field.getDeclaringClass();
 		if (field.isAnnotationPresent(Private.class)) {
 			if (fromClass == null || declaring != fromClass.clazz) {
-				addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new Object[] { declaring.getSimpleName().substring(2), field.getName() });
+				addSystemLog(AILog.ERROR, Error.PRIVATE_FIELD, new Object[] { userClassName(declaring), field.getName() });
 				return false;
 			}
 		} else if (field.isAnnotationPresent(Protected.class)) {
 			if (fromClass == null || !declaring.isAssignableFrom(fromClass.clazz)) {
-				addSystemLog(AILog.ERROR, Error.PROTECTED_FIELD, new Object[] { declaring.getSimpleName().substring(2), field.getName() });
+				addSystemLog(AILog.ERROR, Error.PROTECTED_FIELD, new Object[] { userClassName(declaring), field.getName() });
 				return false;
 			}
 		}
@@ -3721,12 +3735,12 @@ public abstract class AI {
 			if (m == null) return null;
 			if (m.isAnnotationPresent(Private.class)) {
 				if (fromClass == null || valueClass != fromClass.clazz) {
-					addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { valueClass.getSimpleName().substring(2), method });
+					addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { userClassName(valueClass), method });
 					return null;
 				}
 			} else if (m.isAnnotationPresent(Protected.class)) {
 				if (fromClass == null || !valueClass.isAssignableFrom(fromClass.clazz)) {
-					addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { valueClass.getSimpleName().substring(2), method });
+					addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { userClassName(valueClass), method });
 					return null;
 				}
 			}
@@ -3767,12 +3781,12 @@ public abstract class AI {
 				} else {
 					if (m.isAnnotationPresent(Private.class)) {
 						if (fromClass == null || valueClass != fromClass.clazz) {
-							addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { valueClass.getSimpleName().substring(2), field });
+							addSystemLog(AILog.ERROR, Error.PRIVATE_METHOD, new Object[] { userClassName(valueClass), field });
 							return null;
 						}
 					} else if (m.isAnnotationPresent(Protected.class)) {
 						if (fromClass == null || !valueClass.isAssignableFrom(fromClass.clazz)) {
-							addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { valueClass.getSimpleName().substring(2), field });
+							addSystemLog(AILog.ERROR, Error.PROTECTED_METHOD, new Object[] { userClassName(valueClass), field });
 							return null;
 						}
 					}

@@ -580,6 +580,14 @@ public class TestModulesResolution {
 		assertEquals("1105", run(main));
 	}
 
+	// Le préfixe de module du code généré ne paraît pas dans le nom d'une classe importée.
+	@Test
+	public void importedClassNameHasNoModulePrefix() throws Exception {
+		write("geo.leek", "export class Vec { public integer x = 1 }");
+		String main = writeMain("import { Vec } from \"geo\"\nreturn string(new Vec())");
+		assertEquals("Vec {x: 1}", run(main));
+	}
+
 	private Path write(String relative, String content) throws IOException {
 		var p = tmpRoot.resolve(relative);
 		Files.createDirectories(p.getParent());
