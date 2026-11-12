@@ -143,6 +143,66 @@ public class TestPackageCache {
 		assertTrue(!Files.exists(tmpRoot.resolve("cache")));
 	}
 
+	// Ménage : une entrée qui n'a servi à aucune compilation depuis UNUSED_DAYS jours disparaît,
+	// celles qui servent restent, et un groupe dont l'entrée a disparu se recompile.
+	@Test
+	public void unusedEntriesAreSwept() throws Exception {
+		var root = tmpRoot.resolve("cache").toFile();
+		long day = 24 * 3600 * 1000L;
+		long now = System.currentTimeMillis();
+		assertEquals("[A, B] 11", build(a("int", "10", 1), true));
+		assertEquals("[A] 21", build(a("int", "20", 1), true));
+		assertEquals(3, entries(root).size());
+		assertEquals(0, PackageCache.sweep(root, now + (PackageCache.UNUSED_DAYS - 1) * day));
+		// 40 jours plus tard, la version 20 a resservi la veille : l'ancienne version de A part seule
+		long later = now + 40 * day;
+		for (var entry : entries(root)) new File(entry, "ok").setLastModified(now);
+		for (var entry : entries(root)) if (!isFirstA(entry)) new File(entry, "ok").setLastModified(later - day);
+		assertEquals(1, PackageCache.sweep(root, later));
+		assertEquals(2, entries(root).size());
+		assertEquals("[] 21", build(a("int", "20", 1), true));
+		assertEquals("[A] 11", build(a("int", "10", 1), true));
+		// Tout a vieilli : plus rien, et le programme se recompile
+		assertEquals(3, PackageCache.sweep(root, later + 100 * day));
+		assertEquals(0, entries(root).size());
+		assertEquals("[A, B] 11", build(a("int", "10", 1), true));
+	}
+
+	// Une écriture interrompue laisse un dossier temporaire : il part au bout d'un jour.
+	@Test
+	public void interruptedWritesAreSwept() throws Exception {
+		var root = tmpRoot.resolve("cache").toFile();
+		assertEquals("[A, B] 11", build(a("int", "10", 1), true));
+		var source = entries(root).get(0).getParentFile();
+		var temporary = new File(source, "tmp123");
+		assertTrue(temporary.mkdir());
+		Files.writeString(temporary.toPath().resolve("A.class"), "");
+		long now = System.currentTimeMillis();
+		assertEquals(0, PackageCache.sweep(root, now));
+		assertEquals(1, PackageCache.sweep(root, now + 2 * 24 * 3600 * 1000L));
+		assertTrue(!temporary.exists());
+		assertEquals("[] 11", build(a("int", "10", 1), true));
+	}
+
+	/** Les entrées de cache (dossiers `<Java>/<interfaces lues>`) sous `root`. */
+	private static List<File> entries(File root) {
+		var found = new ArrayList<File>();
+		var sources = root.listFiles(File::isDirectory);
+		if (sources == null) return found;
+		for (var source : sources) {
+			for (var entry : source.listFiles(File::isDirectory)) {
+				if (new File(entry, "ok").exists()) found.add(entry);
+			}
+		}
+		return found;
+	}
+
+	/** L'entrée de la première version de A (`return 10`) : la seule dont le Java la contient. */
+	private static boolean isFirstA(File entry) throws IOException {
+		var java = new File(entry, "java/A.java");
+		return java.exists() && Files.readString(java.toPath()).contains("return 10;");
+	}
+
 	// =========================================================================
 	// Programmes LeekScript à packages
 	// =========================================================================
@@ -213,6 +273,22 @@ public class TestPackageCache {
 		assertEquals("7", run(main));
 		// Pas d'analyse ni de javac : les classes viennent des dossiers des packages
 		assertEquals(null, file.getCompiledCode());
+	}
+
+	// Les entrées d'un programme ont été supprimées par le ménage : il se recompile en entier.
+	@Test
+	public void programRecompilesAfterItsEntriesAreSwept() throws Exception {
+		writePackages("2");
+		String main = writeMain(PROGRAM);
+		assertEquals("7", run(main));
+		var file = fs.getRoot(0).resolve(main);
+		PackageCache.sweep(new File(JavaCompiler.IA_PATH, "p"), System.currentTimeMillis() + 1000L * 24 * 3600 * 1000);
+		var cache = JavaCompiler.class.getDeclaredField("aiCache");
+		cache.setAccessible(true);
+		((java.util.Map<?, ?>) cache.get(null)).remove(file.getJavaClass());
+		file.setCompiledCode(null);
+		assertEquals("7", run(main));
+		assertEquals(4, javacUnits(main).size(), javacUnits(main).toString());
 	}
 
 	// =========================================================================

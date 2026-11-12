@@ -26,6 +26,10 @@ import java.util.TreeMap;
  * face des mêmes interfaces : modifier le corps d'une fonction ne recompile que son package, changer
  * une signature recompile aussi les packages qui la lisent, et l'IA et sa suite de tests partagent
  * les packages qu'elles importent toutes deux. Une entrée de cache n'est jamais réécrite.
+ *
+ * <p>Chaque version d'un package laisse une entrée : celles qui n'ont servi à aucune compilation
+ * depuis {@link #UNUSED_DAYS} jours sont supprimées (cf {@link #sweep}). Un programme dont une
+ * entrée a disparu se recompile, comme si son cache disque était vide.
  */
 public class PackageCache {
 
@@ -63,6 +67,13 @@ public class PackageCache {
 	private static final String READS_FILE = "reads";
 	private static final String DONE_FILE = "ok";
 	private static final String SOURCES_DIRECTORY = "java";
+
+	/** Une entrée qui n'a servi à aucune compilation depuis ce nombre de jours est supprimée. */
+	public static final int UNUSED_DAYS = 30;
+	private static final long DAY = 24 * 3600 * 1000L;
+	// Le ménage suit une compilation qui a écrit une entrée, une fois par heure au plus par dossier
+	private static final long SWEEP_INTERVAL = 3600 * 1000L;
+	private static final Map<String, Long> lastSweeps = new java.util.concurrent.ConcurrentHashMap<>();
 
 	private final File root;
 	private final boolean useDisk;
@@ -117,11 +128,25 @@ public class PackageCache {
 				if (group.directory == null) stale.add(group);
 			}
 			compile(javac, stale, result);
+			// Une entrée retenue peut avoir disparu entre-temps (ménage d'un autre fil) : son groupe
+			// se recompile
+			var lost = new ArrayList<Group>();
 			for (var group : groups.values()) {
-				if (group.classes == null) group.classes = readClasses(group.directory);
+				if (group.classes != null) continue;
+				try {
+					group.classes = readClasses(group.directory);
+					markUsed(group.directory);
+				} catch (IOException e) {
+					group.directory = null;
+					lost.add(group);
+				}
+			}
+			compile(javac, lost, result);
+			for (var group : groups.values()) {
 				result.classes.putAll(group.classes);
 				if (group.directory != null) result.directories.add(group.directory);
 			}
+			if (useDisk && !result.compiled.isEmpty()) sweepSometimes();
 		} catch (IOException e) {
 			throw new LeekScriptException(leekscript.common.Error.CANNOT_WRITE_AI, e.getMessage());
 		}
@@ -203,7 +228,10 @@ public class PackageCache {
 		var digest = digest();
 		for (var read : reads.entrySet()) update(digest, read.getKey() + " " + read.getValue());
 		var directory = new File(new File(root, group.sourceHash), hex(digest));
-		if (new File(directory, DONE_FILE).exists()) return directory;
+		if (new File(directory, DONE_FILE).exists()) {
+			markUsed(directory);
+			return directory;
+		}
 		Files.createDirectories(directory.getParentFile().toPath());
 		var temporary = Files.createTempDirectory(directory.getParentFile().toPath(), "tmp");
 		for (var clazz : group.classes.entrySet()) {
@@ -224,6 +252,49 @@ public class PackageCache {
 			deleteDirectory(temporary);
 		}
 		return directory;
+	}
+
+	/** Date la dernière utilisation d'une entrée (son fichier témoin), une fois par jour au plus. */
+	private static void markUsed(File directory) {
+		var done = new File(directory, DONE_FILE);
+		long now = System.currentTimeMillis();
+		if (now - done.lastModified() > DAY) done.setLastModified(now);
+	}
+
+	private void sweepSometimes() {
+		long now = System.currentTimeMillis();
+		var last = lastSweeps.put(root.getPath(), now);
+		if (last != null && now - last < SWEEP_INTERVAL) {
+			lastSweeps.put(root.getPath(), last);
+			return;
+		}
+		sweep(root, now);
+	}
+
+	/**
+	 * Supprime de `root` les entrées qui n'ont servi à aucune compilation depuis UNUSED_DAYS jours
+	 * (à la date `now`), et les dossiers temporaires qu'une écriture interrompue a laissés. Rend le
+	 * nombre d'entrées supprimées. Le témoin part en premier : l'entrée cesse d'être proposée avant
+	 * de perdre ses classes.
+	 */
+	public static int sweep(File root, long now) {
+		int removed = 0;
+		var sources = root.listFiles(File::isDirectory);
+		if (sources == null) return 0;
+		for (var source : sources) {
+			var entries = source.listFiles(File::isDirectory);
+			if (entries == null) continue;
+			for (var entry : entries) {
+				var done = new File(entry, DONE_FILE);
+				boolean unused = done.exists() ? now - done.lastModified() > UNUSED_DAYS * DAY : now - entry.lastModified() > DAY;
+				if (!unused) continue;
+				done.delete();
+				deleteDirectory(entry.toPath());
+				removed++;
+			}
+			source.delete(); // sans effet tant qu'il reste une entrée
+		}
+		return removed;
 	}
 
 	private static void deleteDirectory(Path directory) {
