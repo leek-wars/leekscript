@@ -135,19 +135,24 @@ public class AIFile {
 	}
 
 	/**
-	 * Nom de la classe Java compilée, par défaut tiré de l'identité du fichier : les 64 premiers bits de
-	 * son SHA-256. Fixé au premier appel, pour que la compilation, le cache et le chargement s'accordent.
+	 * Nom de la classe Java compilée, par défaut tiré de l'identité du fichier.
+	 * Fixé au premier appel, pour que la compilation, le cache et le chargement s'accordent.
 	 */
 	public String getJavaClass() {
 		if (clazz == null) {
-			try {
-				var digest = MessageDigest.getInstance("SHA-256").digest(getKey().getBytes(StandardCharsets.UTF_8));
-				clazz = "AI_" + Long.toUnsignedString(ByteBuffer.wrap(digest).getLong(), 36);
-			} catch (NoSuchAlgorithmException e) {
-				throw new IllegalStateException(e);
-			}
+			clazz = "AI_" + getKeyHash();
 		}
 		return clazz;
+	}
+
+	/** Les 64 premiers bits du SHA-256 de l'identité du fichier ({@link #getKey}), en base 36. */
+	public String getKeyHash() {
+		try {
+			var digest = MessageDigest.getInstance("SHA-256").digest(getKey().getBytes(StandardCharsets.UTF_8));
+			return Long.toUnsignedString(ByteBuffer.wrap(digest).getLong(), 36);
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	public void setRootClass(String clazz) {

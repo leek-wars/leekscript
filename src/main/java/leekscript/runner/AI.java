@@ -906,7 +906,7 @@ public abstract class AI {
 
 	/**
 	 * Nom LeekScript d'une classe utilisateur depuis sa classe Java `u_<Nom>`, ou
-	 * `u_$m<id>$<Nom>` quand elle vient d'un module importé (v5) : le préfixe de module est un
+	 * `u_$m<module>$<Nom>` quand elle vient d'un module importé (v5) : le préfixe de module est un
 	 * détail du code généré, il ne doit paraître ni dans `string(objet)` ni dans une erreur.
 	 */
 	public static String userClassName(Class<?> clazz) {

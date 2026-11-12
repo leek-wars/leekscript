@@ -51,7 +51,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final HashSet<String> mGlobales = new HashSet<>();
 	private final ArrayList<LeekGlobalDeclarationInstruction> mGlobalesDeclarations = new ArrayList<>();
 	// Registre module-aware des variables de niveau module (clé = nom interne préfixé
-	// `$m<id>$<name>`) : backing LeekVariable, pour résoudre les imports cross-module.
+	// `$m<module>$<name>`) : backing LeekVariable, pour résoudre les imports cross-module.
 	private final Map<String, leekscript.compiler.expression.LeekVariable> mGlobalVars = new HashMap<>();
 	private final HashSet<String> mRedefinedFunctions = new HashSet<String>();
 	private final HashMap<String, FunctionBlock> mFunctions = new HashMap<>();
@@ -92,7 +92,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private final Map<String, AIFile> mImportedFirstPass = new HashMap<>();
 	private final Map<String, AIFile> mImported = new HashMap<>();
 	private boolean mHasModules = false;
-	private int mModuleId = 1;
+	private final Set<String> mModuleTags = new HashSet<>();
 	private int mCounter = 0;
 	private int mCountInstruction = 0;
 	private final IACompiler mCompiler;
@@ -110,7 +110,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mAIName = ai.getPath();
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
-		mMainModule = new Module(ai, 0, true);
+		mMainModule = new Module(ai, null, true);
 		mModules.put(ai.getKey(), mMainModule);
 		// Un module importé peut importer l'entrée (cycle) : elle est déjà compilée
 		mImportedFirstPass.put(ai.getKey(), ai);
@@ -621,7 +621,11 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	public Module getOrCreateModule(AIFile file) {
 		var existing = mModules.get(file.getKey());
 		if (existing != null) return existing;
-		var module = new Module(file, mModuleId++, false);
+		// L'empreinte fait 64 bits : deux modules d'un même programme ne se heurtent pas en pratique,
+		// mais un heurt donnerait deux déclarations Java du même nom, alors on le départage.
+		var tag = Module.tagOf(file);
+		for (int n = 2; !mModuleTags.add(tag); n++) tag = Module.tagOf(file) + "_" + n;
+		var module = new Module(file, tag, false);
 		mModules.put(file.getKey(), module);
 		return module;
 	}

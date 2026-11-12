@@ -16,9 +16,11 @@ import leekscript.compiler.AIFile;
  * <p>Le module principal (l'entrypoint et tout ce qu'il {@code include()}) a
  * {@link #isMain} = true et un préfixe de codegen vide : les noms émis restent
  * identiques au bit près à v1–v4. Les modules importés reçoivent un préfixe
- * collision-proof {@code $m<id>$} (le {@code $} n'est pas un caractère
- * d'identifiant LeekScript, donc aucun nom utilisateur ne peut entrer en
- * collision avec un nom qualifié).
+ * {@code $m<nom>_<empreinte>$} tiré du fichier, pas de l'ordre des imports : ajouter
+ * ou retirer un import ne renomme rien dans le Java des autres modules, et un module
+ * porte le même nom quel que soit le point d'entrée qui l'importe. Le {@code $} n'est
+ * pas un caractère d'identifiant LeekScript, donc aucun nom utilisateur ne peut entrer
+ * en collision avec un nom qualifié.
  *
  * <p>Pilier 3 (modules), phase 3b. Slice 1 : fonctions uniquement. Les classes,
  * les globales et {@code import * as Ns} viennent ensuite.
@@ -26,7 +28,6 @@ import leekscript.compiler.AIFile;
 public class Module {
 
 	private final AIFile file;
-	private final int id;
 	private final boolean main;
 	// Préfixe de codegen précalculé (immuable) : prefix() est appelé sur chaque
 	// résolution de nom, autant ne pas réallouer la chaîne à chaque fois.
@@ -46,18 +47,38 @@ public class Module {
 	// Imports namespace `import * as Ns from "..."` : alias local -> module source.
 	private final Map<String, Module> namespaceImports = new HashMap<>();
 
-	public Module(AIFile file, int id, boolean main) {
+	/** @param tag nom stable du module ({@link #tagOf}), ignoré pour le module principal */
+	public Module(AIFile file, String tag, boolean main) {
 		this.file = file;
-		this.id = id;
 		this.main = main;
-		this.prefix = main ? "" : PREFIX_START + id + PREFIX_END;
+		this.prefix = main ? "" : PREFIX_START + tag + PREFIX_END;
+	}
+
+	private static final int MAX_TAG_NAME = 24;
+
+	/**
+	 * Nom stable d'un module : le nom du fichier (pour lire le Java généré) suivi de l'empreinte de
+	 * son identité (pour l'unicité : deux fichiers peuvent porter le même nom). Uniquement des
+	 * caractères d'identifiant Java, jamais de `$`.
+	 */
+	public static String tagOf(AIFile file) {
+		var path = file.getPath();
+		var name = path.substring(Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1);
+		int dot = name.lastIndexOf('.');
+		if (dot > 0) name = name.substring(0, dot);
+		var tag = new StringBuilder();
+		for (int i = 0; i < name.length() && tag.length() < MAX_TAG_NAME; i++) {
+			char c = name.charAt(i);
+			tag.append(c < 128 && Character.isLetterOrDigit(c) ? c : '_');
+		}
+		return tag.append('_').append(file.getKeyHash()).toString();
 	}
 
 	// Le préfixe ne peut pas heurter un nom LeekScript : `$` n'y est pas un caractère d'identifiant
 	private static final String PREFIX_START = "$m";
 	private static final char PREFIX_END = '$';
 
-	/** Retire le préfixe de module d'un nom du code généré (`$m31$HitMap` -> `HitMap`). */
+	/** Retire le préfixe de module d'un nom du code généré (`$mhitmap_1x2y3z$HitMap` -> `HitMap`). */
 	public static String stripPrefix(String name) {
 		if (!name.startsWith(PREFIX_START)) return name;
 		int end = name.indexOf(PREFIX_END, PREFIX_START.length());
@@ -66,10 +87,6 @@ public class Module {
 
 	public AIFile getFile() {
 		return file;
-	}
-
-	public int getId() {
-		return id;
 	}
 
 	public boolean isMain() {

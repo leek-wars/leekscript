@@ -602,6 +602,34 @@ public class TestModulesResolution {
 		assertEquals("Vec {x: 1}", run(main));
 	}
 
+	// Le nom Java d'un module vient de son fichier, pas de son rang d'import : un import de plus
+	// dans le programme ne renomme pas les symboles des autres modules.
+	@Test
+	public void moduleNamesDoNotDependOnImportOrder() throws Exception {
+		write("lib.leek", "export function f() { return 1 }");
+		write("other.leek", "export function g() { return 2 }");
+		String alone = writeMain("import { f } from \"lib\"\nreturn f()");
+		uniqueId += "_b";
+		String second = writeMain("import { g } from \"other\"\nimport { f } from \"lib\"\nreturn f() + g()");
+		assertEquals("1", run(alone));
+		assertEquals("3", run(second));
+		var name = java.util.regex.Pattern.compile("f_\\$m\\w+\\$f\\b");
+		var inAlone = name.matcher(javaOf(alone));
+		var inSecond = name.matcher(javaOf(second));
+		assertTrue(inAlone.find() && inSecond.find());
+		assertEquals(inAlone.group(), inSecond.group());
+		assertTrue(inAlone.group().startsWith("f_$mlib_"), inAlone.group());
+	}
+
+	// Deux fichiers de même nom dans deux dossiers sont deux modules distincts.
+	@Test
+	public void sameFileNameInTwoFoldersNoCollision() throws Exception {
+		write("a/util.leek", "export function f() { return 1 }\nexport class C { static integer v = 10 }");
+		write("b/util.leek", "export function f() { return 2 }\nexport class C { static integer v = 20 }");
+		String main = writeMain("import * as A from \"a/util\"\nimport * as B from \"b/util\"\nreturn A.f() + B.f() + A.C.v + B.C.v");
+		assertEquals("33", run(main));
+	}
+
 	// =========================================================================
 	// Helpers
 	// =========================================================================
@@ -629,6 +657,11 @@ public class TestModulesResolution {
 		ai.staticInit();
 		ai.resetCounter();
 		return ai;
+	}
+
+	/** Le Java généré pour l'IA `name`, déjà compilée. */
+	private String javaOf(String name) throws Exception {
+		return fs.getRoot(0).resolve(name).getCompiledCode().getJavaCode();
 	}
 
 	private String run(String name) throws Exception {
