@@ -247,6 +247,18 @@ public class LeekVariable extends Expression {
 		return "g_" + globalPrefix + token.getWord();
 	}
 
+	/** Le champ de la globale tel qu'il se lit depuis la classe en cours d'écriture. */
+	public String globalName(JavaWriter writer) {
+		return writer.ref(globalModule) + globalName();
+	}
+
+	private leekscript.compiler.bloc.Module globalModule;
+
+	public void setGlobalModule(leekscript.compiler.bloc.Module module) {
+		this.globalModule = module;
+		this.globalPrefix = module == null ? "" : module.prefix();
+	}
+
 	// Une fois par référence résolue : mayLoseEntries en dépend
 	public void addUsage() {
 		usageCount++;
@@ -294,6 +306,7 @@ public class LeekVariable extends Expression {
 			this.type = v.getVariableType();
 			this.variableType = v.getType();
 			this.globalPrefix = v.getGlobalPrefix();
+			this.globalModule = v.globalModule;
 			this.declaration = v.getDeclaration();
 			this.classDeclaration = v.getClassDeclaration();
 			this.functionDeclaration = v.getFunctionDeclaration();
@@ -339,6 +352,7 @@ public class LeekVariable extends Expression {
 			this.type = VariableType.GLOBAL;
 			this.variableType = gv.getType();
 			this.globalPrefix = gv.getGlobalPrefix();
+			this.globalModule = gv.globalModule;
 			this.variable = gv;
 			gv.addUsage();
 			return;
@@ -664,7 +678,7 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.THIS_CLASS) {
 			writeThisClass(mainblock, writer);
 		} else if (type == VariableType.SUPER) {
-			writer.addCode("u_" + classDeclaration.getParent().getInternalName());
+			writer.addCode(writer.ref(classDeclaration.getParent().getModule()) + "u_" + classDeclaration.getParent().getInternalName());
 		} else if (type == VariableType.FIELD) {
 			// Le champ Java garde son type déclaré : sans cast, `if (m instanceof B) m.doStuff()`
 			// cherche la méthode de B sur une variable de type A → « cannot find symbol » (#4933).
@@ -715,7 +729,7 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.FUNCTION) {
 			FunctionBlock user_function = getResolvedFunction(mainblock);
 			writer.generateAnonymousUserFunction(user_function);
-			writer.addCode("ufunction_" + user_function.getInternalName());
+			writer.addCode(writer.ref(user_function.getModule()) + "ufunction_" + user_function.getInternalName());
 		} else if (type == VariableType.SYSTEM_CONSTANT) {
 			var constant = LeekConstants.get(token.getWord());
 			if (constant.getType() == Type.INT) writer.addCode(String.valueOf(constant.getIntValue()) + "l");
@@ -733,7 +747,7 @@ public class LeekVariable extends Expression {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
 			if (user_function != null) {
 				writer.generateAnonymousUserFunction(user_function);
-				writer.addCode("ufunction_" + user_function.getInternalName());
+				writer.addCode(writer.ref(user_function.getModule()) + "ufunction_" + user_function.getInternalName());
 			} else {
 				var system_function = LeekFunctions.getValue(token.getWord(), writer.getOptions().useExtra());
 				writer.generateAnonymousSystemFunction(system_function);
@@ -743,9 +757,9 @@ public class LeekVariable extends Expression {
 			}
 		} else if (type == VariableType.GLOBAL) {
 			if (mainblock.getWordCompiler().getVersion() <= 1) {
-				writer.addCode(globalName() + ".get()");
+				writer.addCode(globalName(writer) + ".get()");
 			} else {
-				writer.addCode(globalName());
+				writer.addCode(globalName(writer));
 			}
 		} else if (type == VariableType.CLASS) {
 			if (classDeclaration.internal) {
@@ -755,7 +769,7 @@ public class LeekVariable extends Expression {
 					writer.addCode(token.getWord().toLowerCase() + "Class");
 				}
 			} else {
-				writer.addCode("u_" + classDeclaration.getInternalName());
+				writer.addCode(writer.ref(classDeclaration.getModule()) + "u_" + classDeclaration.getInternalName());
 			}
 		} else {
 			// Check if the variable was narrowed during analysis: if the expression's type
@@ -844,20 +858,20 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.THIS_CLASS) {
 			writeThisClass(mainblock, writer);
 		} else if (type == VariableType.SUPER) {
-			writer.addCode("u_" + classDeclaration.getParent().getInternalName());
+			writer.addCode(writer.ref(classDeclaration.getParent().getModule()) + "u_" + classDeclaration.getParent().getInternalName());
 		} else if (type == VariableType.FIELD) {
 			writer.addCode("this.getFieldL(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.STATIC_FIELD) {
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getFieldL(\"" + token.getWord() + "\")");
 		} else if (type == VariableType.GLOBAL) {
-			writer.addCode(globalName());
+			writer.addCode(globalName(writer));
 		} else if (mainblock.isRedefinedFunction(token.getWord())) {
 			writer.addCode("rfunction_" + token.getWord());
 		} else if (type == VariableType.SYSTEM_FUNCTION) {
 			FunctionBlock user_function = mainblock.getUserFunction(token.getWord());
 			if (user_function != null) {
 				writer.generateAnonymousUserFunction(user_function);
-				writer.addCode("ufunction_" + user_function.getInternalName());
+				writer.addCode(writer.ref(user_function.getModule()) + "ufunction_" + user_function.getInternalName());
 			} else {
 				var system_function = LeekFunctions.getValue(token.getWord(), writer.getOptions().useExtra());
 				writer.generateAnonymousSystemFunction(system_function);
@@ -881,12 +895,12 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.FUNCTION) {
 			FunctionBlock user_function = getResolvedFunction(mainblock);
 			writer.generateAnonymousUserFunction(user_function);
-			writer.addCode("ufunction_" + user_function.getInternalName());
+			writer.addCode(writer.ref(user_function.getModule()) + "ufunction_" + user_function.getInternalName());
 		} else if (type == VariableType.CLASS) {
 			if (classDeclaration.internal) {
 				writer.addCode(token.getWord().toLowerCase() + "Class");
 			} else {
-				writer.addCode("u_" + classDeclaration.getInternalName());
+				writer.addCode(writer.ref(classDeclaration.getModule()) + "u_" + classDeclaration.getInternalName());
 			}
 		} else {
 			if (isWrapper()) {
@@ -916,11 +930,11 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.GLOBAL) {
 			if (mainblock.getWordCompiler().getVersion() >= 2) {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode(globalName() + " = ");
+				writer.addCode(globalName(writer) + " = ");
 				writer.compileConvertTyped(mainblock, 0, expr, globalAssignType(mainblock, expr), false);
 			if (parenthesis) writer.addCode(")");
 			} else {
-				writer.addCode(globalName() + ".set(");
+				writer.addCode(globalName(writer) + ".set(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			}
@@ -973,11 +987,11 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.GLOBAL) {
 			if (mainblock.getWordCompiler().getVersion() >= 2) {
 			if (parenthesis) writer.addCode("(");
-				writer.addCode(globalName() + " = ");
+				writer.addCode(globalName(writer) + " = ");
 				expr.writeJavaCode(mainblock, writer, false);
 			if (parenthesis) writer.addCode(")");
 			} else {
-				writer.addCode(globalName() + ".set(");
+				writer.addCode(globalName(writer) + ".set(");
 				expr.compileL(mainblock, writer, false);
 				writer.addCode(")");
 			}
@@ -1206,7 +1220,7 @@ public class LeekVariable extends Expression {
 			var close = writer.openFieldResultConversion(this.variableType);
 			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + "." + fieldHelper + "(\"" + token.getWord() + "\")" + close);
 		} else if (type == VariableType.GLOBAL) {
-			var name = globalName();
+			var name = globalName(writer);
 			if (isBox()) {
 				writer.addCode(name + "." + boxMethod + "()");
 			} else if (hasPrimitiveJavaSlot(mainblock.getVersion())) {
@@ -1244,19 +1258,19 @@ public class LeekVariable extends Expression {
 			writer.addCode(")" + close);
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
-				writer.addCode(globalName() + ".add_eq(");
+				writer.addCode(globalName(writer) + ".add_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion()) && !(expr instanceof LeekVariable lve && lve.hasNarrowingMismatch(mainblock.getVersion()))) {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode(globalName() + " += ");
+				writer.addCode(globalName(writer) + " += ");
 				writer.compileTyped(mainblock, expr, false);
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode(globalName() + " = ");
+				writer.addCode(globalName(writer) + " = ");
 				var close = openOperationResult(mainblock, writer, globalCastType(), expr.getType());
-				writer.addCode("add(" + globalName() + ", ");
+				writer.addCode("add(" + globalName(writer) + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
 				if (parenthesis) writer.addCode(")");
@@ -1301,19 +1315,19 @@ public class LeekVariable extends Expression {
 			writer.addCode(")" + close);
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
-				writer.addCode(globalName() + ".sub_eq(");
+				writer.addCode(globalName(writer) + ".sub_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion()) && !(expr instanceof LeekVariable lve && lve.hasNarrowingMismatch(mainblock.getVersion()))) {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode(globalName() + " -= ");
+				writer.addCode(globalName(writer) + " -= ");
 				writer.compileTyped(mainblock, expr, false);
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode(globalName() + " = ");
+				writer.addCode(globalName(writer) + " = ");
 				var close = openOperationResult(mainblock, writer, globalCastType(), expr.getType());
-				writer.addCode("sub(" + globalName() + ", ");
+				writer.addCode("sub(" + globalName(writer) + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
 				if (parenthesis) writer.addCode(")");
@@ -1358,19 +1372,19 @@ public class LeekVariable extends Expression {
 			writer.addCode(")" + close);
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
-				writer.addCode(globalName() + ".mul_eq(");
+				writer.addCode(globalName(writer) + ".mul_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion()) && !(expr instanceof LeekVariable lve && lve.hasNarrowingMismatch(mainblock.getVersion()))) {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode(globalName() + " *= ");
+				writer.addCode(globalName(writer) + " *= ");
 				writer.compileTyped(mainblock, expr, false);
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode(globalName() + " = ");
+				writer.addCode(globalName(writer) + " = ");
 				var close = openOperationResult(mainblock, writer, globalCastType(), expr.getType());
-				writer.addCode("mul(" + globalName() + ", ");
+				writer.addCode("mul(" + globalName(writer) + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
 				if (parenthesis) writer.addCode(")");
@@ -1416,14 +1430,14 @@ public class LeekVariable extends Expression {
 			writer.addCode(")" + close);
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
-				writer.addCode(globalName() + ".pow_eq(");
+				writer.addCode(globalName(writer) + ".pow_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode(globalName() + " = ");
+				writer.addCode(globalName(writer) + " = ");
 				var close = openOperationResult(mainblock, writer, globalCastType(), expr.getType());
-				writer.addCode("pow(" + globalName() + ", ");
+				writer.addCode("pow(" + globalName(writer) + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
 				if (parenthesis) writer.addCode(")");
@@ -1492,20 +1506,20 @@ public class LeekVariable extends Expression {
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
 				if (mainblock.getVersion() == 1) {
-					writer.addCode(globalName() + ".div_eq_v1(");
+					writer.addCode(globalName(writer) + ".div_eq_v1(");
 				} else {
-					writer.addCode(globalName() + ".div_eq(");
+					writer.addCode(globalName(writer) + ".div_eq(");
 				}
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode(globalName() + " = ");
+				writer.addCode(globalName(writer) + " = ");
 				var close = openOperationResult(mainblock, writer, divTarget(globalCastType()), expr.getType());
 				if (mainblock.getVersion() == 1) {
-					writer.addCode("div_v1(" + globalName() + ", ");
+					writer.addCode("div_v1(" + globalName(writer) + ", ");
 				} else {
-					writer.addCode("div(" + globalName() + ", ");
+					writer.addCode("div(" + globalName(writer) + ", ");
 				}
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
@@ -1560,19 +1574,19 @@ public class LeekVariable extends Expression {
 			writer.addCode(")");
 		} else if (type == VariableType.GLOBAL) {
 			if (isBox()) {
-				writer.addCode(globalName() + ".mod_eq(");
+				writer.addCode(globalName(writer) + ".mod_eq(");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")");
 			} else if (hasPrimitiveJavaSlot(mainblock.getVersion()) && expr.getType().isPrimitiveNumber()) {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode(globalName() + " %= ");
+				writer.addCode(globalName(writer) + " %= ");
 				writer.compileTyped(mainblock, expr, false);
 				if (parenthesis) writer.addCode(")");
 			} else {
 				if (parenthesis) writer.addCode("(");
-				writer.addCode(globalName() + " = ");
+				writer.addCode(globalName(writer) + " = ");
 				var close = openOperationResult(mainblock, writer, globalCastType(), expr.getType());
-				writer.addCode("mod(" + globalName() + ", ");
+				writer.addCode("mod(" + globalName(writer) + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
 				if (parenthesis) writer.addCode(")");
@@ -1643,7 +1657,7 @@ public class LeekVariable extends Expression {
 			writeContainerOperation(mainblock, writer, expr, box, target != null ? "field_bit_eq" : fieldHelper, target != null ? "bit_eq" : boxMethod, operation, target);
 			return;
 		}
-		String slot = type == VariableType.FIELD ? name : type == VariableType.GLOBAL ? globalName() : "u_" + name;
+		String slot = type == VariableType.FIELD ? name : type == VariableType.GLOBAL ? globalName(writer) : "u_" + name;
 		if (parenthesis) writer.addCode("(");
 		if (operator != null && type != VariableType.FIELD && hasNativeBitSlot(mainblock.getVersion())) {
 			writer.addCode(slot + " " + operator + "= ");
@@ -1686,6 +1700,7 @@ public class LeekVariable extends Expression {
 
 	/** Nom Java du Box de la variable (globale en Box, variable capturée, fonction redéfinie), null sans Box. */
 	private String boxName(MainLeekBlock mainblock) {
+		// Globale en Box : v1 seulement, donc jamais dans un module
 		if (type == VariableType.GLOBAL) return isBox() ? globalName() : null;
 		return type != VariableType.FIELD && type != VariableType.STATIC_FIELD && isBoxLike(mainblock) ? localName(mainblock) : null;
 	}
@@ -1728,7 +1743,7 @@ public class LeekVariable extends Expression {
 		// `+=` (#5300) : Box.coalesce_eq. Fonction système redéfinie : Box `rfunction_<nom>`,
 		// quel que soit le VariableType (cf. isRedefinedFunction).
 		var box = isRedefinedFunction(mainblock) ? localName(mainblock)
-			: isBoxSlot() ? (type == VariableType.GLOBAL ? globalName() : "u_" + token.getWord())
+			: isBoxSlot() ? (type == VariableType.GLOBAL ? globalName(writer) : "u_" + token.getWord())
 			: null;
 		if (box != null) {
 			// `b` n'est évaluée que si la variable est null (#5300)
@@ -1765,7 +1780,7 @@ public class LeekVariable extends Expression {
 		if (type == VariableType.FIELD) {
 			varName = token.getWord();
 		} else if (type == VariableType.GLOBAL) {
-			varName = globalName();
+			varName = globalName(writer);
 		} else {
 			// LOCAL or others
 			varName = "u_" + token.getWord();

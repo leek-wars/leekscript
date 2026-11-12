@@ -171,6 +171,19 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		return module;
 	}
 
+	// v5, une classe Java par module : la classe Java qui contient celle-ci (celle de son module,
+	// ou celle de l'IA). Null quand le programme tient en une seule classe Java.
+	private String javaOwner;
+
+	public void setJavaOwner(String javaOwner) {
+		this.javaOwner = javaOwner;
+	}
+
+	/** Le type Java de la classe, lisible de n'importe quelle classe du programme. */
+	public String getJavaTypeName() {
+		return (javaOwner == null ? "" : javaOwner + ".") + "u_" + getInternalName();
+	}
+
 	/** Nom de codegen de la classe (`u_<internalName>`), préfixé par module pour éviter
 	 * les collisions ; vide pour le principal → byte-identique. getName() reste le nom
 	 * source (affichage/résolution). */
@@ -709,6 +722,17 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		}
 	}
 
+	/**
+	 * Dans la classe d'un module, l'instance qui englobe la classe parente, à nommer dans l'appel à
+	 * `super` quand elle n'est pas celle qui englobe cette classe : l'IA pour NativeObjectLeekValue
+	 * (classe interne d'AI), l'instance d'un autre module pour une classe importée. Null sinon.
+	 */
+	private String superOuterInstance(JavaWriter writer) {
+		if (parent == null) return writer.getModule() == null ? null : writer.getAIThis();
+		var ref = writer.ref(parent.getModule());
+		return ref.isEmpty() ? null : writer.getClassName() + ".this." + ref.substring(0, ref.length() - 1);
+	}
+
 	public void declareJava(MainLeekBlock mainblock, JavaWriter writer) {
 		mainblock.getWordCompiler().setCurrentClass(this);
 		String className = "u_" + getInternalName();
@@ -743,6 +767,9 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 			if (parent.internal) {
 				writer.addLine("super(" + writer.getAIThis() + ");");
 			}
+		} else {
+			var outer = superOuterInstance(writer);
+			if (outer != null) writer.addLine(outer + ".super();");
 		}
 		// Le coût de base de l'instance une seule fois, par la classe racine (une classe interne
 		// parente, comme Array, compte le sien dans son constructeur)
@@ -771,8 +798,12 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 			if (parent.internal) {
 				writer.addLine("super(" + writer.getAIThis() + ", o, level);");
 			} else {
-				writer.addLine("super(o, level);");
+				var outer = superOuterInstance(writer);
+				writer.addLine((outer == null ? "" : outer + ".") + "super(o, level);");
 			}
+		} else {
+			var outer = superOuterInstance(writer);
+			if (outer != null) writer.addLine(outer + ".super();");
 		}
 		for (var field : fields.entrySet()) {
 			writer.addLine("this." + field.getKey() + " = level == 1 ? o." + field.getKey() + " : (" + field.getValue().getType().getJavaPrimitiveName(mainblock.getVersion()) + ") copy(o." + field.getKey() + ", level - 1);");
@@ -969,7 +1000,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		writer.addLine("}");
 
 		// Declare the class as a field of the AI
-		writer.addLine("public ClassLeekValue " + className + " = new ClassLeekValue(this, \"" + token.getWord() + "\", null, " + className + ".class);");
+		writer.addLine("public ClassLeekValue " + className + " = new ClassLeekValue(" + writer.getAI() + ", \"" + token.getWord() + "\", null, " + className + ".class)" + (writer.getModule() != null ? ".inModule(this)" : "") + ";");
 
 		// Constructeur
 		writer.addLine("public " + className + " new_" + className + "(Object... args) throws LeekRunException {");
@@ -983,7 +1014,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 				mainblock.getWordCompiler().setCurrentBlock(block);
 				writer.currentBlock = block;
 				String methodName = className + "_" + method.getKey() + "_" + version.getKey();
-				writer.addCode("private final " + block.getType().returnType().getJavaPrimitiveName(mainblock.getVersion()) + " " + methodName + "(");
+				writer.addCode(writer.privateMember() + "final " + block.getType().returnType().getJavaPrimitiveName(mainblock.getVersion()) + " " + methodName + "(");
 				int i = 0;
 				for (int a = 0; a < version.getKey(); ++a) {
 					var arg = block.getParametersDeclarations().get(a);
@@ -1060,7 +1091,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 				case "Map": return "MapLeekValue";
 			}
 		}
-		return "u_" + getInternalName();
+		return getJavaTypeName();
 	}
 
 	private String getClassName(MainLeekBlock block) {
@@ -1074,11 +1105,11 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	}
 
 	public void defineClass(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addLine("defineClass_" + getInternalName() + "();");
+		writer.addLine(writer.ref(module) + "defineClass_" + getInternalName() + "();");
 	}
 
 	public void writeDefineClass(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addLine("private void defineClass_" + getInternalName() + "() throws LeekRunException {");
+		writer.addLine(writer.privateMember() + "void defineClass_" + getInternalName() + "() throws LeekRunException {");
 		createJava(mainblock, writer);
 		writer.addLine("}");
 	}
@@ -1091,7 +1122,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		String className = "u_" + getInternalName();
 
 		if (parent != null) {
-			writer.addLine(className + ".setParent(" + parent.getClassName(mainblock) + ");");
+			writer.addLine(className + ".setParent(" + (parent.internal ? "" : writer.ref(parent.getModule())) + parent.getClassName(mainblock) + ");");
 		}
 
 		writer.addCode(className + ".initFields = new FunctionLeekValue(0) {");
@@ -1159,7 +1190,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	}
 
 	public void createStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addLine("createStaticClass_" + getInternalName() + "();");
+		writer.addLine(writer.ref(module) + "createStaticClass_" + getInternalName() + "();");
 	}
 
 	/** Types dont la valeur par défaut n'est pas null (cf. champs d'instance, qui sont
@@ -1170,7 +1201,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 
 	public void writeCreateStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
 
-		writer.addLine("private void createStaticClass_" + getInternalName() + "() throws LeekRunException {");
+		writer.addLine(writer.privateMember() + "void createStaticClass_" + getInternalName() + "() throws LeekRunException {");
 
 		mainblock.getWordCompiler().setCurrentClass(this);
 		mainblock.getWordCompiler().setCurrentBlock(staticInitBlock);
@@ -1203,12 +1234,12 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	}
 
 	public void initializeStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
-		writer.addLine("initClass_" + getInternalName() + "();");
+		writer.addLine(writer.ref(module) + "initClass_" + getInternalName() + "();");
 	}
 
 	public void writeInitializeStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
 
-		writer.addLine("private void initClass_" + getInternalName() + "() throws LeekRunException {");
+		writer.addLine(writer.privateMember() + "void initClass_" + getInternalName() + "() throws LeekRunException {");
 
 		mainblock.getWordCompiler().setCurrentClass(this);
 		mainblock.getWordCompiler().setCurrentBlock(staticInitBlock);

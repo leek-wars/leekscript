@@ -583,11 +583,12 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		if (!mHasModules) return;
 		splitModules();
 		for (var module : mModuleBodies.entrySet()) {
-			writer.addLine("private void " + module.getKey().getMethodName() + "() throws LeekRunException {");
+			var moduleWriter = writer.of(module.getKey().getModule());
+			moduleWriter.addLine(moduleWriter.privateMember() + "void " + module.getKey().getMethodName() + "() throws LeekRunException {");
 			for (var instruction : module.getValue()) {
-				instruction.writeJavaCode(this, writer, false);
+				instruction.writeJavaCode(this, moduleWriter, false);
 			}
-			writer.addLine("}");
+			moduleWriter.addLine("}");
 		}
 	}
 
@@ -754,9 +755,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return field;
 	}
 
-	public void writeJavaCode(JavaWriter writer, String className, String AIClass, Options options) {
-		this.className = className;
-
+	private static void writeImports(JavaWriter writer) {
 		writer.addLine("import leekscript.runner.*;");
 		writer.addLine("import leekscript.runner.values.*;");
 		writer.addLine("import leekscript.runner.classes.*;");
@@ -764,22 +763,72 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		if (LeekFunctions.getExtraFunctionsImport() != null) {
 			writer.addLine("import " + LeekFunctions.getExtraFunctionsImport() + ";");
 		}
+	}
+
+	/**
+	 * v5 : une classe Java par module importé, à côté de celle de l'IA. Chacune a ses fonctions, ses
+	 * globales, son code de haut niveau et ses classes, donc ses propres plafonds JVM (65 535
+	 * constantes par classe). La classe de l'IA garde le fichier d'entrée, crée les modules, les
+	 * câble entre eux et déroule l'initialisation des classes dans l'ordre du programme.
+	 */
+	private void openModuleClasses(JavaWriter writer, String AIClass) {
+		if (!mHasModules) return;
+		var modules = new ArrayList<Module>();
+		for (var module : mModules.values()) {
+			if (!module.isMain()) modules.add(module);
+		}
+		modules.sort(java.util.Comparator.comparing(Module::tag));
+		// Le type Java d'une classe utilisateur se lit d'un module à l'autre : `<classe du module>.u_X`
+		for (var clazz : mUserClassesList) {
+			if (clazz.internal) continue;
+			var owner = clazz.getModule();
+			clazz.setJavaOwner(owner == null || owner.isMain() ? className : JavaWriter.moduleClassName(className, owner));
+		}
+		for (var module : modules) {
+			var moduleWriter = writer.addModule(module);
+			writeImports(moduleWriter);
+			// Les types internes d'AI (NativeObjectLeekValue…), hérités dans la classe d'une IA
+			moduleWriter.addLine("import leekscript.runner.AI.*;");
+			moduleWriter.addLine();
+			var name = moduleWriter.getClassName();
+			moduleWriter.addLine("public final class " + name + " extends AIModule {");
+			// L'IA sous son type d'exécution, celui qu'attendent les fonctions de combat
+			// (premier champ : les initialiseurs des suivants le lisent)
+			moduleWriter.addLine("final " + AIClass + " ai = (" + AIClass + ") super.ai;");
+			moduleWriter.addLine("public " + name + "(AI ai) throws LeekRunException { super(ai); }");
+		}
+	}
+
+	public void writeJavaCode(JavaWriter writer, String className, String AIClass, Options options) {
+		this.className = className;
+
+		openModuleClasses(writer, AIClass);
+		var moduleWriters = writer.getModuleWriters();
+
+		writeImports(writer);
 		writer.addLine();
 		writer.addLine("public class " + className + " extends " + AIClass + " {");
+
+		for (var moduleWriter : moduleWriters) {
+			writer.addLine("final " + moduleWriter.getClassName() + " " + JavaWriter.moduleField(moduleWriter.getModule()) + " = new " + moduleWriter.getClassName() + "(this);");
+		}
 
 		// Classes
 		for (var clazz : mUserClassesList) {
 			if (clazz.internal) continue;
-			clazz.declareJava(this, writer);
+			clazz.declareJava(this, writer.of(clazz.getModule()));
 		}
 
 		for (int i = 0; i < mFileContents.size(); i++) {
-			writer.addLine("private static final String file_" + i + " = " + LeekFileContent.javaString(mFileContents.get(i)) + ";");
+			writer.addLine(writer.privateMember() + "static final String file_" + i + " = " + LeekFileContent.javaString(mFileContents.get(i)) + ";");
 		}
 
 		// Constructor
 		writer.addLine("public " + className + "() throws LeekRunException {");
 		writer.addLine("super(" + mInstructions.size() + ", " + mCompiler.getCurrentAI().getVersion() + ");");
+		for (var moduleWriter : moduleWriters) {
+			writer.addLine(JavaWriter.moduleField(moduleWriter.getModule()) + ".$link(this);");
+		}
 
 		// Une méthode par classe : le constructeur seul dépassait les 64 Ko de bytecode d'une méthode
 		// Java (CODE_TOO_LARGE) sur une IA à plusieurs centaines de classes et quelques milliers de méthodes.
@@ -792,9 +841,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		// Classes initialize functions
 		for (var clazz : mUserClassesList) {
 			if (clazz.internal) continue;
-			clazz.writeDefineClass(this, writer);
-			clazz.writeCreateStaticFields(this, writer);
-			clazz.writeInitializeStaticFields(this, writer);
+			var classWriter = writer.of(clazz.getModule());
+			clazz.writeDefineClass(this, classWriter);
+			clazz.writeCreateStaticFields(this, classWriter);
+			clazz.writeInitializeStaticFields(this, classWriter);
 		}
 
 		// Static init
@@ -817,15 +867,17 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		// Variables globales (nom de champ préfixé par module : getInternalName)
 		for (var global : mGlobalesDeclarations) {
 			var fieldName = global.getInternalName();
+			var globalWriter = writer.of(global.getModule());
+			var access = globalWriter.privateMember();
 			if (getWordCompiler().getVersion() >= 2) {
-				writer.addLine("private " + global.getType().getJavaPrimitiveName(getVersion()) + " g_" + fieldName + " = " + global.getType().getDefaultValue(writer, getVersion()) + ";");
+				globalWriter.addLine(access + global.getType().getJavaPrimitiveName(getVersion()) + " g_" + fieldName + " = " + global.getType().getDefaultValue(globalWriter, getVersion()) + ";");
 			} else {
-				writer.addLine("private Box<" + global.getType().getJavaName(getVersion()) + "> g_" + fieldName + " = new Box<" + global.getType().getJavaName(getVersion()) + ">(" + writer.getAIThis() + ");");
+				globalWriter.addLine(access + "Box<" + global.getType().getJavaName(getVersion()) + "> g_" + fieldName + " = new Box<" + global.getType().getJavaName(getVersion()) + ">(" + globalWriter.getAIThis() + ");");
 			}
 			// Garde d'init une-fois : seulement pour les champs persistants (global).
 			// Un var top-level v5 (non persistant) est ré-initialisé chaque tour.
 			if (global.isPersistent()) {
-				writer.addLine("private boolean g_init_" + fieldName + " = false;");
+				globalWriter.addLine(access + "boolean g_init_" + fieldName + " = false;");
 			}
 		}
 		// Fonctions redéfinies
@@ -836,7 +888,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 		// Fonctions
 		for (var instruction : mFunctions.values()) {
-			instruction.writeJavaCode(this, writer, false);
+			instruction.writeJavaCode(this, writer.of(instruction.getModule()), false);
 		}
 
 		writeModuleMethods(writer);
@@ -891,11 +943,16 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			writer.addCode("}");
 		}
 
+		closeClass(writer);
+		for (var moduleWriter : moduleWriters) closeClass(moduleWriter);
+	}
+
+	private void closeClass(JavaWriter writer) {
 		writer.writeGenericFunctions(this);
 		writer.writeAnonymousSystemFunctions(this);
 		writer.writeAnonymousUserFunctions(this);
 		writer.writeMatchTempFields();
-
+		writer.writeModuleLinks();
 		writer.addLine("}");
 	}
 

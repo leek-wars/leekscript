@@ -75,6 +75,16 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		this(ai, name, null, null);
 	}
 
+	/** v5 : l'instance de la classe de module qui englobe les objets de cette classe ; null = l'IA. */
+	public Object owner = null;
+
+	/** Classe déclarée par un module : `module` est l'instance de la classe Java du module. */
+	public ClassLeekValue inModule(Object module) {
+		this.owner = module;
+		ai.registerModuleClass(this);
+		return this;
+	}
+
 	public ClassLeekValue(AI ai, String name, ClassLeekValue parent) {
 		this(ai, name, parent, null);
 	}
@@ -560,7 +570,8 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		ai.ops(1);
 		Object object = null;
 		try {
-			object = this.clazz.getConstructor(ai.getClass()).newInstance(ai);
+			var owner = this.owner != null ? this.owner : ai;
+			object = this.clazz.getConstructor(owner.getClass()).newInstance(owner);
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e1) {
 			if (e1.getCause() instanceof LeekRunException) {
 				// Erreur normale (trop d'opés ou RAM)

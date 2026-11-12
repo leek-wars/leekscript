@@ -17,12 +17,12 @@ public class ClassType extends Type {
 	// se lit donc au moment de l'émission, pas dans le constructeur.
 	@Override
 	public String getJavaPrimitiveName(int version) {
-		return "u_" + clazz.getInternalName();
+		return clazz.getJavaTypeName();
 	}
 
 	@Override
 	public String getJavaName(int version) {
-		return "u_" + clazz.getInternalName();
+		return clazz.getJavaTypeName();
 	}
 
 	public Type member(String member) {

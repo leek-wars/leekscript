@@ -249,6 +249,9 @@ public class JavaCompiler {
 					FileOutputStream javaOutput = new FileOutputStream(java);
 					javaOutput.write(file.getCompiledCode().getJavaCode().getBytes(StandardCharsets.UTF_8));
 					javaOutput.close();
+					for (var module : file.getCompiledCode().getModules()) {
+						try (var moduleOutput = new FileOutputStream(Paths.get(IA_PATH, module.className() + ".java").toFile())) { moduleOutput.write(module.javaCode().getBytes(StandardCharsets.UTF_8)); }
+					}
 				} catch (IOException e) {
 					throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
 				}
@@ -270,7 +273,12 @@ public class JavaCompiler {
 				compileSemaphore.acquire();
 				try {
 					fileManager = new SimpleFileManager(compiler.getStandardFileManager(null, null, null));
-					var compilationUnits = Collections.singletonList(new SimpleSourceFile(fileName, file.getCompiledCode().getJavaCode()));
+					var compilationUnits = new ArrayList<SimpleSourceFile>();
+					compilationUnits.add(new SimpleSourceFile(fileName, file.getCompiledCode().getJavaCode()));
+					// v5 : une unité par classe de module, compilées ensemble (elles se lisent l'une l'autre)
+					for (var module : file.getCompiledCode().getModules()) {
+						compilationUnits.add(new SimpleSourceFile(module.className() + ".java", module.javaCode()));
+					}
 					var task = compiler.getTask(output, fileManager, null, arguments, null, compilationUnits);
 					result = task.call();
 				} finally {
@@ -285,12 +293,21 @@ public class JavaCompiler {
 			if (!result) {
 				var errors = output.toString();
 				int javaLine = -1;
-				Pattern r = Pattern.compile(Pattern.quote(fileName) + ":(\\d+):");
+				// La première erreur, dans la classe de l'IA ou dans celle d'un de ses modules
+				var javaCode = file.getCompiledCode().getJavaCode();
+				var linesMap = file.getCompiledCode().getLinesMap();
+				Pattern r = Pattern.compile("(" + Pattern.quote(file.getJavaClass()) + "\\w*)\\.java:(\\d+):");
 				Matcher m = r.matcher(errors);
 				if (m.find()) {
-					javaLine = Integer.parseInt(m.group(1));
+					javaLine = Integer.parseInt(m.group(2));
+					for (var module : file.getCompiledCode().getModules()) {
+						if (module.className().equals(m.group(1))) {
+							javaCode = module.javaCode();
+							linesMap = module.lines();
+						}
+					}
 				}
-				var mapping = file.getCompiledCode().getLinesMap().get(javaLine);
+				var mapping = linesMap.get(javaLine);
 				String location = null;
 				if (mapping != null) {
 					location = file.getCompiledCode().getFiles().get(mapping.getAI()) + ":" + mapping.getLeekScriptLine();
@@ -300,7 +317,7 @@ public class JavaCompiler {
 					throw new LeekScriptException(Error.CODE_TOO_LARGE, errors, location);
 				} else {
 					throw new LeekScriptException(Error.COMPILE_JAVA, errors, location)
-						.details(javaExcerpt(file.getCompiledCode().getJavaCode(), javaLine));
+						.details(javaExcerpt(javaCode, javaLine));
 				}
 			}
 

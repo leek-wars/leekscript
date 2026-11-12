@@ -659,9 +659,12 @@ public class TestModulesResolution {
 		return ai;
 	}
 
-	/** Le Java généré pour l'IA `name`, déjà compilée. */
+	/** Le Java généré pour l'IA `name`, déjà compilée : sa classe, puis celles de ses modules. */
 	private String javaOf(String name) throws Exception {
-		return fs.getRoot(0).resolve(name).getCompiledCode().getJavaCode();
+		var code = fs.getRoot(0).resolve(name).getCompiledCode();
+		var java = new StringBuilder(code.getJavaCode());
+		for (var module : code.getModules()) java.append(module.javaCode());
+		return java.toString();
 	}
 
 	private String run(String name) throws Exception {

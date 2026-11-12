@@ -367,7 +367,7 @@ public class LeekFunctionCall extends Expression {
 
 		if (namespaceConstructorClass != null) {
 			// v5 (3c) : `new Ns.Class(args)` -> new_u_<internalName>(args).
-			writer.addCode("new_u_" + namespaceConstructorClass.getInternalName() + "(");
+			writer.addCode(writer.ref(namespaceConstructorClass.getModule()) + "new_u_" + namespaceConstructorClass.getInternalName() + "(");
 			addComma = false;
 		} else if (namespaceUserFunction != null) {
 			// v5 (3c) : `Ns.func(args)` -> appel direct de la fonction du module aliasé.
@@ -375,7 +375,7 @@ public class LeekFunctionCall extends Expression {
 					&& this.type != Type.ANY && this.type != Type.VOID) {
 				openGenericReturnCast(mainblock, writer);
 			}
-			writer.addCode("f_" + namespaceUserFunction.getInternalName() + "(");
+			writer.addCode(writer.ref(namespaceUserFunction.getModule()) + "f_" + namespaceUserFunction.getInternalName() + "(");
 			addComma = false;
 			typedArguments = true;
 		} else if (mExpression instanceof LeekObjectAccess) {
@@ -424,7 +424,7 @@ public class LeekFunctionCall extends Expression {
 				if (method != null) {
 					// Méthode statique
 					String methodName = "u_" + v.getClassDeclaration().getStaticMethodName(field, mParameters.size());
-					writer.addCode(methodName + "(");
+					writer.addCode(writer.ref(method.block.getClassDeclaration().getModule()) + methodName + "(");
 					addComma = false;
 					typedArguments = true;
 				} else {
@@ -434,7 +434,7 @@ public class LeekFunctionCall extends Expression {
 						if (parenthesis) { writer.addCode("("); castParenthesis = true; }
 						writer.addCode("(" + type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 					}
-					writer.addCode("u_" + v.getClassDeclaration().getInternalName() + ".callStaticField(\"" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
+					writer.addCode(writer.ref(v.getClassDeclaration().getModule()) + "u_" + v.getClassDeclaration().getInternalName() + ".callStaticField(\"" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 				}
 				}
 			} else if (object instanceof LeekVariable v && v.getVariableType() == VariableType.THIS) {
@@ -461,7 +461,7 @@ public class LeekFunctionCall extends Expression {
 					writer.addCode("callObjectAccess(" + mainblock.getWordCompiler().getCurrentClassVariable() + ".this, \"" + field + "\", \"u_" + field + "\", " + mainblock.getWordCompiler().getCurrentClassVariable());
 				}
 			} else if (is_static_method) {
-				writer.addCode("u_" + method.block.getClassDeclaration().getInternalName() + "_" + field + "_" + mParameters.size() + "(");
+				writer.addCode(writer.ref(method.block.getClassDeclaration().getModule()) + "u_" + method.block.getClassDeclaration().getInternalName() + "_" + field + "_" + mParameters.size() + "(");
 				addComma = false;
 				typedArguments = true;
 			} else if (is_method) {
@@ -550,8 +550,9 @@ public class LeekFunctionCall extends Expression {
 			if (this.type != Type.ANY && this.type != Type.VOID) {
 				writer.addCode("(" + this.type.getJavaPrimitiveName(mainblock.getVersion()) + ") ");
 			}
-			String methodName = "u_" + mainblock.getWordCompiler().getCurrentClass().getStaticMethodName(((LeekVariable) mExpression).getName(), mParameters.size());
-			writer.addCode(methodName + "(");
+			var currentClass = mainblock.getWordCompiler().getCurrentClass();
+			String methodName = "u_" + currentClass.getStaticMethodName(((LeekVariable) mExpression).getName(), mParameters.size());
+			writer.addCode(writer.ref(currentClass.getStaticMethod(((LeekVariable) mExpression).getName(), mParameters.size()).block.getClassDeclaration().getModule()) + methodName + "(");
 			addComma = false;
 			typedArguments = true;
 		} else if (mExpression instanceof LeekVariable && mainblock.isRedefinedFunction(((LeekVariable) mExpression).getName())) {
@@ -575,6 +576,7 @@ public class LeekFunctionCall extends Expression {
 					&& this.type != Type.ANY && this.type != Type.VOID) {
 				openGenericReturnCast(mainblock, writer);
 			}
+			if (user_function != null) writer.addCode(writer.ref(user_function.getModule()));
 			writer.addCode("f_");
 			// #43 T3 : dispatch statique vers la variante monomorphisée si ce site en a résolu
 			// une (sinon nom générique). La variante a son propre nom Java suffixé par le profil.
@@ -588,8 +590,15 @@ public class LeekFunctionCall extends Expression {
 			typedArguments = true;
 		} else if (mExpression.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null) {
 			if (isStaticClassReference(writer)) {
-				writer.addCode("new_");
-				mExpression.trim().writeJavaCode(mainblock, writer, false);
+				// `new_u_X` est une méthode de la classe du module de X : le champ du module vient devant
+				var constructed = cvt.getClassDeclaration();
+				var owner = constructed.internal ? "" : writer.ref(constructed.getModule());
+				if (owner.isEmpty()) {
+					writer.addCode("new_");
+					mExpression.trim().writeJavaCode(mainblock, writer, false);
+				} else {
+					writer.addCode(owner + "new_u_" + constructed.getInternalName());
+				}
 				writer.addCode("(");
 				addComma = false;
 			} else {

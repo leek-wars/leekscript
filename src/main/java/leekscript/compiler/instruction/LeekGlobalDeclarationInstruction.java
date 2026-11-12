@@ -143,7 +143,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 		// On ajoute la variable
 		this.variable = new LeekVariable(compiler, variableToken, VariableType.GLOBAL, leekType == null ? Type.ANY : leekType.getType());
 		this.variable.setGlobalDeclaration(this);
-		this.variable.setGlobalPrefix(module == null ? "" : module.prefix());
+		this.variable.setGlobalModule(module);
 		this.type = this.variable.getType();
 		if (annotations != null) {
 			for (var a : annotations) this.variable.addAnnotation(a);

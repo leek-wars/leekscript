@@ -630,7 +630,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	private void writeJavaCodeForArity(MainLeekBlock mainblock, JavaWriter writer, int paramCount) {
 		final boolean v1 = mainblock.getVersion() <= 1;
 		StringBuilder sb = new StringBuilder();
-		sb.append("private " + this.type.returnType().getJavaPrimitiveName(mainblock.getVersion()) + " f_").append(getInternalName()).append("(");
+		sb.append(writer.privateMember() + this.type.returnType().getJavaPrimitiveName(mainblock.getVersion()) + " f_").append(getInternalName()).append("(");
 		for (int i = 0; i < paramCount; i++) {
 			if (i != 0)
 				sb.append(", ");

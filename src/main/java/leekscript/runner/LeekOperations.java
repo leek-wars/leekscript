@@ -82,7 +82,8 @@ public class LeekOperations {
 			// Call copy constructor
 			Object object = null;
 			try {
-				object = o.getClass().getConstructor(ai.getClass(), o.getClass(), int.class).newInstance(ai, o, level);
+				var owner = ai.userClassOwner(o.getClass());
+				object = o.getClass().getConstructor(owner.getClass(), o.getClass(), int.class).newInstance(owner, o, level);
 			} catch (InvocationTargetException e1) {
 				// Cause normale (limite d'opérations / RAM) : on la propage comme erreur joueur.
 				if (e1.getCause() instanceof LeekRunException lre) throw lre;

@@ -133,6 +133,8 @@ public abstract class AI {
 	private static final Object FIELD_NOT_FOUND = new Object();
 
 	protected TreeMap<Integer, LineMapping> mLinesMapping = new TreeMap<>();
+	/** Dans le fichier des lignes, ouvre celles d'une classe de module : `C <classe Java>`. */
+	public static final String LINES_CLASS_MARK = "C";
 	protected String thisObject = null;
 
 	protected int id;
@@ -662,7 +664,7 @@ public abstract class AI {
 		for (StackTraceElement element : elements) {
 			// System.out.println(element.getClassName() + " " + element.getMethodName() + " " + element.getLineNumber());
 			if (element.getClassName().startsWith("AI_")) {
-				var loc = getErrorLocalisation(element.getLineNumber());
+				var loc = getErrorLocalisation(element.getClassName(), element.getLineNumber());
 				if (loc.isEmpty()) {
 					// Frame interne synthétique (runIA, helpers stdlib inlinés Array_count_a...) sans
 					// ligne LeekScript : on ne l'expose pas à l'utilisateur (bruit + fuite d'internes) — #11874
@@ -686,7 +688,7 @@ public abstract class AI {
 		return STACK_WALKER.walk(s -> s
 			.filter(f -> f.getClassName().startsWith("AI_"))
 			.map(f -> {
-				var mapping = getLineMapping(f.getLineNumber());
+				var mapping = getLineMapping(f.getClassName(), f.getLineNumber());
 				if (mapping == null) return null;
 				var files = getErrorFiles();
 				if (files == null) return null;
@@ -704,21 +706,53 @@ public abstract class AI {
 		return getErrorMessage(e.getStackTrace());
 	}
 
-	protected LineMapping getLineMapping(int javaLine) {
+	// v5 : lignes des classes de module du programme, par nom de classe Java
+	private HashMap<String, TreeMap<Integer, LineMapping>> mModuleLines = null;
+
+	private void loadLineMappings() {
 		if (mLinesMapping.isEmpty() && this.filesLines != null && this.filesLines.exists()) {
 			try (Stream<String> stream = Files.lines(this.filesLines.toPath())) {
-				stream.forEach(l -> {
+				var lines = mLinesMapping;
+				for (var l : (Iterable<String>) stream::iterator) {
 					var parts = l.split(" ");
-					mLinesMapping.put(Integer.parseInt(parts[0]), new LineMapping(Integer.parseInt(parts[2]), Integer.parseInt(parts[1])));
-				});
+					if (parts[0].equals(LINES_CLASS_MARK)) {
+						if (mModuleLines == null) mModuleLines = new HashMap<>();
+						lines = new TreeMap<>();
+						mModuleLines.put(parts[1], lines);
+					} else {
+						lines.put(Integer.parseInt(parts[0]), new LineMapping(Integer.parseInt(parts[2]), Integer.parseInt(parts[1])));
+					}
+				}
 			} catch (IOException e) {}
 			thisObject = getAIString();
+		}
+	}
+
+	protected LineMapping getLineMapping(int javaLine) {
+		loadLineMappings();
+		return mLinesMapping.get(javaLine);
+	}
+
+	/** La ligne LeekScript d'un cadre de la trace : `javaClass` est la classe de l'IA, celle d'un module, ou une de leurs classes internes. */
+	protected LineMapping getLineMapping(String javaClass, int javaLine) {
+		loadLineMappings();
+		if (mModuleLines != null) {
+			int inner = javaClass.indexOf('$');
+			var lines = mModuleLines.get(inner < 0 ? javaClass : javaClass.substring(0, inner));
+			if (lines != null) return lines.get(javaLine);
 		}
 		return mLinesMapping.get(javaLine);
 	}
 
 	protected String getErrorLocalisation(int javaLine) {
-		var lineMapping = getLineMapping(javaLine);
+		return getErrorLocalisation(getLineMapping(javaLine));
+	}
+
+	protected String getErrorLocalisation(String javaClass, int javaLine) {
+		return getErrorLocalisation(getLineMapping(javaClass, javaLine));
+	}
+
+	private String getErrorLocalisation(LineMapping lineMapping) {
 		if (lineMapping != null) {
 			var files = getErrorFiles();
 			var f = lineMapping.getAI();
@@ -726,6 +760,34 @@ public abstract class AI {
 			return "\t▶ AI " + file + ", line " + lineMapping.getLeekScriptLine() + "\n"; // + ", java " + line;
 		}
 		return "";
+	}
+
+	// v5 : classes utilisateur déclarées par un module. Leur classe Java est interne à celle du
+	// module, pas à celle de l'IA : leur valeur de classe et l'instance qui les englobe se
+	// retrouvent ici plutôt que par un champ de l'IA.
+	private HashMap<Class<?>, ClassLeekValue> moduleClasses = null;
+
+	public void registerModuleClass(ClassLeekValue clazz) {
+		if (moduleClasses == null) moduleClasses = new HashMap<>();
+		moduleClasses.put(clazz.clazz, clazz);
+	}
+
+	/** La valeur de classe d'une classe utilisateur compilée. */
+	private ClassLeekValue userClass(Class<?> javaClass) throws IllegalAccessException, NoSuchFieldException {
+		if (moduleClasses != null) {
+			var clazz = moduleClasses.get(javaClass);
+			if (clazz != null) return clazz;
+		}
+		return (ClassLeekValue) getFieldCached(this.getClass(), javaClass.getSimpleName()).get(this);
+	}
+
+	/** L'instance qui englobe les objets de la classe utilisateur `javaClass` : l'IA, ou son module. */
+	public Object userClassOwner(Class<?> javaClass) {
+		if (moduleClasses != null) {
+			var clazz = moduleClasses.get(javaClass);
+			if (clazz != null) return clazz.owner;
+		}
+		return this;
 	}
 
 	public LeekError throwableToError(Throwable throwable) {
@@ -2054,7 +2116,7 @@ public abstract class AI {
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				// Method ?
 				try {
-					var clazz = (ClassLeekValue) getFieldCached(this.getClass(), valueClass.getSimpleName()).get(this);
+					var clazz = userClass(valueClass);
 					// Méthode utilisée comme valeur (`obj.m`) : liée à son receveur (#5133)
 					var method = clazz.getBoundMethod(value, field);
 					if (method == null) method = clazz.genericMethods.get(field);
@@ -3428,7 +3490,7 @@ public abstract class AI {
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				// Method ?
 				try {
-					var clazz = (ClassLeekValue) getFieldCached(this.getClass(), valueClass.getSimpleName()).get(this);
+					var clazz = userClass(valueClass);
 					// Méthode utilisée comme valeur (`obj["m"]`) : liée à son receveur (#5133)
 					var method = clazz.getBoundMethod(value, fieldName);
 					if (method == null) method = clazz.genericMethods.get(fieldName);
@@ -4065,7 +4127,7 @@ public abstract class AI {
 		if (value instanceof NativeObjectLeekValue)
 			try {
 				// System.out.println("get class " + ((NativeObjectLeekValue) value).getClass().getSimpleName());
-				return (ClassLeekValue) getFieldCached(this.getClass(), ((NativeObjectLeekValue) value).getClass().getSimpleName()).get(this);
+				return userClass(value.getClass());
 			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 				return valueClass;
 			}

@@ -452,16 +452,16 @@ public class LeekObjectAccess extends Expression {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// v5 (3c) : membre d'un namespace de module en position de valeur.
 		if (namespaceGlobal != null) {
-			writer.addCode(namespaceGlobal.globalName());
+			writer.addCode(namespaceGlobal.globalName(writer));
 			return;
 		}
 		if (namespaceClass != null) {
-			writer.addCode("u_" + namespaceClass.getInternalName());
+			writer.addCode(writer.ref(namespaceClass.getModule()) + "u_" + namespaceClass.getInternalName());
 			return;
 		}
 		if (namespaceFunction != null) {
 			writer.generateAnonymousUserFunction(namespaceFunction);
-			writer.addCode("ufunction_" + namespaceFunction.getInternalName());
+			writer.addCode(writer.ref(namespaceFunction.getModule()) + "ufunction_" + namespaceFunction.getInternalName());
 			return;
 		}
 		if (optional && field != null && !field.getWord().equals("class")) {

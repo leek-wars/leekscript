@@ -3,6 +3,8 @@ package leekscript.compiler;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -15,6 +17,7 @@ import leekscript.common.FunctionType;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.bloc.Module;
 import leekscript.compiler.expression.Expression;
 import leekscript.runner.AI;
 import leekscript.runner.CallableVersion;
@@ -41,6 +44,15 @@ public class JavaWriter {
 	public boolean lastInstruction = false;
 	public Options options;
 
+	// Une classe Java par module (v5) : l'écrivain de la classe de l'IA (`entry`, lui-même pour
+	// celle-ci) tient ceux des classes de module. `module` est null pour la classe de l'IA.
+	private final JavaWriter entry;
+	private final Module module;
+	private LinkedHashMap<Module, JavaWriter> moduleWriters = null;
+	// Modules dont cette classe lit un symbole : un champ chacun, câblé par l'IA
+	private final LinkedHashSet<Module> referencedModules = new LinkedHashSet<>();
+	private boolean referencesEntry = false;
+
 	public JavaWriter(boolean debug, String className, boolean enableOperations) {
 		mCode = new StringBuilder();
 		mLinesFile = new StringBuilder();
@@ -48,6 +60,93 @@ public class JavaWriter {
 		mWithDebug = debug;
 		this.className = className;
 		this.operationsEnabled = enableOperations;
+		this.entry = this;
+		this.module = null;
+	}
+
+	private JavaWriter(JavaWriter entry, Module module) {
+		mCode = new StringBuilder();
+		mLinesFile = new StringBuilder();
+		mLine = 1;
+		mWithDebug = entry.mWithDebug;
+		this.className = moduleClassName(entry.className, module);
+		this.operationsEnabled = entry.operationsEnabled;
+		this.options = entry.options;
+		this.entry = entry;
+		this.module = module;
+	}
+
+	/** Nom de la classe Java du module `module` dans le programme de classe `entryClass`. */
+	public static String moduleClassName(String entryClass, Module module) {
+		return entryClass + "_" + module.tag();
+	}
+
+	/** Passe en mode « une classe par module » et rend l'écrivain de la classe de `module`. */
+	public JavaWriter addModule(Module module) {
+		if (moduleWriters == null) moduleWriters = new LinkedHashMap<>();
+		return moduleWriters.computeIfAbsent(module, m -> new JavaWriter(this, m));
+	}
+
+	/** L'écrivain de la classe qui porte les symboles de `owner` : celui-ci hors mode module. */
+	public JavaWriter of(Module owner) {
+		if (entry.moduleWriters == null || owner == null || owner.isMain()) return entry;
+		return entry.moduleWriters.get(owner);
+	}
+
+	public java.util.Collection<JavaWriter> getModuleWriters() {
+		return moduleWriters == null ? java.util.List.of() : moduleWriters.values();
+	}
+
+	/**
+	 * Visibilité d'un membre de premier niveau (fonction, globale, méthode d'initialisation) :
+	 * privé dans la classe unique d'une IA, visible des autres classes du programme sinon.
+	 */
+	public String privateMember() {
+		return entry.moduleWriters == null ? "private " : "";
+	}
+
+	public Module getModule() {
+		return module;
+	}
+
+	/**
+	 * Ce qui précède, dans la classe en cours d'écriture, un symbole de premier niveau (fonction,
+	 * globale, valeur de classe) déclaré par `owner` : rien dans sa propre classe, sinon le champ
+	 * qui tient l'instance de sa classe. Les classes utilisateur, internes à la classe de leur
+	 * module, voient ses champs comme elle.
+	 */
+	public String ref(Module owner) {
+		if (entry.moduleWriters == null) return "";
+		if (owner != null && owner.isMain()) owner = null;
+		if (owner == module) return "";
+		if (owner == null) {
+			referencesEntry = true;
+			return ENTRY_FIELD + ".";
+		}
+		referencedModules.add(owner);
+		return moduleField(owner) + ".";
+	}
+
+	private static final String ENTRY_FIELD = "$main";
+
+	/** Champ qui tient l'instance de la classe de `module`, dans l'IA comme dans les autres modules. */
+	public static String moduleField(Module module) {
+		return "$" + module.tag();
+	}
+
+	/** Champs des modules lus par cette classe de module, et la méthode par laquelle l'IA les câble. */
+	public void writeModuleLinks() {
+		if (module == null) return;
+		if (referencesEntry) addLine(entry.className + " " + ENTRY_FIELD + ";");
+		for (var other : referencedModules) {
+			addLine(moduleClassName(entry.className, other) + " " + moduleField(other) + ";");
+		}
+		addLine("void $link(" + entry.className + " main) {");
+		if (referencesEntry) addLine(ENTRY_FIELD + " = main;");
+		for (var other : referencedModules) {
+			addLine(moduleField(other) + " = main." + moduleField(other) + ";");
+		}
+		addLine("}");
 	}
 
 	public boolean hasDebug() {
@@ -69,6 +168,8 @@ public class JavaWriter {
 	}
 
 	private int getFileIndex(AIFile ai) {
+		// Une seule table des fichiers par programme, tenue par la classe de l'IA
+		if (entry != this) return entry.getFileIndex(ai);
 		var index = mFiles.get(ai);
 		if (index != null) return index;
 		var new_index = mFiles.size();
@@ -92,15 +193,20 @@ public class JavaWriter {
 	}
 
 	public AICode getCode() {
-		return new AICode(mCode.toString(), mLinesFile.toString(), mLines, mFilesList);
+		var code = new AICode(mCode.toString(), mLinesFile.toString(), mLines, mFilesList);
+		for (var writer : getModuleWriters()) {
+			code.addModule(writer.className, writer.mCode.toString(), writer.mLines);
+		}
+		return code;
 	}
 
 	public void writeErrorFunction(IACompiler comp, String ai) {
 		String aiJson = Json.toJson(ai);
-		for (var e : mLines.entrySet()) {
-			var line = e.getValue();
-			mLinesFile.append(e.getKey() + " " + line.getAI() + " " + line.getLeekScriptLine() + "\n");
-			// System.out.println(l.mAI.getPath() + ":" + l.mCodeLine + " -> " + l.mJavaLine);
+		appendLines(mLines);
+		// Les lignes d'une classe de module suivent son nom : un cadre de la trace se lit par sa classe
+		for (var writer : getModuleWriters()) {
+			mLinesFile.append(AI.LINES_CLASS_MARK + " " + writer.className + "\n");
+			appendLines(writer.mLines);
 		}
 		mCode.append("protected String getAIString() { return ");
 		mCode.append(aiJson);
@@ -120,6 +226,13 @@ public class JavaWriter {
 			mCode.append(", ");
 		}
 		mCode.append("};}\n\n");
+	}
+
+	private void appendLines(TreeMap<Integer, LineMapping> lines) {
+		for (var e : lines.entrySet()) {
+			var line = e.getValue();
+			mLinesFile.append(e.getKey() + " " + line.getAI() + " " + line.getLeekScriptLine() + "\n");
+		}
 	}
 
 	/**
@@ -159,8 +272,14 @@ public class JavaWriter {
 		mLines.put(mLine, new LineMapping(token.getLocation().getStartLine(), index));
 	}
 
+	/** L'IA, depuis n'importe où dans la classe en cours d'écriture (classe interne comprise). */
 	public String getAIThis() {
-		return className + ".this";
+		return module == null ? className + ".this" : className + ".this.ai";
+	}
+
+	/** L'IA, là où la classe de l'IA écrit `this` : hors de toute classe interne. */
+	public String getAI() {
+		return module == null ? "this" : "ai";
 	}
 
 	public String getClassName() {
@@ -644,7 +763,7 @@ public class JavaWriter {
 	}
 
 	public void generateAnonymousUserFunction(FunctionBlock function) {
-		anonymousUserFunctions.add(function);
+		of(function.getModule()).anonymousUserFunctions.add(function);
 	}
 
 	/** Enregistre le champ temporaire d'une expression match (déclaré par {@link #writeMatchTempFields}). */
@@ -732,7 +851,7 @@ public class JavaWriter {
 			addCode("return x0." + function_name + "(");
 		}
 		ArrayList<String> args = new ArrayList<>();
-		args.add("this");
+		args.add(getAI());
 		int start_index = version.function.isStatic() ? 0 : 1;
 		for (int a = start_index; a < version.arguments.length; ++a) {
 			if (cast) {
@@ -791,7 +910,7 @@ public class JavaWriter {
 
 	public void writeAnonymousUserFunctions(MainLeekBlock block) {
 		for (var function : anonymousUserFunctions) {
-			addCode("private FunctionLeekValue ufunction_" + function.getInternalName() + " = ");
+			addCode(privateMember() + "FunctionLeekValue ufunction_" + function.getInternalName() + " = ");
 			function.compileAnonymousFunction(block, this);
 			addLine(";");
 			addLine();

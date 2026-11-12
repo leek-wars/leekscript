@@ -29,6 +29,7 @@ public class Module {
 
 	private final AIFile file;
 	private final boolean main;
+	private final String tag;
 	// Préfixe de codegen précalculé (immuable) : prefix() est appelé sur chaque
 	// résolution de nom, autant ne pas réallouer la chaîne à chaque fois.
 	private final String prefix;
@@ -51,6 +52,7 @@ public class Module {
 	public Module(AIFile file, String tag, boolean main) {
 		this.file = file;
 		this.main = main;
+		this.tag = tag;
 		this.prefix = main ? "" : PREFIX_START + tag + PREFIX_END;
 	}
 
@@ -87,6 +89,11 @@ public class Module {
 
 	public AIFile getFile() {
 		return file;
+	}
+
+	/** Nom stable du module ({@link #tagOf}) : dans son préfixe, et dans le nom de sa classe Java. */
+	public String tag() {
+		return tag;
 	}
 
 	public boolean isMain() {

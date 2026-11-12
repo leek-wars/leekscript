@@ -74,6 +74,10 @@ public class ModuleScopeInstruction extends LeekInstruction {
 		enterOrExit(compiler);
 	}
 
+	public Module getModule() {
+		return module;
+	}
+
 	public boolean isOpening() {
 		return opening == null;
 	}
@@ -88,7 +92,7 @@ public class ModuleScopeInstruction extends LeekInstruction {
 		// Seul le marqueur d'ouverture s'écrit, comme l'appel de la méthode du module (cf
 		// MainLeekBlock.splitModules). Ligne sans position LeekScript : un import n'est pas une
 		// étape de la trace d'une erreur.
-		if (opening == null) writer.addLine(getMethodName() + "();");
+		if (opening == null) writer.addLine(writer.ref(module) + getMethodName() + "();");
 	}
 
 	@Override
