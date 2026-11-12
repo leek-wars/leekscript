@@ -164,6 +164,7 @@ public class ConditionalBloc extends AbstractLeekBlock {
 						saved.put(entry.getKey(), entry.getKey().getType());
 					}
 					entry.getKey().setType(entry.getValue());
+					entry.getKey().markNarrowed();
 				}
 			}
 		}
@@ -174,7 +175,7 @@ public class ConditionalBloc extends AbstractLeekBlock {
 	 */
 	private void applyPropertyNarrowings(Map<String, Type> propertyNarrowings) {
 		if (propertyNarrowings != null && !propertyNarrowings.isEmpty()) {
-			mNarrowedPropertyTypes = new HashMap<>(propertyNarrowings);
+			mNarrowedPropertyTypes = narrowedProperties(null, propertyNarrowings);
 		}
 	}
 

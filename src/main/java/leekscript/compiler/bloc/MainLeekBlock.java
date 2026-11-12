@@ -34,6 +34,7 @@ import leekscript.compiler.instruction.ModuleScopeInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.runner.LeekFunctions;
 import leekscript.common.Error;
+import leekscript.common.LanguageFeature;
 
 public class MainLeekBlock extends AbstractLeekBlock {
 
@@ -986,5 +987,57 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public boolean isStrict() {
 		return mCompiler.getCurrentAI().isStrict();
+	}
+
+	// v5 (LanguageFeature.SAFE_FIELD_NARROWING) : le type affiné d'un champ (`if (this.f instanceof
+	// B)`) ne vaut que tant que rien n'a pu le réassigner, sinon le Java émis pour ce type plante
+	// (cast, accès direct sur null). Chaque événement qui peut réécrire un champ fait avancer une
+	// horloge : un appel (il peut exécuter du code du joueur) périme tous les affinages posés
+	// avant lui ; une écriture `x.f = …` ou `x = …` périme ceux qui portent ce nom (le champ écrit,
+	// par n'importe quel receveur, ou le receveur réaffecté). Suivis : les champs, et les locales
+	// réaffectées qu'une closure capture (cf LeekVariable.getType, AbstractLeekBlock.NarrowedProperties).
+	private int narrowingClock = 0;
+	private int lastCallTick = 0;
+	private Map<String, Integer> lastWriteTicks = null;
+	// Appels et écritures vus au preAnalyze : une boucle qui en contient périme tout dès son
+	// entrée, le tour suivant pouvant relire un champ réassigné au tour précédent.
+	private int preAnalyzedCalls = 0;
+
+	/** La règle s'applique-t-elle à ce programme ? Faux aussi pour les classes internes, déclarées avant le compilateur. */
+	public boolean hasSafeFieldNarrowing() {
+		return wordCompiler != null && LanguageFeature.SAFE_FIELD_NARROWING.enabledIn(wordCompiler.getVersion());
+	}
+
+	/** Instant auquel un affinage est posé. */
+	public int getNarrowingTick() {
+		return narrowingClock;
+	}
+
+	/** Un appel, ou du code qui s'exécutera plus tard (corps de fonction) : tout affinage suivi est périmé. */
+	public void invalidateFieldNarrowings() {
+		if (hasSafeFieldNarrowing()) lastCallTick = ++narrowingClock;
+	}
+
+	/** Écriture dans le champ ou la variable `name` : les affinages qui portent ce nom sont périmés. */
+	public void invalidateNarrowingsOf(String name) {
+		if (!hasSafeFieldNarrowing()) return;
+		if (lastWriteTicks == null) lastWriteTicks = new HashMap<>();
+		lastWriteTicks.put(name, ++narrowingClock);
+	}
+
+	/** L'affinage posé à `tick` sur le nom `name` est-il périmé ? */
+	public boolean isNarrowingStale(int tick, String name) {
+		if (tick < lastCallTick) return true;
+		if (lastWriteTicks == null) return false;
+		var written = lastWriteTicks.get(name);
+		return written != null && tick < written;
+	}
+
+	public int getPreAnalyzedCalls() {
+		return preAnalyzedCalls;
+	}
+
+	public void countPreAnalyzedCall() {
+		preAnalyzedCalls++;
 	}
 }

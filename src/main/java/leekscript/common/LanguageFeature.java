@@ -46,7 +46,10 @@ public enum LanguageFeature {
 	FUNCTION_OVERLOADING(5),
 
 	/** Bloc nu {@code { ... }} comme instruction, avec sa propre portée. */
-	SCOPE_BLOCK(5);
+	SCOPE_BLOCK(5),
+
+	/** L'affinage du type d'un champ ne survit pas à un appel qui a pu le réassigner. */
+	SAFE_FIELD_NARROWING(5);
 
 	public final int since;
 

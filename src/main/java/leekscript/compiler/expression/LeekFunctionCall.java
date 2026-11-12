@@ -801,6 +801,10 @@ public class LeekFunctionCall extends Expression {
 		for (Expression parameter : mParameters) {
 			parameter.preAnalyze(compiler);
 		}
+		if (compiler.getMainBlock().hasSafeFieldNarrowing()
+				&& mayRunUserCode(systemFunctionName() != null ? LeekFunctions.getValue(systemFunctionName(), compiler.getOptions().useExtra()) : null)) {
+			compiler.getMainBlock().countPreAnalyzedCall();
+		}
 		if (!mParameters.isEmpty()) {
 			var name = systemFunctionName();
 			if (name != null && MAP_READERS.contains(name)) LeekVariable.addEntryPreservingUse(mParameters.get(0));
@@ -809,6 +813,34 @@ public class LeekFunctionCall extends Expression {
 
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
+		analyzeCall(compiler);
+		// v5 : après l'appel (arguments compris), un champ affiné a pu être réassigné
+		if (compiler.getMainBlock().hasSafeFieldNarrowing() && mayRunUserCode(system_function)) {
+			compiler.getMainBlock().invalidateFieldNarrowings();
+		}
+	}
+
+	/**
+	 * L'appel peut-il exécuter du code du joueur ? Oui sauf une fonction système sans paramètre
+	 * fonction (`length(s)`, `s.length()`) : `arrayMap(a, f)` appelle `f`. Au preAnalyze, une
+	 * méthode sur une valeur (`a.count()`) n'est pas encore résolue et compte comme un appel.
+	 */
+	private boolean mayRunUserCode(LeekFunctions function) {
+		if (function == null) return true;
+		// Forme méthode : le receveur est le premier argument de la fonction
+		int arity = mParameters.size() + (is_builtin_method ? 1 : 0);
+		boolean matched = false;
+		for (var version : function.getVersions()) {
+			if (version.arguments.length != arity) continue; // `arraySort(a)` sans comparateur
+			matched = true;
+			for (var argument : version.arguments) {
+				if (argument instanceof FunctionType) return true;
+			}
+		}
+		return !matched;
+	}
+
+	private void analyzeCall(WordCompiler compiler) throws LeekCompilerException {
 
 		// System.out.println("[FC] analyze " + this);
 

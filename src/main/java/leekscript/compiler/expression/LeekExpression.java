@@ -1210,8 +1210,12 @@ public class LeekExpression extends Expression {
 		if (mExpression2 != null) mExpression2.preAnalyze(compiler);
 
 		var target = assignTarget();
+		// Une écriture dans une boucle périme les affinages dès l'entrée (cf AbstractLeekBlock.invalidateIfLoopMayCall)
+		if (target != null) compiler.getMainBlock().countPreAnalyzedCall();
 		if (target instanceof LeekVariable v && v.getVariable() != null) {
 			v.getVariable().setReassigned();
+			var declaration = v.getVariable().getDeclaration();
+			if (declaration != null && declaration.isCaptured()) v.getVariable().trackNarrowing(compiler.getMainBlock());
 		} else if (target instanceof LeekArrayAccess cell && !NarrowingInfo.writesNullFree(mOperator, mExpression2)) {
 			LeekVariable.setCellsMayBeNull(cell.getTabular());
 		}
@@ -1267,11 +1271,11 @@ public class LeekExpression extends Expression {
 		if (mExpression2 != null) {
 			if (mOperator == Operators.AND && mExpression1 != null) {
 				var saved = NarrowingInfo.extract(mExpression1).applyTrue(compiler.getCurrentBlock());
-				mExpression2.analyze(compiler);
+				analyzeRightOperand(compiler);
 				NarrowingInfo.restore(saved);
 			} else if (mOperator == Operators.OR && mExpression1 != null) {
 				var saved = NarrowingInfo.extract(mExpression1).applyFalse(compiler.getCurrentBlock());
-				mExpression2.analyze(compiler);
+				analyzeRightOperand(compiler);
 				NarrowingInfo.restore(saved);
 			} else {
 				mExpression2.analyze(compiler);
@@ -1335,6 +1339,8 @@ public class LeekExpression extends Expression {
 			}
 		}
 
+		invalidateWrittenNarrowings(compiler);
+
 		if (mOperator == Operators.ASSIGN) {
 			var variable1 = mExpression1.getVariable();
 			var variable2 = mExpression2.getVariable();
@@ -1347,13 +1353,15 @@ public class LeekExpression extends Expression {
 
 			// After assignment, reset narrowed variable to its declared type
 			// so subsequent code doesn't use stale narrowing (e.g., w = null inside while (w != null))
-			if (variable1 != null && mExpression1 instanceof LeekVariable lv2) {
+			// v5 : idem pour le champ écrit par `this.x = …`, dont la variable est suivie
+			if (variable1 != null && (mExpression1 instanceof LeekVariable || variable1.isNarrowingTracked())) {
 				variable1.setType(variable1.getDeclaredType());
 			}
 			// Track assigned expression type for assignment narrowing detection
 			// (used by ConditionalBloc to detect patterns like: if (x == null) { x = nonNull })
 			if (variable1 != null) {
 				variable1.setLastAssignedType(mExpression2.getType());
+				variable1.markNarrowed();
 			}
 		}
 
@@ -1697,6 +1705,45 @@ public class LeekExpression extends Expression {
 	 * `--x`…), null pour les autres opérateurs. Sans le `!` : preAnalyze s'en sert avant
 	 * qu'analyze ne le retire (`f! += 1`).
 	 */
+	// v5 : l'opérande droit d'un `&&` / `||` a pu réassigner ce que le gauche vient de tester
+	// (`this.m instanceof B && this.reset()`), cf NarrowingInfo.extract
+	private boolean rightOperandMayReassign = false;
+
+	public boolean rightOperandMayReassign() {
+		return rightOperandMayReassign;
+	}
+
+	private void analyzeRightOperand(WordCompiler compiler) throws LeekCompilerException {
+		int tick = compiler.getMainBlock().getNarrowingTick();
+		mExpression2.analyze(compiler);
+		rightOperandMayReassign = compiler.getMainBlock().getNarrowingTick() != tick;
+	}
+
+	/**
+	 * v5 : une écriture périme les affinages qui portent le nom écrit (cf
+	 * MainLeekBlock.invalidateNarrowingsOf) : `x.f = …` ceux du champ f quel que soit le receveur,
+	 * `x = …` ceux de `x.f`. `o[k] = …` écrit un champ si o est un objet : celui du nom littéral,
+	 * sinon n'importe lequel.
+	 */
+	private void invalidateWrittenNarrowings(WordCompiler compiler) {
+		var main = compiler.getMainBlock();
+		if (!main.hasSafeFieldNarrowing()) return;
+		var target = assignTarget();
+		if (target instanceof LeekVariable variable) {
+			main.invalidateNarrowingsOf(variable.getName());
+		} else if (target instanceof LeekObjectAccess access) {
+			main.invalidateNarrowingsOf(access.getField());
+		} else if (target instanceof LeekArrayAccess cell) {
+			var container = cell.getTabular().getType();
+			if (container.isArray() || container.isMap() || container == Type.STRING) return;
+			if (cell.getCase() instanceof LeekString key) {
+				main.invalidateNarrowingsOf(key.getText());
+			} else {
+				main.invalidateFieldNarrowings();
+			}
+		}
+	}
+
 	private Expression assignTarget() {
 		return Operators.isAssign(mOperator) ? withoutNonNullAssertion(mExpression1)
 			: Operators.isIncrement(mOperator) ? withoutNonNullAssertion(mExpression2)

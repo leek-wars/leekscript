@@ -558,6 +558,9 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		var initialFunction = compiler.getCurrentFunction();
 		var initialModule = compiler.getModule();
 		compiler.setCurrentFunction(this);
+		// Autre corps de fonction (parfois analysé à la demande, au milieu d'un autre) : les
+		// affinages de champs posés ailleurs ne valent pas dedans
+		compiler.getMainBlock().invalidateFieldNarrowings();
 		if (module != null) compiler.setModule(module);
 		for (int i = 0; i < defaultValues.size(); ++i) {
 			var value = defaultValues.get(i);

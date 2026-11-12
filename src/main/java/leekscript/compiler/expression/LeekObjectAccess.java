@@ -222,7 +222,7 @@ public class LeekObjectAccess extends Expression {
 					}
 					this.isFinal = this.variable.isFinal();
 					this.isLeftValue = this.variable.isLeftValue();
-					this.type = this.variable.getType();
+					this.type = sharesFieldNarrowing() ? this.variable.getType() : this.variable.getDeclaredType();
 				}
 			}
 		} else if (objectType instanceof ClassValueType cvt) {
@@ -280,7 +280,10 @@ public class LeekObjectAccess extends Expression {
 		if (!resolvedToMethod) {
 			var fieldWord = field.getWord();
 			var superClassDecl = isSuper ? objectType.getClassDeclaration() : null;
-			var memberType = superClassDecl != null ? superClassDecl.getType().member(fieldWord) : objectType.member(fieldWord);
+			var memberType = superClassDecl != null ? superClassDecl.getType().member(fieldWord)
+				: sharesFieldNarrowing() ? objectType.member(fieldWord)
+				// v5 : `x.f` lit le champ d'un autre objet, sous son type déclaré
+				: this.variable.underDeclaredType(() -> objectType.member(fieldWord));
 			// Méthode de bibliothèque standard sur un type natif (v5, OO stdlib) : `count`
 			// n'est pas un "membre" d'Array au sens classique mais une méthode valide, on
 			// ne doit donc pas la signaler comme membre inexistant.
@@ -316,7 +319,8 @@ public class LeekObjectAccess extends Expression {
 			if (declVar != null && field != null) {
 				String key = declVar.getName() + "." + field.getWord();
 				var narrowedType = compiler.getCurrentBlock().getNarrowedPropertyType(key);
-				if (narrowedType != null) {
+				// v5 : sauf s'il a été périmé depuis par un appel ou une écriture (cf LeekVariable.getType)
+				if (narrowedType != null && !compiler.getCurrentBlock().isNarrowedPropertyStale(key)) {
 					this.type = narrowedType;
 				}
 			}
@@ -360,6 +364,19 @@ public class LeekObjectAccess extends Expression {
 	private boolean isThisLikeReceiver(JavaWriter writer) {
 		return (object instanceof LeekVariable v && v.getVariableType() == VariableType.THIS)
 			|| isSuperInstanceReceiver(writer);
+	}
+
+	/**
+	 * L'affinage de la variable du champ (posé par `f` ou `this.f`) vaut-il pour cet accès ? Oui
+	 * pour `this.f`, `super.f` et un champ statique, qui désignent le même emplacement. En v5,
+	 * pas pour `x.f` : c'est le champ d'un autre objet, affiné à part sous la clé `x.f` (cf
+	 * NarrowingInfo.extractPropertyKey). Avant la v5 la variable n'est pas suivie, et tout accès
+	 * au champ partage son affinage.
+	 */
+	public boolean sharesFieldNarrowing() {
+		if (variable == null || !variable.isNarrowingTracked() || variable.getVariableType() != VariableType.FIELD) return true;
+		return object instanceof LeekVariable receiver
+			&& (receiver.getVariableType() == VariableType.THIS || receiver.getVariableType() == VariableType.SUPER);
 	}
 
 	/**

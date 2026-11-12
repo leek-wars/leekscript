@@ -112,6 +112,8 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		var initialFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(this);
+		// Le corps s'exécute plus tard : les affinages de champs posés autour ne valent pas dedans
+		compiler.getMainBlock().invalidateFieldNarrowings();
 		super.analyze(compiler);
 		compiler.setCurrentFunction(initialFunction);
 	}

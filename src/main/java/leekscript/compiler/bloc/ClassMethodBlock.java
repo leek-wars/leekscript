@@ -249,6 +249,7 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		AbstractLeekBlock initialFunction = compiler.getCurrentFunction();
 		compiler.setCurrentFunction(this);
+		compiler.getMainBlock().invalidateFieldNarrowings(); // cf FunctionBlock.analyze
 		for (int i = 0; i < defaultValues.size(); ++i) {
 			var value = defaultValues.get(i);
 			if (value != null) {

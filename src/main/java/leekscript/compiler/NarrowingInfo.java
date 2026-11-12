@@ -49,6 +49,9 @@ public class NarrowingInfo {
 	private Map<String, LeekVariable> propertyVariables = null;
 	private Set<MapEntry> trueEntries = null;
 	private Set<MapEntry> falseEntries = null;
+	// v5 : clés `x.f` d'un champ résolu, affiné ici sous sa clé et non par la variable du champ
+	// (cf LeekObjectAccess.sharesFieldNarrowing)
+	private Set<String> keyedFields = null;
 
 	/**
 	 * Case `map[key]` présente (`mapContainsKey(map, key)`), cf LeekArrayAccess. `map` est la
@@ -64,6 +67,34 @@ public class NarrowingInfo {
 	public Map<String, LeekVariable> getPropertyVariables() { return propertyVariables != null ? propertyVariables : EMPTY_PROP_VARS; }
 	public Set<MapEntry> getTrueEntries() { return trueEntries != null ? trueEntries : EMPTY_ENTRIES; }
 	public Set<MapEntry> getFalseEntries() { return falseEntries != null ? falseEntries : EMPTY_ENTRIES; }
+
+	/**
+	 * Affinages « faux » des `x.f` de keyedFields : ils valent après un if qui sort (`if (!(x.f
+	 * instanceof B)) return`), comme ceux des variables et comme avant la v5, où la variable du
+	 * champ les portait.
+	 */
+	public Map<String, Type> getFalseKeyedFieldNarrowings() {
+		if (keyedFields == null || falsePropertyNarrowings == null) return EMPTY_PROPS;
+		var narrowings = new HashMap<String, Type>();
+		for (var key : keyedFields) {
+			var type = falsePropertyNarrowings.get(key);
+			if (type != null) narrowings.put(key, type);
+		}
+		return narrowings;
+	}
+
+	private void addKeyedField(Expression access, String key) {
+		if (unwrap(access) instanceof LeekObjectAccess oa && !oa.sharesFieldNarrowing()) {
+			if (keyedFields == null) keyedFields = new HashSet<>();
+			keyedFields.add(key);
+		}
+	}
+
+	private void mergeKeyedFields(NarrowingInfo source) {
+		if (source.keyedFields == null) return;
+		if (keyedFields == null) keyedFields = new HashSet<>();
+		keyedFields.addAll(source.keyedFields);
+	}
 
 	public boolean hasTrue() {
 		return (trueNarrowings != null && !trueNarrowings.isEmpty())
@@ -148,6 +179,7 @@ public class NarrowingInfo {
 		for (var entry : narrowings.entrySet()) {
 			saved.put(entry.getKey(), entry.getKey().getType());
 			entry.getKey().setType(entry.getValue());
+			entry.getKey().markNarrowed();
 		}
 		return saved;
 	}
@@ -190,6 +222,18 @@ public class NarrowingInfo {
 		for (var entry : saved.entrySet()) {
 			entry.getKey().setType(entry.getValue());
 		}
+	}
+
+	/**
+	 * v5 : retire les affinages de ce qu'un appel ou une écriture peut réassigner (propriétés,
+	 * variables suivies, cf LeekVariable.trackNarrowing). Pour l'opérande gauche d'un `&&` / `||`
+	 * dont l'opérande droit, évalué après lui, a pu le faire.
+	 */
+	private void dropTracked() {
+		if (trueNarrowings != null) trueNarrowings.keySet().removeIf(LeekVariable::isNarrowingTracked);
+		if (falseNarrowings != null) falseNarrowings.keySet().removeIf(LeekVariable::isNarrowingTracked);
+		truePropertyNarrowings = null;
+		falsePropertyNarrowings = null;
 	}
 
 	/**
@@ -267,6 +311,7 @@ public class NarrowingInfo {
 						String key = extractPropertyKey(arg);
 						if (key != null) {
 							var oa = (LeekObjectAccess) unwrap(arg);
+							info.addKeyedField(arg, key);
 							info.truePropOrAlloc().put(key, guardType);
 							Type fieldType = oa.getType();
 							if (fieldType instanceof CompoundType ct) {
@@ -305,29 +350,36 @@ public class NarrowingInfo {
 			mergePropsInto(info, inner.truePropertyNarrowings, false);
 			mergeEntriesInto(info, inner.falseEntries, true);
 			mergeEntriesInto(info, inner.trueEntries, false);
+			info.mergeKeyedFields(inner);
 		}
 		// Case: a && b → true narrowings combine (both must be true)
 		else if (op == Operators.AND) {
 			var left = extract(e1);
 			var right = extract(e2);
+			if (expr.rightOperandMayReassign()) left.dropTracked();
 			mergeInto(info, left.trueNarrowings, true);
 			mergeInto(info, right.trueNarrowings, true);
 			mergePropsInto(info, left.truePropertyNarrowings, true);
 			mergePropsInto(info, right.truePropertyNarrowings, true);
 			mergeEntriesInto(info, left.trueEntries, true);
 			mergeEntriesInto(info, right.trueEntries, true);
+			info.mergeKeyedFields(left);
+			info.mergeKeyedFields(right);
 			// False: can't narrow (at least one is false, don't know which)
 		}
 		// Case: a || b → false narrowings combine (both must be false)
 		else if (op == Operators.OR) {
 			var left = extract(e1);
 			var right = extract(e2);
+			if (expr.rightOperandMayReassign()) left.dropTracked();
 			mergeInto(info, left.falseNarrowings, false);
 			mergeInto(info, right.falseNarrowings, false);
 			mergePropsInto(info, left.falsePropertyNarrowings, false);
 			mergePropsInto(info, right.falsePropertyNarrowings, false);
 			mergeEntriesInto(info, left.falseEntries, false);
 			mergeEntriesInto(info, right.falseEntries, false);
+			info.mergeKeyedFields(left);
+			info.mergeKeyedFields(right);
 			// True: can't narrow (at least one is true, don't know which)
 		}
 		// Case: x instanceof Type
@@ -413,6 +465,7 @@ public class NarrowingInfo {
 		String key = extractPropertyKey(e1);
 		if (key == null) return;
 		var oa = (LeekObjectAccess) unwrap(e1);
+		info.addKeyedField(e1, key);
 		info.truePropOrAlloc().put(key, targetType);
 		var fieldType = oa.getType();
 		if (fieldType instanceof CompoundType ct) {
@@ -610,6 +663,8 @@ public class NarrowingInfo {
 
 		// Direct variable reference
 		var v = expr.getVariable();
+		// v5 : `x.f` s'affine sous sa clé, pas par la variable du champ, commune à tous les objets
+		if (v != null && expr instanceof LeekObjectAccess access && !access.sharesFieldNarrowing()) return null;
 		if (v != null) return v;
 
 		// Assignment expression: (x = getValue()) → extract x

@@ -404,7 +404,9 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 			return;
 		}
 		fields.put(word.getWord(), new ClassDeclarationField(word.getWord(), expr, level, isFinal, type));
-		fieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.FIELD, type, isFinal));
+		var variable = new LeekVariable(word, VariableType.FIELD, type, isFinal);
+		variable.trackNarrowing(mainBlock);
+		fieldVariables.put(word.getWord(), variable);
 	}
 
 	public void addStaticField(WordCompiler compiler, Token word, Expression expr, AccessLevel level, boolean isFinal, Type type) throws LeekCompilerException {
@@ -420,7 +422,9 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		// La classe déclarante est attachée à la variable canonique (et donc copiée
 		// sur chaque référence par LeekVariable.preAnalyze) : le codegen peut ainsi
 		// retrouver l'initialiseur d'un champ static final à inliner (ConstantFolder).
-		staticFieldVariables.put(word.getWord(), new LeekVariable(word, VariableType.STATIC_FIELD, type, isFinal, this));
+		var variable = new LeekVariable(word, VariableType.STATIC_FIELD, type, isFinal, this);
+		variable.trackNarrowing(mainBlock);
+		staticFieldVariables.put(word.getWord(), variable);
 	}
 
 	public void declare(WordCompiler compiler) {

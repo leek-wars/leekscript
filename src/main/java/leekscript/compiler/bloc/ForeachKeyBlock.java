@@ -69,6 +69,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	}
 
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
+		int calls = startCountingCalls(compiler);
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 
@@ -105,9 +106,11 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 		compiler.setCurrentBlock(initialBlock);
 		super.preAnalyze(compiler);
+		endCountingCalls(compiler, calls);
 	}
 
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
+		invalidateIfLoopMayCall(compiler);
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		mArray.analyze(compiler);

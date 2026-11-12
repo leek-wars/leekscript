@@ -155,6 +155,62 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	 * Look up a narrowed property type (e.g. "x.field") in this block or parent blocks.
 	 * Used by LeekObjectAccess during type narrowing.
 	 */
+	// Boucle contenant un appel (cf MainLeekBlock.invalidateFieldNarrowings) : un tour peut
+	// relire un champ réassigné par un appel du tour précédent.
+	private boolean mLoopMayCall = false;
+
+	protected int startCountingCalls(WordCompiler compiler) {
+		return compiler.getMainBlock().getPreAnalyzedCalls();
+	}
+
+	protected void endCountingCalls(WordCompiler compiler, int before) {
+		mLoopMayCall = compiler.getMainBlock().getPreAnalyzedCalls() > before;
+	}
+
+	protected void invalidateIfLoopMayCall(WordCompiler compiler) {
+		if (mLoopMayCall) compiler.getMainBlock().invalidateFieldNarrowings();
+	}
+
+	/**
+	 * Affinages de propriétés d'un bloc (`receveur.champ`), avec l'instant où chacun a été posé :
+	 * un appel, ou une écriture du champ ou du receveur, le périme (cf MainLeekBlock.isNarrowingStale).
+	 */
+	protected static class NarrowedProperties extends HashMap<String, Type> {
+		private final HashMap<String, Integer> ticks;
+
+		NarrowedProperties(Map<String, Type> base) {
+			super(base == null ? Map.of() : base);
+			ticks = base instanceof NarrowedProperties properties ? new HashMap<>(properties.ticks) : new HashMap<>();
+		}
+
+		void narrow(Map<String, Type> narrowings, int tick) {
+			putAll(narrowings);
+			for (var key : narrowings.keySet()) ticks.put(key, tick);
+		}
+
+		boolean isStale(String key, MainLeekBlock main) {
+			var tick = ticks.get(key);
+			if (tick == null) return false;
+			int dot = key.indexOf('.');
+			return main.isNarrowingStale(tick, key.substring(dot + 1)) || main.isNarrowingStale(tick, key.substring(0, dot));
+		}
+	}
+
+	protected NarrowedProperties narrowedProperties(Map<String, Type> base, Map<String, Type> narrowings) {
+		var properties = new NarrowedProperties(base);
+		properties.narrow(narrowings, mMain.getNarrowingTick());
+		return properties;
+	}
+
+	/** L'affinage de `key` a-t-il été périmé depuis qu'il est posé ? (cf NarrowedProperties) */
+	public boolean isNarrowedPropertyStale(String key) {
+		if (mNarrowedPropertyTypes != null && mNarrowedPropertyTypes.containsKey(key)) {
+			// Un affinage plus ancien d'un bloc parent l'est aussi
+			return mNarrowedPropertyTypes instanceof NarrowedProperties properties && properties.isStale(key, mMain);
+		}
+		return mParent != null && mParent.isNarrowedPropertyStale(key);
+	}
+
 	public Type getNarrowedPropertyType(String key) {
 		if (mNarrowedPropertyTypes != null) {
 			var type = mNarrowedPropertyTypes.get(key);
@@ -172,9 +228,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	public Map<String, Type> narrowPropertyTypes(Map<String, Type> narrowings) {
 		var saved = mNarrowedPropertyTypes;
 		if (narrowings == null || narrowings.isEmpty()) return saved;
-		var merged = saved == null ? new HashMap<String, Type>() : new HashMap<>(saved);
-		merged.putAll(narrowings);
-		mNarrowedPropertyTypes = merged;
+		mNarrowedPropertyTypes = narrowedProperties(saved, narrowings);
 		return saved;
 	}
 
@@ -417,13 +471,12 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 				&& (cb.mEndInstruction != 0 || cb.isAssignmentSatisfiesFalse())) {
 				if (pendingRestores == null) pendingRestores = new ArrayList<>();
 				pendingRestores.add(cb.getNarrowingInfo().applyFalse());
-				// Case 7: also apply property narrowings for subsequent code
-				if (cb.mEndInstruction == 0) {
-					var falsePropertyNarrowings = cb.getNarrowingInfo().getFalsePropertyNarrowings();
-					if (!falsePropertyNarrowings.isEmpty()) {
-						if (mNarrowedPropertyTypes == null) mNarrowedPropertyTypes = new HashMap<>();
-						mNarrowedPropertyTypes.putAll(falsePropertyNarrowings);
-					}
+				// Case 7: also apply property narrowings for subsequent code. Case 2 : seulement
+				// celles de `x.f` que la v5 n'affine plus par la variable du champ
+				var falsePropertyNarrowings = cb.mEndInstruction == 0 ? cb.getNarrowingInfo().getFalsePropertyNarrowings()
+					: cb.getNarrowingInfo().getFalseKeyedFieldNarrowings();
+				if (!falsePropertyNarrowings.isEmpty()) {
+					mNarrowedPropertyTypes = narrowedProperties(mNarrowedPropertyTypes, falsePropertyNarrowings);
 				}
 			}
 			// Case 2 for map entries (`if (!mapContainsKey(m, k)) return`). Not case 7: an

@@ -978,4 +978,111 @@ public class TestNarrowing extends TestCommon {
 		code_v4_("return [1] instanceof Array").equals("true");
 	}
 
+
+	// =========================================================================
+	// v5 : l'affinage d'un champ ne survit pas à ce qui a pu le réassigner
+	// =========================================================================
+
+	private static final String SAFE_B = "class B { integer v = 1 go() { return v } } ";
+	private static final String SAFE_A = "class A { B|string m = new B() reset() { this.m = 's' return 0 } resetTrue() { this.m = 's' return true } ";
+
+	private Case safe(String body, String main) {
+		return code_v5_(SAFE_B + SAFE_A + body + " } " + main);
+	}
+
+	/**
+	 * Avant la v5, `if (this.m instanceof B) { this.reset() return this.m.v }` émettait un cast
+	 * vers B que reset() rendait faux : ClassCastException, l'IA s'arrêtait. En v5 le champ
+	 * retrouve son type déclaré après l'appel, et l'accès redevient dynamique.
+	 */
+	@Test
+	public void testSafeNarrowing_call() throws Exception {
+		section("Affinage sûr (v5) : un appel périme l'affinage d'un champ");
+		safe("test() { if (this.m instanceof B) { this.reset() return this.m.v } return 0 }", "return new A().test()").equals("null");
+		safe("test() { if (m instanceof B) { reset() return m.v } return 0 }", "return new A().test()").equals("null");
+		safe("", "A c = new A() if (c.m instanceof B) { c.reset() return c.m.v } return 0").equals("null");
+		safe("test() { if (!(this.m instanceof B)) return 0 this.reset() return this.m.v }", "return new A().test()").equals("null");
+		// Constructeur, valeur fonction, fonction système à callback : du code du joueur aussi
+		safe("test() { if (this.m instanceof B) { new R(this) return this.m.v } return 0 }", "class R { constructor(A a) { a.m = 's' } } return new A().test()").equals("null");
+		safe("test() { var f = () -> this.reset() if (this.m instanceof B) { f() return this.m.v } return 0 }", "return new A().test()").equals("null");
+		safe("test() { if (this.m instanceof B) { [1].map(x -> this.reset()) return this.m.v } return 0 }", "return new A().test()").equals("null");
+		// Champ statique
+		code_v5_(SAFE_B + "class A { static B|string s = new B() static reset() { A.s = 'x' return 0 } static test() { if (A.s instanceof B) { A.reset() return A.s.v } return 0 } } return A.test()").equals("null");
+		// « non null » aussi : le champ a pu être remis à null
+		code_v5_(SAFE_B + "class A { B? m = new B() reset() { this.m = null return 0 } test() { if (this.m != null) { this.reset() return this.m.v } return 0 } } return new A().test()").equals("null");
+		// Type guard
+		safe("isB(any x) -> x is B { return x instanceof B } test() { if (this.isB(this.m)) { this.reset() return this.m.v } return 0 }", "return new A().test()").equals("null");
+	}
+
+	@Test
+	public void testSafeNarrowing_kept() throws Exception {
+		section("Affinage sûr (v5) : l'affinage tient tant que rien n'a pu réassigner");
+		safe("test() { if (this.m instanceof B) { return this.m.v + this.m.go() } return 0 }", "return new A().test()").equals("2");
+		safe("test() { if (this.m instanceof B) { return this.m.v + m.v } return 0 }", "return new A().test()").equals("2");
+		// Une fonction système sans callback n'exécute pas de code du joueur
+		safe("test() { if (this.m instanceof B) { var x = Math.abs(-1) return this.m.v + x } return 0 }", "return new A().test()").equals("2");
+		// Ni sa forme méthode (v5), sans callback
+		code_v5_(SAFE_B + "class A { B|string m = new B() Array<integer> list = [1, 2] test() { if (this.m instanceof B) { var n = this.list.count() var s = 'ab'.length() return this.m.v + n + s } return 0 } } return new A().test()").equals("5");
+		code_strict_v5_("class P { } class C extends P { go() { return 2 } } class A { P m = new C() Array<integer> list = [1, 2] test() { if (this.m instanceof C) { var n = this.list.count() return this.m.go() + n } return 0 } } return new A().test()").equals("4");
+		// Appel avant le test, dans la même condition
+		safe("ok() { return true } test() { if (this.ok() && this.m instanceof B) { return this.m.v } return 0 }", "return new A().test()").equals("1");
+		// La parade : copier le champ dans une locale
+		safe("test() { var m = this.m if (m instanceof B) { this.reset() return m.v } return 0 }", "return new A().test()").equals("1");
+		// Une méthode connue seulement du type affiné : après l'appel, erreur en strict, avertissement
+		// et appel dynamique sinon
+		var hierarchy = "class P { integer p = 1 } class C extends P { integer c = 2 go() { return c } } class A { P m = new C() ";
+		code_strict_v5_(hierarchy + "test() { if (this.m instanceof C) { return this.m.go() } return 0 } } return new A().test()").noWarning();
+		code_strict_v5_(hierarchy + "test() { if (this.m instanceof C) { this.m.go() return this.m.go() } return 0 } } return new A().test()").error(Error.CLASS_MEMBER_DOES_NOT_EXIST);
+		code_v5_(hierarchy + "test() { if (this.m instanceof C) { this.m.go() return this.m.go() } return 0 } } return new A().test()").warning(Error.CLASS_MEMBER_DOES_NOT_EXIST);
+		code_v5_(hierarchy + "test() { if (this.m instanceof C) { this.m.go() return this.m.go() } return 0 } } return new A().test()").equals("2");
+		code_strict_v5_(hierarchy + "test() { var m = this.m if (m instanceof C) { m.go() return m.go() } return 0 } } return new A().test()").equals("2");
+		// Réaffecté puis lu sans appel entre les deux
+		code_v5_(SAFE_B + "class A { B? m = null test() { if (this.m == null) { this.m = new B() } return this.m.v } } return new A().test()").equals("1");
+	}
+
+	@Test
+	public void testSafeNarrowing_condition_and_closures() throws Exception {
+		section("Affinage sûr (v5) : condition, closures, boucles");
+		// Appel après le test, dans la même condition
+		safe("test() { if (this.m instanceof B && this.resetTrue()) { return this.m.v } return 0 }", "return new A().test()").equals("null");
+		safe("test() { if (m instanceof B && resetTrue()) { return m.v } return 0 }", "return new A().test()").equals("null");
+		safe("test() { return (this.m instanceof B && this.resetTrue()) ? this.m.v : 0 }", "return new A().test()").equals("null");
+		safe("test() { if (!(this.m instanceof B) || this.resetTrue()) { return 0 } else { return this.m.v } }", "return new A().test()").equals("0");
+		// Le corps d'une closure s'exécute plus tard
+		safe("test() { if (this.m instanceof B) { var f = () -> this.m.v this.reset() return f() } return 0 }", "return new A().test()").equals("null");
+		// Locale réaffectée par une closure : suivie comme un champ
+		code_v5_(SAFE_B + "function test() { B|string x = new B() var f = () -> { x = 's' } if (x instanceof B) { f() return x.v } return 0 } return test()").equals("null");
+		code_v5_(SAFE_B + "function test() { B|string x = new B() var h = () -> { x = 's' return 0 } var f = () -> { if (x instanceof B) { h() return x.v } return 0 } return f() } return test()").equals("null");
+		// Boucle : l'appel d'un tour vaut pour le tour suivant
+		safe("test() { if (this.m instanceof B) { var r = 0 for (var i = 0; i < 2; i++) { r += this.m.v this.reset() } return r } return 0 }", "return new A().test()").equals("1");
+		safe("test() { if (this.m instanceof B) { var i = 0 var r = 0 do { r = this.m.v this.reset() i++ } while (i < 2) return r } return 0 }", "return new A().test()").equals("null");
+		safe("test() { var r = 0 while (this.m instanceof B) { r += this.m.v this.reset() } return r }", "return new A().test()").equals("1");
+		// Affectation puis appel : l'affinage « non null » d'après le if ne vaut plus
+		code_v5_(SAFE_B + "class A { B? m = null log() { this.m = null return 0 } test() { if (this.m == null) { this.m = new B() this.log() } return this.m.v } } return new A().test()").equals("null");
+	}
+
+	@Test
+	public void testSafeNarrowing_writes() throws Exception {
+		section("Affinage sûr (v5) : une écriture périme l'affinage du champ écrit");
+		safe("test() { if (this.m instanceof B) { this.m = 's' return this.m.v } return 0 }", "return new A().test()").equals("null");
+		// Par un autre nom du même objet
+		safe("test() { if (this.m instanceof B) { var o = this o.m = 's' return this.m.v } return 0 }", "return new A().test()").equals("null");
+		safe("test() { if (m instanceof B) { var o = this o.m = 's' return m.v } return 0 }", "return new A().test()").equals("null");
+		safe("test() { if (this.m instanceof B) { var o = this o['m'] = 's' return this.m.v } return 0 }", "return new A().test()").equals("null");
+		safe("test() { if (this.m instanceof B) { var o = this var k = 'm' o[k] = 's' return this.m.v } return 0 }", "return new A().test()").equals("null");
+		// Un autre champ ne périme rien
+		code_v5_(SAFE_B + "class A { B|string m = new B() integer n = 0 test() { if (this.m instanceof B) { this.n = 5 return this.m.v + this.n } return 0 } } return new A().test()").equals("6");
+		// Receveur réaffecté
+		safe("", "function f(A a, A b) { b.m = 's' if (a.m instanceof B) { a = b return a.m.v } return 0 } return f(new A(), new A())").equals("null");
+		// `x.f` est le champ d'un autre objet : l'affinage de a.m, de this.m ou de m ne vaut pas pour lui
+		safe("", "function f(A a, A b) { b.m = 's' if (a.m instanceof B) { return b.m.v } return 0 } return f(new A(), new A())").equals("null");
+		safe("test(A o) { o.m = 's' if (this.m instanceof B) { return o.m.v } return 0 }", "return new A().test(new A())").equals("null");
+		safe("test(A o) { o.m = 's' if (m instanceof B) { return o.m.v } return 0 }", "return new A().test(new A())").equals("null");
+		safe("", "function f(A a) { if (a.m instanceof B) { return a.m.v + a.m.go() } return 0 } return f(new A())").equals("2");
+		code_v5_(SAFE_B + "class A { B? m = new B() } function f(A a, A b) { b.m = null if (a.m != null) { return a.m.v + (b.m == null ? 10 : b.m.v) } return 0 } return f(new A(), new A())").equals("11");
+		// Après un if qui sort, `x.f` reste affiné sous sa clé, jusqu'à l'appel suivant
+		safe("", "function f(A a) { if (!(a.m instanceof B)) return 0 return a.m.v } return f(new A())").equals("1");
+		safe("", "function f(A a) { if (!(a.m instanceof B)) return 0 a.reset() return a.m.v } return f(new A())").equals("null");
+		safe("", "function f(Array<A> list) { var r = 0 for (var a in list) { if (!(a.m instanceof B)) continue r += a.m.v } return r } return f([new A(), new A()])").equals("2");
+	}
 }

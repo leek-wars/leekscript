@@ -51,6 +51,9 @@ public class LeekVariable extends Expression {
 	private leekscript.compiler.bloc.Module namespaceModule = null;
 	private Type declaredType = null;
 	private Type lastAssignedType = null;
+	// Variable suivie (cf trackNarrowing) : instant de son dernier affinage
+	private MainLeekBlock narrowingMain = null;
+	private int narrowingTick = -1;
 	// Suivi d'une variable pour NarrowingInfo (cases de map), posé au preAnalyze. Drapeaux dans un
 	// octet : LeekVariable est instanciée des milliers de fois (références comprises).
 	private static final byte REASSIGNED = 1; // cf setReassigned
@@ -132,7 +135,41 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public Type getType() {
+		// v5 : affinage périmé par un appel ou une écriture (cf MainLeekBlock.isNarrowingStale), on
+		// revient au type déclaré
+		if (narrowingMain != null && narrowingTick >= 0) {
+			var declared = getDeclaredType();
+			if (variableType != declared && narrowingMain.isNarrowingStale(narrowingTick, getName())) return declared;
+		}
 		return variableType;
+	}
+
+	/**
+	 * Variable qu'un appel peut réassigner (champ, locale réaffectée et capturée par une closure) :
+	 * son type affiné ne survit pas à l'appel.
+	 */
+	public void trackNarrowing(MainLeekBlock main) {
+		if (main.hasSafeFieldNarrowing()) this.narrowingMain = main;
+	}
+
+	public boolean isNarrowingTracked() {
+		return narrowingMain != null;
+	}
+
+	/** Calcule `supplier` sous le type déclaré de la variable, sans son affinage en cours. */
+	public <T> T underDeclaredType(java.util.function.Supplier<T> supplier) {
+		var narrowed = variableType;
+		variableType = getDeclaredType();
+		try {
+			return supplier.get();
+		} finally {
+			variableType = narrowed;
+		}
+	}
+
+	/** Le type affiné qu'on vient de poser vaut à partir de maintenant. */
+	public void markNarrowed() {
+		if (narrowingMain != null) narrowingTick = narrowingMain.getNarrowingTick();
 	}
 
 	/**
@@ -258,6 +295,7 @@ public class LeekVariable extends Expression {
 			}
 			if (v.getDeclaration() != null && v.getDeclaration().getFunction() != compiler.getCurrentFunction()) {
 				v.getDeclaration().setCaptured();
+				if (v.isReassigned()) v.trackNarrowing(compiler.getMainBlock());
 			}
 			if (this.type == VariableType.FIELD) {
 				operations += 1;
@@ -394,7 +432,11 @@ public class LeekVariable extends Expression {
 		return declaredType != null ? declaredType : variableType;
 	}
 
-	public Type getLastAssignedType() { return lastAssignedType; }
+	public Type getLastAssignedType() {
+		// v5 : une affectation suivie d'un appel ne dit plus rien du type (cf markNarrowed)
+		if (lastAssignedType != null && narrowingMain != null && narrowingTick >= 0 && narrowingMain.isNarrowingStale(narrowingTick, getName())) return null;
+		return lastAssignedType;
+	}
 	public void setLastAssignedType(Type type) { this.lastAssignedType = type; }
 	public void clearLastAssignedType() { this.lastAssignedType = null; }
 

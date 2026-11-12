@@ -60,6 +60,7 @@ public class ForBlock extends AbstractLeekBlock {
 
 	@Override
 	public void preAnalyze(WordCompiler compiler) throws LeekCompilerException {
+		int calls = startCountingCalls(compiler);
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		if (mInitialisation != null) mInitialisation.preAnalyze(compiler);
@@ -67,10 +68,12 @@ public class ForBlock extends AbstractLeekBlock {
 		if (mIncrementation != null) mIncrementation.preAnalyze(compiler);
 		compiler.setCurrentBlock(initialBlock);
 		super.preAnalyze(compiler);
+		endCountingCalls(compiler, calls);
 	}
 
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
+		invalidateIfLoopMayCall(compiler);
 		AbstractLeekBlock initialBlock = compiler.getCurrentBlock();
 		compiler.setCurrentBlock(this);
 		if (mInitialisation != null) mInitialisation.analyze(compiler);
