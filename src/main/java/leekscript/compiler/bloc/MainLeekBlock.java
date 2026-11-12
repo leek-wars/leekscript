@@ -785,6 +785,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			clazz.setJavaOwner(owner == null || owner.isMain() ? className : JavaWriter.moduleClassName(className, owner));
 		}
 		for (var module : modules) {
+			module.setOwnJavaClass();
 			var moduleWriter = writer.addModule(module);
 			writeImports(moduleWriter);
 			// Les types internes d'AI (NativeObjectLeekValue…), hérités dans la classe d'une IA

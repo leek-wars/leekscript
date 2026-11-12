@@ -84,7 +84,7 @@ public class ModuleScopeInstruction extends LeekInstruction {
 
 	/** Nom Java de la méthode qui porte le code de haut niveau du module. */
 	public String getMethodName() {
-		return module.prefix() + "run";
+		return module.javaPrefix() + "$run";
 	}
 
 	@Override

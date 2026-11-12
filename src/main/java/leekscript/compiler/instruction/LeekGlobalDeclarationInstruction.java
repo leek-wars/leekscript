@@ -71,7 +71,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 	/** Nom du champ Java (`g_<internalName>`), préfixé par le module pour éviter les
 	 * collisions entre modules ; vide pour le module principal → byte-identique. */
 	public String getInternalName() {
-		return (module == null ? "" : module.prefix()) + variableToken.getWord();
+		return (module == null ? "" : module.javaPrefix()) + variableToken.getWord();
 	}
 
 	@Override

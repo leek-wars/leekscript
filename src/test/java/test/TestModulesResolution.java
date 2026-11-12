@@ -613,12 +613,10 @@ public class TestModulesResolution {
 		String second = writeMain("import { g } from \"other\"\nimport { f } from \"lib\"\nreturn f() + g()");
 		assertEquals("1", run(alone));
 		assertEquals("3", run(second));
-		var name = java.util.regex.Pattern.compile("f_\\$m\\w+\\$f\\b");
-		var inAlone = name.matcher(javaOf(alone));
-		var inSecond = name.matcher(javaOf(second));
-		assertTrue(inAlone.find() && inSecond.find());
-		assertEquals(inAlone.group(), inSecond.group());
-		assertTrue(inAlone.group().startsWith("f_$mlib_"), inAlone.group());
+		// La classe Java du module `lib` porte le même nom (derrière celui de l'IA) dans les deux programmes
+		var inAlone = moduleClass(alone, "_lib_");
+		var inSecond = moduleClass(second, "_lib_");
+		assertEquals(inAlone.substring(inAlone.indexOf("_lib_")), inSecond.substring(inSecond.indexOf("_lib_")));
 	}
 
 	// Deux fichiers de même nom dans deux dossiers sont deux modules distincts.
@@ -659,12 +657,10 @@ public class TestModulesResolution {
 		return ai;
 	}
 
-	/** Le Java généré pour l'IA `name`, déjà compilée : sa classe, puis celles de ses modules. */
-	private String javaOf(String name) throws Exception {
-		var code = fs.getRoot(0).resolve(name).getCompiledCode();
-		var java = new StringBuilder(code.getJavaCode());
-		for (var module : code.getModules()) java.append(module.javaCode());
-		return java.toString();
+	/** Nom de la classe Java du module dont le nom contient `part`, dans l'IA `name` déjà compilée. */
+	private String moduleClass(String name, String part) throws Exception {
+		return fs.getRoot(0).resolve(name).getCompiledCode().getModules().stream()
+			.map(m -> m.className()).filter(c -> c.contains(part)).findFirst().orElseThrow();
 	}
 
 	private String run(String name) throws Exception {

@@ -100,10 +100,23 @@ public class Module {
 		return main;
 	}
 
-	/** Préfixe de codegen, intégré dans les noms Java (`f_`, `ufunction_`, ...).
-	 * Vide pour le module principal → v1–v4 byte-identique. */
+	/** Préfixe des symboles du module dans les tables du compilateur, qui tiennent ceux de tous
+	 * les modules. Vide pour le module principal. */
 	public String prefix() {
 		return prefix;
+	}
+
+	// Dans le Java généré, le préfixe ne sert que tant que les modules partagent une classe Java :
+	// un module qui a la sienne y nomme ses symboles sans préfixe (`f_area`, `u_Vec`).
+	private boolean ownJavaClass = false;
+
+	public void setOwnJavaClass() {
+		ownJavaClass = true;
+	}
+
+	/** Préfixe des symboles du module dans le Java généré (`f_`, `g_`, `u_`, `ufunction_`…). */
+	public String javaPrefix() {
+		return ownJavaClass ? "" : prefix;
 	}
 
 	public Set<String> getExportedFunctions() {

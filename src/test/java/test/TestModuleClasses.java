@@ -65,10 +65,11 @@ public class TestModuleClasses {
 		var geo = module(code, "_geo_");
 		var fmt = module(code, "_fmt_");
 		// Chaque module porte ses déclarations, l'IA n'en porte aucune
-		assertTrue(geo.javaCode().contains("$area(") && geo.javaCode().contains("class u_"), geo.javaCode());
-		assertTrue(fmt.javaCode().contains("$show("), fmt.javaCode());
+		// (dans sa classe, un symbole de module n'a plus besoin de préfixe)
+		assertTrue(geo.javaCode().contains(" f_area(") && geo.javaCode().contains("class u_Vec "), geo.javaCode());
+		assertTrue(fmt.javaCode().contains(" f_show(") && fmt.javaCode().contains(".f_area("), fmt.javaCode());
 		assertFalse(fmt.javaCode().contains("class u_"), fmt.javaCode());
-		assertFalse(code.getJavaCode().contains("class u_") || code.getJavaCode().contains("$area(long"), code.getJavaCode());
+		assertFalse(code.getJavaCode().contains("class u_") || code.getJavaCode().contains(" f_area("), code.getJavaCode());
 		// La classe d'un module ne s'appelle pas d'après son rang d'import
 		assertTrue(geo.className().matches("AI_\\w+_geo_[0-9a-z]+"), geo.className());
 	}

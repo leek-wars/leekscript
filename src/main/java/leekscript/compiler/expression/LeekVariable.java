@@ -244,7 +244,7 @@ public class LeekVariable extends Expression {
 
 	/** Nom du champ Java émis pour une variable GLOBAL (préfixé par module). */
 	public String globalName() {
-		return "g_" + globalPrefix + token.getWord();
+		return "g_" + (globalModule != null ? globalModule.javaPrefix() : globalPrefix) + token.getWord();
 	}
 
 	/** Le champ de la globale tel qu'il se lit depuis la classe en cours d'écriture. */

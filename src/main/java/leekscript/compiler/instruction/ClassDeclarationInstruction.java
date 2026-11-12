@@ -188,7 +188,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	 * les collisions ; vide pour le principal → byte-identique. getName() reste le nom
 	 * source (affichage/résolution). */
 	public String getInternalName() {
-		return (module == null ? "" : module.prefix()) + token.getWord();
+		return (module == null ? "" : module.javaPrefix()) + token.getWord();
 	}
 
 	// Paramètres de type génériques (`class Box<T> { ... }`, version >= 5). Lazy :

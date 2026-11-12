@@ -119,7 +119,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	 * principal → v1-4 byte-identique. Suffixé par le profil pour une variante
 	 * monomorphisée (#43 T3 ; vide pour la générique → inchangé). */
 	public String getInternalName() {
-		return (module == null ? "" : module.prefix()) + token.getWord() + overloadSuffix + variantSuffix;
+		return (module == null ? "" : module.javaPrefix()) + token.getWord() + overloadSuffix + variantSuffix;
 	}
 
 	/** Nom interne SANS suffixe (préfixe module + nom brut) : clé de regroupement des surcharges (#4243). */
