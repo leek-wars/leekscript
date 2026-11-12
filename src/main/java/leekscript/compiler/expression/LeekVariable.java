@@ -76,17 +76,15 @@ public class LeekVariable extends Expression {
 
 	/**
 	 * Le nom d'un `import { nom }`, lié à ce qu'il importe : l'éditeur y trouve le survol, la
-	 * définition et une référence de plus, comme sur un usage du nom.
+	 * définition et une référence de plus, comme sur un usage du nom. Reprend de la cible ce que
+	 * preAnalyze reprend d'une variable trouvée, pour ce que lit hover().
 	 */
-	public static LeekVariable importName(Token token, LeekVariable target) {
-		var name = new LeekVariable(token, target.type);
+	public static void importName(Token token, LeekVariable target) {
+		var name = new LeekVariable(token, target.type); // le jeton garde la variable (Token.setExpression)
 		name.variableType = target.variableType;
-		name.declaredType = target.declaredType;
-		name.declaration = target.declaration;
 		name.classDeclaration = target.classDeclaration;
 		name.functionDeclaration = target.functionDeclaration;
 		name.variable = target;
-		return name;
 	}
 
 	public LeekVariable(Token token, VariableType variableType, Type type, boolean isFinal) {

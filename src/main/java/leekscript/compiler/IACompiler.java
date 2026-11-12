@@ -283,6 +283,8 @@ public class IACompiler {
 
 			long analyzeTime = System.nanoTime();
 			compiler.analyze();
+			// Pour l'éditeur seulement (survol, références) : la compilation d'un combat s'en passe
+			main.linkImportNames();
 			analyzeTime = System.nanoTime() - analyzeTime;
 
 			if (PHASE_TIMINGS_ENABLED) {

@@ -299,7 +299,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				if (function != null) target = function.getVariable();
 			} else if (importer.getImportedClassSource(name) != null) {
 				var clazz = getDefinedClass(name, importer);
-				if (clazz != null) target = clazz.getDeclarationVariable();
+				if (clazz != null) target = clazz.getVariable();
 			} else if (importer.getImportedVarSource(name) != null) {
 				target = getGlobal(name, importer);
 			}

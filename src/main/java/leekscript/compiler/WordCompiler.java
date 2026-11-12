@@ -614,7 +614,6 @@ public class WordCompiler {
 		setCurrentFunction(mMain);
 		mMain.preAnalyze(this);
 		mMain.analyze(this);
-		mMain.linkImportNames();
 	}
 
 	/**
@@ -939,6 +938,7 @@ public class WordCompiler {
 					addError(new AnalyzeError(nameToken, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { nameToken.getWord() }));
 					continue;
 				}
+				mMain.addImportName(mModule, nameToken); // lié à sa cible après l'analyse, pour l'éditeur
 				// Un module d'un cycle n'a pas fini sa première passe : ses exports ne sont pas
 				// encore tous connus, le nom est lié à la fin (cf MainLeekBlock.resolvePendingImports)
 				if (!mModule.bindImport(nameToken.getWord(), module, reexport)) {
@@ -948,7 +948,6 @@ public class WordCompiler {
 		} else {
 			var file = mMain.resolvedImport(this, path); // résolu (et vérifié) au firstPass
 			if (file != null) mMain.importModule(this, file); // secondPass du module cible (codegen)
-			for (var nameToken : names) mMain.addImportName(mModule, nameToken);
 		}
 	}
 
