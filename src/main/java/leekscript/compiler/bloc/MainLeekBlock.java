@@ -624,6 +624,48 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 	}
 
+	/**
+	 * Module de test compilé comme point d'entrée : la table de ses fonctions `@test`, `@before` et
+	 * `@after` (JSON, dans l'ordre du fichier) et leur appel par indice. Le lanceur de tests n'a ainsi
+	 * rien à savoir du nom Java d'une fonction.
+	 */
+	private void writeTestTable(JavaWriter writer) {
+		if (mMainModule == null || !mMainModule.getFile().isTestModule()) return;
+		var entries = new ArrayList<FunctionBlock>();
+		for (var function : mFunctions.values()) {
+			if (function.isTestEntry() && !function.isVariant() && (function.getModule() == null || function.getModule() == mMainModule)) entries.add(function);
+		}
+		entries.sort(java.util.Comparator.comparingInt((FunctionBlock f) -> f.getLocation().getStartLine()).thenComparing(FunctionBlock::getInternalName));
+		// Une chaîne par fonction : la table entière en une seule constante dépasserait la limite de
+		// Java (65 535 octets) vers un millier de tests
+		var rows = new ArrayList<String>();
+		for (var function : entries) {
+			var entry = leekscript.util.Json.createObject();
+			entry.put("name", function.getName());
+			entry.put("line", function.getLocation().getStartLine());
+			entry.put("kind", function.hasAnnotation(leekscript.common.Annotation.TEST) ? "test" : function.hasAnnotation(leekscript.common.Annotation.BEFORE) ? "before" : "after");
+			var skip = function.getAnnotationArgs(leekscript.common.Annotation.SKIP).text();
+			if (function.hasAnnotation(leekscript.common.Annotation.SKIP)) entry.put("skip", skip == null ? "" : skip);
+			var fails = function.getAnnotationArgs(leekscript.common.Annotation.FAILS).text();
+			if (function.hasAnnotation(leekscript.common.Annotation.FAILS)) entry.put("fails", fails == null ? "" : fails);
+			// Options du test (`@test(ops: …, scenario: "…")`), telles qu'écrites : le lanceur les interprète
+			var options = function.getAnnotationArgs(leekscript.common.Annotation.TEST).named();
+			if (!options.isEmpty()) {
+				var node = entry.putObject("options");
+				for (var option : options.entrySet()) node.putPOJO(option.getKey(), option.getValue());
+			}
+			rows.add(JavaWriter.javaString(entry.toString()));
+		}
+		writer.addLine("public String getTestTable() { return \"[\" + String.join(\",\", new String[] { " + String.join(", ", rows) + " }) + \"]\"; }");
+		writer.addLine("public void callTestFunction(int index) throws LeekRunException {");
+		writer.addLine("switch (index) {");
+		for (int i = 0; i < entries.size(); i++) {
+			writer.addLine("case " + i + ": f_" + entries.get(i).getInternalName() + "(); break;");
+		}
+		writer.addLine("}");
+		writer.addLine("}");
+	}
+
 	public boolean hasUserFunction(String name, boolean use_declarations) {
 		return hasUserFunction(name, use_declarations, mMainModule);
 	}
@@ -933,6 +975,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 
 		writeModuleMethods(writer);
+		writeTestTable(writer);
 
 		writer.addLine("public Object runIA(Session session) throws LeekRunException {");
 

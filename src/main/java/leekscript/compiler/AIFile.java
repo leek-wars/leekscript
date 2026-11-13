@@ -177,6 +177,15 @@ public class AIFile {
 		return path;
 	}
 
+	/**
+	 * Module de test : fichier `*.test.leek` (ou `*.test` quand le système de fichiers nomme sans
+	 * extension). Lui seul porte des `@test` ; il n'est importé que par un autre module de test,
+	 * donc jamais compilé dans une IA de combat.
+	 */
+	public boolean isTestModule() {
+		return path != null && (path.endsWith(".test.leek") || path.endsWith(".test"));
+	}
+
 	public String toJson() {
 		ObjectNode json = Json.createObject();
 		json.putPOJO("path", path);

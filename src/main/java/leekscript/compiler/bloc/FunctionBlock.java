@@ -573,6 +573,18 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 			}
 		}
 		super.analyze(compiler);
+		// Le lanceur appelle lui-même un test, sa préparation et sa clôture : sans argument
+		if (isTestEntry() && countParameters() > 0) {
+			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.TEST_FUNCTION_WITH_PARAMETERS, new String[] { getName() }));
+		}
+		// `@skip` et `@fails` qualifient un test
+		if (annotations != null && !annotations.contains(Annotation.TEST)) {
+			for (var qualifier : new Annotation[] { Annotation.SKIP, Annotation.FAILS }) {
+				if (annotations.contains(qualifier)) {
+					compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_INVALID_CONTEXT, new String[] { qualifier.name().toLowerCase() }));
+				}
+			}
+		}
 		// @tailrec : après l'analyse du corps, tout appel récursif collecté doit être
 		// en position terminale (expression directe d'un `return` non optionnel).
 		// Sinon, erreur dure pointant l'appel fautif. Inactif sans l'annotation.
@@ -764,6 +776,29 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 	public void addAnnotation(Annotation a) {
 		if (annotations == null) annotations = EnumSet.noneOf(Annotation.class);
 		annotations.add(a);
+	}
+
+	// Arguments des annotations qui en portent (`@skip("raison")`, `@test(ops: …)`)
+	private java.util.EnumMap<Annotation, leekscript.compiler.AnnotationArgs> annotationArgs = null;
+
+	@Override
+	public void addAnnotation(Annotation a, leekscript.compiler.AnnotationArgs args) {
+		addAnnotation(a);
+		if (args != null && !args.isEmpty()) {
+			if (annotationArgs == null) annotationArgs = new java.util.EnumMap<>(Annotation.class);
+			annotationArgs.put(a, args);
+		}
+	}
+
+	/** Arguments de l'annotation, jamais null. */
+	public leekscript.compiler.AnnotationArgs getAnnotationArgs(Annotation a) {
+		var args = annotationArgs == null ? null : annotationArgs.get(a);
+		return args == null ? leekscript.compiler.AnnotationArgs.NONE : args;
+	}
+
+	/** Fonction que le lanceur de tests appelle lui-même : test, ou préparation et clôture d'un test. */
+	public boolean isTestEntry() {
+		return annotations != null && (annotations.contains(Annotation.TEST) || annotations.contains(Annotation.BEFORE) || annotations.contains(Annotation.AFTER));
 	}
 
 	public boolean hasAnnotation(Annotation a) {

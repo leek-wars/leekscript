@@ -405,6 +405,16 @@ public class LeekFunctions {
 		method("getBlue", "Color", 1, true, Type.INT, new Type[] { Type.INT });
 
 		/**
+		 * Asserts du framework de test (v5). Chacun rend son verdict ; le message est facultatif.
+		 * Une fonction du joueur du même nom passe devant, comme pour toute fonction système.
+		 */
+		testAssert("assert", 1).javaName = "check";
+		testAssert("assertEquals", 2);
+		testAssert("assertNear", 3);
+		testAssert("assertError", 1);
+		testAssert("fail", 0);
+
+		/**
 		 * System functions
 		 */
 		method("getOperations", "System", 1, true, Type.INT, new Type[0]);
@@ -452,6 +462,20 @@ public class LeekFunctions {
 				}
 			}
 		}
+	}
+
+	/** Assert à `arguments` valeurs, plus un message facultatif. */
+	private static LeekFunctions testAssert(String name, int arguments) {
+		var without = new Type[arguments];
+		var with = new Type[arguments + 1];
+		java.util.Arrays.fill(without, Type.ANY);
+		java.util.Arrays.fill(with, Type.ANY);
+		var function = method(name, "Test", 10, true, new CallableVersion[] {
+			new CallableVersion(Type.BOOL, with),
+			new CallableVersion(Type.BOOL, without),
+		});
+		function.setMinVersion(5);
+		return function;
 	}
 
 	private static LeekFunctions method(String name, String clazz, Type return_type, Type[] arguments) {

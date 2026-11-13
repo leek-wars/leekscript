@@ -920,6 +920,11 @@ public class WordCompiler {
 		if (firstPass) {
 			var file = mMain.resolveImport(this, pathToken, path); // erreur déjà signalée si null
 			if (file == null) return;
+			// Un module de test n'entre jamais dans une IA de combat : seul un autre module de test l'importe
+			if (file.isTestModule() && !mModule.getFile().isTestModule()) {
+				addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.TEST_MODULE_IMPORTED, new String[] { path }));
+				return;
+			}
 			var module = mMain.importModuleFirstPass(this, file);
 			// Un module est compilé à la version de l'entrée : un `// @version:4` y changerait le
 			// sens du code sans rien dire (seul le pragma compte, pas la version par défaut du fichier)
@@ -1843,7 +1848,20 @@ public class WordCompiler {
 		if (mTokens.get(1).getType() != TokenType.STRING) return false;
 		// Lookahead: verify the token after the annotation name is a declaration keyword or another @
 		// to distinguish annotation syntax from @variable reference expressions
-		var after = mTokens.get(2);
+		int next = 2;
+		// Arguments entre parenthèses (`@skip("raison")`) : la déclaration est après la fermante
+		if (mTokens.get(2).getType() == TokenType.PAR_LEFT) {
+			int depth = 0;
+			while (true) {
+				var t = mTokens.get(next);
+				if (t.getType() == TokenType.END_OF_FILE) return false;
+				if (t.getType() == TokenType.PAR_LEFT) depth++;
+				else if (t.getType() == TokenType.PAR_RIGHT && --depth == 0) break;
+				next++;
+			}
+			next++;
+		}
+		var after = mTokens.get(next);
 		return after.getType() == TokenType.VAR
 			|| after.getType() == TokenType.FUNCTION
 			|| after.getType() == TokenType.GLOBAL
@@ -1852,13 +1870,72 @@ public class WordCompiler {
 			|| (after.getType() == TokenType.OPERATOR && after.getWord().equals("@"));
 	}
 
-	private ArrayList<Token> collectAnnotations() {
+	private ArrayList<Token> collectAnnotations() throws LeekCompilerException {
 		var list = new ArrayList<Token>();
 		while (isAnnotationStart()) {
 			mTokens.skip(); // consume '@'
-			list.add(mTokens.eat()); // consume the annotation name
+			var name = mTokens.eat(); // consume the annotation name
+			list.add(name);
+			if (mTokens.get().getType() == TokenType.PAR_LEFT) annotationArguments(name);
 		}
 		return list;
+	}
+
+	// Arguments des annotations lues, par jeton de nom (la plupart des annotations n'en ont pas)
+	private java.util.IdentityHashMap<Token, AnnotationArgs> mAnnotationArgs = null;
+
+	/** Lit `(littéral, nom: littéral…)` après le nom d'une annotation. */
+	private void annotationArguments(Token name) throws LeekCompilerException {
+		var args = new AnnotationArgs();
+		mTokens.skip(); // '('
+		boolean valid = true;
+		while (mTokens.get().getType() != TokenType.PAR_RIGHT && mTokens.get().getType() != TokenType.END_OF_FILE) {
+			String key = null;
+			if (mTokens.get().getType() == TokenType.STRING && mTokens.get(1).getType() == TokenType.OPERATOR && mTokens.get(1).getWord().equals(":")) {
+				key = mTokens.eat().getWord();
+				mTokens.skip();
+			}
+			var value = mTokens.eat();
+			Object literal = annotationLiteral(value);
+			if (literal == null) {
+				valid = false;
+				// Reprise : jusqu'à la fermante de l'annotation
+				int depth = value.getType() == TokenType.PAR_LEFT ? 1 : 0;
+				while (mTokens.get().getType() != TokenType.END_OF_FILE && !(depth == 0 && mTokens.get().getType() == TokenType.PAR_RIGHT)) {
+					if (mTokens.get().getType() == TokenType.PAR_LEFT) depth++;
+					else if (mTokens.get().getType() == TokenType.PAR_RIGHT) depth--;
+					mTokens.skip();
+				}
+				break;
+			}
+			args.add(key, literal);
+			if (mTokens.get().getType() == TokenType.VIRG) mTokens.skip();
+		}
+		if (mTokens.get().getType() == TokenType.PAR_RIGHT) mTokens.skip();
+		if (!valid) {
+			addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_ARGUMENT_INVALID, new String[] { name.getWord() }));
+		}
+		if (mAnnotationArgs == null) mAnnotationArgs = new java.util.IdentityHashMap<>();
+		mAnnotationArgs.put(name, args);
+	}
+
+	/** Valeur d'un littéral d'annotation (chaîne, nombre, booléen), ou null si le jeton n'en est pas un. */
+	private static Object annotationLiteral(Token token) {
+		var word = token.getWord();
+		switch (token.getType()) {
+			case VAR_STRING: return word.length() >= 2 ? word.substring(1, word.length() - 1) : "";
+			case TRUE: return Boolean.TRUE;
+			case FALSE: return Boolean.FALSE;
+			case NUMBER:
+				try {
+					var digits = word.replace("_", "");
+					if (digits.contains(".")) return Double.parseDouble(digits);
+					return Long.parseLong(digits);
+				} catch (NumberFormatException e) {
+					return null;
+				}
+			default: return null;
+		}
 	}
 
 	private void applyAnnotations(Annotatable target, List<Token> annotations) throws LeekCompilerException {
@@ -1868,11 +1945,36 @@ public class WordCompiler {
 		for (var ann : annotations) {
 			var a = Annotation.fromString(ann.getWord());
 			if (a != null) {
-				target.addAnnotation(a);
+				if (a.isTestAnnotation() && !applyTestAnnotation(target, a, ann)) continue;
+				var args = mAnnotationArgs == null ? null : mAnnotationArgs.get(ann);
+				target.addAnnotation(a, args == null ? AnnotationArgs.NONE : args);
 			} else {
 				addError(new AnalyzeError(ann, AnalyzeErrorLevel.WARNING, Error.ANNOTATION_UNKNOWN, new String[] { ann.getWord() }));
 			}
 		}
+	}
+
+	/**
+	 * Une annotation du framework de test (`@test`, `@skip`, `@fails`, `@before`, `@after`) ne se pose
+	 * que sur une fonction de premier niveau d'un module de test, en v5. Rend false, erreur signalée,
+	 * quand elle est mal placée.
+	 */
+	private boolean applyTestAnnotation(Annotatable target, Annotation a, Token ann) throws LeekCompilerException {
+		if (!LanguageFeature.MODULES.enabledIn(version) || !mModule.getFile().isTestModule()) {
+			addError(new AnalyzeError(ann, AnalyzeErrorLevel.ERROR, Error.TEST_ANNOTATION_OUTSIDE_TEST_MODULE, new String[] { ann.getWord() }));
+			return false;
+		}
+		if (!(target instanceof FunctionBlock)) {
+			addError(new AnalyzeError(ann, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_INVALID_CONTEXT, new String[] { ann.getWord() }));
+			return false;
+		}
+		var args = mAnnotationArgs == null ? null : mAnnotationArgs.get(ann);
+		// `@skip` et `@fails` disent pourquoi : un test désactivé sans raison ne dit rien à qui le relit
+		if ((a == Annotation.SKIP || a == Annotation.FAILS) && (args == null || args.text() == null || args.text().isBlank())) {
+			addError(new AnalyzeError(ann, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_ARGUMENT_INVALID, new String[] { ann.getWord() }));
+			return false;
+		}
+		return true;
 	}
 
 	// Un mot-clé à la place du nom (`var include = 1`) : on dit que ce nom est pris, plutôt

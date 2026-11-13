@@ -414,6 +414,26 @@ public abstract class AI {
 		return id;
 	}
 
+	// Framework de test : ce que le test en cours vérifie (null hors d'un lancement de tests)
+	private leekscript.testing.TestRecorder testRecorder = null;
+
+	public void setTestRecorder(leekscript.testing.TestRecorder recorder) {
+		this.testRecorder = recorder;
+	}
+
+	public leekscript.testing.TestRecorder getTestRecorder() {
+		return testRecorder;
+	}
+
+	/**
+	 * Table des tests d'un module de test compilé comme point d'entrée (JSON : fonctions `@test`,
+	 * `@before`, `@after`, dans l'ordre du fichier), null pour toute autre IA. Générée.
+	 */
+	public String getTestTable() { return null; }
+
+	/** Appelle la fonction d'indice `index` de la table des tests. Générée. */
+	public void callTestFunction(int index) throws LeekRunException {}
+
 	// Method that can be overriden in each AI
 	public void init() throws Exception {}
 
@@ -948,6 +968,8 @@ public abstract class AI {
 
 	public void addSystemLog(int type, int error, Object[] parameters, Throwable cause) throws LeekRunException {
 		ops(AI.ERROR_LOG_COST);
+		// Une erreur journalisée sans arrêter le code fait échouer le test en cours
+		if (testRecorder != null && type == AILog.ERROR) testRecorder.loggedError(this, error, parameters);
 		if (type == AILog.WARNING)
 			type = AILog.SWARNING;
 		else if (type == AILog.ERROR)

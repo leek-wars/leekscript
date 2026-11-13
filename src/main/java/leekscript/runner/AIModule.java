@@ -203,6 +203,10 @@ public abstract class AIModule {
 		return ai.callObjectAccessNullSafe(a0, a1, a2, a3, a4);
 	}
 
+	public final void callTestFunction(int a0) throws leekscript.runner.LeekRunException {
+		ai.callTestFunction(a0);
+	}
+
 	protected static java.lang.StackTraceElement[] captureAITrace() {
 		return AI.captureAITrace();
 	}
@@ -489,6 +493,14 @@ public abstract class AIModule {
 
 	public final java.lang.String getString(java.lang.String a0, java.lang.Object a1) throws leekscript.runner.LeekRunException {
 		return ai.getString(a0, a1);
+	}
+
+	public final leekscript.testing.TestRecorder getTestRecorder() {
+		return ai.getTestRecorder();
+	}
+
+	public final java.lang.String getTestTable() {
+		return ai.getTestTable();
 	}
 
 	public final long getUsedRAM() {
@@ -1025,6 +1037,10 @@ public abstract class AIModule {
 
 	public final void setMaxRAM(int a0) {
 		ai.setMaxRAM(a0);
+	}
+
+	public final void setTestRecorder(leekscript.testing.TestRecorder a0) {
+		ai.setTestRecorder(a0);
 	}
 
 	public final void shareCodeRAM(int a0) {
