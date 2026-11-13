@@ -82,6 +82,13 @@ public class TestTestFramework {
 	}
 
 	@Test
+	public void operationsCappedAtTheCeiling() throws Exception {
+		var table = TestCase.table(compile(module("@test(ops: 9_000_000_000) function huge() { assert(true) }\n@test function plain() { assert(true) }")));
+		assertEquals(TestRunner.MAX_OPERATIONS, table.get(0).maxOperations(1));
+		assertEquals((int) TestRunner.DEFAULT_MAX_OPERATIONS, table.get(1).maxOperations());
+	}
+
+	@Test
 	public void argumentsOnAnAnnotationThatTakesNone() throws Exception {
 		assertTrue(errors(module("@unused(42) function f() { return 1 }\n@test function t() { assert(true) }")).contains(Error.ANNOTATION_ARGUMENT_INVALID));
 	}

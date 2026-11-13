@@ -49,8 +49,13 @@ public record TestCase(int index, String name, int line, Kind kind, String skip,
 		return kind == Kind.TEST;
 	}
 
-	/** Plafond d'opérations demandé par `@test(ops: …)`, ou `byDefault`. */
+	/** Plafond d'opérations demandé par `@test(ops: …)`, ou `byDefault`, borné à {@link TestRunner#MAX_OPERATIONS}. */
 	public long maxOperations(long byDefault) {
-		return options.get("ops") instanceof Number n && n.longValue() > 0 ? n.longValue() : byDefault;
+		return Math.min(TestRunner.MAX_OPERATIONS, options.get("ops") instanceof Number n && n.longValue() > 0 ? n.longValue() : byDefault);
+	}
+
+	/** Plafond d'opérations du test : le sien, ou {@link TestRunner#DEFAULT_MAX_OPERATIONS}. */
+	public int maxOperations() {
+		return (int) maxOperations(TestRunner.DEFAULT_MAX_OPERATIONS);
 	}
 }

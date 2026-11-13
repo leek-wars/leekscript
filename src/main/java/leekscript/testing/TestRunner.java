@@ -21,6 +21,9 @@ public class TestRunner {
 	/** Plafond d'opérations d'un test, sauf `@test(ops: …)`. */
 	public static final long DEFAULT_MAX_OPERATIONS = 20_000_000;
 
+	/** Plafond d'opérations d'un test, même s'il demande plus (`@test(ops: …)`) : borne sa durée. */
+	public static final long MAX_OPERATIONS = 500_000_000;
+
 	/**
 	 * Lance un test sur une IA neuve, prête à tourner : le code de premier niveau du module, ses
 	 * `@before`, le test, ses `@after`. L'IA garde son enregistreur après l'appel.
@@ -138,7 +141,7 @@ public class TestRunner {
 				ai.init();
 				ai.staticInit();
 				ai.resetCounter();
-				ai.setMaxOperations((int) Math.min(Integer.MAX_VALUE, test.maxOperations(DEFAULT_MAX_OPERATIONS)));
+				ai.setMaxOperations(test.maxOperations());
 			}
 			var logs = new ArrayList<String>();
 			if (ai != null) ai.getLogs().setStream(a -> logs.add(a.toString()));
