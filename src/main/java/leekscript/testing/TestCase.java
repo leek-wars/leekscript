@@ -51,6 +51,6 @@ public record TestCase(int index, String name, int line, Kind kind, String skip,
 
 	/** Plafond d'opérations demandé par `@test(ops: …)`, ou `byDefault`. */
 	public long maxOperations(long byDefault) {
-		return options.get("ops") instanceof Number n ? n.longValue() : byDefault;
+		return options.get("ops") instanceof Number n && n.longValue() > 0 ? n.longValue() : byDefault;
 	}
 }

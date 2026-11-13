@@ -25,10 +25,10 @@ public class TestRunner {
 	 * Lance un test sur une IA neuve, prête à tourner : le code de premier niveau du module, ses
 	 * `@before`, le test, ses `@after`. L'IA garde son enregistreur après l'appel.
 	 */
-	public static TestResult run(AI ai, String module, List<TestCase> table, TestCase test, List<String> logs) {
-		if (test.skip() != null) {
-			return new TestResult(module, test.name(), test.line(), TestResult.Status.SKIPPED, test.skip(), 0, 0, 0, List.of(), List.of(), null, List.of());
-		}
+	public static TestResult run(AI ai, TestRun run) {
+		var test = run.test();
+		var table = run.table();
+		if (test.skip() != null) return run.skipped();
 		var recorder = new TestRecorder();
 		ai.setTestRecorder(recorder);
 		String error = null;
@@ -42,6 +42,7 @@ public class TestRunner {
 			inTest = true;
 			ai.callTestFunction(test.index());
 		} catch (Throwable t) {
+			rethrowIfFatal(t);
 			var cause = unwrap(t);
 			error = describe(ai, cause);
 			outOfBudget = cause instanceof LeekRunException e && isOutOfBudget(e);
@@ -50,6 +51,7 @@ public class TestRunner {
 		try {
 			for (var c : table) if (c.kind() == TestCase.Kind.AFTER) ai.callTestFunction(c.index());
 		} catch (Throwable t) {
+			rethrowIfFatal(t);
 			if (error == null) {
 				error = describe(ai, unwrap(t));
 				inTest = false;
@@ -76,8 +78,13 @@ public class TestRunner {
 			reason = test.fails();
 			status = status.ok ? TestResult.Status.UNEXPECTED_PASS : TestResult.Status.EXPECTED_FAILURE;
 		}
-		return new TestResult(module, test.name(), test.line(), status, reason, ai.getOperations(), duration, recorder.asserts(),
-			List.copyOf(recorder.failures()), List.copyOf(recorder.errors()), error, logs == null ? List.of() : List.copyOf(logs));
+		return new TestResult(run.module(), test.name(), test.line(), status, reason, ai.getOperations(), duration, recorder.asserts(),
+			List.copyOf(recorder.failures()), List.copyOf(recorder.errors()), error, run.logs() == null ? List.of() : List.copyOf(run.logs()));
+	}
+
+	/** Une erreur de la machine virtuelle (mémoire épuisée…) n'est pas celle d'un test : elle remonte. */
+	private static void rethrowIfFatal(Throwable t) {
+		if (t instanceof VirtualMachineError fatal && !(t instanceof StackOverflowError)) throw fatal;
 	}
 
 	/** Plus d'opérations ou plus de mémoire : le code n'est pas allé au bout. */
@@ -135,7 +142,7 @@ public class TestRunner {
 			}
 			var logs = new ArrayList<String>();
 			if (ai != null) ai.getLogs().setStream(a -> logs.add(a.toString()));
-			results.add(run(ai, file.getPath(), table, test, logs));
+			results.add(run(ai, new TestRun(file.getPath(), table, test, logs)));
 			if (test.skip() == null) ai = null;
 		}
 		return results;

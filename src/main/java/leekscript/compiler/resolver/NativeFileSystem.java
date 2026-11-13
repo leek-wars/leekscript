@@ -12,7 +12,19 @@ import leekscript.compiler.LeekScript;
 
 public class NativeFileSystem extends FileSystem {
 
-	private Folder root = new Folder(0, this);
+	private final Folder root;
+
+	/** Racine : le dossier courant, sans propriétaire. */
+	public NativeFileSystem() {
+		root = new Folder(0, this);
+	}
+
+	/** Racine : le dossier `path`, dont les fichiers et les sous-dossiers appartiennent à `owner`. */
+	public NativeFileSystem(String path, int owner) {
+		root = new Folder(0, owner, path, null, null, this, System.currentTimeMillis());
+		root.setParent(root);
+		root.setRoot(root);
+	}
 
 	@Override
 	public Folder getRoot() {
@@ -57,7 +69,7 @@ public class NativeFileSystem extends FileSystem {
 			Path resolvedPath = resolveSafe(folderRoot, name);
 			if (resolvedPath == null) return null;
 
-			return new Folder(0, 0, resolvedPath.toString(), folder, this.root, this, System.currentTimeMillis());
+			return new Folder(0, folder.getOwner(), resolvedPath.toString(), folder, this.root, this, System.currentTimeMillis());
 
 		} catch (Exception e) {
 			return null;

@@ -36,6 +36,11 @@ public record TestResult(String module, String name, int line, Status status, St
 		}
 	}
 
+	/** Une erreur hors de tout test lancé (module introuvable, combat qui plante…). */
+	public static TestResult error(String module, String name, int line, String message, List<String> logs) {
+		return new TestResult(module, name, line, Status.ERROR, null, 0, 0, 0, List.of(), List.of(), message, logs == null ? List.of() : List.copyOf(logs));
+	}
+
 	public ObjectNode toJson() {
 		var json = Json.createObject();
 		json.put("module", module);
