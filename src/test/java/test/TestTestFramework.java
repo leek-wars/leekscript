@@ -80,6 +80,21 @@ public class TestTestFramework {
 		assertTrue(TestCase.table(compile("plain_" + uniqueId)).isEmpty());
 	}
 
+	@Test
+	public void staticMethodsAreTestsToo() throws Exception {
+		var results = run(module("class TestTas {\n\tstatic integer base = 0\n\t@before static void prepare() { base = 40 }\n"
+			+ "\t@test static void sum() { assertEquals(42, base + 2) }\n\t@test @skip(\"plus tard\") static void later() { fail() }\n\tstatic integer helper() { return 1 }\n}\n"
+			+ "@test function free() { assertEquals(40, TestTas.base + 0) }"));
+		assertEquals(List.of("TestTas.sum", "TestTas.later", "free"), results.stream().map(TestResult::name).toList());
+		assertEquals(List.of(Status.PASSED, Status.SKIPPED, Status.PASSED), results.stream().map(TestResult::status).toList());
+	}
+
+	@Test
+	public void testAnnotationNeedsAStaticMethod() throws Exception {
+		assertTrue(errors(module("class A {\n\t@test void t() { assert(true) }\n}")).contains(Error.ANNOTATION_INVALID_CONTEXT));
+		assertTrue(errors(module("class A {\n\t@test static void t(integer x) { assert(x > 0) }\n}")).contains(Error.TEST_FUNCTION_WITH_PARAMETERS));
+	}
+
 	// ----- verdicts -----
 
 	@Test

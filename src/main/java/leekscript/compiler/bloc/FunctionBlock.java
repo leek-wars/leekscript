@@ -26,7 +26,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.CallableVersion;
 
-public class FunctionBlock extends AbstractLeekBlock implements Annotatable, leekscript.compiler.TypeParameterScope {
+public class FunctionBlock extends AbstractLeekBlock implements Annotatable, TestEntry, leekscript.compiler.TypeParameterScope {
 
 	private Token token;
 	private int mId;
@@ -573,18 +573,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 			}
 		}
 		super.analyze(compiler);
-		// Le lanceur appelle lui-même un test, sa préparation et sa clôture : sans argument
-		if (isTestEntry() && countParameters() > 0) {
-			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.TEST_FUNCTION_WITH_PARAMETERS, new String[] { getName() }));
-		}
-		// `@skip` et `@fails` qualifient un test
-		if (annotations != null && !annotations.contains(Annotation.TEST)) {
-			for (var qualifier : new Annotation[] { Annotation.SKIP, Annotation.FAILS }) {
-				if (annotations.contains(qualifier)) {
-					compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_INVALID_CONTEXT, new String[] { qualifier.name().toLowerCase() }));
-				}
-			}
-		}
+		checkTestEntry(compiler, this, token, countParameters());
 		// @tailrec : après l'analyse du corps, tout appel récursif collecté doit être
 		// en position terminale (expression directe d'un `return` non optionnel).
 		// Sinon, erreur dure pointant l'appel fautif. Inactif sans l'annotation.
@@ -778,6 +767,22 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		annotations.add(a);
 	}
 
+	/** Contrôles d'une fonction ou d'une méthode statique qui porte une annotation de test. */
+	public static void checkTestEntry(WordCompiler compiler, TestEntry entry, Token name, int parameters) throws LeekCompilerException {
+		// Le lanceur appelle lui-même un test, sa préparation et sa clôture : sans argument
+		if (entry.isTestEntry() && parameters > 0) {
+			compiler.addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.TEST_FUNCTION_WITH_PARAMETERS, new String[] { name.getWord() }));
+		}
+		// `@skip` et `@fails` qualifient un test
+		if (!entry.hasAnnotation(Annotation.TEST)) {
+			for (var qualifier : new Annotation[] { Annotation.SKIP, Annotation.FAILS }) {
+				if (entry.hasAnnotation(qualifier)) {
+					compiler.addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_INVALID_CONTEXT, new String[] { qualifier.name().toLowerCase() }));
+				}
+			}
+		}
+	}
+
 	// Arguments des annotations qui en portent (`@skip("raison")`, `@test(ops: …)`)
 	private java.util.EnumMap<Annotation, leekscript.compiler.AnnotationArgs> annotationArgs = null;
 
@@ -790,16 +795,12 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, lee
 		}
 	}
 
-	/** Arguments de l'annotation, jamais null. */
+	@Override
 	public leekscript.compiler.AnnotationArgs getAnnotationArgs(Annotation a) {
 		var args = annotationArgs == null ? null : annotationArgs.get(a);
 		return args == null ? leekscript.compiler.AnnotationArgs.NONE : args;
 	}
 
-	/** Fonction que le lanceur de tests appelle lui-même : test, ou préparation et clôture d'un test. */
-	public boolean isTestEntry() {
-		return annotations != null && (annotations.contains(Annotation.TEST) || annotations.contains(Annotation.BEFORE) || annotations.contains(Annotation.AFTER));
-	}
 
 	public boolean hasAnnotation(Annotation a) {
 		return annotations != null && annotations.contains(a);

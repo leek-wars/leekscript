@@ -1956,7 +1956,7 @@ public class WordCompiler {
 
 	/**
 	 * Une annotation du framework de test (`@test`, `@skip`, `@fails`, `@before`, `@after`) ne se pose
-	 * que sur une fonction de premier niveau d'un module de test, en v5. Rend false, erreur signalée,
+	 * que sur une fonction de premier niveau ou une méthode statique d'un module de test, en v5. Rend false, erreur signalée,
 	 * quand elle est mal placée.
 	 */
 	private boolean applyTestAnnotation(Annotatable target, Annotation a, Token ann) throws LeekCompilerException {
@@ -1964,7 +1964,8 @@ public class WordCompiler {
 			addError(new AnalyzeError(ann, AnalyzeErrorLevel.ERROR, Error.TEST_ANNOTATION_OUTSIDE_TEST_MODULE, new String[] { ann.getWord() }));
 			return false;
 		}
-		if (!(target instanceof FunctionBlock)) {
+		// Une fonction de premier niveau, ou une méthode statique : le lanceur l'appelle sans objet
+		if (!(target instanceof FunctionBlock) && !(target instanceof ClassMethodBlock method && method.isStatic())) {
 			addError(new AnalyzeError(ann, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_INVALID_CONTEXT, new String[] { ann.getWord() }));
 			return false;
 		}
@@ -2095,7 +2096,9 @@ public class WordCompiler {
 					&& mTokens.get(1).getType() == TokenType.STRING) {
 				mTokens.skip(); // consume '@'
 				if (classAnnotations == NO_ANNOTATIONS) classAnnotations = new ArrayList<>();
-				classAnnotations.add(mTokens.eat()); // consume annotation name
+				var annotationName = mTokens.eat(); // consume annotation name
+				classAnnotations.add(annotationName);
+				if (mTokens.get().getType() == TokenType.PAR_LEFT) annotationArguments(annotationName);
 				word = mTokens.get();
 			}
 			switch (word.getWord()) {

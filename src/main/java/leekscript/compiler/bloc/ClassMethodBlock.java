@@ -24,7 +24,7 @@ import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
 
-public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
+public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable, TestEntry {
 
 	private final ClassDeclarationInstruction clazz;
 	private final boolean isStatic;
@@ -67,6 +67,28 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 
 	public boolean hasAnnotation(Annotation a) {
 		return annotations != null && annotations.contains(a);
+	}
+
+	// Arguments des annotations qui en portent (`@skip("raison")`, `@test(ops: …)`)
+	private java.util.EnumMap<Annotation, leekscript.compiler.AnnotationArgs> annotationArgs = null;
+
+	@Override
+	public void addAnnotation(Annotation a, leekscript.compiler.AnnotationArgs args) {
+		addAnnotation(a);
+		if (args != null && !args.isEmpty()) {
+			if (annotationArgs == null) annotationArgs = new java.util.EnumMap<>(Annotation.class);
+			annotationArgs.put(a, args);
+		}
+	}
+
+	@Override
+	public leekscript.compiler.AnnotationArgs getAnnotationArgs(Annotation a) {
+		var args = annotationArgs == null ? null : annotationArgs.get(a);
+		return args == null ? leekscript.compiler.AnnotationArgs.NONE : args;
+	}
+
+	public boolean isStatic() {
+		return isStatic;
 	}
 
 	// @tailrec : un appel résolu vers cette méthode (récursion directe) s'enregistre
@@ -262,6 +284,7 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 			}
 		}
 		super.analyze(compiler);
+		FunctionBlock.checkTestEntry(compiler, this, token, mParameters.size());
 		// @tailrec : après l'analyse du corps, tout appel récursif collecté doit être
 		// en position terminale, sinon erreur dure pointant l'appel fautif (mirror
 		// FunctionBlock.analyze). Inactif sans l'annotation.

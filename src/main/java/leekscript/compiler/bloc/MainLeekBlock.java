@@ -625,23 +625,37 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	}
 
 	/**
-	 * Module de test compilé comme point d'entrée : la table de ses fonctions `@test`, `@before` et
-	 * `@after` (JSON, dans l'ordre du fichier) et leur appel par indice. Le lanceur de tests n'a ainsi
+	 * Module de test compilé comme point d'entrée : la table de ses fonctions et méthodes statiques
+	 * `@test`, `@before` et `@after` (JSON, dans l'ordre du fichier) et leur appel par indice. Le lanceur de tests n'a ainsi
 	 * rien à savoir du nom Java d'une fonction.
 	 */
 	private void writeTestTable(JavaWriter writer) {
 		if (mMainModule == null || !mMainModule.getFile().isTestModule()) return;
-		var entries = new ArrayList<FunctionBlock>();
+		// (nom affiché, appel Java, entrée), fonctions de premier niveau puis méthodes statiques du module
+		record Row(String name, String call, TestEntry entry) {}
+		var entries = new ArrayList<Row>();
 		for (var function : mFunctions.values()) {
-			if (function.isTestEntry() && !function.isVariant() && (function.getModule() == null || function.getModule() == mMainModule)) entries.add(function);
+			if (function.isTestEntry() && !function.isVariant() && (function.getModule() == null || function.getModule() == mMainModule)) {
+				entries.add(new Row(function.getName(), "f_" + function.getInternalName() + "()", function));
+			}
 		}
-		entries.sort(java.util.Comparator.comparingInt((FunctionBlock f) -> f.getLocation().getStartLine()).thenComparing(FunctionBlock::getInternalName));
+		for (var clazz : mUserClassesList) {
+			if (clazz.internal || clazz.getModule() != null && clazz.getModule() != mMainModule) continue;
+			for (var method : clazz.getStaticMethods().entrySet()) {
+				var block = method.getValue().get(0); // sans paramètre, seule forme admise
+				if (block != null && block.block.isTestEntry()) {
+					entries.add(new Row(clazz.getName() + "." + method.getKey(), "u_" + clazz.getInternalName() + "_" + method.getKey() + "_0()", block.block));
+				}
+			}
+		}
+		entries.sort(java.util.Comparator.comparingInt((Row r) -> r.entry().getLocation().getStartLine()).thenComparing(Row::name));
 		// Une chaîne par fonction : la table entière en une seule constante dépasserait la limite de
 		// Java (65 535 octets) vers un millier de tests
 		var rows = new ArrayList<String>();
-		for (var function : entries) {
+		for (var row : entries) {
+			var function = row.entry();
 			var entry = leekscript.util.Json.createObject();
-			entry.put("name", function.getName());
+			entry.put("name", row.name());
 			entry.put("line", function.getLocation().getStartLine());
 			entry.put("kind", function.hasAnnotation(leekscript.common.Annotation.TEST) ? "test" : function.hasAnnotation(leekscript.common.Annotation.BEFORE) ? "before" : "after");
 			var skip = function.getAnnotationArgs(leekscript.common.Annotation.SKIP).text();
@@ -660,7 +674,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		writer.addLine("public void callTestFunction(int index) throws LeekRunException {");
 		writer.addLine("switch (index) {");
 		for (int i = 0; i < entries.size(); i++) {
-			writer.addLine("case " + i + ": f_" + entries.get(i).getInternalName() + "(); break;");
+			writer.addLine("case " + i + ": " + entries.get(i).call() + "; break;");
 		}
 		writer.addLine("}");
 		writer.addLine("}");
