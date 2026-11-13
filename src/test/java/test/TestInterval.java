@@ -2,9 +2,15 @@ package test;
 
 
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import leekscript.common.Error;
+import leekscript.common.Type;
+import leekscript.runner.AI;
+import leekscript.runner.LeekFunctions;
+import leekscript.runner.values.IntegerIntervalLeekValue;
+import leekscript.runner.values.RealIntervalLeekValue;
 
 @ExtendWith(SummaryExtension.class)
 public class TestInterval extends TestCommon {
@@ -265,6 +271,48 @@ public class TestInterval extends TestCommon {
 		code_v2_("var a = [1.0..2.0] var b = [0..[ return intervalCombine(a, b)").equals("[0.0..∞[");
 		code_v2_("return intervalIntersection(]..5], ]..2.0])").equals("]-∞..2.0]");
 		code_v2_("var a = ]..2.0] var b = ]..5] return intervalIntersection(a, b)").equals("]-∞..2.0]");
+	}
+
+	/**
+	 * Chaque signature déclarée dans LeekFunctions pour un intervalle concret doit exister en Java :
+	 * sinon l'IA passe l'analyse mais l'appel généré ne compile pas (COMPILE_JAVA en combat).
+	 */
+	@Test
+	public void testInterval_declaredVersionsExistInJava() throws Exception {
+		var missing = new java.util.ArrayList<String>();
+		int checked = 0;
+		for (var f : LeekFunctions.getStandardFunctions().values()) {
+			if (!"Interval".equals(f.getStandardClass())) continue;
+			for (var v : f.getVersions()) {
+				if (v.arguments.length == 0) continue;
+				var receiver = javaClass(v.arguments[0]);
+				if (receiver == null || receiver.isPrimitive()) continue;
+				var params = new Class<?>[v.arguments.length];
+				params[0] = AI.class;
+				boolean mappable = true;
+				for (int i = 1; i < v.arguments.length; i++) {
+					params[i] = javaClass(v.arguments[i]);
+					if (params[i] == null) { mappable = false; break; }
+				}
+				if (!mappable) continue;
+				checked++;
+				try {
+					receiver.getMethod(f.getName(), params);
+				} catch (NoSuchMethodException e) {
+					missing.add(receiver.getSimpleName() + "." + f.getName() + java.util.Arrays.toString(v.arguments));
+				}
+			}
+		}
+		Assertions.assertTrue(checked > 10, "trop peu de signatures vérifiées : " + checked);
+		Assertions.assertEquals(java.util.List.of(), missing);
+	}
+
+	private static Class<?> javaClass(Type type) {
+		if (type == Type.INTEGER_INTERVAL) return IntegerIntervalLeekValue.class;
+		if (type == Type.REAL_INTERVAL) return RealIntervalLeekValue.class;
+		if (type == Type.INT) return long.class;
+		if (type == Type.REAL) return double.class;
+		return null;
 	}
 
 	@Test
