@@ -209,12 +209,12 @@ public class RealIntervalLeekValue extends IntervalLeekValue {
 		}
 
 		if (interval.intervalIsEmpty(ai)) {
-			return new RealIntervalLeekValue(ai, interval.minClosed, interval.getFrom(), interval.maxClosed, interval.getTo());
+			return new RealIntervalLeekValue(ai, interval.minClosed, interval.getRealFrom(), interval.maxClosed, interval.getRealTo());
 		}
 
-		var unionMinClosed = from < interval.getFrom() ? interval.minClosed : minClosed;
-		var unionMaxClosed = to < interval.getTo() ? maxClosed : interval.maxClosed;
-		return new RealIntervalLeekValue(ai, unionMinClosed, Math.max(from, interval.getFrom()), unionMaxClosed, Math.min(to, interval.getTo()));
+		var unionMinClosed = from < interval.getRealFrom() ? interval.minClosed : minClosed;
+		var unionMaxClosed = to < interval.getRealTo() ? maxClosed : interval.maxClosed;
+		return new RealIntervalLeekValue(ai, unionMinClosed, Math.max(from, interval.getRealFrom()), unionMaxClosed, Math.min(to, interval.getRealTo()));
 	}
 
 	public RealIntervalLeekValue intervalCombine(AI ai, RealIntervalLeekValue interval) throws LeekRunException {
@@ -233,16 +233,16 @@ public class RealIntervalLeekValue extends IntervalLeekValue {
 
 	public RealIntervalLeekValue intervalCombine(AI ai, IntegerIntervalLeekValue interval) throws LeekRunException {
 		if (intervalIsEmpty(ai)) {
-			return new RealIntervalLeekValue(ai, interval.minClosed, interval.getFrom(), interval.maxClosed, interval.getTo());
+			return new RealIntervalLeekValue(ai, interval.minClosed, interval.getRealFrom(), interval.maxClosed, interval.getRealTo());
 		}
 
 		if (interval.intervalIsEmpty(ai)) {
 			return new RealIntervalLeekValue(ai, minClosed, from, maxClosed, to);
 		}
 
-		var unionMinClosed = from < interval.getFrom() ? minClosed : interval.minClosed;
-		var unionMaxClosed = to < interval.getTo() ? interval.maxClosed : maxClosed;
-		return new RealIntervalLeekValue(ai, unionMinClosed, Math.min(from, interval.getFrom()), unionMaxClosed, Math.max(to, interval.getTo()));
+		var unionMinClosed = from < interval.getRealFrom() ? minClosed : interval.minClosed;
+		var unionMaxClosed = to < interval.getRealTo() ? interval.maxClosed : maxClosed;
+		return new RealIntervalLeekValue(ai, unionMinClosed, Math.min(from, interval.getRealFrom()), unionMaxClosed, Math.max(to, interval.getRealTo()));
 	}
 
 	public ArrayLeekValue intervalToArray(AI ai) throws LeekRunException {
