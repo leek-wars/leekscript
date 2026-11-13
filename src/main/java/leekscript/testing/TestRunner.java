@@ -42,15 +42,16 @@ public class TestRunner {
 			inTest = true;
 			ai.callTestFunction(test.index());
 		} catch (Throwable t) {
-			error = describe(ai, t);
-			outOfBudget = isOutOfBudget(t);
+			var cause = unwrap(t);
+			error = describe(ai, cause);
+			outOfBudget = cause instanceof LeekRunException e && isOutOfBudget(e);
 		}
 		// Les `@after` tournent même après un test planté ; leur propre erreur ne cache pas la première
 		try {
 			for (var c : table) if (c.kind() == TestCase.Kind.AFTER) ai.callTestFunction(c.index());
 		} catch (Throwable t) {
 			if (error == null) {
-				error = describe(ai, t);
+				error = describe(ai, unwrap(t));
 				inTest = false;
 			}
 		}
@@ -58,7 +59,6 @@ public class TestRunner {
 
 		TestResult.Status status;
 		String reason = null;
-		boolean checked = recorder.asserts() > 0 || !recorder.errors().isEmpty() || error != null;
 		if (error != null || !recorder.errors().isEmpty()) {
 			status = TestResult.Status.ERROR;
 		} else if (!recorder.failures().isEmpty()) {
@@ -72,7 +72,7 @@ public class TestRunner {
 		}
 		// `@fails` : l'échec attendu est celui du test lui-même (assert raté, erreur dans son corps).
 		// Un test vidé de ses asserts, une préparation qui plante ou un budget épuisé restent des échecs.
-		if (test.fails() != null && checked && !outOfBudget && (error == null || inTest)) {
+		if (test.fails() != null && reason == null && !outOfBudget && (error == null || inTest)) {
 			reason = test.fails();
 			status = status.ok ? TestResult.Status.UNEXPECTED_PASS : TestResult.Status.EXPECTED_FAILURE;
 		}
@@ -80,16 +80,19 @@ public class TestRunner {
 			List.copyOf(recorder.failures()), List.copyOf(recorder.errors()), error, logs == null ? List.of() : List.copyOf(logs));
 	}
 
-	/** Plus d'opérations ou plus de mémoire : le test n'est pas allé au bout. */
-	private static boolean isOutOfBudget(Throwable t) {
-		while (!(t instanceof LeekRunException) && t.getCause() != null && t.getCause() != t) t = t.getCause();
-		return t instanceof LeekRunException e && (e.getError() == Error.TOO_MUCH_OPERATIONS || e.getError() == Error.OUT_OF_MEMORY);
+	/** Plus d'opérations ou plus de mémoire : le code n'est pas allé au bout. */
+	public static boolean isOutOfBudget(LeekRunException e) {
+		return e.getError() == Error.TOO_MUCH_OPERATIONS || e.getError() == Error.OUT_OF_MEMORY;
 	}
 
-	/** L'erreur qui a arrêté un test, en texte : son type, ses paramètres, où elle a eu lieu. Null si le test s'est arrêté normalement. */
-	private static String describe(AI ai, Throwable t) {
-		// Une erreur du joueur peut arriver emballée (fonction appelée par une native, réflexion)
+	/** Une erreur du joueur peut arriver emballée (fonction appelée par une native, réflexion). */
+	private static Throwable unwrap(Throwable t) {
 		while (!(t instanceof LeekRunException) && !(t instanceof StackOverflowError) && t.getCause() != null && t.getCause() != t) t = t.getCause();
+		return t;
+	}
+
+	/** L'erreur (déballée) qui a arrêté un test, en texte : son type, ses paramètres, où elle a eu lieu. Null si le test s'est arrêté normalement. */
+	private static String describe(AI ai, Throwable t) {
 		if (t instanceof StackOverflowError) return Error.STACKOVERFLOW.name();
 		// L'entité du test est morte pendant son tour : le test s'arrête là, sans erreur
 		if (t instanceof LeekRunException e && e.getError() == Error.ENTITY_DIED) return null;
@@ -118,17 +121,22 @@ public class TestRunner {
 	/** Lance tous les tests d'un module hors de tout combat. */
 	public static List<TestResult> runModule(AIFile file, Options options) throws Exception {
 		var results = new ArrayList<TestResult>();
-		var table = TestCase.table(file.compile(options));
+		// L'IA compilée pour lire la table sert au premier test lancé ; chaque suivant a la sienne
+		var ai = file.compile(options);
+		var table = TestCase.table(ai);
 		for (var test : table) {
 			if (!test.isTest()) continue;
-			var ai = file.compile(options);
+			if (test.skip() == null) {
+				if (ai == null) ai = file.compile(options);
+				ai.init();
+				ai.staticInit();
+				ai.resetCounter();
+				ai.setMaxOperations((int) Math.min(Integer.MAX_VALUE, test.maxOperations(DEFAULT_MAX_OPERATIONS)));
+			}
 			var logs = new ArrayList<String>();
-			ai.getLogs().setStream(a -> logs.add(a.toString()));
-			ai.init();
-			ai.staticInit();
-			ai.resetCounter();
-			ai.setMaxOperations((int) Math.min(Integer.MAX_VALUE, test.maxOperations(DEFAULT_MAX_OPERATIONS)));
+			if (ai != null) ai.getLogs().setStream(a -> logs.add(a.toString()));
 			results.add(run(ai, file.getPath(), table, test, logs));
+			if (test.skip() == null) ai = null;
 		}
 		return results;
 	}

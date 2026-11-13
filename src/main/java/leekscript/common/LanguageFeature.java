@@ -20,6 +20,9 @@ public enum LanguageFeature {
 	/** Modules: {@code import}/{@code export}, one file = one module, private-by-default. */
 	MODULES(5),
 
+	/** Framework de test : annotations {@code @test}, {@code @skip}… dans un module {@code *.test.leek}, arguments d'annotation. */
+	TEST_FRAMEWORK(5),
+
 	/** Type guard functions: {@code function f(any x) -> x is Type} narrows the argument. */
 	TYPE_GUARDS(5),
 

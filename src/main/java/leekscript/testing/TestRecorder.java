@@ -46,8 +46,8 @@ public class TestRecorder {
 	public boolean check(AI ai, boolean ok, String message, String expected, String actual) {
 		asserts++;
 		if (!ok) {
-			var position = ai.getCurrentLeekScriptPosition();
-			failures.add(new Failure(position == null ? null : position.file(), position == null ? 0 : position.line(), message, expected, actual));
+			var position = position(ai);
+			failures.add(new Failure(position.file(), position.line(), message, expected, actual));
 		}
 		return ok;
 	}
@@ -58,7 +58,7 @@ public class TestRecorder {
 			expectedErrorsSeen++;
 			return;
 		}
-		var position = ai.getCurrentLeekScriptPosition();
+		var position = position(ai);
 		String[] texts = null;
 		if (parameters != null) {
 			texts = new String[parameters.length];
@@ -70,7 +70,13 @@ public class TestRecorder {
 				}
 			}
 		}
-		errors.add(new LoggedError(position == null ? null : position.file(), position == null ? 0 : position.line(), error, texts));
+		errors.add(new LoggedError(position.file(), position.line(), error, texts));
+	}
+
+	/** Où en est le code du test, (null, 0) si la position est inconnue. */
+	private static AI.LeekScriptPosition position(AI ai) {
+		var position = ai.getCurrentLeekScriptPosition();
+		return position == null ? new AI.LeekScriptPosition(null, 0) : position;
 	}
 
 	public void beginExpectedError() {

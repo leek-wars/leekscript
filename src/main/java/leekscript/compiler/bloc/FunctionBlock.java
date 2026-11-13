@@ -10,6 +10,7 @@ import leekscript.compiler.Annotatable;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
 import leekscript.compiler.AnalyzeError;
+import leekscript.compiler.AnnotationArgs;
 import leekscript.compiler.Token;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -573,7 +574,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, Tes
 			}
 		}
 		super.analyze(compiler);
-		checkTestEntry(compiler, this, token, countParameters());
+		if (annotations != null) checkTestEntry(compiler, token, countParameters());
 		// @tailrec : après l'analyse du corps, tout appel récursif collecté doit être
 		// en position terminale (expression directe d'un `return` non optionnel).
 		// Sinon, erreur dure pointant l'appel fautif. Inactif sans l'annotation.
@@ -767,36 +768,19 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, Tes
 		annotations.add(a);
 	}
 
-	/** Contrôles d'une fonction ou d'une méthode statique qui porte une annotation de test. */
-	public static void checkTestEntry(WordCompiler compiler, TestEntry entry, Token name, int parameters) throws LeekCompilerException {
-		// Le lanceur appelle lui-même un test, sa préparation et sa clôture : sans argument
-		if (entry.isTestEntry() && parameters > 0) {
-			compiler.addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.TEST_FUNCTION_WITH_PARAMETERS, new String[] { name.getWord() }));
-		}
-		// `@skip` et `@fails` qualifient un test
-		if (!entry.hasAnnotation(Annotation.TEST)) {
-			for (var qualifier : new Annotation[] { Annotation.SKIP, Annotation.FAILS }) {
-				if (entry.hasAnnotation(qualifier)) {
-					compiler.addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_INVALID_CONTEXT, new String[] { qualifier.name().toLowerCase() }));
-				}
-			}
-		}
-	}
-
 	// Arguments des annotations qui en portent (`@skip("raison")`, `@test(ops: …)`)
-	private java.util.EnumMap<Annotation, leekscript.compiler.AnnotationArgs> annotationArgs = null;
+	private java.util.EnumMap<Annotation, AnnotationArgs> annotationArgs = null;
 
 	@Override
-	public void addAnnotation(Annotation a, leekscript.compiler.AnnotationArgs args) {
+	public void addAnnotation(Annotation a, AnnotationArgs args) {
 		addAnnotation(a);
-		annotationArgs = leekscript.compiler.AnnotationArgs.put(annotationArgs, a, args);
+		annotationArgs = AnnotationArgs.put(annotationArgs, a, args);
 	}
 
 	@Override
-	public leekscript.compiler.AnnotationArgs getAnnotationArgs(Annotation a) {
-		return leekscript.compiler.AnnotationArgs.get(annotationArgs, a);
+	public AnnotationArgs getAnnotationArgs(Annotation a) {
+		return AnnotationArgs.get(annotationArgs, a);
 	}
-
 
 	public boolean hasAnnotation(Annotation a) {
 		return annotations != null && annotations.contains(a);

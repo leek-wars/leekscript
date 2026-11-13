@@ -8,6 +8,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.AnonymousFunctionBlock;
+import leekscript.compiler.bloc.ClassMethodBlock;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
@@ -309,7 +310,7 @@ public class LeekVariable extends Expression {
 				// parcourue avant les membres) : `cache` dans une méthode reste le champ de sa classe,
 				// même si le point d'entrée a une fonction `cache`.
 				for (var block = compiler.getCurrentBlock(); block != null; block = block.getParent()) {
-					if (block instanceof leekscript.compiler.bloc.ClassMethodBlock method) {
+					if (block instanceof ClassMethodBlock method) {
 						v = method.getClassMember(name, true);
 						break;
 					}

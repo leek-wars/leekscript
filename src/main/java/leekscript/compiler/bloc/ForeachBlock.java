@@ -87,7 +87,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 
 		// Si c'est une déclaration on vérifie que le nom est disponible
 		if (mIsDeclaration) {
-			if (leekscript.compiler.instruction.LeekVariableDeclarationInstruction.isIteratorNameTaken(compiler, mIterator)) {
+			if (LeekVariableDeclarationInstruction.isIteratorNameTaken(compiler, mIterator)) {
 				compiler.addError(new AnalyzeError(mIterator, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] { mIterator.getWord() }));
 			} else {
 				// this.addVariable(new LeekVariable(mIterator, VariableType.LOCAL, declaration));

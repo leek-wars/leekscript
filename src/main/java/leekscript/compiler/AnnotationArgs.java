@@ -1,9 +1,12 @@
 package leekscript.compiler;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import leekscript.common.Annotation;
 
 /**
  * Arguments d'une annotation : `@skip("raison")`, `@test(ops: 50_000_000)`. Des littéraux
@@ -21,10 +24,6 @@ public class AnnotationArgs {
 		else named.put(name, value);
 	}
 
-	public List<Object> positional() {
-		return positional;
-	}
-
 	public Map<String, Object> named() {
 		return named;
 	}
@@ -39,15 +38,15 @@ public class AnnotationArgs {
 	}
 
 	/** Range les arguments d'une annotation dans la table d'une déclaration (créée au besoin, rendue). */
-	public static java.util.EnumMap<leekscript.common.Annotation, AnnotationArgs> put(java.util.EnumMap<leekscript.common.Annotation, AnnotationArgs> byAnnotation, leekscript.common.Annotation annotation, AnnotationArgs args) {
-		if (args == null || args.isEmpty()) return byAnnotation;
-		if (byAnnotation == null) byAnnotation = new java.util.EnumMap<>(leekscript.common.Annotation.class);
+	public static EnumMap<Annotation, AnnotationArgs> put(EnumMap<Annotation, AnnotationArgs> byAnnotation, Annotation annotation, AnnotationArgs args) {
+		if (args.isEmpty()) return byAnnotation;
+		if (byAnnotation == null) byAnnotation = new EnumMap<>(Annotation.class);
 		byAnnotation.put(annotation, args);
 		return byAnnotation;
 	}
 
 	/** Les arguments d'une annotation dans la table d'une déclaration, jamais null. */
-	public static AnnotationArgs get(java.util.EnumMap<leekscript.common.Annotation, AnnotationArgs> byAnnotation, leekscript.common.Annotation annotation) {
+	public static AnnotationArgs get(EnumMap<Annotation, AnnotationArgs> byAnnotation, Annotation annotation) {
 		var args = byAnnotation == null ? null : byAnnotation.get(annotation);
 		return args == null ? NONE : args;
 	}

@@ -23,6 +23,9 @@ public enum Annotation {
 		};
 	}
 
+	/** Ce que le lanceur de tests appelle lui-même : un test, sa préparation, sa clôture. */
+	public static final java.util.Set<Annotation> TEST_ENTRIES = java.util.Collections.unmodifiableSet(java.util.EnumSet.of(TEST, BEFORE, AFTER));
+
 	/** Annotation du framework de test : admise seulement dans un module de test. */
 	public boolean isTestAnnotation() {
 		return this == TEST || this == SKIP || this == FAILS || this == BEFORE || this == AFTER;

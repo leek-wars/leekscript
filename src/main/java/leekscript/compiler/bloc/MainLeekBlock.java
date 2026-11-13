@@ -2,6 +2,7 @@ package leekscript.compiler.bloc;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -12,6 +13,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import leekscript.common.AccessLevel;
+import leekscript.common.Annotation;
 import leekscript.common.Type;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.Folder;
@@ -39,6 +41,7 @@ import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.compiler.instruction.ModuleScopeInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.runner.LeekFunctions;
+import leekscript.util.Json;
 import leekscript.common.Error;
 import leekscript.common.LanguageFeature;
 
@@ -631,46 +634,46 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 */
 	private void writeTestTable(JavaWriter writer) {
 		if (mMainModule == null || !mMainModule.getFile().isTestModule()) return;
-		// (nom affiché, appel Java, entrée), fonctions de premier niveau puis méthodes statiques du module
+		// (nom affiché, appel Java, déclaration), fonctions de premier niveau puis méthodes statiques du module
 		record Row(String name, String call, TestEntry entry) {}
-		var entries = new ArrayList<Row>();
+		var rows = new ArrayList<Row>();
 		for (var function : mFunctions.values()) {
 			if (function.isTestEntry() && !function.isVariant() && (function.getModule() == null || function.getModule() == mMainModule)) {
-				entries.add(new Row(function.getName(), "f_" + function.getInternalName() + "()", function));
+				rows.add(new Row(function.getName(), "f_" + function.getInternalName() + "()", function));
 			}
 		}
 		for (var clazz : mUserClassesList) {
-			if (clazz.internal || clazz.getModule() != null && clazz.getModule() != mMainModule) continue;
+			if (clazz.internal || !(clazz.getModule() == null || clazz.getModule() == mMainModule)) continue;
 			for (var method : clazz.getStaticMethods().entrySet()) {
-				var block = method.getValue().get(0); // sans paramètre, seule forme admise
-				if (block != null && block.block.isTestEntry()) {
-					entries.add(new Row(clazz.getName() + "." + method.getKey(), "u_" + clazz.getInternalName() + "_" + method.getKey() + "_0()", block.block));
+				var version = method.getValue().get(0); // sans paramètre, seule forme admise
+				if (version != null && version.block.isTestEntry()) {
+					rows.add(new Row(clazz.getName() + "." + method.getKey(), "u_" + clazz.getStaticMethodName(method.getKey(), 0) + "()", version.block));
 				}
 			}
 		}
-		entries.sort(java.util.Comparator.comparingInt((Row r) -> r.entry().getLocation().getStartLine()).thenComparing(Row::name));
-		var table = leekscript.util.Json.createArray();
-		for (var row : entries) {
-			var function = row.entry();
-			var entry = table.addObject();
-			entry.put("name", row.name());
-			entry.put("line", function.getLocation().getStartLine());
-			entry.put("kind", function.hasAnnotation(leekscript.common.Annotation.TEST) ? "test" : function.hasAnnotation(leekscript.common.Annotation.BEFORE) ? "before" : "after");
-			if (function.hasAnnotation(leekscript.common.Annotation.SKIP)) entry.put("skip", function.getAnnotationArgs(leekscript.common.Annotation.SKIP).text());
-			if (function.hasAnnotation(leekscript.common.Annotation.FAILS)) entry.put("fails", function.getAnnotationArgs(leekscript.common.Annotation.FAILS).text());
+		rows.sort(Comparator.comparingInt((Row r) -> r.entry().getLocation().getStartLine()).thenComparing(Row::name));
+		var table = Json.createArray();
+		for (var row : rows) {
+			var entry = row.entry();
+			var node = table.addObject();
+			node.put("name", row.name());
+			node.put("line", entry.getLocation().getStartLine());
+			node.put("kind", entry.hasAnnotation(Annotation.TEST) ? "test" : entry.hasAnnotation(Annotation.BEFORE) ? "before" : "after");
+			if (entry.hasAnnotation(Annotation.SKIP)) node.put("skip", entry.getAnnotationArgs(Annotation.SKIP).text());
+			if (entry.hasAnnotation(Annotation.FAILS)) node.put("fails", entry.getAnnotationArgs(Annotation.FAILS).text());
 			// Options du test (`@test(ops: …, scenario: "…")`), telles qu'écrites : le lanceur les interprète
-			var options = function.getAnnotationArgs(leekscript.common.Annotation.TEST).named();
+			var options = entry.getAnnotationArgs(Annotation.TEST).named();
 			if (!options.isEmpty()) {
-				var node = entry.putObject("options");
-				for (var option : options.entrySet()) node.putPOJO(option.getKey(), option.getValue());
+				var optionsNode = node.putObject("options");
+				for (var option : options.entrySet()) optionsNode.putPOJO(option.getKey(), option.getValue());
 			}
 		}
 		// javaString découpe une table qui dépasserait la taille d'une constante Java (un millier de tests)
-		writer.addLine("public String getTestTable() { return " + leekscript.compiler.expression.LeekFileContent.javaString(table.toString()) + "; }");
+		writer.addLine("public String getTestTable() { return " + LeekFileContent.javaString(table.toString()) + "; }");
 		writer.addLine("public void callTestFunction(int index) throws LeekRunException {");
 		writer.addLine("switch (index) {");
-		for (int i = 0; i < entries.size(); i++) {
-			writer.addLine("case " + i + ": " + entries.get(i).call() + "; break;");
+		for (int i = 0; i < rows.size(); i++) {
+			writer.addLine("case " + i + ": " + rows.get(i).call() + "; break;");
 		}
 		writer.addLine("}");
 		writer.addLine("}");

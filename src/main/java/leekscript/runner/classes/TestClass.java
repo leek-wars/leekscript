@@ -1,10 +1,12 @@
 package leekscript.runner.classes;
 
 import leekscript.AILog;
+import leekscript.common.Error;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.values.FunctionLeekValue;
 import leekscript.testing.TestRecorder;
+import leekscript.testing.TestRunner;
 
 /**
  * Asserts du framework de test : `assert`, `assertEquals`, `assertNear`, `assertError`, `fail`.
@@ -14,16 +16,15 @@ import leekscript.testing.TestRecorder;
 public class TestClass {
 
 	private static boolean record(AI ai, boolean ok, Object message, String expected, String actual) throws LeekRunException {
-		var text = message == null ? null : ai.string(message);
 		var recorder = ai.getTestRecorder();
-		if (recorder != null) return recorder.check(ai, ok, text, expected, actual);
-		if (!ok) {
-			var line = new StringBuilder("assert");
-			if (text != null) line.append(" : ").append(text);
-			if (expected != null) line.append(" (attendu ").append(expected).append(", obtenu ").append(actual).append(")");
-			ai.getLogs().addLog(AILog.ERROR, line.toString());
-		}
-		return ok;
+		if (ok) return recorder == null || recorder.check(ai, true, null, null, null);
+		var text = message == null ? null : ai.string(message);
+		if (recorder != null) return recorder.check(ai, false, text, expected, actual);
+		var line = new StringBuilder("Assertion failed");
+		if (text != null) line.append(": ").append(text);
+		if (expected != null) line.append(" (expected ").append(expected).append(", got ").append(actual).append(")");
+		ai.getLogs().addLog(AILog.ERROR, line.toString());
+		return false;
 	}
 
 	// `assert` est un mot réservé de Java : la fonction LeekScript `assert` appelle `check`
@@ -65,12 +66,12 @@ public class TestClass {
 	 */
 	public static boolean assertError(AI ai, Object function, Object message) throws LeekRunException {
 		if (!(function instanceof FunctionLeekValue f)) {
-			return record(ai, false, message, "une fonction", ai.export(function));
+			return record(ai, false, message, "a function", ai.export(function));
 		}
 		var recorder = ai.getTestRecorder();
 		if (recorder == null) {
 			f.run(ai, null);
-			return record(ai, false, message, "une erreur", "aucune erreur");
+			return record(ai, false, message, "an error", "no error");
 		}
 		int before = recorder.expectedErrorsSeen();
 		recorder.beginExpectedError();
@@ -87,14 +88,12 @@ public class TestClass {
 		} finally {
 			recorder.endExpectedError();
 		}
-		boolean ok = thrown || recorder.expectedErrorsSeen() > before;
-		return record(ai, ok, message, ok ? null : "une erreur", ok ? null : "aucune erreur");
+		return record(ai, thrown || recorder.expectedErrorsSeen() > before, message, "an error", "no error");
 	}
 
 	/** Plus d'opérations, plus de mémoire, entité morte : ce n'est pas l'erreur attendue, le tour s'arrête. */
 	private static boolean stopsTheTest(LeekRunException e) {
-		return e.getError() == leekscript.common.Error.TOO_MUCH_OPERATIONS || e.getError() == leekscript.common.Error.OUT_OF_MEMORY
-			|| e.getError() == leekscript.common.Error.ENTITY_DIED;
+		return TestRunner.isOutOfBudget(e) || e.getError() == Error.ENTITY_DIED;
 	}
 
 	public static boolean fail(AI ai) throws LeekRunException {

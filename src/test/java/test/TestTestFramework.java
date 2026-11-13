@@ -75,6 +75,18 @@ public class TestTestFramework {
 	}
 
 	@Test
+	public void numericOptionsReadLikeCodeLiterals() throws Exception {
+		var table = TestCase.table(compile(module("@test(ops: 5e7) function real() { assert(true) }\n@test(ops: 0x1000) function hex() { assert(true) }")));
+		assertEquals(50_000_000L, table.get(0).maxOperations(1));
+		assertEquals(4096L, table.get(1).maxOperations(1));
+	}
+
+	@Test
+	public void argumentsOnAnAnnotationThatTakesNone() throws Exception {
+		assertTrue(errors(module("@unused(42) function f() { return 1 }\n@test function t() { assert(true) }")).contains(Error.ANNOTATION_ARGUMENT_INVALID));
+	}
+
+	@Test
 	public void ordinaryProgramHasNoTable() throws Exception {
 		write("plain_" + uniqueId + ".leek", "function f() { return 1 }\nreturn f()");
 		assertTrue(TestCase.table(compile("plain_" + uniqueId)).isEmpty());
@@ -236,7 +248,7 @@ public class TestTestFramework {
 	public void assertErrorFailsWithoutError() throws Exception {
 		var r = only("@test function t() {\nassertError(function() { return 1 })\n}");
 		assertEquals(Status.FAILED, r.status());
-		assertEquals("aucune erreur", r.failures().get(0).actual());
+		assertEquals("no error", r.failures().get(0).actual());
 	}
 
 	@Test

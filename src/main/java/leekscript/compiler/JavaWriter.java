@@ -25,7 +25,6 @@ import leekscript.runner.LeekFunctions;
 
 public class JavaWriter {
 
-
 	private final StringBuilder mCode;
 	private final StringBuilder mLinesFile;
 	private int mLine;

@@ -515,7 +515,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.UNUSED_VARIABLE, new String[] { v.getName() }));
 				} else if (vt == LeekVariable.VariableType.FUNCTION && !LeekFunctions.isEntryPointFunction(v.getName())
 						// Un test, sa préparation et sa clôture sont appelés par le lanceur de tests
-						&& !v.hasAnnotation(Annotation.TEST) && !v.hasAnnotation(Annotation.BEFORE) && !v.hasAnnotation(Annotation.AFTER)) {
+						&& Annotation.TEST_ENTRIES.stream().noneMatch(v::hasAnnotation)) {
 					compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.UNUSED_FUNCTION, new String[] { v.getName() }));
 				}
 			}
