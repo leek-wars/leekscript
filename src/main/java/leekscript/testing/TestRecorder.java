@@ -77,21 +77,30 @@ public class TestRecorder {
 		expectingError++;
 	}
 
-	/** Fin d'un assertError : rend le nombre d'erreurs journalisées pendant l'appel. */
-	public int endExpectedError(int seenBefore) {
+	public void endExpectedError() {
 		expectingError--;
-		return expectedErrorsSeen - seenBefore;
 	}
 
 	public int expectedErrorsSeen() {
 		return expectedErrorsSeen;
 	}
 
+	/** Au-delà, deux structures imbriquées ne sont plus comparées élément par élément (structure qui se contient). */
+	private static final int MAX_DEPTH = 64;
+
 	/**
 	 * Égalité d'assertEquals. Entre deux nombres, à {@link #EPSILON} près ; un nombre n'égale qu'un
-	 * nombre (ni null, ni true). Tableaux et maps comparés en profondeur avec la même règle.
+	 * nombre (ni null, ni true). Tableaux et maps comparés en profondeur avec la même règle, une
+	 * opération par élément comparé.
 	 */
 	public static boolean same(AI ai, Object expected, Object actual) throws LeekRunException {
+		return same(ai, expected, actual, 0);
+	}
+
+	private static boolean same(AI ai, Object expected, Object actual, int depth) throws LeekRunException {
+		if (expected == actual) return true;
+		// Trop profond pour être autre chose qu'une structure qui se contient : égales seulement si c'est la même
+		if (depth >= MAX_DEPTH && (expected instanceof ArrayLeekValue || expected instanceof MapLeekValue)) return false;
 		if (expected instanceof Number || actual instanceof Number) {
 			if (!(expected instanceof Number e) || !(actual instanceof Number a)) return false;
 			if (e instanceof Long && a instanceof Long) return e.longValue() == a.longValue();
@@ -103,16 +112,18 @@ public class TestRecorder {
 		}
 		if (expected instanceof ArrayLeekValue e && actual instanceof ArrayLeekValue a) {
 			if (e.size() != a.size()) return false;
+			ai.ops(e.size());
 			for (int i = 0; i < e.size(); i++) {
-				if (!same(ai, e.get(i), a.get(i))) return false;
+				if (!same(ai, e.get(i), a.get(i), depth + 1)) return false;
 			}
 			return true;
 		}
 		if (expected instanceof MapLeekValue e && actual instanceof MapLeekValue a) {
 			if (e.size() != a.size()) return false;
+			ai.ops(e.size());
 			for (var entry : e.entrySet()) {
 				if (!a.containsKey(entry.getKey())) return false;
-				if (!same(ai, entry.getValue(), a.get(entry.getKey()))) return false;
+				if (!same(ai, entry.getValue(), a.get(entry.getKey()), depth + 1)) return false;
 			}
 			return true;
 		}

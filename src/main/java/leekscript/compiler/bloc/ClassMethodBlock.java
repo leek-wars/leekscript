@@ -75,16 +75,12 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable, 
 	@Override
 	public void addAnnotation(Annotation a, leekscript.compiler.AnnotationArgs args) {
 		addAnnotation(a);
-		if (args != null && !args.isEmpty()) {
-			if (annotationArgs == null) annotationArgs = new java.util.EnumMap<>(Annotation.class);
-			annotationArgs.put(a, args);
-		}
+		annotationArgs = leekscript.compiler.AnnotationArgs.put(annotationArgs, a, args);
 	}
 
 	@Override
 	public leekscript.compiler.AnnotationArgs getAnnotationArgs(Annotation a) {
-		var args = annotationArgs == null ? null : annotationArgs.get(a);
-		return args == null ? leekscript.compiler.AnnotationArgs.NONE : args;
+		return leekscript.compiler.AnnotationArgs.get(annotationArgs, a);
 	}
 
 	public boolean isStatic() {

@@ -408,11 +408,12 @@ public class LeekFunctions {
 		 * Asserts du framework de test (v5). Chacun rend son verdict ; le message est facultatif.
 		 * Une fonction du joueur du même nom passe devant, comme pour toute fonction système.
 		 */
-		testAssert("assert", 1).javaName = "check";
-		testAssert("assertEquals", 2);
-		testAssert("assertNear", 3);
-		testAssert("assertError", 1);
-		testAssert("fail", 0);
+		testAssert("assert", Type.ANY).javaName = "check";
+		testAssert("assertEquals", Type.ANY, Type.ANY);
+		testAssert("assertNear", Type.ANY, Type.ANY, Type.ANY);
+		// Typé « fonction » : le compilateur sait ainsi que l'appel exécute du code du joueur
+		testAssert("assertError", Type.FUNCTION);
+		testAssert("fail");
 
 		/**
 		 * System functions
@@ -464,15 +465,13 @@ public class LeekFunctions {
 		}
 	}
 
-	/** Assert à `arguments` valeurs, plus un message facultatif. */
-	private static LeekFunctions testAssert(String name, int arguments) {
-		var without = new Type[arguments];
-		var with = new Type[arguments + 1];
-		java.util.Arrays.fill(without, Type.ANY);
-		java.util.Arrays.fill(with, Type.ANY);
+	/** Assert aux arguments donnés, plus un message facultatif en dernier. */
+	private static LeekFunctions testAssert(String name, Type... arguments) {
+		var withMessage = java.util.Arrays.copyOf(arguments, arguments.length + 1);
+		withMessage[arguments.length] = Type.ANY;
 		var function = method(name, "Test", 10, true, new CallableVersion[] {
-			new CallableVersion(Type.BOOL, with),
-			new CallableVersion(Type.BOOL, without),
+			new CallableVersion(Type.BOOL, withMessage),
+			new CallableVersion(Type.BOOL, arguments),
 		});
 		function.setMinVersion(5);
 		return function;

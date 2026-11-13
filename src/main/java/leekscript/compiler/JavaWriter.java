@@ -25,23 +25,6 @@ import leekscript.runner.LeekFunctions;
 
 public class JavaWriter {
 
-	/** Littéral de chaîne Java qui vaut `text`. */
-	public static String javaString(String text) {
-		var sb = new StringBuilder("\"");
-		for (int i = 0; i < text.length(); i++) {
-			char c = text.charAt(i);
-			switch (c) {
-				case '\\': sb.append("\\\\"); break;
-				case '"': sb.append("\\\""); break;
-				case '\n': sb.append("\\n"); break;
-				case '\r': sb.append("\\r"); break;
-				case '\t': sb.append("\\t"); break;
-				default: sb.append(c);
-			}
-		}
-		return sb.append('"').toString();
-	}
-
 
 	private final StringBuilder mCode;
 	private final StringBuilder mLinesFile;

@@ -32,19 +32,33 @@ public class TestRunner {
 		var recorder = new TestRecorder();
 		ai.setTestRecorder(recorder);
 		String error = null;
+		// Une erreur avant le test (code de premier niveau, `@before`) n'est jamais l'échec attendu d'un `@fails`
+		boolean inTest = false;
+		boolean outOfBudget = false;
 		long start = System.nanoTime();
 		try {
 			ai.runIA();
 			for (var c : table) if (c.kind() == TestCase.Kind.BEFORE) ai.callTestFunction(c.index());
+			inTest = true;
 			ai.callTestFunction(test.index());
-			for (var c : table) if (c.kind() == TestCase.Kind.AFTER) ai.callTestFunction(c.index());
 		} catch (Throwable t) {
 			error = describe(ai, t);
+			outOfBudget = isOutOfBudget(t);
+		}
+		// Les `@after` tournent même après un test planté ; leur propre erreur ne cache pas la première
+		try {
+			for (var c : table) if (c.kind() == TestCase.Kind.AFTER) ai.callTestFunction(c.index());
+		} catch (Throwable t) {
+			if (error == null) {
+				error = describe(ai, t);
+				inTest = false;
+			}
 		}
 		long duration = System.nanoTime() - start;
 
 		TestResult.Status status;
 		String reason = null;
+		boolean checked = recorder.asserts() > 0 || !recorder.errors().isEmpty() || error != null;
 		if (error != null || !recorder.errors().isEmpty()) {
 			status = TestResult.Status.ERROR;
 		} else if (!recorder.failures().isEmpty()) {
@@ -56,12 +70,20 @@ public class TestRunner {
 		} else {
 			status = TestResult.Status.PASSED;
 		}
-		if (test.fails() != null) {
+		// `@fails` : l'échec attendu est celui du test lui-même (assert raté, erreur dans son corps).
+		// Un test vidé de ses asserts, une préparation qui plante ou un budget épuisé restent des échecs.
+		if (test.fails() != null && checked && !outOfBudget && (error == null || inTest)) {
 			reason = test.fails();
 			status = status.ok ? TestResult.Status.UNEXPECTED_PASS : TestResult.Status.EXPECTED_FAILURE;
 		}
 		return new TestResult(module, test.name(), test.line(), status, reason, ai.getOperations(), duration, recorder.asserts(),
 			List.copyOf(recorder.failures()), List.copyOf(recorder.errors()), error, logs == null ? List.of() : List.copyOf(logs));
+	}
+
+	/** Plus d'opérations ou plus de mémoire : le test n'est pas allé au bout. */
+	private static boolean isOutOfBudget(Throwable t) {
+		while (!(t instanceof LeekRunException) && t.getCause() != null && t.getCause() != t) t = t.getCause();
+		return t instanceof LeekRunException e && (e.getError() == Error.TOO_MUCH_OPERATIONS || e.getError() == Error.OUT_OF_MEMORY);
 	}
 
 	/** L'erreur qui a arrêté un test, en texte : son type, ses paramètres, où elle a eu lieu. Null si le test s'est arrêté normalement. */

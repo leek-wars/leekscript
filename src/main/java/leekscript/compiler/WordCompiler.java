@@ -1849,8 +1849,10 @@ public class WordCompiler {
 		// Lookahead: verify the token after the annotation name is a declaration keyword or another @
 		// to distinguish annotation syntax from @variable reference expressions
 		int next = 2;
-		// Arguments entre parenthèses (`@skip("raison")`) : la déclaration est après la fermante
+		// Arguments entre parenthèses (`@skip("raison")`) : la déclaration est après la fermante. Pour une
+		// annotation connue seulement, à partir de la v5 : `@f(x)` suivi d'un `var` reste un appel.
 		if (mTokens.get(2).getType() == TokenType.PAR_LEFT) {
+			if (!LanguageFeature.MODULES.enabledIn(version) || Annotation.fromString(mTokens.get(1).getWord()) == null) return false;
 			int depth = 0;
 			while (true) {
 				var t = mTokens.get(next);
@@ -1894,6 +1896,11 @@ public class WordCompiler {
 			if (mTokens.get().getType() == TokenType.STRING && mTokens.get(1).getType() == TokenType.OPERATOR && mTokens.get(1).getWord().equals(":")) {
 				key = mTokens.eat().getWord();
 				mTokens.skip();
+			}
+			// `@test(ops: )` : la fermante de l'annotation n'est pas une valeur, on s'arrête dessus
+			if (mTokens.get().getType() == TokenType.PAR_RIGHT) {
+				valid = false;
+				break;
 			}
 			var value = mTokens.eat();
 			Object literal = annotationLiteral(value);
@@ -1944,6 +1951,8 @@ public class WordCompiler {
 		if (annotations.isEmpty()) return;
 		for (var ann : annotations) {
 			var a = Annotation.fromString(ann.getWord());
+			// Avant la v5 les annotations de test n'existent pas : un `@test` y reste une annotation inconnue
+			if (a != null && a.isTestAnnotation() && !LanguageFeature.MODULES.enabledIn(version)) a = null;
 			if (a != null) {
 				if (a.isTestAnnotation() && !applyTestAnnotation(target, a, ann)) continue;
 				var args = mAnnotationArgs == null ? null : mAnnotationArgs.get(ann);
@@ -1956,11 +1965,11 @@ public class WordCompiler {
 
 	/**
 	 * Une annotation du framework de test (`@test`, `@skip`, `@fails`, `@before`, `@after`) ne se pose
-	 * que sur une fonction de premier niveau ou une méthode statique d'un module de test, en v5. Rend false, erreur signalée,
-	 * quand elle est mal placée.
+	 * que sur une fonction de premier niveau ou une méthode statique d'un module de test. Rend false,
+	 * erreur signalée, quand elle est mal placée.
 	 */
 	private boolean applyTestAnnotation(Annotatable target, Annotation a, Token ann) throws LeekCompilerException {
-		if (!LanguageFeature.MODULES.enabledIn(version) || !mModule.getFile().isTestModule()) {
+		if (!mModule.getFile().isTestModule()) {
 			addError(new AnalyzeError(ann, AnalyzeErrorLevel.ERROR, Error.TEST_ANNOTATION_OUTSIDE_TEST_MODULE, new String[] { ann.getWord() }));
 			return false;
 		}

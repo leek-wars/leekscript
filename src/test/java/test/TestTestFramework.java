@@ -154,6 +154,38 @@ public class TestTestFramework {
 		assertFalse(r.status().ok);
 	}
 
+	@Test
+	public void failsDoesNotExcuseATestThatChecksNothing() throws Exception {
+		var r = only("@test @fails(\"bug ouvert\") function t() { var x = 1 }");
+		assertEquals(Status.FAILED, r.status());
+		assertEquals("no_assert", r.reason());
+	}
+
+	@Test
+	public void failsDoesNotExcuseABrokenSetup() throws Exception {
+		var r = only("function deep(integer n) -> integer { return deep(n + 1) + 1 }\n@before function prepare() { deep(0) }\n@test @fails(\"bug ouvert\") function t() { assertEquals(1, 2) }");
+		assertEquals(Status.ERROR, r.status());
+	}
+
+	@Test
+	public void failsDoesNotExcuseAnOperationOverrun() throws Exception {
+		var r = only("@test(ops: 5000) @fails(\"bug ouvert\") function t() { var i = 0\nwhile (true) { i++ } }");
+		assertEquals(Status.ERROR, r.status());
+	}
+
+	@Test
+	public void failsAcceptsATestThatCrashes() throws Exception {
+		var r = only("function deep(integer n) -> integer { return deep(n + 1) + 1 }\n@test @fails(\"bug ouvert\") function t() { deep(0) }");
+		assertEquals(Status.EXPECTED_FAILURE, r.status());
+	}
+
+	@Test
+	public void afterRunsEvenWhenTheTestCrashes() throws Exception {
+		var r = only("function deep(integer n) -> integer { return deep(n + 1) + 1 }\n@after function clean() { assert(false, \"after a tourné\") }\n@test function t() { deep(0) }");
+		assertEquals(Status.ERROR, r.status());
+		assertEquals(1, r.failures().size(), "l'assert du @after est enregistré");
+	}
+
 	// ----- asserts -----
 
 	@Test
@@ -221,6 +253,45 @@ public class TestTestFramework {
 		assertEquals(Status.ERROR, results.get(0).status());
 		assertTrue(results.get(0).error().startsWith("TOO_MUCH_OPERATIONS"), results.get(0).error());
 		assertEquals(Status.PASSED, results.get(1).status());
+	}
+
+	@Test
+	public void assertErrorDoesNotInvalidateTheBudget() throws Exception {
+		// Une boucle sans fin dans assertError n'est pas « l'erreur attendue » : le test s'arrête
+		var r = only("@test(ops: 5000) function t() { assertError(function() { var i = 0\nwhile (true) { i++ } }) }");
+		assertEquals(Status.ERROR, r.status());
+		assertTrue(r.error().startsWith("TOO_MUCH_OPERATIONS"), r.error());
+	}
+
+	@Test
+	public void deepComparisonCostsOperations() throws Exception {
+		var small = only("@test function t() { assertEquals([1], [1]) }").operations();
+		var big = only("@test function t() { var a = [] var b = []\nfor (var i = 0; i < 500; ++i) { Array.push(a, i) Array.push(b, i) }\nvar o = getOperations()\nassertEquals(a, b)\nassert(getOperations() - o >= 500) }");
+		assertEquals(Status.PASSED, big.status());
+		assertTrue(big.operations() > small);
+	}
+
+	@Test
+	public void aStructureThatContainsItselfDoesNotLoop() throws Exception {
+		var r = only("@test function t() { var a = [1]\nArray.push(a, a)\nvar b = [1]\nArray.push(b, b)\nassertEquals(a, a)\nassertEquals(a, b) }");
+		assertEquals(Status.FAILED, r.status(), String.valueOf(r.error()));
+		assertEquals(List.of(6), r.failures().stream().map(f -> f.line()).toList());
+	}
+
+	@Test
+	public void testAnnotationsStayUnknownBeforeV5() throws Exception {
+		// Une IA v4 qui portait déjà un `@test` garde son avertissement, sans erreur
+		write("old_" + uniqueId + ".leek", "// @version:4\n@test function t() { return 1 }\nreturn t()");
+		var errors = errors("old_" + uniqueId);
+		assertTrue(errors.contains(Error.ANNOTATION_UNKNOWN), errors.toString());
+		assertFalse(errors.contains(Error.TEST_ANNOTATION_OUTSIDE_TEST_MODULE));
+	}
+
+	@Test
+	public void malformedAnnotationArgumentsKeepTheDeclaration() throws Exception {
+		var errors = errors(module("@test(ops: ) function t() { assert(true) }\n@test function u() { assert(true) }"));
+		// Une seule erreur (relevée à chaque passe) : la déclaration qui suit n'est pas emportée
+		assertEquals(List.of(Error.ANNOTATION_ARGUMENT_INVALID), errors.stream().distinct().toList());
 	}
 
 	// ----- isolation -----

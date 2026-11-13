@@ -649,28 +649,24 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			}
 		}
 		entries.sort(java.util.Comparator.comparingInt((Row r) -> r.entry().getLocation().getStartLine()).thenComparing(Row::name));
-		// Une chaîne par fonction : la table entière en une seule constante dépasserait la limite de
-		// Java (65 535 octets) vers un millier de tests
-		var rows = new ArrayList<String>();
+		var table = leekscript.util.Json.createArray();
 		for (var row : entries) {
 			var function = row.entry();
-			var entry = leekscript.util.Json.createObject();
+			var entry = table.addObject();
 			entry.put("name", row.name());
 			entry.put("line", function.getLocation().getStartLine());
 			entry.put("kind", function.hasAnnotation(leekscript.common.Annotation.TEST) ? "test" : function.hasAnnotation(leekscript.common.Annotation.BEFORE) ? "before" : "after");
-			var skip = function.getAnnotationArgs(leekscript.common.Annotation.SKIP).text();
-			if (function.hasAnnotation(leekscript.common.Annotation.SKIP)) entry.put("skip", skip == null ? "" : skip);
-			var fails = function.getAnnotationArgs(leekscript.common.Annotation.FAILS).text();
-			if (function.hasAnnotation(leekscript.common.Annotation.FAILS)) entry.put("fails", fails == null ? "" : fails);
+			if (function.hasAnnotation(leekscript.common.Annotation.SKIP)) entry.put("skip", function.getAnnotationArgs(leekscript.common.Annotation.SKIP).text());
+			if (function.hasAnnotation(leekscript.common.Annotation.FAILS)) entry.put("fails", function.getAnnotationArgs(leekscript.common.Annotation.FAILS).text());
 			// Options du test (`@test(ops: …, scenario: "…")`), telles qu'écrites : le lanceur les interprète
 			var options = function.getAnnotationArgs(leekscript.common.Annotation.TEST).named();
 			if (!options.isEmpty()) {
 				var node = entry.putObject("options");
 				for (var option : options.entrySet()) node.putPOJO(option.getKey(), option.getValue());
 			}
-			rows.add(JavaWriter.javaString(entry.toString()));
 		}
-		writer.addLine("public String getTestTable() { return \"[\" + String.join(\",\", new String[] { " + String.join(", ", rows) + " }) + \"]\"; }");
+		// javaString découpe une table qui dépasserait la taille d'une constante Java (un millier de tests)
+		writer.addLine("public String getTestTable() { return " + leekscript.compiler.expression.LeekFileContent.javaString(table.toString()) + "; }");
 		writer.addLine("public void callTestFunction(int index) throws LeekRunException {");
 		writer.addLine("switch (index) {");
 		for (int i = 0; i < entries.size(); i++) {

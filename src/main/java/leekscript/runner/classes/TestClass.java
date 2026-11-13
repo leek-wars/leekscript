@@ -60,31 +60,41 @@ public class TestClass {
 
 	/**
 	 * La fonction doit provoquer une erreur d'exécution : une erreur qui arrête le code, ou une
-	 * erreur que le moteur journalise en continuant (lecture hors bornes).
+	 * erreur que le moteur journalise en continuant (lecture hors bornes). Hors d'un lancement de
+	 * tests rien n'est rattrapé : ce n'est pas un try/catch pour une IA de combat.
 	 */
 	public static boolean assertError(AI ai, Object function, Object message) throws LeekRunException {
 		if (!(function instanceof FunctionLeekValue f)) {
 			return record(ai, false, message, "une fonction", ai.export(function));
 		}
 		var recorder = ai.getTestRecorder();
-		int before = recorder == null ? 0 : recorder.expectedErrorsSeen();
-		if (recorder != null) recorder.beginExpectedError();
+		if (recorder == null) {
+			f.run(ai, null);
+			return record(ai, false, message, "une erreur", "aucune erreur");
+		}
+		int before = recorder.expectedErrorsSeen();
+		recorder.beginExpectedError();
 		boolean thrown = false;
 		try {
 			f.run(ai, null);
 		} catch (LeekRunException e) {
-			// Plus d'opérations ou plus de mémoire : ce n'est pas l'erreur attendue, le test s'arrête
-			if (e.getError() == leekscript.common.Error.TOO_MUCH_OPERATIONS || e.getError() == leekscript.common.Error.OUT_OF_MEMORY) {
-				if (recorder != null) recorder.endExpectedError(before);
-				throw e;
-			}
+			if (stopsTheTest(e)) throw e;
 			thrown = true;
 		} catch (RuntimeException e) {
+			// Une erreur du joueur arrive parfois emballée (fonction appelée par une native)
+			if (e.getCause() instanceof LeekRunException cause && stopsTheTest(cause)) throw cause;
 			thrown = true;
+		} finally {
+			recorder.endExpectedError();
 		}
-		int logged = recorder == null ? 0 : recorder.endExpectedError(before);
-		boolean ok = thrown || logged > 0;
+		boolean ok = thrown || recorder.expectedErrorsSeen() > before;
 		return record(ai, ok, message, ok ? null : "une erreur", ok ? null : "aucune erreur");
+	}
+
+	/** Plus d'opérations, plus de mémoire, entité morte : ce n'est pas l'erreur attendue, le tour s'arrête. */
+	private static boolean stopsTheTest(LeekRunException e) {
+		return e.getError() == leekscript.common.Error.TOO_MUCH_OPERATIONS || e.getError() == leekscript.common.Error.OUT_OF_MEMORY
+			|| e.getError() == leekscript.common.Error.ENTITY_DIED;
 	}
 
 	public static boolean fail(AI ai) throws LeekRunException {
