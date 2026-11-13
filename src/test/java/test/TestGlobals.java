@@ -22,6 +22,13 @@ public class TestGlobals extends TestCommon {
 		code_v5("function foo() { return 1 } var foo = 2 return foo").equals("2");
 		code_v2_4("function foo() { return 1 } var foo = 2 return foo").error(Error.VARIABLE_NAME_UNAVAILABLE);
 		code_v5("global g = 5 var g = 2 return g").equals("2");
+		// L'itérateur d'un `for … in` suit la même règle que `var` : il masque une fonction ou une globale en v5
+		code_v5("function item() { return 1 } var s = 0 for (var item in [1, 2]) { s += item } return s").equals("3");
+		code_v2_4("function item() { return 1 } var s = 0 for (var item in [1, 2]) { s += item } return s").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v5("function k() { return 1 } function v() { return 1 } var s = 0 for (var k : var v in [10, 20]) { s += k + v } return s").equals("31");
+		code_v2_4("function k() { return 1 } var s = 0 for (var k : var v in [10, 20]) { s += k + v } return s").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v5("global g = 1 var s = 0 for (var g in [1, 2]) { s += g } return s").error(Error.VARIABLE_NAME_UNAVAILABLE);
+		code_v5("var item = 0 for (var item in [1, 2]) {} return item").error(Error.VARIABLE_NAME_UNAVAILABLE);
 		// Restent interdits en v5 : redéclaration d'une locale (même scope), masquage d'une classe, masquage d'une locale parente.
 		code_v5("var a = 1 var a = 2 return a").error(Error.VARIABLE_NAME_UNAVAILABLE);
 		code_v5("class A {} var A = 12 return A").error(Error.VARIABLE_NAME_UNAVAILABLE);

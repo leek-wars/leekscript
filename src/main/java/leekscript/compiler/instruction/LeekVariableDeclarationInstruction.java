@@ -292,27 +292,47 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 		}
 	}
 
+	/** Le nom d'une variable locale à déclarer par `var` est-il pris ? */
+	public static boolean isNameTaken(WordCompiler compiler, Token token) {
+		return isNameTaken(compiler, token, true);
+	}
+
+	/**
+	 * Le nom de l'itérateur d'un `for (var x in …)` est-il pris ? Comme pour `var`, il peut masquer une
+	 * fonction homonyme en v5 (un nom de fonction du point d'entrée ne doit pas interdire une variable
+	 * de boucle dans un module importé) ; pas une globale, que la boucle écrirait.
+	 */
+	public static boolean isIteratorNameTaken(WordCompiler compiler, Token token) {
+		return isNameTaken(compiler, token, false);
+	}
+
+	private static boolean isNameTaken(WordCompiler compiler, Token token, boolean globalShadowable) {
+		// Prédicat historique (inchangé en v1-4) : le nom est déjà pris par une globale/fonction program-wide
+		// (vérifié seulement en 1.1 car léger bug en 1.0 avec les includes) ou par une variable visible dans la
+		// chaîne de blocs (hasVariable est polymorphe : FunctionBlock isole ses propres locales).
+		boolean nameTaken = (compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(token.getWord()) || compiler.getMainBlock().hasUserFunction(token.getWord(), true)))
+			|| compiler.getCurrentBlock().hasVariable(token.getWord());
+		// #4237 : en v5, une variable locale peut MASQUER une fonction ou une globale homonyme (la résolution en
+		// lecture priorise déjà la locale). Restent interdits : la redéclaration d'une locale (même scope), le
+		// masquage d'une locale parente et le masquage d'une classe.
+		if (nameTaken && LanguageFeature.VARIABLE_SHADOWING.enabledIn(compiler.getVersion())) {
+			LeekVariable existing = compiler.getCurrentBlock().getVariable(token.getWord(), false);
+			// existing == null => le conflit vient du registre program-wide (fonction/globale) => masquable.
+			boolean shadowable = existing == null
+				|| existing.getVariableType() == VariableType.FUNCTION
+				|| existing.getVariableType() == VariableType.GLOBAL;
+			if (!globalShadowable && (compiler.getMainBlock().hasGlobal(token.getWord()) || existing != null && existing.getVariableType() == VariableType.GLOBAL)) shadowable = false;
+			if (shadowable) nameTaken = false;
+		}
+		return nameTaken;
+	}
+
 	private void registerVariable(WordCompiler compiler, Type type) throws LeekCompilerException {
 		// Variables interdites
 		if (compiler.getVersion() >= 2 && token.getWord().equals("this")) {
 			compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.THIS_NOT_ALLOWED_HERE));
 		} else {
-			// Prédicat historique (inchangé en v1-4) : le nom est déjà pris par une globale/fonction program-wide
-			// (vérifié seulement en 1.1 car léger bug en 1.0 avec les includes) ou par une variable visible dans la
-			// chaîne de blocs (hasVariable est polymorphe : FunctionBlock isole ses propres locales).
-			boolean nameTaken = (compiler.getVersion() >= 2 && (compiler.getMainBlock().hasGlobal(token.getWord()) || compiler.getMainBlock().hasUserFunction(token.getWord(), true)))
-				|| compiler.getCurrentBlock().hasVariable(token.getWord());
-			// #4237 : en v5, une variable locale peut MASQUER une fonction ou une globale homonyme (la résolution en
-			// lecture priorise déjà la locale). Restent interdits : la redéclaration d'une locale (même scope), le
-			// masquage d'une locale parente et le masquage d'une classe.
-			if (nameTaken && LanguageFeature.VARIABLE_SHADOWING.enabledIn(compiler.getVersion())) {
-				LeekVariable existing = compiler.getCurrentBlock().getVariable(token.getWord(), false);
-				// existing == null => le conflit vient du registre program-wide (fonction/globale) => masquable.
-				boolean shadowable = existing == null
-					|| existing.getVariableType() == VariableType.FUNCTION
-					|| existing.getVariableType() == VariableType.GLOBAL;
-				if (shadowable) nameTaken = false;
-			}
+			boolean nameTaken = isNameTaken(compiler, token);
 			if (nameTaken) {
 				compiler.addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.VARIABLE_NAME_UNAVAILABLE, new String[] {
 					token.getWord()

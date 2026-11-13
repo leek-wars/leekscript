@@ -196,18 +196,22 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable {
 
 		var v = super.getVariable(variable, includeClassMembers);
 		if (v != null) return v;
+		return getClassMember(variable, includeClassMembers);
+	}
 
+	/** `class`, `this` et les membres de la classe de cette méthode, sans remonter la chaîne de blocs. */
+	public LeekVariable getClassMember(String variable, boolean includeClassMembers) {
 		// Search in fields
 		if (variable.equals("class")) return new LeekVariable(new Token("class"), VariableType.THIS_CLASS);
 		if (!isStatic) {
 			if (variable.equals("this")) return new LeekVariable(new Token("this"), VariableType.THIS);
 			if (includeClassMembers) {
-				v = clazz.getMember(variable);
+				var v = clazz.getMember(variable);
 				if (v != null) return v;
 			}
 		}
 		if (includeClassMembers) {
-			v = clazz.getStaticMember(variable);
+			var v = clazz.getStaticMember(variable);
 			if (v != null) return v;
 		}
 		return null;

@@ -303,7 +303,18 @@ public class LeekVariable extends Expression {
 			// Les classes INTERNES (Array/Map/...) ne fuient pas (visibles partout).
 			boolean leaked = vt == VariableType.FUNCTION || vt == VariableType.GLOBAL
 					|| (vt == VariableType.CLASS && v.getClassDeclaration() != null && !v.getClassDeclaration().internal);
-			if (leaked) v = null;
+			if (leaked) {
+				v = null;
+				// Le nom fuité avait devancé un membre de la classe en cours (la chaîne de blocs est
+				// parcourue avant les membres) : `cache` dans une méthode reste le champ de sa classe,
+				// même si le point d'entrée a une fonction `cache`.
+				for (var block = compiler.getCurrentBlock(); block != null; block = block.getParent()) {
+					if (block instanceof leekscript.compiler.bloc.ClassMethodBlock method) {
+						v = method.getClassMember(name, true);
+						break;
+					}
+				}
+			}
 		}
 		if (v != null) {
 			this.type = v.getVariableType();
