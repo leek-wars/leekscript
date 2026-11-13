@@ -254,6 +254,12 @@ public class TestInterval extends TestCommon {
 		code("return intervalCombine([1..2], ]..[)").equals("]-∞..∞[");
 		code("return intervalCombine(]..2], [1..[)").equals("]-∞..∞[");
 		code("intervalCombine([1..2], [1..2])").ops(7);
+		code("var a = [1..10] var b = [5..20] return intervalCombine(a, b)").equals("[1..20]");
+		code_v1("var a = [1..10] var b = [5.0..20.0] return intervalCombine(a, b)").equals("[1..20]");
+		code_v2_("var a = [1..10] var b = [5.0..20.0] return intervalCombine(a, b)").equals("[1.0..20.0]");
+		code_v1("var a = [1.0..10.0] var b = [5..20] return intervalCombine(a, b)").equals("[1..20]");
+		code_v2_("var a = [1.0..10.0] var b = [5..20] return intervalCombine(a, b)").equals("[1.0..20.0]");
+		code("var a = [1..10] var b = [5..20] return intervalIntersection(a, b)").equals("[5..10]");
 	}
 
 	@Test

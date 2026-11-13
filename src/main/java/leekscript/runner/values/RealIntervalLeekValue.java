@@ -231,6 +231,20 @@ public class RealIntervalLeekValue extends IntervalLeekValue {
 		return new RealIntervalLeekValue(ai, unionMinClosed, Math.min(from, interval.from), unionMaxClosed, Math.max(to, interval.to));
 	}
 
+	public RealIntervalLeekValue intervalCombine(AI ai, IntegerIntervalLeekValue interval) throws LeekRunException {
+		if (intervalIsEmpty(ai)) {
+			return new RealIntervalLeekValue(ai, interval.minClosed, interval.getFrom(), interval.maxClosed, interval.getTo());
+		}
+
+		if (interval.intervalIsEmpty(ai)) {
+			return new RealIntervalLeekValue(ai, minClosed, from, maxClosed, to);
+		}
+
+		var unionMinClosed = from < interval.getFrom() ? minClosed : interval.minClosed;
+		var unionMaxClosed = to < interval.getTo() ? interval.maxClosed : maxClosed;
+		return new RealIntervalLeekValue(ai, unionMinClosed, Math.min(from, interval.getFrom()), unionMaxClosed, Math.max(to, interval.getTo()));
+	}
+
 	public ArrayLeekValue intervalToArray(AI ai) throws LeekRunException {
 		return intervalToArray(ai, 1);
 	}
