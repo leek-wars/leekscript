@@ -16,7 +16,7 @@ public record TestRun(String module, List<TestCase> table, TestCase test, List<S
 	}
 
 	public TestResult skipped() {
-		return new TestResult(module, test.name(), test.line(), TestResult.Status.SKIPPED, test.skip(), 0, 0, 0, List.of(), List.of(), null, List.of());
+		return new TestResult(module, test.name(), test.line(), TestResult.Status.SKIPPED, test.skip(), 0, 0, 0, List.of(), List.of(), null, List.of(), test.tolerance());
 	}
 
 	/** Le test n'a pas pu être lancé, ou son résultat est perdu : une erreur à son nom. */

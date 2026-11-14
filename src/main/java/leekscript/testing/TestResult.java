@@ -9,11 +9,13 @@ import leekscript.util.Json;
 /**
  * Le résultat d'un test.
  *
+ * @param operations coût du test ; pour un bench, celui de sa seule fonction (sans le code de
+ *        premier niveau du module, sa préparation ni sa clôture)
  * @param error erreur d'exécution qui a arrêté le test (texte), null sinon
- * @param errorLine ligne de cette erreur dans le module de test, 0 si inconnue
+ * @param tolerance hausse de coût tolérée d'un bench, en % ; null pour un test
  */
 public record TestResult(String module, String name, int line, Status status, String reason, long operations, long durationNs,
-		int asserts, List<TestRecorder.Failure> failures, List<TestRecorder.LoggedError> loggedErrors, String error, List<String> logs) {
+		int asserts, List<TestRecorder.Failure> failures, List<TestRecorder.LoggedError> loggedErrors, String error, List<String> logs, Integer tolerance) {
 
 	public enum Status {
 		/** Tous les asserts sont passés. */
@@ -38,7 +40,7 @@ public record TestResult(String module, String name, int line, Status status, St
 
 	/** Une erreur hors de tout test lancé (module introuvable, combat qui plante…). */
 	public static TestResult error(String module, String name, int line, String message, List<String> logs) {
-		return new TestResult(module, name, line, Status.ERROR, null, 0, 0, 0, List.of(), List.of(), message, logs == null ? List.of() : List.copyOf(logs));
+		return new TestResult(module, name, line, Status.ERROR, null, 0, 0, 0, List.of(), List.of(), message, logs == null ? List.of() : List.copyOf(logs), null);
 	}
 
 	public ObjectNode toJson() {
@@ -47,6 +49,10 @@ public record TestResult(String module, String name, int line, Status status, St
 		json.put("name", name);
 		json.put("line", line);
 		json.put("status", status.name().toLowerCase());
+		if (tolerance != null) {
+			json.put("bench", true);
+			json.put("tolerance", tolerance);
+		}
 		if (reason != null) json.put("reason", reason);
 		json.put("operations", operations);
 		json.put("duration_ms", durationNs / 1_000_000.0);

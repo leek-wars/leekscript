@@ -3,6 +3,7 @@ package test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -65,6 +66,28 @@ public class TestTestFramework {
 		assertEquals(List.of(TestCase.Kind.BEFORE, TestCase.Kind.TEST, TestCase.Kind.TEST, TestCase.Kind.AFTER), table.stream().map(TestCase::kind).toList());
 		assertEquals(2, table.get(1).line());
 		assertEquals("plus tard", table.get(2).skip());
+	}
+
+	@Test
+	public void benchMeasuresItsOwnCostWithoutAssert() throws Exception {
+		var results = run(module("global setup = 0\nfor (var i = 0; i < 1000; ++i) setup += i\n@before function prepare() { for (var i = 0; i < 1000; ++i) setup += i }\n"
+			+ "@bench function loop() { var s = 0\nfor (var i = 0; i < 100; ++i) s += i }\n@bench(tolerance: 25) function nothing() {}\n@test function plain() { assert(true) }"));
+		var loop = results.get(0);
+		assertEquals(TestResult.Status.PASSED, loop.status());
+		assertEquals(Integer.valueOf(TestCase.DEFAULT_TOLERANCE), loop.tolerance());
+		// Le coût du bench est celui de sa fonction : ni le code de premier niveau, ni la préparation
+		assertTrue(loop.operations() > 0 && loop.operations() < 1000, "ops " + loop.operations());
+		assertEquals(Integer.valueOf(25), results.get(1).tolerance());
+		assertNull(results.get(2).tolerance());
+		assertTrue(results.get(2).operations() > 1000);
+	}
+
+	@Test
+	public void benchFailsOnErrorAndCannotBeATest() throws Exception {
+		assertEquals(TestResult.Status.ERROR, only("@bench function boom() { var a = [1]\nvar b = a[5] }").status());
+		assertEquals(TestResult.Status.FAILED, only("@bench function wrong() { assert(false) }").status());
+		assertTrue(errors(module("@test @bench function both() { assert(true) }")).contains(Error.ANNOTATION_INVALID_CONTEXT));
+		assertTrue(errors(writeMain("@bench function b() {}\nreturn 1")).contains(Error.TEST_ANNOTATION_OUTSIDE_TEST_MODULE));
 	}
 
 	@Test

@@ -38,12 +38,16 @@ public class TestRunner {
 		// Une erreur avant le test (code de premier niveau, `@before`) n'est jamais l'échec attendu d'un `@fails`
 		boolean inTest = false;
 		boolean outOfBudget = false;
+		// Coût de la seule fonction du test : celui d'un bench
+		long beforeTest = 0, afterTest = -1;
 		long start = System.nanoTime();
 		try {
 			ai.runIA();
 			for (var c : table) if (c.kind() == TestCase.Kind.BEFORE) ai.callTestFunction(c.index());
 			inTest = true;
+			beforeTest = ai.getOperations();
 			ai.callTestFunction(test.index());
+			afterTest = ai.getOperations();
 		} catch (Throwable t) {
 			rethrowIfFatal(t);
 			var cause = unwrap(t);
@@ -68,8 +72,8 @@ public class TestRunner {
 			status = TestResult.Status.ERROR;
 		} else if (!recorder.failures().isEmpty()) {
 			status = TestResult.Status.FAILED;
-		} else if (recorder.asserts() == 0) {
-			// Un test qui ne vérifie rien ne prouve rien
+		} else if (recorder.asserts() == 0 && !test.isBench()) {
+			// Un test qui ne vérifie rien ne prouve rien (un bench, lui, mesure)
 			status = TestResult.Status.FAILED;
 			reason = "no_assert";
 		} else {
@@ -81,8 +85,10 @@ public class TestRunner {
 			reason = test.fails();
 			status = status.ok ? TestResult.Status.UNEXPECTED_PASS : TestResult.Status.EXPECTED_FAILURE;
 		}
-		return new TestResult(run.module(), test.name(), test.line(), status, reason, ai.getOperations(), duration, recorder.asserts(),
-			List.copyOf(recorder.failures()), List.copyOf(recorder.errors()), error, run.logs() == null ? List.of() : List.copyOf(run.logs()));
+		long operations = test.isBench() && afterTest >= 0 ? afterTest - beforeTest : ai.getOperations();
+		return new TestResult(run.module(), test.name(), test.line(), status, reason, operations, duration, recorder.asserts(),
+			List.copyOf(recorder.failures()), List.copyOf(recorder.errors()), error, run.logs() == null ? List.of() : List.copyOf(run.logs()),
+			test.tolerance());
 	}
 
 	/** Une erreur de la machine virtuelle (mémoire épuisée…) n'est pas celle d'un test : elle remonte. */

@@ -35,8 +35,12 @@ public interface TestEntry {
 		if (isTestEntry() && parameters > 0) {
 			compiler.addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.TEST_FUNCTION_WITH_PARAMETERS, new String[] { name.getWord() }));
 		}
-		// `@skip` et `@fails` qualifient un test
-		if (!hasAnnotation(Annotation.TEST)) {
+		// Un test vérifie, un bench mesure : pas les deux à la fois
+		if (hasAnnotation(Annotation.TEST) && hasAnnotation(Annotation.BENCH)) {
+			compiler.addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_INVALID_CONTEXT, new String[] { "bench" }));
+		}
+		// `@skip` et `@fails` qualifient un test ou un bench
+		if (!hasAnnotation(Annotation.TEST) && !hasAnnotation(Annotation.BENCH)) {
 			if (hasAnnotation(Annotation.SKIP)) compiler.addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_INVALID_CONTEXT, new String[] { "skip" }));
 			if (hasAnnotation(Annotation.FAILS)) compiler.addError(new AnalyzeError(name, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_INVALID_CONTEXT, new String[] { "fails" }));
 		}

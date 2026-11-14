@@ -19,7 +19,10 @@ import leekscript.util.Json;
  */
 public record TestCase(int index, String name, int line, Kind kind, String skip, String fails, Map<String, Object> options) {
 
-	public enum Kind { TEST, BEFORE, AFTER }
+	public enum Kind { TEST, BENCH, BEFORE, AFTER }
+
+	/** Hausse de coût tolérée d'un bench d'un lancement à l'autre, en %, sauf `@bench(tolerance: …)`. */
+	public static final int DEFAULT_TOLERANCE = 10;
 
 	/** La table des tests d'une IA, vide si elle n'est pas un module de test. */
 	public static List<TestCase> table(AI ai) {
@@ -45,8 +48,20 @@ public record TestCase(int index, String name, int line, Kind kind, String skip,
 		return cases;
 	}
 
+	/** Ce que le lanceur lance : un test, ou un bench. */
 	public boolean isTest() {
-		return kind == Kind.TEST;
+		return kind == Kind.TEST || kind == Kind.BENCH;
+	}
+
+	/** `@bench` : son résultat est son coût, sans assert exigé. */
+	public boolean isBench() {
+		return kind == Kind.BENCH;
+	}
+
+	/** Hausse de coût tolérée d'un bench, en % : `@bench(tolerance: …)`, ou {@link #DEFAULT_TOLERANCE} ; null pour un test. */
+	public Integer tolerance() {
+		if (!isBench()) return null;
+		return options.get("tolerance") instanceof Number n && n.doubleValue() >= 0 ? (int) Math.round(n.doubleValue()) : DEFAULT_TOLERANCE;
 	}
 
 	/** Plafond d'opérations demandé par `@test(ops: …)`, ou `byDefault`, borné à {@link TestRunner#MAX_OPERATIONS}. */
