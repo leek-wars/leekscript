@@ -3,7 +3,6 @@ package test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -74,11 +73,12 @@ public class TestTestFramework {
 			+ "@bench function loop() { var s = 0\nfor (var i = 0; i < 100; ++i) s += i }\n@bench(tolerance: 25) function nothing() {}\n@test function plain() { assert(true) }"));
 		var loop = results.get(0);
 		assertEquals(TestResult.Status.PASSED, loop.status());
-		assertEquals(Integer.valueOf(TestCase.DEFAULT_TOLERANCE), loop.tolerance());
+		assertTrue(loop.bench());
+		assertEquals(TestCase.DEFAULT_TOLERANCE, loop.tolerance());
 		// Le coût du bench est celui de sa fonction : ni le code de premier niveau, ni la préparation
 		assertTrue(loop.operations() > 0 && loop.operations() < 1000, "ops " + loop.operations());
-		assertEquals(Integer.valueOf(25), results.get(1).tolerance());
-		assertNull(results.get(2).tolerance());
+		assertEquals(25, results.get(1).tolerance());
+		assertFalse(results.get(2).bench());
 		assertTrue(results.get(2).operations() > 1000);
 	}
 
@@ -88,6 +88,12 @@ public class TestTestFramework {
 		assertEquals(TestResult.Status.FAILED, only("@bench function wrong() { assert(false) }").status());
 		assertTrue(errors(module("@test @bench function both() { assert(true) }")).contains(Error.ANNOTATION_INVALID_CONTEXT));
 		assertTrue(errors(writeMain("@bench function b() {}\nreturn 1")).contains(Error.TEST_ANNOTATION_OUTSIDE_TEST_MODULE));
+		assertTrue(errors(module("@bench(tolerance: -5) function b() {}")).contains(Error.ANNOTATION_ARGUMENT_INVALID));
+		assertTrue(errors(module("@bench(tolerance: \"20%\") function b() {}")).contains(Error.ANNOTATION_ARGUMENT_INVALID));
+		// Un bench planté garde la mesure de sa seule fonction
+		var boom = only("global setup = 0\nfor (var i = 0; i < 100000; ++i) setup += i\n@bench function boom() { var a = [1]\nvar b = a[5] }");
+		assertEquals(TestResult.Status.ERROR, boom.status());
+		assertTrue(boom.operations() < 50_000, "ops " + boom.operations());
 	}
 
 	@Test

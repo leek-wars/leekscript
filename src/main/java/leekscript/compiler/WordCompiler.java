@@ -1980,6 +1980,11 @@ public class WordCompiler {
 			addError(new AnalyzeError(ann, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_ARGUMENT_INVALID, new String[] { ann.getWord() }));
 			return false;
 		}
+		// `@bench(tolerance: …)` : un pourcentage, positif ou nul
+		if (a == Annotation.BENCH && args.named().containsKey("tolerance") && !(args.named().get("tolerance") instanceof Number n && n.doubleValue() >= 0)) {
+			addError(new AnalyzeError(ann, AnalyzeErrorLevel.ERROR, Error.ANNOTATION_ARGUMENT_INVALID, new String[] { ann.getWord() }));
+			return false;
+		}
 		return true;
 	}
 

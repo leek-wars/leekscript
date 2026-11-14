@@ -85,10 +85,11 @@ public class TestRunner {
 			reason = test.fails();
 			status = status.ok ? TestResult.Status.UNEXPECTED_PASS : TestResult.Status.EXPECTED_FAILURE;
 		}
-		long operations = test.isBench() && afterTest >= 0 ? afterTest - beforeTest : ai.getOperations();
+		// Un bench planté garde la même mesure : ce que sa fonction a coûté jusqu'à l'erreur
+		long operations = !test.isBench() ? ai.getOperations() : afterTest >= 0 ? afterTest - beforeTest : inTest ? ai.getOperations() - beforeTest : 0;
 		return new TestResult(run.module(), test.name(), test.line(), status, reason, operations, duration, recorder.asserts(),
 			List.copyOf(recorder.failures()), List.copyOf(recorder.errors()), error, run.logs() == null ? List.of() : List.copyOf(run.logs()),
-			test.tolerance());
+			test.isBench(), test.tolerance());
 	}
 
 	/** Une erreur de la machine virtuelle (mémoire épuisée…) n'est pas celle d'un test : elle remonte. */

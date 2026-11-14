@@ -58,10 +58,10 @@ public record TestCase(int index, String name, int line, Kind kind, String skip,
 		return kind == Kind.BENCH;
 	}
 
-	/** Hausse de coût tolérée d'un bench, en % : `@bench(tolerance: …)`, ou {@link #DEFAULT_TOLERANCE} ; null pour un test. */
-	public Integer tolerance() {
-		if (!isBench()) return null;
-		return options.get("tolerance") instanceof Number n && n.doubleValue() >= 0 ? (int) Math.round(n.doubleValue()) : DEFAULT_TOLERANCE;
+	/** Hausse de coût tolérée d'un bench, en % : `@bench(tolerance: …)` (validée à la compilation), ou {@link #DEFAULT_TOLERANCE} ; 0 pour un test. */
+	public int tolerance() {
+		if (!isBench()) return 0;
+		return options.get("tolerance") instanceof Number n ? (int) Math.round(n.doubleValue()) : DEFAULT_TOLERANCE;
 	}
 
 	/** Plafond d'opérations demandé par `@test(ops: …)`, ou `byDefault`, borné à {@link TestRunner#MAX_OPERATIONS}. */
