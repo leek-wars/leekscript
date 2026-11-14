@@ -658,12 +658,14 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			var node = table.addObject();
 			node.put("name", row.name());
 			node.put("line", entry.getLocation().getStartLine());
-			node.put("kind", entry.hasAnnotation(Annotation.TEST) ? "test" : entry.hasAnnotation(Annotation.BENCH) ? "bench" : entry.hasAnnotation(Annotation.BEFORE) ? "before" : "after");
+			// La première de TEST_ENTRIES que porte l'entrée (test, bench, before, after) : son genre, et ses options
+			var kind = Annotation.TEST_ENTRIES.stream().filter(entry::hasAnnotation).findFirst().get();
+			node.put("kind", kind.name().toLowerCase());
 			if (entry.hasAnnotation(Annotation.SKIP)) node.put("skip", entry.getAnnotationArgs(Annotation.SKIP).text());
 			if (entry.hasAnnotation(Annotation.FAILS)) node.put("fails", entry.getAnnotationArgs(Annotation.FAILS).text());
 			// Options du test ou du bench (`@test(ops: …, scenario: "…")`, `@bench(tolerance: …)`), telles
 			// qu'écrites : le lanceur les interprète
-			var options = entry.getAnnotationArgs(entry.hasAnnotation(Annotation.BENCH) ? Annotation.BENCH : Annotation.TEST).named();
+			var options = entry.getAnnotationArgs(kind).named();
 			if (!options.isEmpty()) {
 				var optionsNode = node.putObject("options");
 				for (var option : options.entrySet()) optionsNode.putPOJO(option.getKey(), option.getValue());

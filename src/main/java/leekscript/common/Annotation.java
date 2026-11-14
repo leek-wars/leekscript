@@ -29,6 +29,6 @@ public enum Annotation {
 
 	/** Annotation du framework de test : admise seulement dans un module de test. */
 	public boolean isTestAnnotation() {
-		return this == TEST || this == SKIP || this == FAILS || this == BEFORE || this == AFTER || this == BENCH;
+		return TEST_ENTRIES.contains(this) || this == SKIP || this == FAILS;
 	}
 }

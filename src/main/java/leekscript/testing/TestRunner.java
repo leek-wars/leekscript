@@ -38,8 +38,8 @@ public class TestRunner {
 		// Une erreur avant le test (code de premier niveau, `@before`) n'est jamais l'échec attendu d'un `@fails`
 		boolean inTest = false;
 		boolean outOfBudget = false;
-		// Coût de la seule fonction du test : celui d'un bench
-		long beforeTest = 0, afterTest = -1;
+		// Coût de la seule fonction du test, jusqu'à sa fin ou son erreur : celui d'un bench
+		long beforeTest = 0, testOperations = 0;
 		long start = System.nanoTime();
 		try {
 			ai.runIA();
@@ -47,9 +47,10 @@ public class TestRunner {
 			inTest = true;
 			beforeTest = ai.getOperations();
 			ai.callTestFunction(test.index());
-			afterTest = ai.getOperations();
+			testOperations = ai.getOperations() - beforeTest;
 		} catch (Throwable t) {
 			rethrowIfFatal(t);
+			if (inTest) testOperations = ai.getOperations() - beforeTest;
 			var cause = unwrap(t);
 			error = describe(ai, cause);
 			outOfBudget = cause instanceof LeekRunException e && isOutOfBudget(e);
@@ -85,8 +86,7 @@ public class TestRunner {
 			reason = test.fails();
 			status = status.ok ? TestResult.Status.UNEXPECTED_PASS : TestResult.Status.EXPECTED_FAILURE;
 		}
-		// Un bench planté garde la même mesure : ce que sa fonction a coûté jusqu'à l'erreur
-		long operations = !test.isBench() ? ai.getOperations() : afterTest >= 0 ? afterTest - beforeTest : inTest ? ai.getOperations() - beforeTest : 0;
+		long operations = test.isBench() ? testOperations : ai.getOperations();
 		return new TestResult(run.module(), test.name(), test.line(), status, reason, operations, duration, recorder.asserts(),
 			List.copyOf(recorder.failures()), List.copyOf(recorder.errors()), error, run.logs() == null ? List.of() : List.copyOf(run.logs()),
 			test.isBench(), test.tolerance());
