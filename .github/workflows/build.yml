@@ -36,11 +36,18 @@ jobs:
     - name: Build
       run: gradle build
 
+  # Tests du générateur master sur ce commit : le serveur compile le worker et le démon avec
+  # les masters des deux dépôts, un changement d'ici peut casser le générateur.
+  generator-tests:
+    uses: leek-wars/leek-wars-generator/.github/workflows/build.yml@master
+    with:
+      leekscript-ref: ${{ github.sha }}
+
   # Déploiement : le serveur recompile le worker et le démon avec le master de ce dépôt.
   # Job à part, sur une machine neuve et sans checkout : aucun code du dépôt ne tourne à côté
   # du jeton. Jamais depuis un fork : le secret n'y existe pas.
   deploy:
-    needs: build
+    needs: [build, generator-tests]
     if: github.event_name == 'push' && github.repository == 'leek-wars/leekscript'
     runs-on: ubuntu-latest
     # Le jeton est un secret de l'environnement `deploy`, limité à master.
