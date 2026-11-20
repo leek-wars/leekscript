@@ -471,11 +471,6 @@ public class TestBigInt extends TestCommon {
 			"Map<integer, big_integer> m = [:]; m[2] = 5; return m[2] instanceof BigInteger;",
 			"Map<integer, big_integer> m = [:]; big_integer k = 1L << 100; m[2] = k; return m[2] == 1L << 100;",
 			"Array<big_integer> a = [0L]; real r = 3.0; a[0] = r; return a[0] + (1L << 100) == (1L << 100) + 3;",
-		}) {
-			code_v4_(c).equals("true");
-			code_strict_v4_(c).equals("true");
-		}
-		for (var c : new String[] {
 			"Map<integer, big_integer?> m = [:]; integer k = 5; m[2] = k; return m[2] + (1L << 100) == (1L << 100) + 5;",
 		}) {
 			code_v4_(c).equals("true");
