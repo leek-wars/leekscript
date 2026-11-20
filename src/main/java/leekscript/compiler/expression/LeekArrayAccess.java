@@ -462,8 +462,15 @@ public class LeekArrayAccess extends Expression {
 		// writer.compileClone(mainblock, expr);
 	}
 
+	private static boolean isIntOrReal(Type type) {
+		return type == Type.INT || type == Type.REAL || type.isIntOrReal();
+	}
+
 	private void writeValueWithElementCoercion(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type elementType) {
-		if (elementType.isPrimitiveNumber()) {
+		// Un integer/real rangé tel quel dans une case big_integer y resterait un Long/Double :
+		// cast impossible à la lecture, et en strict javac refuse (BigIntegerValue) m.set(k, long).
+		// Les autres valeurs (null, any) restent écrites telles quelles.
+		if (elementType.isPrimitiveNumber() || (elementType == Type.BIG_INT && isIntOrReal(expr.getType()))) {
 			writer.compileConvert(mainblock, 0, expr, elementType, false);
 		} else {
 			expr.writeJavaCode(mainblock, writer, false);

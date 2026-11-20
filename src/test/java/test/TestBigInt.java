@@ -458,6 +458,28 @@ public class TestBigInt extends TestCommon {
 		code_v4_("class Z { public static integer b = 12; public static void t() { b |= 1; } } Z.t(); return Z.b;").equals("13");
 	}
 
+	/** Un entier rangé dans une case big_integer ne compilait pas (COMPILE_JAVA) : `(BigIntegerValue) m.set(2l, k)`. */
+	@Test
+	public void testIntegerStoredInBigIntegerElement() throws Exception {
+		section("Entier rangé dans une case de Map/Array<big_integer>");
+
+		for (var c : new String[] {
+			"Map<integer, big_integer> m = [:]; integer k = 5; m[2] = k; return m[2] + (1L << 100) == (1L << 100) + 5;",
+			"Map<integer, big_integer> m = [:]; integer k = 5; return (m[2] = k) + (1L << 100) == (1L << 100) + 5;",
+			"Array<big_integer> a = [0L, 0L, 0L]; integer k = 5; a[2] = k; return a[2] + (1L << 100) == (1L << 100) + 5;",
+			"Array<big_integer> a = [0L, 0L, 0L]; integer k = 5; return (a[2] = k) + (1L << 100) == (1L << 100) + 5;",
+			"Map<integer, big_integer> m = [:]; m[2] = 5; return m[2] instanceof BigInteger;",
+			"Map<integer, big_integer> m = [:]; big_integer k = 1L << 100; m[2] = k; return m[2] == 1L << 100;",
+			"Array<big_integer> a = [0L]; real r = 3.0; a[0] = r; return a[0] + (1L << 100) == (1L << 100) + 3;",
+		}) {
+			code_v4_(c).equals("true");
+			code_strict_v4_(c).equals("true");
+		}
+		// null et any gardent l'écriture brute
+		code_v4_("Map<integer, big_integer?> m = [:]; m[2] = null; return m[2];").equals("null");
+		code_v4_("Array<big_integer> a = [0L]; var x = 7L << 80; a[0] = x; return a[0] == 7L << 80;").equals("true");
+	}
+
 	/** `big_integer?` ne compilait pas (COMPILE_JAVA), une union tronquait à 64 bits. */
 	@Test
 	public void testCompoundBitAssignOnNullableAndUnion() throws Exception {
