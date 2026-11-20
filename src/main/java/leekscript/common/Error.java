@@ -182,4 +182,5 @@ public enum Error {
 	TEST_MODULE_IMPORTED, // 178
 	TEST_FUNCTION_WITH_PARAMETERS, // 179
 	ANNOTATION_ARGUMENT_INVALID, // 180
+	WAIT_FORBIDDEN, // 181 : une IA JS/Python a voulu attendre (sleep, verrou, file)
 }
