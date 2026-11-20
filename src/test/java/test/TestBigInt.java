@@ -475,6 +475,12 @@ public class TestBigInt extends TestCommon {
 			code_v4_(c).equals("true");
 			code_strict_v4_(c).equals("true");
 		}
+		for (var c : new String[] {
+			"Map<integer, big_integer?> m = [:]; integer k = 5; m[2] = k; return m[2] + (1L << 100) == (1L << 100) + 5;",
+		}) {
+			code_v4_(c).equals("true");
+			code_strict_v4_(c).equals("true");
+		}
 		// null et any gardent l'écriture brute
 		code_v4_("Map<integer, big_integer?> m = [:]; m[2] = null; return m[2];").equals("null");
 		code_v4_("Array<big_integer> a = [0L]; var x = 7L << 80; a[0] = x; return a[0] == 7L << 80;").equals("true");
