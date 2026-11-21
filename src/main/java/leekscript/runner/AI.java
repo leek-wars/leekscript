@@ -1910,6 +1910,16 @@ public abstract class AI {
 		return longint(value);
 	}
 
+	/**
+	 * v5 : valeur insérée dans un conteneur typé dont l'élément `type` exclut null (`Array<A>`,
+	 * `Set<string>`, valeur ou clé d'une `Map`) : null y est refusé à l'insertion plutôt qu'à la
+	 * lecture, loin de sa cause (#5349). Gratuit en opérations, comme les autres conversions.
+	 */
+	public Object nonNullElement(Object value, String type) throws LeekRunException {
+		if (value == null) throw new LeekRunException(Error.IMPOSSIBLE_CAST, new String[] { "null", type });
+		return value;
+	}
+
 	/** v5 : comme {@link #longintNotNull}, vers real (#5389). */
 	public double realNotNull(Object value) throws LeekRunException {
 		if (value instanceof Box<?> box) value = box.get();

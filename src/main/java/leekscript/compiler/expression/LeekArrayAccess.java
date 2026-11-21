@@ -401,7 +401,7 @@ public class LeekArrayAccess extends Expression {
 		} else if (mTabular.getType() instanceof MapType mt) {
 			mTabular.writeJavaCode(mainblock, writer, true);
 			writer.addCode(".set(");
-			mCase.writeJavaCode(mainblock, writer, false);
+			writer.writeElement(mainblock, mt.key(), mCase);
 			writer.addCode(", ");
 			writeValueWithElementCoercion(mainblock, writer, expr, mt.element());
 			writer.addCode(")");
@@ -471,7 +471,7 @@ public class LeekArrayAccess extends Expression {
 			// Les autres valeurs (null, any, integer?) restent écrites telles quelles.
 			writer.compileConvert(mainblock, 0, expr, Type.BIG_INT, false);
 		} else {
-			expr.writeJavaCode(mainblock, writer, false);
+			writer.writeElement(mainblock, elementType, expr);
 		}
 	}
 

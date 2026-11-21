@@ -102,4 +102,54 @@ public class TestV5Types extends TestCommon {
 		code_v4("class A { static Array<integer> a static f() { if (A.a == null) A.a = [1] return A.a } } return A.f()").equals("[1]");
 		code_v4("class A { Array<integer> a } new A() return 0").ops(1);
 	}
+
+	@Test
+	public void nonNullElements() throws Exception {
+		section("v5 : insérer null dans un conteneur typé non nullable = IMPOSSIBLE_CAST (#5349)");
+		// Le cas du forum : `!` ne retire null que du type statique, l'insertion le refuse
+		code_v5_("class Test { public helloWorld() { return 1 } } Array<Test> aTests = [] Test? nullable = null aTests.push(nullable!) return aTests").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("class Test {} Array<Test> a = [] Test? n = null a.unshift(n!) return a").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("class Test {} Array<Test> a = [] Test? n = null a.insert(n!, 0) return a").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("class Test {} Array<Test> a = [new Test()] Test? n = null a.fill(n!) return a").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("class Test {} Array<Test> a = [new Test()] Test? n = null a[0] = n! return a").error(Error.IMPOSSIBLE_CAST);
+		code_strict_v5_("class Test {} Array<Test> a = [new Test()] Test? n = null a[0] = n! return a").error(Error.IMPOSSIBLE_CAST);
+		// Valeur venue d'any, autres types d'élément
+		code_v5_("Array<string> a = [] var x = null a.push(x) return a").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Array<integer> a = [] var x = null a.push(x) return a").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Array<boolean> a = [] var x = null a.insert(x, 0) return a").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Array<Array<integer>> a = [] var x = null a.push(x) return a").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Array<string> a = ['a'] var x = null a[0] = x return a").error(Error.IMPOSSIBLE_CAST);
+		// Set : l'élément ; Map : la valeur et la clé
+		code_v5_("Set<string> s = <> var x = null s.put(x) return s").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("class Test {} Map<string, Test> m = [:] Test? n = null m.put('a', n!) return m").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Map<string, string> m = [:] var x = null m['a'] = x return m").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Map<string, integer> m = ['a': 1] var x = null m.replace('a', x) return m").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Map<string, integer> m = ['a': 1] var x = null m.fill(x) return m").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Map<string, integer> m = [:] var k = null m.put(k, 1) return m").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Map<string, integer> m = [:] var k = null m[k] = 1 return m").error(Error.IMPOSSIBLE_CAST);
+
+		section("v5 : sans contrôle quand l'élément accepte null ou que la valeur ne l'est pas (#5349)");
+		code_v5_("Array a = [] a.push(null) return a").equals("[null]");
+		code_v5_("Array<any> a = [] var x = null a.push(x) return a").equals("[null]");
+		code_v5_("class Test {} Array<Test?> a = [] Test? n = null a.push(n) a.push(n!) return a").equals("[null, null]");
+		code_v5_("Array<string | null> a = ['a'] var x = null a[0] = x return a").equals("[null]");
+		code_v5_("Map<string, integer?> m = [:] var x = null m.put('a', x) m['b'] = x return m").equals("[\"a\" : null, \"b\" : null]");
+		code_v5_("Set<string?> s = <> var x = null s.put(x) return s").equals("<null>");
+		code_v5_("class B<T> { Array<T> a } var b = new B() var x = null b.a.push(x) return b.a").equals("[null]");
+		code_v5_("class Test {} Array<Test> a = [] a.push(new Test()) a.unshift(new Test()) a[0] = new Test() return a.count()").equals("2");
+		code_v5_("Array<string> a = [] var x = 'b' a.push('a') a.push(x) a.push(x + 1) return a").equals("[\"a\", \"b\", \"b1\"]");
+		code_v5_("Map<string, Array<integer>> m = [:] var k = 'a' m[k] = [1] m.put(k + 'b', [2]) return m").equals("[\"a\" : [1], \"ab\" : [2]]");
+		// L'affectation d'une variable typée n'est pas contrôlée, seule l'insertion l'est
+		code_v5_("class Test {} Test? n = null Test t = n! return t").equals("null");
+		// Gratuit en opérations
+		code_v4("Array<string> a = ['b'] var x = 'a' a[0] = x return a").ops(7);
+		code_v5_("Array<string> a = ['b'] var x = 'a' a[0] = x return a").ops(7);
+
+		section("v1-4 : null entre dans un conteneur typé non nullable (#5349)");
+		code_v4("class Test { public helloWorld() { return 1 } } Array<Test> aTests = [] Test? nullable = null push(aTests, nullable!) return aTests").equals("[null]");
+		code_v4("class Test {} Array<Test> a = [new Test()] Test? n = null a[0] = n! return a").equals("[null]");
+		code_v4("Array<string> a = [] var x = null push(a, x) return a").equals("[null]");
+		code_v4("Set<string> s = <> var x = null setPut(s, x) return s").equals("<null>");
+		code_v4("Map<string, string> m = [:] var x = null m['a'] = x mapPut(m, 'b', x) return m").equals("[\"a\" : null, \"b\" : null]");
+	}
 }

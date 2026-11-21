@@ -645,7 +645,12 @@ public class LeekFunctionCall extends Expression {
 				// System.out.println("Argument : " + functionType.getArgument(mParameters.size(), i));
 				if (mainblock.getVersion() >= 2) {
 					if (system_function != null) {
-						parameter.writeJavaCode(mainblock, writer, false);
+						var elementType = insertedElementType(i);
+						if (elementType != null) {
+							writer.writeElement(mainblock, elementType, parameter);
+						} else {
+							parameter.writeJavaCode(mainblock, writer, false);
+						}
 					} else if (typedArguments) {
 						writer.compileConvertTyped(mainblock, i, parameter, functionType.getArgument(mParameters.size(), i), false);
 					} else {
@@ -1702,6 +1707,34 @@ public class LeekFunctionCall extends Expression {
 		this.functionType = best.getType();
 		this.type = bestReturn;
 		return true;
+	}
+
+	/**
+	 * Type d'élément (ou de clé) du conteneur receveur dans lequel l'argument n°`parameter` de cet
+	 * appel système est inséré (`a.push(x)`, `m.put(k, v)`, `s.put(x)`…), null s'il n'y est pas
+	 * inséré : JavaWriter.writeElement y refuse null en v5 (#5349). Le receveur est l'objet d'une
+	 * méthode, sinon le premier argument.
+	 */
+	private Type insertedElementType(int parameter) {
+		int argument = parameter + (is_builtin_method ? 1 : 0);
+		if (argument == 0) return null;
+		var receiver = is_builtin_method ? ((LeekObjectAccess) mExpression).getObject().getType() : mParameters.get(0).getType();
+		// Nom Java : celui de la fonction quelle que soit la forme appelée (`m.put` → mapPut)
+		switch (system_function.getJavaName()) {
+			case "push", "unshift", "insert", "fill":
+				return argument == 1 && receiver instanceof ArrayType at ? at.element() : null;
+			case "setPut":
+				return argument == 1 && receiver instanceof SetType st ? st.element() : null;
+			case "mapPut":
+				if (!(receiver instanceof MapType mt)) return null;
+				return argument == 1 ? mt.key() : argument == 2 ? mt.element() : null;
+			case "mapReplace":
+				return argument == 2 && receiver instanceof MapType mt ? mt.element() : null;
+			case "mapFill":
+				return argument == 1 && receiver instanceof MapType mt ? mt.element() : null;
+			default:
+				return null;
+		}
 	}
 
 	/** Collects every {@link TypeVariable} occurring in a (possibly nested) type. */

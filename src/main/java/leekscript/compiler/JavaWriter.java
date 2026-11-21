@@ -20,6 +20,17 @@ import leekscript.common.Type.CastType;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.bloc.Module;
 import leekscript.compiler.expression.Expression;
+import leekscript.compiler.expression.LeekAnonymousFunction;
+import leekscript.compiler.expression.LeekArray;
+import leekscript.compiler.expression.LeekBigInteger;
+import leekscript.compiler.expression.LeekBoolean;
+import leekscript.compiler.expression.LeekFileContent;
+import leekscript.compiler.expression.LeekInterval;
+import leekscript.compiler.expression.LeekMap;
+import leekscript.compiler.expression.LeekNumber;
+import leekscript.compiler.expression.LeekObject;
+import leekscript.compiler.expression.LeekSet;
+import leekscript.compiler.expression.LeekString;
 import leekscript.runner.AI;
 import leekscript.runner.CallableVersion;
 import leekscript.runner.LeekFunctions;
@@ -827,6 +838,34 @@ public class JavaWriter {
 			return function + "NotNull(";
 		}
 		return function + "(";
+	}
+
+	/**
+	 * v5 : `value`, insérée dans un conteneur typé d'élément (ou de clé) `elementType`, doit-elle
+	 * passer par nonNullElement() (#5349) ? Oui quand le type exclut null et que la valeur peut
+	 * l'être au runtime. Un type statique non nullable ne le garantit pas (`x!`, conversion
+	 * depuis any) : seuls les littéraux et les primitifs Java sont sûrs. Rien pour `Array`,
+	 * `Array<any>`, `Array<A?>` ni un type générique effacé.
+	 */
+	public static boolean checksNullElement(MainLeekBlock mainblock, Type elementType, Expression value) {
+		if (!LanguageFeature.NON_NULL_ELEMENTS.enabledIn(mainblock.getVersion())) return false;
+		if (elementType == Type.ANY || elementType == Type.VOID || elementType.canBeNull()
+			|| elementType.isWarning() || elementType == Type.ERROR || elementType.containsTypeVariable()) return false;
+		if (value.getType().isPrimitive() && !value.hasBoxedJavaResult() && !value.hasObjectJavaResult()) return false;
+		return !(value instanceof LeekNumber || value instanceof LeekString || value instanceof LeekBoolean || value instanceof LeekBigInteger
+			|| value instanceof LeekArray || value instanceof LeekMap || value instanceof LeekSet || value instanceof LeekObject
+			|| value instanceof LeekInterval || value instanceof LeekAnonymousFunction);
+	}
+
+	/** Écrit `value` à insérer dans un conteneur d'élément `elementType`, contrôlée non null si besoin (cf checksNullElement). */
+	public void writeElement(MainLeekBlock mainblock, Type elementType, Expression value) {
+		if (checksNullElement(mainblock, elementType, value)) {
+			addCode("nonNullElement(");
+			value.writeJavaCode(mainblock, this, false);
+			addCode(", " + LeekFileContent.javaString(elementType.toString()) + ")");
+		} else {
+			value.writeJavaCode(mainblock, this, false);
+		}
 	}
 
 	public String generateGenericFunction(ArrayList<CallableVersion> versions) {

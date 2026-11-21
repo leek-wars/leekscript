@@ -82,7 +82,10 @@ public enum LanguageFeature {
 	NULL_TO_NUMBER_ERROR(5),
 
 	/** Un champ de classe typé sans initialiseur reçoit la valeur par défaut de son type, comme une locale (#4635). */
-	FIELD_TYPE_DEFAULT(5);
+	FIELD_TYPE_DEFAULT(5),
+
+	/** Insérer null dans un conteneur typé dont l'élément (ou la clé) exclut null lève IMPOSSIBLE_CAST (#5349). */
+	NON_NULL_ELEMENTS(5);
 
 	public final int since;
 

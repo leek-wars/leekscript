@@ -703,6 +703,10 @@ public abstract class AIModule {
 		return ai.new_stringClass();
 	}
 
+	public final java.lang.Object nonNullElement(java.lang.Object a0, java.lang.String a1) throws leekscript.runner.LeekRunException {
+		return ai.nonNullElement(a0, a1);
+	}
+
 	public final boolean not(java.lang.Object a0) throws leekscript.runner.LeekRunException {
 		return ai.not(a0);
 	}
