@@ -409,11 +409,17 @@ public class TestClass extends TestCommon {
 		code_v4_("class Z { public static integer b; } Z.b += 5; return Z.b;").equals("5");
 		code_v4_("class Z { public static BigInteger b; } Z.b |= 1; return Z.b;").equals("1");
 		code_v4_("class A { public static integer b; } class B extends A {} return B.b;").equals("0");
-		// Les types qui acceptent null gardent null, comme les champs d'instance
-		code_v4_("class Z { public static string s; } return Z.s;").equals("null");
-		code_v4_("class Z { public static Array a; } return Z.a;").equals("null");
-		code_v4_("class Z { public static string s; } Z.s ??= 'x'; return Z.s;").equals("\"x\"");
-		code_v4_("class Z { public static Array a; } Z.a ??= [1]; return Z.a;").equals("[1]");
+		// v1-4 : les types qui acceptent null gardent null, comme les champs d'instance
+		code_v4("class Z { public static string s; } return Z.s;").equals("null");
+		code_v4("class Z { public static Array a; } return Z.a;").equals("null");
+		code_v4("class Z { public static string s; } Z.s ??= 'x'; return Z.s;").equals("\"x\"");
+		code_v4("class Z { public static Array a; } Z.a ??= [1]; return Z.a;").equals("[1]");
+		// v5 : ils reçoivent la valeur par défaut d'une locale, que `??=` ne remplace pas (#4635)
+		code_v5_("class Z { public static string s; } return Z.s;").equals("\"\"");
+		code_v5_("class Z { public static Array a; } return Z.a;").equals("[]");
+		code_v5_("class Z { public static string s; } Z.s ??= 'x'; return Z.s;").equals("\"\"");
+		code_v5_("class Z { public static Array a; } Z.a ??= [1]; return Z.a;").equals("[]");
+		code_v5_("class Z { public static Array? a; } Z.a ??= [1]; return Z.a;").equals("[1]");
 		// Champ avec valeur : inchangé
 		code_v4_("class Z { public static final integer C = 42; } return Z.C;").equals("42");
 	}

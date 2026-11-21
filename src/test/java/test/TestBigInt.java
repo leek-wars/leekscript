@@ -652,8 +652,12 @@ public class TestBigInt extends TestCommon {
 		code_v4_("class Z { public static integer b; public static integer t() { b ??= 5; return b; } } return Z.t();").equals("0");
 		code_v4_("class Z { public static integer b = 3; public static integer t() { b ??= 5; return b; } } return Z.t();").equals("3");
 		code_v4_("class Z { public static integer b; } Z.b ??= 5; return Z.b;").equals("0");
-		code_v4_("class Z { public static string s; public static string t() { s ??= 'x'; return s; } } return Z.t();").equals("\"x\"");
+		code_v4("class Z { public static string s; public static string t() { s ??= 'x'; return s; } } return Z.t();").equals("\"x\"");
+		// v5 : un champ string ou Array non initialisé vaut "" / [] et non null (#4635)
+		code_v5_("class Z { public static string s; public static string t() { s ??= 'x'; return s; } } return Z.t();").equals("\"\"");
 		code_v4_("class Z { public static b; public static t() { b ??= 5; return b; } } return Z.t();").equals("5");
-		code_v4_("class Z { public static Array a; public static Array t() { a ??= [1]; return a; } } return Z.t();").equals("[1]");
+		code_v4("class Z { public static Array a; public static Array t() { a ??= [1]; return a; } } return Z.t();").equals("[1]");
+		code_v5_("class Z { public static Array a; public static Array t() { a ??= [1]; return a; } } return Z.t();").equals("[]");
+		code_v5_("class Z { public static Array? a; public static Array? t() { a ??= [1]; return a; } } return Z.t();").equals("[1]");
 	}
 }

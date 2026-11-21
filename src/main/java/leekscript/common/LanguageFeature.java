@@ -79,7 +79,10 @@ public enum LanguageFeature {
 	RETURN_ENDS_AT_NEWLINE(5),
 
 	/** Convertir null vers integer ou real lève IMPOSSIBLE_CAST au lieu de rendre 0 / 0.0 (#5389). */
-	NULL_TO_NUMBER_ERROR(5);
+	NULL_TO_NUMBER_ERROR(5),
+
+	/** Un champ de classe typé sans initialiseur reçoit la valeur par défaut de son type, comme une locale (#4635). */
+	FIELD_TYPE_DEFAULT(5);
 
 	public final int since;
 

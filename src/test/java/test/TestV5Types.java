@@ -72,4 +72,34 @@ public class TestV5Types extends TestCommon {
 		code_v4("class A { static integer x } var m = [:] A.x = m[0] return A.x").equals("0");
 		code_v4("var m = [:] return m[0] as integer").equals("0");
 	}
+
+	@Test
+	public void fieldTypeDefault() throws Exception {
+		section("v5 : un champ typé sans initialiseur vaut la valeur par défaut de son type (#4635)");
+		code_v5_("class A { static Set<A> aSet } A.aSet.put(new A()) return A.aSet.size()").equals("1");
+		code_v5_("class A { Set<integer> s integer x real r string t boolean b big_integer g Array<integer> a Map<string, integer> m } var a = new A() return [a.s, a.x, a.r, a.t, a.b, a.g, a.a, a.m]").equals("[<>, 0, 0.0, \"\", false, 0, [], [:]]");
+		code_v5_("class A { static Set<integer> s static integer x static real r static string t static boolean b static big_integer g static Array<integer> a static Map<string, integer> m } return [A.s, A.x, A.r, A.t, A.b, A.g, A.a, A.m]").equals("[<>, 0, 0.0, \"\", false, 0, [], [:]]");
+		code_strict_v5_("class A { Array<integer> a } A a = new A() a.a.push(2) return a.a").equals("[2]");
+		// Un type nullable explicite, any, une classe ou une fonction gardent null
+		code_v5_("class A { Set<A> | null s A? a Array<integer>? n integer? x any z A c Function f } var a = new A() return [a.s, a.a, a.n, a.x, a.z, a.c, a.f]").equals("[null, null, null, null, null, null, null]");
+		code_v5_("class A { static Set<A> | null s static A? a static any z } return [A.s, A.a, A.z]").equals("[null, null, null]");
+		// Un conteneur par instance, champs hérités compris, l'initialiseur explicite l'emporte
+		code_v5_("class A { Array<integer> a } var x = new A() var y = new A() x.a.push(1) return [x.a, y.a]").equals("[[1], []]");
+		code_v5_("class P { Array<integer> a } class C extends P { Set<integer> s } var c = new C() return [c.a, c.s]").equals("[[], <>]");
+		code_v5_("class A { Array<integer> a = [1] static Map<string, integer> m = ['a': 1] } return [new A().a, A.m]").equals("[[1], [\"a\" : 1]]");
+		code_v5_("class A { Array<integer> a constructor() { this.a.push(3) } } return new A().a").equals("[3]");
+		code_v5_("class B<T> { T x Array<T> a } var b = new B() return [b.x, b.a]").equals("[null, []]");
+		// L'init paresseuse sur `== null` ne se déclenche plus : le champ n'est jamais null
+		code_v5_("class A { static Array<integer> a static f() { if (A.a == null) A.a = [1] return A.a } } return A.f()").equals("[]");
+		// Coût : celui d'un initialiseur explicite `= []` (aucune opération ; l'allocation compte en RAM)
+		code_v5_("class A { Array<integer> a } new A() return 0").ops(1);
+		code_v5_("class A { Array<integer> a = [] } new A() return 0").ops(1);
+
+		section("v1-4 : un champ typé sans initialiseur reste null (#4635)");
+		code_v4("class A { static Set<A> s } return A.s").equals("null");
+		code_v4("class A { Set<integer> s integer x real r string t boolean b big_integer g Array<integer> a Map<string, integer> m } var a = new A() return [a.s, a.x, a.r, a.t, a.b, a.g, a.a, a.m]").equals("[null, 0, 0.0, null, false, null, null, null]");
+		code_v4("class A { static Set<integer> s static integer x static string t static Array<integer> a } return [A.s, A.x, A.t, A.a]").equals("[null, 0, null, null]");
+		code_v4("class A { static Array<integer> a static f() { if (A.a == null) A.a = [1] return A.a } } return A.f()").equals("[1]");
+		code_v4("class A { Array<integer> a } new A() return 0").ops(1);
+	}
 }

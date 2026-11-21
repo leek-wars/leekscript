@@ -799,6 +799,12 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 					expr.writeJavaCode(mainblock, writer, false);
 				}
 				writer.addLine(";");
+			} else {
+				// Un champ Java primitif (integer, real, boolean) vaut déjà 0 / 0.0 / false
+				var implicit = implicitFieldDefault(mainblock, writer, field.getValue().getType());
+				if (implicit != null && !field.getValue().getType().isPrimitive()) {
+					writer.addLine(field.getKey() + " = " + implicit + ";");
+				}
 			}
 		}
 		writer.addLine("}");
@@ -1210,6 +1216,18 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		return type == Type.INT || type == Type.REAL || type == Type.BOOL || type == Type.BIG_INT;
 	}
 
+	/**
+	 * v5 : la valeur d'un champ typé sans initialiseur, celle d'une variable locale du même type
+	 * (`Set<A> s` → set vide, `string t` → ""), null si ce type n'a pas d'autre valeur par
+	 * défaut (classes, fonctions, any, types nullables : `Set<A> | null`, `A?`). v1-4 : null
+	 * pour tout ce qui n'est pas un champ Java primitif (#4635).
+	 */
+	private static String implicitFieldDefault(MainLeekBlock mainblock, JavaWriter writer, Type type) {
+		if (!LanguageFeature.FIELD_TYPE_DEFAULT.enabledIn(mainblock.getVersion())) return null;
+		var value = type.getDefaultValue(writer, mainblock.getVersion());
+		return value.equals("null") ? null : value;
+	}
+
 	public void writeCreateStaticFields(MainLeekBlock mainblock, JavaWriter writer) {
 
 		writer.addLine(writer.privateMember() + "void createStaticClass_" + getInternalName() + "() throws LeekRunException {");
@@ -1265,13 +1283,14 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 				writer.addCode(".initField(\"" + field.getKey() + "\", ");
 				writer.compileConvert(mainblock, 0, field.getValue().expression, field.getValue().getType(), false);
 				writer.addLine(");");
-			} else if (hasZeroDefault(field.getValue().getType())) {
+			} else if (hasZeroDefault(field.getValue().getType()) || implicitFieldDefault(mainblock, writer, field.getValue().getType()) != null) {
 				// Un champ statique est stocké dans une Box, qui vaut null tant que
 				// rien ne l'initialise — alors qu'un champ d'instance est un vrai champ
 				// Java et vaut donc 0 / 0.0 / false. Sans ça, `class Z { static integer
 				// b; }` puis `Z.b` lit null et le code généré, qui déballe un long,
-				// plante (IMPOSSIBLE_CAST). Les types qui acceptent null (string,
-				// Array, classes…) gardent null, comme les champs d'instance. (#4908)
+				// plante (IMPOSSIBLE_CAST). En v1-4, les types qui acceptent null (string,
+				// Array, classes…) gardent null, comme les champs d'instance (#4908) ; en v5
+				// ils reçoivent la valeur par défaut d'une locale (#4635).
 				writer.addCode(className);
 				writer.addCode(".initField(\"" + field.getKey() + "\", ");
 				writer.addCode(field.getValue().getType().getDefaultValue(writer, mainblock.getVersion()));
