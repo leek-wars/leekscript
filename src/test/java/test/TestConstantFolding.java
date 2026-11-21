@@ -296,7 +296,8 @@ public class TestConstantFolding extends TestCommon {
 	public void testAccess_levels_respected() throws Exception {
 		section("Niveaux d'accès : miroir exact du runtime (pas de fuite de constante)");
 		// private lu de l'extérieur : pas d'inline, le runtime renvoie null + log
-		code_v2_("class A { private static final SECRET = 42 } return A.SECRET").equals("null");
+		code_v2_4("class A { private static final SECRET = 42 } return A.SECRET").equals("null");
+		code_v5_("class A { private static final SECRET = 42 } return A.SECRET").error(Error.PRIVATE_STATIC_FIELD);
 		// private hérité lu depuis la sous-classe : refusé aussi
 		code_v2_("class P { private static final X = 5 } class B extends P { static m() { return X } } return B.m()").equals("null");
 		// private lu depuis SA classe : autorisé, inliné
@@ -304,9 +305,11 @@ public class TestConstantFolding extends TestCommon {
 		// protected depuis un descendant : autorisé
 		code_v2_("class P { protected static final X = 9 } class B extends P { static m() { return X } } return B.m()").equals("9");
 		// protected de l'extérieur : refusé
-		code_v2_("class P { protected static final X = 9 } return P.X").equals("null");
+		code_v2_4("class P { protected static final X = 9 } return P.X").equals("null");
+		code_v5_("class P { protected static final X = 9 } return P.X").error(Error.PROTECTED_STATIC_FIELD);
 		// argument privé d'un appel éliminable : l'appel (et son log d'erreur) reste
-		code_v2_("class A { private static final X = 5 } function foo(x) {} foo(A.X) return 1").equals("1");
+		code_v2_4("class A { private static final X = 5 } function foo(x) {} foo(A.X) return 1").equals("1");
+		code_v5_("class A { private static final X = 5 } function foo(x) {} foo(A.X) return 1").error(Error.PRIVATE_STATIC_FIELD);
 	}
 
 	@Test
