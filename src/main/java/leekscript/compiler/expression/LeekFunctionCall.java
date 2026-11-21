@@ -485,7 +485,14 @@ public class LeekFunctionCall extends Expression {
 				if (systemReturnContainsTypeVariable(mainblock) && this.type != Type.ANY && this.type != Type.VOID) {
 					openGenericReturnCast(mainblock, writer);
 				}
-				if (system_function.isStatic()) {
+				if (unsafe) {
+					// Arguments à convertir (any, nullable…) : par l'enveloppe générique, comme la forme
+					// libre ; l'appel direct ne trouvait pas la surcharge Java (COMPILE_JAVA)
+					var key = writer.generateGenericFunction(callable_versions);
+					writer.addCode(system_function.getStandardClass() + "_" + key + "(");
+					object.writeJavaCode(mainblock, writer, false);
+					addComma = true;
+				} else if (system_function.isStatic()) {
 					// "hello".length() -> StringClass.length(ai, "hello", ...) : méthode
 					// statique du helper, le receveur est le premier argument après l'AI.
 					writer.addCode(system_function.getStandardClass() + "Class." + system_function.getJavaName() + "(" + writer.getAIThis() + ", ");

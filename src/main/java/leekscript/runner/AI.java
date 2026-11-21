@@ -1948,6 +1948,23 @@ public abstract class AI {
 		return value;
 	}
 
+	/**
+	 * v5 : argument integer d'une fonction système appelée par son enveloppe générique. Null n'y
+	 * vaut plus 0 : ClassCastException, que l'enveloppe change en valeur par défaut de l'appel.
+	 */
+	public long longintArgument(Object value) throws LeekRunException {
+		if (value instanceof Box<?> box) value = box.get();
+		if (value == null) throw new ClassCastException();
+		return longint(value);
+	}
+
+	/** v5 : comme {@link #longintArgument}, vers real. */
+	public double realArgument(Object value) throws LeekRunException {
+		if (value instanceof Box<?> box) value = box.get();
+		if (value == null) throw new ClassCastException();
+		return real(value);
+	}
+
 	/** v5 : comme {@link #longintNotNull}, vers real (#5389). */
 	public double realNotNull(Object value) throws LeekRunException {
 		if (value instanceof Box<?> box) value = box.get();

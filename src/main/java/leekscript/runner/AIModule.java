@@ -607,6 +607,10 @@ public abstract class AIModule {
 		return ai.longint(a0);
 	}
 
+	public final long longintArgument(java.lang.Object a0) throws leekscript.runner.LeekRunException {
+		return ai.longintArgument(a0);
+	}
+
 	public final long longintNotNull(java.lang.Object a0) throws leekscript.runner.LeekRunException {
 		return ai.longintNotNull(a0);
 	}
@@ -985,6 +989,10 @@ public abstract class AIModule {
 
 	public final double real(java.lang.Object a0) throws leekscript.runner.LeekRunException {
 		return ai.real(a0);
+	}
+
+	public final double realArgument(java.lang.Object a0) throws leekscript.runner.LeekRunException {
+		return ai.realArgument(a0);
 	}
 
 	public static java.lang.Double realBox(java.lang.Object a0) {

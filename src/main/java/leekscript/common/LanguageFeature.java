@@ -88,7 +88,10 @@ public enum LanguageFeature {
 	NON_NULL_ELEMENTS(5),
 
 	/** Une valeur any convertie en Array / Map / Set typés voit son contenu vérifié à la conversion (#5384). */
-	TYPED_CONTENT_CHECK(5);
+	TYPED_CONTENT_CHECK(5),
+
+	/** Null passé à un paramètre integer ou real d'une fonction système ne vaut plus 0 : l'appel rend sa valeur par défaut. */
+	NULL_ARGUMENT_NOT_ZERO(5);
 
 	public final int since;
 

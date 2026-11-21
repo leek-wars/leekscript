@@ -218,4 +218,27 @@ public class TestV5Types extends TestCommon {
 		code_v4("Map<string, integer> m = (=> ['a': true])() return m").equals("[\"a\" : true]");
 		code_v4("function f(Array<integer> a) { return a } var x = [1, 'b'] return f(x)").equals("[1, \"b\"]");
 	}
+
+	@Test
+	public void nullArgumentIsNotZero() throws Exception {
+		section("v1-4 : null passé à un paramètre integer d'une fonction système vaut 0");
+		code_v4("return substring('hello', null, 2)").equals("\"he\"");
+		code_v4("var x = null return substring('hello', x, 2)").equals("\"he\"");
+		code_v4("integer? x = null return substring('hello', x, 2)").equals("\"he\"");
+
+		section("v5 : null n'est plus 0, l'appel rend sa valeur par défaut");
+		code_v5_("return 'hello'.substring(null, 2)").equals("\"\"");
+		code_v5_("var x = null return 'hello'.substring(x, 2)").equals("\"\"");
+		code_v5_("integer? x = null return 'hello'.substring(x, 2)").equals("\"\"");
+		code_v5_("var f = substring return f('hello', null, 2)").equals("\"\"");
+		code_v5_("var x = null return 'abc'.charAt(x)").equals("\"\"");
+		// Une valeur présente passe, et un paramètre nullable garde son sens (slice(null, 2) = depuis le début)
+		code_v5_("var x = 1 return 'hello'.substring(x, 2)").equals("\"el\"");
+		code_v5_("var a = [3, 1, 2] var x = null return a.slice(x, 2)").equals("[3, 1]");
+
+		section("v5 : forme méthode avec un argument non typé (passait par un appel direct qui ne compilait pas)");
+		code_v5_("any a = [3, 1, 2] return a.slice(1, 2)").equals("[1]");
+		code_v5_("var a = [3, 1, 2] var x = 1 return a.slice(x, 2)").equals("[1]");
+	}
+
 }

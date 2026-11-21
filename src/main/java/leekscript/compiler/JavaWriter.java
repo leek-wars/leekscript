@@ -1095,8 +1095,11 @@ public class JavaWriter {
 		if (type instanceof FunctionType) {
 			return "toFunction(" + index + ", " + v + ")";
 		}
+		// v5 : null vers un paramètre integer/real d'une fonction système n'est plus 0 (une vraie
+		// entité, une vraie case…) : la conversion échoue et l'appel rend sa valeur par défaut,
+		// comme pour un argument d'un autre type
 		if (type == Type.INT) {
-			return "longint(" + v + ")";
+			return (LanguageFeature.NULL_ARGUMENT_NOT_ZERO.enabledIn(version) ? "longintArgument(" : "longint(") + v + ")";
 		}
 		if (type == Type.BIG_INT) {
 			// Conversion vers big_integer dans les wrappers de fonctions système
@@ -1105,7 +1108,7 @@ public class JavaWriter {
 			return "BigIntegerValue.valueOf(" + getAIThis() + ", " + v + ")";
 		}
 		if (type == Type.REAL) {
-			return "real(" + v + ")";
+			return (LanguageFeature.NULL_ARGUMENT_NOT_ZERO.enabledIn(version) ? "realArgument(" : "real(") + v + ")";
 		}
 		if (type == Type.STRING) {
 			return "string(" + v + ")";
