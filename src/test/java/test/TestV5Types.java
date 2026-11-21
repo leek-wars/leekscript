@@ -236,6 +236,13 @@ public class TestV5Types extends TestCommon {
 		code_v5_("var x = 1 return 'hello'.substring(x, 2)").equals("\"el\"");
 		code_v5_("var a = [3, 1, 2] var x = null return a.slice(x, 2)").equals("[3, 1]");
 
+		section("v5 : un avertissement hors strict, une erreur en strict");
+		code_v5_("var x = null return 'hello'.substring(x, 2)").logsError(Error.WRONG_ARGUMENT_TYPE);
+		code_v5_("var x = 1 return 'hello'.substring(x, 2)").doesNotLog(Error.WRONG_ARGUMENT_TYPE);
+		code_strict_v5_("var x = null return 'hello'.substring(x, 2)").error(Error.WRONG_ARGUMENT_TYPE);
+		code_strict_v5_("integer? x = null return 'hello'.substring(x, 2)").error(Error.WRONG_ARGUMENT_TYPE);
+		code_strict_v5_("integer? x = 1 return 'hello'.substring(x, 2)").equals("\"el\"");
+
 		section("v5 : forme méthode avec un argument non typé (passait par un appel direct qui ne compilait pas)");
 		code_v5_("any a = [3, 1, 2] return a.slice(1, 2)").equals("[1]");
 		code_v5_("var a = [3, 1, 2] var x = 1 return a.slice(x, 2)").equals("[1]");

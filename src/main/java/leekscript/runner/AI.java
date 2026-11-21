@@ -1950,19 +1950,27 @@ public abstract class AI {
 
 	/**
 	 * v5 : argument integer d'une fonction système appelée par son enveloppe générique. Null n'y
-	 * vaut plus 0 : ClassCastException, que l'enveloppe change en valeur par défaut de l'appel.
+	 * vaut plus 0 (une vraie entité, une vraie case) : avertissement et ClassCastException, que
+	 * l'enveloppe change en valeur par défaut de l'appel ; erreur depuis un fichier strict.
 	 */
-	public long longintArgument(Object value) throws LeekRunException {
+	public long longintArgument(Object value, int argument, boolean strict) throws LeekRunException {
 		if (value instanceof Box<?> box) value = box.get();
-		if (value == null) throw new ClassCastException();
+		if (value == null) nullArgument(argument, "integer", strict);
 		return longint(value);
 	}
 
 	/** v5 : comme {@link #longintArgument}, vers real. */
-	public double realArgument(Object value) throws LeekRunException {
+	public double realArgument(Object value, int argument, boolean strict) throws LeekRunException {
 		if (value instanceof Box<?> box) value = box.get();
-		if (value == null) throw new ClassCastException();
+		if (value == null) nullArgument(argument, "real", strict);
 		return real(value);
+	}
+
+	private void nullArgument(int argument, String type, boolean strict) throws LeekRunException {
+		var parameters = new String[] { String.valueOf(argument), "null", "null", type };
+		if (strict) throw new LeekRunException(Error.WRONG_ARGUMENT_TYPE, parameters);
+		addSystemLog(AILog.WARNING, Error.WRONG_ARGUMENT_TYPE, parameters);
+		throw new ClassCastException();
 	}
 
 	/** v5 : comme {@link #longintNotNull}, vers real (#5389). */

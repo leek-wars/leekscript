@@ -50,6 +50,7 @@ public class LeekFunctionCall extends Expression {
 	private Expression mExpression = null;
 	private Type type = Type.ANY;
 	private boolean unsafe = false;
+	private boolean strictNullArgument = false;
 	private ArrayList<CallableVersion> callable_versions = null;
 	private LeekFunctions system_function = null;
 	private boolean is_method = false;
@@ -488,7 +489,7 @@ public class LeekFunctionCall extends Expression {
 				if (unsafe) {
 					// Arguments à convertir (any, nullable…) : par l'enveloppe générique, comme la forme
 					// libre ; l'appel direct ne trouvait pas la surcharge Java (COMPILE_JAVA)
-					var key = writer.generateGenericFunction(callable_versions);
+					var key = writer.generateGenericFunction(callable_versions, strictNullArgument);
 					writer.addCode(system_function.getStandardClass() + "_" + key + "(");
 					object.writeJavaCode(mainblock, writer, false);
 					addComma = true;
@@ -768,14 +769,14 @@ public class LeekFunctionCall extends Expression {
 		}
 		if (unsafe || mainblock.getVersion() <= 3) {
 			if (callable_versions != null) {
-				var key = writer.generateGenericFunction(callable_versions);
+				var key = writer.generateGenericFunction(callable_versions, strictNullArgument);
 				writer.addCode(system_function.getStandardClass() + "_" + key + "(");
 				addComma = false;
 			} else {
 				var list = new ArrayList<CallableVersion>();
 				list.add(system_function.getVersions()[0]);
-				writer.generateGenericFunction(list);
-				writer.addCode(system_function.getStandardClass() + "_" + system_function.getName() + "_" + system_function.getVersions()[0].getParametersSignature() + "(");
+				var key = writer.generateGenericFunction(list, strictNullArgument);
+				writer.addCode(system_function.getStandardClass() + "_" + key + "(");
 				addComma = false;
 			}
 		} else if (system_function.isStatic()) {
@@ -834,6 +835,8 @@ public class LeekFunctionCall extends Expression {
 
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
+		// Mode strict du fichier de l'appel (cf JavaWriter.generateGenericFunction)
+		strictNullArgument = compiler.getMainBlock().isStrict() && LanguageFeature.NULL_ARGUMENT_NOT_ZERO.enabledIn(compiler.getVersion());
 		analyzeCall(compiler);
 		// v5 : après l'appel (arguments compris), un champ affiné a pu être réassigné
 		if (compiler.getMainBlock().hasSafeFieldNarrowing() && mayRunUserCode(system_function)) {

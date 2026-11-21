@@ -911,11 +911,26 @@ public class JavaWriter {
 	}
 
 	public String generateGenericFunction(ArrayList<CallableVersion> versions) {
+		return generateGenericFunction(versions, false);
+	}
+
+	/**
+	 * Enveloppe générique des versions d'une fonction système, nom de la méthode Java rendu.
+	 * `strictNull` (v5, appel depuis un fichier strict) : un null vers un paramètre integer/real
+	 * y est une erreur, au lieu d'un avertissement et de la valeur par défaut de l'appel.
+	 */
+	public String generateGenericFunction(ArrayList<CallableVersion> versions, boolean strictNull) {
 		String key = versions.get(0).function.getName();
 		for (var version : versions) key += "_" + version.getParametersSignature();
+		if (strictNull) {
+			key += "_strict";
+			strictGenericFunctions.add(key);
+		}
 		genericFunctions.put(key, versions);
 		return key;
 	}
+
+	private final HashSet<String> strictGenericFunctions = new HashSet<>();
 
 	public void generateAnonymousUserFunction(FunctionBlock function) {
 		of(function.getModule()).anonymousUserFunctions.add(function);
@@ -997,7 +1012,7 @@ public class JavaWriter {
 			int a = 0;
 			for (var argument : first_version.arguments) {
 				if (argument != Type.ANY && !first_version.keepsNull(a)) {
-					addLine(argument.getJavaPrimitiveName(block.getVersion()) + " x" + a + "; try { x" + a + " = " + convert(a + 1, "a" + a, argument, block.getVersion()) + "; } catch (ClassCastException e) { return " + first_version.return_type.getDefaultValue(this, block.getVersion()) + "; }");
+					addLine(argument.getJavaPrimitiveName(block.getVersion()) + " x" + a + "; try { x" + a + " = " + convert(a + 1, "a" + a, argument, block.getVersion(), strictGenericFunctions.contains(signature)) + "; } catch (ClassCastException e) { return " + first_version.return_type.getDefaultValue(this, block.getVersion()) + "; }");
 				}
 				a++;
 			}
@@ -1085,6 +1100,10 @@ public class JavaWriter {
 	}
 
 	private String convert(int index, String v, Type type, int version) {
+		return convert(index, v, type, version, false);
+	}
+
+	private String convert(int index, String v, Type type, int version, boolean strictNull) {
 		if (type.isArray()) {
 			if (version >= 4) return "toArray(" + index + ", " + v + ")";
 			else return "toLegacyArray(" + index + ", " + v + ")";
@@ -1096,10 +1115,10 @@ public class JavaWriter {
 			return "toFunction(" + index + ", " + v + ")";
 		}
 		// v5 : null vers un paramètre integer/real d'une fonction système n'est plus 0 (une vraie
-		// entité, une vraie case…) : la conversion échoue et l'appel rend sa valeur par défaut,
-		// comme pour un argument d'un autre type
+		// entité, une vraie case…) : avertissement et valeur par défaut de l'appel, erreur en strict
+		boolean nullNotZero = LanguageFeature.NULL_ARGUMENT_NOT_ZERO.enabledIn(version);
 		if (type == Type.INT) {
-			return (LanguageFeature.NULL_ARGUMENT_NOT_ZERO.enabledIn(version) ? "longintArgument(" : "longint(") + v + ")";
+			return nullNotZero ? "longintArgument(" + v + ", " + index + ", " + strictNull + ")" : "longint(" + v + ")";
 		}
 		if (type == Type.BIG_INT) {
 			// Conversion vers big_integer dans les wrappers de fonctions système
@@ -1108,7 +1127,7 @@ public class JavaWriter {
 			return "BigIntegerValue.valueOf(" + getAIThis() + ", " + v + ")";
 		}
 		if (type == Type.REAL) {
-			return (LanguageFeature.NULL_ARGUMENT_NOT_ZERO.enabledIn(version) ? "realArgument(" : "real(") + v + ")";
+			return nullNotZero ? "realArgument(" + v + ", " + index + ", " + strictNull + ")" : "real(" + v + ")";
 		}
 		if (type == Type.STRING) {
 			return "string(" + v + ")";
