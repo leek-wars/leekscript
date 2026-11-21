@@ -2271,7 +2271,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).setField(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).setField(field, value);
+			return ((ClassLeekValue) object).setField(field, value, fromClass);
 		}
 		if (object instanceof NativeObjectLeekValue) {
 			try {
@@ -2297,7 +2297,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_inc(field);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).increment();
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).increment();
 		}
 		try {
 			var f = getFieldCached(object.getClass(), field);
@@ -2324,7 +2324,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_pre_inc(field);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).pre_increment();
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).pre_increment();
 		}
 		try {
 			var f = getFieldCached(object.getClass(), field);
@@ -2348,7 +2348,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_dec(field);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).decrement();
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).decrement();
 		}
 		try {
 			var f = getFieldCached(object.getClass(), field);
@@ -2374,7 +2374,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_pre_dec(field);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).pre_decrement();
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).pre_decrement();
 		}
 		try {
 			var f = getFieldCached(object.getClass(), field);
@@ -2398,7 +2398,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_add_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).add_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).add_eq(value);
 		}
 		try {
 			var f = getFieldCached(object.getClass(), field);
@@ -2422,6 +2422,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_coalesce_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
+			if (!((ClassLeekValue) object).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) object).field_coalesce_eq(field, value);
 		}
 		try {
@@ -2448,7 +2449,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_sub_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).sub_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).sub_eq(value);
 		}
 		try {
 			var f = getFieldCached(object.getClass(), field);
@@ -2472,7 +2473,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_mul_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).mul_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).mul_eq(value);
 		}
 		try {
 			var f = getFieldCached(object.getClass(), field);
@@ -2496,7 +2497,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_pow_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).pow_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).pow_eq(value);
 		}
 		try {
 			var f = getFieldCached(object.getClass(), field);
@@ -2520,7 +2521,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_div_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).div_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).div_eq(value);
 		}
 		try {
 			var f = getFieldCached(object.getClass(), field);
@@ -2544,7 +2545,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_intdiv_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).intdiv_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).intdiv_eq(value);
 		}
 		try {
 			var f = getFieldCached(object.getClass(), field);
@@ -2568,7 +2569,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_mod_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).mod_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).mod_eq(value);
 		}
 		try {
 			var f = getFieldCached(object.getClass(), field);
@@ -2592,7 +2593,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_bor_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).bor_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).bor_eq(value);
 		}
 		try {
 			var f = getWriteableField(object, field, fromClass);
@@ -2610,7 +2611,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_band_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).band_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).band_eq(value);
 		}
 		try {
 			var f = getWriteableField(object, field, fromClass);
@@ -2628,7 +2629,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_bxor_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).bxor_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).bxor_eq(value);
 		}
 		try {
 			var f = getWriteableField(object, field, fromClass);
@@ -2646,7 +2647,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_shl_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).shl_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).shl_eq(value);
 		}
 		try {
 			var f = getWriteableField(object, field, fromClass);
@@ -2664,7 +2665,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_shr_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).shr_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).shr_eq(value);
 		}
 		if (object instanceof NativeObjectLeekValue) {
 			try {
@@ -2684,7 +2685,7 @@ public abstract class AI {
 			return ((ObjectLeekValue) object).field_ushr_eq(field, value);
 		}
 		if (object instanceof ClassLeekValue) {
-			return ((ClassLeekValue) object).getFieldL(field).ushr_eq(value);
+			return ((ClassLeekValue) object).getFieldL(field, fromClass).ushr_eq(value);
 		}
 		if (object instanceof NativeObjectLeekValue) {
 			try {
@@ -2714,6 +2715,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).setField(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -2746,6 +2748,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).setField(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -2778,6 +2781,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_inc(field);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -2812,6 +2816,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_pre_inc(field);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -2846,6 +2851,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_dec(field);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -2880,6 +2886,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_pre_dec(field);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -2914,6 +2921,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_add_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -2948,6 +2956,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_sub_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -2982,6 +2991,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_mul_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -3016,6 +3026,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_pow_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -3050,6 +3061,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_mod_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -3084,6 +3096,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_div_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -3118,6 +3131,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_intdiv_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -3222,6 +3236,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_bor_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -3256,6 +3271,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_band_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -3290,6 +3306,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_shl_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -3324,6 +3341,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_shr_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -3358,6 +3376,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_ushr_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -3392,6 +3411,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_bxor_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {
@@ -3426,6 +3446,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
+			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
 			return ((ClassLeekValue) array).field_coalesce_eq(field, value);
 		}
 		if (array instanceof NativeObjectLeekValue) {

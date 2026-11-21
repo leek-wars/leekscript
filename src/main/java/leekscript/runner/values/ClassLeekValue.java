@@ -364,6 +364,35 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		return null;
 	}
 
+	/**
+	 * v5 : écrire un champ statique hors de sa visibilité (privé hors de sa classe, protégé hors
+	 * de sa descendance) est refusé, l'erreur est journalisée et la valeur reste inchangée, comme
+	 * pour un champ d'instance privé. Jusqu'à la v4 l'écriture passe (des IA en dépendent).
+	 */
+	public boolean canWriteStaticField(String field, ClassLeekValue fromClass) throws LeekRunException {
+		if (ai.getVersion() < 5) return true;
+		for (var c = this; c != null; c = c.parent instanceof ClassLeekValue p ? p : null) {
+			var f = c.staticFields.get(field);
+			if (f == null) continue;
+			if (f.level == AccessLevel.PUBLIC || fromClass == c) return true;
+			if (f.level == AccessLevel.PROTECTED && fromClass != null && fromClass.descendsFrom(c)) return true;
+			ai.addSystemLog(AILog.ERROR, f.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_FIELD : Error.PRIVATE_STATIC_FIELD, new String[] { c.name, field });
+			return false;
+		}
+		return true;
+	}
+
+	/** getFieldL contrôlé (cf canWriteStaticField) : refusé, l'écriture va dans une boîte jetable. */
+	public Box getFieldL(String field, ClassLeekValue fromClass) throws LeekRunException {
+		var box = getFieldL(field);
+		return canWriteStaticField(field, fromClass) ? box : new Box(ai, box.get());
+	}
+
+	public Object setField(String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
+		if (!canWriteStaticField(field, fromClass)) return null;
+		return setField(field, value);
+	}
+
 	public Box getFieldL(String field) throws LeekRunException {
 		var result = staticFields.get(field);
 		if (result != null) {

@@ -17,6 +17,26 @@ public class TestClass extends TestCommon {
 
 
 		@Test
+	public void staticFieldVisibilityV5() throws Exception {
+		// #2904 : jusqu'à la v4, écrire un statique privé de l'extérieur passe (avertissement
+		// hors strict). En v5 : erreur à l'analyse, et refus journalisé à l'exécution (valeur inchangée).
+		code_v4("class A { private static d = 1 static get() { return d } } A.d = 8 return A.get()").equals("8");
+		code_v5_("class A { private static d = 1 static get() { return d } } A.d = 8 return A.get()").error(Error.PRIVATE_STATIC_FIELD);
+		code_v5_("class A { private static d = 1 } return A.d").error(Error.PRIVATE_STATIC_FIELD);
+		code_v4("class A { private static d = 1 static get() { return d } } var c = A c.d = 8 return A.get()").equals("8");
+		code_v5_("class A { private static d = 1 static get() { return d } } var c = A c.d = 8 return A.get()").equals("1");
+		code_v5_("class A { private static d = 1 static get() { return d } } var c = A c.d = 8 return A.get()").logsError(Error.PRIVATE_STATIC_FIELD);
+		code_v5_("class A { private static d = 1 static get() { return d } } var c = A c.d += 8 return A.get()").equals("1");
+		code_v5_("class A { private static d = 1 static get() { return d } } var c = A c.d++ return A.get()").equals("1");
+		code_v5_("class A { private static d = 1 static get() { return d } } var c = A c['d'] = 8 return A.get()").equals("1");
+		code_v5_("class A { private static d = 1 static get() { return d } } var c = A c['d'] += 8 return A.get()").equals("1");
+		// Depuis la classe, ou un protégé depuis une fille, ou un public : l'écriture passe
+		code_v5_("class A { private static d = 1 static get() { return d } static set(x) { var c = A c.d = x } } A.set(4) return A.get()").equals("4");
+		code_v5_("class A { protected static d = 1 static get() { return d } } class B extends A { static f() { var c = A c.d = 5 } } B.f() return A.get()").equals("5");
+		code_v5_("class A { public static d = 1 } var c = A c.d = 8 return A.d").equals("8");
+	}
+
+	@Test
 	public void membersBeforeOuterNamesV5() throws Exception {
 		// Forum 11243 / 11170 : jusqu'à la v4, dans une méthode, une globale ou une fonction du programme
 		// passe devant un membre de la classe, mais une fonction de Leek Wars passe derrière. En v5, la

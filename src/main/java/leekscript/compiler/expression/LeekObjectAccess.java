@@ -15,6 +15,7 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.common.ClassType;
 import leekscript.common.ClassValueType;
 import leekscript.common.Error;
+import leekscript.common.LanguageFeature;
 import leekscript.common.FunctionType;
 import leekscript.common.Type;
 import leekscript.runner.AI;
@@ -238,7 +239,8 @@ public class LeekObjectAccess extends Expression {
 				if (this.variable.getVariableType() == VariableType.STATIC_FIELD && !this.calledAsMethod) {
 					var error = clazz.canAccessStaticField(field.getWord(), compiler.getCurrentClass());
 					if (error != null) {
-						var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
+						// v5 : erreur dans tous les modes (#2904), l'exécution refuse aussi l'écriture
+						var level = compiler.getMainBlock().isStrict() || LanguageFeature.STATIC_FIELD_VISIBILITY.enabledIn(compiler.getVersion()) ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 						compiler.addError(new AnalyzeError(this.getLocation(), level, error, new String[] { clazz.getName(), field.getWord() }));
 					}
 				}

@@ -70,7 +70,10 @@ public enum LanguageFeature {
 	IN_PLACE_ADD_EQ(5),
 
 	/** Dans une méthode, un membre de la classe passe devant une globale ou une fonction du programme, comme devant une fonction de Leek Wars. */
-	MEMBERS_BEFORE_OUTER_NAMES(5);
+	MEMBERS_BEFORE_OUTER_NAMES(5),
+
+	/** Lire ou écrire un champ statique hors de sa visibilité est une erreur à l'analyse, et l'écriture est refusée à l'exécution (#2904). */
+	STATIC_FIELD_VISIBILITY(5);
 
 	public final int since;
 

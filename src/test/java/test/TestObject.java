@@ -592,11 +592,11 @@ public class TestObject extends TestCommon {
 		section("Access levels: static fields");
 		code_v2_("class A { static x = 10 } return A.x").equals("10");
 		code_v2_("class A { public static x = 10 } return A.x").equals("10");
-		code_v2_("class A { protected static x = 10 } return A.x").equals("null");
-		code_v2_("class A { private static x = 10 } return A.x").equals("null");
+		code_v2_4("class A { protected static x = 10 } return A.x").equals("null");
+		code_v2_4("class A { private static x = 10 } return A.x").equals("null");
 		code_v2_("class A { private static x = 10 static m() { return x } } return A.m()").equals("10");
-		code_v2_("class A { private static x = 10 } class B extends A {} return B.x").equals("null");
-		code_v2_("class A { protected static x = 10 } class B extends A {} return B.x").equals("null");
+		code_v2_4("class A { private static x = 10 } class B extends A {} return B.x").equals("null");
+		code_v2_4("class A { protected static x = 10 } class B extends A {} return B.x").equals("null");
 		code_v2_("class A { protected static x = 10 } class B extends A { static m() { return x } } return B.m()").equals("10");
 		code_v2_("class A { private static x = 10 static m() { return A.x } } return A.m()").equals("10");
 		// #4967 : accès hors classe à un statique privé/protégé, en lecture comme en écriture
@@ -612,9 +612,13 @@ public class TestObject extends TestCommon {
 		code_strict_v2_("class A { private static x = 10 static m() { return class.x } } return A.m()").equals("10");
 		code_strict_v2_("class A { private static x = 10 static m() { A.x = 12 return A.x } } return A.m()").equals("12");
 		code_strict_v2_("class A { public static x = 10 } A.x = 12 return A.x").equals("12");
-		// Hors strict : avertissement seulement, une IA qui compilait doit continuer à compiler
-		code_v2_("class A { private static x = 10 } A.x = 12 return 0").warning(Error.PRIVATE_STATIC_FIELD);
-		code_v2_("class A { protected static x = 10 } return A.x").warning(Error.PROTECTED_STATIC_FIELD);
+		// Hors strict jusqu'à la v4 : avertissement seulement, une IA qui compilait doit continuer à
+		// compiler ; erreur en v5 (#2904)
+		code_v2_4("class A { private static x = 10 } A.x = 12 return 0").warning(Error.PRIVATE_STATIC_FIELD);
+		code_v2_4("class A { protected static x = 10 } return A.x").warning(Error.PROTECTED_STATIC_FIELD);
+		code_v5_("class A { private static x = 10 } A.x = 12 return 0").error(Error.PRIVATE_STATIC_FIELD);
+		code_v5_("class A { protected static x = 10 } return A.x").error(Error.PROTECTED_STATIC_FIELD);
+		code_v5_("class A { private static x = 10 } class B extends A {} return B.x").error(Error.PRIVATE_STATIC_FIELD);
 
 		section("Access levels: methods");
 		code_v2_("class A { m() { return 10 } } var a = new A() return a.m()").equals("10");
