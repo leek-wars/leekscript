@@ -1,5 +1,7 @@
 package leekscript.compiler.bloc;
 
+import leekscript.compiler.expression.LeekExpression;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -80,6 +82,7 @@ public class ConditionalBloc extends AbstractLeekBlock {
 		if (mCondition != null) {
 			// Analyze the condition (benefits from parent false narrowings if else-if)
 			mCondition.analyze(compiler);
+			LeekExpression.freeNegationInCondition(mCondition, compiler.getVersion());
 			mCondition.operations++; // On rajoute une opé pour le if sur la condition
 
 			// Step 2: Extract narrowing info from this condition

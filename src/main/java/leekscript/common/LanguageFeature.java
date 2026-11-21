@@ -61,7 +61,10 @@ public enum LanguageFeature {
 	BITWISE_PRECEDENCE(5),
 
 	/** En mode strict, une affectation composée ({@code m[k] += x}, {@code m[k]++}…) sur une clé absente d'une map est une erreur. */
-	STRICT_MISSING_MAP_KEY(5);
+	STRICT_MISSING_MAP_KEY(5),
+
+	/** {@code &&} et {@code ||} ne coûtent leur opération que si l'opérande de droite est évaluée ; un {@code !} posé directement en condition est gratuit. */
+	FREE_SHORT_CIRCUIT(5);
 
 	public final int since;
 

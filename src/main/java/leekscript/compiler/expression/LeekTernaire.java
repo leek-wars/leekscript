@@ -352,6 +352,7 @@ public class LeekTernaire extends LeekExpression {
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
 		if (mCondition != null) {
 			mCondition.analyze(compiler);
+			LeekExpression.freeNegationInCondition(mCondition, compiler.getVersion());
 			operations = 1 + mCondition.getOperations();
 
 			// Apply narrowing from the condition to each branch

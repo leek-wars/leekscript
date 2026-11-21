@@ -1,5 +1,7 @@
 package leekscript.compiler.bloc;
 
+import leekscript.compiler.expression.LeekExpression;
+
 import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.compiler.AnalyzeError;
@@ -129,6 +131,7 @@ public class DoWhileBlock extends AbstractLeekBlock {
 		invalidateLoopEffects(compiler);
 		if (mCondition != null) {
 			mCondition.analyze(compiler);
+			LeekExpression.freeNegationInCondition(mCondition, compiler.getVersion());
 		}
 		super.analyze(compiler);
 	}

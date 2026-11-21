@@ -78,6 +78,7 @@ public class ForBlock extends AbstractLeekBlock {
 		compiler.setCurrentBlock(this);
 		if (mInitialisation != null) mInitialisation.analyze(compiler);
 		if (mCondition != null) mCondition.analyze(compiler);
+		LeekExpression.freeNegationInCondition(mCondition, compiler.getVersion());
 		if (mIncrementation != null) mIncrementation.analyze(compiler);
 		compiler.setCurrentBlock(initialBlock);
 

@@ -18,6 +18,38 @@ public class TestOperations extends TestCommon {
 
 
 		@Test
+	public void conditionsShortCircuitAndNegationCostV5() throws Exception {
+		// Forum 11730 : en v5, `&&` / `||` ne coûtent que si la droite est évaluée, et un `!` posé
+		// directement en condition est gratuit (`if (!a)` coûte autant que `if (a) {} else`).
+		code_v1_4("var a = false var b = true if (a && b) {} return 1").ops(4);
+		code_v5_("var a = false var b = true if (a && b) {} return 1").ops(3);
+		code_v1_4("var a = false var b = true if (a) if (b) {} return 1").ops(3);
+		code_v5_("var a = false var b = true if (a) if (b) {} return 1").ops(3);
+		code_v1_4("var a = true var b = true if (a && b) {} return 1").ops(4);
+		code_v5_("var a = true var b = true if (a && b) {} return 1").ops(4);
+		code_v1_4("var a = true var b = true if (a || b) {} return 1").ops(4);
+		code_v5_("var a = true var b = true if (a || b) {} return 1").ops(3);
+		code_v1_4("var a = false var b = true if (a || b) {} return 1").ops(4);
+		code_v5_("var a = false var b = true if (a || b) {} return 1").ops(4);
+		code_v1_4("var a = false if (!a) {} return 1").ops(3);
+		code_v5_("var a = false if (!a) {} return 1").ops(2);
+		code_v1_4("var a = false if (a) {} else {} return 1").ops(2);
+		code_v5_("var a = false if (a) {} else {} return 1").ops(2);
+		code_v1_4("var a = 3 while (!(a == 0)) { a-- } return 1").ops(15);
+		code_v5_("var a = 3 while (!(a == 0)) { a-- } return 1").ops(11);
+		code_v1_4("var a = 3 while (a != 0) { a-- } return 1").ops(11);
+		code_v5_("var a = 3 while (a != 0) { a-- } return 1").ops(11);
+		code_v1_4("var a = false return !a ? 1 : 2").ops(3);
+		code_v5_("var a = false return !a ? 1 : 2").ops(2);
+		code_v1_4("var a = false var x = !a return x").ops(3);
+		code_v5_("var a = false var x = !a return x").ops(3);
+		code_v1_4("var a = 3 for (var i = 0; !(i >= a); i++) {} return 1").ops(16);
+		code_v5_("var a = 3 for (var i = 0; !(i >= a); i++) {} return 1").ops(12);
+		code_v1_4("var a = 3 do { a-- } while (!(a <= 0)) return 1").ops(13);
+		code_v5_("var a = 3 do { a-- } while (!(a <= 0)) return 1").ops(10);
+	}
+
+	@Test
 	public void testInit() throws Exception {
 		header("Operations");
 	}
@@ -50,12 +82,19 @@ public class TestOperations extends TestCommon {
 	@Test
 	public void testBoolean_operators() throws Exception {
 		section("Boolean operators");
-		code("1 or 2").ops(1);
-		code("1 and 2").ops(1);
-		code("(1 + 1) or (2 + 2)").ops(2);
-		code("(1 + 1) and (2 + 2)").ops(3);
-		code("(1 + 1) or (2 + 2) or (3 + 3)").ops(2);
-		code("(1 + 1) and (2 + 2) and (3 + 3)").ops(5);
+		code_v1_4("1 or 2").ops(1);
+		code_v1_4("1 and 2").ops(1);
+		code_v1_4("(1 + 1) or (2 + 2)").ops(2);
+		code_v1_4("(1 + 1) and (2 + 2)").ops(3);
+		code_v1_4("(1 + 1) or (2 + 2) or (3 + 3)").ops(2);
+		code_v1_4("(1 + 1) and (2 + 2) and (3 + 3)").ops(5);
+		// v5 : l'opération de `or` / `and` n'est payée que si la droite est évaluée
+		code_v5_("1 or 2").ops(0);
+		code_v5_("1 and 2").ops(1);
+		code_v5_("(1 + 1) or (2 + 2)").ops(1);
+		code_v5_("(1 + 1) and (2 + 2)").ops(3);
+		code_v5_("(1 + 1) or (2 + 2) or (3 + 3)").ops(1);
+		code_v5_("(1 + 1) and (2 + 2) and (3 + 3)").ops(5);
 	}
 
 	/**

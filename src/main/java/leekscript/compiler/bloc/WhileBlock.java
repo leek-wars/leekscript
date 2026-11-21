@@ -1,5 +1,7 @@
 package leekscript.compiler.bloc;
 
+import leekscript.compiler.expression.LeekExpression;
+
 import leekscript.common.Type;
 import leekscript.compiler.JavaWriter;
 import leekscript.compiler.Location;
@@ -93,6 +95,7 @@ public class WhileBlock extends AbstractLeekBlock {
 		invalidateLoopEffects(compiler);
 		if (mCondition != null) {
 			mCondition.analyze(compiler);
+			LeekExpression.freeNegationInCondition(mCondition, compiler.getVersion());
 
 			// Apply narrowing from while condition to the loop body
 			var narrowingInfo = NarrowingInfo.extract(mCondition);
