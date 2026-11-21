@@ -14,6 +14,29 @@ public class TestGeneral extends TestCommon {
 
 
 		@Test
+	public void returnEndsAtNewlineV5() throws Exception {
+		// #4778 : jusqu'à la v4, `return` en fin de ligne prend la ligne suivante pour valeur
+		code_v1_4("return\n2").equals("2");
+		code_v1_4("var x = 1 if (true) return\nx = 2 return x").equals("2");
+		code_v1_4("global g = 0 function f() { return\ng = 5 } f() return g").equals("5");
+		// v5 : il s'arrête à la fin de sa ligne
+		code_v5_("global g = 0 function f() { if (true) return\ng = 5 } f() return g").equals("0");
+		code_v5_("global g = 0 function f(x) { if (x) return\ng = 5 } f(false) return g").equals("5");
+		code_v5_("function f() { if (true) return ?\n3 } return f()").equals("null");
+		// La ligne suivante, dans le même bloc, devient du code mort : une erreur, plus un retour caché
+		code_v5_("return\n2").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v5_("global g = 0 function f() { return\ng = 5 } f() return g").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v5_("function f() { return\n// commentaire\n\n3 } return f()").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		code_v5_("var f = function() { return\n4 } return f()").error(Error.CANT_ADD_INSTRUCTION_AFTER_BREAK);
+		// Une expression commencée sur la ligne du return peut continuer dessous
+		code_v5_("return 1 +\n2").equals("3");
+		code_v5_("return (\n1 + 2\n)").equals("3");
+		code_v5_("return [\n1,\n2\n]").equals("[1, 2]");
+		code_v5_("function f() { return; } return f()").equals("null");
+		code_v5_("function f() { return } return f()").equals("null");
+	}
+
+	@Test
 	public void testNull() throws Exception {
 		section("null");
 		code_v1_2("return null").equals("null");

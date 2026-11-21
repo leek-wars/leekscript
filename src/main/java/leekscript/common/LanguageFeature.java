@@ -73,7 +73,10 @@ public enum LanguageFeature {
 	MEMBERS_BEFORE_OUTER_NAMES(5),
 
 	/** Lire ou écrire un champ statique hors de sa visibilité est une erreur à l'analyse, et l'écriture est refusée à l'exécution (#2904). */
-	STATIC_FIELD_VISIBILITY(5);
+	STATIC_FIELD_VISIBILITY(5),
+
+	/** Un {@code return} en fin de ligne ne prend pas la ligne suivante pour valeur (#4778). */
+	RETURN_ENDS_AT_NEWLINE(5);
 
 	public final int since;
 

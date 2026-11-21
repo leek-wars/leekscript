@@ -712,13 +712,18 @@ public class WordCompiler {
 				return;
 			case RETURN: {
 				var token = mTokens.eat();
+				var last = token;
 				var optional = false;
 				if (mTokens.get().getWord().equals("?")) {
 					optional = true;
-					mTokens.eat();
+					last = mTokens.eat();
 				}
 				Expression exp = null;
-				if (mTokens.get().getType() != TokenType.END_INSTRUCTION && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
+				// v5 : un `return` en fin de ligne s'arrête là, comme en JS ; avant, il prenait la
+				// ligne suivante pour valeur (`if (x) return` suivi d'une instruction la jouait en retour).
+				boolean endOfLine = LanguageFeature.RETURN_ENDS_AT_NEWLINE.enabledIn(getVersion())
+					&& mTokens.get().getLocation().getStartLine() > last.getLocation().getEndLine();
+				if (!endOfLine && mTokens.get().getType() != TokenType.END_INSTRUCTION && mTokens.get().getType() != TokenType.ACCOLADE_RIGHT) {
 					exp = readStatementExpression(false);
 				}
 				if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) {
