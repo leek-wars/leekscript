@@ -368,6 +368,17 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable, 
 		return true;
 	}
 
+	/** Constructeur dont le corps appelle lui-même `super(...)` : pas d'appel implicite au constructeur parent en v5. */
+	private boolean explicitSuperCall = false;
+
+	public void setExplicitSuperCall() {
+		explicitSuperCall = true;
+	}
+
+	public boolean hasExplicitSuperCall() {
+		return explicitSuperCall;
+	}
+
 	public boolean isInConstructor() {
 		if (isConstructor) {
 			return true;

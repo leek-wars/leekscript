@@ -1094,6 +1094,12 @@ public class LeekFunctionCall extends Expression {
 					} else if (!compiler.isInConstructor()) {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.SUPER_NOT_AVAILABLE_PARENT));
 					}
+					// v5 : le constructeur qui appelle super(...) n'appelle plus en plus, avant son corps,
+					// le constructeur sans argument du parent (il était exécuté deux fois).
+					if (LanguageFeature.EXPLICIT_SUPER_CONSTRUCTOR.enabledIn(compiler.getVersion())) {
+						var constructor = compiler.getCurrentBlock().getEnclosingConstructor();
+						if (constructor != null) constructor.setExplicitSuperCall();
+					}
 					var constructor = clazz.getConstructor(mParameters.size());
 					operations += 1;
 					if (constructor == null) {

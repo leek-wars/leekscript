@@ -878,7 +878,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 			}
 			writer.addLine(") throws LeekRunException {");
 
-			if (parent != null && !parent.internal) {
+			if (parent != null && !parent.internal && (block == null || !block.hasExplicitSuperCall())) {
 				writer.addLine("super.init();");
 			}
 

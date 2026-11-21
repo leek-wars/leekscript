@@ -52,7 +52,10 @@ public enum LanguageFeature {
 	SCOPE_BLOCK(5),
 
 	/** L'affinage du type d'un champ ne survit pas à un appel qui a pu le réassigner. */
-	SAFE_FIELD_NARROWING(5);
+	SAFE_FIELD_NARROWING(5),
+
+	/** Un constructeur qui appelle {@code super(...)} n'appelle pas en plus le constructeur sans argument du parent. */
+	EXPLICIT_SUPER_CONSTRUCTOR(5);
 
 	public final int since;
 
