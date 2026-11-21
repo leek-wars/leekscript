@@ -22,6 +22,7 @@ import leekscript.runner.LeekFunctions;
 import leekscript.common.Annotation;
 import leekscript.common.CompoundType;
 import leekscript.common.Error;
+import leekscript.common.LanguageFeature;
 import leekscript.common.Type;
 
 import java.util.EnumSet;
@@ -1131,6 +1132,9 @@ public class LeekVariable extends Expression {
 		return this.variable != null ? this.variable.getType() : this.variableType;
 	}
 
+	/** Emplacements Java qui ne tiennent jamais de conteneur : `+=` y garde `add` (cf addEqMethod). */
+	private static final Set<String> NON_CONTAINER_JAVA_TYPES = Set.of("long", "Long", "double", "Double", "Number", "boolean", "Boolean", "String", "BigIntegerValue");
+
 	/** Types Java d'une valeur que reçoit un champ `Number` (cf globalAssignType). */
 	private static final Set<String> NUMBER_JAVA_TYPES = Set.of("long", "Long", "double", "Double", "Number");
 	/** Types Java qu'un champ d'un autre type référence ne reçoit pas : un Object, un nombre ou un booléen. */
@@ -1253,6 +1257,17 @@ public class LeekVariable extends Expression {
 		}
 	}
 
+	/**
+	 * `x += y` sur un champ ou une globale non boxée : `add` (copie) jusqu'à la v4, `add_eq` (un
+	 * conteneur étendu en place, comme une locale) en v5.
+	 */
+	private String addEqMethod(MainLeekBlock mainblock) {
+		// Un emplacement qui ne peut pas tenir de conteneur garde `add` et ses surcharges typées
+		if (!LanguageFeature.IN_PLACE_ADD_EQ.enabledIn(mainblock.getVersion()) || !variableType.canBeIterable()) return "add";
+		var slot = type == VariableType.GLOBAL && this.variable != null ? slotType() : getJavaDeclarationType();
+		return NON_CONTAINER_JAVA_TYPES.contains(slot.getJavaPrimitiveName(mainblock.getVersion())) ? "add" : "add_eq";
+	}
+
 	@Override
 	public void compileAddEq(MainLeekBlock mainblock, JavaWriter writer, Expression expr, Type t, boolean parenthesis) {
 		if (compileConvertedArithmetic(mainblock, writer, expr, AI.ArithmeticOperation.ADD)) return;
@@ -1260,7 +1275,7 @@ public class LeekVariable extends Expression {
 			if (parenthesis) writer.addCode("(");
 			writer.addCode(token.getWord() + " = ");
 			var close = openOperationResult(mainblock, writer, variableType, expr.getType());
-			writer.addCode("add(" + token.getWord() + ", ");
+			writer.addCode(addEqMethod(mainblock) + "(" + token.getWord() + ", ");
 			expr.writeJavaCode(mainblock, writer, false);
 			writer.addCode(")" + close);
 			if (parenthesis) writer.addCode(")");
@@ -1283,7 +1298,7 @@ public class LeekVariable extends Expression {
 				if (parenthesis) writer.addCode("(");
 				writer.addCode(globalName(writer) + " = ");
 				var close = openOperationResult(mainblock, writer, globalCastType(), expr.getType());
-				writer.addCode("add(" + globalName(writer) + ", ");
+				writer.addCode(addEqMethod(mainblock) + "(" + globalName(writer) + ", ");
 				expr.writeJavaCode(mainblock, writer, false);
 				writer.addCode(")" + close);
 				if (parenthesis) writer.addCode(")");

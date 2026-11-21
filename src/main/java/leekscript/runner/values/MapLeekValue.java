@@ -221,7 +221,9 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 
 	public Object put_add_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.add(current(ai, key), value);
+		// v5 : une valeur conteneur est étendue en place (`m[k] += x`), comme une locale
+		var current = current(ai, key);
+		var v = ai.getVersion() >= 5 ? ai.add_eq(current, value) : ai.add(current, value);
 		store(key, v);
 		return v;
 	}

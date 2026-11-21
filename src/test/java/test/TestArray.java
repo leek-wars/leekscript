@@ -11,6 +11,38 @@ public class TestArray extends TestCommon {
 
 
 		@Test
+	public void addEqInPlaceEverywhereV5() throws Exception {
+		// #5655 : jusqu'à la v4, `x += y` n'étend un conteneur en place que sur une locale ;
+		// ailleurs, une copie. En v5, en place partout.
+		code_v4("var a = [1] var b = a a += 2 return b").equals("[1, 2]");
+		code_v5_("var a = [1] var b = a a += 2 return b").equals("[1, 2]");
+		code_v4("global a = [1] var b = a a += 2 return b").equals("[1]");
+		code_v5_("global a = [1] var b = a a += 2 return b").equals("[1, 2]");
+		code_v4("class A { x = [1] } var o = new A() var b = o.x o.x += 2 return b").equals("[1]");
+		code_v5_("class A { x = [1] } var o = new A() var b = o.x o.x += 2 return b").equals("[1, 2]");
+		code_v4("class A { x = [1] m() { var b = x x += 2 return b } } return new A().m()").equals("[1]");
+		code_v5_("class A { x = [1] m() { var b = x x += 2 return b } } return new A().m()").equals("[1, 2]");
+		code_v4("class A { static x = [1] } var b = A.x A.x += 2 return b").equals("[1]");
+		code_v5_("class A { static x = [1] } var b = A.x A.x += 2 return b").equals("[1, 2]");
+		code_v4("var a = [1] var b = a var f = function() { a += 2 } f() return b").equals("[1]");
+		code_v5_("var a = [1] var b = a var f = function() { a += 2 } f() return b").equals("[1, 2]");
+		code_v4("var m = [[1]] var b = m[0] m[0] += 2 return b").equals("[1]");
+		code_v5_("var m = [[1]] var b = m[0] m[0] += 2 return b").equals("[1, 2]");
+		code_v4("var m = ['k': [1]] var b = m['k'] m['k'] += 2 return b").equals("[1]");
+		code_v5_("var m = ['k': [1]] var b = m['k'] m['k'] += 2 return b").equals("[1, 2]");
+		code_v4("global m = [1: 1] var b = m m += [2: 2] return b").equals("[1 : 1]");
+		code_v5_("global m = [1: 1] var b = m m += [2: 2] return b").equals("[1 : 1, 2 : 2]");
+		code_v4("global s = <1> var b = s s += 2 return b").equals("<1>");
+		code_v5_("global s = <1> var b = s s += 2 return b").equals("<1, 2>");
+		code_v4("var o = {x: [1]} var b = o.x o.x += 2 return b").equals("[1]");
+		code_v5_("var o = {x: [1]} var b = o.x o.x += 2 return b").equals("[1, 2]");
+		// Valeurs non conteneurs : inchangé
+		code_v5_("global a = 1 var b = a a += 2 return [a, b]").equals("[3, 1]");
+		code_v5_("global a = 'x' var b = a a += 'y' return [a, b]").equals("[\"xy\", \"x\"]");
+		code_v5_("class A { x = 1 } var o = new A() o.x += 2 return o.x").equals("3");
+	}
+
+	@Test
 	public void testArray_constructor() throws Exception {
 		section("Array.constructor()");
 		code_v3_("return Array").equals("<class Array>");

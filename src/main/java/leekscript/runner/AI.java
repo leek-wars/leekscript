@@ -2409,7 +2409,7 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			return setFieldConverted(object, f, add(f.get(object), value));
+			return setFieldConverted(object, f, version >= 5 ? add_eq(f.get(object), value) : add(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}

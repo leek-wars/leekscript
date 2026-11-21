@@ -180,6 +180,11 @@ public class Box<T> {
 	}
 
 	public Object add_eq(Object val) throws LeekRunException {
+		// v5 : un conteneur est étendu en place quel que soit l'emplacement (globale, champ,
+		// locale capturée), comme une locale ; avant, seuls les tableaux legacy l'étaient.
+		if (mUAI.getVersion() >= 5) {
+			return mValue = mUAI.add_eq(mValue, val);
+		}
 		if (mValue instanceof LegacyArrayLeekValue && !(val instanceof String)) {
 			return mValue = mUAI.add_eq(mValue, val);
 		}

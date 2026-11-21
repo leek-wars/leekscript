@@ -261,7 +261,8 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = boundedIndex(ai, key);
 		if (i < 0) return null;
-		var new_value = ai.add(get(i), value);
+		// v5 : un élément conteneur est étendu en place (`a[0] += x`), comme une locale
+		var new_value = ai.getVersion() >= 5 ? ai.add_eq(get(i), value) : ai.add(get(i), value);
 		set(i, new_value);
 		return new_value;
 	}
