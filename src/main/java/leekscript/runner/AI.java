@@ -1950,28 +1950,33 @@ public abstract class AI {
 
 	/**
 	 * v5 : argument integer d'une fonction système appelée par son enveloppe générique. Null n'y
-	 * vaut plus 0 (une vraie entité, une vraie case) : avertissement et ClassCastException, que
+	 * vaut plus 0 (une vraie entité, une vraie case) : erreur journalisée et ClassCastException, que
 	 * l'enveloppe change en valeur par défaut de l'appel ; erreur depuis un fichier strict.
 	 */
 	public long longintArgument(Object value, int argument, boolean strict) throws LeekRunException {
 		if (value instanceof Box<?> box) value = box.get();
-		if (value == null) nullArgument(argument, "integer", strict);
+		if (value == null) nullArgument(argument, Type.INT, strict);
 		return longint(value);
 	}
 
 	/** v5 : comme {@link #longintArgument}, vers real. */
 	public double realArgument(Object value, int argument, boolean strict) throws LeekRunException {
 		if (value instanceof Box<?> box) value = box.get();
-		if (value == null) nullArgument(argument, "real", strict);
+		if (value == null) nullArgument(argument, Type.REAL, strict);
 		return real(value);
 	}
 
-	private void nullArgument(int argument, String type, boolean strict) throws LeekRunException {
-		var parameters = new String[] { String.valueOf(argument), "null", "null", type };
-		if (strict) throw new LeekRunException(Error.WRONG_ARGUMENT_TYPE, parameters);
-		addSystemLog(AILog.WARNING, Error.WRONG_ARGUMENT_TYPE, parameters);
-		throw new ClassCastException();
+	private void nullArgument(int argument, Type type, boolean strict) throws LeekRunException {
+		if (strict) throw new LeekRunException(Error.WRONG_ARGUMENT_TYPE, new String[] { String.valueOf(argument), "null", "null", type.toString() });
+		logWrongType(argument, null, type, "");
+		throw NULL_ARGUMENT;
 	}
+
+	// Signal « valeur par défaut » pour l'enveloppe générique : préallouée, sans pile d'appels
+	private static final ClassCastException NULL_ARGUMENT = new ClassCastException() {
+		@Override
+		public synchronized Throwable fillInStackTrace() { return this; }
+	};
 
 	/** v5 : comme {@link #longintNotNull}, vers real (#5389). */
 	public double realNotNull(Object value) throws LeekRunException {

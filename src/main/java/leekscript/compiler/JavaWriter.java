@@ -45,6 +45,8 @@ public class JavaWriter {
 	private final String className;
 	public AbstractLeekBlock currentBlock = null;
 	public HashMap<String, ArrayList<CallableVersion>> genericFunctions = new HashMap<>();
+	// Enveloppes générées pour un appel depuis un fichier strict (cf generateGenericFunction)
+	private final HashSet<String> strictGenericFunctions = new HashSet<>();
 	public HashSet<LeekFunctions> anonymousSystemFunctions = new HashSet<>();
 	public HashSet<FunctionBlock> anonymousUserFunctions = new HashSet<>();
 	// #2404 : champs temporaires des expressions `match` (un par match, déclarés au niveau classe
@@ -922,7 +924,8 @@ public class JavaWriter {
 	public String generateGenericFunction(ArrayList<CallableVersion> versions, boolean strictNull) {
 		String key = versions.get(0).function.getName();
 		for (var version : versions) key += "_" + version.getParametersSignature();
-		if (strictNull) {
+		// Seule une enveloppe qui convertit un integer/real change en strict : pas de doublon sinon
+		if (strictNull && versions.stream().anyMatch(JavaWriter::convertsNumberArgument)) {
 			key += "_strict";
 			strictGenericFunctions.add(key);
 		}
@@ -930,7 +933,12 @@ public class JavaWriter {
 		return key;
 	}
 
-	private final HashSet<String> strictGenericFunctions = new HashSet<>();
+	private static boolean convertsNumberArgument(CallableVersion version) {
+		for (int a = 0; a < version.arguments.length; a++) {
+			if ((version.arguments[a] == Type.INT || version.arguments[a] == Type.REAL) && !version.keepsNull(a)) return true;
+		}
+		return false;
+	}
 
 	public void generateAnonymousUserFunction(FunctionBlock function) {
 		of(function.getModule()).anonymousUserFunctions.add(function);
@@ -1097,10 +1105,6 @@ public class JavaWriter {
 			addLine(";");
 			addLine();
 		}
-	}
-
-	private String convert(int index, String v, Type type, int version) {
-		return convert(index, v, type, version, false);
 	}
 
 	private String convert(int index, String v, Type type, int version, boolean strictNull) {

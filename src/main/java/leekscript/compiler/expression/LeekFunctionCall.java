@@ -486,7 +486,7 @@ public class LeekFunctionCall extends Expression {
 				if (systemReturnContainsTypeVariable(mainblock) && this.type != Type.ANY && this.type != Type.VOID) {
 					openGenericReturnCast(mainblock, writer);
 				}
-				if (unsafe) {
+				if (builtinArgumentsNeedConversion(mainblock)) {
 					// Arguments à convertir (any, nullable…) : par l'enveloppe générique, comme la forme
 					// libre ; l'appel direct ne trouvait pas la surcharge Java (COMPILE_JAVA)
 					var key = writer.generateGenericFunction(callable_versions, strictNullArgument);
@@ -759,6 +759,23 @@ public class LeekFunctionCall extends Expression {
 		wrapReturnCast = true;
 	}
 
+	/**
+	 * Forme méthode d'une fonction système : un argument doit-il être converti (any, nullable vers
+	 * un paramètre qui ne l'est pas, résultat Java Object) ? Alors l'appel passe par l'enveloppe
+	 * générique ; une conversion sûre (integer vers real, vers un nullable) garde l'appel direct.
+	 */
+	private boolean builtinArgumentsNeedConversion(MainLeekBlock mainblock) {
+		var version = callable_versions.get(0);
+		for (int i = 0; i < mParameters.size(); i++) {
+			var formal = version.arguments[i + 1];
+			var parameter = mParameters.get(i);
+			var cast = formal.accepts(parameter.getType());
+			if (cast != CastType.EQUALS && cast != CastType.UPCAST) return true;
+			if (!formal.getJavaPrimitiveName(mainblock.getVersion()).equals("Object") && parameter.hasObjectJavaResult()) return true;
+		}
+		return false;
+	}
+
 	private boolean[] writeSystemFunctionCallee(MainLeekBlock mainblock, JavaWriter writer) {
 		boolean addComma = true;
 		boolean skipFirstArg = false;
@@ -835,8 +852,6 @@ public class LeekFunctionCall extends Expression {
 
 	@Override
 	public void analyze(WordCompiler compiler) throws LeekCompilerException {
-		// Mode strict du fichier de l'appel (cf JavaWriter.generateGenericFunction)
-		strictNullArgument = compiler.getMainBlock().isStrict() && LanguageFeature.NULL_ARGUMENT_NOT_ZERO.enabledIn(compiler.getVersion());
 		analyzeCall(compiler);
 		// v5 : après l'appel (arguments compris), un champ affiné a pu être réassigné
 		if (compiler.getMainBlock().hasSafeFieldNarrowing() && mayRunUserCode(system_function)) {
@@ -881,6 +896,8 @@ public class LeekFunctionCall extends Expression {
 		// appelé 2× dans le chemin (et appel de fonction = hot path).
 		var exprType = mExpression.getType();
 		boolean strict = compiler.getMainBlock().isStrict();
+		// Mode strict du fichier de l'appel (cf JavaWriter.generateGenericFunction)
+		strictNullArgument = strict && LanguageFeature.NULL_ARGUMENT_NOT_ZERO.enabledIn(compiler.getVersion());
 		// Appel optionnel `obj?.method()` : l'accès optionnel est typé `membre | null`
 		// (résultat nullable) et passe par le chemin dynamique null-safe
 		// (callObjectAccessNullSafe). On ne vérifie donc pas la callabilité, sinon faux
