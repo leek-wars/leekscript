@@ -137,6 +137,25 @@ public class Operators {
 		return op != null ? op : -1;
 	}
 
+	/**
+	 * Priorité pour construire l'arbre d'une expression. Jusqu'à la v4, ordre du C : `&`, `^`, `|`
+	 * sous les comparaisons. En v5 (bitwiseBeforeComparison), ordre de Rust : décalages, puis `&`,
+	 * `^`, `|`, puis les comparaisons. Échelle ×4 pour glisser les trois opérateurs entre les
+	 * décalages et les comparaisons sans changer l'ordre relatif des autres.
+	 */
+	public static int getPriority(int operator, boolean bitwiseBeforeComparison) {
+		int p = getPriority(operator);
+		if (bitwiseBeforeComparison) {
+			int shift = getPriority(SHIFT_LEFT) * 4;
+			switch (operator) {
+			case BITAND: return shift - 1;
+			case BITXOR: return shift - 2;
+			case BITOR: return shift - 3;
+			}
+		}
+		return p < 0 ? p : p * 4;
+	}
+
 	public static int getPriority(int operator) {
 		switch(operator) {
 		case CROCHET:

@@ -161,6 +161,30 @@ public class TestOperators extends TestCommon {
 	}
 
 	@Test
+	public void bitwiseBeforeComparisonInV5() throws Exception {
+		// Forum 11726 : jusqu'à la v4, `&` `^` `|` passent après les comparaisons (ordre du C).
+		code_v1_4("return 1 & 3 == 1").equals("0");
+		code_v1_4("return 1 | 2 == 3").equals("1");
+		code_v2_4("return 6 ^ 3 == 5").equals("6");
+		code_v1_4("return 5 & 4 > 0").equals("1");
+		// v5 : ordre de Rust, décalages > & > ^ > | > comparaisons > && > ||
+		code_v5_("return 1 & 3 == 1").equals("true");
+		code_v5_("return 1 | 2 == 3").equals("true");
+		code_v5_("return 6 ^ 3 == 5").equals("true");
+		code_v5_("return 5 & 4 > 0").equals("true");
+		code_v5_("return 1 | 6 & 3").equals("3");
+		code_v5_("return 1 | 6 ^ 3").equals("5");
+		code_v5_("return 6 ^ 3 & 1").equals("7");
+		code_v5_("return 1 << 2 & 4").equals("4");
+		code_v5_("return 1 + 2 & 3").equals("3");
+		code_v5_("return 12 & 4 == 4 && 3 | 4 == 7").equals("true");
+		code_v5_("var x = 5 & 3 == 1 ? 'a' : 'b' return x").equals("\"a\"");
+		code_v5_("return (1 & 3) == 1").equals("true");
+		code_v5_("return 1 & (3 == 1)").equals("0");
+		code_v5_("var flags = 6 return flags & 2 != 0").equals("true");
+	}
+
+	@Test
 	public void testOther_operators() throws Exception {
 		section("Other operators");
 		code("var sum = 1, ops = 10 return sum < ops * 0.95 || sum > ops").equals("true");

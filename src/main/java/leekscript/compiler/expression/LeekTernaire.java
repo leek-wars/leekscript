@@ -227,7 +227,7 @@ public class LeekTernaire extends LeekExpression {
 			if(mCondition.getNature() == EXPRESSION) ((LeekExpression) mCondition).addUnarySuffix(suffix, token);
 			else{
 				//On doit ajouter à l'élément mExpression1
-				LeekExpression exp = new LeekExpression();
+				LeekExpression exp = newExpression();
 				exp.setParent(this);
 				exp.setExpression1(new LeekNull(token));
 				exp.setOperator(suffix, token);
@@ -239,7 +239,7 @@ public class LeekTernaire extends LeekExpression {
 			if(mExpression1.getNature() == EXPRESSION) ((LeekExpression) mExpression1).addUnarySuffix(suffix, token);
 			else{
 				//On doit ajouter à l'élément mExpression1
-				LeekExpression exp = new LeekExpression();
+				LeekExpression exp = newExpression();
 				exp.setParent(this);
 				exp.setExpression1(new LeekNull(token));
 				exp.setOperator(suffix, token);
@@ -251,7 +251,7 @@ public class LeekTernaire extends LeekExpression {
 			if(mExpression2.getNature() == EXPRESSION) ((LeekExpression) mExpression2).addUnarySuffix(suffix, token);
 			else{
 				//On doit ajouter à l'élément mExpression2
-				LeekExpression exp = new LeekExpression();
+				LeekExpression exp = newExpression();
 				exp.setParent(this);
 				exp.setExpression1(new LeekNull(token));
 				exp.setOperator(suffix, token);
@@ -291,7 +291,7 @@ public class LeekTernaire extends LeekExpression {
 			if(mOp == 0){
 				if(mCondition.getNature() == EXPRESSION) ((LeekExpression) mCondition).addOperator(operator, token);
 				else{
-					LeekExpression new_e = new LeekExpression();
+					LeekExpression new_e = newExpression();
 					new_e.setParent(this);
 					new_e.setExpression1(mCondition);
 					new_e.setOperator(operator, token);
@@ -302,14 +302,14 @@ public class LeekTernaire extends LeekExpression {
 				if(mExpression1.getNature() == EXPRESSION) ((LeekExpression) mExpression1).addOperator(operator, token);
 				else{
 					if(operator == Operators.TERNAIRE){
-						LeekTernaire new_e = new LeekTernaire(token);
+						LeekTernaire new_e = newTernaire(token);
 						new_e.setParent(this);
 						new_e.addExpression(mExpression1);
 						new_e.addOperator(operator, token);
 						mExpression1 = new_e;
 					}
 					else{
-						LeekExpression new_e = new LeekExpression();
+						LeekExpression new_e = newExpression();
 						new_e.setParent(this);
 						new_e.setExpression1(mExpression1);
 						new_e.setOperator(operator, token);
@@ -321,14 +321,14 @@ public class LeekTernaire extends LeekExpression {
 				if(mExpression2.getNature() == EXPRESSION) ((LeekExpression) mExpression2).addOperator(operator, token);
 				else{
 					if(operator == Operators.TERNAIRE){
-						LeekTernaire new_e = new LeekTernaire(token);
+						LeekTernaire new_e = newTernaire(token);
 						new_e.setParent(this);
 						new_e.addExpression(mExpression2);
 						new_e.addOperator(operator, token);
 						mExpression2 = new_e;
 					}
 					else{
-						LeekExpression new_e = new LeekExpression();
+						LeekExpression new_e = newExpression();
 						new_e.setParent(this);
 						new_e.setExpression1(mExpression2);
 						new_e.setOperator(operator, token);

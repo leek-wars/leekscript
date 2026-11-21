@@ -55,7 +55,10 @@ public enum LanguageFeature {
 	SAFE_FIELD_NARROWING(5),
 
 	/** Un constructeur qui appelle {@code super(...)} n'appelle pas en plus le constructeur sans argument du parent. */
-	EXPLICIT_SUPER_CONSTRUCTOR(5);
+	EXPLICIT_SUPER_CONSTRUCTOR(5),
+
+	/** {@code &}, {@code ^} et {@code |} passent avant les comparaisons, comme en Rust : {@code a & b == c} vaut {@code (a & b) == c}. */
+	BITWISE_PRECEDENCE(5);
 
 	public final int since;
 

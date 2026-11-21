@@ -2392,6 +2392,7 @@ public class WordCompiler {
 		mStatementExpression = false;
 
 		var retour = new LeekExpression();
+		retour.setBitwiseBeforeComparison(LanguageFeature.BITWISE_PRECEDENCE.enabledIn(getVersion()));
 
 		// Lambda — fast path : on ne tente la détection que si le head peut commencer
 		// une lambda. Évite getPosition() (alloc d'un record) + eatType (2 HashMap

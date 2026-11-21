@@ -33,6 +33,25 @@ public class LeekExpression extends Expression {
 
 	public LeekExpression() {}
 
+	/** v5 : `&`, `^` et `|` lient plus fort que les comparaisons (`a & b == c` = `(a & b) == c`). Partagé par tout l'arbre d'une expression. */
+	protected boolean bitwiseBeforeComparison = false;
+
+	public void setBitwiseBeforeComparison(boolean value) {
+		bitwiseBeforeComparison = value;
+	}
+
+	protected LeekExpression newExpression() {
+		var e = new LeekExpression();
+		e.bitwiseBeforeComparison = bitwiseBeforeComparison;
+		return e;
+	}
+
+	protected LeekTernaire newTernaire(Token token) {
+		var t = new LeekTernaire(token);
+		t.bitwiseBeforeComparison = bitwiseBeforeComparison;
+		return t;
+	}
+
 	public void setParent(LeekExpression parent) {
 		mParent = parent;
 	}
@@ -172,7 +191,7 @@ public class LeekExpression extends Expression {
 	public void addUnaryPrefix(int operator, Token operatorToken) {
 		// On doit trouver à quel endroit de l'arborescence on doit placer le préfixe
 		// En général c'est un => !
-		LeekExpression exp = new LeekExpression();
+		LeekExpression exp = newExpression();
 		exp.setExpression1(new LeekNull(operatorToken));
 		exp.setParent(this);
 		exp.setOperator(operator, operatorToken);
@@ -184,7 +203,7 @@ public class LeekExpression extends Expression {
 	}
 
 	private LeekExpression cloneAsSubExpression() {
-		LeekExpression copy = new LeekExpression();
+		LeekExpression copy = newExpression();
 		copy.setExpression1(mExpression1);
 		copy.setOperator(mOperator, mOperatorToken);
 		copy.setExpression2(mExpression2);
@@ -292,7 +311,7 @@ public class LeekExpression extends Expression {
 				le1.addUnarySuffix(suffix, token);
 			else {
 				// On doit ajouter à l'élément mExpression1
-				LeekExpression exp = new LeekExpression();
+				LeekExpression exp = newExpression();
 				exp.setParent(this);
 				exp.setExpression1(new LeekNull(token));
 				exp.setOperator(suffix, token);
@@ -305,7 +324,7 @@ public class LeekExpression extends Expression {
 				le2.addUnarySuffix(suffix, token);
 			else {
 				// On doit ajouter à l'élément mExpression2
-				LeekExpression exp = new LeekExpression();
+				LeekExpression exp = newExpression();
 				exp.setParent(this);
 				exp.setExpression1(new LeekNull(token));
 				exp.setOperator(suffix, token);
@@ -319,7 +338,7 @@ public class LeekExpression extends Expression {
 		// On a ajotué un opérateur ?
 		if (mOperator == -1) {
 			if (mExpression1 != null) {
-				LeekTernaire ternaire = new LeekTernaire(token);
+				LeekTernaire ternaire = newTernaire(token);
 				ternaire.addExpression(mExpression1);
 				ternaire.addOperator(Operators.TERNAIRE, null);
 				ternaire.setParent(this);
@@ -327,18 +346,18 @@ public class LeekExpression extends Expression {
 			}
 		} else {
 			int operator = Operators.TERNAIRE;
-			int cur_p = Operators.getPriority(mOperator);
-			int p = Operators.getPriority(operator);
+			int cur_p = Operators.getPriority(mOperator, bitwiseBeforeComparison);
+			int p = Operators.getPriority(operator, bitwiseBeforeComparison);
 			if (cur_p >= p) {
 				// On doit englober l'expression actuelle
-				LeekExpression new_e = new LeekExpression();
+				LeekExpression new_e = newExpression();
 				new_e.setParent(this);
 				new_e.setExpression1(mExpression1);
 				new_e.setExpression2(mExpression2);
 				new_e.setOperator(mOperator, null);
 
 				// Et la mettre en condition de ternaire
-				LeekTernaire ternaire = new LeekTernaire(token);
+				LeekTernaire ternaire = newTernaire(token);
 				ternaire.addExpression(new_e);
 				ternaire.addOperator(Operators.TERNAIRE, null);
 				ternaire.setParent(this);
@@ -347,7 +366,7 @@ public class LeekExpression extends Expression {
 				mOperator = -1;
 			} else if (mExpression2.getNature() != EXPRESSION) {
 				// On doit englober l'expression de droite
-				LeekTernaire ternaire = new LeekTernaire(token);
+				LeekTernaire ternaire = newTernaire(token);
 				ternaire.addExpression(mExpression2);
 				ternaire.addOperator(Operators.TERNAIRE, null);
 				ternaire.setParent(this);
@@ -378,7 +397,7 @@ public class LeekExpression extends Expression {
 		}
 		else if (mOperator == -1) {
 			if (operator == Operators.TERNAIRE) {
-				LeekTernaire trn = new LeekTernaire(token);
+				LeekTernaire trn = newTernaire(token);
 				if (mExpression1.getNature() == EXPRESSION)
 					((LeekExpression) mExpression1).setParent(trn);
 				trn.addExpression(mExpression1);
@@ -397,7 +416,7 @@ public class LeekExpression extends Expression {
 				int expr_op = expr.getOperator();
 				if (expr_op == Operators.NOT || expr_op == Operators.BITNOT) {
 					// Steal the right operand from the prefix expression
-					LeekExpression new_e = new LeekExpression();
+					LeekExpression new_e = newExpression();
 					new_e.setParent(expr);
 					new_e.setExpression1(expr.getExpression2());
 					new_e.setOperator(operator, token);
@@ -410,18 +429,18 @@ public class LeekExpression extends Expression {
 			}
 		}
 		else {
-			int cur_p = Operators.getPriority(mOperator);
-			int p = Operators.getPriority(operator);
+			int cur_p = Operators.getPriority(mOperator, bitwiseBeforeComparison);
+			int p = Operators.getPriority(operator, bitwiseBeforeComparison);
 			boolean higher_priority = mOperator == Operators.ASSIGN && operator == Operators.ASSIGN ? false : ((mOperator == Operators.OR || mOperator == Operators.AND) && operator != Operators.ELVIS ? cur_p > p : cur_p >= p);
 			if (higher_priority) {
 				// On doit englober l'expression actuelle
-				LeekExpression new_e = new LeekExpression();
+				LeekExpression new_e = newExpression();
 				new_e.setParent(this);
 				new_e.setExpression1(mExpression1);
 				new_e.setExpression2(mExpression2);
 				new_e.setOperator(mOperator, mOperatorToken);
 				if (operator == Operators.TERNAIRE) {
-					LeekTernaire trn = new LeekTernaire(token);
+					LeekTernaire trn = newTernaire(token);
 					if (mExpression1.getNature() == EXPRESSION)
 						((LeekExpression) mExpression1).setParent(trn);
 					trn.addExpression(new_e);
@@ -443,14 +462,14 @@ public class LeekExpression extends Expression {
 			else if (mExpression2.getNature() != EXPRESSION) {
 				// On doit englober l'expression de droite
 				if (operator == Operators.TERNAIRE) {
-					LeekTernaire trn = new LeekTernaire(token);
+					LeekTernaire trn = newTernaire(token);
 					trn.setParent(this);
 					trn.addExpression(mExpression2);
 					trn.addOperator(operator, token);
 					mExpression2 = trn;
 				}
 				else {
-					LeekExpression new_e = new LeekExpression();
+					LeekExpression new_e = newExpression();
 					new_e.setParent(this);
 					new_e.setExpression1(mExpression2);
 					new_e.setOperator(operator, token);
