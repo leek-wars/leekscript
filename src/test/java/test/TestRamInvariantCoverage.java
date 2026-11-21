@@ -95,7 +95,15 @@ public class TestRamInvariantCoverage extends TestCommon {
 		each("var m = [1: 2, 3: 1]", "m", MAP_CALLS);
 		each("var m = [1: 2, 3: 1]", "m", MAP_WRITES);
 		for (var write : MAP_WRITES) {
-			code_strict_v4_("Map<integer, integer> m = [1: 2, 3: 1] var r = " + write + " return [m, r]").error(Error.NONE);
+			code_strict_v4("Map<integer, integer> m = [1: 2, 3: 1] var r = " + write + " return [m, r]").error(Error.NONE);
+			// v5 strict : une écriture composée sur une clé absente est une erreur (sauf ??=),
+			// la RAM est mesurée sur une clé présente
+			if (write.contains("??=")) {
+				code_strict_v5_("Map<integer, integer> m = [1: 2, 3: 1] var r = " + write + " return [m, r]").error(Error.NONE);
+			} else {
+				code_strict_v5_("Map<integer, integer> m = [1: 2, 3: 1] var r = " + write + " return [m, r]").error(Error.MAP_KEY_NOT_FOUND);
+				code_strict_v5_("Map<integer, integer> m = [1: 2, 3: 1, 7: 4] var r = " + write + " return [m, r]").error(Error.NONE);
+			}
 		}
 	}
 
