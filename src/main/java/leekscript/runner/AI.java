@@ -328,6 +328,9 @@ public abstract class AI {
 		}
 	}
 
+	/** v5 strict : `m[k] += x`, `m[k]++`… sur une clé absente d'une map lèvent MAP_KEY_NOT_FOUND au lieu de partir de null. */
+	public boolean strictMissingMapKey = false;
+
 	public AI(int instructions, int version) {
 		this(instructions, version, new BasicAILog());
 	}

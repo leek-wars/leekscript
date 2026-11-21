@@ -58,7 +58,10 @@ public enum LanguageFeature {
 	EXPLICIT_SUPER_CONSTRUCTOR(5),
 
 	/** {@code &}, {@code ^} et {@code |} passent avant les comparaisons, comme en Rust : {@code a & b == c} vaut {@code (a & b) == c}. */
-	BITWISE_PRECEDENCE(5);
+	BITWISE_PRECEDENCE(5),
+
+	/** En mode strict, une affectation composée ({@code m[k] += x}, {@code m[k]++}…) sur une clé absente d'une map est une erreur. */
+	STRICT_MISSING_MAP_KEY(5);
 
 	public final int since;
 

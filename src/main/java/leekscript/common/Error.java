@@ -183,4 +183,5 @@ public enum Error {
 	TEST_FUNCTION_WITH_PARAMETERS, // 179
 	ANNOTATION_ARGUMENT_INVALID, // 180
 	WAIT_FORBIDDEN, // 181 : une IA JS/Python a voulu attendre (sleep, verrou, file)
+	MAP_KEY_NOT_FOUND, // 182 : v5 strict, `m[k] += x` ou `m[k]++` sur une clé absente
 }

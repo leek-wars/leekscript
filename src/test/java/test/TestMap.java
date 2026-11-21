@@ -11,6 +11,27 @@ public class TestMap extends TestCommon {
 
 
 		@Test
+	public void strictMissingKeyCompoundAssignment() throws Exception {
+		// Forum 12116 : en v5 strict, une affectation composée sur une clé absente est une erreur
+		code_strict_v5_("Map a = [:]; a[0] += 10; return a").error(Error.MAP_KEY_NOT_FOUND);
+		code_strict_v5_("Map<integer, integer> a = [:]; a[0] += 10; return a").error(Error.MAP_KEY_NOT_FOUND);
+		code_strict_v5_("Map<string, real> a = [:]; a['x'] *= 2; return a").error(Error.MAP_KEY_NOT_FOUND);
+		code_strict_v5_("Map<integer, integer> a = [:]; a[0]++; return a").error(Error.MAP_KEY_NOT_FOUND);
+		code_strict_v5_("Map<integer, integer> a = [:]; ++a[0]; return a").error(Error.MAP_KEY_NOT_FOUND);
+		code_strict_v5_("Map<integer, integer> a = [:]; a[0]--; return a").error(Error.MAP_KEY_NOT_FOUND);
+		code_strict_v5_("Map a = [:]; a[0] |= 1; return a").error(Error.MAP_KEY_NOT_FOUND);
+		code_strict_v5_("class A { Map<integer, integer> m = [:] } var o = new A() o.m[3] += 1 return o.m").error(Error.MAP_KEY_NOT_FOUND);
+		// Clé présente (même à null) : inchangé ; ??= reste fait pour une clé absente
+		code_strict_v5_("Map<integer, integer> a = [0: 1]; a[0] += 1; return a").equals("[0 : 2]");
+		code_strict_v5_("Map a = [0: null]; a[0] += 1; return a").equals("[0 : 1]");
+		code_strict_v5_("Map a = [:]; a[0] ??= 1; return a").equals("[0 : 1]");
+		// Hors strict, et jusqu'à la v4 : la valeur absente vaut null
+		code_v5_("var a = [:]; a[0] += 10; return a").equals("[0 : 10]");
+		code_v5_("var a = [:]; a[0]++; return a").equals("[0 : 1]");
+		code_strict_v4("Map a = [:]; a[0] += 10; return a").equals("[0 : 10]");
+	}
+
+	@Test
 	public void testInit() throws Exception {
 		header("Map");
 	}
