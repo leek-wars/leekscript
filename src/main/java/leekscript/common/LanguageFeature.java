@@ -85,7 +85,10 @@ public enum LanguageFeature {
 	FIELD_TYPE_DEFAULT(5),
 
 	/** Insérer null dans un conteneur typé dont l'élément (ou la clé) exclut null lève IMPOSSIBLE_CAST (#5349). */
-	NON_NULL_ELEMENTS(5);
+	NON_NULL_ELEMENTS(5),
+
+	/** Une valeur any convertie en Array / Map / Set typés voit son contenu vérifié à la conversion (#5384). */
+	TYPED_CONTENT_CHECK(5);
 
 	public final int since;
 

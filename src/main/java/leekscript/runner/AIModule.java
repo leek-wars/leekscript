@@ -219,6 +219,10 @@ public abstract class AIModule {
 		return ai.check(a0, a1, a2);
 	}
 
+	public final <T> T checkContent(T a0, leekscript.runner.ContentType a1) throws leekscript.runner.LeekRunException {
+		return ai.checkContent(a0, a1);
+	}
+
 	public final void checkStringLength(int a0) throws leekscript.runner.LeekRunException {
 		ai.checkStringLength(a0);
 	}

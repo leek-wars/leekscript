@@ -12,6 +12,13 @@ import leekscript.util.Json;
 
 import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.compiler.bloc.FunctionBlock;
+import leekscript.common.ArrayType;
+import leekscript.common.ClassType;
+import leekscript.common.ClassValueType;
+import leekscript.common.IntervalType;
+import leekscript.common.MapType;
+import leekscript.common.SetType;
+import leekscript.common.VersionsType;
 import leekscript.common.CompoundType;
 import leekscript.common.FunctionType;
 import leekscript.common.LanguageFeature;
@@ -677,45 +684,63 @@ public class JavaWriter {
 			return;
 		}
 		if (type.isArray()) {
+			var content = contentCheck(mainblock, value, type);
+			if (content != null) addCode("checkContent(");
 			addCode(mainblock.getVersion() >= 4 ? "toArray(" : "toLegacyArray(");
 			addCode(index + ", ");
 			value.writeJavaCode(mainblock, this, false);
 			addCode(")");
+			if (content != null) addCode(", " + content + ")");
 			return;
 		}
 		else if (type.isArrayOrNull()) {
+			var content = contentCheck(mainblock, value, type);
+			if (content != null) addCode("checkContent(");
 			addCode(mainblock.getVersion() >= 4 ? "toArrayOrNull(" : "toLegacyArrayOrNull(");
 			addCode(index + ", ");
 			value.writeJavaCode(mainblock, this, false);
 			addCode(")");
+			if (content != null) addCode(", " + content + ")");
 			return;
 		}
 		else if (type.isMap()) {
+			var content = contentCheck(mainblock, value, type);
+			if (content != null) addCode("checkContent(");
 			addCode("toMap(");
 			addCode(index + ", ");
 			value.writeJavaCode(mainblock, this, false);
 			addCode(")");
+			if (content != null) addCode(", " + content + ")");
 			return;
 		}
 		else if (type.isMapOrNull()) {
+			var content = contentCheck(mainblock, value, type);
+			if (content != null) addCode("checkContent(");
 			addCode("toMapOrNull(");
 			addCode(index + ", ");
 			value.writeJavaCode(mainblock, this, false);
 			addCode(")");
+			if (content != null) addCode(", " + content + ")");
 			return;
 		}
 		else if (type.isSet()) {
+			var content = contentCheck(mainblock, value, type);
+			if (content != null) addCode("checkContent(");
 			addCode("toSet(");
 			addCode(index + ", ");
 			value.writeJavaCode(mainblock, this, false);
 			addCode(")");
+			if (content != null) addCode(", " + content + ")");
 			return;
 		}
 		else if (type.isSetOrNull()) {
+			var content = contentCheck(mainblock, value, type);
+			if (content != null) addCode("checkContent(");
 			addCode("toSetOrNull(");
 			addCode(index + ", ");
 			value.writeJavaCode(mainblock, this, false);
 			addCode(")");
+			if (content != null) addCode(", " + content + ")");
 			return;
 		}
 		else if (type == Type.INT) {
@@ -866,6 +891,62 @@ public class JavaWriter {
 		} else {
 			value.writeJavaCode(mainblock, this, false);
 		}
+	}
+
+	/**
+	 * v5 : le ContentType (code Java) à vérifier sur le contenu de `value` convertie vers le
+	 * conteneur typé `type`, null s'il n'y a rien à vérifier (#5384). Seulement depuis une valeur
+	 * any : le contrôle est O(n), une affectation déjà typée n'en a pas besoin.
+	 */
+	private String contentCheck(MainLeekBlock mainblock, Expression value, Type type) {
+		int version = mainblock.getVersion();
+		if (!LanguageFeature.TYPED_CONTENT_CHECK.enabledIn(version) || value.getType() != Type.ANY) return null;
+		var container = type.assertNotNull();
+		boolean checked;
+		if (container instanceof MapType mt) {
+			checked = contentTypeCode(mt.key(), version) != null || contentTypeCode(mt.element(), version) != null;
+		} else if (container instanceof ArrayType || container instanceof SetType) {
+			checked = contentTypeCode(container.element(), version) != null;
+		} else {
+			return null;
+		}
+		return checked ? contentTypeCode(container, version) : null;
+	}
+
+	/** Code Java du ContentType d'un type déclaré, null pour un type qui accepte toute valeur (cf ContentType). */
+	private static String contentTypeCode(Type type, int version) {
+		if (type == Type.INT) return "ContentType.INT";
+		if (type == Type.REAL) return "ContentType.REAL";
+		if (type == Type.BIG_INT) return "ContentType.BIG_INT";
+		if (type == Type.BOOL) return "ContentType.BOOL";
+		if (type == Type.STRING) return "ContentType.STRING";
+		if (type == Type.NULL) return "ContentType.NULL";
+		if (type instanceof ArrayType at) return "ContentType.array(" + contentTypeOrAny(at.element(), version) + ")";
+		if (type instanceof SetType st) return "ContentType.set(" + contentTypeOrAny(st.element(), version) + ")";
+		if (type instanceof MapType mt) return "ContentType.map(" + contentTypeOrAny(mt.key(), version) + ", " + contentTypeOrAny(mt.element(), version) + ")";
+		if (type instanceof IntervalType) return "ContentType.INTERVAL";
+		if (type instanceof FunctionType) return "ContentType.FUNCTION";
+		if (type instanceof ClassValueType) return "ContentType.CLASS";
+		if (type instanceof ClassType ct) {
+			return "ContentType.instance(" + ct.getJavaName(version) + ".class, " + LeekFileContent.javaString(ct.getClassDeclaration().getName()) + ")";
+		}
+		if (type instanceof CompoundType ct && !(type instanceof VersionsType)) {
+			var members = new ArrayList<String>();
+			for (var member : ct.getTypes()) {
+				var code = contentTypeCode(member, version);
+				if (code == null) return null;
+				members.add(code);
+			}
+			// HashSet : ordre trié pour un Java stable (clé du cache de compilation)
+			members.sort(null);
+			return "ContentType.union(" + LeekFileContent.javaString(type.toString()) + ", " + String.join(", ", members) + ")";
+		}
+		return null;
+	}
+
+	private static String contentTypeOrAny(Type type, int version) {
+		var code = contentTypeCode(type, version);
+		return code == null ? "ContentType.ANY" : code;
 	}
 
 	public String generateGenericFunction(ArrayList<CallableVersion> versions) {

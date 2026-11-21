@@ -1920,6 +1920,16 @@ public abstract class AI {
 		return value;
 	}
 
+	/**
+	 * v5 : une valeur any convertie en Array / Map / Set typés (`Array<integer> a = f()`) : son
+	 * contenu doit avoir le type déclaré, sinon IMPOSSIBLE_CAST ici plutôt qu'à la lecture de
+	 * l'élément fautif (#5384). Une opération par élément parcouru (cf ContentType).
+	 */
+	public <T> T checkContent(T value, ContentType type) throws LeekRunException {
+		if (value != null) type.check(this, value);
+		return value;
+	}
+
 	/** v5 : comme {@link #longintNotNull}, vers real (#5389). */
 	public double realNotNull(Object value) throws LeekRunException {
 		if (value instanceof Box<?> box) value = box.get();

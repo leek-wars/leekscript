@@ -152,4 +152,61 @@ public class TestV5Types extends TestCommon {
 		code_v4("Set<string> s = <> var x = null setPut(s, x) return s").equals("<null>");
 		code_v4("Map<string, string> m = [:] var x = null m['a'] = x mapPut(m, 'b', x) return m").equals("[\"a\" : null, \"b\" : null]");
 	}
+
+	@Test
+	public void typedContentCheck() throws Exception {
+		section("v5 : contenu d'un Array / Map / Set typé vérifié à la conversion depuis any (#5384)");
+		// Le cas du forum : l'erreur tombe à l'affectation, plus à la lecture de a[0]
+		code_v5_("Array<integer> a = (=> ['a'])() return 1").error(Error.IMPOSSIBLE_CAST);
+		code_strict_v5_("Array<integer> a = (=> ['a'])() return 1").error(Error.IMPOSSIBLE_CAST);
+		// Un élément que la lecture typée refuserait : réel ou booléen dans un Array<integer>,
+		// entier dans un Array<big_integer>, null hors d'un type nullable
+		code_v5_("Array<integer> a = (=> [1, 1.5])() return 1").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Array<integer> a = (=> [true])() return 1").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Array<big_integer> a = (=> [1])() return 1").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Array<string> a = (=> ['a', null])() return 1").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("class A {} Array<A> a = (=> [new A(), 12])() return 1").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Array<integer | string> a = (=> [1, 'a', true])() return 1").error(Error.IMPOSSIBLE_CAST);
+		// Conteneurs imbriqués, Map (clés et valeurs), Set
+		code_v5_("Array<Array<integer>> a = (=> [[1], [2, 'x']])() return 1").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Array<Array> a = (=> [[1], 2])() return 1").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Map<string, integer> m = (=> ['a': 1, 'b': true])() return 1").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Map<string, integer> m = (=> [1: 1])() return 1").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Map<string, Array<real>> m = (=> ['a': [1.5], 'b': ['x']])() return 1").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Set<string> s = (=> <'a', 2>)() return 1").error(Error.IMPOSSIBLE_CAST);
+		// Tous les chemins de conversion : affectation, paramètre, retour, champ, `as`, nullable
+		code_v5_("var x = [1, 'b'] Array<integer> a = [] a = x return 1").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("function f(Array<integer> a) { return a } var x = [1, 'b'] return f(x)").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("function f(any x) => Array<integer> { return x } return f([1, 'b'])").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("class A { Array<integer> a } var x = [1, 'b'] A o = new A() o.a = x return 1").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("var x = [1, 'b'] return x as Array<integer>").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("var x = [1, 'b'] Array<integer>? a = x return 1").error(Error.IMPOSSIBLE_CAST);
+
+		section("v5 : contenu conforme, ou rien à vérifier (#5384)");
+		code_v5_("Array<integer> a = (=> [1, 2])() return a").equals("[1, 2]");
+		code_v5_("Array<real> a = (=> [1, 2.5])() return a").equals("[1, 2.5]");
+		code_v5_("class A {} class B extends A {} Array<A> a = (=> [new A(), new B()])() return a.count()").equals("2");
+		code_v5_("class A {} Array<A?> a = (=> [new A(), null])() return a.count()").equals("2");
+		code_v5_("Map<string, Array<integer>> m = (=> ['a': [1, 2], 'b': []])() return m").equals("[\"a\" : [1, 2], \"b\" : []]");
+		code_v5_("Set<integer> s = (=> <1, 2>)() return s").equals("<1, 2>");
+		code_v5_("var x = null Array<integer>? a = x return a").equals("null");
+		code_v5_("Array<integer> a = (=> [])() return a").equals("[]");
+		// Contenu any : aucun contrôle
+		code_v5_("Array a = (=> [1, 'a'])() return a").equals("[1, \"a\"]");
+		code_v5_("Array<any> a = (=> [1, 'a'])() return a").equals("[1, \"a\"]");
+		code_v5_("Map<any, any> m = (=> [1: 'a'])() return m").equals("[1 : \"a\"]");
+		// Une affectation déjà typée n'est pas parcourue
+		code_v5_("Array a = [1, 'a'] Array<integer> b = a return b").equals("[1, \"a\"]");
+		// Coût : une opération par élément parcouru, conteneurs imbriqués compris
+		code_v4("Array<integer> a = (=> [1, 2])() return a").ops(6);
+		code_v5_("Array<integer> a = (=> [1, 2])() return a").ops(8);
+		code_v4("Map<string, Array<integer>> a = (=> ['a': [1, 2], 'b': []])() return a").ops(10);
+		code_v5_("Map<string, Array<integer>> a = (=> ['a': [1, 2], 'b': []])() return a").ops(14);
+
+		section("v1-4 : le contenu n'est vérifié qu'à la lecture (#5384)");
+		code_v4("Array<integer> a = (=> ['a'])() return a").equals("[\"a\"]");
+		code_v4("Array<integer> a = (=> ['a'])() return a[0]").error(Error.IMPOSSIBLE_CAST);
+		code_v4("Map<string, integer> m = (=> ['a': true])() return m").equals("[\"a\" : true]");
+		code_v4("function f(Array<integer> a) { return a } var x = [1, 'b'] return f(x)").equals("[1, \"b\"]");
+	}
 }
