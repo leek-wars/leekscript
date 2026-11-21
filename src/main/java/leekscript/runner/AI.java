@@ -3942,6 +3942,7 @@ public abstract class AI {
 		if (version >= 5) {
 			String stdClass = standardClassOfValue(value);
 			var builtin = stdClass == null ? null : leekscript.runner.LeekFunctions.getMethod(stdClass, field);
+			if (builtin != null) builtin = builtin.forVersion(version);
 			// Miroir runtime du contrôle fait à la compilation (LeekFunctionCall.resolveBuiltinMethod) :
 			// une fonction réellement retirée du langage (`subArray`, `removeKey`, `assocSort`... capées
 			// en v3) ne doit pas rester atteignable en forme méthode. Sans ce filtre, un receveur `var`

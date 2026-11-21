@@ -811,7 +811,7 @@ public class LeekFunctionCall extends Expression {
 			parameter.preAnalyze(compiler);
 		}
 		if (compiler.getMainBlock().hasSafeFieldNarrowing()
-				&& mayRunUserCode(systemFunctionName() != null ? LeekFunctions.getValue(systemFunctionName(), compiler.getOptions().useExtra()) : null)) {
+				&& mayRunUserCode(systemFunctionName() != null ? LeekFunctions.getValue(systemFunctionName(), compiler.getOptions().useExtra(), compiler.getVersion()) : null)) {
 			compiler.getMainBlock().addPreAnalyzedCall();
 		}
 		if (!mParameters.isEmpty()) {
@@ -928,7 +928,7 @@ public class LeekFunctionCall extends Expression {
 				}
 				if (!ok) {
 					// Est-ce que c'est une fonction système ?
-					system_function = LeekFunctions.getValue(v.getName(), compiler.getOptions().useExtra());
+					system_function = LeekFunctions.getValue(v.getName(), compiler.getOptions().useExtra(), compiler.getVersion());
 					if (system_function != null) {
 						verifySystemFunction(compiler, v.getToken(), system_function);
 
@@ -968,7 +968,7 @@ public class LeekFunctionCall extends Expression {
 				}
 				if (!ok) {
 					// Est-ce que c'est une fonction système ?
-					system_function = LeekFunctions.getValue(v.getName(), compiler.getOptions().useExtra());
+					system_function = LeekFunctions.getValue(v.getName(), compiler.getOptions().useExtra(), compiler.getVersion());
 					if (system_function != null) {
 						verifySystemFunction(compiler, v.getToken(), system_function);
 						if (mParameters.size() >= system_function.getArgumentsMin() && mParameters.size() <= system_function.getArguments()) {
@@ -1043,7 +1043,7 @@ public class LeekFunctionCall extends Expression {
 				if (compiler.getMainBlock().isRedefinedFunction(v.getName())) {
 					// Nothing
 				} else {
-					system_function = LeekFunctions.getValue(v.getName(), compiler.getOptions().useExtra());
+					system_function = LeekFunctions.getValue(v.getName(), compiler.getOptions().useExtra(), compiler.getVersion());
 					verifySystemFunction(compiler, v.getToken(), system_function);
 				}
 
@@ -1163,7 +1163,7 @@ public class LeekFunctionCall extends Expression {
 			if (LanguageFeature.OO_STDLIB.enabledIn(compiler.getVersion())) {
 				var builtinClass = standardClassOf(o.getType());
 				if (builtinClass != null) {
-					var builtinMethod = LeekFunctions.getMethod(builtinClass, oa.getField());
+					var builtinMethod = forVersion(LeekFunctions.getMethod(builtinClass, oa.getField()), compiler);
 					if (builtinMethod != null && resolveBuiltinMethod(compiler, oa.getFieldToken(), o.getType(), builtinMethod)) {
 						// Même coût que la forme libre `name(receiver, ...)` : le coût déclaré de
 						// la fonction, à la place de l'op de l'accès `receiver.name`.
@@ -1177,7 +1177,7 @@ public class LeekFunctionCall extends Expression {
 				// Résolue et vérifiée comme l'ancienne forme libre `sqrt(x)`.
 				if (o instanceof LeekVariable nv && nv.getVariableType() == VariableType.CLASS
 						&& LanguageFeature.OO_STDLIB.enabledIn(compiler.getVersion())) {
-					var nsFunction = LeekFunctions.namespaceFunction(nv.getName(), oa.getField());
+					var nsFunction = forVersion(LeekFunctions.namespaceFunction(nv.getName(), oa.getField()), compiler);
 					if (nsFunction != null) {
 						this.system_function = nsFunction;
 						this.is_namespace_function = true;
@@ -1590,6 +1590,11 @@ public class LeekFunctionCall extends Expression {
 			if (version.return_type.containsTypeVariable()) return true;
 		}
 		return false;
+	}
+
+	/** Variante de la fonction pour la version compilée (cf LeekFunctions.since), null si absente. */
+	private static LeekFunctions forVersion(LeekFunctions function, WordCompiler compiler) {
+		return function == null ? null : function.forVersion(compiler.getVersion());
 	}
 
 	/**

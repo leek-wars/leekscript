@@ -1037,7 +1037,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				if (user_function != null) {
 					user_function.compileAnonymousFunction(this, writer);
 				} else {
-					var system_function = LeekFunctions.getValue(redefined, writer.getOptions().useExtra());
+					var system_function = LeekFunctions.getValue(redefined, writer.getOptions().useExtra(), getVersion());
 					writer.generateAnonymousSystemFunction(system_function);
 					writer.addCode(system_function.getStandardClass() + "_" + redefined);
 				}

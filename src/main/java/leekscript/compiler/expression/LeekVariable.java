@@ -403,7 +403,7 @@ public class LeekVariable extends Expression {
 			return;
 		}
 		// LS functions
-		var lf = LeekFunctions.getValue(name, compiler.getOptions().useExtra());
+		var lf = LeekFunctions.getValue(name, compiler.getOptions().useExtra(), compiler.getVersion());
 		if (lf != null) {
 			// Son fichier est lu à la compilation, d'après le littéral de l'appel : prise comme
 			// valeur, elle recevrait au combat un chemin au lieu du contenu.
@@ -763,7 +763,7 @@ public class LeekVariable extends Expression {
 				writer.generateAnonymousUserFunction(user_function);
 				writer.addCode(writer.ref(user_function.getModule()) + "ufunction_" + user_function.getInternalName());
 			} else {
-				var system_function = LeekFunctions.getValue(token.getWord(), writer.getOptions().useExtra());
+				var system_function = LeekFunctions.getValue(token.getWord(), writer.getOptions().useExtra(), mainblock.getVersion());
 				writer.generateAnonymousSystemFunction(system_function);
 				// String namespace = LeekFunctions.getNamespace(token.getWord());
 				writer.addCode(system_function.getStandardClass() + "_" + token.getWord());
@@ -887,7 +887,7 @@ public class LeekVariable extends Expression {
 				writer.generateAnonymousUserFunction(user_function);
 				writer.addCode(writer.ref(user_function.getModule()) + "ufunction_" + user_function.getInternalName());
 			} else {
-				var system_function = LeekFunctions.getValue(token.getWord(), writer.getOptions().useExtra());
+				var system_function = LeekFunctions.getValue(token.getWord(), writer.getOptions().useExtra(), mainblock.getVersion());
 				writer.generateAnonymousSystemFunction(system_function);
 				// String namespace = LeekFunctions.getNamespace(token.getWord());
 				writer.addCode(system_function.getStandardClass() + "_" + token.getWord());

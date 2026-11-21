@@ -41,6 +41,13 @@ public class CallableVersion {
 		return nullKept[argument];
 	}
 
+	/** Copie de la signature (mêmes arguments, mêmes keepNull) avec un autre type de retour. */
+	public CallableVersion withReturnType(Type returnType) {
+		var copy = new CallableVersion(returnType, arguments);
+		System.arraycopy(nullKept, 0, copy.nullKept, 0, nullKept.length);
+		return copy;
+	}
+
 	public String getParametersSignature() {
 		String r = "";
 		for (var argument : arguments) {

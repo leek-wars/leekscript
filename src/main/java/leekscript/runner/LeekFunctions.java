@@ -600,6 +600,11 @@ public class LeekFunctions {
 	// remplacement) ; dans le second (`subArray`, `assocSort`, `removeKey`, `randFloat`...
 	// retirés en v3) elle ne doit revenir par AUCUNE forme.
 	private boolean ooDemoted = false;
+	// Variantes propres à une version du langage (cf since) : clé = première version concernée.
+	private java.util.TreeMap<Integer, LeekFunctions> sinceVersions = null;
+	// Pour une variante : la fonction déclarée, qui garde nom, bornes de version, coût, etc.
+	private LeekFunctions base = null;
+	private int sinceVersion = 0;
 
 	public LeekFunctions(String standardClass, String name, int operations, boolean isStatic, Type return_type, Type[] arguments) {
 		this(standardClass, name, operations, isStatic, new CallableVersion[] { new CallableVersion(return_type, arguments) });
@@ -670,6 +675,7 @@ public class LeekFunctions {
 	}
 
 	public int getOperations() {
+		if (base != null) return base.getOperations();
 		return mOperations;
 	}
 
@@ -686,6 +692,50 @@ public class LeekFunctions {
 		return null;
 	}
 
+	/** La fonction telle qu'un programme en version {@code version} la voit (cf since). */
+	public static LeekFunctions getValue(String name, boolean useExtra, int version) {
+		var f = getValue(name, useExtra);
+		return f == null ? null : f.forVersion(version);
+	}
+
+	/**
+	 * À partir de la version {@code version}, la fonction a ces signatures et appelle la méthode
+	 * Java {@code <nom Java>_v<version>} : on change ses types ou son comportement pour les
+	 * nouveaux programmes sans toucher à ce que voient (analyse, Java généré, résultat) ceux
+	 * des versions précédentes. Nom, coût, bornes de version et remplacement restent ceux de la
+	 * fonction déclarée.
+	 */
+	public LeekFunctions since(int version, CallableVersion... versions) {
+		if (base != null) throw new IllegalStateException("since() sur une variante de " + name);
+		var variant = new LeekFunctions(standardClass, name, mOperations, isStatic, versions);
+		variant.base = this;
+		variant.sinceVersion = version;
+		if (sinceVersions == null) sinceVersions = new java.util.TreeMap<>();
+		sinceVersions.put(version, variant);
+		return this;
+	}
+
+	/** Mêmes arguments à partir de {@code version}, mais chaque signature rend {@code returnType}. */
+	public LeekFunctions since(int version, Type returnType) {
+		var copies = new CallableVersion[versions.length];
+		for (int i = 0; i < versions.length; i++) copies[i] = versions[i].withReturnType(returnType);
+		return since(version, copies);
+	}
+
+	/** Mêmes signatures à partir de {@code version}, seul le comportement (la méthode Java) change. */
+	public LeekFunctions since(int version) {
+		var copies = new CallableVersion[versions.length];
+		for (int i = 0; i < versions.length; i++) copies[i] = versions[i].withReturnType(versions[i].return_type);
+		return since(version, copies);
+	}
+
+	/** Variante en vigueur pour un programme en version {@code version} (elle-même sinon). */
+	public LeekFunctions forVersion(int version) {
+		if (sinceVersions == null) return this;
+		var entry = sinceVersions.floorEntry(version);
+		return entry == null ? this : entry.getValue();
+	}
+
 	/** Fonctions de la bibliotheque standard (hors fonctions "extra" comme le combat). */
 	public static Map<String, LeekFunctions> getStandardFunctions() {
 		return functions;
@@ -699,6 +749,7 @@ public class LeekFunctions {
 	}
 
 	public int getMinVersion() {
+		if (base != null) return base.getMinVersion();
 		return this.minVersion;
 	}
 
@@ -707,6 +758,7 @@ public class LeekFunctions {
 	}
 
 	public int getMaxVersion() {
+		if (base != null) return base.getMaxVersion();
 		return maxVersion;
 	}
 
@@ -746,6 +798,7 @@ public class LeekFunctions {
 	}
 
 	public boolean hasFileArgument() {
+		if (base != null) return base.hasFileArgument();
 		return fileArgument;
 	}
 
@@ -758,6 +811,7 @@ public class LeekFunctions {
 	}
 
 	public CallSite getCallSite() {
+		if (base != null) return base.getCallSite();
 		return callSite;
 	}
 	public String getName() {
@@ -765,6 +819,7 @@ public class LeekFunctions {
 	}
 	/** Nom de la méthode Java à appeler (défaut = nom leekscript). */
 	public String getJavaName() {
+		if (base != null) return base.getJavaName() + "_v" + sinceVersion;
 		return javaName != null ? javaName : name;
 	}
 
@@ -792,6 +847,7 @@ public class LeekFunctions {
 		return extraFunctionsImport;
 	}
 	public String getReplacement() {
+		if (base != null) return base.getReplacement();
 		return replacement;
 	}
 
@@ -801,6 +857,7 @@ public class LeekFunctions {
 	 * qui doit fermer TOUTES les formes.
 	 */
 	public boolean isOoDemoted() {
+		if (base != null) return base.isOoDemoted();
 		return ooDemoted;
 	}
 
@@ -815,6 +872,7 @@ public class LeekFunctions {
 	 * en v5, mais toujours `arraySlice` en v4.
 	 */
 	public String getReplacement(int version) {
+		if (base != null) return base.getReplacement(version);
 		var current = replacement;
 		var seen = new HashSet<String>();
 		while (current != null && seen.add(current)) {
