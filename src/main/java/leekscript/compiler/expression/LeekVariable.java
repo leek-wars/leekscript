@@ -1132,9 +1132,6 @@ public class LeekVariable extends Expression {
 		return this.variable != null ? this.variable.getType() : this.variableType;
 	}
 
-	/** Emplacements Java qui ne tiennent jamais de conteneur : `+=` y garde `add` (cf addEqMethod). */
-	private static final Set<String> NON_CONTAINER_JAVA_TYPES = Set.of("long", "Long", "double", "Double", "Number", "boolean", "Boolean", "String", "BigIntegerValue");
-
 	/** Types Java d'une valeur que reçoit un champ `Number` (cf globalAssignType). */
 	private static final Set<String> NUMBER_JAVA_TYPES = Set.of("long", "Long", "double", "Double", "Number");
 	/** Types Java qu'un champ d'un autre type référence ne reçoit pas : un Object, un nombre ou un booléen. */
@@ -1259,13 +1256,14 @@ public class LeekVariable extends Expression {
 
 	/**
 	 * `x += y` sur un champ ou une globale non boxée : `add` (copie) jusqu'à la v4, `add_eq` (un
-	 * conteneur étendu en place, comme une locale) en v5.
+	 * conteneur étendu en place, comme une locale) en v5 quand l'emplacement peut tenir un conteneur.
 	 */
 	private String addEqMethod(MainLeekBlock mainblock) {
 		// Un emplacement qui ne peut pas tenir de conteneur garde `add` et ses surcharges typées
 		if (!LanguageFeature.IN_PLACE_ADD_EQ.enabledIn(mainblock.getVersion()) || !variableType.canBeIterable()) return "add";
+		// Le type de l'emplacement Java, pas celui de cette lecture : une globale `integer` reste un long
 		var slot = type == VariableType.GLOBAL && this.variable != null ? slotType() : getJavaDeclarationType();
-		return NON_CONTAINER_JAVA_TYPES.contains(slot.getJavaPrimitiveName(mainblock.getVersion())) ? "add" : "add_eq";
+		return slot.canBeIterable() ? "add_eq" : "add";
 	}
 
 	@Override

@@ -337,6 +337,7 @@ public abstract class AI {
 		this.logs = logs;
 		this.mInstructions = instructions;
 		this.version = version;
+		this.inPlaceAddEq = LanguageFeature.IN_PLACE_ADD_EQ.enabledIn(version);
 
 		randomGenerator = new RandomGenerator() {
 			private Random random = new Random();
@@ -1795,6 +1796,18 @@ public abstract class AI {
 		}
 	}
 
+	/** v5 : `x += y` étend un conteneur en place quel que soit l'emplacement (#5655), tranché une fois par IA. */
+	private boolean inPlaceAddEq;
+
+	/** `x += y` sur un emplacement autre qu'une locale : en place en v5, une copie avant. */
+	public Object addAssign(Object x, Object y) throws LeekRunException {
+		return inPlaceAddEq ? add_eq(x, y) : add(x, y);
+	}
+
+	public boolean isInPlaceAddEq() {
+		return inPlaceAddEq;
+	}
+
 	public Object add_eq(Object x, Object y) throws LeekRunException {
 		if (x instanceof LegacyArrayLeekValue) {
 			return ((LegacyArrayLeekValue) x).add_eq(this, y);
@@ -2458,7 +2471,7 @@ public abstract class AI {
 				this.addSystemLog(AILog.ERROR, Error.CANNOT_ASSIGN_FINAL_FIELD, new String[] { object.getClass().getName(), field });
 				return null;
 			}
-			return setFieldConverted(object, f, LanguageFeature.IN_PLACE_ADD_EQ.enabledIn(version) ? add_eq(f.get(object), value) : add(f.get(object), value));
+			return setFieldConverted(object, f, addAssign(f.get(object), value));
 		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 			addSystemLog(AILog.ERROR, e);
 		}
@@ -2776,8 +2789,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).setField(field, value);
+			return setField(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -2809,8 +2821,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).setField(field, value);
+			return setField(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -2842,8 +2853,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_inc(field);
+			return field_inc(array, field, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -2877,8 +2887,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_pre_inc(field);
+			return field_pre_inc(array, field, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -2912,8 +2921,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_dec(field);
+			return field_dec(array, field, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -2947,8 +2955,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_pre_dec(field);
+			return field_pre_dec(array, field, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -2982,8 +2989,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_add_eq(field, value);
+			return field_add_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3017,8 +3023,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_sub_eq(field, value);
+			return field_sub_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3052,8 +3057,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_mul_eq(field, value);
+			return field_mul_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3087,8 +3091,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_pow_eq(field, value);
+			return field_pow_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3122,8 +3125,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_mod_eq(field, value);
+			return field_mod_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3157,8 +3159,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_div_eq(field, value);
+			return field_div_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3192,8 +3193,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_intdiv_eq(field, value);
+			return field_intdiv_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3297,8 +3297,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_bor_eq(field, value);
+			return field_bor_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3332,8 +3331,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_band_eq(field, value);
+			return field_band_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3367,8 +3365,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_shl_eq(field, value);
+			return field_shl_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3402,8 +3399,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_shr_eq(field, value);
+			return field_shr_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3437,8 +3433,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_ushr_eq(field, value);
+			return field_ushr_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3472,8 +3467,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_bxor_eq(field, value);
+			return field_bxor_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -3507,8 +3501,7 @@ public abstract class AI {
 		}
 		if (array instanceof ClassLeekValue) {
 			var field = string(key);
-			if (!((ClassLeekValue) array).canWriteStaticField(field, fromClass)) return null;
-			return ((ClassLeekValue) array).field_coalesce_eq(field, value);
+			return field_coalesce_eq(array, field, value, fromClass);
 		}
 		if (array instanceof NativeObjectLeekValue) {
 			try {
@@ -4002,8 +3995,7 @@ public abstract class AI {
 		// l'AI en premier param (désambiguïse ArrayLeekValue.sort(AI) de ArrayList.sort).
 		if (version >= 5) {
 			String stdClass = standardClassOfValue(value);
-			var builtin = stdClass == null ? null : leekscript.runner.LeekFunctions.getMethod(stdClass, field);
-			if (builtin != null) builtin = builtin.forVersion(version);
+			var builtin = stdClass == null ? null : leekscript.runner.LeekFunctions.getMethod(stdClass, field, version);
 			// Miroir runtime du contrôle fait à la compilation (LeekFunctionCall.resolveBuiltinMethod) :
 			// une fonction réellement retirée du langage (`subArray`, `removeKey`, `assocSort`... capées
 			// en v3) ne doit pas rester atteignable en forme méthode. Sans ce filtre, un receveur `var`

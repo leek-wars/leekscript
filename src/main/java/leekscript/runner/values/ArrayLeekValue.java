@@ -20,7 +20,6 @@ import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueComparator;
 import leekscript.runner.LeekValueManager;
 import leekscript.util.Json;
-import leekscript.common.LanguageFeature;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
@@ -262,8 +261,7 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 		ai.opsNoCheck(ArrayLeekValue.WRITE_OPERATIONS);
 		int i = boundedIndex(ai, key);
 		if (i < 0) return null;
-		// v5 : un élément conteneur est étendu en place (`a[0] += x`), comme une locale
-		var new_value = LanguageFeature.IN_PLACE_ADD_EQ.enabledIn(ai.getVersion()) ? ai.add_eq(get(i), value) : ai.add(get(i), value);
+		var new_value = ai.addAssign(get(i), value);
 		set(i, new_value);
 		return new_value;
 	}

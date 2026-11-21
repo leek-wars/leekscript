@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import leekscript.common.LanguageFeature;
 import leekscript.common.Type;
 import leekscript.runner.AI;
 import leekscript.runner.AI.RamUsage;
@@ -212,9 +211,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 
 	public Object put_add_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		// v5 : une valeur conteneur est étendue en place (`m[k] += x`), comme une locale
-		var current = get(key);
-		var v = LanguageFeature.IN_PLACE_ADD_EQ.enabledIn(ai.getVersion()) ? ai.add_eq(current, value) : ai.add(current, value);
+		var v = ai.addAssign(get(key), value);
 		store(key, v);
 		return v;
 	}

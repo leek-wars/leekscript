@@ -28,16 +28,7 @@ import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.bloc.Module;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekAnonymousFunction;
-import leekscript.compiler.expression.LeekArray;
-import leekscript.compiler.expression.LeekBigInteger;
-import leekscript.compiler.expression.LeekBoolean;
 import leekscript.compiler.expression.LeekFileContent;
-import leekscript.compiler.expression.LeekInterval;
-import leekscript.compiler.expression.LeekMap;
-import leekscript.compiler.expression.LeekNumber;
-import leekscript.compiler.expression.LeekObject;
-import leekscript.compiler.expression.LeekSet;
-import leekscript.compiler.expression.LeekString;
 import leekscript.runner.AI;
 import leekscript.runner.CallableVersion;
 import leekscript.runner.LeekFunctions;
@@ -828,9 +819,7 @@ public class JavaWriter {
 		if (elementType == Type.ANY || elementType == Type.VOID || elementType.canBeNull()
 			|| elementType.isWarning() || elementType == Type.ERROR || elementType.containsTypeVariable()) return false;
 		if (value.getType().isPrimitive() && !value.hasBoxedJavaResult() && !value.hasObjectJavaResult()) return false;
-		return !(value instanceof LeekNumber || value instanceof LeekString || value instanceof LeekBoolean || value instanceof LeekBigInteger
-			|| value instanceof LeekArray || value instanceof LeekMap || value instanceof LeekSet || value instanceof LeekObject
-			|| value instanceof LeekInterval || value instanceof LeekAnonymousFunction);
+		return !(NarrowingInfo.isNullFree(value) || value.trim() instanceof LeekAnonymousFunction);
 	}
 
 	/** Écrit `value` à insérer dans un conteneur d'élément `elementType`, contrôlée non null si besoin (cf checksNullElement). */

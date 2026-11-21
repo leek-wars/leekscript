@@ -98,42 +98,37 @@ public abstract class ContentType {
 	}
 
 	public static ContentType array(ContentType element) {
-		return new ContentType("Array<" + element + ">") {
-			public boolean fits(AI ai, Object value) throws LeekRunException {
-				if (!(value instanceof ArrayLeekValue array)) return false;
-				ai.ops(array.size());
-				for (var e : array) {
-					if (!element.fits(ai, e)) return false;
-				}
-				return true;
-			}
-			public void check(AI ai, Object value) throws LeekRunException {
-				if (!(value instanceof ArrayLeekValue array)) throw mismatch(ai, value);
-				ai.ops(array.size());
-				for (var e : array) element.check(ai, e);
-			}
-		};
+		return collection("Array<" + element + ">", ArrayLeekValue.class, element);
 	}
 
 	public static ContentType set(ContentType element) {
-		return new ContentType("Set<" + element + ">") {
+		return collection("Set<" + element + ">", SetLeekValue.class, element);
+	}
+
+	/** Tableau ou ensemble : chaque élément est vérifié, sauf pour un élément any (rien à parcourir). */
+	private static ContentType collection(String name, Class<? extends java.util.Collection<?>> javaClass, ContentType element) {
+		if (element == ANY) return leaf(name, javaClass);
+		return new ContentType(name) {
 			public boolean fits(AI ai, Object value) throws LeekRunException {
-				if (!(value instanceof SetLeekValue set)) return false;
-				ai.ops(set.size());
-				for (var e : set) {
+				if (!javaClass.isInstance(value)) return false;
+				var collection = (java.util.Collection<?>) value;
+				ai.ops(collection.size());
+				for (var e : collection) {
 					if (!element.fits(ai, e)) return false;
 				}
 				return true;
 			}
 			public void check(AI ai, Object value) throws LeekRunException {
-				if (!(value instanceof SetLeekValue set)) throw mismatch(ai, value);
-				ai.ops(set.size());
-				for (var e : set) element.check(ai, e);
+				if (!javaClass.isInstance(value)) throw mismatch(ai, value);
+				var collection = (java.util.Collection<?>) value;
+				ai.ops(collection.size());
+				for (var e : collection) element.check(ai, e);
 			}
 		};
 	}
 
 	public static ContentType map(ContentType key, ContentType value) {
+		if (key == ANY && value == ANY) return leaf("Map<" + key + ", " + value + ">", MapLeekValue.class);
 		return new ContentType("Map<" + key + ", " + value + ">") {
 			public boolean fits(AI ai, Object object) throws LeekRunException {
 				if (!(object instanceof MapLeekValue map)) return false;

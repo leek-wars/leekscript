@@ -480,7 +480,7 @@ public class LeekArrayAccess extends Expression {
 	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
-		writePut(mainblock, writer, "put_inc", () -> writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")"));
+		writeIncrement(mainblock, writer, "put_inc");
 	}
 
 
@@ -488,21 +488,21 @@ public class LeekArrayAccess extends Expression {
 	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
-		writePut(mainblock, writer, "put_pre_inc", () -> writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")"));
+		writeIncrement(mainblock, writer, "put_pre_inc");
 	}
 
 	@Override
 	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
-		writePut(mainblock, writer, "put_dec", () -> writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")"));
+		writeIncrement(mainblock, writer, "put_dec");
 	}
 
 	@Override
 	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
-		writePut(mainblock, writer, "put_pre_dec", () -> writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")"));
+		writeIncrement(mainblock, writer, "put_pre_dec");
 	}
 
 	@Override
@@ -607,6 +607,11 @@ public class LeekArrayAccess extends Expression {
 		});
 	}
 
+	/** `helper(tableau, clé, classe)` : ++ et -- sur une case. */
+	private void writeIncrement(MainLeekBlock mainblock, JavaWriter writer, String helper) {
+		writePut(mainblock, writer, helper, () -> writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")"));
+	}
+
 	/**
 	 * `helper(tableau, clé` puis `rest` (la fin des arguments et la parenthèse). En v5 strict, une
 	 * clé absente d'une map est une erreur (forum 12116) : le tableau et la clé sont liés dans des
@@ -614,7 +619,7 @@ public class LeekArrayAccess extends Expression {
 	 * l'opération, sans être évalués deux fois.
 	 */
 	private void writePut(MainLeekBlock mainblock, JavaWriter writer, String helper, Runnable rest) {
-		if (!(strict && LanguageFeature.STRICT_MISSING_MAP_KEY.enabledIn(mainblock.getVersion()))) {
+		if (!(strict && LanguageFeature.STRICT_MISSING_MAP_KEY.enabledIn(mainblock.getVersion()) && mayBeMap())) {
 			writer.addCode(helper + "(");
 			mTabular.writeJavaCode(mainblock, writer, false);
 			writer.addCode(", ");
@@ -630,6 +635,12 @@ public class LeekArrayAccess extends Expression {
 		writer.addCode("; requireMapKey($t" + id + ", $k" + id + "); yield " + helper + "($t" + id + ", $k" + id);
 		rest.run();
 		writer.addCode("; } })");
+	}
+
+	/** Le receveur peut-il être une map (et non seulement un tableau, une chaîne…) ? */
+	private boolean mayBeMap() {
+		var tabular = mTabular.getType();
+		return !(tabular.isArray() || tabular.isArrayOrNull() || tabular == Type.STRING);
 	}
 
 	private boolean isMapCell() {

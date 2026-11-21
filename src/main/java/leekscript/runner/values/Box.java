@@ -7,7 +7,6 @@ import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
-import leekscript.common.LanguageFeature;
 import leekscript.common.Error;
 import leekscript.common.Type;
 
@@ -183,7 +182,7 @@ public class Box<T> {
 	public Object add_eq(Object val) throws LeekRunException {
 		// v5 : un conteneur est étendu en place quel que soit l'emplacement (globale, champ,
 		// locale capturée), comme une locale ; avant, seuls les tableaux legacy l'étaient.
-		if (LanguageFeature.IN_PLACE_ADD_EQ.enabledIn(mUAI.getVersion())) {
+		if (mUAI.isInPlaceAddEq()) {
 			return mValue = mUAI.add_eq(mValue, val);
 		}
 		if (mValue instanceof LegacyArrayLeekValue && !(val instanceof String)) {

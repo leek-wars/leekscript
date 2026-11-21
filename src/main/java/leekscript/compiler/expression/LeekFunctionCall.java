@@ -1170,7 +1170,7 @@ public class LeekFunctionCall extends Expression {
 			if (LanguageFeature.OO_STDLIB.enabledIn(compiler.getVersion())) {
 				var builtinClass = standardClassOf(o.getType());
 				if (builtinClass != null) {
-					var builtinMethod = forVersion(LeekFunctions.getMethod(builtinClass, oa.getField()), compiler);
+					var builtinMethod = LeekFunctions.getMethod(builtinClass, oa.getField(), compiler.getVersion());
 					if (builtinMethod != null && resolveBuiltinMethod(compiler, oa.getFieldToken(), o.getType(), builtinMethod)) {
 						// Même coût que la forme libre `name(receiver, ...)` : le coût déclaré de
 						// la fonction, à la place de l'op de l'accès `receiver.name`.
@@ -1184,7 +1184,7 @@ public class LeekFunctionCall extends Expression {
 				// Résolue et vérifiée comme l'ancienne forme libre `sqrt(x)`.
 				if (o instanceof LeekVariable nv && nv.getVariableType() == VariableType.CLASS
 						&& LanguageFeature.OO_STDLIB.enabledIn(compiler.getVersion())) {
-					var nsFunction = forVersion(LeekFunctions.namespaceFunction(nv.getName(), oa.getField()), compiler);
+					var nsFunction = LeekFunctions.namespaceFunction(nv.getName(), oa.getField(), compiler.getVersion());
 					if (nsFunction != null) {
 						this.system_function = nsFunction;
 						this.is_namespace_function = true;
@@ -1597,11 +1597,6 @@ public class LeekFunctionCall extends Expression {
 			if (version.return_type.containsTypeVariable()) return true;
 		}
 		return false;
-	}
-
-	/** Variante de la fonction pour la version compilée (cf LeekFunctions.since), null si absente. */
-	private static LeekFunctions forVersion(LeekFunctions function, WordCompiler compiler) {
-		return function == null ? null : function.forVersion(compiler.getVersion());
 	}
 
 	/**

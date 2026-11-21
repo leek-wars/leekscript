@@ -372,13 +372,9 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 	 */
 	public boolean canWriteStaticField(String field, ClassLeekValue fromClass) throws LeekRunException {
 		if (!LanguageFeature.STATIC_FIELD_VISIBILITY.enabledIn(ai.getVersion())) return true;
+		// Même règle (et même erreur journalisée) que la lecture, sur la classe qui déclare le champ
 		for (var c = this; c != null; c = c.parent instanceof ClassLeekValue p ? p : null) {
-			var f = c.staticFields.get(field);
-			if (f == null) continue;
-			if (f.level == AccessLevel.PUBLIC || fromClass == c) return true;
-			if (f.level == AccessLevel.PROTECTED && fromClass != null && fromClass.descendsFrom(c)) return true;
-			ai.addSystemLog(AILog.ERROR, f.level == AccessLevel.PROTECTED ? Error.PROTECTED_STATIC_FIELD : Error.PRIVATE_STATIC_FIELD, new String[] { c.name, field });
-			return false;
+			if (c.staticFields.containsKey(field)) return c.getStaticField(field, fromClass) != null;
 		}
 		return true;
 	}

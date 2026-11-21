@@ -509,6 +509,12 @@ public class LeekFunctions {
 	}
 
 	/** Méthode système exposée sur un type natif (ex. "Array","map"), ou null. */
+	/** getMethod, variante en vigueur pour un programme en version {@code version} (cf since). */
+	public static LeekFunctions getMethod(String standardClass, String name, int version) {
+		var f = getMethod(standardClass, name);
+		return f == null ? null : f.forVersion(version);
+	}
+
 	public static LeekFunctions getMethod(String standardClass, String name) {
 		var byName = methodsByClass.get(standardClass);
 		return byName == null ? null : byName.get(name);
@@ -556,6 +562,12 @@ public class LeekFunctions {
 	 * (v5), ou null. Résolue exactement comme l'ancienne forme libre `func(...)` :
 	 * `Math.sqrt(x)` == `sqrt(x)`, `Math.rand()` == `rand()`.
 	 */
+	/** namespaceFunction, variante en vigueur pour un programme en version {@code version} (cf since). */
+	public static LeekFunctions namespaceFunction(String namespaceName, String field, int version) {
+		var f = namespaceFunction(namespaceName, field);
+		return f == null ? null : f.forVersion(version);
+	}
+
 	public static LeekFunctions namespaceFunction(String namespaceName, String field) {
 		var standardClass = namespaceStandardClass(namespaceName);
 		return standardClass == null ? null : getMethod(standardClass, field);
@@ -605,6 +617,7 @@ public class LeekFunctions {
 	// Pour une variante : la fonction déclarée, qui garde nom, bornes de version, coût, etc.
 	private LeekFunctions base = null;
 	private int sinceVersion = 0;
+	private String variantJavaName = null;
 	// Pour une forme méthode (cf alias) : la fonction dont elle est l'alias, qui porte les variantes
 	private LeekFunctions aliasOf = null;
 
@@ -826,7 +839,11 @@ public class LeekFunctions {
 	}
 	/** Nom de la méthode Java à appeler (défaut = nom leekscript). */
 	public String getJavaName() {
-		if (base != null) return base.getJavaName() + "_v" + sinceVersion;
+		if (base != null) {
+			// Lu à chaque appel de méthode dynamique (AI.methodCache) : construit une fois
+			if (variantJavaName == null) variantJavaName = base.getJavaName() + "_v" + sinceVersion;
+			return variantJavaName;
+		}
 		return javaName != null ? javaName : name;
 	}
 

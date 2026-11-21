@@ -75,6 +75,10 @@ public abstract class AIModule {
 		return ai.add(a0, a1);
 	}
 
+	public final java.lang.Object addAssign(java.lang.Object a0, java.lang.Object a1) throws leekscript.runner.LeekRunException {
+		return ai.addAssign(a0, a1);
+	}
+
 	public final void addSystemLog(int a0, int a1) throws leekscript.runner.LeekRunException {
 		ai.addSystemLog(a0, a1);
 	}
@@ -561,6 +565,10 @@ public abstract class AIModule {
 
 	public final leekscript.runner.values.IntervalLeekValue interval(boolean a0, java.lang.Object a1, boolean a2, java.lang.Object a3) throws leekscript.runner.LeekRunException {
 		return ai.interval(a0, a1, a2, a3);
+	}
+
+	public final boolean isInPlaceAddEq() {
+		return ai.isInPlaceAddEq();
 	}
 
 	public final boolean isIterable(java.lang.Object a0) throws leekscript.runner.LeekRunException {
