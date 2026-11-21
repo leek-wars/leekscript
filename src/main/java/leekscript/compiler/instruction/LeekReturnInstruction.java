@@ -1,6 +1,7 @@
 package leekscript.compiler.instruction;
 
 import leekscript.common.CompoundType;
+import leekscript.common.LanguageFeature;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 import leekscript.compiler.Token;
@@ -176,7 +177,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 				writer.addCode(returnType.getJavaName(mainblock.getVersion()) + " " + r + " = ");
 				var converter = orNullConverter(mainblock, finalExpression.getType());
 				if (converter != null) {
-					writer.addCode(converter + "(0, ");
+					writer.addCode(converter);
 					finalExpression.writeJavaCode(mainblock, writer, false);
 					writer.addCode(")");
 				} else {
@@ -207,14 +208,20 @@ public class LeekReturnInstruction extends LeekInstruction {
 	}
 
 	/**
-	 * Variante OrNull du convertisseur qu'émettrait compileConvert vers le type de retour
-	 * Array/Map/Set (même forme, `f(0, expression)`), ou null s'il n'en émet aucun.
+	 * Ouverture de la variante OrNull du convertisseur qu'émettrait compileConvert vers le type de
+	 * retour Array/Map/Set (même forme, `f(0, expression)`), ou null s'il n'en émet aucun. En v5,
+	 * integer et real aussi : longintNotNull()/realNotNull() lèveraient sur le null que bool()
+	 * doit écarter (#5389).
 	 */
 	private String orNullConverter(MainLeekBlock mainblock, Type valueType) {
 		if (returnType.accepts(valueType).ordinal() <= CastType.EQUALS.ordinal()) return null;
-		if (returnType.isArray()) return mainblock.getVersion() >= 4 ? "toArrayOrNull" : "toLegacyArrayOrNull";
-		if (returnType.isMap()) return "toMapOrNull";
-		if (returnType.isSet()) return "toSetOrNull";
+		if (returnType.isArray()) return (mainblock.getVersion() >= 4 ? "toArrayOrNull" : "toLegacyArrayOrNull") + "(0, ";
+		if (returnType.isMap()) return "toMapOrNull(0, ";
+		if (returnType.isSet()) return "toSetOrNull(0, ";
+		if (LanguageFeature.NULL_TO_NUMBER_ERROR.enabledIn(mainblock.getVersion()) && valueType.canBeNull()) {
+			if (returnType == Type.INT) return "longintOrNull(";
+			if (returnType == Type.REAL) return "realOrNull(";
+		}
 		return null;
 	}
 

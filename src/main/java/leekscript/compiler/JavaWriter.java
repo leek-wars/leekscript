@@ -14,6 +14,7 @@ import leekscript.compiler.bloc.AbstractLeekBlock;
 import leekscript.compiler.bloc.FunctionBlock;
 import leekscript.common.CompoundType;
 import leekscript.common.FunctionType;
+import leekscript.common.LanguageFeature;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 import leekscript.compiler.bloc.MainLeekBlock;
@@ -718,7 +719,7 @@ public class JavaWriter {
 				}
 				return;
 			} else {
-				addCode("longint(");
+				addCode(numberConversion(mainblock, value, "longint"));
 				value.writeJavaCode(mainblock, this, false);
 				addCode(")");
 				return;
@@ -735,7 +736,7 @@ public class JavaWriter {
 				}
 				return;
 			} else {
-				addCode("real(");
+				addCode(numberConversion(mainblock, value, "real"));
 				value.writeJavaCode(mainblock, this, false);
 				addCode(")");
 				return;
@@ -814,6 +815,18 @@ public class JavaWriter {
 		} else {
 			value.writeJavaCode(mainblock, this, parenthesis);
 		}
+	}
+
+	/**
+	 * Ouverture de l'appel qui convertit `value` vers integer (`longint`) ou real (`real`). En v5,
+	 * une valeur qui peut être null passe par la variante NotNull, qui lève IMPOSSIBLE_CAST là où
+	 * longint() / real() rendent 0 (#5389) ; les autres gardent l'appel v1-4.
+	 */
+	private String numberConversion(MainLeekBlock mainblock, Expression value, String function) {
+		if (LanguageFeature.NULL_TO_NUMBER_ERROR.enabledIn(mainblock.getVersion()) && value.getType().canBeNull()) {
+			return function + "NotNull(";
+		}
+		return function + "(";
 	}
 
 	public String generateGenericFunction(ArrayList<CallableVersion> versions) {

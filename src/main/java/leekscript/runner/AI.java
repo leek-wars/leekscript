@@ -1901,6 +1901,23 @@ public abstract class AI {
 	}
 
 	/**
+	 * v5 : conversion vers integer d'une valeur qui peut être null. null n'est pas un entier :
+	 * IMPOSSIBLE_CAST, là où longint() rend 0 (#5389). Le reste suit longint().
+	 */
+	public long longintNotNull(Object value) throws LeekRunException {
+		if (value instanceof Box<?> box) value = box.get();
+		if (value == null) throw new LeekRunException(Error.IMPOSSIBLE_CAST, new String[] { "null", "integer" });
+		return longint(value);
+	}
+
+	/** v5 : comme {@link #longintNotNull}, vers real (#5389). */
+	public double realNotNull(Object value) throws LeekRunException {
+		if (value instanceof Box<?> box) value = box.get();
+		if (value == null) throw new LeekRunException(Error.IMPOSSIBLE_CAST, new String[] { "null", "real" });
+		return real(value);
+	}
+
+	/**
 	 * Argument integer|null d'une fonction système : un réel ou un big_integer est tronqué,
 	 * null reste null. Tout autre type lève ClassCastException, et l'appel rend sa valeur par
 	 * défaut, comme le cast (Long) seul.
@@ -2190,13 +2207,14 @@ public abstract class AI {
 	private Object setFieldConverted(Object object, Field f, Object value) throws LeekRunException {
 		var type = f.getType();
 		try {
+			// v5 : null vers un champ integer / real est une erreur, comme sur le chemin statique (#5389)
 			if (type == long.class) {
-				long v = longint(value);
+				long v = version >= 5 ? longintNotNull(value) : longint(value);
 				f.setLong(object, v);
 				return v;
 			}
 			if (type == double.class) {
-				double v = real(value);
+				double v = version >= 5 ? realNotNull(value) : real(value);
 				f.setDouble(object, v);
 				return v;
 			}

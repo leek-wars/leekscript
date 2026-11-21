@@ -76,7 +76,10 @@ public enum LanguageFeature {
 	STATIC_FIELD_VISIBILITY(5),
 
 	/** Un {@code return} en fin de ligne ne prend pas la ligne suivante pour valeur (#4778). */
-	RETURN_ENDS_AT_NEWLINE(5);
+	RETURN_ENDS_AT_NEWLINE(5),
+
+	/** Convertir null vers integer ou real lève IMPOSSIBLE_CAST au lieu de rendre 0 / 0.0 (#5389). */
+	NULL_TO_NUMBER_ERROR(5);
 
 	public final int since;
 

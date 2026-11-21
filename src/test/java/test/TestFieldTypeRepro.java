@@ -3,6 +3,8 @@ package test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 
+import leekscript.common.Error;
+
 @ExtendWith(SummaryExtension.class)
 public class TestFieldTypeRepro extends TestCommon {
 
@@ -12,11 +14,14 @@ public class TestFieldTypeRepro extends TestCommon {
 		// Le chemin dynamique doit appliquer les mêmes conversions que le chemin statique
 		code_v4_("class A { integer x } A a = new A() a.x = 1.5 return a.x").equals("1");
 		code_v4_("class A { integer x } var a = new A() a.x = 1.5 return a.x").equals("1");
-		code_v4_("class A { integer x } var a = new A() a.x = null return a.x").equals("0");
+		code_v4("class A { integer x } var a = new A() a.x = null return a.x").equals("0");
+		// v5 : null n'est pas un integer, même par le chemin dynamique (#5389)
+		code_v5_("class A { integer x } var a = new A() a.x = null return a.x").error(Error.IMPOSSIBLE_CAST);
 		code_v4_("class A { integer x } var a = new A() a.x = 12 return a.x").equals("12");
 		code_v4_("class A { integer x } var a = new A() a.x = true return a.x").equals("1");
 		code_v4_("class A { real x } var a = new A() a.x = 3 return a.x").equals("3.0");
-		code_v4_("class A { real x } var a = new A() a.x = null return a.x").equals("0.0");
+		code_v4("class A { real x } var a = new A() a.x = null return a.x").equals("0.0");
+		code_v5_("class A { real x } var a = new A() a.x = null return a.x").error(Error.IMPOSSIBLE_CAST);
 		code_v4_("class A { boolean x } var a = new A() a.x = 1 return a.x").equals("true");
 		code_v4_("class A { integer | null x = 8 } var a = new A() a.x = null return a.x").equals("null");
 		code_v4_("class A { integer | null x } var a = new A() a.x = 2.5 return a.x").equals("2");
