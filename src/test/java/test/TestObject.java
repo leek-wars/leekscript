@@ -549,7 +549,10 @@ public class TestObject extends TestCommon {
 		code_v5_("global s = '' class A { constructor() { s += 'A' } } class B extends A { constructor() { s += 'B' } } new B() return s").equals("\"AB\"");
 		code_v5_("global s = '' class A { constructor() { s += 'A' } } class B extends A { } new B() return s").equals("\"A\"");
 		code_v5_("global s = '' class A { constructor() { s += 'A' } } class B extends A { constructor() { s += 'B' super() } } class C extends B { constructor() { s += 'C' super() } } new C() return s").equals("\"CBA\"");
-		code_v5_("global s = '' class A { constructor() { s += 'A' } } class B extends A { constructor(x = 1) { if (x > 0) { super() } s += 'B' + x } } new B() new B(0) return s").equals("\"AB1B0\"");
+		// super() hors du premier niveau du corps (if, boucle) : l'appel implicite reste, le parent
+		// est construit même quand la branche n'est pas prise
+		code_v5_("global s = '' class A { constructor() { s += 'A' } } class B extends A { constructor(x = 1) { if (x > 0) { super() } s += 'B' + x } } new B() new B(0) return s").equals("\"AAB1AB0\"");
+		code_v5_("class A { x = 0 constructor() { x = x + 1 } constructor(a) { x = a } } class B extends A { constructor(c) { if (c) super(5) } } return [new B(true).x, new B(false).x]").equals("[5, 1]");
 		// Le champ du parent rempli par la fille avant super() est visible du constructeur parent
 		code_v5_("class Item { string name = 'x' string seen = '' constructor() { seen = name } } class Arme extends Item { constructor(n) { name = n super() } } return new Arme('pistol').seen").equals("\"pistol\"");
 		// super() dans une fonction anonyme du constructeur : l'appel implicite reste

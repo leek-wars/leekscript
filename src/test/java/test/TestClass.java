@@ -34,6 +34,9 @@ public class TestClass extends TestCommon {
 		code_v5_("class A { private static d = 1 static get() { return d } static set(x) { var c = A c.d = x } } A.set(4) return A.get()").equals("4");
 		code_v5_("class A { protected static d = 1 static get() { return d } } class B extends A { static f() { var c = A c.d = 5 } } B.f() return A.get()").equals("5");
 		code_v5_("class A { public static d = 1 } var c = A c.d = 8 return A.d").equals("8");
+		// Refusée, l'écriture ne modifie pas non plus le conteneur en place (+= en v5)
+		code_v5_("class A { private static x = [1] static get() { return A.x } } var c = A c.x += [2] return A.get()").equals("[1]");
+		code_v5_("class A { private static x = [1] static get() { return A.x } } var c = A c['x'] += [2] return A.get()").equals("[1]");
 	}
 
 	@Test

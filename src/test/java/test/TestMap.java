@@ -25,6 +25,9 @@ public class TestMap extends TestCommon {
 		code_strict_v5_("Map<integer, integer> a = [0: 1]; a[0] += 1; return a").equals("[0 : 2]");
 		code_strict_v5_("Map a = [0: null]; a[0] += 1; return a").equals("[0 : 1]");
 		code_strict_v5_("Map a = [:]; a[0] ??= 1; return a").equals("[0 : 1]");
+		// La map et la clé ne sont évaluées qu'une fois
+		code_strict_v5_("Map<integer, integer> m = [0: 1]; var i = 0 m[i++] += 1; return [m, i]").equals("[[0 : 2], 1]");
+		code_strict_v5_("Array<integer> a = [1] a[0] += 1 a[0]++ return a").equals("[3]");
 		// Hors strict, et jusqu'à la v4 : la valeur absente vaut null
 		code_v5_("var a = [:]; a[0] += 10; return a").equals("[0 : 10]");
 		code_v5_("var a = [:]; a[0]++; return a").equals("[0 : 1]");

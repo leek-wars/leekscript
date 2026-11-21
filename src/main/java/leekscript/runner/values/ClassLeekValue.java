@@ -14,6 +14,7 @@ import java.util.Set;
 import leekscript.AILog;
 import leekscript.runner.AI;
 import leekscript.runner.LeekRunException;
+import leekscript.common.LanguageFeature;
 import leekscript.common.AccessLevel;
 import leekscript.common.Error;
 import leekscript.common.Type;
@@ -370,7 +371,7 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 	 * pour un champ d'instance privé. Jusqu'à la v4 l'écriture passe (des IA en dépendent).
 	 */
 	public boolean canWriteStaticField(String field, ClassLeekValue fromClass) throws LeekRunException {
-		if (ai.getVersion() < 5) return true;
+		if (!LanguageFeature.STATIC_FIELD_VISIBILITY.enabledIn(ai.getVersion())) return true;
 		for (var c = this; c != null; c = c.parent instanceof ClassLeekValue p ? p : null) {
 			var f = c.staticFields.get(field);
 			if (f == null) continue;
@@ -380,17 +381,6 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 			return false;
 		}
 		return true;
-	}
-
-	/** getFieldL contrôlé (cf canWriteStaticField) : refusé, l'écriture va dans une boîte jetable. */
-	public Box getFieldL(String field, ClassLeekValue fromClass) throws LeekRunException {
-		var box = getFieldL(field);
-		return canWriteStaticField(field, fromClass) ? box : new Box(ai, box.get());
-	}
-
-	public Object setField(String field, Object value, ClassLeekValue fromClass) throws LeekRunException {
-		if (!canWriteStaticField(field, fromClass)) return null;
-		return setField(field, value);
 	}
 
 	public Box getFieldL(String field) throws LeekRunException {

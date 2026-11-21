@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import leekscript.common.Error;
+import leekscript.common.LanguageFeature;
 import leekscript.common.Type;
 import leekscript.runner.AI;
 import leekscript.runner.AI.RamUsage;
@@ -184,37 +184,28 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 		return this;
 	}
 
-	/** Valeur actuelle à `key` pour une affectation composée : en v5 strict, une clé absente est une erreur. */
-	private Object current(AI ai, Object key) throws LeekRunException {
-		var v = get(key);
-		if (v == null && ai.strictMissingMapKey && !containsKey(key)) {
-			throw new LeekRunException(Error.MAP_KEY_NOT_FOUND, new String[] { ai.export(key) });
-		}
-		return v;
-	}
-
 	public Object put_inc(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = current(ai, key);
+		var v = get(key);
 		store(key, ai.add(v, 1l));
 		return v;
 	}
 
 	public Object put_pre_inc(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.add(current(ai, key), 1l);
+		var v = ai.add(get(key), 1l);
 		store(key, v);
 		return v;
 	}
 
 	public Object put_dec(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		return store(key, ai.sub(current(ai, key), 1l));
+		return store(key, ai.sub(get(key), 1l));
 	}
 
 	public Object put_pre_dec(AI ai, Object key) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.sub(current(ai, key), 1l);
+		var v = ai.sub(get(key), 1l);
 		store(key, v);
 		return v;
 	}
@@ -222,64 +213,64 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	public Object put_add_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
 		// v5 : une valeur conteneur est étendue en place (`m[k] += x`), comme une locale
-		var current = current(ai, key);
-		var v = ai.getVersion() >= 5 ? ai.add_eq(current, value) : ai.add(current, value);
+		var current = get(key);
+		var v = LanguageFeature.IN_PLACE_ADD_EQ.enabledIn(ai.getVersion()) ? ai.add_eq(current, value) : ai.add(current, value);
 		store(key, v);
 		return v;
 	}
 
 	public Object put_sub_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.sub(current(ai, key), value);
+		var v = ai.sub(get(key), value);
 		store(key, v);
 		return v;
 	}
 
 	public Object put_mul_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.mul(current(ai, key), value);
+		var v = ai.mul(get(key), value);
 		store(key, v);
 		return v;
 	}
 
 	public Object put_div_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.div(current(ai, key), value);
+		var v = ai.div(get(key), value);
 		store(key, v);
 		return v;
 	}
 
 	public Object put_intdiv_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.intdivAny(current(ai, key), value);
+		var v = ai.intdivAny(get(key), value);
 		store(key, v);
 		return v;
 	}
 
 	public Object put_mod_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.mod(current(ai, key), value);
+		var v = ai.mod(get(key), value);
 		store(key, v);
 		return v;
 	}
 
 	public Object put_pow_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.pow(current(ai, key), value);
+		var v = ai.pow(get(key), value);
 		store(key, v);
 		return v;
 	}
 
 	public Object put_band_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.bandAny(current(ai, key), value);
+		var v = ai.bandAny(get(key), value);
 		store(key, v);
 		return v;
 	}
 
 	public Object put_bor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.borAny(current(ai, key), value);
+		var v = ai.borAny(get(key), value);
 		store(key, v);
 		return v;
 	}
@@ -287,7 +278,7 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	/** Comme put_add_eq & co, la valeur rangée étant convertie vers `target` (cf AI.ArithmeticOperation). */
 	public Object put_arithmetic_eq(AI ai, Object key, Object value, AI.ArithmeticOperation operation, Type target) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var result = ai.arithmetic(operation, current(ai, key), value);
+		var result = ai.arithmetic(operation, get(key), value);
 		store(key, ai.convertTo(result, target));
 		return result;
 	}
@@ -295,14 +286,14 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 	/** Comme put_bor_eq & co, résultat converti vers `target` (cf AI.BitOperation). */
 	public Object put_bit_eq(AI ai, Object key, Object value, AI.BitOperation operation, Type target) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.convertTo(ai.bitAny(operation, current(ai, key), value), target);
+		var v = ai.convertTo(ai.bitAny(operation, get(key), value), target);
 		store(key, v);
 		return v;
 	}
 
 	public Object put_bxor_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.bxorAny(current(ai, key), value);
+		var v = ai.bxorAny(get(key), value);
 		store(key, v);
 		return v;
 	}
@@ -317,21 +308,21 @@ public class MapLeekValue extends LinkedHashMap<Object, Object> implements Itera
 
 	public Object put_shr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.shrAny(current(ai, key), value);
+		var v = ai.shrAny(get(key), value);
 		store(key, v);
 		return v;
 	}
 
 	public Object put_ushr_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.ushrAny(current(ai, key), value);
+		var v = ai.ushrAny(get(key), value);
 		store(key, v);
 		return v;
 	}
 
 	public Object put_shl_eq(AI ai, Object key, Object value) throws LeekRunException {
 		ai.opsNoCheck(MapLeekValue.WRITE_OPERATIONS);
-		var v = ai.shlAny(current(ai, key), value);
+		var v = ai.shlAny(get(key), value);
 		store(key, v);
 		return v;
 	}

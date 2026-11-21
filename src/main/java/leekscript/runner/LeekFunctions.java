@@ -605,6 +605,8 @@ public class LeekFunctions {
 	// Pour une variante : la fonction déclarée, qui garde nom, bornes de version, coût, etc.
 	private LeekFunctions base = null;
 	private int sinceVersion = 0;
+	// Pour une forme méthode (cf alias) : la fonction dont elle est l'alias, qui porte les variantes
+	private LeekFunctions aliasOf = null;
 
 	public LeekFunctions(String standardClass, String name, int operations, boolean isStatic, Type return_type, Type[] arguments) {
 		this(standardClass, name, operations, isStatic, new CallableVersion[] { new CallableVersion(return_type, arguments) });
@@ -731,6 +733,11 @@ public class LeekFunctions {
 
 	/** Variante en vigueur pour un programme en version {@code version} (elle-même sinon). */
 	public LeekFunctions forVersion(int version) {
+		// Forme méthode : les variantes sont déclarées sur la fonction, y compris après alias()
+		if (aliasOf != null) {
+			var variant = aliasOf.forVersion(version);
+			return variant == aliasOf ? this : variant;
+		}
 		if (sinceVersions == null) return this;
 		var entry = sinceVersions.floorEntry(version);
 		return entry == null ? this : entry.getValue();
@@ -823,6 +830,11 @@ public class LeekFunctions {
 		return javaName != null ? javaName : name;
 	}
 
+	/** Nom de la méthode Java de la fonction déclarée, sans le suffixe `_v<version>` d'une variante. */
+	public String getDeclaredJavaName() {
+		return base != null ? base.getJavaName() : getJavaName();
+	}
+
 	/**
 	 * Expose cette fonction sous un nom de méthode propre, appelable uniquement en
 	 * `valeur.méthode()` (pilier OO v5) : `arrayMap` devient `map`. L'alias est une
@@ -838,6 +850,7 @@ public class LeekFunctions {
 		}
 		var copy = new LeekFunctions(standardClass, methodName, mOperations, isStatic, copyVersions);
 		copy.javaName = this.name;
+		copy.aliasOf = this;
 		copy.minVersion = 5;
 		methodsByClass.computeIfAbsent(standardClass, k -> new HashMap<>()).put(methodName, copy);
 		this.methodName = methodName; // pour le message d'erreur de suppression v5

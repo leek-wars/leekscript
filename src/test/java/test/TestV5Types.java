@@ -127,6 +127,15 @@ public class TestV5Types extends TestCommon {
 		code_v5_("Map<string, integer> m = ['a': 1] var x = null m.fill(x) return m").error(Error.IMPOSSIBLE_CAST);
 		code_v5_("Map<string, integer> m = [:] var k = null m.put(k, 1) return m").error(Error.IMPOSSIBLE_CAST);
 		code_v5_("Map<string, integer> m = [:] var k = null m[k] = 1 return m").error(Error.IMPOSSIBLE_CAST);
+		// `+=` d'un élément, comme push ; un tableau ajouté n'est pas contrôlé (comme pushAll)
+		code_v5_("Array<integer> a = [] var x = null a += x return a").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Set<integer> s = <> var x = null s += x return s").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("global Array<integer> a = [] var x = null a += x return a").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("class C { Array<integer> a = [] f(x) { a += x } } var o = new C() o.f(null) return o.a").error(Error.IMPOSSIBLE_CAST);
+		code_v5_("Array<integer> a = [] var x = 2 a += x return a").equals("[2]");
+		code_v5_("Array<integer?> a = [] var x = null a += x return a").equals("[null]");
+		code_v5_("Array<integer> a = [] a += [3, 4] return a").equals("[3, 4]");
+		code_v4("Array<integer> a = [] var x = null a += x return a").equals("[null]");
 
 		section("v5 : sans contrôle quand l'élément accepte null ou que la valeur ne l'est pas (#5349)");
 		code_v5_("Array a = [] a.push(null) return a").equals("[null]");

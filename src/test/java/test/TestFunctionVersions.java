@@ -74,4 +74,21 @@ public class TestFunctionVersions {
 		assertEquals("nearest_v5", f.forVersion(5).getJavaName());
 		assertEquals(Type.STRING, f.forVersion(5).getVersions()[0].return_type);
 	}
+
+	@Test
+	public void methodFormFollowsTheVariants() {
+		// alias() avant ou après since() : la forme méthode (`x.m()`) suit la version, comme la forme libre
+		var before = new LeekFunctions("TestSinceA", "nearestA", 25, true, new CallableVersion[] { new CallableVersion(Type.INT, new Type[] { Type.INT }) });
+		before.alias("nearA");
+		before.since(5, Type.INT_OR_NULL);
+		var after = new LeekFunctions("TestSinceB", "nearestB", 25, true, new CallableVersion[] { new CallableVersion(Type.INT, new Type[] { Type.INT }) });
+		after.since(5, Type.INT_OR_NULL);
+		after.alias("nearB");
+		for (var m : new LeekFunctions[] { LeekFunctions.getMethod("TestSinceA", "nearA"), LeekFunctions.getMethod("TestSinceB", "nearB") }) {
+			assertEquals(Type.INT, m.forVersion(4).getVersions()[0].return_type);
+			assertTrue(m.forVersion(5).getJavaName().endsWith("_v5"));
+			assertEquals(Type.INT_OR_NULL, m.forVersion(5).getVersions()[0].return_type);
+			assertEquals(m.forVersion(5).getJavaName().replace("_v5", ""), m.forVersion(5).getDeclaredJavaName());
+		}
+	}
 }

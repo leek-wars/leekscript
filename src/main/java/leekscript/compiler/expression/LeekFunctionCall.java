@@ -1099,11 +1099,13 @@ public class LeekFunctionCall extends Expression {
 					} else if (!compiler.isInConstructor()) {
 						compiler.addError(new AnalyzeError(v.getToken(), AnalyzeErrorLevel.WARNING, Error.SUPER_NOT_AVAILABLE_PARENT));
 					}
-					// v5 : le constructeur qui appelle super(...) n'appelle plus en plus, avant son corps,
-					// le constructeur sans argument du parent (il était exécuté deux fois).
-					if (LanguageFeature.EXPLICIT_SUPER_CONSTRUCTOR.enabledIn(compiler.getVersion())) {
-						var constructor = compiler.getCurrentBlock().getEnclosingConstructor();
-						if (constructor != null) constructor.setExplicitSuperCall();
+					// v5 : un constructeur dont le corps appelle super(...) n'appelle plus en plus, avant ce
+					// corps, le constructeur sans argument du parent (il était exécuté deux fois). Seulement
+					// un appel au premier niveau du corps : dans un if, une boucle ou une fonction anonyme, il
+					// peut ne pas s'exécuter, et le parent ne serait alors jamais construit.
+					if (LanguageFeature.EXPLICIT_SUPER_CONSTRUCTOR.enabledIn(compiler.getVersion())
+							&& compiler.getCurrentBlock() instanceof ClassMethodBlock constructor && constructor.isConstructor()) {
+						constructor.setExplicitSuperCall();
 					}
 					var constructor = clazz.getConstructor(mParameters.size());
 					operations += 1;
@@ -1720,7 +1722,7 @@ public class LeekFunctionCall extends Expression {
 		if (argument == 0) return null;
 		var receiver = is_builtin_method ? ((LeekObjectAccess) mExpression).getObject().getType() : mParameters.get(0).getType();
 		// Nom Java : celui de la fonction quelle que soit la forme appelée (`m.put` → mapPut)
-		switch (system_function.getJavaName()) {
+		switch (system_function.getDeclaredJavaName()) {
 			case "push", "unshift", "insert", "fill":
 				return argument == 1 && receiver instanceof ArrayType at ? at.element() : null;
 			case "setPut":

@@ -1,5 +1,6 @@
 package leekscript.compiler.expression;
 
+import leekscript.common.LanguageFeature;
 import leekscript.common.MapType;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
@@ -479,11 +480,7 @@ public class LeekArrayAccess extends Expression {
 	public void compileIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
-		writer.addCode("put_inc(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		writePut(mainblock, writer, "put_inc", () -> writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")"));
 	}
 
 
@@ -491,33 +488,21 @@ public class LeekArrayAccess extends Expression {
 	public void compilePreIncrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
-		writer.addCode("put_pre_inc(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		writePut(mainblock, writer, "put_pre_inc", () -> writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")"));
 	}
 
 	@Override
 	public void compileDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
-		writer.addCode("put_dec(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		writePut(mainblock, writer, "put_dec", () -> writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")"));
 	}
 
 	@Override
 	public void compilePreDecrement(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 
-		writer.addCode("put_pre_dec(");
-		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		writePut(mainblock, writer, "put_pre_dec", () -> writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")"));
 	}
 
 	@Override
@@ -614,14 +599,37 @@ public class LeekArrayAccess extends Expression {
 
 	/** `helper(tableau, clé, valeur, classe)`, ou `converted(tableau, clé, valeur, opération, cible, classe)` vers `target`. */
 	private void compilePutOperation(MainLeekBlock mainblock, JavaWriter writer, Expression expr, String helper, String converted, Enum<?> operation, Type target) {
-		writer.addCode((target != null ? converted : helper) + "(");
+		writePut(mainblock, writer, target != null ? converted : helper, () -> {
+			writer.addCode(", ");
+			expr.writeJavaCode(mainblock, writer, false);
+			if (target != null) writer.addCode(JavaWriter.operationArguments(operation, target));
+			writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		});
+	}
+
+	/**
+	 * `helper(tableau, clé` puis `rest` (la fin des arguments et la parenthèse). En v5 strict, une
+	 * clé absente d'une map est une erreur (forum 12116) : le tableau et la clé sont liés dans des
+	 * locales Java (expression switch, comme ??=) pour être contrôlés par requireMapKey avant
+	 * l'opération, sans être évalués deux fois.
+	 */
+	private void writePut(MainLeekBlock mainblock, JavaWriter writer, String helper, Runnable rest) {
+		if (!(strict && LanguageFeature.STRICT_MISSING_MAP_KEY.enabledIn(mainblock.getVersion()))) {
+			writer.addCode(helper + "(");
+			mTabular.writeJavaCode(mainblock, writer, false);
+			writer.addCode(", ");
+			mCase.writeJavaCode(mainblock, writer, false);
+			rest.run();
+			return;
+		}
+		var id = writer.nextId(mainblock);
+		writer.addCode("(switch (0) { default -> { Object $t" + id + " = ");
 		mTabular.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
+		writer.addCode("; Object $k" + id + " = ");
 		mCase.writeJavaCode(mainblock, writer, false);
-		writer.addCode(", ");
-		expr.writeJavaCode(mainblock, writer, false);
-		if (target != null) writer.addCode(JavaWriter.operationArguments(operation, target));
-		writer.addCode(", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+		writer.addCode("; requireMapKey($t" + id + ", $k" + id + "); yield " + helper + "($t" + id + ", $k" + id);
+		rest.run();
+		writer.addCode("; } })");
 	}
 
 	private boolean isMapCell() {

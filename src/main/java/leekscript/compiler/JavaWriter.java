@@ -196,6 +196,7 @@ public class JavaWriter {
 	 * programme : la classe d'un module de package ne connaît pas le programme.
 	 */
 	public void writeModuleEnd(MainLeekBlock mainblock) {
+		writeContentTypeFields();
 		if (module == null) return;
 		writeFileFields(mainblock);
 		if (referencesEntry) addLine(entry.className + " " + ENTRY_FIELD + ";");
@@ -683,61 +684,11 @@ public class JavaWriter {
 			value.writeJavaCode(mainblock, this, parenthesis);
 			return;
 		}
-		if (type.isArray()) {
+		var converter = containerConverter(mainblock, type);
+		if (converter != null) {
 			var content = contentCheck(mainblock, value, type);
 			if (content != null) addCode("checkContent(");
-			addCode(mainblock.getVersion() >= 4 ? "toArray(" : "toLegacyArray(");
-			addCode(index + ", ");
-			value.writeJavaCode(mainblock, this, false);
-			addCode(")");
-			if (content != null) addCode(", " + content + ")");
-			return;
-		}
-		else if (type.isArrayOrNull()) {
-			var content = contentCheck(mainblock, value, type);
-			if (content != null) addCode("checkContent(");
-			addCode(mainblock.getVersion() >= 4 ? "toArrayOrNull(" : "toLegacyArrayOrNull(");
-			addCode(index + ", ");
-			value.writeJavaCode(mainblock, this, false);
-			addCode(")");
-			if (content != null) addCode(", " + content + ")");
-			return;
-		}
-		else if (type.isMap()) {
-			var content = contentCheck(mainblock, value, type);
-			if (content != null) addCode("checkContent(");
-			addCode("toMap(");
-			addCode(index + ", ");
-			value.writeJavaCode(mainblock, this, false);
-			addCode(")");
-			if (content != null) addCode(", " + content + ")");
-			return;
-		}
-		else if (type.isMapOrNull()) {
-			var content = contentCheck(mainblock, value, type);
-			if (content != null) addCode("checkContent(");
-			addCode("toMapOrNull(");
-			addCode(index + ", ");
-			value.writeJavaCode(mainblock, this, false);
-			addCode(")");
-			if (content != null) addCode(", " + content + ")");
-			return;
-		}
-		else if (type.isSet()) {
-			var content = contentCheck(mainblock, value, type);
-			if (content != null) addCode("checkContent(");
-			addCode("toSet(");
-			addCode(index + ", ");
-			value.writeJavaCode(mainblock, this, false);
-			addCode(")");
-			if (content != null) addCode(", " + content + ")");
-			return;
-		}
-		else if (type.isSetOrNull()) {
-			var content = contentCheck(mainblock, value, type);
-			if (content != null) addCode("checkContent(");
-			addCode("toSetOrNull(");
-			addCode(index + ", ");
+			addCode(converter + "(" + index + ", ");
 			value.writeJavaCode(mainblock, this, false);
 			addCode(")");
 			if (content != null) addCode(", " + content + ")");
@@ -893,6 +844,26 @@ public class JavaWriter {
 		}
 	}
 
+	/** Convertisseur runtime d'une valeur vers le conteneur `type` (toArray, toMapOrNull…), null si ce n'en est pas un. */
+	private static String containerConverter(MainLeekBlock mainblock, Type type) {
+		if (type.isArray()) return mainblock.getVersion() >= 4 ? "toArray" : "toLegacyArray";
+		if (type.isArrayOrNull()) return mainblock.getVersion() >= 4 ? "toArrayOrNull" : "toLegacyArrayOrNull";
+		if (type.isMap()) return "toMap";
+		if (type.isMapOrNull()) return "toMapOrNull";
+		if (type.isSet()) return "toSet";
+		if (type.isSetOrNull()) return "toSetOrNull";
+		return null;
+	}
+
+	// ContentType des conversions de cette classe (code Java -> champ), construits une fois
+	private final LinkedHashMap<String, String> contentTypeFields = new LinkedHashMap<>();
+
+	private void writeContentTypeFields() {
+		for (var field : contentTypeFields.entrySet()) {
+			addLine("private static final leekscript.runner.ContentType " + field.getValue() + " = " + field.getKey() + ";");
+		}
+	}
+
 	/**
 	 * v5 : le ContentType (code Java) à vérifier sur le contenu de `value` convertie vers le
 	 * conteneur typé `type`, null s'il n'y a rien à vérifier (#5384). Seulement depuis une valeur
@@ -910,7 +881,8 @@ public class JavaWriter {
 		} else {
 			return null;
 		}
-		return checked ? contentTypeCode(container, version) : null;
+		if (!checked) return null;
+		return contentTypeFields.computeIfAbsent(contentTypeCode(container, version), code -> "$content" + contentTypeFields.size());
 	}
 
 	/** Code Java du ContentType d'un type déclaré, null pour un type qui accepte toute valeur (cf ContentType). */

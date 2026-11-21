@@ -19,6 +19,7 @@ import leekscript.common.ClassValueType;
 import leekscript.common.CompoundType;
 import leekscript.common.Error;
 import leekscript.common.LanguageFeature;
+import leekscript.common.SetType;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 
@@ -1138,9 +1139,16 @@ public class LeekExpression extends Expression {
 		case Operators.COALESCE_ASSIGN:
 			mExpression1.compileCoalesceEq(mainblock, writer, mExpression2, parenthesis);
 			return;
-		case Operators.ADDASSIGN:
-			mExpression1.compileAddEq(mainblock, writer, mExpression2, type, parenthesis);
+		case Operators.ADDASSIGN: {
+			// v5 : `a += x` sur un Array ou un Set d'élément non nullable refuse null comme push (#5349)
+			var target = mExpression1.getType();
+			var value = mExpression2;
+			if ((target instanceof ArrayType || target instanceof SetType) && JavaWriter.checksNullElement(mainblock, target.element(), value)) {
+				value = new NonNullElement(value, target.element());
+			}
+			mExpression1.compileAddEq(mainblock, writer, value, type, parenthesis);
 			return;
+		}
 		case Operators.MINUSASSIGN:
 			mExpression1.compileSubEq(mainblock, writer, mExpression2, parenthesis);
 			return;

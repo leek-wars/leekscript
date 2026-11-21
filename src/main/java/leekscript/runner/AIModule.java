@@ -999,6 +999,10 @@ public abstract class AIModule {
 		ai.registerModuleClass(a0);
 	}
 
+	public final void requireMapKey(java.lang.Object a0, java.lang.Object a1) throws leekscript.runner.LeekRunException {
+		ai.requireMapKey(a0, a1);
+	}
+
 	public final void resetCounter() {
 		ai.resetCounter();
 	}
