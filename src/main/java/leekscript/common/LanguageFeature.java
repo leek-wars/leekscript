@@ -67,7 +67,10 @@ public enum LanguageFeature {
 	FREE_SHORT_CIRCUIT(5),
 
 	/** {@code x += y} étend un conteneur en place quel que soit l'emplacement de {@code x} (globale, champ, élément, locale capturée), comme une locale (#5655). */
-	IN_PLACE_ADD_EQ(5);
+	IN_PLACE_ADD_EQ(5),
+
+	/** Dans une méthode, un membre de la classe passe devant une globale ou une fonction du programme, comme devant une fonction de Leek Wars. */
+	MEMBERS_BEFORE_OUTER_NAMES(5);
 
 	public final int since;
 

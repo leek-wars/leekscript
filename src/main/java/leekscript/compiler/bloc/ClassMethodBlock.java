@@ -1,5 +1,7 @@
 package leekscript.compiler.bloc;
 
+import leekscript.common.LanguageFeature;
+
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -213,6 +215,18 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable, 
 		// 	}
 		// }
 
+		// v5 : portée la plus proche d'abord. Les paramètres et locales de la méthode, puis les
+		// membres de la classe, puis l'extérieur. Jusqu'à la v4, une globale ou une fonction du
+		// programme passait devant un membre (mais pas une fonction de Leek Wars : incohérent).
+		if (LanguageFeature.MEMBERS_BEFORE_OUTER_NAMES.enabledIn(mMain.getVersion())) {
+			if (mVariables != null) {
+				var local = mVariables.get(variable);
+				if (local != null) return local;
+			}
+			var member = getClassMember(variable, includeClassMembers);
+			if (member != null) return member;
+			return mParent == null ? null : mParent.getVariable(variable, includeClassMembers);
+		}
 		var v = super.getVariable(variable, includeClassMembers);
 		if (v != null) return v;
 		return getClassMember(variable, includeClassMembers);

@@ -17,6 +17,33 @@ public class TestClass extends TestCommon {
 
 
 		@Test
+	public void membersBeforeOuterNamesV5() throws Exception {
+		// Forum 11243 / 11170 : jusqu'à la v4, dans une méthode, une globale ou une fonction du programme
+		// passe devant un membre de la classe, mais une fonction de Leek Wars passe derrière. En v5, la
+		// portée la plus proche gagne toujours : locales et paramètres, puis membres, puis l'extérieur.
+		code_v2_4("global toto = 'ext' class A { static toto = 'int' static f() { return toto } } return A.f()").equals("\"ext\"");
+		code_v5_("global toto = 'ext' class A { static toto = 'int' static f() { return toto } } return A.f()").equals("\"int\"");
+		code_v2_4("global tutu = 'ext' class A { tutu = 'int' f() { return tutu } } return new A().f()").equals("\"ext\"");
+		code_v5_("global tutu = 'ext' class A { tutu = 'int' f() { return tutu } } return new A().f()").equals("\"int\"");
+		code_v2_4("function titi() { return 'ext' } class A { static titi() { return 'int' } static f() { return titi() } } return A.f()").equals("\"ext\"");
+		code_v5_("function titi() { return 'ext' } class A { static titi() { return 'int' } static f() { return titi() } } return A.f()").equals("\"int\"");
+		code_v2_4("function tata() { return 'ext' } class A { tata() { return 'int' } f() { return tata() } } return new A().f()").equals("\"ext\"");
+		code_v5_("function tata() { return 'ext' } class A { tata() { return 'int' } f() { return tata() } } return new A().f()").equals("\"int\"");
+		code_v2_4("global toto = 'ext' class A { toto = 'int' f() { var g = function() { return toto } return g() } } return new A().f()").equals("\"ext\"");
+		code_v5_("global toto = 'ext' class A { toto = 'int' f() { var g = function() { return toto } return g() } } return new A().f()").equals("\"int\"");
+		code_v2_4("global toto = 'ext' class A { toto = 'int' f() { toto = 'w' return this.toto } } var r = new A().f() return [r, toto]").equals("[\"int\", \"w\"]");
+		code_v5_("global toto = 'ext' class A { toto = 'int' f() { toto = 'w' return this.toto } } var r = new A().f() return [r, toto]").equals("[\"w\", \"ext\"]");
+		code_v2_4("function f() { return 'ext' } class A { f() { return 'pa' } } class B extends A { g() { return f() } } return new B().g()").equals("\"ext\"");
+		code_v5_("function f() { return 'ext' } class A { f() { return 'pa' } } class B extends A { g() { return f() } } return new B().g()").equals("\"pa\"");
+		// Une fonction de Leek Wars masquée reste joignable par son espace de noms
+		code_v5_("class A { abs(x) { return 'int' } f() { return [abs(-2), Math.abs(-2)] } } return new A().f()").equals("[\"int\", 2]");
+		// Locales et paramètres passent devant les membres ; sans membre, l'extérieur
+		code_v5_("global toto = 'ext' class A { toto = 'int' f(toto) { return toto } } return new A().f('arg')").equals("\"arg\"");
+		code_v5_("global toto = 'ext' class A { toto = 'int' f() { var toto = 'loc' return toto } } return new A().f()").equals("\"loc\"");
+		code_v5_("global toto = 'ext' class A { f() { return toto } } return new A().f()").equals("\"ext\"");
+	}
+
+	@Test
 	public void testClass_toBoolean() throws Exception {
 		section("Class toBoolean");
 		code_v2_("class A {} return !!A").equals("true");
