@@ -69,11 +69,18 @@ public class Package {
 	 * Toujours faux pour le package du programme, qui n'a pas de dossier à lui.
 	 */
 	public boolean isTestFolder(Folder folder) {
-		if (this.folder == null || folder == null) return false;
+		if (this.folder == null) return false;
 		var home = folderKey(this.folder);
-		var tests = home + (home.endsWith("/") ? "" : "/") + TEST_FOLDER;
-		var key = folderKey(folder);
-		return key.equals(tests) || key.startsWith(tests + "/");
+		// On remonte jusqu'au dossier placé juste sous celui du package. Un nom de dossier peut être
+		// un chemin complet (NativeFileSystem) : on n'en compare que le dernier élément.
+		for (var current = folder; current != null && current.getParent() != null && current.getParent() != current; current = current.getParent()) {
+			if (folderKey(current.getParent()).equals(home)) return TEST_FOLDER.equals(lastSegment(current.getName()));
+		}
+		return false;
+	}
+
+	private static String lastSegment(String name) {
+		return name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf(java.io.File.separatorChar)) + 1);
 	}
 
 	/**

@@ -26,6 +26,7 @@ import leekscript.compiler.LeekScript;
 import leekscript.compiler.Options;
 import leekscript.compiler.Package;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.resolver.NativeFileSystem;
 import leekscript.runner.AI;
 import leekscript.testing.TestResult;
 import leekscript.testing.TestResult.Status;
@@ -287,6 +288,31 @@ public class TestPackageTestDepends {
 		assertNotNull(Package.resolveDependency(file("scoring/core"), "simulation"));
 	}
 
+	@Test
+	public void nativeFileSystem() throws Exception {
+		// Le système de fichiers du générateur (`--test --root=…`) : un dossier y porte son chemin
+		// complet pour nom
+		var root = tmpRoot.resolve("native");
+		tmpRoot = root;
+		// Ses fichiers sont à la dernière version publique : la v5 se déclare
+		header = "// @version:" + LeekScript.MAX_VERSION + "\n";
+		writePackages();
+		write("scoring/test/essai-fixtures.test.leek", "import { expectedScore } from \"@fixtures\"\nimport { score } from \"../package.leek\"\n@test function t() { assertEquals(expectedScore(), score(10)) }");
+		write("scoring/core.leek", "import { strongHit } from \"@fixtures\"\nexport function c() -> integer { return strongHit() }");
+		write("scoring/lib/test/deep.leek", "export function d() -> integer { return 1 }");
+		LeekScript.setFileSystem(new NativeFileSystem(root.toString(), 1));
+		var disk = LeekScript.getFileSystem().getRoot();
+		var entry = disk.resolve("scoring/test/essai-fixtures.test.leek");
+		var scoring = Package.nearest(entry.getFolder(), null);
+		assertTrue(scoring.isTestFolder(entry.getFolder()));
+		assertFalse(scoring.isTestFolder(disk.resolve("scoring/core.leek").getFolder()));
+		assertFalse(scoring.isTestFolder(disk.resolve("scoring/lib/test/deep.leek").getFolder()));
+		entry.setJavaClass("AI_" + entry.getId());
+		entry.setRootClass("AI");
+		assertPassed(TestRunner.runModule(entry, options()));
+		assertNull(Package.resolveDependency(disk.resolve("scoring/core.leek"), "fixtures"));
+	}
+
 	// =========================================================================
 	// Aides
 	// =========================================================================
@@ -296,10 +322,13 @@ public class TestPackageTestDepends {
 		for (var result : results) assertEquals(Status.PASSED, result.status(), result.toString());
 	}
 
+	// Écrit en tête de chaque fichier
+	private String header = "";
+
 	private Path write(String relative, String content) throws IOException {
 		var p = tmpRoot.resolve(relative);
 		Files.createDirectories(p.getParent());
-		Files.writeString(p, content);
+		Files.writeString(p, header + content);
 		return p;
 	}
 
