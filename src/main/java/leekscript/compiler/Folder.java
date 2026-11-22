@@ -12,8 +12,7 @@ public class Folder {
 	private final int id;
 	private final int owner;
 	private String name;
-	// Nom sous lequel le parent l'a trouvé (cf getBaseName), null : celui de `name`
-	private String baseName;
+	private final String baseName; // cf getBaseName
 	private Folder parent = null;
 	private Folder root = null;
 	private ConcurrentHashMap<String, SoftReference<AIFile>> files = new ConcurrentHashMap<>();
@@ -25,16 +24,23 @@ public class Folder {
 		this.id = 0;
 		this.owner = owner;
 		this.name = ".";
+		this.baseName = this.name;
 		this.parent = this;
 		this.root = this;
 		this.timestamp = 0;
 	}
 
 	public Folder(int id, int owner, String name, Folder parent, Folder root, FileSystem fs, long timestamp) {
+		this(id, owner, name, name, parent, root, fs, timestamp);
+	}
+
+	/** `baseName` : nom du dossier dans son parent, quand `name` est autre chose (un chemin complet). */
+	public Folder(int id, int owner, String name, String baseName, Folder parent, Folder root, FileSystem fs, long timestamp) {
 		this.fs = fs;
 		this.id = id;
 		this.owner = owner;
 		this.name = name;
+		this.baseName = baseName;
 		this.parent = parent;
 		this.root = root;
 		this.timestamp = timestamp;
@@ -118,7 +124,6 @@ public class Folder {
 		// Recherche du dossier
 		folder = fs.findFolder(name, this);
 		if (folder == null) return null;
-		folder.baseName = name;
 
 		this.folders.put(name, folder);
 		return folder;
@@ -167,11 +172,10 @@ public class Folder {
 
 	/**
 	 * Nom du dossier dans son parent, tel qu'un chemin le nomme (`test` dans `scoring/test/x`).
-	 * Selon le système de fichiers, getName peut rendre autre chose : le chemin complet sur
-	 * NativeFileSystem.
+	 * getName rend autre chose sur NativeFileSystem et ResourceFileSystem : le chemin complet.
 	 */
 	public String getBaseName() {
-		return baseName != null ? baseName : name;
+		return baseName;
 	}
 
 	@Override

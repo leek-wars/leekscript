@@ -103,8 +103,9 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	private String mAIName;
 	private String className;
 	private WordCompiler wordCompiler;
-	// Compilation de tests (cf Options#tests)
-	private final boolean mTests;
+	// Le package dont on compile les tests (cf Package.testedBy), null sinon : seules ses
+	// dépendances de test (`depends test`) entrent dans le programme
+	private final Package mTestedPackage;
 
 	public MainLeekBlock(IACompiler compiler, WordCompiler wordCompiler, AIFile ai) throws LeekCompilerException {
 		super(null, null);
@@ -114,7 +115,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		mIncluded.put(ai.getKey(), ai);
 		mIncludedFirstPass.put(ai.getKey(), ai);
 		mAIName = ai.getPath();
-		mTests = wordCompiler.getOptions() != null && wordCompiler.getOptions().tests();
+		mTestedPackage = LanguageFeature.MODULES.enabledIn(wordCompiler.getVersion()) ? Package.testedBy(ai, wordCompiler.getOptions(), mPackages) : null;
 		mCompiler = compiler;
 		mCompiler.setCurrentAI(ai);
 		mMainModule = new Module(ai, null, true);
@@ -359,23 +360,6 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return found != null ? found : programPackage();
 	}
 
-	private Package mTestedPackage;
-	private boolean mTestedPackageKnown = false;
-
-	/**
-	 * Le package dont on compile les tests, null sinon : compilation en mode test (cf
-	 * Options#tests, jamais une IA de combat) d'une entrée de son dossier `test/`. Seules ses
-	 * dépendances de test (`depends test`) entrent dans le programme.
-	 */
-	private Package testedPackage() {
-		if (!mTestedPackageKnown) {
-			var entry = mMainModule.getFile();
-			var owner = packageOf(entry);
-			mTestedPackage = mTests && owner.isTestFolder(entry.getFolder()) ? owner : null;
-			mTestedPackageKnown = true;
-		}
-		return mTestedPackage;
-	}
 
 
 	/** Racine (`package.leek`) de la dépendance `dependency` de `from`, null si absente. */
@@ -415,7 +399,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				compiler.addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.PACKAGE_PATH_CROSSES_BOUNDARY, new String[] { path }));
 				return null;
 			}
-			var dependency = from.dependencyFor(alias, compiler.getAI().getFolder(), from.equals(testedPackage()));
+			var dependency = from.dependencyFor(alias, compiler.getAI().getFolder(), from.equals(mTestedPackage));
 			if (dependency == null) {
 				// Une dépendance de test, mais pas depuis la compilation des tests du package (dossier
 				// `test/`, mode test) : elle existe, seulement pas ici
@@ -449,9 +433,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * Graphe des `depends` depuis le package de l'entrée, avant toute compilation : dépendance
 	 * introuvable, nom qui ne correspond pas, cycle (interdit entre packages). Les `depends test`
 	 * n'en font pas partie, sauf ceux du package dont on compile les tests, suivis après tout le
-	 * graphe de prod : ce sont ses tests qui en dépendent, et revenir à lui par un autre package ne
-	 * ferme pas de cycle (`fixtures → scoring` pour un test de `scoring` qui dépend de `fixtures`).
-	 * Une dépendance de test vers lui-même en est un.
+	 * graphe de prod (cf checkDependency pour leurs cycles).
 	 */
 	public void checkPackages(WordCompiler compiler) throws LeekCompilerException {
 		var start = packageOf(mMainModule.getFile());
@@ -459,19 +441,21 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		done.add(start);
 		var path = new ArrayList<Package>();
 		path.add(start);
-		for (var dependency : start.getDepends().values()) checkDependency(compiler, start, dependency, path, done, null);
-		// testedPackage() : null, ou le package de l'entrée (start)
-		if (testedPackage() != null) {
-			for (var dependency : start.getTestDepends().values()) checkDependency(compiler, start, dependency, path, done, start);
+		for (var dependency : start.getDepends().values()) checkDependency(compiler, start, dependency, path, done, false);
+		// mTestedPackage : null, ou le package de l'entrée (start)
+		if (mTestedPackage != null) {
+			for (var dependency : start.getTestDepends().values()) checkDependency(compiler, start, dependency, path, done, true);
 		}
 	}
 
 	/**
 	 * La dépendance `dependency` de `from` (le dernier de `path`), puis ses propres dépendances.
-	 * `tested` : sous une arête de test, le package testé (premier de `path`), auquel on peut
-	 * revenir en passant par un autre package : ce sont ses tests qui en dépendent, pas lui.
+	 * `testEdge` : sous une arête de test du package testé (premier de `path`). Ce sont ses tests
+	 * qui en dépendent, pas lui : y revenir par un autre package ne ferme pas de cycle (`fixtures →
+	 * scoring` pour un test de `scoring` qui dépend de `fixtures`), une dépendance de test vers
+	 * lui-même en ferme un.
 	 */
-	private void checkDependency(WordCompiler compiler, Package from, Package.Dependency dependency, List<Package> path, java.util.Set<Package> done, Package tested) throws LeekCompilerException {
+	private void checkDependency(WordCompiler compiler, Package from, Package.Dependency dependency, List<Package> path, java.util.Set<Package> done, boolean testEdge) throws LeekCompilerException {
 		var root = dependencyRoot(from, dependency);
 		if (root == null) {
 			compiler.addError(new AnalyzeError(dependency.alias().getLocation(), AnalyzeErrorLevel.ERROR, Error.PACKAGE_NOT_FOUND, new String[] { dependency.alias().getWord(), dependency.path() }));
@@ -484,7 +468,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			return;
 		}
 		int index = path.indexOf(target);
-		if (index == 0 && target.equals(tested) && path.size() > 1) return;
+		if (index == 0 && testEdge && path.size() > 1) return;
 		if (index >= 0) {
 			var chain = new StringBuilder();
 			for (var p : path.subList(index, path.size())) chain.append(p.getName().getWord()).append(" → ");
@@ -494,7 +478,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 		if (!done.add(target)) return;
 		path.add(target);
-		for (var next : target.getDepends().values()) checkDependency(compiler, target, next, path, done, tested);
+		for (var next : target.getDepends().values()) checkDependency(compiler, target, next, path, done, testEdge);
 		path.remove(path.size() - 1);
 	}
 

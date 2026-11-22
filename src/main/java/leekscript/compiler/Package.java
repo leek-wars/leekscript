@@ -1,6 +1,7 @@
 package leekscript.compiler;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,15 +64,12 @@ public class Package {
 		return testDepends;
 	}
 
-	/** Nom du dossier des tests d'un package, sous son dossier. */
-	public static final String TEST_FOLDER = "test";
+	// Nom du dossier des tests d'un package, sous son dossier
+	private static final String TEST_FOLDER = "test";
 
 	/**
 	 * La dépendance `alias` vue d'un module du dossier `folder` de ce package : un `depends`, ou, si
 	 * `tests` et que `folder` est dans le dossier `test/` du package, un `depends test`. Null sinon.
-	 * La seule règle de visibilité des dépendances : la compilation (`tests` : on compile les tests
-	 * de ce package) et le graphe des imports du cache des IA (`tests` toujours vrai : une arête de
-	 * trop ne fait que recompiler) l'appellent tous deux.
 	 */
 	public Dependency dependencyFor(String alias, Folder folder, boolean tests) {
 		var dependency = depends.get(alias);
@@ -79,29 +77,41 @@ public class Package {
 		return dependency;
 	}
 
-	// Les dossiers de la racine (exclue) au dossier du package, calculés au premier besoin
+	/**
+	 * Le package dont `entry` compile les tests : celui de l'entrée, si la compilation est en mode
+	 * test (Options#tests, jamais une IA de combat) et que l'entrée est dans son dossier `test/`.
+	 * Null sinon. `cache` : celui de {@link #nearest}.
+	 */
+	public static Package testedBy(AIFile entry, Options options, Map<String, Package> cache) {
+		if (!options.tests()) return null;
+		var owner = nearest(entry.getFolder(), cache);
+		return owner != null && owner.isTestFolder(entry.getFolder()) ? owner : null;
+	}
+
+	// Les noms des dossiers de la racine (exclue) au dossier du package, au premier besoin
 	private List<String> home;
 
 	/**
 	 * Le dossier `folder` est-il le dossier `test/` de ce package ou l'un de ses sous-dossiers ?
-	 * Toujours faux pour le package du programme, qui n'a pas de dossier à lui. Comparés par leurs
-	 * noms (une même instance de dossier n'est pas garantie), d'un seul parcours des parents.
+	 * Toujours faux pour le package du programme, qui n'a pas de dossier à lui. Les dossiers de
+	 * `folder` commencent par ceux du package (même chemin : une même instance n'est pas garantie),
+	 * et le suivant s'appelle `test`.
 	 */
 	public boolean isTestFolder(Folder folder) {
 		if (this.folder == null || folder == null || folder.getOwner() != this.folder.getOwner()) return false;
-		if (home == null) home = names(chain(this.folder));
-		var chain = chain(folder);
-		return chain.size() > home.size()
-			&& names(chain.subList(0, home.size())).equals(home)
-			&& chain.get(home.size()).getBaseName().equals(TEST_FOLDER);
+		if (home == null) home = names(ancestors(this.folder));
+		var ancestors = ancestors(folder);
+		return ancestors.size() > home.size()
+			&& names(ancestors.subList(0, home.size())).equals(home)
+			&& ancestors.get(home.size()).getBaseName().equals(TEST_FOLDER);
 	}
 
 	/** Les dossiers de la racine (exclue) à `folder` (inclus). */
-	private static List<Folder> chain(Folder folder) {
-		var chain = new ArrayList<Folder>();
-		for (var f = folder; f != null && f.getParent() != f; f = f.getParent()) chain.add(f);
-		java.util.Collections.reverse(chain);
-		return chain;
+	private static List<Folder> ancestors(Folder folder) {
+		var ancestors = new ArrayList<Folder>();
+		for (var f = folder; f != null && f.getParent() != f; f = f.getParent()) ancestors.add(f);
+		Collections.reverse(ancestors);
+		return ancestors;
 	}
 
 	private static List<String> names(List<Folder> folders) {
@@ -152,9 +162,7 @@ public class Package {
 
 	/** Clé d'un dossier, stable d'une instance de Folder à l'autre : propriétaire et chemin. */
 	private static String folderKey(Folder folder) {
-		var names = new java.util.ArrayDeque<String>();
-		for (var f = folder; f != null && f.getParent() != f; f = f.getParent()) names.addFirst(f.getName());
-		return folder.getOwner() + ":/" + String.join("/", names);
+		return folder.getOwner() + ":/" + String.join("/", names(ancestors(folder)));
 	}
 
 	/** Racine de la dépendance `dependency` de ce package, null si absente ; `programFolder` : dossier de l'entrée. */
@@ -209,12 +217,12 @@ public class Package {
 		}
 		var result = new Package(folder, root, name);
 		for (int length; (length = dependsLineLength(at, i)) > 0; i = skipEnd(at, i + length)) {
-			var alias = at.apply(i + length - 3);
-			var path = at.apply(i + length - 1).getWord();
-			var dependency = new Dependency(alias, path.substring(1, path.length() - 1));
 			// Le package du programme n'a pas de dossier `test/` : un `depends test` n'y ouvre rien
 			// (sa ligne est une erreur d'en-tête, cf WordCompiler.packageHeader)
 			if (length == TEST_DEPENDS_LENGTH && folder == null) continue;
+			var alias = at.apply(i + length - 3);
+			var path = at.apply(i + length - 1).getWord();
+			var dependency = new Dependency(alias, path.substring(1, path.length() - 1));
 			(length == TEST_DEPENDS_LENGTH ? result.testDepends : result.depends).putIfAbsent(alias.getWord(), dependency);
 		}
 		// Un alias déclaré des deux façons est une dépendance de prod

@@ -38,7 +38,7 @@ public class ResourceFileSystem extends FileSystem {
 			Path parent = resolvedPath.getParent();
 			if (parent == null) parent = Paths.get(".");
 
-			return new Folder(0, 0, resolvedPath.toString(), folder, this.root, this, System.currentTimeMillis());
+			return new Folder(0, 0, resolvedPath.toString(), NativeFileSystem.baseName(resolvedPath), folder, this.root, this, System.currentTimeMillis());
 
 		} catch (Exception e) {
 			return null;

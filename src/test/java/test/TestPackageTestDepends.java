@@ -359,6 +359,7 @@ public class TestPackageTestDepends {
 		var scoring = Package.nearest(entry.getFolder(), null);
 		assertTrue(scoring.isTestFolder(entry.getFolder()));
 		assertEquals("test", entry.getFolder().getBaseName());
+		assertTrue(scoring.isTestFolder(disk.resolve("scoring/./test/essai-fixtures.test.leek").getFolder()));
 		assertFalse(scoring.isTestFolder(disk.resolve("scoring/core.leek").getFolder()));
 		assertFalse(scoring.isTestFolder(disk.resolve("scoring/lib/test/deep.leek").getFolder()));
 		entry.setJavaClass("AI_" + entry.getId());

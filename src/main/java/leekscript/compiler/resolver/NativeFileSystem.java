@@ -62,6 +62,12 @@ public class NativeFileSystem extends FileSystem {
 		return resolved;
 	}
 
+	/** Le dernier élément d'un chemin, le chemin lui-même s'il n'en a pas (racine). */
+	public static String baseName(Path path) {
+		var last = path.getFileName();
+		return last != null ? last.toString() : path.toString();
+	}
+
 	@Override
 	public Folder findFolder(String name, Folder folder) {
 		try {
@@ -69,7 +75,7 @@ public class NativeFileSystem extends FileSystem {
 			Path resolvedPath = resolveSafe(folderRoot, name);
 			if (resolvedPath == null) return null;
 
-			return new Folder(0, folder.getOwner(), resolvedPath.toString(), folder, this.root, this, System.currentTimeMillis());
+			return new Folder(0, folder.getOwner(), resolvedPath.toString(), baseName(resolvedPath), folder, this.root, this, System.currentTimeMillis());
 
 		} catch (Exception e) {
 			return null;

@@ -3,9 +3,12 @@ package leekscript.compiler;
 import leekscript.runner.Session;
 
 /**
- * `tests` : compilation des tests d'un module de test (lanceur de tests, analyse de l'éditeur),
+ * `tests` : compilation des tests d'un module de test (TestRunner, lanceur de tests du générateur),
  * jamais d'une IA de combat. Elle seule ouvre les dépendances de test d'un package
- * (`depends test`, cf Package#getTestDepends) à une entrée de son dossier `test/`.
+ * (`depends test`, cf Package#getTestDepends) à une entrée de son dossier `test/`. L'analyse de
+ * l'éditeur (IACompiler#analyze) tourne aussi en mode test : un module de `test/` qui importe une
+ * dépendance de test y est sans erreur, mais refusé (TEST_DEPENDENCY_OUTSIDE_TESTS) si on le
+ * choisit comme IA de combat.
  */
 public record Options(int version, boolean strict, boolean useCache, boolean enableOperations, Session session, boolean useExtra, boolean tests) {
 
