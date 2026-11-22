@@ -152,7 +152,7 @@ public class TestPackageTestDepends {
 		writePackages();
 		write("scoring/extra.leek", "import { strongHit } from \"@fixtures\"\nexport function extra() -> integer { return strongHit() }");
 		write("scoring/test/extra.test.leek", "import { extra } from \"../extra\"\n@test function t() { assertEquals(20, extra()) }");
-		assertTrue(errors("scoring/test/extra.test").contains(Error.PACKAGE_NOT_DECLARED));
+		assertTrue(testErrors("scoring/test/extra.test").contains(Error.PACKAGE_NOT_DECLARED));
 	}
 
 	@Test
@@ -168,7 +168,7 @@ public class TestPackageTestDepends {
 		writePackages();
 		write("scoring/lib/test/deep.leek", "import { strongHit } from \"@fixtures\"\nexport function deep() -> integer { return strongHit() }");
 		write("scoring/test/deep.test.leek", "import { deep } from \"../lib/test/deep\"\n@test function t() { assertEquals(20, deep()) }");
-		assertTrue(errors("scoring/test/deep.test").contains(Error.PACKAGE_NOT_DECLARED));
+		assertTrue(testErrors("scoring/test/deep.test").contains(Error.PACKAGE_NOT_DECLARED));
 	}
 
 	@Test
@@ -209,10 +209,53 @@ public class TestPackageTestDepends {
 	}
 
 	@Test
+	public void testFolderEntryCompiledAsAFightAI() throws Exception {
+		// Une entrée du dossier test/ choisie comme IA de combat : pas de mode test, pas de fixtures
+		writePackages();
+		write("scoring/test/helper.leek", "import { strongHit } from \"@fixtures\"\nreturn strongHit()");
+		write("scoring/test/score.test.leek", "import { strongHit } from \"@fixtures\"\n@test function t() { assertEquals(20, strongHit()) }");
+		assertEquals(List.of(), testErrors("scoring/test/helper"));
+		assertTrue(errors("scoring/test/helper").contains(Error.PACKAGE_NOT_DECLARED));
+		assertTrue(errors("scoring/test/score.test").contains(Error.PACKAGE_NOT_DECLARED));
+	}
+
+	@Test
+	public void testModeDoesNotLeakIntoTheFightCache() throws Exception {
+		// Compilé d'abord pour ses tests (cache disque et mémoire) : l'IA de combat ne le recharge pas
+		writePackages();
+		write("scoring/test/score.test.leek", "import { strongHit } from \"@fixtures\"\n@test function t() { assertEquals(20, strongHit()) }");
+		assertPassed(runTests("scoring/test/score.test"));
+		assertTrue(errors("scoring/test/score.test").contains(Error.PACKAGE_NOT_DECLARED));
+		assertPassed(runTests("scoring/test/score.test"));
+	}
+
+	@Test
+	public void editorAnalysisOfATestModule() throws Exception {
+		// L'analyse (éditeur) ne fait pas d'IA de combat : elle lit un module de test comme ses tests.
+		// Elle part de la dernière version publique : la v5 se déclare.
+		header = "// @version:" + LeekScript.MAX_VERSION + "\n";
+		writePackages();
+		write("scoring/test/score.test.leek", "import { strongHit } from \"@fixtures\"\n@test function t() { assertEquals(20, strongHit()) }");
+		var entry = file("scoring/test/score.test");
+		new leekscript.compiler.IACompiler().analyze(entry);
+		assertEquals(List.of(), entry.getErrors().stream().map(e -> e.error).toList());
+	}
+
+	@Test
+	public void testDependencyOnItself() throws Exception {
+		// Comme `depends scoring from "."` : un cycle, même par une arête de test
+		write("scoring/package.leek", "package scoring\ndepends test scoring from \".\"\nexport function score(integer power) -> integer { return power + 1 }");
+		write("scoring/test/score.test.leek", "import { score } from \"../package\"\n@test function t() { assertEquals(2, score(1)) }");
+		assertTrue(testErrors("scoring/test/score.test").contains(Error.PACKAGE_CYCLE));
+		write("solo/package.leek", "package solo\ndepends solo from \".\"\nexport function one() -> integer { return 1 }");
+		assertTrue(errors(writeMain("depends solo from \"solo\"\nimport { one } from \"@solo\"\nreturn one()")).contains(Error.PACKAGE_CYCLE));
+	}
+
+	@Test
 	public void testDependencyCycleThroughItsOwnEdgeIsAccepted() throws Exception {
 		writePackages();
 		write("scoring/test/score.test.leek", "import { score } from \"../package\"\nimport { expectedScore } from \"@fixtures\"\n@test function t() { assertEquals(expectedScore(), score(10)) }");
-		assertFalse(errors("scoring/test/score.test").contains(Error.PACKAGE_CYCLE));
+		assertEquals(List.of(), testErrors("scoring/test/score.test"));
 		assertPassed(runTests("scoring/test/score.test"));
 	}
 
@@ -220,7 +263,7 @@ public class TestPackageTestDepends {
 	public void missingTestDependencyOfTheTestedPackage() throws Exception {
 		write("scoring/package.leek", "package scoring\ndepends test fixtures from \"../nowhere\"\nexport function score(integer power) -> integer { return power + 1 }");
 		write("scoring/test/score.test.leek", "import { score } from \"../package\"\n@test function t() { assertEquals(2, score(1)) }");
-		assertTrue(errors("scoring/test/score.test").contains(Error.PACKAGE_NOT_FOUND));
+		assertTrue(testErrors("scoring/test/score.test").contains(Error.PACKAGE_NOT_FOUND));
 	}
 
 	@Test
@@ -228,7 +271,7 @@ public class TestPackageTestDepends {
 		writePackages();
 		write("rating/package.leek", "package rating\ndepends test fakes from \"../fixtures\"\nexport function score(integer power) -> integer { return power + 1 }");
 		write("rating/test/score.test.leek", "import { score } from \"../package\"\n@test function t() { assertEquals(2, score(1)) }");
-		assertTrue(errors("rating/test/score.test").contains(Error.PACKAGE_NAME_MISMATCH));
+		assertTrue(testErrors("rating/test/score.test").contains(Error.PACKAGE_NAME_MISMATCH));
 	}
 
 	@Test
@@ -238,7 +281,7 @@ public class TestPackageTestDepends {
 		write("fixtures/package.leek", "package fixtures\ndepends helpers from \"../helpers\"\nexport function one() -> integer { return 1 }");
 		write("helpers/package.leek", "package helpers\ndepends fixtures from \"../fixtures\"\nexport function two() -> integer { return 2 }");
 		write("scoring/test/score.test.leek", "import { one } from \"@fixtures\"\n@test function t() { assertEquals(1, one()) }");
-		assertTrue(errors("scoring/test/score.test").contains(Error.PACKAGE_CYCLE));
+		assertTrue(testErrors("scoring/test/score.test").contains(Error.PACKAGE_CYCLE));
 	}
 
 	@Test
@@ -246,7 +289,7 @@ public class TestPackageTestDepends {
 		write("scoring/package.leek", "package scoring\ndepends fixtures from \"../fixtures\"\nexport function score(integer power) -> integer { return power + 1 }");
 		write("fixtures/package.leek", "package fixtures\ndepends scoring from \"../scoring\"\nexport function one() -> integer { return 1 }");
 		write("scoring/test/score.test.leek", "import { score } from \"../package\"\n@test function t() { assertEquals(2, score(1)) }");
-		assertTrue(errors("scoring/test/score.test").contains(Error.PACKAGE_CYCLE));
+		assertTrue(testErrors("scoring/test/score.test").contains(Error.PACKAGE_CYCLE));
 	}
 
 	@Test
@@ -257,7 +300,7 @@ public class TestPackageTestDepends {
 		assertPassed(runTests("scoring/test/sim.test"));
 		// … et un package qui n'est pas déclaré du tout reste refusé, même depuis test/
 		write("scoring/test/other.test.leek", "import { one } from \"@other\"\n@test function t() { assertEquals(1, one()) }");
-		assertTrue(errors("scoring/test/other.test").contains(Error.PACKAGE_NOT_DECLARED));
+		assertTrue(testErrors("scoring/test/other.test").contains(Error.PACKAGE_NOT_DECLARED));
 	}
 
 	// ----- cache des packages et graphe des imports -----
@@ -305,6 +348,7 @@ public class TestPackageTestDepends {
 		var entry = disk.resolve("scoring/test/essai-fixtures.test.leek");
 		var scoring = Package.nearest(entry.getFolder(), null);
 		assertTrue(scoring.isTestFolder(entry.getFolder()));
+		assertEquals("test", entry.getFolder().getBaseName());
 		assertFalse(scoring.isTestFolder(disk.resolve("scoring/core.leek").getFolder()));
 		assertFalse(scoring.isTestFolder(disk.resolve("scoring/lib/test/deep.leek").getFolder()));
 		entry.setJavaClass("AI_" + entry.getId());
@@ -361,11 +405,21 @@ public class TestPackageTestDepends {
 		return TestRunner.runModule(file(name), options());
 	}
 
+	/** Erreurs de la compilation de `name` en IA de combat. */
 	private List<Error> errors(String name) throws Exception {
+		return errors(name, options());
+	}
+
+	/** Erreurs de la compilation de `name` en mode test, celle du lanceur de tests. */
+	private List<Error> testErrors(String name) throws Exception {
+		return errors(name, options().forTests());
+	}
+
+	private List<Error> errors(String name, Options options) throws Exception {
 		var file = file(name);
 		var errors = new ArrayList<Error>();
 		try {
-			JavaCompiler.compile(file, options());
+			JavaCompiler.compile(file, options);
 		} catch (LeekCompilerException e) {
 			errors.add(e.getError());
 		} catch (Exception e) {

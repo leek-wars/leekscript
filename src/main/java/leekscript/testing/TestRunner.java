@@ -135,8 +135,9 @@ public class TestRunner {
 		return sb.toString();
 	}
 
-	/** Lance tous les tests d'un module hors de tout combat. */
+	/** Lance tous les tests d'un module hors de tout combat (compilé en mode test, cf Options#tests). */
 	public static List<TestResult> runModule(AIFile file, Options options) throws Exception {
+		options = options.forTests();
 		var results = new ArrayList<TestResult>();
 		// L'IA compilée pour lire la table sert au premier test lancé ; chaque suivant a la sienne
 		var ai = file.compile(options);

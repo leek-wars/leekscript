@@ -1,6 +1,8 @@
 package leekscript.compiler;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,22 +67,45 @@ public class Package {
 	public static final String TEST_FOLDER = "test";
 
 	/**
-	 * Le dossier `folder` est-il le dossier `test/` de ce package ou l'un de ses sous-dossiers ?
-	 * Toujours faux pour le package du programme, qui n'a pas de dossier à lui.
+	 * La dépendance `alias` vue d'un module du dossier `folder` de ce package : un `depends`, ou, si
+	 * `tests` et que `folder` est dans le dossier `test/` du package, un `depends test`. Null sinon.
+	 * La seule règle de visibilité des dépendances : la compilation (`tests` : on compile les tests
+	 * de ce package) et le graphe des imports du cache des IA (`tests` toujours vrai : une arête de
+	 * trop ne fait que recompiler) l'appellent tous deux.
 	 */
-	public boolean isTestFolder(Folder folder) {
-		if (this.folder == null) return false;
-		var home = folderKey(this.folder);
-		// On remonte jusqu'au dossier placé juste sous celui du package. Un nom de dossier peut être
-		// un chemin complet (NativeFileSystem) : on n'en compare que le dernier élément.
-		for (var current = folder; current != null && current.getParent() != null && current.getParent() != current; current = current.getParent()) {
-			if (folderKey(current.getParent()).equals(home)) return TEST_FOLDER.equals(lastSegment(current.getName()));
-		}
-		return false;
+	public Dependency dependencyFor(String alias, Folder folder, boolean tests) {
+		var dependency = depends.get(alias);
+		if (dependency == null && tests && !testDepends.isEmpty() && isTestFolder(folder)) dependency = testDepends.get(alias);
+		return dependency;
 	}
 
-	private static String lastSegment(String name) {
-		return name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf(java.io.File.separatorChar)) + 1);
+	// Les dossiers de la racine (exclue) au dossier du package, calculés au premier besoin
+	private List<String> home;
+
+	/**
+	 * Le dossier `folder` est-il le dossier `test/` de ce package ou l'un de ses sous-dossiers ?
+	 * Toujours faux pour le package du programme, qui n'a pas de dossier à lui. Comparés par leurs
+	 * noms (une même instance de dossier n'est pas garantie), d'un seul parcours des parents.
+	 */
+	public boolean isTestFolder(Folder folder) {
+		if (this.folder == null || folder == null || folder.getOwner() != this.folder.getOwner()) return false;
+		if (home == null) home = names(chain(this.folder));
+		var chain = chain(folder);
+		return chain.size() > home.size()
+			&& names(chain.subList(0, home.size())).equals(home)
+			&& chain.get(home.size()).getBaseName().equals(TEST_FOLDER);
+	}
+
+	/** Les dossiers de la racine (exclue) à `folder` (inclus). */
+	private static List<Folder> chain(Folder folder) {
+		var chain = new ArrayList<Folder>();
+		for (var f = folder; f != null && f.getParent() != f; f = f.getParent()) chain.add(f);
+		java.util.Collections.reverse(chain);
+		return chain;
+	}
+
+	private static List<String> names(List<Folder> folders) {
+		return folders.stream().map(Folder::getName).toList();
 	}
 
 	/**
@@ -146,8 +171,7 @@ public class Package {
 	public static AIFile resolveDependency(AIFile file, String alias) {
 		var owner = nearest(file.getFolder(), null);
 		if (owner == null) owner = read(null, file);
-		var dependency = owner.getDepends().get(alias);
-		if (dependency == null && owner.isTestFolder(file.getFolder())) dependency = owner.getTestDepends().get(alias);
+		var dependency = owner.dependencyFor(alias, file.getFolder(), true);
 		return dependency == null ? null : owner.dependencyRoot(dependency, file.getFolder());
 	}
 

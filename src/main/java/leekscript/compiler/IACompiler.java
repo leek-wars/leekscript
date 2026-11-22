@@ -273,7 +273,9 @@ public class IACompiler {
 			PragmaParser.apply(ai);
 			// On lance la compilation du code de l'IA
 			// Si on est là c'est qu'on a une liste de words correcte, on peut commencer à lire
-			WordCompiler compiler = new WordCompiler(ai, ai.getVersion(), ai.getOptions());
+			// L'éditeur lit un module de test comme ses tests le compilent : l'analyse ne fait pas d'IA
+			// de combat, elle se fait en mode test (dépendances de test visibles du dossier `test/`)
+			WordCompiler compiler = new WordCompiler(ai, ai.getVersion(), ai.getOptions().forTests());
 			MainLeekBlock main = new MainLeekBlock(this, compiler, ai);
 			main.setWordCompiler(compiler);
 

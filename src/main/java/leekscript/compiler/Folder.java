@@ -12,6 +12,8 @@ public class Folder {
 	private final int id;
 	private final int owner;
 	private String name;
+	// Nom sous lequel le parent l'a trouvé (cf getBaseName), null : celui de `name`
+	private String baseName;
 	private Folder parent = null;
 	private Folder root = null;
 	private ConcurrentHashMap<String, SoftReference<AIFile>> files = new ConcurrentHashMap<>();
@@ -116,6 +118,7 @@ public class Folder {
 		// Recherche du dossier
 		folder = fs.findFolder(name, this);
 		if (folder == null) return null;
+		folder.baseName = name;
 
 		this.folders.put(name, folder);
 		return folder;
@@ -160,6 +163,15 @@ public class Folder {
 
 	public String getName() {
 		return name;
+	}
+
+	/**
+	 * Nom du dossier dans son parent, tel qu'un chemin le nomme (`test` dans `scoring/test/x`).
+	 * Selon le système de fichiers, getName peut rendre autre chose : le chemin complet sur
+	 * NativeFileSystem.
+	 */
+	public String getBaseName() {
+		return baseName != null ? baseName : name;
 	}
 
 	@Override

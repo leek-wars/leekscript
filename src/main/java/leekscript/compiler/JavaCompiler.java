@@ -118,9 +118,12 @@ public class JavaCompiler {
 		}
 	}
 
-	private static long signature(AIFile file) {
+	// Les tests d'un module (`options.tests()`) n'ont pas les classes de son IA de combat (les
+	// dépendances de test en plus) : chacun sa signature, l'un ne se charge jamais pour l'autre
+	private static long signature(AIFile file, Options options) {
 		var fs = LeekScript.getFileSystem();
 		long sig = file.getTimestamp();
+		if (options.tests()) sig = sig * 31 + 1;
 		var includes = fs != null ? fs.loadIncludedAIs(file) : null;
 		if (includes == null || fs == null) return sig;
 		// Polynomial hash, position-dependent : un git pull qui pousse main.mtime ==
@@ -258,13 +261,13 @@ public class JavaCompiler {
 		return classes;
 	}
 
-	private static AI loadFromRamCache(AIFile file, File lines) throws LeekScriptException {
+	private static AI loadFromRamCache(AIFile file, File lines, Options options) throws LeekScriptException {
 		var ref = aiCache.get(file.getJavaClass());
 		var entry = ref != null ? ref.get() : null;
 		if (ref != null && entry == null) {
 			System.out.println("[SoftRef] Class " + file.getJavaClass() + " was garbage collected, reloading");
 		}
-		if (entry == null || file.getTimestamp() <= 0 || entry.signature != signature(file)) {
+		if (entry == null || file.getTimestamp() <= 0 || entry.signature != signature(file, options)) {
 			return null;
 		}
 		try {
@@ -328,16 +331,16 @@ public class JavaCompiler {
 		// Programme v5 à packages : les dossiers de cache de ses groupes, un par ligne
 		File manifest = Paths.get(IA_PATH, file.getJavaClass() + ".pkgs").toFile();
 
-		AI cached = loadFromRamCache(file, lines);
+		AI cached = loadFromRamCache(file, lines, options);
 		if (cached != null) return cached;
 
 		Object lock = compilationLocks.computeIfAbsent(file.getJavaClass(), k -> new Object());
 		synchronized (lock) {
 
-			cached = loadFromRamCache(file, lines);
+			cached = loadFromRamCache(file, lines, options);
 			if (cached != null) return cached;
 
-			long sig = signature(file);
+			long sig = signature(file, options);
 			// Programme v5 à packages (il a un manifeste) : ses classes sont dans les dossiers de ses
 			// groupes, jamais à plat dans IA_PATH
 			boolean packaged = options.useCache() && manifest.exists();
@@ -466,7 +469,7 @@ public class JavaCompiler {
 				ai.chargeCodeRAM(bytecodeSize);
 
 				if (options.useCache()) {
-					long currentSig = signature(file);
+					long currentSig = signature(file, options);
 					writeSignatureFile(sigFile, currentSig, bytecodeSize);
 					aiCache.put(file.getJavaClass(), new AIClassSoftReference(file.getJavaClass(), new AIClassEntry(clazz, currentSig, bytecodeSize), refQueue));
 				}
