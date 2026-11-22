@@ -356,6 +356,16 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		return found != null ? found : programPackage();
 	}
 
+	/**
+	 * Le package dont on compile les tests (l'entrée est dans son dossier `test/`), null pour une
+	 * entrée de prod : seules ses dépendances de test (`depends test`) entrent dans le programme.
+	 */
+	private Package testedPackage() {
+		var entry = mMainModule.getFile();
+		var owner = packageOf(entry);
+		return owner.isTestFolder(entry.getFolder()) ? owner : null;
+	}
+
 
 	/** Racine (`package.leek`) de la dépendance `dependency` de `from`, null si absente. */
 	private AIFile dependencyRoot(Package from, Package.Dependency dependency) {
@@ -395,6 +405,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				return null;
 			}
 			var dependency = from.getDepends().get(alias);
+			// Une dépendance de test : depuis le dossier `test/` du package, quand on compile ses tests
+			if (dependency == null && from.equals(testedPackage()) && from.isTestFolder(compiler.getAI().getFolder())) {
+				dependency = from.getTestDepends().get(alias);
+			}
 			if (dependency == null) {
 				compiler.addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.PACKAGE_NOT_DECLARED, new String[] { alias }));
 				return null;
@@ -423,39 +437,48 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	/**
 	 * Graphe des `depends` depuis le package de l'entrée, avant toute compilation : dépendance
-	 * introuvable, nom qui ne correspond pas, cycle (interdit entre packages).
+	 * introuvable, nom qui ne correspond pas, cycle (interdit entre packages). Les `depends test`
+	 * n'en font pas partie, sauf ceux du package dont on compile les tests : suivis après tout le
+	 * graphe de prod, depuis les tests et non depuis le package, ils ne ferment pas de cycle en
+	 * revenant à lui (`fixtures → scoring` pour un test de `scoring` qui dépend de `fixtures`).
 	 */
 	public void checkPackages(WordCompiler compiler) throws LeekCompilerException {
 		var start = packageOf(mMainModule.getFile());
 		var done = new java.util.HashSet<Package>();
 		done.add(start);
-		checkPackage(compiler, start, new ArrayList<>(), done);
+		var path = new ArrayList<Package>();
+		path.add(start);
+		for (var dependency : start.getDepends().values()) checkDependency(compiler, start, dependency, path, done);
+		if (start.equals(testedPackage())) {
+			path.clear();
+			for (var dependency : start.getTestDepends().values()) checkDependency(compiler, start, dependency, path, done);
+		}
 	}
 
-	private void checkPackage(WordCompiler compiler, Package current, List<Package> path, java.util.Set<Package> done) throws LeekCompilerException {
-		path.add(current);
-		for (var dependency : current.getDepends().values()) {
-			var root = dependencyRoot(current, dependency);
-			if (root == null) {
-				compiler.addError(new AnalyzeError(dependency.alias().getLocation(), AnalyzeErrorLevel.ERROR, Error.PACKAGE_NOT_FOUND, new String[] { dependency.alias().getWord(), dependency.path() }));
-				continue;
-			}
-			var target = packageOf(root);
-			var name = target.getName();
-			if (name == null || !name.getWord().equals(dependency.alias().getWord())) {
-				compiler.addError(new AnalyzeError(dependency.alias().getLocation(), AnalyzeErrorLevel.ERROR, Error.PACKAGE_NAME_MISMATCH, new String[] { dependency.alias().getWord(), name == null ? "" : name.getWord() }));
-				continue;
-			}
-			int index = path.indexOf(target);
-			if (index >= 0) {
-				var chain = new StringBuilder();
-				for (var p : path.subList(index, path.size())) chain.append(p.getName().getWord()).append(" → ");
-				chain.append(name.getWord());
-				compiler.addError(new AnalyzeError(dependency.alias().getLocation(), AnalyzeErrorLevel.ERROR, Error.PACKAGE_CYCLE, new String[] { chain.toString() }));
-				continue;
-			}
-			if (done.add(target)) checkPackage(compiler, target, path, done);
+	/** La dépendance `dependency` de `from` (dernier de `path` pour une arête de prod), puis ses propres dépendances. */
+	private void checkDependency(WordCompiler compiler, Package from, Package.Dependency dependency, List<Package> path, java.util.Set<Package> done) throws LeekCompilerException {
+		var root = dependencyRoot(from, dependency);
+		if (root == null) {
+			compiler.addError(new AnalyzeError(dependency.alias().getLocation(), AnalyzeErrorLevel.ERROR, Error.PACKAGE_NOT_FOUND, new String[] { dependency.alias().getWord(), dependency.path() }));
+			return;
 		}
+		var target = packageOf(root);
+		var name = target.getName();
+		if (name == null || !name.getWord().equals(dependency.alias().getWord())) {
+			compiler.addError(new AnalyzeError(dependency.alias().getLocation(), AnalyzeErrorLevel.ERROR, Error.PACKAGE_NAME_MISMATCH, new String[] { dependency.alias().getWord(), name == null ? "" : name.getWord() }));
+			return;
+		}
+		int index = path.indexOf(target);
+		if (index >= 0) {
+			var chain = new StringBuilder();
+			for (var p : path.subList(index, path.size())) chain.append(p.getName().getWord()).append(" → ");
+			chain.append(name.getWord());
+			compiler.addError(new AnalyzeError(dependency.alias().getLocation(), AnalyzeErrorLevel.ERROR, Error.PACKAGE_CYCLE, new String[] { chain.toString() }));
+			return;
+		}
+		if (!done.add(target)) return;
+		path.add(target);
+		for (var next : target.getDepends().values()) checkDependency(compiler, target, next, path, done);
 		path.remove(path.size() - 1);
 	}
 

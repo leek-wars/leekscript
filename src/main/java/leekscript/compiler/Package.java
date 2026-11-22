@@ -9,6 +9,9 @@ import java.util.Map;
  * forment le package du programme, dont l'en-tête est celui du fichier d'entrée (`depends`
  * seulement). L'en-tête se lit sur les jetons, sans compiler : le graphe des dépendances est
  * vérifié avant toute compilation.
+ *
+ * <p>`depends test <alias> from "<dossier>"` : dépendance des seuls modules du dossier `test/` du
+ * package, hors du graphe de prod (cf {@link #getTestDepends}).
  */
 public class Package {
 
@@ -20,6 +23,7 @@ public class Package {
 	private final AIFile root;
 	private final Token name; // `package <nom>`, null si absent
 	private final Map<String, Dependency> depends = new LinkedHashMap<>();
+	private final Map<String, Dependency> testDepends = new LinkedHashMap<>();
 
 	private Package(Folder folder, AIFile root, Token name) {
 		this.folder = folder;
@@ -43,8 +47,33 @@ public class Package {
 		return name;
 	}
 
+	/** Les dépendances de prod (`depends`), sans celles des tests. */
 	public Map<String, Dependency> getDepends() {
 		return depends;
+	}
+
+	/**
+	 * Les dépendances de test (`depends test`) : seuls les modules du dossier `test/` du package
+	 * les importent, et elles ne comptent dans le graphe que quand on compile ses tests. Un alias
+	 * déjà déclaré par un `depends` n'y figure pas.
+	 */
+	public Map<String, Dependency> getTestDepends() {
+		return testDepends;
+	}
+
+	/** Nom du dossier des tests d'un package, sous son dossier. */
+	public static final String TEST_FOLDER = "test";
+
+	/**
+	 * Le dossier `folder` est-il le dossier `test/` de ce package ou l'un de ses sous-dossiers ?
+	 * Toujours faux pour le package du programme, qui n'a pas de dossier à lui.
+	 */
+	public boolean isTestFolder(Folder folder) {
+		if (this.folder == null || folder == null) return false;
+		var home = folderKey(this.folder);
+		var tests = home + (home.endsWith("/") ? "" : "/") + TEST_FOLDER;
+		var key = folderKey(folder);
+		return key.equals(tests) || key.startsWith(tests + "/");
 	}
 
 	/**
@@ -104,12 +133,14 @@ public class Package {
 	/**
 	 * Racine du package `alias` déclaré par un `depends` du package de `file`, null sinon. Hors
 	 * compilation (graphe des dépendances du cache des IA) : un fichier hors de tout package lit
-	 * l'en-tête de son propre fichier, comme le fichier d'entrée d'un programme.
+	 * l'en-tête de son propre fichier, comme le fichier d'entrée d'un programme. Un fichier du
+	 * dossier `test/` de son package voit aussi les `depends test`.
 	 */
 	public static AIFile resolveDependency(AIFile file, String alias) {
 		var owner = nearest(file.getFolder(), null);
 		if (owner == null) owner = read(null, file);
 		var dependency = owner.getDepends().get(alias);
+		if (dependency == null && owner.isTestFolder(file.getFolder())) dependency = owner.getTestDepends().get(alias);
 		return dependency == null ? null : owner.dependencyRoot(dependency, file.getFolder());
 	}
 
@@ -131,7 +162,7 @@ public class Package {
 		return root.getKey().hashCode();
 	}
 
-	/** Lit l'en-tête de `root` : `package <nom>` (racine de package) puis les `depends`. */
+	/** Lit l'en-tête de `root` : `package <nom>` (racine de package) puis les `depends` et `depends test`. */
 	public static Package read(Folder folder, AIFile root) {
 		// Cas courant : aucun en-tête, inutile de relire le fichier en jetons
 		var code = root.getCode();
@@ -146,12 +177,14 @@ public class Package {
 			i = skipEnd(at, i + 2);
 		}
 		var result = new Package(folder, root, name);
-		while (isDependsLine(at, i)) {
-			var alias = at.apply(i + 1);
-			var path = at.apply(i + 3).getWord();
-			result.depends.putIfAbsent(alias.getWord(), new Dependency(alias, path.substring(1, path.length() - 1)));
-			i = skipEnd(at, i + 4);
+		for (int length; (length = dependsLineLength(at, i)) > 0; i = skipEnd(at, i + length)) {
+			var alias = at.apply(i + length - 3);
+			var path = at.apply(i + length - 1).getWord();
+			var dependency = new Dependency(alias, path.substring(1, path.length() - 1));
+			(length == TEST_DEPENDS_LENGTH ? result.testDepends : result.depends).putIfAbsent(alias.getWord(), dependency);
 		}
+		// Un alias déclaré des deux façons est une dépendance de prod
+		result.testDepends.keySet().removeAll(result.depends.keySet());
 		return result;
 	}
 
@@ -165,14 +198,29 @@ public class Package {
 		return is(at.apply(i), TokenType.PACKAGE) && is(at.apply(i + 1), TokenType.STRING);
 	}
 
-	/** `depends <alias> from "<chemin>"` à partir du jeton `i`. */
-	public static boolean isDependsLine(java.util.function.IntFunction<Token> at, int i) {
+	private static final int DEPENDS_LENGTH = 4;
+	public static final int TEST_DEPENDS_LENGTH = 5;
+
+	/**
+	 * Nombre de jetons de la ligne `depends <alias> from "<chemin>"` (4) ou `depends test <alias>
+	 * from "<chemin>"` (5) à partir du jeton `i`, 0 si ce n'en est pas une. `test` n'est un mot de
+	 * l'en-tête que suivi d'un alias : `depends test from "…"` déclare l'alias `test`.
+	 */
+	public static int dependsLineLength(java.util.function.IntFunction<Token> at, int i) {
 		var keyword = at.apply(i);
-		var from = at.apply(i + 2);
-		return is(keyword, TokenType.STRING) && keyword.getWord().equals("depends")
-			&& is(at.apply(i + 1), TokenType.STRING)
+		if (!is(keyword, TokenType.STRING) || !keyword.getWord().equals("depends")) return 0;
+		if (isAliasFrom(at, i + 1)) return DEPENDS_LENGTH;
+		var test = at.apply(i + 1);
+		if (is(test, TokenType.STRING) && test.getWord().equals("test") && isAliasFrom(at, i + 2)) return TEST_DEPENDS_LENGTH;
+		return 0;
+	}
+
+	// `<alias> from "<chemin>"` à partir du jeton `i`
+	private static boolean isAliasFrom(java.util.function.IntFunction<Token> at, int i) {
+		var from = at.apply(i + 1);
+		return is(at.apply(i), TokenType.STRING)
 			&& from != null && from.getWord().equals("from")
-			&& is(at.apply(i + 3), TokenType.VAR_STRING);
+			&& is(at.apply(i + 2), TokenType.VAR_STRING);
 	}
 
 	private static boolean is(Token token, TokenType type) {

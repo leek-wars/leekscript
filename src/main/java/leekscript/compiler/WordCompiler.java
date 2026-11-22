@@ -247,27 +247,32 @@ public class WordCompiler {
 	private boolean mHeaderClosed = false;
 
 	/**
-	 * Consomme une ligne d'en-tête `package <nom>` ou `depends <alias> from "<dossier>"` au niveau
-	 * principal (déjà lue par Package.read) et signale une ligne mal placée. Faux pour toute autre
-	 * instruction, qui ferme l'en-tête.
+	 * Consomme une ligne d'en-tête `package <nom>`, `depends <alias> from "<dossier>"` ou `depends
+	 * test <alias> from "<dossier>"` au niveau principal (déjà lue par Package.read) et signale une
+	 * ligne mal placée. Faux pour toute autre instruction, qui ferme l'en-tête.
 	 */
 	private boolean packageHeader() throws LeekCompilerException {
 		if (mCurentBlock != mMain || !LanguageFeature.MODULES.enabledIn(version)) return false;
 		var token = mTokens.get();
 		java.util.function.IntFunction<Token> at = mTokens::get;
 		boolean isPackage = Package.isPackageLine(at, 0);
-		boolean isDepends = Package.isDependsLine(at, 0);
-		if (!isPackage && !isDepends) {
+		int dependsLength = Package.dependsLineLength(at, 0);
+		if (!isPackage && dependsLength == 0) {
 			mHeaderClosed = true;
 			return false;
 		}
-		// `package` : seulement en tête d'un package.leek ; `depends` : en tête d'un package.leek ou
-		// du fichier d'entrée d'un programme (hors de tout package)
+		// `package` et `depends test` : seulement en tête d'un package.leek (le package du programme
+		// n'a pas de dossier `test/`) ; `depends` : en tête d'un package.leek ou du fichier d'entrée
+		// d'un programme (hors de tout package)
 		boolean root = Package.isRootFile(mAI);
 		boolean programEntry = mAI == mMain.getMainModule().getFile() && mMain.packageOf(mAI).isProgram();
-		boolean allowed = !mHeaderClosed && (isPackage ? root : root || programEntry);
-		if (!allowed) addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.PACKAGE_HEADER_MISPLACED, new String[] { token.getWord() }));
-		for (int i = isPackage ? 2 : 4; i > 0; i--) mTokens.skip();
+		boolean rootOnly = isPackage || dependsLength == Package.TEST_DEPENDS_LENGTH;
+		boolean allowed = !mHeaderClosed && (rootOnly ? root : root || programEntry);
+		if (!allowed) {
+			var word = dependsLength == Package.TEST_DEPENDS_LENGTH ? token.getWord() + " " + mTokens.get(1).getWord() : token.getWord();
+			addError(new AnalyzeError(token, AnalyzeErrorLevel.ERROR, Error.PACKAGE_HEADER_MISPLACED, new String[] { word }));
+		}
+		for (int i = isPackage ? 2 : dependsLength; i > 0; i--) mTokens.skip();
 		if (mTokens.hasMoreTokens() && mTokens.get().getType() == TokenType.END_INSTRUCTION) mTokens.skip();
 		return true;
 	}
