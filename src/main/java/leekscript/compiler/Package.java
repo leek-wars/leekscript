@@ -212,6 +212,9 @@ public class Package {
 			var alias = at.apply(i + length - 3);
 			var path = at.apply(i + length - 1).getWord();
 			var dependency = new Dependency(alias, path.substring(1, path.length() - 1));
+			// Le package du programme n'a pas de dossier `test/` : un `depends test` n'y ouvre rien
+			// (sa ligne est une erreur d'en-tête, cf WordCompiler.packageHeader)
+			if (length == TEST_DEPENDS_LENGTH && folder == null) continue;
 			(length == TEST_DEPENDS_LENGTH ? result.testDepends : result.depends).putIfAbsent(alias.getWord(), dependency);
 		}
 		// Un alias déclaré des deux façons est une dépendance de prod

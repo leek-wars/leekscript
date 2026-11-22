@@ -118,8 +118,14 @@ public class TestPackageTestDepends {
 	public void testDependsInAProgramEntry() throws Exception {
 		// Le package du programme n'a pas de dossier `test/` : `depends test` n'y a pas de sens
 		writePackages();
-		var errors = errors(writeMain("depends test fixtures from \"fixtures\"\nreturn 1"));
+		var main = writeMain("depends test fixtures from \"fixtures\"\nimport { strongHit } from \"@fixtures\"\nreturn strongHit()");
+		var errors = errors(main);
 		assertTrue(errors.contains(Error.PACKAGE_HEADER_MISPLACED), errors.toString());
+		// Pas de 183 à l'import, qu'aucun dossier ne pourrait satisfaire : l'alias n'est pas déclaré
+		assertFalse(errors.contains(Error.TEST_DEPENDENCY_OUTSIDE_TESTS), errors.toString());
+		assertTrue(errors.contains(Error.PACKAGE_NOT_DECLARED), errors.toString());
+		var program = Package.read(null, file(main));
+		assertTrue(program.getTestDepends().isEmpty());
 	}
 
 	@Test
