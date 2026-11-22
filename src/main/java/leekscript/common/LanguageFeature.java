@@ -63,8 +63,8 @@ public enum LanguageFeature {
 	/** En mode strict, une affectation composée ({@code m[k] += x}, {@code m[k]++}…) sur une clé absente d'une map est une erreur. */
 	STRICT_MISSING_MAP_KEY(5),
 
-	/** {@code &&} et {@code ||} ne coûtent leur opération que si l'opérande de droite est évaluée ; un {@code !} posé directement en condition est gratuit. */
-	FREE_SHORT_CIRCUIT(5),
+	/** Un {@code !} posé directement en condition (if, while, for, ternaire) ne coûte pas d'opération. */
+	FREE_NEGATION_IN_CONDITION(5),
 
 	/** {@code x += y} étend un conteneur en place quel que soit l'emplacement de {@code x} (globale, champ, élément, locale capturée), comme une locale (#5655). */
 	IN_PLACE_ADD_EQ(5),

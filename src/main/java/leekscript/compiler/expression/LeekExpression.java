@@ -43,7 +43,7 @@ public class LeekExpression extends Expression {
 	 * `if (a) {} else {…}` face à `if (!a) {…}`. À appeler une fois, après l'analyse de la condition.
 	 */
 	public static void freeNegationInCondition(Expression condition, int version) {
-		if (LanguageFeature.FREE_SHORT_CIRCUIT.enabledIn(version) && condition instanceof LeekExpression e
+		if (LanguageFeature.FREE_NEGATION_IN_CONDITION.enabledIn(version) && condition instanceof LeekExpression e
 				&& e.mOperator == Operators.NOT && e.operations > 0) {
 			e.operations--;
 		}
@@ -971,25 +971,44 @@ public class LeekExpression extends Expression {
 				writer.addCode(")");
 			}
 			return;
-		case Operators.AND, Operators.OR: {
-			// L'opération du `&&` / `||` : avant la v5, comptée avec l'opérande de gauche (payée même
-			// quand la droite n'est pas évaluée) ; en v5, avec celle de droite (`if (a && b)` coûte
-			// alors autant que des `if` imbriqués).
-			int own = LanguageFeature.FREE_SHORT_CIRCUIT.enabledIn(mainblock.getVersion()) ? 0 : 1;
-			int left = mExpression1.operations + own;
-			int right = mExpression2.operations + 1 - own;
-			boolean ops = writer.isOperationsEnabled();
+		case Operators.AND:
 			if (parenthesis) writer.addCode("(");
-			if (ops && left > 0) writer.addCode("ops(");
-			writer.getBoolean(mainblock, mExpression1, !ops);
-			if (ops && left > 0) writer.addCode(", " + left + ")");
-			writer.addCode(mOperator == Operators.AND ? " && " : " || ");
-			if (ops && right > 0) writer.addCode("ops(");
-			writer.getBoolean(mainblock, mExpression2, !ops);
-			if (ops && right > 0) writer.addCode(", " + right + ")");
+			if (writer.isOperationsEnabled()) {
+				writer.addCode("ops(");
+			}
+			writer.getBoolean(mainblock, mExpression1, !writer.isOperationsEnabled());
+			if (writer.isOperationsEnabled()) {
+				writer.addCode(", " + (mExpression1.operations + 1) + ")");
+			}
+			writer.addCode(" && ");
+			if (writer.isOperationsEnabled() && mExpression2.operations > 0) {
+				writer.addCode("ops(");
+			}
+			writer.getBoolean(mainblock, mExpression2, !writer.isOperationsEnabled());
+			if (writer.isOperationsEnabled() && mExpression2.operations > 0) {
+				writer.addCode(", " + mExpression2.operations + ")");
+			}
 			if (parenthesis) writer.addCode(")");
 			return;
-		}
+		case Operators.OR:
+			if (parenthesis) writer.addCode("(");
+			if (writer.isOperationsEnabled()) {
+				writer.addCode("ops(");
+			}
+			writer.getBoolean(mainblock, mExpression1, !writer.isOperationsEnabled());
+			if (writer.isOperationsEnabled()) {
+				writer.addCode(", " + (mExpression1.operations + 1) + ")");
+			}
+			writer.addCode(" || ");
+			if (writer.isOperationsEnabled() && mExpression2.operations > 0) {
+				writer.addCode("ops(");
+			}
+			writer.getBoolean(mainblock, mExpression2, !writer.isOperationsEnabled());
+			if (writer.isOperationsEnabled() && mExpression2.operations > 0) {
+				writer.addCode(", " + mExpression2.operations + ")");
+			}
+			if (parenthesis) writer.addCode(")");
+			return;
 		case Operators.COALESCE:
 			// a ?? b  ==  (a != null) ? a : b
 			if (!mExpression1.getType().canBeNull()) {

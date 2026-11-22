@@ -18,19 +18,15 @@ public class TestOperations extends TestCommon {
 
 
 		@Test
-	public void conditionsShortCircuitAndNegationCostV5() throws Exception {
-		// Forum 11730 : en v5, `&&` / `||` ne coûtent que si la droite est évaluée, et un `!` posé
-		// directement en condition est gratuit (`if (!a)` coûte autant que `if (a) {} else`).
-		code_v1_4("var a = false var b = true if (a && b) {} return 1").ops(4);
-		code_v5_("var a = false var b = true if (a && b) {} return 1").ops(3);
+	public void negationInConditionCostV5() throws Exception {
+		// Forum 11730 : en v5, un `!` posé directement en condition est gratuit (`if (!a)` coûte
+		// autant que `if (a) {} else`). `&&` / `||` gardent leur coût (le changer grossissait le Java).
+		code("var a = false var b = true if (a && b) {} return 1").ops(4);
 		code_v1_4("var a = false var b = true if (a) if (b) {} return 1").ops(3);
 		code_v5_("var a = false var b = true if (a) if (b) {} return 1").ops(3);
-		code_v1_4("var a = true var b = true if (a && b) {} return 1").ops(4);
-		code_v5_("var a = true var b = true if (a && b) {} return 1").ops(4);
-		code_v1_4("var a = true var b = true if (a || b) {} return 1").ops(4);
-		code_v5_("var a = true var b = true if (a || b) {} return 1").ops(3);
-		code_v1_4("var a = false var b = true if (a || b) {} return 1").ops(4);
-		code_v5_("var a = false var b = true if (a || b) {} return 1").ops(4);
+		code("var a = true var b = true if (a && b) {} return 1").ops(4);
+		code("var a = true var b = true if (a || b) {} return 1").ops(4);
+		code("var a = false var b = true if (a || b) {} return 1").ops(4);
 		code_v1_4("var a = false if (!a) {} return 1").ops(3);
 		code_v5_("var a = false if (!a) {} return 1").ops(2);
 		code_v1_4("var a = false if (a) {} else {} return 1").ops(2);
@@ -82,19 +78,12 @@ public class TestOperations extends TestCommon {
 	@Test
 	public void testBoolean_operators() throws Exception {
 		section("Boolean operators");
-		code_v1_4("1 or 2").ops(1);
-		code_v1_4("1 and 2").ops(1);
-		code_v1_4("(1 + 1) or (2 + 2)").ops(2);
-		code_v1_4("(1 + 1) and (2 + 2)").ops(3);
-		code_v1_4("(1 + 1) or (2 + 2) or (3 + 3)").ops(2);
-		code_v1_4("(1 + 1) and (2 + 2) and (3 + 3)").ops(5);
-		// v5 : l'opération de `or` / `and` n'est payée que si la droite est évaluée
-		code_v5_("1 or 2").ops(0);
-		code_v5_("1 and 2").ops(1);
-		code_v5_("(1 + 1) or (2 + 2)").ops(1);
-		code_v5_("(1 + 1) and (2 + 2)").ops(3);
-		code_v5_("(1 + 1) or (2 + 2) or (3 + 3)").ops(1);
-		code_v5_("(1 + 1) and (2 + 2) and (3 + 3)").ops(5);
+		code("1 or 2").ops(1);
+		code("1 and 2").ops(1);
+		code("(1 + 1) or (2 + 2)").ops(2);
+		code("(1 + 1) and (2 + 2)").ops(3);
+		code("(1 + 1) or (2 + 2) or (3 + 3)").ops(2);
+		code("(1 + 1) and (2 + 2) and (3 + 3)").ops(5);
 	}
 
 	/**
