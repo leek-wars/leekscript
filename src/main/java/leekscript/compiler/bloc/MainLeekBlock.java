@@ -417,7 +417,10 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			}
 			var dependency = from.dependencyFor(alias, compiler.getAI().getFolder(), from.equals(testedPackage()));
 			if (dependency == null) {
-				compiler.addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, Error.PACKAGE_NOT_DECLARED, new String[] { alias }));
+				// Une dépendance de test, mais pas depuis la compilation des tests du package (dossier
+				// `test/`, mode test) : elle existe, seulement pas ici
+				var error = from.getTestDepends().containsKey(alias) ? Error.TEST_DEPENDENCY_OUTSIDE_TESTS : Error.PACKAGE_NOT_DECLARED;
+				compiler.addError(new AnalyzeError(pathToken, AnalyzeErrorLevel.ERROR, error, new String[] { alias }));
 				return null;
 			}
 			var root = dependencyRoot(from, dependency);

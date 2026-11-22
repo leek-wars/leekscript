@@ -152,14 +152,18 @@ public class TestPackageTestDepends {
 		writePackages();
 		write("scoring/extra.leek", "import { strongHit } from \"@fixtures\"\nexport function extra() -> integer { return strongHit() }");
 		write("scoring/test/extra.test.leek", "import { extra } from \"../extra\"\n@test function t() { assertEquals(20, extra()) }");
-		assertTrue(testErrors("scoring/test/extra.test").contains(Error.PACKAGE_NOT_DECLARED));
+		var errors = testErrors("scoring/test/extra.test");
+		// Un code à lui : la dépendance est déclarée, mais pour les tests (PACKAGE_NOT_DECLARED
+		// conseillerait un `depends` ordinaire, qui la ferait passer en prod)
+		assertTrue(errors.contains(Error.TEST_DEPENDENCY_OUTSIDE_TESTS), errors.toString());
+		assertFalse(errors.contains(Error.PACKAGE_NOT_DECLARED));
 	}
 
 	@Test
 	public void prodModuleCannotImportATestDependencyInAFightAI() throws Exception {
 		writePackages("\nexport { extra } from \"./extra\"");
 		write("scoring/extra.leek", "import { strongHit } from \"@fixtures\"\nexport function extra() -> integer { return strongHit() }");
-		assertTrue(errors(writeMain("depends scoring from \"scoring\"\nimport { extra } from \"@scoring\"\nreturn extra()")).contains(Error.PACKAGE_NOT_DECLARED));
+		assertTrue(errors(writeMain("depends scoring from \"scoring\"\nimport { extra } from \"@scoring\"\nreturn extra()")).contains(Error.TEST_DEPENDENCY_OUTSIDE_TESTS));
 	}
 
 	@Test
@@ -168,7 +172,7 @@ public class TestPackageTestDepends {
 		writePackages();
 		write("scoring/lib/test/deep.leek", "import { strongHit } from \"@fixtures\"\nexport function deep() -> integer { return strongHit() }");
 		write("scoring/test/deep.test.leek", "import { deep } from \"../lib/test/deep\"\n@test function t() { assertEquals(20, deep()) }");
-		assertTrue(testErrors("scoring/test/deep.test").contains(Error.PACKAGE_NOT_DECLARED));
+		assertTrue(testErrors("scoring/test/deep.test").contains(Error.TEST_DEPENDENCY_OUTSIDE_TESTS));
 	}
 
 	@Test
@@ -177,7 +181,7 @@ public class TestPackageTestDepends {
 		// compile pas les tests du package, la dépendance de test reste invisible
 		writePackages("\nexport { helper } from \"./test/helper\"");
 		write("scoring/test/helper.leek", "import { strongHit } from \"@fixtures\"\nexport function helper() -> integer { return strongHit() }");
-		assertTrue(errors(writeMain("depends scoring from \"scoring\"\nimport { helper } from \"@scoring\"\nreturn helper()")).contains(Error.PACKAGE_NOT_DECLARED));
+		assertTrue(errors(writeMain("depends scoring from \"scoring\"\nimport { helper } from \"@scoring\"\nreturn helper()")).contains(Error.TEST_DEPENDENCY_OUTSIDE_TESTS));
 	}
 
 	@Test
@@ -215,8 +219,8 @@ public class TestPackageTestDepends {
 		write("scoring/test/helper.leek", "import { strongHit } from \"@fixtures\"\nreturn strongHit()");
 		write("scoring/test/score.test.leek", "import { strongHit } from \"@fixtures\"\n@test function t() { assertEquals(20, strongHit()) }");
 		assertEquals(List.of(), testErrors("scoring/test/helper"));
-		assertTrue(errors("scoring/test/helper").contains(Error.PACKAGE_NOT_DECLARED));
-		assertTrue(errors("scoring/test/score.test").contains(Error.PACKAGE_NOT_DECLARED));
+		assertTrue(errors("scoring/test/helper").contains(Error.TEST_DEPENDENCY_OUTSIDE_TESTS));
+		assertTrue(errors("scoring/test/score.test").contains(Error.TEST_DEPENDENCY_OUTSIDE_TESTS));
 	}
 
 	@Test
@@ -225,7 +229,7 @@ public class TestPackageTestDepends {
 		writePackages();
 		write("scoring/test/score.test.leek", "import { strongHit } from \"@fixtures\"\n@test function t() { assertEquals(20, strongHit()) }");
 		assertPassed(runTests("scoring/test/score.test"));
-		assertTrue(errors("scoring/test/score.test").contains(Error.PACKAGE_NOT_DECLARED));
+		assertTrue(errors("scoring/test/score.test").contains(Error.TEST_DEPENDENCY_OUTSIDE_TESTS));
 		assertPassed(runTests("scoring/test/score.test"));
 	}
 
@@ -298,7 +302,7 @@ public class TestPackageTestDepends {
 		writePackages();
 		write("scoring/test/sim.test.leek", "import { damage } from \"@simulation\"\n@test function t() { assertEquals(6, damage(3)) }");
 		assertPassed(runTests("scoring/test/sim.test"));
-		// … et un package qui n'est pas déclaré du tout reste refusé, même depuis test/
+		// … et un package qui n'est pas déclaré du tout reste PACKAGE_NOT_DECLARED, même depuis test/
 		write("scoring/test/other.test.leek", "import { one } from \"@other\"\n@test function t() { assertEquals(1, one()) }");
 		assertTrue(testErrors("scoring/test/other.test").contains(Error.PACKAGE_NOT_DECLARED));
 	}

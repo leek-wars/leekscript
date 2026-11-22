@@ -184,4 +184,5 @@ public enum Error {
 	ANNOTATION_ARGUMENT_INVALID, // 180
 	WAIT_FORBIDDEN, // 181 : une IA JS/Python a voulu attendre (sleep, verrou, file)
 	MAP_KEY_NOT_FOUND, // 182 : v5 strict, `m[k] += x` ou `m[k]++` sur une clé absente
+	TEST_DEPENDENCY_OUTSIDE_TESTS, // 183 : `import … from "@{0}"`, `depends test {0}`, hors de la compilation des tests de son package
 }
