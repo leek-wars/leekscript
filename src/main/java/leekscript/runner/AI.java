@@ -4045,14 +4045,16 @@ public abstract class AI {
 					Class<?> helper = Class.forName("leekscript.runner.classes." + stdClass + "Class");
 					var candidates = methodCache.get(helper).get(builtin.getJavaName());
 					if (candidates != null) {
-						for (var m : candidates) {
-							var params = m.getParameterTypes();
-							if (java.lang.reflect.Modifier.isStatic(m.getModifiers()) && params.length == args.length + 2 && params[0] == AI.class && staticArgsMatch(params, value, args)) {
-								Object[] full = new Object[args.length + 2];
-								full[0] = this;
-								full[1] = value;
-								System.arraycopy(args, 0, full, 2, args.length);
-								return m.invoke(null, full);
+						for (boolean widen : WIDENING_PASSES) {
+							for (var m : candidates) {
+								var params = m.getParameterTypes();
+								if (java.lang.reflect.Modifier.isStatic(m.getModifiers()) && params.length == args.length + 2 && params[0] == AI.class && staticArgsMatch(params, value, args, widen)) {
+									Object[] full = new Object[args.length + 2];
+									full[0] = this;
+									full[1] = value;
+									System.arraycopy(args, 0, full, 2, args.length);
+									return m.invoke(null, full);
+								}
 							}
 						}
 					}
@@ -4060,13 +4062,15 @@ public abstract class AI {
 					// Méthode d'instance sur la value class : ((ArrayLeekValue) value).sort(ai, args...).
 					var candidates = methodCache.get(value.getClass()).get(builtin.getJavaName());
 					if (candidates != null) {
-						for (var m : candidates) {
-							var params = m.getParameterTypes();
-							if (params.length == args.length + 1 && params[0] == AI.class && instanceArgsMatch(params, args)) {
-								Object[] full = new Object[args.length + 1];
-								full[0] = this;
-								System.arraycopy(args, 0, full, 1, args.length);
-								return m.invoke(value, full);
+						for (boolean widen : WIDENING_PASSES) {
+							for (var m : candidates) {
+								var params = m.getParameterTypes();
+								if (params.length == args.length + 1 && params[0] == AI.class && instanceArgsMatch(params, args, widen)) {
+									Object[] full = new Object[args.length + 1];
+									full[0] = this;
+									System.arraycopy(args, 0, full, 1, args.length);
+									return m.invoke(value, full);
+								}
 							}
 						}
 					}
@@ -4094,22 +4098,26 @@ public abstract class AI {
 		return null;
 	}
 
-	// Sélection de surcharge pour le dispatch des méthodes natives au runtime :
-	// la réflexion ne fait pas de widening (Long ne passe pas à un param double),
-	// donc on ne retient que la surcharge dont les types acceptent les arguments réels.
-	private static boolean staticArgsMatch(Class<?>[] params, Object value, Object[] args) {
-		if (!argMatches(params[1], value)) return false;
-		for (int i = 0; i < args.length; i++) if (!argMatches(params[2 + i], args[i])) return false;
+	// Sélection de surcharge pour le dispatch des méthodes natives au runtime : d'abord
+	// une surcharge aux types exacts (`max(long, long)` pour deux entiers, qui rend un
+	// entier), puis, à défaut, une surcharge qui élargit un entier en réel, comme le
+	// compilateur le fait pour un receveur typé (`pow` n'existe qu'en `double, double`).
+	// Method.invoke fait lui-même l'élargissement Long -> double.
+	private static final boolean[] WIDENING_PASSES = { false, true };
+
+	private static boolean staticArgsMatch(Class<?>[] params, Object value, Object[] args, boolean widen) {
+		if (!argMatches(params[1], value, widen)) return false;
+		for (int i = 0; i < args.length; i++) if (!argMatches(params[2 + i], args[i], widen)) return false;
 		return true;
 	}
-	private static boolean instanceArgsMatch(Class<?>[] params, Object[] args) {
-		for (int i = 0; i < args.length; i++) if (!argMatches(params[1 + i], args[i])) return false;
+	private static boolean instanceArgsMatch(Class<?>[] params, Object[] args, boolean widen) {
+		for (int i = 0; i < args.length; i++) if (!argMatches(params[1 + i], args[i], widen)) return false;
 		return true;
 	}
-	private static boolean argMatches(Class<?> param, Object arg) {
+	private static boolean argMatches(Class<?> param, Object arg, boolean widen) {
 		if (param.isPrimitive()) {
 			if (param == long.class) return arg instanceof Long;
-			if (param == double.class) return arg instanceof Double;
+			if (param == double.class) return arg instanceof Double || widen && arg instanceof Long;
 			if (param == boolean.class) return arg instanceof Boolean;
 			if (param == int.class) return arg instanceof Integer;
 			return false;

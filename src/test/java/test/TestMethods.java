@@ -110,6 +110,13 @@ public class TestMethods extends TestCommon {
 		code_v5("var x = 9 return x.sqrt()").equals("3.0");
 		code_v5("integer x = 5 return x.min(3)").equals("3");
 		code_v5("var x = 7 return x.max(10)").equals("10");
+		// Receveur `any` et méthode qui n'existe qu'en réel : l'entier est élargi, comme
+		// pour un receveur typé, au lieu de ne trouver aucune surcharge.
+		code_v5("var x = 9 return x.pow(2)").equals("81.0");
+		code_v5("var x = 3 return x.hypot(4)").equals("5.0");
+		code_v5("var x = 1 return x.atan2(1)").equals("0.7853981633974483");
+		code_v5("var x = 7 return x.max(10.5)").equals("10.5");
+		code_v5("var x = 10.5 return x.max(7)").equals("10.5");
 		code_v5("real x = 2.5 return x.floor()").equals("2");
 		code_strict_v5_("integer x = -5 integer a = x.abs() return a").noWarning();
 	}
