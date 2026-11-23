@@ -878,6 +878,27 @@ public class TestIncludeCache {
 	}
 
 	@Test
+	public void siblingsOfManyIncludes_folderListedOnce() throws Exception {
+		// Une IA qui inclut beaucoup de fichiers : chercher les entrypoints frères ne relit pas le
+		// dossier une fois par include (une sauvegarde de grosse IA coûtait des secondes).
+		var main = new StringBuilder("// @version:4\n");
+		for (int i = 0; i < 20; i++) {
+			write("lib" + i + ".leek", "function f" + i + "() { return " + i + "; }\n");
+			main.append("include(\"lib").append(i).append("\");\n");
+		}
+		write("Main1_" + uniqueId + ".leek", main + "return f0();");
+		write("Main2_" + uniqueId + ".leek", "// @version:4\ninclude(\"lib7\");\nreturn f7();");
+
+		var main1 = fs.getRoot(0).resolve("Main1_" + uniqueId);
+		fs.listings = 0;
+		var result = IACompiler.analyzeWithIncludes(main1);
+
+		assertTrue(fs.listings <= 2, "dossier listé " + fs.listings + " fois");
+		assertTrue(result.perEntrypoint.keySet().stream().anyMatch(f -> f.getPath().equals("Main2_" + uniqueId)),
+			"Main2 partage lib7 : il reste un entrypoint frère");
+	}
+
+	@Test
 	public void selfEntrypoint_analyzeWithIncludes_sameAsDirectAnalyze() throws Exception {
 		// Fichier sans includer : analyzeWithIncludes doit se comporter
 		// comme une analyse directe et retourner l'erreur normalement.
@@ -1201,8 +1222,12 @@ public class TestIncludeCache {
 			this.root = root;
 		}
 
+		/** Nombre de parcours du dossier. */
+		int listings = 0;
+
 		@Override
 		public synchronized Iterable<AIFile> listAllFiles(int owner) {
+			listings++;
 			var list = new ArrayList<AIFile>();
 			if (!Files.exists(root)) return list;
 			try (var walk = Files.walk(root)) {

@@ -99,10 +99,8 @@ public class IACompiler {
 			perEntrypoint.put(ai, result);
 			var siblings = new LinkedHashSet<AIFile>(includers);
 			if (result.includedAIs != null) {
-				for (var included : result.includedAIs) {
-					for (var sibling : fs.getIncluders(included)) {
-						if (sibling != ai) siblings.add(sibling);
-					}
+				for (var sibling : fs.getIncluders(result.includedAIs)) {
+					if (sibling != ai) siblings.add(sibling);
 				}
 			}
 			for (var sibling : siblings) {

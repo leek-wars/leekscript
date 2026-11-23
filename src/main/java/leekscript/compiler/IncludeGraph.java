@@ -1,9 +1,11 @@
 package leekscript.compiler;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,16 +54,14 @@ public class IncludeGraph {
 	}
 
 	/**
-	 * Returns the root entrypoints that transitively include {@code path}.
-	 * A root entrypoint has no includer itself. If {@code path} has no
-	 * includers at all, returns an empty set (caller should treat {@code path}
-	 * as its own entrypoint).
+	 * Returns the root entrypoints that transitively include any of {@code paths}
+	 * (one refresh for all of them). A root entrypoint has no includer itself. A path
+	 * with no includers at all adds nothing (caller should treat it as its own entrypoint).
 	 */
-	public synchronized Set<String> getRootEntrypoints(String path) {
+	public synchronized Set<String> getRootEntrypoints(Collection<String> paths) {
 		refresh();
-		var roots = new HashSet<String>();
-		var visited = new HashSet<String>();
-		collectRoots(path, roots, visited);
+		var roots = new LinkedHashSet<String>();
+		for (var path : paths) collectRoots(path, roots, new HashSet<>());
 		return roots;
 	}
 
@@ -147,10 +147,7 @@ public class IncludeGraph {
 	}
 
 	private void refresh() {
-		var current = new HashMap<String, AIFile>();
-		for (var file : fs.listAllFiles(owner)) {
-			current.put(file.getPath(), file);
-		}
+		var current = fs.listAllTimestamps(owner);
 
 		// Files that disappeared since last scan
 		var removed = new HashSet<String>(seenMtimes.keySet());
@@ -167,13 +164,21 @@ public class IncludeGraph {
 		}
 
 		// Files new or whose mtime changed
+		// Seuls ces fichiers sont chargés : le parcours n'a lu que des mtimes
+		Folder root = null;
 		for (var entry : current.entrySet()) {
 			var path = entry.getKey();
-			var file = entry.getValue();
-			long mtime = fs.getAITimestamp(file);
+			long mtime = entry.getValue();
 			var seen = seenMtimes.get(path);
 			if (seen != null && seen == mtime) continue;
-			rescanFile(file);
+			if (root == null) root = fs.getRoot(owner);
+			var file = root != null ? FileSystem.resolveOrNull(root, path) : null;
+			if (file == null) {
+				// Disparu entre le parcours et le chargement, illisible (binaire, hors du dossier...) : un nœud sans arête, relu seulement à son prochain mtime
+				dropFile(path);
+			} else {
+				rescanFile(file);
+			}
 			seenMtimes.put(path, mtime);
 		}
 	}

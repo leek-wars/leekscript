@@ -1,8 +1,13 @@
 package leekscript.compiler.resolver;
 
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -48,6 +53,20 @@ public abstract class FileSystem {
 	}
 
 	/**
+	 * Chemin → mtime de tous les fichiers d'un owner (même périmètre que {@link #listAllFiles}).
+	 * Le graphe d'includes le relit à chaque requête et ne charge ensuite que les fichiers dont le
+	 * mtime a changé : un FileSystem qui sait lister sans lire le contenu des fichiers doit le
+	 * surcharger, sinon chaque requête du graphe relit tout le dossier.
+	 */
+	public Map<String, Long> listAllTimestamps(int owner) {
+		var timestamps = new HashMap<String, Long>();
+		for (var file : listAllFiles(owner)) {
+			timestamps.put(file.getPath(), getAITimestamp(file));
+		}
+		return timestamps;
+	}
+
+	/**
 	 * Charge la liste des includes d'un AIFile depuis une source persistante (typiquement la DB).
 	 * Permet à JavaCompiler.effectiveTimestamp de reconstruire file.includedAIs après un restart
 	 * du process (sinon null tant qu'aucun analyze n'a tourné).
@@ -76,7 +95,24 @@ public abstract class FileSystem {
 	 * the version/pragma of the top-of-the-chain entrypoint, not an intermediate.
 	 */
 	public Set<AIFile> getIncluders(AIFile file) {
-		return resolveAll(file.getOwner(), graph(file.getOwner()).getRootEntrypoints(file.getPath()));
+		return getIncluders(List.of(file));
+	}
+
+	/**
+	 * Réunion des {@link #getIncluders(AIFile)} de chaque fichier.
+	 * Le graphe n'est rafraîchi qu'une fois par owner, au lieu d'une fois par fichier : pour une IA
+	 * qui inclut des centaines de fichiers, chaque rafraîchissement relit tout le dossier.
+	 */
+	public Set<AIFile> getIncluders(Collection<AIFile> files) {
+		var byOwner = new LinkedHashMap<Integer, List<String>>();
+		for (var file : files) {
+			byOwner.computeIfAbsent(file.getOwner(), o -> new ArrayList<>()).add(file.getPath());
+		}
+		var result = new LinkedHashSet<AIFile>();
+		for (var entry : byOwner.entrySet()) {
+			result.addAll(resolveAll(entry.getKey(), graph(entry.getKey()).getRootEntrypoints(entry.getValue())));
+		}
+		return result;
 	}
 
 	private IncludeGraph graph(int owner) {
@@ -90,14 +126,19 @@ public abstract class FileSystem {
 		if (root == null) return Collections.emptySet();
 		var result = new HashSet<AIFile>();
 		for (var path : paths) {
-			try {
-				var file = root.resolve(path);
-				if (file != null) result.add(file);
-			} catch (Exception e) {
-				// disparu entre le parcours du graphe et la résolution
-			}
+			var file = resolveOrNull(root, path);
+			if (file != null) result.add(file);
 		}
 		return result;
+	}
+
+	/** Le fichier {@code path} sous {@code root}, null s'il a disparu depuis le parcours du graphe ou ne se charge pas. */
+	public static AIFile resolveOrNull(Folder root, String path) {
+		try {
+			return root.resolve(path);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	/**
