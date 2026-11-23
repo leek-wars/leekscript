@@ -92,16 +92,15 @@ public class IACompiler {
 		// des frères (dénominateur des UNUSED_*, erreurs non rendues sur lui).
 		if (includers.isEmpty() || fs.isEquipped(ai)) {
 			// ai est un entrypoint racine : compiler aussi les entrypoints frères qui
-			// partagent les mêmes includes, pour que la déduplication cross-entrypoints
+			// partagent ses includes, pour que la déduplication cross-entrypoints
 			// s'applique aux avertissements sur les fichiers inclus.
 			fs.loadDependencies(ai);
 			var result = new IACompiler().analyze(ai);
 			perEntrypoint.put(ai, result);
 			var siblings = new LinkedHashSet<AIFile>(includers);
-			if (result.includedAIs != null) {
-				for (var sibling : fs.getIncluders(result.includedAIs)) {
-					if (sibling != ai) siblings.add(sibling);
-				}
+			for (var sibling : fs.getIncluders(includesWithUnusedWarnings(ai, result))) {
+				// Une compilation non stricte n'émet aucun UNUSED_* et mergeResults l'écarte du dénominateur
+				if (sibling != ai && !siblings.contains(sibling) && PragmaParser.declaresStrict(sibling)) siblings.add(sibling);
 			}
 			for (var sibling : siblings) {
 				fs.loadDependencies(sibling);
@@ -134,6 +133,30 @@ public class IACompiler {
 			if (ownResult != null) merged.includedAIs = ownResult.includedAIs;
 		}
 		return new MultiAnalyzeResult(merged, perEntrypoint);
+	}
+
+	/**
+	 * Fichiers inclus par {@code ai} où sa compilation signale un UNUSED_*. Les frères ne servent
+	 * qu'à l'intersection de ces avertissements (mergeResults ne rend que ceux de la compilation
+	 * principale) : seuls ceux qui incluent l'un de ces fichiers sont compilés, et tous le sont,
+	 * pour que le dénominateur du fichier compte chacun de ses includers.
+	 */
+	static Set<AIFile> includesWithUnusedWarnings(AIFile ai, AnalyzeResult result) {
+		if (result.includedAIs == null || result.informations == null) return Set.of();
+		var paths = new HashSet<String>();
+		for (JsonNode problem : result.informations) {
+			if (isUnusedWarning(problem.get(6).intValue())) paths.add(problem.get(1).stringValue());
+		}
+		var files = new LinkedHashSet<AIFile>();
+		for (var included : result.includedAIs) {
+			if (included != ai && paths.contains(included.getPath())) files.add(included);
+		}
+		return files;
+	}
+
+	/** Avertissements soumis à l'intersection entre entrypoints. */
+	static boolean isUnusedWarning(int ordinal) {
+		return ordinal == Error.UNUSED_VARIABLE.ordinal() || ordinal == Error.UNUSED_FUNCTION.ordinal();
 	}
 
 	/**
@@ -190,8 +213,6 @@ public class IACompiler {
 	 * nom se signalaient mutuellement un doublon inexistant).
 	 */
 	public static AnalyzeResult mergeResults(Map<AIFile, AnalyzeResult> results, AIFile primary) {
-		int unusedVariableOrdinal = Error.UNUSED_VARIABLE.ordinal();
-		int unusedFunctionOrdinal = Error.UNUSED_FUNCTION.ordinal();
 
 		// Dénominateur pour l'intersection UNUSED_* : uniquement les compilations @strict,
 		// car les compilations non-strict ne génèrent jamais de warnings UNUSED.
@@ -229,7 +250,7 @@ public class IACompiler {
 						+ problem.get(2).intValue() + ":"
 						+ problem.get(3).intValue() + ":"
 						+ ordinal;
-				if (ordinal == unusedVariableOrdinal || ordinal == unusedFunctionOrdinal) {
+				if (isUnusedWarning(ordinal)) {
 					unusedFirst.putIfAbsent(key, problem);
 					unusedCounts.computeIfAbsent(key, k -> new int[1])[0]++;
 					if (isPrimary) primaryUnused.add(key);

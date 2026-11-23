@@ -878,6 +878,52 @@ public class TestIncludeCache {
 	}
 
 	@Test
+	public void siblingsAreNotCompiledWithoutUnusedWarningInSharedFiles() throws Exception {
+		// Les frères ne servent qu'à l'intersection des UNUSED_* de la compilation principale : sans
+		// aucun de ces avertissements dans les fichiers partagés, ils ne peuvent rien changer.
+		write("shared.leek", "function s() { return 1; }\n");
+		write("Main1_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"shared\");\nreturn s();");
+		write("Main2_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"shared\");\nvar inutilisee = 1;\nreturn s();");
+
+		var main1 = fs.getRoot(0).resolve("Main1_" + uniqueId);
+		var result = IACompiler.analyzeWithIncludes(main1);
+
+		assertEquals(1, result.perEntrypoint.size(), "aucun UNUSED_* dans shared : Main2 n'est pas compilé");
+		assertTrue(result.merged.success);
+		assertTrue(result.merged.includedAIs.stream().anyMatch(f -> f.getPath().equals("shared")));
+	}
+
+	@Test
+	public void unusedInTransitiveInclude_siblingIsCompiled() throws Exception {
+		// L'avertissement est dans un fichier inclus par un include : le frère qui inclut ce
+		// fichier (directement) compte quand même.
+		write("leaf.leek", "function s() { return 1; }\nfunction t() { return 2; }\n");
+		write("mid.leek", "include(\"leaf\");\nfunction m() { return s(); }\n");
+		write("Main1_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"mid\");\nreturn m();");
+		write("Main2_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"leaf\");\nreturn s() + t();");
+
+		var main1 = fs.getRoot(0).resolve("Main1_" + uniqueId);
+		var result = IACompiler.analyzeWithIncludes(main1);
+
+		assertEquals(2, result.perEntrypoint.size(), "Main2 inclut leaf, où Main1 signale t()");
+		assertFalse(collectErrors(result.merged).contains(Error.UNUSED_FUNCTION));
+	}
+
+	@Test
+	public void nonStrictSiblingIsNotCompiled() throws Exception {
+		// Une compilation non stricte n'émet aucun UNUSED_* et ne compte pas dans le dénominateur
+		write("shared.leek", "function s() { return 1; }\nfunction t() { return 2; }\n");
+		write("Main1_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"shared\");\nreturn s();");
+		write("Main2_" + uniqueId + ".leek", "// @version:4\ninclude(\"shared\");\nreturn s() + t();");
+
+		var main1 = fs.getRoot(0).resolve("Main1_" + uniqueId);
+		var result = IACompiler.analyzeWithIncludes(main1);
+
+		assertEquals(1, result.perEntrypoint.size());
+		assertTrue(collectErrors(result.merged).contains(Error.UNUSED_FUNCTION), "comme avant : Main2 non strict ne retire rien");
+	}
+
+	@Test
 	public void siblingsOfManyIncludes_folderListedOnce() throws Exception {
 		// Une IA qui inclut beaucoup de fichiers : chercher les entrypoints frères ne relit pas le
 		// dossier une fois par include (une sauvegarde de grosse IA coûtait des secondes).
@@ -894,8 +940,7 @@ public class TestIncludeCache {
 		var result = IACompiler.analyzeWithIncludes(main1);
 
 		assertTrue(fs.listings <= 2, "dossier listé " + fs.listings + " fois");
-		assertTrue(result.perEntrypoint.keySet().stream().anyMatch(f -> f.getPath().equals("Main2_" + uniqueId)),
-			"Main2 partage lib7 : il reste un entrypoint frère");
+		assertEquals(1, result.perEntrypoint.size(), "Main1 non strict : aucun frère à compiler");
 	}
 
 	@Test
@@ -919,11 +964,13 @@ public class TestIncludeCache {
 		// aussi l'autre (frère partageant un include) et fusionnait TOUS ses problèmes :
 		// le joueur voyait, sur l'IA ouverte, un faux doublon signalé dans un fichier
 		// absent de ses propres include.
-		write("sharedUtil.leek", "function su() { return 1; }\n");
+		// onlyB, utilisée par EntryB seul : inutilisée dans la compilation d'EntryA, elle fait
+		// compiler le frère pour l'intersection des UNUSED_*.
+		write("sharedUtil.leek", "function su() { return 1; }\nfunction onlyB() { return 2; }\n");
 		// LibB n'appartient qu'à EntryB et contient une vraie erreur.
 		write("LibB_" + uniqueId + ".leek", "function libB() { return variableQuiNexistePas_" + uniqueId + "; }\n");
-		write("EntryA_" + uniqueId + ".leek", "// @version:4\ninclude(\"sharedUtil\");\nreturn su();");
-		write("EntryB_" + uniqueId + ".leek", "// @version:4\ninclude(\"sharedUtil\");\ninclude(\"LibB_" + uniqueId + "\");\nreturn su() + libB();");
+		write("EntryA_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"sharedUtil\");\nreturn su();");
+		write("EntryB_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"sharedUtil\");\ninclude(\"LibB_" + uniqueId + "\");\nreturn su() + onlyB() + libB();");
 
 		var entryA = fs.getRoot(0).resolve("EntryA_" + uniqueId);
 		var result = IACompiler.analyzeWithIncludes(entryA);
@@ -1108,9 +1155,10 @@ public class TestIncludeCache {
 		// d'eux passe par mergeResults() (perEntrypoint.size() > 1), qui ne propageait pas
 		// includedAIs → GeneratorAPI.addStats comptait total_lines = lignes du fichier seul,
 		// ignorant les include(). merged doit conserver les includes du fichier analysé.
-		write("shared.leek", "function s() { return 1; }\n");
-		write("Main1_" + uniqueId + ".leek", "// @version:4\ninclude(\"shared\");\nreturn s();");
-		write("Main2_" + uniqueId + ".leek", "// @version:4\ninclude(\"shared\");\nreturn s() + 10;");
+		// t(), utilisée par Main2 seul, fait compiler le frère (intersection des UNUSED_*)
+		write("shared.leek", "function s() { return 1; }\nfunction t() { return 2; }\n");
+		write("Main1_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"shared\");\nreturn s();");
+		write("Main2_" + uniqueId + ".leek", "// @version:4\n// @strict\ninclude(\"shared\");\nreturn s() + t();");
 
 		var main1 = fs.getRoot(0).resolve("Main1_" + uniqueId);
 		var result = IACompiler.analyzeWithIncludes(main1);
@@ -1119,6 +1167,7 @@ public class TestIncludeCache {
 		assertNotNull(result.merged.includedAIs, "merged doit conserver includedAIs pour les stats transitives");
 		assertTrue(result.merged.includedAIs.stream().anyMatch(f -> f.getPath().equals("shared")),
 			"shared doit figurer dans includedAIs du fichier analysé");
+		assertFalse(collectErrors(result.merged).contains(Error.UNUSED_FUNCTION), "t() utilisée par Main2 : pas d'avertissement");
 	}
 
 	private List<Error> collectErrors(IACompiler.AnalyzeResult result) {

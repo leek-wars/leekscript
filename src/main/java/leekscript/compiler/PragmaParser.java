@@ -69,6 +69,17 @@ public class PragmaParser {
 		return null;
 	}
 
+	/**
+	 * Le fichier se déclare-t-il <code>// @strict</code> ? Même règle qu'{@link #apply} partant d'un
+	 * fichier remis aux valeurs par défaut (comme le fait l'analyse), sans effet de bord.
+	 */
+	public static boolean declaresStrict(AIFile file) {
+		for (var pragma : scan(file.getCode())) {
+			if (pragma.name().equals("strict") && pragma.value() == null) return true;
+		}
+		return false;
+	}
+
 	public static void apply(AIFile file) {
 
 		Integer version = null;
