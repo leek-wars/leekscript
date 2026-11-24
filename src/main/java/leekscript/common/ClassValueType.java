@@ -62,6 +62,16 @@ public class ClassValueType extends Type {
 		return constructor.block.getType().acceptsArguments(types);
 	}
 
+	/**
+	 * Appeler une classe (`new c()`, `c()`) la construit : une instance de cette classe si l'analyse
+	 * la connaît, n'importe quelle valeur sinon (`Class` sans classe connue). Sans cette méthode,
+	 * le `returnType()` de Type rendait `null`, et `A a = new c()` ou `new c() as A` étaient refusés.
+	 */
+	@Override
+	public Type returnType() {
+		return clazz != null ? clazz.getType() : Type.ANY;
+	}
+
 	@Override
 	public boolean canBeCallable() {
 		return true;

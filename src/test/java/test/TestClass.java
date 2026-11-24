@@ -214,6 +214,20 @@ public class TestClass extends TestCommon {
 	}
 
 	@Test
+	public void testNewOnClassValue() throws Exception {
+		section("new sur une valeur de type Class");
+		// Construire une classe portée par une valeur (variable, champ `Class`) donne une instance :
+		// de cette classe si l'analyse la connaît, `any` sinon. Elle était typée `null`
+		// (ClassValueType héritait du `returnType()` de Type) : affectation à une variable typée
+		// refusée, `as` jugé impossible.
+		code_strict_v5_("class A { public integer x = 3 } Class c = A; A a = new c(); return a.x").equals("3");
+		code_strict_v5_("class A { public integer x = 3 } Class c = A; var a = new c() as A; return a.x").equals("3");
+		code_strict_v5_("class F { public Class clazz constructor(Class c) { this.clazz = c } } class A { public integer x = 4 } var f = new F(A); A a = new f.clazz(); return a.x").equals("4");
+		code_strict_v5_("class F { public Class clazz constructor(Class c) { this.clazz = c } } class A { public integer x = 4 } var f = new F(A); any o = new f.clazz(); return o instanceof A").equals("true");
+		code_strict_v5_("class A { public integer x = 5 } var c = A; A a = new c(); return a.x").equals("5");
+	}
+
+	@Test
 	public void testField_method_same_name() throws Exception {
 		section("Issue #2861 - champ et méthode homonymes");
 		// Appel : `t.monNom()` vise la méthode, sans erreur trompeuse « champ privé /
