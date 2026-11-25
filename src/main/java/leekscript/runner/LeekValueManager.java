@@ -1,6 +1,5 @@
 package leekscript.runner;
 
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -181,43 +180,15 @@ public class LeekValueManager {
 			return ((ObjectLeekValue) array).callMethod(ai.string(key) + "_" + arguments.length, fromClass, arguments);
 		} else if (array instanceof AI.NativeObjectLeekValue) {
 			ai.ops(1);
-			// Lookup by name + arity (not by exact parameter types), so methods
-			// declared with typed parameters like `u_test_fct(long)` are found
-			// when invoked via array-access syntax `obj["name"](args)`.
+			// `obj["name"](args)` suit la même résolution et les mêmes droits que `obj.name(args)` :
+			// callObjectAccess vérifie @Private/@Protected avant d'invoquer (le chemin direct ne le faisait pas).
 			var methodName = ai.string(key);
 			var javaName = "u_" + methodName;
-			var m = AI.findMethod(array.getClass(), javaName, arguments.length);
-			if (m == null) {
-				// Un champ qui contient une fonction s'appelle par crochets comme par le point
-				// (`a['f']()` comme `a.f()`) : même chemin, droits d'accès compris.
-				if (hasField(array.getClass(), methodName)) {
-					return ai.callObjectAccess(array, methodName, javaName, fromClass, arguments);
-				}
-				ai.addSystemLog(AILog.ERROR, Error.UNKNOWN_METHOD, new String[] { AI.userClassName(array.getClass()), ClassLeekValue.createMethodError(methodName + "_" + arguments.length) });
-				return null;
-			}
-			try {
-				m.setAccessible(true);
-				return m.invoke(array, arguments);
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
-				if (e.getCause() instanceof LeekRunException lre) {
-					throw lre;
-				}
-			}
-			return null;
+			return ai.callObjectAccess(array, methodName, javaName, fromClass, arguments);
 		} else if (array instanceof ClassLeekValue) {
 			return ((ClassLeekValue) array).callMethod("u_" + ai.string(key) + "_" + arguments.length, fromClass, arguments);
 		} else {
 			return ai.execute(ai.get(array, key, fromClass), arguments);
-		}
-	}
-
-	private static boolean hasField(Class<?> clazz, String name) {
-		try {
-			AI.getFieldCached(clazz, name);
-			return true;
-		} catch (NoSuchFieldException e) {
-			return false;
 		}
 	}
 }
