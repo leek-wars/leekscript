@@ -284,6 +284,7 @@ public class TestString extends TestCommon {
 		code_v1_4(worst + "return contains(h, n)").max_ops(1_000_000).error(Error.TOO_MUCH_OPERATIONS);
 		code_v1_4(worst + "return replace(h, n, 'x')").max_ops(1_000_000).error(Error.TOO_MUCH_OPERATIONS);
 		code_v1_4(worst + "return indexOf(h, 'b')").max_ops(1_000_000).equals("-1");
+		code_v1_4(worst + "return split(h, 'b' + substring(h, 0, 8000))").max_ops(1_000_000).error(Error.TOO_MUCH_OPERATIONS);
 	}
 
 	@Test

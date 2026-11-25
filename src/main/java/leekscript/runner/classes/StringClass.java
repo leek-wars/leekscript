@@ -64,7 +64,8 @@ public class StringClass {
 
 	/**
 	 * String.indexOf compare naïvement : au pire (n - m + 1) × m caractères (botte « aaa…a »,
-	 * aiguille « aa…ab »), quadratique pour une longue aiguille. Facturé sur ce pire cas, au
+	 * aiguille « aa…ab »), quadratique pour une longue aiguille ; le Boyer-Moore du split par
+	 * motif littéral aussi (aiguille « baa…a »). Facturé sur ce pire cas, au
 	 * dixième d'op par caractère du simple balayage : une aiguille d'un caractère coûte n / 10.
 	 */
 	private static long searchOps(int length, int needleLength) {
@@ -94,7 +95,7 @@ public class StringClass {
 	}
 
 	public static LegacyArrayLeekValue split_v1_3(AI ai, String string, String delimiter, long limit) throws LeekRunException {
-		ai.ops(1 + string.length());
+		ai.ops(Math.max(1 + string.length(), searchOps(string.length(), delimiter.length())));
 		var result = new LegacyArrayLeekValue(ai);
 		for (var element : string.split(Pattern.quote(delimiter), (int) limit)) {
 			result.pushNoClone(ai, element);
@@ -109,7 +110,7 @@ public class StringClass {
 	}
 
 	public static ArrayLeekValue split(AI ai, String string, String delimiter, long limit) throws LeekRunException {
-		ai.ops(1 + string.length());
+		ai.ops(Math.max(1 + string.length(), searchOps(string.length(), delimiter.length())));
 		var parts = string.split(Pattern.quote(delimiter), (int) limit);
 		var result = new ArrayLeekValue(ai, parts.length);
 		for (var element : parts) {
