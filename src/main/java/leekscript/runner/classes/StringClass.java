@@ -58,22 +58,34 @@ public class StringClass {
 		// Worst case for output size: every char in `string` is replaced by `replace`
 		// (when search="" this is exactly what happens). Bill the upper bound so a
 		// hostile AI can't amplify memory faster than its ops budget.
-		ai.ops(Math.max(1L, (long) string.length() * Math.max(1, replace.length())));
+		ai.ops(Math.max(1L, (long) string.length() * Math.max(1, replace.length())) + searchOps(string.length(), search.length()));
 		return string.replace(search, replace);
 	}
 
+	/**
+	 * String.indexOf compare naïvement : au pire (n - m + 1) × m caractères (botte « aaa…a »,
+	 * aiguille « aa…ab »), quadratique pour une longue aiguille. Facturé sur ce pire cas, au
+	 * dixième d'op par caractère du simple balayage : une aiguille d'un caractère coûte n / 10.
+	 */
+	private static long searchOps(int length, int needleLength) {
+		if (needleLength == 0 || needleLength > length) return 1;
+		return 1 + (long) (length - needleLength + 1) * needleLength / 10;
+	}
+
 	public static long indexOf(AI ai, String string, String needle) throws LeekRunException {
-		ai.ops(1 + string.length() / 10);
+		ai.ops(searchOps(string.length(), needle.length()));
 		return string.indexOf(needle);
 	}
 
 	public static long indexOf(AI ai, String string, String needle, long from) throws LeekRunException {
-		ai.ops(1 + string.length() / 10);
-		return string.indexOf(needle, (int) from);
+		// Bornage identique à String.indexOf (négatif = 0), sans le cast long → int qui boucle
+		int start = (int) Math.clamp(from, 0, string.length());
+		ai.ops(searchOps(string.length() - start, needle.length()));
+		return string.indexOf(needle, start);
 	}
 
 	public static boolean contains(AI ai, String string, String needle) throws LeekRunException {
-		ai.ops(1 + string.length() / 10);
+		ai.ops(searchOps(string.length(), needle.length()));
 		return string.contains(needle);
 	}
 

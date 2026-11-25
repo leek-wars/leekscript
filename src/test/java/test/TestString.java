@@ -274,6 +274,16 @@ public class TestString extends TestCommon {
 		section("String.indexOf()");
 		code_v1_4("return indexOf('bonjour','o')").equals("1");
 		code_v1_4("return indexOf('bonjour','o',2)").equals("4");
+		code_v1_4("return indexOf('bonjour','o',-5)").equals("1");
+		code_v1_4("return indexOf('bonjour','o',4294967297)").equals("-1");
+		code_v1_4("return indexOf('bonjour','')").equals("0");
+		// Pire cas de la recherche naïve (botte « aaa…a », aiguille « aa…ab ») : facturé avant de chercher
+		var worst = "var h = 'a'; for (var i = 0; i < 14; i++) { h += h } var n = substring(h, 0, 8000) + 'b'; ";
+		code_v1_4(worst + "return indexOf(h, n)").max_ops(1_000_000).error(Error.TOO_MUCH_OPERATIONS);
+		code_v1_4(worst + "return indexOf(h, n, 0)").max_ops(1_000_000).error(Error.TOO_MUCH_OPERATIONS);
+		code_v1_4(worst + "return contains(h, n)").max_ops(1_000_000).error(Error.TOO_MUCH_OPERATIONS);
+		code_v1_4(worst + "return replace(h, n, 'x')").max_ops(1_000_000).error(Error.TOO_MUCH_OPERATIONS);
+		code_v1_4(worst + "return indexOf(h, 'b')").max_ops(1_000_000).equals("-1");
 	}
 
 	@Test

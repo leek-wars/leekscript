@@ -732,6 +732,8 @@ public class ArrayLeekValue extends ArrayList<Object> implements GenericArrayLee
 	}
 
 	public Object fill(AI ai, Object value, long size) throws LeekRunException {
+		// Au-delà d'un int, le cast rendrait une taille négative et un compteur de RAM négatif
+		if (size > Integer.MAX_VALUE) throw new LeekRunException(Error.OUT_OF_MEMORY);
 		ai.ops(1, Math.max(0, (int) size));
 		if (size >= size()) { // Agrandissement
 			var to_add = (int) size - size();

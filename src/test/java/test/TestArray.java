@@ -1096,6 +1096,10 @@ public class TestArray extends TestCommon {
 		code_v1_4("var a = [1,2,3]; fill(a, 'a'); return a").equals("[\"a\", \"a\", \"a\"]");
 		code_v1_4("var a = [1,2,3]; fill(a, 'a', 2); return a").equals("[\"a\", \"a\", 3]");
 		code_v1_4("var a = []; fill(a, 'a', 2); return a").equals("[\"a\", \"a\"]");
+		// Une taille hors des int ne passe plus par un cast négatif qui fausse le compteur de RAM
+		code_v4("var a = []; fill(a, 0, 2147483648)").error(Error.OUT_OF_MEMORY);
+		code_v4("var a = []; fill(a, 0, 3000000000); var b = []; fill(b, 0, 15000000)").error(Error.OUT_OF_MEMORY);
+		code_v5_("var a = []; a.fill(0, 3000000000); var b = []; b.fill(0, 15000000)").error(Error.OUT_OF_MEMORY);
 	}
 
 	@Test
