@@ -3617,7 +3617,8 @@ public abstract class AI {
 		}
 		if (value instanceof ClassLeekValue) {
 			ops(1);
-			return ((ClassLeekValue) value).getField(string(index));
+			// fromClass (l'appelant réel) : `A["s"]` vérifie @Private/@Protected comme `A.s`.
+			return ((ClassLeekValue) value).getField(string(index), fromClass);
 		}
 		if (value instanceof NativeObjectLeekValue) {
 			ops(1);

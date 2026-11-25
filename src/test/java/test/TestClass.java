@@ -40,6 +40,35 @@ public class TestClass extends TestCommon {
 	}
 
 	@Test
+	public void bracketAccessRespectsVisibilityV5() throws Exception {
+		// L'accès par crochets doit appliquer les mêmes droits que l'accès par point.
+		// Avant correctif : la LECTURE d'un champ statique privé par crochets (A["d"])
+		// traitait la classe comme son propre appelant, et l'APPEL d'une méthode privée
+		// par crochets (a["m"]()) invoquait la méthode sans aucun contrôle d'accès.
+
+		// Lecture d'un champ statique privé / protégé de l'extérieur : refusée (valeur null).
+		code_v5_("class A { private static d = 1 } return A['d']").equals("null");
+		code_v5_("class A { private static d = 1 } return A['d']").logsError(Error.PRIVATE_STATIC_FIELD);
+		code_v5_("class A { protected static d = 1 } return A['d']").equals("null");
+		code_v5_("class A { protected static d = 1 } return A['d']").logsError(Error.PROTECTED_STATIC_FIELD);
+		// Même refus quand la classe passe par une variable.
+		code_v5_("class A { private static d = 1 static g(){return d} } var c = A return c['d']").logsError(Error.PRIVATE_STATIC_FIELD);
+		// Un statique public reste lisible par crochets.
+		code_v5_("class A { public static d = 1 } return A['d']").equals("1");
+		// Depuis la classe elle-même, la lecture par crochets de son propre privé passe.
+		code_v5_("class A { private static d = 7 static get() { return A['d'] } } return A.get()").equals("7");
+
+		// Appel d'une méthode privée / protégée par crochets de l'extérieur : refusé (null).
+		code_v5_("class A { private m() { return 'pm' } } var a = new A() return a['m']()").equals("null");
+		code_v5_("class A { private m() { return 'pm' } } var a = new A() return a['m']()").logsError(Error.PRIVATE_METHOD);
+		code_v5_("class A { protected m() { return 'pm' } } var a = new A() return a['m']()").logsError(Error.PROTECTED_METHOD);
+		// Une méthode publique reste appelable par crochets.
+		code_v5_("class A { public m() { return 'pm' } } var a = new A() return a['m']()").equals("\"pm\"");
+		// Depuis la classe elle-même, l'appel par crochets de sa propre méthode privée passe.
+		code_v5_("class A { private m() { return 42 } public call() { return this['m']() } } return new A().call()").equals("42");
+	}
+
+	@Test
 	public void membersBeforeOuterNamesV5() throws Exception {
 		// Forum 11243 / 11170 : jusqu'à la v4, dans une méthode, une globale ou une fonction du programme
 		// passe devant un membre de la classe, mais une fonction de Leek Wars passe derrière. En v5, la
@@ -168,10 +197,13 @@ public class TestClass extends TestCommon {
 	@Test
 	public void testMethod_call_via_array_access_typed_param() throws Exception {
 		section("Issue #3719 - Array-access method call with typed parameter");
+		// Méthodes publiques : l'appel par crochets depuis l'extérieur applique désormais
+		// les droits d'accès (une méthode privée n'est appelable que depuis sa classe), donc
+		// ce test de résolution par nom + arité se fait sur des méthodes publiques.
 		// Untyped parameter — works
-		code_v2_("class Test { private integer test_fct(a) { return 5 + a } } Test t = new Test(); return t['test_fct'](15)").equals("20");
+		code_v2_("class Test { public integer test_fct(a) { return 5 + a } } Test t = new Test(); return t['test_fct'](15)").equals("20");
 		// Typed parameter — should also work
-		code_v2_("class Test { private integer test_fct(integer a) { return 5 + a } } Test t = new Test(); return t['test_fct'](15)").equals("20");
+		code_v2_("class Test { public integer test_fct(integer a) { return 5 + a } } Test t = new Test(); return t['test_fct'](15)").equals("20");
 		// Multiple typed parameters
 		code_v2_("class Test { public real f(integer a, real b) { return a + b } } return new Test()['f'](2, 3.5)").equals("5.5");
 		// Typed string parameter
