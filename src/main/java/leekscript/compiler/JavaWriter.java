@@ -269,8 +269,8 @@ public class JavaWriter {
 
 		mCode.append("protected String[] getErrorFiles() { return new String[] {");
 		for (var f : mFilesList) {
-			// Remplacements littéraux — replace() évite la compilation regex pour chaque chaîne.
-			mCode.append("\"" + f.getPath().replace("\\/", "/").replace("\\", "\\\\").replace("\"", "\\\"") + "\"");
+			// javaString échappe \n, \r, etc. ; l'échappement manuel ne les couvrait pas.
+			mCode.append(leekscript.compiler.expression.LeekFileContent.javaString(f.getPath().replace("\\/", "/")));
 			mCode.append(", ");
 		}
 		mCode.append("};}\n\n");

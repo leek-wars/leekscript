@@ -62,6 +62,8 @@ public class LeekString extends Expression {
 		boolean dollarEscape = doubleQuoted && mainblock.getCompiler().getCurrentAI().getVersion() >= 5;
 		for (int i = 0; i < mString.length(); i++) {
 			if (mString.charAt(i) == '\n') str += "\\n";
+			// \r est un terminateur de ligne pour javac : non échappé, il casse le littéral généré.
+			else if (mString.charAt(i) == '\r') str += "\\r";
 			else if (mString.charAt(i) == '"') str += "\\\"";
 			else if (mString.charAt(i) == '\\') {
 				if (len > i && mString.charAt(i + 1) == 'n') str += "\\";

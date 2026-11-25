@@ -446,4 +446,18 @@ public class TestString extends TestCommon {
 		code_v5("return 'a,b,c'.split(',', 2)").equals("[\"a\", \"b,c\"]");
 	}
 
+	@Test
+	public void testString_carriageReturnLiteral() throws Exception {
+		// Un retour chariot brut dans un littéral (fréquent avec des fins de ligne
+		// Windows \r\n) n'était pas échappé dans le Java généré : javac échouait sur
+		// le littéral (terminateur de ligne non fermé) et l'erreur renvoyée au joueur
+		// exposait un extrait du code Java. Le \n était déjà échappé, pas le \r.
+		section("Carriage return in string literal");
+		// Les chaînes Java ci-dessous contiennent de vrais caractères CR / LF.
+		code_v4("return length(\"a\rb\")").equals("3");
+		code_v4("return length(\"ligne1\r\nligne2\")").equals("14");
+		// Le CR est bien présent dans la chaîne compilée (pas seulement « ça compile »).
+		code_v4("return \"a\rb\" == \"a\" + \"\r\" + \"b\"").equals("true");
+	}
+
 }
