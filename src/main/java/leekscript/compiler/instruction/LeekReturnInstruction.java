@@ -101,6 +101,7 @@ public class LeekReturnInstruction extends LeekInstruction {
 			}
 		}
 		if (expression != null) cast = NarrowingInfo.warningCast(returnType, expression, cast);
+		cast = compiler.getMainBlock().strictContainerCast(cast, returnType, actualType);
 		if (cast.ordinal() > CastType.UPCAST.ordinal()) {
 
 			if (cast == CastType.INCOMPATIBLE || compiler.getMainBlock().isStrict()) {

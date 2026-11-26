@@ -177,6 +177,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 			// Vérification du type de l'expression
 			if (this.leekType != null) {
 				var cast = NarrowingInfo.warningCast(this.leekType.getType(), mValue);
+				cast = compiler.getMainBlock().strictContainerCast(cast, this.leekType.getType(), mValue.getType());
 				if (cast.ordinal() > CastType.UPCAST.ordinal()) {
 
 					if (cast == CastType.INCOMPATIBLE || compiler.getMainBlock().isStrict()) {

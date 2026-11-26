@@ -478,6 +478,32 @@ public class Type {
 	}
 
 	/**
+	 * Deux conteneurs de même genre dont les éléments (ou les clés) ne peuvent pas se convertir
+	 * l'un en l'autre : `Set<integer>` vers `Set<string>`. accepts les classe UNSAFE_DOWNCAST,
+	 * puisqu'un conteneur vide passerait ; STRICT_CONTAINER_ELEMENTS les refuse.
+	 */
+	public static boolean incompatibleElements(Type target, Type source) {
+		target = target.assertNotNull();
+		source = source.assertNotNull();
+		if (target instanceof ArrayType t && source instanceof ArrayType s) return incompatibleElement(t.element(), s.element());
+		if (target instanceof SetType t && source instanceof SetType s) return incompatibleElement(t.element(), s.element());
+		if (target instanceof MapType t && source instanceof MapType s) {
+			return incompatibleElement(t.key(), s.key()) || incompatibleElement(t.element(), s.element());
+		}
+		return false;
+	}
+
+	private static boolean incompatibleElement(Type target, Type source) {
+		// Deux variables de type distinctes sont toujours incompatibles (TypeVariable.accepts)
+		if (target instanceof TypeVariable || source instanceof TypeVariable) return false;
+		return switch (target.accepts(source)) {
+			case INCOMPATIBLE -> true;
+			case UNSAFE_DOWNCAST -> incompatibleElements(target, source);
+			default -> false;
+		};
+	}
+
+	/**
 	 * `T | null` avec T primitif, rangé en Java dans la boîte de T (Long, Double, Boolean, cf
 	 * getJavaPrimitiveName) : rend T. Null pour tout autre type (cf CompoundType).
 	 */

@@ -1435,6 +1435,7 @@ public class LeekExpression extends Expression {
 
 			var cast = targetType.accepts(expressionType);
 			if (mOperator == Operators.ASSIGN) cast = NarrowingInfo.warningCast(targetType, mExpression2, cast);
+			cast = compiler.getMainBlock().strictContainerCast(cast, targetType, expressionType);
 			if (cast == CastType.INCOMPATIBLE) {
 				var level = compiler.getMainBlock().isStrict() ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
 				compiler.addError(new AnalyzeError(getLocation(), level, Error.ASSIGNMENT_INCOMPATIBLE_TYPE, new String[] {

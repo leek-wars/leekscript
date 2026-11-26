@@ -15,6 +15,7 @@ import java.util.TreeMap;
 import leekscript.common.AccessLevel;
 import leekscript.common.Annotation;
 import leekscript.common.Type;
+import leekscript.common.Type.CastType;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.Folder;
 import leekscript.compiler.Package;
@@ -1236,6 +1237,19 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	public boolean isStrict() {
 		return mCompiler.getCurrentAI().isStrict();
+	}
+
+	/**
+	 * Conversion `cast` de `source` vers `target`, rendue INCOMPATIBLE si ce sont deux conteneurs
+	 * aux éléments incompatibles (Type.incompatibleElements) en strict v5 : `Set<string> s = <1>`
+	 * est alors une erreur, comme `string s = 1` (LanguageFeature.STRICT_CONTAINER_ELEMENTS).
+	 */
+	public CastType strictContainerCast(CastType cast, Type target, Type source) {
+		return cast == CastType.UNSAFE_DOWNCAST && checksContainerElements() && Type.incompatibleElements(target, source) ? CastType.INCOMPATIBLE : cast;
+	}
+
+	public boolean checksContainerElements() {
+		return isStrict() && LanguageFeature.STRICT_CONTAINER_ELEMENTS.enabledIn(getVersion());
 	}
 
 	// v5 (LanguageFeature.SAFE_FIELD_NARROWING) : le type affiné d'un champ (`if (this.f instanceof

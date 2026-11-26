@@ -1338,6 +1338,15 @@ public class LeekFunctionCall extends Expression {
 		var types = new ArrayList<Type>(mParameters.size());
 		for (var p : mParameters) types.add(p.getType());
 		var cast = NarrowingInfo.warningArgumentsCast(functionType, mParameters, types, functionType.acceptsArguments(types));
+		// Une fonction à plusieurs versions donne l'union de leurs paramètres : pas vérifiée ici
+		if (cast == CastType.UNSAFE_DOWNCAST && compiler.getMainBlock().checksContainerElements()) {
+			for (int a = 0; a < types.size(); a++) {
+				if (Type.incompatibleElements(functionType.getArgument(types.size(), a), types.get(a))) {
+					cast = CastType.INCOMPATIBLE;
+					break;
+				}
+			}
+		}
 		if (cast.ordinal() > CastType.UPCAST.ordinal()) {
 
 			if (cast == CastType.INCOMPATIBLE || compiler.getMainBlock().isStrict()) {

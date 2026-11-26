@@ -566,7 +566,9 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 				field.getValue().expression.analyze(compiler);
 
 				// Vérification du type de l'expression
-				var cast = field.getValue().getType().accepts(field.getValue().expression.getType());
+				var fieldType = field.getValue().getType();
+				var valueType = field.getValue().expression.getType();
+				var cast = compiler.getMainBlock().strictContainerCast(fieldType.accepts(valueType), fieldType, valueType);
 				if (cast.ordinal() > CastType.UPCAST.ordinal()) {
 
 					var level = compiler.getMainBlock().isStrict() && cast == CastType.INCOMPATIBLE ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
@@ -574,9 +576,9 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 
 					compiler.addError(new AnalyzeError(field.getValue().expression.getLocation(), level, error, new String[] {
 						field.getValue().expression.toString(),
-						field.getValue().expression.getType().toString(),
+						valueType.toString(),
 						field.getValue().name,
-						field.getValue().getType().toString(),
+						fieldType.toString(),
 					}));
 				}
 			}
@@ -587,7 +589,9 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 			if (field.getValue().expression != null) {
 				field.getValue().expression.analyze(compiler);
 
-				var cast = field.getValue().getType().accepts(field.getValue().expression.getType());
+				var fieldType = field.getValue().getType();
+				var valueType = field.getValue().expression.getType();
+				var cast = compiler.getMainBlock().strictContainerCast(fieldType.accepts(valueType), fieldType, valueType);
 				if (cast.ordinal() > CastType.UPCAST.ordinal()) {
 
 					var level = compiler.getMainBlock().isStrict() && cast == CastType.INCOMPATIBLE ? AnalyzeErrorLevel.ERROR : AnalyzeErrorLevel.WARNING;
@@ -595,9 +599,9 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 
 					compiler.addError(new AnalyzeError(field.getValue().expression.getLocation(), level, error, new String[] {
 						field.getValue().expression.toString(),
-						field.getValue().expression.getType().toString(),
+						valueType.toString(),
 						field.getValue().name,
-						field.getValue().getType().toString(),
+						fieldType.toString(),
 					}));
 				}
 			}

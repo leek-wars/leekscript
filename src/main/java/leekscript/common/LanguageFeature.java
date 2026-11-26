@@ -91,7 +91,10 @@ public enum LanguageFeature {
 	TYPED_CONTENT_CHECK(5),
 
 	/** Null passé à un paramètre integer ou real d'une fonction système ne vaut plus 0 : l'appel rend sa valeur par défaut. */
-	NULL_ARGUMENT_NOT_ZERO(5);
+	NULL_ARGUMENT_NOT_ZERO(5),
+
+	/** En mode strict, un conteneur aux éléments incompatibles ({@code Set<string> s = <1>}) est une erreur, comme {@code string s = 1}. */
+	STRICT_CONTAINER_ELEMENTS(5);
 
 	public final int since;
 

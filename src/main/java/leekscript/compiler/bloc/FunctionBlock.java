@@ -456,7 +456,8 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, Tes
 	 */
 	public static void checkDefaultValueType(WordCompiler compiler, String parameter, Type type, Expression defaultValue) throws LeekCompilerException {
 		if (defaultValue.trim() instanceof LeekNull) return;
-		if (type.accepts(defaultValue.getType()) == CastType.INCOMPATIBLE) {
+		var cast = compiler.getMainBlock().strictContainerCast(type.accepts(defaultValue.getType()), type, defaultValue.getType());
+		if (cast == CastType.INCOMPATIBLE) {
 			compiler.addError(new AnalyzeError(defaultValue.getLocation(), AnalyzeErrorLevel.WARNING, Error.ASSIGNMENT_INCOMPATIBLE_TYPE, new String[] {
 				defaultValue.toString(),
 				defaultValue.getType().toString(),

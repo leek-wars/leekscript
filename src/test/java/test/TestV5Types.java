@@ -248,4 +248,46 @@ public class TestV5Types extends TestCommon {
 		code_v5_("var a = [3, 1, 2] var x = 1 return a.slice(x, 2)").equals("[1]");
 	}
 
+	@Test
+	public void strictContainerElements() throws Exception {
+		section("v5 strict : conteneur aux éléments incompatibles = erreur (forum 12116)");
+		// Déclarations, globales, affectations
+		code_strict_v5_("Set<string> a = <1> return a").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v5_("Array<string> a = [1] return a").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v5_("Map<string, integer> a = [1: 2] return a").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v5_("Map<integer, string> a = [1: 2] return a").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v5_("Array<Array<string>> a = [[1]] return a").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v5_("Array<string>? a = [1] return a").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v5_("global Set<string> g = <1> return g").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v5_("Set<string> a = <'x'> a = <1> return a").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v5_("Array<integer> b = [1] Array<string> a = b return a").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		// Champs, retours, arguments
+		code_strict_v5_("class A { Set<string> s = <1> } return new A().s").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v5_("class A { static Set<string> s = <1> } return A.s").error(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		code_strict_v5_("function f() -> Set<string> { return <1> } return f()").error(Error.INCOMPATIBLE_TYPE);
+		code_strict_v5_("function f(Set<string> s) { return s } return f(<1>)").error(Error.INCOMPATIBLE_TYPE);
+		code_strict_v5_("class A { m(Set<string> s) { return s } } return new A().m(<1>)").error(Error.INCOMPATIBLE_TYPE);
+		code_strict_v5_("class A { static m(Set<string> s) { return s } } return A.m(<1>)").error(Error.INCOMPATIBLE_TYPE);
+		code_strict_v5_("class A { constructor(Set<string> s) {} } return new A(<1>)").error(Error.INCOMPATIBLE_TYPE);
+		code_strict_v5_("function f(Set<string> s) { return s } function f(integer i) { return i } return f(<1>)").error(Error.INCOMPATIBLE_TYPE);
+		code_strict_v5_("var f = function(Set<string> s) { return s } return f(<1>)").error(Error.INCOMPATIBLE_TYPE);
+		// Valeur par défaut d'un paramètre : avertissement comme tout défaut incompatible (jamais d'erreur)
+		code_strict_v5_("function f(Set<string> s = <1>) { return s } return f()").warning(Error.ASSIGNMENT_INCOMPATIBLE_TYPE);
+		// Ce qui peut convenir reste permis : vide, any, union, élargissement, réel vers entier
+		code_strict_v5_("Set<string> a = <> return a").equals("<>");
+		code_strict_v5_("Array<string> a = [] return a").equals("[]");
+		code_strict_v5_("Map<string, integer> a = [:] return a").equals("[:]");
+		code_strict_v5_("Set<real> a = <1> return a").equals("<1>");
+		code_strict_v5_("Array<string | integer> a = [1] return a").equals("[1]");
+		code_strict_v5_("Array a = [1] Array<string> b = a as Array<string> return 1").equals("1");
+		code_strict_v5_("Set<integer> a = <1.5> return a").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+		code_strict_v5_("function first<T>(Array<T> a) -> T { return a[0] } return first(['x'])").equals("\"x\"");
+		// Hors strict, et jusqu'à la v4 : rien ne change
+		code_v5_("Set<string> a = <1> return a").equals("<1>");
+		code_strict_v4("Set<string> a = <1> return a").warning(Error.DANGEROUS_CONVERSION_VARIABLE);
+		code_strict_v4("function f(Set<string> s) { return s } return f(<1>)").warning(Error.DANGEROUS_CONVERSION);
+		code_strict_v4("class A { constructor(Set<string> s) { debug(s) } } return new A(<1>)").warning(Error.DANGEROUS_CONVERSION);
+		code_v5_("function f(Set<string> s) { return s } return f(<1>)").equals("<1>");
+	}
+
 }
