@@ -312,17 +312,6 @@ public class LeekFunctionCall extends Expression {
 	}
 
 	/**
-	 * La classe appelée (`new A()`) est-elle nommée, donc son constructeur Java `new_<classe>`
-	 * connu à la compilation ? `class` aussi dans une méthode statique, écrit comme la classe
-	 * englobante (cf LeekVariable.writeThisClass).
-	 */
-	private boolean isStaticClassReference(JavaWriter writer) {
-		if (!(mExpression.trim() instanceof LeekVariable v)) return false;
-		if (v.getVariableType() == VariableType.CLASS) return true;
-		return v.getVariableType() == VariableType.THIS_CLASS && !writer.inInstanceContext();
-	}
-
-	/**
 	 * Type du Java émis pour cet appel : celui du littéral substitué à un appel éliminé vers une
 	 * fonction sans type de retour (cf writeSubstitutedValue), que getType() annonce any.
 	 */
@@ -597,7 +586,7 @@ public class LeekFunctionCall extends Expression {
 			addComma = false;
 			typedArguments = true;
 		} else if (mExpression.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null) {
-			if (isStaticClassReference(writer)) {
+			if (LeekVariable.isStaticClassReference(mExpression, writer)) {
 				// `new_u_X` est une méthode de la classe du module de X : le champ du module vient devant
 				var constructed = cvt.getClassDeclaration();
 				var owner = constructed.internal ? "" : writer.ref(constructed.getModule());

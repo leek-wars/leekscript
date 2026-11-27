@@ -528,16 +528,16 @@ public class LeekObjectAccess extends Expression {
 				// Champ lu par le chemin dynamique (Object) : une valeur rangée par
 				// `/=` ou `??=` peut être un Long ou un Double. On convertit au lieu
 				// de caster, sinon ClassCastException. (#bigint #4908)
-				writer.addCode("BigIntegerValue.valueOf(" + writer.getAIThis() + ", getField(");
-				writeReceiver(mainblock, writer);
-				writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + "))");
+				writer.addCode("BigIntegerValue.valueOf(" + writer.getAIThis() + ", ");
+				writeDynamicRead(mainblock, writer);
+				writer.addCode(")");
 			} else if (type == Type.INT || type == Type.REAL) {
 				// Idem pour les champs numériques : `Z.b /= 4` range un Double dans un
 				// champ integer, `Z.r \= 2` un Long dans un champ real. On convertit
 				// plutôt que de caster. (#4908)
-				writer.addCode("((Number) getField(");
-				writeReceiver(mainblock, writer);
-				writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + "))." + (type == Type.INT ? "longValue()" : "doubleValue()"));
+				writer.addCode("((Number) ");
+				writeDynamicRead(mainblock, writer);
+				writer.addCode(")." + (type == Type.INT ? "longValue()" : "doubleValue()"));
 			} else {
 				if (type != Type.ANY) {
 					if (parenthesis) writer.addCode("(");
@@ -546,14 +546,32 @@ public class LeekObjectAccess extends Expression {
 					}
 					writer.addCode("(" + type.getJavaName(mainblock.getVersion()) + ") ");
 				}
-				writer.addCode("getField(");
-				writeReceiver(mainblock, writer);
-				writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
+				writeDynamicRead(mainblock, writer);
 				if (type != Type.ANY) {
 					if (parenthesis) writer.addCode(")");
 				}
 			}
 		}
+	}
+
+	/**
+	 * Lecture d'un champ hors accès direct au champ Java, en Object : la boîte du champ statique quand
+	 * le receveur est une classe connue à la compilation (cf ClassDeclarationInstruction.staticFieldBox),
+	 * sinon `getField(receveur, "x", classe courante)`.
+	 */
+	private void writeDynamicRead(MainLeekBlock mainblock, JavaWriter writer) {
+		var currentClass = mainblock.getWordCompiler().getCurrentClass();
+		if (variable != null && variable.getVariableType() == VariableType.STATIC_FIELD
+				&& LeekVariable.isStaticClassReference(object, writer) && object.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null) {
+			var box = cvt.getClassDeclaration().staticFieldBox(field.getWord(), currentClass, writer);
+			if (box != null) {
+				writer.addCode(box + ".get()");
+				return;
+			}
+		}
+		writer.addCode("getField(");
+		writeReceiver(mainblock, writer);
+		writer.addCode(", \"" + field.getWord() + "\", " + mainblock.getWordCompiler().getCurrentClassVariable() + ")");
 	}
 
 	@Override

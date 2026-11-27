@@ -442,6 +442,38 @@ public class TestClass extends TestCommon {
 	}
 
 	/**
+	 * `A.x` et `x` lus par la boîte du champ statique, sans recherche par nom : mêmes valeurs que par
+	 * getField, y compris pour un champ hérité, masqué, lu avant son initialisation, interdit d'accès,
+	 * ou dont le nom est intercepté par la classe (`name`, `fields`).
+	 */
+	@Test
+	public void testClass_static_field_direct_read() throws Exception {
+		section("Lecture directe d'un champ statique");
+		code_v2_("class A { static x = 5 } return A.x").equals("5");
+		code_v2_("class A { public static x = 1 } A.x = 7 A.x += 2 return A.x").equals("9");
+		code_v2_("class A { static x = 3 static f() { return x } } return A.f()").equals("3");
+		code_v2_("class A { static x = 4 static f() { return class.x } } return A.f()").equals("4");
+		// `class` dans une méthode d'instance : la classe de l'objet, pas celle qui déclare la méthode
+		code_v2_("class A { static x = 1 f() { return class.x } } class B extends A { static x = 2 } return [new A().f(), new B().f()]").equals("[1, 2]");
+		code_v2_("class A { static x = 1 } class B extends A {} A.x = 5 return B.x").equals("5");
+		code_v2_("class A { static x = 1 } class B extends A { static x = 2 } return [A.x, B.x]").equals("[1, 2]");
+		code_v2_("class A { static x = 1 } class B extends A { static x = 2 static f() { return [x, A.x, B.x, class.x] } } return B.f()").equals("[2, 1, 2, 2]");
+		code_v2_("class A { static name = 'n' } return A.name").equals("\"A\"");
+		code_v2_("class A { static fields = 'f' } return A.fields").equals("[]");
+		// Lu pendant l'initialisation, avant que son initialiseur ait tourné
+		code_v2_("class A { static x = B.y } class B { static y = 5 } return [A.x, B.y]").equals("[null, 5]");
+		code_v2_("class B { static y = 5 } class A { static x = B.y } return [A.x, B.y]").equals("[5, 5]");
+		code_v2_("class A { static y = A.x * 3 static x = 2 } return [A.y, A.x]").equals("[0, 2]");
+		code_v4("class A { private static d = 1 } return A.d").equals("null");
+		code_v4("class A { private static d = 3 } class B extends A { static f() { return A.d } } return B.f()").equals("null");
+		code_v2_("class A { protected static d = 3 } class B extends A { static f() { return A.d } } return B.f()").equals("3");
+		code_v2_("class A { static f = function(x) { return x * 2 } } return A.f(3)").equals("6");
+		code_v2_("class A { static x = 5 static f() { var g = function() { return x + A.x } return g() } } return A.f()").equals("10");
+		code_v2_("class A { static x = 5 } function f() { return A.x } return f()").equals("5");
+		code_v2_("class A { static x = 1 } A['x'] = 4 return A.x").equals("4");
+	}
+
+	/**
 	 * #4908 : une opération composée range dans la Box le type que renvoie l'opérateur
 	 * (`/=` un real, `\\=` un integer), pas le type déclaré du champ. La lecture doit
 	 * donc convertir au lieu de caster, sinon ClassCastException / IMPOSSIBLE_CAST.

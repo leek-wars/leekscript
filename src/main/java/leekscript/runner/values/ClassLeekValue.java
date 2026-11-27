@@ -314,8 +314,11 @@ public class ClassLeekValue extends FunctionLeekValue<Object> {
 		return getField(field, this);
 	}
 
+	/** Les noms que getField rend avant les champs statiques (`super` et `class` ne peuvent pas en être). */
+	public static final Set<String> MEMBERS_BEFORE_STATIC_FIELDS = Set.of("fields", "staticFields", "methods", "staticMethods", "name");
+
 	public Object getField(String field, ClassLeekValue fromClass) throws LeekRunException {
-		switch (field) {
+		switch (field) { // cf MEMBERS_BEFORE_STATIC_FIELDS
 			case "fields": return getFieldsArray();
 			case "staticFields": return getStaticFieldsArray();
 			case "methods": return getMethodsArray();

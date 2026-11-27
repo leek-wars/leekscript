@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
+import leekscript.runner.values.ClassLeekValue;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.Hover;
@@ -1022,6 +1024,9 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 
 		// Declare the class as a field of the AI
 		writer.addLine("public ClassLeekValue " + className + " = new ClassLeekValue(" + writer.getAI() + ", \"" + token.getWord() + "\", null, " + className + ".class)" + (writer.getModule() != null ? ".inModule(this)" : "") + ";");
+		for (var field : boxedStaticFields()) {
+			writer.addLine("public ObjectVariableValue " + staticFieldBoxName(field) + ";");
+		}
 
 		// Constructeur
 		writer.addLine("public " + className + " new_" + className + "(Object... args) throws LeekRunException {");
@@ -1260,8 +1265,20 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 			writer.addCode(", AccessLevel." + field.getValue().level.name() + ", " + field.getValue().isFinal);
 			writer.addLine(");");
 		}
+		// Dans une méthode à part, pour que createStaticClass ne grossisse que d'un appel (64 Ko de bytecode par méthode)
+		var boxed = boxedStaticFields();
+		if (!boxed.isEmpty()) writer.addLine("linkStaticFields_" + getInternalName() + "();");
 
 		writer.addLine("}");
+
+		if (!boxed.isEmpty()) {
+			writer.addLine(writer.privateMember() + "void linkStaticFields_" + getInternalName() + "() {");
+			for (var field : boxed) {
+				// La map plutôt qu'une méthode nouvelle : le code compilé tourne aussi sur un runtime plus ancien
+				writer.addLine(staticFieldBoxName(field) + " = " + className + ".staticFields.get(\"" + field + "\");");
+			}
+			writer.addLine("}");
+		}
 		mainblock.getWordCompiler().setCurrentClass(null);
 		mainblock.getWordCompiler().setCurrentBlock(null);
 	}
@@ -1489,6 +1506,32 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 			return parent.canAccessField(field, fromClass);
 		}
 		return null;
+	}
+
+	/**
+	 * Le champ Java qui garde la boîte du champ statique `field`, déclaré par cette classe et lisible
+	 * depuis `fromClass`, pour le lire sans le chercher par son nom ; null sinon (champ hérité ou
+	 * inliné, nom que getField intercepte, accès refusé). Les boîtes sont créées par staticInit(),
+	 * avant le premier code du joueur.
+	 */
+	public String staticFieldBox(String field, ClassDeclarationInstruction fromClass, JavaWriter writer) {
+		if (!hasBox(field) || canAccessStaticField(field, fromClass) != null) return null;
+		return writer.ref(module) + staticFieldBoxName(field);
+	}
+
+	// Un `static final` à littéral est inliné à chaque lecture (cf ConstantFolder) : pas de boîte
+	private boolean hasBox(String field) {
+		return !internal && staticFields.containsKey(field) && !ClassLeekValue.MEMBERS_BEFORE_STATIC_FIELDS.contains(field)
+			&& ConstantFolder.staticFinalLiteral(this, field, this) == null;
+	}
+
+	private List<String> boxedStaticFields() {
+		return staticFields.keySet().stream().filter(this::hasBox).toList();
+	}
+
+	// Le `$` ne peut pas venir d'un nom LeekScript
+	private String staticFieldBoxName(String field) {
+		return "sf_" + getInternalName() + "$" + field;
 	}
 
 	/**

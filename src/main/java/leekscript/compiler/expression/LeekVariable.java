@@ -542,6 +542,24 @@ public class LeekVariable extends Expression {
 		return token;
 	}
 
+	/**
+	 * L'expression désigne-t-elle une classe connue à la compilation ? Une classe nommée, ou `class`
+	 * dans une méthode statique, écrit comme la classe englobante (cf writeThisClass).
+	 */
+	public static boolean isStaticClassReference(Expression expression, JavaWriter writer) {
+		if (!(expression.trim() instanceof LeekVariable v)) return false;
+		if (v.getVariableType() == VariableType.CLASS) return true;
+		return v.getVariableType() == VariableType.THIS_CLASS && !writer.inInstanceContext();
+	}
+
+	/** Lecture du champ statique `x` par son nom nu, dans la classe courante : sa boîte, ou getField. Valeur en Object. */
+	private String staticFieldRead(MainLeekBlock mainblock, JavaWriter writer) {
+		var current = mainblock.getWordCompiler().getCurrentClass();
+		var box = current == null ? null : current.staticFieldBox(token.getWord(), current, writer);
+		if (box != null) return box + ".get()";
+		return mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + token.getWord() + "\")";
+	}
+
 	public boolean isBox() {
 		return this.box || (declaration != null && declaration.isBox());
 	}
@@ -711,8 +729,9 @@ public class LeekVariable extends Expression {
 			// dynamique (`/=`, `??=`…) peut être un Long ou un Double. Pour big_integer
 			// on convertit au lieu de caster, sinon la lecture jette une
 			// ClassCastException (IMPOSSIBLE_CAST). (#bigint #4908)
+			var read = staticFieldRead(mainblock, writer);
 			if (variableType == Type.BIG_INT) {
-				writer.addCode("BigIntegerValue.valueOf(" + writer.getAIThis() + ", " + mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + token.getWord() + "\"))");
+				writer.addCode("BigIntegerValue.valueOf(" + writer.getAIThis() + ", " + read + ")");
 				return;
 			}
 			// Idem pour integer et real : une opération composée peut avoir rangé
@@ -720,7 +739,7 @@ public class LeekVariable extends Expression {
 			// On convertit comme le fait openResultConversion pour les variables
 			// locales, au lieu d'un cast Java qui jetterait une ClassCastException.
 			if (variableType == Type.INT || variableType == Type.REAL) {
-				writer.addCode("((Number) " + mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + token.getWord() + "\"))." + (variableType == Type.INT ? "longValue()" : "doubleValue()"));
+				writer.addCode("((Number) " + read + ")." + (variableType == Type.INT ? "longValue()" : "doubleValue()"));
 				return;
 			}
 			if (variableType != Type.ANY) {
@@ -730,7 +749,7 @@ public class LeekVariable extends Expression {
 				}
 				writer.addCode("(" + variableType.getJavaName(mainblock.getVersion()) + ") ");
 			}
-			writer.addCode(mainblock.getWordCompiler().getCurrentClassVariable() + ".getField(\"" + token.getWord() + "\")");
+			writer.addCode(read);
 			if (variableType != Type.ANY) {
 				if (parenthesis) writer.addCode(")");
 			}

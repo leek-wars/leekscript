@@ -74,6 +74,20 @@ public class TestModuleClasses {
 		assertTrue(geo.className().matches("AI_\\w+_geo_[0-9a-z]+"), geo.className());
 	}
 
+	// `A.x` d'une classe d'un autre module : lu par la boîte du champ, gardée dans la classe Java du
+	// module qui déclare A (sf_A$x), y compris après une écriture et depuis une méthode du module
+	@Test
+	public void staticFieldReadAcrossModules() throws Exception {
+		write("conf.leek", "export class Conf {\n\tpublic static integer x = 3\n\tpublic static y = [1]\n\tstatic twice() { return x * 2 + class.x }\n}");
+		String main = writeMain("import { Conf } from \"conf\"\nConf.x = 5\nConf.y += [2]\nvar t = Conf.twice()\nreturn [Conf.x, Conf.y, t]");
+		assertEquals("[5, [1, 2], 15]", run(main));
+		var code = codeOf(main);
+		var conf = module(code, "_conf_");
+		assertTrue(conf.javaCode().contains("public ObjectVariableValue sf_Conf$x;"), conf.javaCode());
+		assertTrue(code.getJavaCode().contains(".sf_Conf$x.get()"), code.getJavaCode());
+		assertFalse(code.getJavaCode().contains("getField("), code.getJavaCode());
+	}
+
 	// Un programme sans import reste en une seule classe Java, comme en v1-4.
 	@Test
 	public void programWithoutImportKeepsOneClass() throws Exception {
