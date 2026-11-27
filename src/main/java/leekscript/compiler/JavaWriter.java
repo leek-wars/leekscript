@@ -1141,13 +1141,19 @@ public class JavaWriter {
 				for (var t : ct.getTypes()) {
 					if (t != Type.NULL) {
 						if (t == Type.INT) return "toLongOrNull(" + v + ")";
-						if (t == Type.BOOL) return "(Boolean) (" + v + ")";
-						if (t == Type.STRING) return "(String) (" + v + ")";
+						if (t == Type.BOOL) return "castArgument(" + v + ", Boolean.class)";
+						if (t == Type.STRING) return "castArgument(" + v + ", String.class)";
 					}
 				}
 			}
 		}
-		return "(" + type.getJavaName(version) + ") (" + v + ")";
+		// Une classe : castArgument, dont l'échec ne remplit pas de pile (un cast Java raté en remplit
+		// une à chaque appel, des microsecondes). Tout le reste (Object, type paramétré) : cast seul.
+		var javaName = type.getJavaName(version);
+		if (!javaName.equals("Object") && javaName.chars().allMatch(Character::isJavaIdentifierPart)) {
+			return "castArgument(" + v + ", " + javaName + ".class)";
+		}
+		return "(" + javaName + ") (" + v + ")";
 	}
 
 	public boolean isInConstructor() {

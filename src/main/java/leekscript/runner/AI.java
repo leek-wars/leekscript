@@ -1973,11 +1973,12 @@ public abstract class AI {
 	private void nullArgument(int argument, Type type, boolean strict) throws LeekRunException {
 		if (strict) throw new LeekRunException(Error.WRONG_ARGUMENT_TYPE, new String[] { String.valueOf(argument), "null", "null", type.toString() });
 		logWrongType(argument, null, type, "");
-		throw NULL_ARGUMENT;
+		throw DEFAULT_VALUE;
 	}
 
-	// Signal « valeur par défaut » pour l'enveloppe générique : préallouée, sans pile d'appels
-	private static final ClassCastException NULL_ARGUMENT = new ClassCastException() {
+	// Signal « valeur par défaut » pour l'enveloppe générique : préallouée, sans pile d'appels (une
+	// pile remplie à chaque argument du mauvais type coûterait des microsecondes à l'appel)
+	private static final ClassCastException DEFAULT_VALUE = new ClassCastException() {
 		@Override
 		public synchronized Throwable fillInStackTrace() { return this; }
 	};
@@ -1991,13 +1992,25 @@ public abstract class AI {
 
 	/**
 	 * Argument integer|null d'une fonction système : un réel ou un big_integer est tronqué,
-	 * null reste null. Tout autre type lève ClassCastException, et l'appel rend sa valeur par
-	 * défaut, comme le cast (Long) seul.
+	 * null reste null. Tout autre type lève ClassCastException (sans pile d'appels), et l'appel
+	 * rend sa valeur par défaut.
 	 */
 	public static Long toLongOrNull(Object value) {
+		if (value == null || value instanceof Long) return (Long) value;
 		if (value instanceof Double d) return (long) (double) d;
 		if (value instanceof BigIntegerValue big) return big.longValue();
-		return (Long) value;
+		throw DEFAULT_VALUE;
+	}
+
+	/**
+	 * Argument d'une fonction système appelée par son enveloppe générique : la valeur si elle est
+	 * null ou du type attendu. Tout autre type lève ClassCastException, et l'appel rend sa valeur
+	 * par défaut, comme le cast seul, mais sans la pile d'appels que la JVM remplirait.
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T castArgument(Object value, Class<T> type) {
+		if (value == null || type.isInstance(value)) return (T) value;
+		throw DEFAULT_VALUE;
 	}
 
 	public Object copy(Object value) throws LeekRunException {

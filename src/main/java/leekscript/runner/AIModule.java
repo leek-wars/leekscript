@@ -215,6 +215,10 @@ public abstract class AIModule {
 		return AI.captureAITrace();
 	}
 
+	public static <T> T castArgument(java.lang.Object a0, java.lang.Class<T> a1) {
+		return AI.castArgument(a0, a1);
+	}
+
 	public final void chargeCodeRAM(long a0) {
 		ai.chargeCodeRAM(a0);
 	}
