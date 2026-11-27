@@ -43,13 +43,14 @@ public final class Resolver {
 		}
 	}
 
-	private record Key(Class<?> owner, String name, List<Class<?>> args, boolean statics) {}
+	private record Key(Class<?> owner, String name, List<Class<?>> args, List<Class<?>> classLiterals, boolean statics) {}
 
 	private static final ConcurrentHashMap<Key, Resolved> cache = new ConcurrentHashMap<>();
 	private static final ConcurrentHashMap<Class<?>, HashMap<String, List<Method>>> methodsByClass = new ConcurrentHashMap<>();
 
-	public static Resolved method(Class<?> owner, String name, List<Class<?>> args, boolean statics) {
-		var key = new Key(owner, name, List.copyOf(args), statics);
+	/** `classLiterals` : pour chaque argument `X.class`, X (null sinon, ou liste null) ; il déduit un `T` déclaré `Class<T>`. */
+	public static Resolved method(Class<?> owner, String name, List<Class<?>> args, List<Class<?>> classLiterals, boolean statics) {
+		var key = new Key(owner, name, List.copyOf(args), classLiterals, statics);
 		var r = cache.get(key);
 		if (r == null) {
 			var candidates = new ArrayList<Executable>();
@@ -57,21 +58,21 @@ public final class Resolver {
 				// Un appel sans receveur voit aussi les méthodes statiques
 				if (!statics || Modifier.isStatic(m.getModifiers())) candidates.add(m);
 			}
-			r = select(candidates, args, owner + "." + name);
+			r = select(candidates, args, classLiterals, owner + "." + name);
 			cache.put(key, r);
 		}
 		return r;
 	}
 
 	public static Resolved constructor(Class<?> owner, List<Class<?>> args) {
-		var key = new Key(owner, "<init>", List.copyOf(args), false);
+		var key = new Key(owner, "<init>", List.copyOf(args), null, false);
 		var r = cache.get(key);
 		if (r == null) {
 			var candidates = new ArrayList<Executable>();
 			for (var c : owner.getDeclaredConstructors()) {
 				if (Modifier.isPublic(c.getModifiers()) || Modifier.isProtected(c.getModifiers())) candidates.add(c);
 			}
-			r = select(candidates, args, owner + ".<init>");
+			r = select(candidates, args, null, owner + ".<init>");
 			cache.put(key, r);
 		}
 		return r;
@@ -103,7 +104,7 @@ public final class Resolver {
 		});
 	}
 
-	private static Resolved select(List<Executable> candidates, List<Class<?>> args, String what) {
+	private static Resolved select(List<Executable> candidates, List<Class<?>> args, List<Class<?>> classLiterals, String what) {
 		for (int phase = 1; phase <= 3; phase++) {
 			var applicable = new ArrayList<Executable>();
 			for (var m : candidates) {
@@ -112,7 +113,7 @@ public final class Resolver {
 			if (applicable.isEmpty()) continue;
 			var best = mostSpecific(applicable, args, phase == 3);
 			if (best == null) throw new Unsupported("surcharge ambiguë " + what + args);
-			return new Resolved(best, phase == 3, returnType(best, args, phase == 3));
+			return new Resolved(best, phase == 3, returnType(best, args, classLiterals, phase == 3));
 		}
 		throw new Unsupported("aucune méthode " + what + args);
 	}
@@ -165,20 +166,28 @@ public final class Resolver {
 	}
 
 	/** Type statique du résultat : le retour effacé, ou pour un `T` de la méthode, le type des arguments déclarés `T`. */
-	private static Class<?> returnType(Executable e, List<Class<?>> args, boolean varargs) {
+	private static Class<?> returnType(Executable e, List<Class<?>> args, List<Class<?>> classLiterals, boolean varargs) {
 		if (!(e instanceof Method m)) return e.getDeclaringClass();
 		Type generic = m.getGenericReturnType();
 		if (generic instanceof Class<?> c) return c;
 		if (generic instanceof ParameterizedType p) return (Class<?>) p.getRawType();
-		if (generic instanceof TypeVariable<?> tv && tv.getGenericDeclaration() == m) {
+		// (equals : la réflexion rend une copie de la méthode, jamais la même instance)
+		if (generic instanceof TypeVariable<?> tv && tv.getGenericDeclaration().equals(m)) {
 			var params = m.getGenericParameterTypes();
 			Class<?> inferred = null;
 			for (int i = 0; i < args.size(); i++) {
 				int pi = Math.min(i, params.length - 1);
 				Type p = params[pi];
 				if (varargs && pi == params.length - 1 && p instanceof GenericArrayType ga) p = ga.getGenericComponentType();
-				if (!p.equals(tv) || JTypes.isNull(args.get(i))) continue;
-				var t = JTypes.box(args.get(i));
+				Class<?> t;
+				if (p instanceof ParameterizedType pt && pt.getRawType() == Class.class && pt.getActualTypeArguments()[0].equals(tv)
+						&& classLiterals != null && classLiterals.get(i) != null) {
+					t = classLiterals.get(i);
+				} else if (p.equals(tv) && !JTypes.isNull(args.get(i))) {
+					t = JTypes.box(args.get(i));
+				} else {
+					continue;
+				}
 				if (inferred == null || JTypes.subtypeRef(inferred, t)) inferred = t;
 				else if (!JTypes.subtypeRef(t, inferred)) throw new Unsupported("inférence de " + tv + " dans " + m);
 			}

@@ -55,6 +55,11 @@ public class AICode {
 		return linesFile;
 	}
 
+	/** Les lignes du backend bytecode, quand c'est lui qui a écrit la classe. */
+	public void setLines(String linesFile) {
+		this.linesFile = linesFile;
+	}
+
 	public TreeMap<Integer, LineMapping> getLinesMap() {
 		return lines;
 	}

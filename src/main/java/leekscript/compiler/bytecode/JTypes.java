@@ -136,6 +136,12 @@ public final class JTypes {
 			case "void": return void.class;
 		}
 		if (name.contains("<") || name.contains("[")) throw new Unsupported("type " + name);
+		var extra = leekscript.runner.LeekFunctions.getExtraFunctionsImport();
+		if (extra != null && extra.endsWith(".*") && !name.contains(".")) {
+			try {
+				return Class.forName(extra.substring(0, extra.length() - 1) + name, false, JTypes.class.getClassLoader());
+			} catch (ClassNotFoundException e) {}
+		}
 		for (var p : PACKAGES) {
 			try {
 				return Class.forName(name.contains(".") ? name : p + name, false, JTypes.class.getClassLoader());
@@ -144,5 +150,40 @@ public final class JTypes {
 			}
 		}
 		throw new Unsupported("type inconnu " + name);
+	}
+
+	/**
+	 * La valeur d'un littéral chaîne Java tel que JavaWriter l'écrit (guillemets compris) :
+	 * les seuls échappements qu'il produit sont décodés, et une chaîne que javac refuserait
+	 * (fin de ligne brute, plus de 65 535 octets en UTF-8 modifié) lève {@link Unsupported}.
+	 */
+	public static String javaStringValue(String literal) {
+		if (literal.length() < 2 || literal.charAt(0) != '"' || literal.charAt(literal.length() - 1) != '"') throw new Unsupported("littéral " + literal);
+		var sb = new StringBuilder(literal.length());
+		for (int i = 1; i < literal.length() - 1; i++) {
+			char c = literal.charAt(i);
+			if (c == '\\') {
+				char n = literal.charAt(++i);
+				switch (n) {
+					case 'n' -> sb.append('\n');
+					case 't' -> sb.append('\t');
+					case '"' -> sb.append('"');
+					case '\\' -> sb.append('\\');
+					default -> throw new Unsupported("échappement \\" + n);
+				}
+			} else if (c == '\n' || c == '\r') {
+				throw new Unsupported("fin de ligne dans un littéral");
+			} else {
+				sb.append(c);
+			}
+		}
+		var value = sb.toString();
+		long utf8 = 0;
+		for (int i = 0; i < value.length(); i++) {
+			char c = value.charAt(i);
+			utf8 += c != 0 && c < 0x80 ? 1 : c < 0x800 ? 2 : 3;
+		}
+		if (utf8 > 65535) throw new Unsupported("chaîne de plus de 65 535 octets");
+		return value;
 	}
 }

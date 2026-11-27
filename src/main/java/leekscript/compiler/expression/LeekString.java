@@ -9,6 +9,9 @@ import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.JTypes;
 
 public class LeekString extends Expression {
 
@@ -47,6 +50,11 @@ public class LeekString extends Expression {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		writer.addCode(getJavaLiteral(mainblock));
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		return JExpr.of(JTypes.javaStringValue(getJavaLiteral(mainblock)));
 	}
 
 	/**

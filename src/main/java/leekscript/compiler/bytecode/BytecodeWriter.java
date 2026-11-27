@@ -53,6 +53,10 @@ public class BytecodeWriter {
 	public record Loop(Label breakLabel, Label continueLabel) {}
 	private final ArrayList<Loop> loops = new ArrayList<>();
 
+	// Enveloppes génériques des fonctions système (JavaWriter.generateGenericFunction), écrites après runIA
+	private final java.util.LinkedHashMap<String, List<leekscript.runner.CallableVersion>> genericFunctions = new java.util.LinkedHashMap<>();
+	private final java.util.HashSet<String> strictGenericFunctions = new java.util.HashSet<>();
+
 	// Lignes : repère Java -> ligne LeekScript, et fichiers dans l'ordre de leur première ligne
 	private final TreeMap<Integer, LineMapping> lines = new TreeMap<>();
 	private final ArrayList<AIFile> files = new ArrayList<>();
@@ -122,6 +126,26 @@ public class BytecodeWriter {
 
 	public List<AIFile> getFiles() {
 		return files;
+	}
+
+	/** Enregistre l'enveloppe générique des versions d'une fonction système et rend son nom de clé, comme JavaWriter. */
+	public String genericFunction(List<leekscript.runner.CallableVersion> versions, boolean strictNull) {
+		String key = versions.get(0).function.getName();
+		for (var version : versions) key += "_" + version.getParametersSignature();
+		if (strictNull && versions.stream().anyMatch(GenericFunctions::convertsNumberArgument)) {
+			key += "_strict";
+			strictGenericFunctions.add(key);
+		}
+		genericFunctions.put(key, versions);
+		return key;
+	}
+
+	public java.util.Map<String, List<leekscript.runner.CallableVersion>> getGenericFunctions() {
+		return genericFunctions;
+	}
+
+	public boolean isStrictGenericFunction(String key) {
+		return strictGenericFunctions.contains(key);
 	}
 
 	// ---- Portées et variables locales ----
@@ -194,10 +218,26 @@ public class BytecodeWriter {
 		return r;
 	}
 
+	/** Les `X.class` passés en argument, pour déduire un `T` déclaré `Class<T>`. */
+	private static List<Class<?>> classLiterals(List<JExpr> args) {
+		List<Class<?>> r = null;
+		for (int i = 0; i < args.size(); i++) {
+			if (args.get(i) instanceof JExpr.ClassLit c) {
+				if (r == null) r = new ArrayList<>(java.util.Collections.nCopies(args.size(), null));
+				r.set(i, c.type());
+			}
+		}
+		return r;
+	}
+
 	private Resolver.Resolved resolve(JExpr.Call c) {
 		var owner = c.receiver() == null ? thisClass : typeOf(c.receiver());
 		if (owner.isPrimitive() || JTypes.isNull(owner)) throw new Unsupported("appel sur " + owner);
-		return Resolver.method(owner, c.name(), argTypes(c.args()), false);
+		return Resolver.method(owner, c.name(), argTypes(c.args()), classLiterals(c.args()), false);
+	}
+
+	private Resolver.Resolved resolve(JExpr.StaticCall c) {
+		return Resolver.method(c.owner(), c.name(), argTypes(c.args()), classLiterals(c.args()), true);
 	}
 
 	private Class<?> computeType(JExpr e) {
@@ -206,9 +246,16 @@ public class BytecodeWriter {
 			case JExpr.Local l -> l.var().type();
 			case JExpr.This t -> thisClass;
 			case JExpr.Call c -> resolve(c).returnType();
-			case JExpr.StaticCall c -> Resolver.method(c.owner(), c.name(), argTypes(c.args()), true).returnType();
+			case JExpr.StaticCall c -> resolve(c).returnType();
 			case JExpr.GetStatic g -> field(g).getType();
+			case JExpr.Self c -> c.returnType();
+			case JExpr.InstanceOf i -> {
+				if (typeOf(i.expr()).isPrimitive()) throw new Unsupported("instanceof sur un primitif");
+				yield boolean.class;
+			}
+			case JExpr.ClassLit c -> Class.class;
 			case JExpr.New n -> n.type();
+			case JExpr.NewArray n -> n.component().arrayType();
 			case JExpr.Cast c -> c.type();
 			case JExpr.AssignLocal a -> a.var().type();
 			case JExpr.CompoundLocal a -> {
@@ -361,10 +408,27 @@ public class BytecodeWriter {
 				return m.erasedReturn();
 			}
 			case JExpr.StaticCall c -> {
-				var m = Resolver.method(c.owner(), c.name(), argTypes(c.args()), true);
+				var m = resolve(c);
 				emitArgs(m, c.args());
 				cb.invokestatic(JTypes.desc(c.owner()), c.name(), methodDesc(m), c.owner().isInterface());
 				return m.erasedReturn();
+			}
+			case JExpr.Self c -> {
+				cb.aload(0);
+				for (int i = 0; i < c.args().size(); i++) emitAs(c.args().get(i), c.parameters().get(i));
+				var params = new ClassDesc[c.parameters().size()];
+				for (int i = 0; i < params.length; i++) params[i] = JTypes.desc(c.parameters().get(i));
+				cb.invokevirtual(thisDesc, c.name(), MethodTypeDesc.of(JTypes.desc(c.returnType()), params));
+				return c.returnType();
+			}
+			case JExpr.InstanceOf i -> {
+				emitValue(i.expr());
+				cb.instanceOf(JTypes.desc(i.type()));
+				return boolean.class;
+			}
+			case JExpr.ClassLit c -> {
+				cb.ldc(JTypes.desc(c.type()));
+				return Class.class;
 			}
 			case JExpr.GetStatic g -> {
 				var f = field(g);
@@ -379,6 +443,19 @@ public class BytecodeWriter {
 				emitArgs(m, n.args());
 				cb.invokespecial(d, ConstantDescs.INIT_NAME, methodDesc(m));
 				return n.type();
+			}
+			case JExpr.NewArray n -> {
+				var component = n.component();
+				cb.loadConstant(n.elements().size());
+				if (component.isPrimitive()) cb.newarray(kind(component));
+				else cb.anewarray(JTypes.desc(component));
+				for (int i = 0; i < n.elements().size(); i++) {
+					cb.dup();
+					cb.loadConstant(i);
+					emitAs(n.elements().get(i), component);
+					cb.arrayStore(kind(component));
+				}
+				return component.arrayType();
 			}
 			case JExpr.Cast c -> {
 				emitCast(c);
@@ -806,6 +883,17 @@ public class BytecodeWriter {
 		return expression.hasObjectJavaResult() ? Type.ANY : expression.getType();
 	}
 
+	/** L'IA, telle que JavaWriter.getAIThis() la désigne. */
+	public JExpr aiThis() {
+		return new JExpr.This();
+	}
+
+	public List<JExpr> exprs(MainLeekBlock mainblock, List<? extends Expression> list) {
+		var r = new ArrayList<JExpr>(list.size());
+		for (var e : list) r.add(expr(mainblock, e));
+		return r;
+	}
+
 	public JExpr expr(MainLeekBlock mainblock, Expression e) {
 		return e.toBytecode(mainblock, this);
 	}
@@ -815,6 +903,24 @@ public class BytecodeWriter {
 		if (type == Type.BOOL) return expr(mainblock, expression);
 		if (type == Type.INT) return new JExpr.Binary("!=", expr(mainblock, expression), JExpr.of(0l));
 		return JExpr.call("bool", expr(mainblock, expression));
+	}
+
+	public JExpr getString(MainLeekBlock mainblock, Expression expression) {
+		if (codegenType(expression) == Type.STRING) return expr(mainblock, expression);
+		if (mainblock.getWordCompiler().getCurrentClass() != null) throw new Unsupported("string() dans une classe");
+		return JExpr.call("string", expr(mainblock, expression));
+	}
+
+	/** La classe courante passée aux accès dynamiques (getCurrentClassVariable) : null hors d'une classe. */
+	public JExpr classVariable(MainLeekBlock mainblock) {
+		if (mainblock.getWordCompiler().getCurrentClass() != null) throw new Unsupported("classe courante");
+		return JExpr.nul();
+	}
+
+	/** openCastObject : `realBox(x)` vers Double, un cast sinon. */
+	public JExpr castObject(String javaType, JExpr e) {
+		if (javaType.equals("Double")) return JExpr.call("realBox", e);
+		return new JExpr.Cast(JTypes.forName(javaType), e);
 	}
 
 	public JExpr getInt(MainLeekBlock mainblock, Expression expression) {
@@ -860,8 +966,11 @@ public class BytecodeWriter {
 		if (convertsAsIs(value.getType(), type) && !(typed && value.hasObjectJavaResult())) {
 			return expr(mainblock, value);
 		}
-		if (type.isArray() || type.isArrayOrNull() || type.isMap() || type.isMapOrNull() || type.isSet() || type.isSetOrNull()) {
-			throw new Unsupported("conversion vers un conteneur");
+		var converter = containerConverter(type);
+		if (converter != null) {
+			// Contrôle du contenu (v5, valeur any) : un champ ContentType de la classe, pas encore émis
+			if (LanguageFeature.TYPED_CONTENT_CHECK.enabledIn(version) && value.getType() == Type.ANY) throw new Unsupported("contrôle du contenu d'un conteneur");
+			return JExpr.call(converter, JExpr.of(index), expr(mainblock, value));
 		}
 		if (type == Type.INT) {
 			if (value.getType() == Type.REAL) return new JExpr.Cast(long.class, new JExpr.Cast(double.class, expr(mainblock, value)));
@@ -879,6 +988,16 @@ public class BytecodeWriter {
 			return new JExpr.Cast(primitiveClass(type), v);
 		}
 		return expr(mainblock, value);
+	}
+
+	private String containerConverter(Type type) {
+		if (type.isArray()) return version >= 4 ? "toArray" : "toLegacyArray";
+		if (type.isArrayOrNull()) return version >= 4 ? "toArrayOrNull" : "toLegacyArrayOrNull";
+		if (type.isMap()) return "toMap";
+		if (type.isMapOrNull()) return "toMapOrNull";
+		if (type.isSet()) return "toSet";
+		if (type.isSetOrNull()) return "toSetOrNull";
+		return null;
 	}
 
 	private static String numberConversion(MainLeekBlock mainblock, Expression value, String function) {
@@ -906,5 +1025,33 @@ public class BytecodeWriter {
 		if (castType == Type.REAL) return JExpr.call("real", call);
 		if (castType == Type.BIG_INT) throw new Unsupported("big_integer");
 		return null;
+	}
+
+	private static final leekscript.compiler.JavaWriter DEFAULT_PROBE = new leekscript.compiler.JavaWriter(false, "PROBE", true);
+	private static final java.util.regex.Pattern NEW_DEFAULT = java.util.regex.Pattern.compile("new (\\w+)\\(PROBE\\.this\\)");
+
+	/** La valeur par défaut d'un type, lue du Java de Type.getDefaultValue : un littéral ou `new X(ai)`. */
+	public JExpr defaultValue(Type type) {
+		var java = type.getDefaultValue(DEFAULT_PROBE, version);
+		switch (java) {
+			case "null": return JExpr.nul();
+			case "0l": return JExpr.of(0l);
+			case "0.0": return JExpr.of(0.0);
+			case "false": return JExpr.of(false);
+			case "\"\"": return JExpr.of("");
+			case "new BigIntegerValue(PROBE.this, 0)": return new JExpr.New(leekscript.runner.values.BigIntegerValue.class, List.of(aiThis(), JExpr.of(0)));
+		}
+		var m = NEW_DEFAULT.matcher(java);
+		if (m.matches()) return new JExpr.New(JTypes.forName(m.group(1)), List.of(aiThis()));
+		throw new Unsupported("valeur par défaut " + java);
+	}
+
+	/** writeElement : une valeur insérée dans un conteneur d'élément typé, contrôlée non nulle si besoin. */
+	public JExpr element(MainLeekBlock mainblock, Type elementType, Expression value) {
+		if (leekscript.compiler.JavaWriter.checksNullElement(mainblock, elementType, value)) {
+			var name = JTypes.javaStringValue(leekscript.compiler.expression.LeekFileContent.javaString(elementType.toString()));
+			return JExpr.call("nonNullElement", expr(mainblock, value), JExpr.of(name));
+		}
+		return expr(mainblock, value);
 	}
 }

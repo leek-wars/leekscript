@@ -13,6 +13,10 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.runner.values.LegacyArrayLeekValue;
+import java.util.List;
 
 public class LegacyLeekArray extends Expression {
 
@@ -133,6 +137,12 @@ public class LegacyLeekArray extends Expression {
 			mValues.get(i).writeJavaCode(mainblock, writer, false);
 		}
 		writer.addCode(" }, " + (mIsKeyVal ? "true" : "false") + ")");
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (mValues.isEmpty()) return new JExpr.New(LegacyArrayLeekValue.class, List.of(writer.aiThis()));
+		return new JExpr.New(LegacyArrayLeekValue.class, List.of(writer.aiThis(), new JExpr.NewArray(Object.class, writer.exprs(mainblock, mValues)), JExpr.of(mIsKeyVal)));
 	}
 
 	@Override

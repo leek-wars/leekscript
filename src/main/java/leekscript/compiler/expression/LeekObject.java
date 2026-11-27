@@ -10,6 +10,11 @@ import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.JTypes;
+import leekscript.runner.values.ObjectLeekValue;
+import java.util.List;
 
 public class LeekObject extends Expression {
 
@@ -82,6 +87,17 @@ public class LeekObject extends Expression {
 			entry.getValue().writeJavaCode(mainblock, writer, false);
 		}
 		writer.addCode(" })");
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var keys = new java.util.ArrayList<JExpr>();
+		var values = new java.util.ArrayList<JExpr>();
+		for (var entry : mValues.entrySet()) {
+			keys.add(JExpr.of(JTypes.javaStringValue("\"" + entry.getKey() + "\"")));
+			values.add(writer.expr(mainblock, entry.getValue()));
+		}
+		return new JExpr.New(ObjectLeekValue.class, List.of(writer.aiThis(), new JExpr.NewArray(String.class, keys), new JExpr.NewArray(Object.class, values)));
 	}
 
 	@Override

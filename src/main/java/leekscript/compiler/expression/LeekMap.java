@@ -15,6 +15,10 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.runner.values.MapLeekValue;
+import java.util.List;
 
 public class LeekMap extends Expression {
 
@@ -142,6 +146,17 @@ public class LeekMap extends Expression {
 			mEntries.get(i).value.writeJavaCode(mainblock, writer, false);
 		}
 		writer.addCode(" })");
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (mEntries.isEmpty()) return new JExpr.New(MapLeekValue.class, List.of(writer.aiThis()));
+		var values = new java.util.ArrayList<JExpr>();
+		for (var entry : mEntries) {
+			values.add(writer.expr(mainblock, entry.key));
+			values.add(writer.expr(mainblock, entry.value));
+		}
+		return new JExpr.New(MapLeekValue.class, List.of(writer.aiThis(), new JExpr.NewArray(Object.class, values)));
 	}
 
 	@Override

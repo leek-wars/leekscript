@@ -19,6 +19,11 @@ import leekscript.common.ArrayType;
 import leekscript.common.ClassType;
 import leekscript.common.Error;
 import leekscript.common.LegacyArrayType;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.Unsupported;
+import java.util.List;
+import java.util.ArrayList;
 
 public class LeekArrayAccess extends Expression {
 
@@ -355,6 +360,39 @@ public class LeekArrayAccess extends Expression {
 	}
 
 	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (colon != null) {
+			boolean string = mTabular.getType() == Type.STRING;
+			var prefix = string ? "rangeString" : mTabular.getType() == Type.ANY ? "rangeDynamic" : "range";
+			var name = mCase != null && endIndex != null ? prefix : mCase != null ? prefix + "_start" : endIndex != null ? prefix + "_end" : prefix + "_all";
+			var arguments = new java.util.ArrayList<JExpr>();
+			arguments.add(string ? writer.getString(mainblock, mTabular) : writer.expr(mainblock, mTabular));
+			if (mCase != null) arguments.add(writer.expr(mainblock, mCase));
+			if (endIndex != null) arguments.add(writer.expr(mainblock, endIndex));
+			if (stride != null) arguments.add(writer.expr(mainblock, stride));
+			return new JExpr.Call(null, name, arguments);
+		}
+		if (mTabular.getType() == Type.STRING) {
+			return JExpr.call("getString", writer.getString(mainblock, mTabular), writer.expr(mainblock, mCase));
+		}
+		if (mTabular instanceof LeekVariable v && v.getVariableType() == VariableType.THIS) throw new Unsupported("this[…]");
+		if (mTabular.getType() instanceof LegacyArrayType) {
+			return new JExpr.Call(writer.expr(mainblock, mTabular), "get", List.of(writer.expr(mainblock, mCase)));
+		}
+		if (mTabular.getType() instanceof ArrayType || mTabular.getType() instanceof MapType) {
+			JExpr e = new JExpr.Call(writer.expr(mainblock, mTabular), "get", List.of(writer.expr(mainblock, mCase)));
+			if (type != Type.ANY) {
+				e = writer.castObject(type.getJavaName(mainblock.getVersion()), e);
+				if (type.isPrimitive()) e = new JExpr.Cast(writer.primitiveClass(type), e);
+			}
+			return e;
+		}
+		JExpr e = JExpr.call("get", writer.expr(mainblock, mTabular), writer.expr(mainblock, mCase), writer.classVariable(mainblock));
+		if (this.type != Type.ANY) e = new JExpr.Cast(writer.javaClass(this.type), e);
+		return e;
+	}
+
+	@Override
 	public void compileL(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		// assert(mLeftValue && !mTabular.nullable());
 		writer.addCode("getBox(");
@@ -422,6 +460,98 @@ public class LeekArrayAccess extends Expression {
 		if (castType != Type.ANY && mainblock.isStrict()) {
 			if (parenthesis) writer.addCode(")");
 		}
+	}
+
+
+	// ---- Backend bytecode : écriture d'une case ----
+
+	@Override
+	public JExpr bytecodeAssign(MainLeekBlock mainblock, BytecodeWriter writer, int operator, Expression value) {
+		switch (operator) {
+			case Operators.ASSIGN: return bytecodeSet(mainblock, writer, value);
+			case Operators.INCREMENT: return bytecodePut(mainblock, writer, "put_inc", List.of());
+			case Operators.PRE_INCREMENT: return bytecodePut(mainblock, writer, "put_pre_inc", List.of());
+			case Operators.DECREMENT: return bytecodePut(mainblock, writer, "put_dec", List.of());
+			case Operators.PRE_DECREMENT: return bytecodePut(mainblock, writer, "put_pre_dec", List.of());
+			case Operators.ADDASSIGN: return bytecodeArithmetic(mainblock, writer, value, "put_add_eq", AI.ArithmeticOperation.ADD);
+			case Operators.MINUSASSIGN: return bytecodeArithmetic(mainblock, writer, value, "put_sub_eq", AI.ArithmeticOperation.SUB);
+			case Operators.MULTIPLIEASSIGN: return bytecodeArithmetic(mainblock, writer, value, "put_mul_eq", AI.ArithmeticOperation.MUL);
+			case Operators.MODULUSASSIGN: return bytecodeArithmetic(mainblock, writer, value, "put_mod_eq", AI.ArithmeticOperation.MOD);
+			case Operators.DIVIDEASSIGN: return bytecodeArithmetic(mainblock, writer, value, "put_div_eq", AI.ArithmeticOperation.DIV);
+			case Operators.POWERASSIGN: return bytecodeArithmetic(mainblock, writer, value, "put_pow_eq", AI.ArithmeticOperation.POW);
+			case Operators.INTEGER_DIVISION_EQ: return bytecodeBit(mainblock, writer, value, "put_intdiv_eq", AI.BitOperation.INTDIV);
+			case Operators.BITOR_ASSIGN: return bytecodeBit(mainblock, writer, value, "put_bor_eq", AI.BitOperation.BOR);
+			case Operators.BITAND_ASSIGN: return bytecodeBit(mainblock, writer, value, "put_band_eq", AI.BitOperation.BAND);
+			case Operators.BITXOR_ASSIGN: return bytecodeBit(mainblock, writer, value, "put_bxor_eq", AI.BitOperation.BXOR);
+			case Operators.SHIFT_LEFT_ASSIGN: return bytecodeBit(mainblock, writer, value, "put_shl_eq", AI.BitOperation.SHL);
+			case Operators.SHIFT_RIGHT_ASSIGN: return bytecodeBit(mainblock, writer, value, "put_shr_eq", AI.BitOperation.SHR);
+			case Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN: return bytecodeBit(mainblock, writer, value, "put_ushr_eq", AI.BitOperation.USHR);
+		}
+		throw new Unsupported("affectation de case " + operator);
+	}
+
+	private JExpr bytecodeSet(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr) {
+		Type castType = expr.getType();
+		if (mTabular.getType() instanceof ArrayType at) castType = at.element();
+		else if (mTabular.getType() instanceof MapType mt) castType = mt.element();
+		JExpr e;
+		if (mTabular.getType() instanceof ArrayType at) {
+			var method = mainblock.isStrict() || mainblock.getVersion() <= 3 ? "put" : "putv4";
+			e = new JExpr.Call(writer.expr(mainblock, mTabular), method, List.of(writer.expr(mainblock, mCase), bytecodeElement(mainblock, writer, expr, at.element())));
+		} else if (mTabular.getType() instanceof MapType mt) {
+			e = new JExpr.Call(writer.expr(mainblock, mTabular), "set", List.of(writer.element(mainblock, mt.key(), mCase), bytecodeElement(mainblock, writer, expr, mt.element())));
+		} else {
+			e = JExpr.call(mainblock.isStrict() ? "put" : "putv4", writer.expr(mainblock, mTabular), writer.expr(mainblock, mCase), writer.expr(mainblock, expr), writer.classVariable(mainblock));
+		}
+		if (castType != Type.ANY && mainblock.isStrict()) {
+			e = new JExpr.Cast(writer.javaClass(castType), e);
+			if (castType.isPrimitive()) e = new JExpr.Cast(writer.primitiveClass(castType), e);
+		}
+		return e;
+	}
+
+	/** writeValueWithElementCoercion. */
+	private JExpr bytecodeElement(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr, Type elementType) {
+		if (elementType.isPrimitiveNumber()) return writer.compileConvert(mainblock, 0, expr, elementType);
+		if (elementType.assertNotNull() == Type.BIG_INT && (expr.getType().isPrimitiveNumber() || expr.getType().isIntOrReal())) {
+			return writer.compileConvert(mainblock, 0, expr, Type.BIG_INT);
+		}
+		return writer.element(mainblock, elementType, expr);
+	}
+
+	private JExpr bytecodeBit(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr, String helper, AI.BitOperation operation) {
+		var element = getType().assertNotNull();
+		boolean converted = element == Type.BOOL || element == Type.REAL
+			|| element == Type.BIG_INT && isMapCell() && expr.getType().assertNotNull() == Type.INT;
+		return bytecodeOperation(mainblock, writer, expr, helper, "put_bit_eq", operation, converted ? element : null);
+	}
+
+	private JExpr bytecodeArithmetic(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr, String helper, AI.ArithmeticOperation operation) {
+		var element = getType().assertNotNull();
+		var cell = element == Type.BIG_INT && isMapCell() ? getType() : element;
+		return bytecodeOperation(mainblock, writer, expr, helper, "put_arithmetic_eq", operation, JavaWriter.arithmeticConversion(cell, expr.getType(), operation));
+	}
+
+	private JExpr bytecodeOperation(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr, String helper, String converted, Enum<?> operation, Type target) {
+		var rest = new ArrayList<JExpr>();
+		rest.add(writer.expr(mainblock, expr));
+		if (target != null) {
+			rest.add(new JExpr.GetStatic(operation.getDeclaringClass(), operation.name()));
+			String type = target == Type.BOOL ? "BOOL" : target == Type.INT ? "INT" : target == Type.REAL ? "REAL" : "BIG_INT";
+			rest.add(new JExpr.GetStatic(Type.class, type));
+		}
+		return bytecodePut(mainblock, writer, target != null ? converted : helper, rest);
+	}
+
+	/** writePut : `helper(tableau, clé, …reste, classe)`. */
+	private JExpr bytecodePut(MainLeekBlock mainblock, BytecodeWriter writer, String helper, List<JExpr> rest) {
+		if (strict && LanguageFeature.STRICT_MISSING_MAP_KEY.enabledIn(mainblock.getVersion()) && mayBeMap()) throw new Unsupported("clé de map contrôlée");
+		var arguments = new ArrayList<JExpr>();
+		arguments.add(writer.expr(mainblock, mTabular));
+		arguments.add(writer.expr(mainblock, mCase));
+		arguments.addAll(rest);
+		arguments.add(writer.classVariable(mainblock));
+		return new JExpr.Call(null, helper, arguments);
 	}
 
 	@Override

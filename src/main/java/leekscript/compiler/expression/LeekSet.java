@@ -12,6 +12,10 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.runner.values.SetLeekValue;
+import java.util.List;
 
 public class LeekSet extends Expression {
 
@@ -151,6 +155,22 @@ public class LeekSet extends Expression {
 			}
 			writer.addCode(")");
 		}
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (!hasRange()) {
+			var values = new java.util.ArrayList<JExpr>();
+			for (var element : mElements) values.add(writer.expr(mainblock, element.start));
+			return new JExpr.New(SetLeekValue.class, List.of(writer.aiThis(), new JExpr.NewArray(Object.class, values)));
+		}
+		JExpr set = new JExpr.New(SetLeekValue.class, List.of(writer.aiThis()));
+		for (var element : mElements) {
+			set = element.isRange()
+				? JExpr.call("setLiteralRange", set, writer.expr(mainblock, element.start), writer.expr(mainblock, element.end))
+				: JExpr.call("setLiteralAdd", set, writer.expr(mainblock, element.start));
+		}
+		return set;
 	}
 
 	@Override

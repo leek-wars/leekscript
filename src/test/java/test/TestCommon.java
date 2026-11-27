@@ -370,6 +370,14 @@ public class TestCommon {
 
 				ai = is_file ? LeekScript.compileFile(code, "AI", options) : LeekScript.compileSnippet(code, "AI", options);
 				ai.init();
+				if (DIFFERENTIAL) {
+					// Même tirage pour les deux backends, et leurs lignes (sans cache disque, pas de .lines)
+					ai.getRandom().seed(42);
+					var lines = java.nio.file.Files.createTempFile("diff", ".lines");
+					lines.toFile().deleteOnExit();
+					java.nio.file.Files.writeString(lines, ai.getFile().getCompiledCode().getLines());
+					ai.setLinesFile(lines.toFile());
+				}
 				ai.staticInit();
 				ai.resetCounter();
 				aiID = ai.getId();
@@ -426,17 +434,35 @@ public class TestCommon {
 			return new Execution(result, ramErrors, aiID, compile_time, ops, ram, errorLocation, bytecode);
 		}
 
+		private static long usedRAM(AI ai) {
+			return ai != null ? ai.getUsedRAM() - ai.getCodeRAM() : 0;
+		}
+
+		private static String withoutSnippetId(String s) {
+			return s == null ? null : s.replaceAll("<snippet \\d+>", "<snippet>");
+		}
+
 		private void compareBackends(int version, Execution javac, Execution bytecode) {
 			bytecodeCompared.incrementAndGet();
 			var a = javac.result();
 			var b = bytecode.result();
 			var diffs = new ArrayList<String>();
-			if (!java.util.Objects.equals(a.result, b.result)) diffs.add("résultat " + a.result + " / " + b.result);
+			// Chaque compilation d'un snippet a son numéro : `<snippet N>` diffère sans que le code y soit pour rien
+			if (!java.util.Objects.equals(withoutSnippetId(a.result), withoutSnippetId(b.result))) diffs.add("résultat " + a.result + " / " + b.result);
 			if (a.error != b.error) diffs.add("erreur " + a.error + " / " + b.error);
-			if (a.operations != b.operations) diffs.add("opérations " + a.operations + " / " + b.operations);
-			if (javac.ram() != bytecode.ram()) diffs.add("RAM hors code " + javac.ram() + " / " + bytecode.ram());
+			// Deux OUT_OF_MEMORY : le bytecode n'a pas la taille de celui de javac, la RAM du code non plus,
+			// donc la limite tombe à un autre moment de l'exécution
+			boolean outOfMemory = a.error == Error.OUT_OF_MEMORY && b.error == Error.OUT_OF_MEMORY;
+			if (a.operations != b.operations && !outOfMemory) diffs.add("opérations " + a.operations + " / " + b.operations);
+			if (javac.ram() != bytecode.ram() && !outOfMemory) {
+				// La RAM d'un objet ramassé est rendue au passage du GC : relue après un GC des deux côtés
+				System.gc();
+				try { Thread.sleep(20); } catch (InterruptedException e) {}
+				long ramA = usedRAM(a.ai), ramB = usedRAM(b.ai);
+				if (ramA != ramB) diffs.add("RAM hors code " + ramA + " / " + ramB);
+			}
 			if (!a.loggedErrors.equals(b.loggedErrors)) diffs.add("erreurs loggées " + a.loggedErrors + " / " + b.loggedErrors);
-			if (!java.util.Objects.equals(javac.errorLocation(), bytecode.errorLocation())) diffs.add("position d'erreur " + javac.errorLocation() + " / " + bytecode.errorLocation());
+			if (!java.util.Objects.equals(withoutSnippetId(javac.errorLocation()), withoutSnippetId(bytecode.errorLocation()))) diffs.add("position d'erreur " + javac.errorLocation() + " / " + bytecode.errorLocation());
 			if (diffs.isEmpty()) return;
 			var err = C_RED + "[DIFF] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " : javac / bytecode : " + String.join(", ", diffs);
 			System.out.println(err);

@@ -45,6 +45,14 @@ public abstract class Expression {
 		throw new Unsupported(getClass().getSimpleName());
 	}
 
+	/**
+	 * L'affectation `operator` (Operators.ASSIGN, ADDASSIGN…, INCREMENT…) de `value` à cette
+	 * l-value, pour le backend bytecode (cf compileSet, compileAddEq…). `value` null pour ++ et --.
+	 */
+	public JExpr bytecodeAssign(MainLeekBlock mainblock, BytecodeWriter writer, int operator, Expression value) {
+		throw new Unsupported("affectation de " + getClass().getSimpleName());
+	}
+
 	public void compileL(MainLeekBlock mainblock, JavaWriter writer,  boolean parenthesis) {
 		writeJavaCode(mainblock, writer, parenthesis);
 	}

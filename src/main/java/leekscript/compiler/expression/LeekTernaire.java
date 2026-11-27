@@ -11,6 +11,10 @@ import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.common.Error;
 import leekscript.common.Type;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.JTypes;
+import leekscript.compiler.bytecode.Unsupported;
 
 public class LeekTernaire extends LeekExpression {
 
@@ -167,6 +171,30 @@ public class LeekTernaire extends LeekExpression {
 		if (parenthesis) {
 			writer.addCode(")");
 		}
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (!complete()) throw new Unsupported("ternaire incomplet");
+		var condition = writer.getBoolean(mainblock, mCondition);
+		var then = bytecodeBranch(mainblock, writer, mExpression1);
+		var otherwise = bytecodeBranch(mainblock, writer, mExpression2);
+		if (castsBranches()) {
+			then = new JExpr.Cast(writer.javaClass(this.type), then);
+			otherwise = new JExpr.Cast(writer.primitiveClass(this.type), otherwise);
+		}
+		JExpr e = new JExpr.Cond(condition, then, otherwise);
+		var cast = opsArgument || type != Type.BOOL ? javaType(mainblock.getVersion()) : null;
+		if (cast != null) e = new JExpr.Cast(JTypes.forName(cast), e);
+		return e;
+	}
+
+	private JExpr bytecodeBranch(MainLeekBlock mainblock, BytecodeWriter writer, Expression branch) {
+		var value = writer.compileConvert(mainblock, ARRAY, branch, type);
+		if (!counted(branch)) return value;
+		if (JavaWriter.keepsBoxed(branch, type)) value = new JExpr.Cast(writer.primitiveClass(type), value);
+		var ops = branch.trim() instanceof LeekTernaire nested && nested.hasObjectJavaResult() ? "opsAny" : "ops";
+		return JExpr.call(ops, value, JExpr.of(branch.operations));
 	}
 
 	/**

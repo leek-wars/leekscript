@@ -1322,29 +1322,44 @@ public class LeekExpression extends Expression {
 			if (mExpression2.getType().isPrimitiveNumber()) return new JExpr.Unary("-", writer.compileTyped(mainblock, mExpression2));
 			if (type == Type.BIG_INT) throw new Unsupported("big_integer");
 			return JExpr.call("minus", writer.expr(mainblock, mExpression2));
-		case Operators.INCREMENT: return bytecodeTarget(mExpression2).bytecodeIncDec(mainblock, writer, true, true);
-		case Operators.DECREMENT: return bytecodeTarget(mExpression2).bytecodeIncDec(mainblock, writer, false, true);
-		case Operators.PRE_INCREMENT: return bytecodeTarget(mExpression2).bytecodeIncDec(mainblock, writer, true, false);
-		case Operators.PRE_DECREMENT: return bytecodeTarget(mExpression2).bytecodeIncDec(mainblock, writer, false, false);
+		case Operators.INCREMENT:
+		case Operators.DECREMENT:
+		case Operators.PRE_INCREMENT:
+		case Operators.PRE_DECREMENT:
+			return mExpression2.bytecodeAssign(mainblock, writer, mOperator, null);
 		case Operators.ASSIGN:
 			if (v < 2) throw new Unsupported("affectation v1");
-			return bytecodeTarget(mExpression1).bytecodeSet(mainblock, writer, mExpression2);
+			return mExpression1.bytecodeAssign(mainblock, writer, mOperator, mExpression2);
 		case Operators.ADDASSIGN: {
 			var target = mExpression1.getType();
 			if ((target instanceof ArrayType || target instanceof SetType) && JavaWriter.checksNullElement(mainblock, target.element(), mExpression2)) throw new Unsupported("+= sur un conteneur");
-			return bytecodeTarget(mExpression1).bytecodeArithmeticEq(mainblock, writer, mExpression2, "+", "add_eq");
+			return mExpression1.bytecodeAssign(mainblock, writer, mOperator, mExpression2);
 		}
-		case Operators.MINUSASSIGN: return bytecodeTarget(mExpression1).bytecodeArithmeticEq(mainblock, writer, mExpression2, "-", "sub");
-		case Operators.MULTIPLIEASSIGN: return bytecodeTarget(mExpression1).bytecodeArithmeticEq(mainblock, writer, mExpression2, "*", "mul");
+		case Operators.MINUSASSIGN:
+		case Operators.MULTIPLIEASSIGN:
+		case Operators.DIVIDEASSIGN:
+		case Operators.MODULUSASSIGN:
+		case Operators.POWERASSIGN:
+		case Operators.INTEGER_DIVISION_EQ:
+		case Operators.BITOR_ASSIGN:
+		case Operators.BITAND_ASSIGN:
+		case Operators.BITXOR_ASSIGN:
+		case Operators.SHIFT_LEFT_ASSIGN:
+		case Operators.SHIFT_RIGHT_ASSIGN:
+		case Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN:
+			return mExpression1.bytecodeAssign(mainblock, writer, mOperator, mExpression2);
 		case Operators.REFERENCE:
 			return writer.expr(mainblock, mExpression2);
+		case Operators.INSTANCEOF:
+			return bytecodeCall(mainblock, writer, "instanceOf");
+		case Operators.IN:
+			return JExpr.call("operatorIn", writer.expr(mainblock, mExpression2), writer.expr(mainblock, mExpression1));
+		case Operators.NOT_IN:
+			return new JExpr.Unary("!", JExpr.call("operatorIn", writer.expr(mainblock, mExpression2), writer.expr(mainblock, mExpression1)));
+		case Operators.NON_NULL_ASSERTION:
+			return writer.compileConvert(mainblock, 0, mExpression2, type);
 		}
 		throw new Unsupported("opérateur " + mOperator);
-	}
-
-	private static LeekVariable bytecodeTarget(Expression e) {
-		if (e instanceof LeekVariable variable) return variable;
-		throw new Unsupported("affectation de " + e.getClass().getSimpleName());
 	}
 
 	private JExpr bytecodeCall(MainLeekBlock mainblock, BytecodeWriter writer, String method) {

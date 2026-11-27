@@ -11,6 +11,11 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.common.Error;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.runner.values.RealIntervalLeekValue;
+import leekscript.runner.values.IntegerIntervalLeekValue;
+import java.util.List;
 
 public class LeekInterval extends Expression {
 
@@ -140,6 +145,27 @@ public class LeekInterval extends Expression {
 			}
 			writer.addCode(")");
 		}
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainBlock, BytecodeWriter writer) {
+		if (type == Type.EMPTY_INTERVAL) {
+			return new JExpr.New(RealIntervalLeekValue.class, List.of(writer.aiThis(), JExpr.of(false), JExpr.of(0.0), JExpr.of(false), JExpr.of(0.0)));
+		}
+		boolean integer = type == Type.INTEGER_INTERVAL;
+		JExpr from = mFrom != null ? writer.expr(mainBlock, mFrom) : integer ? new JExpr.GetStatic(Long.class, "MIN_VALUE") : new JExpr.GetStatic(Double.class, "NEGATIVE_INFINITY");
+		JExpr to = mTo != null ? writer.expr(mainBlock, mTo) : integer ? new JExpr.GetStatic(Long.class, "MAX_VALUE") : new JExpr.GetStatic(Double.class, "POSITIVE_INFINITY");
+		var arguments = List.of(JExpr.of(minClosed), from, JExpr.of(maxClosed), to);
+		if (integer) return new JExpr.New(IntegerIntervalLeekValue.class, prepend(writer.aiThis(), arguments));
+		if (type == Type.REAL_INTERVAL) return new JExpr.New(RealIntervalLeekValue.class, prepend(writer.aiThis(), arguments));
+		return new JExpr.Call(null, "interval", arguments);
+	}
+
+	private static List<JExpr> prepend(JExpr first, List<JExpr> rest) {
+		var r = new java.util.ArrayList<JExpr>(rest.size() + 1);
+		r.add(first);
+		r.addAll(rest);
+		return r;
 	}
 
 	@Override

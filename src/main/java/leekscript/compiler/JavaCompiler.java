@@ -383,6 +383,7 @@ public class JavaCompiler {
 				t = System.nanoTime();
 				bytecode = BytecodeBackend.compile(lsCompiler.getMainBlock(), file, file.getJavaClass(), options);
 				analyze_time += System.nanoTime() - t;
+				if (bytecode != null) file.getCompiledCode().setLines(bytecode.lines());
 			}
 
 			if (options.useCache()) {
@@ -401,7 +402,7 @@ public class JavaCompiler {
 
 				try {
 					FileOutputStream javaOutput = new FileOutputStream(lines);
-					javaOutput.write((bytecode != null ? bytecode.lines() : file.getCompiledCode().getLines()).getBytes(StandardCharsets.UTF_8));
+					javaOutput.write(file.getCompiledCode().getLines().getBytes(StandardCharsets.UTF_8));
 					javaOutput.close();
 				} catch (IOException e) {
 					throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());

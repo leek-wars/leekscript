@@ -22,6 +22,15 @@ public sealed interface JExpr {
 	/** Appel de méthode d'instance par son nom ; receveur null = `this` (méthode de l'IA). */
 	record Call(JExpr receiver, String name, List<JExpr> args) implements JExpr {}
 
+	/** Appel d'une méthode d'instance de la classe générée, de signature connue (pas de résolution). */
+	record Self(String name, List<Class<?>> parameters, Class<?> returnType, List<JExpr> args) implements JExpr {}
+
+	/** `e instanceof T`. */
+	record InstanceOf(JExpr expr, Class<?> type) implements JExpr {}
+
+	/** `T.class`. */
+	record ClassLit(Class<?> type) implements JExpr {}
+
 	/** Appel de méthode statique par son nom. */
 	record StaticCall(Class<?> owner, String name, List<JExpr> args) implements JExpr {}
 
@@ -30,6 +39,9 @@ public sealed interface JExpr {
 
 	/** `new T(args)`. */
 	record New(Class<?> type, List<JExpr> args) implements JExpr {}
+
+	/** `new T[] { e1, e2… }`. */
+	record NewArray(Class<?> component, List<JExpr> elements) implements JExpr {}
 
 	/** Cast Java `(T) e` : conversions de cast du JLS (checkcast, unboxing, conversions primitives). */
 	record Cast(Class<?> type, JExpr expr) implements JExpr {}

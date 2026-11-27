@@ -41,6 +41,11 @@ import leekscript.common.SetType;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 import leekscript.common.TypeVariable;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.GenericFunctions;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.JTypes;
+import leekscript.compiler.bytecode.Unsupported;
 
 public class LeekFunctionCall extends Expression {
 
@@ -224,6 +229,61 @@ public class LeekFunctionCall extends Expression {
 		} else {
 			compileL(mainblock, writer, parenthesis);
 		}
+	}
+
+	// ---- Backend bytecode : appels de fonctions système (v4+, surcharge connue à la compilation) ----
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (mainblock.getVersion() == 1) throw new Unsupported("appel v1");
+		if (isEliminable(mainblock)) {
+			var classification = resolvedFunction.getBodyClassification(mainblock);
+			if (classification.kind() == ConstantFolder.BodyKind.CONSTANT) return writer.compileConvert(mainblock, 0, classification.literal(), this.type);
+			return writer.defaultValue(this.type);
+		}
+		var callSite = callSite(mainblock);
+		if (callSite != null) {
+			var location = ((LeekVariable) mExpression).getToken().getLocation();
+			if (callSite == LeekFunctions.CallSite.LINE) return JExpr.of((long) location.getStartLine());
+			return JExpr.of(JTypes.javaStringValue(LeekFileContent.javaString(SystemClass.sourcePath(location.getFile().getPath()))));
+		}
+		if (namespaceConstructorClass != null || namespaceUserFunction != null || !(mExpression instanceof LeekVariable variable)
+			|| variable.getVariableType() != VariableType.SYSTEM_FUNCTION || mainblock.isRedefinedFunction(variable.getName())) {
+			throw new Unsupported("appel de " + mExpression.getClass().getSimpleName());
+		}
+		boolean generic = unsafe || mainblock.getVersion() <= 3;
+
+		int argCount = callable_versions != null ? callable_versions.get(0).arguments.length : system_function.getVersions()[0].arguments.length;
+		var arguments = new ArrayList<JExpr>();
+		for (int i = 0; i < argCount; i++) {
+			if (i < mParameters.size()) {
+				var elementType = insertedElementType(i);
+				arguments.add(elementType != null ? writer.element(mainblock, elementType, mParameters.get(i)) : writer.expr(mainblock, mParameters.get(i)));
+			} else {
+				arguments.add(JExpr.nul());
+			}
+		}
+		JExpr call;
+		if (generic) {
+			// Par l'enveloppe générique `Std_<clé>(a0, …)`, qui convertit les arguments au runtime
+			var versions = callable_versions != null ? callable_versions : new ArrayList<CallableVersion>(List.of(system_function.getVersions()[0]));
+			var key = writer.genericFunction(versions, strictNullArgument);
+			call = GenericFunctions.call(writer, versions, key, arguments);
+		} else if (system_function.isStatic()) {
+			arguments.add(0, new JExpr.This());
+			call = new JExpr.StaticCall(JTypes.forName(system_function.getStandardClass() + "Class"), system_function.getJavaName(), arguments);
+		} else {
+			// `((T) a).f(ai, …)` : la méthode du premier argument
+			var receiver = arguments.remove(0);
+			if (mParameters.get(0).getType() != Type.ANY) receiver = new JExpr.Cast(writer.javaClass(mParameters.get(0).getType()), receiver);
+			arguments.add(0, new JExpr.This());
+			call = new JExpr.Call(receiver, system_function.getJavaName(), arguments);
+		}
+		// Retour effacé d'une fonction générique : casté au type inféré
+		if (systemReturnContainsTypeVariable(mainblock) && this.type != Type.ANY && this.type != Type.VOID) {
+			call = new JExpr.Cast(writer.javaClass(this.type), call);
+		}
+		return call;
 	}
 
 	/**

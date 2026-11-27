@@ -46,6 +46,14 @@ public final class BytecodeBackend {
 	// Statistiques des compilations (tests, bancs) : nombre de programmes émis, et des replis par raison
 	public static final LongAdder compiled = new LongAdder();
 	public static final ConcurrentHashMap<String, LongAdder> fallbacks = new ConcurrentHashMap<>();
+	/** Un programme par raison de repli (le plus court), pour choisir et tester la construction suivante. */
+	public static final ConcurrentHashMap<String, String> examples = new ConcurrentHashMap<>();
+
+	private static void fallback(String reason, AIFile file) {
+		fallbacks.computeIfAbsent(reason, k -> new LongAdder()).increment();
+		var code = file.getCode();
+		if (code != null) examples.merge(reason, code, (a, b) -> b.length() < a.length() ? b : a);
+	}
 
 	/** Le bytecode du programme, ou null s'il contient une construction que le backend ne sait pas émettre. */
 	public static Result compile(MainLeekBlock main, AIFile file, String className, Options options) {
@@ -54,15 +62,15 @@ public final class BytecodeBackend {
 			compiled.increment();
 			return result;
 		} catch (Unsupported e) {
-			fallbacks.computeIfAbsent(e.getMessage(), k -> new LongAdder()).increment();
+			fallback(e.getMessage(), file);
 			return null;
 		} catch (RuntimeException | LinkageError e) {
 			// Méthode de plus de 64 Ko : javac la refusera aussi, avec l'erreur CODE_TOO_LARGE habituelle
 			if (e instanceof IllegalArgumentException && String.valueOf(e.getMessage()).startsWith("Code length")) {
-				fallbacks.computeIfAbsent("méthode de plus de 64 Ko", k -> new LongAdder()).increment();
+				fallback("méthode de plus de 64 Ko", file);
 				return null;
 			}
-			fallbacks.computeIfAbsent("ERREUR " + e, k -> new LongAdder()).increment();
+			fallback("ERREUR " + e, file);
 			if (MODE.equals("check")) throw new IllegalStateException("backend bytecode : " + file.getPath(), e);
 			return null;
 		}
@@ -97,6 +105,8 @@ public final class BytecodeBackend {
 				main.writeBytecode(writer, options);
 				if (writer.isAlive()) throw new Unsupported("fin de runIA atteignable");
 			});
+
+			GenericFunctions.write(clb, writer);
 
 			clb.withMethodBody("getAIString", MethodTypeDesc.of(ConstantDescs.CD_String), ClassFile.ACC_PROTECTED, cb -> {
 				cb.loadConstant(main.getAIName());

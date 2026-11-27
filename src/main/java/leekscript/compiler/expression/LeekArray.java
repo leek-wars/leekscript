@@ -12,6 +12,10 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.runner.values.ArrayLeekValue;
+import java.util.List;
 
 public class LeekArray extends Expression {
 
@@ -96,6 +100,12 @@ public class LeekArray extends Expression {
 			mValues.get(i).writeJavaCode(mainblock, writer, false);
 		}
 		writer.addCode(" })");
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (mValues.isEmpty()) return new JExpr.New(ArrayLeekValue.class, List.of(writer.aiThis()));
+		return new JExpr.New(ArrayLeekValue.class, List.of(writer.aiThis(), new JExpr.NewArray(Object.class, writer.exprs(mainblock, mValues))));
 	}
 
 	@Override

@@ -851,13 +851,38 @@ public class LeekVariable extends Expression {
 		return base;
 	}
 
-	public JExpr bytecodeSet(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr) {
+	@Override
+	public JExpr bytecodeAssign(MainLeekBlock mainblock, BytecodeWriter writer, int operator, Expression value) {
+		switch (operator) {
+			case Operators.ASSIGN: return bytecodeSet(mainblock, writer, value);
+			case Operators.INCREMENT: return bytecodeIncDec(mainblock, writer, true, true);
+			case Operators.DECREMENT: return bytecodeIncDec(mainblock, writer, false, true);
+			case Operators.PRE_INCREMENT: return bytecodeIncDec(mainblock, writer, true, false);
+			case Operators.PRE_DECREMENT: return bytecodeIncDec(mainblock, writer, false, false);
+			case Operators.ADDASSIGN: return bytecodeArithmeticEq(mainblock, writer, value, "+", "add_eq");
+			case Operators.MINUSASSIGN: return bytecodeArithmeticEq(mainblock, writer, value, "-", "sub");
+			case Operators.MULTIPLIEASSIGN: return bytecodeArithmeticEq(mainblock, writer, value, "*", "mul");
+			case Operators.DIVIDEASSIGN: return bytecodeDivEq(mainblock, writer, value);
+			case Operators.MODULUSASSIGN: return bytecodeModEq(mainblock, writer, value);
+			case Operators.POWERASSIGN: return bytecodePowEq(mainblock, writer, value);
+			case Operators.INTEGER_DIVISION_EQ: return bytecodeBitAssign(mainblock, writer, value, AI.BitOperation.INTDIV, null);
+			case Operators.BITOR_ASSIGN: return bytecodeBitAssign(mainblock, writer, value, AI.BitOperation.BOR, "|");
+			case Operators.BITAND_ASSIGN: return bytecodeBitAssign(mainblock, writer, value, AI.BitOperation.BAND, "&");
+			case Operators.BITXOR_ASSIGN: return bytecodeBitAssign(mainblock, writer, value, AI.BitOperation.BXOR, "^");
+			case Operators.SHIFT_LEFT_ASSIGN: return bytecodeBitAssign(mainblock, writer, value, AI.BitOperation.SHL, "<<");
+			case Operators.SHIFT_RIGHT_ASSIGN: return bytecodeBitAssign(mainblock, writer, value, AI.BitOperation.SHR, ">>");
+			case Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN: return bytecodeBitAssign(mainblock, writer, value, AI.BitOperation.USHR, ">>>");
+		}
+		throw new Unsupported("affectation " + operator);
+	}
+
+	private JExpr bytecodeSet(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr) {
 		var local = plainLocal(mainblock, writer);
 		var assignType = (this.declaration != null) ? this.declaration.getType() : this.variableType;
 		return new JExpr.AssignLocal(local, writer.compileConvertTyped(mainblock, 0, expr, assignType));
 	}
 
-	public JExpr bytecodeIncDec(MainLeekBlock mainblock, BytecodeWriter writer, boolean increment, boolean suffix) {
+	private JExpr bytecodeIncDec(MainLeekBlock mainblock, BytecodeWriter writer, boolean increment, boolean suffix) {
 		var local = plainLocal(mainblock, writer);
 		if (hasPrimitiveJavaSlot(mainblock.getVersion())) return new JExpr.IncLocal(local, increment, !suffix);
 		// writeIncrement : `sub(u_x = add(u_x, 1l), 1l)` en suffixe, `u_x = add(u_x, 1l)` en préfixe
@@ -869,13 +894,49 @@ public class LeekVariable extends Expression {
 	}
 
 	/** `+=`, `-=`, `*=` sur une variable locale : opérateur Java natif sur un primitif, add_eq / sub / mul sinon. */
-	public JExpr bytecodeArithmeticEq(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr, String javaOperator, String method) {
+	private JExpr bytecodeArithmeticEq(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr, String javaOperator, String method) {
 		var local = plainLocal(mainblock, writer);
 		if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion()) && !(expr instanceof LeekVariable lve && lve.hasNarrowingMismatch(mainblock.getVersion()))) {
 			return new JExpr.CompoundLocal(local, javaOperator, writer.compileTyped(mainblock, expr));
 		}
 		var call = JExpr.call(method, new JExpr.Local(local), writer.expr(mainblock, expr));
 		return new JExpr.AssignLocal(local, bytecodeOperationResult(writer, this.variableType, expr.getType(), call));
+	}
+
+	/** `/=` sur une variable locale : `u_x = div(u_x, e)` converti. */
+	private JExpr bytecodeDivEq(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr) {
+		var local = plainLocal(mainblock, writer);
+		if (mainblock.getVersion() == 1) throw new Unsupported("/= v1");
+		var call = JExpr.call("div", new JExpr.Local(local), writer.expr(mainblock, expr));
+		return new JExpr.AssignLocal(local, bytecodeOperationResult(writer, divTarget(this.variableType), expr.getType(), call));
+	}
+
+	/** `%=` : `%=` Java sur un emplacement primitif, `mod` sinon. */
+	private JExpr bytecodeModEq(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr) {
+		var local = plainLocal(mainblock, writer);
+		if (hasPrimitiveJavaSlot(mainblock.getVersion()) && expr.getType().isPrimitiveNumber()) {
+			return new JExpr.CompoundLocal(local, "%", writer.compileTyped(mainblock, expr));
+		}
+		var call = JExpr.call("mod", new JExpr.Local(local), writer.expr(mainblock, expr));
+		return new JExpr.AssignLocal(local, bytecodeOperationResult(writer, this.variableType, expr.getType(), call));
+	}
+
+	private JExpr bytecodePowEq(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr) {
+		var local = plainLocal(mainblock, writer);
+		var call = JExpr.call("pow", new JExpr.Local(local), writer.expr(mainblock, expr));
+		return new JExpr.AssignLocal(local, bytecodeOperationResult(writer, this.variableType, expr.getType(), call));
+	}
+
+	/** compileBitAssign : `|=`, `&=`, `^=`, décalages et `\=` sur une variable locale. */
+	private JExpr bytecodeBitAssign(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr, AI.BitOperation operation, String operator) {
+		var local = plainLocal(mainblock, writer);
+		if (operator != null && hasNativeBitSlot(mainblock.getVersion())) {
+			return new JExpr.CompoundLocal(local, operator, writer.getInt(mainblock, expr));
+		}
+		var converted = javaSlotType().assertNotNull() == Type.BOOL ? Type.BOOL : boxedSlotType() == Type.REAL ? Type.REAL : null;
+		JExpr call = JExpr.call(bitOpMethod(operation.name().toLowerCase(Locale.ROOT)), new JExpr.Local(local), writer.expr(mainblock, expr));
+		if (converted != null) call = writer.fieldResultConversion(converted, call);
+		return new JExpr.AssignLocal(local, call);
 	}
 
 	/** openOperationResult du backend bytecode. */

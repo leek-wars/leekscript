@@ -236,14 +236,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 		var castHere = writer.isOperationsEnabled() && this.type != Type.ANY && !this.type.isPrimitive();
 		JExpr value;
 		if (mValue == null) {
-			if (this.type != Type.ANY && !this.type.isPrimitive()) throw new Unsupported("valeur par défaut de " + this.type);
-			value = switch (this.type.getDefaultValue(null, mainblock.getVersion())) {
-				case "null" -> JExpr.nul();
-				case "0l" -> JExpr.of(0l);
-				case "0.0" -> JExpr.of(0.0);
-				case "false" -> JExpr.of(false);
-				default -> throw new Unsupported("valeur par défaut de " + this.type);
-			};
+			value = writer.defaultValue(this.type);
 		} else if (castHere) {
 			value = writer.compileConvert(mainblock, 0, mValue, this.type);
 		} else {
