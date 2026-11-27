@@ -45,6 +45,8 @@ import leekscript.runner.LeekFunctions;
 import leekscript.util.Json;
 import leekscript.common.Error;
 import leekscript.common.LanguageFeature;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.Unsupported;
 
 public class MainLeekBlock extends AbstractLeekBlock {
 
@@ -1069,6 +1071,33 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 		closeClass(writer);
 		for (var moduleWriter : moduleWriters) closeClass(moduleWriter);
+	}
+
+
+	/**
+	 * Le corps de runIA pour le backend bytecode, s'il sait traiter tout le programme : un
+	 * programme sans fonction, classe, globale, module ni fichier lu, hors console. Lève
+	 * {@link leekscript.compiler.bytecode.Unsupported} sinon.
+	 */
+	public void writeBytecode(BytecodeWriter writer, Options options) {
+		if (mHasModules) throw new Unsupported("modules");
+		if (mMainModule != null && mMainModule.getFile().isTestModule()) throw new Unsupported("module de tests");
+		if (mUserClassesList.stream().anyMatch(c -> !c.internal)) throw new Unsupported("classes");
+		if (!mFileContents.isEmpty()) throw new Unsupported("fichiers lus");
+		if (!mGlobalesDeclarations.isEmpty()) throw new Unsupported("globales");
+		if (!mRedefinedFunctions.isEmpty()) throw new Unsupported("fonctions redéfinies");
+		if (!mFunctions.isEmpty()) throw new Unsupported("fonctions");
+		if (options.session() != null) throw new Unsupported("session");
+		writeBlockBytecode(this, writer);
+	}
+
+	/** Le nombre d'instructions passé au constructeur de l'IA. */
+	public int getInstructionCount() {
+		return mInstructions.size();
+	}
+
+	public String getAIName() {
+		return mAIName;
 	}
 
 	private void closeClass(JavaWriter writer) {

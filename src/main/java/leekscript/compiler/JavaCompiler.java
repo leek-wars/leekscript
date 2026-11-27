@@ -20,6 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import leekscript.common.Error;
+import leekscript.compiler.bytecode.BytecodeBackend;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.runner.AI;
 
@@ -376,6 +377,14 @@ public class JavaCompiler {
 				throw new LeekScriptException(Error.TRANSPILE_TO_JAVA, "No java generated!");
 			}
 
+			// Backend bytecode : la classe directement depuis l'AST, sans javac, quand il sait tout le programme
+			BytecodeBackend.Result bytecode = null;
+			if (BytecodeBackend.enabled() && file.getCompiledCode().getModules().isEmpty()) {
+				t = System.nanoTime();
+				bytecode = BytecodeBackend.compile(lsCompiler.getMainBlock(), file, file.getJavaClass(), options);
+				analyze_time += System.nanoTime() - t;
+			}
+
 			if (options.useCache()) {
 				try {
 					FileOutputStream javaOutput = new FileOutputStream(java);
@@ -392,7 +401,7 @@ public class JavaCompiler {
 
 				try {
 					FileOutputStream javaOutput = new FileOutputStream(lines);
-					javaOutput.write(file.getCompiledCode().getLines().getBytes(StandardCharsets.UTF_8));
+					javaOutput.write((bytecode != null ? bytecode.lines() : file.getCompiledCode().getLines()).getBytes(StandardCharsets.UTF_8));
 					javaOutput.close();
 				} catch (IOException e) {
 					throw new LeekScriptException(Error.CANNOT_WRITE_AI, e.getMessage());
@@ -404,7 +413,10 @@ public class JavaCompiler {
 			boolean hasPackages = code.hasPackages();
 			Map<String, byte[]> classes;
 			List<File> packageDirectories = null;
-			if (hasPackages) {
+			if (bytecode != null) {
+				classes = bytecode.classes();
+				code.setJavacUnits(List.of());
+			} else if (hasPackages) {
 				// v5 : chaque package se compile et se cache à part (cf PackageCache)
 				var cache = new PackageCache(new File(IA_PATH, PACKAGES_PATH), options.useCache());
 				cache.add(PackageCache.PROGRAM_GROUP, file.getJavaClass(), code.getJavaCode());

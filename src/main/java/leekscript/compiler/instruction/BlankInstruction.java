@@ -6,6 +6,7 @@ import leekscript.compiler.Location;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekExpressionException;
+import leekscript.compiler.bytecode.BytecodeWriter;
 
 public class BlankInstruction extends LeekInstruction {
 
@@ -16,6 +17,10 @@ public class BlankInstruction extends LeekInstruction {
 
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
+	}
+
+	@Override
+	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
 	}
 
 	@Override

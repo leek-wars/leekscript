@@ -18,6 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import leekscript.compiler.bytecode.BytecodeBackend;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.LeekScript;
 import leekscript.compiler.Options;
@@ -72,6 +73,9 @@ public class TestCommon {
 	private static List<Long> operations = Collections.synchronizedList(new ArrayList<>());
 
 	private static List<String> failedTests = new CopyOnWriteArrayList<>();
+	/** `-Dleekscript.bytecode.diff` : chaque cas compilé et exécuté par javac puis par le backend bytecode, comparés. */
+	private static final boolean DIFFERENTIAL = System.getProperty("leekscript.bytecode.diff") != null;
+	private static final java.util.concurrent.atomic.AtomicInteger bytecodeCompared = new java.util.concurrent.atomic.AtomicInteger();
 	private static List<String> disabledTests = new CopyOnWriteArrayList<>();
 
 	public static class Case {
@@ -351,9 +355,9 @@ public class TestCommon {
 			return run_version(version_max, checker);
 		}
 
-		public String run_version(int version, Checker checker) {
-			tests.incrementAndGet();
+		private Execution execute(int version) {
 			int aiID = 0;
+			String errorLocation = null;
 			Result result;
 			long compile_time = 0;
 			long ops = 0;
@@ -405,6 +409,7 @@ public class TestCommon {
 				result = new Result(e.getError().toString() + " " + Arrays.toString(e.getParameters()), ai, e.getError(), e.getParameters(), 0, 0);
 			} catch (LeekRunException e) {
 				long exec_time = (System.nanoTime() - t) / 1000;
+				if (DIFFERENTIAL) errorLocation = ai.getErrorMessage(e);
 				result = new Result(e.getError().toString(), ai, e.getError(), new String[0], ai.getOperations(), exec_time);
 			} catch (Throwable e) {
 				if (ai != null) {
@@ -415,6 +420,51 @@ public class TestCommon {
 					result = new Result("unknown error!", ai, Error.UNKNOWN_ERROR, new String[0], 0, 0);
 				}
 			}
+
+			boolean bytecode = ai != null && ai.getFile() != null && ai.getFile().getCompiledCode() != null && ai.getFile().getCompiledCode().getJavacUnits().isEmpty();
+			long ram = ai != null ? ai.getUsedRAM() - ai.getCodeRAM() : 0;
+			return new Execution(result, ramErrors, aiID, compile_time, ops, ram, errorLocation, bytecode);
+		}
+
+		private void compareBackends(int version, Execution javac, Execution bytecode) {
+			bytecodeCompared.incrementAndGet();
+			var a = javac.result();
+			var b = bytecode.result();
+			var diffs = new ArrayList<String>();
+			if (!java.util.Objects.equals(a.result, b.result)) diffs.add("résultat " + a.result + " / " + b.result);
+			if (a.error != b.error) diffs.add("erreur " + a.error + " / " + b.error);
+			if (a.operations != b.operations) diffs.add("opérations " + a.operations + " / " + b.operations);
+			if (javac.ram() != bytecode.ram()) diffs.add("RAM hors code " + javac.ram() + " / " + bytecode.ram());
+			if (!a.loggedErrors.equals(b.loggedErrors)) diffs.add("erreurs loggées " + a.loggedErrors + " / " + b.loggedErrors);
+			if (!java.util.Objects.equals(javac.errorLocation(), bytecode.errorLocation())) diffs.add("position d'erreur " + javac.errorLocation() + " / " + bytecode.errorLocation());
+			if (diffs.isEmpty()) return;
+			var err = C_RED + "[DIFF] " + END_COLOR + "[v" + version + "]" + (strict ? "[strict]" : "") + " " + code + " : javac / bytecode : " + String.join(", ", diffs);
+			System.out.println(err);
+			failedTests.add(err);
+		}
+
+		/** Une compilation et une exécution du cas, et ce que le mode différentiel compare. */
+		private record Execution(Result result, List<String> ramErrors, int aiID, long compileTime, long ops, long ram, String errorLocation, boolean bytecode) {}
+
+		public String run_version(int version, Checker checker) {
+			tests.incrementAndGet();
+			Execution execution;
+			if (DIFFERENTIAL) {
+				// Les deux backends sur le même cas : javac puis bytecode, comparés quand le second a servi
+				BytecodeBackend.override.set(false);
+				var javac = execute(version);
+				BytecodeBackend.override.set(true);
+				execution = execute(version);
+				BytecodeBackend.override.remove();
+				if (execution.bytecode()) compareBackends(version, javac, execution);
+			} else {
+				execution = execute(version);
+			}
+			var result = execution.result();
+			var ramErrors = execution.ramErrors();
+			int aiID = execution.aiID();
+			long compile_time = execution.compileTime();
+			long ops = execution.ops();
 
 			if (checker.check(result) && ramErrors.isEmpty()) {
 				int ops_per_ms = (int) Math.round(1000 * (double) result.operations / result.exec_time);
@@ -625,6 +675,7 @@ public class TestCommon {
 		long at = analyze_time.get(), ct = compile_time.get(), et = execution_time.get();
 		System.out.println("================================================");
 		System.out.println(s + " / " + t + " tests passed, " + (t - s) + " errors, " + d + " disabled");
+		if (DIFFERENTIAL) System.out.println(bytecodeCompared.get() + " cas comparés javac / bytecode");
 		System.out.println("Total time: " + fn(at + ct + et) + " ms"
 			+ " = Analyze: " + fn(at) + " ms"
 			+ " + Compile: " + fn(ct) + " ms"

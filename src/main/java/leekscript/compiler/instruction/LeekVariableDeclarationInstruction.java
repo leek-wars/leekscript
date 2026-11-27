@@ -27,6 +27,9 @@ import leekscript.common.Type;
 
 import java.util.EnumSet;
 import leekscript.common.Type.CastType;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.Unsupported;
 
 public class LeekVariableDeclarationInstruction extends LeekInstruction implements Annotatable {
 
@@ -223,6 +226,36 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 				writer.addLine(";", getLocation());
 			}
 		}
+	}
+
+	@Override
+	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (this.captured || mainblock.getWordCompiler().getVersion() <= 1) throw new Unsupported("variable capturée ou v1");
+		writer.line(getLocation());
+		var javaType = writer.primitiveClass(this.type);
+		var castHere = writer.isOperationsEnabled() && this.type != Type.ANY && !this.type.isPrimitive();
+		JExpr value;
+		if (mValue == null) {
+			if (this.type != Type.ANY && !this.type.isPrimitive()) throw new Unsupported("valeur par défaut de " + this.type);
+			value = switch (this.type.getDefaultValue(null, mainblock.getVersion())) {
+				case "null" -> JExpr.nul();
+				case "0l" -> JExpr.of(0l);
+				case "0.0" -> JExpr.of(0.0);
+				case "false" -> JExpr.of(false);
+				default -> throw new Unsupported("valeur par défaut de " + this.type);
+			};
+		} else if (castHere) {
+			value = writer.compileConvert(mainblock, 0, mValue, this.type);
+		} else {
+			value = writer.compileConvertTyped(mainblock, 0, mValue, this.type);
+		}
+		if (writer.isOperationsEnabled()) {
+			value = JExpr.call("ops", value, JExpr.of(1 + (mValue == null ? 0 : mValue.getOperations())));
+			if (castHere) value = new JExpr.Cast(javaType, value);
+		}
+		// Déclarée après sa valeur : `var x = x` lit l'ancienne variable, comme en Java
+		var local = writer.declare(this, javaType, token.getWord());
+		writer.emitStatement(new JExpr.AssignLocal(local, value));
 	}
 
 	@Override

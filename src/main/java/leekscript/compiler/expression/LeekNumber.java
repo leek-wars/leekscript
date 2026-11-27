@@ -11,6 +11,8 @@ import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
 
 public class LeekNumber extends Expression {
 
@@ -97,6 +99,14 @@ public class LeekNumber extends Expression {
 				writer.addCode(String.valueOf(doubleValue));
 			}
 		}
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (type == Type.INT) return JExpr.of(longValue);
+		if (doubleValue == Double.POSITIVE_INFINITY) return new JExpr.GetStatic(Double.class, "POSITIVE_INFINITY");
+		if (doubleValue == Double.NEGATIVE_INFINITY) return new JExpr.GetStatic(Double.class, "NEGATIVE_INFINITY");
+		return JExpr.of(doubleValue);
 	}
 
 	@Override

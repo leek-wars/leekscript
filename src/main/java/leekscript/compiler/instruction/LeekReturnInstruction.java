@@ -21,6 +21,9 @@ import leekscript.compiler.expression.LeekFunctionCall;
 import leekscript.compiler.expression.LeekTernaire;
 import leekscript.compiler.expression.Operators;
 import leekscript.common.Error;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.Unsupported;
 
 public class LeekReturnInstruction extends LeekInstruction {
 
@@ -195,6 +198,20 @@ public class LeekReturnInstruction extends LeekInstruction {
 				writer.addLine(";", getLocation());
 			}
 		}
+	}
+
+	@Override
+	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (optional) throw new Unsupported("return?");
+		writer.line(getLocation());
+		if (expression == null) {
+			writer.emitReturn(JExpr.nul(), writer.returnType());
+			return;
+		}
+		var finalExpression = expression.trim();
+		if (finalExpression.getOperations() > 0) writer.emitStatement(JExpr.call("ops", JExpr.of(finalExpression.getOperations())));
+		if (mainblock.getWordCompiler().getVersion() == 1 && !convertsV1Return(finalExpression)) throw new Unsupported("return v1");
+		writer.emitReturn(writer.compileConvertTyped(mainblock, 0, finalExpression, returnType), writer.returnType());
 	}
 
 	/**

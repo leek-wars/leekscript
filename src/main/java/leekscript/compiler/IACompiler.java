@@ -355,6 +355,7 @@ public class IACompiler {
 			WordCompiler compiler = new WordCompiler(ai, ai.getVersion(), options);
 			MainLeekBlock main = new MainLeekBlock(this, compiler, ai);
 			main.setWordCompiler(compiler);
+			mainBlock = main;
 
 			// Ajout des variables de la session
 			if (options.session() != null) {
@@ -384,6 +385,13 @@ public class IACompiler {
 			throw e;
 		}
 		return writer.getCode();
+	}
+
+	// Le programme de la dernière compilation, pour le backend bytecode qui le lit après le Java
+	private MainLeekBlock mainBlock;
+
+	public MainLeekBlock getMainBlock() {
+		return mainBlock;
 	}
 
 	public String merge(AIFile ai) throws LeekCompilerException {

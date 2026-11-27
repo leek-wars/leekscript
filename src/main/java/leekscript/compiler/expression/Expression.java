@@ -8,6 +8,9 @@ import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.Unsupported;
 import leekscript.compiler.exceptions.LeekCompilerException;
 
 public abstract class Expression {
@@ -33,6 +36,14 @@ public abstract class Expression {
 	public abstract Type getType();
 
 	public abstract void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis);
+
+	/**
+	 * L'expression Java de writeJavaCode, pour le backend bytecode. Un nœud qui ne la sait pas
+	 * encore lève {@link Unsupported} : le programme se compile alors par javac.
+	 */
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		throw new Unsupported(getClass().getSimpleName());
+	}
 
 	public void compileL(MainLeekBlock mainblock, JavaWriter writer,  boolean parenthesis) {
 		writeJavaCode(mainblock, writer, parenthesis);

@@ -23,6 +23,8 @@ import leekscript.common.Annotation;
 import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.compiler.NarrowingInfo;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
 
 public abstract class AbstractLeekBlock extends LeekInstruction {
 
@@ -369,6 +371,43 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		if (this instanceof MainLeekBlock && mInstructions.size() == 0) {
 			writer.addLine("return null;");
 		}
+	}
+
+
+	/**
+	 * Les instructions du bloc pour le backend bytecode (cf writeJavaCode). Une instruction qui
+	 * commence dans du code mort n'est pas émise : javac ne l'émettrait pas non plus.
+	 */
+	public void writeBlockBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var instructions = getWrittenInstructions();
+		boolean main = this instanceof MainLeekBlock;
+		writer.openScope();
+		for (int i = 0; i < instructions.size() && writer.isAlive(); i++) {
+			var instruction = instructions.get(i);
+			if (instruction instanceof ConditionalBloc condition && condition.getParentCondition() == null) {
+				// La chaîne if / else if / else : les blocs suivants dont le parent est le précédent
+				var chain = new ArrayList<ConditionalBloc>();
+				chain.add(condition);
+				while (i + 1 < instructions.size() && instructions.get(i + 1) instanceof ConditionalBloc next && next.getParentCondition() == chain.get(chain.size() - 1)) {
+					chain.add(next);
+					i++;
+				}
+				ConditionalBloc.writeChainBytecode(mainblock, writer, chain);
+			} else if (main && i == instructions.size() - 1 && instruction instanceof LeekExpressionInstruction expression) {
+				writer.line(expression.getLocation());
+				writer.emitReturn(expression.bytecodeValue(mainblock, writer), writer.returnType());
+				continue;
+			} else {
+				instruction.writeBytecode(mainblock, writer);
+			}
+			if (main && i == instructions.size() - 1 && mEndInstruction == 0 && writer.isAlive()) {
+				writer.emitReturn(JExpr.nul(), writer.returnType());
+			}
+		}
+		if (main && mInstructions.size() == 0) {
+			writer.emitReturn(JExpr.nul(), writer.returnType());
+		}
+		writer.closeScope();
 	}
 
 	@Override

@@ -14,6 +14,8 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.ConstantFolder;
 import leekscript.compiler.expression.LeekExpressionException;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
 
 public class DoWhileBlock extends AbstractLeekBlock {
 
@@ -76,6 +78,25 @@ public class DoWhileBlock extends AbstractLeekBlock {
 			writer.addCode(", " + mCondition.getOperations() + ")");
 		}
 		writer.addLine(");", getLocation());
+	}
+
+	@Override
+	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var start = writer.newLabel();
+		var test = writer.newLabel();
+		var end = writer.newLabel();
+		writer.bind(start);
+		writer.pushLoop(new BytecodeWriter.Loop(end, test));
+		writer.counter(1);
+		writeBlockBytecode(mainblock, writer);
+		writer.popLoop();
+		writer.bind(test);
+		writer.line(getLocation());
+		JExpr condition = writer.getBoolean(mainblock, mCondition);
+		if (ConstantFolder.isConstantEmission(mCondition, mainblock, mainblock.getWordCompiler().getCurrentClass())) condition = JExpr.call("bool", condition);
+		if (writer.isOperationsEnabled()) condition = JExpr.call("ops", condition, JExpr.of(mCondition.getOperations()));
+		writer.jump(condition, true, start);
+		writer.bind(end);
 	}
 
 	@Override

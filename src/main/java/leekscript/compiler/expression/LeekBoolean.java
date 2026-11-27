@@ -7,6 +7,8 @@ import leekscript.compiler.Location;
 import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
 
 public class LeekBoolean extends Expression {
 
@@ -41,6 +43,11 @@ public class LeekBoolean extends Expression {
 	@Override
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		writer.addCode(mValue ? "true" : "false");
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		return JExpr.of(mValue);
 	}
 
 	@Override

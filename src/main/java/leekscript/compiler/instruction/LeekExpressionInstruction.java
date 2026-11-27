@@ -24,6 +24,9 @@ import leekscript.compiler.AnalyzeError;
 import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.common.Annotation;
 import leekscript.common.Error;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.Unsupported;
 
 public class LeekExpressionInstruction extends LeekInstruction {
 
@@ -86,6 +89,34 @@ public class LeekExpressionInstruction extends LeekInstruction {
 		// 	writer.addCode("; ops(" + trimmed.getOperations() + ")");
 		// }
 		writer.addLine(";", getLocation());
+	}
+
+	@Override
+	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var trimmed = mExpression.trim();
+		if (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).getOperator() == Operators.REFERENCE) {
+			trimmed = ((LeekExpression) trimmed).getExpression2().trim();
+		}
+		if (trimmed instanceof LeekNull || trimmed instanceof LeekBoolean || trimmed instanceof LeekNumber || trimmed instanceof LeekString || trimmed instanceof LeekVariable || trimmed instanceof LeekObjectAccess || trimmed instanceof LeekArrayAccess || trimmed instanceof LeekAnonymousFunction) {
+			return;
+		}
+		if (trimmed instanceof LeekFunctionCall call && call.isEliminableStatement(mainblock)) return;
+		writer.line(getLocation());
+		var e = trimmed.toBytecode(mainblock, writer);
+		if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) e = JExpr.call("ops", e, JExpr.of(trimmed.getOperations()));
+		else if (needsStatementWrapper(trimmed)) e = JExpr.call("nothing", e);
+		writer.emitStatement(e);
+	}
+
+	/** La valeur de l'expression, dernière instruction du programme, que runIA retourne. */
+	public JExpr bytecodeValue(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var trimmed = mExpression.trim();
+		if (trimmed instanceof LeekExpression && ((LeekExpression) trimmed).getOperator() == Operators.REFERENCE) {
+			trimmed = ((LeekExpression) trimmed).getExpression2().trim();
+		}
+		var e = trimmed.toBytecode(mainblock, writer);
+		if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) e = JExpr.call("ops", e, JExpr.of(trimmed.getOperations()));
+		return e;
 	}
 
 	@Override

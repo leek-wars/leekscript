@@ -16,6 +16,10 @@ import leekscript.compiler.expression.ConstantFolder;
 import leekscript.compiler.expression.Expression;
 import leekscript.compiler.expression.LeekExpressionException;
 import leekscript.compiler.expression.LeekVariable;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import java.lang.classfile.Label;
+import java.util.List;
 
 public class ConditionalBloc extends AbstractLeekBlock {
 
@@ -232,6 +236,44 @@ public class ConditionalBloc extends AbstractLeekBlock {
 		else writer.addLine("else {", getLocation());
 		super.writeJavaCode(mainblock, writer, false);
 		writer.addLine("}");
+	}
+
+	/** La condition du `if`, telle que writeCondition l'écrit ; null quand elle est constante (cf ConstantFolder.truthiness). */
+	private JExpr bytecodeCondition(MainLeekBlock mainblock, BytecodeWriter writer) {
+		JExpr condition = writer.getBoolean(mainblock, mCondition);
+		if (writer.isOperationsEnabled() && mCondition.getOperations() > 0) condition = JExpr.call("ops", condition, JExpr.of(mCondition.getOperations()));
+		return condition;
+	}
+
+	/**
+	 * Une chaîne if / else if / else pour le backend bytecode. Une condition constante n'est pas
+	 * testée et sa branche morte n'est pas émise, comme javac le fait de `if (true)` / `if (false)`.
+	 */
+	public static void writeChainBytecode(MainLeekBlock mainblock, BytecodeWriter writer, List<ConditionalBloc> chain) {
+		var end = writer.newLabel();
+		boolean jumpsToEnd = false;
+		for (int k = 0; k < chain.size(); k++) {
+			var c = chain.get(k);
+			writer.line(c.getLocation());
+			Label next = null;
+			Boolean constant = true;
+			if (c.mCondition != null) {
+				constant = ConstantFolder.truthiness(c.mCondition, mainblock.getWordCompiler().getCurrentClass());
+				if (constant == Boolean.FALSE) continue;
+				if (constant == null) {
+					next = writer.newLabel();
+					writer.jump(c.bytecodeCondition(mainblock, writer), false, next);
+				}
+			}
+			c.writeBlockBytecode(mainblock, writer);
+			if (next == null) break; // branche inconditionnelle : les suivantes sont mortes
+			if (k < chain.size() - 1 && writer.isAlive()) {
+				writer.goto_(end);
+				jumpsToEnd = true;
+			}
+			writer.bind(next);
+		}
+		if (jumpsToEnd) writer.bind(end);
 	}
 
 	/**

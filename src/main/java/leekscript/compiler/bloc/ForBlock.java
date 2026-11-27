@@ -18,6 +18,8 @@ import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.LeekExpressionInstruction;
 import leekscript.compiler.instruction.LeekInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
 
 public class ForBlock extends AbstractLeekBlock {
 
@@ -135,6 +137,37 @@ public class ForBlock extends AbstractLeekBlock {
 		writer.addCounter(1);
 		super.writeJavaCode(mainblock, writer, false);
 		writer.addLine("}");
+	}
+
+	@Override
+	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		writer.openScope();
+		mInitialisation.writeBytecode(mainblock, writer);
+		var start = writer.newLabel();
+		var step = writer.newLabel();
+		var end = writer.newLabel();
+		writer.bind(start);
+		writer.line(getLocation());
+		JExpr condition = writer.getBoolean(mainblock, mCondition);
+		if (ConstantFolder.isConstantEmission(mCondition, mainblock, mainblock.getWordCompiler().getCurrentClass())) condition = JExpr.call("bool", condition);
+		if (writer.isOperationsEnabled()) condition = JExpr.call("ops", condition, JExpr.of(mCondition.getOperations()));
+		writer.jump(condition, false, end);
+		writer.pushLoop(new BytecodeWriter.Loop(end, step));
+		writer.counter(1);
+		writeBlockBytecode(mainblock, writer);
+		writer.popLoop();
+		writer.bind(step);
+		var incrementation = mIncrementation.trim();
+		if (writer.isOperationsEnabled()) {
+			writer.emitStatement(JExpr.call("ops", mIncrementation.toBytecode(mainblock, writer), JExpr.of(mIncrementation.getOperations())));
+		} else if (!(incrementation instanceof LeekFunctionCall call && call.isEliminable(mainblock))) {
+			JExpr e = mIncrementation.toBytecode(mainblock, writer);
+			if (LeekExpressionInstruction.needsStatementWrapper(incrementation)) e = JExpr.call("nothing", e);
+			writer.emitStatement(e);
+		}
+		writer.goto_(start);
+		writer.bind(end);
+		writer.closeScope();
 	}
 
 	@Override

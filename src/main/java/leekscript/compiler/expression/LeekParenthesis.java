@@ -7,6 +7,8 @@ import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
 
 public class LeekParenthesis extends Expression {
 
@@ -66,6 +68,11 @@ public class LeekParenthesis extends Expression {
 		writer.addCode("(");
 		mExpression.writeJavaCode(mainblock, writer, false);
 		writer.addCode(")");
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		return mExpression.toBytecode(mainblock, writer);
 	}
 
 	@Override

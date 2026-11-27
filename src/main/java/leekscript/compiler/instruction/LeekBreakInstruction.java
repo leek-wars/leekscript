@@ -7,6 +7,7 @@ import leekscript.compiler.Token;
 import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.expression.LeekExpressionException;
+import leekscript.compiler.bytecode.BytecodeWriter;
 
 public class LeekBreakInstruction extends LeekInstruction {
 
@@ -25,6 +26,13 @@ public class LeekBreakInstruction extends LeekInstruction {
 	public void writeJavaCode(MainLeekBlock mainblock, JavaWriter writer, boolean parenthesis) {
 		writer.addCounter(1);
 		writer.addLine("break;", getLocation());
+	}
+
+	@Override
+	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		writer.line(getLocation());
+		writer.counter(1);
+		writer.goto_(writer.currentLoop().breakLabel());
 	}
 
 	@Override

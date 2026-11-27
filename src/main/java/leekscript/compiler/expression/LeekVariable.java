@@ -15,6 +15,9 @@ import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekGlobalDeclarationInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.Unsupported;
 import leekscript.runner.AI;
 import leekscript.runner.LeekConstants;
 import leekscript.runner.LeekFunctions;
@@ -814,6 +817,77 @@ public class LeekVariable extends Expression {
 				writeNarrowed(mainblock, writer, "u_" + token.getWord());
 			}
 		}
+	}
+
+	// ---- Backend bytecode : variables locales simples (ni Box ni Wrapper) et constantes ----
+
+	/** Variable locale lue ou écrite telle quelle (`u_x`), le seul cas que le backend bytecode sait traiter. */
+	private BytecodeWriter.LocalVar plainLocal(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (type != VariableType.LOCAL || declaration == null || mainblock.isRedefinedFunction(token.getWord()) || isWrapper() || isBox()) {
+			throw new Unsupported("variable " + type);
+		}
+		return writer.local(declaration);
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (type == VariableType.SYSTEM_CONSTANT) {
+			var constant = LeekConstants.get(token.getWord());
+			if (constant.getType() == Type.INT) return JExpr.of((long) constant.getIntValue());
+			if (constant.getType() == Type.REAL) {
+				if (constant == LeekConstants.NaN) return new JExpr.GetStatic(Double.class, "NaN");
+				if (constant == LeekConstants.Infinity) return new JExpr.GetStatic(Double.class, "POSITIVE_INFINITY");
+				return JExpr.of(constant.getValue());
+			}
+			return JExpr.nul();
+		}
+		JExpr base = new JExpr.Local(plainLocal(mainblock, writer));
+		if (needsNarrowingCast(mainblock.getVersion())) {
+			return new JExpr.Cast(writer.primitiveClass(this.variableType), base);
+		} else if (needsPrimitiveNarrowingConversion(mainblock.getVersion())) {
+			if (this.variableType == Type.INT) return JExpr.call("longint", base);
+			if (this.variableType == Type.REAL) return JExpr.call("real", base);
+		}
+		return base;
+	}
+
+	public JExpr bytecodeSet(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr) {
+		var local = plainLocal(mainblock, writer);
+		var assignType = (this.declaration != null) ? this.declaration.getType() : this.variableType;
+		return new JExpr.AssignLocal(local, writer.compileConvertTyped(mainblock, 0, expr, assignType));
+	}
+
+	public JExpr bytecodeIncDec(MainLeekBlock mainblock, BytecodeWriter writer, boolean increment, boolean suffix) {
+		var local = plainLocal(mainblock, writer);
+		if (hasPrimitiveJavaSlot(mainblock.getVersion())) return new JExpr.IncLocal(local, increment, !suffix);
+		// writeIncrement : `sub(u_x = add(u_x, 1l), 1l)` en suffixe, `u_x = add(u_x, 1l)` en préfixe
+		var slotType = javaSlotType();
+		JExpr op = JExpr.call(increment ? "add" : "sub", new JExpr.Local(local), JExpr.of(1l));
+		if (slotType != Type.INT) op = bytecodeOperationResult(writer, slotType, Type.INT, op);
+		JExpr assign = new JExpr.AssignLocal(local, op);
+		return suffix ? JExpr.call(increment ? "sub" : "add", assign, JExpr.of(1l)) : assign;
+	}
+
+	/** `+=`, `-=`, `*=` sur une variable locale : opérateur Java natif sur un primitif, add_eq / sub / mul sinon. */
+	public JExpr bytecodeArithmeticEq(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr, String javaOperator, String method) {
+		var local = plainLocal(mainblock, writer);
+		if (this.variableType.isPrimitiveNumber() && expr.getType().isPrimitiveNumber() && !hasNarrowingMismatch(mainblock.getVersion()) && !(expr instanceof LeekVariable lve && lve.hasNarrowingMismatch(mainblock.getVersion()))) {
+			return new JExpr.CompoundLocal(local, javaOperator, writer.compileTyped(mainblock, expr));
+		}
+		var call = JExpr.call(method, new JExpr.Local(local), writer.expr(mainblock, expr));
+		return new JExpr.AssignLocal(local, bytecodeOperationResult(writer, this.variableType, expr.getType(), call));
+	}
+
+	/** openOperationResult du backend bytecode. */
+	private JExpr bytecodeOperationResult(BytecodeWriter writer, Type castType, Type operand, JExpr call) {
+		if (castType.assertNotNull() == Type.BOOL) {
+			var slot = javaSlotType();
+			if (slot.assertNotNull() == Type.BOOL) return writer.fieldResultConversion(Type.BOOL, call);
+			castType = slot;
+		}
+		var boxed = castType.boxedPrimitive();
+		if ((boxed == Type.INT || boxed == Type.REAL) && operand.assertNotNull() != boxed) castType = boxed;
+		return writer.resultConversion(castType, call);
 	}
 
 	/**

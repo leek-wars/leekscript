@@ -10,6 +10,9 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.Unsupported;
 import leekscript.runner.AI;
 import leekscript.runner.values.LeekValue;
 import leekscript.runner.values.LeekValueType;
@@ -1220,6 +1223,152 @@ public class LeekExpression extends Expression {
 			return;
 		}
 		return;
+	}
+
+	// ---- Backend bytecode : le Java de writeJavaCode, en JExpr ----
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var v = mainblock.getVersion();
+		switch (mOperator) {
+		case Operators.ADD:
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
+				return new JExpr.Binary("+", writer.compileTyped(mainblock, mExpression1), writer.compileTyped(mainblock, mExpression2));
+			} else if (mExpression1.getType() == Type.STRING || mExpression2.getType() == Type.STRING) {
+				return new JExpr.Cast(String.class, bytecodeCall(mainblock, writer, "add"));
+			} else {
+				JExpr e = new JExpr.Cast(writer.primitiveClass(type), bytecodeCall(mainblock, writer, "add"));
+				if (type.isPrimitive()) e = new JExpr.Cast(writer.primitiveClass(type), e);
+				return e;
+			}
+		case Operators.MINUS:
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
+				return new JExpr.Binary("-", writer.compileTyped(mainblock, mExpression1), writer.compileTyped(mainblock, mExpression2));
+			} else if (mExpression1.getType() == Type.NULL && mExpression2.getType() == Type.NULL) {
+				return JExpr.of(0l);
+			}
+			return bytecodeCastedCall(mainblock, writer, "sub");
+		case Operators.MULTIPLIE:
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
+				return new JExpr.Binary("*", writer.compileTyped(mainblock, mExpression1), writer.compileTyped(mainblock, mExpression2));
+			}
+			return bytecodeCastedCall(mainblock, writer, "mul");
+		case Operators.MODULUS:
+			if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
+				return new JExpr.Binary("%", writer.compileTyped(mainblock, mExpression1), writer.compileTyped(mainblock, mExpression2));
+			}
+			return bytecodeCastedCall(mainblock, writer, "mod");
+		case Operators.DIVIDE: {
+			var call = JExpr.call(v == 1 ? "div_v1" : "div", writer.expr(mainblock, mExpression1), writer.compileLoad(mainblock, mExpression2));
+			if (v == 1) return new JExpr.Cast(writer.javaClass(type), call);
+			JExpr e = new JExpr.Cast(writer.primitiveClass(type), call);
+			if (type.isPrimitive()) e = new JExpr.Cast(writer.primitiveClass(type), e);
+			return e;
+		}
+		case Operators.INTEGER_DIVISION:
+			return bytecodeIntBinary(mainblock, writer, "/");
+		case Operators.POWER:
+			if (mExpression1.getType() == Type.NULL && mExpression2.getType() == Type.NULL) return JExpr.of(1l);
+			if (mExpression1.getType() == Type.NULL && mExpression2.getType().isNumber()) return JExpr.call("pow", JExpr.of(0l), writer.expr(mainblock, mExpression2));
+			return new JExpr.Cast(writer.javaClass(type), bytecodeCall(mainblock, writer, "pow"));
+		case Operators.BITAND: return bytecodeIntBinary(mainblock, writer, "&");
+		case Operators.BITOR: return bytecodeIntBinary(mainblock, writer, "|");
+		case Operators.BITXOR: return bytecodeIntBinary(mainblock, writer, "^");
+		case Operators.SHIFT_LEFT: return bytecodeIntBinary(mainblock, writer, "<<");
+		case Operators.SHIFT_RIGHT: return bytecodeIntBinary(mainblock, writer, ">>");
+		case Operators.SHIFT_UNSIGNED_RIGHT: return bytecodeIntBinary(mainblock, writer, ">>>");
+		case Operators.EQUALS_EQUALS:
+			if (mExpression2 instanceof LeekNull) {
+				if (mExpression1.getType() == Type.BOOL || mExpression1.getType().isNumber()) return JExpr.of(false);
+				return new JExpr.Binary("==", writer.expr(mainblock, mExpression1), JExpr.nul());
+			}
+			if (isReferenceComparison()) throw new Unsupported("comparaison de références");
+			return bytecodeCall(mainblock, writer, "equals_equals");
+		case Operators.NOT_EQUALS_EQUALS:
+			if (isReferenceComparison()) throw new Unsupported("comparaison de références");
+			return bytecodeCall(mainblock, writer, "notequals_equals");
+		case Operators.EQUALS:
+			if (isReferenceComparison()) throw new Unsupported("comparaison de références");
+			if (mainblock.getWordCompiler().getVersion() >= 4) {
+				if (mExpression1.getType() == Type.INT && mExpression2.getType() == Type.INT && !(mExpression1.hasBoxedJavaResult() && mExpression2.hasBoxedJavaResult())) {
+					return new JExpr.Binary("==", writer.getInt(mainblock, mExpression1), writer.getInt(mainblock, mExpression2));
+				}
+				return bytecodeCall(mainblock, writer, "equals_equals");
+			}
+			return bytecodeCall(mainblock, writer, "eq");
+		case Operators.MORE: return bytecodeComparison(mainblock, writer, ">", "more");
+		case Operators.LESS: return bytecodeComparison(mainblock, writer, "<", "less");
+		case Operators.MOREEQUALS: return bytecodeComparison(mainblock, writer, ">=", "moreequals");
+		case Operators.LESSEQUALS: return bytecodeComparison(mainblock, writer, "<=", "lessequals");
+		case Operators.NOTEQUALS:
+			if (isReferenceComparison()) throw new Unsupported("comparaison de références");
+			return bytecodeCall(mainblock, writer, mainblock.getWordCompiler().getVersion() >= 4 ? "notequals_equals" : "neq");
+		case Operators.AND:
+		case Operators.OR: {
+			JExpr left = writer.getBoolean(mainblock, mExpression1);
+			if (writer.isOperationsEnabled()) left = JExpr.call("ops", left, JExpr.of(mExpression1.operations + 1));
+			JExpr right = writer.getBoolean(mainblock, mExpression2);
+			if (writer.isOperationsEnabled() && mExpression2.operations > 0) right = JExpr.call("ops", right, JExpr.of(mExpression2.operations));
+			return new JExpr.Binary(mOperator == Operators.AND ? "&&" : "||", left, right);
+		}
+		case Operators.XOR:
+			return JExpr.call("xor", writer.getBoolean(mainblock, mExpression1), writer.getBoolean(mainblock, mExpression2));
+		case Operators.NOT:
+			return new JExpr.Unary("!", writer.getBoolean(mainblock, mExpression2));
+		case Operators.BITNOT:
+			if (type == Type.BIG_INT) throw new Unsupported("big_integer");
+			return JExpr.call(type instanceof CompoundType ? "bnotAny" : "bnot", writer.expr(mainblock, mExpression2));
+		case Operators.UNARY_MINUS:
+			if (mExpression2.getType().isPrimitiveNumber()) return new JExpr.Unary("-", writer.compileTyped(mainblock, mExpression2));
+			if (type == Type.BIG_INT) throw new Unsupported("big_integer");
+			return JExpr.call("minus", writer.expr(mainblock, mExpression2));
+		case Operators.INCREMENT: return bytecodeTarget(mExpression2).bytecodeIncDec(mainblock, writer, true, true);
+		case Operators.DECREMENT: return bytecodeTarget(mExpression2).bytecodeIncDec(mainblock, writer, false, true);
+		case Operators.PRE_INCREMENT: return bytecodeTarget(mExpression2).bytecodeIncDec(mainblock, writer, true, false);
+		case Operators.PRE_DECREMENT: return bytecodeTarget(mExpression2).bytecodeIncDec(mainblock, writer, false, false);
+		case Operators.ASSIGN:
+			if (v < 2) throw new Unsupported("affectation v1");
+			return bytecodeTarget(mExpression1).bytecodeSet(mainblock, writer, mExpression2);
+		case Operators.ADDASSIGN: {
+			var target = mExpression1.getType();
+			if ((target instanceof ArrayType || target instanceof SetType) && JavaWriter.checksNullElement(mainblock, target.element(), mExpression2)) throw new Unsupported("+= sur un conteneur");
+			return bytecodeTarget(mExpression1).bytecodeArithmeticEq(mainblock, writer, mExpression2, "+", "add_eq");
+		}
+		case Operators.MINUSASSIGN: return bytecodeTarget(mExpression1).bytecodeArithmeticEq(mainblock, writer, mExpression2, "-", "sub");
+		case Operators.MULTIPLIEASSIGN: return bytecodeTarget(mExpression1).bytecodeArithmeticEq(mainblock, writer, mExpression2, "*", "mul");
+		case Operators.REFERENCE:
+			return writer.expr(mainblock, mExpression2);
+		}
+		throw new Unsupported("opérateur " + mOperator);
+	}
+
+	private static LeekVariable bytecodeTarget(Expression e) {
+		if (e instanceof LeekVariable variable) return variable;
+		throw new Unsupported("affectation de " + e.getClass().getSimpleName());
+	}
+
+	private JExpr bytecodeCall(MainLeekBlock mainblock, BytecodeWriter writer, String method) {
+		return JExpr.call(method, writer.expr(mainblock, mExpression1), writer.expr(mainblock, mExpression2));
+	}
+
+	/** `(long) (Long) sub(a, b)` : cast au type Java du résultat, doublé d'un cast primitif. */
+	private JExpr bytecodeCastedCall(MainLeekBlock mainblock, BytecodeWriter writer, String method) {
+		JExpr e = new JExpr.Cast(writer.javaClass(type), bytecodeCall(mainblock, writer, method));
+		if (type.isPrimitive()) e = new JExpr.Cast(writer.primitiveClass(type), e);
+		return e;
+	}
+
+	private JExpr bytecodeComparison(MainLeekBlock mainblock, BytecodeWriter writer, String javaOperator, String method) {
+		if (mExpression1.getType().isPrimitiveNumber() && mExpression2.getType().isPrimitiveNumber()) {
+			return new JExpr.Binary(javaOperator, writer.compileTyped(mainblock, mExpression1), writer.compileTyped(mainblock, mExpression2));
+		}
+		return bytecodeCall(mainblock, writer, method);
+	}
+
+	/** `\`, opérateurs de bits et décalages sur des integer (big_integer et types composés : pas encore). */
+	private JExpr bytecodeIntBinary(MainLeekBlock mainblock, BytecodeWriter writer, String javaOperator) {
+		if (type == Type.BIG_INT || type instanceof CompoundType) throw new Unsupported(javaOperator + " sur " + type);
+		return new JExpr.Binary(javaOperator, writer.getInt(mainblock, mExpression1), writer.getInt(mainblock, mExpression2));
 	}
 
 	@Override
