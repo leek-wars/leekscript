@@ -17,6 +17,10 @@ import leekscript.compiler.expression.LeekType;
 import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.Unsupported;
+import java.util.List;
 
 public class AnonymousFunctionBlock extends AbstractLeekBlock {
 
@@ -167,6 +171,43 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 			writer.addLine("return " + type.returnType().getDefaultValue(writer, mainblock.getVersion()) + ";");
 		}
 		writer.addCode("}");
+		mainblock.getWordCompiler().setCurrentFunction(previousFunction);
+	}
+
+
+	/** getArgument : `(values.length > i ? (T) values[i] : <défaut>)`. */
+	private JExpr bytecodeArgument(MainLeekBlock mainblock, BytecodeWriter writer, int i) {
+		var values = new JExpr.Read(new BytecodeWriter.LocalVar(3, Object[].class, "values"));
+		var declared = mParameterDeclarations.get(i).getType();
+		JExpr given = new JExpr.ArrayGet(values, JExpr.of(i));
+		if (declared != Type.ANY) given = new JExpr.Cast(writer.typeNamed(declared.getJavaName(mainblock.getVersion())), given);
+		return new JExpr.Cond(new JExpr.Binary(">", new JExpr.ArrayLength(values), JExpr.of(i)), given, writer.defaultValue(this.type.getArgument(i)));
+	}
+
+	/** Le corps de `run(AI ai, Object thiz, Object... values)` pour le backend bytecode. */
+	public void writeBytecodeBody(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (mainblock.getWordCompiler().getVersion() < 2) throw new Unsupported("fonction anonyme v1");
+		var previousFunction = mainblock.getWordCompiler().getCurrentFunction();
+		mainblock.getWordCompiler().setCurrentFunction(this);
+		writer.line(getLocation());
+		for (int i = 0; i < mParameters.size(); i++) {
+			var declaration = mParameterDeclarations.get(i);
+			if (mReferences.get(i)) throw new Unsupported("paramètre par référence");
+			var argument = bytecodeArgument(mainblock, writer, i);
+			if (declaration.isCaptured()) {
+				var javaType = writer.typeNamed(declaration.getType().getJavaName(mainblock.getVersion()));
+				var wrapper = writer.declare(declaration, leekscript.runner.Wrapper.class, mParameters.get(i), javaType);
+				var box = new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), argument));
+				writer.emitStatement(new JExpr.Assign(wrapper, new JExpr.New(leekscript.runner.Wrapper.class, List.of(box))));
+			} else {
+				var local = writer.declare(declaration, writer.typeOf(argument), mParameters.get(i));
+				writer.emitStatement(new JExpr.Assign(local, argument));
+			}
+		}
+		writer.pendingLine();
+		writer.counter(1);
+		writeBlockBytecode(mainblock, writer);
+		if (mEndInstruction == 0 && writer.isAlive()) writer.emitReturn(writer.defaultValue(type.returnType()), writer.returnType());
 		mainblock.getWordCompiler().setCurrentFunction(previousFunction);
 	}
 

@@ -1394,7 +1394,21 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		var declarations = block.getParametersDeclarations();
 		for (int a = 0; a < declarations.size(); a++) {
 			var arg = declarations.get(a);
-			if (arg.isCaptured()) throw new Unsupported("paramètre de méthode capturé");
+			if (arg.isCaptured()) {
+				// `final var u_x = new Box<T>(ai, p_x)` ou `(ai, <défaut>, ops)`
+				var javaType = writer.typeNamed(arg.getType().getJavaName(mainblock.getVersion()));
+				List<JExpr> boxArgs;
+				if (a < count) {
+					var p = writer.alias(new Object(), BytecodeWriter.parameterSlot(parameters, a), parameters.get(a), "p_" + arg.getName());
+					boxArgs = List.of(writer.aiThis(), new JExpr.Read(p));
+				} else {
+					var defaultValue = block.getDefaultValues().get(a);
+					boxArgs = List.of(writer.aiThis(), writer.compileDefaultValue(mainblock, a, defaultValue, arg.getType()), JExpr.of(defaultValue.operations));
+				}
+				var box = writer.declare(arg, leekscript.runner.values.Box.class, arg.getName(), javaType);
+				writer.emitStatement(new JExpr.Assign(box, new JExpr.New(leekscript.runner.values.Box.class, boxArgs)));
+				continue;
+			}
 			if (a < count) {
 				writer.alias(arg, BytecodeWriter.parameterSlot(parameters, a), parameters.get(a), arg.getName());
 			} else {
@@ -1409,7 +1423,10 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	/** Les arguments transmis à la version complète (`return u_m(u_a, u_b…)`). */
 	private static List<JExpr> bytecodeForward(BytecodeWriter writer, ClassMethodBlock block) {
 		var args = new ArrayList<JExpr>();
-		for (var arg : block.getParametersDeclarations()) args.add(new JExpr.Read(writer.local(arg)));
+		for (var arg : block.getParametersDeclarations()) {
+			var local = new JExpr.Read(writer.local(arg));
+			args.add(arg.isCaptured() ? new JExpr.Call(local, "get", List.of()) : local);
+		}
 		return args;
 	}
 

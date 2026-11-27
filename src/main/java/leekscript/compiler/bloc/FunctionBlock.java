@@ -733,6 +733,31 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, Tes
 		return parameters;
 	}
 
+	/**
+	 * compileAnonymousFunction : la valeur fonction de la fonction (champ `ufunction_<nom>` de l'IA),
+	 * une FunctionLeekValue anonyme qui appelle `f_<nom>` avec les arguments reçus ou leurs défauts.
+	 */
+	public JExpr bytecodeFunctionValue(MainLeekBlock mainblock, BytecodeWriter writer) {
+		int version = mainblock.getVersion();
+		int count = countParameters();
+		var parameters = bytecodeParameters(writer, count);
+		var returnClass = writer.primitiveClass(type.returnType());
+		var runParams = List.<Class<?>>of(leekscript.runner.AI.class, Object.class, Object[].class);
+		return writer.anonymous(leekscript.runner.values.FunctionLeekValue.class, List.of(JExpr.of(count), JExpr.of("#Function " + getName())),
+			List.of(new BytecodeWriter.AnonymousMethod("run", java.lang.classfile.ClassFile.ACC_PUBLIC | java.lang.classfile.ClassFile.ACC_VARARGS, runParams, Object.class, () -> {
+				var values = new JExpr.Read(new BytecodeWriter.LocalVar(3, Object[].class, "values"));
+				var args = new ArrayList<JExpr>();
+				for (int a = 0; a < count; a++) {
+					JExpr given = new JExpr.ArrayGet(values, JExpr.of(a));
+					if (type != Type.ANY) given = new JExpr.Cast(writer.typeNamed(type.getArgument(a).getJavaName(version)), given);
+					var fallback = defaultValues.get(a) != null ? writer.compileDefaultValue(mainblock, a, defaultValues.get(a), type.getArgument(a)) : writer.defaultValue(type.getArgument(a));
+					var length = new JExpr.ArrayLength(values);
+					args.add(new JExpr.Cond(new JExpr.Binary(">", length, JExpr.of(a)), given, fallback));
+				}
+				writer.emitReturn(new JExpr.Self("f_" + getInternalName(), parameters, returnClass, args), Object.class);
+			})));
+	}
+
 	/** Une méthode `f_<nom>` par arité, et les variantes monomorphisées, pour le backend bytecode. */
 	@Override
 	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
@@ -751,19 +776,34 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, Tes
 			// `var u_x = p_x;` : la variable lit directement l'emplacement du paramètre
 			for (int i = 0; i < paramCount; i++) {
 				var declaration = mParameterDeclarations.get(i);
-				if (declaration.isCaptured() || mReferences.get(i)) throw new Unsupported("paramètre capturé ou par référence");
-				writer.alias(declaration, BytecodeWriter.parameterSlot(parameters, i), parameters.get(i), mParameters.get(i));
+				if (mReferences.get(i)) throw new Unsupported("paramètre par référence");
+				if (declaration.isCaptured()) {
+					// `final var u_x = new Box<T>(ai, p_x);`
+					var p = writer.alias(new Object(), BytecodeWriter.parameterSlot(parameters, i), parameters.get(i), "p_" + mParameters.get(i));
+					var box = writer.declare(declaration, leekscript.runner.values.Box.class, mParameters.get(i), writer.typeNamed(declaration.getType().getJavaName(mainblock.getVersion())));
+					writer.emitStatement(new JExpr.Assign(box, new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), new JExpr.Read(p)))));
+				} else {
+					writer.alias(declaration, BytecodeWriter.parameterSlot(parameters, i), parameters.get(i), mParameters.get(i));
+				}
 			}
 			// Paramètres absents : leur valeur par défaut (lignes Java sans ligne LeekScript)
 			if (paramCount < maxParameters) writer.noLine();
 			for (int i = paramCount; i < maxParameters; i++) {
 				var declaration = mParameterDeclarations.get(i);
-				if (declaration.isCaptured()) throw new Unsupported("paramètre capturé");
 				var defaultValue = defaultValues.get(i);
+				if (declaration.isCaptured()) {
+					// `final var u_x = new Box<T>(ai, <défaut>);` puis ses opérations
+					var javaType = writer.typeNamed(declaration.getType().getJavaName(mainblock.getVersion()));
+					var box = writer.declare(declaration, leekscript.runner.values.Box.class, mParameters.get(i), javaType);
+					writer.emitStatement(new JExpr.Assign(box, new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), writer.compileDefaultValue(mainblock, i, defaultValue, declaration.getType())))));
+					writer.counter(defaultValue.operations);
+					continue;
+				}
 				var local = writer.declare(declaration, writer.primitiveClass(declaration.getType()), mParameters.get(i));
 				writer.emitStatement(new JExpr.Assign(local, writer.compileDefaultValue(mainblock, i, defaultValue, declaration.getType())));
 				writer.counter(defaultValue.operations);
 			}
+			writer.pendingLine();
 			writer.counter(1);
 			writeBlockBytecode(mainblock, writer);
 			if (mEndInstruction == 0 && writer.isAlive()) writer.emitReturn(writer.defaultValue(type.returnType()), returnClass);

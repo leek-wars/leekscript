@@ -407,6 +407,7 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 		if (main && mInstructions.size() == 0) {
 			writer.emitReturn(JExpr.nul(), writer.returnType());
 		}
+		writer.endLine();
 		writer.closeScope();
 	}
 

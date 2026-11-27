@@ -1359,6 +1359,10 @@ public class LeekExpression extends Expression {
 			return new JExpr.Unary("!", JExpr.call("operatorIn", writer.expr(mainblock, mExpression2), writer.expr(mainblock, mExpression1)));
 		case Operators.NON_NULL_ASSERTION:
 			return writer.compileConvert(mainblock, 0, mExpression2, type);
+		case Operators.AS:
+			if (asConverts()) return writer.compileConvert(mainblock, AI.CAST_INDEX, mExpression1, type);
+			if (mExpression2 instanceof LeekType lt) return new JExpr.Cast(writer.typeNamed(lt.getType().getJavaPrimitiveName(mainblock.getVersion())), writer.expr(mainblock, mExpression1));
+			throw new Unsupported("as");
 		case Operators.NEW:
 			if (mExpression2 instanceof LeekVariable variable) {
 				if (mainblock.getWordCompiler().getVersion() >= 3 && variable.toString().equals("Array")) {

@@ -849,6 +849,81 @@ public class LeekVariable extends Expression {
 		return bytecodeSlot(mainblock, writer);
 	}
 
+	/** Variable locale ou paramètre vivant dans un Box ou un Wrapper (capturé) : l'emplacement de la boîte, null sinon. */
+	private BytecodeWriter.Slot bytecodeBox(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if ((type != VariableType.LOCAL && type != VariableType.ARGUMENT) || declaration == null || mainblock.isRedefinedFunction(token.getWord())) return null;
+		if (!isWrapper() && !isBox()) return null;
+		return writer.local(declaration);
+	}
+
+	/** compileL d'une variable : la boîte d'un Wrapper (getVariable), la valeur sinon. */
+	public JExpr bytecodeL(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var box = bytecodeBox(mainblock, writer);
+		if (box != null) {
+			if (isWrapper()) return new JExpr.Call(new JExpr.Read(box), "getVariable", List.of());
+			return new JExpr.Read(box);
+		}
+		if (type == VariableType.LOCAL || type == VariableType.ARGUMENT) return new JExpr.Read(bytecodeSlot(mainblock, writer));
+		throw new Unsupported("compileL de " + type);
+	}
+
+	/** Les affectations d'une variable en boîte : méthodes du Box / Wrapper (set, increment, add_eq…). */
+	private JExpr bytecodeBoxAssign(MainLeekBlock mainblock, BytecodeWriter writer, BytecodeWriter.Slot box, int operator, Expression value) {
+		var boxValue = new JExpr.Read(box);
+		switch (operator) {
+			case Operators.ASSIGN: {
+				if (isWrapper()) {
+					JExpr l;
+					if (value instanceof LeekVariable lv) l = lv.bytecodeL(mainblock, writer);
+					else if (value.isLeftValue()) throw new Unsupported("compileL de " + value.getClass().getSimpleName());
+					else l = writer.expr(mainblock, value);
+					return new JExpr.Call(boxValue, value.isLeftValue() ? "set" : "setBoxOrValue", List.of(l));
+				}
+				var assignType = (this.declaration != null) ? this.declaration.getType() : this.variableType;
+				return new JExpr.Call(boxValue, "set", List.of(writer.compileConvert(mainblock, 0, value, assignType)));
+			}
+			case Operators.INCREMENT: return new JExpr.Call(boxValue, "increment", List.of());
+			case Operators.DECREMENT: return new JExpr.Call(boxValue, "decrement", List.of());
+			case Operators.PRE_INCREMENT: return new JExpr.Call(boxValue, "pre_increment", List.of());
+			case Operators.PRE_DECREMENT: return new JExpr.Call(boxValue, "pre_decrement", List.of());
+		}
+		AI.ArithmeticOperation arithmetic = switch (operator) {
+			case Operators.ADDASSIGN -> AI.ArithmeticOperation.ADD;
+			case Operators.MINUSASSIGN -> AI.ArithmeticOperation.SUB;
+			case Operators.MULTIPLIEASSIGN -> AI.ArithmeticOperation.MUL;
+			case Operators.DIVIDEASSIGN -> AI.ArithmeticOperation.DIV;
+			case Operators.MODULUSASSIGN -> AI.ArithmeticOperation.MOD;
+			case Operators.POWERASSIGN -> AI.ArithmeticOperation.POW;
+			default -> null;
+		};
+		if (arithmetic != null) {
+			if (mainblock.getVersion() == 1) throw new Unsupported("boîte v1");
+			var target = JavaWriter.arithmeticConversion(javaSlotType(), value.getType(), arithmetic);
+			if (target != null) return bytecodeContainerOperation(writer, boxValue, "arithmetic_eq", writer.expr(mainblock, value), arithmetic, target);
+			var method = switch (arithmetic) { case ADD -> "add_eq"; case SUB -> "sub_eq"; case MUL -> "mul_eq"; case DIV -> "div_eq"; case MOD -> "mod_eq"; default -> "pow_eq"; };
+			return new JExpr.Call(boxValue, method, List.of(writer.expr(mainblock, value)));
+		}
+		AI.BitOperation bit = switch (operator) {
+			case Operators.INTEGER_DIVISION_EQ -> AI.BitOperation.INTDIV;
+			case Operators.BITOR_ASSIGN -> AI.BitOperation.BOR;
+			case Operators.BITAND_ASSIGN -> AI.BitOperation.BAND;
+			case Operators.BITXOR_ASSIGN -> AI.BitOperation.BXOR;
+			case Operators.SHIFT_LEFT_ASSIGN -> AI.BitOperation.SHL;
+			case Operators.SHIFT_RIGHT_ASSIGN -> AI.BitOperation.SHR;
+			case Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN -> AI.BitOperation.USHR;
+			default -> throw new Unsupported("affectation de boîte " + operator);
+		};
+		var target = JavaWriter.containerBitConversion(javaSlotType());
+		if (target != null) return bytecodeContainerOperation(writer, boxValue, "bit_eq", writer.expr(mainblock, value), bit, target);
+		return new JExpr.Call(boxValue, bit.name().toLowerCase(Locale.ROOT) + "_eq", List.of(writer.expr(mainblock, value)));
+	}
+
+	/** writeContainerOperation sur une boîte : `box.<méthode>(e, Opération.X, Type.Y)`. */
+	private static JExpr bytecodeContainerOperation(BytecodeWriter writer, JExpr box, String method, JExpr value, Enum<?> operation, Type target) {
+		String typeName = target == Type.BOOL ? "BOOL" : target == Type.INT ? "INT" : target == Type.REAL ? "REAL" : "BIG_INT";
+		return new JExpr.Call(box, method, List.of(value, new JExpr.GetStatic(operation.getDeclaringClass(), operation.name()), new JExpr.GetStatic(Type.class, typeName)));
+	}
+
 	/** Le type vers lequel convertir le résultat d'une opération rangée dans la variable (globalCastType pour une globale). */
 	private Type bytecodeCastType(MainLeekBlock mainblock) {
 		return isBytecodeGlobal(mainblock) ? globalCastType() : this.variableType;
@@ -869,6 +944,14 @@ public class LeekVariable extends Expression {
 		// Une globale se lit telle quelle (sans writeNarrowed)
 		if (isBytecodeGlobal(mainblock)) return new JExpr.Read(bytecodeSlot(mainblock, writer));
 		var currentClass = mainblock.getWordCompiler().getCurrentClass();
+		// Fonction utilisateur comme valeur : le champ `ufunction_<nom>` de l'IA
+		FunctionBlock valueFunction = type == VariableType.FUNCTION ? getResolvedFunction(mainblock)
+			: type == VariableType.SYSTEM_FUNCTION && !mainblock.isRedefinedFunction(token.getWord()) ? mainblock.getUserFunction(token.getWord()) : null;
+		if (valueFunction != null && !mainblock.isRedefinedFunction(token.getWord())) {
+			if (valueFunction.getModule() != null && !valueFunction.getModule().isMain()) throw new Unsupported("fonction de module");
+			final var function = valueFunction;
+			return new JExpr.Read(writer.functionValue("ufunction_" + function.getInternalName(), () -> function.bytecodeFunctionValue(mainblock, writer)));
+		}
 		if (type == VariableType.THIS) {
 			if (currentClass == null) throw new Unsupported("this hors classe");
 			return writer.thisOf(writer.typeNamed(mainblock.getWordCompiler().getCurrentClassVariable()));
@@ -912,7 +995,8 @@ public class LeekVariable extends Expression {
 			}
 			return field;
 		}
-		JExpr base = new JExpr.Read(bytecodeSlot(mainblock, writer));
+		var box = bytecodeBox(mainblock, writer);
+		JExpr base = box != null ? new JExpr.Call(new JExpr.Read(box), "get", List.of()) : new JExpr.Read(bytecodeSlot(mainblock, writer));
 		if (needsNarrowingCast(mainblock.getVersion())) {
 			return new JExpr.Cast(writer.primitiveClass(this.variableType), base);
 		} else if (needsPrimitiveNarrowingConversion(mainblock.getVersion())) {
@@ -925,6 +1009,8 @@ public class LeekVariable extends Expression {
 	@Override
 	public JExpr bytecodeAssign(MainLeekBlock mainblock, BytecodeWriter writer, int operator, Expression value) {
 		if (type == VariableType.FIELD) return bytecodeFieldAssign(mainblock, writer, operator, value);
+		var box = bytecodeBox(mainblock, writer);
+		if (box != null) return bytecodeBoxAssign(mainblock, writer, box, operator, value);
 		switch (operator) {
 			case Operators.ASSIGN: return bytecodeSet(mainblock, writer, value);
 			case Operators.INCREMENT: return bytecodeIncDec(mainblock, writer, true, true);

@@ -39,16 +39,31 @@ public class BytecodeWriter {
 	public sealed interface Slot permits LocalVar, FieldVar, MemberVar {
 		Class<?> type();
 		String name();
+		/** Le paramètre de type d'un `Box<T>` / `Wrapper<T>` (variable capturée), que `get()` rend. */
+		default Class<?> typeArg() {
+			return null;
+		}
 	}
 
-	/** Variable locale : son emplacement, son type Java et son nom LeekScript (pour le débogage). */
-	public record LocalVar(int slot, Class<?> type, String name) implements Slot {}
+	/**
+	 * Variable locale : son emplacement, son type Java, son nom LeekScript, la méthode qui la
+	 * déclare (null : celle en cours d'écriture) et le paramètre de type de sa boîte.
+	 */
+	public record LocalVar(int slot, Class<?> type, String name, Object method, Class<?> typeArg) implements Slot {
+		public LocalVar(int slot, Class<?> type, String name) {
+			this(slot, type, name, null, null);
+		}
+	}
 
 	/** Champ public `name` d'un objet quelconque (`o.f`), déclaré dans `owner`. */
 	public record MemberVar(JExpr receiver, Class<?> owner, String name, Class<?> type) implements Slot {}
 
 	/** Champ d'instance d'une classe générée (globale de l'IA, champ d'une classe utilisateur…). */
-	public record FieldVar(ClassContext owner, String name, Class<?> type) implements Slot {}
+	public record FieldVar(ClassContext owner, String name, Class<?> type, Class<?> typeArg) implements Slot {
+		public FieldVar(ClassContext owner, String name, Class<?> type) {
+			this(owner, name, type, null);
+		}
+	}
 
 	/**
 	 * Une classe en cours d'écriture : celle de l'IA, une classe utilisateur `u_X` ou une classe
@@ -62,6 +77,8 @@ public class BytecodeWriter {
 		public final ClassContext outer;
 		java.lang.classfile.ClassBuilder builder;
 		final java.util.HashMap<String, FieldVar> fields = new java.util.HashMap<>();
+		/** Classe anonyme : les locales des méthodes englobantes qu'elle lit, chacune dans son champ `val$x`. */
+		java.util.LinkedHashMap<LocalVar, FieldVar> captures = null;
 
 		public ClassContext(ClassDesc desc, Class<?> type, Class<?> members, ClassContext outer) {
 			this.desc = desc;
@@ -85,6 +102,8 @@ public class BytecodeWriter {
 		boolean alive = true;
 		String name;
 		MethodTypeDesc type;
+		/** Repère posé sans ligne LeekScript, que la prochaine instruction reprend (cf pendingLine). */
+		int pendingLine = 0;
 	}
 
 	public final Options options;
@@ -200,37 +219,60 @@ public class BytecodeWriter {
 		var enclosingName = method.name;
 		var enclosingType = method.type;
 		var anonymous = new ClassContext(desc, superclass, superclass, outer);
+		anonymous.captures = new java.util.LinkedHashMap<>();
 		var bytes = classFile.build(desc, clb -> inClass(anonymous, clb, () -> {
 			clb.withFlags(java.lang.classfile.ClassFile.ACC_SUPER);
 			clb.withSuperclass(superDesc);
 			clb.withField("this$0", outer.desc, java.lang.classfile.ClassFile.ACC_FINAL | java.lang.classfile.ClassFile.ACC_SYNTHETIC);
-			var ctorParams = new ClassDesc[superParams.size() + 1];
+			// Les méthodes d'abord : elles disent quelles locales englobantes la classe capture
+			for (var m : methods) writeMethod(m.name(), m.flags(), m.parameters(), m.returnType(), m.body());
+			var captures = new ArrayList<>(anonymous.captures.values());
+			var ctorParams = new ClassDesc[1 + superParams.size() + captures.size()];
 			ctorParams[0] = outer.desc;
 			for (int i = 0; i < superParams.size(); i++) ctorParams[i + 1] = JTypes.desc(superParams.get(i));
+			for (int i = 0; i < captures.size(); i++) ctorParams[1 + superParams.size() + i] = JTypes.desc(captures.get(i).type());
 			clb.withMethodBody(ConstantDescs.INIT_NAME, MethodTypeDesc.of(ConstantDescs.CD_void, ctorParams), 0, code -> {
 				code.aload(0);
 				code.aload(1);
 				code.putfield(desc, "this$0", outer.desc);
-				code.aload(0);
 				int slot = 2;
 				var superDescs = new ClassDesc[superParams.size()];
+				for (int i = 0; i < superParams.size(); i++) {
+					superDescs[i] = JTypes.desc(superParams.get(i));
+					slot += kind(superParams.get(i)).slotSize();
+				}
+				// Les champs des locales capturées, avant super() comme javac
+				for (var capture : captures) {
+					var k = kind(capture.type());
+					code.aload(0);
+					code.loadLocal(k, slot);
+					code.putfield(desc, capture.name(), JTypes.desc(capture.type()));
+					slot += k.slotSize();
+				}
+				code.aload(0);
+				slot = 2;
 				for (int i = 0; i < superParams.size(); i++) {
 					var k = kind(superParams.get(i));
 					code.loadLocal(k, slot);
 					slot += k.slotSize();
-					superDescs[i] = JTypes.desc(superParams.get(i));
 				}
 				code.invokespecial(superDesc, ConstantDescs.INIT_NAME, MethodTypeDesc.of(ConstantDescs.CD_void, superDescs));
 				code.return_();
 			});
-			for (var m : methods) writeMethod(m.name(), m.flags(), m.parameters(), m.returnType(), m.body());
 			if (enclosingName != null) {
 				clb.with(java.lang.classfile.attribute.EnclosingMethodAttribute.of(outer.desc, java.util.Optional.of(enclosingName), java.util.Optional.of(enclosingType)));
 			}
 			finishClass(clb, desc);
 		}));
 		classes.put(desc.displayName(), bytes);
-		return new JExpr.NewInner(desc, superParams, superArgs, superclass);
+		// L'instanciation passe aussi les locales capturées (lues dans la méthode englobante, qui peut à son tour les capturer)
+		var parameters = new ArrayList<Class<?>>(superParams);
+		var args = new ArrayList<JExpr>(superArgs);
+		for (var capture : anonymous.captures.entrySet()) {
+			parameters.add(capture.getValue().type());
+			args.add(new JExpr.Read(capture.getKey()));
+		}
+		return new JExpr.NewInner(desc, parameters, args, superclass);
 	}
 
 	private List<Class<?>> argTypesOf(List<JExpr> args) {
@@ -322,7 +364,7 @@ public class BytecodeWriter {
 
 	/** Une variable LeekScript lue directement dans un emplacement existant (paramètre). */
 	public LocalVar alias(Object declaration, int slot, Class<?> type, String name) {
-		var v = new LocalVar(slot, type, name);
+		var v = new LocalVar(slot, type, name, method, null);
 		locals.put(declaration, v);
 		return v;
 	}
@@ -414,8 +456,13 @@ public class BytecodeWriter {
 	}
 
 	public LocalVar declare(Object declaration, Class<?> type, String name) {
+		return declare(declaration, type, name, null);
+	}
+
+	/** Une locale `Box<T>` / `Wrapper<T>` : `typeArg` est son T. */
+	public LocalVar declare(Object declaration, Class<?> type, String name, Class<?> typeArg) {
 		if (type == void.class || JTypes.isNull(type)) throw new Unsupported("variable de type " + type);
-		var v = new LocalVar(method.nextSlot, type, name);
+		var v = new LocalVar(method.nextSlot, type, name, method, typeArg);
 		method.nextSlot += TypeKind.from(JTypes.desc(type)).slotSize();
 		locals.put(declaration, v);
 		return v;
@@ -452,6 +499,33 @@ public class BytecodeWriter {
 
 	public List<JExpr> getFieldInitializers() {
 		return fieldInitializers;
+	}
+
+	// Valeurs fonction des fonctions utilisateur (`ufunction_<nom>`), créées à la première référence et
+	// initialisées par le constructeur de l'IA (leur classe anonyme a l'IA pour classe englobante)
+	private final java.util.LinkedHashMap<String, FieldVar> functionValues = new java.util.LinkedHashMap<>();
+	private final ArrayList<java.util.function.Supplier<JExpr>> lazyInitializers = new ArrayList<>();
+	private final ArrayList<FieldVar> lazyFields = new ArrayList<>();
+
+	public FieldVar functionValue(String name, java.util.function.Supplier<JExpr> value) {
+		var field = functionValues.get(name);
+		if (field == null) {
+			field = new FieldVar(aiContext, name, leekscript.runner.values.FunctionLeekValue.class);
+			aiContext.fields.put(name, field);
+			aiContext.builder.withField(name, JTypes.desc(field.type()), java.lang.classfile.ClassFile.ACC_PRIVATE);
+			functionValues.put(name, field);
+			lazyFields.add(field);
+			lazyInitializers.add(value);
+		}
+		return field;
+	}
+
+	/** Les initialiseurs des valeurs fonction, à écrire dans le constructeur de l'IA (après les autres champs). */
+	public List<JExpr> takeLazyInitializers() {
+		var result = new ArrayList<JExpr>();
+		// Une valeur fonction peut en référencer d'autres : la liste grandit pendant qu'on la parcourt
+		for (int i = 0; i < lazyInitializers.size(); i++) result.add(new JExpr.Assign(lazyFields.get(i), lazyInitializers.get(i).get()));
+		return result;
 	}
 
 	// Corps du constructeur de l'IA après les initialiseurs (defineClass_X()…)
@@ -551,7 +625,9 @@ public class BytecodeWriter {
 	/** Repère de ligne pour l'instruction qui commence, relié à la ligne LeekScript de `location`. */
 	public void line(Location location) {
 		if (location == null || location.getFile() == null) return;
-		int line = nextLine++;
+		boolean pending = method.pendingLine != 0;
+		int line = pending ? method.pendingLine : nextLine++;
+		method.pendingLine = 0;
 		var file = location.getFile();
 		int index = files.indexOf(file);
 		if (index < 0) {
@@ -559,7 +635,22 @@ public class BytecodeWriter {
 			files.add(file);
 		}
 		lines.put(line, new LineMapping(location.getStartLine(), index));
-		cb.lineNumber(line);
+		if (!pending) cb.lineNumber(line);
+	}
+
+	/**
+	 * Le code qui suit (le `ops(1)` d'entrée d'un corps) est sur la ligne Java de la prochaine
+	 * instruction, comme JavaWriter l'écrit : il en prend la ligne LeekScript, ou aucune si le bloc
+	 * se ferme avant (cf endLine).
+	 */
+	public void pendingLine() {
+		method.pendingLine = nextLine++;
+		cb.lineNumber(method.pendingLine);
+	}
+
+	/** Fin de bloc (`}`) : une ligne en attente reste sans ligne LeekScript. */
+	public void endLine() {
+		method.pendingLine = 0;
 	}
 
 	// ---- Typage (JLS 15) ----
@@ -613,7 +704,15 @@ public class BytecodeWriter {
 			case JExpr.Read l -> l.var().type();
 			case JExpr.This t -> context.type;
 			case JExpr.Outer o -> o.target().type;
-			case JExpr.Call c -> resolve(c).returnType();
+			case JExpr.Call c -> {
+				var r = resolve(c);
+				// T d'un Box<T> / Wrapper<T> : get() & co rendent le type de la variable capturée
+				if (c.receiver() instanceof JExpr.Read read && read.var().typeArg() != null && r.executable() instanceof Method m
+						&& m.getGenericReturnType() instanceof java.lang.reflect.TypeVariable<?> tv && tv.getGenericDeclaration() instanceof Class<?>) {
+					yield read.var().typeArg();
+				}
+				yield r.returnType();
+			}
 			case JExpr.StaticCall c -> resolve(c).returnType();
 			case JExpr.GetStatic g -> field(g).getType();
 			case JExpr.Self c -> c.returnType();
@@ -629,6 +728,10 @@ public class BytecodeWriter {
 				var t = typeOf(a.array());
 				if (!t.isArray()) throw new Unsupported("[] sur " + t);
 				yield t.getComponentType();
+			}
+			case JExpr.ArrayLength a -> {
+				if (!typeOf(a.array()).isArray()) throw new Unsupported(".length sur " + typeOf(a.array()));
+				yield int.class;
 			}
 			case JExpr.SuperCall c -> resolveSuper(c).returnType();
 			case JExpr.Cast c -> c.type();
@@ -826,6 +929,11 @@ public class BytecodeWriter {
 				cb.invokespecial(d, ConstantDescs.INIT_NAME, methodDesc(m));
 				return n.type();
 			}
+			case JExpr.ArrayLength a -> {
+				emitValue(a.array());
+				cb.arraylength();
+				return int.class;
+			}
 			case JExpr.ArrayGet a -> {
 				var t = typeOf(a.array());
 				emitAs(a.array(), t);
@@ -916,7 +1024,27 @@ public class BytecodeWriter {
 		}
 	}
 
+	/** La locale d'une méthode englobante, lue depuis une classe anonyme : son champ `val$x`, créé à la première lecture. */
+	private FieldVar captured(LocalVar l) {
+		if (context.captures == null) throw new Unsupported("locale d'une autre méthode hors d'une classe anonyme");
+		var f = context.captures.get(l);
+		if (f == null) {
+			f = new FieldVar(context, "val$" + l.name() + "$" + context.captures.size(), l.type(), l.typeArg());
+			context.captures.put(l, f);
+			context.builder.withField(f.name(), JTypes.desc(f.type()), java.lang.classfile.ClassFile.ACC_FINAL | java.lang.classfile.ClassFile.ACC_SYNTHETIC);
+		}
+		return f;
+	}
+
+	private boolean isForeign(LocalVar l) {
+		return l.method() != null && l.method() != method;
+	}
+
 	private void load(Slot v) {
+		if (v instanceof LocalVar l && isForeign(l)) {
+			load(captured(l));
+			return;
+		}
 		switch (v) {
 			case LocalVar l -> cb.loadLocal(kind(l.type()), l.slot());
 			case FieldVar f -> {
@@ -932,6 +1060,7 @@ public class BytecodeWriter {
 
 	/** Avant la valeur d'une écriture : le receveur d'un champ. */
 	private void storePrepare(Slot v) {
+		if (v instanceof LocalVar l && isForeign(l)) throw new Unsupported("écriture d'une locale capturée");
 		if (v instanceof FieldVar f) loadInstance(f.owner());
 		if (v instanceof MemberVar m) emitAs(m.receiver(), m.owner());
 	}
@@ -983,6 +1112,7 @@ public class BytecodeWriter {
 	private Class<?> increment(JExpr.Inc i, boolean used) {
 		var v = i.var();
 		var k = kind(v.type());
+		if (v instanceof LocalVar l && isForeign(l)) throw new Unsupported("incrément d'une locale capturée");
 		if (k == TypeKind.INT && v instanceof LocalVar l) {
 			if (used && !i.prefix()) cb.iload(l.slot());
 			cb.iinc(l.slot(), i.increment() ? 1 : -1);
@@ -1357,6 +1487,9 @@ public class BytecodeWriter {
 
 	/** La classe d'un nom de type écrit par JavaWriter : talon d'une classe générée, sinon classe du runtime. */
 	public Class<?> typeNamed(String name) {
+		// FunctionLeekValue<T> : effacé ; run() rend alors Object là où javac connaît T, et les
+		// conversions que javac n'écrit pas (T vers un primitif…) font repasser le programme par lui
+		if (name.startsWith("FunctionLeekValue<")) return leekscript.runner.values.FunctionLeekValue.class;
 		var stub = stubs.get(name);
 		return stub != null ? stub : runtimeType(name);
 	}

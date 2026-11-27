@@ -100,7 +100,11 @@ public class LeekExpressionInstruction extends LeekInstruction {
 		if (trimmed instanceof LeekNull || trimmed instanceof LeekBoolean || trimmed instanceof LeekNumber || trimmed instanceof LeekString || trimmed instanceof LeekVariable || trimmed instanceof LeekObjectAccess || trimmed instanceof LeekArrayAccess || trimmed instanceof LeekAnonymousFunction) {
 			return;
 		}
-		if (trimmed instanceof LeekFunctionCall call && call.isEliminableStatement(mainblock)) return;
+		// Instruction éliminée : JavaWriter écrit tout de même son `;` sur une ligne à elle
+		if (trimmed instanceof LeekFunctionCall call && call.isEliminableStatement(mainblock)) {
+			writer.line(getLocation());
+			return;
+		}
 		writer.line(getLocation());
 		var e = trimmed.toBytecode(mainblock, writer);
 		if (writer.isOperationsEnabled() && trimmed.getOperations() > 0) e = JExpr.call("ops", e, JExpr.of(trimmed.getOperations()));

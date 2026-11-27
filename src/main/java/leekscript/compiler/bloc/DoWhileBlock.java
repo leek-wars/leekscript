@@ -87,6 +87,7 @@ public class DoWhileBlock extends AbstractLeekBlock {
 		var end = writer.newLabel();
 		writer.bind(start);
 		writer.pushLoop(new BytecodeWriter.Loop(end, test));
+		writer.pendingLine();
 		writer.counter(1);
 		writeBlockBytecode(mainblock, writer);
 		writer.popLoop();

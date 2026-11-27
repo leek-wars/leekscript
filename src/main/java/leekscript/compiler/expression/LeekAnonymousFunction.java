@@ -8,6 +8,12 @@ import leekscript.compiler.WordCompiler;
 import leekscript.compiler.bloc.AnonymousFunctionBlock;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.runner.AI;
+import leekscript.runner.values.FunctionLeekValue;
+import java.lang.classfile.ClassFile;
+import java.util.List;
 
 public class LeekAnonymousFunction extends Expression {
 
@@ -44,6 +50,13 @@ public class LeekAnonymousFunction extends Expression {
 		writer.addCode("new FunctionLeekValue(" + mBlock.countParameters() + ") {");
 		mBlock.writeJavaCode(mainblock, writer, false);
 		writer.addCode("}");
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var runParams = List.<Class<?>>of(AI.class, Object.class, Object[].class);
+		return writer.anonymous(FunctionLeekValue.class, List.of(JExpr.of(mBlock.countParameters())),
+			List.of(new BytecodeWriter.AnonymousMethod("run", ClassFile.ACC_PUBLIC | ClassFile.ACC_VARARGS, runParams, Object.class, () -> mBlock.writeBytecodeBody(mainblock, writer))));
 	}
 
 	@Override

@@ -153,6 +153,7 @@ public class ForBlock extends AbstractLeekBlock {
 		if (writer.isOperationsEnabled()) condition = JExpr.call("ops", condition, JExpr.of(mCondition.getOperations()));
 		writer.jump(condition, false, end);
 		writer.pushLoop(new BytecodeWriter.Loop(end, step));
+		writer.pendingLine();
 		writer.counter(1);
 		writeBlockBytecode(mainblock, writer);
 		writer.popLoop();

@@ -69,6 +69,7 @@ public class WhileBlock extends AbstractLeekBlock {
 		if (ConstantFolder.isConstantEmission(mCondition, mainblock, mainblock.getWordCompiler().getCurrentClass())) condition = JExpr.call("bool", condition);
 		writer.jump(JExpr.call("ops", condition, JExpr.of(mCondition.getOperations())), false, end);
 		writer.pushLoop(new BytecodeWriter.Loop(end, start));
+		writer.pendingLine();
 		writer.counter(1);
 		writeBlockBytecode(mainblock, writer);
 		writer.popLoop();
