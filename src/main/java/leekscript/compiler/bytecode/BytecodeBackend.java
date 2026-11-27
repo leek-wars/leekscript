@@ -142,6 +142,7 @@ public final class BytecodeBackend {
 				}
 				cb.areturn();
 			});
+			writer.writeAccessors(clb);
 			writer.finishClass(clb, thisDesc);
 		});
 

@@ -277,6 +277,28 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		writer.addLine("}}");
 	}
 
+	/** La variable d'itération (clé ou valeur) : son emplacement, et si c'est une boîte (Wrapper capturé). */
+	private record IterationSlot(BytecodeWriter.Slot slot, boolean box) {}
+
+	private IterationSlot foreachSlot(MainLeekBlock mainblock, BytecodeWriter writer, boolean declared, LeekVariableDeclarationInstruction declaration, Token token, LeekVariable variable, int version) {
+		if (declared) {
+			if (mainblock.hasGlobal(token.getWord())) throw new Unsupported("itérateur homonyme d'une globale");
+			if (declaration.isCaptured()) {
+				var javaType = writer.typeNamed(declaration.getVariable().getType().getJavaName(version));
+				var wrapper = writer.declare(declaration, leekscript.runner.Wrapper.class, token.getWord(), javaType);
+				writer.emitStatement(new JExpr.Assign(wrapper, new JExpr.New(leekscript.runner.Wrapper.class, List.of(new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), JExpr.nul()))))));
+				return new IterationSlot(wrapper, true);
+			}
+			var slot = writer.declare(declaration, writer.typeNamed(declaration.getIteratorJavaName(version)), token.getWord());
+			writer.emitStatement(new JExpr.Assign(slot, JExpr.nul()));
+			writer.counter(1);
+			return new IterationSlot(slot, false);
+		}
+		var box = variable.bytecodeIteratorBox(mainblock, writer);
+		if (box != null) return new IterationSlot(box, true);
+		return new IterationSlot(variable.bytecodeIteratorSlot(mainblock, writer), false);
+	}
+
 	@Override
 	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
 		int version = mainblock.getVersion();
@@ -291,36 +313,22 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		writer.openScope();
 		var end = writer.newLabel();
 		var ar = writer.foreachContainer(writer.expr(mainblock, mArray), mArray.getOperations(), end);
-		BytecodeWriter.Slot key;
-		if (mIsKeyDeclaration) {
-			if (iteratorKeyDeclaration.isCaptured() || mainblock.hasGlobal(mKeyIterator.getWord())) throw new Unsupported("itérateur capturé");
-			key = writer.declare(iteratorKeyDeclaration, writer.typeNamed(iteratorKeyDeclaration.getIteratorJavaName(version)), mKeyIterator.getWord());
-			writer.emitStatement(new JExpr.Assign(key, JExpr.nul()));
-			writer.counter(1);
-		} else {
-			key = iteratorKeyVariable.bytecodeIteratorSlot(mainblock, writer);
-		}
-		BytecodeWriter.Slot value;
-		if (mIsDeclaration) {
-			if (iteratorDeclaration.isCaptured() || mainblock.hasGlobal(mIterator.getWord())) throw new Unsupported("itérateur capturé");
-			value = writer.declare(iteratorDeclaration, writer.typeNamed(iteratorDeclaration.getIteratorJavaName(version)), mIterator.getWord());
-			writer.emitStatement(new JExpr.Assign(value, JExpr.nul()));
-			writer.counter(1);
-		} else {
-			value = iteratorVariable.bytecodeIteratorSlot(mainblock, writer);
-		}
+		var key = foreachSlot(mainblock, writer, mIsKeyDeclaration, iteratorKeyDeclaration, mKeyIterator, iteratorKeyVariable, version);
+		var value = foreachSlot(mainblock, writer, mIsDeclaration, iteratorDeclaration, mIterator, iteratorVariable, version);
 		var it = writer.foreachIterator(ar);
 		var test = writer.newLabel();
 		var entry = writer.foreachNext(it, test, end);
 		JExpr keyValue = new JExpr.Call(new JExpr.Read(entry), "getKey", List.of());
-		if (version >= 4) {
-			keyValue = writer.castObject(iteratorKeyVariable.getType().getJavaName(version), keyValue);
-		} else if (mIsKeyDeclaration) {
-			keyValue = writer.castObject(iteratorKeyDeclaration.getVariable().getType().getJavaName(version), keyValue);
+		if (key.box()) {
+			writer.emitStatement(new JExpr.Call(new JExpr.Read(key.slot()), "set", List.of(keyValue)));
+		} else {
+			if (version >= 4) keyValue = writer.castObject(iteratorKeyVariable.getType().getJavaName(version), keyValue);
+			else if (mIsKeyDeclaration) keyValue = writer.castObject(iteratorKeyDeclaration.getVariable().getType().getJavaName(version), keyValue);
+			writer.emitStatement(new JExpr.Assign(key.slot(), keyValue));
 		}
-		writer.emitStatement(new JExpr.Assign(key, keyValue));
-		var valueValue = writer.castObject(iteratorVariable.getType().getJavaName(version), new JExpr.Call(new JExpr.Read(entry), "getValue", List.of()));
-		writer.emitStatement(new JExpr.Assign(value, valueValue));
+		JExpr valueValue = new JExpr.Call(new JExpr.Read(entry), "getValue", List.of());
+		if (value.box()) writer.emitStatement(new JExpr.Call(new JExpr.Read(value.slot()), "set", List.of(valueValue)));
+		else writer.emitStatement(new JExpr.Assign(value.slot(), writer.castObject(iteratorVariable.getType().getJavaName(version), valueValue)));
 		mainblock.getWordCompiler().setCurrentBlock(initialBlock);
 		writer.counter(1);
 

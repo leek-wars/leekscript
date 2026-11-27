@@ -1440,7 +1440,6 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		var superClass = stub.getSuperclass();
 		var superDesc = JTypes.desc(superClass);
 		var ai = writer.aiContext;
-		writer.registerInnerClass(desc, superDesc, ai.desc, name, ClassFile.ACC_PUBLIC);
 		var context = new BytecodeWriter.ClassContext(desc, stub, stub, ai);
 		mainblock.getWordCompiler().setCurrentClass(this);
 		var bytes = writer.classFile().build(desc, clb -> writer.inClass(context, clb, () -> {
@@ -1563,6 +1562,12 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		var descs = new java.lang.constant.ClassDesc[params.length];
 		for (int i = 0; i < params.length; i++) descs[i] = JTypes.desc(params[i]);
 		return java.lang.constant.MethodTypeDesc.of(ConstantDescs.CD_void, descs);
+	}
+
+	/** La classe dans la hiérarchie (stack maps), le nid et les InnerClasses de l'IA, avant que du code la référence. */
+	public void registerBytecodeClass(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var stub = writer.typeNamed(bytecodeName());
+		writer.registerInnerClass(JTypes.desc(stub), JTypes.desc(stub.getSuperclass()), writer.aiContext.desc, bytecodeName(), ClassFile.ACC_PUBLIC);
 	}
 
 	/** Les champs de la classe dans l'IA : sa ClassLeekValue (initialisée par le constructeur) et ses boîtes de champs statiques. */

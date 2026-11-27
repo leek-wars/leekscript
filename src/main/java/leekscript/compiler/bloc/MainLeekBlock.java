@@ -1094,6 +1094,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			var specs = new java.util.ArrayList<leekscript.compiler.bytecode.ClassStubs.ClassSpec>();
 			for (var clazz : classes) specs.add(clazz.bytecodeSpec(this));
 			writer.setStubs(leekscript.compiler.bytecode.ClassStubs.build(writer.aiContext.desc.displayName(), writer.aiContext.members, specs, writer::runtimeType));
+			for (var clazz : classes) clazz.registerBytecodeClass(this, writer);
 			for (var clazz : classes) clazz.declareBytecodeFields(this, writer);
 		}
 		// Globales : un champ chacune (et sa garde d'initialisation si elle est persistante)

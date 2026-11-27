@@ -296,7 +296,9 @@ public class LeekFunctionCall extends Expression {
 				var constructed = cvt.getClassDeclaration();
 				if (constructed.internal) throw new Unsupported("new d'une classe interne");
 				var name = "u_" + constructed.getInternalName();
-				var args = new JExpr.NewArray(Object.class, bytecodeArguments(mainblock, writer, false, false));
+				// new_u_X(Object... args) : un seul argument déjà Object[] (le `new Object[] { null }` d'un null seul) est le tableau lui-même
+				var arguments = bytecodeArguments(mainblock, writer, false, false);
+				JExpr args = arguments.size() == 1 && arguments.get(0) instanceof JExpr.NewArray ? arguments.get(0) : new JExpr.NewArray(Object.class, arguments);
 				return new JExpr.Self("new_" + name, List.of(Object[].class), writer.typeNamed(name), List.of(args));
 			}
 			return bytecodeConvertPrimitive(writer, bytecodeDynamicExecute(mainblock, writer));

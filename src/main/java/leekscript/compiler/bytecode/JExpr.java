@@ -47,6 +47,9 @@ public sealed interface JExpr {
 	/** `new <classe interne générée>(this, args)` : constructeur de paramètres connus, typé `type` (sa super-classe pour une anonyme). */
 	record NewInner(ClassDesc desc, List<Class<?>> parameters, List<JExpr> args, Class<?> type) implements JExpr {}
 
+	/** `e instanceof Object x` : range e dans la locale `temp` et vaut vrai s'il n'est pas null. */
+	record BindNonNull(JExpr expr, BytecodeWriter.LocalVar temp) implements JExpr {}
+
 	/** `a.length` d'un tableau Java. */
 	record ArrayLength(JExpr array) implements JExpr {}
 

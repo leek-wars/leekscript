@@ -1363,6 +1363,19 @@ public class LeekExpression extends Expression {
 			if (asConverts()) return writer.compileConvert(mainblock, AI.CAST_INDEX, mExpression1, type);
 			if (mExpression2 instanceof LeekType lt) return new JExpr.Cast(writer.typeNamed(lt.getType().getJavaPrimitiveName(mainblock.getVersion())), writer.expr(mainblock, mExpression1));
 			throw new Unsupported("as");
+		case Operators.COALESCE: {
+			// a ?? b == (a != null) ? a : b, `a` lié une seule fois s'il a un effet de bord (#5300)
+			if (!mExpression1.getType().canBeNull()) return writer.expr(mainblock, mExpression1);
+			var load = writer.compileLoad(mainblock, mExpression1);
+			var left = coalesceLeft();
+			JExpr test;
+			if (left instanceof CoalesceValue value) {
+				test = new JExpr.BindNonNull(load, writer.declare(value, Object.class, CoalesceValue.NAME));
+			} else {
+				test = new JExpr.Binary("!=", load, JExpr.nul());
+			}
+			return new JExpr.Cond(test, writer.compileConvert(mainblock, ARRAY, left, type), writer.compileConvert(mainblock, ARRAY, mExpression2, type));
+		}
 		case Operators.NEW:
 			if (mExpression2 instanceof LeekVariable variable) {
 				if (mainblock.getWordCompiler().getVersion() >= 3 && variable.toString().equals("Array")) {
@@ -1898,6 +1911,11 @@ public class LeekExpression extends Expression {
 		@Override
 		public boolean hasObjectJavaResult() {
 			return true;
+		}
+
+		@Override
+		public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+			return new JExpr.Read(writer.local(this));
 		}
 
 		@Override

@@ -253,20 +253,30 @@ public class ForeachBlock extends AbstractLeekBlock {
 		writer.openScope();
 		var end = writer.newLabel();
 		var ar = writer.foreachContainer(writer.expr(mainblock, mArray), mArray.getOperations(), end);
-		BytecodeWriter.Slot iterator;
+		BytecodeWriter.Slot iterator = null;
+		BytecodeWriter.Slot iteratorBox = null;
 		if (mIsDeclaration) {
-			if (declaration.isCaptured() || mainblock.hasGlobal(mIterator.getWord())) throw new Unsupported("itérateur capturé");
-			iterator = writer.declare(declaration, writer.typeNamed(declaration.getIteratorJavaName(mainblock.getVersion())), mIterator.getWord());
-			writer.emitStatement(new JExpr.Assign(iterator, JExpr.nul()));
-			writer.counter(1);
+			if (mainblock.hasGlobal(mIterator.getWord())) throw new Unsupported("itérateur homonyme d'une globale");
+			if (declaration.isCaptured()) {
+				// `final Wrapper<T> u_x = new Wrapper<T>(new Box(ai, null));`, mis à jour par set()
+				iteratorBox = writer.declare(declaration, leekscript.runner.Wrapper.class, mIterator.getWord(), writer.typeNamed(iterJavaType));
+				writer.emitStatement(new JExpr.Assign(iteratorBox, new JExpr.New(leekscript.runner.Wrapper.class, List.of(new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), JExpr.nul()))))));
+			} else {
+				iterator = writer.declare(declaration, writer.typeNamed(declaration.getIteratorJavaName(mainblock.getVersion())), mIterator.getWord());
+				writer.emitStatement(new JExpr.Assign(iterator, JExpr.nul()));
+				writer.counter(1);
+			}
 		} else {
 			writer.counter(1);
-			iterator = iteratorVariable.bytecodeIteratorSlot(mainblock, writer);
+			iteratorBox = iteratorVariable.bytecodeIteratorBox(mainblock, writer);
+			if (iteratorBox == null) iterator = iteratorVariable.bytecodeIteratorSlot(mainblock, writer);
 		}
 		var it = writer.foreachIterator(ar);
 		var test = writer.newLabel();
 		var entry = writer.foreachNext(it, test, end);
-		writer.emitStatement(new JExpr.Assign(iterator, writer.castObject(iterJavaType, new JExpr.Call(new JExpr.Read(entry), "getValue", List.of()))));
+		var value = new JExpr.Call(new JExpr.Read(entry), "getValue", List.of());
+		if (iteratorBox != null) writer.emitStatement(new JExpr.Call(new JExpr.Read(iteratorBox), "set", List.of(value)));
+		else writer.emitStatement(new JExpr.Assign(iterator, writer.castObject(iterJavaType, value)));
 		writer.counter(1);
 		mainblock.getWordCompiler().setCurrentBlock(initialBlock);
 

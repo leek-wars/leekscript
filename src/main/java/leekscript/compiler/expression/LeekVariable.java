@@ -843,6 +843,11 @@ public class LeekVariable extends Expression {
 		return writer.local(declaration);
 	}
 
+	/** La boîte (Box / Wrapper) d'une variable d'itération capturée, null si elle s'écrit directement. */
+	public BytecodeWriter.Slot bytecodeIteratorBox(MainLeekBlock mainblock, BytecodeWriter writer) {
+		return bytecodeBox(mainblock, writer);
+	}
+
 	/** La variable d'itération d'un foreach, écrite telle quelle (pas de Box). */
 	public BytecodeWriter.Slot bytecodeIteratorSlot(MainLeekBlock mainblock, BytecodeWriter writer) {
 		if (isBox()) throw new Unsupported("itérateur en Box");
@@ -951,6 +956,12 @@ public class LeekVariable extends Expression {
 			if (valueFunction.getModule() != null && !valueFunction.getModule().isMain()) throw new Unsupported("fonction de module");
 			final var function = valueFunction;
 			return new JExpr.Read(writer.functionValue("ufunction_" + function.getInternalName(), () -> function.bytecodeFunctionValue(mainblock, writer)));
+		}
+		if (type == VariableType.THIS_CLASS) {
+			if (currentClass == null) throw new Unsupported("class hors classe");
+			var classVariable = mainblock.getWordCompiler().getCurrentClassVariable();
+			if (writer.inInstanceContext()) return JExpr.call("classOf", writer.thisOf(writer.typeNamed(classVariable)));
+			return new JExpr.Read(writer.fieldNamed(classVariable));
 		}
 		if (type == VariableType.THIS) {
 			if (currentClass == null) throw new Unsupported("this hors classe");

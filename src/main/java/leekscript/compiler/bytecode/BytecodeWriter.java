@@ -733,6 +733,10 @@ public class BytecodeWriter {
 				if (!typeOf(a.array()).isArray()) throw new Unsupported(".length sur " + typeOf(a.array()));
 				yield int.class;
 			}
+			case JExpr.BindNonNull b -> {
+				if (typeOf(b.expr()).isPrimitive()) throw new Unsupported("instanceof sur un primitif");
+				yield boolean.class;
+			}
 			case JExpr.SuperCall c -> resolveSuper(c).returnType();
 			case JExpr.Cast c -> c.type();
 			case JExpr.Assign a -> a.var().type();
@@ -875,7 +879,14 @@ public class BytecodeWriter {
 				if (c.receiver() == null) {
 					// Appel non qualifié : qualifié par la classe où Java trouve la méthode
 					var scope = methodScope(c.name());
-					if (scope != context && Modifier.isProtected(m.executable().getModifiers())) throw new Unsupported("méthode protégée englobante " + c.name());
+					if (scope != context && Modifier.isProtected(m.executable().getModifiers())) {
+						// Méthode protégée de l'IA appelée d'une classe interne : par une méthode d'accès, comme javac
+						if (scope != aiContext || isStatic) throw new Unsupported("méthode protégée englobante " + c.name());
+						loadInstance(scope);
+						emitArgs(m, c.args());
+						cb.invokestatic(aiContext.desc, accessor(m), accessorDesc(m), false);
+						return m.erasedReturn();
+					}
 					owner = scope.members;
 					ownerDesc = scope.desc;
 					if (!isStatic) loadInstance(scope);
@@ -933,6 +944,13 @@ public class BytecodeWriter {
 				emitValue(a.array());
 				cb.arraylength();
 				return int.class;
+			}
+			case JExpr.BindNonNull b -> {
+				emitAs(b.expr(), Object.class);
+				cb.dup();
+				cb.astore(b.temp().slot());
+				cb.instanceOf(ConstantDescs.CD_Object);
+				return boolean.class;
 			}
 			case JExpr.ArrayGet a -> {
 				var t = typeOf(a.array());
@@ -1487,9 +1505,6 @@ public class BytecodeWriter {
 
 	/** La classe d'un nom de type écrit par JavaWriter : talon d'une classe générée, sinon classe du runtime. */
 	public Class<?> typeNamed(String name) {
-		// FunctionLeekValue<T> : effacé ; run() rend alors Object là où javac connaît T, et les
-		// conversions que javac n'écrit pas (T vers un primitif…) font repasser le programme par lui
-		if (name.startsWith("FunctionLeekValue<")) return leekscript.runner.values.FunctionLeekValue.class;
 		var stub = stubs.get(name);
 		return stub != null ? stub : runtimeType(name);
 	}
@@ -1499,6 +1514,9 @@ public class BytecodeWriter {
 	 * classe membre héritée (NativeObjectLeekValue d'AI) passe avant les imports.
 	 */
 	public Class<?> runtimeType(String name) {
+		// FunctionLeekValue<T> : effacé ; run() rend alors Object là où javac connaît T, et les
+		// conversions que javac n'écrit pas (T vers un primitif…) font repasser le programme par lui
+		if (name.startsWith("FunctionLeekValue<")) return leekscript.runner.values.FunctionLeekValue.class;
 		if (!name.contains(".") && !name.contains("<")) {
 			for (var c = aiContext.members; c != null; c = c.getSuperclass()) {
 				for (var member : c.getDeclaredClasses()) {
@@ -1534,6 +1552,44 @@ public class BytecodeWriter {
 		for (var c = context; c != target; c = c.outer) {
 			if (c.outer == null) throw new Unsupported("instance englobante introuvable");
 			cb.getfield(c.desc, "this$0", c.outer.desc);
+		}
+	}
+
+	// Méthodes d'accès aux méthodes protégées de l'IA depuis ses classes internes (`access$N`), écrites à la fin
+	private final java.util.LinkedHashMap<Method, String> accessors = new java.util.LinkedHashMap<>();
+
+	private String accessor(Resolver.Resolved m) {
+		return accessors.computeIfAbsent((Method) m.executable(), k -> "access$" + accessors.size());
+	}
+
+	private MethodTypeDesc accessorDesc(Resolver.Resolved m) {
+		var method = (Method) m.executable();
+		var params = new ArrayList<ClassDesc>();
+		params.add(aiContext.desc);
+		for (var p : method.getParameterTypes()) params.add(JTypes.desc(p));
+		return MethodTypeDesc.of(JTypes.desc(method.getReturnType()), params);
+	}
+
+	/** Les méthodes d'accès demandées : `static R access$N(AI_N self, params) { return self.m(params); }`. */
+	public void writeAccessors(java.lang.classfile.ClassBuilder builder) {
+		for (var entry : accessors.entrySet()) {
+			var method = entry.getKey();
+			var params = new ArrayList<ClassDesc>();
+			params.add(aiContext.desc);
+			for (var p : method.getParameterTypes()) params.add(JTypes.desc(p));
+			var desc = MethodTypeDesc.of(JTypes.desc(method.getReturnType()), params);
+			builder.withMethodBody(entry.getValue(), desc, java.lang.classfile.ClassFile.ACC_STATIC | java.lang.classfile.ClassFile.ACC_SYNTHETIC, code -> {
+				code.aload(0);
+				int slot = 1;
+				for (var p : method.getParameterTypes()) {
+					code.loadLocal(kind(p), slot);
+					slot += kind(p).slotSize();
+				}
+				var own = new ClassDesc[method.getParameterCount()];
+				for (int i = 0; i < own.length; i++) own[i] = JTypes.desc(method.getParameterTypes()[i]);
+				code.invokevirtual(aiContext.desc, method.getName(), MethodTypeDesc.of(JTypes.desc(method.getReturnType()), own));
+				if (method.getReturnType() == void.class) code.return_(); else code.return_(kind(method.getReturnType()));
+			});
 		}
 	}
 
