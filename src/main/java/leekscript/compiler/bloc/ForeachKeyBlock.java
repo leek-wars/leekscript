@@ -294,7 +294,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		BytecodeWriter.Slot key;
 		if (mIsKeyDeclaration) {
 			if (iteratorKeyDeclaration.isCaptured() || mainblock.hasGlobal(mKeyIterator.getWord())) throw new Unsupported("itérateur capturé");
-			key = writer.declare(iteratorKeyDeclaration, JTypes.forName(iteratorKeyDeclaration.getIteratorJavaName(version)), mKeyIterator.getWord());
+			key = writer.declare(iteratorKeyDeclaration, writer.typeNamed(iteratorKeyDeclaration.getIteratorJavaName(version)), mKeyIterator.getWord());
 			writer.emitStatement(new JExpr.Assign(key, JExpr.nul()));
 			writer.counter(1);
 		} else {
@@ -303,7 +303,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		BytecodeWriter.Slot value;
 		if (mIsDeclaration) {
 			if (iteratorDeclaration.isCaptured() || mainblock.hasGlobal(mIterator.getWord())) throw new Unsupported("itérateur capturé");
-			value = writer.declare(iteratorDeclaration, JTypes.forName(iteratorDeclaration.getIteratorJavaName(version)), mIterator.getWord());
+			value = writer.declare(iteratorDeclaration, writer.typeNamed(iteratorDeclaration.getIteratorJavaName(version)), mIterator.getWord());
 			writer.emitStatement(new JExpr.Assign(value, JExpr.nul()));
 			writer.counter(1);
 		} else {

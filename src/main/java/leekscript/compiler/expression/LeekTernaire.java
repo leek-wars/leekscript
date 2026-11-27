@@ -185,7 +185,7 @@ public class LeekTernaire extends LeekExpression {
 		}
 		JExpr e = new JExpr.Cond(condition, then, otherwise);
 		var cast = opsArgument || type != Type.BOOL ? javaType(mainblock.getVersion()) : null;
-		if (cast != null) e = new JExpr.Cast(JTypes.forName(cast), e);
+		if (cast != null) e = new JExpr.Cast(writer.typeNamed(cast), e);
 		return e;
 	}
 

@@ -19,6 +19,10 @@ import leekscript.common.LanguageFeature;
 import leekscript.common.FunctionType;
 import leekscript.common.Type;
 import leekscript.runner.AI;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.Unsupported;
+import java.util.List;
 
 public class LeekObjectAccess extends Expression {
 
@@ -552,6 +556,147 @@ public class LeekObjectAccess extends Expression {
 				}
 			}
 		}
+	}
+
+
+	// ---- Backend bytecode ----
+
+	private boolean bytecodeSuperReceiver(BytecodeWriter writer) {
+		return object instanceof LeekVariable v && v.getVariableType() == VariableType.SUPER
+			&& this.variable != null && this.variable.getVariableType() == VariableType.FIELD && writer.inInstanceContext();
+	}
+
+	private boolean bytecodeThisLike(BytecodeWriter writer) {
+		return (object instanceof LeekVariable v && v.getVariableType() == VariableType.THIS) || bytecodeSuperReceiver(writer);
+	}
+
+	/** writeReceiver : `u_X.this` pour `super.champ`, l'objet sinon. */
+	private JExpr bytecodeReceiver(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (bytecodeSuperReceiver(writer)) return writer.thisOf(writer.typeNamed(mainblock.getWordCompiler().getCurrentClassVariable()));
+		return writer.expr(mainblock, object);
+	}
+
+	/** writeObjectWithNarrowingCast. */
+	private JExpr bytecodeNarrowedObject(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (object.getType() instanceof ClassType ct) {
+			ClassType castTarget = null;
+			if (object instanceof LeekObjectAccess oa && oa.getVariable() != null && oa.getVariable().getType() != ct) castTarget = ct;
+			if (castTarget == null && object instanceof LeekVariable lv && lv.getVariable() != null && lv.getVariable().getType() != ct) castTarget = ct;
+			if (castTarget == null && resolvedOnClassType != null && resolvedOnClassType != ct) castTarget = resolvedOnClassType;
+			if (castTarget != null) return new JExpr.Cast(writer.typeNamed(castTarget.getJavaName(mainblock.getVersion())), writer.expr(mainblock, object));
+		}
+		return writer.expr(mainblock, object);
+	}
+
+	/** Le champ Java lu directement (`x` dans la classe, `o.x` sur un objet de classe connue), null sinon. */
+	private BytecodeWriter.Slot bytecodeDirectField(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (this.variable == null) return null;
+		if (bytecodeThisLike(writer)) return writer.fieldNamed(field.getWord());
+		if (object.getType() instanceof ClassType) return writer.member(bytecodeNarrowedObject(mainblock, writer), field.getWord());
+		return null;
+	}
+
+	private JExpr bytecodeDynamicRead(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var currentClass = mainblock.getWordCompiler().getCurrentClass();
+		if (variable != null && variable.getVariableType() == VariableType.STATIC_FIELD
+				&& LeekVariable.isStaticClassReference(object, writer) && object.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null
+				&& cvt.getClassDeclaration().hasStaticFieldBox(field.getWord(), currentClass)) {
+			return new JExpr.Call(new JExpr.Read(writer.field(cvt.getClassDeclaration().staticFieldBoxField(field.getWord()))), "get", List.of());
+		}
+		return JExpr.call("getField", bytecodeReceiver(mainblock, writer), JExpr.of(field.getWord()), writer.classVariable(mainblock));
+	}
+
+	@Override
+	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (namespaceGlobal != null || namespaceClass != null || namespaceFunction != null) throw new Unsupported("membre de module");
+		if (optional && field != null && !field.getWord().equals("class")) {
+			return JExpr.call("getFieldNullSafe", bytecodeReceiver(mainblock, writer), JExpr.of(field.getWord()), writer.classVariable(mainblock));
+		}
+		if (this.variable != null && this.variable.getVariableType() == VariableType.STATIC_FIELD
+			&& object instanceof LeekVariable classVariable && classVariable.getVariableType() == VariableType.CLASS) {
+			var constant = ConstantFolder.staticFinalLiteral(classVariable.getClassDeclaration(), field.getWord(), mainblock.getWordCompiler().getCurrentClass());
+			if (constant != null) return writer.expr(mainblock, constant);
+		}
+		if (mainblock.getWordCompiler().getVersion() >= 2 && field.getWord().equals("class")) {
+			return JExpr.call("classOf", writer.expr(mainblock, object));
+		}
+		boolean methodValue = this.variable != null && this.variable.getVariableType() == VariableType.METHOD;
+		if (this.variable != null && !methodValue && (bytecodeThisLike(writer) || (object.getType() instanceof ClassType && !(type instanceof FunctionType)))) {
+			JExpr read = new JExpr.Read(bytecodeDirectField(mainblock, writer));
+			boolean needGenericCast = object.getType() instanceof leekscript.common.ParameterizedClassType
+				&& variable.getType().containsTypeVariable() && type != Type.ANY && type != Type.VOID;
+			if (needsNarrowedResultCast() || needGenericCast) read = new JExpr.Cast(writer.javaClass(type), read);
+			return read;
+		}
+		var dynamic = bytecodeDynamicRead(mainblock, writer);
+		if (type == Type.BIG_INT) return new JExpr.StaticCall(leekscript.runner.values.BigIntegerValue.class, "valueOf", List.of(writer.aiThis(), dynamic));
+		if (type == Type.INT || type == Type.REAL) return new JExpr.Call(new JExpr.Cast(Number.class, dynamic), type == Type.INT ? "longValue" : "doubleValue", List.of());
+		if (type != Type.ANY) {
+			dynamic = new JExpr.Cast(writer.javaClass(type), dynamic);
+			if (type.isPrimitive()) dynamic = new JExpr.Cast(writer.primitiveClass(type), dynamic);
+		}
+		return dynamic;
+	}
+
+	@Override
+	public JExpr bytecodeAssign(MainLeekBlock mainblock, BytecodeWriter writer, int operator, Expression value) {
+		var classVariable = writer.classVariable(mainblock);
+		switch (operator) {
+			case Operators.ASSIGN: {
+				var fieldType = (this.variable != null) ? this.variable.getDeclaredType() : this.type;
+				if (this.variable != null && (bytecodeThisLike(writer) || object.getType() instanceof ClassType)) {
+					return new JExpr.Assign(bytecodeDirectField(mainblock, writer), writer.compileConvertTyped(mainblock, 0, value, fieldType));
+				}
+				var call = JExpr.call("setField", bytecodeReceiver(mainblock, writer), JExpr.of(field.getWord()), writer.compileConvert(mainblock, 0, value, this.type), classVariable);
+				return writer.fieldResultConversion(this.type, call);
+			}
+			case Operators.INCREMENT: case Operators.PRE_INCREMENT: case Operators.DECREMENT: case Operators.PRE_DECREMENT: {
+				var helper = switch (operator) {
+					case Operators.INCREMENT -> "field_inc";
+					case Operators.PRE_INCREMENT -> "field_pre_inc";
+					case Operators.DECREMENT -> "field_dec";
+					default -> "field_pre_dec";
+				};
+				JExpr call = JExpr.call(helper, bytecodeReceiver(mainblock, writer), JExpr.of(field.getWord()), classVariable);
+				if (this.type != Type.ANY) call = new JExpr.Cast(writer.javaClass(this.type), call);
+				return call;
+			}
+		}
+		var declared = staticFieldType();
+		String helper;
+		String converted;
+		Enum<?> operation;
+		Type target;
+		switch (operator) {
+			case Operators.ADDASSIGN -> { helper = "field_add_eq"; operation = AI.ArithmeticOperation.ADD; }
+			case Operators.MINUSASSIGN -> { helper = "field_sub_eq"; operation = AI.ArithmeticOperation.SUB; }
+			case Operators.MULTIPLIEASSIGN -> { helper = "field_mul_eq"; operation = AI.ArithmeticOperation.MUL; }
+			case Operators.POWERASSIGN -> { helper = "field_pow_eq"; operation = AI.ArithmeticOperation.POW; }
+			case Operators.DIVIDEASSIGN -> { helper = "field_div_eq"; operation = AI.ArithmeticOperation.DIV; }
+			case Operators.MODULUSASSIGN -> { helper = "field_mod_eq"; operation = AI.ArithmeticOperation.MOD; }
+			case Operators.INTEGER_DIVISION_EQ -> { helper = "field_intdiv_eq"; operation = AI.BitOperation.INTDIV; }
+			case Operators.BITOR_ASSIGN -> { helper = "field_bor_eq"; operation = AI.BitOperation.BOR; }
+			case Operators.BITAND_ASSIGN -> { helper = "field_band_eq"; operation = AI.BitOperation.BAND; }
+			case Operators.BITXOR_ASSIGN -> { helper = "field_bxor_eq"; operation = AI.BitOperation.BXOR; }
+			case Operators.SHIFT_LEFT_ASSIGN -> { helper = "field_shl_eq"; operation = AI.BitOperation.SHL; }
+			case Operators.SHIFT_RIGHT_ASSIGN -> { helper = "field_shr_eq"; operation = AI.BitOperation.SHR; }
+			case Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN -> { helper = "field_ushr_eq"; operation = AI.BitOperation.USHR; }
+			default -> throw new Unsupported("affectation de champ " + operator);
+		}
+		if (operation instanceof AI.ArithmeticOperation arithmetic) {
+			converted = "field_arithmetic_eq";
+			target = declared == null ? null : JavaWriter.staticFieldArithmeticConversion(declared, value.getType(), arithmetic);
+		} else {
+			converted = "field_bit_eq";
+			target = declared == null ? null : JavaWriter.containerBitConversion(declared);
+		}
+		if (target == null) {
+			var call = JExpr.call(helper, bytecodeReceiver(mainblock, writer), JExpr.of(field.getWord()), writer.expr(mainblock, value), classVariable);
+			return writer.fieldResultConversion(this.type, call);
+		}
+		String typeName = target == Type.BOOL ? "BOOL" : target == Type.INT ? "INT" : target == Type.REAL ? "REAL" : "BIG_INT";
+		return new JExpr.Call(bytecodeReceiver(mainblock, writer), converted, List.of(JExpr.of(field.getWord()), writer.expr(mainblock, value),
+			new JExpr.GetStatic(operation.getDeclaringClass(), operation.name()), new JExpr.GetStatic(Type.class, typeName)));
 	}
 
 	/**

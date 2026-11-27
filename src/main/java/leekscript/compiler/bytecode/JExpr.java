@@ -1,5 +1,6 @@
 package leekscript.compiler.bytecode;
 
+import java.lang.constant.ClassDesc;
 import java.util.List;
 
 /**
@@ -16,8 +17,11 @@ public sealed interface JExpr {
 	/** Lecture d'une variable : locale de la méthode, ou champ de la classe générée. */
 	record Read(BytecodeWriter.Slot var) implements JExpr {}
 
-	/** `this` : l'instance de l'IA. */
+	/** `this` : l'instance de la classe en cours d'écriture. */
 	record This() implements JExpr {}
+
+	/** `Outer.this` : l'instance d'une classe englobante, par les champs `this$0`. */
+	record Outer(BytecodeWriter.ClassContext target) implements JExpr {}
 
 	/** Appel de méthode d'instance par son nom ; receveur null = `this` (méthode de l'IA). */
 	record Call(JExpr receiver, String name, List<JExpr> args) implements JExpr {}
@@ -39,6 +43,15 @@ public sealed interface JExpr {
 
 	/** `new T(args)`. */
 	record New(Class<?> type, List<JExpr> args) implements JExpr {}
+
+	/** `new <classe interne générée>(this, args)` : constructeur de paramètres connus, typé `type` (sa super-classe pour une anonyme). */
+	record NewInner(ClassDesc desc, List<Class<?>> parameters, List<JExpr> args, Class<?> type) implements JExpr {}
+
+	/** `a[i]` sur un tableau Java. */
+	record ArrayGet(JExpr array, JExpr index) implements JExpr {}
+
+	/** `super.name(args)` : la méthode de la super-classe de la classe en cours, appelée sans liaison dynamique. */
+	record SuperCall(String name, List<JExpr> args) implements JExpr {}
 
 	/** `new T[] { e1, e2… }`. */
 	record NewArray(Class<?> component, List<JExpr> elements) implements JExpr {}

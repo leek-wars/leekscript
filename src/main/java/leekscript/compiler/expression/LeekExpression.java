@@ -10,6 +10,7 @@ import leekscript.compiler.AnalyzeError.AnalyzeErrorLevel;
 import leekscript.compiler.bloc.MainLeekBlock;
 import leekscript.compiler.exceptions.LeekCompilerException;
 import leekscript.compiler.expression.LeekVariable.VariableType;
+import java.util.List;
 import leekscript.compiler.bytecode.BytecodeWriter;
 import leekscript.compiler.bytecode.JExpr;
 import leekscript.compiler.bytecode.Unsupported;
@@ -1358,6 +1359,17 @@ public class LeekExpression extends Expression {
 			return new JExpr.Unary("!", JExpr.call("operatorIn", writer.expr(mainblock, mExpression2), writer.expr(mainblock, mExpression1)));
 		case Operators.NON_NULL_ASSERTION:
 			return writer.compileConvert(mainblock, 0, mExpression2, type);
+		case Operators.NEW:
+			if (mExpression2 instanceof LeekVariable variable) {
+				if (mainblock.getWordCompiler().getVersion() >= 3 && variable.toString().equals("Array")) {
+					return new JExpr.New(mainblock.getWordCompiler().getVersion() >= 4 ? leekscript.runner.values.ArrayLeekValue.class : leekscript.runner.values.LegacyArrayLeekValue.class, List.of(writer.aiThis()));
+				}
+				if (mainblock.getWordCompiler().getVersion() >= 4 && variable.toString().equals("Map")) {
+					return new JExpr.New(leekscript.runner.values.MapLeekValue.class, List.of(writer.aiThis()));
+				}
+				return JExpr.call("execute", writer.expr(mainblock, mExpression2));
+			}
+			return writer.expr(mainblock, mExpression2);
 		}
 		throw new Unsupported("opérateur " + mOperator);
 	}

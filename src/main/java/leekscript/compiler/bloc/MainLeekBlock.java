@@ -1076,17 +1076,26 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	/**
 	 * Le corps de runIA pour le backend bytecode, s'il sait traiter tout le programme : un
-	 * programme sans classe, module ni fichier lu, hors console. Lève
+	 * programme sans module ni fichier lu, hors console. Lève
 	 * {@link leekscript.compiler.bytecode.Unsupported} sinon.
 	 */
 	public void writeBytecode(BytecodeWriter writer, Options options) {
 		if (mHasModules) throw new Unsupported("modules");
 		if (mMainModule != null && mMainModule.getFile().isTestModule()) throw new Unsupported("module de tests");
-		if (mUserClassesList.stream().anyMatch(c -> !c.internal)) throw new Unsupported("classes");
 		if (!mFileContents.isEmpty()) throw new Unsupported("fichiers lus");
 		if (!mRedefinedFunctions.isEmpty()) throw new Unsupported("fonctions redéfinies");
 		if (options.session() != null) throw new Unsupported("session");
 		if (getVersion() < 2 && !mGlobalesDeclarations.isEmpty()) throw new Unsupported("globales v1");
+		// Classes utilisateur : leurs talons d'abord (typage), puis la classe interne et ses membres dans l'IA
+		var classes = new java.util.ArrayList<ClassDeclarationInstruction>();
+		for (var clazz : mUserClassesList) if (!clazz.internal) classes.add(clazz);
+		if (!classes.isEmpty()) {
+			if (getVersion() < 2) throw new Unsupported("classes v1");
+			var specs = new java.util.ArrayList<leekscript.compiler.bytecode.ClassStubs.ClassSpec>();
+			for (var clazz : classes) specs.add(clazz.bytecodeSpec(this));
+			writer.setStubs(leekscript.compiler.bytecode.ClassStubs.build(writer.aiContext.desc.displayName(), writer.aiContext.members, specs, writer::runtimeType));
+			for (var clazz : classes) clazz.declareBytecodeFields(this, writer);
+		}
 		// Globales : un champ chacune (et sa garde d'initialisation si elle est persistante)
 		for (var global : mGlobalesDeclarations) {
 			var field = writer.field("g_" + global.getInternalName(), writer.primitiveClass(global.getType()), java.lang.classfile.ClassFile.ACC_PRIVATE);
@@ -1095,6 +1104,19 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				var init = writer.field("g_init_" + global.getInternalName(), boolean.class, java.lang.classfile.ClassFile.ACC_PRIVATE);
 				writer.initializeField(init, leekscript.compiler.bytecode.JExpr.of(false));
 			}
+		}
+		if (!classes.isEmpty()) {
+			for (var clazz : classes) clazz.writeBytecodeClass(this, writer);
+			for (var clazz : classes) clazz.writeBytecodeMembers(this, writer);
+			for (var clazz : classes) {
+				writer.addConstructorStatement(new leekscript.compiler.bytecode.JExpr.Self("defineClass_" + clazz.getInternalName(), java.util.List.of(), void.class, java.util.List.of()));
+				clazz.writeBytecodeDefine(this, writer);
+				clazz.writeBytecodeStatics(this, writer);
+			}
+			writer.writeMethod("staticInit", java.lang.classfile.ClassFile.ACC_PUBLIC, java.util.List.of(), void.class, () -> {
+				for (var clazz : classes) writer.emitStatement(new leekscript.compiler.bytecode.JExpr.Self("createStaticClass_" + clazz.getInternalName(), java.util.List.of(), void.class, java.util.List.of()));
+				for (var clazz : classes) writer.emitStatement(new leekscript.compiler.bytecode.JExpr.Self("initClass_" + clazz.getInternalName(), java.util.List.of(), void.class, java.util.List.of()));
+			});
 		}
 		for (var function : mFunctions.values()) function.writeBytecode(this, writer);
 		writer.writeMethod("runIA", java.lang.classfile.ClassFile.ACC_PUBLIC, java.util.List.of(leekscript.runner.Session.class), Object.class, () -> {

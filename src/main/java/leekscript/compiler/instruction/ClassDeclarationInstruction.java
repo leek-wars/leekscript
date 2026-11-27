@@ -34,6 +34,19 @@ import leekscript.common.LanguageFeature;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 import leekscript.runner.AI;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.ClassStubs;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.JTypes;
+import leekscript.compiler.bytecode.Resolver;
+import leekscript.compiler.bytecode.Unsupported;
+import java.lang.classfile.ClassFile;
+import java.lang.constant.ConstantDescs;
+import leekscript.runner.Final;
+import leekscript.runner.Private;
+import leekscript.runner.Protected;
+import leekscript.runner.values.ObjectVariableValue;
+import leekscript.runner.values.FunctionLeekValue;
 
 public class ClassDeclarationInstruction extends LeekInstruction implements leekscript.compiler.TypeParameterScope {
 
@@ -1329,6 +1342,349 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 
 	}
 
+
+	// ---- Backend bytecode : la classe interne `u_X`, ses membres dans l'IA, sa définition ----
+
+	private String bytecodeName() {
+		return "u_" + getInternalName();
+	}
+
+	private static List<String> bytecodeParameterNames(MainLeekBlock mainblock, ClassMethodBlock block, int count) {
+		var names = new ArrayList<String>();
+		for (int a = 0; a < count; a++) names.add(block.getParametersDeclarations().get(a).getType().getJavaPrimitiveName(mainblock.getVersion()));
+		return names;
+	}
+
+	private static List<Class<?>> bytecodeParameters(MainLeekBlock mainblock, BytecodeWriter writer, ClassMethodBlock block, int count) {
+		var types = new ArrayList<Class<?>>();
+		for (var name : bytecodeParameterNames(mainblock, block, count)) types.add(writer.typeNamed(name));
+		return types;
+	}
+
+	/** Le talon de la classe : ses champs et les signatures de ses méthodes, comme declareJava les écrit. */
+	public ClassStubs.ClassSpec bytecodeSpec(MainLeekBlock mainblock) {
+		int version = mainblock.getVersion();
+		var name = bytecodeName();
+		var fieldSpecs = new ArrayList<ClassStubs.FieldSpec>();
+		for (var field : fields.entrySet()) fieldSpecs.add(new ClassStubs.FieldSpec(field.getKey(), field.getValue().getType().getJavaPrimitiveName(version)));
+		var methodSpecs = new ArrayList<ClassStubs.MethodSpec>();
+		for (var ctor : constructorsList) {
+			var block = ctor.block;
+			methodSpecs.add(new ClassStubs.MethodSpec(name + "$body_" + block.getMaxParameters(), "Object", bytecodeParameterNames(mainblock, block, block.getMaxParameters()), ClassFile.ACC_PRIVATE));
+		}
+		for (var construct : constructors.entrySet()) {
+			var block = construct.getValue().block;
+			methodSpecs.add(new ClassStubs.MethodSpec("init", "Object", block == null ? List.of() : bytecodeParameterNames(mainblock, block, construct.getKey()), ClassFile.ACC_PUBLIC));
+		}
+		for (var method : methods.entrySet()) {
+			for (var v : method.getValue().entrySet()) {
+				var block = v.getValue().block;
+				methodSpecs.add(new ClassStubs.MethodSpec("u_" + method.getKey(), block.getType().returnType().getJavaPrimitiveName(version), bytecodeParameterNames(mainblock, block, v.getKey()), ClassFile.ACC_PUBLIC));
+			}
+		}
+		var superName = parent == null ? "NativeObjectLeekValue" : parent.getJavaName(mainblock);
+		return new ClassStubs.ClassSpec(name, superName, fieldSpecs, methodSpecs, List.of(List.of(), List.of(name, "int")));
+	}
+
+	/**
+	 * Paramètres d'une méthode : les `count` premiers lus dans leurs emplacements, les suivants
+	 * initialisés par leur valeur par défaut (`final T u_x = …;` puis ses opérations).
+	 */
+	private static void bytecodeArguments(MainLeekBlock mainblock, BytecodeWriter writer, ClassMethodBlock block, int count, List<Class<?>> parameters) {
+		var declarations = block.getParametersDeclarations();
+		for (int a = 0; a < declarations.size(); a++) {
+			var arg = declarations.get(a);
+			if (arg.isCaptured()) throw new Unsupported("paramètre de méthode capturé");
+			if (a < count) {
+				writer.alias(arg, BytecodeWriter.parameterSlot(parameters, a), parameters.get(a), arg.getName());
+			} else {
+				var defaultValue = block.getDefaultValues().get(a);
+				var local = writer.declare(arg, writer.primitiveClass(arg.getType()), arg.getName());
+				writer.emitStatement(new JExpr.Assign(local, writer.compileDefaultValue(mainblock, a, defaultValue, arg.getType())));
+				writer.counter(defaultValue.operations);
+			}
+		}
+	}
+
+	/** Les arguments transmis à la version complète (`return u_m(u_a, u_b…)`). */
+	private static List<JExpr> bytecodeForward(BytecodeWriter writer, ClassMethodBlock block) {
+		var args = new ArrayList<JExpr>();
+		for (var arg : block.getParametersDeclarations()) args.add(new JExpr.Read(writer.local(arg)));
+		return args;
+	}
+
+	/** La classe Java `u_X`, interne à l'IA (cf declareJava). */
+	public void writeBytecodeClass(MainLeekBlock mainblock, BytecodeWriter writer) {
+		int version = mainblock.getVersion();
+		var name = bytecodeName();
+		var stub = writer.typeNamed(name);
+		var aiStub = writer.aiStub();
+		var desc = JTypes.desc(stub);
+		var superClass = stub.getSuperclass();
+		var superDesc = JTypes.desc(superClass);
+		var ai = writer.aiContext;
+		writer.registerInnerClass(desc, superDesc, ai.desc, name, ClassFile.ACC_PUBLIC);
+		var context = new BytecodeWriter.ClassContext(desc, stub, stub, ai);
+		mainblock.getWordCompiler().setCurrentClass(this);
+		var bytes = writer.classFile().build(desc, clb -> writer.inClass(context, clb, () -> {
+			clb.withFlags(ClassFile.ACC_PUBLIC | ClassFile.ACC_SUPER);
+			clb.withSuperclass(superDesc);
+			var fieldVars = new ArrayList<BytecodeWriter.FieldVar>();
+			for (var field : fields.entrySet()) {
+				var annotations = new ArrayList<Class<?>>();
+				if (field.getValue().isFinal) annotations.add(Final.class);
+				if (field.getValue().level == AccessLevel.PROTECTED) annotations.add(Protected.class);
+				else if (field.getValue().level == AccessLevel.PRIVATE) annotations.add(Private.class);
+				fieldVars.add(writer.field(field.getKey(), writer.primitiveClass(field.getValue().getType()), ClassFile.ACC_PUBLIC, annotations));
+			}
+			clb.withField("this$0", ai.desc, ClassFile.ACC_FINAL | ClassFile.ACC_SYNTHETIC);
+
+			// Constructeur par défaut : this$0, super(this$0), la RAM de l'instance, les initialiseurs
+			var superCtor = Resolver.constructor(superClass, List.of(aiStub));
+			writer.writeMethod(ConstantDescs.INIT_NAME, ClassFile.ACC_PUBLIC, List.of(aiStub), void.class, () -> {
+				var cb = writer.code();
+				cb.aload(0); cb.aload(1); cb.putfield(desc, "this$0", ai.desc);
+				cb.aload(0); cb.aload(1);
+				cb.invokespecial(superDesc, ConstantDescs.INIT_NAME, ctorDesc(superCtor));
+				int ram = (parent == null ? AI.INSTANCE_BASE_RAM : 0) + 2 * fieldVariables.size();
+				if (ram > 0) writer.emitStatement(JExpr.call("allocateRAM", new JExpr.This(), JExpr.of(ram)));
+				int i = 0;
+				for (var field : fields.entrySet()) {
+					var slot = fieldVars.get(i++);
+					Expression expr = field.getValue().expression;
+					if (expr != null) {
+						var value = field.getValue().getType() != Type.ANY ? writer.compileConvertTyped(mainblock, 0, expr, field.getValue().getType()) : writer.expr(mainblock, expr);
+						writer.emitStatement(new JExpr.Assign(slot, value));
+					} else if (LanguageFeature.FIELD_TYPE_DEFAULT.enabledIn(version) && !field.getValue().getType().isPrimitive()) {
+						var value = writer.defaultValue(field.getValue().getType());
+						if (!(value instanceof JExpr.Lit lit && lit.value() == null)) writer.emitStatement(new JExpr.Assign(slot, value));
+					}
+				}
+			});
+
+			// Constructeur par copie (o, level)
+			var copyParams = List.<Class<?>>of(aiStub, stub, int.class);
+			var superCopy = parent == null ? superCtor : Resolver.constructor(superClass, copyParams);
+			writer.writeMethod(ConstantDescs.INIT_NAME, ClassFile.ACC_PUBLIC, copyParams, void.class, () -> {
+				var cb = writer.code();
+				cb.aload(0); cb.aload(1); cb.putfield(desc, "this$0", ai.desc);
+				cb.aload(0); cb.aload(1);
+				if (parent != null) { cb.aload(2); cb.iload(3); }
+				cb.invokespecial(superDesc, ConstantDescs.INIT_NAME, ctorDesc(superCopy));
+				var o = new JExpr.Read(new BytecodeWriter.LocalVar(2, stub, "o"));
+				var level = new JExpr.Read(new BytecodeWriter.LocalVar(3, int.class, "level"));
+				int i = 0;
+				for (var field : fields.entrySet()) {
+					var slot = fieldVars.get(i++);
+					var other = new JExpr.Read(new BytecodeWriter.MemberVar(o, stub, field.getKey(), slot.type()));
+					var copied = new JExpr.Cast(writer.primitiveClass(field.getValue().getType()), JExpr.call("copy", other, new JExpr.Binary("-", level, JExpr.of(1))));
+					writer.emitStatement(new JExpr.Assign(slot, new JExpr.Cond(new JExpr.Binary("==", level, JExpr.of(1)), other, copied)));
+				}
+			});
+
+			// Corps des constructeurs, hors init() pour rester non virtuels (#3159)
+			for (var ctor : constructorsList) {
+				final var bodyBlock = ctor.block;
+				var params = bytecodeParameters(mainblock, writer, bodyBlock, bodyBlock.getMaxParameters());
+				writer.writeMethod(name + "$body_" + bodyBlock.getMaxParameters(), ClassFile.ACC_PRIVATE, params, Object.class, () -> {
+					mainblock.getWordCompiler().setCurrentBlock(bodyBlock);
+					writer.currentBlock = bodyBlock;
+					bytecodeArguments(mainblock, writer, bodyBlock, bodyBlock.getMaxParameters(), params);
+					bodyBlock.writeBytecodeBody(mainblock, writer);
+					mainblock.getWordCompiler().setCurrentBlock(null);
+					writer.currentBlock = null;
+				});
+			}
+			for (var construct : constructors.entrySet()) {
+				final var block = construct.getValue().block;
+				var params = block == null ? List.<Class<?>>of() : bytecodeParameters(mainblock, writer, block, construct.getKey());
+				writer.writeMethod("init", ClassFile.ACC_PUBLIC, params, Object.class, () -> {
+					mainblock.getWordCompiler().setCurrentBlock(block);
+					writer.currentBlock = block;
+					if (parent != null && !parent.internal && (block == null || !block.hasExplicitSuperCall())) {
+						writer.emitStatement(new JExpr.SuperCall("init", List.of()));
+					}
+					if (block != null) {
+						bytecodeArguments(mainblock, writer, block, construct.getKey(), params);
+						writer.emitReturn(new JExpr.Call(null, name + "$body_" + block.getMaxParameters(), bytecodeForward(writer, block)), Object.class);
+					} else {
+						writer.emitReturn(JExpr.nul(), Object.class);
+					}
+					mainblock.getWordCompiler().setCurrentBlock(null);
+					writer.currentBlock = null;
+				});
+			}
+			for (var method : methods.entrySet()) {
+				for (var v : method.getValue().entrySet()) {
+					final var block = v.getValue().block;
+					var params = bytecodeParameters(mainblock, writer, block, v.getKey());
+					var returnClass = writer.primitiveClass(block.getType().returnType());
+					var level = v.getValue().level;
+					List<Class<?>> annotations = level == AccessLevel.PROTECTED ? List.of(Protected.class) : level == AccessLevel.PRIVATE ? List.of(Private.class) : List.of();
+					writer.writeMethod("u_" + method.getKey(), ClassFile.ACC_PUBLIC, params, returnClass, annotations, () -> {
+						mainblock.getWordCompiler().setCurrentBlock(block);
+						writer.currentBlock = block;
+						bytecodeArguments(mainblock, writer, block, v.getKey(), params);
+						if (v.getKey() < block.getMaxParameters()) {
+							writer.emitReturn(new JExpr.Call(null, "u_" + method.getKey(), bytecodeForward(writer, block)), returnClass);
+						} else {
+							block.writeBytecodeBody(mainblock, writer);
+						}
+						mainblock.getWordCompiler().setCurrentBlock(null);
+						writer.currentBlock = null;
+					});
+				}
+			}
+			writer.finishClass(clb, desc);
+		}));
+		writer.addClass(desc, bytes);
+		mainblock.getWordCompiler().setCurrentClass(null);
+	}
+
+	private static java.lang.constant.MethodTypeDesc ctorDesc(Resolver.Resolved ctor) {
+		var params = ctor.parameters();
+		var descs = new java.lang.constant.ClassDesc[params.length];
+		for (int i = 0; i < params.length; i++) descs[i] = JTypes.desc(params[i]);
+		return java.lang.constant.MethodTypeDesc.of(ConstantDescs.CD_void, descs);
+	}
+
+	/** Les champs de la classe dans l'IA : sa ClassLeekValue (initialisée par le constructeur) et ses boîtes de champs statiques. */
+	public void declareBytecodeFields(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var name = bytecodeName();
+		var classField = writer.field(name, ClassLeekValue.class, ClassFile.ACC_PUBLIC);
+		writer.initializeField(classField, new JExpr.New(ClassLeekValue.class, List.of(new JExpr.This(), JExpr.of(token.getWord()), JExpr.nul(), new JExpr.ClassLit(writer.typeNamed(name)))));
+		for (var field : boxedStaticFields()) writer.field(staticFieldBoxName(field), ObjectVariableValue.class, ClassFile.ACC_PUBLIC);
+	}
+
+	/** Les méthodes de la classe dans l'IA : new_u_X et ses méthodes statiques. */
+	public void writeBytecodeMembers(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var name = bytecodeName();
+		var stub = writer.typeNamed(name);
+		mainblock.getWordCompiler().setCurrentClass(this);
+		var classField = writer.field(name);
+		writer.writeMethod("new_" + name, ClassFile.ACC_PUBLIC | ClassFile.ACC_VARARGS, List.of(Object[].class), stub, () -> {
+			var args = new JExpr.Read(new BytecodeWriter.LocalVar(1, Object[].class, "args"));
+			writer.emitReturn(new JExpr.Cast(stub, JExpr.call("execute", new JExpr.Read(classField), args)), stub);
+		});
+		for (var method : staticMethods.entrySet()) {
+			for (var v : method.getValue().entrySet()) {
+				final var block = v.getValue().block;
+				var params = bytecodeParameters(mainblock, writer, block, v.getKey());
+				var returnClass = writer.primitiveClass(block.getType().returnType());
+				writer.writeMethod(name + "_" + method.getKey() + "_" + v.getKey(), ClassFile.ACC_PRIVATE | ClassFile.ACC_FINAL, params, returnClass, () -> {
+					mainblock.getWordCompiler().setCurrentBlock(block);
+					writer.currentBlock = block;
+					bytecodeArguments(mainblock, writer, block, v.getKey(), params);
+					if (v.getKey() < block.getMaxParameters()) {
+						var full = bytecodeParameters(mainblock, writer, block, block.getMaxParameters());
+						writer.emitReturn(new JExpr.Self(name + "_" + method.getKey() + "_" + block.getMaxParameters(), full, returnClass, bytecodeForward(writer, block)), returnClass);
+					} else {
+						block.writeBytecodeBody(mainblock, writer);
+					}
+					mainblock.getWordCompiler().setCurrentBlock(null);
+					writer.currentBlock = null;
+				});
+			}
+		}
+		mainblock.getWordCompiler().setCurrentClass(null);
+	}
+
+	/** defineClass_X : le parent, initFields, l'enregistrement des méthodes par des FunctionLeekValue anonymes. */
+	public void writeBytecodeDefine(MainLeekBlock mainblock, BytecodeWriter writer) {
+		int version = mainblock.getVersion();
+		var name = bytecodeName();
+		var stub = writer.typeNamed(name);
+		mainblock.getWordCompiler().setCurrentClass(this);
+		writer.writeMethod("defineClass_" + getInternalName(), ClassFile.ACC_PRIVATE, List.of(), void.class, () -> {
+			var classValue = new JExpr.Read(writer.field(name));
+			if (parent != null) {
+				var parentValue = parent.internal ? new JExpr.Read(writer.member(new JExpr.This(), parent.getClassName(mainblock))) : new JExpr.Read(writer.field(parent.getClassName(mainblock)));
+				writer.emitStatement(new JExpr.Call(classValue, "setParent", List.of(parentValue)));
+			}
+			var runParams = List.<Class<?>>of(AI.class, Object.class, Object[].class);
+			var initFields = writer.anonymous(FunctionLeekValue.class, List.of(JExpr.of(0)), List.of(new BytecodeWriter.AnonymousMethod("run", ClassFile.ACC_PUBLIC | ClassFile.ACC_VARARGS, runParams, Object.class,
+				() -> writer.emitReturn(JExpr.nul(), Object.class))));
+			writer.emitStatement(new JExpr.Assign(new BytecodeWriter.MemberVar(classValue, ClassLeekValue.class, "initFields", FunctionLeekValue.class), initFields));
+			var args = new JExpr.Read(new BytecodeWriter.LocalVar(3, Object[].class, "args"));
+			var thiz = new JExpr.Read(new BytecodeWriter.LocalVar(2, Object.class, "thiz"));
+			for (var method : staticMethods.entrySet()) {
+				for (var v : method.getValue().entrySet()) {
+					var block = v.getValue().block;
+					var params = bytecodeParameters(mainblock, writer, block, v.getKey());
+					var returnClass = writer.primitiveClass(block.getType().returnType());
+					var function = writer.anonymous(FunctionLeekValue.class, List.of(JExpr.of(1), JExpr.of("#Function " + token.getWord() + "." + method.getKey())),
+						List.of(new BytecodeWriter.AnonymousMethod("run", ClassFile.ACC_PUBLIC | ClassFile.ACC_VARARGS, runParams, Object.class, () -> {
+							var callArgs = new ArrayList<JExpr>();
+							for (int a = 0; a < v.getKey(); a++) {
+								callArgs.add(new JExpr.Cast(writer.typeNamed(block.getParametersDeclarations().get(a).getType().getJavaName(version)), new JExpr.ArrayGet(args, JExpr.of(a))));
+							}
+							writer.emitReturn(new JExpr.Self(name + "_" + method.getKey() + "_" + v.getKey(), params, returnClass, callArgs), Object.class);
+						})));
+					writer.emitStatement(new JExpr.Call(classValue, "addStaticMethod", List.of(JExpr.of(method.getKey()), JExpr.of(v.getKey()), function, new JExpr.GetStatic(AccessLevel.class, v.getValue().level.name()))));
+				}
+				writer.emitStatement(new JExpr.Call(classValue, "addGenericStaticMethod", List.of(JExpr.of(method.getKey()))));
+			}
+			for (var method : methods.entrySet()) {
+				for (var v : method.getValue().entrySet()) {
+					var block = v.getValue().block;
+					var function = writer.anonymous(FunctionLeekValue.class, List.of(JExpr.of(0), JExpr.of("#Function " + token.getWord() + "." + method.getKey())),
+						List.of(new BytecodeWriter.AnonymousMethod("run", ClassFile.ACC_PUBLIC | ClassFile.ACC_VARARGS, runParams, Object.class, () -> {
+							var callArgs = new ArrayList<JExpr>();
+							for (int a = 0; a < v.getKey(); a++) {
+								callArgs.add(new JExpr.Cast(writer.typeNamed(block.getParametersDeclarations().get(a).getType().getJavaName(version)), new JExpr.ArrayGet(args, JExpr.of(a))));
+							}
+							writer.emitReturn(new JExpr.Call(new JExpr.Cast(stub, thiz), "u_" + method.getKey(), callArgs), Object.class);
+						})));
+					writer.emitStatement(new JExpr.Call(classValue, "addMethod", List.of(JExpr.of(method.getKey()), JExpr.of(v.getKey()), function, new JExpr.GetStatic(AccessLevel.class, v.getValue().level.name()))));
+				}
+				writer.emitStatement(new JExpr.Call(classValue, "addGenericMethod", List.of(JExpr.of(method.getKey()))));
+			}
+		});
+		mainblock.getWordCompiler().setCurrentClass(null);
+	}
+
+	/** createStaticClass_X, linkStaticFields_X et initClass_X (cf writeCreateStaticFields, writeInitializeStaticFields). */
+	public void writeBytecodeStatics(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var name = bytecodeName();
+		var boxed = boxedStaticFields();
+		mainblock.getWordCompiler().setCurrentClass(this);
+		mainblock.getWordCompiler().setCurrentBlock(staticInitBlock);
+		writer.writeMethod("createStaticClass_" + getInternalName(), ClassFile.ACC_PRIVATE, List.of(), void.class, () -> {
+			var classValue = new JExpr.Read(writer.field(name));
+			for (var field : staticFields.entrySet()) {
+				var constant = ConstantFolder.staticFinalLiteral(this, field.getKey(), this);
+				var value = constant != null ? writer.expr(mainblock, constant) : JExpr.nul();
+				writer.emitStatement(new JExpr.Call(classValue, "addStaticField", List.of(writer.aiThis(), JExpr.of(field.getKey()), value,
+					new JExpr.GetStatic(AccessLevel.class, field.getValue().level.name()), JExpr.of(field.getValue().isFinal))));
+			}
+			if (!boxed.isEmpty()) writer.emitStatement(new JExpr.Self("linkStaticFields_" + getInternalName(), List.of(), void.class, List.of()));
+		});
+		if (!boxed.isEmpty()) {
+			writer.writeMethod("linkStaticFields_" + getInternalName(), ClassFile.ACC_PRIVATE, List.of(), void.class, () -> {
+				var classValue = new JExpr.Read(writer.field(name));
+				var map = new JExpr.Read(new BytecodeWriter.MemberVar(classValue, ClassLeekValue.class, "staticFields", java.util.LinkedHashMap.class));
+				for (var field : boxed) {
+					var box = new JExpr.Cast(ObjectVariableValue.class, new JExpr.Call(map, "get", List.of(JExpr.of(field))));
+					writer.emitStatement(new JExpr.Assign(writer.field(staticFieldBoxName(field)), box));
+				}
+			});
+		}
+		writer.writeMethod("initClass_" + getInternalName(), ClassFile.ACC_PRIVATE, List.of(), void.class, () -> {
+			var classValue = new JExpr.Read(writer.field(name));
+			for (var field : staticFields.entrySet()) {
+				JExpr value = null;
+				if (field.getValue().expression != null) {
+					value = writer.compileConvert(mainblock, 0, field.getValue().expression, field.getValue().getType());
+				} else if (hasZeroDefault(field.getValue().getType()) || (LanguageFeature.FIELD_TYPE_DEFAULT.enabledIn(mainblock.getVersion()) && !(writer.defaultValue(field.getValue().getType()) instanceof JExpr.Lit lit && lit.value() == null))) {
+					value = writer.defaultValue(field.getValue().getType());
+				}
+				if (value != null) writer.emitStatement(new JExpr.Call(classValue, "initField", List.of(JExpr.of(field.getKey()), value)));
+			}
+		});
+		mainblock.getWordCompiler().setCurrentClass(null);
+		mainblock.getWordCompiler().setCurrentBlock(null);
+	}
+
 	private void writeFields(MainLeekBlock mainblock, JavaWriter writer, String className) {
 
 		if (parent != null) {
@@ -1517,6 +1873,15 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 	public String staticFieldBox(String field, ClassDeclarationInstruction fromClass, JavaWriter writer) {
 		if (!hasBox(field) || canAccessStaticField(field, fromClass) != null) return null;
 		return writer.ref(module) + staticFieldBoxName(field);
+	}
+
+	/** staticFieldBox pour le backend bytecode : le champ `sf_` existe-t-il, accessible depuis `fromClass` ? */
+	public boolean hasStaticFieldBox(String field, ClassDeclarationInstruction fromClass) {
+		return hasBox(field) && canAccessStaticField(field, fromClass) == null;
+	}
+
+	public String staticFieldBoxField(String field) {
+		return staticFieldBoxName(field);
 	}
 
 	// Un `static final` à littéral est inliné à chaque lecture (cf ConstantFolder) : pas de boîte

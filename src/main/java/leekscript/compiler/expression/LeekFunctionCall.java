@@ -265,15 +265,179 @@ public class LeekFunctionCall extends Expression {
 			if (callSite == LeekFunctions.CallSite.LINE) return JExpr.of((long) location.getStartLine());
 			return JExpr.of(JTypes.javaStringValue(LeekFileContent.javaString(SystemClass.sourcePath(location.getFile().getPath()))));
 		}
-		if (namespaceConstructorClass != null || namespaceUserFunction != null || !(mExpression instanceof LeekVariable variable)
-			|| mainblock.isRedefinedFunction(variable.getName())) {
-			throw new Unsupported("appel de " + mExpression.getClass().getSimpleName());
+		if (namespaceConstructorClass != null || namespaceUserFunction != null) throw new Unsupported("appel de module");
+		if (mExpression instanceof LeekObjectAccess access) return bytecodeAccessCall(mainblock, writer, access);
+		if (mExpression instanceof LeekVariable variable) {
+			if (mainblock.isRedefinedFunction(variable.getName())) throw new Unsupported("fonction redéfinie");
+			switch (variable.getVariableType()) {
+				case FUNCTION: return bytecodeUserCall(mainblock, writer, variable);
+				case SYSTEM_FUNCTION: return bytecodeSystemCall(mainblock, writer, null);
+				case SUPER: {
+					// u_X.super.init(args) : seulement depuis la classe elle-même (pas d'une anonyme)
+					var current = writer.typeNamed(mainblock.getWordCompiler().getCurrentClassVariable());
+					if (writer.context().type != current) throw new Unsupported("super() hors de la classe");
+					return new JExpr.SuperCall("init", bytecodeArguments(mainblock, writer, true, false));
+				}
+				case METHOD: return new JExpr.Call(null, "u_" + variable.getName(), bytecodeArguments(mainblock, writer, true, false));
+				case STATIC_METHOD: {
+					var currentClass = mainblock.getWordCompiler().getCurrentClass();
+					var methodName = "u_" + currentClass.getStaticMethodName(variable.getName(), mParameters.size());
+					var block = currentClass.getStaticMethod(variable.getName(), mParameters.size()).block;
+					JExpr call = bytecodeStaticMethod(writer, methodName, block, bytecodeArguments(mainblock, writer, true, false));
+					if (this.type != Type.ANY && this.type != Type.VOID) call = new JExpr.Cast(writer.primitiveClass(this.type), call);
+					return call;
+				}
+				default: break;
+			}
 		}
-		if (variable.getVariableType() == VariableType.FUNCTION) return bytecodeUserCall(mainblock, writer, variable);
-		if (variable.getVariableType() != VariableType.SYSTEM_FUNCTION) throw new Unsupported("appel de " + variable.getVariableType());
-		boolean generic = unsafe || mainblock.getVersion() <= 3;
+		if (mExpression instanceof LeekArrayAccess) throw new Unsupported("appel de LeekArrayAccess");
+		if (mExpression.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null) {
+			if (LeekVariable.isStaticClassReference(mExpression, writer)) {
+				var constructed = cvt.getClassDeclaration();
+				if (constructed.internal) throw new Unsupported("new d'une classe interne");
+				var name = "u_" + constructed.getInternalName();
+				var args = new JExpr.NewArray(Object.class, bytecodeArguments(mainblock, writer, false, false));
+				return new JExpr.Self("new_" + name, List.of(Object[].class), writer.typeNamed(name), List.of(args));
+			}
+			return bytecodeConvertPrimitive(writer, bytecodeDynamicExecute(mainblock, writer));
+		}
+		if (mExpression instanceof LeekVariable v && v.getType() instanceof ClassValueType) return bytecodeDynamicExecute(mainblock, writer);
+		if (this.functionType instanceof FunctionType) {
+			var args = new ArrayList<JExpr>();
+			args.add(writer.aiThis());
+			args.add(JExpr.nul());
+			args.addAll(bytecodeArguments(mainblock, writer, false, false));
+			return bytecodeConvertPrimitive(writer, new JExpr.Call(writer.expr(mainblock, mExpression), "run", args));
+		}
+		return bytecodeDynamicExecute(mainblock, writer);
+	}
 
-		int argCount = callable_versions != null ? callable_versions.get(0).arguments.length : system_function.getVersions()[0].arguments.length;
+	/** Arguments d'un appel qui n'est pas celui d'une fonction système : convertis vers les paramètres (typés : vers leur type Java). */
+	private List<JExpr> bytecodeArguments(MainLeekBlock mainblock, BytecodeWriter writer, boolean typed, boolean userFunction) {
+		var arguments = new ArrayList<JExpr>();
+		int n = mParameters.size();
+		for (int i = 0; i < n; i++) {
+			var parameter = mParameters.get(i);
+			// Java : un null seul pour un Object... serait un tableau null
+			if (n == 1 && parameter.getType() == Type.NULL && !userFunction && system_function == null && !unsafe && !is_method && !is_static_method) {
+				arguments.add(new JExpr.NewArray(Object.class, List.of(JExpr.nul())));
+				continue;
+			}
+			var formal = functionType.getArgument(n, i);
+			arguments.add(typed ? writer.compileConvertTyped(mainblock, i, parameter, formal) : writer.compileConvert(mainblock, i, parameter, formal));
+		}
+		return arguments;
+	}
+
+	/** Appel d'une méthode statique de classe `u_X_m_n` de l'IA, de signature celle du bloc. */
+	private JExpr bytecodeStaticMethod(BytecodeWriter writer, String methodName, leekscript.compiler.bloc.ClassMethodBlock block, List<JExpr> args) {
+		var params = new ArrayList<Class<?>>();
+		for (int a = 0; a < args.size(); a++) params.add(writer.primitiveClass(block.getParametersDeclarations().get(a).getType()));
+		return new JExpr.Self(methodName, params, writer.primitiveClass(block.getType().returnType()), args);
+	}
+
+	/** writeDynamicExecute : `[(T)] execute(f, args…)`. */
+	private JExpr bytecodeDynamicExecute(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var args = new ArrayList<JExpr>();
+		args.add(writer.expr(mainblock, mExpression));
+		args.addAll(bytecodeArguments(mainblock, writer, false, false));
+		JExpr call = new JExpr.Call(null, "execute", args);
+		if (this.type != Type.ANY && this.type != Type.VOID && !this.type.isPrimitive()) call = new JExpr.Cast(writer.primitiveClass(this.type), call);
+		return call;
+	}
+
+	/** writeConvertPrimitiveCast : `((Number) x).longValue()`, `((Boolean) x).booleanValue()`. */
+	private JExpr bytecodeConvertPrimitive(BytecodeWriter writer, JExpr call) {
+		if (this.type == Type.INT) return new JExpr.Call(new JExpr.Cast(Number.class, call), "longValue", List.of());
+		if (this.type == Type.REAL) return new JExpr.Call(new JExpr.Cast(Number.class, call), "doubleValue", List.of());
+		if (this.type == Type.BOOL) return new JExpr.Call(new JExpr.Cast(Boolean.class, call), "booleanValue", List.of());
+		return call;
+	}
+
+	/** Appel `objet.champ(args)` : méthode connue, statique, native, ou appel dynamique. */
+	private JExpr bytecodeAccessCall(MainLeekBlock mainblock, BytecodeWriter writer, LeekObjectAccess access) {
+		if (access.isOptional()) throw new Unsupported("appel optionnel");
+		var object = access.getObject();
+		var field = access.getField();
+		var classVariable = writer.classVariable(mainblock);
+		if (object instanceof LeekVariable v && v.getVariableType() == VariableType.SUPER) {
+			var current = writer.typeNamed(mainblock.getWordCompiler().getCurrentClassVariable());
+			if (writer.context().type != current) throw new Unsupported("super. hors de la classe");
+			return new JExpr.SuperCall("u_" + field, bytecodeArguments(mainblock, writer, true, false));
+		}
+		if (object instanceof LeekVariable v && v.getVariableType() == VariableType.CLASS) {
+			if (is_namespace_function) return bytecodeSystemCall(mainblock, writer, null);
+			var staticMethod = v.getClassDeclaration().getStaticMethod(field, mParameters.size());
+			if (staticMethod != null) {
+				var name = "u_" + v.getClassDeclaration().getStaticMethodName(field, mParameters.size());
+				return bytecodeStaticMethod(writer, name, staticMethod.block, bytecodeArguments(mainblock, writer, true, false));
+			}
+			var args = new ArrayList<JExpr>();
+			args.add(JExpr.of(field));
+			args.add(classVariable);
+			args.addAll(bytecodeArguments(mainblock, writer, false, false));
+			JExpr call = new JExpr.Call(writer.expr(mainblock, v), "callStaticField", args);
+			if (type != Type.ANY) call = new JExpr.Cast(writer.primitiveClass(type), call);
+			return call;
+		}
+		if (object instanceof LeekVariable v && v.getVariableType() == VariableType.THIS) {
+			var currentClass = mainblock.getWordCompiler().getCurrentClass();
+			if (currentClass.getMethodName(field, mParameters.size()) != null) {
+				return new JExpr.Call(null, "u_" + field, bytecodeArguments(mainblock, writer, true, false));
+			}
+			if (this.functionType instanceof FunctionType) {
+				var args = new ArrayList<JExpr>();
+				args.add(writer.aiThis());
+				args.add(JExpr.nul());
+				args.addAll(bytecodeArguments(mainblock, writer, false, false));
+				return bytecodeConvertPrimitive(writer, new JExpr.Call(new JExpr.Read(writer.member(new JExpr.This(), field)), "run", args));
+			}
+			if (access.getVariable() != null) {
+				var args = new ArrayList<JExpr>();
+				args.add(new JExpr.Read(writer.member(new JExpr.This(), field)));
+				args.addAll(bytecodeArguments(mainblock, writer, false, false));
+				return new JExpr.Call(null, "execute", args);
+			}
+			var args = new ArrayList<JExpr>();
+			args.add(writer.thisOf(writer.typeNamed(mainblock.getWordCompiler().getCurrentClassVariable())));
+			args.add(JExpr.of(field));
+			args.add(JExpr.of("u_" + field));
+			args.add(classVariable);
+			args.addAll(bytecodeArguments(mainblock, writer, false, false));
+			return new JExpr.Call(null, "callObjectAccess", args);
+		}
+		if (is_static_method) {
+			var name = "u_" + method.block.getClassDeclaration().getInternalName() + "_" + field + "_" + mParameters.size();
+			return bytecodeStaticMethod(writer, name, method.block, bytecodeArguments(mainblock, writer, true, false));
+		}
+		if (is_method) {
+			JExpr call = new JExpr.Call(writer.expr(mainblock, object), "u_" + field, bytecodeArguments(mainblock, writer, true, false));
+			if (object.getType() instanceof ParameterizedClassType && functionType instanceof FunctionType ft && ft.returnType().containsTypeVariable()
+					&& this.type != Type.ANY && this.type != Type.VOID) {
+				call = new JExpr.Cast(writer.javaClass(this.type), call);
+			}
+			return call;
+		}
+		if (is_builtin_method) return bytecodeSystemCall(mainblock, writer, object);
+		var args = new ArrayList<JExpr>();
+		args.add(writer.expr(mainblock, object));
+		args.add(JExpr.of(field));
+		args.add(JExpr.of("u_" + field));
+		args.add(classVariable);
+		args.addAll(bytecodeArguments(mainblock, writer, false, false));
+		JExpr call = new JExpr.Call(null, "callObjectAccess", args);
+		if (type != Type.ANY) call = new JExpr.Cast(writer.primitiveClass(type), call);
+		return call;
+	}
+
+	/**
+	 * Appel d'une fonction système : forme libre (`receiver` null) ou méthode native sur `receiver`
+	 * (`"x".length()`), directe ou par l'enveloppe générique.
+	 */
+	private JExpr bytecodeSystemCall(MainLeekBlock mainblock, BytecodeWriter writer, Expression receiver) {
+		boolean builtin = receiver != null;
+		boolean generic = builtin ? builtinArgumentsNeedConversion(mainblock) : (unsafe || mainblock.getVersion() <= 3);
+		int argCount = builtin ? mParameters.size() : callable_versions != null ? callable_versions.get(0).arguments.length : system_function.getVersions()[0].arguments.length;
 		var arguments = new ArrayList<JExpr>();
 		for (int i = 0; i < argCount; i++) {
 			if (i < mParameters.size()) {
@@ -288,16 +452,23 @@ public class LeekFunctionCall extends Expression {
 			// Par l'enveloppe générique `Std_<clé>(a0, …)`, qui convertit les arguments au runtime
 			var versions = callable_versions != null ? callable_versions : new ArrayList<CallableVersion>(List.of(system_function.getVersions()[0]));
 			var key = writer.genericFunction(versions, strictNullArgument);
+			if (builtin) arguments.add(0, writer.expr(mainblock, receiver));
 			call = GenericFunctions.call(writer, versions, key, arguments);
 		} else if (system_function.isStatic()) {
-			arguments.add(0, new JExpr.This());
+			if (builtin) arguments.add(0, writer.compileTyped(mainblock, receiver));
+			arguments.add(0, writer.aiThis());
 			call = new JExpr.StaticCall(JTypes.forName(system_function.getStandardClass() + "Class"), system_function.getJavaName(), arguments);
 		} else {
-			// `((T) a).f(ai, …)` : la méthode du premier argument
-			var receiver = arguments.remove(0);
-			if (mParameters.get(0).getType() != Type.ANY) receiver = new JExpr.Cast(writer.javaClass(mParameters.get(0).getType()), receiver);
-			arguments.add(0, new JExpr.This());
-			call = new JExpr.Call(receiver, system_function.getJavaName(), arguments);
+			// `((T) a).f(ai, …)` : la méthode du premier argument (ou du receveur)
+			JExpr object;
+			if (builtin) {
+				object = new JExpr.Cast(writer.javaClass(receiver.getType()), writer.expr(mainblock, receiver));
+			} else {
+				object = arguments.remove(0);
+				if (mParameters.get(0).getType() != Type.ANY) object = new JExpr.Cast(writer.javaClass(mParameters.get(0).getType()), object);
+			}
+			arguments.add(0, writer.aiThis());
+			call = new JExpr.Call(object, system_function.getJavaName(), arguments);
 		}
 		// Retour effacé d'une fonction générique : casté au type inféré
 		if (systemReturnContainsTypeVariable(mainblock) && this.type != Type.ANY && this.type != Type.VOID) {

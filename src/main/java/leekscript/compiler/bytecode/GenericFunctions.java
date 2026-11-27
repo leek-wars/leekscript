@@ -143,8 +143,8 @@ public final class GenericFunctions {
 		}
 		var javaName = type.getJavaName(version);
 		if (!javaName.equals("Object") && javaName.matches("[A-Z]\\w*")) {
-			return JExpr.call("castArgument", v, new JExpr.ClassLit(JTypes.forName(javaName)));
+			return JExpr.call("castArgument", v, new JExpr.ClassLit(writer.typeNamed(javaName)));
 		}
-		return new JExpr.Cast(JTypes.forName(javaName), v);
+		return new JExpr.Cast(writer.typeNamed(javaName), v);
 	}
 }

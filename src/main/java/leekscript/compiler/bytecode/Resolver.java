@@ -51,7 +51,9 @@ public final class Resolver {
 	/** `classLiterals` : pour chaque argument `X.class`, X (null sinon, ou liste null) ; il déduit un `T` déclaré `Class<T>`. */
 	public static Resolved method(Class<?> owner, String name, List<Class<?>> args, List<Class<?>> classLiterals, boolean statics) {
 		var key = new Key(owner, name, List.copyOf(args), classLiterals, statics);
-		var r = cache.get(key);
+		// Les talons d'une compilation ne vont pas dans les caches : ils retiendraient leur chargeur
+		boolean cacheable = cacheable(owner, args);
+		var r = cacheable ? cache.get(key) : null;
 		if (r == null) {
 			var candidates = new ArrayList<Executable>();
 			for (var m : methods(owner).getOrDefault(name, List.of())) {
@@ -59,28 +61,46 @@ public final class Resolver {
 				if (!statics || Modifier.isStatic(m.getModifiers())) candidates.add(m);
 			}
 			r = select(candidates, args, classLiterals, owner + "." + name);
-			cache.put(key, r);
+			if (cacheable) cache.put(key, r);
 		}
 		return r;
 	}
 
 	public static Resolved constructor(Class<?> owner, List<Class<?>> args) {
 		var key = new Key(owner, "<init>", List.copyOf(args), null, false);
-		var r = cache.get(key);
+		boolean cacheable = cacheable(owner, args);
+		var r = cacheable ? cache.get(key) : null;
 		if (r == null) {
 			var candidates = new ArrayList<Executable>();
 			for (var c : owner.getDeclaredConstructors()) {
 				if (Modifier.isPublic(c.getModifiers()) || Modifier.isProtected(c.getModifiers())) candidates.add(c);
 			}
 			r = select(candidates, args, null, owner + ".<init>");
-			cache.put(key, r);
+			if (cacheable) cache.put(key, r);
 		}
 		return r;
 	}
 
+	/** La classe (ou ses parents) a-t-elle une méthode accessible de ce nom ? */
+	public static boolean hasMethod(Class<?> owner, String name) {
+		return methods(owner).containsKey(name);
+	}
+
 	/** Méthodes accessibles depuis une classe générée hors package : publiques et protégées, sans les ponts. */
+	private static boolean cacheable(Class<?> owner, List<Class<?>> args) {
+		if (ClassStubs.isStub(owner)) return false;
+		for (var a : args) if (!a.isPrimitive() && ClassStubs.isStub(a)) return false;
+		return true;
+	}
+
 	private static HashMap<String, List<Method>> methods(Class<?> owner) {
-		return methodsByClass.computeIfAbsent(owner, c -> {
+		if (ClassStubs.isStub(owner)) return collectMethods(owner);
+		return methodsByClass.computeIfAbsent(owner, Resolver::collectMethods);
+	}
+
+	private static HashMap<String, List<Method>> collectMethods(Class<?> owner) {
+		{
+			var c = owner;
 			var byName = new HashMap<String, List<Method>>();
 			var signatures = new java.util.HashSet<String>();
 			var all = new ArrayList<Method>();
@@ -88,7 +108,8 @@ public final class Resolver {
 				for (var m : k.getDeclaredMethods()) {
 					int mod = m.getModifiers();
 					if (m.isBridge() || m.isSynthetic()) continue;
-					if (!Modifier.isPublic(mod) && !Modifier.isProtected(mod)) continue;
+					// Les méthodes privées d'une classe générée ne s'appellent que depuis son nid
+					if (!Modifier.isPublic(mod) && !Modifier.isProtected(mod) && !(Modifier.isPrivate(mod) && ClassStubs.isStub(k))) continue;
 					all.add(m);
 				}
 			}
@@ -101,7 +122,7 @@ public final class Resolver {
 				if (signatures.add(sig)) byName.computeIfAbsent(m.getName(), n -> new ArrayList<>()).add(m);
 			}
 			return byName;
-		});
+		}
 	}
 
 	private static Resolved select(List<Executable> candidates, List<Class<?>> args, List<Class<?>> classLiterals, String what) {

@@ -26,6 +26,7 @@ import leekscript.compiler.instruction.ClassDeclarationInstruction;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.common.Error;
 import leekscript.common.FunctionType;
+import leekscript.compiler.bytecode.BytecodeWriter;
 
 public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable, TestEntry {
 
@@ -323,6 +324,13 @@ public class ClassMethodBlock extends AbstractLeekBlock implements Annotatable, 
 		if (mEndInstruction == 0) {
 			writer.addLine("return " + type.returnType().getDefaultValue(writer, mainblock.getVersion()) + ";");
 		}
+	}
+
+
+	/** Le corps de la méthode pour le backend bytecode, retour par défaut compris. */
+	public void writeBytecodeBody(MainLeekBlock mainblock, BytecodeWriter writer) {
+		writeBlockBytecode(mainblock, writer);
+		if (mEndInstruction == 0 && writer.isAlive()) writer.emitReturn(writer.defaultValue(type.returnType()), writer.returnType());
 	}
 
 	/**

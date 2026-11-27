@@ -29,6 +29,7 @@ import leekscript.common.LanguageFeature;
 import leekscript.common.Type;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -549,6 +550,12 @@ public class LeekVariable extends Expression {
 	 * L'expression désigne-t-elle une classe connue à la compilation ? Une classe nommée, ou `class`
 	 * dans une méthode statique, écrit comme la classe englobante (cf writeThisClass).
 	 */
+	public static boolean isStaticClassReference(Expression expression, BytecodeWriter writer) {
+		if (!(expression.trim() instanceof LeekVariable v)) return false;
+		if (v.getVariableType() == VariableType.CLASS) return true;
+		return v.getVariableType() == VariableType.THIS_CLASS && !writer.inInstanceContext();
+	}
+
 	public static boolean isStaticClassReference(Expression expression, JavaWriter writer) {
 		if (!(expression.trim() instanceof LeekVariable v)) return false;
 		if (v.getVariableType() == VariableType.CLASS) return true;
@@ -828,6 +835,8 @@ public class LeekVariable extends Expression {
 	/** La variable Java lue ou écrite telle quelle : `u_x` d'une locale ou d'un paramètre, champ `g_x` d'une globale. */
 	private BytecodeWriter.Slot bytecodeSlot(MainLeekBlock mainblock, BytecodeWriter writer) {
 		if (isBytecodeGlobal(mainblock)) return writer.field(globalName());
+		// Champ d'instance : le champ Java `x`, trouvé comme javac depuis la classe en cours
+		if (type == VariableType.FIELD) return writer.fieldNamed(token.getWord());
 		if ((type != VariableType.LOCAL && type != VariableType.ARGUMENT) || declaration == null || mainblock.isRedefinedFunction(token.getWord()) || isWrapper() || isBox()) {
 			throw new Unsupported("variable " + type);
 		}
@@ -859,6 +868,50 @@ public class LeekVariable extends Expression {
 		}
 		// Une globale se lit telle quelle (sans writeNarrowed)
 		if (isBytecodeGlobal(mainblock)) return new JExpr.Read(bytecodeSlot(mainblock, writer));
+		var currentClass = mainblock.getWordCompiler().getCurrentClass();
+		if (type == VariableType.THIS) {
+			if (currentClass == null) throw new Unsupported("this hors classe");
+			return writer.thisOf(writer.typeNamed(mainblock.getWordCompiler().getCurrentClassVariable()));
+		}
+		if (type == VariableType.SUPER) return new JExpr.Read(writer.fieldNamed("u_" + classDeclaration.getParent().getInternalName()));
+		if (type == VariableType.CLASS) {
+			if (classDeclaration.internal) {
+				var name = token.getWord().equals("Array") && mainblock.getVersion() <= 3 ? "legacyArrayClass" : token.getWord().toLowerCase() + "Class";
+				return new JExpr.Read(writer.fieldNamed(name));
+			}
+			return new JExpr.Read(writer.fieldNamed("u_" + classDeclaration.getInternalName()));
+		}
+		if ((type == VariableType.METHOD || type == VariableType.STATIC_METHOD) && currentClass != null) {
+			return new JExpr.Call(writer.classVariable(mainblock), "getField", List.of(JExpr.of(token.getWord())));
+		}
+		if (type == VariableType.STATIC_FIELD && currentClass != null) {
+			var constant = ConstantFolder.staticFinalLiteral(classDeclaration, token.getWord(), currentClass);
+			if (constant != null) return writer.expr(mainblock, constant);
+			JExpr read;
+			if (currentClass.hasStaticFieldBox(token.getWord(), currentClass)) {
+				read = new JExpr.Call(new JExpr.Read(writer.field(currentClass.staticFieldBoxField(token.getWord()))), "get", List.of());
+			} else {
+				read = new JExpr.Call(writer.classVariable(mainblock), "getField", List.of(JExpr.of(token.getWord())));
+			}
+			if (variableType == Type.BIG_INT) return new JExpr.StaticCall(leekscript.runner.values.BigIntegerValue.class, "valueOf", List.of(writer.aiThis(), read));
+			if (variableType == Type.INT || variableType == Type.REAL) {
+				return new JExpr.Call(new JExpr.Cast(Number.class, read), variableType == Type.INT ? "longValue" : "doubleValue", List.of());
+			}
+			if (variableType != Type.ANY) {
+				read = new JExpr.Cast(writer.javaClass(variableType), read);
+				if (variableType.isPrimitive()) read = new JExpr.Cast(writer.primitiveClass(variableType), read);
+			}
+			return read;
+		}
+		if (type == VariableType.FIELD) {
+			JExpr field = new JExpr.Read(bytecodeSlot(mainblock, writer));
+			if (needsNarrowingCast(mainblock.getVersion())) return new JExpr.Cast(writer.primitiveClass(this.variableType), field);
+			if (needsPrimitiveNarrowingConversion(mainblock.getVersion())) {
+				if (this.variableType == Type.INT) return JExpr.call("longint", field);
+				if (this.variableType == Type.REAL) return JExpr.call("real", field);
+			}
+			return field;
+		}
 		JExpr base = new JExpr.Read(bytecodeSlot(mainblock, writer));
 		if (needsNarrowingCast(mainblock.getVersion())) {
 			return new JExpr.Cast(writer.primitiveClass(this.variableType), base);
@@ -871,6 +924,7 @@ public class LeekVariable extends Expression {
 
 	@Override
 	public JExpr bytecodeAssign(MainLeekBlock mainblock, BytecodeWriter writer, int operator, Expression value) {
+		if (type == VariableType.FIELD) return bytecodeFieldAssign(mainblock, writer, operator, value);
 		switch (operator) {
 			case Operators.ASSIGN: return bytecodeSet(mainblock, writer, value);
 			case Operators.INCREMENT: return bytecodeIncDec(mainblock, writer, true, true);
@@ -892,6 +946,48 @@ public class LeekVariable extends Expression {
 			case Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN: return bytecodeBitAssign(mainblock, writer, value, AI.BitOperation.USHR, ">>>");
 		}
 		throw new Unsupported("affectation " + operator);
+	}
+
+	/** Les affectations d'un champ d'instance `x` (branches FIELD de compileSet, compileAddEq…) : jamais d'opérateur Java natif. */
+	private JExpr bytecodeFieldAssign(MainLeekBlock mainblock, BytecodeWriter writer, int operator, Expression value) {
+		var slot = bytecodeSlot(mainblock, writer);
+		switch (operator) {
+			case Operators.ASSIGN: return new JExpr.Assign(slot, writer.compileConvertTyped(mainblock, 0, value, getJavaDeclarationType()));
+			case Operators.INCREMENT: case Operators.DECREMENT: case Operators.PRE_INCREMENT: case Operators.PRE_DECREMENT: {
+				boolean increment = operator == Operators.INCREMENT || operator == Operators.PRE_INCREMENT;
+				boolean suffix = operator == Operators.INCREMENT || operator == Operators.DECREMENT;
+				var slotType = javaSlotType();
+				JExpr op = JExpr.call(increment ? "add" : "sub", new JExpr.Read(slot), JExpr.of(1l));
+				if (slotType != Type.INT) op = bytecodeOperationResult(writer, slotType, Type.INT, op);
+				JExpr assign = new JExpr.Assign(slot, op);
+				return suffix ? JExpr.call(increment ? "sub" : "add", assign, JExpr.of(1l)) : assign;
+			}
+			case Operators.ADDASSIGN: return bytecodeOperationEq(mainblock, writer, value, addEqMethod(mainblock), variableType);
+			case Operators.MINUSASSIGN: return bytecodeOperationEq(mainblock, writer, value, "sub", variableType);
+			case Operators.MULTIPLIEASSIGN: return bytecodeOperationEq(mainblock, writer, value, "mul", variableType);
+			case Operators.DIVIDEASSIGN: return bytecodeOperationEq(mainblock, writer, value, "div", divTarget(variableType));
+			case Operators.MODULUSASSIGN: return bytecodeOperationEq(mainblock, writer, value, "mod", variableType);
+			case Operators.POWERASSIGN: return bytecodeOperationEq(mainblock, writer, value, "pow", variableType);
+		}
+		AI.BitOperation operation = switch (operator) {
+			case Operators.INTEGER_DIVISION_EQ -> AI.BitOperation.INTDIV;
+			case Operators.BITOR_ASSIGN -> AI.BitOperation.BOR;
+			case Operators.BITAND_ASSIGN -> AI.BitOperation.BAND;
+			case Operators.BITXOR_ASSIGN -> AI.BitOperation.BXOR;
+			case Operators.SHIFT_LEFT_ASSIGN -> AI.BitOperation.SHL;
+			case Operators.SHIFT_RIGHT_ASSIGN -> AI.BitOperation.SHR;
+			case Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN -> AI.BitOperation.USHR;
+			default -> throw new Unsupported("affectation de champ " + operator);
+		};
+		var converted = javaSlotType().assertNotNull() == Type.BOOL ? Type.BOOL : boxedSlotType() == Type.REAL ? Type.REAL : null;
+		JExpr call = JExpr.call(bitOpMethod(operation.name().toLowerCase(Locale.ROOT)), new JExpr.Read(slot), writer.expr(mainblock, value));
+		if (converted != null) call = writer.fieldResultConversion(converted, call);
+		if (operation == AI.BitOperation.BOR) {
+			// Cast historique du seul `|=` sur un champ
+			var castType = variableType == Type.NULL ? javaSlotType() : variableType;
+			if (castType != Type.ANY) call = new JExpr.Cast(writer.primitiveClass(castType), call);
+		}
+		return new JExpr.Assign(slot, call);
 	}
 
 	private JExpr bytecodeSet(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr) {

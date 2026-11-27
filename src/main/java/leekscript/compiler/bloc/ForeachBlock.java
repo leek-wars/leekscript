@@ -256,7 +256,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		BytecodeWriter.Slot iterator;
 		if (mIsDeclaration) {
 			if (declaration.isCaptured() || mainblock.hasGlobal(mIterator.getWord())) throw new Unsupported("itérateur capturé");
-			iterator = writer.declare(declaration, JTypes.forName(declaration.getIteratorJavaName(mainblock.getVersion())), mIterator.getWord());
+			iterator = writer.declare(declaration, writer.typeNamed(declaration.getIteratorJavaName(mainblock.getVersion())), mIterator.getWord());
 			writer.emitStatement(new JExpr.Assign(iterator, JExpr.nul()));
 			writer.counter(1);
 		} else {

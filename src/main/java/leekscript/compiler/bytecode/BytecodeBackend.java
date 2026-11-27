@@ -80,12 +80,18 @@ public final class BytecodeBackend {
 		var thisDesc = ClassDesc.of(className);
 		var rootDesc = JTypes.desc(root);
 		int version = main.getWordCompiler().getVersion();
-		var writer = new BytecodeWriter(options, version, thisDesc, root);
-
-		var resolver = ClassHierarchyResolver.of(List.of(), Map.of(thisDesc, rootDesc))
+		// Hiérarchie des classes générées, remplie au fil de l'écriture (stack maps, vérification)
+		var hierarchy = new ConcurrentHashMap<ClassDesc, ClassDesc>();
+		hierarchy.put(thisDesc, rootDesc);
+		ClassHierarchyResolver generated = desc -> {
+			var parent = hierarchy.get(desc);
+			return parent == null ? null : ClassHierarchyResolver.ClassHierarchyInfo.ofClass(parent);
+		};
+		var resolver = generated
 			.orElse(ClassHierarchyResolver.defaultResolver())
 			.orElse(ClassHierarchyResolver.ofClassLoading(BytecodeBackend.class.getClassLoader()));
 		var classFile = ClassFile.of(ClassFile.ClassHierarchyResolverOption.of(resolver));
+		var writer = new BytecodeWriter(options, version, new BytecodeWriter.ClassContext(thisDesc, root, root, null), classFile, hierarchy);
 
 		byte[] bytes = classFile.build(thisDesc, clb -> {
 			clb.withFlags(AccessFlag.PUBLIC, AccessFlag.SUPER);
@@ -103,6 +109,7 @@ public final class BytecodeBackend {
 				cb.loadConstant(version);
 				cb.invokespecial(rootDesc, ConstantDescs.INIT_NAME, MethodTypeDesc.of(ConstantDescs.CD_void, ConstantDescs.CD_int, ConstantDescs.CD_int));
 				for (var initializer : writer.getFieldInitializers()) writer.emitStatement(initializer);
+				for (var statement : writer.getConstructorStatements()) writer.emitStatement(statement);
 			});
 
 			GenericFunctions.write(clb, writer);
@@ -134,16 +141,22 @@ public final class BytecodeBackend {
 				}
 				cb.areturn();
 			});
+			writer.finishClass(clb, thisDesc);
 		});
 
-		var errors = classFile.verify(bytes);
-		if (!errors.isEmpty()) throw new IllegalStateException("bytecode invalide : " + errors.get(0).getMessage());
+		var classes = new java.util.LinkedHashMap<String, byte[]>();
+		classes.put(className, bytes);
+		classes.putAll(writer.getClasses());
+		for (var entry : classes.entrySet()) {
+			var errors = classFile.verify(entry.getValue());
+			if (!errors.isEmpty()) throw new IllegalStateException("bytecode invalide (" + entry.getKey() + ") : " + errors.get(0).getMessage());
+		}
 
 		var lines = new StringBuilder();
 		for (var e : writer.getLines().entrySet()) {
 			lines.append(e.getKey()).append(' ').append(e.getValue().getAI()).append(' ').append(e.getValue().getLeekScriptLine()).append('\n');
 		}
-		return new Result(Map.of(className, bytes), lines.toString());
+		return new Result(classes, lines.toString());
 	}
 
 	private static void newArray(CodeBuilder cb, int size, ClassDesc component) {

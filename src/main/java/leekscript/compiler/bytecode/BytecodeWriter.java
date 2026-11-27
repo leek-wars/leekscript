@@ -13,6 +13,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 import leekscript.compiler.AIFile;
@@ -35,7 +36,7 @@ import leekscript.compiler.expression.Expression;
 public class BytecodeWriter {
 
 	/** Une variable du Java : locale de la méthode ou champ de la classe générée. */
-	public sealed interface Slot permits LocalVar, FieldVar {
+	public sealed interface Slot permits LocalVar, FieldVar, MemberVar {
 		Class<?> type();
 		String name();
 	}
@@ -43,24 +44,62 @@ public class BytecodeWriter {
 	/** Variable locale : son emplacement, son type Java et son nom LeekScript (pour le débogage). */
 	public record LocalVar(int slot, Class<?> type, String name) implements Slot {}
 
-	/** Champ d'instance de la classe générée (globale…). */
-	public record FieldVar(String name, Class<?> type) implements Slot {}
+	/** Champ public `name` d'un objet quelconque (`o.f`), déclaré dans `owner`. */
+	public record MemberVar(JExpr receiver, Class<?> owner, String name, Class<?> type) implements Slot {}
+
+	/** Champ d'instance d'une classe générée (globale de l'IA, champ d'une classe utilisateur…). */
+	public record FieldVar(ClassContext owner, String name, Class<?> type) implements Slot {}
+
+	/**
+	 * Une classe en cours d'écriture : celle de l'IA, une classe utilisateur `u_X` ou une classe
+	 * anonyme, interne à `outer` (champ `this$0`). `type` type son `this` ; `members` est la classe où
+	 * se cherchent ses membres pour un nom non qualifié (la classe du runtime pour l'IA, le talon sinon).
+	 */
+	public static final class ClassContext {
+		public final ClassDesc desc;
+		public final Class<?> type;
+		public final Class<?> members;
+		public final ClassContext outer;
+		java.lang.classfile.ClassBuilder builder;
+		final java.util.HashMap<String, FieldVar> fields = new java.util.HashMap<>();
+
+		public ClassContext(ClassDesc desc, Class<?> type, Class<?> members, ClassContext outer) {
+			this.desc = desc;
+			this.type = type;
+			this.members = members;
+			this.outer = outer;
+		}
+
+		public java.lang.classfile.ClassBuilder builder() {
+			return builder;
+		}
+	}
+
+	/** L'état de la méthode en cours d'écriture, mis de côté le temps d'écrire une classe anonyme. */
+	private static final class MethodState {
+		CodeBuilder cb;
+		int nextSlot;
+		final ArrayList<Integer> scopes = new ArrayList<>();
+		final ArrayList<Loop> loops = new ArrayList<>();
+		Class<?> returnType;
+		boolean alive = true;
+		String name;
+		MethodTypeDesc type;
+	}
 
 	public final Options options;
 	public final int version;
-	/** Classe générée (receveur de `this`) et la classe du runtime qu'elle étend, où se résolvent ses méthodes. */
-	public final ClassDesc thisDesc;
-	public final Class<?> thisClass;
+	/** La classe de l'IA, et la classe en cours d'écriture. */
+	public final ClassContext aiContext;
+	private ClassContext context;
 
+	private MethodState method = new MethodState();
 	private CodeBuilder cb;
-	private int nextSlot;
-	private final ArrayList<Integer> scopes = new ArrayList<>();
 	private final IdentityHashMap<Object, LocalVar> locals = new IdentityHashMap<>();
 	private final IdentityHashMap<JExpr, Class<?>> types = new IdentityHashMap<>();
 
 	/** Cibles de break / continue des boucles englobantes. */
 	public record Loop(Label breakLabel, Label continueLabel) {}
-	private final ArrayList<Loop> loops = new ArrayList<>();
 
 	// Enveloppes génériques des fonctions système (JavaWriter.generateGenericFunction), écrites après runIA
 	private final java.util.LinkedHashMap<String, List<leekscript.runner.CallableVersion>> genericFunctions = new java.util.LinkedHashMap<>();
@@ -71,26 +110,158 @@ public class BytecodeWriter {
 	private final ArrayList<AIFile> files = new ArrayList<>();
 	private int nextLine = 1;
 
-	/** Type Java du retour de la méthode en cours. */
-	private Class<?> returnType;
-	/** Faux après un saut inconditionnel ou un return : le code qui suit est mort, javac ne l'émet pas. */
-	private boolean alive = true;
-
-	public BytecodeWriter(Options options, int version, ClassDesc thisDesc, Class<?> thisClass) {
+	public BytecodeWriter(Options options, int version, ClassContext aiContext, java.lang.classfile.ClassFile classFile, Map<ClassDesc, ClassDesc> hierarchy) {
+		this.classFile = classFile;
+		this.hierarchy = hierarchy;
 		this.options = options;
 		this.version = version;
-		this.thisDesc = thisDesc;
-		this.thisClass = thisClass;
+		this.aiContext = aiContext;
+		this.context = aiContext;
+	}
+
+	public ClassContext context() {
+		return context;
+	}
+
+	/** Le bloc de la méthode de classe en cours (JavaWriter.currentBlock). */
+	public leekscript.compiler.bloc.AbstractLeekBlock currentBlock = null;
+
+	public boolean inInstanceContext() {
+		return currentBlock != null && !currentBlock.isInStaticMethod();
+	}
+
+	// Classes écrites à côté de celle de l'IA (classes utilisateur, anonymes), leur hiérarchie pour
+	// les stack maps, et les attributs InnerClasses / NestMembers de chaque classe englobante
+	private final java.util.LinkedHashMap<String, byte[]> classes = new java.util.LinkedHashMap<>();
+	private final Map<ClassDesc, ClassDesc> hierarchy;
+	private final java.lang.classfile.ClassFile classFile;
+	private final java.util.HashMap<ClassDesc, ArrayList<java.lang.classfile.attribute.InnerClassInfo>> innerClasses = new java.util.HashMap<>();
+	private final ArrayList<ClassDesc> nestMembers = new ArrayList<>();
+	private int anonymousCount = 0;
+
+	public Map<String, byte[]> getClasses() {
+		return classes;
+	}
+
+	public void addClass(ClassDesc desc, byte[] bytes) {
+		classes.put(desc.displayName(), bytes);
+	}
+
+	/** Le talon de la classe de l'IA (type du paramètre d'instance englobante des classes internes). */
+	public Class<?> aiStub() {
+		var stub = stubs.get(aiContext.desc.displayName());
+		if (stub == null) throw new Unsupported("talon de l'IA");
+		return stub;
+	}
+
+	public java.lang.classfile.ClassFile classFile() {
+		return classFile;
+	}
+
+	/** Une classe interne de l'IA : sa hiérarchie, et sa place dans le nid et dans les InnerClasses de `outer`. */
+	public void registerInnerClass(ClassDesc desc, ClassDesc superDesc, ClassDesc outer, String simpleName, int flags) {
+		hierarchy.put(desc, superDesc);
+		nestMembers.add(desc);
+		var info = java.lang.classfile.attribute.InnerClassInfo.of(desc, simpleName == null ? java.util.Optional.empty() : java.util.Optional.of(outer),
+			java.util.Optional.ofNullable(simpleName), flags);
+		innerClasses.computeIfAbsent(outer, k -> new ArrayList<>()).add(info);
+		innerClasses.computeIfAbsent(desc, k -> new ArrayList<>()).add(info);
+	}
+
+	/** Les attributs de nid et de classes internes de la classe `desc`, à la fin de son écriture. */
+	public void finishClass(java.lang.classfile.ClassBuilder builder, ClassDesc desc) {
+		var inner = innerClasses.get(desc);
+		if (inner != null) builder.with(java.lang.classfile.attribute.InnerClassesAttribute.of(inner));
+		if (desc.equals(aiContext.desc)) {
+			if (!nestMembers.isEmpty()) {
+				var members = new ArrayList<java.lang.constant.ClassDesc>(nestMembers);
+				builder.with(java.lang.classfile.attribute.NestMembersAttribute.ofSymbols(members));
+			}
+		} else {
+			builder.with(java.lang.classfile.attribute.NestHostAttribute.of(aiContext.desc));
+		}
+	}
+
+	/** Une méthode d'une classe anonyme. */
+	public record AnonymousMethod(String name, int flags, List<Class<?>> parameters, Class<?> returnType, Runnable body) {}
+
+	/**
+	 * `new S(superArgs) { méthodes }` : la classe anonyme, interne à la classe en cours, est écrite à
+	 * part ; rend l'expression qui l'instancie (typée S). Son constructeur reçoit l'instance
+	 * englobante (`this$0`) puis les paramètres du constructeur de S choisi par les arguments.
+	 */
+	public JExpr anonymous(Class<?> superclass, List<JExpr> superArgs, List<AnonymousMethod> methods) {
+		var superCtor = Resolver.constructor(superclass, argTypesOf(superArgs));
+		var superParams = List.of(superCtor.parameters());
+		var outer = context;
+		var desc = ClassDesc.of(aiContext.desc.displayName() + "$" + (++anonymousCount));
+		var superDesc = JTypes.desc(superclass);
+		registerInnerClass(desc, superDesc, outer.desc, null, 0);
+		var enclosingName = method.name;
+		var enclosingType = method.type;
+		var anonymous = new ClassContext(desc, superclass, superclass, outer);
+		var bytes = classFile.build(desc, clb -> inClass(anonymous, clb, () -> {
+			clb.withFlags(java.lang.classfile.ClassFile.ACC_SUPER);
+			clb.withSuperclass(superDesc);
+			clb.withField("this$0", outer.desc, java.lang.classfile.ClassFile.ACC_FINAL | java.lang.classfile.ClassFile.ACC_SYNTHETIC);
+			var ctorParams = new ClassDesc[superParams.size() + 1];
+			ctorParams[0] = outer.desc;
+			for (int i = 0; i < superParams.size(); i++) ctorParams[i + 1] = JTypes.desc(superParams.get(i));
+			clb.withMethodBody(ConstantDescs.INIT_NAME, MethodTypeDesc.of(ConstantDescs.CD_void, ctorParams), 0, code -> {
+				code.aload(0);
+				code.aload(1);
+				code.putfield(desc, "this$0", outer.desc);
+				code.aload(0);
+				int slot = 2;
+				var superDescs = new ClassDesc[superParams.size()];
+				for (int i = 0; i < superParams.size(); i++) {
+					var k = kind(superParams.get(i));
+					code.loadLocal(k, slot);
+					slot += k.slotSize();
+					superDescs[i] = JTypes.desc(superParams.get(i));
+				}
+				code.invokespecial(superDesc, ConstantDescs.INIT_NAME, MethodTypeDesc.of(ConstantDescs.CD_void, superDescs));
+				code.return_();
+			});
+			for (var m : methods) writeMethod(m.name(), m.flags(), m.parameters(), m.returnType(), m.body());
+			if (enclosingName != null) {
+				clb.with(java.lang.classfile.attribute.EnclosingMethodAttribute.of(outer.desc, java.util.Optional.of(enclosingName), java.util.Optional.of(enclosingType)));
+			}
+			finishClass(clb, desc);
+		}));
+		classes.put(desc.displayName(), bytes);
+		return new JExpr.NewInner(desc, superParams, superArgs, superclass);
+	}
+
+	private List<Class<?>> argTypesOf(List<JExpr> args) {
+		var r = new ArrayList<Class<?>>(args.size());
+		for (var a : args) r.add(typeOf(a));
+		return r;
+	}
+
+	/** Écrit `body` dans la classe `inner` (une méthode en cours est mise de côté puis reprise). */
+	public void inClass(ClassContext inner, java.lang.classfile.ClassBuilder builder, Runnable body) {
+		var savedContext = context;
+		var savedMethod = method;
+		var savedCb = cb;
+		inner.builder = builder;
+		context = inner;
+		method = new MethodState();
+		try {
+			body.run();
+		} finally {
+			context = savedContext;
+			method = savedMethod;
+			cb = savedCb;
+		}
 	}
 
 	public boolean isOperationsEnabled() {
 		return options.enableOperations();
 	}
 
-	private java.lang.classfile.ClassBuilder classBuilder;
-
 	public void setClassBuilder(java.lang.classfile.ClassBuilder classBuilder) {
-		this.classBuilder = classBuilder;
+		context.builder = classBuilder;
 	}
 
 	/**
@@ -99,6 +270,11 @@ public class BytecodeWriter {
 	 * Unsupported, comme javac refuserait une méthode sans return.
 	 */
 	public void writeMethod(String name, int flags, List<Class<?>> parameters, Class<?> returnType, Runnable body) {
+		writeMethod(name, flags, parameters, returnType, List.of(), body);
+	}
+
+	/** Idem, avec des annotations visibles à l'exécution (`@Private`, `@Protected` des méthodes de classe). */
+	public void writeMethod(String name, int flags, List<Class<?>> parameters, Class<?> returnType, List<Class<?>> annotations, Runnable body) {
 		var descs = new ClassDesc[parameters.size()];
 		int slot = 1;
 		for (int i = 0; i < descs.length; i++) {
@@ -106,14 +282,35 @@ public class BytecodeWriter {
 			slot += kind(parameters.get(i)).slotSize();
 		}
 		int firstSlot = slot;
-		classBuilder.withMethodBody(name, MethodTypeDesc.of(JTypes.desc(returnType), descs), flags, code -> {
-			begin(code, firstSlot, returnType);
-			body.run();
-			if (alive) {
-				if (returnType != void.class) throw new Unsupported("fin de " + name + " atteignable");
-				code.return_();
+		var methodType = MethodTypeDesc.of(JTypes.desc(returnType), descs);
+		java.util.function.Consumer<java.lang.classfile.CodeBuilder> handler = code -> {
+			var saved = method;
+			var savedCb = cb;
+			method = new MethodState();
+			try {
+				begin(code, firstSlot, returnType);
+				method.name = name;
+				method.type = methodType;
+				body.run();
+				if (method.alive) {
+					if (returnType != void.class) throw new Unsupported("fin de " + name + " atteignable");
+					code.return_();
+				}
+			} finally {
+				method = saved;
+				cb = savedCb;
 			}
-		});
+		};
+		if (annotations.isEmpty()) {
+			context.builder.withMethodBody(name, methodType, flags, handler);
+		} else {
+			context.builder.withMethod(name, methodType, flags, mb -> {
+				var list = new ArrayList<java.lang.classfile.Annotation>();
+				for (var a : annotations) list.add(java.lang.classfile.Annotation.of(JTypes.desc(a)));
+				mb.with(java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute.of(list));
+				mb.withCode(handler);
+			});
+		}
 	}
 
 	/** Emplacement du paramètre `index` (0 = premier après this) d'une méthode de paramètres `parameters`. */
@@ -138,11 +335,12 @@ public class BytecodeWriter {
 	/** Début d'une méthode : `firstSlot` = premier emplacement libre après this et les paramètres. */
 	public void begin(CodeBuilder cb, int firstSlot, Class<?> returnType) {
 		this.cb = cb;
-		this.returnType = returnType;
-		this.alive = true;
-		this.nextSlot = firstSlot;
-		this.scopes.clear();
-		this.loops.clear();
+		method.cb = cb;
+		method.returnType = returnType;
+		method.alive = true;
+		method.nextSlot = firstSlot;
+		method.scopes.clear();
+		method.loops.clear();
 	}
 
 	public CodeBuilder code() {
@@ -150,11 +348,11 @@ public class BytecodeWriter {
 	}
 
 	public Class<?> returnType() {
-		return returnType;
+		return method.returnType;
 	}
 
 	public boolean isAlive() {
-		return alive;
+		return method.alive;
 	}
 
 	public Label newLabel() {
@@ -164,12 +362,12 @@ public class BytecodeWriter {
 	/** Pose une étiquette d'instruction : le code qui la suit redevient atteignable. */
 	public void bind(Label label) {
 		cb.labelBinding(label);
-		alive = true;
+		method.alive = true;
 	}
 
 	public void goto_(Label label) {
 		cb.goto_(label);
-		alive = false;
+		method.alive = false;
 	}
 
 	/** `ops(n);` de JavaWriter.addCounter. */
@@ -208,28 +406,40 @@ public class BytecodeWriter {
 	// ---- Portées et variables locales ----
 
 	public void openScope() {
-		scopes.add(nextSlot);
+		method.scopes.add(method.nextSlot);
 	}
 
 	public void closeScope() {
-		nextSlot = scopes.remove(scopes.size() - 1);
+		method.nextSlot = method.scopes.remove(method.scopes.size() - 1);
 	}
 
 	public LocalVar declare(Object declaration, Class<?> type, String name) {
 		if (type == void.class || JTypes.isNull(type)) throw new Unsupported("variable de type " + type);
-		var v = new LocalVar(nextSlot, type, name);
-		nextSlot += TypeKind.from(JTypes.desc(type)).slotSize();
+		var v = new LocalVar(method.nextSlot, type, name);
+		method.nextSlot += TypeKind.from(JTypes.desc(type)).slotSize();
 		locals.put(declaration, v);
 		return v;
 	}
 
-	private final java.util.HashMap<String, FieldVar> fields = new java.util.HashMap<>();
-
-	/** Déclare un champ d'instance de la classe générée. */
+	/** Déclare un champ d'instance de la classe en cours d'écriture. */
 	public FieldVar field(String name, Class<?> type, int flags) {
-		var f = new FieldVar(name, type);
-		if (fields.putIfAbsent(name, f) != null) throw new Unsupported("champ en double " + name);
-		classBuilder.withField(name, JTypes.desc(type), flags);
+		return field(name, type, flags, null);
+	}
+
+	/** Idem, avec ses annotations (`@Final`, `@Private`… des champs de classe utilisateur). */
+	public FieldVar field(String name, Class<?> type, int flags, List<Class<?>> annotations) {
+		var f = new FieldVar(context, name, type);
+		if (context.fields.putIfAbsent(name, f) != null) throw new Unsupported("champ en double " + name);
+		if (annotations == null || annotations.isEmpty()) {
+			context.builder.withField(name, JTypes.desc(type), flags);
+		} else {
+			context.builder.withField(name, JTypes.desc(type), fb -> {
+				fb.withFlags(flags);
+				var list = new ArrayList<java.lang.classfile.Annotation>();
+				for (var a : annotations) list.add(java.lang.classfile.Annotation.of(JTypes.desc(a)));
+				fb.with(java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute.of(list));
+			});
+		}
 		return f;
 	}
 
@@ -244,10 +454,77 @@ public class BytecodeWriter {
 		return fieldInitializers;
 	}
 
+	// Corps du constructeur de l'IA après les initialiseurs (defineClass_X()…)
+	private final ArrayList<JExpr> constructorStatements = new ArrayList<>();
+
+	public void addConstructorStatement(JExpr statement) {
+		constructorStatements.add(statement);
+	}
+
+	public List<JExpr> getConstructorStatements() {
+		return constructorStatements;
+	}
+
+	/** L'instance de la classe `c` (la classe en cours ou une classe qui l'englobe). */
+	public JExpr instance(ClassContext c) {
+		return c == context ? new JExpr.This() : new JExpr.Outer(c);
+	}
+
+	/** `u_X.this` : l'instance de la classe englobante de type `type`. */
+	public JExpr thisOf(Class<?> type) {
+		for (var c = context; c != null; c = c.outer) {
+			if (c.type == type) return instance(c);
+		}
+		throw new Unsupported("pas d'instance englobante " + type.getSimpleName());
+	}
+
+	/**
+	 * Un champ lu par son nom simple, comme Java le trouve : dans la classe en cours ou la plus
+	 * interne qui l'englobe et l'a, champ déclaré par le backend ou hérité (public ou protégé).
+	 */
+	public Slot fieldNamed(String name) {
+		for (var c = context; c != null; c = c.outer) {
+			var f = c.fields.get(name);
+			if (f != null) return f;
+			var reflected = findField(c.members, name);
+			if (reflected != null) {
+				// Un membre protégé d'une autre classe englobante : javac passerait par une méthode d'accès
+				if (c != context && Modifier.isProtected(reflected.getModifiers())) throw new Unsupported("champ protégé englobant " + name);
+				return new MemberVar(instance(c), reflected.getDeclaringClass(), name, reflected.getType());
+			}
+		}
+		throw new Unsupported("champ inconnu " + name);
+	}
+
+	private static java.lang.reflect.Field findField(Class<?> owner, String name) {
+		for (var k = owner; k != null; k = k.getSuperclass()) {
+			for (var f : k.getDeclaredFields()) {
+				int mod = f.getModifiers();
+				if (f.getName().equals(name) && !Modifier.isStatic(mod) && (Modifier.isPublic(mod) || Modifier.isProtected(mod))) return f;
+			}
+		}
+		return null;
+	}
+
+	/** Le champ public `name` de l'objet `receiver`, cherché dans son type statique (classe du runtime ou talon). */
+	public MemberVar member(JExpr receiver, String name) {
+		var owner = typeOf(receiver);
+		try {
+			var f = owner.getField(name);
+			if (Modifier.isStatic(f.getModifiers())) throw new Unsupported("champ statique " + name);
+			return new MemberVar(receiver, owner, name, f.getType());
+		} catch (NoSuchFieldException e) {
+			throw new Unsupported("champ " + owner.getSimpleName() + "." + name);
+		}
+	}
+
+	/** Le champ `name` tel que Java le trouve depuis la classe en cours : la plus interne qui le déclare. */
 	public FieldVar field(String name) {
-		var f = fields.get(name);
-		if (f == null) throw new Unsupported("champ inconnu " + name);
-		return f;
+		for (var c = context; c != null; c = c.outer) {
+			var f = c.fields.get(name);
+			if (f != null) return f;
+		}
+		throw new Unsupported("champ inconnu " + name);
 	}
 
 	public LocalVar local(Object declaration) {
@@ -257,16 +534,16 @@ public class BytecodeWriter {
 	}
 
 	public void pushLoop(Loop loop) {
-		loops.add(loop);
+		method.loops.add(loop);
 	}
 
 	public void popLoop() {
-		loops.remove(loops.size() - 1);
+		method.loops.remove(method.loops.size() - 1);
 	}
 
 	public Loop currentLoop() {
-		if (loops.isEmpty()) throw new Unsupported("break hors boucle");
-		return loops.get(loops.size() - 1);
+		if (method.loops.isEmpty()) throw new Unsupported("break hors boucle");
+		return method.loops.get(method.loops.size() - 1);
 	}
 
 	// ---- Lignes ----
@@ -315,9 +592,15 @@ public class BytecodeWriter {
 	}
 
 	private Resolver.Resolved resolve(JExpr.Call c) {
-		var owner = c.receiver() == null ? thisClass : typeOf(c.receiver());
+		var owner = c.receiver() == null ? methodScope(c.name()).members : typeOf(c.receiver());
 		if (owner.isPrimitive() || JTypes.isNull(owner)) throw new Unsupported("appel sur " + owner);
 		return Resolver.method(owner, c.name(), argTypes(c.args()), classLiterals(c.args()), false);
+	}
+
+	private Resolver.Resolved resolveSuper(JExpr.SuperCall c) {
+		var parent = context.members.getSuperclass();
+		if (parent == null) throw new Unsupported("super sans parent");
+		return Resolver.method(parent, c.name(), argTypes(c.args()), classLiterals(c.args()), false);
 	}
 
 	private Resolver.Resolved resolve(JExpr.StaticCall c) {
@@ -328,7 +611,8 @@ public class BytecodeWriter {
 		return switch (e) {
 			case JExpr.Lit l -> l.type();
 			case JExpr.Read l -> l.var().type();
-			case JExpr.This t -> thisClass;
+			case JExpr.This t -> context.type;
+			case JExpr.Outer o -> o.target().type;
 			case JExpr.Call c -> resolve(c).returnType();
 			case JExpr.StaticCall c -> resolve(c).returnType();
 			case JExpr.GetStatic g -> field(g).getType();
@@ -340,6 +624,13 @@ public class BytecodeWriter {
 			case JExpr.ClassLit c -> Class.class;
 			case JExpr.New n -> n.type();
 			case JExpr.NewArray n -> n.component().arrayType();
+			case JExpr.NewInner n -> n.type();
+			case JExpr.ArrayGet a -> {
+				var t = typeOf(a.array());
+				if (!t.isArray()) throw new Unsupported("[] sur " + t);
+				yield t.getComponentType();
+			}
+			case JExpr.SuperCall c -> resolveSuper(c).returnType();
 			case JExpr.Cast c -> c.type();
 			case JExpr.Assign a -> a.var().type();
 			case JExpr.Compound a -> {
@@ -467,7 +758,11 @@ public class BytecodeWriter {
 			}
 			case JExpr.This t -> {
 				cb.aload(0);
-				return thisClass;
+				return context.type;
+			}
+			case JExpr.Outer o -> {
+				loadInstance(o.target());
+				return o.target().type;
 			}
 			case JExpr.Call c -> {
 				var m = resolve(c);
@@ -475,9 +770,12 @@ public class BytecodeWriter {
 				ClassDesc ownerDesc;
 				boolean isStatic = Modifier.isStatic(m.executable().getModifiers());
 				if (c.receiver() == null) {
-					owner = thisClass;
-					ownerDesc = thisDesc;
-					if (!isStatic) cb.aload(0);
+					// Appel non qualifié : qualifié par la classe où Java trouve la méthode
+					var scope = methodScope(c.name());
+					if (scope != context && Modifier.isProtected(m.executable().getModifiers())) throw new Unsupported("méthode protégée englobante " + c.name());
+					owner = scope.members;
+					ownerDesc = scope.desc;
+					if (!isStatic) loadInstance(scope);
 				} else {
 					if (isStatic) throw new Unsupported("méthode statique sur une instance");
 					owner = typeOf(c.receiver());
@@ -498,11 +796,11 @@ public class BytecodeWriter {
 				return m.erasedReturn();
 			}
 			case JExpr.Self c -> {
-				cb.aload(0);
+				loadInstance(aiContext);
 				for (int i = 0; i < c.args().size(); i++) emitAs(c.args().get(i), c.parameters().get(i));
 				var params = new ClassDesc[c.parameters().size()];
 				for (int i = 0; i < params.length; i++) params[i] = JTypes.desc(c.parameters().get(i));
-				cb.invokevirtual(thisDesc, c.name(), MethodTypeDesc.of(JTypes.desc(c.returnType()), params));
+				cb.invokevirtual(aiContext.desc, c.name(), MethodTypeDesc.of(JTypes.desc(c.returnType()), params));
 				return c.returnType();
 			}
 			case JExpr.InstanceOf i -> {
@@ -526,6 +824,33 @@ public class BytecodeWriter {
 				cb.dup();
 				emitArgs(m, n.args());
 				cb.invokespecial(d, ConstantDescs.INIT_NAME, methodDesc(m));
+				return n.type();
+			}
+			case JExpr.ArrayGet a -> {
+				var t = typeOf(a.array());
+				emitAs(a.array(), t);
+				emitAs(a.index(), int.class);
+				cb.arrayLoad(kind(t.getComponentType()));
+				return t.getComponentType();
+			}
+			case JExpr.SuperCall c -> {
+				var m = resolveSuper(c);
+				cb.aload(0);
+				emitArgs(m, c.args());
+				cb.invokespecial(JTypes.desc(context.members.getSuperclass()), c.name(), methodDesc(m));
+				return m.erasedReturn();
+			}
+			case JExpr.NewInner n -> {
+				cb.new_(n.desc());
+				cb.dup();
+				cb.aload(0);
+				var params = new ClassDesc[n.parameters().size() + 1];
+				params[0] = context.desc;
+				for (int i = 0; i < n.args().size(); i++) {
+					emitAs(n.args().get(i), n.parameters().get(i));
+					params[i + 1] = JTypes.desc(n.parameters().get(i));
+				}
+				cb.invokespecial(n.desc(), ConstantDescs.INIT_NAME, MethodTypeDesc.of(ConstantDescs.CD_void, params));
 				return n.type();
 			}
 			case JExpr.NewArray n -> {
@@ -595,15 +920,35 @@ public class BytecodeWriter {
 		switch (v) {
 			case LocalVar l -> cb.loadLocal(kind(l.type()), l.slot());
 			case FieldVar f -> {
-				cb.aload(0);
-				cb.getfield(thisDesc, f.name(), JTypes.desc(f.type()));
+				loadInstance(f.owner());
+				cb.getfield(f.owner().desc, f.name(), JTypes.desc(f.type()));
+			}
+			case MemberVar m -> {
+				emitAs(m.receiver(), m.owner());
+				cb.getfield(JTypes.desc(m.owner()), m.name(), JTypes.desc(m.type()));
 			}
 		}
 	}
 
 	/** Avant la valeur d'une écriture : le receveur d'un champ. */
 	private void storePrepare(Slot v) {
-		if (v instanceof FieldVar) cb.aload(0);
+		if (v instanceof FieldVar f) loadInstance(f.owner());
+		if (v instanceof MemberVar m) emitAs(m.receiver(), m.owner());
+	}
+
+	/** Lit la variable dont le receveur est déjà sur la pile (storePrepare), sans le consommer. */
+	private void loadPrepared(Slot v) {
+		switch (v) {
+			case LocalVar l -> cb.loadLocal(kind(l.type()), l.slot());
+			case FieldVar f -> {
+				cb.dup();
+				cb.getfield(f.owner().desc, f.name(), JTypes.desc(f.type()));
+			}
+			case MemberVar m -> {
+				cb.dup();
+				cb.getfield(JTypes.desc(m.owner()), m.name(), JTypes.desc(m.type()));
+			}
+		}
 	}
 
 	/** Range la valeur du sommet de pile ; `keep` : elle y reste aussi, valeur de l'expression. */
@@ -616,7 +961,11 @@ public class BytecodeWriter {
 			}
 			case FieldVar f -> {
 				if (keep) { if (k.slotSize() == 2) cb.dup2_x1(); else cb.dup_x1(); }
-				cb.putfield(thisDesc, f.name(), JTypes.desc(f.type()));
+				cb.putfield(f.owner().desc, f.name(), JTypes.desc(f.type()));
+			}
+			case MemberVar m -> {
+				if (keep) { if (k.slotSize() == 2) cb.dup2_x1(); else cb.dup_x1(); }
+				cb.putfield(JTypes.desc(m.owner()), m.name(), JTypes.desc(m.type()));
 			}
 		}
 	}
@@ -624,8 +973,9 @@ public class BytecodeWriter {
 	/** Laisse `(T) (x op e)` sur la pile. */
 	private void compound(JExpr.Compound a) {
 		var v = a.var();
+		loadPrepared(v);
 		var binary = new JExpr.Binary(a.op(), new JExpr.Read(v), a.value());
-		var t = emitBinary(binary);
+		var t = emitBinary(binary, true);
 		if (t != v.type()) primitiveConversion(t, v.type());
 	}
 
@@ -640,10 +990,10 @@ public class BytecodeWriter {
 			return v.type();
 		}
 		storePrepare(v);
-		load(v);
+		loadPrepared(v);
 		if (used && !i.prefix()) {
 			// L'ancienne valeur, sous le receveur d'un champ
-			if (v instanceof FieldVar) { if (k.slotSize() == 2) cb.dup2_x1(); else cb.dup_x1(); }
+			if (!(v instanceof LocalVar)) { if (k.slotSize() == 2) cb.dup2_x1(); else cb.dup_x1(); }
 			else { if (k.slotSize() == 2) cb.dup2(); else cb.dup(); }
 		}
 		switch (k) {
@@ -818,13 +1168,18 @@ public class BytecodeWriter {
 	}
 
 	private Class<?> emitBinary(JExpr.Binary b) {
+		return emitBinary(b, false);
+	}
+
+	/** `leftOnStack` : l'opérande gauche (de son type statique) est déjà sur la pile. */
+	private Class<?> emitBinary(JExpr.Binary b, boolean leftOnStack) {
 		var t = typeOf(b);
 		switch (b.op()) {
 			case "<", ">", "<=", ">=", "==", "!=", "&&", "||" -> {
 				return emitBoolean(b);
 			}
 			case "<<", ">>", ">>>" -> {
-				emitAs(b.left(), t);
+				emitLeft(b.left(), t, leftOnStack);
 				var tr = JTypes.promote(typeOf(b.right()));
 				emitAs(b.right(), tr);
 				if (tr == long.class) cb.l2i();
@@ -838,12 +1193,21 @@ public class BytecodeWriter {
 			}
 		}
 		var operand = t == boolean.class ? boolean.class : t;
-		emitAs(b.left(), operand);
+		emitLeft(b.left(), operand, leftOnStack);
 		emitAs(b.right(), operand);
 		var k = kind(t);
 		if (k == TypeKind.BOOLEAN) k = TypeKind.INT;
 		cb.with(OperatorInstruction.of(arithmetic(b.op(), k)));
 		return t;
+	}
+
+	private void emitLeft(JExpr left, Class<?> target, boolean onStack) {
+		if (!onStack) {
+			emitAs(left, target);
+			return;
+		}
+		var stat = typeOf(left);
+		convert(stat, stat, target);
 	}
 
 	private static Opcode arithmetic(String op, TypeKind k) {
@@ -978,29 +1342,74 @@ public class BytecodeWriter {
 			emitAs(e, returnType);
 			cb.return_(kind(returnType));
 		}
-		alive = false;
+		method.alive = false;
 	}
 
 
 	// ---- Conversions LeekScript, portées de JavaWriter (mêmes noms, même Java) ----
 
+	// Talons des classes générées (`u_X` → AI_N$u_X), pour typer comme javac
+	private java.util.Map<String, Class<?>> stubs = java.util.Map.of();
+
+	public void setStubs(java.util.Map<String, Class<?>> stubs) {
+		this.stubs = stubs;
+	}
+
+	/** La classe d'un nom de type écrit par JavaWriter : talon d'une classe générée, sinon classe du runtime. */
+	public Class<?> typeNamed(String name) {
+		var stub = stubs.get(name);
+		return stub != null ? stub : runtimeType(name);
+	}
+
+	/**
+	 * Une classe du runtime par son nom simple, comme javac le résout dans la classe de l'IA : une
+	 * classe membre héritée (NativeObjectLeekValue d'AI) passe avant les imports.
+	 */
+	public Class<?> runtimeType(String name) {
+		if (!name.contains(".") && !name.contains("<")) {
+			for (var c = aiContext.members; c != null; c = c.getSuperclass()) {
+				for (var member : c.getDeclaredClasses()) {
+					if (member.getSimpleName().equals(name) && (Modifier.isPublic(member.getModifiers()) || Modifier.isProtected(member.getModifiers()))) return member;
+				}
+			}
+		}
+		return JTypes.forName(name);
+	}
+
 	/** Classe Java du type LeekScript, telle que JavaWriter l'écrit (getJavaPrimitiveName). */
 	public Class<?> primitiveClass(Type type) {
-		return JTypes.forName(type.getJavaPrimitiveName(version));
+		return typeNamed(type.getJavaPrimitiveName(version));
 	}
 
 	/** Classe Java boxée du type LeekScript (getJavaName). */
 	public Class<?> javaClass(Type type) {
-		return JTypes.forName(type.getJavaName(version));
+		return typeNamed(type.getJavaName(version));
 	}
 
 	private static Type codegenType(Expression expression) {
 		return expression.hasObjectJavaResult() ? Type.ANY : expression.getType();
 	}
 
-	/** L'IA, telle que JavaWriter.getAIThis() la désigne. */
+	/** L'IA, telle que JavaWriter.getAIThis() la désigne (`AI_N.this`). */
 	public JExpr aiThis() {
-		return new JExpr.This();
+		return context == aiContext ? new JExpr.This() : new JExpr.Outer(aiContext);
+	}
+
+	/** Charge l'instance de `target`, la classe en cours ou une classe qui l'englobe (`this$0`…). */
+	private void loadInstance(ClassContext target) {
+		cb.aload(0);
+		for (var c = context; c != target; c = c.outer) {
+			if (c.outer == null) throw new Unsupported("instance englobante introuvable");
+			cb.getfield(c.desc, "this$0", c.outer.desc);
+		}
+	}
+
+	/** La classe englobante (ou courante) où Java trouve la méthode `name` appelée sans receveur. */
+	private ClassContext methodScope(String name) {
+		for (var c = context; c != null; c = c.outer) {
+			if (Resolver.hasMethod(c.members, name)) return c;
+		}
+		throw new Unsupported("méthode inconnue " + name);
 	}
 
 	public List<JExpr> exprs(MainLeekBlock mainblock, List<? extends Expression> list) {
@@ -1022,14 +1431,15 @@ public class BytecodeWriter {
 
 	public JExpr getString(MainLeekBlock mainblock, Expression expression) {
 		if (codegenType(expression) == Type.STRING) return expr(mainblock, expression);
-		if (mainblock.getWordCompiler().getCurrentClass() != null) throw new Unsupported("string() dans une classe");
+		// Dans une classe, `string(` nu viserait celle de NativeObjectLeekValue : celle de l'IA
+		if (mainblock.getWordCompiler().getCurrentClass() != null) return new JExpr.Call(aiThis(), "string", List.of(expr(mainblock, expression)));
 		return JExpr.call("string", expr(mainblock, expression));
 	}
 
 	/** La classe courante passée aux accès dynamiques (getCurrentClassVariable) : null hors d'une classe. */
 	public JExpr classVariable(MainLeekBlock mainblock) {
-		if (mainblock.getWordCompiler().getCurrentClass() != null) throw new Unsupported("classe courante");
-		return JExpr.nul();
+		var name = mainblock.getWordCompiler().getCurrentClassVariable();
+		return name == null ? JExpr.nul() : new JExpr.Read(fieldNamed(name));
 	}
 
 	/**
@@ -1063,7 +1473,7 @@ public class BytecodeWriter {
 	/** openCastObject : `realBox(x)` vers Double, un cast sinon. */
 	public JExpr castObject(String javaType, JExpr e) {
 		if (javaType.equals("Double")) return JExpr.call("realBox", e);
-		return new JExpr.Cast(JTypes.forName(javaType), e);
+		return new JExpr.Cast(typeNamed(javaType), e);
 	}
 
 	public JExpr getInt(MainLeekBlock mainblock, Expression expression) {
@@ -1203,7 +1613,7 @@ public class BytecodeWriter {
 			case "new BigIntegerValue(PROBE.this, 0)": return new JExpr.New(leekscript.runner.values.BigIntegerValue.class, List.of(aiThis(), JExpr.of(0)));
 		}
 		var m = NEW_DEFAULT.matcher(java);
-		if (m.matches()) return new JExpr.New(JTypes.forName(m.group(1)), List.of(aiThis()));
+		if (m.matches()) return new JExpr.New(typeNamed(m.group(1)), List.of(aiThis()));
 		throw new Unsupported("valeur par défaut " + java);
 	}
 
