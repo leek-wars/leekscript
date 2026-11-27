@@ -26,9 +26,8 @@ public final class NumberSyntax {
 		int i = 0;
 		long limit = -max;
 		char first = s.charAt(0);
-		if (first < '0') {
+		if (first == '-' || first == '+') {
 			if (first == '-') limit = min;
-			else if (first != '+') return false;
 			if (length == 1) return false;
 			i++;
 		}

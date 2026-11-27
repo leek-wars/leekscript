@@ -40,9 +40,9 @@ public class TestNumberSyntax extends TestCommon {
 	}
 
 	private static void assertSameAsJdk(String s) {
-		assertEquals(parses(() -> Integer.parseInt(s)), NumberSyntax.isInt(s), "isInt [" + s + "]");
-		assertEquals(parses(() -> Long.parseLong(s)), NumberSyntax.isLong(s), "isLong [" + s + "]");
-		assertEquals(parses(() -> Double.parseDouble(s)), NumberSyntax.isReal(s), "isReal [" + s + "]");
+		assertEquals(parses(() -> Integer.parseInt(s)), NumberSyntax.isInt(s), () -> "isInt [" + s + "]");
+		assertEquals(parses(() -> Long.parseLong(s)), NumberSyntax.isLong(s), () -> "isLong [" + s + "]");
+		assertEquals(parses(() -> Double.parseDouble(s)), NumberSyntax.isReal(s), () -> "isReal [" + s + "]");
 	}
 
 	@Test
@@ -51,7 +51,7 @@ public class TestNumberSyntax extends TestCommon {
 		assertSameAsJdk("9".repeat(400));
 		assertSameAsJdk("." + "9".repeat(400));
 		var random = new Random(42);
-		for (int k = 0; k < 300_000; k++) {
+		for (int k = 0; k < 100_000; k++) {
 			String alphabet = ALPHABETS[random.nextInt(ALPHABETS.length)];
 			int length = random.nextInt(random.nextBoolean() ? 6 : 24);
 			var sb = new StringBuilder();

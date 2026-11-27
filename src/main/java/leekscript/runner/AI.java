@@ -1312,7 +1312,7 @@ public abstract class AI {
 			if (s.equals("false")) return 0;
 			if (s.isEmpty()) return 0;
 			ops(s.length());
-			if (!NumberSyntax.isInt(s)) return (int) s.length();
+			if (!NumberSyntax.isInt(s)) return s.length();
 			try {
 				return Integer.parseInt(s);
 			} catch (Exception e) {
@@ -1384,7 +1384,7 @@ public abstract class AI {
 			if (s.equals("false")) return 0;
 			if (s.isEmpty()) return 0;
 			ops(s.length());
-			if (!NumberSyntax.isLong(s)) return (long) s.length();
+			if (!NumberSyntax.isLong(s)) return s.length();
 			try {
 				return Long.parseLong(s);
 			} catch (Exception e) {
