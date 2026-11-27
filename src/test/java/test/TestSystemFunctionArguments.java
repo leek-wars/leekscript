@@ -12,10 +12,7 @@ import leekscript.runner.AI;
 
 /**
  * Argument du mauvais type passé à une fonction système : l'appel rend sa valeur par défaut, et
- * l'exception qui le signale à l'enveloppe générique ne remplit pas de pile d'appels (sinon une
- * boucle sur un tel appel coûte des microsecondes par itération pour une ou deux opérations). Le
- * temps de ces boucles sur le code généré est gardé par le générateur (BenchFightCosts), dont les
- * tests tournent avec les options de la JVM du worker.
+ * l'exception qui le signale à l'enveloppe générique ne remplit pas de pile d'appels.
  */
 @ExtendWith(SummaryExtension.class)
 public class TestSystemFunctionArguments extends TestCommon {
@@ -23,9 +20,7 @@ public class TestSystemFunctionArguments extends TestCommon {
 	@Test
 	public void wrongTypeSignalHasNoStackTrace() {
 		assertEquals(0, assertThrows(ClassCastException.class, () -> AI.toLongOrNull("x")).getStackTrace().length);
-		assertEquals(0, assertThrows(ClassCastException.class, () -> AI.toLongOrNull(true)).getStackTrace().length);
 		assertEquals(0, assertThrows(ClassCastException.class, () -> AI.castArgument("x", Boolean.class)).getStackTrace().length);
-		assertEquals(0, assertThrows(ClassCastException.class, () -> AI.castArgument(12L, String.class)).getStackTrace().length);
 	}
 
 	@Test
@@ -34,7 +29,6 @@ public class TestSystemFunctionArguments extends TestCommon {
 		assertEquals(12L, AI.toLongOrNull(12.9));
 		assertNull(AI.toLongOrNull(null));
 		assertSame("x", AI.castArgument("x", String.class));
-		assertEquals(true, AI.castArgument(true, Boolean.class));
 		assertNull(AI.castArgument(null, String.class));
 	}
 

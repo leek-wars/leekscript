@@ -1141,17 +1141,13 @@ public class JavaWriter {
 				for (var t : ct.getTypes()) {
 					if (t != Type.NULL) {
 						if (t == Type.INT) return "toLongOrNull(" + v + ")";
-						if (t == Type.BOOL) return "castArgument(" + v + ", Boolean.class)";
-						if (t == Type.STRING) return "castArgument(" + v + ", String.class)";
 					}
 				}
 			}
 		}
-		// Une classe : castArgument, dont l'échec ne remplit pas de pile (un cast Java raté en remplit
-		// une à chaque appel, des microsecondes). Tout le reste (Object, type primitif ou paramétré) :
-		// cast seul.
+		// Une classe simple : castArgument, dont l'échec ne remplit pas de pile (cf AI.DEFAULT_VALUE)
 		var javaName = type.getJavaName(version);
-		if (!javaName.equals("Object") && Character.isUpperCase(javaName.charAt(0)) && javaName.chars().allMatch(Character::isJavaIdentifierPart)) {
+		if (!javaName.equals("Object") && javaName.matches("[A-Z]\\w*")) {
 			return "castArgument(" + v + ", " + javaName + ".class)";
 		}
 		return "(" + javaName + ") (" + v + ")";

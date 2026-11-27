@@ -1976,8 +1976,8 @@ public abstract class AI {
 		throw DEFAULT_VALUE;
 	}
 
-	// Signal « valeur par défaut » pour l'enveloppe générique : préallouée, sans pile d'appels (une
-	// pile remplie à chaque argument du mauvais type coûterait des microsecondes à l'appel)
+	// Signal « valeur par défaut » pour l'enveloppe générique, qui le rattrape toujours : préalloué,
+	// sans pile d'appels (la remplir à chaque argument du mauvais type coûterait des microsecondes)
 	private static final ClassCastException DEFAULT_VALUE = new ClassCastException() {
 		@Override
 		public synchronized Throwable fillInStackTrace() { return this; }
@@ -1992,8 +1992,7 @@ public abstract class AI {
 
 	/**
 	 * Argument integer|null d'une fonction système : un réel ou un big_integer est tronqué,
-	 * null reste null. Tout autre type lève ClassCastException (sans pile d'appels), et l'appel
-	 * rend sa valeur par défaut.
+	 * null reste null. Tout autre type lève DEFAULT_VALUE, et l'appel rend sa valeur par défaut.
 	 */
 	public static Long toLongOrNull(Object value) {
 		if (value == null || value instanceof Long) return (Long) value;
@@ -2004,8 +2003,7 @@ public abstract class AI {
 
 	/**
 	 * Argument d'une fonction système appelée par son enveloppe générique : la valeur si elle est
-	 * null ou du type attendu. Tout autre type lève ClassCastException, et l'appel rend sa valeur
-	 * par défaut, comme le cast seul, mais sans la pile d'appels que la JVM remplirait.
+	 * null ou du type attendu, comme un cast. Tout autre type lève DEFAULT_VALUE.
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T castArgument(Object value, Class<T> type) {
