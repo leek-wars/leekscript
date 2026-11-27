@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.LongAdder;
 import leekscript.compiler.AIFile;
 import leekscript.compiler.Options;
 import leekscript.compiler.bloc.MainLeekBlock;
-import leekscript.runner.Session;
 
 /**
  * Backend bytecode : la classe de l'IA écrite directement avec l'API Class-File du JDK, sans
@@ -92,18 +91,18 @@ public final class BytecodeBackend {
 			clb.withFlags(AccessFlag.PUBLIC, AccessFlag.SUPER);
 			clb.withSuperclass(rootDesc);
 
-			clb.withMethodBody(ConstantDescs.INIT_NAME, MethodTypeDesc.of(ConstantDescs.CD_void), ClassFile.ACC_PUBLIC, cb -> {
+			writer.setClassBuilder(clb);
+			// Champs, fonctions et runIA de l'IA
+			main.writeBytecode(writer, options);
+
+			// Le constructeur : super(instructions, version), puis les initialiseurs des champs
+			writer.writeMethod(ConstantDescs.INIT_NAME, ClassFile.ACC_PUBLIC, List.of(), void.class, () -> {
+				var cb = writer.code();
 				cb.aload(0);
 				cb.loadConstant(main.getInstructionCount());
 				cb.loadConstant(version);
 				cb.invokespecial(rootDesc, ConstantDescs.INIT_NAME, MethodTypeDesc.of(ConstantDescs.CD_void, ConstantDescs.CD_int, ConstantDescs.CD_int));
-				cb.return_();
-			});
-
-			clb.withMethodBody("runIA", MethodTypeDesc.of(ConstantDescs.CD_Object, JTypes.desc(Session.class)), ClassFile.ACC_PUBLIC, cb -> {
-				writer.begin(cb, 2, Object.class);
-				main.writeBytecode(writer, options);
-				if (writer.isAlive()) throw new Unsupported("fin de runIA atteignable");
+				for (var initializer : writer.getFieldInitializers()) writer.emitStatement(initializer);
 			});
 
 			GenericFunctions.write(clb, writer);

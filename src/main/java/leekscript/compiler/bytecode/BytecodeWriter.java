@@ -34,8 +34,17 @@ import leekscript.compiler.expression.Expression;
  */
 public class BytecodeWriter {
 
+	/** Une variable du Java : locale de la méthode ou champ de la classe générée. */
+	public sealed interface Slot permits LocalVar, FieldVar {
+		Class<?> type();
+		String name();
+	}
+
 	/** Variable locale : son emplacement, son type Java et son nom LeekScript (pour le débogage). */
-	public record LocalVar(int slot, Class<?> type, String name) {}
+	public record LocalVar(int slot, Class<?> type, String name) implements Slot {}
+
+	/** Champ d'instance de la classe générée (globale…). */
+	public record FieldVar(String name, Class<?> type) implements Slot {}
 
 	public final Options options;
 	public final int version;
@@ -76,6 +85,54 @@ public class BytecodeWriter {
 
 	public boolean isOperationsEnabled() {
 		return options.enableOperations();
+	}
+
+	private java.lang.classfile.ClassBuilder classBuilder;
+
+	public void setClassBuilder(java.lang.classfile.ClassBuilder classBuilder) {
+		this.classBuilder = classBuilder;
+	}
+
+	/**
+	 * Écrit une méthode d'instance de la classe générée : `body` émet son code (les paramètres
+	 * occupent les emplacements qui suivent `this`). Une fin de méthode atteignable lève
+	 * Unsupported, comme javac refuserait une méthode sans return.
+	 */
+	public void writeMethod(String name, int flags, List<Class<?>> parameters, Class<?> returnType, Runnable body) {
+		var descs = new ClassDesc[parameters.size()];
+		int slot = 1;
+		for (int i = 0; i < descs.length; i++) {
+			descs[i] = JTypes.desc(parameters.get(i));
+			slot += kind(parameters.get(i)).slotSize();
+		}
+		int firstSlot = slot;
+		classBuilder.withMethodBody(name, MethodTypeDesc.of(JTypes.desc(returnType), descs), flags, code -> {
+			begin(code, firstSlot, returnType);
+			body.run();
+			if (alive) {
+				if (returnType != void.class) throw new Unsupported("fin de " + name + " atteignable");
+				code.return_();
+			}
+		});
+	}
+
+	/** Emplacement du paramètre `index` (0 = premier après this) d'une méthode de paramètres `parameters`. */
+	public static int parameterSlot(List<Class<?>> parameters, int index) {
+		int slot = 1;
+		for (int i = 0; i < index; i++) slot += kind(parameters.get(i)).slotSize();
+		return slot;
+	}
+
+	/** Une variable LeekScript lue directement dans un emplacement existant (paramètre). */
+	public LocalVar alias(Object declaration, int slot, Class<?> type, String name) {
+		var v = new LocalVar(slot, type, name);
+		locals.put(declaration, v);
+		return v;
+	}
+
+	/** Repère de ligne sans ligne LeekScript : le code qui suit n'est rattaché à aucune (cadre ignoré). */
+	public void noLine() {
+		cb.lineNumber(nextLine++);
 	}
 
 	/** Début d'une méthode : `firstSlot` = premier emplacement libre après this et les paramètres. */
@@ -166,6 +223,33 @@ public class BytecodeWriter {
 		return v;
 	}
 
+	private final java.util.HashMap<String, FieldVar> fields = new java.util.HashMap<>();
+
+	/** Déclare un champ d'instance de la classe générée. */
+	public FieldVar field(String name, Class<?> type, int flags) {
+		var f = new FieldVar(name, type);
+		if (fields.putIfAbsent(name, f) != null) throw new Unsupported("champ en double " + name);
+		classBuilder.withField(name, JTypes.desc(type), flags);
+		return f;
+	}
+
+	// Initialiseurs des champs (`T g_x = <défaut>;`), exécutés par le constructeur après super()
+	private final ArrayList<JExpr> fieldInitializers = new ArrayList<>();
+
+	public void initializeField(FieldVar field, JExpr value) {
+		fieldInitializers.add(new JExpr.Assign(field, value));
+	}
+
+	public List<JExpr> getFieldInitializers() {
+		return fieldInitializers;
+	}
+
+	public FieldVar field(String name) {
+		var f = fields.get(name);
+		if (f == null) throw new Unsupported("champ inconnu " + name);
+		return f;
+	}
+
 	public LocalVar local(Object declaration) {
 		var v = locals.get(declaration);
 		if (v == null) throw new Unsupported("variable locale inconnue");
@@ -243,7 +327,7 @@ public class BytecodeWriter {
 	private Class<?> computeType(JExpr e) {
 		return switch (e) {
 			case JExpr.Lit l -> l.type();
-			case JExpr.Local l -> l.var().type();
+			case JExpr.Read l -> l.var().type();
 			case JExpr.This t -> thisClass;
 			case JExpr.Call c -> resolve(c).returnType();
 			case JExpr.StaticCall c -> resolve(c).returnType();
@@ -257,14 +341,14 @@ public class BytecodeWriter {
 			case JExpr.New n -> n.type();
 			case JExpr.NewArray n -> n.component().arrayType();
 			case JExpr.Cast c -> c.type();
-			case JExpr.AssignLocal a -> a.var().type();
-			case JExpr.CompoundLocal a -> {
+			case JExpr.Assign a -> a.var().type();
+			case JExpr.Compound a -> {
 				var t = a.var().type();
-				var op = binaryType(new JExpr.Binary(a.op(), new JExpr.Local(a.var()), a.value()));
+				var op = binaryType(new JExpr.Binary(a.op(), new JExpr.Read(a.var()), a.value()));
 				if (!t.isPrimitive() || op == boolean.class && t != boolean.class) throw new Unsupported("composée sur " + t);
 				yield t;
 			}
-			case JExpr.IncLocal i -> {
+			case JExpr.Inc i -> {
 				if (JTypes.numeric(i.var().type()) == null || !i.var().type().isPrimitive()) throw new Unsupported("++ sur " + i.var().type());
 				yield i.var().type();
 			}
@@ -377,8 +461,8 @@ public class BytecodeWriter {
 				else cb.loadConstant((java.lang.constant.ConstantDesc) l.value());
 				return l.type();
 			}
-			case JExpr.Local l -> {
-				cb.loadLocal(kind(l.var().type()), l.var().slot());
+			case JExpr.Read l -> {
+				load(l.var());
 				return l.var().type();
 			}
 			case JExpr.This t -> {
@@ -461,19 +545,19 @@ public class BytecodeWriter {
 				emitCast(c);
 				return c.type();
 			}
-			case JExpr.AssignLocal a -> {
+			case JExpr.Assign a -> {
+				storePrepare(a.var());
 				emitAs(a.value(), a.var().type());
-				var k = kind(a.var().type());
-				if (k.slotSize() == 2) cb.dup2(); else cb.dup();
-				cb.storeLocal(k, a.var().slot());
+				store(a.var(), true);
 				return a.var().type();
 			}
-			case JExpr.CompoundLocal a -> {
+			case JExpr.Compound a -> {
+				storePrepare(a.var());
 				compound(a);
-				dupStore(a.var());
+				store(a.var(), true);
 				return a.var().type();
 			}
-			case JExpr.IncLocal i -> {
+			case JExpr.Inc i -> {
 				return increment(i, true);
 			}
 			case JExpr.Unary u -> {
@@ -507,39 +591,68 @@ public class BytecodeWriter {
 		}
 	}
 
-	private void dupStore(LocalVar v) {
+	private void load(Slot v) {
+		switch (v) {
+			case LocalVar l -> cb.loadLocal(kind(l.type()), l.slot());
+			case FieldVar f -> {
+				cb.aload(0);
+				cb.getfield(thisDesc, f.name(), JTypes.desc(f.type()));
+			}
+		}
+	}
+
+	/** Avant la valeur d'une écriture : le receveur d'un champ. */
+	private void storePrepare(Slot v) {
+		if (v instanceof FieldVar) cb.aload(0);
+	}
+
+	/** Range la valeur du sommet de pile ; `keep` : elle y reste aussi, valeur de l'expression. */
+	private void store(Slot v, boolean keep) {
 		var k = kind(v.type());
-		if (k.slotSize() == 2) cb.dup2(); else cb.dup();
-		cb.storeLocal(k, v.slot());
+		switch (v) {
+			case LocalVar l -> {
+				if (keep) { if (k.slotSize() == 2) cb.dup2(); else cb.dup(); }
+				cb.storeLocal(k, l.slot());
+			}
+			case FieldVar f -> {
+				if (keep) { if (k.slotSize() == 2) cb.dup2_x1(); else cb.dup_x1(); }
+				cb.putfield(thisDesc, f.name(), JTypes.desc(f.type()));
+			}
+		}
 	}
 
 	/** Laisse `(T) (x op e)` sur la pile. */
-	private void compound(JExpr.CompoundLocal a) {
+	private void compound(JExpr.Compound a) {
 		var v = a.var();
-		var binary = new JExpr.Binary(a.op(), new JExpr.Local(v), a.value());
+		var binary = new JExpr.Binary(a.op(), new JExpr.Read(v), a.value());
 		var t = emitBinary(binary);
 		if (t != v.type()) primitiveConversion(t, v.type());
 	}
 
 	/** `x++` & co ; `used` : la valeur de l'expression reste sur la pile. */
-	private Class<?> increment(JExpr.IncLocal i, boolean used) {
+	private Class<?> increment(JExpr.Inc i, boolean used) {
 		var v = i.var();
 		var k = kind(v.type());
-		if (k == TypeKind.INT) {
-			if (used && !i.prefix()) cb.iload(v.slot());
-			cb.iinc(v.slot(), i.increment() ? 1 : -1);
-			if (used && i.prefix()) cb.iload(v.slot());
+		if (k == TypeKind.INT && v instanceof LocalVar l) {
+			if (used && !i.prefix()) cb.iload(l.slot());
+			cb.iinc(l.slot(), i.increment() ? 1 : -1);
+			if (used && i.prefix()) cb.iload(l.slot());
 			return v.type();
 		}
-		cb.loadLocal(k, v.slot());
-		if (used && !i.prefix()) { if (k.slotSize() == 2) cb.dup2(); else cb.dup(); }
+		storePrepare(v);
+		load(v);
+		if (used && !i.prefix()) {
+			// L'ancienne valeur, sous le receveur d'un champ
+			if (v instanceof FieldVar) { if (k.slotSize() == 2) cb.dup2_x1(); else cb.dup_x1(); }
+			else { if (k.slotSize() == 2) cb.dup2(); else cb.dup(); }
+		}
 		switch (k) {
 			case LONG -> { cb.lconst_1(); if (i.increment()) cb.ladd(); else cb.lsub(); }
 			case DOUBLE -> { cb.dconst_1(); if (i.increment()) cb.dadd(); else cb.dsub(); }
+			case INT -> { cb.iconst_1(); if (i.increment()) cb.iadd(); else cb.isub(); }
 			default -> throw new Unsupported("++ sur " + v.type());
 		}
-		if (used && i.prefix()) { if (k.slotSize() == 2) cb.dup2(); else cb.dup(); }
-		cb.storeLocal(k, v.slot());
+		store(v, used && i.prefix());
 		return v.type();
 	}
 
@@ -592,19 +705,21 @@ public class BytecodeWriter {
 	/** Émet `e` comme une instruction : sa valeur, s'il en a une, est dépilée (ou jamais calculée, comme javac). */
 	public void emitStatement(JExpr e) {
 		switch (e) {
-			case JExpr.AssignLocal a -> {
+			case JExpr.Assign a -> {
 				typeOf(e);
+				storePrepare(a.var());
 				emitAs(a.value(), a.var().type());
-				cb.storeLocal(kind(a.var().type()), a.var().slot());
+				store(a.var(), false);
 				return;
 			}
-			case JExpr.CompoundLocal a -> {
+			case JExpr.Compound a -> {
 				typeOf(e);
+				storePrepare(a.var());
 				compound(a);
-				cb.storeLocal(kind(a.var().type()), a.var().slot());
+				store(a.var(), false);
 				return;
 			}
-			case JExpr.IncLocal i -> {
+			case JExpr.Inc i -> {
 				typeOf(e);
 				increment(i, false);
 				return;
@@ -941,6 +1056,15 @@ public class BytecodeWriter {
 		var t = e.getType();
 		if (t == Type.NULL || t == Type.BOOL || t.isNumber() || t == Type.STRING || t.isArray()) return expr(mainblock, e);
 		return JExpr.call("load", expr(mainblock, e));
+	}
+
+	/** compileDefaultValue : la valeur par défaut d'un paramètre ; `null` reste null, casté pour être typé. */
+	public JExpr compileDefaultValue(MainLeekBlock mainblock, int index, Expression value, Type type) {
+		if (value.getType() == Type.NULL) {
+			var e = expr(mainblock, value);
+			return type != Type.ANY && !type.isPrimitive() ? new JExpr.Cast(primitiveClass(type), e) : e;
+		}
+		return compileConvertTyped(mainblock, index, value, type);
 	}
 
 	public JExpr compileConvert(MainLeekBlock mainblock, int index, Expression value, Type type) {

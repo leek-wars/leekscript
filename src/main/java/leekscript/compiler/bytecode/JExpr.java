@@ -13,8 +13,8 @@ public sealed interface JExpr {
 	/** Littéral : Long/Double/Integer/Boolean/String, ou null (type {@link JTypes.Null}). */
 	record Lit(Object value, Class<?> type) implements JExpr {}
 
-	/** Variable locale de la méthode en cours. */
-	record Local(BytecodeWriter.LocalVar var) implements JExpr {}
+	/** Lecture d'une variable : locale de la méthode, ou champ de la classe générée. */
+	record Read(BytecodeWriter.Slot var) implements JExpr {}
 
 	/** `this` : l'instance de l'IA. */
 	record This() implements JExpr {}
@@ -53,13 +53,13 @@ public sealed interface JExpr {
 	record Unary(String op, JExpr expr) implements JExpr {}
 
 	/** Affectation `x = e`, de valeur la valeur affectée. */
-	record AssignLocal(BytecodeWriter.LocalVar var, JExpr value) implements JExpr {}
+	record Assign(BytecodeWriter.Slot var, JExpr value) implements JExpr {}
 
 	/** Affectation composée native `x op= e` : `x = (T) (x op e)` (JLS 15.26.2). */
-	record CompoundLocal(BytecodeWriter.LocalVar var, String op, JExpr value) implements JExpr {}
+	record Compound(BytecodeWriter.Slot var, String op, JExpr value) implements JExpr {}
 
-	/** `x++`, `x--`, `++x`, `--x` sur une variable locale primitive. */
-	record IncLocal(BytecodeWriter.LocalVar var, boolean increment, boolean prefix) implements JExpr {}
+	/** `x++`, `x--`, `++x`, `--x` sur une variable primitive. */
+	record Inc(BytecodeWriter.Slot var, boolean increment, boolean prefix) implements JExpr {}
 
 	/** Ternaire `c ? a : b`. */
 	record Cond(JExpr condition, JExpr then, JExpr otherwise) implements JExpr {}

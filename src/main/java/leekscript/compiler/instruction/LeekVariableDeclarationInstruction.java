@@ -230,7 +230,8 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 
 	@Override
 	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
-		if (this.captured || mainblock.getWordCompiler().getVersion() <= 1) throw new Unsupported("variable capturée ou v1");
+		if (mainblock.getWordCompiler().getVersion() <= 1) throw new Unsupported("variable v1");
+		if (this.captured) throw new Unsupported("variable capturée");
 		writer.line(getLocation());
 		var javaType = writer.primitiveClass(this.type);
 		var castHere = writer.isOperationsEnabled() && this.type != Type.ANY && !this.type.isPrimitive();
@@ -248,7 +249,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 		}
 		// Déclarée après sa valeur : `var x = x` lit l'ancienne variable, comme en Java
 		var local = writer.declare(this, javaType, token.getWord());
-		writer.emitStatement(new JExpr.AssignLocal(local, value));
+		writer.emitStatement(new JExpr.Assign(local, value));
 	}
 
 	@Override

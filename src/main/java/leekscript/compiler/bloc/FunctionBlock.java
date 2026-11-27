@@ -26,6 +26,10 @@ import leekscript.compiler.expression.LeekVariable;
 import leekscript.compiler.expression.LeekVariable.VariableType;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
 import leekscript.runner.CallableVersion;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.Unsupported;
+import java.util.List;
 
 public class FunctionBlock extends AbstractLeekBlock implements Annotatable, TestEntry, leekscript.compiler.TypeParameterScope {
 
@@ -719,6 +723,51 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, Tes
 			writer.addLine("return " + type.returnType().getDefaultValue(writer, mainblock.getVersion()) + ";");
 		}
 		writer.addLine("}");
+	}
+
+
+	/** Les paramètres Java de l'arité `paramCount` (cf writeJavaCodeForArity). */
+	public List<Class<?>> bytecodeParameters(BytecodeWriter writer, int paramCount) {
+		var parameters = new ArrayList<Class<?>>();
+		for (int i = 0; i < paramCount; i++) parameters.add(writer.primitiveClass(mParameterDeclarations.get(i).getType()));
+		return parameters;
+	}
+
+	/** Une méthode `f_<nom>` par arité, et les variantes monomorphisées, pour le backend bytecode. */
+	@Override
+	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (mainblock.getVersion() <= 1) throw new Unsupported("fonction v1");
+		for (int paramCount = minParameters; paramCount <= maxParameters; paramCount++) {
+			writeBytecodeForArity(mainblock, writer, paramCount);
+		}
+		for (var variant : getVariants()) variant.writeBytecode(mainblock, writer);
+	}
+
+	private void writeBytecodeForArity(MainLeekBlock mainblock, BytecodeWriter writer, int paramCount) {
+		var parameters = bytecodeParameters(writer, paramCount);
+		var returnClass = writer.primitiveClass(this.type.returnType());
+		writer.writeMethod("f_" + getInternalName(), java.lang.classfile.ClassFile.ACC_PRIVATE, parameters, returnClass, () -> {
+			writer.line(getLocation());
+			// `var u_x = p_x;` : la variable lit directement l'emplacement du paramètre
+			for (int i = 0; i < paramCount; i++) {
+				var declaration = mParameterDeclarations.get(i);
+				if (declaration.isCaptured() || mReferences.get(i)) throw new Unsupported("paramètre capturé ou par référence");
+				writer.alias(declaration, BytecodeWriter.parameterSlot(parameters, i), parameters.get(i), mParameters.get(i));
+			}
+			// Paramètres absents : leur valeur par défaut (lignes Java sans ligne LeekScript)
+			if (paramCount < maxParameters) writer.noLine();
+			for (int i = paramCount; i < maxParameters; i++) {
+				var declaration = mParameterDeclarations.get(i);
+				if (declaration.isCaptured()) throw new Unsupported("paramètre capturé");
+				var defaultValue = defaultValues.get(i);
+				var local = writer.declare(declaration, writer.primitiveClass(declaration.getType()), mParameters.get(i));
+				writer.emitStatement(new JExpr.Assign(local, writer.compileDefaultValue(mainblock, i, defaultValue, declaration.getType())));
+				writer.counter(defaultValue.operations);
+			}
+			writer.counter(1);
+			writeBlockBytecode(mainblock, writer);
+			if (mEndInstruction == 0 && writer.isAlive()) writer.emitReturn(writer.defaultValue(type.returnType()), returnClass);
+		});
 	}
 
 	/**

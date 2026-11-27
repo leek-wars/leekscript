@@ -1076,7 +1076,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 
 	/**
 	 * Le corps de runIA pour le backend bytecode, s'il sait traiter tout le programme : un
-	 * programme sans fonction, classe, globale, module ni fichier lu, hors console. Lève
+	 * programme sans classe, module ni fichier lu, hors console. Lève
 	 * {@link leekscript.compiler.bytecode.Unsupported} sinon.
 	 */
 	public void writeBytecode(BytecodeWriter writer, Options options) {
@@ -1084,11 +1084,22 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		if (mMainModule != null && mMainModule.getFile().isTestModule()) throw new Unsupported("module de tests");
 		if (mUserClassesList.stream().anyMatch(c -> !c.internal)) throw new Unsupported("classes");
 		if (!mFileContents.isEmpty()) throw new Unsupported("fichiers lus");
-		if (!mGlobalesDeclarations.isEmpty()) throw new Unsupported("globales");
 		if (!mRedefinedFunctions.isEmpty()) throw new Unsupported("fonctions redéfinies");
-		if (!mFunctions.isEmpty()) throw new Unsupported("fonctions");
 		if (options.session() != null) throw new Unsupported("session");
-		writeBlockBytecode(this, writer);
+		if (getVersion() < 2 && !mGlobalesDeclarations.isEmpty()) throw new Unsupported("globales v1");
+		// Globales : un champ chacune (et sa garde d'initialisation si elle est persistante)
+		for (var global : mGlobalesDeclarations) {
+			var field = writer.field("g_" + global.getInternalName(), writer.primitiveClass(global.getType()), java.lang.classfile.ClassFile.ACC_PRIVATE);
+			writer.initializeField(field, writer.defaultValue(global.getType()));
+			if (global.isPersistent()) {
+				var init = writer.field("g_init_" + global.getInternalName(), boolean.class, java.lang.classfile.ClassFile.ACC_PRIVATE);
+				writer.initializeField(init, leekscript.compiler.bytecode.JExpr.of(false));
+			}
+		}
+		for (var function : mFunctions.values()) function.writeBytecode(this, writer);
+		writer.writeMethod("runIA", java.lang.classfile.ClassFile.ACC_PUBLIC, java.util.List.of(leekscript.runner.Session.class), Object.class, () -> {
+			writeBlockBytecode(this, writer);
+		});
 	}
 
 	/** Le nombre d'instructions passé au constructeur de l'IA. */

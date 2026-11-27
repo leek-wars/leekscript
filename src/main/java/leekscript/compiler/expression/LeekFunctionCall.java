@@ -231,6 +231,24 @@ public class LeekFunctionCall extends Expression {
 		}
 	}
 
+	/** `f_<nom>(args)` : appel direct de la fonction utilisateur, arguments convertis vers ses paramètres. */
+	private JExpr bytecodeUserCall(MainLeekBlock mainblock, BytecodeWriter writer, LeekVariable variable) {
+		var user_function = variable.getResolvedFunction(mainblock);
+		if (resolvedOverload != null) user_function = resolvedOverload;
+		if (user_function == null) throw new Unsupported("fonction non résolue");
+		var target = resolvedVariant != null ? resolvedVariant : user_function;
+		var arguments = new ArrayList<JExpr>();
+		for (int i = 0; i < mParameters.size(); i++) {
+			arguments.add(writer.compileConvertTyped(mainblock, i, mParameters.get(i), functionType.getArgument(mParameters.size(), i)));
+		}
+		JExpr call = new JExpr.Self("f_" + target.getInternalName(), target.bytecodeParameters(writer, mParameters.size()),
+			writer.primitiveClass(target.getType().returnType()), arguments);
+		if (user_function.getType().returnType().containsTypeVariable() && this.type != Type.ANY && this.type != Type.VOID) {
+			call = new JExpr.Cast(writer.javaClass(this.type), call);
+		}
+		return call;
+	}
+
 	// ---- Backend bytecode : appels de fonctions système (v4+, surcharge connue à la compilation) ----
 
 	@Override
@@ -248,9 +266,11 @@ public class LeekFunctionCall extends Expression {
 			return JExpr.of(JTypes.javaStringValue(LeekFileContent.javaString(SystemClass.sourcePath(location.getFile().getPath()))));
 		}
 		if (namespaceConstructorClass != null || namespaceUserFunction != null || !(mExpression instanceof LeekVariable variable)
-			|| variable.getVariableType() != VariableType.SYSTEM_FUNCTION || mainblock.isRedefinedFunction(variable.getName())) {
+			|| mainblock.isRedefinedFunction(variable.getName())) {
 			throw new Unsupported("appel de " + mExpression.getClass().getSimpleName());
 		}
+		if (variable.getVariableType() == VariableType.FUNCTION) return bytecodeUserCall(mainblock, writer, variable);
+		if (variable.getVariableType() != VariableType.SYSTEM_FUNCTION) throw new Unsupported("appel de " + variable.getVariableType());
 		boolean generic = unsafe || mainblock.getVersion() <= 3;
 
 		int argCount = callable_versions != null ? callable_versions.get(0).arguments.length : system_function.getVersions()[0].arguments.length;

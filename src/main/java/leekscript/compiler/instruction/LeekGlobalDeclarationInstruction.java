@@ -20,6 +20,10 @@ import leekscript.common.Annotation;
 import leekscript.common.Error;
 
 import java.util.EnumSet;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.Unsupported;
+import java.lang.classfile.Label;
 
 public class LeekGlobalDeclarationInstruction extends LeekInstruction implements leekscript.compiler.Annotatable {
 
@@ -126,6 +130,32 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 		if (persistent) writer.addCode(" g_init_" + name + " = true;");
 		if (mainblock.getWordCompiler().getVersion() >= 2) writer.addCode(" ops(1);");
 		writer.addLine(persistent ? " }" : "", getLocation());
+	}
+
+	@Override
+	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (mainblock.getWordCompiler().getVersion() < 2) throw new Unsupported("globale v1");
+		final String name = getInternalName();
+		writer.line(getLocation());
+		var field = writer.field("g_" + name);
+		Label skip = null;
+		if (persistent) {
+			// if (!g_init_x) { … }
+			skip = writer.newLabel();
+			writer.jump(new JExpr.Read(writer.field("g_init_" + name)), true, skip);
+		}
+		JExpr value;
+		if (mValue != null) {
+			value = writer.compileConvert(mainblock, 0, mValue, variable.getType());
+			if (mValue.getOperations() > 0) value = JExpr.call("ops", value, JExpr.of(mValue.getOperations()));
+			if (variable.getType() != Type.ANY) value = new JExpr.Cast(writer.primitiveClass(variable.getType()), value);
+		} else {
+			value = writer.defaultValue(this.variable.getType());
+		}
+		writer.emitStatement(new JExpr.Assign(field, value));
+		if (persistent) writer.emitStatement(new JExpr.Assign(writer.field("g_init_" + name), JExpr.of(true)));
+		writer.emitStatement(JExpr.call("ops", JExpr.of(1)));
+		if (persistent) writer.bind(skip);
 	}
 
 	@Override

@@ -63,7 +63,7 @@ public final class GenericFunctions {
 			clb.withMethodBody(methodName(versions, key), MethodTypeDesc.of(JTypes.desc(returnClass), params), ClassFile.ACC_PRIVATE, cb -> {
 				writer.begin(cb, 1 + n, returnClass);
 				var a = new ArrayList<JExpr>();
-				for (int i = 0; i < n; i++) a.add(new JExpr.Local(new BytecodeWriter.LocalVar(1 + i, Object.class, "a" + i)));
+				for (int i = 0; i < n; i++) a.add(new JExpr.Read(new BytecodeWriter.LocalVar(1 + i, Object.class, "a" + i)));
 
 				// Versions en conflit : chacune (sauf la première, le repli) testée par instanceof
 				for (int vi = 1; vi < versions.size(); vi++) {
@@ -84,14 +84,14 @@ public final class GenericFunctions {
 					var argument = first.arguments[i];
 					if (argument == Type.ANY || first.keepsNull(i)) continue;
 					var local = writer.declare(new Object(), writer.primitiveClass(argument), "x" + i);
-					x.set(i, new JExpr.Local(local));
+					x.set(i, new JExpr.Read(local));
 					// try { x = convert(a); } catch (ClassCastException e) { return <défaut>; }
 					var start = writer.newLabel();
 					var end = writer.newLabel();
 					var handler = writer.newLabel();
 					var after = writer.newLabel();
 					writer.bind(start);
-					writer.emitStatement(new JExpr.AssignLocal(local, convert(writer, i + 1, a.get(i), argument, version, strict)));
+					writer.emitStatement(new JExpr.Assign(local, convert(writer, i + 1, a.get(i), argument, version, strict)));
 					writer.bind(end);
 					writer.goto_(after);
 					writer.bind(handler);
