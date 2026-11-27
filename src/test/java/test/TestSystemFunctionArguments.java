@@ -13,7 +13,9 @@ import leekscript.runner.AI;
 /**
  * Argument du mauvais type passé à une fonction système : l'appel rend sa valeur par défaut, et
  * l'exception qui le signale à l'enveloppe générique ne remplit pas de pile d'appels (sinon une
- * boucle sur un tel appel coûte des microsecondes par itération pour une ou deux opérations).
+ * boucle sur un tel appel coûte des microsecondes par itération pour une ou deux opérations). Le
+ * temps de ces boucles sur le code généré est gardé par le générateur (BenchFightCosts), dont les
+ * tests tournent avec les options de la JVM du worker.
  */
 @ExtendWith(SummaryExtension.class)
 public class TestSystemFunctionArguments extends TestCommon {
