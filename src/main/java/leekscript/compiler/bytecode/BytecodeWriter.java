@@ -1032,6 +1032,34 @@ public class BytecodeWriter {
 		return JExpr.nul();
 	}
 
+	/**
+	 * Le début d'un foreach : `final var $ar = ops(<conteneur>, n); if (isIterable($ar)) {` ; rend
+	 * l'emplacement de `$ar`, et `end` reçoit le saut quand le conteneur n'est pas itérable.
+	 */
+	public LocalVar foreachContainer(JExpr container, int operations, Label end) {
+		JExpr value = JExpr.call("ops", container, JExpr.of(operations));
+		var ar = declare(new Object(), typeOf(value), "$ar");
+		emitStatement(new JExpr.Assign(ar, value));
+		jump(JExpr.call("isIterable", new JExpr.Read(ar)), false, end);
+		return ar;
+	}
+
+	/** `var $i = iterator($ar);` */
+	public LocalVar foreachIterator(LocalVar ar) {
+		var it = declare(new Object(), java.util.Iterator.class, "$i");
+		emitStatement(new JExpr.Assign(it, JExpr.call("iterator", new JExpr.Read(ar))));
+		return it;
+	}
+
+	/** `while ($i.hasNext()) { var $v = $i.next();` : le test (étiquette `test`) puis l'entrée courante. */
+	public LocalVar foreachNext(LocalVar it, Label test, Label end) {
+		bind(test);
+		jump(new JExpr.Call(new JExpr.Read(it), "hasNext", List.of()), false, end);
+		var v = declare(new Object(), java.util.Map.Entry.class, "$v");
+		emitStatement(new JExpr.Assign(v, new JExpr.Cast(java.util.Map.Entry.class, new JExpr.Call(new JExpr.Read(it), "next", List.of()))));
+		return v;
+	}
+
 	/** openCastObject : `realBox(x)` vers Double, un cast sinon. */
 	public JExpr castObject(String javaType, JExpr e) {
 		if (javaType.equals("Double")) return JExpr.call("realBox", e);
@@ -1105,7 +1133,16 @@ public class BytecodeWriter {
 			return JExpr.call(numberConversion(mainblock, value, "real"), expr(mainblock, value));
 		}
 		if (type == Type.BOOL) return getBoolean(mainblock, value);
-		if (type instanceof CompoundType) throw new Unsupported("conversion vers " + type);
+		// int?, real?
+		if (type instanceof CompoundType ct && ct.getTypes().size() == 2 && ct.containsNull()) {
+			for (var t : ct.getTypes()) {
+				if (t == Type.NULL) continue;
+				if (t == Type.REAL && value.getType() == Type.INT) return new JExpr.Cast(double.class, new JExpr.Cast(long.class, expr(mainblock, value)));
+				if (t == Type.INT && value.getType() == Type.REAL) return new JExpr.Cast(long.class, new JExpr.Cast(double.class, expr(mainblock, value)));
+				if (t == Type.INT) return JExpr.call("longintOrNull", expr(mainblock, value));
+				if (t == Type.REAL) return JExpr.call("realOrNull", expr(mainblock, value));
+			}
+		}
 		if (type != Type.ANY) {
 			var v = expr(mainblock, value);
 			if (!type.isPrimitive()) v = new JExpr.Cast(Object.class, v);

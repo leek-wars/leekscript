@@ -1282,13 +1282,13 @@ public class LeekExpression extends Expression {
 				if (mExpression1.getType() == Type.BOOL || mExpression1.getType().isNumber()) return JExpr.of(false);
 				return new JExpr.Binary("==", writer.expr(mainblock, mExpression1), JExpr.nul());
 			}
-			if (isReferenceComparison()) throw new Unsupported("comparaison de références");
+			if (isReferenceComparison()) return bytecodeReferenceEquality(mainblock, writer, "==");
 			return bytecodeCall(mainblock, writer, "equals_equals");
 		case Operators.NOT_EQUALS_EQUALS:
-			if (isReferenceComparison()) throw new Unsupported("comparaison de références");
+			if (isReferenceComparison()) return bytecodeReferenceEquality(mainblock, writer, "!=");
 			return bytecodeCall(mainblock, writer, "notequals_equals");
 		case Operators.EQUALS:
-			if (isReferenceComparison()) throw new Unsupported("comparaison de références");
+			if (isReferenceComparison()) return bytecodeReferenceEquality(mainblock, writer, "==");
 			if (mainblock.getWordCompiler().getVersion() >= 4) {
 				if (mExpression1.getType() == Type.INT && mExpression2.getType() == Type.INT && !(mExpression1.hasBoxedJavaResult() && mExpression2.hasBoxedJavaResult())) {
 					return new JExpr.Binary("==", writer.getInt(mainblock, mExpression1), writer.getInt(mainblock, mExpression2));
@@ -1301,7 +1301,7 @@ public class LeekExpression extends Expression {
 		case Operators.MOREEQUALS: return bytecodeComparison(mainblock, writer, ">=", "moreequals");
 		case Operators.LESSEQUALS: return bytecodeComparison(mainblock, writer, "<=", "lessequals");
 		case Operators.NOTEQUALS:
-			if (isReferenceComparison()) throw new Unsupported("comparaison de références");
+			if (isReferenceComparison()) return bytecodeReferenceEquality(mainblock, writer, "!=");
 			return bytecodeCall(mainblock, writer, mainblock.getWordCompiler().getVersion() >= 4 ? "notequals_equals" : "neq");
 		case Operators.AND:
 		case Operators.OR: {
@@ -1360,6 +1360,11 @@ public class LeekExpression extends Expression {
 			return writer.compileConvert(mainblock, 0, mExpression2, type);
 		}
 		throw new Unsupported("opérateur " + mOperator);
+	}
+
+	/** writeReferenceEquality : `((Object) a) == b`. */
+	private JExpr bytecodeReferenceEquality(MainLeekBlock mainblock, BytecodeWriter writer, String operator) {
+		return new JExpr.Binary(operator, new JExpr.Cast(Object.class, writer.expr(mainblock, mExpression1)), writer.expr(mainblock, mExpression2));
 	}
 
 	private JExpr bytecodeCall(MainLeekBlock mainblock, BytecodeWriter writer, String method) {

@@ -14,6 +14,11 @@ import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.JTypes;
+import leekscript.compiler.bytecode.Unsupported;
+import java.util.List;
 
 public class ForeachBlock extends AbstractLeekBlock {
 
@@ -234,6 +239,43 @@ public class ForeachBlock extends AbstractLeekBlock {
 		super.writeJavaCode(mainblock, writer, false);
 
 		writer.addLine("}}");
+	}
+
+	@Override
+	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (mainblock.getVersion() < 2) throw new Unsupported("foreach v1");
+		AbstractLeekBlock initialBlock = mainblock.getWordCompiler().getCurrentBlock();
+		mainblock.getWordCompiler().setCurrentBlock(this);
+		if (iteratorVariable == null) throw new Unsupported("itérateur inconnu");
+		var iterJavaType = iteratorVariable.getType().getJavaName(mainblock.getVersion());
+
+		writer.line(mIterator.getLocation());
+		writer.openScope();
+		var end = writer.newLabel();
+		var ar = writer.foreachContainer(writer.expr(mainblock, mArray), mArray.getOperations(), end);
+		BytecodeWriter.Slot iterator;
+		if (mIsDeclaration) {
+			if (declaration.isCaptured() || mainblock.hasGlobal(mIterator.getWord())) throw new Unsupported("itérateur capturé");
+			iterator = writer.declare(declaration, JTypes.forName(declaration.getIteratorJavaName(mainblock.getVersion())), mIterator.getWord());
+			writer.emitStatement(new JExpr.Assign(iterator, JExpr.nul()));
+			writer.counter(1);
+		} else {
+			writer.counter(1);
+			iterator = iteratorVariable.bytecodeIteratorSlot(mainblock, writer);
+		}
+		var it = writer.foreachIterator(ar);
+		var test = writer.newLabel();
+		var entry = writer.foreachNext(it, test, end);
+		writer.emitStatement(new JExpr.Assign(iterator, writer.castObject(iterJavaType, new JExpr.Call(new JExpr.Read(entry), "getValue", List.of()))));
+		writer.counter(1);
+		mainblock.getWordCompiler().setCurrentBlock(initialBlock);
+
+		writer.pushLoop(new BytecodeWriter.Loop(end, test));
+		writeBlockBytecode(mainblock, writer);
+		writer.popLoop();
+		if (writer.isAlive()) writer.goto_(test);
+		writer.bind(end);
+		writer.closeScope();
 	}
 
 	@Override

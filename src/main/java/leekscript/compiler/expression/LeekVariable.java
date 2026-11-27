@@ -834,6 +834,12 @@ public class LeekVariable extends Expression {
 		return writer.local(declaration);
 	}
 
+	/** La variable d'itération d'un foreach, écrite telle quelle (pas de Box). */
+	public BytecodeWriter.Slot bytecodeIteratorSlot(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (isBox()) throw new Unsupported("itérateur en Box");
+		return bytecodeSlot(mainblock, writer);
+	}
+
 	/** Le type vers lequel convertir le résultat d'une opération rangée dans la variable (globalCastType pour une globale). */
 	private Type bytecodeCastType(MainLeekBlock mainblock) {
 		return isBytecodeGlobal(mainblock) ? globalCastType() : this.variableType;

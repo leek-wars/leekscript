@@ -15,6 +15,11 @@ import leekscript.common.Error;
 import leekscript.common.Type;
 import leekscript.common.Type.CastType;
 import leekscript.compiler.instruction.LeekVariableDeclarationInstruction;
+import leekscript.compiler.bytecode.BytecodeWriter;
+import leekscript.compiler.bytecode.JExpr;
+import leekscript.compiler.bytecode.JTypes;
+import leekscript.compiler.bytecode.Unsupported;
+import java.util.List;
 
 public class ForeachKeyBlock extends AbstractLeekBlock {
 
@@ -270,6 +275,61 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 
 		// Fin
 		writer.addLine("}}");
+	}
+
+	@Override
+	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
+		int version = mainblock.getVersion();
+		if (version < 2) throw new Unsupported("foreach v1");
+		AbstractLeekBlock initialBlock = mainblock.getWordCompiler().getCurrentBlock();
+		mainblock.getWordCompiler().setCurrentBlock(this);
+		var iteratorVariable = mainblock.getWordCompiler().getCurrentBlock().getVariable(mIterator.getWord(), false);
+		var iteratorKeyVariable = mainblock.getWordCompiler().getCurrentBlock().getVariable(mKeyIterator.getWord(), false);
+		if (iteratorVariable == null || iteratorKeyVariable == null) throw new Unsupported("itérateur inconnu");
+
+		writer.line(getLocation());
+		writer.openScope();
+		var end = writer.newLabel();
+		var ar = writer.foreachContainer(writer.expr(mainblock, mArray), mArray.getOperations(), end);
+		BytecodeWriter.Slot key;
+		if (mIsKeyDeclaration) {
+			if (iteratorKeyDeclaration.isCaptured() || mainblock.hasGlobal(mKeyIterator.getWord())) throw new Unsupported("itérateur capturé");
+			key = writer.declare(iteratorKeyDeclaration, JTypes.forName(iteratorKeyDeclaration.getIteratorJavaName(version)), mKeyIterator.getWord());
+			writer.emitStatement(new JExpr.Assign(key, JExpr.nul()));
+			writer.counter(1);
+		} else {
+			key = iteratorKeyVariable.bytecodeIteratorSlot(mainblock, writer);
+		}
+		BytecodeWriter.Slot value;
+		if (mIsDeclaration) {
+			if (iteratorDeclaration.isCaptured() || mainblock.hasGlobal(mIterator.getWord())) throw new Unsupported("itérateur capturé");
+			value = writer.declare(iteratorDeclaration, JTypes.forName(iteratorDeclaration.getIteratorJavaName(version)), mIterator.getWord());
+			writer.emitStatement(new JExpr.Assign(value, JExpr.nul()));
+			writer.counter(1);
+		} else {
+			value = iteratorVariable.bytecodeIteratorSlot(mainblock, writer);
+		}
+		var it = writer.foreachIterator(ar);
+		var test = writer.newLabel();
+		var entry = writer.foreachNext(it, test, end);
+		JExpr keyValue = new JExpr.Call(new JExpr.Read(entry), "getKey", List.of());
+		if (version >= 4) {
+			keyValue = writer.castObject(iteratorKeyVariable.getType().getJavaName(version), keyValue);
+		} else if (mIsKeyDeclaration) {
+			keyValue = writer.castObject(iteratorKeyDeclaration.getVariable().getType().getJavaName(version), keyValue);
+		}
+		writer.emitStatement(new JExpr.Assign(key, keyValue));
+		var valueValue = writer.castObject(iteratorVariable.getType().getJavaName(version), new JExpr.Call(new JExpr.Read(entry), "getValue", List.of()));
+		writer.emitStatement(new JExpr.Assign(value, valueValue));
+		mainblock.getWordCompiler().setCurrentBlock(initialBlock);
+		writer.counter(1);
+
+		writer.pushLoop(new BytecodeWriter.Loop(end, test));
+		writeBlockBytecode(mainblock, writer);
+		writer.popLoop();
+		if (writer.isAlive()) writer.goto_(test);
+		writer.bind(end);
+		writer.closeScope();
 	}
 
 	@Override
