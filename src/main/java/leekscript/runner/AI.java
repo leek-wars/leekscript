@@ -1065,15 +1065,15 @@ public abstract class AI {
 				if (s.equals("1") && n == 1) return true;
 				if (x instanceof Double) {
 					try {
-						ops(((String) y).length());
-						return n == Double.parseDouble((String) y);
+						ops(s.length());
+						return NumberSyntax.isReal(s) && n == Double.parseDouble(s);
 					} catch (Exception e) {
 						return false;
 					}
 				} else {
 					try {
-						ops(((String) y).length());
-						return n == Integer.parseInt((String) y);
+						ops(s.length());
+						return NumberSyntax.isInt(s) && n == Integer.parseInt(s);
 					} catch (Exception e) {
 						return false;
 					}
@@ -1135,7 +1135,7 @@ public abstract class AI {
 				if (s.equals("1") && n == 1) return true;
 				try {
 					ops(s.length());
-					return n == Double.parseDouble(s);
+					return NumberSyntax.isReal(s) && n == Double.parseDouble(s);
 				} catch (Exception e) {
 					return false;
 				}
@@ -1312,6 +1312,7 @@ public abstract class AI {
 			if (s.equals("false")) return 0;
 			if (s.isEmpty()) return 0;
 			ops(s.length());
+			if (!NumberSyntax.isInt(s)) return (int) s.length();
 			try {
 				return Integer.parseInt(s);
 			} catch (Exception e) {
@@ -1345,6 +1346,7 @@ public abstract class AI {
 			if (s.equals("false")) return 0l;
 			if (s.isEmpty()) return 0l;
 			ops(s.length());
+			if (!NumberSyntax.isReal(s)) return (long) s.length();
 			try {
 				return Double.parseDouble(s);
 			} catch (Exception e) {
@@ -1382,6 +1384,7 @@ public abstract class AI {
 			if (s.equals("false")) return 0;
 			if (s.isEmpty()) return 0;
 			ops(s.length());
+			if (!NumberSyntax.isLong(s)) return (long) s.length();
 			try {
 				return Long.parseLong(s);
 			} catch (Exception e) {
@@ -1419,6 +1422,7 @@ public abstract class AI {
 			if (s.equals("false")) return 0l;
 			if (s.isEmpty()) return 0l;
 			ops(s.length());
+			if (!NumberSyntax.isReal(s)) return s.length();
 			try {
 				return Double.parseDouble(s);
 			} catch (Exception e) {

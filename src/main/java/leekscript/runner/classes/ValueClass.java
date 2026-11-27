@@ -4,6 +4,7 @@ import leekscript.runner.AI;
 import leekscript.runner.LeekOperations;
 import leekscript.runner.LeekRunException;
 import leekscript.runner.LeekValueManager;
+import leekscript.runner.NumberSyntax;
 
 public class ValueClass {
 
@@ -28,9 +29,9 @@ public class ValueClass {
 			var s = (String) value;
 			try {
 				if (s.contains(".")) {
-					return Double.parseDouble(s);
+					if (NumberSyntax.isReal(s)) return Double.parseDouble(s);
 				} else {
-					return Long.parseLong(s);
+					if (NumberSyntax.isLong(s)) return Long.parseLong(s);
 				}
 			} catch (Exception e) {}
 		}
