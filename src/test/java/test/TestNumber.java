@@ -965,6 +965,9 @@ public class TestNumber extends TestCommon {
 		code("return 155 >>> 3;").equals("19");
 		code("return -155 >>> 3;").equals("2305843009213693932");
 		code("return [-155, ''][0] >>> 3;").equals("2305843009213693932");
+		// Distance de décalage calculée à la compilation (une expression, pas un littéral)
+		code("var x = 5 return x << (2 + 3);").equals("160");
+		code("var x = 4096 return (x >> (2 * 2)) + (x >>> (1 + 1));").equals("1280");
 		code("var a = -155 return a >>>= 4;").equals("1152921504606846966");
 		code("var a = -155 a >>>= 5 return a;").equals("576460752303423483");
 		code("var a = [-155, ''] return a[0] >>>= 5;").equals("576460752303423483");
