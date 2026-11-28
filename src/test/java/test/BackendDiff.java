@@ -50,6 +50,41 @@ final class BackendDiff {
 		}
 	}
 
+	/** Compare les deux backends sur le module de tests `file`, test par test (cf TestRunner.runModule). */
+	static void compareTests(AIFile file, String rootClass) {
+		if (!ENABLED) return;
+		var javaClass = file.getJavaClass();
+		try {
+			BytecodeBackend.override.set(false);
+			var javac = runTests(file, rootClass);
+			BytecodeBackend.override.set(true);
+			var bytecode = runTests(file, rootClass);
+			if (!file.getCompiledCode().isBytecode()) return;
+			compared.incrementAndGet();
+			if (!javac.equals(bytecode)) System.out.println("[DIFF] tests de " + file.getPath() + " : javac " + javac + " / bytecode " + bytecode);
+		} finally {
+			BytecodeBackend.override.remove();
+			file.setJavaClass(javaClass);
+			file.setRootClass(rootClass);
+		}
+	}
+
+	private static java.util.List<String> runTests(AIFile file, String rootClass) {
+		file.setJavaClass("AI_diff" + names.incrementAndGet());
+		file.setRootClass(rootClass);
+		try {
+			var results = leekscript.testing.TestRunner.runModule(file, new Options(LeekScript.MAX_VERSION, false, false, true, null, true));
+			// Tout le résultat d'un test, sauf sa durée ; et ses opérations s'il déborde la pile : la
+			// profondeur atteinte suit la taille des cadres de la JVM, pas le programme
+			return results.stream().map(r -> r.name() + " " + r.status() + " " + r.reason()
+				+ " ops=" + ("STACKOVERFLOW".equals(r.error()) ? "?" : r.operations()) + " asserts=" + r.asserts()
+				+ " " + r.failures() + " " + r.loggedErrors().stream().map(l -> l.file() + ":" + l.line() + " " + l.error() + " " + java.util.Arrays.toString(l.parameters())).toList()
+				+ " " + r.error() + " " + r.logs()).toList();
+		} catch (Exception e) {
+			return java.util.List.of("exception " + e);
+		}
+	}
+
 	private static Execution execute(AIFile file, String rootClass) {
 		// Un nom neuf : ni le cache en mémoire des classes ni celui du disque ne servent
 		file.setJavaClass("AI_diff" + names.incrementAndGet());

@@ -658,14 +658,22 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * `@test`, `@before` et `@after` (JSON, dans l'ordre du fichier) et leur appel par indice. Le lanceur de tests n'a ainsi
 	 * rien à savoir du nom Java d'une fonction.
 	 */
-	private void writeTestTable(JavaWriter writer) {
-		if (mMainModule == null || !mMainModule.getFile().isTestModule()) return;
-		// (nom affiché, appel Java, déclaration), fonctions de premier niveau puis méthodes statiques du module
-		record Row(String name, String call, TestEntry entry) {}
-		var rows = new ArrayList<Row>();
+	private boolean isTestModule() {
+		return mMainModule != null && mMainModule.getFile().isTestModule();
+	}
+
+	/**
+	 * Une entrée de la table des tests : son nom affiché, la méthode Java qui l'appelle (`f_x` d'une
+	 * fonction, `u_X_m_0` d'une méthode statique, sans paramètre), son type de retour et sa déclaration.
+	 */
+	private record TestRow(String name, String method, Type returnType, TestEntry entry) {}
+
+	/** Les fonctions de premier niveau puis les méthodes statiques du module, dans l'ordre du fichier. */
+	private List<TestRow> testRows() {
+		var rows = new ArrayList<TestRow>();
 		for (var function : mFunctions.values()) {
 			if (function.isTestEntry() && !function.isVariant() && (function.getModule() == null || function.getModule() == mMainModule)) {
-				rows.add(new Row(function.getName(), "f_" + function.getInternalName() + "()", function));
+				rows.add(new TestRow(function.getName(), "f_" + function.getInternalName(), function.getType().returnType(), function));
 			}
 		}
 		for (var clazz : mUserClassesList) {
@@ -673,11 +681,29 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			for (var method : clazz.getStaticMethods().entrySet()) {
 				var version = method.getValue().get(0); // sans paramètre, seule forme admise
 				if (version != null && version.block.isTestEntry()) {
-					rows.add(new Row(clazz.getName() + "." + method.getKey(), "u_" + clazz.getStaticMethodName(method.getKey(), 0) + "()", version.block));
+					rows.add(new TestRow(clazz.getName() + "." + method.getKey(), "u_" + clazz.getStaticMethodName(method.getKey(), 0), version.block.getType().returnType(), version.block));
 				}
 			}
 		}
-		rows.sort(Comparator.comparingInt((Row r) -> r.entry().getLocation().getStartLine()).thenComparing(Row::name));
+		rows.sort(Comparator.comparingInt((TestRow r) -> r.entry().getLocation().getStartLine()).thenComparing(TestRow::name));
+		return rows;
+	}
+
+	private void writeTestTable(JavaWriter writer) {
+		if (!isTestModule()) return;
+		var rows = testRows();
+		writer.addLine("public String getTestTable() { return " + LeekFileContent.javaString(testTable(rows)) + "; }");
+		writer.addLine("public void callTestFunction(int index) throws LeekRunException {");
+		writer.addLine("switch (index) {");
+		for (int i = 0; i < rows.size(); i++) {
+			writer.addLine("case " + i + ": " + rows.get(i).method() + "(); break;");
+		}
+		writer.addLine("}");
+		writer.addLine("}");
+	}
+
+	/** La table des tests, en JSON : ce que le lanceur lit de chaque entrée. */
+	private static String testTable(List<TestRow> rows) {
 		var table = Json.createArray();
 		for (var row : rows) {
 			var entry = row.entry();
@@ -697,15 +723,49 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				for (var option : options.entrySet()) optionsNode.putPOJO(option.getKey(), option.getValue());
 			}
 		}
-		// javaString découpe une table qui dépasserait la taille d'une constante Java (un millier de tests)
-		writer.addLine("public String getTestTable() { return " + LeekFileContent.javaString(table.toString()) + "; }");
-		writer.addLine("public void callTestFunction(int index) throws LeekRunException {");
-		writer.addLine("switch (index) {");
-		for (int i = 0; i < rows.size(); i++) {
-			writer.addLine("case " + i + ": " + rows.get(i).call() + "; break;");
-		}
-		writer.addLine("}");
-		writer.addLine("}");
+		// (javaString découpe une table qui dépasserait la taille d'une constante Java : un millier de tests)
+		return table.toString();
+	}
+
+	/** writeTestTable pour le backend bytecode : la table, et `callTestFunction`, un switch sur l'indice. */
+	private void writeTestTableBytecode(BytecodeWriter writer) {
+		if (!isTestModule()) return;
+		var rows = testRows();
+		var table = testTable(rows);
+		var chunks = LeekFileContent.chunks(table);
+		writer.writeMethod("getTestTable", java.lang.classfile.ClassFile.ACC_PUBLIC, java.util.List.of(), String.class, () -> {
+			if (chunks.size() == 1) {
+				writer.emitReturn(leekscript.compiler.bytecode.JExpr.of(table), String.class);
+			} else {
+				var args = new ArrayList<leekscript.compiler.bytecode.JExpr>();
+				args.add(leekscript.compiler.bytecode.JExpr.of(""));
+				for (var chunk : chunks) args.add(leekscript.compiler.bytecode.JExpr.of(chunk));
+				writer.emitReturn(new leekscript.compiler.bytecode.JExpr.StaticCall(String.class, "join", args), String.class);
+			}
+		});
+		writer.writeMethod("callTestFunction", java.lang.classfile.ClassFile.ACC_PUBLIC, java.util.List.of(int.class), void.class, () -> {
+			if (rows.isEmpty()) return;
+			// Ligne sans position LeekScript : l'appel n'est pas une étape de la trace d'une erreur
+			writer.noLine();
+			var cb = writer.code();
+			var end = writer.newLabel();
+			var cases = new ArrayList<java.lang.classfile.instruction.SwitchCase>();
+			var labels = new ArrayList<java.lang.classfile.Label>();
+			for (int i = 0; i < rows.size(); i++) {
+				var label = writer.newLabel();
+				labels.add(label);
+				cases.add(java.lang.classfile.instruction.SwitchCase.of(i, label));
+			}
+			cb.iload(1);
+			cb.tableswitch(0, rows.size() - 1, end, cases);
+			for (int i = 0; i < rows.size(); i++) {
+				var row = rows.get(i);
+				writer.bind(labels.get(i));
+				writer.emitStatement(new leekscript.compiler.bytecode.JExpr.Self(row.method(), java.util.List.of(), writer.primitiveClass(row.returnType()), java.util.List.of()));
+				writer.goto_(end);
+			}
+			writer.bind(end);
+		});
 	}
 
 	public boolean hasUserFunction(String name, boolean use_declarations) {
@@ -1084,7 +1144,6 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		// (une reprise, cf BytecodeWriter.Retry, peut avoir interrompu l'écriture d'une classe)
 		getWordCompiler().setCurrentClass(null);
 		getWordCompiler().setCurrentBlock(null);
-		if (mMainModule != null && mMainModule.getFile().isTestModule()) throw new Unsupported("module de tests");
 		if (!mRedefinedFunctions.isEmpty()) throw new Unsupported("fonctions redéfinies");
 		if (options.session() != null) throw new Unsupported("session");
 		var classes = new ArrayList<ClassDeclarationInstruction>();
@@ -1146,6 +1205,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		for (var function : mFunctions.values()) {
 			if (writer.writerOf(function.getModule()) == writer) function.writeBytecode(this, writer);
 		}
+		writeTestTableBytecode(writer);
 		writer.writeMethod("runIA", java.lang.classfile.ClassFile.ACC_PUBLIC, java.util.List.of(leekscript.runner.Session.class), Object.class, () -> {
 			writeBlockBytecode(this, writer);
 		});

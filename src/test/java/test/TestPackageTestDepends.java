@@ -413,6 +413,7 @@ public class TestPackageTestDepends {
 	}
 
 	private List<TestResult> runTests(String name) throws Exception {
+		BackendDiff.compareTests(file(name), "AI");
 		return TestRunner.runModule(file(name), options());
 	}
 

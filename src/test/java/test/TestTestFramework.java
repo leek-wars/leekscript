@@ -465,6 +465,7 @@ public class TestTestFramework {
 	}
 
 	private List<TestResult> run(String name) throws Exception {
+		BackendDiff.compareTests(file(name), "AI");
 		return TestRunner.runModule(file(name), options());
 	}
 
