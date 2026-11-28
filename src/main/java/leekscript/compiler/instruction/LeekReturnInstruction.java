@@ -202,14 +202,32 @@ public class LeekReturnInstruction extends LeekInstruction {
 
 	@Override
 	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
-		if (optional) throw new Unsupported("return?");
 		writer.line(getLocation());
 		if (expression == null) {
+			// (`return?` nu : `if (true) return null;`, le même bytecode)
 			writer.emitReturn(JExpr.nul(), writer.returnType());
 			return;
 		}
 		var finalExpression = expression.trim();
 		if (finalExpression.getOperations() > 0) writer.emitStatement(JExpr.call("ops", JExpr.of(finalExpression.getOperations())));
+		if (optional) {
+			// `T $ret = <valeur>; if (bool($ret)) return $ret;`
+			var converter = orNullConverter(mainblock, finalExpression.getType());
+			JExpr value;
+			if (converter != null) {
+				var name = converter.substring(0, converter.indexOf('('));
+				value = converter.contains("(0, ") ? JExpr.call(name, JExpr.of(0), writer.expr(mainblock, finalExpression)) : JExpr.call(name, writer.expr(mainblock, finalExpression));
+			} else {
+				value = writer.compileConvertTyped(mainblock, 0, finalExpression, returnType);
+			}
+			var r = writer.declare(new Object(), writer.javaClass(returnType), "$ret");
+			writer.emitStatement(new JExpr.Assign(r, value));
+			var skip = writer.newLabel();
+			writer.jump(JExpr.call("bool", new JExpr.Read(r)), false, skip);
+			writer.emitReturn(new JExpr.Read(r), writer.returnType());
+			writer.bind(skip);
+			return;
+		}
 		if (mainblock.getWordCompiler().getVersion() == 1 && !convertsV1Return(finalExpression)) throw new Unsupported("return v1");
 		writer.emitReturn(writer.compileConvertTyped(mainblock, 0, finalExpression, returnType), writer.returnType());
 	}
