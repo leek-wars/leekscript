@@ -39,9 +39,12 @@ public final class BytecodeBackend {
 		return MODE.equals("true") || MODE.equals("check");
 	}
 
-	/** Hiérarchie des classes du runtime (AI, valeurs…), lue une fois pour toutes les compilations. */
+	/**
+	 * Hiérarchie des classes du runtime (AI, valeurs…), lue une fois pour toutes les compilations.
+	 * Son cache est partagé par les compilations parallèles : `cached()` seul le tiendrait dans une HashMap.
+	 */
 	private static final ClassHierarchyResolver RUNTIME_HIERARCHY = ClassHierarchyResolver.defaultResolver()
-		.orElse(ClassHierarchyResolver.ofClassLoading(BytecodeBackend.class.getClassLoader())).cached();
+		.orElse(ClassHierarchyResolver.ofClassLoading(BytecodeBackend.class.getClassLoader())).cached(ConcurrentHashMap::new);
 
 	/** Les classes compilées et le fichier `.lines` qui relie leurs lignes au LeekScript. */
 	/** `loader` : les classes déjà définies et vérifiées par la JVM, à réutiliser (null en mode check). */
