@@ -244,6 +244,19 @@ public class TestAnnotations extends TestCommon {
 			return new Dog().self().bark();
 			""").equals("\"woof\"");
 
+		// Appelée par le type du parent, la redéfinition covariante reste celle de l'enfant
+		code_v4_("""
+			class Animal {
+				Animal who() { return null; }
+			}
+			class Dog extends Animal {
+				@override
+				Dog who() { return this; }
+			}
+			Animal a = new Dog();
+			return a.who() != null;
+			""").equals("true");
+
 		// Covariance is limited to class types, like Java: a primitive return type
 		// cannot be narrowed (Java forbids real → integer covariant returns too).
 		code_v4_("""

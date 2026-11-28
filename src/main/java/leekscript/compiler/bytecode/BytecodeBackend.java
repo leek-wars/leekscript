@@ -22,7 +22,9 @@ import leekscript.compiler.bloc.MainLeekBlock;
  * {@link #compile} rend null et le programme se compile par javac comme avant.
  *
  * Activé par la propriété système `leekscript.bytecode` : `true` (repli silencieux sur javac),
- * ou `check` (une erreur interne du backend, autre qu'une construction non gérée, est levée).
+ * `check` (une erreur interne du backend, autre qu'une construction non gérée, est levée), ou
+ * `compare` : javac compile aussi le programme, et ses classes ne servent que si l'empreinte des deux
+ * diffère (cf {@link BytecodeCompare}) ; l'écart, comme une erreur interne, va à {@link #reporter}.
  */
 public final class BytecodeBackend {
 
@@ -36,7 +38,45 @@ public final class BytecodeBackend {
 	public static boolean enabled() {
 		var forced = override.get();
 		if (forced != null) return forced;
-		return MODE.equals("true") || MODE.equals("check");
+		return MODE.equals("true") || MODE.equals("check") || MODE.equals("compare");
+	}
+
+	/** Mode `compare` : chaque programme compilé aussi par javac, les deux comparés. */
+	public static boolean comparing() {
+		return MODE.equals("compare") && override.get() == null;
+	}
+
+	/**
+	 * Où va un écart avec javac ou une erreur interne du backend en mode `compare` (le programme se
+	 * joue alors avec les classes de javac) : le générateur y branche son ErrorManager.
+	 */
+	public static volatile java.util.function.BiConsumer<AIFile, String> reporter = (file, problem) ->
+		System.err.println("[bytecode] " + (file != null ? file.getPath() : "?") + " : " + problem);
+
+	/** Mode `compare` : programmes comparés, et ceux dont l'empreinte diffère de javac. */
+	public static final LongAdder compared = new LongAdder(), mismatched = new LongAdder();
+
+	/** Mode `compare` : l'écart entre les classes de javac et celles du backend, signalé ; vrai s'il y en a un. */
+	public static boolean differs(AIFile file, Map<String, byte[]> javac, Result bytecode) {
+		compared.increment();
+		String difference;
+		try {
+			difference = BytecodeCompare.difference(javac, bytecode.classes());
+		} catch (RuntimeException e) {
+			difference = "comparaison impossible : " + e;
+		}
+		if (difference == null) return false;
+		mismatched.increment();
+		report(file, "classes différentes de javac, " + difference);
+		return true;
+	}
+
+	private static void report(AIFile file, String problem) {
+		try {
+			reporter.accept(file, problem);
+		} catch (RuntimeException e) {
+			System.err.println("[bytecode] signalement impossible : " + e);
+		}
 	}
 
 	/**
@@ -94,6 +134,7 @@ public final class BytecodeBackend {
 			}
 			fallback("ERREUR " + e, file);
 			if (MODE.equals("check")) throw new IllegalStateException("backend bytecode : " + file.getPath(), e);
+			if (comparing()) report(file, "erreur interne, " + e);
 			return null;
 		}
 	}

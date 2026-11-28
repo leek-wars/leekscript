@@ -1001,6 +1001,15 @@ public class BytecodeWriter {
 
 	/** Émet `e` et rend le type effacé laissé sur la pile (void pour un appel sans résultat). */
 	public Class<?> emit(JExpr e) {
+		// Expression constante (JLS 15.29) : sa valeur, que javac calcule à la compilation
+		if (!(e instanceof JExpr.Lit)) {
+			var value = constant(e);
+			if (value != null) {
+				if (value instanceof Boolean bool) cb.loadConstant(bool ? 1 : 0);
+				else cb.loadConstant((java.lang.constant.ConstantDesc) value);
+				return typeOf(e);
+			}
+		}
 		switch (e) {
 			case JExpr.Lit l -> {
 				if (l.value() == null) cb.aconst_null();
@@ -1078,6 +1087,15 @@ public class BytecodeWriter {
 			}
 			case JExpr.GetStatic g -> {
 				var f = field(g);
+				// Constante d'une classe enveloppe (Double.NaN, Long.MAX_VALUE…) : sa valeur, que javac inline
+				if (f.getType().isPrimitive() && JTypes.unbox(g.owner()) != null && Modifier.isFinal(f.getModifiers())) {
+					try {
+						cb.loadConstant((java.lang.constant.ConstantDesc) f.get(null));
+						return f.getType();
+					} catch (IllegalAccessException inaccessible) {
+						throw new Unsupported("constante " + g.name());
+					}
+				}
 				cb.getstatic(JTypes.desc(g.owner()), g.name(), JTypes.desc(f.getType()));
 				return f.getType();
 			}
@@ -1179,6 +1197,12 @@ public class BytecodeWriter {
 			}
 			case JExpr.Cond c -> {
 				var t = typeOf(e);
+				// Condition constante : seule la branche retenue s'écrit, comme javac
+				var known = conditionConstant(c.condition());
+				if (known != null) {
+					emitAs(known ? c.then() : c.otherwise(), t);
+					return t;
+				}
 				var otherwise = cb.newLabel();
 				var end = cb.newLabel();
 				jump(c.condition(), false, otherwise);
@@ -1319,7 +1343,14 @@ public class BytecodeWriter {
 	private void emitArgs(Resolver.Resolved m, List<JExpr> args) {
 		var params = m.parameters();
 		if (!m.varargs()) {
-			for (int i = 0; i < args.size(); i++) emitAs(args.get(i), params[i]);
+			var generic = m.executable().getGenericParameterTypes();
+			for (int i = 0; i < args.size(); i++) {
+				// Paramètre `T` de la méthode : javac y vérifie l'argument contre son type déduit, celui de
+				// l'argument (le résultat effacé d'un autre appel générique y est casté)
+				var stat = typeOf(args.get(i));
+				boolean typeVariable = generic.length == params.length && generic[i] instanceof java.lang.reflect.TypeVariable<?> tv && tv.getGenericDeclaration().equals(m.executable());
+				emitAs(args.get(i), typeVariable && !stat.isPrimitive() && !JTypes.isNull(stat) ? stat : params[i]);
+			}
 			return;
 		}
 		int fixed = params.length - 1;
@@ -1343,6 +1374,14 @@ public class BytecodeWriter {
 	/** Émet `e` converti vers `target` par conversion d'affectation (JLS 5.2) ou d'invocation (5.3). */
 	public void emitAs(JExpr e, Class<?> target) {
 		var stat = typeOf(e);
+		// Constante élargie vers un autre primitif (`1` vers double) : sa valeur convertie, comme javac
+		if (target != null && target.isPrimitive() && stat.isPrimitive() && stat != target && target != boolean.class && JTypes.widensPrimitive(stat, target)) {
+			var value = constant(e);
+			if (value != null) {
+				cb.loadConstant((java.lang.constant.ConstantDesc) convertConstant(value, target));
+				return;
+			}
+		}
 		var stack = emit(e);
 		try {
 			convert(stack, stat, target);
@@ -1468,9 +1507,10 @@ public class BytecodeWriter {
 				unbox(box);
 			}
 		} else {
-			// Cast de référence : checkcast sauf s'il est redondant, comme javac
+			// Cast de référence : checkcast sauf s'il est redondant, comme javac (qui en écrit un pour
+			// `(T) null`, sauf vers Object)
 			var stack = emit(c.expr());
-			if (!JTypes.isNull(stat) && !JTypes.subtypeRef(stack, target)) cb.checkcast(JTypes.desc(target));
+			if (JTypes.isNull(stat) ? target != Object.class : !JTypes.subtypeRef(stack, target)) cb.checkcast(JTypes.desc(target));
 		}
 	}
 
@@ -1488,8 +1528,13 @@ public class BytecodeWriter {
 			case "<<", ">>", ">>>" -> {
 				emitLeft(b.left(), t, leftOnStack);
 				var tr = JTypes.promote(typeOf(b.right()));
-				emitAs(b.right(), tr);
-				if (tr == long.class) cb.l2i();
+				if (b.right() instanceof JExpr.Lit lit && lit.value() instanceof Long distance) {
+					// Distance littérale long : javac la charge directement en int
+					cb.loadConstant((int) (long) distance);
+				} else {
+					emitAs(b.right(), tr);
+					if (tr == long.class) cb.l2i();
+				}
 				var op = switch (b.op()) {
 					case "<<" -> t == long.class ? Opcode.LSHL : Opcode.ISHL;
 					case ">>" -> t == long.class ? Opcode.LSHR : Opcode.ISHR;
@@ -1543,7 +1588,28 @@ public class BytecodeWriter {
 	/** Saute à `target` quand la condition `e` vaut `when`, continue sinon. */
 	public void jump(JExpr e, boolean when, Label target) {
 		if (typeOf(e) != boolean.class && typeOf(e) != Boolean.class) throw new Unsupported("condition de type " + typeOf(e));
+		if (!(e instanceof JExpr.Lit) && constant(e) instanceof Boolean v) {
+			if (v == when) cb.goto_(target);
+			return;
+		}
 		switch (e) {
+			case JExpr.Cond c when typeOf(c) == boolean.class -> {
+				// `c ? a : b` booléen : un saut par branche, sans en calculer la valeur (javac genCond)
+				var known = conditionConstant(c.condition());
+				if (known != null) {
+					jump(known ? c.then() : c.otherwise(), when, target);
+					return;
+				}
+				var otherwise = cb.newLabel();
+				var end = cb.newLabel();
+				jump(c.condition(), false, otherwise);
+				jump(c.then(), when, target);
+				cb.goto_(end);
+				cb.labelBinding(otherwise);
+				jump(c.otherwise(), when, target);
+				cb.labelBinding(end);
+				return;
+			}
 			case JExpr.Lit l when l.value() instanceof Boolean v -> {
 				if (v == when) cb.goto_(target);
 				return;
@@ -1574,6 +1640,131 @@ public class BytecodeWriter {
 		}
 		emitAs(e, boolean.class);
 		if (when) cb.ifne(target); else cb.ifeq(target);
+	}
+
+	/**
+	 * La valeur d'une expression constante au sens du JLS (15.29) : littéraux primitifs et chaînes,
+	 * casts vers un primitif, opérateurs unaires et binaires entre constantes ; null sinon (une
+	 * division entière par zéro n'en est pas une). Rendue dans le type de l'expression (Long, Integer…).
+	 */
+	private Object constant(JExpr e) {
+		return switch (e) {
+			case JExpr.Lit l -> l.value() instanceof Number || l.value() instanceof Boolean || l.value() instanceof String ? l.value() : null;
+			case JExpr.GetStatic g -> {
+				// Constante d'une classe enveloppe (Double.POSITIVE_INFINITY…), comme à l'émission
+				if (JTypes.unbox(g.owner()) == null) yield null;
+				var f = field(g);
+				if (!f.getType().isPrimitive() || !Modifier.isFinal(f.getModifiers())) yield null;
+				try {
+					yield f.get(null);
+				} catch (IllegalAccessException inaccessible) {
+					yield null;
+				}
+			}
+			case JExpr.Cast c -> {
+				var v = constant(c.expr());
+				if (v == null) yield null;
+				if (c.type() == String.class) yield v instanceof String ? v : null;
+				yield c.type().isPrimitive() ? convertConstant(v, c.type()) : null;
+			}
+			case JExpr.Unary u -> {
+				var v = constant(u.expr());
+				if (u.op().equals("!")) yield v instanceof Boolean b ? !b : null;
+				if (!u.op().equals("-") || !(v instanceof Number n)) yield null;
+				var t = JTypes.promote(typeOf(u.expr()));
+				if (t == long.class) yield -n.longValue();
+				if (t == int.class) yield -n.intValue();
+				if (t == double.class) yield -n.doubleValue();
+				if (t == float.class) yield -n.floatValue();
+				yield null;
+			}
+			case JExpr.Binary b -> {
+				var l = constant(b.left());
+				if (l == null) yield null;
+				var r = constant(b.right());
+				if (r == null) yield null;
+				yield binaryConstant(b.op(), l, r, typeOf(b.left()), typeOf(b.right()));
+			}
+			default -> null;
+		};
+	}
+
+	/**
+	 * La valeur de la condition d'un ternaire connue à la compilation : une constante, ou `null == null`
+	 * / `null != null`, que javac tranche là (pas en valeur : `return null == null` se calcule).
+	 */
+	private Boolean conditionConstant(JExpr e) {
+		if (e instanceof JExpr.Binary b && (b.op().equals("==") || b.op().equals("!="))
+				&& b.left() instanceof JExpr.Lit l && l.value() == null && b.right() instanceof JExpr.Lit r && r.value() == null) {
+			return b.op().equals("==");
+		}
+		return constant(e) instanceof Boolean v ? v : null;
+	}
+
+	private static Object convertConstant(Object v, Class<?> target) {
+		if (v instanceof Boolean) return target == boolean.class ? v : null;
+		if (!(v instanceof Number n)) return null;
+		if (target == long.class) return n.longValue();
+		if (target == int.class) return n.intValue();
+		if (target == double.class) return n.doubleValue();
+		if (target == float.class) return n.floatValue();
+		if (target == short.class) return (int) n.shortValue();
+		if (target == byte.class) return (int) n.byteValue();
+		return null;
+	}
+
+	private static Object binaryConstant(String op, Object l, Object r, Class<?> lt, Class<?> rt) {
+		if (l instanceof Boolean a && r instanceof Boolean b) {
+			return switch (op) {
+				case "&&", "&" -> a && b;
+				case "||", "|" -> a || b;
+				case "^", "!=" -> a ^ b;
+				case "==" -> a == b;
+				default -> null;
+			};
+		}
+		if (!(l instanceof Number a) || !(r instanceof Number b)) return null;
+		if (op.equals("<<") || op.equals(">>") || op.equals(">>>")) {
+			var t = JTypes.promote(lt);
+			// (javac calcule tous les décalages constants sauf `long >>> distance long`, dont il ne
+			// convertit que la distance)
+			if (op.equals(">>>") && t == long.class && JTypes.promote(rt) == long.class) return null;
+			int d = b.intValue();
+			if (t == long.class) return op.equals("<<") ? a.longValue() << d : op.equals(">>") ? a.longValue() >> d : a.longValue() >>> d;
+			if (t == int.class) return op.equals("<<") ? a.intValue() << d : op.equals(">>") ? a.intValue() >> d : a.intValue() >>> d;
+			return null;
+		}
+		var t = JTypes.promote(lt, rt);
+		if (t == double.class || t == float.class) {
+			if (t == float.class) return null;
+			double x = a.doubleValue(), y = b.doubleValue();
+			return switch (op) {
+				case "+" -> x + y; case "-" -> x - y; case "*" -> x * y; case "/" -> x / y; case "%" -> x % y;
+				case "<" -> x < y; case ">" -> x > y; case "<=" -> x <= y; case ">=" -> x >= y; case "==" -> x == y; case "!=" -> x != y;
+				default -> null;
+			};
+		}
+		if (t == long.class) {
+			long x = a.longValue(), y = b.longValue();
+			if ((op.equals("/") || op.equals("%")) && y == 0) return null;
+			return switch (op) {
+				case "+" -> x + y; case "-" -> x - y; case "*" -> x * y; case "/" -> x / y; case "%" -> x % y;
+				case "&" -> x & y; case "|" -> x | y; case "^" -> x ^ y;
+				case "<" -> x < y; case ">" -> x > y; case "<=" -> x <= y; case ">=" -> x >= y; case "==" -> x == y; case "!=" -> x != y;
+				default -> null;
+			};
+		}
+		if (t == int.class) {
+			int x = a.intValue(), y = b.intValue();
+			if ((op.equals("/") || op.equals("%")) && y == 0) return null;
+			return switch (op) {
+				case "+" -> x + y; case "-" -> x - y; case "*" -> x * y; case "/" -> x / y; case "%" -> x % y;
+				case "&" -> x & y; case "|" -> x | y; case "^" -> x ^ y;
+				case "<" -> x < y; case ">" -> x > y; case "<=" -> x <= y; case ">=" -> x >= y; case "==" -> x == y; case "!=" -> x != y;
+				default -> null;
+			};
+		}
+		return null;
 	}
 
 	private static boolean isComparison(String op) {
@@ -1609,9 +1800,22 @@ public class BytecodeWriter {
 		} else {
 			t = JTypes.promote(l, r);
 		}
+		var k = kind(t);
+		// Un int comparé au littéral 0 : sans le charger (if<cond>), comme javac
+		if (k == TypeKind.INT && b.right() instanceof JExpr.Lit lit && lit.value() instanceof Integer zero && zero == 0) {
+			emitAs(b.left(), t);
+			switch (op) {
+				case "<" -> cb.iflt(target);
+				case ">" -> cb.ifgt(target);
+				case "<=" -> cb.ifle(target);
+				case ">=" -> cb.ifge(target);
+				case "==" -> cb.ifeq(target);
+				default -> cb.ifne(target);
+			}
+			return;
+		}
 		emitAs(b.left(), t);
 		emitAs(b.right(), t);
-		var k = kind(t);
 		if (k == TypeKind.INT || k == TypeKind.BOOLEAN) {
 			switch (op) {
 				case "<" -> cb.if_icmplt(target);

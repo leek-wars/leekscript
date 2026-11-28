@@ -1573,12 +1573,35 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 						mainblock.getWordCompiler().setCurrentBlock(null);
 						writer.currentBlock = null;
 					});
+					writeBytecodeBridges(mainblock, writer, method.getKey(), v.getKey(), params, returnClass, annotations);
 				}
 			}
 			writer.finishClass(clb, desc);
 		}));
 		writer.addClass(desc, bytes);
 		mainblock.getWordCompiler().setCurrentClass(null);
+	}
+
+	/**
+	 * Une redéfinition au type de retour plus précis (covariant) : une méthode pont à la signature de
+	 * chaque ancêtre qui la déclare autrement, qui appelle celle-ci, comme javac. Sans elle, un appel
+	 * typé par l'ancêtre (`Animal a = new Dog(); a.who()`) garderait la version de l'ancêtre.
+	 */
+	private void writeBytecodeBridges(MainLeekBlock mainblock, BytecodeWriter writer, String name, int arity, List<Class<?>> params, Class<?> returnClass, List<Class<?>> annotations) {
+		var bridged = new java.util.HashSet<Class<?>>();
+		for (var ancestor = parent; ancestor != null && !ancestor.internal; ancestor = ancestor.parent) {
+			var versions = ancestor.methods.get(name);
+			var inherited = versions == null ? null : versions.get(arity);
+			if (inherited == null) continue;
+			var ancestorParams = bytecodeParameters(mainblock, writer, inherited.block, arity);
+			var ancestorReturn = writer.primitiveClass(inherited.block.getType().returnType());
+			if (!ancestorParams.equals(params) || ancestorReturn == returnClass || !bridged.add(ancestorReturn)) continue;
+			writer.writeMethod("u_" + name, ClassFile.ACC_PUBLIC | ClassFile.ACC_SYNTHETIC | ClassFile.ACC_BRIDGE, params, ancestorReturn, annotations, () -> {
+				var args = new ArrayList<JExpr>();
+				for (int i = 0; i < params.size(); i++) args.add(new JExpr.Read(new BytecodeWriter.LocalVar(BytecodeWriter.parameterSlot(params, i), params.get(i), "p" + i)));
+				writer.emitReturn(new JExpr.Self(writer.context(), "u_" + name, params, returnClass, args), ancestorReturn);
+			});
+		}
 	}
 
 	private static java.lang.constant.MethodTypeDesc ctorDesc(Resolver.Resolved ctor) {

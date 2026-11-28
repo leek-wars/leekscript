@@ -933,9 +933,10 @@ public class LeekVariable extends Expression {
 			default -> null;
 		};
 		if (arithmetic != null) {
-			if (mainblock.getVersion() == 1 && arithmetic == AI.ArithmeticOperation.DIV) return new JExpr.Call(boxValue, "div_eq_v1", List.of(writer.expr(mainblock, value)));
+			// La conversion vers le type déclaré d'abord (compileConvertedArithmetic), même en v1
 			var target = JavaWriter.arithmeticConversion(javaSlotType(), value.getType(), arithmetic);
 			if (target != null) return bytecodeContainerOperation(writer, boxValue, "arithmetic_eq", writer.expr(mainblock, value), arithmetic, target);
+			if (mainblock.getVersion() == 1 && arithmetic == AI.ArithmeticOperation.DIV) return new JExpr.Call(boxValue, "div_eq_v1", List.of(writer.expr(mainblock, value)));
 			var method = switch (arithmetic) { case ADD -> "add_eq"; case SUB -> "sub_eq"; case MUL -> "mul_eq"; case DIV -> "div_eq"; case MOD -> "mod_eq"; default -> "pow_eq"; };
 			return new JExpr.Call(boxValue, method, List.of(writer.expr(mainblock, value)));
 		}
