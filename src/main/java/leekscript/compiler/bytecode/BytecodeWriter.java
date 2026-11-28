@@ -1575,13 +1575,28 @@ public class BytecodeWriter {
 		// conversions que javac n'écrit pas (T vers un primitif…) font repasser le programme par lui
 		if (name.startsWith("FunctionLeekValue<")) return leekscript.runner.values.FunctionLeekValue.class;
 		if (!name.contains(".") && !name.contains("<")) {
-			for (var c = aiContext.members; c != null; c = c.getSuperclass()) {
-				for (var member : c.getDeclaredClasses()) {
-					if (member.getSimpleName().equals(name) && (Modifier.isPublic(member.getModifiers()) || Modifier.isProtected(member.getModifiers()))) return member;
-				}
-			}
+			var member = memberClasses(aiContext.members).get(name);
+			if (member != null) return member;
 		}
 		return JTypes.forName(name);
+	}
+
+	// Classes membres publiques ou protégées de la classe de l'IA et de ses parents, par nom simple
+	private static final ClassValue<Map<String, Class<?>>> MEMBER_CLASSES = new ClassValue<>() {
+		@Override
+		protected Map<String, Class<?>> computeValue(Class<?> type) {
+			var members = new java.util.HashMap<String, Class<?>>();
+			for (var c = type; c != null; c = c.getSuperclass()) {
+				for (var member : c.getDeclaredClasses()) {
+					if (Modifier.isPublic(member.getModifiers()) || Modifier.isProtected(member.getModifiers())) members.putIfAbsent(member.getSimpleName(), member);
+				}
+			}
+			return members;
+		}
+	};
+
+	private static Map<String, Class<?>> memberClasses(Class<?> type) {
+		return MEMBER_CLASSES.get(type);
 	}
 
 	/** Classe Java du type LeekScript, telle que JavaWriter l'écrit (getJavaPrimitiveName). */

@@ -39,11 +39,18 @@ public final class BytecodeBackend {
 		return MODE.equals("true") || MODE.equals("check");
 	}
 
+	/** Hiérarchie des classes du runtime (AI, valeurs…), lue une fois pour toutes les compilations. */
+	private static final ClassHierarchyResolver RUNTIME_HIERARCHY = ClassHierarchyResolver.defaultResolver()
+		.orElse(ClassHierarchyResolver.ofClassLoading(BytecodeBackend.class.getClassLoader())).cached();
+
 	/** Les classes compilées et le fichier `.lines` qui relie leurs lignes au LeekScript. */
-	public record Result(Map<String, byte[]> classes, String lines) {}
+	/** `loader` : les classes déjà définies et vérifiées par la JVM, à réutiliser (null en mode check). */
+	public record Result(Map<String, byte[]> classes, String lines, ClassLoader loader) {}
 
 	// Statistiques des compilations (tests, bancs) : nombre de programmes émis, et des replis par raison
 	public static final LongAdder compiled = new LongAdder();
+	/** Temps passé (ns) : construction des classes, vérification. */
+	public static final LongAdder buildNanos = new LongAdder(), verifyNanos = new LongAdder();
 	public static final ConcurrentHashMap<String, LongAdder> fallbacks = new ConcurrentHashMap<>();
 	/** Un programme par raison de repli (le plus court), pour choisir et tester la construction suivante. */
 	public static final ConcurrentHashMap<String, String> examples = new ConcurrentHashMap<>();
@@ -64,15 +71,27 @@ public final class BytecodeBackend {
 			fallback(e.getMessage(), file);
 			return null;
 		} catch (RuntimeException | LinkageError e) {
-			// Méthode de plus de 64 Ko : javac la refusera aussi, avec l'erreur CODE_TOO_LARGE habituelle
-			if (e instanceof IllegalArgumentException && String.valueOf(e.getMessage()).startsWith("Code length")) {
-				fallback("méthode de plus de 64 Ko", file);
+			// Limite de la JVM (méthode de plus de 64 Ko, plus de 255 emplacements de paramètres, plus de
+			// 65 535 constantes) : javac la refusera aussi, avec l'erreur CODE_TOO_LARGE habituelle
+			var limit = jvmLimit(e);
+			if (limit != null) {
+				fallback(limit, file);
 				return null;
 			}
 			fallback("ERREUR " + e, file);
 			if (MODE.equals("check")) throw new IllegalStateException("backend bytecode : " + file.getPath(), e);
 			return null;
 		}
+	}
+
+	private static String jvmLimit(Throwable e) {
+		for (var t = e; t != null; t = t.getCause()) {
+			var message = String.valueOf(t.getMessage());
+			if (message.startsWith("Code length")) return "méthode de plus de 64 Ko";
+			if (message.contains("Too many arguments in method signature")) return "plus de 255 emplacements de paramètres";
+			if (message.contains("is not a valid index")) return "plus de 65 535 constantes";
+		}
+		return null;
 	}
 
 	private static Result build(MainLeekBlock main, AIFile file, String className, Options options) {
@@ -87,12 +106,11 @@ public final class BytecodeBackend {
 			var parent = hierarchy.get(desc);
 			return parent == null ? null : ClassHierarchyResolver.ClassHierarchyInfo.ofClass(parent);
 		};
-		var resolver = generated
-			.orElse(ClassHierarchyResolver.defaultResolver())
-			.orElse(ClassHierarchyResolver.ofClassLoading(BytecodeBackend.class.getClassLoader()));
+		var resolver = generated.orElse(RUNTIME_HIERARCHY);
 		var classFile = ClassFile.of(ClassFile.ClassHierarchyResolverOption.of(resolver));
 		var writer = new BytecodeWriter(options, version, new BytecodeWriter.ClassContext(thisDesc, root, root, null), classFile, hierarchy);
 
+		long t0 = System.nanoTime();
 		byte[] bytes = classFile.build(thisDesc, clb -> {
 			clb.withFlags(AccessFlag.PUBLIC, AccessFlag.SUPER);
 			clb.withSuperclass(rootDesc);
@@ -146,19 +164,39 @@ public final class BytecodeBackend {
 			writer.finishClass(clb, thisDesc);
 		});
 
+		long t1 = System.nanoTime();
+		buildNanos.add(t1 - t0);
 		var classes = new java.util.LinkedHashMap<String, byte[]>();
 		classes.put(className, bytes);
 		classes.putAll(writer.getClasses());
-		for (var entry : classes.entrySet()) {
-			var errors = classFile.verify(entry.getValue());
-			if (!errors.isEmpty()) throw new IllegalStateException("bytecode invalide (" + entry.getKey() + ") : " + errors.get(0).getMessage());
+		ClassLoader verified = null;
+		if (MODE.equals("check")) {
+			// Vérificateur de l'API Class-File : des messages précis, mais lent
+			for (var entry : classes.entrySet()) {
+				var errors = classFile.verify(entry.getValue());
+				if (!errors.isEmpty()) throw new IllegalStateException("bytecode invalide (" + entry.getKey() + ") : " + errors.get(0).getMessage());
+			}
+		} else {
+			// Celui de la JVM, natif : chaque classe définie dans un chargeur jetable puis liée, pour
+			// qu'une VerifyError fasse repasser le programme par javac au lieu d'éclater en combat
+			var loader = leekscript.compiler.JavaCompiler.inMemoryLoader(classes);
+			verified = loader;
+			for (var name : classes.keySet()) {
+				try {
+					// Initialisée pour être liée (vérifiée) : les classes générées n'ont pas d'initialiseur statique
+					Class.forName(name, true, loader);
+				} catch (ClassNotFoundException | LinkageError e) {
+					throw new IllegalStateException("bytecode refusé par la JVM (" + name + ") : " + e);
+				}
+			}
 		}
+		verifyNanos.add(System.nanoTime() - t1);
 
 		var lines = new StringBuilder();
 		for (var e : writer.getLines().entrySet()) {
 			lines.append(e.getKey()).append(' ').append(e.getValue().getAI()).append(' ').append(e.getValue().getLeekScriptLine()).append('\n');
 		}
-		return new Result(classes, lines.toString());
+		return new Result(classes, lines.toString(), verified);
 	}
 
 	private static void newArray(CodeBuilder cb, int size, ClassDesc component) {

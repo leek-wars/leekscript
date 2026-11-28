@@ -441,7 +441,8 @@ public class JavaCompiler {
 			long compile_time = System.nanoTime() - t;
 
 			t = System.nanoTime();
-			ClassLoader classLoader = inMemoryLoader(classes);
+			// (le backend bytecode a déjà défini et vérifié ses classes dans un chargeur : réutilisé)
+			ClassLoader classLoader = bytecode != null && bytecode.loader() != null ? bytecode.loader() : inMemoryLoader(classes);
 
 			long bytecodeSize = 0;
 			for (var compiledClass : classes.entrySet()) {

@@ -46,7 +46,6 @@ public final class Resolver {
 	private record Key(Class<?> owner, String name, List<Class<?>> args, List<Class<?>> classLiterals, boolean statics) {}
 
 	private static final ConcurrentHashMap<Key, Resolved> cache = new ConcurrentHashMap<>();
-	private static final ConcurrentHashMap<Class<?>, HashMap<String, List<Method>>> methodsByClass = new ConcurrentHashMap<>();
 
 	/** `classLiterals` : pour chaque argument `X.class`, X (null sinon, ou liste null) ; il déduit un `T` déclaré `Class<T>`. */
 	public static Resolved method(Class<?> owner, String name, List<Class<?>> args, List<Class<?>> classLiterals, boolean statics) {
@@ -93,9 +92,16 @@ public final class Resolver {
 		return true;
 	}
 
+	// Par classe, dans la classe elle-même (ClassValue) : un talon emporte son entrée quand il est ramassé
+	private static final ClassValue<HashMap<String, List<Method>>> METHODS = new ClassValue<>() {
+		@Override
+		protected HashMap<String, List<Method>> computeValue(Class<?> type) {
+			return collectMethods(type);
+		}
+	};
+
 	private static HashMap<String, List<Method>> methods(Class<?> owner) {
-		if (ClassStubs.isStub(owner)) return collectMethods(owner);
-		return methodsByClass.computeIfAbsent(owner, Resolver::collectMethods);
+		return METHODS.get(owner);
 	}
 
 	private static HashMap<String, List<Method>> collectMethods(Class<?> owner) {

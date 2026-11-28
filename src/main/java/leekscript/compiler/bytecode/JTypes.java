@@ -126,8 +126,19 @@ public final class JTypes {
 		return c.describeConstable().orElseThrow(() -> new Unsupported("type sans descripteur " + c));
 	}
 
+	// Noms de types déjà résolus : chaque essai raté de Class.forName lève une exception
+	private static final java.util.concurrent.ConcurrentHashMap<String, Class<?>> resolved = new java.util.concurrent.ConcurrentHashMap<>();
+
 	/** La classe d'un nom de type écrit par JavaWriter (`long`, `Object`, `ArrayLeekValue`…). */
 	public static Class<?> forName(String name) {
+		var cached = resolved.get(name);
+		if (cached != null) return cached;
+		var c = lookup(name);
+		resolved.put(name, c);
+		return c;
+	}
+
+	private static Class<?> lookup(String name) {
 		switch (name) {
 			case "long": return long.class;
 			case "int": return int.class;
