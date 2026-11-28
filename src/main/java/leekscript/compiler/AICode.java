@@ -31,8 +31,9 @@ public class AICode {
 		return modules.stream().anyMatch(m -> !m.group().equals(PackageCache.PROGRAM_GROUP));
 	}
 
-	// Les classes de premier niveau passées à javac à la dernière compilation (les autres
-	// viennent du cache des packages). Point d'observation des tests : rien d'autre ne le lit.
+	// Les classes de premier niveau compilées à la dernière compilation, par javac ou par le backend
+	// bytecode (les autres viennent du cache des packages). Point d'observation des tests : rien
+	// d'autre ne le lit.
 	private java.util.List<String> javacUnits = java.util.List.of();
 
 	public void setJavacUnits(java.util.List<String> javacUnits) {
@@ -41,6 +42,17 @@ public class AICode {
 
 	public java.util.List<String> getJavacUnits() {
 		return javacUnits;
+	}
+
+	// Les classes viennent du backend bytecode (cf BytecodeBackend), pas de javac
+	private boolean bytecode = false;
+
+	public void setBytecode(boolean bytecode) {
+		this.bytecode = bytecode;
+	}
+
+	public boolean isBytecode() {
+		return bytecode;
 	}
 
 	public ArrayList<ModuleCode> getModules() {

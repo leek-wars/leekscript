@@ -85,14 +85,26 @@ public class PackageCache {
 
 	private final File root;
 	private final boolean useDisk;
+	// Le compilateur des classes, s'il n'est pas javac (cf PackageCache(File, boolean, String))
+	private final String backend;
 	private final Map<String, Group> groups = new LinkedHashMap<>();
 	// Classe de premier niveau -> son groupe
 	private final Map<String, Group> owners = new HashMap<>();
 
 	/** `root` : dossier des entrées de cache ; `useDisk` faux : tout se compile, rien ne s'écrit. */
 	public PackageCache(File root, boolean useDisk) {
+		this(root, useDisk, "");
+	}
+
+	/**
+	 * `backend` : le nom du compilateur des classes quand ce n'est pas javac (« bytecode ») ; il entre
+	 * dans l'empreinte des groupes, pour que ses entrées et celles de javac ne se mêlent jamais (les
+	 * classes d'un groupe lisent celles des autres telles que leur compilateur les a écrites).
+	 */
+	public PackageCache(File root, boolean useDisk, String backend) {
 		this.root = root;
 		this.useDisk = useDisk;
+		this.backend = backend;
 	}
 
 	public void add(String group, String className, String javaCode) {
@@ -109,6 +121,7 @@ public class PackageCache {
 			for (var group : groups.values()) {
 				group.units.sort(java.util.Comparator.comparing(Unit::className));
 				var digest = digest();
+				if (!backend.isEmpty()) update(digest, backend);
 				for (var unit : group.units) {
 					update(digest, unit.className());
 					update(digest, unit.javaCode());

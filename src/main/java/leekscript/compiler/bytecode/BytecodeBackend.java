@@ -52,6 +52,8 @@ public final class BytecodeBackend {
 
 	// Statistiques des compilations (tests, bancs) : nombre de programmes émis, et des replis par raison
 	public static final LongAdder compiled = new LongAdder();
+	/** Dont les programmes v5 à modules (une classe par module). */
+	public static final LongAdder compiledModules = new LongAdder();
 	/** Temps passé (ns) : construction des classes, vérification. */
 	public static final LongAdder buildNanos = new LongAdder(), verifyNanos = new LongAdder();
 	public static final ConcurrentHashMap<String, LongAdder> fallbacks = new ConcurrentHashMap<>();
@@ -67,9 +69,18 @@ public final class BytecodeBackend {
 	/** Le bytecode du programme, ou null s'il contient une construction que le backend ne sait pas émettre. */
 	public static Result compile(MainLeekBlock main, AIFile file, String className, Options options) {
 		try {
-			var result = build(main, file, className, options);
-			compiled.increment();
-			return result;
+			// Une valeur fonction demandée à une classe de module déjà écrite : on recommence en la
+			// déclarant d'avance (une par reprise, autant que le programme en a)
+			var predeclared = new java.util.LinkedHashSet<leekscript.compiler.bloc.FunctionBlock>();
+			while (true) {
+				try {
+					var result = build(main, file, className, options, predeclared);
+					compiled.increment();
+					return result;
+				} catch (BytecodeWriter.Retry retry) {
+					if (!predeclared.add(retry.function)) throw new IllegalStateException("valeur fonction redemandée " + retry.function.getName());
+				}
+			}
 		} catch (Unsupported e) {
 			fallback(e.getMessage(), file);
 			return null;
@@ -87,6 +98,12 @@ public final class BytecodeBackend {
 		}
 	}
 
+	private static void appendLines(StringBuilder lines, BytecodeWriter writer) {
+		for (var e : writer.getLines().entrySet()) {
+			lines.append(e.getKey()).append(' ').append(e.getValue().getAI()).append(' ').append(e.getValue().getLeekScriptLine()).append('\n');
+		}
+	}
+
 	private static String jvmLimit(Throwable e) {
 		for (var t = e; t != null; t = t.getCause()) {
 			var message = String.valueOf(t.getMessage());
@@ -97,7 +114,7 @@ public final class BytecodeBackend {
 		return null;
 	}
 
-	private static Result build(MainLeekBlock main, AIFile file, String className, Options options) {
+	private static Result build(MainLeekBlock main, AIFile file, String className, Options options, java.util.Set<leekscript.compiler.bloc.FunctionBlock> predeclared) {
 		var root = JTypes.forName(file.getRootClass());
 		var thisDesc = ClassDesc.of(className);
 		var rootDesc = JTypes.desc(root);
@@ -112,6 +129,7 @@ public final class BytecodeBackend {
 		var resolver = generated.orElse(RUNTIME_HIERARCHY);
 		var classFile = ClassFile.of(ClassFile.ClassHierarchyResolverOption.of(resolver));
 		var writer = new BytecodeWriter(options, version, new BytecodeWriter.ClassContext(thisDesc, root, root, null), classFile, hierarchy);
+		writer.setPredeclaredFunctionValues(predeclared);
 
 		long t0 = System.nanoTime();
 		byte[] bytes = classFile.build(thisDesc, clb -> {
@@ -166,6 +184,10 @@ public final class BytecodeBackend {
 			writer.writeAccessors(clb);
 			writer.finishClass(clb, thisDesc);
 		});
+		writer.markBuilt();
+		// v5 : les classes des modules importés
+		main.writeModulesBytecode(writer, options);
+		if (writer.isMultiClass()) compiledModules.increment();
 
 		long t1 = System.nanoTime();
 		buildNanos.add(t1 - t0);
@@ -195,9 +217,12 @@ public final class BytecodeBackend {
 		}
 		verifyNanos.add(System.nanoTime() - t1);
 
+		// Les lignes de la classe de l'IA, puis celles de chaque module sous le nom de sa classe (comme JavaWriter)
 		var lines = new StringBuilder();
-		for (var e : writer.getLines().entrySet()) {
-			lines.append(e.getKey()).append(' ').append(e.getValue().getAI()).append(' ').append(e.getValue().getLeekScriptLine()).append('\n');
+		appendLines(lines, writer);
+		for (var module : writer.getModuleWriters()) {
+			lines.append(leekscript.runner.AI.LINES_CLASS_MARK).append(' ').append(module.aiContext.desc.displayName()).append('\n');
+			appendLines(lines, module);
 		}
 		return new Result(classes, lines.toString(), verified);
 	}

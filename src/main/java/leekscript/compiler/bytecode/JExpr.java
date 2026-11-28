@@ -26,8 +26,15 @@ public sealed interface JExpr {
 	/** Appel de méthode d'instance par son nom ; receveur null = `this` (méthode de l'IA). */
 	record Call(JExpr receiver, String name, List<JExpr> args) implements JExpr {}
 
-	/** Appel d'une méthode d'instance de la classe générée, de signature connue (pas de résolution). */
-	record Self(String name, List<Class<?>> parameters, Class<?> returnType, List<JExpr> args) implements JExpr {}
+	/**
+	 * Appel d'une méthode d'instance d'une classe générée, de signature connue (pas de résolution) :
+	 * celle de l'IA ou d'un module (`owner`, une classe racine), null = la racine de la classe en cours.
+	 */
+	record Self(BytecodeWriter.ClassContext owner, String name, List<Class<?>> parameters, Class<?> returnType, List<JExpr> args) implements JExpr {
+		public Self(String name, List<Class<?>> parameters, Class<?> returnType, List<JExpr> args) {
+			this(null, name, parameters, returnType, args);
+		}
+	}
 
 	/** `e instanceof T`. */
 	record InstanceOf(JExpr expr, Class<?> type) implements JExpr {}

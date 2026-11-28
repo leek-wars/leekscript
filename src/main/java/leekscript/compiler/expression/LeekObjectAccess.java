@@ -561,6 +561,10 @@ public class LeekObjectAccess extends Expression {
 
 	// ---- Backend bytecode ----
 
+	private boolean isNamespaceMember() {
+		return namespaceGlobal != null || namespaceClass != null || namespaceFunction != null;
+	}
+
 	private boolean bytecodeSuperReceiver(BytecodeWriter writer) {
 		return object instanceof LeekVariable v && v.getVariableType() == VariableType.SUPER
 			&& this.variable != null && this.variable.getVariableType() == VariableType.FIELD && writer.inInstanceContext();
@@ -601,14 +605,20 @@ public class LeekObjectAccess extends Expression {
 		if (variable != null && variable.getVariableType() == VariableType.STATIC_FIELD
 				&& LeekVariable.isStaticClassReference(object, writer) && object.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null
 				&& cvt.getClassDeclaration().hasStaticFieldBox(field.getWord(), currentClass)) {
-			return new JExpr.Call(new JExpr.Read(writer.field(cvt.getClassDeclaration().staticFieldBoxField(field.getWord()))), "get", List.of());
+			return new JExpr.Call(new JExpr.Read(writer.field(cvt.getClassDeclaration().getModule(), cvt.getClassDeclaration().staticFieldBoxField(field.getWord()))), "get", List.of());
 		}
 		return JExpr.call("getField", bytecodeReceiver(mainblock, writer), JExpr.of(field.getWord()), writer.classVariable(mainblock));
 	}
 
 	@Override
 	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
-		if (namespaceGlobal != null || namespaceClass != null || namespaceFunction != null) throw new Unsupported("membre de module");
+		// v5 : membre d'un namespace de module (cf writeJavaCode)
+		if (namespaceGlobal != null) return new JExpr.Read(namespaceGlobal.bytecodeGlobalField(writer));
+		if (namespaceClass != null) return new JExpr.Read(writer.field(namespaceClass.getModule(), "u_" + namespaceClass.getInternalName()));
+		if (namespaceFunction != null) {
+			final var function = namespaceFunction;
+			return new JExpr.Read(writer.functionValue(function, w -> function.bytecodeFunctionValue(mainblock, w)));
+		}
 		if (optional && field != null && !field.getWord().equals("class")) {
 			return JExpr.call("getFieldNullSafe", bytecodeReceiver(mainblock, writer), JExpr.of(field.getWord()), writer.classVariable(mainblock));
 		}
@@ -640,6 +650,7 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public JExpr bytecodeL(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (isNamespaceMember()) throw new Unsupported("l-value de module");
 		if (mainblock.getWordCompiler().getVersion() >= 2 && field.getWord().equals("class")) return JExpr.call("classOf", writer.expr(mainblock, object));
 		var direct = this.variable != null && (bytecodeThisLike(writer) || object.getType() instanceof ClassType);
 		if (direct) return new JExpr.Read(bytecodeDirectField(mainblock, writer));
@@ -648,6 +659,7 @@ public class LeekObjectAccess extends Expression {
 
 	@Override
 	public JExpr bytecodeAssign(MainLeekBlock mainblock, BytecodeWriter writer, int operator, Expression value) {
+		if (isNamespaceMember()) throw new Unsupported("affectation de module");
 		var classVariable = writer.classVariable(mainblock);
 		switch (operator) {
 			case Operators.ASSIGN: {

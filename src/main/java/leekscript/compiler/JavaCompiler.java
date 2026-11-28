@@ -191,6 +191,19 @@ public class JavaCompiler {
 		};
 	}
 
+	/** Les classes des unités `units` (chacune et ses classes internes), parmi celles d'un programme. */
+	private static Map<String, byte[]> ofUnits(Map<String, byte[]> classes, List<PackageCache.Unit> units) {
+		var names = new java.util.HashSet<String>();
+		for (var unit : units) names.add(unit.className());
+		var result = new java.util.HashMap<String, byte[]>();
+		for (var entry : classes.entrySet()) {
+			var name = entry.getKey();
+			int inner = name.indexOf('$');
+			if (names.contains(inner < 0 ? name : name.substring(0, inner))) result.put(name, entry.getValue());
+		}
+		return result;
+	}
+
 	/**
 	 * Compile des sources Java en mémoire, les dossiers de `classpath` en plus du classpath du
 	 * compilateur : nom de classe -> bytecode. Une erreur de javac est rapportée sur la ligne
@@ -379,7 +392,7 @@ public class JavaCompiler {
 
 			// Backend bytecode : la classe directement depuis l'AST, sans javac, quand il sait tout le programme
 			BytecodeBackend.Result bytecode = null;
-			if (BytecodeBackend.enabled() && file.getCompiledCode().getModules().isEmpty()) {
+			if (BytecodeBackend.enabled()) {
 				t = System.nanoTime();
 				bytecode = BytecodeBackend.compile(lsCompiler.getMainBlock(), file, file.getJavaClass(), options);
 				analyze_time += System.nanoTime() - t;
@@ -414,17 +427,20 @@ public class JavaCompiler {
 			boolean hasPackages = code.hasPackages();
 			Map<String, byte[]> classes;
 			List<File> packageDirectories = null;
-			if (bytecode != null) {
+			code.setBytecode(bytecode != null);
+			if (bytecode != null && !hasPackages) {
 				classes = bytecode.classes();
-				code.setJavacUnits(List.of());
+				code.setJavacUnits(new ArrayList<>(classes.keySet().stream().filter(name -> !name.contains("$")).toList()));
 			} else if (hasPackages) {
-				// v5 : chaque package se compile et se cache à part (cf PackageCache)
-				var cache = new PackageCache(new File(IA_PATH, PACKAGES_PATH), options.useCache());
+				// v5 : chaque package se compile et se cache à part (cf PackageCache) ; le backend
+				// bytecode a déjà écrit toutes les classes, le cache prend celles des groupes à refaire
+				var cache = new PackageCache(new File(IA_PATH, PACKAGES_PATH), options.useCache(), bytecode != null ? "bytecode" : "");
 				cache.add(PackageCache.PROGRAM_GROUP, file.getJavaClass(), code.getJavaCode());
 				for (var module : code.getModules()) {
 					cache.add(module.group(), module.className(), module.javaCode());
 				}
-				var result = cache.compile((units, classpath) -> javac(file, units, classpath));
+				var written = bytecode;
+				var result = cache.compile(written != null ? (units, classpath) -> ofUnits(written.classes(), units) : (units, classpath) -> javac(file, units, classpath));
 				classes = result.classes;
 				packageDirectories = result.directories;
 				code.setJavacUnits(result.compiled);
@@ -441,8 +457,9 @@ public class JavaCompiler {
 			long compile_time = System.nanoTime() - t;
 
 			t = System.nanoTime();
-			// (le backend bytecode a déjà défini et vérifié ses classes dans un chargeur : réutilisé)
-			ClassLoader classLoader = bytecode != null && bytecode.loader() != null ? bytecode.loader() : inMemoryLoader(classes);
+			// (le backend bytecode a déjà défini et vérifié ses classes dans un chargeur : réutilisé, sauf
+			// si des groupes viennent du cache des packages)
+			ClassLoader classLoader = bytecode != null && bytecode.loader() != null && !hasPackages ? bytecode.loader() : inMemoryLoader(classes);
 
 			long bytecodeSize = 0;
 			for (var compiledClass : classes.entrySet()) {

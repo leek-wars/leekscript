@@ -212,6 +212,7 @@ public class TestPackages {
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass("AI");
 		var options = new Options(LeekScript.MAX_VERSION, false, true, true, null, true);
+		BackendDiff.compare(file, "AI");
 		AI ai = JavaCompiler.compile(file, options);
 		ai.init();
 		ai.staticInit();
@@ -224,6 +225,7 @@ public class TestPackages {
 		var file = fs.getRoot(0).resolve(name);
 		file.setJavaClass("AI_" + file.getId());
 		file.setRootClass("AI");
+		BackendDiff.compare(file, "AI");
 		AI ai = JavaCompiler.compile(file, new Options(LeekScript.MAX_VERSION, false, true, true, null, true));
 		ai.init();
 		ai.staticInit();

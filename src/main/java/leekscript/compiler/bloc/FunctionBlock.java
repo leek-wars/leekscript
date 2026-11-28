@@ -770,7 +770,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, Tes
 	private void writeBytecodeForArity(MainLeekBlock mainblock, BytecodeWriter writer, int paramCount) {
 		var parameters = bytecodeParameters(writer, paramCount);
 		var returnClass = writer.primitiveClass(this.type.returnType());
-		writer.writeMethod("f_" + getInternalName(), java.lang.classfile.ClassFile.ACC_PRIVATE, parameters, returnClass, () -> {
+		writer.writeMethod("f_" + getInternalName(), writer.memberFlags(), parameters, returnClass, () -> {
 			writer.line(getLocation());
 			// `var u_x = p_x;` : la variable lit directement l'emplacement du paramètre
 			boolean v1 = mainblock.getVersion() <= 1;

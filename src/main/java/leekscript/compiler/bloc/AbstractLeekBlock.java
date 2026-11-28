@@ -379,8 +379,16 @@ public abstract class AbstractLeekBlock extends LeekInstruction {
 	 * commence dans du code mort n'est pas émise : javac ne l'émettrait pas non plus.
 	 */
 	public void writeBlockBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
-		var instructions = getWrittenInstructions();
-		boolean main = this instanceof MainLeekBlock;
+		writeInstructionsBytecode(mainblock, writer, getWrittenInstructions(), this instanceof MainLeekBlock);
+	}
+
+	/** Des instructions hors de tout bloc à elles : le code de haut niveau d'un module (méthode `$run`). */
+	public void writeInstructionsBytecode(MainLeekBlock mainblock, BytecodeWriter writer, List<LeekInstruction> instructions) {
+		writeInstructionsBytecode(mainblock, writer, instructions, false);
+	}
+
+	/** `main` : le corps de runIA, qui rend la valeur de sa dernière expression. */
+	private void writeInstructionsBytecode(MainLeekBlock mainblock, BytecodeWriter writer, List<LeekInstruction> instructions, boolean main) {
 		writer.openScope();
 		for (int i = 0; i < instructions.size() && writer.isAlive(); i++) {
 			var instruction = instructions.get(i);

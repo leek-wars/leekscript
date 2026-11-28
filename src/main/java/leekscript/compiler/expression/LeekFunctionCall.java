@@ -244,7 +244,7 @@ public class LeekFunctionCall extends Expression {
 			if (mainblock.getVersion() < 2 && argType == Type.ANY) arguments.add(mParameters.get(i).bytecodeL(mainblock, writer));
 			else arguments.add(writer.compileConvertTyped(mainblock, i, mParameters.get(i), argType));
 		}
-		JExpr call = new JExpr.Self("f_" + target.getInternalName(), target.bytecodeParameters(writer, mParameters.size()),
+		JExpr call = writer.self(user_function.getModule(), "f_" + target.getInternalName(), target.bytecodeParameters(writer, mParameters.size()),
 			writer.primitiveClass(target.getType().returnType()), arguments);
 		if (user_function.getType().returnType().containsTypeVariable() && this.type != Type.ANY && this.type != Type.VOID) {
 			call = new JExpr.Cast(writer.javaClass(this.type), call);
@@ -274,7 +274,20 @@ public class LeekFunctionCall extends Expression {
 			if (callSite == LeekFunctions.CallSite.LINE) return JExpr.of((long) location.getStartLine());
 			return JExpr.of(JTypes.javaStringValue(LeekFileContent.javaString(SystemClass.sourcePath(location.getFile().getPath()))));
 		}
-		if (namespaceConstructorClass != null || namespaceUserFunction != null) throw new Unsupported("appel de module");
+		// v5 : `new Ns.Class(args)` et `Ns.func(args)`, dans la classe du module aliasé
+		if (namespaceConstructorClass != null) {
+			var arguments = bytecodeArguments(mainblock, writer, false, false);
+			JExpr args = arguments.size() == 1 && arguments.get(0) instanceof JExpr.NewArray ? arguments.get(0) : new JExpr.NewArray(Object.class, arguments);
+			return writer.self(namespaceConstructorClass.getModule(), "new_u_" + namespaceConstructorClass.getInternalName(), List.of(Object[].class),
+				writer.typeNamed(namespaceConstructorClass.getJavaTypeName()), List.of(args));
+		}
+		if (namespaceUserFunction != null) {
+			var function = namespaceUserFunction;
+			JExpr call = writer.self(function.getModule(), "f_" + function.getInternalName(), function.bytecodeParameters(writer, mParameters.size()),
+				writer.primitiveClass(function.getType().returnType()), bytecodeArguments(mainblock, writer, true, false));
+			if (function.getType().returnType().containsTypeVariable() && this.type != Type.ANY && this.type != Type.VOID) call = new JExpr.Cast(writer.javaClass(this.type), call);
+			return call;
+		}
 		if (mExpression instanceof LeekObjectAccess access) return bytecodeAccessCall(mainblock, writer, access);
 		if (mExpression instanceof LeekVariable variable) {
 			if (mainblock.isRedefinedFunction(variable.getName())) throw new Unsupported("fonction redéfinie");
@@ -312,7 +325,7 @@ public class LeekFunctionCall extends Expression {
 				// new_u_X(Object... args) : un seul argument déjà Object[] (le `new Object[] { null }` d'un null seul) est le tableau lui-même
 				var arguments = bytecodeArguments(mainblock, writer, false, false);
 				JExpr args = arguments.size() == 1 && arguments.get(0) instanceof JExpr.NewArray ? arguments.get(0) : new JExpr.NewArray(Object.class, arguments);
-				return new JExpr.Self("new_" + name, List.of(Object[].class), writer.typeNamed(name), List.of(args));
+				return writer.self(constructed.getModule(), "new_" + name, List.of(Object[].class), writer.typeNamed(constructed.getJavaTypeName()), List.of(args));
 			}
 			return bytecodeConvertPrimitive(writer, bytecodeDynamicExecute(mainblock, writer));
 		}
@@ -348,11 +361,11 @@ public class LeekFunctionCall extends Expression {
 		return arguments;
 	}
 
-	/** Appel d'une méthode statique de classe `u_X_m_n` de l'IA, de signature celle du bloc. */
+	/** Appel d'une méthode statique de classe `u_X_m_n`, dans la classe racine du module de X, de signature celle du bloc. */
 	private JExpr bytecodeStaticMethod(BytecodeWriter writer, String methodName, leekscript.compiler.bloc.ClassMethodBlock block, List<JExpr> args) {
 		var params = new ArrayList<Class<?>>();
 		for (int a = 0; a < args.size(); a++) params.add(writer.primitiveClass(block.getParametersDeclarations().get(a).getType()));
-		return new JExpr.Self(methodName, params, writer.primitiveClass(block.getType().returnType()), args);
+		return writer.self(block.getClassDeclaration().getModule(), methodName, params, writer.primitiveClass(block.getType().returnType()), args);
 	}
 
 	/** writeDynamicExecute : `[(T)] execute(f, args…)`. */

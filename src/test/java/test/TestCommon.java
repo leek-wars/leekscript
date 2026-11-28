@@ -429,7 +429,7 @@ public class TestCommon {
 				}
 			}
 
-			boolean bytecode = ai != null && ai.getFile() != null && ai.getFile().getCompiledCode() != null && ai.getFile().getCompiledCode().getJavacUnits().isEmpty();
+			boolean bytecode = ai != null && ai.getFile() != null && ai.getFile().getCompiledCode() != null && ai.getFile().getCompiledCode().isBytecode();
 			long ram = ai != null ? ai.getUsedRAM() - ai.getCodeRAM() : 0;
 			return new Execution(result, ramErrors, aiID, compile_time, ops, ram, errorLocation, bytecode);
 		}

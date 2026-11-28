@@ -96,6 +96,13 @@ public class ModuleScopeInstruction extends LeekInstruction {
 	}
 
 	@Override
+	public void writeBytecode(MainLeekBlock mainblock, leekscript.compiler.bytecode.BytecodeWriter writer) {
+		if (opening != null) return;
+		writer.noLine();
+		writer.emitStatement(writer.self(module, getMethodName(), java.util.List.of(), void.class, java.util.List.of()));
+	}
+
+	@Override
 	public String getCode() {
 		return "";
 	}

@@ -1361,8 +1361,8 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		return types;
 	}
 
-	/** Le talon de la classe : ses champs et les signatures de ses méthodes, comme declareJava les écrit. */
-	public ClassStubs.ClassSpec bytecodeSpec(MainLeekBlock mainblock) {
+	/** Le talon de la classe, interne à la classe racine `owner` : ses champs et les signatures de ses méthodes, comme declareJava les écrit. */
+	public ClassStubs.ClassSpec bytecodeSpec(MainLeekBlock mainblock, String owner) {
 		int version = mainblock.getVersion();
 		var name = bytecodeName();
 		var fieldSpecs = new ArrayList<ClassStubs.FieldSpec>();
@@ -1383,7 +1383,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 			}
 		}
 		var superName = parent == null ? "NativeObjectLeekValue" : parent.getJavaName(mainblock);
-		return new ClassStubs.ClassSpec(name, superName, fieldSpecs, methodSpecs, List.of(List.of(), List.of(name, "int")));
+		return new ClassStubs.ClassSpec(owner, name, superName, fieldSpecs, methodSpecs, List.of(List.of(), List.of(name, "int")));
 	}
 
 	/**
@@ -1430,7 +1430,29 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		return args;
 	}
 
-	/** La classe Java `u_X`, interne à l'IA (cf declareJava). */
+	/**
+	 * Charge l'instance englobante de la classe parente, premier argument de son constructeur
+	 * (superOuterInstance), depuis un constructeur de cette classe (this$0 dans l'emplacement 1) ;
+	 * rend son type : l'IA pour NativeObjectLeekValue et les classes internes du runtime, la racine
+	 * d'un autre module pour une classe importée.
+	 */
+	private Class<?> bytecodeSuperOuter(BytecodeWriter writer, java.lang.classfile.CodeBuilder cb) {
+		var root = writer.aiContext;
+		cb.aload(1);
+		if (parent == null || parent.internal) {
+			var ai = writer.aiField();
+			if (ai == null) return writer.aiStub();
+			cb.getfield(root.desc, ai.name(), JTypes.desc(ai.type()));
+			return ai.type();
+		}
+		var parentRoot = writer.rootOf(parent.getModule());
+		if (parentRoot == root) return writer.aiStub();
+		var reference = writer.reference(parentRoot);
+		cb.getfield(root.desc, reference.name(), JTypes.desc(reference.type()));
+		return reference.type();
+	}
+
+	/** La classe Java `u_X`, interne à la classe racine de son module (cf declareJava). */
 	public void writeBytecodeClass(MainLeekBlock mainblock, BytecodeWriter writer) {
 		int version = mainblock.getVersion();
 		var name = bytecodeName();
@@ -1456,12 +1478,12 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 			}
 			clb.withField("this$0", ai.desc, ClassFile.ACC_FINAL | ClassFile.ACC_SYNTHETIC);
 
-			// Constructeur par défaut : this$0, super(this$0), la RAM de l'instance, les initialiseurs
-			var superCtor = Resolver.constructor(superClass, List.of(aiStub));
+			// Constructeur par défaut : this$0, super(<instance englobante du parent>), la RAM de l'instance, les initialiseurs
 			writer.writeMethod(ConstantDescs.INIT_NAME, ClassFile.ACC_PUBLIC, List.of(aiStub), void.class, () -> {
 				var cb = writer.code();
 				cb.aload(0); cb.aload(1); cb.putfield(desc, "this$0", ai.desc);
-				cb.aload(0); cb.aload(1);
+				cb.aload(0);
+				var superCtor = Resolver.constructor(superClass, List.of(bytecodeSuperOuter(writer, cb)));
 				cb.invokespecial(superDesc, ConstantDescs.INIT_NAME, ctorDesc(superCtor));
 				int ram = (parent == null ? AI.INSTANCE_BASE_RAM : 0) + 2 * fieldVariables.size();
 				if (ram > 0) writer.emitStatement(JExpr.call("allocateRAM", new JExpr.This(), JExpr.of(ram)));
@@ -1481,12 +1503,13 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 
 			// Constructeur par copie (o, level)
 			var copyParams = List.<Class<?>>of(aiStub, stub, int.class);
-			var superCopy = parent == null ? superCtor : Resolver.constructor(superClass, copyParams);
 			writer.writeMethod(ConstantDescs.INIT_NAME, ClassFile.ACC_PUBLIC, copyParams, void.class, () -> {
 				var cb = writer.code();
 				cb.aload(0); cb.aload(1); cb.putfield(desc, "this$0", ai.desc);
-				cb.aload(0); cb.aload(1);
+				cb.aload(0);
+				var outer = bytecodeSuperOuter(writer, cb);
 				if (parent != null) { cb.aload(2); cb.iload(3); }
+				var superCopy = Resolver.constructor(superClass, parent == null ? List.of(outer) : List.of(outer, stub, int.class));
 				cb.invokespecial(superDesc, ConstantDescs.INIT_NAME, ctorDesc(superCopy));
 				var o = new JExpr.Read(new BytecodeWriter.LocalVar(2, stub, "o"));
 				var level = new JExpr.Read(new BytecodeWriter.LocalVar(3, int.class, "level"));
@@ -1565,17 +1588,20 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		return java.lang.constant.MethodTypeDesc.of(ConstantDescs.CD_void, descs);
 	}
 
-	/** La classe dans la hiérarchie (stack maps), le nid et les InnerClasses de l'IA, avant que du code la référence. */
+	/** La classe dans la hiérarchie (stack maps), le nid et les InnerClasses de sa racine, avant que du code la référence. */
 	public void registerBytecodeClass(MainLeekBlock mainblock, BytecodeWriter writer) {
 		var stub = writer.typeNamed(bytecodeName());
 		writer.registerInnerClass(JTypes.desc(stub), JTypes.desc(stub.getSuperclass()), writer.aiContext.desc, bytecodeName(), ClassFile.ACC_PUBLIC);
 	}
 
-	/** Les champs de la classe dans l'IA : sa ClassLeekValue (initialisée par le constructeur) et ses boîtes de champs statiques. */
+	/** Les champs de la classe dans sa racine : sa ClassLeekValue (initialisée par le constructeur) et ses boîtes de champs statiques. */
 	public void declareBytecodeFields(MainLeekBlock mainblock, BytecodeWriter writer) {
 		var name = bytecodeName();
 		var classField = writer.field(name, ClassLeekValue.class, ClassFile.ACC_PUBLIC);
-		writer.initializeField(classField, new JExpr.New(ClassLeekValue.class, List.of(new JExpr.This(), JExpr.of(token.getWord()), JExpr.nul(), new JExpr.ClassLit(writer.typeNamed(name)))));
+		JExpr value = new JExpr.New(ClassLeekValue.class, List.of(writer.aiThis(), JExpr.of(token.getWord()), JExpr.nul(), new JExpr.ClassLit(writer.typeNamed(name))));
+		// Une classe de module se rattache à lui (`.inModule(this)`)
+		if (writer.module != null) value = new JExpr.Call(value, "inModule", List.of(new JExpr.This()));
+		writer.initializeField(classField, value);
 		for (var field : boxedStaticFields()) writer.field(staticFieldBoxName(field), ObjectVariableValue.class, ClassFile.ACC_PUBLIC);
 	}
 
@@ -1594,7 +1620,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 				final var block = v.getValue().block;
 				var params = bytecodeParameters(mainblock, writer, block, v.getKey());
 				var returnClass = writer.primitiveClass(block.getType().returnType());
-				writer.writeMethod(name + "_" + method.getKey() + "_" + v.getKey(), ClassFile.ACC_PRIVATE | ClassFile.ACC_FINAL, params, returnClass, () -> {
+				writer.writeMethod(name + "_" + method.getKey() + "_" + v.getKey(), writer.memberFlags() | ClassFile.ACC_FINAL, params, returnClass, () -> {
 					mainblock.getWordCompiler().setCurrentBlock(block);
 					writer.currentBlock = block;
 					bytecodeArguments(mainblock, writer, block, v.getKey(), params);
@@ -1618,10 +1644,10 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		var name = bytecodeName();
 		var stub = writer.typeNamed(name);
 		mainblock.getWordCompiler().setCurrentClass(this);
-		writer.writeMethod("defineClass_" + getInternalName(), ClassFile.ACC_PRIVATE, List.of(), void.class, () -> {
+		writer.writeMethod("defineClass_" + getInternalName(), writer.memberFlags(), List.of(), void.class, () -> {
 			var classValue = new JExpr.Read(writer.field(name));
 			if (parent != null) {
-				var parentValue = parent.internal ? new JExpr.Read(writer.member(new JExpr.This(), parent.getClassName(mainblock))) : new JExpr.Read(writer.field(parent.getClassName(mainblock)));
+				var parentValue = parent.internal ? new JExpr.Read(writer.member(new JExpr.This(), parent.getClassName(mainblock))) : new JExpr.Read(writer.field(parent.getModule(), parent.getClassName(mainblock)));
 				writer.emitStatement(new JExpr.Call(classValue, "setParent", List.of(parentValue)));
 			}
 			var runParams = List.<Class<?>>of(AI.class, Object.class, Object[].class);
@@ -1672,7 +1698,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 		var boxed = boxedStaticFields();
 		mainblock.getWordCompiler().setCurrentClass(this);
 		mainblock.getWordCompiler().setCurrentBlock(staticInitBlock);
-		writer.writeMethod("createStaticClass_" + getInternalName(), ClassFile.ACC_PRIVATE, List.of(), void.class, () -> {
+		writer.writeMethod("createStaticClass_" + getInternalName(), writer.memberFlags(), List.of(), void.class, () -> {
 			var classValue = new JExpr.Read(writer.field(name));
 			for (var field : staticFields.entrySet()) {
 				var constant = ConstantFolder.staticFinalLiteral(this, field.getKey(), this);
@@ -1683,7 +1709,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 			if (!boxed.isEmpty()) writer.emitStatement(new JExpr.Self("linkStaticFields_" + getInternalName(), List.of(), void.class, List.of()));
 		});
 		if (!boxed.isEmpty()) {
-			writer.writeMethod("linkStaticFields_" + getInternalName(), ClassFile.ACC_PRIVATE, List.of(), void.class, () -> {
+			writer.writeMethod("linkStaticFields_" + getInternalName(), writer.memberFlags(), List.of(), void.class, () -> {
 				var classValue = new JExpr.Read(writer.field(name));
 				var map = new JExpr.Read(new BytecodeWriter.MemberVar(classValue, ClassLeekValue.class, "staticFields", java.util.LinkedHashMap.class));
 				for (var field : boxed) {
@@ -1692,7 +1718,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 				}
 			});
 		}
-		writer.writeMethod("initClass_" + getInternalName(), ClassFile.ACC_PRIVATE, List.of(), void.class, () -> {
+		writer.writeMethod("initClass_" + getInternalName(), writer.memberFlags(), List.of(), void.class, () -> {
 			var classValue = new JExpr.Read(writer.field(name));
 			for (var field : staticFields.entrySet()) {
 				JExpr value = null;

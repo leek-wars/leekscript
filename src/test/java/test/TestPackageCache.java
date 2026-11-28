@@ -267,7 +267,9 @@ public class TestPackageCache {
 		uniqueId += "_b";
 		String second = writeMain("depends box from \"box\"\nimport { wrap, size } from \"@box\"\nvar w = wrap(\"a\")\nreturn string(w) + size(w) + size([1.5])");
 		assertEquals("[\"a\", \"a\"]21", run(second));
-		assertEquals(1, javacUnits(second).size(), javacUnits(second).toString());
+		// (les entrées de javac et celles du backend bytecode ne se mêlent pas : un programme passé
+		// par l'un ne reprend pas le package compilé pour l'autre)
+		if (isBytecode(first) == isBytecode(second)) assertEquals(1, javacUnits(second).size(), javacUnits(second).toString());
 	}
 
 	// Rechargé du disque (autre processus), le programme retrouve les classes de ses packages.
@@ -368,6 +370,10 @@ public class TestPackageCache {
 
 	private List<String> javacUnits(String name) throws Exception {
 		return fs.getRoot(0).resolve(name).getCompiledCode().getJavacUnits();
+	}
+
+	private boolean isBytecode(String name) throws Exception {
+		return fs.getRoot(0).resolve(name).getCompiledCode().isBytecode();
 	}
 
 	/** Comme un autre processus : ni classe en mémoire, ni code compilé gardé sur le fichier. */

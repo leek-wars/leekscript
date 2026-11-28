@@ -48,7 +48,7 @@ public final class GenericFunctions {
 		return new JExpr.Self(methodName(versions, key), parameters, returnClass(writer, versions), arguments);
 	}
 
-	static void write(ClassBuilder clb, BytecodeWriter writer) {
+	public static void write(ClassBuilder clb, BytecodeWriter writer) {
 		int version = writer.version;
 		for (var entry : writer.getGenericFunctions().entrySet()) {
 			var key = entry.getKey();

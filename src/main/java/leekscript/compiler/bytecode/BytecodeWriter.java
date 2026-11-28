@@ -77,6 +77,8 @@ public class BytecodeWriter {
 		public final ClassContext outer;
 		java.lang.classfile.ClassBuilder builder;
 		final java.util.HashMap<String, FieldVar> fields = new java.util.HashMap<>();
+		/** Champs déclarés avant que la classe ne s'écrive (v5, une classe par module) : posés à son ouverture. */
+		final ArrayList<java.util.function.Consumer<java.lang.classfile.ClassBuilder>> pendingFields = new ArrayList<>();
 		/** Classe anonyme : les locales des méthodes englobantes qu'elle lit, chacune dans son champ `val$x`. */
 		java.util.LinkedHashMap<LocalVar, FieldVar> captures = null;
 
@@ -108,9 +110,28 @@ public class BytecodeWriter {
 
 	public final Options options;
 	public final int version;
-	/** La classe de l'IA, et la classe en cours d'écriture. */
+	/**
+	 * La classe racine de cet écrivain (celle de l'IA, ou en v5 celle d'un module, qui a chacune son
+	 * écrivain), et la classe en cours d'écriture : la racine ou une de ses classes internes.
+	 */
 	public final ClassContext aiContext;
 	private ClassContext context;
+
+	/**
+	 * v5, une classe Java par module : l'écrivain de la classe de l'IA (lui-même pour celle-ci), qui
+	 * tient l'état commun au programme, et le module de cette classe-ci (null pour l'IA).
+	 */
+	private final BytecodeWriter entry;
+	public final leekscript.compiler.bloc.Module module;
+	// (dans l'écrivain de l'IA) ceux des modules, par module puis par classe racine
+	private java.util.LinkedHashMap<leekscript.compiler.bloc.Module, BytecodeWriter> moduleWriters = null;
+	private final java.util.HashMap<ClassContext, BytecodeWriter> rootWriters = new java.util.HashMap<>();
+	// Les champs qui tiennent l'instance d'une autre classe racine (`$<module>`, `$main`)
+	private final java.util.LinkedHashMap<ClassContext, FieldVar> references = new java.util.LinkedHashMap<>();
+	// Module : son champ `ai`, l'IA sous le type de sa classe racine
+	private FieldVar aiField;
+	/** La classe racine est écrite : elle ne reçoit plus de champ. */
+	private boolean built = false;
 
 	private MethodState method = new MethodState();
 	private CodeBuilder cb;
@@ -124,9 +145,10 @@ public class BytecodeWriter {
 	private final java.util.LinkedHashMap<String, List<leekscript.runner.CallableVersion>> genericFunctions = new java.util.LinkedHashMap<>();
 	private final java.util.HashSet<String> strictGenericFunctions = new java.util.HashSet<>();
 
-	// Lignes : repère Java -> ligne LeekScript, et fichiers dans l'ordre de leur première ligne
+	// Lignes de la classe racine et de ses classes internes : repère Java -> ligne LeekScript. Les
+	// fichiers, communs au programme, dans l'ordre de leur première ligne.
 	private final TreeMap<Integer, LineMapping> lines = new TreeMap<>();
-	private final ArrayList<AIFile> files = new ArrayList<>();
+	private final ArrayList<AIFile> files;
 	private int nextLine = 1;
 
 	public BytecodeWriter(Options options, int version, ClassContext aiContext, java.lang.classfile.ClassFile classFile, Map<ClassDesc, ClassDesc> hierarchy) {
@@ -136,6 +158,26 @@ public class BytecodeWriter {
 		this.version = version;
 		this.aiContext = aiContext;
 		this.context = aiContext;
+		this.entry = this;
+		this.module = null;
+		this.classes = new java.util.LinkedHashMap<>();
+		this.innerClasses = new java.util.HashMap<>();
+		this.files = new ArrayList<>();
+		rootWriters.put(aiContext, this);
+	}
+
+	private BytecodeWriter(BytecodeWriter entry, leekscript.compiler.bloc.Module module, ClassContext root) {
+		this.classFile = entry.classFile;
+		this.hierarchy = entry.hierarchy;
+		this.options = entry.options;
+		this.version = entry.version;
+		this.aiContext = root;
+		this.context = root;
+		this.entry = entry;
+		this.module = module;
+		this.classes = entry.classes;
+		this.innerClasses = entry.innerClasses;
+		this.files = entry.files;
 	}
 
 	public ClassContext context() {
@@ -151,10 +193,10 @@ public class BytecodeWriter {
 
 	// Classes écrites à côté de celle de l'IA (classes utilisateur, anonymes), leur hiérarchie pour
 	// les stack maps, et les attributs InnerClasses / NestMembers de chaque classe englobante
-	private final java.util.LinkedHashMap<String, byte[]> classes = new java.util.LinkedHashMap<>();
+	private final java.util.LinkedHashMap<String, byte[]> classes;
 	private final Map<ClassDesc, ClassDesc> hierarchy;
 	private final java.lang.classfile.ClassFile classFile;
-	private final java.util.HashMap<ClassDesc, ArrayList<java.lang.classfile.attribute.InnerClassInfo>> innerClasses = new java.util.HashMap<>();
+	private final java.util.HashMap<ClassDesc, ArrayList<java.lang.classfile.attribute.InnerClassInfo>> innerClasses;
 	private final ArrayList<ClassDesc> nestMembers = new ArrayList<>();
 	private int anonymousCount = 0;
 
@@ -168,7 +210,7 @@ public class BytecodeWriter {
 
 	/** Le talon de la classe de l'IA (type du paramètre d'instance englobante des classes internes). */
 	public Class<?> aiStub() {
-		var stub = stubs.get(aiContext.desc.displayName());
+		var stub = entry.stubs.get(aiContext.desc.displayName());
 		if (stub == null) throw new Unsupported("talon de l'IA");
 		return stub;
 	}
@@ -346,6 +388,8 @@ public class BytecodeWriter {
 
 	public void setClassBuilder(java.lang.classfile.ClassBuilder classBuilder) {
 		context.builder = classBuilder;
+		for (var field : context.pendingFields) field.accept(classBuilder);
+		context.pendingFields.clear();
 	}
 
 	/**
@@ -471,6 +515,22 @@ public class BytecodeWriter {
 		return files;
 	}
 
+	/** Inscrit un fichier dans la table du programme (ses lignes s'y rapportent par son rang). */
+	public void addFile(AIFile file) {
+		if (!files.contains(file)) files.add(file);
+	}
+
+	// Valeurs fonction à déclarer avant d'écrire les classes (cf Retry)
+	private java.util.Set<leekscript.compiler.bloc.FunctionBlock> predeclaredFunctionValues = java.util.Set.of();
+
+	public void setPredeclaredFunctionValues(java.util.Set<leekscript.compiler.bloc.FunctionBlock> functions) {
+		entry.predeclaredFunctionValues = functions;
+	}
+
+	public java.util.Set<leekscript.compiler.bloc.FunctionBlock> getPredeclaredFunctionValues() {
+		return entry.predeclaredFunctionValues;
+	}
+
 	/** Enregistre l'enveloppe générique des versions d'une fonction système et rend son nom de clé, comme JavaWriter. */
 	public String genericFunction(List<leekscript.runner.CallableVersion> versions, boolean strictNull) {
 		String key = versions.get(0).function.getName();
@@ -527,17 +587,26 @@ public class BytecodeWriter {
 	public FieldVar field(String name, Class<?> type, int flags, List<Class<?>> annotations, GType generic) {
 		var f = new FieldVar(context, name, type, generic);
 		if (context.fields.putIfAbsent(name, f) != null) throw new Unsupported("champ en double " + name);
+		java.util.function.Consumer<java.lang.classfile.ClassBuilder> write;
 		if (annotations == null || annotations.isEmpty()) {
-			context.builder.withField(name, JTypes.desc(type), flags);
+			write = builder -> builder.withField(name, JTypes.desc(type), flags);
 		} else {
-			context.builder.withField(name, JTypes.desc(type), fb -> {
+			write = builder -> builder.withField(name, JTypes.desc(type), fb -> {
 				fb.withFlags(flags);
 				var list = new ArrayList<java.lang.classfile.Annotation>();
 				for (var a : annotations) list.add(java.lang.classfile.Annotation.of(JTypes.desc(a)));
 				fb.with(java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute.of(list));
 			});
 		}
+		declareField(context, write);
 		return f;
+	}
+
+	/** Pose un champ dans la classe `c`, ou à son ouverture si elle ne s'écrit pas encore. */
+	private void declareField(ClassContext c, java.util.function.Consumer<java.lang.classfile.ClassBuilder> write) {
+		if (built && c == aiContext) throw new Unsupported("champ d'une classe déjà écrite");
+		if (c.builder != null) write.accept(c.builder);
+		else c.pendingFields.add(write);
 	}
 
 	// Initialiseurs des champs (`T g_x = <défaut>;`), exécutés par le constructeur après super()
@@ -562,12 +631,37 @@ public class BytecodeWriter {
 		if (field == null) {
 			field = new FieldVar(aiContext, name, leekscript.runner.values.FunctionLeekValue.class);
 			aiContext.fields.put(name, field);
-			aiContext.builder.withField(name, JTypes.desc(field.type()), java.lang.classfile.ClassFile.ACC_PRIVATE);
+			int flags = memberFlags();
+			declareField(aiContext, builder -> builder.withField(name, JTypes.desc(leekscript.runner.values.FunctionLeekValue.class), flags));
 			functionValues.put(name, field);
 			lazyFields.add(field);
 			lazyInitializers.add(value);
 		}
 		return field;
+	}
+
+	/**
+	 * La valeur fonction de `function` (`ufunction_<nom>`), dans la classe de son module. Celle-ci
+	 * déjà écrite ne peut plus recevoir le champ : la compilation reprend en le déclarant d'avance
+	 * (cf {@link Retry}).
+	 */
+	public FieldVar functionValue(leekscript.compiler.bloc.FunctionBlock function, java.util.function.Function<BytecodeWriter, JExpr> value) {
+		var owner = writerOf(function.getModule());
+		var name = "ufunction_" + function.getInternalName();
+		var existing = owner.functionValues.get(name);
+		if (existing != null) return existing;
+		if (owner.built) throw new Retry(function);
+		return owner.functionValue(name, () -> value.apply(owner));
+	}
+
+	/** Une valeur fonction demandée à une classe de module déjà écrite : la compilation reprend, la valeur déclarée d'avance. */
+	public static final class Retry extends RuntimeException {
+		public final transient leekscript.compiler.bloc.FunctionBlock function;
+
+		Retry(leekscript.compiler.bloc.FunctionBlock function) {
+			super("valeur fonction " + function.getName(), null, false, false);
+			this.function = function;
+		}
 	}
 
 	/** Les initialiseurs des valeurs fonction, à écrire dans le constructeur de l'IA (après les autres champs). */
@@ -962,11 +1056,12 @@ public class BytecodeWriter {
 				return m.erasedReturn();
 			}
 			case JExpr.Self c -> {
-				loadInstance(aiContext);
+				var owner = c.owner() != null ? c.owner() : aiContext;
+				loadInstance(owner);
 				for (int i = 0; i < c.args().size(); i++) emitAs(c.args().get(i), c.parameters().get(i));
 				var params = new ClassDesc[c.parameters().size()];
 				for (int i = 0; i < params.length; i++) params[i] = JTypes.desc(c.parameters().get(i));
-				cb.invokevirtual(aiContext.desc, c.name(), MethodTypeDesc.of(JTypes.desc(c.returnType()), params));
+				cb.invokevirtual(owner.desc, c.name(), MethodTypeDesc.of(JTypes.desc(c.returnType()), params));
 				return c.returnType();
 			}
 			case JExpr.InstanceOf i -> {
@@ -1557,12 +1652,18 @@ public class BytecodeWriter {
 	private java.util.Map<String, Class<?>> stubs = java.util.Map.of();
 
 	public void setStubs(java.util.Map<String, Class<?>> stubs) {
-		this.stubs = stubs;
+		entry.stubs = stubs;
 	}
 
-	/** La classe d'un nom de type écrit par JavaWriter : talon d'une classe générée, sinon classe du runtime. */
+	/**
+	 * La classe d'un nom de type écrit par JavaWriter : talon d'une classe générée, sinon classe du
+	 * runtime. Les talons des classes utilisateur sont rangés sous leur classe racine (`AI_N.u_X`,
+	 * `AI_N_<module>.u_X`) : un nom simple est celui d'une classe de la racine en cours, comme en Java.
+	 */
 	public Class<?> typeNamed(String name) {
+		var stubs = entry.stubs;
 		var stub = stubs.get(name);
+		if (stub == null && name.startsWith("u_")) stub = stubs.get(aiContext.desc.displayName() + "." + name);
 		return stub != null ? stub : runtimeType(name);
 	}
 
@@ -1575,7 +1676,8 @@ public class BytecodeWriter {
 		// conversions que javac n'écrit pas (T vers un primitif…) font repasser le programme par lui
 		if (name.startsWith("FunctionLeekValue<")) return leekscript.runner.values.FunctionLeekValue.class;
 		if (!name.contains(".") && !name.contains("<")) {
-			var member = memberClasses(aiContext.members).get(name);
+			// (un module les importe d'AI : AIModule n'en déclare pas)
+			var member = memberClasses(entry.aiContext.members).get(name);
 			if (member != null) return member;
 		}
 		return JTypes.forName(name);
@@ -1613,18 +1715,142 @@ public class BytecodeWriter {
 		return expression.hasObjectJavaResult() ? Type.ANY : expression.getType();
 	}
 
-	/** L'IA, telle que JavaWriter.getAIThis() la désigne (`AI_N.this`). */
+	/** L'IA, telle que JavaWriter.getAIThis() la désigne (`AI_N.this`, `AI_N_<module>.this.ai` dans un module). */
 	public JExpr aiThis() {
+		if (aiField != null) return new JExpr.Read(aiField);
 		return context == aiContext ? new JExpr.This() : new JExpr.Outer(aiContext);
 	}
 
-	/** Charge l'instance de `target`, la classe en cours ou une classe qui l'englobe (`this$0`…). */
+	/**
+	 * Charge l'instance de `target` : la classe en cours ou une classe qui l'englobe (`this$0`…), ou
+	 * la racine d'un autre module, par le champ de la racine en cours qui la tient.
+	 */
 	private void loadInstance(ClassContext target) {
 		cb.aload(0);
 		for (var c = context; c != target; c = c.outer) {
-			if (c.outer == null) throw new Unsupported("instance englobante introuvable");
+			if (c.outer == null) {
+				if (c != aiContext) throw new Unsupported("instance englobante introuvable");
+				var reference = reference(target);
+				cb.getfield(c.desc, reference.name(), JTypes.desc(reference.type()));
+				return;
+			}
 			cb.getfield(c.desc, "this$0", c.outer.desc);
 		}
+	}
+
+	// ---- v5 : une classe Java par module ----
+
+	/** Vrai quand le programme s'écrit en plusieurs classes racines (v5, avec un module importé). */
+	public boolean isMultiClass() {
+		return entry.moduleWriters != null;
+	}
+
+	/**
+	 * Accès d'un membre de premier niveau (fonction, globale, méthode d'initialisation) :
+	 * privé dans la classe unique d'une IA, visible des autres classes du programme sinon (JavaWriter.privateMember).
+	 */
+	public int memberFlags() {
+		return isMultiClass() ? 0 : java.lang.classfile.ClassFile.ACC_PRIVATE;
+	}
+
+	/** Crée l'écrivain de la classe de `module` (`desc`, de talon `stub`), qui étend AIModule. */
+	public BytecodeWriter addModule(leekscript.compiler.bloc.Module module, ClassDesc desc, Class<?> stub) {
+		if (entry != this) throw new IllegalStateException("addModule hors de l'écrivain de l'IA");
+		if (moduleWriters == null) moduleWriters = new java.util.LinkedHashMap<>();
+		var root = new ClassContext(desc, stub, leekscript.runner.AIModule.class, null);
+		var writer = new BytecodeWriter(this, module, root);
+		moduleWriters.put(module, writer);
+		rootWriters.put(root, writer);
+		hierarchy.put(desc, JTypes.desc(leekscript.runner.AIModule.class));
+		// Son champ `ai`, l'IA sous le type de la classe de l'IA (`final AI ai = (AI) super.ai;`)
+		var rootType = aiContext.members;
+		writer.aiField = writer.field("ai", rootType, java.lang.classfile.ClassFile.ACC_FINAL);
+		writer.initializeField(writer.aiField, new JExpr.Cast(rootType, new JExpr.Read(new MemberVar(new JExpr.This(), leekscript.runner.AIModule.class, "ai", leekscript.runner.AI.class))));
+		return writer;
+	}
+
+	public java.util.Collection<BytecodeWriter> getModuleWriters() {
+		return moduleWriters == null ? List.of() : moduleWriters.values();
+	}
+
+	/** L'écrivain de la classe qui porte les symboles de `owner` (celle de l'IA pour le module principal). */
+	public BytecodeWriter writerOf(leekscript.compiler.bloc.Module owner) {
+		if (!isMultiClass() || owner == null || owner.isMain()) return entry;
+		var writer = entry.moduleWriters.get(owner);
+		if (writer == null) throw new Unsupported("module sans classe");
+		return writer;
+	}
+
+	/** La classe racine qui porte les symboles de `owner`. */
+	public ClassContext rootOf(leekscript.compiler.bloc.Module owner) {
+		return writerOf(owner).aiContext;
+	}
+
+	/** L'appel `owner.name(args)` d'une méthode de premier niveau du module `owner`, de signature connue. */
+	public JExpr.Self self(leekscript.compiler.bloc.Module owner, String name, List<Class<?>> parameters, Class<?> returnType, List<JExpr> args) {
+		return new JExpr.Self(rootOf(owner), name, parameters, returnType, args);
+	}
+
+	/**
+	 * Le champ `name` d'un symbole de premier niveau de `owner` (globale, valeur de classe…) : par
+	 * son nom simple dans sa propre classe (JavaWriter.ref vide), sinon dans la racine de son module.
+	 */
+	public FieldVar field(leekscript.compiler.bloc.Module owner, String name) {
+		var root = rootOf(owner);
+		if (root == aiContext) return field(name);
+		var f = root.fields.get(name);
+		if (f == null) throw new Unsupported("champ inconnu " + name);
+		return f;
+	}
+
+	/** Module : son champ `ai` (l'IA sous le type de la classe de l'IA) ; null dans l'IA. */
+	public FieldVar aiField() {
+		return aiField;
+	}
+
+	/** Le champ de la racine en cours qui tient l'instance de la racine `target` (JavaWriter.ownerField). */
+	public FieldVar reference(ClassContext target) {
+		var reference = references.get(target);
+		if (reference != null) return reference;
+		// L'IA crée les siens d'avance (declareModuleFields) ; un module les reçoit de $link
+		if (module == null) throw new Unsupported("classe racine sans champ");
+		var other = entry.rootWriters.get(target);
+		var name = other.module == null ? "$main" : "$" + other.module.tag();
+		var field = new FieldVar(aiContext, name, target.type);
+		aiContext.fields.put(name, field);
+		declareField(aiContext, builder -> builder.withField(name, target.desc, 0));
+		references.put(target, field);
+		return field;
+	}
+
+	/** Dans l'IA : `final AI_N_<module> $<module> = new AI_N_<module>(this);` par module, dans l'ordre des classes Java. */
+	public void declareModuleFields() {
+		for (var writer : getModuleWriters()) {
+			var root = writer.aiContext;
+			var name = "$" + writer.module.tag();
+			var field = field(name, root.type, java.lang.classfile.ClassFile.ACC_FINAL);
+			references.put(root, field);
+			// (le talon d'un module a le constructeur `(AI ai)` de la vraie classe)
+			initializeField(field, new JExpr.New(root.type, List.of(new JExpr.This())));
+		}
+	}
+
+	/** `$link()` d'un module : les champs des autres classes racines qu'il lit, pris dans le registre de l'IA. */
+	public void writeLink() {
+		writeMethod("$link", java.lang.classfile.ClassFile.ACC_PUBLIC, List.of(), void.class, () -> {
+			for (var e : references.entrySet()) {
+				var other = entry.rootWriters.get(e.getKey());
+				JExpr value = other.module == null
+					? new JExpr.Cast(e.getKey().type, new JExpr.Cast(leekscript.runner.AI.class, aiThis()))
+					: new JExpr.Cast(e.getKey().type, new JExpr.Call(aiThis(), "getModule", List.of(JExpr.of(other.module.tag()))));
+				emitStatement(new JExpr.Assign(e.getValue(), value));
+			}
+		});
+	}
+
+	/** La classe racine est écrite : plus de champ (cf functionValue). */
+	public void markBuilt() {
+		built = true;
 	}
 
 	// Méthodes d'accès aux méthodes protégées de l'IA depuis ses classes internes (`access$N`), écrites à la fin

@@ -832,9 +832,14 @@ public class LeekVariable extends Expression {
 		return type == VariableType.GLOBAL && mainblock.getVersion() >= 2 && !isBox() && !mainblock.isRedefinedFunction(token.getWord());
 	}
 
+	/** Le champ `g_x` de la globale, dans la classe de son module (globalName(writer)). */
+	public BytecodeWriter.FieldVar bytecodeGlobalField(BytecodeWriter writer) {
+		return writer.field(globalModule, globalName());
+	}
+
 	/** La variable Java lue ou écrite telle quelle : `u_x` d'une locale ou d'un paramètre, champ `g_x` d'une globale. */
 	private BytecodeWriter.Slot bytecodeSlot(MainLeekBlock mainblock, BytecodeWriter writer) {
-		if (isBytecodeGlobal(mainblock)) return writer.field(globalName());
+		if (isBytecodeGlobal(mainblock)) return bytecodeGlobalField(writer);
 		// Champ d'instance : le champ Java `x`, trouvé comme javac depuis la classe en cours
 		if (type == VariableType.FIELD) return writer.fieldNamed(token.getWord());
 		if ((type != VariableType.LOCAL && type != VariableType.ARGUMENT) || declaration == null || mainblock.isRedefinedFunction(token.getWord()) || isWrapper() || isBox()) {
@@ -871,7 +876,7 @@ public class LeekVariable extends Expression {
 		}
 		switch (type) {
 			case LOCAL, ARGUMENT -> { return new JExpr.Read(bytecodeSlot(mainblock, writer)); }
-			case GLOBAL -> { return new JExpr.Read(writer.field(globalName())); }
+			case GLOBAL -> { return new JExpr.Read(bytecodeGlobalField(writer)); }
 			case FIELD -> { return new JExpr.Call(new JExpr.This(), "getFieldL", List.of(JExpr.of(token.getWord()))); }
 			case STATIC_FIELD -> { return new JExpr.Call(writer.classVariable(mainblock), "getFieldL", List.of(JExpr.of(token.getWord()))); }
 			case THIS, THIS_CLASS, SUPER, SYSTEM_FUNCTION, SYSTEM_CONSTANT, FUNCTION, CLASS -> { return toBytecode(mainblock, writer); }
@@ -882,7 +887,7 @@ public class LeekVariable extends Expression {
 	/** Globale v1 : un champ `Box<T> g_x`, lu par get() et écrit par les méthodes de la boîte. */
 	private BytecodeWriter.Slot bytecodeGlobalBox(MainLeekBlock mainblock, BytecodeWriter writer) {
 		if (type != VariableType.GLOBAL || mainblock.getVersion() >= 2 || mainblock.isRedefinedFunction(token.getWord())) return null;
-		return writer.field(globalName());
+		return bytecodeGlobalField(writer);
 	}
 
 	@Override
@@ -979,9 +984,8 @@ public class LeekVariable extends Expression {
 		FunctionBlock valueFunction = type == VariableType.FUNCTION ? getResolvedFunction(mainblock)
 			: type == VariableType.SYSTEM_FUNCTION && !mainblock.isRedefinedFunction(token.getWord()) ? mainblock.getUserFunction(token.getWord()) : null;
 		if (valueFunction != null && !mainblock.isRedefinedFunction(token.getWord())) {
-			if (valueFunction.getModule() != null && !valueFunction.getModule().isMain()) throw new Unsupported("fonction de module");
 			final var function = valueFunction;
-			return new JExpr.Read(writer.functionValue("ufunction_" + function.getInternalName(), () -> function.bytecodeFunctionValue(mainblock, writer)));
+			return new JExpr.Read(writer.functionValue(function, w -> function.bytecodeFunctionValue(mainblock, w)));
 		}
 		if (type == VariableType.THIS_CLASS) {
 			if (currentClass == null) throw new Unsupported("class hors classe");
@@ -993,13 +997,13 @@ public class LeekVariable extends Expression {
 			if (currentClass == null) throw new Unsupported("this hors classe");
 			return writer.thisOf(writer.typeNamed(mainblock.getWordCompiler().getCurrentClassVariable()));
 		}
-		if (type == VariableType.SUPER) return new JExpr.Read(writer.fieldNamed("u_" + classDeclaration.getParent().getInternalName()));
+		if (type == VariableType.SUPER) return new JExpr.Read(writer.field(classDeclaration.getParent().getModule(), "u_" + classDeclaration.getParent().getInternalName()));
 		if (type == VariableType.CLASS) {
 			if (classDeclaration.internal) {
 				var name = token.getWord().equals("Array") && mainblock.getVersion() <= 3 ? "legacyArrayClass" : token.getWord().toLowerCase() + "Class";
 				return new JExpr.Read(writer.fieldNamed(name));
 			}
-			return new JExpr.Read(writer.fieldNamed("u_" + classDeclaration.getInternalName()));
+			return new JExpr.Read(writer.field(classDeclaration.getModule(), "u_" + classDeclaration.getInternalName()));
 		}
 		if ((type == VariableType.METHOD || type == VariableType.STATIC_METHOD) && currentClass != null) {
 			return new JExpr.Call(writer.classVariable(mainblock), "getField", List.of(JExpr.of(token.getWord())));
