@@ -186,19 +186,28 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 
 	/** Le corps de `run(AI ai, Object thiz, Object... values)` pour le backend bytecode. */
 	public void writeBytecodeBody(MainLeekBlock mainblock, BytecodeWriter writer) {
-		if (mainblock.getWordCompiler().getVersion() < 2) throw new Unsupported("fonction anonyme v1");
 		var previousFunction = mainblock.getWordCompiler().getCurrentFunction();
 		mainblock.getWordCompiler().setCurrentFunction(this);
 		writer.line(getLocation());
 		for (int i = 0; i < mParameters.size(); i++) {
 			var declaration = mParameterDeclarations.get(i);
-			if (mReferences.get(i)) throw new Unsupported("paramètre par référence");
 			var argument = bytecodeArgument(mainblock, writer, i);
+			var Box = leekscript.runner.values.Box.class;
+			boolean v1 = mainblock.getWordCompiler().getVersion() < 2;
 			if (declaration.isCaptured()) {
 				var javaType = writer.boxGeneric(leekscript.runner.Wrapper.class, declaration.getType().getJavaName(mainblock.getVersion()));
 				var wrapper = writer.declare(declaration, leekscript.runner.Wrapper.class, mParameters.get(i), javaType);
-				var box = new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), argument));
+				// Par référence : la boîte reçue si c'en est une
+				JExpr box = new JExpr.New(Box, List.of(writer.aiThis(), argument));
+				if (mReferences.get(i)) box = new JExpr.Cond(new JExpr.InstanceOf(argument, Box), new JExpr.Cast(Box, argument), box);
 				writer.emitStatement(new JExpr.Assign(wrapper, new JExpr.New(leekscript.runner.Wrapper.class, List.of(box))));
+			} else if (v1) {
+				// `var u_x = new Box(ai, arg)` ; par référence `arg instanceof Box ? (Box) arg : new Box(ai, load(arg))`
+				JExpr box = mReferences.get(i)
+					? new JExpr.Cond(new JExpr.InstanceOf(argument, Box), new JExpr.Cast(Box, argument), new JExpr.New(Box, List.of(writer.aiThis(), JExpr.call("load", argument))))
+					: new JExpr.New(Box, List.of(writer.aiThis(), argument));
+				var local = writer.declare(declaration, Box, mParameters.get(i), null);
+				writer.emitStatement(new JExpr.Assign(local, box));
 			} else {
 				var declared = declaration.getType();
 				var generic = declared != Type.ANY ? writer.genericNamed(declared.getJavaName(mainblock.getVersion())) : null;

@@ -1751,6 +1751,12 @@ public class BytecodeWriter {
 		return expr(mainblock, expression);
 	}
 
+	public JExpr compileClone(MainLeekBlock mainblock, Expression e) {
+		var t = e.getType();
+		if (t == Type.NULL || t == Type.BOOL || t.isNumber() || t == Type.STRING) return expr(mainblock, e);
+		return JExpr.call("copy", expr(mainblock, e));
+	}
+
 	public JExpr compileLoad(MainLeekBlock mainblock, Expression e) {
 		var t = e.getType();
 		if (t == Type.NULL || t == Type.BOOL || t.isNumber() || t == Type.STRING || t.isArray()) return expr(mainblock, e);

@@ -1329,8 +1329,10 @@ public class LeekExpression extends Expression {
 		case Operators.PRE_DECREMENT:
 			return mExpression2.bytecodeAssign(mainblock, writer, mOperator, null);
 		case Operators.ASSIGN:
-			if (v < 2) throw new Unsupported("affectation v1");
-			return mExpression1.bytecodeAssign(mainblock, writer, mOperator, mExpression2);
+			if (v >= 2) return mExpression1.bytecodeAssign(mainblock, writer, mOperator, mExpression2);
+			// v1 : `= @x` affecte la référence, sinon une copie
+			if (mExpression2 instanceof LeekExpression e && e.getOperator() == Operators.REFERENCE) return mExpression1.bytecodeAssign(mainblock, writer, mOperator, e.mExpression2);
+			return mExpression1.bytecodeSetCopy(mainblock, writer, mExpression2);
 		case Operators.ADDASSIGN: {
 			var target = mExpression1.getType();
 			if ((target instanceof ArrayType || target instanceof SetType) && JavaWriter.checksNullElement(mainblock, target.element(), mExpression2)) throw new Unsupported("+= sur un conteneur");

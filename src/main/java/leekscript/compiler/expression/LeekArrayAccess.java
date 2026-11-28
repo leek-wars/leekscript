@@ -490,6 +490,25 @@ public class LeekArrayAccess extends Expression {
 		throw new Unsupported("affectation de case " + operator);
 	}
 
+	@Override
+	public JExpr bytecodeL(MainLeekBlock mainblock, BytecodeWriter writer) {
+		return JExpr.call("getBox", writer.expr(mainblock, mTabular), writer.expr(mainblock, mCase));
+	}
+
+	@Override
+	public JExpr bytecodeSetCopy(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr) {
+		JExpr e;
+		if (mTabular.getType() instanceof ArrayType at) {
+			e = new JExpr.Call(writer.expr(mainblock, mTabular), "put", List.of(writer.expr(mainblock, mCase), bytecodeElement(mainblock, writer, expr, at.element())));
+		} else if (mTabular.getType() instanceof MapType mt) {
+			e = new JExpr.Call(writer.expr(mainblock, mTabular), "set", List.of(writer.expr(mainblock, mCase), bytecodeElement(mainblock, writer, expr, mt.element())));
+		} else {
+			e = JExpr.call("put", writer.expr(mainblock, mTabular), writer.expr(mainblock, mCase), writer.expr(mainblock, expr), writer.classVariable(mainblock));
+		}
+		if (expr.getType() != Type.ANY) e = new JExpr.Cast(writer.javaClass(expr.getType()), e);
+		return e;
+	}
+
 	private JExpr bytecodeSet(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr) {
 		Type castType = expr.getType();
 		if (mTabular.getType() instanceof ArrayType at) castType = at.element();

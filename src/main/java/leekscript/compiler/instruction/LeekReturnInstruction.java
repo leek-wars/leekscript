@@ -228,7 +228,10 @@ public class LeekReturnInstruction extends LeekInstruction {
 			writer.bind(skip);
 			return;
 		}
-		if (mainblock.getWordCompiler().getVersion() == 1 && !convertsV1Return(finalExpression)) throw new Unsupported("return v1");
+		if (mainblock.getWordCompiler().getVersion() == 1 && !convertsV1Return(finalExpression)) {
+			writer.emitReturn(finalExpression.bytecodeL(mainblock, writer), writer.returnType());
+			return;
+		}
 		writer.emitReturn(writer.compileConvertTyped(mainblock, 0, finalExpression, returnType), writer.returnType());
 	}
 

@@ -243,7 +243,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 
 	@Override
 	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
-		if (mainblock.getVersion() < 2) throw new Unsupported("foreach v1");
+		boolean v1 = mainblock.getVersion() < 2;
 		AbstractLeekBlock initialBlock = mainblock.getWordCompiler().getCurrentBlock();
 		mainblock.getWordCompiler().setCurrentBlock(this);
 		if (iteratorVariable == null) throw new Unsupported("itérateur inconnu");
@@ -252,12 +252,16 @@ public class ForeachBlock extends AbstractLeekBlock {
 		writer.line(mIterator.getLocation());
 		writer.openScope();
 		var end = writer.newLabel();
-		var ar = writer.foreachContainer(writer.expr(mainblock, mArray), mArray.getOperations(), end);
+		var ar = writer.foreachContainer(v1 ? writer.compileLoad(mainblock, mArray) : writer.expr(mainblock, mArray), mArray.getOperations(), end);
 		BytecodeWriter.Slot iterator = null;
 		BytecodeWriter.Slot iteratorBox = null;
 		if (mIsDeclaration) {
 			if (mainblock.hasGlobal(mIterator.getWord())) throw new Unsupported("itérateur homonyme d'une globale");
-			if (declaration.isCaptured()) {
+			if (v1 && !declaration.isCaptured()) {
+				// `var u_x = new Box(ai, null);`
+				iteratorBox = writer.declare(declaration, leekscript.runner.values.Box.class, mIterator.getWord(), writer.boxGeneric(leekscript.runner.values.Box.class, iterJavaType));
+				writer.emitStatement(new JExpr.Assign(iteratorBox, new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), JExpr.nul()))));
+			} else if (declaration.isCaptured()) {
 				// `final Wrapper<T> u_x = new Wrapper<T>(new Box(ai, null));`, mis à jour par set()
 				iteratorBox = writer.declare(declaration, leekscript.runner.Wrapper.class, mIterator.getWord(), writer.boxGeneric(leekscript.runner.Wrapper.class, iterJavaType));
 				writer.emitStatement(new JExpr.Assign(iteratorBox, new JExpr.New(leekscript.runner.Wrapper.class, List.of(new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), JExpr.nul()))))));
@@ -277,6 +281,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 		var value = new JExpr.Call(new JExpr.Read(entry), "getValue", List.of());
 		if (iteratorBox != null) writer.emitStatement(new JExpr.Call(new JExpr.Read(iteratorBox), "set", List.of(value)));
 		else writer.emitStatement(new JExpr.Assign(iterator, writer.castObject(iterJavaType, value)));
+		if (v1 && !mReference) writer.counter(1);
 		writer.counter(1);
 		mainblock.getWordCompiler().setCurrentBlock(initialBlock);
 

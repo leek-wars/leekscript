@@ -228,9 +228,46 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 		}
 	}
 
+	/** v1 : toute variable est une boîte, `new Box<T>(ai, v[, ops])`, ou un Wrapper si elle est capturée. */
+	private void writeBytecodeV1(MainLeekBlock mainblock, BytecodeWriter writer) {
+		var version = mainblock.getVersion();
+		var boxGeneric = writer.boxGeneric(leekscript.runner.values.Box.class, type.getJavaName(version));
+		var aiThis = writer.aiThis();
+		if (this.captured) {
+			// `final var u_x = new Wrapper<T>(new Box(ai, <compileL ou null>)[, ops]);`
+			if (mValue instanceof LeekExpression e && e.getOperator() == Operators.REFERENCE) throw new Unsupported("référence capturée v1");
+			if (mValue != null && mValue.trim() instanceof LeekAnonymousFunction) throw new Unsupported("fonction capturée v1");
+			writer.line(getLocation());
+			var wrapper = writer.declare(this, leekscript.runner.Wrapper.class, token.getWord(), writer.boxGeneric(leekscript.runner.Wrapper.class, type.getJavaName(version)));
+			var box = new JExpr.New(leekscript.runner.values.Box.class, java.util.List.of(aiThis, mValue != null ? mValue.bytecodeL(mainblock, writer) : JExpr.nul()));
+			var args = mValue != null && mValue.getOperations() > 0 ? java.util.List.<JExpr>of(box, JExpr.of(mValue.getOperations())) : java.util.List.<JExpr>of(box);
+			writer.emitStatement(new JExpr.Assign(wrapper, new JExpr.New(leekscript.runner.Wrapper.class, args)));
+			return;
+		}
+		JExpr value;
+		int ops;
+		if (mValue instanceof LeekExpression e && e.getOperator() == Operators.REFERENCE) {
+			var referenced = e.getExpression2();
+			// (sur deux lignes Java, la première sans ligne LeekScript : l'expression y est évaluée)
+			writer.noLine();
+			value = referenced.isLeftValue() ? writer.expr(mainblock, referenced) : mValue.bytecodeL(mainblock, writer);
+			ops = mValue.getOperations();
+		} else {
+			writer.line(getLocation());
+			value = mValue == null ? JExpr.nul() : mValue.isLeftValue() ? writer.compileClone(mainblock, mValue) : mValue.bytecodeL(mainblock, writer);
+			ops = mValue == null ? 0 : mValue.getOperations();
+		}
+		var args = ops > 0 ? java.util.List.<JExpr>of(aiThis, value, JExpr.of(ops)) : java.util.List.<JExpr>of(aiThis, value);
+		var box = writer.declare(this, leekscript.runner.values.Box.class, token.getWord(), boxGeneric);
+		writer.emitStatement(new JExpr.Assign(box, new JExpr.New(leekscript.runner.values.Box.class, args)));
+	}
+
 	@Override
 	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
-		if (mainblock.getWordCompiler().getVersion() <= 1) throw new Unsupported("variable v1");
+		if (mainblock.getWordCompiler().getVersion() <= 1) {
+			writeBytecodeV1(mainblock, writer);
+			return;
+		}
 		writer.line(getLocation());
 		if (this.captured) {
 			// `final var u_x = new Wrapper<T>(new Box(ai, v)[, ops]);` : la boîte lue et écrite par les closures

@@ -761,7 +761,6 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, Tes
 	/** Une méthode `f_<nom>` par arité, et les variantes monomorphisées, pour le backend bytecode. */
 	@Override
 	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
-		if (mainblock.getVersion() <= 1) throw new Unsupported("fonction v1");
 		for (int paramCount = minParameters; paramCount <= maxParameters; paramCount++) {
 			writeBytecodeForArity(mainblock, writer, paramCount);
 		}
@@ -774,14 +773,32 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, Tes
 		writer.writeMethod("f_" + getInternalName(), java.lang.classfile.ClassFile.ACC_PRIVATE, parameters, returnClass, () -> {
 			writer.line(getLocation());
 			// `var u_x = p_x;` : la variable lit directement l'emplacement du paramètre
+			boolean v1 = mainblock.getVersion() <= 1;
+			var Box = leekscript.runner.values.Box.class;
 			for (int i = 0; i < paramCount; i++) {
 				var declaration = mParameterDeclarations.get(i);
-				if (mReferences.get(i)) throw new Unsupported("paramètre par référence");
+				var javaName = declaration.getType().getJavaName(mainblock.getVersion());
+				var p = new JExpr.Read(writer.alias(new Object(), BytecodeWriter.parameterSlot(parameters, i), parameters.get(i), "p_" + mParameters.get(i)));
+				// Paramètre par référence : la boîte reçue, ou une boîte neuve
+				JExpr byReference = mReferences.get(i) ? new JExpr.Cond(new JExpr.InstanceOf(p, Box), new JExpr.Cast(Box, p), new JExpr.New(Box, List.of(writer.aiThis(), v1 ? p : JExpr.call("copy", p)))) : null;
 				if (declaration.isCaptured()) {
-					// `final var u_x = new Box<T>(ai, p_x);`
-					var p = writer.alias(new Object(), BytecodeWriter.parameterSlot(parameters, i), parameters.get(i), "p_" + mParameters.get(i));
-					var box = writer.declare(declaration, leekscript.runner.values.Box.class, mParameters.get(i), writer.boxGeneric(leekscript.runner.values.Box.class, declaration.getType().getJavaName(mainblock.getVersion())));
-					writer.emitStatement(new JExpr.Assign(box, new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), new JExpr.Read(p)))));
+					if (v1) {
+						// `final var u_x = new Wrapper<T>(<référence> ou new Box(ai, copy(p_x)));`
+						JExpr box = byReference != null ? byReference : new JExpr.New(Box, List.of(writer.aiThis(), JExpr.call("copy", p)));
+						var wrapper = writer.declare(declaration, leekscript.runner.Wrapper.class, mParameters.get(i), writer.boxGeneric(leekscript.runner.Wrapper.class, javaName));
+						writer.emitStatement(new JExpr.Assign(wrapper, new JExpr.New(leekscript.runner.Wrapper.class, List.of(box))));
+					} else {
+						// `final var u_x = new Box<T>(ai, p_x);`
+						var box = writer.declare(declaration, Box, mParameters.get(i), writer.boxGeneric(Box, javaName));
+						writer.emitStatement(new JExpr.Assign(box, new JExpr.New(Box, List.of(writer.aiThis(), p))));
+					}
+				} else if (byReference != null) {
+					var box = writer.declare(declaration, Box, mParameters.get(i), null);
+					writer.emitStatement(new JExpr.Assign(box, byReference));
+				} else if (v1) {
+					// `var u_x = new Box<T>(ai, copy(p_x));`
+					var box = writer.declare(declaration, Box, mParameters.get(i), writer.boxGeneric(Box, javaName));
+					writer.emitStatement(new JExpr.Assign(box, new JExpr.New(Box, List.of(writer.aiThis(), JExpr.call("copy", p)))));
 				} else {
 					writer.alias(declaration, BytecodeWriter.parameterSlot(parameters, i), parameters.get(i), mParameters.get(i), writer.genericNamed(declaration.getType().getJavaPrimitiveName(mainblock.getVersion())));
 				}
@@ -792,10 +809,19 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, Tes
 				var declaration = mParameterDeclarations.get(i);
 				var defaultValue = defaultValues.get(i);
 				if (declaration.isCaptured()) {
-					// `final var u_x = new Box<T>(ai, <défaut>);` puis ses opérations
-					var javaType = writer.boxGeneric(leekscript.runner.values.Box.class, declaration.getType().getJavaName(mainblock.getVersion()));
-					var box = writer.declare(declaration, leekscript.runner.values.Box.class, mParameters.get(i), javaType);
-					writer.emitStatement(new JExpr.Assign(box, new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), writer.compileDefaultValue(mainblock, i, defaultValue, declaration.getType())))));
+					// `final var u_x = new Box<T>(ai, <défaut>);` (v1 : dans un Wrapper) puis ses opérations
+					var javaName = declaration.getType().getJavaName(mainblock.getVersion());
+					JExpr box = new JExpr.New(Box, List.of(writer.aiThis(), writer.compileDefaultValue(mainblock, i, defaultValue, declaration.getType())));
+					var slotClass = v1 ? leekscript.runner.Wrapper.class : Box;
+					var slot = writer.declare(declaration, slotClass, mParameters.get(i), writer.boxGeneric(slotClass, javaName));
+					writer.emitStatement(new JExpr.Assign(slot, v1 ? new JExpr.New(leekscript.runner.Wrapper.class, List.of(box)) : box));
+					writer.counter(defaultValue.operations);
+					continue;
+				}
+				if (v1) {
+					// `var u_x = new Box(ai, <défaut>);`
+					var box = writer.declare(declaration, Box, mParameters.get(i), null);
+					writer.emitStatement(new JExpr.Assign(box, new JExpr.New(Box, List.of(writer.aiThis(), writer.expr(mainblock, defaultValue)))));
 					writer.counter(defaultValue.operations);
 					continue;
 				}

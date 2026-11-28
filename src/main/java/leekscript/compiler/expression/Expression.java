@@ -53,6 +53,16 @@ public abstract class Expression {
 		throw new Unsupported("affectation de " + getClass().getSimpleName());
 	}
 
+	/** compileL pour le backend bytecode : la référence (boîte) d'une l-value, la valeur sinon. */
+	public JExpr bytecodeL(MainLeekBlock mainblock, BytecodeWriter writer) {
+		return toBytecode(mainblock, writer);
+	}
+
+	/** compileSetCopy (v1) pour le backend bytecode. */
+	public JExpr bytecodeSetCopy(MainLeekBlock mainblock, BytecodeWriter writer, Expression value) {
+		throw new Unsupported("copie dans " + getClass().getSimpleName());
+	}
+
 	public void compileL(MainLeekBlock mainblock, JavaWriter writer,  boolean parenthesis) {
 		writeJavaCode(mainblock, writer, parenthesis);
 	}

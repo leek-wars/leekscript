@@ -861,15 +861,39 @@ public class LeekVariable extends Expression {
 		return writer.local(declaration);
 	}
 
-	/** compileL d'une variable : la boîte d'un Wrapper (getVariable), la valeur sinon. */
+	/** compileL d'une variable : sa boîte (getVariable d'un Wrapper), la valeur d'une variable directe. */
+	@Override
 	public JExpr bytecodeL(MainLeekBlock mainblock, BytecodeWriter writer) {
 		var box = bytecodeBox(mainblock, writer);
 		if (box != null) {
 			if (isWrapper()) return new JExpr.Call(new JExpr.Read(box), "getVariable", List.of());
 			return new JExpr.Read(box);
 		}
-		if (type == VariableType.LOCAL || type == VariableType.ARGUMENT) return new JExpr.Read(bytecodeSlot(mainblock, writer));
-		throw new Unsupported("compileL de " + type);
+		switch (type) {
+			case LOCAL, ARGUMENT -> { return new JExpr.Read(bytecodeSlot(mainblock, writer)); }
+			case GLOBAL -> { return new JExpr.Read(writer.field(globalName())); }
+			case FIELD -> { return new JExpr.Call(new JExpr.This(), "getFieldL", List.of(JExpr.of(token.getWord()))); }
+			case STATIC_FIELD -> { return new JExpr.Call(writer.classVariable(mainblock), "getFieldL", List.of(JExpr.of(token.getWord()))); }
+			case THIS, THIS_CLASS, SUPER, SYSTEM_FUNCTION, SYSTEM_CONSTANT, FUNCTION, CLASS -> { return toBytecode(mainblock, writer); }
+			default -> throw new Unsupported("compileL de " + type);
+		}
+	}
+
+	/** Globale v1 : un champ `Box<T> g_x`, lu par get() et écrit par les méthodes de la boîte. */
+	private BytecodeWriter.Slot bytecodeGlobalBox(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (type != VariableType.GLOBAL || mainblock.getVersion() >= 2 || mainblock.isRedefinedFunction(token.getWord())) return null;
+		return writer.field(globalName());
+	}
+
+	@Override
+	public JExpr bytecodeSetCopy(MainLeekBlock mainblock, BytecodeWriter writer, Expression expr) {
+		if (type == VariableType.FIELD || type == VariableType.STATIC_FIELD || mainblock.isRedefinedFunction(token.getWord())) throw new Unsupported("copie dans " + type);
+		var global = bytecodeGlobalBox(mainblock, writer);
+		if (global != null) return new JExpr.Call(new JExpr.Read(global), "set", List.of(expr.bytecodeL(mainblock, writer)));
+		if (type == VariableType.GLOBAL) return new JExpr.Assign(bytecodeSlot(mainblock, writer), writer.expr(mainblock, expr));
+		var box = bytecodeBox(mainblock, writer);
+		if (box != null) return new JExpr.Call(new JExpr.Read(box), "set", List.of(writer.compileConvert(mainblock, 0, expr, this.variableType)));
+		return new JExpr.Assign(bytecodeSlot(mainblock, writer), writer.expr(mainblock, expr));
 	}
 
 	/** Les affectations d'une variable en boîte : méthodes du Box / Wrapper (set, increment, add_eq…). */
@@ -882,7 +906,9 @@ public class LeekVariable extends Expression {
 					if (value instanceof LeekVariable lv) l = lv.bytecodeL(mainblock, writer);
 					else if (value.isLeftValue()) throw new Unsupported("compileL de " + value.getClass().getSimpleName());
 					else l = writer.expr(mainblock, value);
-					return new JExpr.Call(boxValue, value.isLeftValue() ? "set" : "setBoxOrValue", List.of(l));
+					// v1 : une l-value partage sa boîte (setBox)
+					var method = !value.isLeftValue() ? "setBoxOrValue" : mainblock.getVersion() <= 1 ? "setBox" : "set";
+					return new JExpr.Call(boxValue, method, List.of(l));
 				}
 				var assignType = (this.declaration != null) ? this.declaration.getType() : this.variableType;
 				return new JExpr.Call(boxValue, "set", List.of(writer.compileConvert(mainblock, 0, value, assignType)));
@@ -902,7 +928,7 @@ public class LeekVariable extends Expression {
 			default -> null;
 		};
 		if (arithmetic != null) {
-			if (mainblock.getVersion() == 1) throw new Unsupported("boîte v1");
+			if (mainblock.getVersion() == 1 && arithmetic == AI.ArithmeticOperation.DIV) return new JExpr.Call(boxValue, "div_eq_v1", List.of(writer.expr(mainblock, value)));
 			var target = JavaWriter.arithmeticConversion(javaSlotType(), value.getType(), arithmetic);
 			if (target != null) return bytecodeContainerOperation(writer, boxValue, "arithmetic_eq", writer.expr(mainblock, value), arithmetic, target);
 			var method = switch (arithmetic) { case ADD -> "add_eq"; case SUB -> "sub_eq"; case MUL -> "mul_eq"; case DIV -> "div_eq"; case MOD -> "mod_eq"; default -> "pow_eq"; };
@@ -1006,6 +1032,8 @@ public class LeekVariable extends Expression {
 			}
 			return field;
 		}
+		var globalBox = bytecodeGlobalBox(mainblock, writer);
+		if (globalBox != null) return new JExpr.Call(new JExpr.Read(globalBox), "get", List.of());
 		var box = bytecodeBox(mainblock, writer);
 		JExpr base = box != null ? new JExpr.Call(new JExpr.Read(box), "get", List.of()) : new JExpr.Read(bytecodeSlot(mainblock, writer));
 		if (needsNarrowingCast(mainblock.getVersion())) {
@@ -1021,6 +1049,12 @@ public class LeekVariable extends Expression {
 	public JExpr bytecodeAssign(MainLeekBlock mainblock, BytecodeWriter writer, int operator, Expression value) {
 		if (type == VariableType.FIELD) return bytecodeFieldAssign(mainblock, writer, operator, value);
 		if (type == VariableType.STATIC_FIELD) return bytecodeStaticFieldAssign(mainblock, writer, operator, value);
+		var globalBox = bytecodeGlobalBox(mainblock, writer);
+		if (globalBox != null) {
+			// compileSet d'une globale v1 : la valeur telle quelle dans la boîte
+			if (operator == Operators.ASSIGN) return new JExpr.Call(new JExpr.Read(globalBox), "set", List.of(writer.expr(mainblock, value)));
+			return bytecodeBoxAssign(mainblock, writer, globalBox, operator, value);
+		}
 		var box = bytecodeBox(mainblock, writer);
 		if (box != null) return bytecodeBoxAssign(mainblock, writer, box, operator, value);
 		switch (operator) {

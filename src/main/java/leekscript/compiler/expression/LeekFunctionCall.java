@@ -239,7 +239,10 @@ public class LeekFunctionCall extends Expression {
 		var target = resolvedVariant != null ? resolvedVariant : user_function;
 		var arguments = new ArrayList<JExpr>();
 		for (int i = 0; i < mParameters.size(); i++) {
-			arguments.add(writer.compileConvertTyped(mainblock, i, mParameters.get(i), functionType.getArgument(mParameters.size(), i)));
+			var argType = functionType.getArgument(mParameters.size(), i);
+			// v1 : un paramètre non typé reçoit la l-value (sa boîte)
+			if (mainblock.getVersion() < 2 && argType == Type.ANY) arguments.add(mParameters.get(i).bytecodeL(mainblock, writer));
+			else arguments.add(writer.compileConvertTyped(mainblock, i, mParameters.get(i), argType));
 		}
 		JExpr call = new JExpr.Self("f_" + target.getInternalName(), target.bytecodeParameters(writer, mParameters.size()),
 			writer.primitiveClass(target.getType().returnType()), arguments);
@@ -253,7 +256,13 @@ public class LeekFunctionCall extends Expression {
 
 	@Override
 	public JExpr toBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
-		if (mainblock.getVersion() == 1) throw new Unsupported("appel v1");
+		// v1 : un résultat any est chargé (sa boîte éventuelle déréférencée)
+		if (mainblock.getVersion() == 1 && type == Type.ANY) return JExpr.call("load", bytecodeL(mainblock, writer));
+		return bytecodeL(mainblock, writer);
+	}
+
+	@Override
+	public JExpr bytecodeL(MainLeekBlock mainblock, BytecodeWriter writer) {
 		if (isEliminable(mainblock)) {
 			var classification = resolvedFunction.getBodyClassification(mainblock);
 			if (classification.kind() == ConstantFolder.BodyKind.CONSTANT) return writer.compileConvert(mainblock, 0, classification.literal(), this.type);
@@ -330,6 +339,10 @@ public class LeekFunctionCall extends Expression {
 				continue;
 			}
 			var formal = functionType.getArgument(n, i);
+			if (mainblock.getVersion() < 2) {
+				arguments.add(parameter.bytecodeL(mainblock, writer));
+				continue;
+			}
 			arguments.add(typed ? writer.compileConvertTyped(mainblock, i, parameter, formal) : writer.compileConvert(mainblock, i, parameter, formal));
 		}
 		return arguments;
@@ -446,7 +459,11 @@ public class LeekFunctionCall extends Expression {
 		int argCount = builtin ? mParameters.size() : callable_versions != null ? callable_versions.get(0).arguments.length : system_function.getVersions()[0].arguments.length;
 		var arguments = new ArrayList<JExpr>();
 		for (int i = 0; i < argCount; i++) {
-			if (i < mParameters.size()) {
+			if (i < mParameters.size() && mainblock.getVersion() < 2) {
+				// v1 : chargée (unsafe) ou convertie vers le paramètre
+				var parameter = mParameters.get(i);
+				arguments.add(unsafe ? writer.compileLoad(mainblock, parameter) : writer.compileConvert(mainblock, i, parameter, functionType.getArgument(mParameters.size(), i)));
+			} else if (i < mParameters.size()) {
 				var elementType = insertedElementType(i);
 				arguments.add(elementType != null ? writer.element(mainblock, elementType, mParameters.get(i)) : writer.expr(mainblock, mParameters.get(i)));
 			} else {

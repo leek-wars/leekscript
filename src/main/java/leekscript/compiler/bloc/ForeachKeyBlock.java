@@ -283,6 +283,12 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	private IterationSlot foreachSlot(MainLeekBlock mainblock, BytecodeWriter writer, boolean declared, LeekVariableDeclarationInstruction declaration, Token token, LeekVariable variable, int version) {
 		if (declared) {
 			if (mainblock.hasGlobal(token.getWord())) throw new Unsupported("itérateur homonyme d'une globale");
+			if (version < 2 && !declaration.isCaptured()) {
+				// `var u_x = new Box(ai, null);`
+				var box = writer.declare(declaration, leekscript.runner.values.Box.class, token.getWord(), writer.boxGeneric(leekscript.runner.values.Box.class, declaration.getVariable().getType().getJavaName(version)));
+				writer.emitStatement(new JExpr.Assign(box, new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), JExpr.nul()))));
+				return new IterationSlot(box, true);
+			}
 			if (declaration.isCaptured()) {
 				var javaType = writer.boxGeneric(leekscript.runner.Wrapper.class, declaration.getVariable().getType().getJavaName(version));
 				var wrapper = writer.declare(declaration, leekscript.runner.Wrapper.class, token.getWord(), javaType);
@@ -302,7 +308,6 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 	@Override
 	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
 		int version = mainblock.getVersion();
-		if (version < 2) throw new Unsupported("foreach v1");
 		AbstractLeekBlock initialBlock = mainblock.getWordCompiler().getCurrentBlock();
 		mainblock.getWordCompiler().setCurrentBlock(this);
 		var iteratorVariable = mainblock.getWordCompiler().getCurrentBlock().getVariable(mIterator.getWord(), false);
@@ -312,7 +317,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		writer.line(getLocation());
 		writer.openScope();
 		var end = writer.newLabel();
-		var ar = writer.foreachContainer(writer.expr(mainblock, mArray), mArray.getOperations(), end);
+		var ar = writer.foreachContainer(version < 2 ? writer.compileLoad(mainblock, mArray) : writer.expr(mainblock, mArray), mArray.getOperations(), end);
 		var key = foreachSlot(mainblock, writer, mIsKeyDeclaration, iteratorKeyDeclaration, mKeyIterator, iteratorKeyVariable, version);
 		var value = foreachSlot(mainblock, writer, mIsDeclaration, iteratorDeclaration, mIterator, iteratorVariable, version);
 		var it = writer.foreachIterator(ar);
@@ -321,13 +326,17 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		JExpr keyValue = new JExpr.Call(new JExpr.Read(entry), "getKey", List.of());
 		if (key.box()) {
 			writer.emitStatement(new JExpr.Call(new JExpr.Read(key.slot()), "set", List.of(keyValue)));
+			if (version < 2 && !mKeyReference) writer.counter(1);
 		} else {
 			if (version >= 4) keyValue = writer.castObject(iteratorKeyVariable.getType().getJavaName(version), keyValue);
 			else if (mIsKeyDeclaration) keyValue = writer.castObject(iteratorKeyDeclaration.getVariable().getType().getJavaName(version), keyValue);
 			writer.emitStatement(new JExpr.Assign(key.slot(), keyValue));
 		}
 		JExpr valueValue = new JExpr.Call(new JExpr.Read(entry), "getValue", List.of());
-		if (value.box()) writer.emitStatement(new JExpr.Call(new JExpr.Read(value.slot()), "set", List.of(valueValue)));
+		if (value.box()) {
+			writer.emitStatement(new JExpr.Call(new JExpr.Read(value.slot()), "set", List.of(valueValue)));
+			if (version < 2 && !mValueReference) writer.counter(1);
+		}
 		else writer.emitStatement(new JExpr.Assign(value.slot(), writer.castObject(iteratorVariable.getType().getJavaName(version), valueValue)));
 		mainblock.getWordCompiler().setCurrentBlock(initialBlock);
 		writer.counter(1);

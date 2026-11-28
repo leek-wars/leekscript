@@ -639,6 +639,14 @@ public class LeekObjectAccess extends Expression {
 	}
 
 	@Override
+	public JExpr bytecodeL(MainLeekBlock mainblock, BytecodeWriter writer) {
+		if (mainblock.getWordCompiler().getVersion() >= 2 && field.getWord().equals("class")) return JExpr.call("classOf", writer.expr(mainblock, object));
+		var direct = this.variable != null && (bytecodeThisLike(writer) || object.getType() instanceof ClassType);
+		if (direct) return new JExpr.Read(bytecodeDirectField(mainblock, writer));
+		return JExpr.call("getField", bytecodeReceiver(mainblock, writer), JExpr.of(field.getWord()), writer.classVariable(mainblock));
+	}
+
+	@Override
 	public JExpr bytecodeAssign(MainLeekBlock mainblock, BytecodeWriter writer, int operator, Expression value) {
 		var classVariable = writer.classVariable(mainblock);
 		switch (operator) {

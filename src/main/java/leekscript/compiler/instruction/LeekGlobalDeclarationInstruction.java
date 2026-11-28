@@ -134,7 +134,6 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 
 	@Override
 	public void writeBytecode(MainLeekBlock mainblock, BytecodeWriter writer) {
-		if (mainblock.getWordCompiler().getVersion() < 2) throw new Unsupported("globale v1");
 		final String name = getInternalName();
 		writer.line(getLocation());
 		var field = writer.field("g_" + name);
@@ -145,7 +144,11 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 			writer.jump(new JExpr.Read(writer.field("g_init_" + name)), true, skip);
 		}
 		JExpr value;
-		if (mValue != null) {
+		boolean v1 = mainblock.getWordCompiler().getVersion() < 2;
+		if (v1) {
+			// `g_x = new Box<T>(ai, <compileL ou null>, ops)`, sans ops(1)
+			value = new JExpr.New(leekscript.runner.values.Box.class, java.util.List.of(writer.aiThis(), mValue != null ? mValue.bytecodeL(mainblock, writer) : JExpr.nul(), JExpr.of(mValue != null ? mValue.getOperations() : 0)));
+		} else if (mValue != null) {
 			value = writer.compileConvert(mainblock, 0, mValue, variable.getType());
 			if (mValue.getOperations() > 0) value = JExpr.call("ops", value, JExpr.of(mValue.getOperations()));
 			if (variable.getType() != Type.ANY) value = new JExpr.Cast(writer.primitiveClass(variable.getType()), value);
@@ -154,7 +157,7 @@ public class LeekGlobalDeclarationInstruction extends LeekInstruction implements
 		}
 		writer.emitStatement(new JExpr.Assign(field, value));
 		if (persistent) writer.emitStatement(new JExpr.Assign(writer.field("g_init_" + name), JExpr.of(true)));
-		writer.emitStatement(JExpr.call("ops", JExpr.of(1)));
+		if (!v1) writer.emitStatement(JExpr.call("ops", JExpr.of(1)));
 		if (persistent) writer.bind(skip);
 	}
 

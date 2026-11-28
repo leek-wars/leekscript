@@ -1085,7 +1085,6 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		if (!mFileContents.isEmpty()) throw new Unsupported("fichiers lus");
 		if (!mRedefinedFunctions.isEmpty()) throw new Unsupported("fonctions redéfinies");
 		if (options.session() != null) throw new Unsupported("session");
-		if (getVersion() < 2 && !mGlobalesDeclarations.isEmpty()) throw new Unsupported("globales v1");
 		// Classes utilisateur : leurs talons d'abord (typage), puis la classe interne et ses membres dans l'IA
 		var classes = new java.util.ArrayList<ClassDeclarationInstruction>();
 		for (var clazz : mUserClassesList) if (!clazz.internal) classes.add(clazz);
@@ -1099,6 +1098,14 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		}
 		// Globales : un champ chacune (et sa garde d'initialisation si elle est persistante)
 		for (var global : mGlobalesDeclarations) {
+			if (getVersion() < 2) {
+				// v1 : `Box<T> g_x = new Box<T>(ai);`
+				var generic = writer.boxGeneric(leekscript.runner.values.Box.class, global.getType().getJavaName(getVersion()));
+				var field = writer.field("g_" + global.getInternalName(), leekscript.runner.values.Box.class, java.lang.classfile.ClassFile.ACC_PRIVATE, java.util.List.of(), generic);
+				writer.initializeField(field, new leekscript.compiler.bytecode.JExpr.New(leekscript.runner.values.Box.class, java.util.List.of(new leekscript.compiler.bytecode.JExpr.This())));
+				if (global.isPersistent()) writer.initializeField(writer.field("g_init_" + global.getInternalName(), boolean.class, java.lang.classfile.ClassFile.ACC_PRIVATE), leekscript.compiler.bytecode.JExpr.of(false));
+				continue;
+			}
 			var field = writer.field("g_" + global.getInternalName(), writer.primitiveClass(global.getType()), java.lang.classfile.ClassFile.ACC_PRIVATE);
 			writer.initializeField(field, writer.defaultValue(global.getType()));
 			if (global.isPersistent()) {
