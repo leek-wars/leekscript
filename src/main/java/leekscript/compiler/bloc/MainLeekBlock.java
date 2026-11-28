@@ -732,16 +732,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		if (!isTestModule()) return;
 		var rows = testRows();
 		var table = testTable(rows);
-		var chunks = LeekFileContent.chunks(table);
 		writer.writeMethod("getTestTable", java.lang.classfile.ClassFile.ACC_PUBLIC, java.util.List.of(), String.class, () -> {
-			if (chunks.size() == 1) {
-				writer.emitReturn(leekscript.compiler.bytecode.JExpr.of(table), String.class);
-			} else {
-				var args = new ArrayList<leekscript.compiler.bytecode.JExpr>();
-				args.add(leekscript.compiler.bytecode.JExpr.of(""));
-				for (var chunk : chunks) args.add(leekscript.compiler.bytecode.JExpr.of(chunk));
-				writer.emitReturn(new leekscript.compiler.bytecode.JExpr.StaticCall(String.class, "join", args), String.class);
-			}
+			writer.emitReturn(BytecodeWriter.longString(table), String.class);
 		});
 		writer.writeMethod("callTestFunction", java.lang.classfile.ClassFile.ACC_PUBLIC, java.util.List.of(int.class), void.class, () -> {
 			if (rows.isEmpty()) return;
@@ -750,17 +742,12 @@ public class MainLeekBlock extends AbstractLeekBlock {
 			var cb = writer.code();
 			var end = writer.newLabel();
 			var cases = new ArrayList<java.lang.classfile.instruction.SwitchCase>();
-			var labels = new ArrayList<java.lang.classfile.Label>();
-			for (int i = 0; i < rows.size(); i++) {
-				var label = writer.newLabel();
-				labels.add(label);
-				cases.add(java.lang.classfile.instruction.SwitchCase.of(i, label));
-			}
+			for (int i = 0; i < rows.size(); i++) cases.add(java.lang.classfile.instruction.SwitchCase.of(i, writer.newLabel()));
 			cb.iload(1);
 			cb.tableswitch(0, rows.size() - 1, end, cases);
 			for (int i = 0; i < rows.size(); i++) {
 				var row = rows.get(i);
-				writer.bind(labels.get(i));
+				writer.bind(cases.get(i).target());
 				writer.emitStatement(new leekscript.compiler.bytecode.JExpr.Self(row.method(), java.util.List.of(), writer.primitiveClass(row.returnType()), java.util.List.of()));
 				writer.goto_(end);
 			}
@@ -1146,8 +1133,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		getWordCompiler().setCurrentBlock(null);
 		if (!mRedefinedFunctions.isEmpty()) throw new Unsupported("fonctions redéfinies");
 		if (options.session() != null) throw new Unsupported("session");
-		var classes = new ArrayList<ClassDeclarationInstruction>();
-		for (var clazz : mUserClassesList) if (!clazz.internal) classes.add(clazz);
+		var classes = bytecodeUserClasses();
 		if (!classes.isEmpty() && getVersion() < 2) throw new Unsupported("classes v1");
 		var modules = bytecodeModules();
 		// Talons des classes générées (typage), puis l'écrivain de chaque classe de module
@@ -1170,27 +1156,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		// Les champs de chaque classe racine, avant d'en écrire aucune : chacune lit ceux des autres
 		declareBytecodeFields(writer, classes);
 		for (var module : writer.getModuleWriters()) declareBytecodeFields(module, classes);
+		java.util.function.BiFunction<FunctionBlock, BytecodeWriter, leekscript.compiler.bytecode.JExpr> functionValue = (function, w) -> function.bytecodeFunctionValue(this, w);
 		if (writer.isMultiClass()) {
-			writer.setPredeclaring(true);
-			for (var function : mJavaFunctionValues.getOrDefault(null, List.of())) writer.functionValue(function, w -> function.bytecodeFunctionValue(this, w));
-			for (var module : writer.getModuleWriters()) {
-				for (var function : mJavaFunctionValues.getOrDefault(module.module, List.of())) writer.functionValue(function, w -> function.bytecodeFunctionValue(this, w));
-			}
-			writer.setPredeclaring(false);
+			var java = new ArrayList<>(mJavaFunctionValues.getOrDefault(null, List.of()));
+			for (var module : writer.getModuleWriters()) java.addAll(mJavaFunctionValues.getOrDefault(module.module, List.of()));
+			writer.predeclareFunctionValues(java, functionValue);
 		}
-		for (var function : writer.getPredeclaredFunctionValues()) {
-			writer.functionValue(function, w -> function.bytecodeFunctionValue(this, w));
-		}
+		for (var function : writer.getPredeclaredFunctionValues()) writer.functionValue(function, w -> functionValue.apply(function, w));
 
-		var own = ownBytecodeClasses(writer, classes);
-		if (!own.isEmpty()) {
-			for (var clazz : own) clazz.writeBytecodeClass(this, writer);
-			for (var clazz : own) clazz.writeBytecodeMembers(this, writer);
-			for (var clazz : own) {
-				clazz.writeBytecodeDefine(this, writer);
-				clazz.writeBytecodeStatics(this, writer);
-			}
-		}
+		writeRootClassesBytecode(writer, classes);
 		// Le constructeur de l'IA câble ses modules, puis définit les classes de tout le programme
 		for (var module : writer.getModuleWriters()) {
 			writer.addConstructorStatement(new leekscript.compiler.bytecode.JExpr.Self(module.aiContext, "$link", java.util.List.of(), void.class, java.util.List.of()));
@@ -1204,9 +1178,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				for (var clazz : classes) writer.emitStatement(writer.self(clazz.getModule(), "initClass_" + clazz.getInternalName(), java.util.List.of(), void.class, java.util.List.of()));
 			});
 		}
-		for (var function : mFunctions.values()) {
-			if (writer.writerOf(function.getModule()) == writer) function.writeBytecode(this, writer);
-		}
+		writeRootFunctionsBytecode(writer);
 		writeTestTableBytecode(writer);
 		writer.writeMethod("runIA", java.lang.classfile.ClassFile.ACC_PUBLIC, java.util.List.of(leekscript.runner.Session.class), Object.class, () -> {
 			writeBlockBytecode(this, writer);
@@ -1219,8 +1191,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	 * câblage des autres classes qu'elle lit (`$link`), comme openModuleClasses les écrit en Java.
 	 */
 	public void writeModulesBytecode(BytecodeWriter entry, Options options) {
-		var classes = new ArrayList<ClassDeclarationInstruction>();
-		for (var clazz : mUserClassesList) if (!clazz.internal) classes.add(clazz);
+		var classes = bytecodeUserClasses();
 		for (var writer : entry.getModuleWriters()) {
 			var module = writer.module;
 			var desc = writer.aiContext.desc;
@@ -1230,16 +1201,8 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				clb.withFlags(java.lang.classfile.ClassFile.ACC_PUBLIC | java.lang.classfile.ClassFile.ACC_FINAL | java.lang.classfile.ClassFile.ACC_SUPER);
 				clb.withSuperclass(moduleDesc);
 				writer.setClassBuilder(clb);
-				var own = ownBytecodeClasses(writer, classes);
-				for (var clazz : own) clazz.writeBytecodeClass(this, writer);
-				for (var clazz : own) clazz.writeBytecodeMembers(this, writer);
-				for (var clazz : own) {
-					clazz.writeBytecodeDefine(this, writer);
-					clazz.writeBytecodeStatics(this, writer);
-				}
-				for (var function : mFunctions.values()) {
-					if (entry.writerOf(function.getModule()) == writer) function.writeBytecode(this, writer);
-				}
+				writeRootClassesBytecode(writer, classes);
+				writeRootFunctionsBytecode(writer);
 				// Son code de haut niveau (cf writeModuleMethods)
 				var body = bytecodeModuleBody(module);
 				writer.writeMethod("$run", writer.memberFlags(), java.util.List.of(), void.class, () -> writeInstructionsBytecode(this, writer, body));
@@ -1250,8 +1213,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 					cb.aload(1);
 					cb.loadConstant(module.tag());
 					cb.invokespecial(moduleDesc, java.lang.constant.ConstantDescs.INIT_NAME, java.lang.constant.MethodTypeDesc.of(java.lang.constant.ConstantDescs.CD_void, aiDesc, java.lang.constant.ConstantDescs.CD_String));
-					for (var initializer : writer.getFieldInitializers()) writer.emitStatement(initializer);
-					for (var initializer : writer.takeLazyInitializers()) writer.emitStatement(initializer);
+					writer.emitFieldInitializers();
 				});
 				leekscript.compiler.bytecode.GenericFunctions.write(clb, writer);
 				writer.writeAccessors(clb);
@@ -1278,6 +1240,31 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	/** Le nom de la classe Java qui porte les symboles de `module` (celle de l'IA pour le module principal). */
 	private String bytecodeClassName(Module module) {
 		return module == null || module.isMain() || !mHasModules ? className : JavaWriter.moduleClassName(className, module);
+	}
+
+	/** Les classes utilisateur du programme (hors classes internes du langage), dans leur ordre. */
+	private List<ClassDeclarationInstruction> bytecodeUserClasses() {
+		var classes = new ArrayList<ClassDeclarationInstruction>();
+		for (var clazz : mUserClassesList) if (!clazz.internal) classes.add(clazz);
+		return classes;
+	}
+
+	/** Les classes utilisateur de la classe racine de `writer` : leur classe interne, leurs membres dans la racine, leur définition. */
+	private void writeRootClassesBytecode(BytecodeWriter writer, List<ClassDeclarationInstruction> classes) {
+		var own = ownBytecodeClasses(writer, classes);
+		for (var clazz : own) clazz.writeBytecodeClass(this, writer);
+		for (var clazz : own) clazz.writeBytecodeMembers(this, writer);
+		for (var clazz : own) {
+			clazz.writeBytecodeDefine(this, writer);
+			clazz.writeBytecodeStatics(this, writer);
+		}
+	}
+
+	/** Les fonctions de la classe racine de `writer`. */
+	private void writeRootFunctionsBytecode(BytecodeWriter writer) {
+		for (var function : mFunctions.values()) {
+			if (writer.writerOf(function.getModule()) == writer) function.writeBytecode(this, writer);
+		}
 	}
 
 	/** Les classes utilisateur écrites dans la classe racine de `writer`. */

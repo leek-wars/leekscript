@@ -1484,7 +1484,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 				cb.aload(0); cb.aload(1); cb.putfield(desc, "this$0", ai.desc);
 				cb.aload(0);
 				var superCtor = Resolver.constructor(superClass, List.of(bytecodeSuperOuter(writer, cb)));
-				cb.invokespecial(superDesc, ConstantDescs.INIT_NAME, ctorDesc(superCtor));
+				cb.invokespecial(superDesc, ConstantDescs.INIT_NAME, BytecodeWriter.methodDesc(superCtor));
 				int ram = (parent == null ? AI.INSTANCE_BASE_RAM : 0) + 2 * fieldVariables.size();
 				if (ram > 0) writer.emitStatement(JExpr.call("allocateRAM", new JExpr.This(), JExpr.of(ram)));
 				int i = 0;
@@ -1510,7 +1510,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 				var outer = bytecodeSuperOuter(writer, cb);
 				if (parent != null) { cb.aload(2); cb.iload(3); }
 				var superCopy = Resolver.constructor(superClass, parent == null ? List.of(outer) : List.of(outer, stub, int.class));
-				cb.invokespecial(superDesc, ConstantDescs.INIT_NAME, ctorDesc(superCopy));
+				cb.invokespecial(superDesc, ConstantDescs.INIT_NAME, BytecodeWriter.methodDesc(superCopy));
 				var o = new JExpr.Read(new BytecodeWriter.LocalVar(2, stub, "o"));
 				var level = new JExpr.Read(new BytecodeWriter.LocalVar(3, int.class, "level"));
 				int i = 0;
@@ -1602,13 +1602,6 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 				writer.emitReturn(new JExpr.Self(writer.context(), "u_" + name, params, returnClass, args), ancestorReturn);
 			});
 		}
-	}
-
-	private static java.lang.constant.MethodTypeDesc ctorDesc(Resolver.Resolved ctor) {
-		var params = ctor.parameters();
-		var descs = new java.lang.constant.ClassDesc[params.length];
-		for (int i = 0; i < params.length; i++) descs[i] = JTypes.desc(params[i]);
-		return java.lang.constant.MethodTypeDesc.of(ConstantDescs.CD_void, descs);
 	}
 
 	/** La classe dans la hiérarchie (stack maps), le nid et les InnerClasses de sa racine, avant que du code la référence. */

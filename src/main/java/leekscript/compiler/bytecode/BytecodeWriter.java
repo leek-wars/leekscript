@@ -99,7 +99,6 @@ public class BytecodeWriter {
 
 	/** L'état de la méthode en cours d'écriture, mis de côté le temps d'écrire une classe anonyme. */
 	private static final class MethodState {
-		CodeBuilder cb;
 		int nextSlot;
 		final ArrayList<Integer> scopes = new ArrayList<>();
 		final ArrayList<Loop> loops = new ArrayList<>();
@@ -475,7 +474,6 @@ public class BytecodeWriter {
 	/** Début d'une méthode : `firstSlot` = premier emplacement libre après this et les paramètres. */
 	public void begin(CodeBuilder cb, int firstSlot, Class<?> returnType) {
 		this.cb = cb;
-		method.cb = cb;
 		method.returnType = returnType;
 		method.alive = true;
 		method.nextSlot = firstSlot;
@@ -532,9 +530,14 @@ public class BytecodeWriter {
 	private java.util.Set<leekscript.compiler.bloc.FunctionBlock> predeclaredFunctionValues = java.util.Set.of();
 	private boolean predeclaring = false;
 
-	/** Le temps de déclarer d'avance les valeurs fonction du Java (functionValue les accepte alors dans un package). */
-	public void setPredeclaring(boolean predeclaring) {
-		entry.predeclaring = predeclaring;
+	/** Déclare d'avance les valeurs fonction du Java (functionValue les accepte alors dans un package). */
+	public void predeclareFunctionValues(java.util.Collection<leekscript.compiler.bloc.FunctionBlock> functions, java.util.function.BiFunction<leekscript.compiler.bloc.FunctionBlock, BytecodeWriter, JExpr> value) {
+		entry.predeclaring = true;
+		try {
+			for (var function : functions) functionValue(function, w -> value.apply(function, w));
+		} finally {
+			entry.predeclaring = false;
+		}
 	}
 
 	public void setPredeclaredFunctionValues(java.util.Set<leekscript.compiler.bloc.FunctionBlock> functions) {
@@ -630,9 +633,6 @@ public class BytecodeWriter {
 		fieldInitializers.add(new JExpr.Assign(field, value));
 	}
 
-	public List<JExpr> getFieldInitializers() {
-		return fieldInitializers;
-	}
 
 	// Valeurs fonction des fonctions utilisateur (`ufunction_<nom>`), créées à la première référence et
 	// initialisées par le constructeur de l'IA (leur classe anonyme a l'IA pour classe englobante)
@@ -681,8 +681,14 @@ public class BytecodeWriter {
 		}
 	}
 
+	/** Dans le constructeur de la classe racine, après super() : les initialiseurs de ses champs, puis ceux des valeurs fonction. */
+	public void emitFieldInitializers() {
+		for (var initializer : fieldInitializers) emitStatement(initializer);
+		for (var initializer : takeLazyInitializers()) emitStatement(initializer);
+	}
+
 	/** Les initialiseurs des valeurs fonction, à écrire dans le constructeur de l'IA (après les autres champs). */
-	public List<JExpr> takeLazyInitializers() {
+	private List<JExpr> takeLazyInitializers() {
 		var result = new ArrayList<JExpr>();
 		// Une valeur fonction peut en référencer d'autres : la liste grandit pendant qu'on la parcourt
 		for (int i = 0; i < lazyInitializers.size(); i++) result.add(new JExpr.Assign(lazyFields.get(i), lazyInitializers.get(i).get()));
@@ -1019,16 +1025,14 @@ public class BytecodeWriter {
 		if (!(e instanceof JExpr.Lit)) {
 			var value = constant(e);
 			if (value != null) {
-				if (value instanceof Boolean bool) cb.loadConstant(bool ? 1 : 0);
-				else cb.loadConstant((java.lang.constant.ConstantDesc) value);
+				loadConstant(value);
 				return typeOf(e);
 			}
 		}
 		switch (e) {
 			case JExpr.Lit l -> {
 				if (l.value() == null) cb.aconst_null();
-				else if (l.value() instanceof Boolean bool) cb.loadConstant(bool ? 1 : 0);
-				else cb.loadConstant((java.lang.constant.ConstantDesc) l.value());
+				else loadConstant(l.value());
 				return l.type();
 			}
 			case JExpr.Read l -> {
@@ -1100,16 +1104,8 @@ public class BytecodeWriter {
 				return Class.class;
 			}
 			case JExpr.GetStatic g -> {
+				// (une constante d'enveloppe, Double.NaN…, s'est chargée par constant() en tête)
 				var f = field(g);
-				// Constante d'une classe enveloppe (Double.NaN, Long.MAX_VALUE…) : sa valeur, que javac inline
-				if (f.getType().isPrimitive() && JTypes.unbox(g.owner()) != null && Modifier.isFinal(f.getModifiers())) {
-					try {
-						cb.loadConstant((java.lang.constant.ConstantDesc) f.get(null));
-						return f.getType();
-					} catch (IllegalAccessException inaccessible) {
-						throw new Unsupported("constante " + g.name());
-					}
-				}
 				cb.getstatic(JTypes.desc(g.owner()), g.name(), JTypes.desc(f.getType()));
 				return f.getType();
 			}
@@ -1346,7 +1342,8 @@ public class BytecodeWriter {
 		return v.type();
 	}
 
-	private static MethodTypeDesc methodDesc(Resolver.Resolved m) {
+	/** Le descripteur de la méthode ou du constructeur résolu. */
+	public static MethodTypeDesc methodDesc(Resolver.Resolved m) {
 		var params = m.parameters();
 		var descs = new ClassDesc[params.length];
 		for (int i = 0; i < params.length; i++) descs[i] = JTypes.desc(params[i]);
@@ -1385,14 +1382,20 @@ public class BytecodeWriter {
 		return TypeKind.from(JTypes.desc(c));
 	}
 
+	/** Une valeur constante (Long, Integer, Double, String… ; un booléen en 0 / 1). */
+	private void loadConstant(Object value) {
+		if (value instanceof Boolean bool) cb.loadConstant(bool ? 1 : 0);
+		else cb.loadConstant((java.lang.constant.ConstantDesc) value);
+	}
+
 	/** Émet `e` converti vers `target` par conversion d'affectation (JLS 5.2) ou d'invocation (5.3). */
 	public void emitAs(JExpr e, Class<?> target) {
 		var stat = typeOf(e);
 		// Constante élargie vers un autre primitif (`1` vers double) : sa valeur convertie, comme javac
-		if (target != null && target.isPrimitive() && stat.isPrimitive() && stat != target && target != boolean.class && JTypes.widensPrimitive(stat, target)) {
+		if (target != null && stat != target && JTypes.widensPrimitive(stat, target)) {
 			var value = constant(e);
 			if (value != null) {
-				cb.loadConstant((java.lang.constant.ConstantDesc) convertConstant(value, target));
+				loadConstant(convertConstant(value, target));
 				return;
 			}
 		}
@@ -1830,14 +1833,7 @@ public class BytecodeWriter {
 		// Un int comparé au littéral 0 : sans le charger (if<cond>), comme javac
 		if (k == TypeKind.INT && b.right() instanceof JExpr.Lit lit && lit.value() instanceof Integer zero && zero == 0) {
 			emitAs(b.left(), t);
-			switch (op) {
-				case "<" -> cb.iflt(target);
-				case ">" -> cb.ifgt(target);
-				case "<=" -> cb.ifle(target);
-				case ">=" -> cb.ifge(target);
-				case "==" -> cb.ifeq(target);
-				default -> cb.ifne(target);
-			}
+			ifZero(op, target);
 			return;
 		}
 		emitAs(b.left(), t);
@@ -1861,6 +1857,11 @@ public class BytecodeWriter {
 			case FLOAT -> { if (lessFamily) cb.fcmpg(); else cb.fcmpl(); }
 			default -> throw new Unsupported("comparaison sur " + t);
 		}
+		ifZero(op, target);
+	}
+
+	/** Le saut de `op` sur l'int du sommet de pile comparé à 0 (if<cond>). */
+	private void ifZero(String op, Label target) {
 		switch (op) {
 			case "<" -> cb.iflt(target);
 			case ">" -> cb.ifgt(target);
@@ -2316,18 +2317,25 @@ public class BytecodeWriter {
 	 * l'IA, ou dans un module sa copie `file_N`, cf JavaWriter.fileField), `String.join` de ses morceaux.
 	 */
 	public JExpr fileContent(String field, String content) {
-		var chunks = leekscript.compiler.expression.LeekFileContent.chunks(content);
-		if (chunks.size() == 1) return JExpr.of(content);
+		var value = longString(content);
+		if (value instanceof JExpr.Lit) return value;
 		var f = fileFields.get(field);
 		if (f == null) {
-			var args = new ArrayList<JExpr>();
-			args.add(JExpr.of(""));
-			for (var chunk : chunks) args.add(JExpr.of(chunk));
 			var name = module == null ? field : "file_" + fileFields.size();
-			f = staticField(name, String.class, module == null ? java.lang.classfile.ClassFile.ACC_PRIVATE : 0, new JExpr.StaticCall(String.class, "join", args));
+			f = staticField(name, String.class, module == null ? java.lang.classfile.ClassFile.ACC_PRIVATE : 0, value);
 			fileFields.put(field, f);
 		}
 		return new JExpr.Read(f);
+	}
+
+	/** Une chaîne quelconque comme LeekFileContent.javaString l'écrit : le littéral, ou `String.join` de ses morceaux s'il dépasse une constante. */
+	public static JExpr longString(String content) {
+		var chunks = leekscript.compiler.expression.LeekFileContent.chunks(content);
+		if (chunks.size() == 1) return JExpr.of(content);
+		var args = new ArrayList<JExpr>();
+		args.add(JExpr.of(""));
+		for (var chunk : chunks) args.add(JExpr.of(chunk));
+		return new JExpr.StaticCall(String.class, "join", args);
 	}
 
 	/** Le champ `$contentN` du ContentType de code Java `code` (celui de `container`), créé à la première demande. */

@@ -33,8 +33,8 @@ import java.util.regex.Pattern;
  * fait (javac en écrit une par site d'appel, et pour un `C.super.m()` dans C) ; `$link` ne compte pas
  * (javac y câble aussi les modules que seul du code mort lit) ; un membre hérité de
  * l'IA ou d'AIModule se lit quel que soit le type qui le qualifie ; les contrôles de nullité que javac
- * ajoute (`Objects.requireNonNull`) et les classes anonymes qu'il écrit pour du code mort (jamais
- * instanciées) ne comptent pas.
+ * ajoute (`Objects.requireNonNull`) et le code mort qu'il écrit quand même (classe anonyme jamais
+ * instanciée, méthode privée jamais appelée) ne comptent pas ; un cast compte une fois par type.
  */
 public final class BytecodeCompare {
 
@@ -81,129 +81,153 @@ public final class BytecodeCompare {
 
 	/** Par méthode (les classes anonymes ensemble par classe de premier niveau) : le multi-ensemble de son code. */
 	private static Map<String, Map<String, Integer>> fingerprint(Map<String, byte[]> classes) {
-		var classFile = ClassFile.of();
-		var models = new HashMap<String, ClassModel>();
-		for (var e : classes.entrySet()) models.put(e.getKey(), classFile.parse(e.getValue()));
+		return new Fingerprint(classes).result;
+	}
+
+	/** Le nom d'une classe anonyme (`AI_N$7`, `AI_N$u_X$1`) : il finit par `$` et des chiffres. */
+	private static boolean isAnonymous(String name) {
+		int dollar = name.lastIndexOf('$');
+		if (dollar < 0 || dollar == name.length() - 1) return false;
+		for (int i = dollar + 1; i < name.length(); i++) if (!Character.isDigit(name.charAt(i))) return false;
+		return true;
+	}
+
+	/** La clé d'un appel : propriétaire (nom interne), nom et descripteur, comme le nom d'une méthode déclarée. */
+	private static String callKey(InvokeInstruction i) {
+		return i.owner().asInternalName() + "." + i.name().stringValue() + i.typeSymbol().descriptorString();
+	}
+
+	/** L'empreinte des classes d'un compilateur, et ce qu'il faut connaître d'elles pour la normaliser. */
+	private static final class Fingerprint {
+
+		final Map<String, Map<String, Integer>> result = new HashMap<>();
 		// Les membres que déclare chaque classe générée et sa super-classe : un membre se rapporte à la
 		// classe générée qui le déclare (javac le qualifie par une sous-classe), et un membre qu'aucune ne
 		// déclare est hérité du runtime (l'IA, AIModule, NativeObjectLeekValue)
-		var declared = new HashMap<String, Set<String>>();
-		var supers = new HashMap<String, String>();
-		// Les méthodes appelées quelque part : une méthode privée que rien n'appelle est celle de code
-		// mort que javac écrit quand même (enveloppe générique d'une branche `if (false)`)
-		var called = new HashSet<String>();
-		for (var e : models.entrySet()) e.getValue().superclass().ifPresent(s -> supers.put(e.getKey(), s.asInternalName().replace('/', '.')));
-		var instantiated = new HashSet<String>();
-		for (var e : models.entrySet()) {
-			var members = new HashSet<String>();
-			for (var m : e.getValue().methods()) members.add(m.methodName().stringValue() + m.methodType().stringValue());
-			for (var f : e.getValue().fields()) members.add(f.fieldName().stringValue());
-			declared.put(e.getKey(), members);
-			for (var m : e.getValue().methods()) {
-				m.code().ifPresent(code -> {
-					for (var element : code) {
-						if (element instanceof NewObjectInstruction n) instantiated.add(n.className().asInternalName());
-						if (element instanceof InvokeInstruction i) called.add(i.owner().asInternalName() + "." + i.name().stringValue() + i.typeSymbol().descriptorString());
-					}
-				});
-			}
-		}
-		// Ce que fait chaque méthode d'accès, compté là où elle est appelée
-		var accessors = new HashMap<String, java.util.List<String>>();
-		for (var e : models.entrySet()) {
-			for (var m : e.getValue().methods()) {
-				if (!ACCESSOR.matcher(m.methodName().stringValue()).matches()) continue;
-				var items = new java.util.ArrayList<String>();
-				m.code().ifPresent(code -> {
-					for (var element : code) {
-						var item = item(element, declared, supers);
-						if (item != null) items.add(item);
-					}
-				});
-				accessors.put(e.getKey().replace('.', '/') + "." + m.methodName().stringValue() + m.methodType().stringValue(), items);
-			}
-		}
-		var result = new HashMap<String, Map<String, Integer>>();
-		for (var e : models.entrySet()) {
-			var name = e.getKey();
-			boolean anonymous = ANONYMOUS.matcher(name).find() && name.matches(".*\\$\\d+$");
-			// Une classe anonyme que rien n'instancie : celle de code mort que javac écrit quand même
-			if (anonymous && !instantiated.contains(name)) continue;
-			for (var m : e.getValue().methods()) {
-				var methodName = m.methodName().stringValue();
-				// La table des fichiers : chaque compilateur la remplit dans son ordre, cohérent avec ses lignes
-				if (!anonymous && (methodName.equals("getErrorFiles") || methodName.equals("getErrorFilesID") || methodName.equals("$link"))) continue;
-				if (ACCESSOR.matcher(methodName).matches()) continue;
-				if (m.flags().has(java.lang.reflect.AccessFlag.PRIVATE) && !methodName.startsWith("<") && !called.contains(name + "." + methodName + m.methodType().stringValue())) continue;
-				String key;
-				if (anonymous) key = name.substring(0, name.indexOf('$')) + "$anonymes";
-				else key = name + "." + methodName + normalize(m.methodType().stringValue());
-				var bag = result.computeIfAbsent(key, k -> new HashMap<>());
-				m.code().ifPresent(code -> {
-					for (var element : code) {
-						java.util.List<String> items;
-						if (element instanceof InvokeInstruction i && ACCESSOR.matcher(i.name().stringValue()).matches()) {
-							items = accessors.getOrDefault(i.owner().asInternalName() + "." + i.name().stringValue() + i.typeSymbol().descriptorString(), java.util.List.of());
-						} else {
-							var item = item(element, declared, supers);
-							items = item == null ? java.util.List.of() : java.util.List.of(item);
+		private final Map<String, Set<String>> declared = new HashMap<>();
+		private final Map<String, String> supers = new HashMap<>();
+		// Les noms et descripteurs déjà normalisés : peu de valeurs distinctes pour beaucoup d'instructions
+		private final Map<String, String> normalized = new HashMap<>();
+
+		Fingerprint(Map<String, byte[]> classes) {
+			var classFile = ClassFile.of();
+			var models = new HashMap<String, ClassModel>();
+			for (var e : classes.entrySet()) models.put(e.getKey(), classFile.parse(e.getValue()));
+			// Les méthodes appelées et les classes instanciées quelque part : une méthode privée que rien
+			// n'appelle, une classe anonyme que rien n'instancie, sont du code mort que javac écrit quand même
+			// (enveloppe générique, fonction anonyme d'une branche `if (false)`)
+			var called = new HashSet<String>();
+			var instantiated = new HashSet<String>();
+			for (var e : models.entrySet()) {
+				var model = e.getValue();
+				model.superclass().ifPresent(c -> supers.put(e.getKey(), c.asInternalName().replace('/', '.')));
+				var members = new HashSet<String>();
+				for (var m : model.methods()) members.add(m.methodName().stringValue() + m.methodType().stringValue());
+				for (var f : model.fields()) members.add(f.fieldName().stringValue());
+				declared.put(e.getKey(), members);
+				for (var m : model.methods()) {
+					m.code().ifPresent(code -> {
+						for (var element : code) {
+							if (element instanceof NewObjectInstruction n) instantiated.add(n.className().asInternalName());
+							if (element instanceof InvokeInstruction i) called.add(callKey(i));
 						}
-						for (var item : items) {
-						// Un cast compte une fois par type : javac en écrit un de plus pour la variable
-						// d'un `instanceof T x` qu'il ne lit pas
-						if (item.startsWith("checkcast ")) bag.put(item, 1);
-						else bag.merge(item, 1, Integer::sum);
+					});
+				}
+			}
+			// Ce que fait chaque méthode d'accès, compté là où elle est appelée
+			var accessors = new HashMap<String, java.util.List<String>>();
+			for (var e : models.entrySet()) {
+				for (var m : e.getValue().methods()) {
+					if (!ACCESSOR.matcher(m.methodName().stringValue()).matches()) continue;
+					var items = new java.util.ArrayList<String>();
+					m.code().ifPresent(code -> {
+						for (var element : instructions(code)) {
+							var item = item(element);
+							if (item != null) items.add(item);
 						}
-					}
-				});
+					});
+					accessors.put(e.getKey() + "." + m.methodName().stringValue() + m.methodType().stringValue(), items);
+				}
+			}
+			for (var e : models.entrySet()) {
+				var name = e.getKey();
+				boolean anonymous = isAnonymous(name);
+				if (anonymous && !instantiated.contains(name)) continue;
+				for (var m : e.getValue().methods()) {
+					var methodName = m.methodName().stringValue();
+					// La table des fichiers : chaque compilateur la remplit dans son ordre, cohérent avec ses lignes
+					if (!anonymous && (methodName.equals("getErrorFiles") || methodName.equals("getErrorFilesID") || methodName.equals("$link"))) continue;
+					if (ACCESSOR.matcher(methodName).matches()) continue;
+					if (m.flags().has(java.lang.reflect.AccessFlag.PRIVATE) && !methodName.startsWith("<") && !called.contains(name + "." + methodName + m.methodType().stringValue())) continue;
+					var key = anonymous ? name.substring(0, name.indexOf('$')) + "$anonymes" : name + "." + methodName + normalize(m.methodType().stringValue());
+					var bag = result.computeIfAbsent(key, k -> new HashMap<>());
+					m.code().ifPresent(code -> {
+						for (var element : instructions(code)) {
+							if (element instanceof InvokeInstruction call && ACCESSOR.matcher(call.name().stringValue()).matches()) {
+								for (var item : accessors.getOrDefault(callKey(call), java.util.List.of())) bag.merge(item, 1, Integer::sum);
+								continue;
+							}
+							var item = item(element);
+							if (item == null) continue;
+							// Un cast compte une fois par type : les deux compilateurs n'en écrivent pas autant (javac
+							// en ajoute pour la variable d'un `instanceof T x`, et en omet que le backend écrit)
+							if (item.startsWith("checkcast ")) bag.put(item, 1);
+							else bag.merge(item, 1, Integer::sum);
+						}
+					});
+				}
 			}
 		}
-		return result;
-	}
 
-	private static String normalize(String s) {
-		return ANONYMOUS.matcher(ACCESSOR.matcher(s).replaceAll("access\\$")).replaceAll("\\$anonyme");
-	}
-
-	/** Le type qui qualifie un membre : la classe générée qui le déclare, ou le runtime dont il est hérité. */
-	private static String owner(String owner, String member, Map<String, Set<String>> declared, Map<String, String> supers) {
-		// Une classe anonyme se lit par sa super-classe (javac type `new S() { … }` par l'anonyme, le backend par S)
-		if (owner.matches(".*\\$\\d+") && supers.containsKey(owner)) owner = supers.get(owner);
-		if (declared.containsKey(owner)) {
-			for (var c = owner; c != null && declared.containsKey(c); c = supers.get(c)) {
-				if (declared.get(c).contains(member)) return normalize(c);
-			}
-			return "<hérité>";
+		private static java.util.List<java.lang.classfile.Instruction> instructions(java.lang.classfile.CodeModel code) {
+			var list = new java.util.ArrayList<java.lang.classfile.Instruction>();
+			for (var element : code) if (element instanceof java.lang.classfile.Instruction i) list.add(i);
+			return list;
 		}
-		if (owner.equals("leekscript.runner.AI") || owner.equals("leekscript.runner.AIModule")) return "<hérité>";
-		return normalize(owner);
-	}
 
-	private static String item(java.lang.classfile.CodeElement element, Map<String, Set<String>> declared, Map<String, String> supers) {
-		return switch (element) {
-			case InvokeInstruction i -> {
-				var owner = i.owner().asInternalName();
-				var name = i.name().stringValue();
-				var type = i.typeSymbol().descriptorString();
-				if (owner.equals("java/util/Objects") && name.equals("requireNonNull")) yield null;
-				yield "appel " + owner(owner.replace('/', '.'), name + type, declared, supers) + "." + normalize(name) + normalize(type);
+		private String normalize(String s) {
+			return normalized.computeIfAbsent(s, v -> ANONYMOUS.matcher(ACCESSOR.matcher(v).replaceAll("access\\$")).replaceAll("\\$anonyme"));
+		}
+
+		/** Le type qui qualifie un membre : la classe générée qui le déclare, ou le runtime dont il est hérité. */
+		private String owner(String owner, String member) {
+			// Une classe anonyme se lit par sa super-classe (javac type `new S() { … }` par l'anonyme, le backend par S)
+			if (isAnonymous(owner) && supers.containsKey(owner)) owner = supers.get(owner);
+			if (declared.containsKey(owner)) {
+				for (var c = owner; c != null && declared.containsKey(c); c = supers.get(c)) {
+					if (declared.get(c).contains(member)) return normalize(c);
+				}
+				return "<hérité>";
 			}
-			case FieldInstruction f -> {
-				var owner = f.owner().asInternalName().replace('/', '.');
-				var name = f.name().stringValue();
-				// L'instance englobante et les locales capturées d'une classe interne : sa plomberie, que
-				// javac et le backend n'imbriquent pas de la même façon (et javac omet un this$0 inutile)
-				if (SYNTHETIC_FIELD.matcher(name).matches()) yield null;
-				yield f.opcode().name().toLowerCase() + " " + owner(owner, name, declared, supers) + "." + name + ":" + normalize(f.typeSymbol().descriptorString());
-			}
-			case ConstantInstruction c -> c.opcode() == Opcode.ACONST_NULL ? null : "constante " + c.constantValue();
-			case OperatorInstruction o -> o.opcode().name().toLowerCase();
-			case ConvertInstruction c -> c.opcode().name().toLowerCase();
-			case TypeCheckInstruction t -> t.opcode().name().toLowerCase() + " " + normalize(t.type().asInternalName());
-			case NewObjectInstruction n -> "new " + normalize(n.className().asInternalName());
-			case NewReferenceArrayInstruction n -> "anewarray " + normalize(n.componentType().asInternalName());
-			case NewMultiArrayInstruction n -> "multianewarray " + normalize(n.arrayType().asInternalName());
-			default -> null;
-		};
+			if (owner.equals("leekscript.runner.AI") || owner.equals("leekscript.runner.AIModule")) return "<hérité>";
+			return normalize(owner);
+		}
+
+		private String item(java.lang.classfile.Instruction element) {
+			return switch (element) {
+				case InvokeInstruction i -> {
+					var owner = i.owner().asInternalName();
+					var name = i.name().stringValue();
+					var type = i.typeSymbol().descriptorString();
+					if (owner.equals("java/util/Objects") && name.equals("requireNonNull")) yield null;
+					yield "appel " + owner(owner.replace('/', '.'), name + type) + "." + normalize(name) + normalize(type);
+				}
+				case FieldInstruction f -> {
+					var name = f.name().stringValue();
+					// L'instance englobante et les locales capturées d'une classe interne : sa plomberie, que
+					// javac et le backend n'imbriquent pas de la même façon (et javac omet un this$0 inutile)
+					if (SYNTHETIC_FIELD.matcher(name).matches()) yield null;
+					yield f.opcode().name().toLowerCase() + " " + owner(f.owner().asInternalName().replace('/', '.'), name) + "." + name + ":" + normalize(f.typeSymbol().descriptorString());
+				}
+				case ConstantInstruction c -> c.opcode() == Opcode.ACONST_NULL ? null : "constante " + c.constantValue();
+				case OperatorInstruction o -> o.opcode().name().toLowerCase();
+				case ConvertInstruction c -> c.opcode().name().toLowerCase();
+				case TypeCheckInstruction t -> t.opcode().name().toLowerCase() + " " + normalize(t.type().asInternalName());
+				case NewObjectInstruction n -> "new " + normalize(n.className().asInternalName());
+				case NewReferenceArrayInstruction n -> "anewarray " + normalize(n.componentType().asInternalName());
+				case NewMultiArrayInstruction n -> "multianewarray " + normalize(n.arrayType().asInternalName());
+				default -> null;
+			};
+		}
 	}
 }

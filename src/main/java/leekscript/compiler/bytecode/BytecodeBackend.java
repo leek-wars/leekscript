@@ -205,8 +205,7 @@ public final class BytecodeBackend {
 				cb.loadConstant(main.getInstructionCount());
 				cb.loadConstant(version);
 				cb.invokespecial(rootDesc, ConstantDescs.INIT_NAME, MethodTypeDesc.of(ConstantDescs.CD_void, ConstantDescs.CD_int, ConstantDescs.CD_int));
-				for (var initializer : writer.getFieldInitializers()) writer.emitStatement(initializer);
-				for (var initializer : writer.takeLazyInitializers()) writer.emitStatement(initializer);
+				writer.emitFieldInitializers();
 				for (var statement : writer.getConstructorStatements()) writer.emitStatement(statement);
 			});
 
