@@ -1547,7 +1547,7 @@ public class BytecodeWriter {
 				var distance = constant(b.right());
 				if (distance instanceof Integer || distance instanceof Long) {
 					// Distance constante (`x << (2 + 3)`, `x >> 1l`) : javac la charge calculée, en int
-					cb.loadConstant(((Number) distance).intValue());
+					loadConstant(convertConstant(distance, int.class));
 				} else {
 					var tr = JTypes.promote(typeOf(b.right()));
 					emitAs(b.right(), tr);
@@ -1606,7 +1606,7 @@ public class BytecodeWriter {
 	/** Saute à `target` quand la condition `e` vaut `when`, continue sinon. */
 	public void jump(JExpr e, boolean when, Label target) {
 		if (typeOf(e) != boolean.class && typeOf(e) != Boolean.class) throw new Unsupported("condition de type " + typeOf(e));
-		if (!(e instanceof JExpr.Lit) && constant(e) instanceof Boolean v) {
+		if (constant(e) instanceof Boolean v) {
 			if (v == when) cb.goto_(target);
 			return;
 		}
@@ -1626,10 +1626,6 @@ public class BytecodeWriter {
 				cb.labelBinding(otherwise);
 				jump(c.otherwise(), when, target);
 				cb.labelBinding(end);
-				return;
-			}
-			case JExpr.Lit l when l.value() instanceof Boolean v -> {
-				if (v == when) cb.goto_(target);
 				return;
 			}
 			case JExpr.Unary u when u.op().equals("!") -> {
@@ -1831,8 +1827,9 @@ public class BytecodeWriter {
 			t = JTypes.promote(l, r);
 		}
 		var k = kind(t);
-		// Un int comparé à la constante 0 : sans la charger (if<cond>), comme javac
-		if (k == TypeKind.INT && constant(b.right()) instanceof Number zero && zero.intValue() == 0) {
+		// Un int comparé à la constante 0, ou un booléen à false : sans la charger (if<cond>), comme javac
+		var right = constant(b.right());
+		if (k == TypeKind.INT && right instanceof Number zero && zero.intValue() == 0 || k == TypeKind.BOOLEAN && Boolean.FALSE.equals(right)) {
 			emitAs(b.left(), t);
 			ifZero(op, target);
 			return;
