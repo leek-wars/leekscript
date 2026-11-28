@@ -1077,7 +1077,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 	/**
 	 * Le programme pour le backend bytecode, s'il sait le traiter en entier : champs, fonctions,
 	 * classes et runIA de la classe de l'IA, et en v5 la préparation des classes des modules
-	 * importés (écrites ensuite par {@link #writeModulesBytecode}). Un programme sans fichier lu,
+	 * importés (écrites ensuite par {@link #writeModulesBytecode}). Un programme
 	 * hors console. Lève {@link leekscript.compiler.bytecode.Unsupported} sinon.
 	 */
 	public void writeBytecode(BytecodeWriter writer, Options options) {
@@ -1085,7 +1085,6 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		getWordCompiler().setCurrentClass(null);
 		getWordCompiler().setCurrentBlock(null);
 		if (mMainModule != null && mMainModule.getFile().isTestModule()) throw new Unsupported("module de tests");
-		if (!mFileContents.isEmpty()) throw new Unsupported("fichiers lus");
 		if (!mRedefinedFunctions.isEmpty()) throw new Unsupported("fonctions redéfinies");
 		if (options.session() != null) throw new Unsupported("session");
 		var classes = new ArrayList<ClassDeclarationInstruction>();
@@ -1195,6 +1194,7 @@ public class MainLeekBlock extends AbstractLeekBlock {
 				leekscript.compiler.bytecode.GenericFunctions.write(clb, writer);
 				writer.writeAccessors(clb);
 				writer.writeLink();
+				writer.writeStaticInit(clb);
 				writer.finishClass(clb, desc);
 			});
 			writer.markBuilt();

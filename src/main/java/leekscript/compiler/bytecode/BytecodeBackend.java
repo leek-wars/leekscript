@@ -182,6 +182,7 @@ public final class BytecodeBackend {
 				cb.areturn();
 			});
 			writer.writeAccessors(clb);
+			writer.writeStaticInit(clb);
 			writer.finishClass(clb, thisDesc);
 		});
 		writer.markBuilt();
@@ -208,7 +209,7 @@ public final class BytecodeBackend {
 			verified = loader;
 			for (var name : classes.keySet()) {
 				try {
-					// Initialisée pour être liée (vérifiée) : les classes générées n'ont pas d'initialiseur statique
+					// Initialisée pour être liée (vérifiée) : un initialiseur statique ne fait que créer des ContentType
 					Class.forName(name, true, loader);
 				} catch (ClassNotFoundException | LinkageError e) {
 					throw new IllegalStateException("bytecode refusé par la JVM (" + name + ") : " + e);

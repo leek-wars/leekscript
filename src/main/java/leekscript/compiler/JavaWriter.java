@@ -861,8 +861,14 @@ public class JavaWriter {
 	 * any : le contrôle est O(n), une affectation déjà typée n'en a pas besoin.
 	 */
 	private String contentCheck(MainLeekBlock mainblock, Expression value, Type type) {
-		int version = mainblock.getVersion();
-		if (!LanguageFeature.TYPED_CONTENT_CHECK.enabledIn(version) || value.getType() != Type.ANY) return null;
+		var code = contentCheckCode(value.getType(), type, mainblock.getVersion());
+		if (code == null) return null;
+		return contentTypeFields.computeIfAbsent(code, c -> "$content" + contentTypeFields.size());
+	}
+
+	/** Le code Java du ContentType à vérifier sur une valeur de type `valueType` convertie vers `type` (cf contentCheck), null sinon. */
+	public static String contentCheckCode(Type valueType, Type type, int version) {
+		if (!LanguageFeature.TYPED_CONTENT_CHECK.enabledIn(version) || valueType != Type.ANY) return null;
 		var container = type.assertNotNull();
 		boolean checked;
 		if (container instanceof MapType mt) {
@@ -872,12 +878,11 @@ public class JavaWriter {
 		} else {
 			return null;
 		}
-		if (!checked) return null;
-		return contentTypeFields.computeIfAbsent(contentTypeCode(container, version), code -> "$content" + contentTypeFields.size());
+		return checked ? contentTypeCode(container, version) : null;
 	}
 
 	/** Code Java du ContentType d'un type déclaré, null pour un type qui accepte toute valeur (cf ContentType). */
-	private static String contentTypeCode(Type type, int version) {
+	public static String contentTypeCode(Type type, int version) {
 		if (type == Type.INT) return "ContentType.INT";
 		if (type == Type.REAL) return "ContentType.REAL";
 		if (type == Type.BIG_INT) return "ContentType.BIG_INT";

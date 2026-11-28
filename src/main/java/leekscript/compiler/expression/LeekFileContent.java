@@ -52,6 +52,19 @@ public class LeekFileContent extends Expression {
 		writer.addCode(writer.fileField(field));
 	}
 
+	@Override
+	public leekscript.compiler.bytecode.JExpr toBytecode(MainLeekBlock mainblock, leekscript.compiler.bytecode.BytecodeWriter writer) {
+		return writer.fileContent(field, mainblock.getFileContent(field));
+	}
+
+	/** Les morceaux d'une chaîne tels que javaString les écrit : un seul si elle tient dans une constante. */
+	public static java.util.List<String> chunks(String content) {
+		if (content.length() <= CHUNK) return java.util.List.of(content);
+		var chunks = new java.util.ArrayList<String>();
+		for (int i = 0; i < content.length(); i += CHUNK) chunks.add(content.substring(i, Math.min(content.length(), i + CHUNK)));
+		return chunks;
+	}
+
 	/** Expression Java d'une chaîne quelconque, découpée si elle dépasse la taille d'une constante. */
 	public static String javaString(String content) {
 		if (content.length() <= CHUNK) return javaLiteral(content);

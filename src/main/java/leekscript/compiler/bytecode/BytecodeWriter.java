@@ -36,7 +36,7 @@ import leekscript.compiler.expression.Expression;
 public class BytecodeWriter {
 
 	/** Une variable du Java : locale de la méthode ou champ de la classe générée. */
-	public sealed interface Slot permits LocalVar, FieldVar, MemberVar {
+	public sealed interface Slot permits LocalVar, FieldVar, MemberVar, StaticVar {
 		Class<?> type();
 		String name();
 		/** Le type générique de la variable (`Wrapper<FunctionLeekValue<String>>`…), null s'il n'en a pas. */
@@ -57,6 +57,9 @@ public class BytecodeWriter {
 
 	/** Champ public `name` d'un objet quelconque (`o.f`), déclaré dans `owner`. */
 	public record MemberVar(JExpr receiver, Class<?> owner, String name, Class<?> type) implements Slot {}
+
+	/** Champ statique d'une classe générée, en lecture seule (`$contentN` d'une classe racine, écrit par son <clinit>). */
+	public record StaticVar(ClassDesc owner, String name, Class<?> type) implements Slot {}
 
 	/** Champ d'instance d'une classe générée (globale de l'IA, champ d'une classe utilisateur…). */
 	public record FieldVar(ClassContext owner, String name, Class<?> type, GType generic) implements Slot {
@@ -1220,12 +1223,14 @@ public class BytecodeWriter {
 				emitAs(m.receiver(), m.owner());
 				cb.getfield(JTypes.desc(m.owner()), m.name(), JTypes.desc(m.type()));
 			}
+			case StaticVar s -> cb.getstatic(s.owner(), s.name(), JTypes.desc(s.type()));
 		}
 	}
 
 	/** Avant la valeur d'une écriture : le receveur d'un champ. */
 	private void storePrepare(Slot v) {
 		if (v instanceof LocalVar l && isForeign(l)) throw new Unsupported("écriture d'une locale capturée");
+		if (v instanceof StaticVar) throw new Unsupported("écriture d'un champ statique");
 		if (v instanceof FieldVar f) loadInstance(f.owner());
 		if (v instanceof MemberVar m) emitAs(m.receiver(), m.owner());
 	}
@@ -1242,6 +1247,7 @@ public class BytecodeWriter {
 				cb.dup();
 				cb.getfield(JTypes.desc(m.owner()), m.name(), JTypes.desc(m.type()));
 			}
+			case StaticVar sv -> throw new Unsupported("écriture d'un champ statique");
 		}
 	}
 
@@ -1261,6 +1267,7 @@ public class BytecodeWriter {
 				if (keep) { if (k.slotSize() == 2) cb.dup2_x1(); else cb.dup_x1(); }
 				cb.putfield(JTypes.desc(m.owner()), m.name(), JTypes.desc(m.type()));
 			}
+			case StaticVar sv -> throw new Unsupported("écriture d'un champ statique");
 		}
 	}
 
@@ -1816,7 +1823,9 @@ public class BytecodeWriter {
 		if (module == null) throw new Unsupported("classe racine sans champ");
 		var other = entry.rootWriters.get(target);
 		var name = other.module == null ? "$main" : "$" + other.module.tag();
-		var field = new FieldVar(aiContext, name, target.type);
+		// Typé par le talon de la classe (celle de l'IA n'a pas le sien pour type de contexte)
+		var type = entry.stubs.getOrDefault(target.desc.displayName(), target.type);
+		var field = new FieldVar(aiContext, name, type);
 		aiContext.fields.put(name, field);
 		declareField(aiContext, builder -> builder.withField(name, target.desc, 0));
 		references.put(target, field);
@@ -1840,9 +1849,10 @@ public class BytecodeWriter {
 		writeMethod("$link", java.lang.classfile.ClassFile.ACC_PUBLIC, List.of(), void.class, () -> {
 			for (var e : references.entrySet()) {
 				var other = entry.rootWriters.get(e.getKey());
+				var type = e.getValue().type();
 				JExpr value = other.module == null
-					? new JExpr.Cast(e.getKey().type, new JExpr.Cast(leekscript.runner.AI.class, aiThis()))
-					: new JExpr.Cast(e.getKey().type, new JExpr.Call(aiThis(), "getModule", List.of(JExpr.of(other.module.tag()))));
+					? new JExpr.Cast(type, new JExpr.Cast(leekscript.runner.AI.class, aiThis()))
+					: new JExpr.Cast(type, new JExpr.Call(aiThis(), "getModule", List.of(JExpr.of(other.module.tag()))));
 				emitStatement(new JExpr.Assign(e.getValue(), value));
 			}
 		});
@@ -2023,9 +2033,11 @@ public class BytecodeWriter {
 		}
 		var converter = containerConverter(type);
 		if (converter != null) {
-			// Contrôle du contenu (v5, valeur any) : un champ ContentType de la classe, pas encore émis
-			if (LanguageFeature.TYPED_CONTENT_CHECK.enabledIn(version) && value.getType() == Type.ANY) throw new Unsupported("contrôle du contenu d'un conteneur");
-			return JExpr.call(converter, JExpr.of(index), expr(mainblock, value));
+			JExpr converted = JExpr.call(converter, JExpr.of(index), expr(mainblock, value));
+			// v5, valeur any : `checkContent(<conversion>, $contentN)`, le ContentType du type déclaré
+			var code = leekscript.compiler.JavaWriter.contentCheckCode(value.getType(), type, version);
+			if (code != null) converted = JExpr.call("checkContent", converted, new JExpr.Read(contentType(code, type.assertNotNull())));
+			return converted;
 		}
 		if (type == Type.INT) {
 			if (value.getType() == Type.REAL) return new JExpr.Cast(long.class, new JExpr.Cast(double.class, expr(mainblock, value)));
@@ -2052,6 +2064,111 @@ public class BytecodeWriter {
 			return new JExpr.Cast(primitiveClass(type), v);
 		}
 		return expr(mainblock, value);
+	}
+
+	// Champs statiques de la classe racine et leur valeur, posée par son <clinit> : les ContentType des
+	// contrôles de contenu (JavaWriter.contentTypeFields), les contenus de fichiers trop longs pour une constante
+	private final java.util.LinkedHashMap<StaticVar, JExpr> staticInitializers = new java.util.LinkedHashMap<>();
+	private final java.util.LinkedHashMap<String, StaticVar> contentTypes = new java.util.LinkedHashMap<>();
+	private final java.util.LinkedHashMap<String, StaticVar> fileFields = new java.util.LinkedHashMap<>();
+
+	/** Un champ statique final de la classe racine, de valeur `value`. */
+	private StaticVar staticField(String name, Class<?> type, int flags, JExpr value) {
+		var field = new StaticVar(aiContext.desc, name, type);
+		declareField(aiContext, builder -> builder.withField(name, JTypes.desc(type), flags | java.lang.classfile.ClassFile.ACC_STATIC | java.lang.classfile.ClassFile.ACC_FINAL));
+		staticInitializers.put(field, value);
+		return field;
+	}
+
+	/**
+	 * Le contenu d'un fichier lu à la compilation (LeekFileContent), porté par le champ `field` de
+	 * l'IA : en une constante comme javac l'inline, sinon par un champ de la classe racine (celui de
+	 * l'IA, ou dans un module sa copie `file_N`, cf JavaWriter.fileField), `String.join` de ses morceaux.
+	 */
+	public JExpr fileContent(String field, String content) {
+		var chunks = leekscript.compiler.expression.LeekFileContent.chunks(content);
+		if (chunks.size() == 1) return JExpr.of(content);
+		var f = fileFields.get(field);
+		if (f == null) {
+			var args = new ArrayList<JExpr>();
+			args.add(JExpr.of(""));
+			for (var chunk : chunks) args.add(JExpr.of(chunk));
+			var name = module == null ? field : "file_" + fileFields.size();
+			f = staticField(name, String.class, module == null ? java.lang.classfile.ClassFile.ACC_PRIVATE : 0, new JExpr.StaticCall(String.class, "join", args));
+			fileFields.put(field, f);
+		}
+		return new JExpr.Read(f);
+	}
+
+	/** Le champ `$contentN` du ContentType de code Java `code` (celui de `container`), créé à la première demande. */
+	private StaticVar contentType(String code, Type container) {
+		var field = contentTypes.get(code);
+		if (field != null) return field;
+		field = staticField("$content" + contentTypes.size(), leekscript.runner.ContentType.class, java.lang.classfile.ClassFile.ACC_PRIVATE, contentTypeValue(container));
+		contentTypes.put(code, field);
+		return field;
+	}
+
+	/** Le ContentType d'un type déclaré, comme JavaWriter.contentTypeCode l'écrit ; null : il accepte toute valeur. */
+	private JExpr contentTypeValue(Type type) {
+		var ct = leekscript.runner.ContentType.class;
+		if (type == Type.INT) return new JExpr.GetStatic(ct, "INT");
+		if (type == Type.REAL) return new JExpr.GetStatic(ct, "REAL");
+		if (type == Type.BIG_INT) return new JExpr.GetStatic(ct, "BIG_INT");
+		if (type == Type.BOOL) return new JExpr.GetStatic(ct, "BOOL");
+		if (type == Type.STRING) return new JExpr.GetStatic(ct, "STRING");
+		if (type == Type.NULL) return new JExpr.GetStatic(ct, "NULL");
+		if (type instanceof leekscript.common.ArrayType at) return new JExpr.StaticCall(ct, "array", List.of(contentTypeOrAny(at.element())));
+		if (type instanceof leekscript.common.SetType st) return new JExpr.StaticCall(ct, "set", List.of(contentTypeOrAny(st.element())));
+		if (type instanceof leekscript.common.MapType mt) return new JExpr.StaticCall(ct, "map", List.of(contentTypeOrAny(mt.key()), contentTypeOrAny(mt.element())));
+		if (type instanceof leekscript.common.IntervalType) return new JExpr.GetStatic(ct, "INTERVAL");
+		if (type instanceof leekscript.common.FunctionType) return new JExpr.GetStatic(ct, "FUNCTION");
+		if (type instanceof leekscript.common.ClassValueType) return new JExpr.GetStatic(ct, "CLASS");
+		if (type instanceof leekscript.common.ClassType c) {
+			return new JExpr.StaticCall(ct, "instance", List.of(new JExpr.ClassLit(typeNamed(c.getJavaName(version))), JExpr.of(c.getClassDeclaration().getName())));
+		}
+		if (type instanceof CompoundType compound && !(type instanceof leekscript.common.VersionsType)) {
+			// Les membres dans l'ordre de leur code Java, comme JavaWriter
+			var members = new java.util.TreeMap<String, JExpr>();
+			for (var member : compound.getTypes()) {
+				var code = leekscript.compiler.JavaWriter.contentTypeCode(member, version);
+				if (code == null) return null;
+				members.put(code, contentTypeValue(member));
+			}
+			if (members.size() != compound.getTypes().size()) throw new Unsupported("union de membres de même code");
+			var args = new ArrayList<JExpr>();
+			args.add(JExpr.of(type.toString()));
+			args.addAll(members.values());
+			return new JExpr.StaticCall(ct, "union", args);
+		}
+		return null;
+	}
+
+	private JExpr contentTypeOrAny(Type type) {
+		var value = contentTypeValue(type);
+		return value != null ? value : new JExpr.GetStatic(leekscript.runner.ContentType.class, "ANY");
+	}
+
+	/** `<clinit>` de la classe racine : ses champs statiques (cf staticField). Rien sans eux. */
+	public void writeStaticInit(java.lang.classfile.ClassBuilder builder) {
+		if (staticInitializers.isEmpty()) return;
+		builder.withMethodBody(ConstantDescs.CLASS_INIT_NAME, MethodTypeDesc.of(ConstantDescs.CD_void), java.lang.classfile.ClassFile.ACC_STATIC, code -> {
+			var saved = method;
+			var savedCb = cb;
+			method = new MethodState();
+			try {
+				begin(code, 0, void.class);
+				for (var e : staticInitializers.entrySet()) {
+					var field = e.getKey();
+					emitAs(e.getValue(), field.type());
+					code.putstatic(field.owner(), field.name(), JTypes.desc(field.type()));
+				}
+				code.return_();
+			} finally {
+				method = saved;
+				cb = savedCb;
+			}
+		});
 	}
 
 	private String containerConverter(Type type) {
