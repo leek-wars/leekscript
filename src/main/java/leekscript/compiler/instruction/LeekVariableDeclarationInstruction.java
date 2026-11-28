@@ -236,9 +236,14 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 		if (this.captured) {
 			// `final var u_x = new Wrapper<T>(new Box(ai, <compileL ou null>)[, ops]);`
 			if (mValue instanceof LeekExpression e && e.getOperator() == Operators.REFERENCE) throw new Unsupported("référence capturée v1");
-			if (mValue != null && mValue.trim() instanceof LeekAnonymousFunction) throw new Unsupported("fonction capturée v1");
 			writer.line(getLocation());
 			var wrapper = writer.declare(this, leekscript.runner.Wrapper.class, token.getWord(), writer.boxGeneric(leekscript.runner.Wrapper.class, type.getJavaName(version)));
+			if (mValue != null && mValue.trim() instanceof LeekAnonymousFunction) {
+				// Comme en v2 : déclarée avant sa valeur, la fonction peut s'appeler par la variable
+				writer.emitStatement(new JExpr.Assign(wrapper, new JExpr.New(leekscript.runner.Wrapper.class, java.util.List.of(new JExpr.New(leekscript.runner.values.Box.class, java.util.List.of(aiThis, JExpr.nul()))))));
+				writer.emitStatement(new JExpr.Call(new JExpr.Read(wrapper), "set", java.util.List.of(writer.expr(mainblock, mValue))));
+				return;
+			}
 			var box = new JExpr.New(leekscript.runner.values.Box.class, java.util.List.of(aiThis, mValue != null ? mValue.bytecodeL(mainblock, writer) : JExpr.nul()));
 			var args = mValue != null && mValue.getOperations() > 0 ? java.util.List.<JExpr>of(box, JExpr.of(mValue.getOperations())) : java.util.List.<JExpr>of(box);
 			writer.emitStatement(new JExpr.Assign(wrapper, new JExpr.New(leekscript.runner.Wrapper.class, args)));
