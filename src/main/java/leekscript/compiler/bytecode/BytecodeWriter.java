@@ -1544,11 +1544,12 @@ public class BytecodeWriter {
 			}
 			case "<<", ">>", ">>>" -> {
 				emitLeft(b.left(), t, leftOnStack);
-				var tr = JTypes.promote(typeOf(b.right()));
-				if (constant(b.right()) instanceof Number distance) {
+				var distance = constant(b.right());
+				if (distance instanceof Integer || distance instanceof Long) {
 					// Distance constante (`x << (2 + 3)`, `x >> 1l`) : javac la charge calculée, en int
-					cb.loadConstant(distance.intValue());
+					cb.loadConstant(((Number) distance).intValue());
 				} else {
+					var tr = JTypes.promote(typeOf(b.right()));
 					emitAs(b.right(), tr);
 					if (tr == long.class) cb.l2i();
 				}
@@ -1831,7 +1832,7 @@ public class BytecodeWriter {
 		}
 		var k = kind(t);
 		// Un int comparé à la constante 0 : sans la charger (if<cond>), comme javac
-		if (k == TypeKind.INT && constant(b.right()) instanceof Number zero && !(zero instanceof Double) && zero.longValue() == 0) {
+		if (k == TypeKind.INT && constant(b.right()) instanceof Number zero && zero.intValue() == 0) {
 			emitAs(b.left(), t);
 			ifZero(op, target);
 			return;
