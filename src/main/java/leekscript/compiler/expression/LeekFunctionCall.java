@@ -294,7 +294,11 @@ public class LeekFunctionCall extends Expression {
 		if (mExpression.getType() instanceof ClassValueType cvt && cvt.getClassDeclaration() != null) {
 			if (LeekVariable.isStaticClassReference(mExpression, writer)) {
 				var constructed = cvt.getClassDeclaration();
-				if (constructed.internal) throw new Unsupported("new d'une classe interne");
+				if (constructed.internal) {
+					// `new_setClass(args)` : méthode du runtime, nommée d'après le champ de la classe interne
+					var classField = mExpression.trim() instanceof LeekVariable v && v.toString().equals("Array") && mainblock.getVersion() <= 3 ? "legacyArrayClass" : constructed.getName().toLowerCase() + "Class";
+					return new JExpr.Call(null, "new_" + classField, bytecodeArguments(mainblock, writer, false, false));
+				}
 				var name = "u_" + constructed.getInternalName();
 				// new_u_X(Object... args) : un seul argument déjà Object[] (le `new Object[] { null }` d'un null seul) est le tableau lui-même
 				var arguments = bytecodeArguments(mainblock, writer, false, false);

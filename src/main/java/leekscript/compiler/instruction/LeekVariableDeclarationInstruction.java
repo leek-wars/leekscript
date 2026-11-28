@@ -234,7 +234,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 		writer.line(getLocation());
 		if (this.captured) {
 			// `final var u_x = new Wrapper<T>(new Box(ai, v)[, ops]);` : la boîte lue et écrite par les closures
-			var javaType = writer.typeNamed(type.getJavaName(mainblock.getVersion()));
+			var javaType = writer.boxGeneric(leekscript.runner.Wrapper.class, type.getJavaName(mainblock.getVersion()));
 			var wrapper = writer.declare(this, leekscript.runner.Wrapper.class, token.getWord(), javaType);
 			if (mValue != null && mValue.trim() instanceof LeekAnonymousFunction) {
 				// Déclarée avant sa valeur : la fonction peut s'appeler elle-même par la variable
@@ -263,7 +263,7 @@ public class LeekVariableDeclarationInstruction extends LeekInstruction implemen
 			if (castHere) value = new JExpr.Cast(javaType, value);
 		}
 		// Déclarée après sa valeur : `var x = x` lit l'ancienne variable, comme en Java
-		var local = writer.declare(this, javaType, token.getWord());
+		var local = writer.declare(this, javaType, token.getWord(), writer.genericNamed(this.type.getJavaPrimitiveName(mainblock.getVersion())));
 		writer.emitStatement(new JExpr.Assign(local, value));
 	}
 

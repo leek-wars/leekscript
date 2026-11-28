@@ -284,7 +284,7 @@ public class ForeachKeyBlock extends AbstractLeekBlock {
 		if (declared) {
 			if (mainblock.hasGlobal(token.getWord())) throw new Unsupported("itérateur homonyme d'une globale");
 			if (declaration.isCaptured()) {
-				var javaType = writer.typeNamed(declaration.getVariable().getType().getJavaName(version));
+				var javaType = writer.boxGeneric(leekscript.runner.Wrapper.class, declaration.getVariable().getType().getJavaName(version));
 				var wrapper = writer.declare(declaration, leekscript.runner.Wrapper.class, token.getWord(), javaType);
 				writer.emitStatement(new JExpr.Assign(wrapper, new JExpr.New(leekscript.runner.Wrapper.class, List.of(new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), JExpr.nul()))))));
 				return new IterationSlot(wrapper, true);

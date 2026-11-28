@@ -6,7 +6,18 @@ package leekscript.compiler.bytecode;
  */
 public class Unsupported extends RuntimeException {
 
+	/** Diagnostic : `-Dleekscript.bytecode.trace=<motif>` imprime d'où vient un repli dont la raison contient le motif. */
+	private static final String TRACE = System.getProperty("leekscript.bytecode.trace");
+
+	static boolean tracing() {
+		return TRACE != null;
+	}
+
 	public Unsupported(String what) {
 		super(what, null, false, false);
+		if (TRACE != null && what != null && what.contains(TRACE)) {
+			var at = BytecodeWriter.CURRENT_LOCATION.get();
+			new Throwable("repli : " + what + (at != null ? " (" + at.getFile().getPath() + ":" + at.getStartLine() + ")" : "")).printStackTrace(System.out);
+		}
 	}
 }

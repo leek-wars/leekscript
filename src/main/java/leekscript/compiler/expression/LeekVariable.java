@@ -1020,6 +1020,7 @@ public class LeekVariable extends Expression {
 	@Override
 	public JExpr bytecodeAssign(MainLeekBlock mainblock, BytecodeWriter writer, int operator, Expression value) {
 		if (type == VariableType.FIELD) return bytecodeFieldAssign(mainblock, writer, operator, value);
+		if (type == VariableType.STATIC_FIELD) return bytecodeStaticFieldAssign(mainblock, writer, operator, value);
 		var box = bytecodeBox(mainblock, writer);
 		if (box != null) return bytecodeBoxAssign(mainblock, writer, box, operator, value);
 		switch (operator) {
@@ -1043,6 +1044,60 @@ public class LeekVariable extends Expression {
 			case Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN: return bytecodeBitAssign(mainblock, writer, value, AI.BitOperation.USHR, ">>>");
 		}
 		throw new Unsupported("affectation " + operator);
+	}
+
+	/** Les affectations d'un champ statique `x` dans sa classe : méthodes de la ClassLeekValue (setField, field_add_eq…). */
+	private JExpr bytecodeStaticFieldAssign(MainLeekBlock mainblock, BytecodeWriter writer, int operator, Expression value) {
+		if (mainblock.getWordCompiler().getCurrentClassVariable() == null) throw new Unsupported("champ statique hors classe");
+		var classValue = writer.classVariable(mainblock);
+		var name = JExpr.of(token.getWord());
+		switch (operator) {
+			case Operators.ASSIGN: {
+				var fieldType = getJavaDeclarationType();
+				var v = fieldType == Type.BIG_INT ? writer.compileConvert(mainblock, 0, value, fieldType) : writer.expr(mainblock, value);
+				return writer.fieldResultConversion(this.variableType, new JExpr.Call(classValue, "setField", List.of(name, v)));
+			}
+			case Operators.INCREMENT: return writer.fieldResultConversion(this.variableType, new JExpr.Call(classValue, "field_inc", List.of(name)));
+			case Operators.DECREMENT: return writer.fieldResultConversion(this.variableType, new JExpr.Call(classValue, "field_dec", List.of(name)));
+			case Operators.PRE_INCREMENT: return writer.fieldResultConversion(this.variableType, new JExpr.Call(classValue, "field_pre_inc", List.of(name)));
+			case Operators.PRE_DECREMENT: return writer.fieldResultConversion(this.variableType, new JExpr.Call(classValue, "field_pre_dec", List.of(name)));
+		}
+		AI.ArithmeticOperation arithmetic = switch (operator) {
+			case Operators.ADDASSIGN -> AI.ArithmeticOperation.ADD;
+			case Operators.MINUSASSIGN -> AI.ArithmeticOperation.SUB;
+			case Operators.MULTIPLIEASSIGN -> AI.ArithmeticOperation.MUL;
+			case Operators.DIVIDEASSIGN -> AI.ArithmeticOperation.DIV;
+			case Operators.MODULUSASSIGN -> AI.ArithmeticOperation.MOD;
+			case Operators.POWERASSIGN -> AI.ArithmeticOperation.POW;
+			default -> null;
+		};
+		var expr = writer.expr(mainblock, value);
+		if (arithmetic != null) {
+			var target = JavaWriter.staticFieldArithmeticConversion(javaSlotType(), value.getType(), arithmetic);
+			if (target != null) return bytecodeContainerCall(classValue, "field_arithmetic_eq", name, expr, arithmetic, target);
+			var helper = "field_" + switch (arithmetic) { case ADD -> "add"; case SUB -> "sub"; case MUL -> "mul"; case DIV -> "div"; case MOD -> "mod"; default -> "pow"; } + "_eq";
+			JExpr call = new JExpr.Call(classValue, helper, List.of(name, expr));
+			// `/=` et `%=` rendent le résultat tel quel, les autres le convertissent comme setField
+			return arithmetic == AI.ArithmeticOperation.DIV || arithmetic == AI.ArithmeticOperation.MOD ? call : writer.fieldResultConversion(this.variableType, call);
+		}
+		AI.BitOperation bit = switch (operator) {
+			case Operators.INTEGER_DIVISION_EQ -> AI.BitOperation.INTDIV;
+			case Operators.BITOR_ASSIGN -> AI.BitOperation.BOR;
+			case Operators.BITAND_ASSIGN -> AI.BitOperation.BAND;
+			case Operators.BITXOR_ASSIGN -> AI.BitOperation.BXOR;
+			case Operators.SHIFT_LEFT_ASSIGN -> AI.BitOperation.SHL;
+			case Operators.SHIFT_RIGHT_ASSIGN -> AI.BitOperation.SHR;
+			case Operators.SHIFT_UNSIGNED_RIGHT_ASSIGN -> AI.BitOperation.USHR;
+			default -> throw new Unsupported("affectation de champ statique " + operator);
+		};
+		var target = JavaWriter.containerBitConversion(javaSlotType());
+		if (target != null) return bytecodeContainerCall(classValue, "field_bit_eq", name, expr, bit, target);
+		return new JExpr.Call(classValue, "field_" + bit.name().toLowerCase(Locale.ROOT) + "_eq", List.of(name, expr));
+	}
+
+	private static JExpr bytecodeContainerCall(JExpr owner, String method, JExpr name, JExpr value, Enum<?> operation, Type target) {
+		String typeName = target == Type.BOOL ? "BOOL" : target == Type.INT ? "INT" : target == Type.REAL ? "REAL" : "BIG_INT";
+		return new JExpr.Call(owner, method, List.of(name, value, new JExpr.GetStatic(operation.getDeclaringClass(), operation.name()), new JExpr.GetStatic(Type.class, typeName)));
 	}
 
 	/** Les affectations d'un champ d'instance `x` (branches FIELD de compileSet, compileAddEq…) : jamais d'opérateur Java natif. */

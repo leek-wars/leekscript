@@ -780,10 +780,10 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, Tes
 				if (declaration.isCaptured()) {
 					// `final var u_x = new Box<T>(ai, p_x);`
 					var p = writer.alias(new Object(), BytecodeWriter.parameterSlot(parameters, i), parameters.get(i), "p_" + mParameters.get(i));
-					var box = writer.declare(declaration, leekscript.runner.values.Box.class, mParameters.get(i), writer.typeNamed(declaration.getType().getJavaName(mainblock.getVersion())));
+					var box = writer.declare(declaration, leekscript.runner.values.Box.class, mParameters.get(i), writer.boxGeneric(leekscript.runner.values.Box.class, declaration.getType().getJavaName(mainblock.getVersion())));
 					writer.emitStatement(new JExpr.Assign(box, new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), new JExpr.Read(p)))));
 				} else {
-					writer.alias(declaration, BytecodeWriter.parameterSlot(parameters, i), parameters.get(i), mParameters.get(i));
+					writer.alias(declaration, BytecodeWriter.parameterSlot(parameters, i), parameters.get(i), mParameters.get(i), writer.genericNamed(declaration.getType().getJavaPrimitiveName(mainblock.getVersion())));
 				}
 			}
 			// Paramètres absents : leur valeur par défaut (lignes Java sans ligne LeekScript)
@@ -793,7 +793,7 @@ public class FunctionBlock extends AbstractLeekBlock implements Annotatable, Tes
 				var defaultValue = defaultValues.get(i);
 				if (declaration.isCaptured()) {
 					// `final var u_x = new Box<T>(ai, <défaut>);` puis ses opérations
-					var javaType = writer.typeNamed(declaration.getType().getJavaName(mainblock.getVersion()));
+					var javaType = writer.boxGeneric(leekscript.runner.values.Box.class, declaration.getType().getJavaName(mainblock.getVersion()));
 					var box = writer.declare(declaration, leekscript.runner.values.Box.class, mParameters.get(i), javaType);
 					writer.emitStatement(new JExpr.Assign(box, new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), writer.compileDefaultValue(mainblock, i, defaultValue, declaration.getType())))));
 					writer.counter(defaultValue.operations);

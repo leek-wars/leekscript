@@ -39,8 +39,8 @@ public class BytecodeWriter {
 	public sealed interface Slot permits LocalVar, FieldVar, MemberVar {
 		Class<?> type();
 		String name();
-		/** Le paramètre de type d'un `Box<T>` / `Wrapper<T>` (variable capturée), que `get()` rend. */
-		default Class<?> typeArg() {
+		/** Le type générique de la variable (`Wrapper<FunctionLeekValue<String>>`…), null s'il n'en a pas. */
+		default GType generic() {
 			return null;
 		}
 	}
@@ -49,7 +49,7 @@ public class BytecodeWriter {
 	 * Variable locale : son emplacement, son type Java, son nom LeekScript, la méthode qui la
 	 * déclare (null : celle en cours d'écriture) et le paramètre de type de sa boîte.
 	 */
-	public record LocalVar(int slot, Class<?> type, String name, Object method, Class<?> typeArg) implements Slot {
+	public record LocalVar(int slot, Class<?> type, String name, Object method, GType generic) implements Slot {
 		public LocalVar(int slot, Class<?> type, String name) {
 			this(slot, type, name, null, null);
 		}
@@ -59,7 +59,7 @@ public class BytecodeWriter {
 	public record MemberVar(JExpr receiver, Class<?> owner, String name, Class<?> type) implements Slot {}
 
 	/** Champ d'instance d'une classe générée (globale de l'IA, champ d'une classe utilisateur…). */
-	public record FieldVar(ClassContext owner, String name, Class<?> type, Class<?> typeArg) implements Slot {
+	public record FieldVar(ClassContext owner, String name, Class<?> type, GType generic) implements Slot {
 		public FieldVar(ClassContext owner, String name, Class<?> type) {
 			this(owner, name, type, null);
 		}
@@ -199,6 +199,48 @@ public class BytecodeWriter {
 		} else {
 			builder.with(java.lang.classfile.attribute.NestHostAttribute.of(aiContext.desc));
 		}
+	}
+
+	/** Un type générique à un paramètre, tel que javac le suit : `raw<arg>`. */
+	public record GType(Class<?> raw, GType arg) {}
+
+	private static final java.util.Set<Class<?>> GENERIC_CLASSES = java.util.Set.of(leekscript.runner.values.Box.class, leekscript.runner.Wrapper.class, leekscript.runner.values.FunctionLeekValue.class);
+
+	/** Le type générique d'un nom écrit par JavaWriter (`FunctionLeekValue<String>`), null hors des classes suivies. */
+	public GType genericNamed(String name) {
+		int lt = name.indexOf('<');
+		if (lt < 0) return null;
+		if (!name.endsWith(">")) return null;
+		var inner = name.substring(lt + 1, name.length() - 1).trim();
+		if (inner.contains(",")) return null;
+		var raw = runtimeType(name.substring(0, lt));
+		if (!GENERIC_CLASSES.contains(raw)) return null;
+		var innerGeneric = genericNamed(inner);
+		return new GType(raw, innerGeneric != null ? innerGeneric : new GType(typeNamed(inner), null));
+	}
+
+	/** `Box<T>` / `Wrapper<T>` d'une variable capturée dont T s'écrit `elementJavaName`. */
+	public GType boxGeneric(Class<?> box, String elementJavaName) {
+		var element = genericNamed(elementJavaName);
+		return new GType(box, element != null ? element : new GType(typeNamed(elementJavaName), null));
+	}
+
+	/** Le type générique statique d'une expression, quand javac le connaît mieux que son effacement. */
+	public GType genericOf(JExpr e) {
+		if (e == null) return null;
+		return switch (e) {
+			case JExpr.Read r -> r.var().generic();
+			case JExpr.Assign a -> a.var().generic();
+			case JExpr.Call c -> {
+				var g = genericOf(c.receiver());
+				yield g != null && g.arg() != null && returnsClassTypeVariable(resolve(c)) ? g.arg() : null;
+			}
+			default -> null;
+		};
+	}
+
+	private static boolean returnsClassTypeVariable(Resolver.Resolved r) {
+		return r.executable() instanceof Method m && m.getGenericReturnType() instanceof java.lang.reflect.TypeVariable<?> tv && tv.getGenericDeclaration() instanceof Class<?>;
 	}
 
 	/** Une méthode d'une classe anonyme. */
@@ -364,7 +406,11 @@ public class BytecodeWriter {
 
 	/** Une variable LeekScript lue directement dans un emplacement existant (paramètre). */
 	public LocalVar alias(Object declaration, int slot, Class<?> type, String name) {
-		var v = new LocalVar(slot, type, name, method, null);
+		return alias(declaration, slot, type, name, null);
+	}
+
+	public LocalVar alias(Object declaration, int slot, Class<?> type, String name, GType generic) {
+		var v = new LocalVar(slot, type, name, method, generic);
 		locals.put(declaration, v);
 		return v;
 	}
@@ -459,10 +505,10 @@ public class BytecodeWriter {
 		return declare(declaration, type, name, null);
 	}
 
-	/** Une locale `Box<T>` / `Wrapper<T>` : `typeArg` est son T. */
-	public LocalVar declare(Object declaration, Class<?> type, String name, Class<?> typeArg) {
+	/** Une locale de type générique (`Box<T>`, `Wrapper<T>`, `FunctionLeekValue<T>`) : `generic` le décrit. */
+	public LocalVar declare(Object declaration, Class<?> type, String name, GType generic) {
 		if (type == void.class || JTypes.isNull(type)) throw new Unsupported("variable de type " + type);
-		var v = new LocalVar(method.nextSlot, type, name, method, typeArg);
+		var v = new LocalVar(method.nextSlot, type, name, method, generic);
 		method.nextSlot += TypeKind.from(JTypes.desc(type)).slotSize();
 		locals.put(declaration, v);
 		return v;
@@ -475,7 +521,11 @@ public class BytecodeWriter {
 
 	/** Idem, avec ses annotations (`@Final`, `@Private`… des champs de classe utilisateur). */
 	public FieldVar field(String name, Class<?> type, int flags, List<Class<?>> annotations) {
-		var f = new FieldVar(context, name, type);
+		return field(name, type, flags, annotations, null);
+	}
+
+	public FieldVar field(String name, Class<?> type, int flags, List<Class<?>> annotations, GType generic) {
+		var f = new FieldVar(context, name, type, generic);
 		if (context.fields.putIfAbsent(name, f) != null) throw new Unsupported("champ en double " + name);
 		if (annotations == null || annotations.isEmpty()) {
 			context.builder.withField(name, JTypes.desc(type), flags);
@@ -623,8 +673,12 @@ public class BytecodeWriter {
 	// ---- Lignes ----
 
 	/** Repère de ligne pour l'instruction qui commence, relié à la ligne LeekScript de `location`. */
+	/** Diagnostic (cf Unsupported) : l'instruction LeekScript en cours d'émission. */
+	static final ThreadLocal<Location> CURRENT_LOCATION = new ThreadLocal<>();
+
 	public void line(Location location) {
 		if (location == null || location.getFile() == null) return;
+		CURRENT_LOCATION.set(location);
 		boolean pending = method.pendingLine != 0;
 		int line = pending ? method.pendingLine : nextLine++;
 		method.pendingLine = 0;
@@ -706,11 +760,9 @@ public class BytecodeWriter {
 			case JExpr.Outer o -> o.target().type;
 			case JExpr.Call c -> {
 				var r = resolve(c);
-				// T d'un Box<T> / Wrapper<T> : get() & co rendent le type de la variable capturée
-				if (c.receiver() instanceof JExpr.Read read && read.var().typeArg() != null && r.executable() instanceof Method m
-						&& m.getGenericReturnType() instanceof java.lang.reflect.TypeVariable<?> tv && tv.getGenericDeclaration() instanceof Class<?>) {
-					yield read.var().typeArg();
-				}
+				// T d'un Box<T>, Wrapper<T>, FunctionLeekValue<T> : get(), run()… rendent le type de la variable
+				var g = genericOf(c.receiver());
+				if (g != null && g.arg() != null && returnsClassTypeVariable(r)) yield g.arg().raw();
 				yield r.returnType();
 			}
 			case JExpr.StaticCall c -> resolve(c).returnType();
@@ -1047,7 +1099,7 @@ public class BytecodeWriter {
 		if (context.captures == null) throw new Unsupported("locale d'une autre méthode hors d'une classe anonyme");
 		var f = context.captures.get(l);
 		if (f == null) {
-			f = new FieldVar(context, "val$" + l.name() + "$" + context.captures.size(), l.type(), l.typeArg());
+			f = new FieldVar(context, "val$" + l.name() + "$" + context.captures.size(), l.type(), l.generic());
 			context.captures.put(l, f);
 			context.builder.withField(f.name(), JTypes.desc(f.type()), java.lang.classfile.ClassFile.ACC_FINAL | java.lang.classfile.ClassFile.ACC_SYNTHETIC);
 		}
@@ -1190,7 +1242,12 @@ public class BytecodeWriter {
 	public void emitAs(JExpr e, Class<?> target) {
 		var stat = typeOf(e);
 		var stack = emit(e);
-		convert(stack, stat, target);
+		try {
+			convert(stack, stat, target);
+		} catch (Unsupported u) {
+			if (Unsupported.tracing()) System.out.println("  expression : " + String.valueOf(e).substring(0, Math.min(600, String.valueOf(e).length())));
+			throw u;
+		}
 	}
 
 	/** Émet `e` et laisse sa valeur sur la pile avec son type statique. */

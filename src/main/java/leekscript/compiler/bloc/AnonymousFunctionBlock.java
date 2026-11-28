@@ -195,12 +195,14 @@ public class AnonymousFunctionBlock extends AbstractLeekBlock {
 			if (mReferences.get(i)) throw new Unsupported("paramètre par référence");
 			var argument = bytecodeArgument(mainblock, writer, i);
 			if (declaration.isCaptured()) {
-				var javaType = writer.typeNamed(declaration.getType().getJavaName(mainblock.getVersion()));
+				var javaType = writer.boxGeneric(leekscript.runner.Wrapper.class, declaration.getType().getJavaName(mainblock.getVersion()));
 				var wrapper = writer.declare(declaration, leekscript.runner.Wrapper.class, mParameters.get(i), javaType);
 				var box = new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), argument));
 				writer.emitStatement(new JExpr.Assign(wrapper, new JExpr.New(leekscript.runner.Wrapper.class, List.of(box))));
 			} else {
-				var local = writer.declare(declaration, writer.typeOf(argument), mParameters.get(i));
+				var declared = declaration.getType();
+				var generic = declared != Type.ANY ? writer.genericNamed(declared.getJavaName(mainblock.getVersion())) : null;
+				var local = writer.declare(declaration, writer.typeOf(argument), mParameters.get(i), generic);
 				writer.emitStatement(new JExpr.Assign(local, argument));
 			}
 		}

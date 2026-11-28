@@ -259,7 +259,7 @@ public class ForeachBlock extends AbstractLeekBlock {
 			if (mainblock.hasGlobal(mIterator.getWord())) throw new Unsupported("itérateur homonyme d'une globale");
 			if (declaration.isCaptured()) {
 				// `final Wrapper<T> u_x = new Wrapper<T>(new Box(ai, null));`, mis à jour par set()
-				iteratorBox = writer.declare(declaration, leekscript.runner.Wrapper.class, mIterator.getWord(), writer.typeNamed(iterJavaType));
+				iteratorBox = writer.declare(declaration, leekscript.runner.Wrapper.class, mIterator.getWord(), writer.boxGeneric(leekscript.runner.Wrapper.class, iterJavaType));
 				writer.emitStatement(new JExpr.Assign(iteratorBox, new JExpr.New(leekscript.runner.Wrapper.class, List.of(new JExpr.New(leekscript.runner.values.Box.class, List.of(writer.aiThis(), JExpr.nul()))))));
 			} else {
 				iterator = writer.declare(declaration, writer.typeNamed(declaration.getIteratorJavaName(mainblock.getVersion())), mIterator.getWord());

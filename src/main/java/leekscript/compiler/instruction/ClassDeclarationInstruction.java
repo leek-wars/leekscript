@@ -1396,7 +1396,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 			var arg = declarations.get(a);
 			if (arg.isCaptured()) {
 				// `final var u_x = new Box<T>(ai, p_x)` ou `(ai, <défaut>, ops)`
-				var javaType = writer.typeNamed(arg.getType().getJavaName(mainblock.getVersion()));
+				var javaType = writer.boxGeneric(leekscript.runner.values.Box.class, arg.getType().getJavaName(mainblock.getVersion()));
 				List<JExpr> boxArgs;
 				if (a < count) {
 					var p = writer.alias(new Object(), BytecodeWriter.parameterSlot(parameters, a), parameters.get(a), "p_" + arg.getName());
@@ -1410,7 +1410,7 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 				continue;
 			}
 			if (a < count) {
-				writer.alias(arg, BytecodeWriter.parameterSlot(parameters, a), parameters.get(a), arg.getName());
+				writer.alias(arg, BytecodeWriter.parameterSlot(parameters, a), parameters.get(a), arg.getName(), writer.genericNamed(arg.getType().getJavaPrimitiveName(mainblock.getVersion())));
 			} else {
 				var defaultValue = block.getDefaultValues().get(a);
 				var local = writer.declare(arg, writer.primitiveClass(arg.getType()), arg.getName());
@@ -1451,7 +1451,8 @@ public class ClassDeclarationInstruction extends LeekInstruction implements leek
 				if (field.getValue().isFinal) annotations.add(Final.class);
 				if (field.getValue().level == AccessLevel.PROTECTED) annotations.add(Protected.class);
 				else if (field.getValue().level == AccessLevel.PRIVATE) annotations.add(Private.class);
-				fieldVars.add(writer.field(field.getKey(), writer.primitiveClass(field.getValue().getType()), ClassFile.ACC_PUBLIC, annotations));
+				var javaName = field.getValue().getType().getJavaPrimitiveName(version);
+				fieldVars.add(writer.field(field.getKey(), writer.typeNamed(javaName), ClassFile.ACC_PUBLIC, annotations, writer.genericNamed(javaName)));
 			}
 			clb.withField("this$0", ai.desc, ClassFile.ACC_FINAL | ClassFile.ACC_SYNTHETIC);
 
