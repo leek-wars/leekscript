@@ -907,13 +907,10 @@ public class LeekVariable extends Expression {
 		switch (operator) {
 			case Operators.ASSIGN: {
 				if (isWrapper()) {
-					JExpr l;
-					if (value instanceof LeekVariable lv) l = lv.bytecodeL(mainblock, writer);
-					else if (value.isLeftValue()) throw new Unsupported("compileL de " + value.getClass().getSimpleName());
-					else l = writer.expr(mainblock, value);
-					// v1 : une l-value partage sa boîte (setBox)
+					// La valeur par compileL comme le Java : une l-value partage sa boîte (setBox en v1),
+					// un appel any de v1 passe sans load() (setBoxOrValue déballe lui-même)
 					var method = !value.isLeftValue() ? "setBoxOrValue" : mainblock.getVersion() <= 1 ? "setBox" : "set";
-					return new JExpr.Call(boxValue, method, List.of(l));
+					return new JExpr.Call(boxValue, method, List.of(value.bytecodeL(mainblock, writer)));
 				}
 				var assignType = (this.declaration != null) ? this.declaration.getType() : this.variableType;
 				return new JExpr.Call(boxValue, "set", List.of(writer.compileConvert(mainblock, 0, value, assignType)));

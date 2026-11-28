@@ -31,6 +31,10 @@ public class TestReference extends TestCommon {
 		code_v2_4("var t = 0; var f = function(a) { t = @a }; var b = []; f(b); push(t, 5); return b;").equals("[5]");
 		code_strict_v2_4("any t = 0; var f = function(a) { t = @a }; var b = []; f(b); push(t, 5); return b;").equals("[5]");
 		code_v1_4("var t = 0; var f = function(@a) { t = @a }; var b = []; f(b); push(t, 5); return b;").equals("[5]");
+		// Variable capturée affectée par référence : la valeur passe par setBoxOrValue
+		code_v1("global t = 1 function g() { return @t } var y = 0 var h = function() { return y } y = @g() t = 5 return h()").equals("1");
+		code_v1("var g = function() { return 2 } var f = function() { var y = 0 var h = function() { return y } y = @g() return h() } return f()").equals("2");
+		code_v1("var t = [5] var y = 0 var h = function() { return y } y = @t[0] t[0] = 7 return h()").equals("7");
 		code("var t = 0; var f = function(a) { t; }; f(t); return 'ok';").equals("\"ok\"");
 		code_v1("function ref() { var a = 2; return @a; } return 1 / ref();").equals("0,5");
 		code_v2_("function ref() { var a = 2; return @a; } return 1 / ref();").equals("0.5");
