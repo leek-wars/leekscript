@@ -100,10 +100,19 @@ public final class BytecodeBackend {
 	/** Un programme par raison de repli (le plus court), pour choisir et tester la construction suivante. */
 	public static final ConcurrentHashMap<String, String> examples = new ConcurrentHashMap<>();
 
+	// Des raisons en nombre borné (un message peut porter un nom du programme) ; les exemples, qui
+	// gardent le code d'une IA, seulement pour les tests et les bancs (mode check)
+	private static final int MAX_REASONS = 256;
+
 	private static void fallback(String reason, AIFile file) {
-		fallbacks.computeIfAbsent(reason, k -> new LongAdder()).increment();
+		var counter = fallbacks.get(reason);
+		if (counter == null) {
+			if (fallbacks.size() >= MAX_REASONS) reason = "(autres raisons)";
+			counter = fallbacks.computeIfAbsent(reason, k -> new LongAdder());
+		}
+		counter.increment();
 		var code = file.getCode();
-		if (code != null) examples.merge(reason, code, (a, b) -> b.length() < a.length() ? b : a);
+		if (code != null && MODE.equals("check")) examples.merge(reason, code, (a, b) -> b.length() < a.length() ? b : a);
 	}
 
 	/** Le bytecode du programme, ou null s'il contient une construction que le backend ne sait pas émettre. */
@@ -124,6 +133,11 @@ public final class BytecodeBackend {
 		} catch (Unsupported e) {
 			fallback(e.getMessage(), file);
 			return null;
+		} catch (StackOverflowError e) {
+			// Le backend empile plus de cadres par nœud que JavaWriter : une expression très imbriquée
+			// que javac compile encore se compile par lui
+			fallback("pile du backend", file);
+			return null;
 		} catch (RuntimeException | LinkageError e) {
 			// Limite de la JVM (méthode de plus de 64 Ko, plus de 255 emplacements de paramètres, plus de
 			// 65 535 constantes) : javac la refusera aussi, avec l'erreur CODE_TOO_LARGE habituelle
@@ -136,6 +150,9 @@ public final class BytecodeBackend {
 			if (MODE.equals("check")) throw new IllegalStateException("backend bytecode : " + file.getPath(), e);
 			if (comparing()) report(file, "erreur interne, " + e);
 			return null;
+		} finally {
+			// (la dernière position émise retiendrait l'AIFile, son source et son Java, dans le fil)
+			BytecodeWriter.CURRENT_LOCATION.remove();
 		}
 	}
 

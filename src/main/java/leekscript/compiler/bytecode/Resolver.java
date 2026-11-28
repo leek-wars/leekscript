@@ -51,7 +51,8 @@ public final class Resolver {
 	public static Resolved method(Class<?> owner, String name, List<Class<?>> args, List<Class<?>> classLiterals, boolean statics) {
 		var key = new Key(owner, name, List.copyOf(args), classLiterals, statics);
 		// Les talons d'une compilation ne vont pas dans les caches : ils retiendraient leur chargeur
-		boolean cacheable = cacheable(owner, args);
+		// (un `u_X.class` d'une classe utilisateur est un talon aussi)
+		boolean cacheable = cacheable(owner, args) && (classLiterals == null || classLiterals.stream().allMatch(c -> c == null || !ClassStubs.isStub(c)));
 		var r = cacheable ? cache.get(key) : null;
 		if (r == null) {
 			var candidates = new ArrayList<Executable>();

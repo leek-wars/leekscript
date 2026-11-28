@@ -191,6 +191,28 @@ public class JavaCompiler {
 		};
 	}
 
+	/** Les classes compilées d'un programme, les dossiers du cache des packages qui les portent (null hors packages, ou hors cache), les unités compilées cette fois. */
+	private record Compiled(Map<String, byte[]> classes, List<File> directories, List<String> units) {}
+
+	/** Le programme par javac : chaque package par le cache des packages, sinon toutes les unités ensemble. */
+	private static Compiled compileJavac(AIFile file, Options options) throws LeekScriptException {
+		if (file.getCompiledCode().hasPackages()) {
+			var result = packageCache(file, options, "").compile((units, classpath) -> javac(file, units, classpath));
+			return new Compiled(result.classes, result.directories, result.compiled);
+		}
+		var units = allUnits(file);
+		return new Compiled(javac(file, units, List.of()), null, units.stream().map(PackageCache.Unit::className).toList());
+	}
+
+	/** Le cache des packages du programme, ses groupes posés ; `backend` : celui qui en écrit les classes (cf PackageCache). */
+	private static PackageCache packageCache(AIFile file, Options options, String backend) {
+		var code = file.getCompiledCode();
+		var cache = new PackageCache(new File(IA_PATH, PACKAGES_PATH), options.useCache(), backend);
+		cache.add(PackageCache.PROGRAM_GROUP, file.getJavaClass(), code.getJavaCode());
+		for (var module : code.getModules()) cache.add(module.group(), module.className(), module.javaCode());
+		return cache;
+	}
+
 	/** L'unité de la classe de l'IA, puis une par classe de module : compilées ensemble (elles se lisent l'une l'autre). */
 	private static List<PackageCache.Unit> allUnits(AIFile file) {
 		var code = file.getCompiledCode();
@@ -401,8 +423,9 @@ public class JavaCompiler {
 
 			// Backend bytecode : la classe directement depuis l'AST, sans javac, quand il sait tout le programme
 			BytecodeBackend.Result bytecode = null;
-			// Mode `compare` : les classes de javac du programme entier, contre lesquelles celles du backend se vérifient
-			Map<String, byte[]> javacClasses = null;
+			// Mode `compare` : la compilation par javac (cache des packages compris), contre laquelle celle du
+			// backend se vérifie, et qui sert telle quelle si elles diffèrent
+			Compiled javacCompiled = null;
 			long compareTime = 0;
 			if (BytecodeBackend.enabled()) {
 				t = System.nanoTime();
@@ -410,8 +433,8 @@ public class JavaCompiler {
 				analyze_time += System.nanoTime() - t;
 				if (bytecode != null && BytecodeBackend.comparing()) {
 					t = System.nanoTime();
-					javacClasses = javac(file, allUnits(file), List.of());
-					if (BytecodeBackend.differs(file, javacClasses, bytecode)) bytecode = null;
+					javacCompiled = compileJavac(file, options);
+					if (BytecodeBackend.differs(file, javacCompiled.classes(), bytecode)) bytecode = null;
 					compareTime = System.nanoTime() - t;
 				}
 				// (sans lui, les lignes restent celles du Java)
@@ -450,24 +473,20 @@ public class JavaCompiler {
 			if (bytecode != null && !hasPackages) {
 				classes = bytecode.classes();
 				code.setJavacUnits(new ArrayList<>(classes.keySet().stream().filter(name -> !name.contains("$")).toList()));
-			} else if (hasPackages) {
-				// v5 : chaque package se compile et se cache à part (cf PackageCache) ; le backend
-				// bytecode a déjà écrit toutes les classes, le cache prend celles des groupes à refaire
-				var cache = new PackageCache(new File(IA_PATH, PACKAGES_PATH), options.useCache(), bytecode != null ? "bytecode" : "");
-				cache.add(PackageCache.PROGRAM_GROUP, file.getJavaClass(), code.getJavaCode());
-				for (var module : code.getModules()) {
-					cache.add(module.group(), module.className(), module.javaCode());
-				}
+			} else if (bytecode != null) {
+				// v5 : chaque package se compile et se cache à part (cf PackageCache) ; le backend a déjà
+				// écrit toutes les classes, le cache prend celles des groupes à refaire
 				var written = bytecode;
-				var result = cache.compile(written != null ? (units, classpath) -> ofUnits(written.classes(), units) : (units, classpath) -> javac(file, units, classpath));
+				var result = packageCache(file, options, "bytecode").compile((units, classpath) -> ofUnits(written.classes(), units));
 				classes = result.classes;
 				packageDirectories = result.directories;
 				code.setJavacUnits(result.compiled);
 			} else {
-				var units = allUnits(file);
-				// (déjà compilées par javac en mode `compare`)
-				classes = javacClasses != null ? javacClasses : javac(file, units, List.of());
-				code.setJavacUnits(units.stream().map(PackageCache.Unit::className).toList());
+				// (déjà compilé par javac en mode `compare`)
+				var compiledByJavac = javacCompiled != null ? javacCompiled : compileJavac(file, options);
+				classes = compiledByJavac.classes();
+				packageDirectories = compiledByJavac.directories();
+				code.setJavacUnits(compiledByJavac.units());
 			}
 			long compile_time = System.nanoTime() - t + compareTime;
 

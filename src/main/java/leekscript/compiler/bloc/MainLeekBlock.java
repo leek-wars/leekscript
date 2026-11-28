@@ -1170,13 +1170,15 @@ public class MainLeekBlock extends AbstractLeekBlock {
 		// Les champs de chaque classe racine, avant d'en écrire aucune : chacune lit ceux des autres
 		declareBytecodeFields(writer, classes);
 		for (var module : writer.getModuleWriters()) declareBytecodeFields(module, classes);
-		var functionValues = new ArrayList<FunctionBlock>();
 		if (writer.isMultiClass()) {
-			functionValues.addAll(mJavaFunctionValues.getOrDefault(null, List.of()));
-			for (var module : writer.getModuleWriters()) functionValues.addAll(mJavaFunctionValues.getOrDefault(module.module, List.of()));
+			writer.setPredeclaring(true);
+			for (var function : mJavaFunctionValues.getOrDefault(null, List.of())) writer.functionValue(function, w -> function.bytecodeFunctionValue(this, w));
+			for (var module : writer.getModuleWriters()) {
+				for (var function : mJavaFunctionValues.getOrDefault(module.module, List.of())) writer.functionValue(function, w -> function.bytecodeFunctionValue(this, w));
+			}
+			writer.setPredeclaring(false);
 		}
-		functionValues.addAll(writer.getPredeclaredFunctionValues());
-		for (var function : functionValues) {
+		for (var function : writer.getPredeclaredFunctionValues()) {
 			writer.functionValue(function, w -> function.bytecodeFunctionValue(this, w));
 		}
 

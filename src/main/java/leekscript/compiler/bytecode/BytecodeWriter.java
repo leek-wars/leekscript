@@ -414,7 +414,12 @@ public class BytecodeWriter {
 		}
 		int firstSlot = slot;
 		var methodType = MethodTypeDesc.of(JTypes.desc(returnType), descs);
+		var invoked = new boolean[1];
 		java.util.function.Consumer<java.lang.classfile.CodeBuilder> handler = code -> {
+			// L'API Class-File rappelle le corps quand un saut dépasse ±32 Ko (FIX_SHORT_JUMPS) ; son
+			// émission n'est pas rejouable (classes anonymes, champs, lignes déjà posés) : javac s'en charge
+			if (invoked[0]) throw new Unsupported("saut de plus de 32 Ko");
+			invoked[0] = true;
 			var saved = method;
 			var savedCb = cb;
 			method = new MethodState();
@@ -523,8 +528,14 @@ public class BytecodeWriter {
 		if (!files.contains(file)) files.add(file);
 	}
 
-	// Valeurs fonction à déclarer avant d'écrire les classes (cf Retry)
+	// Valeurs fonction à déclarer avant d'écrire les classes (cf Retry), et le temps de les déclarer
 	private java.util.Set<leekscript.compiler.bloc.FunctionBlock> predeclaredFunctionValues = java.util.Set.of();
+	private boolean predeclaring = false;
+
+	/** Le temps de déclarer d'avance les valeurs fonction du Java (functionValue les accepte alors dans un package). */
+	public void setPredeclaring(boolean predeclaring) {
+		entry.predeclaring = predeclaring;
+	}
 
 	public void setPredeclaredFunctionValues(java.util.Set<leekscript.compiler.bloc.FunctionBlock> functions) {
 		entry.predeclaredFunctionValues = functions;
@@ -653,6 +664,9 @@ public class BytecodeWriter {
 		var name = "ufunction_" + function.getInternalName();
 		var existing = owner.functionValues.get(name);
 		if (existing != null) return existing;
+		// La classe d'un package se met en cache sous l'empreinte de son Java : elle n'a que les
+		// valeurs fonction du Java, déclarées d'avance (cf MainLeekBlock.mJavaFunctionValues)
+		if (owner.module != null && owner.module.isInPackage() && !entry.predeclaring) throw new Unsupported("valeur fonction hors du Java d'un package");
 		if (owner.built) throw new Retry(function);
 		return owner.functionValue(name, () -> value.apply(owner));
 	}
@@ -1648,6 +1662,18 @@ public class BytecodeWriter {
 	 * division entière par zéro n'en est pas une). Rendue dans le type de l'expression (Long, Integer…).
 	 */
 	private Object constant(JExpr e) {
+		// Mémorisée par nœud : emit() la demande à chaque niveau d'une chaîne d'opérateurs
+		var known = constants.get(e);
+		if (known != null) return known == NOT_CONSTANT ? null : known;
+		var value = computeConstant(e);
+		constants.put(e, value == null ? NOT_CONSTANT : value);
+		return value;
+	}
+
+	private static final Object NOT_CONSTANT = new Object();
+	private final IdentityHashMap<JExpr, Object> constants = new IdentityHashMap<>();
+
+	private Object computeConstant(JExpr e) {
 		return switch (e) {
 			case JExpr.Lit l -> l.value() instanceof Number || l.value() instanceof Boolean || l.value() instanceof String ? l.value() : null;
 			case JExpr.GetStatic g -> {
